@@ -1,0 +1,25 @@
+[
+  {
+    "bug": "Reimportação repete conflitos",
+    "confirmed": true,
+    "before": 3,
+    "after": 4
+  },
+  {
+    "bug": "sessions false descartado silenciosamente",
+    "confirmed": true
+  },
+  {
+    "bug": "Recuperação não disponibiliza conteúdo bruto inválido",
+    "confirmed": true,
+    "error": "Não foi possível recuperar o registro local: Expected property name or '}' in JSON at position 1 (line 1 column 2). O dado anterior não foi apagado. Importe uma cópia válida para recuperá-lo."
+  },
+  {
+    "bug": "Dependência concluída fora filtro considerada pendente",
+    "confirmed": true
+  },
+  {
+    "bug": "Nova tarefa sem opção MVP e oculta após salvar",
+    "confirmed": true
+  }
+]

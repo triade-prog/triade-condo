@@ -1,0 +1,7 @@
+{
+  "verificacoes": 23,
+  "metodo": "Execução da lógica JavaScript em DOM simulado, sem navegador",
+  "dados": "comparados integralmente à extração do XLSX",
+  "abertura_visual": "não verificada; navegador integrado bloqueia file://",
+  "dependencias_externas": 0
+}

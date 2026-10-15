@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "updates": {
+    "REV-01": {
+      "status": "Concluída",
+      "owner": "Codex · análise técnica assistida",
+      "notes": "Auditoria transversal assistida: dez grupos de correções locais aplicados, comparação com dez fontes oficiais, riscos/decisões documentados, testes orientados a perda de registros/isolamento visual e regressão aprovados. Janela inclui interrupções e retomadas; não equivale a horas ativas de trabalho. Produto não implementado.",
+      "updatedAt": "2026-10-09T00:15:53Z",
+      "evidence": "../../../estruturação do sistema/relatorio-revisao-desenvolvimento.md"
+    }
+  },
+  "custom": [],
+  "sessions": [
+    {
+      "sid": "AUDIT-20261008-045503",
+      "id": "REV-01",
+      "start": "2026-10-08T04:55:03Z",
+      "end": "2026-10-09T00:15:53Z",
+      "summary": "Auditoria transversal assistida: dez grupos de correções locais aplicados, comparação com dez fontes oficiais, riscos/decisões documentados, testes orientados a perda de registros/isolamento visual e regressão aprovados. Janela inclui interrupções e retomadas; não equivale a horas ativas de trabalho. Produto não implementado."
+    }
+  ],
+  "history": [
+    {
+      "id": "REV-01",
+      "at": "2026-10-08T04:55:03Z",
+      "type": "Início de auditoria registrado em arquivo, sem acessar navegador",
+      "patch": {
+        "start": "2026-10-08T04:55:03Z"
+      }
+    },
+    {
+      "id": "REV-01",
+      "at": "2026-10-09T00:15:53Z",
+      "type": "Finalização da auditoria documental e validação, sem concluir produto",
+      "patch": {
+        "end": "2026-10-09T00:15:53Z",
+        "summary": "Auditoria transversal assistida: dez grupos de correções locais aplicados, comparação com dez fontes oficiais, riscos/decisões documentados, testes orientados a perda de registros/isolamento visual e regressão aprovados. Janela inclui interrupções e retomadas; não equivale a horas ativas de trabalho. Produto não implementado.",
+        "evidence": "../../../estruturação do sistema/relatorio-revisao-desenvolvimento.md"
+      }
+    }
+  ]
+}

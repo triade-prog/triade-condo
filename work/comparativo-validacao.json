@@ -1,0 +1,18 @@
+{
+  "abas": [
+    "Cenários e ofertas",
+    "Oferta por funcionalidade",
+    "Sistemas de referência",
+    "Matriz de funcionalidades",
+    "Foco e evolução",
+    "Fontes e pendências"
+  ],
+  "tabelas_com_filtro": 11,
+  "links_nativos": 22,
+  "ofertas_por_cenario": 42,
+  "matriz": "14 SaaS + TRÍADE; 12 funcionalidades",
+  "erros_celula": 0,
+  "preco_e_data": "valores tipados verificados",
+  "decisao": "lista editável verificada",
+  "aplicativo_excel": "não testado em sessão nativa"
+}

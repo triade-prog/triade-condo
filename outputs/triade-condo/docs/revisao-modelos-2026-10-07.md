@@ -1,0 +1,76 @@
+# Registro e validação — 07/10/2026
+
+## Assessoria atual e terminologia confirmadas — 08/10/2026
+Este esclarecimento prevalece sobre o enquadramento anterior: a assessoria da oferta atual concentra-se na **implantação de novo condomínio cliente** (prédio/condomínio que contrata o sistema), com demonstração e orientação passo a passo em reunião/assembleia acordada, e na **integração/orientação de novo morador em condomínio já cliente**, reduzindo trabalho do síndico. “Novo cliente” significa condomínio, não morador. Assembleia não é requisito jurídico de adesão; não afirmar exclusividade.
+
+Na orientação do novo morador, explicar regras existentes aprovadas/fornecidas pelo cliente, mostrar uso do WhatsApp e funcionamento do sistema e realizar cadastro breve com nome, telefone e apartamento. Não inventar regras nem substituir documentos do prédio. CPF é possibilidade condicional à necessidade do módulo financeiro, não obrigatório para funções básicas; sem coleta real agora ou interpretação de regra legal. Preço/pacote, frequência, capacidade, responsáveis e presencial versus remoto para novos moradores continuam a definir.
+
+Assessoria operacional recorrente (triagem, vistoria, acompanhamento/manutenção) permanece apenas hipótese opcional futura, claramente distinta, sem inclusão automática na oferta atual. Descrições anteriores desse modelo não significam serviço vigente ou obrigação de execução. Preservar Brasília/DF, morador exclusivamente WhatsApp, número institucional próprio como pré-requisito, síndico painel web e avisos no WhatsApp dele, módulos independentes e MVP focado. Apenas materiais atualizados; sem pesquisa, contato, contratação ou implementação.
+
+
+Serviço humano TRÍADE registrado como adicional opcional. Plataforma deve permitir ao próprio síndico triar, acompanhar, checar evidências e revisar/concluir, mantendo chamados, responsáveis, dois prazos, decisões, histórico, reabertura e comunicação. Sem obrigação de envio de equipe humana.
+
+Pendências: executor por atividade/modelo (DEC-06); equipe contratada (ADD-01); demandas cobertas (ADD-02); horários/cobertura/substituição (SERV-02); quantidade/capacidade de condomínios (ADD-03); atividades presenciais (ADD-04); pacote/limites/preço (SERV-01). ADD-05 é prontidão específica do adicional, não bloqueio do piloto da plataforma.
+
+Prioridade: necessidade real, público, oferta e venda antes de definir/codificar MVP. Não há público/oferta validados nem síndico/condomínio inicial. Descoberta por fontes públicas gera hipóteses, sem validar demanda/disposição a pagar; entrevistas prévias não são requisito obrigatório. MVP focado será posteriormente oferecido a alguns síndicos para teste. Catálogo é backlog de possibilidades, não MVP aprovado ou autorização de implementação.
+
+Produto, arquitetura, plano e catálogo/painel sincronizados: 80 tarefas, 7 fases, 17 frentes. Preservados 74 IDs anteriores, chave e versão 1 do armazenamento. Registros reais do navegador não acessados ou reescritos. Campos locais e tarefas adicionais permanecem; critérios revisados possuem aviso para reavaliar conclusões antigas. Tarefas locais antigas ficam A classificar no novo filtro de Aplicação.
+
+Sintaxe e 22 verificações de lógica/modelo aprovadas: compatibilidade do estado antigo, IDs, catálogo sincronizado, ausência de dependências de tarefas comuns sobre o adicional, pendências não concluídas e sequência comercial. Testes com dados sintéticos; não certificam interface visual, que segue pendente em BASE-07.
+
+Protótipo operacional preservado e ainda não demonstra a rotina completa do síndico sozinho. Adequação está registrada nas tarefas futuras. Nenhum backend, integração, conta, contratação, publicação, pesquisa extensa ou comunicação com terceiros executados.
+
+## Complemento — cenários de portaria e pouca estrutura
+Registrados cenários presencial/atendente, online/remota e sem portaria, incluindo prédios de vários andares/apartamentos conduzidos por síndico morador com pouca estrutura. Não presumidos porteiro, zelador, equipe, administradora ou prestador fixo; expressão informal sobre prédio não determina classificação jurídica. Portaria remota não recebe função automática de manutenção/revisão e não se presume integração técnica.
+
+Produto, arquitetura, plano e catálogo/painel sincronizados. Critérios de PROD-01/02/03/05, DEC-01/06, TIC-02, SERV-05/06, VIS-01, EVI-01, END-01, WA-04 e ADD-04 ajustados para dores, fluxos, responsáveis, acesso, vistorias, coleta/checagem de evidências e comunicação. Síndico pode executar/atribuir; adicional humano permanece opcional. Descoberta ampla gera hipóteses; recorte escolhido depois, sem todos os cenários obrigatórios no MVP.
+
+80 IDs e ordem preservados; chave/versão de armazenamento inalteradas. Nenhum registro real do navegador acessado/reescrito. Passaram as 22 verificações anteriores, mais conferência dos 80 IDs e consistência de critérios/documentos. Sintaxe aprovada; revisão visual continua pendente. Não executada pesquisa, implementação funcional, publicação ou contato com terceiros.
+
+## Ajuste de contexto e visão de evolução — 07/10/2026
+O cenário C01 confirmado pela usuária é um prédio simples, sem porteiro e sem operação de portaria, com porta de entrada, elevador e apartamentos. Visitas e entregas são tratadas diretamente pelo morador, como já acontece. Não presumir autorização de entrada, registro de visitantes, aviso automático de chegada ou controle de encomendas. Esses recursos ficam fora do recorte inicial desse caso e só são reavaliados diante de necessidade concreta. Sem porteiro com operação remota/equipamentos específicos é contexto distinto; isso não amplia automaticamente C01.
+
+Núcleo candidato: rotina compartilhada — porta/elevador, iluminação, limpeza, manutenção e comunicação síndico-moradores — com pedido, responsável real, providência, andamento e conclusão. Identificar a organização existente em todos os cenários: atores, procedimentos adotados e necessidades reais. Manutenção pode já estar organizada em atas, regras internas, acordos ou contratos; verificar por prédio, sem regra jurídica ou presunção de ata obrigatória. Registro de referência existente, decisão ou responsável é opcional quando útil; não criar papel, equipe ou fluxo burocrático obrigatório. Critérios gerais de acesso/autorizações do backlog só se aplicam a necessidades efetivas do recorte, não são exigência de portaria para C01.
+
+Visão de evolução: servir diferentes realidades, do prédio simples ao condomínio grande com muitos apartamentos, com ou sem portaria, disponibilizando funcionalidades adequadas a cada contexto, sem exigir todas de todos. A forma de disponibilizar os recursos permanece pendente de desenho; não foram escolhidos pacotes, preços ou arquitetura definitivos. MVP continua focado como etapa. Assessoria humana segue opcional; pesquisa precede MVP, sem oferta ou comprador validados. Este ajuste preserva IDs e decisões anteriores e não implementa produto, realiza nova pesquisa, publica ou contata terceiros.
+
+## Jornada e notificações confirmadas — 07/10/2026
+Em todos os cenários, o morador interage 100% pelo WhatsApp, sem aplicativo ou portal externo. O síndico tem painel web para gestão e recebe no próprio WhatsApp notificações de novidades relevantes, incluindo novo chamado/reclamação e nova solicitação de morador, evitando precisar manter o painel aberto. É requisito do produto para implementação futura, não integração entregue. Não presumir decisões/aprovações pelo WhatsApp nem notificações para cada alteração técnica. Detalhar eventos pertinentes, destinatários por vínculo, falha/entrega e prevenção de duplicidade, preservando a simplicidade da rotina. Outros tipos e regras de aviso continuam a detalhar.
+
+## Atividades e módulos opcionais — 07/10/2026
+Decisão de produto: atividades/módulos devem poder ser usados de forma independente, com pouca burocracia e ativação opcional pelo síndico. Compartilhar dados e relacionar atividades quando útil não cria dependência comercial nem percurso compulsório entre funções. Orçamento não exige pagamento/financeiro; chamados, evidências, checagem e reabertura não exigem financeiro ou cobrança. Usar orçamento ou outro módulo independente não obriga criar chamado, evidência ou checagem. Preservar vínculos essenciais de registro, identidade, autorização e coerência quando necessários, como uma evidência pertencente ao caso correto.
+
+Controle financeiro e cobrança mensal do condomínio por boleto entram como possibilidades opcionais de evolução, que o síndico pode usar ou não. Não estão aprovados para MVP nem implementados. Provedor, fluxo de boleto, ativação e eventuais integrações serão pesquisados/desenhados futuramente; nenhuma pesquisa extra ou movimentação financeira nesta revisão. Não interpretar a visão ampla como suíte obrigatória ou escolher pacotes, preços ou arquitetura definitivos. Morador permanece exclusivamente WhatsApp; síndico com painel web e avisos WhatsApp. MVP focado e assessoria humana opcional permanecem.
+
+## Armário de encomendas: hipótese após os primeiros clientes — 07/10/2026
+A usuária decidiu adiar a idealização detalhada e a implantação de armário de encomendas para uma fase de ampliação futura, após os primeiros clientes. Fica fora do MVP, sem escopo aprovado. Hipótese discutida: locação a prédios/condomínios com sistema, manutenção/suporte e notificações ao morador via WhatsApp; viabilidade comercial ainda não confirmada.
+
+Somente depois de haver clientes, avaliar no local necessidade, espaço e acesso do entregador, possibilidade externa/área separada/hall com integração, depósito, guarda, retirada individual e rastreabilidade, exceções e suporte, custos e responsabilidades. Não prometer ausência de extravio nem integração disponível. Não iniciar desenvolvimento, compra, parceria ou instalação. Esta decisão não cria operação de portaria no prédio simples, não torna o módulo obrigatório e preserva morador exclusivamente WhatsApp, síndico com painel/avisos WhatsApp, módulos opcionais e assessoria humana opcional. Registro apenas; sem pesquisa nova.
+
+## WhatsApp institucional como pré-requisito de adesão — 08/10/2026
+Para adquirir/usar a TRÍADE, o prédio ou condomínio deve ter WhatsApp próprio, com número institucional do prédio/condomínio. Se ainda não houver, providenciar esse número é pré-requisito da adesão. Não usar automaticamente WhatsApp pessoal do síndico como canal institucional e não inventar exceções ou burocracia adicional. Morador continua 100% WhatsApp, pelo canal institucional; síndico mantém painel web de gestão e recebe notificações no WhatsApp dele.
+
+É requisito comercial e de jornada confirmado, não integração entregue. Viabilidade técnica do número para futura integração permanece a verificar. Provedor, tipo de conta/API, custos e migração não foram escolhidos. Não criar número/conta, pesquisar ou implementar nesta atualização. As demais decisões permanecem.
+
+## Foco inicial Brasília/DF e entrada assistida — 08/10/2026
+Foco inicial de atendimento escolhido pela usuária: Brasília/Distrito Federal. É definição comercial de atuação, sem demanda ou comprador validados. Ofertar implantação assistida como diferencial proposto: equipe vai a reunião/assembleia acordada com o cliente, demonstra o sistema e orienta passo a passo. Assembleia não é requisito jurídico de adesão; não afirmar exclusividade competitiva.
+
+Ofertar suporte de entrada de novos moradores, orientando uso do WhatsApp e funcionamento do serviço, com preparação/cadastro assistido conforme requisitos a detalhar. Não é registro de visitante ou aviso automático de chegada. Implantação/treinamento e suporte de entrada são distintos de assessoria operacional humana opcional, como triagem/vistoria. Preço/pacote, frequência, capacidade e responsáveis continuam a definir; presencial versus remoto para novos moradores também permanece aberto. Sem assumir contratação ou serviços ilimitados.
+
+Preservar morador 100% WhatsApp, número institucional próprio do prédio como pré-requisito de adesão, síndico com painel web e notificações no WhatsApp dele. Esta revisão só registra materiais: sem pesquisa adicional, contratação, contato, agenda ou implementação.
+
+## Apoio documental na implantação — 08/10/2026
+A consultoria/assessoria de implantação de novo condomínio cliente inclui como diferencial proposto apoio à documentação do condomínio: atas, regras e documentos pertinentes. Se inexistentes, ajudar a desenvolver; se existentes, revisar e propor ajustes quando necessários. Não afirmar exclusividade de mercado. Apoio de redação/organização e propostas de ajuste são distintos da aprovação das regras pelo condomínio. Atas devem refletir reuniões e decisões efetivamente ocorridas, sem fabricar atas retroativas ou decisões. Não apresentar o apoio como regularização automática ou assessoria jurídica já contratada.
+
+Documentos abrangidos, responsáveis, revisão profissional quando aplicável e preço/pacote continuam a definir. Documentação não se torna requisito compulsório para todos os módulos nem burocracia obrigatória por chamado. Orientar moradores pelas regras fornecidas/aprovadas pelo cliente, sem substituir documentos. Preservar implantação de novo condomínio cliente versus integração/orientação de novo morador em condomínio já cliente, cadastro breve nome/telefone/apartamento e CPF condicional à necessidade financeira, Brasília/DF, WhatsApp institucional e síndico painel/avisos. Apenas registro; nenhum documento real criado para cliente inexistente, pesquisa, contato ou implementação.
+
+## Estrutura inicial de disponibilização por planos — 08/10/2026
+A usuária decidiu criar níveis/planos de disponibilização de funcionalidades. A tabela descreve a estrutura inicial da oferta, sem nomes comerciais, preços ou composição final aprovados.
+
+| Nível proposto (descrição, não nome comercial) | Direção de recursos | Fronteiras a definir |
+| --- | --- | --- |
+| Básico | Atendimento e controle | Recursos exatos, limites, nome e preço |
+| Ampliação | Nível que inclua coordenação e agenda; adquirir mais funcionalidades conforme plano | Composição e limites; coordenação não implica equipe TRÍADE executar manutenção |
+| Serviços associados e evolução | Implantação de novo condomínio cliente, integração/orientação de novo morador em condomínio já cliente e apoio documental | Inclusão em cada plano, preço/pacote, frequência e capacidade ainda a definir; financeiro/boleto seguem evolução a decidir, armário após primeiros clientes |
+
+Plano define acesso comercial aos recursos, não dependências artificiais no fluxo. Funções continuam opcionais/autônomas dentro dos recursos disponibilizados: orçamento não exige pagamento e chamados não exigem financeiro. Compartilhar dados quando útil preserva vínculos essenciais de identidade, autorização e coerência, sem percurso compulsório. A decisão atual esclarece a pendência anterior de como disponibilizar recursos; composição final e arquitetura seguem abertas. Preservar cenários variados, Brasília/DF, número institucional próprio de WhatsApp como pré-requisito, morador 100% WhatsApp, síndico painel/avisos WhatsApp e assessoria atual de implantação/orientação. Apenas registros, sem pesquisa, preços inventados, MVP, divulgação ou contratação.

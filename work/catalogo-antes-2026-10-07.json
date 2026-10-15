@@ -1,0 +1,1439 @@
+{
+  "version": 1,
+  "baselineDate": "2026-10-05",
+  "phases": [
+    {
+      "id": "0",
+      "name": "Base recuperada",
+      "goal": "Inventariar documentos e protótipo, sem tratar simulação como produto em produção."
+    },
+    {
+      "id": "1",
+      "name": "Validar produto e serviço",
+      "goal": "Definir escopo, responsabilidades, canais e capacidade com Gabriela e síndicos."
+    },
+    {
+      "id": "2",
+      "name": "Fundação técnica",
+      "goal": "Preparar identidade, isolamento, dados e API antes de usar dados reais."
+    },
+    {
+      "id": "3",
+      "name": "Operação de chamados",
+      "goal": "Implementar acompanhamento, prazos, decisões, vistorias e encerramento."
+    },
+    {
+      "id": "4",
+      "name": "WhatsApp e indicadores",
+      "goal": "Integrar o canal do morador e tornar comunicação e qualidade observáveis."
+    },
+    {
+      "id": "5",
+      "name": "Qualidade e infraestrutura",
+      "goal": "Verificar segurança, continuidade, acessibilidade e operação técnica."
+    },
+    {
+      "id": "6",
+      "name": "Piloto e preparação da operação",
+      "goal": "Preparar pessoas, contratos, suporte e critérios de entrada e saída do piloto."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "BASE-01",
+      "phase": "0",
+      "front": "Produto",
+      "title": "Recuperar documento de produto",
+      "criteria": "Personas, jornada, limites e MVP disponíveis para revisão.",
+      "deps": [],
+      "priority": "P1",
+      "kind": "Documento",
+      "baseline": "Documentado",
+      "status": "Concluída",
+      "owner": "",
+      "notes": "",
+      "evidence": "../docs/produto.md",
+      "updatedAt": ""
+    },
+    {
+      "id": "BASE-02",
+      "phase": "0",
+      "front": "Arquitetura e dados",
+      "title": "Recuperar desenho modular",
+      "criteria": "Entidades, API proposta, isolamento e integrações descritos; stack é hipótese.",
+      "deps": [],
+      "priority": "P1",
+      "kind": "Documento",
+      "baseline": "Documentado",
+      "status": "Concluída",
+      "owner": "",
+      "notes": "",
+      "evidence": "../docs/arquitetura.md",
+      "updatedAt": ""
+    },
+    {
+      "id": "BASE-03",
+      "phase": "0",
+      "front": "Experiência",
+      "title": "Preservar protótipo operacional",
+      "criteria": "Demonstração de demandas, decisões, retorno, revisão e reabertura em dados fictícios.",
+      "deps": [],
+      "priority": "P1",
+      "kind": "Protótipo",
+      "baseline": "Simulado",
+      "status": "Concluída",
+      "owner": "",
+      "notes": "Filtros e perfis não implementam autorização; alterações em memória; evidência apenas textual.",
+      "evidence": "../prototype/index.html",
+      "updatedAt": ""
+    },
+    {
+      "id": "BASE-04",
+      "phase": "0",
+      "front": "Qualidade",
+      "title": "Registrar verificações iniciais",
+      "criteria": "Sintaxe e regras pontuais verificadas; limites de validação registrados.",
+      "deps": [],
+      "priority": "P1",
+      "kind": "Documento",
+      "baseline": "Documentado",
+      "status": "Concluída",
+      "owner": "",
+      "notes": "",
+      "evidence": "../docs/validacao.md",
+      "updatedAt": ""
+    },
+    {
+      "id": "BASE-05",
+      "phase": "0",
+      "front": "Gestão do projeto",
+      "title": "Criar plano detalhado da execução",
+      "criteria": "Todo escopo recuperado aparece com tarefas, critérios e dependências.",
+      "deps": [],
+      "priority": "P1",
+      "kind": "Documento",
+      "baseline": "Documentado",
+      "status": "Concluída",
+      "owner": "",
+      "notes": "",
+      "evidence": "../docs/plano-execucao.md",
+      "updatedAt": ""
+    },
+    {
+      "id": "BASE-06",
+      "phase": "0",
+      "front": "Gestão do projeto",
+      "title": "Criar painel local da construção",
+      "criteria": "Busca, filtros, edição, persistência, exportação e importação disponíveis; testes registrados.",
+      "deps": [],
+      "priority": "P1",
+      "kind": "Ferramenta local",
+      "baseline": "Implementado localmente",
+      "status": "Concluída",
+      "owner": "",
+      "notes": "Sem servidor de dados ou colaboração multiusuário. Conclusões registradas não são certificação independente.",
+      "evidence": "index.html",
+      "updatedAt": ""
+    },
+    {
+      "id": "PROD-01",
+      "phase": "1",
+      "front": "Produto",
+      "title": "Entrevistar Gabriela e síndicos sobre a rotina",
+      "criteria": "Registrar demandas, volume, gargalos e rotina atual em entrevistas consentidas.",
+      "deps": [
+        "BASE-01"
+      ],
+      "priority": "P0",
+      "kind": "Validação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "PROD-02",
+      "phase": "1",
+      "front": "Produto",
+      "title": "Priorizar o escopo do piloto",
+      "criteria": "Lista aprovada de categorias, canais, ações atendidas e exclusões; todo novo pedido entra na fila de mudanças.",
+      "deps": [
+        "PROD-01"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "PROD-03",
+      "phase": "1",
+      "front": "Produto",
+      "title": "Validar diferenciação e referências de mercado",
+      "criteria": "Fontes datadas e escopos comparáveis registrados; relatos exploratórios não viram afirmações de prevalência.",
+      "deps": [
+        "PROD-01"
+      ],
+      "priority": "P1",
+      "kind": "Validação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "PROD-04",
+      "phase": "1",
+      "front": "Experiência",
+      "title": "Testar jornada de morador e painel com usuários",
+      "criteria": "Percorrer abertura, atualização, decisão, conclusão e contestação; registrar problemas e ajustes priorizados.",
+      "deps": [
+        "BASE-03",
+        "PROD-02"
+      ],
+      "priority": "P0",
+      "kind": "Validação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "PROD-05",
+      "phase": "1",
+      "front": "Produto",
+      "title": "Definir critérios e métricas de sucesso do piloto",
+      "criteria": "Estabelecer medição inicial, metas acordadas e critérios de suspensão/expansão sem prometer resultados.",
+      "deps": [
+        "PROD-01"
+      ],
+      "priority": "P1",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "SERV-01",
+      "phase": "1",
+      "front": "Serviço humano",
+      "title": "Definir pacote de assessoria e limites",
+      "criteria": "Escopo de triagem, cobrança, vistorias e prestadores definido; representação, pagamentos e multas fora das ações autônomas.",
+      "deps": [
+        "PROD-02"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "SERV-02",
+      "phase": "1",
+      "front": "Serviço humano",
+      "title": "Definir horário humano, cobertura e substituição",
+      "criteria": "Escala, capacidade estimada, responsáveis substitutos e mensagem fora do horário aprovados.",
+      "deps": [
+        "SERV-01"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "SERV-03",
+      "phase": "1",
+      "front": "Serviço humano",
+      "title": "Definir emergência e escalonamento",
+      "criteria": "Canal de emergência de cada condomínio documentado; mensagem de orientação e escalonamento testada sem prometer socorro TRÍADE.",
+      "deps": [
+        "SERV-01"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "SERV-04",
+      "phase": "1",
+      "front": "Serviço humano",
+      "title": "Definir prazos por categoria e regras de pausa",
+      "criteria": "Matriz distingue retorno de resolução, feriados, pendências e atualização de estimativa com justificativa.",
+      "deps": [
+        "SERV-02",
+        "PROD-02"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "SERV-05",
+      "phase": "1",
+      "front": "Serviço humano",
+      "title": "Criar procedimentos e checklists de vistoria",
+      "criteria": "Modelos por categoria com acesso ao local, responsável, fotos necessárias e revisão da evidência.",
+      "deps": [
+        "SERV-01"
+      ],
+      "priority": "P1",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "SERV-06",
+      "phase": "1",
+      "front": "Serviço humano",
+      "title": "Definir cadastro de prestadores e cobrança",
+      "criteria": "Escopo, contatos, tarefa, prazo e impedimentos registrados; operação coordena prestadores no MVP.",
+      "deps": [
+        "SERV-01"
+      ],
+      "priority": "P1",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "SERV-07",
+      "phase": "1",
+      "front": "Serviço humano",
+      "title": "Definir encerramento, contestação e incidente técnico",
+      "criteria": "Revisor e critérios definidos; atendimento continua por canal alternativo com dono do incidente e conciliação posterior.",
+      "deps": [
+        "SERV-03",
+        "SERV-04"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "DEC-01",
+      "phase": "1",
+      "front": "Identidade e permissões",
+      "title": "Aprovar matriz de acesso e autoridades de decisão",
+      "criteria": "Síndico, operador e gestor possuem vínculos explícitos; limites de autorização e assembleia documentados por condomínio; decidir necessidade de acesso de prestador.",
+      "deps": [
+        "PROD-02"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "DEC-02",
+      "phase": "1",
+      "front": "Arquitetura e dados",
+      "title": "Escolher stack e ambientes de desenvolvimento",
+      "criteria": "Confirmar ou substituir proposta TypeScript/Node/PostgreSQL; registrar equipe, custos estimados e critérios, sem contratar.",
+      "deps": [
+        "BASE-02"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "DEC-03",
+      "phase": "1",
+      "front": "WhatsApp",
+      "title": "Escolher estratégia WhatsApp/BotConversa",
+      "criteria": "Validar funções, webhook, mídia, restrições, custos e ambiente de testes; escolha não conecta contas reais.",
+      "deps": [
+        "PROD-02"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "DEC-04",
+      "phase": "1",
+      "front": "Evidências e privacidade",
+      "title": "Definir retenção, áudio e privacidade",
+      "criteria": "Decidir transcrição de áudio, armazenamento, acesso, consentimento quando aplicável, exclusão e tratamento de fotos; revisão profissional planejada.",
+      "deps": [
+        "SERV-05",
+        "DEC-03"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "DEC-05",
+      "phase": "1",
+      "front": "Gestão do projeto",
+      "title": "Definir equipe, orçamento e cronograma",
+      "criteria": "Nomear responsáveis e capacidade; estimar esforço após decisões; aprovar sequência e datas sem inventar compromissos.",
+      "deps": [
+        "PROD-02",
+        "DEC-02",
+        "SERV-02"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "TEC-01",
+      "phase": "2",
+      "front": "Arquitetura e dados",
+      "title": "Estruturar aplicação e configuração",
+      "criteria": "Separar frontend, API, domínio e adaptadores; configuração por ambiente, segredos fora do código e verificação automática.",
+      "deps": [
+        "DEC-02"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "DB-01",
+      "phase": "2",
+      "front": "Arquitetura e dados",
+      "title": "Modelar banco e migrações",
+      "criteria": "Tenant, condomínio, usuário, vínculo, chamado, decisão, evidência, eventos, comunicação, vistoria e checklist com chaves e índices.",
+      "deps": [
+        "TEC-01",
+        "DEC-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "DB-02",
+      "phase": "2",
+      "front": "Arquitetura e dados",
+      "title": "Criar dados fictícios e ambientes separados",
+      "criteria": "Múltiplos clientes/condomínios no ambiente de testes; nenhuma cópia de dados reais para desenvolvimento.",
+      "deps": [
+        "DB-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "AUTH-01",
+      "phase": "2",
+      "front": "Identidade e permissões",
+      "title": "Implementar login e sessão de síndico/operação",
+      "criteria": "Login, logout, expiração, recuperação e revogação verificados; morador não recebe portal principal.",
+      "deps": [
+        "TEC-01",
+        "DEC-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "AUTH-02",
+      "phase": "2",
+      "front": "Identidade e permissões",
+      "title": "Implementar permissões e vínculos no servidor",
+      "criteria": "Cada endpoint valida função e condomínio; perfil do navegador não concede acesso; gestão só vê vínculos autorizados.",
+      "deps": [
+        "AUTH-01",
+        "DB-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "TEN-01",
+      "phase": "2",
+      "front": "Isolamento",
+      "title": "Implementar isolamento de clientes e condomínios",
+      "criteria": "Tenant derivado da sessão; consultas, escritas, buscas, relatórios e anexos validam vínculo; avaliar RLS como complemento.",
+      "deps": [
+        "AUTH-02"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "API-01",
+      "phase": "2",
+      "front": "Arquitetura e dados",
+      "title": "Implementar contratos e validação de API",
+      "criteria": "Rotas de chamados, eventos, comunicação, evidência, revisão, reabertura e decisões com esquema, paginação, erros e controle de versão.",
+      "deps": [
+        "DB-01",
+        "TEN-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "AUD-01",
+      "phase": "2",
+      "front": "Arquitetura e dados",
+      "title": "Implementar histórico e auditoria",
+      "criteria": "Eventos persistem autor, data, versão e alteração; usuário comum não edita eventos anteriores; evitar dados sensíveis desnecessários nos logs.",
+      "deps": [
+        "API-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "TEN-02",
+      "phase": "2",
+      "front": "Isolamento",
+      "title": "Testar acesso cruzado entre clientes",
+      "criteria": "Testes negativos em listagem, detalhe, edição, decisão, anexo e relatório bloqueiam IDs de outro cliente e condomínio.",
+      "deps": [
+        "TEN-01",
+        "API-01"
+      ],
+      "priority": "P0",
+      "kind": "Teste",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "TIC-01",
+      "phase": "3",
+      "front": "Chamados e prazos",
+      "title": "Persistir recebimento e protocolo",
+      "criteria": "Todo chamado contém cliente, condomínio, local, categoria, descrição e protocolo único; validação de campos e identificador externo.",
+      "deps": [
+        "API-01",
+        "AUD-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "TIC-02",
+      "phase": "3",
+      "front": "Chamados e prazos",
+      "title": "Implementar triagem e atribuição",
+      "criteria": "Operador registra urgência, dados faltantes, possível duplicidade, responsável e motivo de encaminhamento.",
+      "deps": [
+        "TIC-01",
+        "SERV-04"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "TIC-03",
+      "phase": "3",
+      "front": "Chamados e prazos",
+      "title": "Implementar estados e pendências",
+      "criteria": "Transições válidas; pendência de fornecedor, equipe, morador ou síndico exige responsável e motivo.",
+      "deps": [
+        "TIC-02",
+        "SERV-07"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "TIC-04",
+      "phase": "3",
+      "front": "Chamados e prazos",
+      "title": "Implementar dois relógios e alertas de retorno",
+      "criteria": "Próximo retorno independente da estimativa de resolução; mudança exige histórico; regras de horário e pausa implementadas.",
+      "deps": [
+        "TIC-03",
+        "SERV-04"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "TIC-05",
+      "phase": "3",
+      "front": "Experiência",
+      "title": "Construir painel real de acompanhamento",
+      "criteria": "Fila, detalhe, filtros, responsável editável, erros e carregamento ligados à API; remover datas fixas de demonstração na aplicação real.",
+      "deps": [
+        "TIC-04",
+        "AUTH-02",
+        "PROD-04"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "TIC-06",
+      "phase": "3",
+      "front": "Chamados e prazos",
+      "title": "Relacionar duplicidades e reincidências",
+      "criteria": "Relacionar relatos conservando protocolos/histórico; reincidência por local/categoria é sinal de investigação e não causa confirmada.",
+      "deps": [
+        "TIC-02"
+      ],
+      "priority": "P1",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "SYN-01",
+      "phase": "3",
+      "front": "Decisões do síndico",
+      "title": "Criar solicitação de autorização",
+      "criteria": "Operação registra alternativas, custo estimado, prazo e evidência; fila do síndico mostra decisões necessárias.",
+      "deps": [
+        "TIC-03",
+        "DEC-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "SYN-02",
+      "phase": "3",
+      "front": "Decisões do síndico",
+      "title": "Persistir aprovação/devolução autorizada",
+      "criteria": "Autoria e justificativa obrigatórias; versão impede resposta dupla; sem contratação ou transação financeira automática.",
+      "deps": [
+        "SYN-01",
+        "AUD-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "EVI-01",
+      "phase": "3",
+      "front": "Evidências e privacidade",
+      "title": "Implementar upload privado e controles de mídia",
+      "criteria": "Validar tipo/tamanho/conteúdo, acesso por vínculo e links temporários; definir verificação de arquivos; impedir exposição pública.",
+      "deps": [
+        "TEN-01",
+        "API-01",
+        "DEC-04"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "EVI-02",
+      "phase": "3",
+      "front": "Evidências e privacidade",
+      "title": "Implementar retenção e exclusão",
+      "criteria": "Rotina e solicitações seguem política validada; testar expiração de links, remoção e preservação legal quando definida.",
+      "deps": [
+        "EVI-01",
+        "DEC-04"
+      ],
+      "priority": "P1",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "VIS-01",
+      "phase": "3",
+      "front": "Serviço humano",
+      "title": "Implementar vistorias e checklists",
+      "criteria": "Visita associada a chamado/local, responsável, data, acesso e checklist; impedimentos e fotos rastreáveis.",
+      "deps": [
+        "EVI-01",
+        "SERV-05"
+      ],
+      "priority": "P1",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "END-01",
+      "phase": "3",
+      "front": "Evidências e privacidade",
+      "title": "Implementar revisão e conclusão explicada",
+      "criteria": "Execução vai à revisão; concluir exige evidência válida e explicação revisada; decisão pendente impede conclusão incompatível.",
+      "deps": [
+        "EVI-01",
+        "SYN-02",
+        "TIC-03",
+        "SERV-07"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "END-02",
+      "phase": "3",
+      "front": "Chamados e prazos",
+      "title": "Implementar contestação e reabertura",
+      "criteria": "Motivo e autor preservados; chamado reaberto recebe responsável e próximo retorno sem apagar histórico.",
+      "deps": [
+        "END-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "WA-01",
+      "phase": "4",
+      "front": "WhatsApp",
+      "title": "Implementar identificação e cadastro assistido",
+      "criteria": "Relacionar contato ao condomínio/morador; tratar múltiplos vínculos e contato desconhecido; validar identidade antes de divulgar status.",
+      "deps": [
+        "DEC-03",
+        "AUTH-02",
+        "SERV-07"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "WA-02",
+      "phase": "4",
+      "front": "WhatsApp",
+      "title": "Implementar webhook autenticado e deduplicação",
+      "criteria": "Verificar autenticidade, registrar ID externo, tratar repetição e ordem; confirmação não cria chamados duplicados.",
+      "deps": [
+        "WA-01",
+        "TIC-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "WA-03",
+      "phase": "4",
+      "front": "WhatsApp",
+      "title": "Implementar outbox e fila de envio",
+      "criteria": "Gravação transacional, retentativas limitadas e falhas visíveis; recebido, enviado e entregue distintos.",
+      "deps": [
+        "WA-02",
+        "AUD-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "WA-04",
+      "phase": "4",
+      "front": "WhatsApp",
+      "title": "Implementar mensagens e horário humano",
+      "criteria": "Protocolo, andamento sem solução, pendências e conclusão usam textos aprovados; recebimento automático distingue horário humano e emergência.",
+      "deps": [
+        "WA-03",
+        "SERV-02",
+        "SERV-03"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "WA-05",
+      "phase": "4",
+      "front": "WhatsApp",
+      "title": "Receber fotos e áudios pelo canal",
+      "criteria": "Mídia vinculada ao chamado com controles privados; áudio tratado conforme decisão, sem prometer transcrição não implementada.",
+      "deps": [
+        "WA-02",
+        "EVI-01",
+        "DEC-04"
+      ],
+      "priority": "P1",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "WA-06",
+      "phase": "4",
+      "front": "WhatsApp",
+      "title": "Permitir consulta e pedido de revisão pelo morador",
+      "criteria": "WhatsApp consulta somente demandas autorizadas, oferece retorno e registra contestação/reabertura; nenhum login de morador exigido.",
+      "deps": [
+        "WA-04",
+        "END-02",
+        "WA-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "WA-07",
+      "phase": "4",
+      "front": "WhatsApp",
+      "title": "Testar integração em ambiente de testes",
+      "criteria": "Percorrer texto, mídia, entrega, duplicação, identidade ambígua e falha; documentar limites reais do provedor escolhido.",
+      "deps": [
+        "WA-05",
+        "WA-06"
+      ],
+      "priority": "P0",
+      "kind": "Teste",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "INC-01",
+      "phase": "4",
+      "front": "Serviço humano",
+      "title": "Implementar contingência e conciliação de atendimento",
+      "criteria": "Operação registra incidente, dono, canal alternativo e demandas recebidas na falha; reconciliar sem perder/duplicar protocolos.",
+      "deps": [
+        "SERV-07",
+        "WA-03"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "MET-01",
+      "phase": "4",
+      "front": "Indicadores",
+      "title": "Definir cálculo e base dos indicadores",
+      "criteria": "Definir tempo até triagem, atrasos, resolução, reabertura, recorrência e pendências; fuso, período e denominadores documentados.",
+      "deps": [
+        "PROD-05",
+        "TIC-04",
+        "END-02"
+      ],
+      "priority": "P1",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "MET-02",
+      "phase": "4",
+      "front": "Indicadores",
+      "title": "Implementar painel e relatório por condomínio",
+      "criteria": "Indicadores reais com filtro por período e vínculo; exportação respeita acesso; distinguir falta de dados de zero.",
+      "deps": [
+        "MET-01",
+        "TEN-01"
+      ],
+      "priority": "P1",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "QA-01",
+      "phase": "5",
+      "front": "Qualidade",
+      "title": "Testar domínio e transições",
+      "criteria": "Cobrir prazos separados, pendências, duplicidades, justificativa, revisão e reabertura com cenários inválidos.",
+      "deps": [
+        "TIC-04",
+        "SYN-02",
+        "END-02"
+      ],
+      "priority": "P0",
+      "kind": "Teste",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "QA-02",
+      "phase": "5",
+      "front": "Qualidade",
+      "title": "Testar decisões e eventos concorrentes",
+      "criteria": "Duas respostas simultâneas e retry não sobrescrevem decisão; histórico e outbox consistentes.",
+      "deps": [
+        "SYN-02",
+        "WA-03"
+      ],
+      "priority": "P0",
+      "kind": "Teste",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "QA-03",
+      "phase": "5",
+      "front": "Qualidade",
+      "title": "Testar anexos, isolamento e identidade no WhatsApp",
+      "criteria": "Acesso cruzado, mídia inválida, URL vencida, contato não validado e pedido de dado alheio são bloqueados.",
+      "deps": [
+        "TEN-02",
+        "EVI-01",
+        "WA-06"
+      ],
+      "priority": "P0",
+      "kind": "Teste",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "QA-04",
+      "phase": "5",
+      "front": "Experiência",
+      "title": "Testar navegador, celular e acessibilidade",
+      "criteria": "Jornadas ponta a ponta, teclado, foco, rótulos, contraste, telas pequenas e erros verificadas com usuários.",
+      "deps": [
+        "TIC-05",
+        "WA-07",
+        "END-02"
+      ],
+      "priority": "P0",
+      "kind": "Teste",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "QA-05",
+      "phase": "5",
+      "front": "Qualidade",
+      "title": "Testar carga e falhas recuperáveis",
+      "criteria": "Volume estimado do piloto, lentidão, queda de provedor e fila com retentativas; incidentes têm responsável e instruções.",
+      "deps": [
+        "WA-07",
+        "INC-01",
+        "DEC-05"
+      ],
+      "priority": "P0",
+      "kind": "Teste",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "INF-01",
+      "phase": "5",
+      "front": "Infraestrutura",
+      "title": "Preparar ambiente local e integração contínua",
+      "criteria": "Build, migrações e verificações reproduzíveis; segredos protegidos; procedimento para futuras versões.",
+      "deps": [
+        "TEC-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "INF-02",
+      "phase": "5",
+      "front": "Infraestrutura",
+      "title": "Planejar hospedagem e aprovar custos",
+      "criteria": "Comparar alternativas, acesso, certificados, banco, armazenamento e custos; decisão revisável, sem contratação/publicação automática.",
+      "deps": [
+        "DEC-05",
+        "INF-01"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "INF-03",
+      "phase": "5",
+      "front": "Infraestrutura",
+      "title": "Preparar implantação autorizada e reversão",
+      "criteria": "Após autorização específica: ambientes separados, TLS, migrações, reversão e controle de acesso testados.",
+      "deps": [
+        "INF-02",
+        "QA-01",
+        "QA-03"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Pendente de autorização futura para contratação, contas e publicação; não executado nesta entrega.",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "INF-04",
+      "phase": "5",
+      "front": "Infraestrutura",
+      "title": "Implementar observabilidade e alertas",
+      "criteria": "Métricas de API/fila, erro de envio e indisponibilidade com logs sem segredos e responsável de resposta.",
+      "deps": [
+        "INF-01",
+        "WA-03"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "INF-05",
+      "phase": "5",
+      "front": "Infraestrutura",
+      "title": "Testar backup e restauração",
+      "criteria": "Backup cifrado e restrito conforme política; restaurar em ambiente isolado e medir recuperação com objetivo aprovado.",
+      "deps": [
+        "DB-01",
+        "DEC-04",
+        "INF-02"
+      ],
+      "priority": "P0",
+      "kind": "Teste",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "PIL-01",
+      "phase": "6",
+      "front": "Preparação da operação",
+      "title": "Preparar termos, privacidade e contrato para revisão",
+      "criteria": "Revisão profissional de responsabilidades, escopo, tratamento de dados, retenção e regras internas; não prometer ausência de responsabilidade.",
+      "deps": [
+        "SERV-01",
+        "DEC-04"
+      ],
+      "priority": "P0",
+      "kind": "Validação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "PIL-02",
+      "phase": "6",
+      "front": "Preparação da operação",
+      "title": "Preparar implantação assistida do condomínio",
+      "criteria": "Confirmar Gabriela como candidata, cadastro de condomínio/moradores, verificação de vínculos, prestadores e canal de emergência.",
+      "deps": [
+        "PIL-01",
+        "WA-01",
+        "DEC-01"
+      ],
+      "priority": "P0",
+      "kind": "Implementação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "PIL-03",
+      "phase": "6",
+      "front": "Preparação da operação",
+      "title": "Treinar síndico e equipe TRÍADE",
+      "criteria": "Treinar triagem, cobrança, decisões, evidências, revisão, incidentes e substituição; simulação completa sem dados reais.",
+      "deps": [
+        "TIC-05",
+        "WA-07",
+        "VIS-01",
+        "INC-01",
+        "SERV-02"
+      ],
+      "priority": "P0",
+      "kind": "Validação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "PIL-04",
+      "phase": "6",
+      "front": "Preparação da operação",
+      "title": "Definir suporte técnico e suporte operacional",
+      "criteria": "Canais, dono, escalonamento e capacidade separados; cadastro assistido e rotina de acompanhamento de incidentes.",
+      "deps": [
+        "SERV-07",
+        "INF-04"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "PIL-05",
+      "phase": "6",
+      "front": "Piloto",
+      "title": "Revisar prontidão e autorizar entrada do piloto",
+      "criteria": "Escopo/contrato aceitos, treinamento, isolamento, comunicação, restauração e critérios de sucesso verificados; decisão registrada antes de dados reais.",
+      "deps": [
+        "PIL-01",
+        "PIL-02",
+        "PIL-03",
+        "PIL-04",
+        "QA-01",
+        "QA-02",
+        "QA-03",
+        "QA-04",
+        "QA-05",
+        "INF-03",
+        "INF-05",
+        "MET-02"
+      ],
+      "priority": "P0",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "PIL-06",
+      "phase": "6",
+      "front": "Piloto",
+      "title": "Executar piloto assistido e medir resultados",
+      "criteria": "Após aprovação: registrar volume, retornos, reaberturas, esforço humano e feedback; reuniões de revisão conforme combinado.",
+      "deps": [
+        "PIL-05"
+      ],
+      "priority": "P0",
+      "kind": "Validação",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "PIL-07",
+      "phase": "6",
+      "front": "Piloto",
+      "title": "Avaliar expansão e sustentabilidade do serviço",
+      "criteria": "Comparar resultado às metas, custo/capacidade, preço, riscos e melhorias; registrar continuar, ajustar ou encerrar sem expansão automática.",
+      "deps": [
+        "PIL-06",
+        "PROD-05"
+      ],
+      "priority": "P1",
+      "kind": "Decisão",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "GOV-01",
+      "phase": "1",
+      "front": "Gestão do projeto",
+      "title": "Manter fila de mudanças e evidências de conclusão",
+      "criteria": "Cada alteração de escopo vira tarefa com impacto/dependências; conclusão tem evidência, responsável e verificação; atualizar documentos ao mudar decisão.",
+      "deps": [
+        "BASE-06"
+      ],
+      "priority": "P1",
+      "kind": "Processo",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "",
+      "evidence": "",
+      "updatedAt": ""
+    },
+    {
+      "id": "BASE-07",
+      "phase": "0",
+      "front": "Qualidade",
+      "title": "Revisar visualmente o painel da construção",
+      "criteria": "Verificar navegação, filtros, formulário, recarga com persistência, exportação/importação, teclado e tela pequena em navegador disponível.",
+      "deps": [
+        "BASE-06"
+      ],
+      "priority": "P0",
+      "kind": "Teste",
+      "baseline": "Pendente",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Navegador de automação indisponível nesta sessão; testes de lógica não substituem revisão visual.",
+      "evidence": "",
+      "updatedAt": ""
+    }
+  ]
+}

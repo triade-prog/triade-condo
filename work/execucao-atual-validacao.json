@@ -1,0 +1,10 @@
+{
+  "checks": 10,
+  "tasks": 109,
+  "legacyPreserved": 80,
+  "mvpTasks": 18,
+  "planningTasks": 3,
+  "auditTasks": 8,
+  "visualBrowserVerified": false,
+  "productImplemented": false
+}
