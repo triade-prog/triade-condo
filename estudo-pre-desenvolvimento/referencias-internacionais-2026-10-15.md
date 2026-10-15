@@ -1,6 +1,6 @@
 # Referências internacionais: ideias para diferenciar a TRÍADE no Brasil
 
-Pesquisa web de 15/10/2026, complementar ao [estudo de mercado](estudo-de-mercado-2026-10-15.md).
+Pesquisa web de 15/10/2026, complementar ao [estudo de mercado](estudo-de-mercado-2026-10-15.md). O confronto destas ideias com o que já está idealizado, e a lista do que é novo, está em [confronto-ideias-internacionais](confronto-ideias-internacionais-2026-10-15.md).
 
 **Pergunta:** o que mercados mais maduros já fazem e ninguém faz no Brasil, ou faz mal? O que disso pode virar diferencial para um prédio com síndico morador, morador só no WhatsApp e painel do síndico?
 
