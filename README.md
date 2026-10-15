@@ -13,6 +13,7 @@ Planejamento, pesquisa, escopo, decisões e protótipos do projeto. Importação
 - [Pesquisa e comparativo](outputs/triade-condo/pesquisa/)
 - [Auditoria e limitações](estruturação%20do%20sistema/relatorio-revisao-desenvolvimento.md)
 - [Entregas e backups históricos](outputs/entregas/)
+- [Estudo pré-desenvolvimento: mercado e análise do repositório (15/10/2026)](estudo-pre-desenvolvimento/)
 
 Baixe ou clone o repositório e abra os HTMLs mantendo a estrutura das pastas. Links HTML do GitHub exibem o código; não significam publicação de site. Os protótipos usam dados fictícios e armazenamento local do navegador.
 
