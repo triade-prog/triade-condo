@@ -78,16 +78,16 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | AT-10 | Prazo-padrão de retorno por categoria, com regras de pausa e feriados | [A] [INT] |
 | AT-11 | Pendências e impedimentos explícitos: aguardando fornecedor, morador, decisão do síndico, peça, acesso | [A] [BR] |
 | AT-12 | Sem executor disponível: pendência real, nunca pessoa inventada | [A] |
-| AT-13 | Conclusão com explicação ao morador e evidência quando fizer sentido (foto, referência), sem exigir foto sempre | [A] |
+| AT-13 | Conclusão com explicação ao morador e evidência quando fizer sentido (foto, referência), sem exigir foto sempre. A evidência pode vir do síndico ou de um executor autorizado, sem depender de porteiro ou zelador | [A] |
 | AT-14 | Revisão da conclusão pelo síndico ou revisor antes de encerrar | [A] |
 | AT-15 | Reabertura com motivo, preservando a conclusão anterior | [A] [INT] |
 | AT-16 | **Pergunta de satisfação ao concluir** ("Resolveu? 1 a 5"); nota baixa sugere reabertura (Property Meld) | [INT] |
 | AT-17 | Histórico completo com autor, data e antes/depois; nada é apagado | [A] [INT] |
-| AT-18 | Relacionar pedidos duplicados e reincidências por local/categoria | [A] [BR] |
+| AT-18 | Relacionar pedidos duplicados e reincidências por local/categoria, mantendo o protocolo e o histórico de cada relato. Reincidência é sinal para investigar, não causa confirmada. Fica mais precisa com o QR por local (AT-30) | [A] [BR] |
 | AT-19 | **Autoajuda antes do chamado**: orientação curta por tipo de problema e "resolveu?" (Fixflo) | [INT] |
 | AT-20 | **Responsabilidade da unidade × condomínio**: avisar quando o problema é do morador, com base nas regras do prédio | [INT] |
 | AT-21 | Videochamada com profissional para orientar o morador (Fixflo "Help me Fix") | [INT] |
-| AT-22 | Triagem de urgência e orientação de emergência para o canal do condomínio | [A] [INT] |
+| AT-22 | Triagem de urgência e orientação de emergência para o canal do condomínio, com responsáveis definidos por condomínio. Nunca prometer socorro nem equipe TRÍADE sem o serviço contratado (SH-05) | [A] [INT] |
 | AT-23 | Solicitação de decisão ao síndico: alternativas, custo estimado, prazo, justificativa da aprovação ou devolução | [A] |
 | AT-24 | Controle de edição simultânea: duas pessoas não sobrescrevem a mesma alteração sem aviso (Zendesk) | [A] |
 | AT-25 | Modelos de resposta prontos por condomínio | [A] |
@@ -186,7 +186,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | MP-04 | Vínculo opcional entre manutenção, pedido do morador e agenda | [A] |
 | MP-05 | Cadastro de prestadores, mantido quando o síndico muda (Nextin) | [A] [BR] |
 | MP-06 | Indicação de prestadores avaliados pelos moradores (MeuVizy) | [BR] |
-| MP-07 | Vistorias e checklists quando necessários (sem checklist universal) | [A] [BR] |
+| MP-07 | Vistorias e checklists quando necessários (sem checklist universal), registrando responsável, acesso, impedimentos e evidências por pedido e por local. O síndico pode fazer ou atribuir; nada é atribuído automaticamente à portaria remota | [A] [BR] |
 | MP-08 | **Check-in e check-out do prestador por QR no local** (Arcsite) | [INT] |
 | MP-09 | Fornecedor reserva automático quando o principal não responde (Latchel) | [INT] |
 | MP-10 | Agrupar chamados próximos para reduzir deslocamento do prestador (Fixflo) | [INT] |
@@ -277,7 +277,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 
 | ID | Ideia | Origem |
 |---|---|---|
-| TR-01 | Indicadores: tempo até triagem, retornos vencidos, pendências por responsável, tempo de solução por categoria, reabertura, reincidência, decisões aguardando síndico | [A] |
+| TR-01 | Indicadores: tempo até triagem, retornos vencidos, pendências por responsável, tempo de solução por categoria, reabertura, reincidência, decisões aguardando síndico. Cada indicador tem fuso, período e base de cálculo documentados | [A] |
 | TR-02 | **Relatório mensal do atendimento para a assembleia**: pedidos, retornos no prazo, concluídos e reabertos (Property Meld, Mygate); a parte financeira está na seção 22 | [A] [INT] |
 | TR-03 | % de retornos cumpridos no prazo como métrica principal | [INT] |
 | TR-04 | Velocidade de reparo e satisfação média como indicadores (Property Meld) | [INT] |
