@@ -132,7 +132,7 @@ A Plataforma ganhou a página onde o síndico convidado cria a senha. Os testes 
 - Pessoas autorizadas com permissões individuais. O cargo não dá permissão.
 - Quem atende os pedidos, com o responsável padrão da fila.
 
-A migration 0070 ainda não está no `triade-condo-dev`. A aplicação pela ferramenta do Supabase passou do limite de 60 segundos e nada foi gravado; falta aplicá-la de outro jeito (por exemplo, `supabase db push`).
+As migrations 0070 e 0080 foram aplicadas no `triade-condo-dev` em 16/10/2026, em partes (0070_configuracoes_condominio_1 a _5 e 0080_moradores_unidades_1 a _5), porque a ferramenta do Supabase expira em 60 segundos com textos grandes e espera confirmação para SQL com `delete`. A comparação com o banco local deu igual em tabelas, restrições, índices, gatilhos, políticas e funções. Faltam só `plataforma_remover_feriado` e `plataforma_remover_prazo` (fim da 0070), que têm `delete` e precisam ser coladas no SQL Editor.
 
 Decisões deste passo:
 
@@ -152,7 +152,7 @@ As nove telas foram desenhadas no `design-frontend.html`, aprovadas pela Carolin
 - Importação de planilha CSV, tudo ou nada, com os contatos a confirmar.
 - Remoção de nome e telefone de quem não está mais em nenhuma unidade.
 
-A migration 0080 também ainda não está no `triade-condo-dev`. As oito telas foram desenhadas no `design-frontend.html`, aprovadas pela Carolina e construídas no mesmo dia, com três decisões:
+As oito telas foram desenhadas no `design-frontend.html`, aprovadas pela Carolina e construídas no mesmo dia, com três decisões:
 
 - o CF-03 ganhou a permissão "Cadastrar moradores": a pessoa autorizada inclui e corrige, e o que ela inclui fica a confirmar pelo síndico;
 - a planilha é importada em CSV;
@@ -164,7 +164,7 @@ Depois, também a pedido da Carolina e para controle: quando a unidade tem inqui
 
 **Próximo passo:**
 
-1. Aplicar as migrations 0070 e 0080 no `triade-condo-dev`.
+1. Colar no SQL Editor do `triade-condo-dev` as duas funções que faltam da 0070 (`plataforma_remover_feriado` e `plataforma_remover_prazo`).
 2. Conferir login e convite com o Supabase Auth de verdade (F0.6, F1.5).
 3. Publicar na Vercel (E4).
 4. Liberar o CI (F0.9).

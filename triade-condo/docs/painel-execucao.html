@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (organização do prédio por torre, bloco, quadra ou prédio, com ou sem andar; unidades; inquilino sempre com o proprietário do imóvel no cadastro; ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (343 pgTAP, 63 Deno, 54 Vitest, 74 ponta a ponta). As migrations 0070 e 0080 ainda não estão no triade-condo-dev.",
+    "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (organização do prédio por torre, bloco, quadra ou prédio, com ou sem andar; unidades; inquilino sempre com o proprietário do imóvel no cadastro; ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (343 pgTAP, 63 Deno, 54 Vitest, 74 ponta a ponta). As migrations 0070 e 0080 estão no triade-condo-dev, menos duas funções da 0070 que têm delete (remover feriado e remover prazo), a colar no SQL Editor.",
     "fase_atual": "F3",
-    "proximo_passo": "Aplicar as migrations 0070 e 0080 no triade-condo-dev (supabase db push). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9). Depois, passo 4: pedidos no painel, começando pelo desenho das telas."
+    "proximo_passo": "Colar no SQL Editor do triade-condo-dev as funções plataforma_remover_feriado e plataforma_remover_prazo (fim da 0070). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9). Depois, passo 4: pedidos no painel, começando pelo desenho das telas."
   },
   "fases": [
     {
@@ -1174,6 +1174,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "15:26",
+      "fim": "15:55",
+      "texto": "Migrations 0070 e 0080 aplicadas no triade-condo-dev pela ferramenta do Supabase, em partes, porque ela expira em 60 segundos com textos grandes e espera confirmação para SQL com delete. Comparação com o banco local (tabelas, restrições, índices, gatilhos, políticas e o código de cada função) deu igual; faltam só plataforma_remover_feriado e plataforma_remover_prazo, a colar no SQL Editor. O verificador de segurança do Supabase só aponta a proteção contra senhas vazadas desligada no Auth.",
+      "ref": "F0.2, F0.3, CF-03, MU-01"
+    },
     {
       "data": "16/10/2026",
       "inicio": "15:14",
