@@ -524,7 +524,7 @@ Para ver e decidir, abra o pedido no painel.</div>
 
 <section id="sec-h-telas" aria-labelledby="h-telas">
   <h2 id="h-telas">Telas a desenhar</h2>
-  <p class="suave">Cada tela é desenhada e aprovada antes do código dela, na ordem dos passos do painel de execução. As telas do passo 1 e a entrada no Console foram aprovadas em 16/10/2026 e construídas. As do passo 2 foram aprovadas no mesmo dia e construídas. As do passo 3 estão desenhadas e esperam aprovação.</p>
+  <p class="suave">Cada tela é desenhada e aprovada antes do código dela, na ordem dos passos do painel de execução. As telas do passo 1 e a entrada no Console foram aprovadas em 16/10/2026 e construídas. As do passo 2 foram aprovadas no mesmo dia e construídas. As do passo 3 foram aprovadas no mesmo dia e construídas.</p>
   <div class="tbl"><table>
     <thead><tr><th>Passo</th><th>Sistema</th><th>Telas</th></tr></thead>
     <tbody>
@@ -665,8 +665,8 @@ Para ver e decidir, abra o pedido no painel.</div>
 </section>
 
 <section id="sec-h-f3" aria-labelledby="h-f3">
-  <h2 id="h-f3">Telas do passo 3 · para aprovação</h2>
-  <p class="suave">Desenho das telas de moradores e unidades na Plataforma do síndico, com dados fictícios. O banco e a API deste passo já estão prontos e testados; o código das telas só começa depois da aprovação. Mesma estrutura do passo 2: barra superior, menu branco flutuante e ação em verde-petróleo, tudo funcionando no celular. Sem emoji nem emoticon: cada selo tem palavra e forma desenhada. O morador continua sem tela, sem login e sem senha (V-07): aqui o síndico cuida do cadastro dele.</p>
+  <h2 id="h-f3">Telas do passo 3 · aprovadas</h2>
+  <p class="suave">Desenho das telas de moradores e unidades na Plataforma do síndico, com dados fictícios. Aprovadas pela Carolina em 16/10/2026, com as três decisões abaixo, e construídas na Plataforma (apps/plataforma). Mesma estrutura do passo 2: barra superior, menu branco flutuante e ação em verde-petróleo, tudo funcionando no celular. Sem emoji nem emoticon: cada selo tem palavra e forma desenhada. O morador continua sem tela, sem login e sem senha (V-07): aqui o síndico cuida do cadastro dele.</p>
   <div class="telas-f1">
 
   <figure class="front-example"><figcaption><strong>1 · Início com o resumo de moradores</strong><span>O menu ganha Moradores e unidades. O início passa a mostrar quantas unidades existem, quantas estão sem contato confirmado e quantos contatos esperam confirmação, cada um com o botão que leva até lá. <span class="ref">V-08</span> <span class="ref">MU-02</span></span></figcaption>
@@ -695,9 +695,9 @@ Para ver e decidir, abra o pedido no painel.</div>
 
   </div>
   <div class="grade">
-    <div class="cartao"><h3>Decisão para aprovar · quem cuida dos moradores</h3><p>Neste passo, moradores e unidades ficam só com o síndico, porque o CF-03 não tem uma permissão para isso. Proposta: acrescentar ao CF-03 a permissão <strong>Cadastrar moradores</strong> (incluir e corrigir unidades e contatos). O que essa pessoa incluir ficaria a confirmar, e só o síndico confirmaria. O banco já está pronto para isso.</p><p><span class="ref">CF-03</span> <span class="ref">MU-02</span></p></div>
-    <div class="cartao"><h3>Decisão para aprovar · planilha em CSV</h3><p>A importação lê CSV, que o Excel e o Google Planilhas salvam sem programa extra. Arquivo .xlsx pede para salvar como CSV. Dá para aceitar .xlsx direto mais tarde, se a implantação pedir.</p><p><span class="ref">PI-04</span></p></div>
-    <div class="cartao"><h3>Decisão para aprovar · o que vem da planilha</h3><p>Todo contato importado nasce a confirmar, mesmo quando é o próprio síndico quem importa, porque lista de administradora costuma estar desatualizada. Confirmar vários de uma vez resolve em um toque.</p><p><span class="ref">MU-02</span> <span class="ref">MU-03</span></p></div>
+    <div class="cartao"><h3>Decidido · quem cuida dos moradores</h3><p>O CF-03 ganhou a permissão <strong>Cadastrar moradores</strong> (incluir e corrigir unidades e contatos). O que a pessoa autorizada inclui fica a confirmar, e só o síndico confirma ou recusa.</p><p><span class="ref">CF-03</span> <span class="ref">MU-02</span></p></div>
+    <div class="cartao"><h3>Decidido · planilha em CSV</h3><p>A importação lê CSV, que o Excel e o Google Planilhas salvam sem programa extra. Arquivo .xlsx pede para salvar como CSV. Dá para aceitar .xlsx direto mais tarde, se a implantação pedir.</p><p><span class="ref">PI-04</span></p></div>
+    <div class="cartao"><h3>Decidido · o que vem da planilha</h3><p>Todo contato importado nasce a confirmar, mesmo quando é o próprio síndico quem importa, porque lista de administradora costuma estar desatualizada. Confirmar vários de uma vez resolve em um toque.</p><p><span class="ref">MU-02</span> <span class="ref">MU-03</span></p></div>
   </div>
   <p class="nota-regra">Cada tela terá vazio, erro e carregando, conflito de edição sem perder o que foi escrito (AT-24) e teste de acessibilidade (axe) no celular e no computador.</p>
 </section>

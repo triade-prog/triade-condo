@@ -5,6 +5,7 @@ import {
   gerarUnidades,
   incluirContatoSchema,
   lerPlanilhaMoradores,
+  MODELO_PLANILHA,
   mudancaSchema,
   telefoneContato,
 } from "./moradores.ts";
@@ -58,11 +59,13 @@ describe("moradores e unidades (passo 3)", () => {
       { bloco: null, unidade: "Loja 2", nome: "Padaria Sol", telefone: "+556133330000", relacao: "OUTRO" },
     ]);
     expect(r.erros).toEqual([{ linha: 4, campos: ["unidade", "telefone", "relacao"] }]);
+    expect(r.origens).toEqual([2, 3, 5]);
   });
 
   it("F3.3: planilha com vírgula e sem coluna de telefone diz o que falta", () => {
     expect(lerPlanilhaMoradores("unidade,nome\n101,Ana\n").faltam).toEqual(["telefone"]);
     expect(lerPlanilhaMoradores("unidade,nome,telefone\n101,Ana,61999990001\n").linhas).toHaveLength(1);
+    expect(lerPlanilhaMoradores(MODELO_PLANILHA).linhas).toHaveLength(1);
   });
 
   it("o histórico da unidade em frases, sem nome nem telefone", () => {

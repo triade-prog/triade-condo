@@ -1,5 +1,5 @@
-// O que a API da Plataforma devolve nas configurações (plataforma_configuracoes) e nas
-// pessoas (plataforma_pessoas).
+// O que a API da Plataforma devolve nas configurações (plataforma_configuracoes), nas
+// pessoas (plataforma_pessoas) e nos moradores e unidades (passo 3).
 
 import type { Intervalo } from "@triade/domain";
 
@@ -40,3 +40,93 @@ export interface Pessoas {
 
 /** Recado no topo depois de uma ação (salvo, convite enviado...). */
 export type Recado = { tom: "ok" | "info"; texto: string } | null;
+
+export interface Bloco {
+  id: string;
+  nome: string;
+  ordem: number;
+  ativo: boolean;
+  versao: number;
+}
+
+export interface UnidadeResumo {
+  id: string;
+  blocoId: string | null;
+  identificacao: string;
+  ativa: boolean;
+  versao: number;
+  confirmados: number;
+  pendentes: number;
+  principal: string | null;
+}
+
+export interface Unidades {
+  blocos: Bloco[];
+  unidades: UnidadeResumo[];
+  resumo: { unidades: number; semContato: number; aConfirmar: number };
+  podeEditar: boolean;
+  podeConfirmar: boolean;
+}
+
+export interface ContatoDaUnidade {
+  vinculoId: string;
+  contatoId: string;
+  nome: string;
+  telefone: string;
+  contatoVersao: number;
+  relacao: string;
+  principal: boolean;
+  recebeComunicados: boolean;
+  estado: "PENDENTE" | "CONFIRMADO";
+  origem: "PAINEL" | "PLANILHA";
+  desde: string;
+  versao: number;
+  telefoneCompartilhado: boolean;
+  outrasUnidades: string[];
+}
+
+export interface ContatoAnterior {
+  vinculoId: string;
+  contatoId: string;
+  nome: string | null;
+  relacao: string;
+  motivo: string;
+  dataSaida: string | null;
+  encerradoEm: string;
+  dadosRemovidos: boolean;
+  contatoVersao: number;
+  semVinculoAtivo: boolean;
+}
+
+export interface UnidadeDetalhe {
+  unidade: { id: string; identificacao: string; blocoId: string | null; bloco: string | null; ativa: boolean; versao: number };
+  contatos: ContatoDaUnidade[];
+  anteriores: ContatoAnterior[];
+  podeEditar: boolean;
+  podeConfirmar: boolean;
+}
+
+export interface MoradorDaLista {
+  vinculoId: string;
+  contatoId: string;
+  nome: string;
+  telefone: string;
+  unidadeId: string;
+  unidade: string;
+  bloco: string | null;
+  relacao: string;
+  principal: boolean;
+  estado: "PENDENTE" | "CONFIRMADO";
+  origem: "PAINEL" | "PLANILHA";
+  versao: number;
+}
+
+export interface ListaMoradores {
+  itens: MoradorDaLista[];
+  total: number;
+  pagina: number;
+  porPagina: number;
+  aConfirmar: number;
+  podeEditar: boolean;
+  podeConfirmar: boolean;
+}

@@ -1,6 +1,7 @@
 "use client";
-// Início do síndico no passo 2 (V-08, CF-12): o que falta configurar, sem obrigar nada, e o
-// que já veio pronto pelo cenário. O dia do síndico (pedidos e retornos) chega no passo 7.
+// Início do síndico (V-08, CF-12): o resumo de moradores e unidades (passo 3), o que falta
+// configurar, sem obrigar nada, e o que já veio pronto pelo cenário. O dia do síndico
+// (pedidos e retornos) chega no passo 7.
 
 import Link from "next/link";
 import { CENARIOS, PENDENCIAS_CONFIG } from "@triade/domain";
@@ -13,6 +14,44 @@ const ONDE: Record<string, { href: string; texto: string; acao: string }> = {
   SEM_RESPONSAVEL: { href: "/pessoas?aba=atendimento", texto: "Escolher", acao: "atendimento.responsaveis" },
   SEM_RESPONSAVEL_PADRAO: { href: "/pessoas?aba=atendimento", texto: "Escolher", acao: "atendimento.responsaveis" },
 };
+
+function plural(n: number, um: string, varios: string): string {
+  return `${n} ${n === 1 ? um : varios}`;
+}
+
+/** Resumo de moradores (MU-02): cada número leva até onde se resolve. */
+function Moradores({ resumo }: { resumo: NonNullable<ReturnType<typeof usePlataforma>["painel"]["moradores"]> }) {
+  const linhas = [
+    { texto: plural(resumo.unidades, "unidade cadastrada", "unidades cadastradas"), href: "/moradores", botao: "Ver unidades", ajuda: null, aviso: false },
+    ...(resumo.aConfirmar ? [{ texto: plural(resumo.aConfirmar, "contato a confirmar", "contatos a confirmar"), href: "/moradores?aba=confirmar", botao: "Conferir",
+      ajuda: "Só valem depois de confirmados.", aviso: true }] : []),
+    ...(resumo.semContato ? [{ texto: plural(resumo.semContato, "unidade sem contato confirmado", "unidades sem contato confirmado"),
+      href: "/moradores?filtro=sem-contato", botao: "Ver quais", ajuda: null, aviso: true }] : []),
+  ];
+  return (
+    <section aria-labelledby="t-moradores" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
+      <h2 id="t-moradores" className="font-semibold">Moradores e unidades</h2>
+      {resumo.unidades === 0 ? (
+        <div className="grid justify-items-start gap-2 text-sm">
+          <p>Nenhuma unidade ainda. Cadastre as unidades ou importe a planilha da administradora.</p>
+          <Link href="/moradores" className={classeBotao("secundario")}>Cadastrar unidades</Link>
+        </div>
+      ) : (
+        <ul className="divide-y divide-linha">
+          {linhas.map((l) => (
+            <li key={l.href} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+              <span className="flex items-start gap-2">
+                {l.aviso ? <IconeMarca marca="atencao" className="mt-0.5 h-4 w-4 text-atencao" /> : null}
+                <span>{l.texto}{l.ajuda ? <span className="block text-xs text-tinta-suave">{l.ajuda}</span> : null}</span>
+              </span>
+              <Link href={l.href} className={classeBotao("secundario")}>{l.botao}</Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
 
 function excecoes(n: number): string {
   return n === 0 ? "" : n === 1 ? ", com 1 exceção" : `, com ${n} exceções`;
@@ -54,6 +93,7 @@ export function Inicio() {
         </p>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
+        {painel.moradores ? <Moradores resumo={painel.moradores} /> : null}
         <section aria-labelledby="t-falta" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
           <h2 id="t-falta" className="font-semibold">O que falta configurar</h2>
           {painel.pendencias.length === 0 ? (

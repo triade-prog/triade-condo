@@ -99,9 +99,10 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
           className={`${menuAberto ? "grid" : "hidden"} m-3 content-start gap-1 rounded-xl border border-linha bg-superficie p-2 shadow-sm md:sticky md:top-4 md:m-0 md:grid md:self-start`}
         >
           <ItemMenu href="/" atual={caminho === "/"}>Início</ItemMenu>
+          {pode("moradores.ver") ? <ItemMenu href="/moradores" atual={caminho.startsWith("/moradores")}>Moradores e unidades</ItemMenu> : null}
           {pode("config.ver") ? <ItemMenu href="/configuracoes" atual={caminho.startsWith("/configuracoes")}>Configurações</ItemMenu> : null}
           {pode("pessoas.ver") ? <ItemMenu href="/pessoas" atual={caminho.startsWith("/pessoas")}>Pessoas e acesso</ItemMenu> : null}
-          <p className="mt-2 border-t border-linha px-3 pt-2 text-xs text-tinta-suave">Atendimentos, moradores e avisos chegam nos próximos passos.</p>
+          <p className="mt-2 border-t border-linha px-3 pt-2 text-xs text-tinta-suave">Atendimentos e avisos chegam nos próximos passos.</p>
         </nav>
         <main id="conteudo" className="min-w-0 px-4 py-6 md:px-2 md:py-4">{children}</main>
       </div>

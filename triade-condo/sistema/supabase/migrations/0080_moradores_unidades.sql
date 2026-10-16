@@ -19,14 +19,19 @@
 --    Vínculo encerrado não volta e não muda; a autoria fica.
 -- 6. Contato sem nenhum vínculo ativo pode ter os dados pessoais removidos (PT-11): o
 --    registro fica, sem nome nem telefone, para o histórico continuar coerente.
--- 7. Por ora, moradores e unidades ficam com o síndico. Dar isso a uma pessoa autorizada
---    exige uma permissão nova no CF-03; vínculo criado por quem não pode confirmar nasce
---    pendente.
+-- 7. O síndico cuida de tudo. A pessoa autorizada com a permissão Cadastrar moradores (CF-03,
+--    aprovada pela Carolina em 16/10/2026) inclui e corrige unidades e contatos, mas o que ela
+--    inclui nasce pendente: confirmar e recusar ficam só com o síndico.
 
 insert into funcao_acoes (funcao, acao) values
   ('SINDICO', 'moradores.ver'),
   ('SINDICO', 'moradores.editar'),
   ('SINDICO', 'moradores.confirmar');
+insert into permissoes (codigo, nome, descricao, ordem) values
+  ('CADASTRAR', 'Cadastrar moradores', 'Incluir e corrigir unidades e contatos. O que a pessoa inclui fica a confirmar pelo síndico.', 8);
+insert into permissao_acoes (permissao, acao) values
+  ('CADASTRAR', 'moradores.ver'),
+  ('CADASTRAR', 'moradores.editar');
 
 -- ---------------------------------------------------------------------------------------
 -- Blocos e unidades.

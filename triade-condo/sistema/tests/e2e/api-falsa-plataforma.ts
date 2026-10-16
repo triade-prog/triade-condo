@@ -1,7 +1,8 @@
-// API da Plataforma falsa, dentro do navegador (page.route): as telas do passo 2 rodam sem
-// Supabase. As regras de verdade estão testadas no banco (pgTAP 008) e na API (Deno); aqui
-// se confere a tela: fluxo, textos, o que cada pessoa vê e acessibilidade.
+// API da Plataforma falsa, dentro do navegador (page.route): as telas dos passos 2 e 3 rodam
+// sem Supabase. As regras de verdade estão testadas no banco (pgTAP 008 e 009) e na API
+// (Deno); aqui se confere a tela: fluxo, textos, o que cada pessoa vê e acessibilidade.
 import type { Page, Route } from "@playwright/test";
+import { criarMoradores, resumoMoradores, rotasMoradores } from "./api-falsa-moradores";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -11,7 +12,7 @@ export const V_BRUNA = "7c8d9e0f-1a2b-4c3d-9e4f-5a6b7c8d9e0f";
 
 export interface OpcoesPlataforma {
   logado?: boolean;
-  /** Quem entra: a síndica, a secretária com Configurar ou o subsíndico que só vê. */
+  /** Quem entra: a síndica, a secretária com Configurar e Cadastrar moradores ou o subsíndico que só vê. */
   quem?: "SINDICA" | "SECRETARIA" | "SO_VE";
   /** Com dois condomínios, a pessoa escolhe em qual entrar (MU-04). */
   doisCondominios?: boolean;
@@ -62,15 +63,17 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     },
     pessoas: [
       { vinculoId: V_ANA, pessoaId: ANA, nome: "Ana Souza", funcao: "SINDICO", cargo: null as string | null, permissoes: [] as string[], desde: "2026-10-16T13:00:00Z", versao: 1, responsavel: false, disponivel: false },
-      { vinculoId: V_BRUNA, pessoaId: novoId(), nome: "Bruna", funcao: "AUTORIZADO", cargo: "Secretária" as string | null, permissoes: ["CONFIGURAR"], desde: "2026-10-16T14:00:00Z", versao: 1, responsavel: false, disponivel: false },
+      { vinculoId: V_BRUNA, pessoaId: novoId(), nome: "Bruna", funcao: "AUTORIZADO", cargo: "Secretária" as string | null, permissoes: ["CONFIGURAR", "CADASTRAR"], desde: "2026-10-16T14:00:00Z", versao: 1, responsavel: false, disponivel: false },
     ],
     responsavelPadrao: null as string | null,
     convites: [] as string[],
+    moradores: criarMoradores(),
   };
 
   const acoes = () => quem === "SINDICA"
-    ? ["atendimento.responsaveis", "config.editar", "config.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver"]
-    : quem === "SECRETARIA" ? ["config.editar", "config.ver", "plataforma.painel.ver"] : ["config.ver", "plataforma.painel.ver"];
+    ? ["atendimento.responsaveis", "config.editar", "config.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pessoas.autorizar", "pessoas.ver",
+      "plataforma.painel.ver"]
+    : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "plataforma.painel.ver"] : ["config.ver", "plataforma.painel.ver"];
   const pendencias = () => {
     const p: string[] = [];
     if (estado.config.horarios.ATENDIMENTO.intervalos.length === 0) p.push("SEM_HORARIO_ATENDIMENTO");
@@ -121,9 +124,13 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         condominio: { id: estado.condominioAtual, nome, cidade: "Brasília", uf: "DF", cenario: "PORTARIA_REMOTA" },
         pessoa: { id: ANA, nome: quem === "SINDICA" ? "Ana Souza" : quem === "SECRETARIA" ? "Bruna" : "Caio" },
         funcoes: [quem === "SINDICA" ? "SINDICO" : "AUTORIZADO"], acoes: acoes(), pendencias: pendencias(),
+        ...(acoes().includes("moradores.ver") ? { moradores: resumoMoradores(estado.moradores) } : {}),
       } });
     }
     if (caminho === "/v1/condominio/configuracoes") return route.fulfill({ json: { ...c, pendencias: pendencias(), podeEditar: pode("config.editar") } });
+
+    const moradores = await rotasMoradores(route, estado.moradores, caminho, metodo, corpo, pode);
+    if (moradores !== null) return moradores;
 
     // Daqui em diante, mudar configuração.
     const editaConfig = /^\/v1\/condominio\/(fuso|horarios|feriados|categorias|prioridades|etapas|modelos|prazos)/.test(caminho);
@@ -186,7 +193,10 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (caminho === "/v1/condominio/pessoas" && metodo === "GET") {
       return route.fulfill({ json: {
         pessoas: estado.pessoas, responsavelPadrao: estado.responsavelPadrao, versao: c.versao, pendencias: pendencias(),
-        permissoesDisponiveis: [{ codigo: "CONFIGURAR", nome: "Configurar", descricao: "Mudar horários, feriados, categorias, prioridades, etapas, modelos de resposta e prazos." }],
+        permissoesDisponiveis: [
+          { codigo: "CONFIGURAR", nome: "Configurar", descricao: "Mudar horários, feriados, categorias, prioridades, etapas, modelos de resposta e prazos." },
+          { codigo: "CADASTRAR", nome: "Cadastrar moradores", descricao: "Incluir e corrigir unidades e contatos. O que a pessoa inclui fica a confirmar pelo síndico." },
+        ],
       } });
     }
     if (caminho === "/v1/condominio/pessoas" && metodo === "POST") {

@@ -12,6 +12,8 @@ export interface Painel {
   funcoes: string[];
   acoes: string[];
   pendencias: string[];
+  /** Resumo de moradores, só para quem pode ver (passo 3). */
+  moradores?: { unidades: number; semContato: number; aConfirmar: number };
 }
 
 export interface CondominioDaPessoa {

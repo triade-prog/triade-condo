@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0, 1 e 2 construídos; passo 3 (moradores e unidades) com banco, API e testes prontos e as 8 telas desenhadas, esperando aprovação. A Plataforma do síndico tem login, escolha do condomínio, início, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (318 pgTAP, 61 Deno, 53 Vitest, 56 ponta a ponta). As migrations 0070 e 0080 ainda não estão no triade-condo-dev.",
+    "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (unidades por bloco, ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (325 pgTAP, 61 Deno, 53 Vitest, 70 ponta a ponta). As migrations 0070 e 0080 ainda não estão no triade-condo-dev.",
     "fase_atual": "F3",
-    "proximo_passo": "Aprovar as telas do passo 3 no design-frontend.html (e decidir a permissão Cadastrar moradores no CF-03) para construí-las. Aplicar as migrations 0070 e 0080 no triade-condo-dev (supabase db push). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9)."
+    "proximo_passo": "Aplicar as migrations 0070 e 0080 no triade-condo-dev (supabase db push). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9). Depois, passo 4: pedidos no painel, começando pelo desenho das telas."
   },
   "fases": [
     {
@@ -366,9 +366,9 @@
           "refs": [
             "PT-03"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: blocos opcionais e unidades, incluídas uma a uma ou geradas pela numeração do prédio, em ordem natural; nada se apaga, só desativa sem nada ativo dentro. Telas desenhadas, aguardando aprovação.",
-          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest packages/domain/src/moradores.test.ts"
+          "status": "feito",
+          "nota": "Banco e API prontos: blocos opcionais e unidades, incluídas uma a uma ou geradas pela numeração do prédio, em ordem natural; nada se apaga, só desativa sem nada ativo dentro. Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F3.2",
@@ -378,11 +378,12 @@
             "MU-01",
             "MU-08",
             "MU-04",
-            "PT-11"
+            "PT-11",
+            "CF-03"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: contato com nome e telefone, sem CPF; vários por unidade, um principal, relação e preferência de comunicados; o mesmo contato em mais de uma unidade. Telas desenhadas, aguardando aprovação.",
-          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest packages/domain/src/moradores.test.ts"
+          "status": "feito",
+          "nota": "Banco e API prontos: contato com nome e telefone, sem CPF; vários por unidade, um principal, relação e preferência de comunicados; o mesmo contato em mais de uma unidade. Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev. Permissão Cadastrar moradores (CF-03): a pessoa autorizada inclui e corrige, e o que ela inclui fica a confirmar pelo síndico.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F3.3",
@@ -391,9 +392,9 @@
           "refs": [
             "PI-04"
           ],
-          "status": "andamento",
-          "nota": "Banco, API e leitura do CSV prontos: colunas reconhecidas pelos nomes comuns, prévia com a linha de cada erro, tudo ou nada, sem duplicar; os contatos nascem a confirmar. Necessidade da implantação (PI-04). Telas desenhadas, aguardando aprovação.",
-          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest packages/domain/src/moradores.test.ts"
+          "status": "feito",
+          "nota": "Banco, API e leitura do CSV prontos: colunas reconhecidas pelos nomes comuns, prévia com a linha de cada erro, tudo ou nada, sem duplicar; os contatos nascem a confirmar. Necessidade da implantação (PI-04). Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F3.4",
@@ -403,9 +404,9 @@
             "MU-02",
             "MU-03"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: só o vínculo confirmado pelo síndico vale; o pendente não acessa nada; confirmar vários de uma vez ou recusar; telefone compartilhado só avisa e leva a todas as unidades para perguntar qual (unidades_do_telefone, para o passo 5). Telas desenhadas, aguardando aprovação.",
-          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest packages/domain/src/moradores.test.ts"
+          "status": "feito",
+          "nota": "Banco e API prontos: só o vínculo confirmado pelo síndico vale; o pendente não acessa nada; confirmar vários de uma vez ou recusar; telefone compartilhado só avisa e leva a todas as unidades para perguntar qual (unidades_do_telefone, para o passo 5). Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F3.5",
@@ -415,9 +416,9 @@
             "MU-07",
             "PT-11"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: mudança numa operação (data, quem sai, quem entra); vínculo encerrado não volta nem muda; quem não está mais em nenhuma unidade pode ter nome e telefone removidos (PT-11). Telas desenhadas, aguardando aprovação.",
-          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest packages/domain/src/moradores.test.ts"
+          "status": "feito",
+          "nota": "Banco e API prontos: mudança numa operação (data, quem sai, quem entra); vínculo encerrado não volta nem muda; quem não está mais em nenhuma unidade pode ter nome e telefone removidos (PT-11). Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         }
       ]
     },
@@ -942,10 +943,11 @@
         "MU-08",
         "PT-01",
         "PT-11",
-        "PT-13"
+        "PT-13",
+        "CF-03"
       ],
       "status": "feito",
-      "evidencia": "pgTAP 009_moradores_unidades_test.sql (69 testes); Deno api-plataforma/moradores_test.ts (11 testes); Vitest moradores.test.ts (8 testes)"
+      "evidencia": "pgTAP 009_moradores_unidades_test.sql (76 testes); Deno api-plataforma/moradores_test.ts (11 testes); Vitest moradores.test.ts (8 testes)"
     },
     {
       "id": "T17",
@@ -956,8 +958,8 @@
         "MU-02",
         "MU-07"
       ],
-      "status": "pendente",
-      "nota": "Depois da aprovação das telas"
+      "status": "feito",
+      "evidencia": "Playwright plataforma-passo3.spec.ts (7 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -1171,6 +1173,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "13:30",
+      "fim": "13:48",
+      "texto": "Com o desenho e as três decisões aprovados pela Carolina, construídas as telas do passo 3 na Plataforma do síndico: início com o resumo de moradores; unidades por bloco, com filtro, blocos e unidades geradas pela numeração do prédio; ficha da unidade com contatos, confirmar e recusar, editar, encerrar, registrar mudança, editar a unidade e remover os dados de quem saiu; moradores e a confirmar, com busca e confirmação em lote; importação de planilha CSV com prévia das linhas erradas e modelo para baixar. O CF-03 ganhou a permissão Cadastrar moradores: a pessoa autorizada inclui e corrige, e o que ela inclui fica a confirmar pelo síndico (IDEIAS, MAPA e mapa atualizados). 7 cenários Playwright com API falsa, no celular e no computador, com axe e sem emoji; 70 testes ponta a ponta e 325 pgTAP passando.",
+      "ref": "MU-01, MU-02, MU-03, MU-04, MU-07, MU-08, CF-03, PI-04, PT-10, PT-11"
+    },
     {
       "data": "16/10/2026",
       "inicio": "13:11",

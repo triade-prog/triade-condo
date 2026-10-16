@@ -137,9 +137,13 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
 - **Dados pessoais (PT-11, PT-13).**
   - Quem não está em nenhuma unidade pode ter nome e telefone removidos; o registro fica.
   - O histórico nunca guarda nome nem telefone.
-- **Permissão.** As ações `moradores.ver`, `moradores.editar` e `moradores.confirmar` ficam só com o síndico até o CF-03 ganhar uma permissão para isso.
+- **Permissão (CF-03).**
+  - O síndico tem `moradores.ver`, `moradores.editar` e `moradores.confirmar`.
+  - A permissão `CADASTRAR` dá à pessoa autorizada ver e editar. O que ela inclui nasce pendente, e confirmar ou recusar fica com o síndico.
 - **Rotas.** `/v1/condominio/unidades`, `blocos`, `unidades/:id/contatos`, `unidades/:id/mudanca`, `moradores`, `contatos/:id`, `vinculos-unidade/...` e `importacoes`.
-- **Telas.** Desenhadas em `../docs/design-frontend.html` ("Telas do passo 3"); o código delas espera a aprovação.
+- **Telas.** Seguem o desenho aprovado em `../docs/design-frontend.html` ("Telas do passo 3").
+  - Ficam em `apps/plataforma/src/telas/moradores`, com as rotas `/moradores`, `/moradores/unidade?id=` e `/moradores/importar`.
+  - Os testes ponta a ponta usam `tests/e2e/api-falsa-moradores.ts`.
 
 ## Rodar
 

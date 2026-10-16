@@ -3,7 +3,7 @@
 -- (MU-02), telefone que não prova identidade (MU-03), mudança (MU-07), importação de planilha
 -- e remoção dos dados pessoais (PT-11).
 begin;
-select plan(69);
+select plan(76);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -176,8 +176,25 @@ select is((select x ->> 'dadosRemovidos' from jsonb_array_elements((select plata
 select is((teste.erro($$ select plataforma_incluir_contato(sindica, ipe, a102, (pedro ->> 'contatoId')::uuid, null, null, 'MORADOR', false, true)
                          from ids, c, un, ct $$)) -> 'detalhe' ->> 'motivo', 'CONTATO_REMOVIDO', 'contato removido não volta a uma unidade');
 
+-- Permissão Cadastrar moradores (CF-03): a pessoa autorizada inclui, mas só o síndico confirma.
+select lives_ok($$ select plataforma_alterar_pessoa(sindica, ipe, v_bruna, 1, 'Secretária', array['CONFIGURAR', 'CADASTRAR']) from ids, c, vs $$,
+  'CF-03: o síndico dá a permissão Cadastrar moradores');
+select ok((select plataforma_unidades(bruna, ipe) ->> 'podeEditar' = 'true' and plataforma_unidades(bruna, ipe) ->> 'podeConfirmar' = 'false' from ids, c),
+  'ela vê e edita, mas não confirma');
+create temp table br as select plataforma_incluir_contato(bruna, ipe, a201, null, 'Teo Dias', '+5561955550001', 'MORADOR', false, true) as teo
+  from ids, c, un;
+select is((select estado from contatos_unidade, br where id = (teo ->> 'vinculoId')::uuid), 'PENDENTE',
+  'CF-03 e MU-02: o que a pessoa autorizada inclui nasce a confirmar');
+select throws_ok($$ select plataforma_confirmar_contatos(bruna, ipe, jsonb_build_array(jsonb_build_object('id', teo ->> 'vinculoId', 'versao', 1)))
+                    from ids, c, br $$, 'TC401', null, 'confirmar fica só com o síndico');
+select throws_ok($$ select plataforma_encerrar_vinculo_unidade(bruna, ipe, (teo ->> 'vinculoId')::uuid, 1, 'RECUSADO', null) from ids, c, br $$,
+  'TC401', null, 'recusar também');
+select lives_ok($$ select plataforma_alterar_pessoa(sindica, ipe, v_bruna, 2, 'Secretária', array['CONFIGURAR']) from ids, c, vs $$,
+  'a permissão é retirada');
+select throws_ok($$ select plataforma_unidades(bruna, ipe) from ids, c $$, 'TC401', null, 'CF-04: retirada, para na hora');
+
 -- Busca (PT-17): páginas, busca por nome, unidade e telefone, sem curinga do usuário.
-select is((select plataforma_moradores(sindica, ipe, null, null, 1) ->> 'total' from ids, c), '6', 'a lista mostra os vínculos ativos');
+select is((select plataforma_moradores(sindica, ipe, null, null, 1) ->> 'total' from ids, c), '7', 'a lista mostra os vínculos ativos');
 select is((select plataforma_moradores(sindica, ipe, 'lia', null, 1) ->> 'total' from ids, c), '2', 'busca pelo nome');
 select is((select plataforma_moradores(sindica, ipe, '7770001', null, 1) -> 'itens' -> 0 ->> 'unidade' from ids, c), '202', 'busca pelo telefone');
 select is((select plataforma_moradores(sindica, ipe, '%', null, 1) ->> 'total' from ids, c), '0', 'o % digitado é texto, não curinga');

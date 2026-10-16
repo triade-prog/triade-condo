@@ -228,6 +228,8 @@ export interface ErroPlanilha {
 
 export interface LeituraPlanilha {
   linhas: LinhaImportacao[];
+  /** Número da linha na planilha de cada linha boa (para traduzir o erro da API). */
+  origens: number[];
   erros: ErroPlanilha[];
   /** Coluna obrigatória que não foi achada no cabeçalho. */
   faltam: string[];
@@ -242,9 +244,10 @@ export function lerPlanilhaMoradores(texto: string): LeituraPlanilha {
     if (alvo && indices[alvo] === undefined) indices[alvo] = i;
   });
   const faltam = (["unidade", "nome", "telefone"] as const).filter((c) => indices[c] === undefined);
-  if (faltam.length) return { linhas: [], erros: [], faltam };
+  if (faltam.length) return { linhas: [], origens: [], erros: [], faltam };
 
   const linhas: LinhaImportacao[] = [];
+  const origens: number[] = [];
   const erros: ErroPlanilha[] = [];
   corpo.forEach((celulas, n) => {
     const valor = (c: keyof LinhaImportacao) => (indices[c] === undefined ? "" : (celulas[indices[c]!] ?? "").trim());
@@ -257,8 +260,23 @@ export function lerPlanilhaMoradores(texto: string): LeituraPlanilha {
       telefone: valor("telefone"),
       relacao: relacaoAchada ?? "INVALIDA",
     });
-    if (r.success) linhas.push(r.data);
+    if (r.success) {
+      linhas.push(r.data);
+      origens.push(n + 2);
+    }
     else erros.push({ linha: n + 2, campos: [...new Set(r.error.issues.map((i) => String(i.path[0])))] });
   });
-  return { linhas, erros, faltam: [] };
+  return { linhas, origens, erros, faltam: [] };
 }
+
+/** O que corrigir em cada campo da planilha, dito para quem usa. */
+export const TEXTOS_CAMPO_PLANILHA: Record<string, string> = {
+  bloco: "Bloco com mais de 40 caracteres",
+  unidade: "Unidade em branco ou com mais de 20 caracteres",
+  nome: "Nome em branco",
+  telefone: "Telefone incompleto: precisa do DDD e do número",
+  relacao: "Relação não reconhecida: use proprietário, inquilino, morador, familiar ou outro",
+};
+
+/** Modelo de planilha para baixar (separador ";", como o Excel em português salva). */
+export const MODELO_PLANILHA = "Bloco;Unidade;Nome;Telefone;Relação\r\nTorre A;101;Maria Exemplo;(61) 99999-0000;Proprietário\r\n";

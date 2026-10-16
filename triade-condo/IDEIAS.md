@@ -154,7 +154,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 |---|---|---|
 | CF-01 | Ficha do condomínio preenchida na implantação e editável depois | [A] |
 | CF-02 | Pessoas autorizadas, cada uma com acesso próprio (sem conta compartilhada) | [A] |
-| CF-03 | Permissões individuais: acompanhar, responder, atualizar, concluir, publicar, configurar. Cargo ou função não concede permissão automaticamente; portaria, administradora ou fornecedor não ganham acesso só por existirem. Aprovar despesas e decisões fica com o síndico e só passa a um delegado se ele configurar; contratar o serviço humano também não concede permissão | [A] |
+| CF-03 | Permissões individuais: acompanhar, responder, atualizar, concluir, publicar, configurar, cadastrar moradores (o que a pessoa autorizada cadastra fica a confirmar pelo síndico). Cargo ou função não concede permissão automaticamente; portaria, administradora ou fornecedor não ganham acesso só por existirem. Aprovar despesas e decisões fica com o síndico e só passa a um delegado se ele configurar; contratar o serviço humano também não concede permissão | [A] |
 | CF-04 | Vínculo ativo ou revogado; revogado não age mais, mas a autoria antiga fica | [A] |
 | CF-05 | Responsáveis pelo atendimento por condomínio. O responsável padrão da fila é o síndico ou uma pessoa autorizada por ele, de fato disponível; desativar quem tem pedidos em andamento exige substituto ou pendência explícita | [A] |
 | CF-06 | Dias e horários de funcionamento e de atendimento | [A] |
