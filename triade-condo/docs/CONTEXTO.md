@@ -1,6 +1,6 @@
 # Contexto do projeto — TRÍADE Condo
 
-Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com os passos 0 a 3 construídos.
+Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com os passos 0 a 3 construídos e o passo 4 com banco e API prontos.
 
 ## Onde está cada coisa
 
@@ -64,7 +64,7 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 |---|---|---|
 | Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta) | Carolina (em análise) | Passo 5 |
 | Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio | TRÍADE | Passo 5 |
-| Ligar as configurações de login no painel do Supabase (triade-condo-dev), ajustar os modelos de e-mail de recuperação e convite, cadastrar a primeira administração e criar os projetos na Vercel | TRÍADE | Conferir o login e o convite de verdade (F0.6, F1.5) e publicar o passo 1 |
+| E-mail próprio no Supabase Auth (E9): configurar o Resend como SMTP, trocar a Site URL para `https://plataforma-omega-five.vercel.app` e pôr os modelos de convite e de recuperação em português, com `{{ .RedirectTo }}?token_hash={{ .TokenHash }}`. Sem SMTP próprio o Supabase não deixa editar os modelos e o link do convite cai em localhost | Carolina | Conferir o convite e a recuperação de verdade (F1.5) |
 | Logo oficial (a paleta e a tipografia já estão definidas, DC11) e aprovação do tom das mensagens | TRÍADE | Nada no código; o símbolo triangular atual é provisório |
 | Dados da empresa para termos e privacidade (EM-01, EM-06) | TRÍADE | Publicação |
 | Domínio próprio | TRÍADE | Publicação |
@@ -162,11 +162,23 @@ No mesmo dia, a pedido da Carolina, o prédio passou a se organizar do jeito del
 
 Depois, também a pedido da Carolina e para controle: quando a unidade tem inquilino, o proprietário do imóvel fica no cadastro. O inquilino entra junto com o proprietário (pessoa nova ou já cadastrada), que não é o contato principal e não recebe os comunicados do dia a dia. Na mudança, se entra inquilino ou sai o proprietário, o novo proprietário entra junto. A planilha não barra: a unidade com inquilino e sem proprietário vira pendência no Início, no filtro da lista e na ficha. MU-01 atualizada de novo.
 
+**16/10/2026, fim da tarde.** O e-mail próprio (Resend como SMTP, Site URL e modelos em português) ficou como tarefa da Carolina (E9). Começou o passo 4 (pedidos no painel). Ficaram prontos no banco (migration 0090) e na API:
+
+- Registro com protocolo por condomínio e por ano ("2026-0001"), unidade ou local, contato confirmado e como o pedido chegou.
+- Fila com filtros por situação, responsável, prioridade e categoria, atalhos do que pede atenção e há quanto tempo cada pedido está aberto.
+- Responsável da lista de quem atende, que confirma o aceite e pode repassar; quem sai da lista passa os pedidos ao padrão.
+- Próximo retorno separado da previsão de solução, os dois com motivo para mudar; retorno ao morador e nota interna.
+- Pendências com tipo, motivo e quem cuida.
+- Conclusão explicada, revisão e reabertura configuráveis, cancelamento com motivo.
+- Pedido privado e histórico completo.
+
+As permissões Acompanhar, Responder, Atualizar e Concluir passaram a valer. Onze telas foram desenhadas no `design-frontend.html`, com as decisões para aprovar (protocolo, quem faz o quê, privado, pendência na conclusão, anexos no passo 4b). A 0090 ainda não está no `triade-condo-dev`: a Carolina vai colar no SQL Editor, e depois a `api-plataforma` precisa ser publicada de novo.
+
 **Próximo passo:**
 
-1. Conferir o convite e a recuperação de senha por e-mail de verdade (F1.5). A primeira administração (`admin@triadecondo.com`) já entra no Console com senha e autenticador.
-2. Liberar o CI (F0.9).
-3. Começar o passo 4 (pedidos no painel) pelo desenho das telas.
+1. Aprovar as telas e as decisões do passo 4; depois construir as telas.
+2. Aplicar a 0090 no `triade-condo-dev` e publicar de novo a `api-plataforma`.
+3. Com a Carolina: e-mail próprio (E9) para conferir o convite e a recuperação (F1.5); juntar o PR 3; liberar o CI (F0.9).
 
 ## Como trabalhar
 

@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (organização do prédio por torre, bloco, quadra ou prédio, com ou sem andar; unidades; inquilino sempre com o proprietário do imóvel no cadastro; ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (343 pgTAP, 63 Deno, 54 Vitest, 74 ponta a ponta). O triade-condo-dev tem todas as migrations e as Edge Functions api-plataforma e api-console; a Plataforma e o Console estão na Vercel, falando com elas.",
+    "situacao": "Passos 0, 1, 2 e 3 construídos; passo 4 (pedidos no painel) com banco e API prontos e as telas desenhadas, esperando aprovação. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 74 Deno, 58 Vitest, 74 ponta a ponta). O triade-condo-dev tem as migrations até a 0080 e as Edge Functions api-plataforma e api-console; a Plataforma e o Console estão na Vercel, falando com elas.",
     "fase_atual": "F3",
-    "proximo_passo": "Conferir o convite e a recuperação de senha por e-mail de verdade (F1.5). Juntar o PR 3. Liberar o GitHub Actions (F0.9). Depois, passo 4: pedidos no painel, começando pelo desenho das telas."
+    "proximo_passo": "Aprovar as telas e as decisões do passo 4 no design-frontend.html; depois construir as telas. Aplicar a 0090 no triade-condo-dev (a Carolina cola no SQL Editor) e publicar de novo a api-plataforma. Em paralelo, com a Carolina: e-mail próprio com Resend (E9) para conferir o convite e a recuperação (F1.5), juntar o PR 3 e liberar o GitHub Actions (F0.9)."
   },
   "fases": [
     {
@@ -76,7 +76,7 @@
           "peca": "B4",
           "refs": [],
           "status": "andamento",
-          "nota": "Telas dos passos 1 e 2 aprovadas pela Carolina em 16/10/2026 e construídas, sem emoji nem emoticon. As telas de cada passo seguinte também são desenhadas e aprovadas antes do código."
+          "nota": "Telas dos passos 1, 2 e 3 aprovadas pela Carolina em 16/10/2026 e construídas, sem emoji nem emoticon. Telas do passo 4 desenhadas em 16/10/2026, esperando aprovação. As telas de cada passo seguinte também são desenhadas e aprovadas antes do código."
         }
       ]
     },
@@ -436,7 +436,9 @@
           "refs": [
             "AT-01"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: protocolo por condomínio e por ano (2026-0001), unidade ou local, contato só se confirmado na unidade, como chegou, categoria, prioridade, assunto e relato. Anexos ficam para o F4.8. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
         },
         {
           "id": "F4.2",
@@ -445,7 +447,9 @@
           "refs": [
             "AT-02"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: fila com filtros por situação, responsável, prioridade e categoria, atalhos (retorno vencido, sem responsável, esperando aceite, com pendência), busca e há quanto tempo cada pedido está aberto. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
         },
         {
           "id": "F4.3",
@@ -455,7 +459,9 @@
             "AT-03",
             "AT-12"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: o responsável vem da lista de quem atende (padrão da fila ou escolhido), confirma o aceite e pode repassar no fim do turno; quem sai da lista passa os pedidos ao padrão ou deixa sem responsável, à vista (CF-05). Sem executor é pendência. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
         },
         {
           "id": "F4.4",
@@ -465,7 +471,9 @@
             "AT-06",
             "AT-07"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: próximo retorno pelo prazo (AT-10), recalculado a cada retorno ao morador, sem mexer na previsão; nota interna não conta; previsão só quando conhecida; mudar qualquer um pede motivo. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
         },
         {
           "id": "F4.5",
@@ -474,7 +482,9 @@
           "refs": [
             "AT-11"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: pendência com tipo, motivo e quem cuida; concluir pede as pendências resolvidas. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
         },
         {
           "id": "F4.6",
@@ -486,7 +496,9 @@
             "AT-15",
             "AT-31"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: conclusão com explicação e evidência opcional; revisão opcional por condomínio (o síndico que conclui já revisa); reabertura com motivo, preservando a conclusão e dando responsável e próximo retorno, configurável; cancelamento com motivo e autor. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
         },
         {
           "id": "F4.7",
@@ -496,7 +508,9 @@
             "AT-17",
             "AT-32"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: histórico do pedido com autor, data, antes e depois e motivo, nada se apaga; pedido privado visível só ao síndico, a quem registrou e ao responsável. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
         },
         {
           "id": "F4.8",
@@ -505,7 +519,8 @@
           "refs": [
             "PT-07"
           ],
-          "status": "pendente"
+          "status": "pendente",
+          "nota": "Proposto como passo 4b, logo depois das telas do passo 4 (Supabase Storage privado, validação de tipo e tamanho, link que expira). Até lá, a evidência da conclusão é texto."
         }
       ]
     },
@@ -962,6 +977,31 @@
       ],
       "status": "feito",
       "evidencia": "Playwright plataforma-passo3.spec.ts (8 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T18",
+      "texto": "Pedidos: só o próprio condomínio, protocolo sem buracos, responsável real que aceita, próximo retorno separado da previsão, pendências, conclusão, revisão, reabertura e cancelamento com motivo, pedido privado, histórico completo e edição simultânea",
+      "fase": "F4",
+      "refs": [
+        "AT-01",
+        "AT-02",
+        "AT-03",
+        "AT-06",
+        "AT-07",
+        "AT-11",
+        "AT-12",
+        "AT-13",
+        "AT-14",
+        "AT-15",
+        "AT-17",
+        "AT-24",
+        "AT-31",
+        "AT-32",
+        "CF-05",
+        "PT-01"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 010_pedidos_test.sql (107 testes); Deno api-plataforma/pedidos_test.ts (11 testes); Vitest pedidos.test.ts (4 testes)"
     }
   ],
   "publicacao": [
@@ -1127,6 +1167,15 @@
       "precisa_em": "F4",
       "refs": [],
       "status": "pendente"
+    },
+    {
+      "id": "E9",
+      "texto": "E-mail próprio no Supabase Auth (Resend como SMTP), com os modelos de convite e de recuperação de senha em português e a Site URL apontando para a Plataforma",
+      "quem": "TRÍADE",
+      "precisa_em": "F1",
+      "refs": [],
+      "status": "pendente",
+      "nota": "Sem SMTP próprio o Supabase não deixa editar os modelos, e o link do convite cai em localhost. Os modelos precisam usar {{ .RedirectTo }}?token_hash={{ .TokenHash }}; a Plataforma e o Console leem token_hash em /convite e /redefinir. Destrava o F1.5."
     }
   ],
   "decisoes": [
@@ -1176,6 +1225,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "17:54",
+      "fim": "18:25",
+      "texto": "Resend como tarefa da Carolina (E9: SMTP próprio, Site URL e modelos de e-mail em português). Passo 4, pedidos no painel: migration 0090 com pedidos, protocolo por condomínio e ano, guardião (aberto, em andamento, em revisão, encerrado, cancelado), responsável que aceita e repassa, próximo retorno e previsão separados e com motivo, retornos e notas internas, pendências com tipo e quem cuida, conclusão com explicação, revisão e reabertura configuráveis, cancelamento, pedido privado e histórico completo; quem sai da lista de quem atende passa os pedidos ao padrão (CF-05). Permissões Acompanhar, Responder, Atualizar e Concluir passam a valer. API da Plataforma com as rotas dos pedidos. Onze telas desenhadas no design-frontend.html, com as decisões para aprovar. 107 pgTAP, 11 Deno e 4 Vitest novos; 450 pgTAP, 74 Deno e 58 Vitest passando.",
+      "ref": "E9, F4.1, F4.2, F4.3, F4.4, F4.5, F4.6, F4.7, T18, D4"
+    },
     {
       "data": "16/10/2026",
       "inicio": "17:31",

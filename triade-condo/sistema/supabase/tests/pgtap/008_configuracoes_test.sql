@@ -164,7 +164,7 @@ select is((select plataforma_painel(caio, ipe) -> 'acoes' from ids, c), '["confi
   'CF-03: subsíndico sem permissão só vê');
 select throws_ok($$ select plataforma_salvar_categoria(caio, ipe, null, null, 'Obras', null) from ids, c $$, 'TC401', null,
   'CF-03: o cargo não concede permissão');
-select is((teste.erro($$ select plataforma_autorizar_pessoa(sindica, ipe, davi, 'Davi', null, array['RESPONDER']) from ids, c $$)) -> 'detalhe',
+select is((teste.erro($$ select plataforma_autorizar_pessoa(sindica, ipe, davi, 'Davi', null, array['PUBLICAR']) from ids, c $$)) -> 'detalhe',
   '{"campos": ["permissoes"]}'::jsonb, 'CF-12: permissão de recurso que ainda não existe não é dada');
 select throws_ok($$ select plataforma_autorizar_pessoa(bruna, ipe, davi, 'Davi', null, '{}') from ids, c $$, 'TC401', null,
   'quem é autorizado não autoriza ninguém');

@@ -148,6 +148,20 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
   - Ficam em `apps/plataforma/src/telas/moradores`, com as rotas `/moradores`, `/moradores/unidade?id=` e `/moradores/importar`.
   - Os testes ponta a ponta usam `tests/e2e/api-falsa-moradores.ts`.
 
+## Pedidos no painel (passo 4)
+
+- **Pedido (AT-01).** A tabela `pedidos` guarda o protocolo por condomínio e por ano (`protocolos_pedido`: "2026-0001"), a unidade ou o local, o contato (só se confirmado na unidade), como chegou, categoria, prioridade, etapa, assunto e relato. O registro não muda depois: o que vier a mais vira nota.
+- **Situação (AT-05).** O pedido passa pelo guardião: `ABERTO`, `EM_ANDAMENTO`, `EM_REVISAO`, `ENCERRADO` ou `CANCELADO`. A etapa configurada sempre combina com a situação e com a categoria (`pedidos_regras`).
+- **Responsável (AT-03, AT-12, CF-05).** Vem da lista de quem atende: o escolhido ou o padrão da fila, se disponível. Confirma o aceite (`aceito_em`); repassar pede o aceite de novo. Quem sai da lista passa os pedidos ao padrão ou os deixa sem responsável, à vista na fila (`pedidos_do_responsavel_retirado`).
+- **Próximo retorno e previsão (AT-06, AT-07).** `calcular_proximo_retorno` usa o prazo do passo 2. Registrar retorno ao morador (`andamentos_pedido`, tipo `RETORNO`) recalcula; nota interna (`NOTA`) não. Mudar o próximo retorno ou a previsão pede motivo. Etapa que pausa o prazo não deixa o retorno vencer.
+- **Pendências (AT-11).** `pendencias_pedido` com tipo, motivo e quem cuida. Concluir pede todas resolvidas; cancelar fecha as abertas.
+- **Conclusão (AT-13, AT-14, AT-15, AT-31).** `conclusoes_pedido` guarda cada conclusão, com a revisão e a reabertura. `configuracao_condominio.revisao_conclusao` (desligada) e `reabertura` (ligada) são as regras do condomínio.
+- **Privado (AT-32).** `pedido_visivel`: o síndico, quem registrou e o responsável. Para os outros, o pedido não existe (404).
+- **Histórico (AT-17).** Tudo vai para `historico` com `entidade = 'pedidos'`; `descreverEventoPedido` (domínio) transforma em frase.
+- **Permissão (CF-03).** O síndico tem `pedidos.ver`, `responder`, `atualizar`, `concluir` e `revisar`. As permissões `ACOMPANHAR`, `RESPONDER`, `ATUALIZAR` e `CONCLUIR` passam a valer. O responsável de um pedido responde, atualiza e repassa aquele pedido (`pode_no_pedido`).
+- **Rotas.** `/v1/condominio/pedidos` (fila e registro), `pedidos/opcoes`, `pedidos/contatos/:unidade`, `pedidos/:id` e as ações `etapa`, `responsavel`, `aceitar`, `retornos`, `notas`, `proximo-retorno`, `previsao`, `pendencias`, `concluir`, `revisar`, `reabrir`, `cancelar`; `regras-pedidos`.
+- **Telas.** Desenhadas em `../docs/design-frontend.html` ("Telas do passo 4"), esperando aprovação.
+
 ## Rodar
 
 Requisitos: Node 22, pnpm 10 e PostgreSQL 16 ou 17 com pgTAP (`postgresql-17-pgtap`).
