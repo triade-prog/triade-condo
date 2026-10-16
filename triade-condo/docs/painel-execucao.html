@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passo 0 (Fundação) construído em triade-condo/sistema/: monorepo com os dois apps, banco com RLS forçado e separação por condomínio, histórico, guardião de transições, controle de versão, relógio da aplicação, vínculos e permissão, login e proteção do servidor. Testes T1 a T5 passando localmente; o CI no GitHub roda a partir deste envio. O login ainda não foi conferido com um Supabase de verdade (E3).",
+    "situacao": "Passo 0 (Fundação) construído em triade-condo/sistema/: monorepo com os dois apps, banco com RLS forçado e separação por condomínio, histórico, guardião de transições, controle de versão, relógio da aplicação, vínculos e permissão, login e proteção do servidor. Testes T1 a T5 passando localmente; o CI no GitHub roda a partir deste envio. O projeto Supabase de desenvolvimento (triade-condo-dev, São Paulo) foi criado e recebeu as migrations; o login ainda não foi conferido nele.",
     "fase_atual": "F0",
-    "proximo_passo": "Conferir o CI verde no GitHub e fechar F0.9. Com o projeto Supabase de desenvolvimento (E3), conferir o login de verdade (F0.6). Depois, passo 1: cadastrar condomínio no Console TRÍADE."
+    "proximo_passo": "Conferir o CI verde no GitHub e fechar F0.9. Ligar as configurações de login no painel do Supabase e conferir o login de verdade no triade-condo-dev (F0.6). Depois, passo 1: cadastrar condomínio no Console TRÍADE."
   },
   "fases": [
     {
@@ -142,7 +142,7 @@
             "PT-08"
           ],
           "status": "andamento",
-          "nota": "Rotas de login, autenticador, saída de todas as sessões, recuperação e redefinição prontas e testadas com um Auth falso (api-console/app_test.ts, api-plataforma/app_test.ts). Falta conferir com o Supabase Auth de verdade quando existir o projeto (E3). As telas de login entram no passo 1."
+          "nota": "Rotas de login, autenticador, saída de todas as sessões, recuperação e redefinição prontas e testadas com um Auth falso (api-console/app_test.ts, api-plataforma/app_test.ts). Falta conferir com o Supabase Auth de verdade no triade-condo-dev, depois de ligar as configurações de login no painel do Supabase. As telas de login entram no passo 1."
         },
         {
           "id": "F0.7",
@@ -961,8 +961,9 @@
       "quem": "TRÍADE",
       "precisa_em": "F1",
       "refs": [],
-      "status": "pendente",
-      "nota": "O passo 0 roda com Postgres local"
+      "status": "feito",
+      "nota": "As configurações de login do config.toml (cadastro aberto desligado, confirmação de e-mail, autenticador, sessões de 12 h) ainda precisam ser ligadas no painel do Supabase, em Authentication.",
+      "evidencia": "Projeto triade-condo-dev (ref dzwkxiimwprftgulhoqn) criado em 16/10/2026 em sa-east-1, plano gratuito, com as migrations 0001 a 0050 aplicadas e o verificador de segurança do Supabase sem avisos"
     },
     {
       "id": "E4",
@@ -1053,6 +1054,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "01:58",
+      "fim": "01:55",
+      "texto": "Criado o projeto Supabase triade-condo-dev em São Paulo, no plano gratuito, a pedido da Carolina. As migrations 0001 a 0040 foram aplicadas, e a nova 0050 fixa o caminho de busca das funções, apontado pelo verificador de segurança, que agora não tem avisos. No Supabase, as mesmas garantias do teste local: RLS forçado em todas as tabelas, nenhuma permissão da API nas tabelas e só as funções da API liberadas para o servidor. As migrations deixaram de usar comandos de remoção (drop), que o Supabase segura pedindo confirmação.",
+      "ref": "PT-06, PT-14, PT-16"
+    },
     {
       "data": "16/10/2026",
       "inicio": "01:11",

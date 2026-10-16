@@ -89,8 +89,9 @@ begin
   if not exists (select 1 from pg_attribute where attrelid = p_tabela and attname = 'estado' and not attisdropped) then
     raise exception 'A tabela % não tem a coluna estado', p_tabela;
   end if;
-  execute format('drop trigger if exists guardiao_transicao on %s', p_tabela);
-  execute format('create trigger guardiao_transicao before insert or update on %s for each row execute function guardiao_transicao()', p_tabela);
+  if not exists (select 1 from pg_trigger where tgrelid = p_tabela and tgname = 'guardiao_transicao') then
+    execute format('create trigger guardiao_transicao before insert or update on %s for each row execute function guardiao_transicao()', p_tabela);
+  end if;
 end $$;
 
 call fechar_acesso();

@@ -64,7 +64,7 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 |---|---|---|
 | Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta) | Carolina (em análise) | Passo 5 |
 | Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio | TRÍADE | Passo 5 |
-| Projeto Supabase de desenvolvimento e projetos na Vercel | TRÍADE | Conferir o login de verdade (F0.6) e publicar o passo 1; o passo 0 roda com Postgres local |
+| Ligar as configurações de login no painel do Supabase (triade-condo-dev) e criar os projetos na Vercel | TRÍADE | Conferir o login de verdade (F0.6) e publicar o passo 1 |
 | Logo oficial (a paleta e a tipografia já estão definidas, DC11) e aprovação do tom das mensagens | TRÍADE | Nada no código; o símbolo triangular atual é provisório |
 | Dados da empresa para termos e privacidade (EM-01, EM-06) | TRÍADE | Publicação |
 | Domínio próprio | TRÍADE | Publicação |
@@ -94,6 +94,8 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 - Login com autenticador obrigatório para a equipe e recuperação neutra; proteção do servidor; CI.
 - Testes T1 a T5 passando localmente.
 - Ainda abertos: a primeira execução verde do CI no GitHub (F0.9) e a conferência do login com um Supabase de verdade (F0.6, depende do E3).
+
+No mesmo dia foi criado o projeto Supabase de desenvolvimento `triade-condo-dev` (São Paulo, plano gratuito, ref `dzwkxiimwprftgulhoqn`), com todas as migrations aplicadas e sem avisos do verificador de segurança.
 
 **Próximo passo:** fechar F0.9 com o CI verde e começar o passo 1 (cadastrar condomínio no Console TRÍADE). Ver as entregas F1 no painel.
 

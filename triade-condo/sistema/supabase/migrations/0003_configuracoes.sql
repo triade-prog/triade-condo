@@ -55,7 +55,7 @@ begin
   if configuracao('ambiente') = '"producao"' then
     raise exception 'O relógio não pode ser adiantado em produção' using errcode = 'TC003';
   end if;
-  update app_relogio set adiantamento = p_adiantamento;
+  update app_relogio set adiantamento = p_adiantamento where id;
   return app_now();
 end $$;
 

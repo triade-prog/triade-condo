@@ -1,6 +1,6 @@
 -- T1 (PT-06) e F0.2: RLS ligado e forçado em tudo, privilégios fechados, só o servidor acessa.
 begin;
-select plan(19);
+select plan(20);
 
 -- A consulta que o teste usa para achar tabela sem RLS (forçado) no esquema public.
 create temp view sem_rls as
@@ -48,6 +48,11 @@ select is(
       and not exists (select 1 from pg_trigger t where t.tgrelid = c.oid and t.tgname = 'controle_versao')),
   null, 'AT-24: toda tabela com versão tem o controle de versão');
 
+select is(
+  (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.prokind in ('f', 'p')
+      and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')),
+  null, 'toda função e procedimento tem o caminho de busca fixo');
 select ok(has_function_privilege('service_role', 'meus_condominios(uuid, text)', 'execute'), 'o servidor chama as funções da API');
 select ok(not has_function_privilege('service_role', 'entrar_condominio(uuid, uuid, text)', 'execute'), 'o servidor não grava o contexto direto');
 

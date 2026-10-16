@@ -50,8 +50,9 @@ as $$
 begin
   execute format('alter table %s enable row level security', p_tabela);
   execute format('alter table %s force row level security', p_tabela);
-  execute format('drop policy if exists global on %s', p_tabela);
-  execute format('create policy global on %s using (true) with check (true)', p_tabela);
+  if not exists (select 1 from pg_policy where polrelid = p_tabela and polname = 'global') then
+    execute format('create policy global on %s using (true) with check (true)', p_tabela);
+  end if;
   insert into tabelas_sem_condominio (tabela, motivo) values (p_tabela::text, p_motivo)
   on conflict (tabela) do update set motivo = excluded.motivo;
 end $$;
@@ -109,13 +110,14 @@ begin
 
   execute format('alter table %s enable row level security', p_tabela);
   execute format('alter table %s force row level security', p_tabela);
-  execute format('drop policy if exists isolamento_condominio on %s', p_tabela);
-  execute format(
-    'create policy isolamento_condominio on %s using (condominio_id = contexto_condominio()) with check (condominio_id = contexto_condominio())',
-    p_tabela);
+  if not exists (select 1 from pg_policy where polrelid = p_tabela and polname = 'isolamento_condominio') then
+    execute format(
+      'create policy isolamento_condominio on %s using (condominio_id = contexto_condominio()) with check (condominio_id = contexto_condominio())',
+      p_tabela);
+  end if;
 
-  if exists (select 1 from pg_attribute where attrelid = p_tabela and attname = 'versao' and not attisdropped) then
-    execute format('drop trigger if exists controle_versao on %s', p_tabela);
+  if exists (select 1 from pg_attribute where attrelid = p_tabela and attname = 'versao' and not attisdropped)
+     and not exists (select 1 from pg_trigger where tgrelid = p_tabela and tgname = 'controle_versao') then
     execute format('create trigger controle_versao before update on %s for each row execute function controle_versao()', p_tabela);
   end if;
 end $$;

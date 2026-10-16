@@ -81,4 +81,6 @@ pnpm build && pnpm e2e                     # Playwright com axe (PW_CHROMIUM_PAT
 
 ## Ainda não ligado
 
-Para publicar, falta o projeto Supabase de desenvolvimento em São Paulo (E3) e os projetos na Vercel (E4). Os segredos das funções estão listados no fim do `supabase/config.toml`. O login foi testado com um Auth falso; a conferência com o Supabase Auth de verdade fica para quando o projeto existir.
+O projeto Supabase de desenvolvimento é o `triade-condo-dev` (São Paulo, ref `dzwkxiimwprftgulhoqn`), já com todas as migrations. As configurações de login do `supabase/config.toml` não sobem sozinhas para o projeto hospedado: ligue-as no painel do Supabase, em Authentication. Faltam os projetos na Vercel (E4). Os segredos das funções estão listados no fim do `supabase/config.toml`. O login foi testado com um Auth falso; a conferência com o Supabase Auth de verdade é o próximo passo.
+
+Nas migrations, não use comandos de remoção (`drop`) nem `update` ou `delete` sem `where`: a ferramenta do Supabase segura esses comandos pedindo confirmação. Para recriar algo, crie só se não existir.
