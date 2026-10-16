@@ -30,11 +30,7 @@
     "total_ideias": 296,
     "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (organização do prédio por torre, bloco, quadra ou prédio, com ou sem andar; unidades; inquilino sempre com o proprietário do imóvel no cadastro; ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (343 pgTAP, 63 Deno, 54 Vitest, 74 ponta a ponta). O triade-condo-dev tem todas as migrations e as Edge Functions api-plataforma e api-console; a Plataforma e o Console estão na Vercel, falando com elas.",
     "fase_atual": "F3",
-    "proximo_passo": "Cadastrar a primeira administração com iniciar_equipe (README) e conferir login, autenticador e convite de verdade nos dois sistemas (F0.6, F1.5). Juntar o PR 3. Liberar o GitHub Actions (F0.9). Depois, passo 4: pedidos no painel, começando pelo desenho das telas."
-  },
-  "fases": [
-    {
-      "id": "D",
+    "proximo_passo": "Conferir o convite e a recuperação de senha por e-mail de verdade (F1.5). Juntar o PR 3. Liberar o GitHub Actions (F0.9). Depois, passo 4: pedidos no painel, começando pelo desenho das telas.",
       "nome": "Design do frontend",
       "objetivo": "Identidade, design system e textos aprovados antes das telas de verdade. As telas do passo 1 em diante usam a proposta do design-frontend.html até a identidade oficial chegar.",
       "itens": [
@@ -142,8 +138,9 @@
           "refs": [
             "PT-08"
           ],
-          "status": "andamento",
-          "nota": "Rotas e telas de login, autenticador, recuperação e redefinição prontas no Console (Playwright console-passo1.spec.ts) e testadas com um Auth falso. Falta conferir com o Supabase Auth de verdade no triade-condo-dev, depois de ligar as configurações de login no painel do Supabase. As telas de login da Plataforma foram construídas no passo 2 (F2.1)."
+          "status": "feito",
+          "evidencia": "Login real no Console do triade-condo-dev (console-hazel-nine.vercel.app) com admin@triadecondo.com: senha e cadastro do autenticador no primeiro acesso, 16/10/2026",
+          "nota": "Falta conferir de verdade a recuperação de senha e o convite por e-mail (F1.5)."
         },
         {
           "id": "F0.7",
@@ -251,7 +248,7 @@
           ],
           "status": "feito",
           "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)",
-          "nota": "Falta conferir o e-mail de convite de verdade no triade-condo-dev (modelo do e-mail com token_hash), junto com a conferência do login (F0.6)."
+          "nota": "Login real conferido (F0.6). Falta conferir o e-mail de convite de verdade no triade-condo-dev (modelo do e-mail com token_hash)."
         },
         {
           "id": "F1.6",
@@ -1175,6 +1172,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "17:31",
+      "fim": "17:38",
+      "texto": "Primeira administração cadastrada no triade-condo-dev: a conta admin@triadecondo.com, criada pela Carolina no Supabase Auth, entrou na equipe TRÍADE com a função Administração (iniciar_equipe). A Carolina entrou no Console publicado na Vercel com senha e autenticador: o login real funciona (F0.6).",
+      "ref": "F0.6, CF-01"
+    },
     {
       "data": "16/10/2026",
       "inicio": "16:52",
