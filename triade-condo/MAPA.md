@@ -205,7 +205,7 @@ Quem mora em cada unidade, os contatos autorizados e as mudanças.
 
 | ID | Ideia | Forma |
 |---|---|---|
-| MU-01 | Cadastro breve: nome, telefone, apartamento; CPF só se necessário ao financeiro | Função |
+| MU-01 | Cadastro breve: nome, telefone, apartamento; CPF só se necessário ao financeiro. A unidade fica do jeito que o prédio se organiza: torre, bloco, quadra ou prédio (ou sem divisão), com ou sem andar; vale para morador e para proprietário (condômino) | Função |
 | MU-06 | Família, veículos e pets no cadastro | Função |
 | MU-07 | Mudança de morador: entrada e saída com revogação do vínculo | Função |
 | MU-08 | Múltiplos contatos autorizados por unidade (titular, cônjuge, inquilino), com preferências e revogação | Função |
@@ -388,7 +388,7 @@ Ficha do condomínio, pessoas e permissões, horários, categorias, prazos e mod
 | CF-01 | Ficha do condomínio preenchida na implantação e editável depois | Aba |
 | CF-02 | Pessoas autorizadas, cada uma com acesso próprio | Aba |
 | V-09 | Secretária e delegados do síndico: acesso próprio, com permissões individuais por condomínio | Função |
-| CF-03 | Permissões individuais: acompanhar, responder, atualizar, concluir, publicar, configurar | Regra |
+| CF-03 | Permissões individuais: acompanhar, responder, atualizar, concluir, publicar, configurar, cadastrar moradores | Regra |
 | CF-04 | Vínculo ativo ou revogado; revogado não age mais, mas a autoria antiga fica | Regra |
 | CF-12 | Configuração proporcional: começa simples e só ajusta opções dos recursos que existem; não é construtor de fluxos; na… | Regra |
 | AT-05 | Etapas configuráveis por condomínio e por tipo de pedido, sempre ligadas a aberto, em andamento ou encerrado | Configuração |

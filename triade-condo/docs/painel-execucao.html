@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Ideias consolidadas (296 no IDEIAS.md, distribuídas em 35 peças no MAPA.md) e tecnologia aprovada: a mesma do T-shirt Club (TypeScript, Next.js, Supabase em São Paulo). Decisões de construção registradas (DC1 a DC10). Nenhum código ainda: o passo 0 (Fundação) está liberado.",
-    "fase_atual": "F0",
-    "proximo_passo": "Passo 0 em triade-condo/sistema/: estrutura do projeto, banco com RLS fechado e separação por condomínio, histórico, relógio da aplicação, login e vínculos, proteção do servidor e CI. Roda com Postgres local; o projeto Supabase de desenvolvimento (E3) só é preciso para publicar."
+    "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (organização do prédio por torre, bloco, quadra ou prédio, com ou sem andar; unidades; ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (336 pgTAP, 62 Deno, 54 Vitest, 72 ponta a ponta). As migrations 0070 e 0080 ainda não estão no triade-condo-dev.",
+    "fase_atual": "F3",
+    "proximo_passo": "Aplicar as migrations 0070 e 0080 no triade-condo-dev (supabase db push). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9). Depois, passo 4: pedidos no painel, começando pelo desenho das telas."
   },
   "fases": [
     {
@@ -75,7 +75,8 @@
           "texto": "Telas de cada passo desenhadas e aprovadas antes do código da tela (regras antes, tela depois)",
           "peca": "B4",
           "refs": [],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Telas dos passos 1 e 2 aprovadas pela Carolina em 16/10/2026 e construídas, sem emoji nem emoticon. As telas de cada passo seguinte também são desenhadas e aprovadas antes do código."
         }
       ]
     },
@@ -91,7 +92,8 @@
           "refs": [
             "PT-05"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pnpm build dos dois apps e pnpm typecheck; triade-condo/sistema/README.md"
         },
         {
           "id": "F0.2",
@@ -101,7 +103,8 @@
             "PT-06",
             "PT-16"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 001_acesso_rls_test.sql (RLS forçado, privilégios fechados, tabela nova sem RLS é encontrada)"
         },
         {
           "id": "F0.3",
@@ -110,7 +113,8 @@
           "refs": [
             "PT-01"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 002_isolamento_condominios_test.sql e testes da api-plataforma (condomínio vem da sessão)"
         },
         {
           "id": "F0.4",
@@ -120,15 +124,16 @@
             "PT-03",
             "AT-24"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 003_historico_guardiao_test.sql e 004_versao_test.sql; concorrencia/edicao-simultanea.sh com duas conexões"
         },
         {
           "id": "F0.5",
           "texto": "Relógio da aplicação (app_now) para testar prazos sem esperar o tempo passar",
           "peca": "B2",
           "refs": [],
-          "status": "pendente",
-          "nota": "Base dos testes de próximo retorno e escalonamento (passo 6)"
+          "status": "feito",
+          "evidencia": "pgTAP 006_relogio_limites_dinheiro_test.sql"
         },
         {
           "id": "F0.6",
@@ -137,7 +142,8 @@
           "refs": [
             "PT-08"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Rotas e telas de login, autenticador, recuperação e redefinição prontas no Console (Playwright console-passo1.spec.ts) e testadas com um Auth falso. Falta conferir com o Supabase Auth de verdade no triade-condo-dev, depois de ligar as configurações de login no painel do Supabase. As telas de login da Plataforma foram construídas no passo 2 (F2.1)."
         },
         {
           "id": "F0.7",
@@ -148,7 +154,8 @@
             "MU-04",
             "CF-04"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 005_vinculos_permissao_test.sql"
         },
         {
           "id": "F0.8",
@@ -157,7 +164,8 @@
           "refs": [
             "PT-13"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "Vitest cabecalhos.test.ts e repasse.test.ts; registro.test.ts e _shared/app_test.ts (logs limpos); Playwright fundacao.spec.ts"
         },
         {
           "id": "F0.9",
@@ -167,7 +175,8 @@
             "PT-18",
             "PT-14"
           ],
-          "status": "pendente"
+          "status": "bloqueado",
+          "nota": "As execuções 1 e 2 do CI no GitHub (runs 38851124190 e 38853140218) falharam em 2 segundos, sem nenhuma máquina alocada e sem registro: o GitHub não chegou a rodar os passos. Esse padrão costuma ser a conta sem minutos do GitHub Actions ou com cobrança pendente. Conferir em github.com/settings/billing (ou nas configurações da organização triade-prog). Os mesmos passos passam localmente."
         },
         {
           "id": "F0.10",
@@ -176,7 +185,8 @@
           "refs": [
             "PT-09"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "Vitest dinheiro.test.ts; tipos centavos e moeda no banco (006)"
         }
       ]
     },
@@ -192,7 +202,8 @@
           "refs": [
             "PI-10"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)"
         },
         {
           "id": "F1.2",
@@ -202,7 +213,8 @@
             "PI-01",
             "V-10"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)"
         },
         {
           "id": "F1.3",
@@ -212,7 +224,9 @@
             "PI-02",
             "CF-01"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)",
+          "nota": "Recursos contratados e liberados (parte do PI-02) entram com Planos e liberação (C3)."
         },
         {
           "id": "F1.4",
@@ -224,7 +238,9 @@
             "V-06",
             "CF-12"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)",
+          "nota": "As opções de configuração de cada cenário entram no passo 2, só para os recursos que existirem (CF-12)."
         },
         {
           "id": "F1.5",
@@ -233,7 +249,9 @@
           "refs": [
             "CF-02"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)",
+          "nota": "Falta conferir o e-mail de convite de verdade no triade-condo-dev (modelo do e-mail com token_hash), junto com a conferência do login (F0.6)."
         },
         {
           "id": "F1.6",
@@ -242,7 +260,8 @@
           "refs": [
             "PI-06"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)"
         },
         {
           "id": "F1.7",
@@ -251,7 +270,8 @@
           "refs": [
             "PI-12"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)"
         }
       ]
     },
@@ -267,7 +287,9 @@
           "refs": [
             "V-08"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: painel só do próprio condomínio, com o que falta configurar e só as ações que a pessoa pode (plataforma_painel). A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F2.2",
@@ -277,7 +299,9 @@
             "CF-06",
             "CF-10"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: funcionamento e atendimento com vários intervalos por dia, fuso pela UF (quatro do Brasil), feriados como data sem hora. A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F2.3",
@@ -290,7 +314,9 @@
             "AT-25",
             "CF-09"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: tudo nasce pelo modelo do cenário; renomear mantém o id, desativar em vez de apagar, etapa sempre ligada a aberto, em andamento ou encerrado, com pausa de prazo. Mover pedidos de etapa desativada chega com os pedidos (passo 4). A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F2.4",
@@ -300,7 +326,9 @@
             "CF-03",
             "V-09"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: vínculo de pessoa autorizada com cargo só como rótulo e permissões individuais; só se dá permissão de recurso que já existe (hoje, Configurar). A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F2.5",
@@ -309,7 +337,9 @@
           "refs": [
             "CF-05"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: responsáveis com disponibilidade e responsável padrão da fila; revogar o padrão exige substituto ou pendência explícita. Pedidos em andamento de quem sai entram com os pedidos (passo 4). A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F2.6",
@@ -318,7 +348,9 @@
           "refs": [
             "AT-10"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: regra geral e exceções por categoria, prioridade ou as duas; vencimento conta só horas de atendimento, no fuso do condomínio, pulando feriados (vencimento_do_prazo). Pausa por etapa entra com os pedidos. A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         }
       ]
     },
@@ -329,10 +361,15 @@
       "itens": [
         {
           "id": "F3.1",
-          "texto": "Torres ou blocos e unidades do condomínio",
+          "texto": "Torres, blocos, quadras ou prédios (ou sem divisão), andares e unidades do condomínio",
           "peca": "S4",
-          "refs": [],
-          "status": "pendente"
+          "refs": [
+            "PT-03",
+            "MU-01"
+          ],
+          "status": "feito",
+          "nota": "Banco e API prontos: o condomínio diz como o prédio se organiza (torre, bloco, quadra, prédio ou sem divisão; com ou sem andar) e as unidades ficam no bloco e no andar, incluídas uma a uma ou geradas pela numeração do prédio, em ordem natural; nada se apaga, só desativa sem nada ativo dentro. Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F3.2",
@@ -340,17 +377,25 @@
           "peca": "S4",
           "refs": [
             "MU-01",
-            "MU-08"
+            "MU-08",
+            "MU-04",
+            "PT-11",
+            "CF-03"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: contato com nome e telefone, sem CPF; vários por unidade, um principal, relação e preferência de comunicados; o mesmo contato em mais de uma unidade. Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev. Permissão Cadastrar moradores (CF-03): a pessoa autorizada inclui e corrige, e o que ela inclui fica a confirmar pelo síndico. Cadastrar morador ou proprietário (condômino) pela lista, escolhendo a torre, o andar e a unidade.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F3.3",
           "texto": "Importar unidades e contatos de uma planilha",
           "peca": "S4",
-          "refs": [],
-          "status": "pendente",
-          "nota": "Necessidade da implantação (PI-04); não é uma ideia própria do IDEIAS.md"
+          "refs": [
+            "PI-04"
+          ],
+          "status": "feito",
+          "nota": "Banco, API e leitura do CSV prontos: colunas reconhecidas pelos nomes comuns, prévia com a linha de cada erro, tudo ou nada, sem duplicar; os contatos nascem a confirmar. Necessidade da implantação (PI-04). Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev. Aceita a coluna andar (ou pavimento); planilha com torre ou andar ajusta a organização do prédio.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F3.4",
@@ -360,16 +405,21 @@
             "MU-02",
             "MU-03"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: só o vínculo confirmado pelo síndico vale; o pendente não acessa nada; confirmar vários de uma vez ou recusar; telefone compartilhado só avisa e leva a todas as unidades para perguntar qual (unidades_do_telefone, para o passo 5). Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F3.5",
           "texto": "Mudança de morador: entrada e saída com revogação do vínculo",
           "peca": "S4",
           "refs": [
-            "MU-07"
+            "MU-07",
+            "PT-11"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: mudança numa operação (data, quem sai, quem entra); vínculo encerrado não volta nem muda; quem não está mais em nenhuma unidade pode ter nome e telefone removidos (PT-11). Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         }
       ]
     },
@@ -733,7 +783,8 @@
       "refs": [
         "PT-06"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "pgTAP 001_acesso_rls_test.sql"
     },
     {
       "id": "T2",
@@ -742,7 +793,9 @@
       "refs": [
         "PT-01"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "pgTAP 002_isolamento_condominios_test.sql (lista, leitura, busca, alteração, histórico, pessoas e vínculos)",
+      "nota": "Anexos entram com os arquivos privados (PT-07); o mesmo teste ganha o caso do anexo nessa hora."
     },
     {
       "id": "T3",
@@ -751,7 +804,8 @@
       "refs": [
         "PT-03"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "pgTAP 003_historico_guardiao_test.sql"
     },
     {
       "id": "T4",
@@ -760,7 +814,8 @@
       "refs": [
         "AT-24"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "pgTAP 004_versao_test.sql e concorrencia/edicao-simultanea.sh"
     },
     {
       "id": "T5",
@@ -769,7 +824,9 @@
       "refs": [
         "CF-04"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "pgTAP 005_vinculos_permissao_test.sql e api-plataforma/app_test.ts",
+      "nota": "Regra do banco pronta no passo 0; revogar pessoa autorizada pela tela de pessoas e acesso no passo 2."
     },
     {
       "id": "T6",
@@ -825,6 +882,85 @@
         "PT-10"
       ],
       "status": "pendente"
+    },
+    {
+      "id": "T12",
+      "texto": "Pessoa da equipe só vê e age nos clientes atribuídos, com função que ainda tem; o síndico nunca lê carteira, notas nem eventos internos",
+      "fase": "F1",
+      "refs": [
+        "PI-10",
+        "PI-06"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 007_console_clientes_test.sql (56 testes)"
+    },
+    {
+      "id": "T13",
+      "texto": "Telas do Console do passo 1 no celular e no computador: fluxo, permissões que a tela respeita e acessibilidade (axe, WCAG 2.2 AA)",
+      "fase": "F1",
+      "refs": [
+        "PT-10",
+        "PI-10"
+      ],
+      "status": "feito",
+      "evidencia": "Playwright console-passo1.spec.ts (11 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T14",
+      "texto": "Configurações do condomínio: só o próprio condomínio, cargo não dá permissão, permissão individual retirada para na hora, id estável, prazo em horas de atendimento com feriado, responsável padrão nunca some em silêncio",
+      "fase": "F2",
+      "refs": [
+        "V-08",
+        "CF-03",
+        "CF-04",
+        "CF-05",
+        "CF-09",
+        "AT-10"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 008_configuracoes_test.sql (82 testes); Deno api-plataforma/configuracoes_test.ts (10 testes)"
+    },
+    {
+      "id": "T15",
+      "texto": "Telas da Plataforma do passo 2 no celular e no computador: fluxo, permissões que a tela respeita, acessibilidade (axe, WCAG 2.2 AA) e nenhum emoji",
+      "fase": "F2",
+      "refs": [
+        "PT-10",
+        "V-08",
+        "CF-03"
+      ],
+      "status": "feito",
+      "evidencia": "Playwright plataforma-passo2.spec.ts (9 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T16",
+      "texto": "Moradores e unidades: só o próprio condomínio, só o vínculo confirmado vale, telefone não prova identidade, mudança encerra quem sai, planilha tudo ou nada, dados pessoais removíveis e fora do histórico",
+      "fase": "F3",
+      "refs": [
+        "MU-01",
+        "MU-02",
+        "MU-03",
+        "MU-07",
+        "MU-08",
+        "PT-01",
+        "PT-11",
+        "PT-13",
+        "CF-03"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 009_moradores_unidades_test.sql (87 testes); Deno api-plataforma/moradores_test.ts (12 testes); Vitest moradores.test.ts (9 testes)"
+    },
+    {
+      "id": "T17",
+      "texto": "Telas da Plataforma do passo 3 no celular e no computador: fluxo, permissões que a tela respeita, acessibilidade (axe, WCAG 2.2 AA) e nenhum emoji",
+      "fase": "F3",
+      "refs": [
+        "PT-10",
+        "MU-02",
+        "MU-07"
+      ],
+      "status": "feito",
+      "evidencia": "Playwright plataforma-passo3.spec.ts (8 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -945,8 +1081,9 @@
       "quem": "TRÍADE",
       "precisa_em": "F1",
       "refs": [],
-      "status": "pendente",
-      "nota": "O passo 0 roda com Postgres local"
+      "status": "feito",
+      "nota": "As configurações de login do config.toml (cadastro aberto desligado, confirmação de e-mail, autenticador, sessões de 12 h) ainda precisam ser ligadas no painel do Supabase, em Authentication.",
+      "evidencia": "Projeto triade-condo-dev (ref dzwkxiimwprftgulhoqn) criado em 16/10/2026 em sa-east-1, plano gratuito, com as migrations 0001 a 0050 aplicadas e o verificador de segurança do Supabase sem avisos"
     },
     {
       "id": "E4",
@@ -1037,6 +1174,76 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "14:17",
+      "fim": "14:36",
+      "texto": "Ajuste pedido pela Carolina: o prédio se organiza por torre, bloco, quadra ou prédio (ou sem divisão), com ou sem andar. Nova tela Como o prédio se organiza; a unidade ganhou andar (o mesmo número pode repetir em andares diferentes) e aparece como Torre A · 3º andar · 302, com filtro por andar e ordem do subsolo e térreo à cobertura; a numeração gerada já põe cada unidade no andar dela; novo Cadastrar morador ou proprietário (condômino) pela lista, escolhendo torre, andar e unidade; a planilha aceita andar ou pavimento e ajusta a organização. MU-01 atualizada no IDEIAS, MAPA e mapa. 11 pgTAP, 1 Deno, 1 Vitest e 1 cenário ponta a ponta novos; 336 pgTAP e 72 ponta a ponta passando.",
+      "ref": "MU-01, MU-08, F3.1, F3.3"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "13:30",
+      "fim": "13:48",
+      "texto": "Com o desenho e as três decisões aprovados pela Carolina, construídas as telas do passo 3 na Plataforma do síndico: início com o resumo de moradores; unidades por bloco, com filtro, blocos e unidades geradas pela numeração do prédio; ficha da unidade com contatos, confirmar e recusar, editar, encerrar, registrar mudança, editar a unidade e remover os dados de quem saiu; moradores e a confirmar, com busca e confirmação em lote; importação de planilha CSV com prévia das linhas erradas e modelo para baixar. O CF-03 ganhou a permissão Cadastrar moradores: a pessoa autorizada inclui e corrige, e o que ela inclui fica a confirmar pelo síndico (IDEIAS, MAPA e mapa atualizados). 7 cenários Playwright com API falsa, no celular e no computador, com axe e sem emoji; 70 testes ponta a ponta e 325 pgTAP passando.",
+      "ref": "MU-01, MU-02, MU-03, MU-04, MU-07, MU-08, CF-03, PI-04, PT-10, PT-11"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "13:11",
+      "fim": "13:32",
+      "texto": "Iniciado o passo 3 (moradores e unidades). Banco (migration 0080): blocos opcionais e unidades que não se apagam; contato com cadastro breve (nome e telefone, sem CPF), vários por unidade com principal, relação e preferência de comunicados, e o mesmo contato em mais de uma unidade; vínculo contato e unidade pendente ou confirmado pelo guardião, e só o confirmado vale; telefone compartilhado só avisa e leva a todas as unidades; mudança numa operação; importação de planilha tudo ou nada, com os contatos a confirmar; remoção de nome e telefone de quem saiu; nada pessoal no histórico. API da Plataforma com as rotas do passo 3; leitura do CSV e numeração do prédio no packages/domain. 69 testes pgTAP novos, 11 Deno e 8 Vitest. Oito telas desenhadas no design-frontend.html, aguardando aprovação, com três decisões para a Carolina (permissão Cadastrar moradores no CF-03, planilha em CSV, importados a confirmar). Migration 0080 ainda não aplicada no triade-condo-dev.",
+      "ref": "MU-01, MU-02, MU-03, MU-04, MU-07, MU-08, PI-04, PT-01, PT-11, PT-13"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "12:24",
+      "fim": "12:49",
+      "texto": "Com o desenho aprovado pela Carolina, construídas as telas do passo 2 na Plataforma do síndico: entrar, recuperar e criar senha, escolher e trocar o condomínio, início com o que falta configurar e o que veio pronto, configurações em abas (horários com vários intervalos e fuso, feriados com os nacionais em um toque, categorias e prioridades, etapas e modelos de resposta, prazos) e pessoas e acesso (autorizar, rever, revogar com substituto, quem atende). Nenhuma tela usa emoji nem emoticon: os selos ganharam formas em SVG, também no Console, e o teste ponta a ponta confere. Abas e aviso de conflito passaram para o packages/ui. 9 cenários Playwright com API falsa, no celular e no computador, com axe; 56 testes ponta a ponta passando.",
+      "ref": "V-08, V-09, CF-03, CF-04, CF-05, CF-06, CF-08, CF-09, CF-10, CF-12, AT-04, AT-05, AT-10, AT-25, PT-08, PT-10"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "02:37",
+      "fim": "06:08",
+      "texto": "Iniciado o passo 2 (configurações na Plataforma do síndico). Banco (migration 0070): pessoa autorizada com cargo só como rótulo e permissões individuais, que param na hora quando retiradas; configuração pronta pelo cenário em todo condomínio; fuso, horários de funcionamento e atendimento com vários intervalos, feriados como data sem hora; categorias, prioridades com significado, etapas ligadas a aberto, em andamento ou encerrado e modelos de resposta, todos com id estável; prazos com regra geral e exceções, vencendo só em horas de atendimento e pulando feriados; responsáveis pelo atendimento com padrão da fila disponível. API da Plataforma com as rotas do passo 2 e o convite da pessoa autorizada. 82 testes pgTAP novos, 10 Deno e 5 Vitest. Migration ainda não aplicada no triade-condo-dev (a ferramenta do Supabase excedeu 60 s e nada foi gravado). Nove telas desenhadas no design-frontend.html, aguardando aprovação.",
+      "ref": "V-08, V-09, CF-03, CF-04, CF-05, CF-06, CF-08, CF-09, CF-10, CF-12, AT-04, AT-05, AT-10, AT-25"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "02:21",
+      "fim": "02:33",
+      "texto": "Com o desenho aprovado pela Carolina, construídas as telas do passo 1 no Console TRÍADE: entrar com o autenticador, recuperar e criar senha, carteira com filtros, cadastrar condomínio com cenário, ficha com abas (ficha e área interna, síndico, equipe, notas internas, histórico) e pessoas e funções da equipe. A Plataforma ganhou a página onde o síndico convidado cria a senha. Componentes base no packages/ui (campos, selos, avisos, vazio, erro, carregando, janela). 11 cenários Playwright com API falsa, no celular e no computador, com axe em cada tela; 38 testes ponta a ponta passando.",
+      "ref": "PI-01, PI-02, PI-06, PI-10, PI-12, V-04, V-05, V-06, V-10, CF-01, CF-02, CF-12, PT-08, PT-10"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "01:58",
+      "fim": "02:19",
+      "texto": "Iniciado o passo 1 (Console TRÍADE). Banco (migration 0060): funções internas com clientes atribuídos, carteira com estágio, ficha do condomínio, cenários, convite do síndico, notas internas e histórico administrativo, com tabelas internas que o síndico nunca lê. API do Console com as rotas do passo 1 e o convite pelo Supabase Auth; rota de criar senha pelo convite nos dois sistemas. 56 testes pgTAP novos, 15 testes Deno e 3 Vitest novos; um teste achou e corrigiu a marca de equipe no contexto, que agora só vale para a mesma pessoa. Migration aplicada no triade-condo-dev sem avisos. Telas desenhadas no design-frontend.html, aguardando aprovação.",
+      "ref": "PI-01, PI-02, PI-06, PI-10, PI-12, V-04, V-05, V-06, V-10, CF-01, CF-02, CF-12"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "01:56",
+      "fim": "01:56",
+      "texto": "Conferido o CI no GitHub: as duas execuções falharam sem rodar nenhum passo (nenhuma máquina alocada, sem registro). Não é erro do código, que passa inteiro localmente; o GitHub Actions da conta precisa ser liberado. F0.9 marcado como bloqueado.",
+      "ref": "PT-18"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "01:35",
+      "fim": "01:55",
+      "texto": "Criado o projeto Supabase triade-condo-dev em São Paulo, no plano gratuito, a pedido da Carolina. As migrations 0001 a 0040 foram aplicadas, e a nova 0050 fixa o caminho de busca das funções, apontado pelo verificador de segurança, que agora não tem avisos. No Supabase, as mesmas garantias do teste local: RLS forçado em todas as tabelas, nenhuma permissão da API nas tabelas e só as funções da API liberadas para o servidor. As migrations deixaram de usar comandos de remoção (drop), que o Supabase segura pedindo confirmação.",
+      "ref": "PT-06, PT-14, PT-16"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "01:11",
+      "fim": "01:31",
+      "texto": "Passo 0 (Fundação) construído em triade-condo/sistema/: monorepo pnpm com a Plataforma do síndico e o Console TRÍADE; banco com RLS forçado, privilégios fechados e cada condomínio separado pelo contexto da sessão; histórico só de inserção, guardião de transições e controle de versão; relógio da aplicação; vínculos e permissão negando por padrão; login com autenticador obrigatório para a equipe e recuperação neutra; cabeçalhos de segurança, CSP com nonce, repasse /api e logs sem dados sensíveis; CI. Testes T1 a T5 passando localmente (110 pgTAP, 25 Deno, 34 Vitest, 16 Playwright com axe).",
+      "ref": "PT-01, PT-02, PT-03, PT-05, PT-06, PT-08, PT-09, PT-13, PT-14, PT-16, PT-18, AT-24, MU-04, CF-04"
+    },
     {
       "data": "16/10/2026",
       "inicio": "00:55",

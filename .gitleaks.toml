@@ -1,0 +1,8 @@
+# Regras padrão do gitleaks. O exemplo de variáveis e os testes das funções (tokens falsos)
+# não são segredo.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Arquivos de exemplo e testes com dados fictícios"
+paths = ['''triade-condo/sistema/\.env\.example$''', '''triade-condo/sistema/supabase/functions/.*_test\.ts$''', '''triade-condo/sistema/supabase/functions/_shared/teste_util\.ts$''']

@@ -1,6 +1,6 @@
 # Contexto do projeto — TRÍADE Condo
 
-Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com a base visual adotada e antes do primeiro código.
+Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com os passos 0 a 3 construídos.
 
 ## Onde está cada coisa
 
@@ -16,7 +16,8 @@ Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atuali
 | Notas e prévias da base visual (valores extraídos da referência) | `triade-condo/docs/design/` |
 | Instruções para toda sessão do Claude | `CLAUDE.md` (raiz do repositório) |
 | Planejamento, protótipos e pesquisas antigos (só consulta) | `arquivo/` |
-| Código do sistema | `triade-condo/sistema/` (nasce no passo 0) |
+| Código do sistema (como rodar, como a base funciona, tabela nova passo a passo) | `triade-condo/sistema/` e o `README.md` dele |
+| CI (lint, tipos, testes, banco, ponta a ponta, segredos) | `.github/workflows/ci.yml` (raiz do repositório) |
 
 O `arquivo/` **não é base de construção**: o que for útil de lá entra primeiro no `IDEIAS.md`.
 
@@ -63,7 +64,7 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 |---|---|---|
 | Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta) | Carolina (em análise) | Passo 5 |
 | Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio | TRÍADE | Passo 5 |
-| Projeto Supabase de desenvolvimento e projetos na Vercel | TRÍADE | Publicar o passo 1 (o passo 0 roda com Postgres local) |
+| Ligar as configurações de login no painel do Supabase (triade-condo-dev), ajustar os modelos de e-mail de recuperação e convite, cadastrar a primeira administração e criar os projetos na Vercel | TRÍADE | Conferir o login e o convite de verdade (F0.6, F1.5) e publicar o passo 1 |
 | Logo oficial (a paleta e a tipografia já estão definidas, DC11) e aprovação do tom das mensagens | TRÍADE | Nada no código; o símbolo triangular atual é provisório |
 | Dados da empresa para termos e privacidade (EM-01, EM-06) | TRÍADE | Publicação |
 | Domínio próprio | TRÍADE | Publicação |
@@ -85,7 +86,87 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 
 **16/10/2026.** A Carolina entregou a nova base visual. A paleta e a tipografia foram adotadas (DC11). O design do frontend e o painel de execução ganharam navegação lateral, busca e tema claro ou escuro, sem mudar os dados do painel.
 
-**Próximo passo:** passo 0 (Fundação) em `triade-condo/sistema/`. Ver as entregas F0 no painel.
+**16/10/2026, madrugada.** O passo 0 (Fundação) foi construído em `triade-condo/sistema/`.
+
+- Monorepo com a Plataforma do síndico e o Console TRÍADE.
+- Banco com RLS forçado, privilégios fechados e cada condomínio separado pelo contexto da sessão.
+- Histórico só de inserção, guardião de transições, controle de versão, relógio da aplicação, vínculos e permissão.
+- Login com autenticador obrigatório para a equipe e recuperação neutra; proteção do servidor; CI.
+- Testes T1 a T5 passando localmente.
+- Ainda abertos: a primeira execução verde do CI no GitHub (F0.9) e a conferência do login com um Supabase de verdade (F0.6, depende do E3).
+
+No mesmo dia foi criado o projeto Supabase de desenvolvimento `triade-condo-dev` (São Paulo, plano gratuito, ref `dzwkxiimwprftgulhoqn`), com todas as migrations aplicadas e sem avisos do verificador de segurança.
+
+**16/10/2026, madrugada.** Começou o passo 1 (Console TRÍADE). Ficaram prontos no banco e na API:
+
+- Funções internas (administração, implantação, financeiro, suporte), cada uma só nos clientes atribuídos.
+- Carteira com estágio e situações a tratar.
+- Ficha do condomínio, com número institucional único.
+- Cenário do prédio.
+- Convite do síndico pelo Supabase Auth.
+- Notas internas que o síndico nunca lê.
+- Histórico administrativo.
+
+A migration 0060 foi aplicada no `triade-condo-dev`. As telas foram desenhadas no `design-frontend.html` e esperam aprovação antes do código, como manda a regra de design.
+
+No mesmo dia, com o desenho aprovado pela Carolina, as telas do passo 1 foram construídas no Console:
+
+- entrar com o autenticador;
+- carteira;
+- cadastro com cenário;
+- ficha com abas;
+- convite do síndico;
+- equipe;
+- notas internas;
+- histórico;
+- pessoas e funções.
+
+A Plataforma ganhou a página onde o síndico convidado cria a senha. Os testes ponta a ponta rodam com axe no celular e no computador.
+
+**16/10/2026, manhã.** Começou o passo 2 (configurações na Plataforma do síndico). Ficaram prontos no banco e na API:
+
+- Painel só do próprio condomínio, com o que falta configurar.
+- Fuso, horários de funcionamento e de atendimento com vários intervalos por dia, e feriados.
+- Categorias, prioridades com significado, etapas e modelos de resposta. Todos nascem pelo cenário e têm identificador estável.
+- Prazos de retorno em horas de atendimento, pulando feriados.
+- Pessoas autorizadas com permissões individuais. O cargo não dá permissão.
+- Quem atende os pedidos, com o responsável padrão da fila.
+
+A migration 0070 ainda não está no `triade-condo-dev`. A aplicação pela ferramenta do Supabase passou do limite de 60 segundos e nada foi gravado; falta aplicá-la de outro jeito (por exemplo, `supabase db push`).
+
+Decisões deste passo:
+
+- Autorizar pessoas e escolher quem atende ficam só com o síndico.
+- Só se dá permissão de recurso que já existe.
+- Sem horário de atendimento, o prazo conta em horas corridas e o painel avisa.
+
+As nove telas foram desenhadas no `design-frontend.html`, aprovadas pela Carolina e construídas na Plataforma no mesmo dia. Decisão de design: nenhuma tela usa emoji nem emoticon. Os selos mostram palavra e uma forma desenhada em SVG, e o teste ponta a ponta confere que não aparece emoji.
+
+**16/10/2026, tarde.** Começou o passo 3 (moradores e unidades). Ficaram prontos no banco e na API:
+
+- Blocos opcionais e unidades, que não se apagam: são desativados.
+- Contato com cadastro breve (nome e telefone, sem CPF). Cada unidade tem vários contatos, um deles o principal, com relação e preferência de comunicados. O mesmo contato pode estar em mais de uma unidade.
+- Vínculo do contato com a unidade, pendente ou confirmado. Só o confirmado pelo síndico vale; o pendente não acessa nada.
+- O telefone sozinho não prova quem é: número repetido só gera aviso, e a busca pelo telefone devolve todas as unidades.
+- Mudança numa operação: quem sai e quem entra.
+- Importação de planilha CSV, tudo ou nada, com os contatos a confirmar.
+- Remoção de nome e telefone de quem não está mais em nenhuma unidade.
+
+A migration 0080 também ainda não está no `triade-condo-dev`. As oito telas foram desenhadas no `design-frontend.html`, aprovadas pela Carolina e construídas no mesmo dia, com três decisões:
+
+- o CF-03 ganhou a permissão "Cadastrar moradores": a pessoa autorizada inclui e corrige, e o que ela inclui fica a confirmar pelo síndico;
+- a planilha é importada em CSV;
+- todo contato importado nasce a confirmar.
+
+No mesmo dia, a pedido da Carolina, o prédio passou a se organizar do jeito dele: por torre, bloco, quadra ou prédio (ou sem divisão), com ou sem andar. A unidade aparece como "Torre A · 3º andar · 302". O síndico cadastra morador ou proprietário (condômino) pela lista, escolhendo torre, andar e unidade, e a planilha aceita a coluna andar. A ideia MU-01 foi atualizada.
+
+**Próximo passo:**
+
+1. Aplicar as migrations 0070 e 0080 no `triade-condo-dev`.
+2. Conferir login e convite com o Supabase Auth de verdade (F0.6, F1.5).
+3. Publicar na Vercel (E4).
+4. Liberar o CI (F0.9).
+5. Começar o passo 4 (pedidos no painel) pelo desenho das telas.
 
 ## Como trabalhar
 

@@ -1,0 +1,69 @@
+# Projeto Supabase da TRÍADE Condo (DC5): criar em sa-east-1 (São Paulo, PT-16) e ligar com
+# `supabase link --project-ref <ref>`. Um projeto por ambiente: desenvolvimento, teste e
+# produção (PT-14). Migrations em supabase/migrations, aplicadas em ordem.
+project_id = "triade-condo"
+
+[db]
+major_version = 17
+
+[api]
+# Os apps nunca usam a API REST das tabelas: nem a chave de serviço lê tabela (0002). Só as
+# Edge Functions, chamando funções do banco.
+schemas = ["public"]
+
+# As funções não usam o JWT do Supabase na entrada: só aceitam o segredo de repasse (F0.8).
+[functions.api-plataforma]
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.api-console]
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+# Login (F0.6, PT-08). Ninguém se cadastra sozinho: a equipe TRÍADE cria o condomínio e
+# convida o síndico (passo 1).
+[auth]
+enable_signup = false
+minimum_password_length = 12
+password_requirements = "lower_upper_letters_digits"
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+
+[auth.email]
+enable_signup = false
+# E-mail verificado antes de entrar.
+enable_confirmations = true
+# Troca de e-mail confirmada nos dois endereços: o anterior fica sabendo (PT-08).
+double_confirm_changes = true
+# Trocar a senha logado pede reautenticação recente.
+secure_password_change = true
+# Link de recuperação vale 1 hora e é de uso único; um pedido novo invalida o anterior.
+otp_expiry = 3600
+max_frequency = "60s"
+
+# Autenticador (TOTP): obrigatório para a equipe no Console; opcional para o síndico.
+[auth.mfa]
+max_enrolled_factors = 4
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+# Sessão de até 12 h; 2 h parada encerra.
+[auth.sessions]
+timebox = "12h"
+inactivity_timeout = "2h"
+
+[auth.rate_limit]
+email_sent = 30
+token_verifications = 30
+sign_in_sign_ups = 30
+
+# Segredos das funções (supabase secrets set ...): REPASSE_SEGREDO (o mesmo dos apps, 32+
+# caracteres), PLATAFORMA_URL e CONSOLE_URL (links de redefinir senha e de convite; a
+# api-console usa os dois: convite da equipe vai para o Console, do síndico para a Plataforma).
+# SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY o Supabase já entrega.
+# Os modelos dos e-mails de recuperação e de convite levam ao app com o token:
+# {{ .RedirectTo }}?token_hash={{ .TokenHash }}
+# (recuperação vai para /redefinir; convite, para /convite, onde a pessoa cria a senha).
