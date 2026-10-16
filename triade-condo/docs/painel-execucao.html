@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel de Execução TRÍADE Condo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+
+<!--
+  DADOS DO PAINEL: única fonte da verdade do acompanhamento da TRÍADE Condo.
+  Como atualizar (a cada entrega, no mesmo commit do código):
+    1. Mude o "status" do item: "pendente" | "andamento" | "feito" | "bloqueado".
+       Em "feito", preencha "evidencia" (commit, PR ou teste que comprova).
+       Em "bloqueado", preencha "nota" com o motivo ("nota" também serve para qualquer status).
+    2. Atualize "meta.atualizado_em", "meta.situacao" e "meta.proximo_passo". A fase liberada vai em
+       "meta.fase_atual" (ex.: "F1"); enquanto for null, o painel mostra a próxima fase.
+    3. Acrescente uma linha no topo de "historico", com "data" (dd/mm/aaaa), "inicio" e "fim"
+       (hh:mm, horário de Brasília): do pedido até o commit que entregou.
+  "refs" leva os códigos das ideias do IDEIAS.md que o item atende (ex.: "AT-06").
+  As ideias não têm status próprio: o status de cada uma é calculado a partir de todos os itens
+  (entregas, testes, publicação) que a citam. "peca" é o código da peça no mapa (ex.: "S2" = Pedidos).
+  Se o total de ideias do IDEIAS.md mudar, atualize "meta.total_ideias".
+-->
+<script type="application/json" id="dados">
+{
+  "meta": {
+    "atualizado_em": "15/10/2026",
+    "total_ideias": 296,
+    "situacao": "Ideias consolidadas (296 no IDEIAS.md, distribuídas em 35 peças no MAPA.md) e tecnologia aprovada: a mesma do T-shirt Club (TypeScript, Next.js, Supabase em São Paulo). Decisões de construção registradas (DC1 a DC10). Nenhum código ainda: o passo 0 (Fundação) está liberado.",
+    "fase_atual": "F0",
+    "proximo_passo": "Passo 0 em triade-condo/sistema/: estrutura do projeto, banco com RLS fechado e separação por condomínio, histórico, relógio da aplicação, login e vínculos, proteção do servidor e CI. Roda com Postgres local; o projeto Supabase de desenvolvimento (E3) só é preciso para publicar."
+  },
+  "fases": [
+    {"id":"D","nome":"Design do frontend","objetivo":"Identidade, design system e textos aprovados antes das telas de verdade. As telas do passo 1 em diante usam a proposta do design-frontend.html até a identidade oficial chegar.",
+     "itens":[
+      {"id":"D1","texto":"Identidade da TRÍADE Condo: logo, paleta, tipografia e tom de voz","peca":"F3","refs":["EM-02","EM-05"],"status":"pendente","nota":"Proposta inicial no design-frontend.html; falta a marca oficial"},
+      {"id":"D2","texto":"Design system: tokens claro e escuro, componentes base, estados vazio, erro e carregando, acessibilidade WCAG 2.2 AA","peca":"B4","refs":["PT-10"],"status":"andamento","nota":"Proposta 1 no design-frontend.html, aguardando aprovação"},
+      {"id":"D3","texto":"Textos: mensagens do WhatsApp ao morador e ao síndico, avisos e erros na tela","peca":"S15","refs":["W-08","W-12"],"status":"andamento","nota":"Primeiros textos no design-frontend.html, aguardando aprovação"},
+      {"id":"D4","texto":"Telas de cada passo desenhadas e aprovadas antes do código da tela (regras antes, tela depois)","peca":"B4","refs":[],"status":"pendente"}
+    ]},
+    {"id":"F0","nome":"Fundação","objetivo":"A Base comum que todo o resto usa: projeto, banco separado por condomínio, histórico, login e testes. Termina com os testes T1 a T4 passando no CI.",
+     "itens":[
+      {"id":"F0.1","texto":"Monorepo pnpm em triade-condo/sistema/: apps/plataforma, apps/console, packages/domain, packages/ui, packages/servidor e supabase/","peca":"B4","refs":["PT-05"],"status":"pendente"},
+      {"id":"F0.2","texto":"Banco com migrations, RLS ligado em todas as tabelas e privilégios fechados (só o servidor acessa); teste falha se uma tabela nova vier sem RLS","peca":"B1","refs":["PT-06","PT-16"],"status":"pendente"},
+      {"id":"F0.3","texto":"Condomínio como dono de todo dado: toda tabela com o condomínio, o condomínio vem da sessão e nunca do navegador","peca":"B1","refs":["PT-01"],"status":"pendente"},
+      {"id":"F0.4","texto":"Histórico só de inserção e gatilho guardião de transições (mudança de estado só com evento e autor); controle de versão contra edição simultânea","peca":"B2","refs":["PT-03","AT-24"],"status":"pendente"},
+      {"id":"F0.5","texto":"Relógio da aplicação (app_now) para testar prazos sem esperar o tempo passar","peca":"B2","refs":[],"status":"pendente","nota":"Base dos testes de próximo retorno e escalonamento (passo 6)"},
+      {"id":"F0.6","texto":"Login: e-mail verificado, autenticador obrigatório para a equipe TRÍADE, sessões revogáveis, recuperação por token de uso único com resposta neutra","peca":"B1","refs":["PT-08"],"status":"pendente"},
+      {"id":"F0.7","texto":"Vínculos e permissão: pessoa + função + condomínio + ação, negar por padrão; uma pessoa em vários condomínios; vínculo revogado não age, autoria fica","peca":"B1","refs":["PT-02","MU-04","CF-04"],"status":"pendente"},
+      {"id":"F0.8","texto":"Proteção do servidor: cabeçalhos de segurança, CSP com nonce, repasse /api e logs sem senhas, tokens nem dados pessoais desnecessários","peca":"B4","refs":["PT-13"],"status":"pendente"},
+      {"id":"F0.9","texto":"CI: lint, tipos, Vitest, pgTAP e Playwright com axe; ambientes separados e só dados fictícios no desenvolvimento","peca":"B4","refs":["PT-18","PT-14"],"status":"pendente"},
+      {"id":"F0.10","texto":"Valores em dinheiro exatos (centavos inteiros, moeda explícita) no domínio","peca":"B2","refs":["PT-09"],"status":"pendente"}
+    ]},
+    {"id":"F1","nome":"Cadastrar condomínio (Console TRÍADE)","objetivo":"A Carolina cria um condomínio, preenche a ficha e convida o síndico. É o ponto de partida de todo dado do sistema.",
+     "itens":[
+      {"id":"F1.1","texto":"Console: entrada da equipe e funções internas, cada uma só com os clientes atribuídos","peca":"C7","refs":["PI-10"],"status":"pendente"},
+      {"id":"F1.2","texto":"Carteira de clientes com estágio: em implantação, ativo, situações a tratar","peca":"C1","refs":["PI-01","V-10"],"status":"pendente"},
+      {"id":"F1.3","texto":"Ficha do condomínio: contatos, número institucional, referência do contrato; editável depois","peca":"C1","refs":["PI-02","CF-01"],"status":"pendente"},
+      {"id":"F1.4","texto":"Escolher o cenário do prédio (sem portaria, portaria remota, portaria presencial) como modelo pronto de configuração","peca":"C2","refs":["V-04","V-05","V-06","CF-12"],"status":"pendente"},
+      {"id":"F1.5","texto":"Convidar o síndico: conta própria, ligada ao condomínio","peca":"C2","refs":["CF-02"],"status":"pendente"},
+      {"id":"F1.6","texto":"Notas internas que o cliente nunca vê","peca":"C1","refs":["PI-06"],"status":"pendente"},
+      {"id":"F1.7","texto":"Histórico administrativo de toda mudança feita no Console","peca":"C7","refs":["PI-12"],"status":"pendente"}
+    ]},
+    {"id":"F2","nome":"Configurações (Plataforma do síndico)","objetivo":"O síndico entra, vê só o condomínio dele e ajusta o básico: horários, categorias, prazos e pessoas autorizadas.",
+     "itens":[
+      {"id":"F2.1","texto":"Síndico entra no painel e vê só o próprio condomínio; o sistema funciona sem operador TRÍADE","peca":"S14","refs":["V-08"],"status":"pendente"},
+      {"id":"F2.2","texto":"Dias e horários de funcionamento e de atendimento, feriados e fuso","peca":"S14","refs":["CF-06","CF-10"],"status":"pendente"},
+      {"id":"F2.3","texto":"Categorias, prioridades, etapas e modelos de resposta, com identificadores estáveis","peca":"S14","refs":["CF-08","AT-04","AT-05","AT-25","CF-09"],"status":"pendente"},
+      {"id":"F2.4","texto":"Pessoas autorizadas com permissões individuais (secretária e delegados); cargo não dá permissão sozinho","peca":"S14","refs":["CF-03","V-09"],"status":"pendente"},
+      {"id":"F2.5","texto":"Responsáveis pelo atendimento e responsável padrão da fila","peca":"S14","refs":["CF-05"],"status":"pendente"},
+      {"id":"F2.6","texto":"Prazo-padrão de retorno por categoria e prioridade, com pausas e feriados","peca":"S14","refs":["AT-10"],"status":"pendente"}
+    ]},
+    {"id":"F3","nome":"Moradores e unidades","objetivo":"O prédio passa a ter torres, unidades e contatos confirmados pelo síndico.",
+     "itens":[
+      {"id":"F3.1","texto":"Torres ou blocos e unidades do condomínio","peca":"S4","refs":[],"status":"pendente"},
+      {"id":"F3.2","texto":"Cadastro breve do morador (nome, telefone, apartamento) e vários contatos por unidade","peca":"S4","refs":["MU-01","MU-08"],"status":"pendente"},
+      {"id":"F3.3","texto":"Importar unidades e contatos de uma planilha","peca":"S4","refs":[],"status":"pendente","nota":"Necessidade da implantação (PI-04); não é uma ideia própria do IDEIAS.md"},
+      {"id":"F3.4","texto":"Confirmação do vínculo contato e unidade pelo síndico; telefone sozinho não prova identidade","peca":"S4","refs":["MU-02","MU-03"],"status":"pendente"},
+      {"id":"F3.5","texto":"Mudança de morador: entrada e saída com revogação do vínculo","peca":"S4","refs":["MU-07"],"status":"pendente"}
+    ]},
+    {"id":"F4","nome":"Pedidos no painel","objetivo":"O síndico registra um pedido (por exemplo, que chegou por telefone) e acompanha até a conclusão explicada, com próximo retorno e histórico.",
+     "itens":[
+      {"id":"F4.1","texto":"Registrar pedido: protocolo, unidade, contato, local, categoria, descrição e anexos","peca":"S2","refs":["AT-01"],"status":"pendente"},
+      {"id":"F4.2","texto":"Fila com filtros por situação, responsável, prioridade e categoria, mostrando há quanto tempo cada pedido está aberto","peca":"S2","refs":["AT-02"],"status":"pendente"},
+      {"id":"F4.3","texto":"Responsável real que aceita o pedido; sem executor, pendência real","peca":"S2","refs":["AT-03","AT-12"],"status":"pendente"},
+      {"id":"F4.4","texto":"Próximo retorno separado da previsão de solução; previsão só quando conhecida","peca":"S2","refs":["AT-06","AT-07"],"status":"pendente"},
+      {"id":"F4.5","texto":"Pendências e impedimentos com responsável e motivo","peca":"S2","refs":["AT-11"],"status":"pendente"},
+      {"id":"F4.6","texto":"Conclusão explicada, revisão, reabertura com motivo e cancelamento","peca":"S2","refs":["AT-13","AT-14","AT-15","AT-31"],"status":"pendente"},
+      {"id":"F4.7","texto":"Histórico completo do pedido e pedido privado","peca":"S2","refs":["AT-17","AT-32"],"status":"pendente"},
+      {"id":"F4.8","texto":"Arquivos privados (fotos e documentos) com validação e link que expira","peca":"B2","refs":["PT-07"],"status":"pendente"}
+    ]},
+    {"id":"F5","nome":"WhatsApp do morador","objetivo":"O morador abre e consulta pedidos pelo WhatsApp do condomínio, e o pedido cai na mesma fila do painel. Depende do provedor oficial (E1).",
+     "itens":[
+      {"id":"F5.1","texto":"Conector trocável com o provedor oficial; um número próprio por condomínio","peca":"B3","refs":["W-04","W-01"],"status":"pendente"},
+      {"id":"F5.2","texto":"Recebimento com autenticidade verificada, sem duplicar pedido nem aviso e tratando eventos fora de ordem","peca":"B3","refs":["W-15"],"status":"pendente"},
+      {"id":"F5.3","texto":"Fila de envio gravada junto com a alteração, com estados da mensagem e novas tentativas só em falha passageira","peca":"B3","refs":["W-13","W-14","PT-04"],"status":"pendente"},
+      {"id":"F5.4","texto":"Janela de 24h e modelos de mensagem aprovados","peca":"B3","refs":["W-20"],"status":"pendente"},
+      {"id":"F5.5","texto":"Morador abre pedido com texto, foto, áudio ou documento e recebe a confirmação com protocolo","peca":"S15","refs":["W-05","W-08"],"status":"pendente"},
+      {"id":"F5.6","texto":"Morador consulta o andamento e pede revisão; vê os status combinados","peca":"S15","refs":["W-09","W-10","AT-28"],"status":"pendente"},
+      {"id":"F5.7","texto":"Mensagem fora do horário, sem prometer prazo e sem fechar o pedido","peca":"S15","refs":["W-12"],"status":"pendente"},
+      {"id":"F5.8","texto":"Preferências e pedido para não receber avisos","peca":"S15","refs":["W-16"],"status":"pendente"}
+    ]},
+    {"id":"F6","nome":"Prazos e avisos","objetivo":"Nenhum pedido fica sem resposta sem que alguém seja avisado: retorno vencido, escalonamento e aviso ao síndico no WhatsApp.",
+     "itens":[
+      {"id":"F6.1","texto":"Verificador automático de prazos e alerta de retorno vencido","peca":"S1","refs":["AT-08"],"status":"pendente"},
+      {"id":"F6.2","texto":"Escalonamento: responsável, síndico, substituto ou conselho","peca":"S2","refs":["AT-09","V-14"],"status":"pendente"},
+      {"id":"F6.3","texto":"Aviso ao síndico no WhatsApp dele: novo pedido, reclamação, retorno vencido","peca":"S1","refs":["W-11"],"status":"pendente"},
+      {"id":"F6.4","texto":"Avisar os envolvidos quando um pedido é registrado","peca":"S2","refs":["AT-26"],"status":"pendente"}
+    ]},
+    {"id":"F7","nome":"Início","objetivo":"O síndico abre o painel e vê o dia: o que vence hoje, o que espera decisão e como está o atendimento.",
+     "itens":[
+      {"id":"F7.1","texto":"Painel do dia: retornos que vencem hoje, pendências e pedidos sem responsável","peca":"S1","refs":[],"status":"pendente"},
+      {"id":"F7.2","texto":"Indicadores do atendimento, com retornos no prazo como métrica principal e \"sem dados\" diferente de zero","peca":"S12","refs":["TR-01","TR-03","TR-07"],"status":"pendente"}
+    ]},
+    {"id":"R","nome":"Peças seguintes","objetivo":"As outras peças do mapa. Cada uma é detalhada em entregas quando chegar a vez, na ordem que fizer sentido; nenhuma ideia foi cortada.",
+     "itens":[
+      {"id":"R1","texto":"Comunicados e documentos","peca":"S5","refs":[],"status":"pendente"},
+      {"id":"R2","texto":"Planos e liberação (quando houver um segundo conjunto para vender)","peca":"C3","refs":[],"status":"pendente"},
+      {"id":"R3","texto":"Pagamentos dos clientes (quando houver cliente pagando)","peca":"C4","refs":[],"status":"pendente"},
+      {"id":"R4","texto":"Implantação completa e suporte e acessos","peca":"C2","refs":[],"status":"pendente"},
+      {"id":"R5","texto":"Decisões e aprovações","peca":"S3","refs":[],"status":"pendente"},
+      {"id":"R6","texto":"Manutenção e prestadores","peca":"S6","refs":[],"status":"pendente"},
+      {"id":"R7","texto":"Agenda","peca":"S7","refs":[],"status":"pendente"},
+      {"id":"R8","texto":"Orçamentos e compras","peca":"S8","refs":[],"status":"pendente"},
+      {"id":"R9","texto":"Dinheiro do prédio","peca":"S9","refs":[],"status":"pendente"},
+      {"id":"R10","texto":"Memória do prédio","peca":"S13","refs":[],"status":"pendente"},
+      {"id":"R11","texto":"Portaria e encomendas","peca":"S10","refs":[],"status":"pendente"},
+      {"id":"R12","texto":"Vida em condomínio","peca":"S11","refs":[],"status":"pendente"},
+      {"id":"R13","texto":"Links e QR","peca":"S16","refs":[],"status":"pendente"},
+      {"id":"R14","texto":"Funções de IA, seguindo as regras do Motor de IA","peca":"B6","refs":[],"status":"pendente"},
+      {"id":"R15","texto":"Serviços contratados, saúde e capacidade, mensagens e custos (Console)","peca":"C6","refs":[],"status":"pendente"}
+    ]}
+  ],
+  "testes": [
+    {"id":"T1","texto":"Tabela nova sem RLS faz o teste falhar","fase":"F0","refs":["PT-06"],"status":"pendente"},
+    {"id":"T2","texto":"Usuário do condomínio A não lista, lê, busca, altera nem baixa anexo de nada do condomínio B","fase":"F0","refs":["PT-01"],"status":"pendente"},
+    {"id":"T3","texto":"Histórico recusa alteração e exclusão; mudança de estado sem evento e autor é recusada","fase":"F0","refs":["PT-03"],"status":"pendente"},
+    {"id":"T4","texto":"Duas alterações simultâneas no mesmo registro: uma grava, a outra recebe aviso de conflito sem perder o que foi escrito","fase":"F0","refs":["AT-24"],"status":"pendente"},
+    {"id":"T5","texto":"Vínculo revogado não age mais e a autoria antiga continua no histórico","fase":"F2","refs":["CF-04"],"status":"pendente"},
+    {"id":"T6","texto":"Enviar retorno ao morador recalcula o próximo retorno e não altera a previsão de solução","fase":"F4","refs":["AT-06"],"status":"pendente"},
+    {"id":"T7","texto":"Mensagem repetida do provedor não cria pedido nem aviso duplicado","fase":"F5","refs":["W-15"],"status":"pendente"},
+    {"id":"T8","texto":"Mensagem que chega no número de um condomínio nunca cai em outro","fase":"F5","refs":["PT-01"],"status":"pendente"},
+    {"id":"T9","texto":"Contato não confirmado não consulta pedido nenhum","fase":"F5","refs":["MU-02"],"status":"pendente"},
+    {"id":"T10","texto":"Retorno vencido dispara alerta e escalonamento no minuto certo (com o relógio da aplicação)","fase":"F6","refs":["AT-08","AT-09"],"status":"pendente"},
+    {"id":"T11","texto":"Telas sem erro de acessibilidade no axe, no celular e no computador","fase":"F7","refs":["PT-10"],"status":"pendente"}
+  ],
+  "publicacao": [
+    {"grupo":"Contas e ambiente","itens":[
+      {"id":"P1","texto":"Supabase em sa-east-1 com backup diário e restauração ensaiada","refs":["PT-12","PT-16"],"status":"pendente"},
+      {"id":"P2","texto":"Plataforma e Console na Vercel, com HTTPS e domínio próprio","refs":[],"status":"pendente"},
+      {"id":"P3","texto":"Segredos só nas variáveis dos ambientes, nunca no código","refs":["PT-05"],"status":"pendente"}
+    ]},
+    {"grupo":"WhatsApp","itens":[
+      {"id":"P4","texto":"Conta Meta Business verificada, número do condomínio na API oficial e modelos de mensagem aprovados","refs":["W-04","W-20"],"status":"pendente"}
+    ]},
+    {"grupo":"Segurança e dados","itens":[
+      {"id":"P5","texto":"Autenticador ligado em todas as contas da equipe TRÍADE","refs":["PT-08"],"status":"pendente"},
+      {"id":"P6","texto":"Termos de uso, política de privacidade e termo de tratamento de dados revisados por profissional","refs":["EM-06"],"status":"pendente"},
+      {"id":"P7","texto":"Inventário de dados por tipo (finalidade, retenção, exclusão)","refs":["PT-11"],"status":"pendente"}
+    ]},
+    {"grupo":"Operação","itens":[
+      {"id":"P8","texto":"Monitoramento e alertas de fila e de falha de envio, com responsável","refs":["PT-12"],"status":"pendente"},
+      {"id":"P9","texto":"Roteiro para queda do WhatsApp ou do provedor: canal alternativo e conciliação","refs":["W-17"],"status":"pendente"}
+    ]}
+  ],
+  "externos": [
+    {"id":"E1","texto":"Escolha do provedor oficial do WhatsApp","quem":"Carolina","precisa_em":"F5","refs":[],"status":"andamento","nota":"Em análise"},
+    {"id":"E2","texto":"Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio","quem":"TRÍADE","precisa_em":"F5","refs":[],"status":"pendente"},
+    {"id":"E3","texto":"Projeto Supabase de desenvolvimento em sa-east-1","quem":"TRÍADE","precisa_em":"F1","refs":[],"status":"pendente","nota":"O passo 0 roda com Postgres local"},
+    {"id":"E4","texto":"Projetos da Plataforma e do Console na Vercel","quem":"TRÍADE","precisa_em":"F1","refs":[],"status":"pendente"},
+    {"id":"E5","texto":"Identidade visual oficial (logo, paleta, tipografia)","quem":"TRÍADE","precisa_em":"D","refs":[],"status":"pendente"},
+    {"id":"E6","texto":"Dados da empresa para termos e privacidade (razão social, CNPJ, endereço, encarregado)","quem":"TRÍADE","precisa_em":"Publicação","refs":[],"status":"pendente"},
+    {"id":"E7","texto":"Domínio próprio","quem":"TRÍADE","precisa_em":"Publicação","refs":[],"status":"pendente"},
+    {"id":"E8","texto":"Condomínio de teste com síndico disposto a usar","quem":"TRÍADE","precisa_em":"F4","refs":[],"status":"pendente"}
+  ],
+  "decisoes": [
+    ["DC1","Dois sistemas: Plataforma do síndico (com o WhatsApp do morador) e Console TRÍADE; a Base comum são regras dos dois"],
+    ["DC2","O cliente é o condomínio: unidade que contrata e unidade de separação dos dados; uma pessoa pode estar em vários"],
+    ["DC3","Cada condomínio tem o seu número de WhatsApp"],
+    ["DC4","Só a API oficial do WhatsApp; provedor em análise"],
+    ["DC5","Tecnologia do T-shirt Club: TypeScript, Next.js 16, Supabase (Postgres 17, sa-east-1), Edge Functions, monorepo pnpm, Vercel"],
+    ["DC6","Do T-shirt Club vêm só as peças genéricas, revisadas e adaptadas a vários condomínios"],
+    ["DC7","Ordem por dependência, sem MVP: Fundação, Cadastrar condomínio, Configurações, Moradores, Pedidos, WhatsApp, Prazos, Início"],
+    ["DC8","Quadro de permissões e fluxos detalhados só quando houver funcionalidade pronta"],
+    ["DC9","Toda entrega cita os códigos das ideias; toda regra vira teste com o código da ideia"],
+    ["DC10","Pedidos funcionam primeiro pelo painel; o WhatsApp entra no passo 5"]
+  ],
+  "historico": [
+    {"data":"15/10/2026","inicio":"22:30","fim":"22:51","texto":"Decisões de construção: o cliente é o condomínio, cada condomínio com o seu número, mesma tecnologia do T-shirt Club (lida a pasta sistema/ e as decisões técnicas dele). Criados o CONTEXTO.md, este painel e o design do frontend.","ref":""},
+    {"data":"15/10/2026","inicio":"22:00","fim":"22:22","texto":"Mapa do sistema: as 296 ideias em 35 peças de dois sistemas (Plataforma do síndico e Console TRÍADE), com forma de cada ideia e índice de códigos. MAPA.md e mapa.html.","ref":"2b57a4e"},
+    {"data":"15/10/2026","inicio":"21:20","fim":"21:52","texto":"Classificação revista duas vezes e conferência com todo o arquivo e o catálogo antigo: regras trazidas para as ideias, CLAUDE.md criado, total de 296 ideias.","ref":"c760faf"},
+    {"data":"15/10/2026","inicio":"21:00","fim":"21:19","texto":"Pasta triade-condo/ criada com IDEIAS.md, SOBRE.md e a pesquisa de transparência do dinheiro (DR-01 a DR-22); planejamento antigo arquivado em arquivo/.","ref":"3731ff3"},
+    {"data":"15/10/2026","inicio":"19:25","fim":"20:49","texto":"Leitura de todo o repositório, estudo de mercado, referências internacionais e confronto com o que já estava idealizado.","ref":"75a362b"}
+  ]
+}
+</script>
+
+<style>
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --surface-2:#eef1f4; --ink:#141a22; --muted:#566070; --line:#d9dee5;
+  --accent:#0d5f6f; --accent-soft:#dcedf0;
+  --s-pend:#566070; --s-pend-bg:#eef1f4;
+  --s-and:#8a5208; --s-and-bg:#fbefdc;
+  --s-feito:#1d6b42; --s-feito-bg:#e1f2e8;
+  --s-bloq:#a52a27; --s-bloq-bg:#fbe4e3;
+  --g-crit:var(--s-bloq); --g-alto:var(--s-and); --g-med:#2c5d9e; --g-baixo:var(--muted);
+  --track:#e3e7ec;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0f1317; --surface:#161b21; --surface-2:#1c232b; --ink:#e4e8ee; --muted:#9aa4b2; --line:#2a323c;
+    --accent:#5bb4c5; --accent-soft:#16323a;
+    --s-pend:#9aa4b2; --s-pend-bg:#1f2730;
+    --s-and:#e0a04a; --s-and-bg:#33260f;
+    --s-feito:#5cc58c; --s-feito-bg:#12291d;
+    --s-bloq:#ef7773; --s-bloq-bg:#3a1a19;
+    --g-med:#79a7e6;
+    --track:#262e38;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1317; --surface:#161b21; --surface-2:#1c232b; --ink:#e4e8ee; --muted:#9aa4b2; --line:#2a323c;
+  --accent:#5bb4c5; --accent-soft:#16323a;
+  --s-pend:#9aa4b2; --s-pend-bg:#1f2730;
+  --s-and:#e0a04a; --s-and-bg:#33260f;
+  --s-feito:#5cc58c; --s-feito-bg:#12291d;
+  --s-bloq:#ef7773; --s-bloq-bg:#3a1a19;
+  --g-med:#79a7e6;
+  --track:#262e38;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:0 64px}
+.shell{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:40px}
+@media (min-width:1000px){.shell{grid-template-columns:210px minmax(0,1fr)}}
+nav.toc{display:none}
+@media (min-width:1000px){nav.toc{display:block;position:sticky;top:24px;align-self:start;padding-top:40px;font-size:13.5px}}
+nav.toc p{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+nav.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+nav.toc a{display:block;color:var(--muted);text-decoration:none;padding:4px 8px;border-radius:6px}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--ink);background:var(--surface-2)}
+main{min-width:0}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header.top{padding-block:40px 24px;border-bottom:1px solid var(--line);display:grid;gap:14px}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600;margin:0}
+h1{font-size:clamp(28px,4.2vw,40px);line-height:1.15;margin:0;font-weight:700;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:22px;line-height:1.25;margin:0 0 4px;font-weight:600;text-wrap:balance}
+h3{font-size:16px;margin:0;font-weight:600}
+p{margin:0;max-width:72ch}
+.lede{font-size:16px;color:var(--muted)}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+section{padding-block:36px 8px;border-bottom:1px solid var(--line);display:grid;gap:14px}
+section:last-of-type{border-bottom:0}
+.sub{color:var(--muted)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+
+/* situação */
+.now{display:grid;gap:14px;grid-template-columns:1fr;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+@media (min-width:760px){.now{grid-template-columns:1.2fr 1fr}}
+.now .label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.now .big{font-size:20px;font-weight:600;margin-top:2px}
+.nums{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-content:start}
+.num{background:var(--surface-2);border-radius:8px;padding:10px}
+.num b{display:block;font-size:24px;font-weight:600;line-height:1.2}
+.num span{font-size:12px;color:var(--muted)}
+.num b small{font-size:14px;font-weight:500;color:var(--muted)}
+
+/* barra de progresso: segmentos separados por 2px da superfície; bloqueado leva textura,
+   para o status não depender só da cor (âmbar e vermelho se confundem em daltonismo). */
+.bar{height:10px;border-radius:4px;overflow:hidden;display:flex;gap:2px;background:var(--surface)}
+.bar i{display:block;height:100%;min-width:3px;flex-grow:1}
+.bar .feito{background:var(--s-feito)} .bar .andamento{background:var(--s-and)}
+.bar .bloqueado{background:repeating-linear-gradient(135deg,var(--s-bloq) 0 3px,var(--s-bloq-bg) 3px 5px)}
+.bar .pendente{background:var(--track)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted);margin:0;padding:0;list-style:none}
+.legend li{display:inline-flex;align-items:center;gap:6px}
+.legend .bar{width:16px}
+.sit-barra{display:grid;gap:6px}
+
+/* status */
+.st{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap;background:var(--s-pend-bg);color:var(--s-pend)}
+.st .ic{font-size:11px;line-height:1;width:1em;text-align:center}
+.st.andamento{background:var(--s-and-bg);color:var(--s-and)}
+.st.feito{background:var(--s-feito-bg);color:var(--s-feito)}
+.st.bloqueado{background:var(--s-bloq-bg);color:var(--s-bloq)}
+
+/* filtros */
+.filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{font:inherit;font-size:13px;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;min-height:44px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* fases */
+.phases{display:grid;gap:10px}
+details.phase{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+details.phase[data-atual="1"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+details.phase{--pid-col:52px}
+details.phase summary{list-style:none;cursor:pointer;padding:14px 16px;display:grid;grid-template-columns:var(--pid-col) 1fr auto;gap:4px 12px;align-items:center}
+details.phase summary::-webkit-details-marker{display:none}
+.pid{font-family:var(--mono);font-weight:600;color:var(--accent);font-size:15px}
+.pname{font-weight:600}
+.pcount{font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+details.phase summary .bar{grid-column:2 / 4}
+.obj{font-size:13.5px;color:var(--muted);padding:0 16px 10px calc(16px + var(--pid-col) + 12px)}
+@media (max-width:480px){.obj{padding-left:16px}}
+.filtro-info{font-size:13.5px;color:var(--muted)}
+.aviso{border:1px solid var(--s-bloq);background:var(--s-bloq-bg);color:var(--ink);border-radius:8px;padding:10px 14px;font-size:14px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.badge-atual{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-left:8px}
+.items{list-style:none;margin:0;padding:0 16px 14px;display:grid}
+.item{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line);align-items:start}
+.iid{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.item .iid{padding-top:2px;min-width:44px}
+.item .body{display:grid;gap:4px}
+.item .foot{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:12.5px;color:var(--muted)}
+.ref{font-family:var(--mono);font-size:12px;background:var(--surface-2);border-radius:4px;padding:0 5px;color:var(--ink);text-decoration:none}
+a.ref:hover{text-decoration:underline}
+.note{font-size:13px;color:var(--s-bloq)}
+.evid{font-size:12.5px;color:var(--s-feito)}
+.nota-item{font-size:13px;color:var(--muted)}
+.note,.evid,.nota-item{display:block;flex-basis:100%}
+
+/* tabelas */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--surface-2);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.id{font-family:var(--mono);font-size:13px;white-space:nowrap}
+.grav{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.grav.Crítico{color:var(--g-crit)} .grav.Alto{color:var(--g-alto)} .grav.Médio{color:var(--g-med)} .grav.Baixo{color:var(--g-baixo)}
+
+/* grupos da publicação */
+.groups{display:grid;gap:12px;grid-template-columns:1fr}
+@media (min-width:760px){.groups{grid-template-columns:1fr 1fr}}
+.group{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:6px;align-content:start}
+.group header{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.group ul{list-style:none;margin:0;padding:0}
+.group li{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+
+/* decisões */
+.decs{display:grid;gap:6px 18px;grid-template-columns:1fr;font-size:14px}
+@media (min-width:760px){.decs{grid-template-columns:1fr 1fr}}
+.decs div{display:grid;grid-template-columns:42px 1fr;gap:8px}
+.decs b{font-family:var(--mono);color:var(--accent);font-weight:600}
+
+/* histórico */
+ol.log{list-style:none;margin:0 0 0 6px;padding:0;display:grid;border-left:2px solid var(--line)}
+ol.log li{position:relative;padding:4px 0 12px 18px;font-size:14px}
+ol.log li::before{content:"";position:absolute;left:-7px;top:10px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
+ol.log time{font-family:var(--mono);font-size:12.5px;color:var(--muted);margin-right:8px}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+footer{color:var(--muted);font-size:13px;padding-top:24px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="toc" aria-label="Sumário">
+  <p>Painel</p>
+  <ol>
+    <li><a href="#situacao">Situação</a></li>
+    <li><a href="#fases">Fases e entregas</a></li>
+    <li><a href="#ideias">Ideias atendidas</a></li>
+    <li><a href="#testes">Testes</a></li>
+    <li><a href="#publicacao">Publicação</a></li>
+    <li><a href="#externos">Dependências externas</a></li>
+    <li><a href="#decisoes">Decisões</a></li>
+    <li><a href="#historico">Histórico</a></li>
+  </ol>
+</nav>
+
+<main>
+<div class="aviso" id="avisos" role="alert" hidden></div>
+<header class="top">
+  <p class="eyebrow">Acompanhamento da execução</p>
+  <h1>Painel de Execução TRÍADE Condo</h1>
+  <p class="lede">Tudo o que vai ser construído na TRÍADE Condo, com o status de cada entrega, teste e item de publicação. Cada entrega aponta para a peça do <a href="../mapa.html">mapa</a> e para as ideias do <a href="../IDEIAS.md">IDEIAS.md</a> que ela atende.</p>
+  <div class="meta">
+    <span><b>Atualizado em:</b> <span id="mAtual"></span></span>
+    <span><b>Ideias no IDEIAS.md:</b> <span id="mVersao"></span></span>
+    <span><b>Contexto:</b> <a href="CONTEXTO.md">CONTEXTO.md</a></span>
+    <span><b>Design:</b> <a href="design-frontend.html">design-frontend.html</a></span>
+  </div>
+</header>
+
+<section id="situacao" aria-labelledby="h-sit">
+  <h2 id="h-sit">Situação</h2>
+  <div class="now">
+    <div style="display:grid;gap:10px;align-content:start">
+      <div><div class="label">Agora</div><div class="big" id="sAgora"></div></div>
+      <p class="sub" id="sProximo"></p>
+      <div class="sit-barra"><div class="label" id="sBarLabel"></div><div id="sBar"></div><p class="sub" style="font-size:13px" id="sBarTxt"></p><ul class="legend" id="legenda1"></ul></div>
+    </div>
+    <div class="nums" id="sNums"></div>
+  </div>
+</section>
+
+<section id="fases" aria-labelledby="h-fases">
+  <h2 id="h-fases">Fases e entregas</h2>
+  <p class="sub">Cada fase só termina com os testes passando e funcionando de ponta a ponta, com provedores falsos onde o real ainda não existe. A fase em execução fica aberta.</p>
+  <div class="filters" role="group" aria-label="Filtrar entregas por status" id="filtros"></div>
+  <p class="filtro-info" id="filtroInfo" aria-live="polite"></p>
+  <ul class="legend" id="legenda2"></ul>
+  <div class="phases" id="listaFases"></div>
+</section>
+
+<section id="ideias" aria-labelledby="h-ach">
+  <h2 id="h-ach">Ideias atendidas</h2>
+  <p class="sub">As ideias do <a href="../IDEIAS.md">IDEIAS.md</a> que já têm entrega, teste ou item de publicação planejado: <span id="nIdeias"></span>. O status de cada ideia sai dos itens que a citam.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Ideia</th><th>Onde entra</th><th>Itens</th><th>Status</th></tr></thead>
+    <tbody id="tIdeias"></tbody>
+  </table></div>
+</section>
+
+<section id="testes" aria-labelledby="h-test">
+  <h2 id="h-test">Testes que provam a fundação e as regras</h2>
+  <p class="sub">Um teste passa a "feito" quando roda no CI. O nome do teste no código leva o código da ideia.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>Cenário</th><th>Fase</th><th>Status</th></tr></thead>
+    <tbody id="tTestes"></tbody>
+  </table></div>
+</section>
+
+<section id="publicacao" aria-labelledby="h-pub">
+  <h2 id="h-pub">Checklist de publicação</h2>
+  <p class="sub">O primeiro condomínio real só entra com todos marcados.</p>
+  <div class="groups" id="gPub"></div>
+</section>
+
+<section id="externos" aria-labelledby="h-ext">
+  <h2 id="h-ext">Dependências externas</h2>
+  <p class="sub">O que depende de contas, dados ou confirmações de fora do código, e em que fase trava o trabalho se faltar.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>O que falta</th><th>Quem</th><th>Precisa em</th><th>Status</th></tr></thead>
+    <tbody id="tExt"></tbody>
+  </table></div>
+</section>
+
+<section id="decisoes" aria-labelledby="h-dec">
+  <h2 id="h-dec">Decisões fechadas</h2>
+  <p class="sub">Mudar qualquer uma delas atualiza primeiro o <a href="CONTEXTO.md">CONTEXTO.md</a> e depois este painel.</p>
+  <div class="decs" id="dDec"></div>
+</section>
+
+<section id="historico" aria-labelledby="h-hist">
+  <h2 id="h-hist">Histórico</h2>
+  <ol class="log" id="hLog"></ol>
+</section>
+
+<footer>Os dados deste painel ficam num bloco JSON no início do arquivo e são atualizados no mesmo commit de cada entrega. Mapa das peças: <a href="../mapa.html">mapa.html</a>.</footer>
+</main>
+</div>
+
+<script>
+(function(){
+  const D=JSON.parse(document.getElementById('dados').textContent);
+  const MAPA='../mapa.html';
+  // Uma tabela só para os status: ordem na barra, nome, rótulo do filtro e ícone (o status nunca depende só da cor).
+  const STATUS={
+    feito:{nome:'Feito',plural:'Feitas',icone:'✓'},
+    andamento:{nome:'Em andamento',plural:'Em andamento',icone:'◐'},
+    bloqueado:{nome:'Bloqueado',plural:'Bloqueadas',icone:'✕'},
+    pendente:{nome:'Pendente',plural:'Pendentes',icone:'○'}
+  };
+  const CHAVES=Object.keys(STATUS);
+  const FILTROS={todos:'Todas',...Object.fromEntries(['pendente','andamento','bloqueado','feito'].map(k=>[k,STATUS[k].plural]))};
+  // Nome de cada peça do mapa (mesmos códigos do mapa.html).
+  const PECAS={S1:'Início',S2:'Pedidos',S3:'Decisões e aprovações',S4:'Moradores e unidades',S5:'Comunicados e documentos',S6:'Manutenção e prestadores',S7:'Agenda',S8:'Orçamentos e compras',S9:'Dinheiro do prédio',S10:'Portaria e encomendas',S11:'Vida em condomínio',S12:'Indicadores e relatórios',S13:'Memória do prédio',S14:'Configurações',S15:'WhatsApp do morador',S16:'Links e QR',C1:'Carteira de clientes',C2:'Implantação',C3:'Planos e liberação',C4:'Pagamentos dos clientes',C5:'Suporte e acessos',C6:'Serviços contratados',C7:'Equipe interna',C8:'Saúde e capacidade',C9:'Mensagens e custos',B1:'Segurança e acesso',B2:'Dados e histórico',B3:'Motor de mensagens',B4:'Infraestrutura e qualidade',B5:'Princípios do produto',B6:'Motor de IA',F1:'Serviços fora do sistema',F2:'Negócio e preço',F3:'Empresa e marca',F4:'Material antigo'};
+  const $=id=>document.getElementById(id);
+  const el=(tag,attrs={},...filhos)=>{const e=document.createElement(tag);for(const [k,v] of Object.entries(attrs)){if(k==='class')e.className=v;else if(k==='text')e.textContent=v;else e.setAttribute(k,v);}filhos.forEach(f=>f!=null&&e.append(f));return e;};
+  const pct=(n,t)=>t?Math.round(n/t*100):0;
+  const conta=lista=>lista.reduce((c,i)=>(c[i.status]++,c),Object.fromEntries(CHAVES.map(k=>[k,0])));
+  const linkFase=f=>/^(F\d+|D|R)$/.test(f)?el('a',{href:'#fase-'+f,text:f}):f;
+  const st=k=>el('span',{class:'st '+k},el('span',{class:'ic','aria-hidden':'true',text:STATUS[k].icone}),STATUS[k].nome);
+  const refLink=r=>el('a',{class:'ref',href:'#ideia-'+r,text:r});
+
+  // Uma passada sobre os dados editados à mão: marca a fase de cada item e confere status e ids.
+  // Status fora da lista vira aviso visível e conta como pendente.
+  const entregas=D.fases.flatMap(f=>f.itens.map(i=>Object.assign(i,{fase:f.id})));
+  const pub=D.publicacao.flatMap(g=>g.itens.map(i=>Object.assign(i,{fase:'Publicação'})));
+  D.externos.forEach(i=>i.fase=i.precisa_em);
+  const todos=[...entregas,...D.testes,...pub,...D.externos];
+  const avisos=[], vistos=new Set(), repetidos=new Set();
+  const confere=(i,campo)=>{if(i[campo]!==undefined&&!STATUS[i[campo]]){avisos.push(`${i.id}: status "${i[campo]}" não existe (use ${CHAVES.join(', ')})`);i[campo]='pendente';}};
+  todos.forEach(i=>{if(i.status===undefined)i.status='pendente';confere(i,'status');vistos.has(i.id)?repetidos.add(i.id):vistos.add(i.id);});
+  repetidos.forEach(x=>avisos.push(`${x}: id repetido`));
+  if(D.meta.fase_atual&&!D.fases.some(f=>f.id===D.meta.fase_atual))avisos.push(`meta.fase_atual "${D.meta.fase_atual}" não é uma fase`);
+  if(avisos.length){$('avisos').hidden=false;$('avisos').append(el('strong',{text:'Dados do painel com erro. '}),avisos.join(' · '));console.warn('Painel:',avisos);}
+
+  // Barra decorativa: o texto ao lado (ou o resumo da fase) é que diz os números.
+  function barra(c,total){
+    return el('div',{class:'bar','aria-hidden':'true'},...CHAVES.filter(k=>c[k]).map(k=>el('i',{class:k,title:`${STATUS[k].nome}: ${c[k]} de ${total}`,style:`flex-grow:${c[k]}`})));
+  }
+  const legenda=ul=>CHAVES.forEach(k=>ul.append(el('li',{},el('span',{class:'bar','aria-hidden':'true'},el('i',{class:k})),`${STATUS[k].icone} ${STATUS[k].nome}`)));
+  // Rodapé comum a todo item: referências, motivo do bloqueio e evidência.
+  const detalhes=i=>[
+    ...(i.refs||[]).flatMap(r=>[' ',refLink(r)]),
+    i.nota?el('span',{class:i.status==='bloqueado'?'note':'nota-item',text:(i.status==='bloqueado'?'Bloqueio: ':'Nota: ')+i.nota}):null,
+    i.status==='feito'&&i.evidencia?el('span',{class:'evid',text:'Evidência: '+i.evidencia}):null
+  ];
+
+  // Ideias citadas: o status de cada uma sai dos itens que a citam em "refs".
+  const ordemIdeia=r=>{const [p,n]=r.split('-');return [p,Number(n)];};
+  const citadas=[...new Set(todos.flatMap(i=>i.refs||[]))].sort((a,b)=>{const [pa,na]=ordemIdeia(a),[pb,nb]=ordemIdeia(b);return pa===pb?na-nb:pa<pb?-1:1;});
+  const ideiasCitadas=citadas.map(id=>{
+    const itens=todos.filter(i=>(i.refs||[]).includes(id)), c=conta(itens);
+    const status=c.bloqueado?'bloqueado':c.feito===itens.length?'feito':c.pendente<itens.length?'andamento':'pendente';
+    return {id,itens,c,status};
+  });
+
+  // Situação
+  $('mAtual').textContent=D.meta.atualizado_em;
+  $('mVersao').textContent=D.meta.total_ideias;
+  $('sAgora').textContent=D.meta.situacao;
+  $('sProximo').textContent=D.meta.proximo_passo;
+  $('nIdeias').textContent=`${ideiasCitadas.length} de ${D.meta.total_ideias}`;
+  const ce=conta(entregas);
+  $('sBarLabel').textContent=`Entregas das ${D.fases.length} fases`;
+  $('sBar').replaceWith(barra(ce,entregas.length));
+  $('sBarTxt').textContent=`${ce.feito} de ${entregas.length} entregas feitas (${pct(ce.feito,entregas.length)}%) · ${ce.andamento} em andamento · ${ce.bloqueado} bloqueadas`;
+  legenda($('legenda1'));legenda($('legenda2'));
+  [[entregas,'Entregas feitas',entregas.length],[D.testes,'Testes passando',D.testes.length],[ideiasCitadas,'Ideias atendidas',D.meta.total_ideias],[pub,'Itens de publicação prontos',pub.length]]
+    .forEach(([lista,rotulo,total])=>$('sNums').append(el('div',{class:'num'},el('b',{},String(conta(lista).feito),el('small',{text:` de ${total}`})),el('span',{text:rotulo}))));
+
+  // Fases: a atual vem de meta.fase_atual; sem ela, destaca a próxima (primeira não concluída).
+  const proxima=D.fases.find(f=>f.itens.some(i=>i.status!=='feito'));
+  const atual=D.meta.fase_atual?{id:D.meta.fase_atual,rotulo:'fase atual'}:proxima&&{id:proxima.id,rotulo:'próxima fase'};
+  let filtro='todos';
+  Object.entries(FILTROS).forEach(([v,t])=>{
+    const b=el('button',{type:'button',class:'chip','aria-pressed':String(v===filtro),text:t});
+    b.addEventListener('click',()=>{filtro=v;$('filtros').querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',String(c===b)));renderFases();});
+    $('filtros').append(b);
+  });
+
+  const lista=$('listaFases');
+  function renderFases(){
+    const rotulo=FILTROS[filtro].toLowerCase();
+    let achou=0,fasesCom=0;
+    lista.replaceChildren(...D.fases.map(f=>{
+      const c=conta(f.itens), total=f.itens.length;
+      const vis=f.itens.filter(i=>filtro==='todos'||i.status===filtro);
+      if(filtro!=='todos'&&vis.length){achou+=vis.length;fasesCom++;}
+      const ehAtual=atual&&f.id===atual.id;
+      const d=el('details',{class:'phase','data-atual':ehAtual?'1':'0',id:'fase-'+f.id});
+      // Sem filtro, abre a fase atual; com filtro, abre só as fases que têm itens no status escolhido.
+      d.open=filtro==='todos'?!!ehAtual:vis.length>0;
+      const nome=el('span',{class:'pname',text:f.nome});
+      if(ehAtual)nome.append(el('span',{class:'badge-atual',text:atual.rotulo}));
+      const contagem=filtro==='todos'
+        ?el('span',{class:'pcount'},el('span',{'aria-hidden':'true',text:`${c.feito}/${total}`}),el('span',{class:'sr-only',text:`, ${c.feito} de ${total} feitas`}))
+        :el('span',{class:'pcount',text:`${vis.length} ${rotulo}`});
+      d.append(el('summary',{},el('span',{class:'pid',text:f.id}),nome,contagem,barra(c,total)));
+      d.append(el('p',{class:'obj',text:f.objetivo}));
+      const ul=el('ul',{class:'items'},...vis.map(i=>el('li',{class:'item'},el('span',{class:'iid',text:i.id}),
+        el('div',{class:'body'},el('span',{text:i.texto}),el('div',{class:'foot'},st(i.status),el('a',{class:'ref',href:`${MAPA}#${i.peca}`,text:PECAS[i.peca]||i.peca}),...detalhes(i))))));
+      if(!vis.length)ul.append(el('li',{class:'empty',text:'Nenhuma entrega com este status nesta fase.'}));
+      d.append(ul);
+      return d;
+    }));
+    $('filtroInfo').textContent=filtro==='todos'?'':`${achou} entrega(s) em ${fasesCom} fase(s) com o filtro "${FILTROS[filtro]}".`;
+  }
+  renderFases();
+
+  // Links para uma fase abrem a fase. O clique cobre o link para o endereço atual, que não dispara hashchange.
+  const abrir=h=>{const d=h&&h.startsWith('#fase-')&&$(h.slice(1));if(d)d.open=true;};
+  document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#fase-"]');if(a)abrir(a.getAttribute('href'));});
+  window.addEventListener('hashchange',()=>abrir(location.hash));abrir(location.hash);
+
+  // Ideias
+  ideiasCitadas.forEach(a=>{
+    const fases=[...new Set(a.itens.map(i=>i.fase).filter(Boolean))];
+    $('tIdeias').append(el('tr',{id:'ideia-'+a.id},
+      el('td',{},el('span',{class:'mono',text:a.id})),
+      el('td',{},...fases.flatMap((f,k)=>[k?', ':'',linkFase(f)])),
+      el('td',{class:'mono',text:`${a.c.feito}/${a.itens.length}`}),
+      el('td',{},st(a.status))));
+  });
+
+  // Testes, publicação e dependências externas usam o mesmo rodapé de detalhes.
+  D.testes.forEach(t=>$('tTestes').append(el('tr',{},el('td',{class:'id',text:t.id}),el('td',{},t.texto,...detalhes(t)),el('td',{},linkFase(t.fase)),el('td',{},st(t.status)))));
+  D.publicacao.forEach(g=>$('gPub').append(el('div',{class:'group'},
+    el('header',{},el('h3',{text:g.grupo}),el('span',{class:'pcount',text:`${conta(g.itens).feito}/${g.itens.length}`})),
+    el('ul',{},...g.itens.map(i=>el('li',{},st(i.status),el('span',{},el('span',{class:'iid',text:i.id+' '}),i.texto,...detalhes(i))))))));
+  D.externos.forEach(e=>$('tExt').append(el('tr',{},el('td',{class:'id',text:e.id}),el('td',{},e.texto,...detalhes(e)),el('td',{text:e.quem}),el('td',{},linkFase(e.precisa_em)),el('td',{},st(e.status)))));
+
+  // Decisões e histórico
+  D.decisoes.forEach(([id,t])=>$('dDec').append(el('div',{},el('b',{text:id}),el('span',{text:t}))));
+  const horario=h=>h.inicio&&h.fim?` · das ${h.inicio} às ${h.fim}`:h.fim?` · até ${h.fim}`:'';
+  D.historico.forEach(h=>{const li=el('li',{},el('time',{text:h.data+horario(h)}),h.texto);if(h.ref)li.append(' ',el('code',{text:h.ref}));$('hLog').append(li);});
+})();
+</script>
+</body>
+</html>
