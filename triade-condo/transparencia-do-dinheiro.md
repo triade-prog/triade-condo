@@ -136,7 +136,7 @@ Cada ideia traz: inspiração · como fica na TRÍADE (morador no WhatsApp, sín
 
 **DR-17 — Calendário do dinheiro.**
 - Inspiração: previsibilidade.
-- Como fica: "próximos gastos grandes previstos": seguro anual em março, revisão do elevador em junho, sem surpresas. Ligado à previsão orçamentária (FC-07).
+- Como fica: "próximos gastos grandes previstos": seguro anual em março, revisão do elevador em junho, sem surpresas. Ligado à previsão orçamentária (FC-06).
 - Por que é lúdico: tira o susto da taxa extra.
 
 **DR-18 — O que esta obra protege.**

@@ -55,14 +55,10 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | W-14 | Fila durável de envio com novas tentativas limitadas; falha fica visível com responsável | [A] |
 | W-15 | Eventos repetidos não duplicam pedido nem aviso (deduplicação) | [A] |
 | W-16 | Registro de preferências e de pedido para não receber avisos (opt-out) | [A] |
-| W-17 | Planejar custo das mensagens: cobrança por mensagem desde 01/10/2026; comunicados podem cair na categoria marketing, ~9× mais cara; faturamento em reais | [BR] |
-| W-18 | Avisos segmentados por torre ou bloco (MeuVizy) | [BR] |
-| W-19 | Ler e resumir o grupo de WhatsApp do condomínio, com memória de decisões e resumo diário (Seu Síndico IA) | [BR] |
-| W-20 | Responder moradores dentro do grupo quando mencionado (Seu Síndico IA) | [BR] |
-| W-21 | Múltiplos contatos autorizados por unidade (titular, cônjuge, inquilino), com preferências e revogação | [A] |
-| W-22 | Canal alternativo e conciliação quando o WhatsApp ou o provedor ficar fora do ar | [A] |
-| W-23 | Ligação telefônica ou voz como canal complementar (Latchel, Vendoroo, Condo Control) | [A] [INT] |
-| W-24 | Respostas em vários idiomas para moradores estrangeiros (Fixflo: 40+ idiomas) | [INT] |
+| W-17 | Avisos segmentados por torre ou bloco (MeuVizy) | [BR] |
+| W-18 | Canal alternativo e conciliação quando o WhatsApp ou o provedor ficar fora do ar | [A] |
+| W-19 | Ligação telefônica ou voz como canal complementar (Latchel, Vendoroo, Condo Control) | [A] [INT] |
+| W-20 | Respostas em vários idiomas para moradores estrangeiros (Fixflo: 40+ idiomas) | [INT] |
 
 ---
 
@@ -96,10 +92,10 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | AT-24 | Controle de edição simultânea: duas pessoas não sobrescrevem a mesma alteração sem aviso (Zendesk) | [A] |
 | AT-25 | Modelos de resposta prontos por condomínio | [A] |
 | AT-26 | Avisar todos os envolvidos ao mesmo tempo quando um problema é registrado: síndico, prestador, moradores afetados (Plusvecinos) | [INT] |
-| AT-27 | Classificar o pedido automaticamente a partir da mensagem (gateway de IA, MeuSíndico.IA) | [BR] |
-| AT-28 | Kanban de pedidos (MeuSíndico.IA) | [BR] |
-| AT-29 | Status visíveis ao morador: novo, em análise, aguardando peça, em andamento, concluído (SindIA) | [BR] |
-| AT-30 | Roteamento automático por tipo: manutenção → zelador, acesso → portaria, reclamação → síndico (SindIA) | [BR] |
+| AT-27 | Kanban de pedidos (MeuSíndico.IA) | [BR] |
+| AT-28 | Status visíveis ao morador: novo, em análise, aguardando peça, em andamento, concluído (SindIA) | [BR] |
+| AT-29 | Roteamento automático por tipo: manutenção → zelador, acesso → portaria, reclamação → síndico (SindIA) | [BR] |
+| AT-30 | **Etiquetas QR por local**: QR fixado no elevador, garagem ou hall abre o WhatsApp do condomínio com o local já escrito ("Problema em: elevador social, bloco A"); a produção e a colagem são um serviço (seção 17) (ComtyLink, Arcsite) | [INT] |
 
 ---
 
@@ -120,10 +116,12 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | IA-11 | Agentes especializados: triagem, síndico, operação/manutenção, morador (MeuSíndico.IA) | [BR] |
 | IA-12 | Extrair tarefas das conversas, com responsável e prioridade (Seu Síndico IA) | [BR] |
 | IA-13 | Diagnóstico de problema por foto (Vendoroo) | [INT] |
-| IA-14 | Acordos de inadimplência negociados pelo WhatsApp (wCond) | [BR] |
-| IA-15 | Relatórios gerados por IA (MeuSíndico.IA) | [BR] |
-| IA-16 | Regra de ouro vista lá fora: todo texto de IA é rascunho até uma pessoa aprovar | [INT] |
-| IA-17 | Observar a política da Meta: bot de atendimento da própria empresa é permitido; IA de uso geral no WhatsApp não | [BR] |
+| IA-14 | Relatórios gerados por IA (MeuSíndico.IA) | [BR] |
+| IA-15 | Regra de ouro vista lá fora: todo texto de IA é rascunho até uma pessoa aprovar | [INT] |
+| IA-16 | Observar a política da Meta: bot de atendimento da própria empresa é permitido; IA de uso geral no WhatsApp não | [BR] |
+| IA-17 | Ler o grupo de WhatsApp do condomínio para alimentar a memória e o resumo diário (Seu Síndico IA) | [BR] |
+| IA-18 | Responder moradores dentro do grupo de WhatsApp quando mencionado, segundo regras do síndico (Seu Síndico IA) | [BR] |
+| IA-19 | Classificar o pedido automaticamente a partir da mensagem (gateway de IA, MeuSíndico.IA) | [BR] |
 
 ---
 
@@ -160,7 +158,6 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | CF-09 | Identificadores estáveis: renomear ou desativar etapa sem quebrar histórico | [A] |
 | CF-10 | Feriados, fuso, múltiplos intervalos de atendimento | [A] |
 | CF-11 | Recursos ativados ou desativados por condomínio (Gruvi) | [A] [BR] |
-| CF-12 | Health score do condomínio (MeuSíndico.IA) | [BR] |
 
 ---
 
@@ -172,9 +169,10 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | MU-02 | Verificação do vínculo contato ↔ unidade; contato desconhecido não acessa nada restrito | [A] |
 | MU-03 | Número de telefone sozinho não prova identidade; tratar número reciclado ou compartilhado | [A] |
 | MU-04 | Pessoa com vínculo em mais de um condomínio | [A] |
-| MU-05 | Orientação de novo morador: regras do prédio, uso do WhatsApp, cadastro (serviço TRÍADE) | [A] |
+| MU-05 | Boas-vindas do novo morador pelo WhatsApp: regras do prédio, como fazer pedidos e confirmação do cadastro (a orientação feita por pessoas é o serviço de orientação de novos moradores, seção 17) | [A] |
 | MU-06 | Família, veículos e pets no cadastro (Gruvi) | [BR] |
 | MU-07 | Mudança de morador: entrada e saída com revogação do vínculo | [A] |
+| MU-08 | Múltiplos contatos autorizados por unidade (titular, cônjuge, inquilino), com preferências e revogação | [A] |
 
 ---
 
@@ -226,7 +224,6 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | OC-05 | Mínimo de propostas e alçadas configuráveis pelo condomínio, não universais (Superlógica, HabitaOne) | [A] [BR] |
 | OC-06 | Escolha mais cara exige justificativa (HabitaOne) | [BR] |
 | OC-07 | Planilha comparativa exportável em PDF para o conselho (CoteiBem) | [BR] |
-| OC-08 | Conselho aprova faturas ou despesas no sistema (strata australiano) | [INT] |
 
 ---
 
@@ -239,10 +236,11 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | FC-03 | Régua de cobrança e lembrete de vencimento pelo WhatsApp (iSindi, MyCond) | [BR] |
 | FC-04 | 2ª via de boleto pelo WhatsApp (Superlógica, ConexCondo) | [BR] |
 | FC-05 | Começar pelo mês atual, sem migrar todo o histórico (iSindi) | [BR] |
-| FC-06 | Relatórios financeiros para os moradores | [BR] |
-| FC-07 | Previsão orçamentária anual | [A] |
-| FC-08 | Patrimônio do condomínio | [BR] |
-| FC-09 | Conta digital e garantia de inadimplência (Superlógica, FIDC) | [BR] |
+| FC-06 | Previsão orçamentária anual | [A] |
+| FC-07 | Patrimônio do condomínio | [BR] |
+| FC-08 | Conta digital e garantia de inadimplência (Superlógica, FIDC) | [BR] |
+| FC-09 | Acordos de inadimplência negociados pelo WhatsApp (wCond) | [BR] |
+| FC-10 | Conselho aprova faturas ou despesas no sistema (strata australiano) | [INT] |
 
 ---
 
@@ -280,13 +278,14 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | ID | Ideia | Origem |
 |---|---|---|
 | TR-01 | Indicadores: tempo até triagem, retornos vencidos, pendências por responsável, tempo de solução por categoria, reabertura, reincidência, decisões aguardando síndico | [A] |
-| TR-02 | **Relatório mensal de prestação de contas para a assembleia** (Property Meld, Mygate) | [A] [INT] |
+| TR-02 | **Relatório mensal do atendimento para a assembleia**: pedidos, retornos no prazo, concluídos e reabertos (Property Meld, Mygate); a parte financeira está na seção 22 | [A] [INT] |
 | TR-03 | % de retornos cumpridos no prazo como métrica principal | [INT] |
 | TR-04 | Velocidade de reparo e satisfação média como indicadores (Property Meld) | [INT] |
 | TR-05 | Relatório por categoria, bloco/torre e tempo médio de fechamento (Mygate) | [INT] |
 | TR-06 | **Índice público anônimo de atendimento condominial no DF**, publicado como conteúdo (benchmarks Property Meld) | [INT] |
 | TR-07 | Distinguir "sem dados" de zero | [A] |
 | TR-08 | Exportação respeitando permissões | [A] |
+| TR-09 | Health score do condomínio (MeuSíndico.IA) | [BR] |
 
 ---
 
@@ -298,7 +297,6 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | CT-02 | **Dossiê de passagem de bastão**: pendências, prestadores, contratos, documentos e histórico entregues ao novo síndico | [INT] |
 | CT-03 | Memória permanente do prédio que não depende de quem é o síndico (golden thread, Reino Unido) | [INT] |
 | CT-04 | Exportar todo o histórico do condomínio se ele sair da plataforma | [A] |
-| CT-05 | Suspender um recurso sem perder o histórico | [A] |
 
 ---
 
@@ -321,6 +319,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | PI-13 | Acompanhar a adoção por condomínio (Gruvi) | [BR] |
 | PI-14 | Ferramenta interna de rascunho de documentos e atas para o apoio documental | [INT] |
 | PI-15 | Visão de capacidade da equipe (quantos condomínios cada um atende) | [A] |
+| PI-16 | Suspender um recurso sem perder o histórico | [A] |
 
 ---
 
@@ -360,6 +359,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | NG-12 | Índice público de atendimento (TR-06) como marketing e imprensa | [INT] |
 | NG-13 | Planilha de custo por condomínio: mensagens, provedor, hospedagem, horas de implantação | [BR] |
 | NG-14 | White label para administradoras (Gruvi, Winker) | [BR] |
+| NG-15 | Planejar custo das mensagens: cobrança por mensagem desde 01/10/2026; comunicados podem cair na categoria marketing, ~9× mais cara; faturamento em reais | [BR] |
 
 ---
 
@@ -430,11 +430,12 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | DR-14 | **Pergunte ao caixa.** O morador pergunta no WhatsApp "quanto gastamos com elevador este ano?" e recebe a resposta a partir do extrato aprovado. Se for dúvida de decisão, vira pedido na fila do síndico com próximo retorno. *Por que é lúdico:* Autoatendimento; tira a cobrança do grupo. *Inspiração:* Ideias IA-01/IA-02. | [INT] |
 | DR-15 | **Por que fizemos.** Cada despesa relevante tem uma frase "por quê" e, se houve, "comparamos 3 orçamentos; escolhemos o B porque incluía garantia". Liga com orçamentos (OC-01). *Por que é lúdico:* Conta a história, mostra o esforço. *Inspiração:* *labor illusion*. | [INT] |
 | DR-16 | **Sua parte.** Todo valor coletivo vem acompanhado de "sua parte", como "a impermeabilização custou R$ 40 mil; sua parte: R$ 1.000". *Por que é lúdico:* Personaliza, gera pertencimento. *Inspiração:* charity: water ("seu poço"). | [INT] |
-| DR-17 | **Calendário do dinheiro.** "próximos gastos grandes previstos": seguro anual em março, revisão do elevador em junho, sem surpresas. Ligado à previsão orçamentária (FC-07). *Por que é lúdico:* Tira o susto da taxa extra. *Inspiração:* Previsibilidade. | [INT] |
+| DR-17 | **Calendário do dinheiro.** "próximos gastos grandes previstos": seguro anual em março, revisão do elevador em junho, sem surpresas. Ligado à previsão orçamentária (FC-06). *Por que é lúdico:* Tira o susto da taxa extra. *Inspiração:* Previsibilidade. | [INT] |
 | DR-18 | **O que esta obra protege.** Explicar o patrimônio coletivo protegido, por exemplo "a impermeabilização protege a estrutura e as unidades do último andar". Sem prometer valorização do imóvel. *Por que é lúdico:* Liga gasto a cuidado com o que é de todos. *Inspiração:* Relatórios de patrimônio. | [INT] |
 | DR-19 | **Obrigado, síndico.** Reação 👏 nos cartões de conquista; o síndico recebe um resumo mensal: "23 moradores agradeceram; 3 obras concluídas; seu prédio está com o fundo em 62%". *Por que é lúdico:* Reconhecimento + mostra **ao síndico** o impacto do trabalho, que é o que reduz o desgaste. *Inspiração:* Pesquisa com voluntários (senso de eficácia). | [INT] |
 | DR-20 | **Prestação de contas pronta para a assembleia.** O relatório anual sai praticamente pronto, a partir de tudo acima, para a assembleia e o conselho fiscal. *Por que é lúdico:* O síndico ganha tempo; a obrigação legal vira algo de que ele se orgulha de mostrar. *Inspiração:* Código Civil, arts. 1.348 e 1.350; extranet francês. | [INT] |
 | DR-21 | **Selo de prédio transparente (opcional, do síndico).** O síndico que publica o resumo mensal por N meses ganha um selo para exibir aos moradores (e, com autorização, no índice público TR-06). *Por que é lúdico:* Conquista **do síndico**, nunca imposição. Ele escolhe participar. *Inspiração:* Selos de confiança. | [INT] |
+| DR-22 | **Relatórios financeiros para os moradores.** Balancete e relatórios do mês acessíveis aos moradores; são a base numérica dos cartões lúdicos desta seção. *Por que é lúdico:* Sozinho não é; vira lúdico quando alimenta o recibo do condômino, a retrospectiva e o placar de economias. *Inspiração:* iSindi e sistemas de autogestão. | [BR] |
 
 ---
 
@@ -443,25 +444,49 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | Seção | Ideias |
 |---|---|
 | 1. Visão e pessoas | 16 |
-| 2. Canal WhatsApp | 24 |
+| 2. Canal WhatsApp | 20 |
 | 3. Atendimento | 30 |
-| 4. Inteligência artificial | 17 |
+| 4. Inteligência artificial | 19 |
 | 5. Comunicados e documentos | 11 |
-| 6. Configuração e ficha | 12 |
-| 7. Moradores e unidades | 7 |
+| 6. Configuração e ficha | 11 |
+| 7. Moradores e unidades | 8 |
 | 8. Manutenção e prédio | 16 |
 | 9. Agenda | 7 |
-| 10. Orçamentos e compras | 8 |
-| 11. Financeiro do condomínio | 9 |
+| 10. Orçamentos e compras | 7 |
+| 11. Financeiro do condomínio | 10 |
 | 12. Portaria, acesso, encomendas | 10 |
 | 13. Áreas comuns e vida em condomínio | 5 |
-| 14. Transparência e indicadores | 8 |
-| 15. Continuidade e troca de síndico | 5 |
-| 16. Painel interno TRÍADE | 15 |
+| 14. Transparência e indicadores | 9 |
+| 15. Continuidade e troca de síndico | 4 |
+| 16. Painel interno TRÍADE | 16 |
 | 17. Serviços humanos | 11 |
-| 18. Negócio, planos e preço | 14 |
+| 18. Negócio, planos e preço | 15 |
 | 19. Empresa e marca | 5 |
 | 20. Princípios técnicos | 16 |
 | 21. Ferramentas internas | 3 |
-| 22. Transparência do dinheiro | 21 |
-| **Total** | **270** |
+| 22. Transparência do dinheiro | 22 |
+| **Total** | **271** |
+
+---
+
+## Revisão de classificação (16/10/2026)
+
+Ideias que mudaram de seção ou de código. Os códigos antigos não existem mais.
+
+| Antes | Agora | Motivo |
+|---|---|---|
+| W-17 | NG-15 | É planejamento de custo do negócio |
+| W-19 | IA-17 | É recurso de IA (leitura e resumo do grupo) |
+| W-20 | IA-18 | É recurso de IA (resposta automática no grupo) |
+| W-21 | MU-08 | Trata de quem pode falar pela unidade |
+| AT-27 | IA-19 | É recurso de IA |
+| IA-14 | FC-09 | É cobrança, do domínio financeiro |
+| CF-12 | TR-09 | É indicador |
+| OC-08 | FC-10 | É aprovação de despesa, do domínio financeiro |
+| FC-06 | DR-22 | É transparência do dinheiro para o morador |
+| CT-05 | PI-16 | É gestão de contratação e liberação da equipe TRÍADE |
+| — | AT-30 | **Nova:** QR por local como recurso do sistema; antes só existia o serviço de colar as etiquetas |
+
+Textos ajustados: MU-05 passou a descrever o recurso no WhatsApp (a orientação humana é SH-02, que já existia); TR-02 virou "relatório mensal do atendimento" para não se confundir com a prestação de contas financeira da seção 22.
+
+Renumeração para manter a sequência sem buracos: W-18→W-17, W-22→W-18, W-23→W-19, W-24→W-20, AT-28→AT-27, AT-29→AT-28, AT-30→AT-29, IA-15→IA-14, IA-16→IA-15, IA-17→IA-16, FC-07→FC-06, FC-08→FC-07, FC-09→FC-08.
