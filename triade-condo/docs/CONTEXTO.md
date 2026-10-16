@@ -164,7 +164,7 @@ Depois, também a pedido da Carolina e para controle: quando a unidade tem inqui
 
 **Próximo passo:**
 
-1. Cadastrar a primeira administração (`iniciar_equipe`, no README) e conferir login, autenticador e convite de verdade (F0.6, F1.5).
+1. Conferir o convite e a recuperação de senha por e-mail de verdade (F1.5). A primeira administração (`admin@triadecondo.com`) já entra no Console com senha e autenticador.
 2. Liberar o CI (F0.9).
 3. Começar o passo 4 (pedidos no painel) pelo desenho das telas.
 
