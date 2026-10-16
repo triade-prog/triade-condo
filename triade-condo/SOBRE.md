@@ -23,6 +23,7 @@ Os detalhes ficam em outros lugares:
 Na maioria dos prédios brasileiros, principalmente os pequenos e sem administradora, a rotina funciona assim:
 
 - os moradores mandam pedidos e reclamações no WhatsApp pessoal do síndico ou no grupo do prédio;
+- **quem paga o condomínio não vê para onde vai o dinheiro nem o retorno que ele gera**;
 - o síndico, quase sempre um morador voluntário, acumula mensagens, esquece pedidos e responde fora de hora;
 - ninguém sabe **quem vai resolver, quando vai haver retorno, o que está travando e como o caso terminou**;
 - o morador sente falta de transparência e o síndico sente falta de reconhecimento. Isso gera conflito;
@@ -97,6 +98,7 @@ Em volta desse fluxo: comunicados e documentos do prédio entregues pelo WhatsAp
 10. **Segurança e privacidade de verdade.** Um condomínio nunca vê dados de outro. Nada é apagado em silêncio. Senhas nunca visíveis. Respeito à LGPD.
 11. **Confiabilidade.** WhatsApp oficial, mensagens que falharam ficam visíveis, nada se perde nem se duplica.
 12. **IA como ajudante, não como substituta.** IA pode sugerir respostas, resumir e responder dúvidas com base nos documentos aprovados, mas uma pessoa responde pelo atendimento.
+13. **"Meu dinheiro virou o quê?"** Quem paga o condomínio vê, de forma leve, para onde foi o dinheiro e o retorno que ele gerou: recibo do mês, antes e depois, conquistas, economias. Sempre como **vitrine do trabalho do síndico**, nunca como fiscalização (ver [`transparencia-do-dinheiro.md`](transparencia-do-dinheiro.md)).
 
 ---
 
@@ -105,6 +107,7 @@ Em volta desse fluxo: comunicados e documentos do prédio entregues pelo WhatsAp
 ### Software (plataforma)
 - **Atendimento completo pelo WhatsApp:** pedidos, fila, responsável, prioridade, próximo retorno, escalonamento, conclusão, reabertura, satisfação e histórico (seção 3 do IDEIAS).
 - **Comunicados e documentos:** regimento, regras e avisos publicados pelo síndico e consultados pelo morador no WhatsApp, com versão vigente (seção 5).
+- **Transparência do dinheiro:** recibo mensal do condômino, antes e depois das obras, mural de conquistas, bateria do fundo de reserva, economias geradas, retrospectiva anual, orçamento participativo (seção 22 do IDEIAS).
 - **Ficha por condomínio:** pessoas, permissões individuais, horários, mensagem fora do expediente (seção 6).
 - **Painel interno TRÍADE:** carteira de clientes, implantação, recursos liberados, pagamentos, suporte de acesso (seção 16).
 - **Evoluções possíveis:**

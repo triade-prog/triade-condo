@@ -408,6 +408,36 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 
 ---
 
+## 22. Transparência do dinheiro e retorno (lúdico, sem controlar o síndico)
+
+Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transparencia-do-dinheiro.md). Princípio: o síndico é o autor e o recurso é a vitrine do trabalho dele, nunca fiscalização.
+
+| ID | Ideia | Origem |
+|---|---|---|
+| DR-01 | **Recibo do condômino**: cartão mensal no WhatsApp "sua taxa de R$ X virou: limpeza, elevador, fundo…", pela fração da unidade (recibo do contribuinte, EUA) | [INT] |
+| DR-02 | Seu dinheiro em coisas concretas: equivalências do dia a dia ("= 30 dias de elevador funcionando") | [INT] |
+| DR-03 | **Antes e depois** com fotos, custo e sua parte em toda obra ou reparo relevante (Boston 311, FixMyStreet) | [INT] |
+| DR-04 | **Mural de conquistas do prédio**: linha do tempo de obras, economias e marcos, assinada pelo síndico | [INT] |
+| DR-05 | **Retrospectiva anual "Seu prédio em 2026"** em cartões compartilháveis (Spotify Wrapped) | [INT] |
+| DR-06 | Termômetro de metas coletivas (obra, fundo) com comemoração de marcos (efeito do gradiente de meta, Kivetz) | [INT] |
+| DR-07 | **Bateria do prédio**: saúde do fundo de reserva, geral e por componente (percent funded, EUA) | [INT] |
+| DR-08 | **O dinheiro que voltou**: placar de economias geradas, total e por apartamento | [INT] |
+| DR-09 | O prejuízo evitado pela manutenção preventiva, como estimativa ilustrativa (lei dos cinco, de Sitter) | [INT] |
+| DR-10 | Desafio de economia de água e luz das áreas comuns contra o próprio histórico (Opower) | [INT] |
+| DR-11 | **Orçamento participativo do prédio**: moradores propõem e votam uma fatia pequena (Porto Alegre, Paris, Toronto) | [INT] |
+| DR-12 | Simulador do orçamento antes da assembleia: o morador tenta fechar a conta (Balancing Act, BudgetHero) | [INT] |
+| DR-13 | Extrato aberto do condomínio com comprovantes e "para quê", sem dados pessoais (Open Collective, extranet ALUR) | [INT] |
+| DR-14 | Pergunte ao caixa: o morador consulta gastos no WhatsApp; dúvida de decisão vira pedido na fila | [INT] |
+| DR-15 | "Por que fizemos": cada despesa relevante com motivo e alternativas consideradas (labor illusion, Harvard) | [INT] |
+| DR-16 | "Sua parte" em todo valor coletivo (charity: water) | [INT] |
+| DR-17 | Calendário do dinheiro: próximos gastos grandes previstos, sem surpresas | [INT] |
+| DR-18 | "O que esta obra protege": patrimônio coletivo cuidado, sem prometer valorização | [INT] |
+| DR-19 | **Obrigado, síndico**: reações dos moradores + resumo mensal de impacto para o síndico (pesquisa com voluntários) | [INT] |
+| DR-20 | Prestação de contas anual pronta para assembleia e conselho fiscal (Código Civil, arts. 1.348 e 1.350) | [INT] |
+| DR-21 | Selo opcional de prédio transparente, conquista do síndico que publica o resumo mensal | [INT] |
+
+---
+
 ## Contagem
 
 | Seção | Ideias |
@@ -433,4 +463,5 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | 19. Empresa e marca | 5 |
 | 20. Princípios técnicos | 16 |
 | 21. Ferramentas internas | 3 |
-| **Total** | **249** |
+| 22. Transparência do dinheiro | 21 |
+| **Total** | **270** |
