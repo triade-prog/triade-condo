@@ -1,6 +1,6 @@
 # Contexto do projeto — TRÍADE Condo
 
-Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com o passo 0 (Fundação) construído.
+Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com o passo 0 (Fundação) construído e o passo 1 (Console TRÍADE) com regras e API prontas.
 
 ## Onde está cada coisa
 
@@ -64,7 +64,8 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 |---|---|---|
 | Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta) | Carolina (em análise) | Passo 5 |
 | Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio | TRÍADE | Passo 5 |
-| Ligar as configurações de login no painel do Supabase (triade-condo-dev) e criar os projetos na Vercel | TRÍADE | Conferir o login de verdade (F0.6) e publicar o passo 1 |
+| Ligar as configurações de login no painel do Supabase (triade-condo-dev), ajustar os modelos de e-mail de recuperação e convite, cadastrar a primeira administração e criar os projetos na Vercel | TRÍADE | Conferir o login e o convite de verdade (F0.6, F1.5) e publicar o passo 1 |
+| Aprovar o desenho das telas do passo 1 (design-frontend.html) | Carolina | Código das telas do Console |
 | Logo oficial (a paleta e a tipografia já estão definidas, DC11) e aprovação do tom das mensagens | TRÍADE | Nada no código; o símbolo triangular atual é provisório |
 | Dados da empresa para termos e privacidade (EM-01, EM-06) | TRÍADE | Publicação |
 | Domínio próprio | TRÍADE | Publicação |
@@ -97,7 +98,19 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 
 No mesmo dia foi criado o projeto Supabase de desenvolvimento `triade-condo-dev` (São Paulo, plano gratuito, ref `dzwkxiimwprftgulhoqn`), com todas as migrations aplicadas e sem avisos do verificador de segurança.
 
-**Próximo passo:** fechar F0.9 com o CI verde e começar o passo 1 (cadastrar condomínio no Console TRÍADE). Ver as entregas F1 no painel.
+**16/10/2026, madrugada.** Começou o passo 1 (Console TRÍADE). Ficaram prontos no banco e na API:
+
+- Funções internas (administração, implantação, financeiro, suporte), cada uma só nos clientes atribuídos.
+- Carteira com estágio e situações a tratar.
+- Ficha do condomínio, com número institucional único.
+- Cenário do prédio.
+- Convite do síndico pelo Supabase Auth.
+- Notas internas que o síndico nunca lê.
+- Histórico administrativo.
+
+A migration 0060 foi aplicada no `triade-condo-dev`. As telas foram desenhadas no `design-frontend.html` e esperam aprovação antes do código, como manda a regra de design.
+
+**Próximo passo:** aprovar o desenho das telas do passo 1 para construí-las; liberar o GitHub Actions (F0.9). Ver as entregas F1 no painel.
 
 ## Como trabalhar
 

@@ -1,12 +1,13 @@
 // Dependências falsas para os testes das APIs: o Auth e o banco em memória, sem rede.
 
-import type { CadastroTotp, Fator, Portador, ProvedorAuth, ResultadoSenha, SessaoAuth } from "./auth.ts";
+import type { AdminAuth, CadastroTotp, Fator, Portador, ProvedorAuth, ResultadoSenha, SessaoAuth } from "./auth.ts";
 import { ErroBanco, type Banco } from "./banco.ts";
 import { base64url } from "./cripto.ts";
 
 export const SEGREDO = "segredo-de-repasse-de-teste";
 export const CODIGO_CERTO = "123456";
 export const TOKEN_RECUPERACAO = "token-de-recuperacao-valido";
+export const TOKEN_CONVITE = "token-de-convite-valido-123";
 
 export interface UsuarioFalso {
   id: string;
@@ -96,6 +97,11 @@ export function authFalso(usuarios: UsuarioFalso[]) {
       recuperacaoUsada.add(tokenHash);
       return Promise.resolve(emitir(usuarios[0]!.id));
     },
+    usarConvite(tokenHash) {
+      if (tokenHash !== TOKEN_CONVITE || recuperacaoUsada.has(tokenHash)) return Promise.resolve(null);
+      recuperacaoUsada.add(tokenHash);
+      return Promise.resolve(emitir(usuarios.at(-1)!.id));
+    },
     trocarSenha(token, novaSenha) {
       if (novaSenha.includes("vazada")) return Promise.resolve("FRACA" as const);
       senhasTrocadas.push(tokens.get(token)!.userId);
@@ -165,4 +171,18 @@ export function cookieDe(r: Response): string {
 
 export async function erro(r: Response): Promise<{ codigo: string; detalhes?: Record<string, unknown> }> {
   return ((await r.json()) as { erro: { codigo: string; detalhes?: Record<string, unknown> } }).erro;
+}
+
+/** Convites em memória: e-mail já cadastrado devolve a mesma conta, sem e-mail novo. */
+export function adminFalso(contas: Record<string, string> = {}) {
+  const enviados: { email: string; voltarPara: string }[] = [];
+  const admin: AdminAuth = {
+    convidar(email, voltarPara) {
+      if (contas[email]) return Promise.resolve({ userId: contas[email]!, contaNova: false });
+      contas[email] = crypto.randomUUID();
+      enviados.push({ email, voltarPara });
+      return Promise.resolve({ userId: contas[email]!, contaNova: true });
+    },
+  };
+  return { admin, enviados, contas };
 }

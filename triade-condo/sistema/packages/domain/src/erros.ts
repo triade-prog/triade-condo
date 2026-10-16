@@ -12,6 +12,8 @@ export const CODIGOS_ERRO = {
   NOT_FOUND: 404,
   /** Duas pessoas editaram o mesmo registro (AT-24): a segunda recebe a versão nova. */
   VERSION_CONFLICT: 409,
+  /** Mudança de estado que a regra não permite (ex.: cliente ativo voltar para implantação). */
+  INVALID_TRANSITION: 409,
   TOKEN_INVALID: 410,
   MFA_INVALID: 422,
   PASSWORD_WEAK: 422,
@@ -64,4 +66,5 @@ export const ERROS_BANCO: Record<string, CodigoErro> = {
   TC404: "NOT_FOUND",
   TC409: "VERSION_CONFLICT",
   TC422: "VALIDATION_ERROR",
+  TC023: "INVALID_TRANSITION",
 };

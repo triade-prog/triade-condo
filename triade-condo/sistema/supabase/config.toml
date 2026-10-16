@@ -61,7 +61,9 @@ token_verifications = 30
 sign_in_sign_ups = 30
 
 # Segredos das funções (supabase secrets set ...): REPASSE_SEGREDO (o mesmo dos apps, 32+
-# caracteres), PLATAFORMA_URL e CONSOLE_URL (para o link de redefinir senha).
+# caracteres), PLATAFORMA_URL e CONSOLE_URL (links de redefinir senha e de convite; a
+# api-console usa os dois: convite da equipe vai para o Console, do síndico para a Plataforma).
 # SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY o Supabase já entrega.
-# O modelo do e-mail de recuperação leva ao app com o token:
+# Os modelos dos e-mails de recuperação e de convite levam ao app com o token:
 # {{ .RedirectTo }}?token_hash={{ .TokenHash }}
+# (recuperação vai para /redefinir; convite, para /convite, onde a pessoa cria a senha).

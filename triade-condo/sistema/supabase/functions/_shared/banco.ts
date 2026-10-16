@@ -35,17 +35,19 @@ export function bancoPostgrest(url: string, chaveServico: string, buscar: typeof
 }
 
 /**
- * Erro do banco com código próprio (TC401, TC404, TC409, TC422) vira o erro da API. No
- * conflito de versão (AT-24), o detalhe traz a versão nova e o registro atual.
+ * Erro do banco com código próprio (TC401, TC404, TC409, TC422, TC023) vira o erro da API. No
+ * conflito de versão (AT-24), o detalhe traz a versão nova e o registro atual; no dado
+ * inválido, os campos ou o motivo da recusa, para a tela dizer o que fazer.
  */
 export function traduzirErroBanco(e: ErroBanco): ErroDominio | null {
   const codigo = ERROS_BANCO[e.codigo];
   if (!codigo) return null;
-  if (codigo === "VERSION_CONFLICT" && e.detalhe) {
+  if ((codigo === "VERSION_CONFLICT" || codigo === "VALIDATION_ERROR") && e.detalhe) {
     try {
-      return new ErroDominio(codigo, JSON.parse(e.detalhe));
+      const detalhe = JSON.parse(e.detalhe);
+      if (detalhe && typeof detalhe === "object" && !Array.isArray(detalhe)) return new ErroDominio(codigo, detalhe);
     } catch {
-      return new ErroDominio(codigo);
+      // detalhe sem JSON: segue sem detalhes
     }
   }
   return new ErroDominio(codigo);

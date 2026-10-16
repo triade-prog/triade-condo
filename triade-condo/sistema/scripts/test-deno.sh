@@ -5,4 +5,4 @@ cd "$(dirname "$0")/../supabase/functions"
 DENO="${DENO:-$(command -v deno || echo ../../node_modules/.bin/deno)}"
 "$DENO" check api-plataforma/index.ts api-console/index.ts
 "$DENO" lint
-"$DENO" test --allow-env
+"$DENO" test --allow-env --allow-read=../migrations

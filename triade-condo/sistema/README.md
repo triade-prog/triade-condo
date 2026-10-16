@@ -59,6 +59,35 @@ scripts/            banco de teste e Deno
 
 Se a tabela não tiver condomínio, ela precisa de um motivo em `tabelas_sem_condominio`. Sem o motivo, o teste `001_acesso_rls_test.sql` falha.
 
+## Console TRÍADE (passo 1)
+
+- **Funções internas (PI-10).**
+  - Há quatro: administração, implantação, financeiro e suporte. Uma pessoa pode acumular funções (`equipe_funcoes`).
+  - Em cada cliente atribuído, a pessoa tem um vínculo com uma das funções que tem. Ela só age nesse cliente.
+  - Tirar a função faz as atribuições dela pararem na hora, sem apagar nada.
+  - O que cada função faz está em `funcao_acoes`, com ações `console.*`. Por exemplo, implantação não muda contrato, e financeiro e suporte só consultam a ficha e escrevem notas.
+- **O que o cliente nunca vê (PI-06).**
+  - A carteira (`clientes`) e as notas internas (`notas_internas`) são tabelas internas, criadas com `proteger_tabela_interna`.
+  - A política delas exige o condomínio do contexto e alguém da equipe ativa.
+  - Eventos dessas tabelas entram no histórico com `interno = true`, que o síndico não lê.
+- **A ficha é do condomínio (CF-01).** Endereço, contatos, número institucional (único por condomínio, W-01) e cenário ficam em `condominios`.
+- **Convite (CF-02).**
+  - A Edge Function convida pelo Supabase Auth. O banco confere a permissão antes de o convite sair.
+  - Quem já tem conta (síndico profissional, MU-04) não recebe e-mail: o acesso aparece no próximo login.
+  - O convidado cria a senha em `/convite` do app (`POST /v1/auth/criar-senha`).
+- **As telas** estão desenhadas em `../docs/design-frontend.html` ("Telas do passo 1") e esperam aprovação antes do código.
+
+### Primeira pessoa da equipe
+
+A primeira pessoa com administração entra uma vez, pelo SQL do Supabase. Depois disso, a equipe cresce pelo Console.
+
+1. Crie a conta em Authentication → Users → Invite user.
+2. Rode o SQL abaixo com o id da conta criada:
+
+```sql
+call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
+```
+
 ## Rodar
 
 Requisitos: Node 22, pnpm 10 e PostgreSQL 16 ou 17 com pgTAP (`postgresql-17-pgtap`).
@@ -81,6 +110,6 @@ pnpm build && pnpm e2e                     # Playwright com axe (PW_CHROMIUM_PAT
 
 ## Ainda não ligado
 
-O projeto Supabase de desenvolvimento é o `triade-condo-dev` (São Paulo, ref `dzwkxiimwprftgulhoqn`), já com todas as migrations. As configurações de login do `supabase/config.toml` não sobem sozinhas para o projeto hospedado: ligue-as no painel do Supabase, em Authentication. Faltam os projetos na Vercel (E4). Os segredos das funções estão listados no fim do `supabase/config.toml`. O login foi testado com um Auth falso; a conferência com o Supabase Auth de verdade é o próximo passo.
+O projeto Supabase de desenvolvimento é o `triade-condo-dev` (São Paulo, ref `dzwkxiimwprftgulhoqn`), já com todas as migrations. As configurações de login do `supabase/config.toml` não sobem sozinhas para o projeto hospedado: ligue-as no painel do Supabase, em Authentication. Faltam os projetos na Vercel (E4). Os segredos das funções e os modelos de e-mail (recuperação e convite) estão no fim do `supabase/config.toml`. O login foi testado com um Auth falso; a conferência com o Supabase Auth de verdade é o próximo passo.
 
 Nas migrations, não use comandos de remoção (`drop`) nem `update` ou `delete` sem `where`: a ferramenta do Supabase segura esses comandos pedindo confirmação. Para recriar algo, crie só se não existir.

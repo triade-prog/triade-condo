@@ -195,6 +195,22 @@ export function criarSessao(cfg: ConfigSistema, deps: DepsSessao) {
       c.header("set-cookie", apagarCookie(cfg.cookie), { append: true });
       return c.json({ ok: true });
     });
+
+    // Convite aceito (CF-02): a pessoa convidada cria a própria senha pelo link do e-mail e
+    // entra depois pelo login normal (no Console, com o autenticador).
+    app.post("/v1/auth/criar-senha", async (c) => {
+      const { tokenHash, novaSenha } = await lerCorpo(c, redefinirSenhaSchema);
+      const s = await deps.auth.usarConvite(tokenHash);
+      if (!s) throw new ErroDominio("TOKEN_INVALID");
+      if ((await deps.auth.trocarSenha(s.accessToken, novaSenha)) === "FRACA") {
+        await deps.auth.sair(s.accessToken).catch(() => undefined);
+        throw new ErroDominio("PASSWORD_WEAK");
+      }
+      await deps.auth.sairDeTodas(s.accessToken);
+      await acesso(deps, cfg, s.userId, "acesso.convite_aceito");
+      c.header("set-cookie", apagarCookie(cfg.cookie), { append: true });
+      return c.json({ ok: true });
+    });
   }
 
   return { rotas, exigirSessao };

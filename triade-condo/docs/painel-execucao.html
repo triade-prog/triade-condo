@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passo 0 (Fundação) construído em triade-condo/sistema/: monorepo com os dois apps, banco com RLS forçado e separação por condomínio, histórico, guardião de transições, controle de versão, relógio da aplicação, vínculos e permissão, login e proteção do servidor. Testes T1 a T5 passando localmente; o CI no GitHub roda a partir deste envio. O projeto Supabase de desenvolvimento (triade-condo-dev, São Paulo) foi criado e recebeu as migrations; o login ainda não foi conferido nele.",
-    "fase_atual": "F0",
-    "proximo_passo": "Liberar o GitHub Actions da conta (cobrança ou minutos) e rodar o CI de novo para fechar F0.9. Ligar as configurações de login no painel do Supabase e conferir o login de verdade no triade-condo-dev (F0.6). Depois, passo 1: cadastrar condomínio no Console TRÍADE."
+    "situacao": "Passo 0 construído; passo 1 (Console TRÍADE) com regras e API prontos: funções internas só nos clientes atribuídos, carteira com estágio e situações a tratar, ficha com número institucional único, cenário do prédio, convite do síndico pelo Supabase Auth, notas internas e histórico administrativo. A migration 0060 está aplicada no triade-condo-dev, sem avisos de segurança. As telas do passo 1 estão desenhadas e aguardam aprovação antes do código. O CI no GitHub segue bloqueado pela conta (F0.9).",
+    "fase_atual": "F1",
+    "proximo_passo": "Aprovar o desenho das telas do passo 1 (design-frontend.html, seção Telas do passo 1) para construir as telas do Console. Liberar o GitHub Actions (F0.9). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail de recuperação e convite e cadastrar a primeira administração com iniciar_equipe (README)."
   },
   "fases": [
     {
@@ -75,7 +75,8 @@
           "texto": "Telas de cada passo desenhadas e aprovadas antes do código da tela (regras antes, tela depois)",
           "peca": "B4",
           "refs": [],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Telas do passo 1 e entrada no Console desenhadas em design-frontend.html (seção Telas do passo 1), aguardando aprovação da Carolina."
         }
       ]
     },
@@ -201,7 +202,8 @@
           "refs": [
             "PI-10"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Funções internas, atribuição e equipe prontas no banco e na API, com a migration aplicada no triade-condo-dev. Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). A entrada no Console (login com autenticador) também está desenhada. Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts (PI-10: só clientes atribuídos, função retirada para na hora, administração nunca some)."
         },
         {
           "id": "F1.2",
@@ -211,7 +213,8 @@
             "PI-01",
             "V-10"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Carteira com estágio (em implantação → ativo, só com síndico convidado) e situações a tratar calculadas da ficha. Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts."
         },
         {
           "id": "F1.3",
@@ -221,7 +224,8 @@
             "PI-02",
             "CF-01"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Ficha com endereço, contatos, número institucional único por condomínio (W-01) e referência do contrato (só administração), editável com controle de versão. Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). Recursos contratados e liberados entram com Planos e liberação (C3). Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts."
         },
         {
           "id": "F1.4",
@@ -233,7 +237,8 @@
             "V-06",
             "CF-12"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Três cenários (sem portaria, portaria remota, portaria presencial), escolhidos no cadastro ou depois; não criam equipe (V-06). As opções de configuração de cada cenário entram no passo 2, só para os recursos que existirem (CF-12). Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts."
         },
         {
           "id": "F1.5",
@@ -242,7 +247,8 @@
           "refs": [
             "CF-02"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Convite pelo Supabase Auth: conta nova recebe o link para criar a senha na Plataforma; quem já tem conta (MU-04) só ganha o vínculo. O banco confere a permissão antes de o convite sair. Falta conferir o e-mail de convite de verdade no triade-condo-dev (modelo do e-mail com token_hash). Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts."
         },
         {
           "id": "F1.6",
@@ -251,7 +257,8 @@
           "refs": [
             "PI-06"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Notas só de inserção em tabela interna: o síndico não as lê nem com o contexto do próprio condomínio (teste PI-06). Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts."
         },
         {
           "id": "F1.7",
@@ -260,7 +267,8 @@
           "refs": [
             "PI-12"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Histórico do cliente com autor, incluindo eventos internos que só a equipe vê; histórico das mudanças na equipe para a administração. Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts."
         }
       ]
     },
@@ -841,6 +849,17 @@
         "PT-10"
       ],
       "status": "pendente"
+    },
+    {
+      "id": "T12",
+      "texto": "Pessoa da equipe só vê e age nos clientes atribuídos, com função que ainda tem; o síndico nunca lê carteira, notas nem eventos internos",
+      "fase": "F1",
+      "refs": [
+        "PI-10",
+        "PI-06"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 007_console_clientes_test.sql (56 testes)"
     }
   ],
   "publicacao": [
@@ -1054,6 +1073,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "01:58",
+      "fim": "02:25",
+      "texto": "Iniciado o passo 1 (Console TRÍADE). Banco (migration 0060): funções internas com clientes atribuídos, carteira com estágio, ficha do condomínio, cenários, convite do síndico, notas internas e histórico administrativo, com tabelas internas que o síndico nunca lê. API do Console com as rotas do passo 1 e o convite pelo Supabase Auth; rota de criar senha pelo convite nos dois sistemas. 56 testes pgTAP novos, 15 testes Deno e 3 Vitest novos; um teste achou e corrigiu a marca de equipe no contexto, que agora só vale para a mesma pessoa. Migration aplicada no triade-condo-dev sem avisos. Telas desenhadas no design-frontend.html, aguardando aprovação.",
+      "ref": "PI-01, PI-02, PI-06, PI-10, PI-12, V-04, V-05, V-06, V-10, CF-01, CF-02, CF-12"
+    },
     {
       "data": "16/10/2026",
       "inicio": "01:56",

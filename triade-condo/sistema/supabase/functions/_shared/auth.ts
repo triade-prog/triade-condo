@@ -54,6 +54,8 @@ export interface ProvedorAuth {
   pedirRecuperacao(email: string, voltarPara: string): Promise<void>;
   /** Troca o token do link por uma sessão; null se vencido, usado ou substituído por outro pedido. */
   usarRecuperacao(tokenHash: string): Promise<SessaoAuth | null>;
+  /** O mesmo para o link do convite: a pessoa convidada cria a senha (CF-02). */
+  usarConvite(tokenHash: string): Promise<SessaoAuth | null>;
   trocarSenha(accessToken: string, novaSenha: string): Promise<"OK" | "FRACA">;
 }
 
@@ -172,11 +174,59 @@ export function authGoTrue(url: string, apiKey: string, buscar: typeof fetch = f
       return sessao((await exigirOk(r)) as TokenGoTrue);
     },
 
+    async usarConvite(tokenHash) {
+      const r = await chamar("/verify", { corpo: { type: "invite", token_hash: tokenHash } });
+      if (r.status >= 400 && r.status < 500) return null;
+      return sessao((await exigirOk(r)) as TokenGoTrue);
+    },
+
     async trocarSenha(token, novaSenha) {
       const r = await chamar("/user", { method: "PUT", token, corpo: { password: novaSenha } });
       if (r.status === 422 || r.status === 400) return "FRACA"; // weak_password (inclui senha vazada) ou same_password
       await exigirOk(r);
       return "OK";
+    },
+  };
+}
+
+/**
+ * Convites (CF-02, PI-10), com a chave de serviço e só no servidor. Quem já tem conta (síndico
+ * profissional, MU-04) não recebe e-mail novo: o acesso aparece no próximo login.
+ */
+export interface AdminAuth {
+  convidar(email: string, voltarPara: string): Promise<{ userId: string; contaNova: boolean }>;
+}
+
+export function adminGoTrue(url: string, chaveServico: string, buscar: typeof fetch = fetch): AdminAuth {
+  async function chamar(caminho: string, corpo?: unknown): Promise<Response> {
+    return await buscar(`${url}/auth/v1${caminho}`, {
+      method: corpo === undefined ? "GET" : "POST",
+      headers: { apikey: chaveServico, authorization: `Bearer ${chaveServico}`, "content-type": "application/json" },
+      body: corpo === undefined ? undefined : JSON.stringify(corpo),
+      signal: AbortSignal.timeout(8000),
+    });
+  }
+
+  async function acharPorEmail(email: string): Promise<string | null> {
+    const r = await chamar(`/admin/users?filter=${encodeURIComponent(email)}&per_page=50`);
+    if (!r.ok) throw new Error(`Auth respondeu ${r.status}`);
+    const corpo = (await r.json()) as { users?: { id: string; email?: string }[] };
+    return corpo.users?.find((u) => u.email?.toLowerCase() === email)?.id ?? null;
+  }
+
+  return {
+    async convidar(email, voltarPara) {
+      const existente = await acharPorEmail(email);
+      if (existente) return { userId: existente, contaNova: false };
+      const r = await chamar(`/invite?redirect_to=${encodeURIComponent(voltarPara)}`, { email });
+      if (r.status === 422) {
+        // Criada entre a busca e o convite: é conta existente.
+        const id = await acharPorEmail(email);
+        if (id) return { userId: id, contaNova: false };
+      }
+      if (!r.ok) throw new Error(`Auth respondeu ${r.status}`);
+      const u = (await r.json()) as { id: string };
+      return { userId: u.id, contaNova: true };
     },
   };
 }

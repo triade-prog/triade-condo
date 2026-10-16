@@ -114,3 +114,14 @@ exception when others then
   get stacked diagnostics v_codigo = returned_sqlstate, v_detalhe = pg_exception_detail;
   return jsonb_build_object('codigo', v_codigo, 'detalhe', nullif(v_detalhe, '')::jsonb);
 end $$;
+
+-- Pessoa da equipe TRÍADE, ativa, com as funções internas dadas (passo 1).
+create function teste.equipe(p_nome text, variadic p_funcoes text[]) returns uuid
+language plpgsql
+as $$
+declare v_id uuid := teste.pessoa(p_nome);
+begin
+  insert into public.equipe_triade (pessoa_id) values (v_id);
+  insert into public.equipe_funcoes (pessoa_id, funcao) select v_id, unnest(p_funcoes);
+  return v_id;
+end $$;
