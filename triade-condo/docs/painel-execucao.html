@@ -30,7 +30,7 @@
     "total_ideias": 296,
     "situacao": "Passo 0 (Fundação) construído em triade-condo/sistema/: monorepo com os dois apps, banco com RLS forçado e separação por condomínio, histórico, guardião de transições, controle de versão, relógio da aplicação, vínculos e permissão, login e proteção do servidor. Testes T1 a T5 passando localmente; o CI no GitHub roda a partir deste envio. O projeto Supabase de desenvolvimento (triade-condo-dev, São Paulo) foi criado e recebeu as migrations; o login ainda não foi conferido nele.",
     "fase_atual": "F0",
-    "proximo_passo": "Conferir o CI verde no GitHub e fechar F0.9. Ligar as configurações de login no painel do Supabase e conferir o login de verdade no triade-condo-dev (F0.6). Depois, passo 1: cadastrar condomínio no Console TRÍADE."
+    "proximo_passo": "Liberar o GitHub Actions da conta (cobrança ou minutos) e rodar o CI de novo para fechar F0.9. Ligar as configurações de login no painel do Supabase e conferir o login de verdade no triade-condo-dev (F0.6). Depois, passo 1: cadastrar condomínio no Console TRÍADE."
   },
   "fases": [
     {
@@ -174,8 +174,8 @@
             "PT-18",
             "PT-14"
           ],
-          "status": "andamento",
-          "nota": "Workflow .github/workflows/ci.yml com lint, tipos, Vitest, Deno, pgTAP no PostgreSQL 17, Playwright com axe e gitleaks. Tudo passa localmente; falta a primeira execução verde no GitHub."
+          "status": "bloqueado",
+          "nota": "As execuções 1 e 2 do CI no GitHub (runs 38851124190 e 38853140218) falharam em 2 segundos, sem nenhuma máquina alocada e sem registro: o GitHub não chegou a rodar os passos. Esse padrão costuma ser a conta sem minutos do GitHub Actions ou com cobrança pendente. Conferir em github.com/settings/billing (ou nas configurações da organização triade-prog). Os mesmos passos passam localmente."
         },
         {
           "id": "F0.10",
@@ -1054,6 +1054,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "01:56",
+      "fim": "01:56",
+      "texto": "Conferido o CI no GitHub: as duas execuções falharam sem rodar nenhum passo (nenhuma máquina alocada, sem registro). Não é erro do código, que passa inteiro localmente; o GitHub Actions da conta precisa ser liberado. F0.9 marcado como bloqueado.",
+      "ref": "PT-18"
+    },
     {
       "data": "16/10/2026",
       "inicio": "01:35",
