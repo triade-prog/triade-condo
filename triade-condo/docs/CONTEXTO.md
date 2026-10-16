@@ -1,6 +1,6 @@
 # Contexto do projeto — TRÍADE Condo
 
-Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com os passos 0 a 3 construídos e o passo 4 com banco e API prontos.
+Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com os passos 0 a 4 construídos.
 
 ## Onde está cada coisa
 
@@ -174,11 +174,21 @@ Depois, também a pedido da Carolina e para controle: quando a unidade tem inqui
 
 As permissões Acompanhar, Responder, Atualizar e Concluir passaram a valer. Onze telas foram desenhadas no `design-frontend.html`, com as decisões para aprovar (protocolo, quem faz o quê, privado, pendência na conclusão, anexos no passo 4b). A 0090 ainda não está no `triade-condo-dev`: a Carolina vai colar no SQL Editor, e depois a `api-plataforma` precisa ser publicada de novo.
 
+No mesmo dia, a Carolina aplicou a 0090 no `triade-condo-dev` pelo SQL Editor e aprovou as telas e as decisões. O banco do dev foi conferido igual ao local, a `api-plataforma` foi publicada de novo (versão 2) e as onze telas foram construídas na Plataforma: Pedidos no menu e no Início, fila, registrar, a ficha do pedido com as ações, histórico e as regras nas configurações.
+
+Decisões do passo 4:
+
+- Protocolo por condomínio e por ano: 2026-0001.
+- Acompanhar vê; Responder dá retorno; Atualizar registra e muda; Concluir conclui, reabre e cancela; revisar fica com o síndico. O responsável age no próprio pedido.
+- Pedido privado: só o síndico, quem registrou e o responsável.
+- Concluir pede as pendências resolvidas; cancelar fecha as abertas.
+- Fotos e documentos no passo 4b; até lá, evidência em texto.
+
 **Próximo passo:**
 
-1. Aprovar as telas e as decisões do passo 4; depois construir as telas.
-2. Aplicar a 0090 no `triade-condo-dev` e publicar de novo a `api-plataforma`.
-3. Com a Carolina: e-mail próprio (E9) para conferir o convite e a recuperação (F1.5); juntar o PR 3; liberar o CI (F0.9).
+1. Juntar o PR 3: a produção da Vercel sai do `main` (as prévias da branch não têm o `REPASSE_SEGREDO`). Depois, testar os pedidos com um condomínio de verdade (E8).
+2. Passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho.
+3. Com a Carolina: e-mail próprio (E9) para conferir o convite e a recuperação (F1.5); liberar o CI (F0.9).
 
 ## Como trabalhar
 

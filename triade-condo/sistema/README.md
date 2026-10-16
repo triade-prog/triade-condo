@@ -160,7 +160,10 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
 - **Histórico (AT-17).** Tudo vai para `historico` com `entidade = 'pedidos'`; `descreverEventoPedido` (domínio) transforma em frase.
 - **Permissão (CF-03).** O síndico tem `pedidos.ver`, `responder`, `atualizar`, `concluir` e `revisar`. As permissões `ACOMPANHAR`, `RESPONDER`, `ATUALIZAR` e `CONCLUIR` passam a valer. O responsável de um pedido responde, atualiza e repassa aquele pedido (`pode_no_pedido`).
 - **Rotas.** `/v1/condominio/pedidos` (fila e registro), `pedidos/opcoes`, `pedidos/contatos/:unidade`, `pedidos/:id` e as ações `etapa`, `responsavel`, `aceitar`, `retornos`, `notas`, `proximo-retorno`, `previsao`, `pendencias`, `concluir`, `revisar`, `reabrir`, `cancelar`; `regras-pedidos`.
-- **Telas.** Desenhadas em `../docs/design-frontend.html` ("Telas do passo 4"), esperando aprovação.
+- **Telas.** Seguem o desenho aprovado em `../docs/design-frontend.html` ("Telas do passo 4").
+  - Ficam em `apps/plataforma/src/telas/pedidos`, com as rotas `/pedidos` (filtros no endereço: `situacao`, `responsavel`, `prioridade`, `categoria`, `atencao`, `busca`) e `/pedidos/pedido?id=`. As regras ficam na aba Regras dos pedidos das configurações.
+  - Os testes ponta a ponta usam `tests/e2e/api-falsa-pedidos.ts`.
+- **Publicar.** Mudou a `api-plataforma`? Ela precisa ser publicada de novo no Supabase, num pacote só (o domínio e o `_shared` juntos).
 
 ## Rodar
 

@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0, 1, 2 e 3 construídos; passo 4 (pedidos no painel) com banco e API prontos e as telas desenhadas, esperando aprovação. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 74 Deno, 58 Vitest, 74 ponta a ponta). O triade-condo-dev tem as migrations até a 0080 e as Edge Functions api-plataforma e api-console; a Plataforma e o Console estão na Vercel, falando com elas.",
-    "fase_atual": "F3",
-    "proximo_passo": "Aprovar as telas e as decisões do passo 4 no design-frontend.html; depois construir as telas. Aplicar a 0090 no triade-condo-dev (a Carolina cola no SQL Editor) e publicar de novo a api-plataforma. Em paralelo, com a Carolina: e-mail próprio com Resend (E9) para conferir o convite e a recuperação (F1.5), juntar o PR 3 e liberar o GitHub Actions (F0.9)."
+    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 74 Deno, 58 Vitest, 84 ponta a ponta). O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 2, com os pedidos) e api-console; a Plataforma e o Console estão na Vercel, falando com elas.",
+    "fase_atual": "F4",
+    "proximo_passo": "Juntar o PR 3 para as telas dos pedidos chegarem ao site da Vercel (a produção sai do main; as prévias da branch não têm o REPASSE_SEGREDO) e testar com um condomínio de verdade (E8). Depois, passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho. Em paralelo, com a Carolina: e-mail próprio com Resend (E9) para o F1.5 e liberar o GitHub Actions (F0.9)."
   },
   "fases": [
     {
@@ -76,7 +76,7 @@
           "peca": "B4",
           "refs": [],
           "status": "andamento",
-          "nota": "Telas dos passos 1, 2 e 3 aprovadas pela Carolina em 16/10/2026 e construídas, sem emoji nem emoticon. Telas do passo 4 desenhadas em 16/10/2026, esperando aprovação. As telas de cada passo seguinte também são desenhadas e aprovadas antes do código."
+          "nota": "Telas dos passos 1 a 4 aprovadas pela Carolina em 16/10/2026 e construídas, sem emoji nem emoticon. As telas de cada passo seguinte também são desenhadas e aprovadas antes do código."
         }
       ]
     },
@@ -436,9 +436,9 @@
           "refs": [
             "AT-01"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: protocolo por condomínio e por ano (2026-0001), unidade ou local, contato só se confirmado na unidade, como chegou, categoria, prioridade, assunto e relato. Anexos ficam para o F4.8. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
-          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
+          "status": "feito",
+          "nota": "Banco e API prontos: protocolo por condomínio e por ano (2026-0001), unidade ou local, contato só se confirmado na unidade, como chegou, categoria, prioridade, assunto e relato. Anexos ficam para o F4.8. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.2",
@@ -447,9 +447,9 @@
           "refs": [
             "AT-02"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: fila com filtros por situação, responsável, prioridade e categoria, atalhos (retorno vencido, sem responsável, esperando aceite, com pendência), busca e há quanto tempo cada pedido está aberto. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
-          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
+          "status": "feito",
+          "nota": "Banco e API prontos: fila com filtros por situação, responsável, prioridade e categoria, atalhos (retorno vencido, sem responsável, esperando aceite, com pendência), busca e há quanto tempo cada pedido está aberto. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.3",
@@ -459,9 +459,9 @@
             "AT-03",
             "AT-12"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: o responsável vem da lista de quem atende (padrão da fila ou escolhido), confirma o aceite e pode repassar no fim do turno; quem sai da lista passa os pedidos ao padrão ou deixa sem responsável, à vista (CF-05). Sem executor é pendência. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
-          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
+          "status": "feito",
+          "nota": "Banco e API prontos: o responsável vem da lista de quem atende (padrão da fila ou escolhido), confirma o aceite e pode repassar no fim do turno; quem sai da lista passa os pedidos ao padrão ou deixa sem responsável, à vista (CF-05). Sem executor é pendência. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.4",
@@ -471,9 +471,9 @@
             "AT-06",
             "AT-07"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: próximo retorno pelo prazo (AT-10), recalculado a cada retorno ao morador, sem mexer na previsão; nota interna não conta; previsão só quando conhecida; mudar qualquer um pede motivo. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
-          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
+          "status": "feito",
+          "nota": "Banco e API prontos: próximo retorno pelo prazo (AT-10), recalculado a cada retorno ao morador, sem mexer na previsão; nota interna não conta; previsão só quando conhecida; mudar qualquer um pede motivo. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.5",
@@ -482,9 +482,9 @@
           "refs": [
             "AT-11"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: pendência com tipo, motivo e quem cuida; concluir pede as pendências resolvidas. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
-          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
+          "status": "feito",
+          "nota": "Banco e API prontos: pendência com tipo, motivo e quem cuida; concluir pede as pendências resolvidas. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.6",
@@ -496,9 +496,9 @@
             "AT-15",
             "AT-31"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: conclusão com explicação e evidência opcional; revisão opcional por condomínio (o síndico que conclui já revisa); reabertura com motivo, preservando a conclusão e dando responsável e próximo retorno, configurável; cancelamento com motivo e autor. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
-          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
+          "status": "feito",
+          "nota": "Banco e API prontos: conclusão com explicação e evidência opcional; revisão opcional por condomínio (o síndico que conclui já revisa); reabertura com motivo, preservando a conclusão e dando responsável e próximo retorno, configurável; cancelamento com motivo e autor. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.7",
@@ -508,9 +508,9 @@
             "AT-17",
             "AT-32"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: histórico do pedido com autor, data, antes e depois e motivo, nada se apaga; pedido privado visível só ao síndico, a quem registrou e ao responsável. Telas desenhadas, esperando aprovação. A migration 0090 ainda precisa ser aplicada no triade-condo-dev.",
-          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts"
+          "status": "feito",
+          "nota": "Banco e API prontos: histórico do pedido com autor, data, antes e depois e motivo, nada se apaga; pedido privado visível só ao síndico, a quem registrou e ao responsável. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.8",
@@ -1002,6 +1002,21 @@
       ],
       "status": "feito",
       "evidencia": "pgTAP 010_pedidos_test.sql (107 testes); Deno api-plataforma/pedidos_test.ts (11 testes); Vitest pedidos.test.ts (4 testes)"
+    },
+    {
+      "id": "T19",
+      "texto": "Telas da Plataforma do passo 4 no celular e no computador: início com o que pede atenção, fila filtrada, registrar, retorno, previsão, pendência, conclusão, reabertura, histórico, aceite da responsável e o que cada pessoa pode fazer; acessibilidade (axe, WCAG 2.2 AA) e nenhum emoji",
+      "fase": "F4",
+      "refs": [
+        "PT-10",
+        "AT-02",
+        "AT-03",
+        "AT-06",
+        "AT-13",
+        "AT-15"
+      ],
+      "status": "feito",
+      "evidencia": "Playwright plataforma-passo4.spec.ts (5 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -1225,6 +1240,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "18:22",
+      "fim": "18:42",
+      "texto": "Carolina aplicou a 0090 no SQL Editor e aprovou as telas do passo 4. Conferi o banco do triade-condo-dev com o local (tabelas, restrições, índices, gatilhos, políticas, permissões e o código de cada função): igual, fora a console_carteira já conhecida. Publiquei a api-plataforma de novo (versão 2, com as rotas dos pedidos) e ela responde pela Vercel. Construí as telas aprovadas: Pedidos no menu e no Início (o que pede atenção, levando à fila filtrada), fila com filtros, atalhos e busca, registrar pedido, a ficha com próximo retorno e previsão, responsável e aceite, pendências e as ações (retorno ao morador com modelos, nota interna, mudar etapa, pendência, concluir, revisar, reabrir, cancelar, repassar, editar), as abas de andamento, histórico, relato e conclusões, e as regras dos pedidos nas configurações. 10 testes ponta a ponta novos; 84 passando.",
+      "ref": "F4.1, F4.2, F4.3, F4.4, F4.5, F4.6, F4.7, T19, D4"
+    },
     {
       "data": "16/10/2026",
       "inicio": "17:54",
