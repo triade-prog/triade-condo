@@ -1,6 +1,6 @@
 # Contexto do projeto — TRÍADE Condo
 
-Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 15/10/2026 (horário de Brasília), com a aprovação da tecnologia e antes do primeiro código.
+Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com a base visual adotada e antes do primeiro código.
 
 ## Onde está cada coisa
 
@@ -11,7 +11,9 @@ Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atuali
 | Onde cada ideia entra no sistema real (sistema, peça e forma) | `triade-condo/MAPA.md` e a versão visual `triade-condo/mapa.html` |
 | Transparência do dinheiro (pesquisa e regras de tom) | `triade-condo/transparencia-do-dinheiro.md` |
 | Painel de execução (fases, entregas, testes, publicação, dependências, decisões, histórico) | `triade-condo/docs/painel-execucao.html` |
-| Design do frontend (princípios, design system, textos, telas a desenhar) | `triade-condo/docs/design-frontend.html` |
+| Design do frontend (base visual adotada, princípios, componentes, textos, telas a desenhar) | `triade-condo/docs/design-frontend.html` |
+| Tema e navegação reutilizáveis dos documentos HTML | `triade-condo/docs/tema-triade.css` e `triade-condo/docs/navegacao-triade.js` |
+| Notas e prévias da base visual (valores extraídos da referência) | `triade-condo/docs/design/` |
 | Instruções para toda sessão do Claude | `CLAUDE.md` (raiz do repositório) |
 | Planejamento, protótipos e pesquisas antigos (só consulta) | `arquivo/` |
 | Código do sistema | `triade-condo/sistema/` (nasce no passo 0) |
@@ -20,7 +22,7 @@ O `arquivo/` **não é base de construção**: o que for útil de lá entra prim
 
 ## Decisões fechadas
 
-As mesmas decisões estão no painel de execução (DC1 a DC10). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
+As mesmas decisões estão no painel de execução (DC1 a DC11). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
 
 - **DC1 · Dois sistemas.** Plataforma do síndico (painel web do síndico, WhatsApp do morador e acessos por link ou QR) e Console TRÍADE (sistema interno da equipe). A Base comum são as regras que os dois seguem por baixo; não é um terceiro sistema.
 - **DC2 · O cliente é o condomínio.** É a unidade que contrata e a unidade de separação dos dados: toda informação pertence a um condomínio e nunca aparece em outro (PT-01). Uma pessoa pode ter vínculo com mais de um condomínio (MU-04), o que atende o síndico profissional.
@@ -32,6 +34,12 @@ As mesmas decisões estão no painel de execução (DC1 a DC10). Mudar qualquer 
 - **DC8 · Quadro de permissões e fluxos detalhados só quando houver funcionalidade pronta para eles.** A fundação traz o mecanismo de permissão (pessoa + função + condomínio + ação, negar por padrão), não a tabela completa de quem pode o quê.
 - **DC9 · Rastreio até a ideia.** O `IDEIAS.md` é a fonte única. Cada entrega do painel cita em `refs` os códigos das ideias que atende; cada regra vira teste automático com o código da ideia no nome (ex.: `AT-06: próximo retorno não altera a previsão`).
 - **DC10 · Pedidos funcionam primeiro pelo painel.** O WhatsApp entra no passo 5 como mais uma entrada para o mesmo pedido, quando o provedor oficial estiver escolhido.
+- **DC11 · Paleta e tipografia definidas (Carolina, 16/10/2026).**
+  - Seguem a interface do produto Lattice nas referências fornecidas: fonte Inter, neutros frios, destaque lilás e cores de status em fundo suave com detalhe forte.
+  - Verde-petróleo nas ações da Plataforma do síndico e violeta no Console TRÍADE.
+  - A Plataforma usa barra superior com busca e menu branco flutuante. O Console usa lateral contínua com grupos e a identificação "Console TRÍADE · Admin".
+  - Os valores estão no `design-frontend.html`, na seção "Base adotada". Não tratar como provisórios.
+  - A marca Lattice não faz parte da identidade da TRÍADE. O logo oficial continua pendente.
 
 ## Como as ideias viram código
 
@@ -56,7 +64,7 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 | Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta) | Carolina (em análise) | Passo 5 |
 | Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio | TRÍADE | Passo 5 |
 | Projeto Supabase de desenvolvimento e projetos na Vercel | TRÍADE | Publicar o passo 1 (o passo 0 roda com Postgres local) |
-| Identidade visual (logo, paleta, tipografia) | TRÍADE | Telas do passo 1 em diante; até lá vale a proposta do `design-frontend.html` |
+| Logo oficial (a paleta e a tipografia já estão definidas, DC11) e aprovação do tom das mensagens | TRÍADE | Nada no código; o símbolo triangular atual é provisório |
 | Dados da empresa para termos e privacidade (EM-01, EM-06) | TRÍADE | Publicação |
 | Domínio próprio | TRÍADE | Publicação |
 | Condomínio de teste com síndico disposto (NG-09) | TRÍADE | Teste dos passos 4 a 7 |
@@ -74,6 +82,8 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
   - Fora do software: 34.
 - A tecnologia foi aprovada (DC5) depois da leitura do sistema do T-shirt Club.
 - Foram criados este arquivo, o painel de execução e o design do frontend.
+
+**16/10/2026.** A Carolina entregou a nova base visual. A paleta e a tipografia foram adotadas (DC11). O design do frontend e o painel de execução ganharam navegação lateral, busca e tema claro ou escuro, sem mudar os dados do painel.
 
 **Próximo passo:** passo 0 (Fundação) em `triade-condo/sistema/`. Ver as entregas F0 no painel.
 

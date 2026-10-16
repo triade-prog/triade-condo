@@ -11,6 +11,6 @@ Para construir:
 
 - [`docs/CONTEXTO.md`](docs/CONTEXTO.md): onde está cada coisa, decisões fechadas, o que está em aberto e a situação. **Leia antes de continuar o trabalho.**
 - [`docs/painel-execucao.html`](docs/painel-execucao.html): fases, entregas, testes, publicação, dependências e histórico da construção.
-- [`docs/design-frontend.html`](docs/design-frontend.html): princípios, design system e textos da Plataforma do síndico e do Console TRÍADE.
+- [`docs/design-frontend.html`](docs/design-frontend.html): base visual adotada (paleta e tipografia), princípios, componentes e textos da Plataforma do síndico e do Console TRÍADE. Notas e prévias em [`docs/design/`](docs/design/).
 
 O material de planejamento e pesquisa que levou até aqui está guardado em [`../arquivo/`](../arquivo/), apenas para consulta.
