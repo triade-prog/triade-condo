@@ -114,6 +114,20 @@ details.how { background: var(--surface); border: 1px solid var(--line); border-
 details.how summary { cursor: pointer; font-weight: 600; }
 details.how .legend { margin-top: 12px; }
 .note { font-size: 13.5px; color: var(--muted); max-width: 80ch; }
+.index { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px; display: grid; gap: 14px; }
+.index h2 { font-size: 22px; font-weight: 700; }
+.index .desc { color: var(--muted); margin: 4px 0 0; max-width: 70ch; }
+.icols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px 28px; }
+.ibr { display: grid; gap: 6px; align-content: start; }
+.ibr h3 { font-size: 15px; font-weight: 700; color: var(--c); border-bottom: 2px solid var(--c); padding-bottom: 3px; }
+.igrp { font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-top: 4px; }
+.irow { display: grid; grid-template-columns: minmax(0, 11em) minmax(0, 1fr); gap: 2px 10px; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+.irow:last-child { border-bottom: 0; }
+.irow button { border: 0; background: none; padding: 0; text-align: left; font-weight: 600; color: var(--ink); text-decoration: underline; text-decoration-color: var(--c); text-underline-offset: 3px; }
+.irow button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.irow code { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); }
+.irow code span { white-space: nowrap; }
+@media (max-width: 520px) { .irow { grid-template-columns: 1fr; } }
 
 @media (max-width: 1000px) {
   .wires { display: none; }
@@ -157,6 +171,11 @@ details.how .legend { margin-top: 12px; }
   </details>
 
   <section class="detail" id="detail" aria-live="polite"></section>
+
+  <section class="index" id="indice" aria-label="Índice de códigos">
+    <div><h2>Índice de códigos</h2><p class="desc">Em que peça está cada ideia do <code>IDEIAS.md</code>. “AT-01 a 04” quer dizer AT-01, AT-02, AT-03 e AT-04. Clique no nome da peça para abrir as ideias dela.</p></div>
+    <div class="icols" id="icols"></div>
+  </section>
 
   <p class="note">A Plataforma do síndico inclui o WhatsApp do morador, porque o canal é do condomínio. A Base comum não é um terceiro sistema: são regras que os dois sistemas seguem por baixo. “Fora do software” reúne o que a TRÍADE faz como empresa e não vira tela.</p>
 </div>
@@ -323,6 +342,22 @@ function renderCounts() {
   $('#clear').hidden = !filtering();
 }
 function render() { renderCounts(); renderDetail(); }
+function compress(ids) {
+  const by = []; const m = {};
+  for (const id of ids) { const [p, n] = id.split('-'); if (!m[p]) { m[p] = []; by.push(p); } m[p].push(n); }
+  return by.map(p => {
+    const ns = m[p].map(Number).sort((a, b) => a - b); const w = m[p][0].length; const f = n => String(n).padStart(w, '0');
+    const parts = []; let i = 0;
+    while (i < ns.length) { let j = i; while (j + 1 < ns.length && ns[j + 1] === ns[j] + 1) j++;
+      if (j - i >= 2) { parts.push(f(ns[i]) + ' a ' + f(ns[j])); i = j + 1; } else { parts.push(f(ns[i])); i++; } }
+    return p + '-' + parts.join(', ');
+  }).join('; ');
+}
+function buildIndex() {
+  $('#icols').innerHTML = Object.entries(BR).map(([b, br]) => `<div class="ibr ${b}"><h3>${esc(br.name)}</h3>` +
+    br.groups.map(g => (g.name && br.groups.length > 1 ? `<div class="igrp">${esc(g.name)}</div>` : '') +
+      g.ids.map(pid => `<div class="irow"><button type="button" data-open="${pid}">${esc(P[pid][0])}</button><code>${compress(D.pieces[pid].map(x => x[0])).replace(/[A-Z]+-\d+(?: a \d+)?|\d+ a \d+/g, m => `<span>${m}</span>`)}</code></div>`).join('')).join('') + `</div>`).join('');
+}
 function select(pid, scroll) {
   state.piece = pid; state.q = ''; $('#q').value = ''; render();
   try { history.replaceState(null, '', '#' + pid); } catch (e) {}
@@ -330,6 +365,7 @@ function select(pid, scroll) {
 }
 
 buildMap();
+buildIndex();
 const h = (location.hash || '').slice(1); if (P[h]) state.piece = h;
 render();
 document.addEventListener('click', e => {

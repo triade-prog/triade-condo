@@ -64,6 +64,65 @@ mindmap
       Material antigo · 3
 ```
 
+## Índice de códigos
+
+Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-04.
+
+**Plataforma do síndico**
+
+| Peça | Códigos |
+|---|---|
+| Início | AT-08; W-11; IA-10 |
+| Pedidos | AT-01 a 04, 06, 07, 09, 11 a 15, 17, 18, 20, 26, 27, 31 a 33; IA-03, 04, 12, 13, 19 |
+| Decisões e aprovações | V-14; AT-23; IA-08; FC-10 |
+| Moradores e unidades | MU-01, 02, 06 a 08 |
+| Comunicados e documentos | CD-01, 02, 04 a 11; IA-05 a 07 |
+| Manutenção e prestadores | V-13; MP-01 a 07, 09 a 11, 13, 15, 16 |
+| Agenda | AG-01 a 08 |
+| Orçamentos e compras | OC-01, 02, 04 a 10 |
+| Dinheiro do prédio | FC-01 a 03, 05 a 09, 11; DR-01 a 13, 15 a 22 |
+| Portaria e encomendas | PA-01 a 05, 07 a 11 |
+| Vida em condomínio | AC-01 a 05 |
+| Indicadores e relatórios | TR-01 a 05, 07 a 09; IA-14 |
+| Memória do prédio | MP-12, 14; CT-02 a 04; IA-09, 17 |
+| Configurações | V-04 a 06, 09; AT-05, 10, 25, 29; CF-01 a 08, 10, 12 |
+| WhatsApp do morador | V-07; W-05 a 10, 12, 16, 19; AT-16, 19, 21, 22, 28; CD-03; IA-01, 02, 18, 20; MU-05; FC-04; DR-14 |
+| Links e QR | V-11, 12; AT-30; MP-08; OC-03; PA-06 |
+
+**Console TRÍADE**
+
+| Peça | Códigos |
+|---|---|
+| Carteira de clientes | V-10; PI-01, 02, 06 |
+| Implantação | W-01, 03; PI-04, 05; SH-01 |
+| Planos e liberação | CF-11; PI-03, 16, 19; NG-01, 06 |
+| Pagamentos dos clientes | PI-07, 08 |
+| Suporte e acessos | PI-09, 11, 17; CT-01 |
+| Serviços contratados | SH-02 a 06, 09, 10; PI-14 |
+| Equipe interna | PI-10, 12, 18 |
+| Saúde e capacidade | PI-13, 15; TR-06 |
+| Mensagens e custos | NG-13, 15 |
+
+**Base comum**
+
+| Peça | Códigos |
+|---|---|
+| Segurança e acesso | MU-03, 04; PT-01, 02, 06, 08, 11, 13 |
+| Dados e histórico | AT-24; CF-09; PT-03, 04, 07, 09 |
+| Motor de mensagens | W-02, 04, 13 a 15, 17, 18, 20 |
+| Infraestrutura e qualidade | PT-05, 10, 12, 14 a 18 |
+| Princípios do produto | V-01, 08, 17 |
+| Motor de IA | IA-11, 15, 16 |
+
+**Fora do software**
+
+| Peça | Códigos |
+|---|---|
+| Serviços fora do sistema | SH-07, 08, 11 |
+| Negócio e preço | V-02, 03, 16; NG-02 a 05, 07 a 12, 14, 16 a 20 |
+| Empresa e marca | V-15; EM-01 a 08 |
+| Material antigo | FI-01 a 03 |
+
 ## Como ler as formas
 
 | Forma | O que significa |
