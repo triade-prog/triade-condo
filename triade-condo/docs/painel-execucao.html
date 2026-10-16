@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0, 1 e 2 construídos. A Plataforma do síndico tem login, escolha do condomínio, início com o que falta configurar, configurações (horários e fuso, feriados, categorias e prioridades, etapas e modelos de resposta, prazos) e pessoas e acesso (pessoas autorizadas com permissões individuais e quem atende). Nenhuma tela usa emoji. Tudo testado localmente (banco, API e telas com axe). A migration 0060 está no triade-condo-dev; a 0070 ainda não (a aplicação pela ferramenta excedeu 60 s e nada foi gravado). Falta conferir login e convite com o Supabase Auth de verdade, publicar na Vercel (E4) e liberar o CI do GitHub (F0.9).",
-    "fase_atual": "F2",
-    "proximo_passo": "Aplicar a migration 0070 no triade-condo-dev (supabase db push). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail de recuperação e convite e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9). Depois, passo 3: moradores e unidades, começando pelo desenho das telas."
+    "situacao": "Passos 0, 1 e 2 construídos; passo 3 (moradores e unidades) com banco, API e testes prontos e as 8 telas desenhadas, esperando aprovação. A Plataforma do síndico tem login, escolha do condomínio, início, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (318 pgTAP, 61 Deno, 53 Vitest, 56 ponta a ponta). As migrations 0070 e 0080 ainda não estão no triade-condo-dev.",
+    "fase_atual": "F3",
+    "proximo_passo": "Aprovar as telas do passo 3 no design-frontend.html (e decidir a permissão Cadastrar moradores no CF-03) para construí-las. Aplicar as migrations 0070 e 0080 no triade-condo-dev (supabase db push). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9)."
   },
   "fases": [
     {
@@ -363,8 +363,12 @@
           "id": "F3.1",
           "texto": "Torres ou blocos e unidades do condomínio",
           "peca": "S4",
-          "refs": [],
-          "status": "pendente"
+          "refs": [
+            "PT-03"
+          ],
+          "status": "andamento",
+          "nota": "Banco e API prontos: blocos opcionais e unidades, incluídas uma a uma ou geradas pela numeração do prédio, em ordem natural; nada se apaga, só desativa sem nada ativo dentro. Telas desenhadas, aguardando aprovação.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest packages/domain/src/moradores.test.ts"
         },
         {
           "id": "F3.2",
@@ -372,17 +376,24 @@
           "peca": "S4",
           "refs": [
             "MU-01",
-            "MU-08"
+            "MU-08",
+            "MU-04",
+            "PT-11"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: contato com nome e telefone, sem CPF; vários por unidade, um principal, relação e preferência de comunicados; o mesmo contato em mais de uma unidade. Telas desenhadas, aguardando aprovação.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest packages/domain/src/moradores.test.ts"
         },
         {
           "id": "F3.3",
           "texto": "Importar unidades e contatos de uma planilha",
           "peca": "S4",
-          "refs": [],
-          "status": "pendente",
-          "nota": "Necessidade da implantação (PI-04); não é uma ideia própria do IDEIAS.md"
+          "refs": [
+            "PI-04"
+          ],
+          "status": "andamento",
+          "nota": "Banco, API e leitura do CSV prontos: colunas reconhecidas pelos nomes comuns, prévia com a linha de cada erro, tudo ou nada, sem duplicar; os contatos nascem a confirmar. Necessidade da implantação (PI-04). Telas desenhadas, aguardando aprovação.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest packages/domain/src/moradores.test.ts"
         },
         {
           "id": "F3.4",
@@ -392,16 +403,21 @@
             "MU-02",
             "MU-03"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: só o vínculo confirmado pelo síndico vale; o pendente não acessa nada; confirmar vários de uma vez ou recusar; telefone compartilhado só avisa e leva a todas as unidades para perguntar qual (unidades_do_telefone, para o passo 5). Telas desenhadas, aguardando aprovação.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest packages/domain/src/moradores.test.ts"
         },
         {
           "id": "F3.5",
           "texto": "Mudança de morador: entrada e saída com revogação do vínculo",
           "peca": "S4",
           "refs": [
-            "MU-07"
+            "MU-07",
+            "PT-11"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: mudança numa operação (data, quem sai, quem entra); vínculo encerrado não volta nem muda; quem não está mais em nenhuma unidade pode ter nome e telefone removidos (PT-11). Telas desenhadas, aguardando aprovação.",
+          "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest packages/domain/src/moradores.test.ts"
         }
       ]
     },
@@ -913,6 +929,35 @@
       ],
       "status": "feito",
       "evidencia": "Playwright plataforma-passo2.spec.ts (9 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T16",
+      "texto": "Moradores e unidades: só o próprio condomínio, só o vínculo confirmado vale, telefone não prova identidade, mudança encerra quem sai, planilha tudo ou nada, dados pessoais removíveis e fora do histórico",
+      "fase": "F3",
+      "refs": [
+        "MU-01",
+        "MU-02",
+        "MU-03",
+        "MU-07",
+        "MU-08",
+        "PT-01",
+        "PT-11",
+        "PT-13"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 009_moradores_unidades_test.sql (69 testes); Deno api-plataforma/moradores_test.ts (11 testes); Vitest moradores.test.ts (8 testes)"
+    },
+    {
+      "id": "T17",
+      "texto": "Telas da Plataforma do passo 3 no celular e no computador: fluxo, permissões que a tela respeita, acessibilidade (axe, WCAG 2.2 AA) e nenhum emoji",
+      "fase": "F3",
+      "refs": [
+        "PT-10",
+        "MU-02",
+        "MU-07"
+      ],
+      "status": "pendente",
+      "nota": "Depois da aprovação das telas"
     }
   ],
   "publicacao": [
@@ -1126,6 +1171,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "13:11",
+      "fim": "13:32",
+      "texto": "Iniciado o passo 3 (moradores e unidades). Banco (migration 0080): blocos opcionais e unidades que não se apagam; contato com cadastro breve (nome e telefone, sem CPF), vários por unidade com principal, relação e preferência de comunicados, e o mesmo contato em mais de uma unidade; vínculo contato e unidade pendente ou confirmado pelo guardião, e só o confirmado vale; telefone compartilhado só avisa e leva a todas as unidades; mudança numa operação; importação de planilha tudo ou nada, com os contatos a confirmar; remoção de nome e telefone de quem saiu; nada pessoal no histórico. API da Plataforma com as rotas do passo 3; leitura do CSV e numeração do prédio no packages/domain. 69 testes pgTAP novos, 11 Deno e 8 Vitest. Oito telas desenhadas no design-frontend.html, aguardando aprovação, com três decisões para a Carolina (permissão Cadastrar moradores no CF-03, planilha em CSV, importados a confirmar). Migration 0080 ainda não aplicada no triade-condo-dev.",
+      "ref": "MU-01, MU-02, MU-03, MU-04, MU-07, MU-08, PI-04, PT-01, PT-11, PT-13"
+    },
     {
       "data": "16/10/2026",
       "inicio": "12:24",

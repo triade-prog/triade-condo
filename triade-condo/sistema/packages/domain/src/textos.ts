@@ -49,6 +49,18 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PADRAO_NECESSARIO: "Escolha o responsável padrão da fila.",
   PADRAO_INDISPONIVEL: "O responsável padrão precisa estar na lista e disponível.",
   RESPONSAVEL_INVALIDO: "Só o síndico ou uma pessoa autorizada, com acesso ativo, atende os pedidos.",
+  BLOCO_COM_UNIDADES: "Este bloco ainda tem unidades ativas. Desative-as ou mude-as de bloco antes.",
+  UNIDADE_REPETIDA: "Já existe uma unidade ativa com esta identificação neste bloco.",
+  UNIDADE_COM_CONTATOS: "Esta unidade ainda tem contatos. Registre a mudança ou encerre os vínculos antes de desativar.",
+  UNIDADE_INATIVA: "Esta unidade está desativada.",
+  CONTATO_JA_NA_UNIDADE: "Este contato já está nesta unidade.",
+  CONTATO_REMOVIDO: "Os dados deste contato foram removidos. Cadastre a pessoa de novo, se for o caso.",
+  CONTATO_COM_UNIDADE: "Este contato ainda está em alguma unidade. Encerre os vínculos antes de remover os dados.",
+  VINCULO_ENCERRADO: "Este vínculo já foi encerrado.",
+  NAO_PENDENTE: "Este contato já não está a confirmar. Atualize a lista.",
+  PENDENTE_SE_RECUSA: "Contato a confirmar não sai por mudança: confirme ou recuse.",
+  MUDANCA_VAZIA: "Diga quem sai ou quem entra na unidade.",
+  LINHA_INVALIDA: "Uma linha da planilha tem dado inválido. Corrija e envie de novo; nada foi gravado.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

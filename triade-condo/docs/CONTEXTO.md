@@ -1,6 +1,6 @@
 # Contexto do projeto — TRÍADE Condo
 
-Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com os passos 0 (Fundação) e 1 (Console TRÍADE) construídos.
+Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com os passos 0 a 2 construídos e o passo 3 com banco e API prontos.
 
 ## Onde está cada coisa
 
@@ -142,13 +142,31 @@ Decisões deste passo:
 
 As nove telas foram desenhadas no `design-frontend.html`, aprovadas pela Carolina e construídas na Plataforma no mesmo dia. Decisão de design: nenhuma tela usa emoji nem emoticon. Os selos mostram palavra e uma forma desenhada em SVG, e o teste ponta a ponta confere que não aparece emoji.
 
+**16/10/2026, tarde.** Começou o passo 3 (moradores e unidades). Ficaram prontos no banco e na API:
+
+- Blocos opcionais e unidades, que não se apagam: são desativados.
+- Contato com cadastro breve (nome e telefone, sem CPF). Cada unidade tem vários contatos, um deles o principal, com relação e preferência de comunicados. O mesmo contato pode estar em mais de uma unidade.
+- Vínculo do contato com a unidade, pendente ou confirmado. Só o confirmado pelo síndico vale; o pendente não acessa nada.
+- O telefone sozinho não prova quem é: número repetido só gera aviso, e a busca pelo telefone devolve todas as unidades.
+- Mudança numa operação: quem sai e quem entra.
+- Importação de planilha CSV, tudo ou nada, com os contatos a confirmar.
+- Remoção de nome e telefone de quem não está mais em nenhuma unidade.
+
+A migration 0080 também ainda não está no `triade-condo-dev`. As oito telas foram desenhadas no `design-frontend.html` e esperam aprovação, com três decisões para a Carolina:
+
+- permissão "Cadastrar moradores" no CF-03;
+- planilha em CSV;
+- importados nascem a confirmar.
+
+Até a decisão sobre o CF-03, moradores e unidades ficam só com o síndico.
+
 **Próximo passo:**
 
-1. Aplicar a migration 0070 no `triade-condo-dev`.
-2. Conferir login e convite com o Supabase Auth de verdade (F0.6, F1.5).
-3. Publicar na Vercel (E4).
-4. Liberar o CI (F0.9).
-5. Começar o passo 3 (moradores e unidades) pelo desenho das telas.
+1. Aprovar as telas do passo 3 e as três decisões; depois, construir as telas.
+2. Aplicar as migrations 0070 e 0080 no `triade-condo-dev`.
+3. Conferir login e convite com o Supabase Auth de verdade (F0.6, F1.5).
+4. Publicar na Vercel (E4).
+5. Liberar o CI (F0.9).
 
 ## Como trabalhar
 

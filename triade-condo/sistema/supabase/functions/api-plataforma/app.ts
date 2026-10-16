@@ -1,11 +1,24 @@
 // API da Plataforma do síndico. Login (F0.6) e escolha do condomínio na sessão (F0.3):
 // o navegador nunca manda o condomínio nas chamadas; ele vem da sessão, conferida no banco.
-// Passo 2: painel, configurações, pessoas autorizadas e quem atende. Quem pode o quê é
-// decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
+// Passo 2: painel, configurações, pessoas autorizadas e quem atende. Passo 3: blocos,
+// unidades e contatos. Quem pode o quê é decidido no banco (vínculo e permissões
+// individuais, CF-03); aqui só se valida a entrada.
 
 import type { Context, MiddlewareHandler } from "hono";
 import {
+  alterarContatoSchema,
   alterarPessoaSchema,
+  alterarUnidadeSchema,
+  alterarVinculoUnidadeSchema,
+  blocoSchema,
+  buscaMoradoresSchema,
+  confirmarContatosSchema,
+  encerrarVinculoSchema,
+  importacaoSchema,
+  incluirContatoSchema,
+  incluirUnidadesSchema,
+  mudancaSchema,
+  removerDadosSchema,
   atendimentoSchema,
   autorizarPessoaSchema,
   categoriaSchema,
@@ -201,6 +214,100 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json({
       versao: await rpc<number>("plataforma_definir_atendimento", { ...quem(c), p_versao: d.versao, p_responsaveis: d.responsaveis, p_padrao: d.padraoId }),
     });
+  });
+
+  // Blocos e unidades (F3.1).
+  app.get("/v1/condominio/unidades", async (c) => c.json(await rpc("plataforma_unidades", quem(c))));
+
+  app.get("/v1/condominio/unidades/:id", async (c) =>
+    c.json(await rpc("plataforma_unidade", { ...quem(c), p_unidade: idDaRota(c, "id") })));
+
+  const salvarBloco = async (c: Context<VarsPlataforma>, id: string | null) => {
+    const d = await lerCorpo(c, blocoSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc<{ id: string; versao: number }>("plataforma_salvar_bloco", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_nome: d.nome, p_ordem: d.ordem ?? null, p_ativo: d.ativo ?? null,
+    });
+  };
+  app.post("/v1/condominio/blocos", async (c) => c.json(await salvarBloco(c, null), 201));
+  app.put("/v1/condominio/blocos/:id", async (c) => c.json(await salvarBloco(c, idDaRota(c, "id"))));
+
+  app.post("/v1/condominio/unidades", async (c) => {
+    const d = await lerCorpo(c, incluirUnidadesSchema);
+    return c.json(await rpc("plataforma_incluir_unidades", { ...quem(c), p_bloco: d.blocoId, p_identificacoes: d.identificacoes }), 201);
+  });
+
+  app.put("/v1/condominio/unidades/:id", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, alterarUnidadeSchema);
+    return c.json({
+      versao: await rpc<number>("plataforma_alterar_unidade", {
+        ...quem(c), p_id: id, p_versao: d.versao, p_identificacao: d.identificacao, p_bloco: d.blocoId, p_ativa: d.ativa ?? null,
+      }),
+    });
+  });
+
+  // Contatos (MU-01, MU-02, MU-03, MU-08).
+  app.post("/v1/condominio/unidades/:id/contatos", async (c) => {
+    const unidade = idDaRota(c, "id");
+    const d = await lerCorpo(c, incluirContatoSchema);
+    return c.json(await rpc("plataforma_incluir_contato", {
+      ...quem(c), p_unidade: unidade, p_contato: d.contatoId ?? null, p_nome: d.contatoId ? null : d.nome,
+      p_telefone: d.contatoId ? null : d.telefone, p_relacao: d.relacao, p_principal: d.principal, p_recebe: d.recebeComunicados,
+    }), 201);
+  });
+
+  app.post("/v1/condominio/unidades/:id/mudanca", async (c) => {
+    const unidade = idDaRota(c, "id");
+    const d = await lerCorpo(c, mudancaSchema);
+    return c.json(await rpc("plataforma_registrar_mudanca", { ...quem(c), p_unidade: unidade, p_data: d.data, p_saem: d.saem, p_entram: d.entram }));
+  });
+
+  app.get("/v1/condominio/moradores", async (c) => {
+    const r = buscaMoradoresSchema.safeParse(c.req.query());
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
+    return c.json(await rpc("plataforma_moradores", { ...quem(c), p_busca: r.data.busca ?? null, p_estado: r.data.estado ?? null, p_pagina: r.data.pagina }));
+  });
+
+  app.put("/v1/condominio/contatos/:id", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, alterarContatoSchema);
+    return c.json(await rpc("plataforma_alterar_contato", { ...quem(c), p_contato: id, p_versao: d.versao, p_nome: d.nome, p_telefone: d.telefone }));
+  });
+
+  app.post("/v1/condominio/contatos/:id/remover-dados", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, removerDadosSchema);
+    await rpc("plataforma_remover_dados_contato", { ...quem(c), p_contato: id, p_versao: d.versao });
+    return c.json({ ok: true });
+  });
+
+  app.put("/v1/condominio/vinculos-unidade/:id", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, alterarVinculoUnidadeSchema);
+    return c.json({
+      versao: await rpc<number>("plataforma_alterar_vinculo_unidade", {
+        ...quem(c), p_id: id, p_versao: d.versao, p_relacao: d.relacao, p_principal: d.principal, p_recebe: d.recebeComunicados,
+      }),
+    });
+  });
+
+  app.post("/v1/condominio/vinculos-unidade/:id/encerrar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, encerrarVinculoSchema);
+    await rpc("plataforma_encerrar_vinculo_unidade", { ...quem(c), p_id: id, p_versao: d.versao, p_motivo: d.motivo, p_data_saida: d.dataSaida ?? null });
+    return c.json({ ok: true });
+  });
+
+  app.post("/v1/condominio/vinculos-unidade/confirmar", async (c) => {
+    const d = await lerCorpo(c, confirmarContatosSchema);
+    return c.json({ confirmados: await rpc<number>("plataforma_confirmar_contatos", { ...quem(c), p_itens: d.itens }) });
+  });
+
+  // Planilha (F3.3): a tela lê o arquivo e mostra a prévia; aqui chegam as linhas já lidas.
+  app.post("/v1/condominio/importacoes", async (c) => {
+    const d = await lerCorpo(c, importacaoSchema);
+    return c.json(await rpc("plataforma_importar_moradores", { ...quem(c), p_linhas: d.linhas }), 201);
   });
 
   return app;

@@ -116,6 +116,31 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
   - Nenhuma tela usa emoji nem emoticon; o teste ponta a ponta confere.
   - Os testes ponta a ponta usam `tests/e2e/api-falsa-plataforma.ts`.
 
+## Moradores e unidades (passo 3)
+
+- **Blocos e unidades.**
+  - Blocos (torre, quadra) são opcionais. A identificação da unidade é livre ("101", "Casa 12") e única entre as ativas do bloco.
+  - Nada se apaga. Bloco e unidade só são desativados quando não têm nada ativo dentro.
+  - `chave_unidade` (banco) e `chaveUnidade` (domínio) dão a mesma ordem natural. `gerarUnidades` monta a numeração por andar.
+- **Contatos (MU-01, MU-08).**
+  - O contato não tem login. O cadastro é breve: nome e telefone (`+55...`), sem CPF.
+  - `contatos_unidade` liga o contato à unidade, com relação, principal (um por unidade) e preferência de comunicados. O mesmo contato pode estar em mais de uma unidade.
+- **Confirmação (MU-02, MU-03).**
+  - O vínculo passa pelo guardião: `PENDENTE`, `CONFIRMADO` ou `ENCERRADO`. Só o confirmado vale.
+  - Quem pode confirmar inclui já confirmado. O que vem da planilha nasce pendente.
+  - `unidades_do_telefone` devolve só vínculos confirmados, todos eles. O WhatsApp (passo 5) pergunta qual unidade quando houver mais de uma.
+  - Telefone repetido em outro contato só gera aviso (`TELEFONE_COMPARTILHADO`).
+- **Mudança (MU-07).** `plataforma_registrar_mudanca` encerra quem sai e cria quem entra numa só transação. Vínculo encerrado não volta nem muda.
+- **Planilha (F3.3).**
+  - `lerPlanilhaMoradores` lê o CSV no navegador e aponta a linha de cada erro.
+  - `plataforma_importar_moradores` grava tudo ou nada.
+- **Dados pessoais (PT-11, PT-13).**
+  - Quem não está em nenhuma unidade pode ter nome e telefone removidos; o registro fica.
+  - O histórico nunca guarda nome nem telefone.
+- **Permissão.** As ações `moradores.ver`, `moradores.editar` e `moradores.confirmar` ficam só com o síndico até o CF-03 ganhar uma permissão para isso.
+- **Rotas.** `/v1/condominio/unidades`, `blocos`, `unidades/:id/contatos`, `unidades/:id/mudanca`, `moradores`, `contatos/:id`, `vinculos-unidade/...` e `importacoes`.
+- **Telas.** Desenhadas em `../docs/design-frontend.html` ("Telas do passo 3"); o código delas espera a aprovação.
+
 ## Rodar
 
 Requisitos: Node 22, pnpm 10 e PostgreSQL 16 ou 17 com pgTAP (`postgresql-17-pgtap`).

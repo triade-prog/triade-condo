@@ -2,6 +2,7 @@
 // Datas sempre no horário de Brasília.
 
 import { CENARIOS, ESTAGIOS, FUNCOES_CONSOLE } from "./console.ts";
+import { MOTIVOS_ENCERRAMENTO } from "./moradores.ts";
 import { FUSOS, mostrarDataSemHora, PERMISSOES, TIPOS_HORARIO } from "./plataforma.ts";
 
 export interface EventoHistorico {
@@ -57,6 +58,10 @@ export function descreverEvento(e: EventoHistorico): string {
     case "contrato.alterado":
       return "Referência do contrato alterada";
     case "estado.mudou": {
+      if (e.entidade === "contatos_unidade") {
+        if (d.para === "ENCERRADO") return d.motivo ? `Contato saiu da unidade · ${nomeDe(MOTIVOS_ENCERRAMENTO, d.motivo)}` : "Contato saiu da unidade";
+        return d.para === "CONFIRMADO" ? "Contato confirmado na unidade" : "Contato incluído na unidade, a confirmar";
+      }
       const texto = `Estágio: ${nomeDe(ESTAGIOS, d.de)} → ${nomeDe(ESTAGIOS, d.para)}`;
       if (!d.de) return `Cliente aberto em ${nomeDe(ESTAGIOS, d.para).toLowerCase()}`;
       return d.motivo ? `${texto}. Motivo: ${String(d.motivo)}` : texto;
@@ -105,6 +110,26 @@ export function descreverEvento(e: EventoHistorico): string {
       return d.pendente ? "Acesso revogado · responsável padrão ficou pendente" : "Acesso revogado";
     case "atendimento.alterado":
       return "Responsáveis pelo atendimento alterados";
+    case "bloco.criado":
+      return "Bloco criado";
+    case "bloco.alterado":
+      return "Bloco alterado";
+    case "unidades.incluidas":
+      return d.quantidade === 1 ? "1 unidade incluída" : `${String(d.quantidade)} unidades incluídas`;
+    case "unidade.alterada":
+      return "Unidade alterada";
+    case "contato.criado":
+      return "Contato cadastrado";
+    case "contato.alterado":
+      return "Contato corrigido";
+    case "contato.dados_removidos":
+      return "Dados pessoais do contato removidos";
+    case "vinculo_unidade.alterado":
+      return "Relação ou preferências do contato alteradas";
+    case "mudanca.registrada":
+      return `Mudança registrada em ${mostrarDataSemHora(String(d.data))}: ${String(d.saem)} saíram, ${String(d.entram)} entraram`;
+    case "moradores.importados":
+      return `Planilha importada: ${String(d.vinculos)} contatos a confirmar`;
     default:
       return e.acao;
   }

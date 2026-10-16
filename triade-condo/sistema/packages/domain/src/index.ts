@@ -7,3 +7,4 @@ export * from "./schemas.ts";
 export * from "./console.ts";
 export * from "./eventos.ts";
 export * from "./plataforma.ts";
+export * from "./moradores.ts";
