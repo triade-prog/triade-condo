@@ -16,6 +16,13 @@
   --color-lilas: #8576f3;
   --color-lilas-bruma: #f1f0ff;
   --color-foco: #196dca;
+  /* Contorno de campos, ícones e detalhes, lateral do Console e seleção lilás (DC11). */
+  --color-contorno: #a4b1cd;
+  --color-detalhe: #5e6d96;
+  --color-lateral: #eff2f8;
+  --color-lateral-borda: #c4cee1;
+  --color-selecao: #e3dfff;
+  --color-selecao-tinta: #5322c5;
 
   --color-plataforma: #007773;
   --color-plataforma-press: #005e5b;
@@ -46,6 +53,12 @@
     --color-tinta: #eceefa;
     --color-tinta-suave: #afb7d0;
     --color-linha: #373f5c;
+    --color-contorno: #5b6588;
+    --color-detalhe: #a5b0cf;
+    --color-lateral: #1a1e33;
+    --color-lateral-borda: #373f5c;
+    --color-selecao: #393052;
+    --color-selecao-tinta: #d2beff;
     --color-lilas-bruma: #393052;
     --color-plataforma: #65d7bf;
     --color-plataforma-press: #8de8d4;

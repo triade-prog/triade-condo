@@ -1,6 +1,6 @@
 # Contexto do projeto — TRÍADE Condo
 
-Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com o passo 0 (Fundação) construído e o passo 1 (Console TRÍADE) com regras e API prontas.
+Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com os passos 0 (Fundação) e 1 (Console TRÍADE) construídos.
 
 ## Onde está cada coisa
 
@@ -65,7 +65,6 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 | Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta) | Carolina (em análise) | Passo 5 |
 | Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio | TRÍADE | Passo 5 |
 | Ligar as configurações de login no painel do Supabase (triade-condo-dev), ajustar os modelos de e-mail de recuperação e convite, cadastrar a primeira administração e criar os projetos na Vercel | TRÍADE | Conferir o login e o convite de verdade (F0.6, F1.5) e publicar o passo 1 |
-| Aprovar o desenho das telas do passo 1 (design-frontend.html) | Carolina | Código das telas do Console |
 | Logo oficial (a paleta e a tipografia já estão definidas, DC11) e aprovação do tom das mensagens | TRÍADE | Nada no código; o símbolo triangular atual é provisório |
 | Dados da empresa para termos e privacidade (EM-01, EM-06) | TRÍADE | Publicação |
 | Domínio próprio | TRÍADE | Publicação |
@@ -110,7 +109,26 @@ No mesmo dia foi criado o projeto Supabase de desenvolvimento `triade-condo-dev`
 
 A migration 0060 foi aplicada no `triade-condo-dev`. As telas foram desenhadas no `design-frontend.html` e esperam aprovação antes do código, como manda a regra de design.
 
-**Próximo passo:** aprovar o desenho das telas do passo 1 para construí-las; liberar o GitHub Actions (F0.9). Ver as entregas F1 no painel.
+No mesmo dia, com o desenho aprovado pela Carolina, as telas do passo 1 foram construídas no Console:
+
+- entrar com o autenticador;
+- carteira;
+- cadastro com cenário;
+- ficha com abas;
+- convite do síndico;
+- equipe;
+- notas internas;
+- histórico;
+- pessoas e funções.
+
+A Plataforma ganhou a página onde o síndico convidado cria a senha. Os testes ponta a ponta rodam com axe no celular e no computador.
+
+**Próximo passo:**
+
+1. Conferir login e convite com o Supabase Auth de verdade (F0.6, F1.5).
+2. Publicar na Vercel (E4).
+3. Liberar o CI (F0.9).
+4. Começar o passo 2 (configurações na Plataforma do síndico) pelo desenho das telas.
 
 ## Como trabalhar
 

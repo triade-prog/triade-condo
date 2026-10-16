@@ -3,9 +3,10 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+// A primeira página que abre sem sessão: o início da Plataforma e o login do Console.
 const APPS = [
-  { nome: "Plataforma do síndico", url: "http://localhost:3000" },
-  { nome: "Console TRÍADE", url: "http://localhost:3001" },
+  { nome: "Plataforma do síndico", base: "http://localhost:3000", url: "http://localhost:3000", titulo: "Plataforma do síndico" },
+  { nome: "Console TRÍADE", base: "http://localhost:3001", url: "http://localhost:3001/entrar", titulo: "Entrar no Console" },
 ];
 
 for (const app of APPS) {
@@ -24,7 +25,7 @@ for (const app of APPS) {
       expect(h["x-content-type-options"]).toBe("nosniff");
       expect(h["x-robots-tag"]).toBe("noindex, nofollow");
       expect(h["x-powered-by"]).toBeUndefined();
-      await expect(page.getByRole("heading", { level: 1, name: app.nome })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1, name: app.titulo })).toBeVisible();
       expect(erros).toEqual([]);
     });
 
@@ -40,7 +41,7 @@ for (const app of APPS) {
     });
 
     test("o repasse /api não chama nada sem a configuração do servidor", async ({ request }) => {
-      const r = await request.get(`${app.url}/api/v1/saude`);
+      const r = await request.get(`${app.base}/api/v1/saude`);
       expect(r.status()).toBe(503);
       expect(await r.json()).toEqual({ erro: { codigo: "UPSTREAM_UNAVAILABLE" } });
     });

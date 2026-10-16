@@ -42,8 +42,8 @@ export function cabecalhosSeguranca(_app: App, caminho = "/"): Record<string, st
   return {
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
     "X-Content-Type-Options": "nosniff",
-    // O link de redefinir senha leva o token na URL: nada de referrer ali.
-    "Referrer-Policy": caminho.startsWith("/redefinir") ? "no-referrer" : "strict-origin-when-cross-origin",
+    // Os links de redefinir senha e de convite levam o token na URL: nada de referrer ali.
+    "Referrer-Policy": caminho.startsWith("/redefinir") || caminho.startsWith("/convite") ? "no-referrer" : "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=(), browsing-topics=(), payment=()",
     "Cross-Origin-Opener-Policy": "same-origin",
     "X-Frame-Options": "DENY",

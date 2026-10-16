@@ -75,7 +75,10 @@ Se a tabela não tiver condomínio, ela precisa de um motivo em `tabelas_sem_con
   - A Edge Function convida pelo Supabase Auth. O banco confere a permissão antes de o convite sair.
   - Quem já tem conta (síndico profissional, MU-04) não recebe e-mail: o acesso aparece no próximo login.
   - O convidado cria a senha em `/convite` do app (`POST /v1/auth/criar-senha`).
-- **As telas** estão desenhadas em `../docs/design-frontend.html` ("Telas do passo 1") e esperam aprovação antes do código.
+- **As telas** seguem o desenho aprovado em `../docs/design-frontend.html` ("Telas do passo 1"):
+  - Ficam em `apps/console/src/telas`, e as rotas em `apps/console/src/app`.
+  - Os componentes base (campos, selos, avisos, vazio, erro, carregando, janela e o cliente da API) ficam em `packages/ui`.
+  - Os testes ponta a ponta usam uma API falsa no navegador (`tests/e2e/api-falsa.ts`).
 
 ### Primeira pessoa da equipe
 

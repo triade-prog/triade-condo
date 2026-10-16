@@ -11,10 +11,14 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "peerDependencies": {
-    "react": "^19.3.0"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
     "react": "^19.3.0"
+  },
+  "dependencies": {
+    "@triade/domain": "workspace:*"
   }
 }

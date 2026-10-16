@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passo 0 construído; passo 1 (Console TRÍADE) com regras e API prontos: funções internas só nos clientes atribuídos, carteira com estágio e situações a tratar, ficha com número institucional único, cenário do prédio, convite do síndico pelo Supabase Auth, notas internas e histórico administrativo. A migration 0060 está aplicada no triade-condo-dev, sem avisos de segurança. As telas do passo 1 estão desenhadas e aguardam aprovação antes do código. O CI no GitHub segue bloqueado pela conta (F0.9).",
+    "situacao": "Passos 0 e 1 construídos. O Console TRÍADE tem login com autenticador, carteira de clientes, cadastro com cenário, ficha do condomínio, convite do síndico, equipe do cliente, notas internas e histórico, além de pessoas e funções da equipe; a Plataforma tem a página onde o síndico convidado cria a senha. Tudo testado localmente (banco, API e telas com axe); a migration 0060 está no triade-condo-dev. Falta conferir login e convite com o Supabase Auth de verdade, publicar na Vercel (E4) e liberar o CI do GitHub (F0.9).",
     "fase_atual": "F1",
-    "proximo_passo": "Aprovar o desenho das telas do passo 1 (design-frontend.html, seção Telas do passo 1) para construir as telas do Console. Liberar o GitHub Actions (F0.9). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail de recuperação e convite e cadastrar a primeira administração com iniciar_equipe (README)."
+    "proximo_passo": "No Supabase: ligar as configurações de login, ajustar os modelos de e-mail de recuperação e convite e cadastrar a primeira administração com iniciar_equipe (README); então conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9). Depois, passo 2: configurações na Plataforma do síndico, começando pelo desenho das telas."
   },
   "fases": [
     {
@@ -76,7 +76,7 @@
           "peca": "B4",
           "refs": [],
           "status": "andamento",
-          "nota": "Telas do passo 1 e entrada no Console desenhadas em design-frontend.html (seção Telas do passo 1), aguardando aprovação da Carolina."
+          "nota": "Telas do passo 1 e entrada no Console aprovadas pela Carolina em 16/10/2026 e construídas. Segue em andamento: as telas de cada passo seguinte também são desenhadas e aprovadas antes do código."
         }
       ]
     },
@@ -143,7 +143,7 @@
             "PT-08"
           ],
           "status": "andamento",
-          "nota": "Rotas de login, autenticador, saída de todas as sessões, recuperação e redefinição prontas e testadas com um Auth falso (api-console/app_test.ts, api-plataforma/app_test.ts). Falta conferir com o Supabase Auth de verdade no triade-condo-dev, depois de ligar as configurações de login no painel do Supabase. As telas de login entram no passo 1."
+          "nota": "Rotas e telas de login, autenticador, recuperação e redefinição prontas no Console (Playwright console-passo1.spec.ts) e testadas com um Auth falso. Falta conferir com o Supabase Auth de verdade no triade-condo-dev, depois de ligar as configurações de login no painel do Supabase. As telas de login da Plataforma entram no passo 2 (F2.1)."
         },
         {
           "id": "F0.7",
@@ -202,8 +202,8 @@
           "refs": [
             "PI-10"
           ],
-          "status": "andamento",
-          "nota": "Funções internas, atribuição e equipe prontas no banco e na API, com a migration aplicada no triade-condo-dev. Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). A entrada no Console (login com autenticador) também está desenhada. Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts (PI-10: só clientes atribuídos, função retirada para na hora, administração nunca some)."
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)"
         },
         {
           "id": "F1.2",
@@ -213,8 +213,8 @@
             "PI-01",
             "V-10"
           ],
-          "status": "andamento",
-          "nota": "Carteira com estágio (em implantação → ativo, só com síndico convidado) e situações a tratar calculadas da ficha. Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts."
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)"
         },
         {
           "id": "F1.3",
@@ -224,8 +224,9 @@
             "PI-02",
             "CF-01"
           ],
-          "status": "andamento",
-          "nota": "Ficha com endereço, contatos, número institucional único por condomínio (W-01) e referência do contrato (só administração), editável com controle de versão. Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). Recursos contratados e liberados entram com Planos e liberação (C3). Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts."
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)",
+          "nota": "Recursos contratados e liberados (parte do PI-02) entram com Planos e liberação (C3)."
         },
         {
           "id": "F1.4",
@@ -237,8 +238,9 @@
             "V-06",
             "CF-12"
           ],
-          "status": "andamento",
-          "nota": "Três cenários (sem portaria, portaria remota, portaria presencial), escolhidos no cadastro ou depois; não criam equipe (V-06). As opções de configuração de cada cenário entram no passo 2, só para os recursos que existirem (CF-12). Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts."
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)",
+          "nota": "As opções de configuração de cada cenário entram no passo 2, só para os recursos que existirem (CF-12)."
         },
         {
           "id": "F1.5",
@@ -247,8 +249,9 @@
           "refs": [
             "CF-02"
           ],
-          "status": "andamento",
-          "nota": "Convite pelo Supabase Auth: conta nova recebe o link para criar a senha na Plataforma; quem já tem conta (MU-04) só ganha o vínculo. O banco confere a permissão antes de o convite sair. Falta conferir o e-mail de convite de verdade no triade-condo-dev (modelo do e-mail com token_hash). Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts."
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)",
+          "nota": "Falta conferir o e-mail de convite de verdade no triade-condo-dev (modelo do e-mail com token_hash), junto com a conferência do login (F0.6)."
         },
         {
           "id": "F1.6",
@@ -257,8 +260,8 @@
           "refs": [
             "PI-06"
           ],
-          "status": "andamento",
-          "nota": "Notas só de inserção em tabela interna: o síndico não as lê nem com o contexto do próprio condomínio (teste PI-06). Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts."
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)"
         },
         {
           "id": "F1.7",
@@ -267,8 +270,8 @@
           "refs": [
             "PI-12"
           ],
-          "status": "andamento",
-          "nota": "Histórico do cliente com autor, incluindo eventos internos que só a equipe vê; histórico das mudanças na equipe para a administração. Regras e API prontas e testadas; a tela está desenhada em design-frontend.html (Telas do passo 1) e espera aprovação antes do código (D4). Evidência: pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts."
+          "status": "feito",
+          "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)"
         }
       ]
     },
@@ -860,6 +863,17 @@
       ],
       "status": "feito",
       "evidencia": "pgTAP 007_console_clientes_test.sql (56 testes)"
+    },
+    {
+      "id": "T13",
+      "texto": "Telas do Console do passo 1 no celular e no computador: fluxo, permissões que a tela respeita e acessibilidade (axe, WCAG 2.2 AA)",
+      "fase": "F1",
+      "refs": [
+        "PT-10",
+        "PI-10"
+      ],
+      "status": "feito",
+      "evidencia": "Playwright console-passo1.spec.ts (11 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -1073,6 +1087,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "02:21",
+      "fim": "02:33",
+      "texto": "Com o desenho aprovado pela Carolina, construídas as telas do passo 1 no Console TRÍADE: entrar com o autenticador, recuperar e criar senha, carteira com filtros, cadastrar condomínio com cenário, ficha com abas (ficha e área interna, síndico, equipe, notas internas, histórico) e pessoas e funções da equipe. A Plataforma ganhou a página onde o síndico convidado cria a senha. Componentes base no packages/ui (campos, selos, avisos, vazio, erro, carregando, janela). 11 cenários Playwright com API falsa, no celular e no computador, com axe em cada tela; 38 testes ponta a ponta passando.",
+      "ref": "PI-01, PI-02, PI-06, PI-10, PI-12, V-04, V-05, V-06, V-10, CF-01, CF-02, CF-12, PT-08, PT-10"
+    },
     {
       "data": "16/10/2026",
       "inicio": "01:58",
