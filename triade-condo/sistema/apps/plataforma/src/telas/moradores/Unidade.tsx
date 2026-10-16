@@ -2,6 +2,7 @@
 // Ficha da unidade (MU-01, MU-03, MU-04, MU-07, MU-08): os contatos ativos, com relação,
 // telefone, principal e comunicados; confirmar ou recusar o que está a confirmar; a mudança;
 // quem saiu, com o motivo e a data, e a remoção dos dados pessoais de quem saiu (PT-11).
+// Unidade com inquilino e sem proprietário no cadastro pede o proprietário (MU-01).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -15,7 +16,8 @@ import { nomeMotivo, nomeRelacao, SeloEstado } from "./comum.tsx";
 import { EditarContato, EditarUnidade, Encerrar, IncluirContato, RegistrarMudanca } from "./JanelasUnidade.tsx";
 
 type JanelaAberta =
-  | { tipo: "incluir" | "mudanca" | "unidade" }
+  | { tipo: "incluir"; relacao?: string }
+  | { tipo: "mudanca" | "unidade" }
   | { tipo: "editar" | "encerrar" | "recusar"; contato: ContatoDaUnidade }
   | { tipo: "remover"; anterior: ContatoAnterior };
 
@@ -83,6 +85,14 @@ export function Unidade() {
       </div>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
       {falha ? <Aviso tom="erro">{falha}</Aviso> : null}
+      {d.faltaProprietario ? (
+        <Aviso tom="atencao">
+          <span className="flex flex-wrap items-center justify-between gap-2">
+            <span>Esta unidade tem inquilino e o proprietário do imóvel não está no cadastro. Para controle, inclua o proprietário, mesmo que não more aqui.</span>
+            {edita ? <Botao variante="secundario" onClick={() => setJanela({ tipo: "incluir", relacao: "PROPRIETARIO" })}>Incluir proprietário</Botao> : null}
+          </span>
+        </Aviso>
+      ) : null}
 
       {d.contatos.length === 0 ? (
         <Vazio titulo="Nenhum contato nesta unidade" acao={edita ? <Botao onClick={() => setJanela({ tipo: "incluir" })}>+ Contato</Botao> : undefined}>
@@ -158,7 +168,7 @@ export function Unidade() {
         </section>
       ) : null}
 
-      <IncluirContato aberto={janela?.tipo === "incluir"} unidade={d} aoFechar={fechar} salvo={salvo} />
+      <IncluirContato aberto={janela?.tipo === "incluir"} unidade={d} relacaoInicial={janela?.tipo === "incluir" ? janela.relacao : undefined} aoFechar={fechar} salvo={salvo} />
       <RegistrarMudanca aberto={janela?.tipo === "mudanca"} unidade={d} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
       <EditarUnidade aberto={janela?.tipo === "unidade"} unidade={d} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
       <EditarContato contato={janela?.tipo === "editar" ? janela.contato : null} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />

@@ -12,9 +12,9 @@ import { useCarregar } from "../sessao.tsx";
 import type { ListaMoradores, MoradorDaLista, Recado } from "../tipos.ts";
 import { nomeRelacao, SeloEstado } from "./comum.tsx";
 
-export function ListaContatos({ estado, salvo }: { estado?: "PENDENTE"; salvo: (r: Recado) => void }) {
-  const [texto, setTexto] = useState("");
-  const [busca, setBusca] = useState("");
+export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "PENDENTE"; salvo: (r: Recado) => void; buscaInicial?: string }) {
+  const [texto, setTexto] = useState(buscaInicial);
+  const [busca, setBusca] = useState(buscaInicial);
   const [pagina, setPagina] = useState(1);
   const [marcados, setMarcados] = useState<string[]>([]);
   const [recusar, setRecusar] = useState<MoradorDaLista | null>(null);

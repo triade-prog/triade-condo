@@ -1,8 +1,9 @@
-// API da Plataforma falsa, dentro do navegador (page.route): as telas dos passos 2 e 3 rodam
-// sem Supabase. As regras de verdade estão testadas no banco (pgTAP 008 e 009) e na API
+// API da Plataforma falsa, dentro do navegador (page.route): as telas dos passos 2, 3 e 4 rodam
+// sem Supabase. As regras de verdade estão testadas no banco (pgTAP 008, 009 e 010) e na API
 // (Deno); aqui se confere a tela: fluxo, textos, o que cada pessoa vê e acessibilidade.
 import type { Page, Route } from "@playwright/test";
 import { criarMoradores, resumoMoradores, rotasMoradores } from "./api-falsa-moradores";
+import { criarPedidos, resumoPedidos, rotasPedidos } from "./api-falsa-pedidos";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -16,6 +17,8 @@ export interface OpcoesPlataforma {
   quem?: "SINDICA" | "SECRETARIA" | "SO_VE";
   /** Com dois condomínios, a pessoa escolhe em qual entrar (MU-04). */
   doisCondominios?: boolean;
+  /** A síndica e a secretária já atendem os pedidos (passo 4). */
+  comAtendimento?: boolean;
 }
 
 function erro(route: Route, status: number, codigo: string, detalhes?: Record<string, unknown>) {
@@ -60,6 +63,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         { id: novoId(), categoriaId: null as string | null, prioridadeId: null as string | null, horas: 24, versao: 1 },
         { id: novoId(), categoriaId: null as string | null, prioridadeId: pris[3]!.id as string | null, horas: 4, versao: 1 },
       ],
+      regrasPedidos: { revisao: false, reabertura: true },
     },
     pessoas: [
       { vinculoId: V_ANA, pessoaId: ANA, nome: "Ana Souza", funcao: "SINDICO", cargo: null as string | null, permissoes: [] as string[], desde: "2026-10-16T13:00:00Z", versao: 1, responsavel: false, disponivel: false },
@@ -68,12 +72,20 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     responsavelPadrao: null as string | null,
     convites: [] as string[],
     moradores: criarMoradores(),
+    pedidos: [] as ReturnType<typeof criarPedidos>,
   };
+  estado.pedidos = criarPedidos(estado.config, V_ANA, V_BRUNA);
+  if (opcoes.comAtendimento) {
+    for (const p of estado.pessoas) { p.responsavel = true; p.disponivel = true; }
+    estado.responsavelPadrao = V_ANA;
+  }
+  const eu = quem === "SINDICA" ? { vinculo: V_ANA, nome: "Ana Souza" } : quem === "SECRETARIA" ? { vinculo: V_BRUNA, nome: "Bruna" } : { vinculo: "caio", nome: "Caio" };
 
   const acoes = () => quem === "SINDICA"
-    ? ["atendimento.responsaveis", "config.editar", "config.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pessoas.autorizar", "pessoas.ver",
-      "plataforma.painel.ver"]
-    : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "plataforma.painel.ver"] : ["config.ver", "plataforma.painel.ver"];
+    ? ["atendimento.responsaveis", "config.editar", "config.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pedidos.atualizar", "pedidos.concluir",
+      "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver"]
+    : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver"]
+      : ["config.ver", "pedidos.ver", "plataforma.painel.ver"];
   const pendencias = () => {
     const p: string[] = [];
     if (estado.config.horarios.ATENDIMENTO.intervalos.length === 0) p.push("SEM_HORARIO_ATENDIMENTO");
@@ -125,12 +137,15 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         pessoa: { id: ANA, nome: quem === "SINDICA" ? "Ana Souza" : quem === "SECRETARIA" ? "Bruna" : "Caio" },
         funcoes: [quem === "SINDICA" ? "SINDICO" : "AUTORIZADO"], acoes: acoes(), pendencias: pendencias(),
         ...(acoes().includes("moradores.ver") ? { moradores: resumoMoradores(estado.moradores) } : {}),
+        ...(acoes().includes("pedidos.ver") ? { pedidos: resumoPedidos(estado.pedidos, estado.config, eu.vinculo) } : {}),
       } });
     }
     if (caminho === "/v1/condominio/configuracoes") return route.fulfill({ json: { ...c, pendencias: pendencias(), podeEditar: pode("config.editar") } });
 
     const moradores = await rotasMoradores(route, estado.moradores, caminho, metodo, corpo, pode);
     if (moradores !== null) return moradores;
+    const pedidos = await rotasPedidos(route, estado.pedidos, c, estado.pessoas, estado.moradores, eu, caminho, metodo, corpo, url, pode);
+    if (pedidos !== null) return pedidos;
 
     // Daqui em diante, mudar configuração.
     const editaConfig = /^\/v1\/condominio\/(fuso|horarios|feriados|categorias|prioridades|etapas|modelos|prazos)/.test(caminho);

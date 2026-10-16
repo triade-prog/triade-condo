@@ -1,7 +1,7 @@
 // API da Plataforma do síndico. Login (F0.6) e escolha do condomínio na sessão (F0.3):
 // o navegador nunca manda o condomínio nas chamadas; ele vem da sessão, conferida no banco.
 // Passo 2: painel, configurações, pessoas autorizadas e quem atende. Passo 3: blocos,
-// unidades e contatos. Quem pode o quê é decidido no banco (vínculo e permissões
+// unidades e contatos. Passo 4: pedidos no painel. Quem pode o quê é decidido no banco (vínculo e permissões
 // individuais, CF-03); aqui só se valida a entrada.
 
 import type { Context, MiddlewareHandler } from "hono";
@@ -36,6 +36,23 @@ import {
   revogarPessoaSchema,
   TIPOS_HORARIO,
   versaoSchema,
+  aceitarPedidoSchema,
+  alterarPedidoSchema,
+  atribuirPedidoSchema,
+  buscaPedidosSchema,
+  cancelarPedidoSchema,
+  concluirPedidoSchema,
+  moverPedidoSchema,
+  mudarRetornoSchema,
+  notaPedidoSchema,
+  pendenciaSchema,
+  previsaoSchema,
+  reabrirPedidoSchema,
+  registrarPedidoSchema,
+  regrasPedidosSchema,
+  resolverPendenciaSchema,
+  retornoSchema,
+  revisarPedidoSchema,
 } from "@triade/domain";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { criarApp } from "../_shared/app.ts";
@@ -263,6 +280,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json(await rpc("plataforma_incluir_contato", {
       ...quem(c), p_unidade: unidade, p_contato: d.contatoId ?? null, p_nome: d.contatoId ? null : d.nome,
       p_telefone: d.contatoId ? null : d.telefone, p_relacao: d.relacao, p_principal: d.principal, p_recebe: d.recebeComunicados,
+      p_proprietario: d.proprietario ?? null,
     }), 201);
   });
 
@@ -317,6 +335,84 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/importacoes", async (c) => {
     const d = await lerCorpo(c, importacaoSchema);
     return c.json(await rpc("plataforma_importar_moradores", { ...quem(c), p_linhas: d.linhas, p_agrupamento: d.agrupamento ?? null }), 201);
+  });
+
+  // Pedidos no painel (passo 4; AT-01 a AT-17, AT-31, AT-32). Toda ação leva a versão lida
+  // do pedido (AT-24) e devolve a nova.
+  app.put("/v1/condominio/regras-pedidos", async (c) => {
+    const d = await lerCorpo(c, regrasPedidosSchema);
+    return c.json({
+      versao: await rpc<number>("plataforma_definir_regras_pedidos", { ...quem(c), p_versao: d.versao, p_revisao: d.revisao, p_reabertura: d.reabertura }),
+    });
+  });
+
+  app.get("/v1/condominio/pedidos/opcoes", async (c) => c.json(await rpc("plataforma_pedidos_opcoes", quem(c))));
+
+  app.get("/v1/condominio/pedidos/contatos/:unidade", async (c) =>
+    c.json(await rpc("plataforma_pedido_contatos", { ...quem(c), p_unidade: idDaRota(c, "unidade") })));
+
+  app.get("/v1/condominio/pedidos", async (c) => {
+    const r = buscaPedidosSchema.safeParse(c.req.query());
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
+    const f = r.data;
+    return c.json(await rpc("plataforma_pedidos", {
+      ...quem(c), p_situacao: f.situacao ?? null, p_responsavel: f.responsavel ?? null, p_prioridade: f.prioridade ?? null,
+      p_categoria: f.categoria ?? null, p_atencao: f.atencao ?? null, p_busca: f.busca ?? null, p_pagina: f.pagina,
+    }));
+  });
+
+  app.post("/v1/condominio/pedidos", async (c) => {
+    const d = await lerCorpo(c, registrarPedidoSchema);
+    return c.json(await rpc("plataforma_registrar_pedido", {
+      ...quem(c), p_unidade: d.unidadeId, p_contato: d.contatoId, p_local: d.local, p_categoria: d.categoriaId, p_prioridade: d.prioridadeId,
+      p_assunto: d.assunto, p_descricao: d.descricao, p_canal: d.canal, p_privado: d.privado, p_responsavel: d.responsavelId,
+    }), 201);
+  });
+
+  app.get("/v1/condominio/pedidos/:id", async (c) => c.json(await rpc("plataforma_pedido", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  // Ações sobre um pedido: rota, validação e os parâmetros da função do banco.
+  const acoes = [
+    { rota: "", metodo: "put", schema: alterarPedidoSchema, funcao: "plataforma_alterar_pedido",
+      args: (d: ReturnType<typeof alterarPedidoSchema.parse>) => ({ p_categoria: d.categoriaId, p_prioridade: d.prioridadeId, p_local: d.local, p_privado: d.privado }) },
+    { rota: "/etapa", metodo: "post", schema: moverPedidoSchema, funcao: "plataforma_mover_pedido",
+      args: (d: ReturnType<typeof moverPedidoSchema.parse>) => ({ p_etapa: d.etapaId }) },
+    { rota: "/responsavel", metodo: "post", schema: atribuirPedidoSchema, funcao: "plataforma_atribuir_pedido",
+      args: (d: ReturnType<typeof atribuirPedidoSchema.parse>) => ({ p_responsavel: d.responsavelId, p_motivo: d.motivo }) },
+    { rota: "/aceitar", metodo: "post", schema: aceitarPedidoSchema, funcao: "plataforma_aceitar_pedido", args: () => ({}) },
+    { rota: "/retornos", metodo: "post", schema: retornoSchema, funcao: "plataforma_registrar_retorno",
+      args: (d: ReturnType<typeof retornoSchema.parse>) => ({ p_meio: d.meio, p_texto: d.texto }) },
+    { rota: "/notas", metodo: "post", schema: notaPedidoSchema, funcao: "plataforma_anotar_pedido",
+      args: (d: ReturnType<typeof notaPedidoSchema.parse>) => ({ p_texto: d.texto }) },
+    { rota: "/proximo-retorno", metodo: "put", schema: mudarRetornoSchema, funcao: "plataforma_mudar_retorno",
+      args: (d: ReturnType<typeof mudarRetornoSchema.parse>) => ({ p_quando: d.quando, p_motivo: d.motivo }) },
+    { rota: "/previsao", metodo: "put", schema: previsaoSchema, funcao: "plataforma_definir_previsao",
+      args: (d: ReturnType<typeof previsaoSchema.parse>) => ({ p_data: d.data, p_motivo: d.motivo }) },
+    { rota: "/pendencias", metodo: "post", schema: pendenciaSchema, funcao: "plataforma_abrir_pendencia",
+      args: (d: ReturnType<typeof pendenciaSchema.parse>) => ({ p_tipo: d.tipo, p_motivo: d.motivo, p_responsavel: d.responsavelId }) },
+    { rota: "/concluir", metodo: "post", schema: concluirPedidoSchema, funcao: "plataforma_concluir_pedido",
+      args: (d: ReturnType<typeof concluirPedidoSchema.parse>) => ({ p_etapa: d.etapaId, p_explicacao: d.explicacao, p_evidencia: d.evidencia }) },
+    { rota: "/revisar", metodo: "post", schema: revisarPedidoSchema, funcao: "plataforma_revisar_pedido",
+      args: (d: ReturnType<typeof revisarPedidoSchema.parse>) => ({ p_aprovar: d.aprovar, p_motivo: d.motivo }) },
+    { rota: "/reabrir", metodo: "post", schema: reabrirPedidoSchema, funcao: "plataforma_reabrir_pedido",
+      args: (d: ReturnType<typeof reabrirPedidoSchema.parse>) => ({ p_motivo: d.motivo, p_responsavel: d.responsavelId }) },
+    { rota: "/cancelar", metodo: "post", schema: cancelarPedidoSchema, funcao: "plataforma_cancelar_pedido",
+      args: (d: ReturnType<typeof cancelarPedidoSchema.parse>) => ({ p_motivo: d.motivo }) },
+  ];
+  for (const a of acoes) {
+    app[a.metodo as "put" | "post"](`/v1/condominio/pedidos/:id${a.rota}`, async (c) => {
+      const id = idDaRota(c, "id");
+      const d = await lerCorpo(c, a.schema as Parameters<typeof lerCorpo>[1]) as { versao: number };
+      // deno-lint-ignore no-explicit-any
+      return c.json(await rpc(a.funcao, { ...quem(c), p_id: id, p_versao: d.versao, ...(a.args as (x: any) => object)(d) }));
+    });
+  }
+
+  app.post("/v1/condominio/pedidos/:id/pendencias/:pendencia/resolver", async (c) => {
+    const id = idDaRota(c, "id");
+    const pendencia = idDaRota(c, "pendencia");
+    const d = await lerCorpo(c, resolverPendenciaSchema);
+    return c.json(await rpc("plataforma_resolver_pendencia", { ...quem(c), p_id: id, p_versao: d.versao, p_pendencia: pendencia, p_resolucao: d.resolucao }));
   });
 
   return app;

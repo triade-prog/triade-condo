@@ -83,7 +83,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
       return route.fulfill({ json: { mensagem: "Se este e-mail tiver acesso à TRÍADE Condo, enviamos um link para criar uma senha nova." } });
     }
     if (caminho === "/v1/auth/criar-senha" || caminho === "/v1/auth/redefinir") {
-      if (corpo.tokenHash !== "token-de-convite-valido-123") return erro(route, 410, "TOKEN_INVALID");
+      if (corpo.tokenHash !== "token-de-convite-valido-123" && corpo.accessToken !== "aaa.bbb.ccc") return erro(route, 410, "TOKEN_INVALID");
       estado.senhasCriadas++;
       return route.fulfill({ json: { ok: true } });
     }

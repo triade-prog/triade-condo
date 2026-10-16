@@ -5,6 +5,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { chamarApi, pedeLogin, textoDoErro, type ErroApi } from "@triade/ui";
+import type { ResumoPedidos } from "./tipos.ts";
 
 export interface Painel {
   condominio: { id: string; nome: string; cidade: string | null; uf: string | null; cenario: string | null };
@@ -13,7 +14,9 @@ export interface Painel {
   acoes: string[];
   pendencias: string[];
   /** Resumo de moradores, só para quem pode ver (passo 3). */
-  moradores?: { unidades: number; semContato: number; aConfirmar: number };
+  moradores?: { unidades: number; semContato: number; aConfirmar: number; semProprietario: number };
+  /** Resumo dos pedidos que a pessoa enxerga, para quem pode ver (passo 4). */
+  pedidos?: ResumoPedidos;
 }
 
 export interface CondominioDaPessoa {

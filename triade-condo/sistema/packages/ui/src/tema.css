@@ -27,6 +27,9 @@
   --color-plataforma: #007773;
   --color-plataforma-press: #005e5b;
   --color-plataforma-bruma: #e3f5f1;
+  /* Faixa lilás do alto da Plataforma (cabeçalho da referência Lattice). */
+  --color-faixa-alto: #d4d4ff;
+  --color-faixa-baixo: #e4d3ff;
   --color-console: #6d44ef;
   --color-console-press: #5530c0;
   --color-console-bruma: #f1f0ff;
@@ -63,6 +66,8 @@
     --color-plataforma: #65d7bf;
     --color-plataforma-press: #8de8d4;
     --color-plataforma-bruma: #203e3c;
+    --color-faixa-alto: #302d53;
+    --color-faixa-baixo: #3b2d50;
     --color-console: #bca2ff;
     --color-console-press: #d2beff;
     --color-console-bruma: #393052;

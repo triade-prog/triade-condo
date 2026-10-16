@@ -63,7 +63,23 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   ESTRUTURA_COM_BLOCOS: "Ainda há torres ou blocos ativos. Desative-os antes de tirar a divisão.",
   ESTRUTURA_COM_ANDARES: "Ainda há unidades com andar. Tire o andar delas antes de deixar de usar andar.",
   SEM_ANDAR: "Este condomínio não usa andar. Ligue o uso de andar em Como o prédio se organiza.",
+  FALTA_PROPRIETARIO: "Unidade com inquilino precisa do proprietário do imóvel no cadastro. Informe o proprietário junto.",
+  MESMA_PESSOA: "Inquilino e proprietário precisam ser pessoas diferentes.",
   LINHA_INVALIDA: "Uma linha da planilha tem dado inválido. Corrija e envie de novo; nada foi gravado.",
+  CONTATO_NAO_CONFIRMADO: "Escolha um contato confirmado desta unidade. Contato a confirmar ainda não fala pela unidade.",
+  RESPONSAVEL_INDISPONIVEL: "Escolha alguém da lista de quem atende que esteja disponível.",
+  RESPONSAVEL_NECESSARIO: "Ninguém disponível para assumir. Escolha quem assume o pedido reaberto.",
+  MESMO_RESPONSAVEL: "Esta pessoa já é a responsável pelo pedido.",
+  NAO_RESPONSAVEL: "Só a pessoa responsável aceita o pedido.",
+  PEDIDO_ENCERRADO: "Este pedido está encerrado. Reabra para mudar alguma coisa.",
+  PEDIDO_EM_REVISAO: "Este pedido está em revisão. Espere a revisão do síndico.",
+  ETAPA_INCOMPATIVEL: "Esta etapa não combina com a situação ou a categoria do pedido.",
+  CONCLUIR_PARA_ENCERRAR: "Para encerrar, use Concluir: a conclusão explica ao morador o que foi feito.",
+  PENDENCIA_ABERTA: "Ainda há pendência aberta. Resolva as pendências antes de concluir.",
+  PENDENCIA_RESOLVIDA: "Esta pendência já foi resolvida.",
+  SEM_REVISAO: "Este pedido não está esperando revisão. Atualize a página.",
+  NAO_ENCERRADO: "Só pedido encerrado pode ser reaberto. Pedido cancelado continua cancelado.",
+  REABERTURA_DESLIGADA: "Este condomínio não reabre pedidos. Registre um pedido novo.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

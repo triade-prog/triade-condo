@@ -8,3 +8,4 @@ export * from "./console.ts";
 export * from "./eventos.ts";
 export * from "./plataforma.ts";
 export * from "./moradores.ts";
+export * from "./pedidos.ts";

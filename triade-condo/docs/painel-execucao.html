@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (organização do prédio por torre, bloco, quadra ou prédio, com ou sem andar; unidades; ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (336 pgTAP, 62 Deno, 54 Vitest, 72 ponta a ponta). As migrations 0070 e 0080 ainda não estão no triade-condo-dev.",
-    "fase_atual": "F3",
-    "proximo_passo": "Aplicar as migrations 0070 e 0080 no triade-condo-dev (supabase db push). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9). Depois, passo 4: pedidos no painel, começando pelo desenho das telas."
+    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 76 Deno, 58 Vitest, 88 ponta a ponta). O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 3) e api-console (versão 2); a Plataforma e o Console estão na Vercel, falando com elas.",
+    "fase_atual": "F4",
+    "proximo_passo": "Juntar o PR 3 para as telas dos pedidos chegarem ao site da Vercel (a produção sai do main; as prévias da branch não têm o REPASSE_SEGREDO) e testar com um condomínio de verdade (E8). Depois, passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho. Em paralelo, com a Carolina: e-mail próprio com Resend (E9) para o F1.5 e liberar o GitHub Actions (F0.9)."
   },
   "fases": [
     {
@@ -76,7 +76,7 @@
           "peca": "B4",
           "refs": [],
           "status": "andamento",
-          "nota": "Telas dos passos 1 e 2 aprovadas pela Carolina em 16/10/2026 e construídas, sem emoji nem emoticon. As telas de cada passo seguinte também são desenhadas e aprovadas antes do código."
+          "nota": "Telas dos passos 1 a 4 aprovadas pela Carolina em 16/10/2026 e construídas, sem emoji nem emoticon. As telas de cada passo seguinte também são desenhadas e aprovadas antes do código."
         }
       ]
     },
@@ -142,8 +142,9 @@
           "refs": [
             "PT-08"
           ],
-          "status": "andamento",
-          "nota": "Rotas e telas de login, autenticador, recuperação e redefinição prontas no Console (Playwright console-passo1.spec.ts) e testadas com um Auth falso. Falta conferir com o Supabase Auth de verdade no triade-condo-dev, depois de ligar as configurações de login no painel do Supabase. As telas de login da Plataforma foram construídas no passo 2 (F2.1)."
+          "status": "feito",
+          "evidencia": "Login real no Console do triade-condo-dev (console-hazel-nine.vercel.app) com admin@triadecondo.com: senha e cadastro do autenticador no primeiro acesso, 16/10/2026",
+          "nota": "Falta conferir de verdade a recuperação de senha e o convite por e-mail (F1.5)."
         },
         {
           "id": "F0.7",
@@ -251,7 +252,7 @@
           ],
           "status": "feito",
           "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)",
-          "nota": "Falta conferir o e-mail de convite de verdade no triade-condo-dev (modelo do e-mail com token_hash), junto com a conferência do login (F0.6)."
+          "nota": "Login real conferido (F0.6). Falta conferir o e-mail de convite de verdade no triade-condo-dev (modelo do e-mail com token_hash)."
         },
         {
           "id": "F1.6",
@@ -435,7 +436,9 @@
           "refs": [
             "AT-01"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: protocolo por condomínio e por ano (2026-0001), unidade ou local, contato só se confirmado na unidade, como chegou, categoria, prioridade, assunto e relato. Anexos ficam para o F4.8. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.2",
@@ -444,7 +447,9 @@
           "refs": [
             "AT-02"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: fila com filtros por situação, responsável, prioridade e categoria, atalhos (retorno vencido, sem responsável, esperando aceite, com pendência), busca e há quanto tempo cada pedido está aberto. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.3",
@@ -454,7 +459,9 @@
             "AT-03",
             "AT-12"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: o responsável vem da lista de quem atende (padrão da fila ou escolhido), confirma o aceite e pode repassar no fim do turno; quem sai da lista passa os pedidos ao padrão ou deixa sem responsável, à vista (CF-05). Sem executor é pendência. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.4",
@@ -464,7 +471,9 @@
             "AT-06",
             "AT-07"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: próximo retorno pelo prazo (AT-10), recalculado a cada retorno ao morador, sem mexer na previsão; nota interna não conta; previsão só quando conhecida; mudar qualquer um pede motivo. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.5",
@@ -473,7 +482,9 @@
           "refs": [
             "AT-11"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: pendência com tipo, motivo e quem cuida; concluir pede as pendências resolvidas. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.6",
@@ -485,7 +496,9 @@
             "AT-15",
             "AT-31"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: conclusão com explicação e evidência opcional; revisão opcional por condomínio (o síndico que conclui já revisa); reabertura com motivo, preservando a conclusão e dando responsável e próximo retorno, configurável; cancelamento com motivo e autor. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.7",
@@ -495,7 +508,9 @@
             "AT-17",
             "AT-32"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Banco e API prontos: histórico do pedido com autor, data, antes e depois e motivo, nada se apaga; pedido privado visível só ao síndico, a quem registrou e ao responsável. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
+          "evidencia": "pgTAP 010_pedidos_test.sql; Deno api-plataforma/pedidos_test.ts; Vitest pedidos.test.ts; Playwright plataforma-passo4.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F4.8",
@@ -504,7 +519,8 @@
           "refs": [
             "PT-07"
           ],
-          "status": "pendente"
+          "status": "pendente",
+          "nota": "Proposto como passo 4b, logo depois das telas do passo 4 (Supabase Storage privado, validação de tipo e tamanho, link que expira). Até lá, a evidência da conclusão é texto."
         }
       ]
     },
@@ -961,6 +977,46 @@
       ],
       "status": "feito",
       "evidencia": "Playwright plataforma-passo3.spec.ts (8 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T18",
+      "texto": "Pedidos: só o próprio condomínio, protocolo sem buracos, responsável real que aceita, próximo retorno separado da previsão, pendências, conclusão, revisão, reabertura e cancelamento com motivo, pedido privado, histórico completo e edição simultânea",
+      "fase": "F4",
+      "refs": [
+        "AT-01",
+        "AT-02",
+        "AT-03",
+        "AT-06",
+        "AT-07",
+        "AT-11",
+        "AT-12",
+        "AT-13",
+        "AT-14",
+        "AT-15",
+        "AT-17",
+        "AT-24",
+        "AT-31",
+        "AT-32",
+        "CF-05",
+        "PT-01"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 010_pedidos_test.sql (107 testes); Deno api-plataforma/pedidos_test.ts (11 testes); Vitest pedidos.test.ts (4 testes)"
+    },
+    {
+      "id": "T19",
+      "texto": "Telas da Plataforma do passo 4 no celular e no computador: início com o que pede atenção, fila filtrada, registrar, retorno, previsão, pendência, conclusão, reabertura, histórico, aceite da responsável e o que cada pessoa pode fazer; acessibilidade (axe, WCAG 2.2 AA) e nenhum emoji",
+      "fase": "F4",
+      "refs": [
+        "PT-10",
+        "AT-02",
+        "AT-03",
+        "AT-06",
+        "AT-13",
+        "AT-15"
+      ],
+      "status": "feito",
+      "evidencia": "Playwright plataforma-passo4.spec.ts (5 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -1091,7 +1147,8 @@
       "quem": "TRÍADE",
       "precisa_em": "F1",
       "refs": [],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "plataforma-omega-five.vercel.app e console-hazel-nine.vercel.app (equipe triade-ai), com SUPABASE_FUNCTIONS_URL e REPASSE_SEGREDO; login com e-mail inexistente volta INVALID_CREDENTIALS pelas Edge Functions do triade-condo-dev (16/10/2026)"
     },
     {
       "id": "E5",
@@ -1125,6 +1182,15 @@
       "precisa_em": "F4",
       "refs": [],
       "status": "pendente"
+    },
+    {
+      "id": "E9",
+      "texto": "E-mail próprio no Supabase Auth (Resend como SMTP), com os modelos de convite e de recuperação de senha em português e a Site URL apontando para a Plataforma",
+      "quem": "TRÍADE",
+      "precisa_em": "F1",
+      "refs": [],
+      "status": "pendente",
+      "nota": "A Site URL já aponta para a Plataforma, e desde 16/10/2026 a Plataforma e o Console aceitam também o link do modelo padrão do Supabase (o acesso vem depois do #). O Resend continua necessário para os e-mails saírem em nome da TRÍADE, em português e sem o limite baixo de envios do Supabase; com ele, os modelos usam {{ .RedirectTo }}?token_hash={{ .TokenHash }}."
     }
   ],
   "decisoes": [
@@ -1174,6 +1240,55 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "18:46",
+      "fim": "19:10",
+      "texto": "O link de nova senha dava Link incompleto: o modelo padrão do Supabase manda o acesso depois do # no endereço, e as telas só liam token_hash. A Plataforma e o Console passaram a aceitar os dois formatos; o # sai do endereço assim que é lido, link vencido mostra Link vencido ou já usado, e o servidor só aceita o acesso que nasceu do mesmo tipo de link (recuperação ou convite), nunca o de um login comum. As duas Edge Functions foram publicadas de novo. A pedido da Carolina, a Plataforma passou a seguir a estrutura de Dois sistemas, uma família: busca no condomínio na barra superior (pedidos e moradores, cada parte para quem pode ver) e faixa lilás no alto (estava verde-clara); o desenho ganhou a busca nas 30 telas da Plataforma e a tela de resultados. 2 testes Deno e 4 ponta a ponta novos; 76 Deno e 88 ponta a ponta passando.",
+      "ref": "F1.5, E9, D2, PT-08, AT-02"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "18:22",
+      "fim": "18:42",
+      "texto": "Carolina aplicou a 0090 no SQL Editor e aprovou as telas do passo 4. Conferi o banco do triade-condo-dev com o local (tabelas, restrições, índices, gatilhos, políticas, permissões e o código de cada função): igual, fora a console_carteira já conhecida. Publiquei a api-plataforma de novo (versão 2, com as rotas dos pedidos) e ela responde pela Vercel. Construí as telas aprovadas: Pedidos no menu e no Início (o que pede atenção, levando à fila filtrada), fila com filtros, atalhos e busca, registrar pedido, a ficha com próximo retorno e previsão, responsável e aceite, pendências e as ações (retorno ao morador com modelos, nota interna, mudar etapa, pendência, concluir, revisar, reabrir, cancelar, repassar, editar), as abas de andamento, histórico, relato e conclusões, e as regras dos pedidos nas configurações. 10 testes ponta a ponta novos; 84 passando.",
+      "ref": "F4.1, F4.2, F4.3, F4.4, F4.5, F4.6, F4.7, T19, D4"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "17:54",
+      "fim": "18:17",
+      "texto": "Resend como tarefa da Carolina (E9: SMTP próprio, Site URL e modelos de e-mail em português). Passo 4, pedidos no painel: migration 0090 com pedidos, protocolo por condomínio e ano, guardião (aberto, em andamento, em revisão, encerrado, cancelado), responsável que aceita e repassa, próximo retorno e previsão separados e com motivo, retornos e notas internas, pendências com tipo e quem cuida, conclusão com explicação, revisão e reabertura configuráveis, cancelamento, pedido privado e histórico completo; quem sai da lista de quem atende passa os pedidos ao padrão (CF-05). Permissões Acompanhar, Responder, Atualizar e Concluir passam a valer. API da Plataforma com as rotas dos pedidos. Onze telas desenhadas no design-frontend.html, com as decisões para aprovar. 107 pgTAP, 11 Deno e 4 Vitest novos; 450 pgTAP, 74 Deno e 58 Vitest passando.",
+      "ref": "E9, F4.1, F4.2, F4.3, F4.4, F4.5, F4.6, F4.7, T18, D4"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "17:31",
+      "fim": "17:38",
+      "texto": "Primeira administração cadastrada no triade-condo-dev: a conta admin@triadecondo.com, criada pela Carolina no Supabase Auth, entrou na equipe TRÍADE com a função Administração (iniciar_equipe). A Carolina entrou no Console publicado na Vercel com senha e autenticador: o login real funciona (F0.6).",
+      "ref": "F0.6, CF-01"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "16:52",
+      "fim": "17:30",
+      "texto": "Publicação no ambiente de desenvolvimento. A Carolina colou no SQL Editor as duas funções da 0070 com delete (conferidas iguais às do repositório), criou os projetos plataforma e console na Vercel (o duplicado console-hh7n foi apagado), gravou os segredos das funções no Supabase e o REPASSE_SEGREDO na Vercel. Pus SUPABASE_FUNCTIONS_URL nos dois projetos e publiquei as Edge Functions api-plataforma e api-console no triade-condo-dev, cada uma num pacote só (domínio e _shared juntos), testadas antes no Deno local. Teste de ponta a ponta: sem a senha de repasse a função responde 403; login com e-mail inexistente pelos dois sites volta INVALID_CREDENTIALS, passando pela Vercel, pela função, pelo Auth e pelo banco.",
+      "ref": "E4, F0.6, F0.8"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "15:26",
+      "fim": "15:55",
+      "texto": "Migrations 0070 e 0080 aplicadas no triade-condo-dev pela ferramenta do Supabase, em partes, porque ela expira em 60 segundos com textos grandes e espera confirmação para SQL com delete. Comparação com o banco local (tabelas, restrições, índices, gatilhos, políticas e o código de cada função) deu igual; faltam só plataforma_remover_feriado e plataforma_remover_prazo, a colar no SQL Editor. O verificador de segurança do Supabase só aponta a proteção contra senhas vazadas desligada no Auth.",
+      "ref": "F0.2, F0.3, CF-03, MU-01"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "15:14",
+      "fim": "15:25",
+      "texto": "Ajuste pedido pela Carolina, para controle: quando a unidade tem inquilino, o proprietário do imóvel fica no cadastro. Ao incluir um inquilino em unidade sem proprietário, a mesma janela pede o proprietário (pessoa nova ou já cadastrada no condomínio), que fica sem ser o principal e sem os comunicados do dia a dia; o banco recusa o inquilino sozinho (FALTA_PROPRIETARIO). Na mudança, se entra inquilino ou sai o proprietário, o novo proprietário entra junto. A planilha não barra: a unidade com inquilino e sem proprietário aparece no Início, no filtro Inquilino sem proprietário, na ficha (botão Incluir proprietário) e no fim da importação. MU-01 atualizada no IDEIAS, MAPA e mapa; tela 11 no desenho. 7 pgTAP, 1 Deno e 1 cenário ponta a ponta novos; 343 pgTAP, 63 Deno e 74 ponta a ponta passando.",
+      "ref": "MU-01, MU-07, F3.1, F3.3"
+    },
     {
       "data": "16/10/2026",
       "inicio": "14:17",

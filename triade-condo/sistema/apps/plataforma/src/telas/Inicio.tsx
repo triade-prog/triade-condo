@@ -1,7 +1,7 @@
 "use client";
 // Início do síndico (V-08, CF-12): o resumo de moradores e unidades (passo 3), o que falta
-// configurar, sem obrigar nada, e o que já veio pronto pelo cenário. O dia do síndico
-// (pedidos e retornos) chega no passo 7.
+// configurar, sem obrigar nada, e o que já veio pronto pelo cenário. Os pedidos (passo 4)
+// mostram o que pede atenção agora; o dia do síndico completo chega no passo 7.
 
 import Link from "next/link";
 import { CENARIOS, PENDENCIAS_CONFIG } from "@triade/domain";
@@ -27,6 +27,8 @@ function Moradores({ resumo }: { resumo: NonNullable<ReturnType<typeof usePlataf
       ajuda: "Só valem depois de confirmados.", aviso: true }] : []),
     ...(resumo.semContato ? [{ texto: plural(resumo.semContato, "unidade sem contato confirmado", "unidades sem contato confirmado"),
       href: "/moradores?filtro=sem-contato", botao: "Ver quais", ajuda: null, aviso: true }] : []),
+    ...(resumo.semProprietario ? [{ texto: plural(resumo.semProprietario, "unidade com inquilino e sem proprietário", "unidades com inquilino e sem proprietário"),
+      href: "/moradores?filtro=sem-proprietario", botao: "Ver quais", ajuda: "Para controle, o dono do imóvel fica no cadastro.", aviso: true }] : []),
   ];
   return (
     <section aria-labelledby="t-moradores" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
@@ -49,6 +51,46 @@ function Moradores({ resumo }: { resumo: NonNullable<ReturnType<typeof usePlataf
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+/** Pedidos (AT-02, AT-03): o que pede atenção agora, cada um levando à fila filtrada. */
+function Pedidos({ resumo, registrar }: { resumo: NonNullable<ReturnType<typeof usePlataforma>["painel"]["pedidos"]>; registrar: boolean }) {
+  const linhas = [
+    ...(resumo.meusParaAceitar ? [{ texto: plural(resumo.meusParaAceitar, "pedido para você aceitar", "pedidos para você aceitar"),
+      href: "/pedidos?responsavel=EU&atencao=AGUARDANDO_ACEITE", botao: "Ver e aceitar", ajuda: null as string | null, primario: true }] : []),
+    ...(resumo.retornoVencido ? [{ texto: plural(resumo.retornoVencido, "com retorno vencido", "com retorno vencido"), href: "/pedidos?atencao=RETORNO_VENCIDO",
+      botao: "Ver quais", ajuda: "O morador está esperando notícia.", primario: false }] : []),
+    ...(resumo.semResponsavel ? [{ texto: plural(resumo.semResponsavel, "sem responsável", "sem responsável"), href: "/pedidos?atencao=SEM_RESPONSAVEL",
+      botao: "Ver quais", ajuda: null, primario: false }] : []),
+    ...(resumo.emRevisao ? [{ texto: plural(resumo.emRevisao, "em revisão", "em revisão"), href: "/pedidos?situacao=EM_REVISAO", botao: "Revisar", ajuda: null, primario: false }] : []),
+  ];
+  return (
+    <section aria-labelledby="t-pedidos" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
+      <h2 id="t-pedidos" className="font-semibold">Pedidos</h2>
+      {linhas.length ? (
+        <ul className="divide-y divide-linha">
+          {linhas.map((l) => (
+            <li key={l.href} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+              <span className="flex items-start gap-2">
+                <IconeMarca marca="atencao" className="mt-0.5 h-4 w-4 text-atencao" />
+                <span>{l.texto}{l.ajuda ? <span className="block text-xs text-tinta-suave">{l.ajuda}</span> : null}</span>
+              </span>
+              <Link href={l.href} className={classeBotao(l.primario ? "primario" : "secundario")}>{l.botao}</Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="flex items-center gap-2 text-sm"><IconeMarca marca="ok" className="h-4 w-4 text-ok" />Nada pedindo atenção agora.</p>
+      )}
+      <p className="flex flex-wrap items-center justify-between gap-2 text-sm">
+        <span className="text-tinta-suave">{plural(resumo.ativos, "pedido ativo", "pedidos ativos")}</span>
+        <span className="flex gap-2">
+          {registrar ? <Link href="/pedidos" className={classeBotao("secundario")}>Registrar pedido</Link> : null}
+          <Link href="/pedidos" className={classeBotao("texto")}>Ver todos</Link>
+        </span>
+      </p>
     </section>
   );
 }
@@ -93,6 +135,7 @@ export function Inicio() {
         </p>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
+        {painel.pedidos ? <Pedidos resumo={painel.pedidos} registrar={pode("pedidos.atualizar")} /> : null}
         {painel.moradores ? <Moradores resumo={painel.moradores} /> : null}
         <section aria-labelledby="t-falta" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
           <h2 id="t-falta" className="font-semibold">O que falta configurar</h2>

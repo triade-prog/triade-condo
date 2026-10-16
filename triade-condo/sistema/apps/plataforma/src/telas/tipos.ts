@@ -1,5 +1,5 @@
 // O que a API da Plataforma devolve nas configurações (plataforma_configuracoes), nas
-// pessoas (plataforma_pessoas) e nos moradores e unidades (passo 3).
+// pessoas (plataforma_pessoas), nos moradores e unidades (passo 3) e nos pedidos (passo 4).
 
 import type { Intervalo } from "@triade/domain";
 
@@ -13,6 +13,8 @@ export interface Configuracoes {
   etapas: { id: string; nome: string; situacao: string; categoriaId: string | null; pausaPrazo: boolean; ordem: number; ativa: boolean; versao: number }[];
   modelos: { id: string; titulo: string; texto: string; categoriaId: string | null; ativo: boolean; versao: number }[];
   prazos: { id: string; categoriaId: string | null; prioridadeId: string | null; horas: number; versao: number }[];
+  /** Revisão da conclusão e reabertura dos pedidos (AT-14, AT-15). */
+  regrasPedidos: { revisao: boolean; reabertura: boolean };
   pendencias: string[];
   podeEditar: boolean;
 }
@@ -64,6 +66,9 @@ export interface UnidadeResumo {
   versao: number;
   confirmados: number;
   pendentes: number;
+  /** Tem proprietário no cadastro; semProprietario: tem inquilino e falta o proprietário (MU-01). */
+  temProprietario: boolean;
+  semProprietario: boolean;
   principal: string | null;
 }
 
@@ -71,7 +76,7 @@ export interface Unidades {
   estrutura: Estrutura;
   blocos: Bloco[];
   unidades: UnidadeResumo[];
-  resumo: { unidades: number; semContato: number; aConfirmar: number };
+  resumo: { unidades: number; semContato: number; aConfirmar: number; semProprietario: number };
   podeEditar: boolean;
   podeConfirmar: boolean;
 }
@@ -110,6 +115,7 @@ export interface UnidadeDetalhe {
   unidade: { id: string; identificacao: string; blocoId: string | null; andar: string | null; bloco: string | null; ativa: boolean; versao: number };
   contatos: ContatoDaUnidade[];
   anteriores: ContatoAnterior[];
+  faltaProprietario: boolean;
   podeEditar: boolean;
   podeConfirmar: boolean;
 }
@@ -138,4 +144,125 @@ export interface ListaMoradores {
   aConfirmar: number;
   podeEditar: boolean;
   podeConfirmar: boolean;
+}
+
+// Pedidos no painel (passo 4).
+
+export interface OpcoesPedidos {
+  categorias: { id: string; nome: string; ativa: boolean }[];
+  prioridades: { id: string; nome: string; significado: string; nivel: number; ativa: boolean }[];
+  etapas: { id: string; nome: string; situacao: "ABERTO" | "EM_ANDAMENTO" | "ENCERRADO"; categoriaId: string | null; pausaPrazo: boolean; ativa: boolean }[];
+  responsaveis: { vinculoId: string; nome: string; disponivel: boolean; eu: boolean }[];
+  pessoas: { vinculoId: string; nome: string; eu: boolean }[];
+  responsavelPadrao: string | null;
+  unidades: { id: string; nome: string }[];
+  modelos: { id: string; titulo: string; texto: string; categoriaId: string | null }[];
+  regras: { revisao: boolean; reabertura: boolean };
+  pode: { registrar: boolean; responder: boolean; atualizar: boolean; concluir: boolean; revisar: boolean };
+  meuVinculo: string | null;
+}
+
+export interface ResumoPedidos {
+  ativos: number;
+  semResponsavel: number;
+  aguardandoAceite: number;
+  meusParaAceitar: number;
+  retornoVencido: number;
+  emRevisao: number;
+  comPendencia: number;
+  meus: number;
+}
+
+export type EstadoPedido = "ABERTO" | "EM_ANDAMENTO" | "EM_REVISAO" | "ENCERRADO" | "CANCELADO";
+
+export interface PedidoDaFila {
+  id: string;
+  protocolo: string;
+  assunto: string;
+  estado: EstadoPedido;
+  privado: boolean;
+  unidade: string | null;
+  local: string | null;
+  categoria: string;
+  prioridade: { nome: string; nivel: number };
+  etapa: { nome: string; pausaPrazo: boolean };
+  responsavel: { vinculoId: string; nome: string; eu: boolean } | null;
+  aceito: boolean;
+  abertoEm: string;
+  encerradoEm: string | null;
+  proximoRetorno: string | null;
+  retornoVencido: boolean;
+  previsao: string | null;
+  pendencias: number;
+}
+
+export interface FilaPedidos {
+  itens: PedidoDaFila[];
+  total: number;
+  pagina: number;
+  porPagina: number;
+  resumo: ResumoPedidos;
+  agora: string;
+}
+
+export interface PendenciaPedido {
+  id: string;
+  tipo: string;
+  motivo: string;
+  responsavel: { vinculoId: string; nome: string; ativo: boolean };
+  abertaEm: string;
+  abertaPor: string;
+  resolvidaEm: string | null;
+  resolvidaPor: string | null;
+  resolucao: string | null;
+}
+
+export interface ConclusaoPedido {
+  id: string;
+  etapa: string;
+  explicacao: string;
+  evidencia: string | null;
+  concluidaEm: string;
+  concluidaPor: string;
+  revisao: "SEM_REVISAO" | "AGUARDANDO" | "APROVADA" | "DEVOLVIDA";
+  revisadaEm: string | null;
+  revisadaPor: string | null;
+  motivoDevolucao: string | null;
+  reabertaEm: string | null;
+  reabertaPor: string | null;
+  motivoReabertura: string | null;
+}
+
+export interface PedidoDetalhe {
+  pedido: {
+    id: string;
+    protocolo: string;
+    assunto: string;
+    descricao: string;
+    canal: string;
+    privado: boolean;
+    estado: EstadoPedido;
+    local: string | null;
+    versao: number;
+    unidade: { id: string; nome: string } | null;
+    contato: { id: string; nome?: string; telefone?: string; relacao?: string; dadosRemovidos: boolean } | null;
+    categoria: { id: string; nome: string };
+    prioridade: { id: string; nome: string; nivel: number; significado: string };
+    etapa: { id: string; nome: string; situacao: string; pausaPrazo: boolean };
+    responsavel: { vinculoId: string; nome: string; eu: boolean; desde: string; aceitoEm: string | null } | null;
+    proximoRetorno: string | null;
+    retornoVencido: boolean;
+    previsao: string | null;
+    abertoEm: string;
+    registradoPor: string;
+    encerradoEm: string | null;
+    cancelamento: { em: string; motivo: string; por: string } | null;
+  };
+  pendencias: PendenciaPedido[];
+  andamentos: { id: string; tipo: "RETORNO" | "NOTA"; meio: string | null; texto: string; em: string; autor: string }[];
+  conclusoes: ConclusaoPedido[];
+  historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
+  pode: { responder: boolean; atualizar: boolean; concluir: boolean; revisar: boolean; aceitar: boolean; repassar: boolean };
+  regras: { revisao: boolean; reabertura: boolean };
+  agora: string;
 }

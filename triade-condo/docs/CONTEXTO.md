@@ -1,6 +1,6 @@
 # Contexto do projeto — TRÍADE Condo
 
-Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com os passos 0 a 3 construídos.
+Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com os passos 0 a 4 construídos.
 
 ## Onde está cada coisa
 
@@ -64,7 +64,7 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 |---|---|---|
 | Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta) | Carolina (em análise) | Passo 5 |
 | Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio | TRÍADE | Passo 5 |
-| Ligar as configurações de login no painel do Supabase (triade-condo-dev), ajustar os modelos de e-mail de recuperação e convite, cadastrar a primeira administração e criar os projetos na Vercel | TRÍADE | Conferir o login e o convite de verdade (F0.6, F1.5) e publicar o passo 1 |
+| E-mail próprio no Supabase Auth (E9): configurar o Resend como SMTP e pôr os modelos de convite e de recuperação em português, com `{{ .RedirectTo }}?token_hash={{ .TokenHash }}`. Sem SMTP próprio o Supabase não deixa editar os modelos; os links do modelo padrão já funcionam | Carolina | E-mails em nome da TRÍADE e sem o limite baixo do Supabase |
 | Logo oficial (a paleta e a tipografia já estão definidas, DC11) e aprovação do tom das mensagens | TRÍADE | Nada no código; o símbolo triangular atual é provisório |
 | Dados da empresa para termos e privacidade (EM-01, EM-06) | TRÍADE | Publicação |
 | Domínio próprio | TRÍADE | Publicação |
@@ -132,7 +132,7 @@ A Plataforma ganhou a página onde o síndico convidado cria a senha. Os testes 
 - Pessoas autorizadas com permissões individuais. O cargo não dá permissão.
 - Quem atende os pedidos, com o responsável padrão da fila.
 
-A migration 0070 ainda não está no `triade-condo-dev`. A aplicação pela ferramenta do Supabase passou do limite de 60 segundos e nada foi gravado; falta aplicá-la de outro jeito (por exemplo, `supabase db push`).
+As migrations 0070 e 0080 foram aplicadas no `triade-condo-dev` em 16/10/2026, em partes (0070_configuracoes_condominio_1 a _5 e 0080_moradores_unidades_1 a _5), porque a ferramenta do Supabase expira em 60 segundos com textos grandes e espera confirmação para SQL com `delete`. A comparação com o banco local deu igual em tabelas, restrições, índices, gatilhos, políticas e funções. As duas funções com `delete` (`plataforma_remover_feriado` e `plataforma_remover_prazo`) foram coladas pela Carolina no SQL Editor e conferidas. As Edge Functions `api-plataforma` e `api-console` foram publicadas no dev pela ferramenta do Supabase, cada uma num pacote só (o domínio e o `_shared` juntos), porque o token pessoal do Supabase não fica no GitHub (repositório público). Os sites estão na Vercel: Plataforma em `https://plataforma-omega-five.vercel.app` e Console em `https://console-hazel-nine.vercel.app`, com `SUPABASE_FUNCTIONS_URL` e `REPASSE_SEGREDO`. O login de ponta a ponta já responde pelas funções. Mudou alguma função? É preciso publicar de novo.
 
 Decisões deste passo:
 
@@ -152,7 +152,7 @@ As nove telas foram desenhadas no `design-frontend.html`, aprovadas pela Carolin
 - Importação de planilha CSV, tudo ou nada, com os contatos a confirmar.
 - Remoção de nome e telefone de quem não está mais em nenhuma unidade.
 
-A migration 0080 também ainda não está no `triade-condo-dev`. As oito telas foram desenhadas no `design-frontend.html`, aprovadas pela Carolina e construídas no mesmo dia, com três decisões:
+As oito telas foram desenhadas no `design-frontend.html`, aprovadas pela Carolina e construídas no mesmo dia, com três decisões:
 
 - o CF-03 ganhou a permissão "Cadastrar moradores": a pessoa autorizada inclui e corrige, e o que ela inclui fica a confirmar pelo síndico;
 - a planilha é importada em CSV;
@@ -160,13 +160,37 @@ A migration 0080 também ainda não está no `triade-condo-dev`. As oito telas f
 
 No mesmo dia, a pedido da Carolina, o prédio passou a se organizar do jeito dele: por torre, bloco, quadra ou prédio (ou sem divisão), com ou sem andar. A unidade aparece como "Torre A · 3º andar · 302". O síndico cadastra morador ou proprietário (condômino) pela lista, escolhendo torre, andar e unidade, e a planilha aceita a coluna andar. A ideia MU-01 foi atualizada.
 
+Depois, também a pedido da Carolina e para controle: quando a unidade tem inquilino, o proprietário do imóvel fica no cadastro. O inquilino entra junto com o proprietário (pessoa nova ou já cadastrada), que não é o contato principal e não recebe os comunicados do dia a dia. Na mudança, se entra inquilino ou sai o proprietário, o novo proprietário entra junto. A planilha não barra: a unidade com inquilino e sem proprietário vira pendência no Início, no filtro da lista e na ficha. MU-01 atualizada de novo.
+
+**16/10/2026, fim da tarde.** O e-mail próprio (Resend como SMTP, Site URL e modelos em português) ficou como tarefa da Carolina (E9). Começou o passo 4 (pedidos no painel). Ficaram prontos no banco (migration 0090) e na API:
+
+- Registro com protocolo por condomínio e por ano ("2026-0001"), unidade ou local, contato confirmado e como o pedido chegou.
+- Fila com filtros por situação, responsável, prioridade e categoria, atalhos do que pede atenção e há quanto tempo cada pedido está aberto.
+- Responsável da lista de quem atende, que confirma o aceite e pode repassar; quem sai da lista passa os pedidos ao padrão.
+- Próximo retorno separado da previsão de solução, os dois com motivo para mudar; retorno ao morador e nota interna.
+- Pendências com tipo, motivo e quem cuida.
+- Conclusão explicada, revisão e reabertura configuráveis, cancelamento com motivo.
+- Pedido privado e histórico completo.
+
+As permissões Acompanhar, Responder, Atualizar e Concluir passaram a valer. Onze telas foram desenhadas no `design-frontend.html`, com as decisões para aprovar (protocolo, quem faz o quê, privado, pendência na conclusão, anexos no passo 4b). A 0090 ainda não está no `triade-condo-dev`: a Carolina vai colar no SQL Editor, e depois a `api-plataforma` precisa ser publicada de novo.
+
+No mesmo dia, a Carolina aplicou a 0090 no `triade-condo-dev` pelo SQL Editor e aprovou as telas e as decisões. O banco do dev foi conferido igual ao local, a `api-plataforma` foi publicada de novo (versão 2) e as onze telas foram construídas na Plataforma: Pedidos no menu e no Início, fila, registrar, a ficha do pedido com as ações, histórico e as regras nas configurações.
+
+Decisões do passo 4:
+
+- Protocolo por condomínio e por ano: 2026-0001.
+- Acompanhar vê; Responder dá retorno; Atualizar registra e muda; Concluir conclui, reabre e cancela; revisar fica com o síndico. O responsável age no próprio pedido.
+- Pedido privado: só o síndico, quem registrou e o responsável.
+- Concluir pede as pendências resolvidas; cancelar fecha as abertas.
+- Fotos e documentos no passo 4b; até lá, evidência em texto.
+
+No fim do dia, dois ajustes pedidos pela Carolina. O link de nova senha (e o de convite) passou a funcionar também com o modelo padrão do Supabase, que manda o acesso depois do `#` no endereço; o servidor só aceita esse acesso se ele nasceu do mesmo tipo de link. E a Plataforma passou a seguir a estrutura de "Dois sistemas, uma família": busca no condomínio na barra superior e faixa lilás no alto. As duas Edge Functions foram publicadas de novo.
+
 **Próximo passo:**
 
-1. Aplicar as migrations 0070 e 0080 no `triade-condo-dev`.
-2. Conferir login e convite com o Supabase Auth de verdade (F0.6, F1.5).
-3. Publicar na Vercel (E4).
-4. Liberar o CI (F0.9).
-5. Começar o passo 4 (pedidos no painel) pelo desenho das telas.
+1. Juntar o PR 3: a produção da Vercel sai do `main` (as prévias da branch não têm o `REPASSE_SEGREDO`). Depois, testar os pedidos com um condomínio de verdade (E8).
+2. Passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho.
+3. Com a Carolina: e-mail próprio (E9) para conferir o convite e a recuperação (F1.5); liberar o CI (F0.9).
 
 ## Como trabalhar
 

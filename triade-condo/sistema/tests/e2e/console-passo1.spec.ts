@@ -192,4 +192,23 @@ test.describe("Console TRÍADE · passo 1", () => {
       await page.unrouteAll();
     }
   });
+
+  test("PT-08: o link padrão do Supabase (com #) cria a senha nova e some do endereço; o vencido avisa", async ({ page }) => {
+    for (const base of [CONSOLE, PLATAFORMA]) {
+      await instalarApiFalsa(page, { logado: false });
+      await page.goto(`${base}/redefinir#access_token=aaa.bbb.ccc&expires_in=3600&refresh_token=r&token_type=bearer&type=recovery`);
+      await expect(page.getByRole("heading", { level: 1, name: "Criar senha nova" })).toBeVisible();
+      await expect(page.getByLabel("Senha nova")).toBeVisible();
+      await expect.poll(() => new URL(page.url()).hash).toBe("");
+      await page.getByLabel("Senha nova").fill("uma frase bem comprida");
+      await page.getByLabel("Repita a senha").fill("uma frase bem comprida");
+      await page.getByRole("button", { name: "Salvar senha nova" }).click();
+      await expect(page.getByRole("status").filter({ hasText: "Senha nova salva" })).toBeVisible();
+      await page.goto("about:blank");
+      await page.goto(`${base}/redefinir#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired`);
+      await expect(page.getByText("Link vencido ou já usado")).toBeVisible();
+      await semErroDeAcessibilidade(page);
+      await page.unrouteAll();
+    }
+  });
 });

@@ -108,7 +108,14 @@ export function authFalso(usuarios: UsuarioFalso[]) {
       return Promise.resolve("OK" as const);
     },
   };
-  return { auth, recuperacoes, senhasTrocadas, tokens };
+  /** O access_token que o modelo padrão do Supabase põe no link (depois do #), com o amr do tipo de link. */
+  function linkImplicito(metodo: "recovery" | "invite" | "password", userId = metodo === "invite" ? usuarios.at(-1)!.id : usuarios[0]!.id): string {
+    const sessaoId = crypto.randomUUID();
+    const accessToken = jwt({ sub: userId, session_id: sessaoId, aal: "aal1", amr: [{ method: metodo, timestamp: 1 }], n: crypto.randomUUID() });
+    tokens.set(accessToken, { userId, sessaoId, aal: "aal1" });
+    return accessToken;
+  }
+  return { auth, recuperacoes, senhasTrocadas, tokens, linkImplicito };
 }
 
 type Handler = (args: Record<string, unknown>) => unknown;

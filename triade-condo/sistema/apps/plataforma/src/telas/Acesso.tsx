@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { Aviso, Botao, CampoTexto, chamarApi, FormSenhaNova, textoDoErro, type ErroApi } from "@triade/ui";
+import { Aviso, Botao, CampoTexto, chamarApi, FormSenhaNova, textoDoErro, useCredencialDoLink, type ErroApi } from "@triade/ui";
 
 export function Recuperar() {
   const [email, setEmail] = useState("");
@@ -39,11 +39,12 @@ export function Recuperar() {
 }
 
 export function SenhaPeloLink({ tipo }: { tipo: "redefinir" | "convite" }) {
-  const token = useSearchParams().get("token_hash");
+  const { credencial, vencido } = useCredencialDoLink(useSearchParams().get("token_hash"));
   return (
     <FormSenhaNova
       rota={tipo === "convite" ? "/v1/auth/criar-senha" : "/v1/auth/redefinir"}
-      tokenHash={token}
+      credencial={credencial}
+      vencido={vencido}
       textoBotao={tipo === "convite" ? "Criar senha" : "Salvar senha nova"}
       aoConcluir={
         <div className="grid gap-4">
