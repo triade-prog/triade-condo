@@ -131,6 +131,18 @@ test.describe("Plataforma do síndico · passo 4", () => {
     await conferir(page);
   });
 
+  test("a busca no topo acha pedidos e moradores do condomínio", async ({ page }) => {
+    await instalarApiPlataformaFalsa(page, { comAtendimento: true });
+    await page.goto(PLATAFORMA);
+    const busca = page.getByRole("searchbox", { name: "Buscar no condomínio" });
+    await busca.fill("vazamento");
+    await busca.press("Enter");
+    await expect(page.getByRole("heading", { level: 1, name: "Buscar no condomínio" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Pedidos" }).getByRole("link", { name: /Vazamento no banheiro/ })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Moradores" })).toContainText("Nenhum morador encontrado.");
+    await conferir(page);
+  });
+
   test("AT-14, AT-15: as regras dos pedidos ficam nas configurações", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(`${PLATAFORMA}/configuracoes?aba=regras`);

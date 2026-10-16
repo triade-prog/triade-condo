@@ -74,7 +74,7 @@ export function Moradores() {
             <AbaUnidades dados={dados} filtroInicial={FILTROS_DO_ENDERECO.find((f) => f === busca.get("filtro")) ?? "todos"} aoMudarBloco={setBlocoAtual}
               aoIncluir={() => setJanela("unidades")} aoOrganizar={() => setJanela("estrutura")} salvo={salvo} recarregar={carga.recarregar} />
           ) : (
-            <ListaContatos estado={aba === "confirmar" ? "PENDENTE" : undefined} salvo={salvo} />
+            <ListaContatos estado={aba === "confirmar" ? "PENDENTE" : undefined} salvo={salvo} buscaInicial={aba === "moradores" ? busca.get("busca") ?? "" : ""} />
           )}
         </div>
       </Abas>

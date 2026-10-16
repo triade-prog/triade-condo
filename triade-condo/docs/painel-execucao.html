@@ -28,7 +28,7 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 74 Deno, 58 Vitest, 84 ponta a ponta). O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 2, com os pedidos) e api-console; a Plataforma e o Console estão na Vercel, falando com elas.",
+    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 76 Deno, 58 Vitest, 88 ponta a ponta). O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 3) e api-console (versão 2); a Plataforma e o Console estão na Vercel, falando com elas.",
     "fase_atual": "F4",
     "proximo_passo": "Juntar o PR 3 para as telas dos pedidos chegarem ao site da Vercel (a produção sai do main; as prévias da branch não têm o REPASSE_SEGREDO) e testar com um condomínio de verdade (E8). Depois, passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho. Em paralelo, com a Carolina: e-mail próprio com Resend (E9) para o F1.5 e liberar o GitHub Actions (F0.9)."
   },
@@ -1190,7 +1190,7 @@
       "precisa_em": "F1",
       "refs": [],
       "status": "pendente",
-      "nota": "Sem SMTP próprio o Supabase não deixa editar os modelos, e o link do convite cai em localhost. Os modelos precisam usar {{ .RedirectTo }}?token_hash={{ .TokenHash }}; a Plataforma e o Console leem token_hash em /convite e /redefinir. Destrava o F1.5."
+      "nota": "A Site URL já aponta para a Plataforma, e desde 16/10/2026 a Plataforma e o Console aceitam também o link do modelo padrão do Supabase (o acesso vem depois do #). O Resend continua necessário para os e-mails saírem em nome da TRÍADE, em português e sem o limite baixo de envios do Supabase; com ele, os modelos usam {{ .RedirectTo }}?token_hash={{ .TokenHash }}."
     }
   ],
   "decisoes": [
@@ -1240,6 +1240,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "18:46",
+      "fim": "19:10",
+      "texto": "O link de nova senha dava Link incompleto: o modelo padrão do Supabase manda o acesso depois do # no endereço, e as telas só liam token_hash. A Plataforma e o Console passaram a aceitar os dois formatos; o # sai do endereço assim que é lido, link vencido mostra Link vencido ou já usado, e o servidor só aceita o acesso que nasceu do mesmo tipo de link (recuperação ou convite), nunca o de um login comum. As duas Edge Functions foram publicadas de novo. A pedido da Carolina, a Plataforma passou a seguir a estrutura de Dois sistemas, uma família: busca no condomínio na barra superior (pedidos e moradores, cada parte para quem pode ver) e faixa lilás no alto (estava verde-clara); o desenho ganhou a busca nas 30 telas da Plataforma e a tela de resultados. 2 testes Deno e 4 ponta a ponta novos; 76 Deno e 88 ponta a ponta passando.",
+      "ref": "F1.5, E9, D2, PT-08, AT-02"
+    },
     {
       "data": "16/10/2026",
       "inicio": "18:22",

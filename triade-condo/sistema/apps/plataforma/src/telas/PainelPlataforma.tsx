@@ -1,6 +1,7 @@
 "use client";
-// Moldura da Plataforma do síndico (design "Telas do passo 2", aprovado em 16/10/2026):
-// barra superior com o condomínio e a pessoa, menu branco flutuante e ação em verde-petróleo.
+// Moldura da Plataforma do síndico (design "Dois sistemas, uma família" e "Telas do passo 2",
+// aprovados em 16/10/2026): barra superior com a marca, a busca no condomínio, o condomínio e a
+// pessoa; faixa lilás no alto; menu branco flutuante com seleção lilás; ação em verde-petróleo.
 // O condomínio vem da sessão no servidor; quem atende mais de um escolhe e troca aqui (MU-04).
 
 import Link from "next/link";
@@ -72,6 +73,13 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
       </a>
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-linha bg-superficie px-4 py-2.5">
         <Marca sistema="Plataforma do síndico" />
+        {pode("pedidos.ver") || pode("moradores.ver") ? (
+          <form role="search" action="/busca" className="order-last w-full md:order-none md:w-auto md:max-w-xs md:flex-1"
+            onSubmit={(e) => { e.preventDefault(); const q = new FormData(e.currentTarget).get("q"); router.push(`/busca?q=${encodeURIComponent(String(q ?? "").trim())}`); }}>
+            <input type="search" name="q" maxLength={60} aria-label="Buscar no condomínio" placeholder="Buscar no condomínio…" key={caminho}
+              className="min-h-10 w-full rounded-full border border-[#c7c8fe] bg-superficie px-4 text-sm text-tinta placeholder:text-tinta-suave" />
+          </form>
+        ) : null}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           <span className="font-medium">
             {painel.condominio.nome}
@@ -92,7 +100,7 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
           </button>
         </div>
       </header>
-      <div className="min-h-[calc(100dvh-57px)] bg-[linear-gradient(var(--color-plataforma-bruma),var(--color-papel)_220px)] md:grid md:grid-cols-[232px_1fr] md:gap-6 md:p-4">
+      <div className="min-h-[calc(100dvh-57px)] bg-[linear-gradient(var(--color-faixa-alto),var(--color-faixa-baixo)_140px,var(--color-papel)_220px)] md:grid md:grid-cols-[232px_1fr] md:gap-6 md:p-4">
         <nav
           id="menu-plataforma"
           aria-label="Plataforma"

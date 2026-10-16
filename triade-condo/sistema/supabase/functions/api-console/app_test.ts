@@ -157,6 +157,29 @@ Deno.test("PT-08: redefinir com token de uso único derruba as sessões antigas"
   assertEquals((await erro(deNovo)).codigo, "TOKEN_INVALID");
 });
 
+Deno.test("PT-08: o link do e-mail padrão do Supabase (access_token depois do #) também redefine, uma vez só", async () => {
+  const m = montar();
+  const antiga = await entrarCompleto(m);
+  const token = m.linkImplicito("recovery");
+  const r = await m.pedir("/v1/auth/redefinir", { corpo: { accessToken: token, novaSenha: "uma-senha-nova-forte" } });
+  assertEquals(r.status, 200);
+  assertEquals(m.senhasTrocadas, [CAROLINA]);
+  assertEquals((await erro(await m.pedir("/v1/sessao", { cookie: antiga }))).codigo, "UNAUTHORIZED");
+  const deNovo = await m.pedir("/v1/auth/redefinir", { corpo: { accessToken: token, novaSenha: "outra-senha-nova-forte" } });
+  assertEquals((await erro(deNovo)).codigo, "TOKEN_INVALID");
+});
+
+Deno.test("PT-08: token de login comum ou de convite não serve para redefinir; token e hash juntos também não", async () => {
+  const m = montar();
+  for (const metodo of ["password", "invite"] as const) {
+    const r = await m.pedir("/v1/auth/redefinir", { corpo: { accessToken: m.linkImplicito(metodo), novaSenha: "uma-senha-nova-forte" } });
+    assertEquals((await erro(r)).codigo, "TOKEN_INVALID");
+  }
+  const ambos = await m.pedir("/v1/auth/redefinir", { corpo: { accessToken: m.linkImplicito("recovery"), tokenHash: TOKEN_RECUPERACAO, novaSenha: "uma-senha-nova-forte" } });
+  assertEquals((await erro(ambos)).codigo, "VALIDATION_ERROR");
+  assertEquals(m.senhasTrocadas, []);
+});
+
 Deno.test("senha nova fraca ou curta é recusada", async () => {
   const m = montar();
   assertEquals((await erro(await m.pedir("/v1/auth/redefinir", { corpo: { tokenHash: TOKEN_RECUPERACAO, novaSenha: "curta" } }))).codigo, "VALIDATION_ERROR");

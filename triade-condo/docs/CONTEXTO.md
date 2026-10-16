@@ -64,7 +64,7 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 |---|---|---|
 | Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta) | Carolina (em análise) | Passo 5 |
 | Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio | TRÍADE | Passo 5 |
-| E-mail próprio no Supabase Auth (E9): configurar o Resend como SMTP, trocar a Site URL para `https://plataforma-omega-five.vercel.app` e pôr os modelos de convite e de recuperação em português, com `{{ .RedirectTo }}?token_hash={{ .TokenHash }}`. Sem SMTP próprio o Supabase não deixa editar os modelos e o link do convite cai em localhost | Carolina | Conferir o convite e a recuperação de verdade (F1.5) |
+| E-mail próprio no Supabase Auth (E9): configurar o Resend como SMTP e pôr os modelos de convite e de recuperação em português, com `{{ .RedirectTo }}?token_hash={{ .TokenHash }}`. Sem SMTP próprio o Supabase não deixa editar os modelos; os links do modelo padrão já funcionam | Carolina | E-mails em nome da TRÍADE e sem o limite baixo do Supabase |
 | Logo oficial (a paleta e a tipografia já estão definidas, DC11) e aprovação do tom das mensagens | TRÍADE | Nada no código; o símbolo triangular atual é provisório |
 | Dados da empresa para termos e privacidade (EM-01, EM-06) | TRÍADE | Publicação |
 | Domínio próprio | TRÍADE | Publicação |
@@ -183,6 +183,8 @@ Decisões do passo 4:
 - Pedido privado: só o síndico, quem registrou e o responsável.
 - Concluir pede as pendências resolvidas; cancelar fecha as abertas.
 - Fotos e documentos no passo 4b; até lá, evidência em texto.
+
+No fim do dia, dois ajustes pedidos pela Carolina. O link de nova senha (e o de convite) passou a funcionar também com o modelo padrão do Supabase, que manda o acesso depois do `#` no endereço; o servidor só aceita esse acesso se ele nasceu do mesmo tipo de link. E a Plataforma passou a seguir a estrutura de "Dois sistemas, uma família": busca no condomínio na barra superior e faixa lilás no alto. As duas Edge Functions foram publicadas de novo.
 
 **Próximo passo:**
 

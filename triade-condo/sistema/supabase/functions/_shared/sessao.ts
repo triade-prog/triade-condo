@@ -18,6 +18,7 @@ import type { Banco } from "./banco.ts";
 import { apagarCookie, gravarCookie, lerCookie } from "./cookies.ts";
 import { base64url, deBase64url, sha256Hex } from "./cripto.ts";
 import { ipDaChamada } from "./repasse.ts";
+import { claimsJwt } from "./jwt.ts";
 import { registrar } from "./registro.ts";
 import { lerCorpo } from "./validar.ts";
 
@@ -181,9 +182,27 @@ export function criarSessao(cfg: ConfigSistema, deps: DepsSessao) {
       return c.json({ mensagem: TEXTO_RECUPERACAO_ENVIADA });
     });
 
+    // A sessão que o link do e-mail dá. Com token_hash, o servidor troca pelo Auth (uso único).
+    // Com o access_token do modelo padrão do Supabase, só vale se o Auth ainda aceita o token e
+    // se ele nasceu do mesmo tipo de link (amr: recovery ou invite), nunca de um login comum.
+    async function sessaoDoLink(tokenHash: string | undefined, accessToken: string | undefined, tipo: "recovery" | "invite"): Promise<SessaoAuth | null> {
+      if (tokenHash) return tipo === "recovery" ? await deps.auth.usarRecuperacao(tokenHash) : await deps.auth.usarConvite(tokenHash);
+      if (!accessToken) return null;
+      let metodos: unknown[] = [];
+      try {
+        const amr = claimsJwt(accessToken).amr;
+        metodos = Array.isArray(amr) ? amr.map((x) => (typeof x === "string" ? x : (x as { method?: unknown })?.method)) : [];
+      } catch {
+        return null;
+      }
+      if (!metodos.includes(tipo)) return null;
+      const p = await deps.auth.portador(accessToken);
+      return p ? { accessToken, refreshToken: "", expiraEm: 0, userId: p.userId } : null;
+    }
+
     app.post("/v1/auth/redefinir", async (c) => {
-      const { tokenHash, novaSenha } = await lerCorpo(c, redefinirSenhaSchema);
-      const s = await deps.auth.usarRecuperacao(tokenHash);
+      const { tokenHash, accessToken, novaSenha } = await lerCorpo(c, redefinirSenhaSchema);
+      const s = await sessaoDoLink(tokenHash, accessToken, "recovery");
       if (!s) throw new ErroDominio("TOKEN_INVALID");
       if ((await deps.auth.trocarSenha(s.accessToken, novaSenha)) === "FRACA") {
         await deps.auth.sair(s.accessToken).catch(() => undefined);
@@ -199,8 +218,8 @@ export function criarSessao(cfg: ConfigSistema, deps: DepsSessao) {
     // Convite aceito (CF-02): a pessoa convidada cria a própria senha pelo link do e-mail e
     // entra depois pelo login normal (no Console, com o autenticador).
     app.post("/v1/auth/criar-senha", async (c) => {
-      const { tokenHash, novaSenha } = await lerCorpo(c, redefinirSenhaSchema);
-      const s = await deps.auth.usarConvite(tokenHash);
+      const { tokenHash, accessToken, novaSenha } = await lerCorpo(c, redefinirSenhaSchema);
+      const s = await sessaoDoLink(tokenHash, accessToken, "invite");
       if (!s) throw new ErroDominio("TOKEN_INVALID");
       if ((await deps.auth.trocarSenha(s.accessToken, novaSenha)) === "FRACA") {
         await deps.auth.sair(s.accessToken).catch(() => undefined);
