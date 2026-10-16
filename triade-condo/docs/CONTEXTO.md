@@ -123,12 +123,31 @@ No mesmo dia, com o desenho aprovado pela Carolina, as telas do passo 1 foram co
 
 A Plataforma ganhou a página onde o síndico convidado cria a senha. Os testes ponta a ponta rodam com axe no celular e no computador.
 
+**16/10/2026, manhã.** Começou o passo 2 (configurações na Plataforma do síndico). Ficaram prontos no banco e na API:
+
+- Painel só do próprio condomínio, com o que falta configurar.
+- Fuso, horários de funcionamento e de atendimento com vários intervalos por dia, e feriados.
+- Categorias, prioridades com significado, etapas e modelos de resposta. Todos nascem pelo cenário e têm identificador estável.
+- Prazos de retorno em horas de atendimento, pulando feriados.
+- Pessoas autorizadas com permissões individuais. O cargo não dá permissão.
+- Quem atende os pedidos, com o responsável padrão da fila.
+
+A migration 0070 está sendo aplicada no `triade-condo-dev`.
+
+Decisões deste passo:
+
+- Autorizar pessoas e escolher quem atende ficam só com o síndico.
+- Só se dá permissão de recurso que já existe.
+- Sem horário de atendimento, o prazo conta em horas corridas e o painel avisa.
+
+As nove telas foram desenhadas no `design-frontend.html` e esperam aprovação.
+
 **Próximo passo:**
 
-1. Conferir login e convite com o Supabase Auth de verdade (F0.6, F1.5).
-2. Publicar na Vercel (E4).
-3. Liberar o CI (F0.9).
-4. Começar o passo 2 (configurações na Plataforma do síndico) pelo desenho das telas.
+1. Aprovar as telas do passo 2 e construí-las na Plataforma.
+2. Conferir login e convite com o Supabase Auth de verdade (F0.6, F1.5).
+3. Publicar na Vercel (E4).
+4. Liberar o CI (F0.9).
 
 ## Como trabalhar
 

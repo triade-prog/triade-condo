@@ -6,3 +6,4 @@ export * from "./registro.ts";
 export * from "./schemas.ts";
 export * from "./console.ts";
 export * from "./eventos.ts";
+export * from "./plataforma.ts";

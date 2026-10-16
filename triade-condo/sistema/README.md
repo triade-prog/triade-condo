@@ -91,6 +91,27 @@ A primeira pessoa com administração entra uma vez, pelo SQL do Supabase. Depoi
 call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
 ```
 
+## Plataforma do síndico (passo 2)
+
+- **Pessoas autorizadas (V-09, CF-03).**
+  - A secretária, o subsíndico ou o conselho têm um vínculo `AUTORIZADO`. Com ele, só veem o painel e as configurações.
+  - O cargo é só um rótulo. O resto vem de permissões individuais (`vinculo_permissoes`), que valem pelas ações de `permissao_acoes`.
+  - Só se dá permissão de recurso que já existe. Hoje é só `CONFIGURAR`; as outras ganham ação com os passos seguintes.
+  - Retirar uma permissão grava a retirada e não apaga a linha. O efeito é imediato.
+- **Configuração pronta (CF-12).**
+  - Todo condomínio nasce configurado. O gatilho `condominios_modelo_configuracao` chama `aplicar_modelo_configuracao`.
+  - Trocar o cenário só acrescenta o que falta.
+  - Nada é obrigatório. `pendencias_configuracao` diz ao painel o que ainda falta.
+- **Identificador estável (CF-09).** Categoria, prioridade, etapa e modelo de resposta não se apagam: mudam de nome ou são desativados. A situação e a categoria de uma etapa não mudam depois de criadas.
+- **Prazos (AT-10).**
+  - `horas_de_prazo` escolhe a regra mais específica: prioridade e categoria juntas, depois só a prioridade, depois só a categoria, depois a regra geral.
+  - `vencimento_do_prazo` conta só as horas de atendimento, no fuso do condomínio, pulando os feriados.
+- **Feriado (CF-10).** O banco guarda só a data e a API devolve `aaaa-mm-dd`. A tela mostra a data como foi escrita, sem fuso.
+- **Rotas.**
+  - Todas ficam em `/v1/condominio/...` (painel, configuracoes, fuso, horarios, feriados, categorias, prioridades, etapas, modelos, prazos, pessoas, atendimento).
+  - Pessoa e condomínio vêm sempre da sessão.
+- **Telas.** Estão desenhadas em `../docs/design-frontend.html` ("Telas do passo 2") e aguardam aprovação antes do código.
+
 ## Rodar
 
 Requisitos: Node 22, pnpm 10 e PostgreSQL 16 ou 17 com pgTAP (`postgresql-17-pgtap`).

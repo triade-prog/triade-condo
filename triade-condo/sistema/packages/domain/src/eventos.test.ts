@@ -22,3 +22,12 @@ describe("histórico legível (PI-12)", () => {
     expect(mostrarTelefone("+5561999990001")).toBe("+55 61 99999-0001");
   });
 });
+
+describe("eventos do passo 2", () => {
+  it("configurações e pessoas autorizadas em frase curta", () => {
+    expect(descreverEvento({ acao: "feriado.incluido", entidade: "feriado", dados: { data: "2026-11-20" } })).toBe("Feriado incluído: 20/11/2026");
+    expect(descreverEvento({ acao: "pessoa.alterada", entidade: "vinculo", dados: { antes: ["CONFIGURAR"], depois: [] } }))
+      .toBe("Permissões revistas: Configurar → só ver");
+    expect(descreverEvento({ acao: "categoria.criada", entidade: "categoria", dados: {} })).toBe("Categoria criada");
+  });
+});

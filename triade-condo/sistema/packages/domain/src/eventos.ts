@@ -2,6 +2,7 @@
 // Datas sempre no horário de Brasília.
 
 import { CENARIOS, ESTAGIOS, FUNCOES_CONSOLE } from "./console.ts";
+import { FUSOS, mostrarDataSemHora, PERMISSOES, TIPOS_HORARIO } from "./plataforma.ts";
 
 export interface EventoHistorico {
   acao: string;
@@ -24,6 +25,22 @@ function nomeDe<T extends Record<string, string>>(lista: T, codigo: unknown): st
 
 function listaDeFuncoes(v: unknown): string {
   return Array.isArray(v) ? v.map((f) => nomeDe(FUNCOES_CONSOLE, f)).join(", ") || "nenhuma" : "";
+}
+
+const ITENS: Record<string, string> = {
+  "categoria.criada": "Categoria criada",
+  "categoria.alterada": "Categoria alterada",
+  "prioridade.criada": "Prioridade criada",
+  "prioridade.alterada": "Prioridade alterada",
+  "etapa.criada": "Etapa criada",
+  "etapa.alterada": "Etapa alterada",
+  "modelo.criado": "Modelo de resposta criado",
+  "modelo.alterado": "Modelo de resposta alterado",
+  "prazo.criado": "Exceção de prazo criada",
+};
+
+function listaDePermissoes(v: unknown): string {
+  return Array.isArray(v) ? v.map((p) => nomeDe(PERMISSOES, p)).join(", ") || "só ver" : "";
 }
 
 export function descreverEvento(e: EventoHistorico): string {
@@ -58,6 +75,36 @@ export function descreverEvento(e: EventoHistorico): string {
       return `Funções revistas: ${listaDeFuncoes(d.antes)} → ${listaDeFuncoes(d.depois)}`;
     case "equipe.membro_desativado":
       return "Pessoa desativada da equipe";
+    case "fuso.alterado":
+      return `Fuso: ${nomeDe(FUSOS, d.de)} → ${nomeDe(FUSOS, d.para)}`;
+    case "horarios.alterados":
+      return `Horário de ${nomeDe(TIPOS_HORARIO, d.tipo).toLowerCase()} alterado`;
+    case "feriado.incluido":
+      return `Feriado incluído: ${mostrarDataSemHora(String(d.data))}`;
+    case "feriado.removido":
+      return `Feriado retirado: ${mostrarDataSemHora(String(d.data))}`;
+    case "categoria.criada":
+    case "prioridade.criada":
+    case "etapa.criada":
+    case "modelo.criado":
+    case "prazo.criado":
+    case "categoria.alterada":
+    case "prioridade.alterada":
+    case "etapa.alterada":
+    case "modelo.alterado":
+      return ITENS[e.acao]!;
+    case "prazo.alterado":
+      return `Prazo alterado: ${String(d.de)} h → ${String(d.para)} h`;
+    case "prazo.removido":
+      return "Exceção de prazo retirada";
+    case "pessoa.autorizada":
+      return `Pessoa autorizada · ${listaDePermissoes(d.permissoes)}`;
+    case "pessoa.alterada":
+      return `Permissões revistas: ${listaDePermissoes(d.antes)} → ${listaDePermissoes(d.depois)}`;
+    case "pessoa.revogada":
+      return d.pendente ? "Acesso revogado · responsável padrão ficou pendente" : "Acesso revogado";
+    case "atendimento.alterado":
+      return "Responsáveis pelo atendimento alterados";
     default:
       return e.acao;
   }

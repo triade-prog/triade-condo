@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0 e 1 construídos. O Console TRÍADE tem login com autenticador, carteira de clientes, cadastro com cenário, ficha do condomínio, convite do síndico, equipe do cliente, notas internas e histórico, além de pessoas e funções da equipe; a Plataforma tem a página onde o síndico convidado cria a senha. Tudo testado localmente (banco, API e telas com axe); a migration 0060 está no triade-condo-dev. Falta conferir login e convite com o Supabase Auth de verdade, publicar na Vercel (E4) e liberar o CI do GitHub (F0.9).",
-    "fase_atual": "F1",
-    "proximo_passo": "No Supabase: ligar as configurações de login, ajustar os modelos de e-mail de recuperação e convite e cadastrar a primeira administração com iniciar_equipe (README); então conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9). Depois, passo 2: configurações na Plataforma do síndico, começando pelo desenho das telas."
+    "situacao": "Passos 0 e 1 construídos; passo 2 com banco e API prontos e telas desenhadas para aprovação. Na Plataforma, o síndico terá painel só do próprio condomínio, horários e feriados, categorias, prioridades, etapas e modelos de resposta, prazos em horas de atendimento, pessoas autorizadas com permissões individuais e quem atende. Tudo testado localmente (banco, API e telas do passo 1 com axe); a migration 0060 está no triade-condo-dev e a 0070 está sendo aplicada. Falta conferir login e convite com o Supabase Auth de verdade, publicar na Vercel (E4) e liberar o CI do GitHub (F0.9).",
+    "fase_atual": "F2",
+    "proximo_passo": "Carolina aprova (ou ajusta) as telas do passo 2 no design-frontend.html; então construir as telas da Plataforma. Em paralelo, no Supabase: ligar as configurações de login, ajustar os modelos de e-mail de recuperação e convite e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9)."
   },
   "fases": [
     {
@@ -76,7 +76,7 @@
           "peca": "B4",
           "refs": [],
           "status": "andamento",
-          "nota": "Telas do passo 1 e entrada no Console aprovadas pela Carolina em 16/10/2026 e construídas. Segue em andamento: as telas de cada passo seguinte também são desenhadas e aprovadas antes do código."
+          "nota": "Telas do passo 1 e entrada no Console aprovadas pela Carolina em 16/10/2026 e construídas. Telas do passo 2 (Plataforma do síndico) desenhadas em 16/10/2026, aguardando aprovação."
         }
       ]
     },
@@ -287,7 +287,8 @@
           "refs": [
             "V-08"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: painel só do próprio condomínio, com o que falta configurar e só as ações que a pessoa pode (plataforma_painel). Telas de entrar, escolher o condomínio e início desenhadas no design-frontend.html, aguardando aprovação. Evidência até aqui: pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Vitest plataforma.test.ts."
         },
         {
           "id": "F2.2",
@@ -297,7 +298,8 @@
             "CF-06",
             "CF-10"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: funcionamento e atendimento com vários intervalos por dia, fuso pela UF (quatro do Brasil), feriados como data sem hora. Telas desenhadas, aguardando aprovação. Evidência até aqui: pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Vitest plataforma.test.ts."
         },
         {
           "id": "F2.3",
@@ -310,7 +312,8 @@
             "AT-25",
             "CF-09"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: tudo nasce pelo modelo do cenário; renomear mantém o id, desativar em vez de apagar, etapa sempre ligada a aberto, em andamento ou encerrado, com pausa de prazo. Mover pedidos de etapa desativada chega com os pedidos (passo 4). Telas desenhadas, aguardando aprovação. Evidência até aqui: pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Vitest plataforma.test.ts."
         },
         {
           "id": "F2.4",
@@ -320,7 +323,8 @@
             "CF-03",
             "V-09"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: vínculo de pessoa autorizada com cargo só como rótulo e permissões individuais; só se dá permissão de recurso que já existe (hoje, Configurar). Telas desenhadas, aguardando aprovação. Evidência até aqui: pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Vitest plataforma.test.ts."
         },
         {
           "id": "F2.5",
@@ -329,7 +333,8 @@
           "refs": [
             "CF-05"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: responsáveis com disponibilidade e responsável padrão da fila; revogar o padrão exige substituto ou pendência explícita. Pedidos em andamento de quem sai entram com os pedidos (passo 4). Telas desenhadas, aguardando aprovação. Evidência até aqui: pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Vitest plataforma.test.ts."
         },
         {
           "id": "F2.6",
@@ -338,7 +343,8 @@
           "refs": [
             "AT-10"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Banco e API prontos: regra geral e exceções por categoria, prioridade ou as duas; vencimento conta só horas de atendimento, no fuso do condomínio, pulando feriados (vencimento_do_prazo). Pausa por etapa entra com os pedidos. Telas desenhadas, aguardando aprovação. Evidência até aqui: pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Vitest plataforma.test.ts."
         }
       ]
     },
@@ -874,6 +880,21 @@
       ],
       "status": "feito",
       "evidencia": "Playwright console-passo1.spec.ts (11 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T14",
+      "texto": "Configurações do condomínio: só o próprio condomínio, cargo não dá permissão, permissão individual retirada para na hora, id estável, prazo em horas de atendimento com feriado, responsável padrão nunca some em silêncio",
+      "fase": "F2",
+      "refs": [
+        "V-08",
+        "CF-03",
+        "CF-04",
+        "CF-05",
+        "CF-09",
+        "AT-10"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 008_configuracoes_test.sql (82 testes); Deno api-plataforma/configuracoes_test.ts (10 testes)"
     }
   ],
   "publicacao": [
@@ -1087,6 +1108,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "02:37",
+      "fim": "06:08",
+      "texto": "Iniciado o passo 2 (configurações na Plataforma do síndico). Banco (migration 0070): pessoa autorizada com cargo só como rótulo e permissões individuais, que param na hora quando retiradas; configuração pronta pelo cenário em todo condomínio; fuso, horários de funcionamento e atendimento com vários intervalos, feriados como data sem hora; categorias, prioridades com significado, etapas ligadas a aberto, em andamento ou encerrado e modelos de resposta, todos com id estável; prazos com regra geral e exceções, vencendo só em horas de atendimento e pulando feriados; responsáveis pelo atendimento com padrão da fila disponível. API da Plataforma com as rotas do passo 2 e o convite da pessoa autorizada. 82 testes pgTAP novos, 10 Deno e 5 Vitest. Migration em aplicação no triade-condo-dev. Nove telas desenhadas no design-frontend.html, aguardando aprovação.",
+      "ref": "V-08, V-09, CF-03, CF-04, CF-05, CF-06, CF-08, CF-09, CF-10, CF-12, AT-04, AT-05, AT-10, AT-25"
+    },
     {
       "data": "16/10/2026",
       "inicio": "02:21",
