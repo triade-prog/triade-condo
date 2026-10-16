@@ -30,7 +30,7 @@
     "total_ideias": 296,
     "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 76 Deno, 58 Vitest, 88 ponta a ponta). O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 3) e api-console (versão 2); a Plataforma e o Console estão na Vercel, falando com elas.",
     "fase_atual": "F4",
-    "proximo_passo": "Juntar o PR 3 para as telas dos pedidos chegarem ao site da Vercel (a produção sai do main; as prévias da branch não têm o REPASSE_SEGREDO) e testar com um condomínio de verdade (E8). Depois, passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho. Em paralelo, com a Carolina: e-mail próprio com Resend (E9) para o F1.5 e liberar o GitHub Actions (F0.9)."
+    "proximo_passo": "A síndica do Condomínio Águas Claras entra na Plataforma, escolhe quem atende (Pessoas e acesso), cadastra unidades e moradores e registra os primeiros pedidos (E8). Depois, passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho. Com a Carolina: Resend (E9) e liberar o GitHub Actions (F0.9; os testes do GitHub nem chegam a rodar)."
   },
   "fases": [
     {
@@ -1181,7 +1181,8 @@
       "quem": "TRÍADE",
       "precisa_em": "F4",
       "refs": [],
-      "status": "pendente"
+      "status": "andamento",
+      "nota": "Condomínio Águas Claras cadastrado pela Carolina no Console, com a síndica convidada (16/10/2026). Falta a síndica usar no dia a dia: escolher quem atende, cadastrar unidades e moradores e registrar os primeiros pedidos."
     },
     {
       "id": "E9",
@@ -1240,6 +1241,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "19:10",
+      "fim": "19:17",
+      "texto": "PR 3 juntado no main (os testes do GitHub falham sem rodar, pelo bloqueio do F0.9; localmente tudo passa). A Vercel publicou a Plataforma e o Console de produção a partir do main. Teste no banco do triade-condo-dev com o Condomínio Águas Claras, como a síndica, dentro de uma transação desfeita no fim (nada ficou gravado): quem atende, unidade, morador, pedido 2026-0001 registrado e já aceito, retorno ao morador com próximo retorno em 24 h, previsão, pendência que impede concluir, resolução, conclusão, reabertura, um pedido privado cancelado, a fila e o resumo do Início. Tudo respondeu como nos testes.",
+      "ref": "E8, F4.1, F4.2, F4.3, F4.4, F4.5, F4.6, F4.7"
+    },
     {
       "data": "16/10/2026",
       "inicio": "18:46",
