@@ -63,6 +63,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   ESTRUTURA_COM_BLOCOS: "Ainda há torres ou blocos ativos. Desative-os antes de tirar a divisão.",
   ESTRUTURA_COM_ANDARES: "Ainda há unidades com andar. Tire o andar delas antes de deixar de usar andar.",
   SEM_ANDAR: "Este condomínio não usa andar. Ligue o uso de andar em Como o prédio se organiza.",
+  FALTA_PROPRIETARIO: "Unidade com inquilino precisa do proprietário do imóvel no cadastro. Informe o proprietário junto.",
+  MESMA_PESSOA: "Inquilino e proprietário precisam ser pessoas diferentes.",
   LINHA_INVALIDA: "Uma linha da planilha tem dado inválido. Corrija e envie de novo; nada foi gravado.",
 };
 

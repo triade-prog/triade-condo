@@ -205,7 +205,7 @@ Quem mora em cada unidade, os contatos autorizados e as mudanças.
 
 | ID | Ideia | Forma |
 |---|---|---|
-| MU-01 | Cadastro breve: nome, telefone, apartamento; CPF só se necessário ao financeiro. A unidade fica do jeito que o prédio se organiza: torre, bloco, quadra ou prédio (ou sem divisão), com ou sem andar; vale para morador e para proprietário (condômino) | Função |
+| MU-01 | Cadastro breve: nome, telefone, apartamento; CPF só se necessário ao financeiro. A unidade fica do jeito que o prédio se organiza: torre, bloco, quadra ou prédio (ou sem divisão), com ou sem andar; vale para morador e para proprietário (condômino); quando a unidade tem inquilino, o proprietário do imóvel fica no cadastro, para controle | Função |
 | MU-06 | Família, veículos e pets no cadastro | Função |
 | MU-07 | Mudança de morador: entrada e saída com revogação do vínculo | Função |
 | MU-08 | Múltiplos contatos autorizados por unidade (titular, cônjuge, inquilino), com preferências e revogação | Função |

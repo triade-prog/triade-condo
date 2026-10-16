@@ -27,6 +27,8 @@ function Moradores({ resumo }: { resumo: NonNullable<ReturnType<typeof usePlataf
       ajuda: "Só valem depois de confirmados.", aviso: true }] : []),
     ...(resumo.semContato ? [{ texto: plural(resumo.semContato, "unidade sem contato confirmado", "unidades sem contato confirmado"),
       href: "/moradores?filtro=sem-contato", botao: "Ver quais", ajuda: null, aviso: true }] : []),
+    ...(resumo.semProprietario ? [{ texto: plural(resumo.semProprietario, "unidade com inquilino e sem proprietário", "unidades com inquilino e sem proprietário"),
+      href: "/moradores?filtro=sem-proprietario", botao: "Ver quais", ajuda: "Para controle, o dono do imóvel fica no cadastro.", aviso: true }] : []),
   ];
   return (
     <section aria-labelledby="t-moradores" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">

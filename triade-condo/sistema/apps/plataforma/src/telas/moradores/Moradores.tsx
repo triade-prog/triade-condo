@@ -18,6 +18,9 @@ import { ListaContatos } from "./ListaContatos.tsx";
 
 type IdAba = "unidades" | "moradores" | "confirmar";
 
+/** Filtros que o Início abre pelo endereço. */
+const FILTROS_DO_ENDERECO = ["sem-contato", "sem-proprietario"] as const;
+
 export function Moradores() {
   const { atualizar } = usePlataforma();
   const carga = useCarregar<Unidades>("/v1/condominio/unidades");
@@ -68,7 +71,7 @@ export function Moradores() {
         aoMudar={(id) => { setAba(id); setRecado(null); router.replace(id === "unidades" ? "/moradores" : `/moradores?aba=${id}`, { scroll: false }); }}>
         <div key={`${aba}-${assinatura(dados)}`} className="pt-5">
           {aba === "unidades" ? (
-            <AbaUnidades dados={dados} filtroInicial={busca.get("filtro") === "sem-contato" ? "sem-contato" : "todos"} aoMudarBloco={setBlocoAtual}
+            <AbaUnidades dados={dados} filtroInicial={FILTROS_DO_ENDERECO.find((f) => f === busca.get("filtro")) ?? "todos"} aoMudarBloco={setBlocoAtual}
               aoIncluir={() => setJanela("unidades")} aoOrganizar={() => setJanela("estrutura")} salvo={salvo} recarregar={carga.recarregar} />
           ) : (
             <ListaContatos estado={aba === "confirmar" ? "PENDENTE" : undefined} salvo={salvo} />

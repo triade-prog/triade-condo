@@ -263,6 +263,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json(await rpc("plataforma_incluir_contato", {
       ...quem(c), p_unidade: unidade, p_contato: d.contatoId ?? null, p_nome: d.contatoId ? null : d.nome,
       p_telefone: d.contatoId ? null : d.telefone, p_relacao: d.relacao, p_principal: d.principal, p_recebe: d.recebeComunicados,
+      p_proprietario: d.proprietario ?? null,
     }), 201);
   });
 

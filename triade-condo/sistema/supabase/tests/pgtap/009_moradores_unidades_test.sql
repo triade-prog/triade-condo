@@ -3,7 +3,7 @@
 -- (MU-02), telefone que não prova identidade (MU-03), mudança (MU-07), importação de planilha
 -- e remoção dos dados pessoais (PT-11).
 begin;
-select plan(87);
+select plan(94);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -23,7 +23,7 @@ create temp table vs as select
 -- Permissão (PT-02): moradores ficam com o síndico; a pessoa autorizada não vê.
 select ok((select plataforma_painel(sindica, ipe) -> 'acoes' ?& array['moradores.ver', 'moradores.editar', 'moradores.confirmar'] from ids, c),
   'o síndico cuida dos moradores');
-select is((select plataforma_painel(sindica, ipe) -> 'moradores' from ids, c), '{"unidades": 0, "aConfirmar": 0, "semContato": 0}'::jsonb,
+select is((select plataforma_painel(sindica, ipe) -> 'moradores' from ids, c), '{"unidades": 0, "aConfirmar": 0, "semContato": 0, "semProprietario": 0}'::jsonb,
   'o painel mostra o resumo de moradores');
 select throws_ok($$ select plataforma_unidades(bruna, ipe) from ids, c $$, 'TC401', null, 'CF-03: pessoa autorizada sem permissão não vê moradores');
 select is((select plataforma_painel(bruna, ipe) ? 'moradores' from ids, c), false, 'e o painel dela não traz o resumo');
@@ -118,9 +118,20 @@ select is((select x -> 'outrasUnidades' from jsonb_array_elements((select plataf
 select is((select count(*)::int from historico, c where condominio_id = ipe and dados::text ~* 'marina|5561'), 0,
   'PT-13: o histórico não guarda nome nem telefone');
 
+-- Inquilino entra com o proprietário do imóvel no cadastro (MU-01).
+select is((teste.erro($$ select plataforma_incluir_contato(sindica, ipe, a102, null, 'Joana Lima', '+5561999990001', 'INQUILINO', true, true)
+                         from ids, c, un $$)) -> 'detalhe' ->> 'motivo', 'FALTA_PROPRIETARIO',
+  'MU-01: inquilino em unidade sem proprietário pede o proprietário junto');
+select is((teste.erro($$ select plataforma_incluir_contato(sindica, ipe, loja2, (marina ->> 'contatoId')::uuid, null, null, 'INQUILINO', false, true,
+                         jsonb_build_object('contatoId', marina ->> 'contatoId')) from ids, c, un, ct $$)) -> 'detalhe' ->> 'motivo', 'MESMA_PESSOA',
+  'inquilino e proprietário são pessoas diferentes');
+
 -- Telefone não prova identidade (MU-02, MU-03).
-create temp table tel as select plataforma_incluir_contato(sindica, ipe, a102, null, 'Joana Lima', '+5561999990001', 'INQUILINO', true, true) as joana
+create temp table tel as select plataforma_incluir_contato(sindica, ipe, a102, null, 'Joana Lima', '+5561999990001', 'INQUILINO', true, true,
+  '{"nome": "Rita Prado", "telefone": "+5561944440001"}') as joana
   from ids, c, un;
+select is((select (relacao, principal, recebe_comunicados, estado)::text from contatos_unidade, tel where contato_id = (joana ->> 'proprietarioId')::uuid),
+  '(PROPRIETARIO,f,f,CONFIRMADO)', 'MU-01: o proprietário fica no cadastro, sem ser o principal e sem os comunicados do dia a dia');
 select is((select joana -> 'avisos' from tel), '["TELEFONE_COMPARTILHADO"]'::jsonb, 'MU-03: telefone já usado em outro contato só avisa');
 select is((select count(*)::int from unidades_do_telefone((select ipe from c), '+5561999990001')), 3,
   'MU-03: o telefone compartilhado leva a todas as unidades, para perguntar qual');
@@ -140,7 +151,7 @@ create temp table imp as select plataforma_importar_moradores(sindica, ipe, '[
   {"bloco": null, "unidade": "Loja 9", "nome": "Padaria Sol", "telefone": "+556133330000", "relacao": "OUTRO"},
   {"bloco": "Torre A", "unidade": "101", "nome": "Marina Souza", "telefone": "+5561999990001", "relacao": "PROPRIETARIO"}
 ]') as r from ids, c;
-select is((select r from imp), '{"linhas": 5, "blocos": 1, "contatos": 3, "unidades": 3, "vinculos": 4, "ignoradas": 1}'::jsonb,
+select is((select r from imp), '{"linhas": 5, "blocos": 1, "contatos": 3, "unidades": 3, "vinculos": 4, "ignoradas": 1, "semProprietario": 1}'::jsonb,
   'F3.3: a planilha cria o que falta, reaproveita o contato e ignora o que já existe');
 select is((select count(*)::int from contatos_unidade, c where condominio_id = ipe and origem = 'PLANILHA' and estado = 'PENDENTE'), 4,
   'MU-02: o que vem da planilha nasce pendente');
@@ -151,6 +162,10 @@ select is((teste.erro($$ select plataforma_importar_moradores(sindica, ipe, '[{"
   '{"campos": ["unidade", "telefone"], "linha": 2, "motivo": "LINHA_INVALIDA"}'::jsonb, 'a linha com erro é apontada');
 select is((select count(*)::int from unidades, c where condominio_id = ipe and identificacao = 'X9'), 0, 'e nada da planilha com erro fica (tudo ou nada)');
 select is((select plataforma_painel(sindica, ipe) -> 'moradores' ->> 'aConfirmar' from ids, c), '4', 'o painel conta os contatos a confirmar');
+select is((select plataforma_painel(sindica, ipe) -> 'moradores' ->> 'semProprietario' from ids, c), '1',
+  'MU-01: a planilha não barra o inquilino sem proprietário, que vira pendência no painel');
+select is((select x ->> 'identificacao' from jsonb_array_elements((select plataforma_unidades(sindica, ipe) -> 'unidades' from ids, c)) x
+            where (x ->> 'semProprietario')::boolean), '11', 'e a lista de unidades aponta qual');
 select is((select plataforma_importar_moradores(davi, jatoba, '[{"bloco": "Quadra 1", "andar": "1", "unidade": "Casa 3", "nome": "Lia Reis",
             "telefone": "+5561977770002"}]', 'QUADRA') ->> 'unidades' from ids, c), '1', 'a planilha traz o andar');
 select is((select (agrupamento, usa_andar)::text from configuracao_condominio, c where condominio_id = jatoba), '(QUADRA,t)',
@@ -174,9 +189,15 @@ select is((select dados ->> 'evento' from historico, loja where acao = 'estado.m
 create temp table mud as select
   (select jsonb_agg(jsonb_build_object('id', id, 'versao', versao)) from contatos_unidade, un where unidade_id = a101 and estado <> 'ENCERRADO') as saem
   from un;
+select is((teste.erro($$ select plataforma_registrar_mudanca(sindica, ipe, a101, '2026-10-01', saem,
+            '[{"nome": "Caio Nunes", "telefone": "+5561966660001", "relacao": "INQUILINO", "principal": true}]') from ids, c, un, mud $$))
+  -> 'detalhe' ->> 'motivo', 'FALTA_PROPRIETARIO', 'MU-01: sai a proprietária e entra inquilino: o novo proprietário entra junto');
 select is((select plataforma_registrar_mudanca(sindica, ipe, a101, '2026-10-01', saem,
-            '[{"nome": "Caio Nunes", "telefone": "+5561966660001", "relacao": "INQUILINO", "principal": true}]') from ids, c, un, mud),
-  '{"saem": 2, "entram": 1}'::jsonb, 'MU-07: quem sai e quem entra numa só operação');
+            '[{"nome": "Caio Nunes", "telefone": "+5561966660001", "relacao": "INQUILINO", "principal": true},
+              {"nome": "Sara Melo", "telefone": "+5561966660002", "relacao": "PROPRIETARIO", "recebeComunicados": false}]') from ids, c, un, mud),
+  '{"saem": 2, "entram": 2}'::jsonb, 'MU-07: quem sai e quem entra numa só operação');
+select is((select x ->> 'recebeComunicados' from jsonb_array_elements((select plataforma_unidade(sindica, ipe, a101) -> 'contatos' from ids, c, un)) x
+            where x ->> 'nome' = 'Sara Melo'), 'false', 'o novo proprietário fica sem os comunicados do dia a dia');
 select is((select array_agg(distinct motivo_encerramento || ' ' || data_saida) from contatos_unidade, un where unidade_id = a101 and estado = 'ENCERRADO'),
   array['MUDANCA 2026-10-01'], 'a saída guarda o motivo e a data');
 select is((select jsonb_array_length(plataforma_unidade(sindica, ipe, a101) -> 'anteriores') from ids, c, un), 2, 'quem saiu aparece em anteriores');
@@ -226,7 +247,7 @@ select lives_ok($$ select plataforma_alterar_pessoa(sindica, ipe, v_bruna, 2, 'S
 select throws_ok($$ select plataforma_unidades(bruna, ipe) from ids, c $$, 'TC401', null, 'CF-04: retirada, para na hora');
 
 -- Busca (PT-17): páginas, busca por nome, unidade e telefone, sem curinga do usuário.
-select is((select plataforma_moradores(sindica, ipe, null, null, 1) ->> 'total' from ids, c), '7', 'a lista mostra os vínculos ativos');
+select is((select plataforma_moradores(sindica, ipe, null, null, 1) ->> 'total' from ids, c), '9', 'a lista mostra os vínculos ativos');
 select is((select plataforma_moradores(sindica, ipe, 'lia', null, 1) ->> 'total' from ids, c), '2', 'busca pelo nome');
 select is((select plataforma_moradores(sindica, ipe, '7770001', null, 1) -> 'itens' -> 0 ->> 'unidade' from ids, c), '202', 'busca pelo telefone');
 select is((select plataforma_moradores(sindica, ipe, '%', null, 1) ->> 'total' from ids, c), '0', 'o % digitado é texto, não curinga');

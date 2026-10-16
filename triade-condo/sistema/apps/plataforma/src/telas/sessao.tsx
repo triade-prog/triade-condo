@@ -13,7 +13,7 @@ export interface Painel {
   acoes: string[];
   pendencias: string[];
   /** Resumo de moradores, só para quem pode ver (passo 3). */
-  moradores?: { unidades: number; semContato: number; aConfirmar: number };
+  moradores?: { unidades: number; semContato: number; aConfirmar: number; semProprietario: number };
 }
 
 export interface CondominioDaPessoa {

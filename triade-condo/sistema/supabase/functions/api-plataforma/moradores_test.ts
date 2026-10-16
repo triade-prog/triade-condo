@@ -99,6 +99,23 @@ Deno.test("MU-04: contato que já existe vai pelo id, sem nome nem telefone", as
   assertEquals([args.p_contato, args.p_nome, args.p_telefone], [OUTRO, null, null]);
 });
 
+Deno.test("MU-01: inquilino leva junto o proprietário do imóvel, novo ou já cadastrado", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  const inquilino = { nome: "Joana Lima", telefone: "61988887777", relacao: "INQUILINO" };
+  await m.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo: { ...inquilino, proprietario: { nome: " Rita Prado ", telefone: "(61) 94444-0001" } }, cookie });
+  assertEquals(chamada(m, "plataforma_incluir_contato")?.p_proprietario, { nome: "Rita Prado", telefone: "+5561944440001" });
+  const m2 = montar();
+  const cookie2 = await entrar(m2);
+  await m2.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo: { ...inquilino, proprietario: { contatoId: OUTRO } }, cookie: cookie2 });
+  assertEquals(chamada(m2, "plataforma_incluir_contato")?.p_proprietario, { contatoId: OUTRO });
+  const ruim = await m2.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo: { ...inquilino, proprietario: { nome: "Rita", telefone: "123" } }, cookie: cookie2 });
+  assertEquals((await erro(ruim)).codigo, "VALIDATION_ERROR");
+  const sem = montar();
+  await sem.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo: inquilino, cookie: await entrar(sem) });
+  assertEquals(chamada(sem, "plataforma_incluir_contato")?.p_proprietario, null);
+});
+
 Deno.test("MU-07: mudança valida a data e quem entra antes do banco", async () => {
   const m = montar();
   const cookie = await entrar(m);

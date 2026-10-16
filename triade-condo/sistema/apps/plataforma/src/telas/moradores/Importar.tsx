@@ -16,6 +16,7 @@ interface Resultado {
   contatos: number;
   vinculos: number;
   ignoradas: number;
+  semProprietario: number;
 }
 
 const LIMITE = 2000;
@@ -146,7 +147,7 @@ export function Importar() {
           ) : null}
           <p className="text-sm text-tinta-suave">
             {leitura.erros.length ? `Corrija na planilha e escolha o arquivo de novo, ou importe só as ${leitura.linhas.length} prontas. ` : ""}
-            O que já existe não se repete. Todo contato importado fica a confirmar: só vale depois que o síndico conferir.
+            O que já existe não se repete. Todo contato importado fica a confirmar: só vale depois que o síndico conferir. Inclua o proprietário na planilha também quando a unidade tem inquilino.
             {leitura.agrupamento || leitura.linhas.some((l) => l.andar) ? " Se o condomínio ainda não usa torre, bloco ou andar, passa a usar, como na planilha." : ""}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -165,6 +166,13 @@ export function Importar() {
             {plural(resultado.vinculos, "contato a confirmar", "contatos a confirmar")}.
             {resultado.ignoradas ? ` ${plural(resultado.ignoradas, "linha já existia e ficou como estava", "linhas já existiam e ficaram como estavam")}.` : ""}
           </Aviso>
+          {resultado.semProprietario ? (
+            <Aviso tom="atencao">
+              {plural(resultado.semProprietario, "unidade ficou", "unidades ficaram")} com inquilino e sem proprietário. Para controle, inclua o proprietário do
+              imóvel em cada uma.{" "}
+              <Link href="/moradores?filtro=sem-proprietario" className="font-medium text-acao underline">Ver quais</Link>
+            </Aviso>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             <Link href="/moradores?aba=confirmar" className={classeBotao("primario")}>Conferir os contatos a confirmar</Link>
             <Botao variante="secundario" onClick={recomecar}>Importar outra planilha</Botao>

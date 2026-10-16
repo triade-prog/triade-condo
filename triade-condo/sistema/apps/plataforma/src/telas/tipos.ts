@@ -64,6 +64,9 @@ export interface UnidadeResumo {
   versao: number;
   confirmados: number;
   pendentes: number;
+  /** Tem proprietário no cadastro; semProprietario: tem inquilino e falta o proprietário (MU-01). */
+  temProprietario: boolean;
+  semProprietario: boolean;
   principal: string | null;
 }
 
@@ -71,7 +74,7 @@ export interface Unidades {
   estrutura: Estrutura;
   blocos: Bloco[];
   unidades: UnidadeResumo[];
-  resumo: { unidades: number; semContato: number; aConfirmar: number };
+  resumo: { unidades: number; semContato: number; aConfirmar: number; semProprietario: number };
   podeEditar: boolean;
   podeConfirmar: boolean;
 }
@@ -110,6 +113,7 @@ export interface UnidadeDetalhe {
   unidade: { id: string; identificacao: string; blocoId: string | null; andar: string | null; bloco: string | null; ativa: boolean; versao: number };
   contatos: ContatoDaUnidade[];
   anteriores: ContatoAnterior[];
+  faltaProprietario: boolean;
   podeEditar: boolean;
   podeConfirmar: boolean;
 }

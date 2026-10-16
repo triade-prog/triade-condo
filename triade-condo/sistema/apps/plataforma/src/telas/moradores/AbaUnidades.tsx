@@ -14,7 +14,7 @@ import { Janela } from "../Janela.tsx";
 import type { Bloco, Estrutura, Recado, UnidadeResumo, Unidades } from "../tipos.ts";
 import { Caixa, Escolha, nomesDivisao } from "./comum.tsx";
 
-type Filtro = "todos" | "sem-bloco" | "sem-contato" | string;
+type Filtro = "todos" | "sem-bloco" | "sem-contato" | "sem-proprietario" | string;
 
 function plural(n: number, um: string, varios: string): string {
   return `${n} ${n === 1 ? um : varios}`;
@@ -27,6 +27,7 @@ function Contatos({ u }: { u: UnidadeResumo }) {
     <span className="flex flex-wrap gap-1">
       {u.confirmados ? <Selo tom="ok" marca="ok">{plural(u.confirmados, "confirmado", "confirmados")}</Selo> : null}
       {u.pendentes ? <Selo tom="atencao" marca="atencao">{u.pendentes} a confirmar</Selo> : null}
+      {u.semProprietario ? <Selo tom="atencao" marca="atencao">Falta o proprietário</Selo> : null}
     </span>
   );
 }
@@ -79,7 +80,8 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
     filtro === "todos" ? true
       : filtro === "sem-bloco" ? !u.blocoId
         : filtro === "sem-contato" ? u.ativa && u.confirmados === 0
-          : u.blocoId === filtro);
+          : filtro === "sem-proprietario" ? u.semProprietario
+            : u.blocoId === filtro);
   const andares = dados.estrutura.usaAndar ? andaresDe(doFiltro) : [];
   const lista = andar ? doFiltro.filter((u) => u.andar === andar) : doFiltro;
   const nomeBloco = (id: string | null) => dados.blocos.find((b) => b.id === id)?.nome ?? null;
@@ -88,7 +90,10 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
     ...(div.usa ? ativos.map((b) => ({ valor: b.id, texto: b.nome })) : []),
     ...(div.usa && temSemBloco && ativos.length ? [{ valor: "sem-bloco", texto: div.sem }] : []),
     { valor: "sem-contato", texto: "Sem contato confirmado" },
+    ...(dados.resumo.semProprietario || filtro === "sem-proprietario" ? [{ valor: "sem-proprietario", texto: "Inquilino sem proprietário" }] : []),
   ];
+  const resolvido = filtro === "sem-contato" ? "Todas as unidades têm contato confirmado"
+    : filtro === "sem-proprietario" ? "Toda unidade com inquilino tem o proprietário no cadastro" : null;
 
   return (
     <div className="grid gap-4">
@@ -109,8 +114,8 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
         </p>
       ) : null}
       {lista.length === 0 ? (
-        <Vazio titulo={filtro === "sem-contato" ? "Todas as unidades têm contato confirmado" : "Nenhuma unidade aqui"}>
-          {filtro === "sem-contato" ? "Nada a fazer por enquanto." : "Inclua unidades pelo botão + Unidades."}
+        <Vazio titulo={resolvido ?? "Nenhuma unidade aqui"}>
+          {resolvido ? "Nada a fazer por enquanto." : "Inclua unidades pelo botão + Unidades."}
         </Vazio>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-linha">

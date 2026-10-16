@@ -28,7 +28,7 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (organização do prédio por torre, bloco, quadra ou prédio, com ou sem andar; unidades; ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (336 pgTAP, 62 Deno, 54 Vitest, 72 ponta a ponta). As migrations 0070 e 0080 ainda não estão no triade-condo-dev.",
+    "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (organização do prédio por torre, bloco, quadra ou prédio, com ou sem andar; unidades; inquilino sempre com o proprietário do imóvel no cadastro; ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (343 pgTAP, 63 Deno, 54 Vitest, 74 ponta a ponta). As migrations 0070 e 0080 ainda não estão no triade-condo-dev.",
     "fase_atual": "F3",
     "proximo_passo": "Aplicar as migrations 0070 e 0080 no triade-condo-dev (supabase db push). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9). Depois, passo 4: pedidos no painel, começando pelo desenho das telas."
   },
@@ -1174,6 +1174,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "15:14",
+      "fim": "15:25",
+      "texto": "Ajuste pedido pela Carolina, para controle: quando a unidade tem inquilino, o proprietário do imóvel fica no cadastro. Ao incluir um inquilino em unidade sem proprietário, a mesma janela pede o proprietário (pessoa nova ou já cadastrada no condomínio), que fica sem ser o principal e sem os comunicados do dia a dia; o banco recusa o inquilino sozinho (FALTA_PROPRIETARIO). Na mudança, se entra inquilino ou sai o proprietário, o novo proprietário entra junto. A planilha não barra: a unidade com inquilino e sem proprietário aparece no Início, no filtro Inquilino sem proprietário, na ficha (botão Incluir proprietário) e no fim da importação. MU-01 atualizada no IDEIAS, MAPA e mapa; tela 11 no desenho. 7 pgTAP, 1 Deno e 1 cenário ponta a ponta novos; 343 pgTAP, 63 Deno e 74 ponta a ponta passando.",
+      "ref": "MU-01, MU-07, F3.1, F3.3"
+    },
     {
       "data": "16/10/2026",
       "inicio": "14:17",

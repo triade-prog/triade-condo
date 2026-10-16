@@ -351,6 +351,16 @@ language sql stable
 set search_path = public
 as $$ select (app_now() at time zone coalesce((select fuso from configuracao_condominio), 'America/Sao_Paulo'))::date $$;
 
+-- Unidade com inquilino e sem proprietário no cadastro (MU-01): o dono do imóvel fica
+-- registrado para controle, mesmo sem morar lá.
+create function falta_proprietario(p_unidade uuid) returns boolean
+language sql stable
+set search_path = public
+as $$
+  select exists (select 1 from contatos_unidade where unidade_id = p_unidade and relacao = 'INQUILINO' and estado <> 'ENCERRADO')
+     and not exists (select 1 from contatos_unidade where unidade_id = p_unidade and relacao = 'PROPRIETARIO' and estado <> 'ENCERRADO')
+$$;
+
 -- Resumo para o painel e para a lista de unidades.
 create function resumo_moradores(p_condominio uuid) returns jsonb
 language sql stable
@@ -361,7 +371,8 @@ as $$
     'semContato', (select count(*) from unidades u where u.condominio_id = p_condominio and u.ativa
                      and not exists (select 1 from contatos_unidade cu where cu.unidade_id = u.id and cu.estado = 'CONFIRMADO')),
     'aConfirmar', (select count(*) from contatos_unidade cu join unidades u on u.id = cu.unidade_id and u.ativa
-                    where cu.condominio_id = p_condominio and cu.estado = 'PENDENTE'))
+                    where cu.condominio_id = p_condominio and cu.estado = 'PENDENTE'),
+    'semProprietario', (select count(*) from unidades u where u.condominio_id = p_condominio and u.ativa and falta_proprietario(u.id)))
 $$;
 
 -- ---------------------------------------------------------------------------------------
@@ -407,6 +418,8 @@ begin
                'id', u.id, 'blocoId', u.bloco_id, 'andar', u.andar, 'identificacao', u.identificacao, 'ativa', u.ativa, 'versao', u.versao,
                'confirmados', (select count(*) from contatos_unidade cu where cu.unidade_id = u.id and cu.estado = 'CONFIRMADO'),
                'pendentes', (select count(*) from contatos_unidade cu where cu.unidade_id = u.id and cu.estado = 'PENDENTE'),
+               'temProprietario', exists (select 1 from contatos_unidade cu where cu.unidade_id = u.id and cu.relacao = 'PROPRIETARIO' and cu.estado <> 'ENCERRADO'),
+               'semProprietario', u.ativa and falta_proprietario(u.id),
                'principal', (select ct.nome from contatos_unidade cu join contatos ct on ct.id = cu.contato_id
                               where cu.unidade_id = u.id and cu.principal and cu.estado <> 'ENCERRADO'))
              order by u.ativa desc, b.ordem nulls first, lower(b.nome) nulls first, chave_andar(u.andar), chave_unidade(u.identificacao))
@@ -451,6 +464,7 @@ begin
              order by cu.encerrado_em desc)
         from contatos_unidade cu join contatos ct on ct.id = cu.contato_id
        where cu.unidade_id = v_u.id and cu.estado = 'ENCERRADO'), '[]'::jsonb),
+    'faltaProprietario', falta_proprietario(v_u.id),
     'podeEditar', pode(p_pessoa, p_condominio, 'moradores.editar'),
     'podeConfirmar', pode(p_pessoa, p_condominio, 'moradores.confirmar'));
 end $$;
@@ -628,8 +642,12 @@ end $$;
 -- Incluir um contato na unidade (MU-01, MU-08): contato novo (nome e telefone) ou um que já
 -- existe no condomínio (a mesma pessoa em outra unidade). Quem pode confirmar inclui já
 -- confirmado; os outros deixam pendente para o síndico (MU-02).
+-- Inquilino em unidade sem proprietário no cadastro entra junto com o proprietário do
+-- imóvel (p_proprietario: {"contatoId": "..."} ou {"nome": "...", "telefone": "+55..."}),
+-- que fica registrado sem ser o principal e sem receber os comunicados do dia a dia.
 create function plataforma_incluir_contato(p_pessoa uuid, p_condominio uuid, p_unidade uuid, p_contato uuid, p_nome text,
-                                           p_telefone text, p_relacao text, p_principal boolean, p_recebe boolean)
+                                           p_telefone text, p_relacao text, p_principal boolean, p_recebe boolean,
+                                           p_proprietario jsonb default null)
 returns jsonb
 language plpgsql
 security definer
@@ -638,6 +656,8 @@ as $$
 declare
   v_contato uuid := p_contato;
   v_id uuid;
+  v_dono uuid;
+  v_estado text;
 begin
   perform entrar_condominio(p_pessoa, p_condominio, 'moradores.editar');
   if not (exigir_unidade(p_unidade)).ativa then perform recusar_motivo('Unidade desativada', 'UNIDADE_INATIVA'); end if;
@@ -646,9 +666,32 @@ begin
   elsif not exists (select 1 from contatos where id = v_contato) then
     raise exception 'Contato não encontrado' using errcode = 'TC404';
   end if;
-  v_id := ligar_contato_unidade(v_contato, p_unidade, p_relacao, p_principal, p_recebe,
-            case when pode(p_pessoa, p_condominio, 'moradores.confirmar') then 'CONFIRMADO' else 'PENDENTE' end, 'PAINEL', p_pessoa);
-  return jsonb_build_object('vinculoId', v_id, 'contatoId', v_contato,
+  v_estado := case when pode(p_pessoa, p_condominio, 'moradores.confirmar') then 'CONFIRMADO' else 'PENDENTE' end;
+  v_id := ligar_contato_unidade(v_contato, p_unidade, p_relacao, p_principal, p_recebe, v_estado, 'PAINEL', p_pessoa);
+  if p_relacao = 'INQUILINO' and falta_proprietario(p_unidade) then
+    if p_proprietario is null or jsonb_typeof(p_proprietario) <> 'object' then
+      perform recusar_motivo('Informe o proprietário do imóvel', 'FALTA_PROPRIETARIO');
+    end if;
+    if nullif(p_proprietario ->> 'contatoId', '') is not null then
+      begin
+        v_dono := (p_proprietario ->> 'contatoId')::uuid;
+      exception when invalid_text_representation then
+        perform recusar_campos('Proprietário inválido', 'proprietario');
+      end;
+      if not exists (select 1 from contatos where id = v_dono and dados_removidos_em is null) then
+        raise exception 'Contato não encontrado' using errcode = 'TC404';
+      end if;
+      if v_dono = v_contato then perform recusar_motivo('Inquilino e proprietário são pessoas diferentes', 'MESMA_PESSOA'); end if;
+    else
+      begin
+        v_dono := criar_contato(p_proprietario ->> 'nome', p_proprietario ->> 'telefone', p_pessoa);
+      exception when sqlstate 'TC422' then
+        perform recusar_campos('Confira o nome e o telefone do proprietário', 'proprietario');
+      end;
+    end if;
+    perform ligar_contato_unidade(v_dono, p_unidade, 'PROPRIETARIO', false, false, v_estado, 'PAINEL', p_pessoa);
+  end if;
+  return jsonb_build_object('vinculoId', v_id, 'contatoId', v_contato, 'proprietarioId', v_dono,
     'avisos', case when telefone_compartilhado(v_contato) then '["TELEFONE_COMPARTILHADO"]'::jsonb else '[]'::jsonb end);
 end $$;
 
@@ -769,7 +812,9 @@ begin
   perform encerrar_contato_unidade(p_id, p_versao, p_motivo, coalesce(p_data_saida, hoje_no_condominio()), p_pessoa);
 end $$;
 
--- Mudança (MU-07): quem sai e quem entra, numa só operação.
+-- Mudança (MU-07): quem sai e quem entra, numa só operação. Se entra inquilino ou sai o
+-- proprietário, a unidade não pode ficar com inquilino e sem proprietário (MU-01): o novo
+-- proprietário entra na mesma mudança.
 -- p_saem: [{"id": "<vínculo>", "versao": 1}]
 -- p_entram: [{"nome": "...", "telefone": "+55...", "relacao": "INQUILINO", "principal": true, "recebeComunicados": true}]
 create function plataforma_registrar_mudanca(p_pessoa uuid, p_condominio uuid, p_unidade uuid, p_data date, p_saem jsonb, p_entram jsonb)
@@ -783,6 +828,7 @@ declare
   v_contato uuid;
   v_estado text;
   v_entram integer := 0;
+  v_checar_dono boolean := false;
 begin
   perform entrar_condominio(p_pessoa, p_condominio, 'moradores.editar');
   if not (exigir_unidade(p_unidade)).ativa then perform recusar_motivo('Unidade desativada', 'UNIDADE_INATIVA'); end if;
@@ -803,6 +849,7 @@ begin
     if not exists (select 1 from contatos_unidade where id = r.id and unidade_id = p_unidade and estado <> 'ENCERRADO') then
       raise exception 'Vínculo não encontrado nesta unidade' using errcode = 'TC404';
     end if;
+    v_checar_dono := v_checar_dono or exists (select 1 from contatos_unidade where id = r.id and relacao = 'PROPRIETARIO');
     perform encerrar_contato_unidade(r.id, r.versao, 'MUDANCA', p_data, p_pessoa);
   end loop;
 
@@ -816,7 +863,11 @@ begin
     perform ligar_contato_unidade(v_contato, p_unidade, r.x ->> 'relacao', (r.x ->> 'principal')::boolean,
                                   coalesce((r.x ->> 'recebeComunicados')::boolean, true), v_estado, 'PAINEL', p_pessoa);
     v_entram := v_entram + 1;
+    v_checar_dono := v_checar_dono or r.x ->> 'relacao' = 'INQUILINO';
   end loop;
+  if v_checar_dono and falta_proprietario(p_unidade) then
+    perform recusar_motivo('Inclua o proprietário do imóvel entre quem entra', 'FALTA_PROPRIETARIO');
+  end if;
 
   perform registrar_historico('mudanca.registrada', 'unidade', p_unidade::text,
     jsonb_build_object('data', to_char(p_data, 'YYYY-MM-DD'), 'saem', jsonb_array_length(p_saem), 'entram', v_entram));
@@ -993,7 +1044,8 @@ begin
     'linhas', jsonb_array_length(p_linhas), 'blocos', v_blocos, 'unidades', v_unidades, 'contatos', v_contatos,
     'vinculos', v_vinculos, 'ignoradas', v_ignoradas));
   return jsonb_build_object('linhas', jsonb_array_length(p_linhas), 'blocos', v_blocos, 'unidades', v_unidades,
-                            'contatos', v_contatos, 'vinculos', v_vinculos, 'ignoradas', v_ignoradas);
+                            'contatos', v_contatos, 'vinculos', v_vinculos, 'ignoradas', v_ignoradas,
+                            'semProprietario', (select count(*) from unidades u where u.ativa and falta_proprietario(u.id)));
 end $$;
 
 call fechar_acesso();

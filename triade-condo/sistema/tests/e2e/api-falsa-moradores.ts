@@ -71,7 +71,14 @@ export function resumoMoradores(m: EstadoMoradores) {
     unidades: ativas.length,
     semContato: ativas.filter((x) => !m.vinculos.some((v) => v.unidadeId === x.id && v.estado === "CONFIRMADO")).length,
     aConfirmar: m.vinculos.filter((v) => v.estado === "PENDENTE").length,
+    semProprietario: ativas.filter((x) => faltaDono(m, x.id)).length,
   };
+}
+
+/** Inquilino ativo e nenhum proprietário ativo na unidade (MU-01). */
+function faltaDono(m: EstadoMoradores, unidadeId: string): boolean {
+  const ativos = m.vinculos.filter((v) => v.unidadeId === unidadeId && v.estado !== "ENCERRADO");
+  return ativos.some((v) => v.relacao === "INQUILINO") && !ativos.some((v) => v.relacao === "PROPRIETARIO");
 }
 
 /** Atende as rotas do passo 3; devolve null quando a rota não é daqui. */
@@ -108,6 +115,8 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
       unidades: lista.map((x) => ({ ...x,
         confirmados: ativos(x.id).filter((v) => v.estado === "CONFIRMADO").length,
         pendentes: ativos(x.id).filter((v) => v.estado === "PENDENTE").length,
+        temProprietario: ativos(x.id).some((v) => v.relacao === "PROPRIETARIO"),
+        semProprietario: x.ativa && faltaDono(m, x.id),
         principal: (() => { const p = ativos(x.id).find((v) => v.principal); return p ? contato(p.contatoId).nome : null; })() })),
       resumo: resumoMoradores(m), podeEditar: edita, podeConfirmar: confirma,
     } });
@@ -130,6 +139,7 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
           return { vinculoId: v.id, contatoId: c.id, nome: c.nome, relacao: v.relacao, motivo: v.motivo, dataSaida: v.dataSaida ?? null, encerradoEm: v.encerradoEm,
             dadosRemovidos: c.nome === null, contatoVersao: c.versao, semVinculoAtivo: !m.vinculos.some((o) => o.contatoId === c.id && o.estado !== "ENCERRADO") };
         }),
+        faltaProprietario: faltaDono(m, x.id),
         podeEditar: edita, podeConfirmar: confirma,
       } });
     }
@@ -151,14 +161,35 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
         id = novo.id;
       }
       if (ativos(x.id).some((v) => v.contatoId === id)) return erro(route, 400, "VALIDATION_ERROR", { motivo: "CONTATO_JA_NA_UNIDADE" });
+      const pedeDono = corpo.relacao === "INQUILINO" && !ativos(x.id).some((v) => v.relacao === "PROPRIETARIO");
+      const p = corpo.proprietario as { contatoId?: string; nome?: string; telefone?: string } | undefined;
+      let dono: string | null = null;
+      if (pedeDono) {
+        if (!p) return erro(route, 400, "VALIDATION_ERROR", { motivo: "FALTA_PROPRIETARIO" });
+        if (p.contatoId) dono = p.contatoId;
+        else {
+          const tel = normalizar(p.telefone);
+          if (!tel || !String(p.nome ?? "").trim()) return erro(route, 400, "VALIDATION_ERROR", { campos: ["proprietario"] });
+          const novo = { id: novoId(), nome: String(p.nome).trim(), telefone: tel, versao: 1 };
+          m.contatos.push(novo);
+          dono = novo.id;
+        }
+      }
       const v = ligar(id, x.id, String(corpo.relacao), corpo.principal === true, corpo.recebeComunicados !== false);
-      return route.fulfill({ status: 201, json: { vinculoId: v.id, contatoId: id, avisos: compartilhado(contato(id)) ? ["TELEFONE_COMPARTILHADO"] : [] } });
+      if (dono) ligar(dono, x.id, "PROPRIETARIO", false, false);
+      return route.fulfill({ status: 201, json: { vinculoId: v.id, contatoId: id, proprietarioId: dono, avisos: compartilhado(contato(id)) ? ["TELEFONE_COMPARTILHADO"] : [] } });
     }
     if (un[2] === "mudanca") {
       const saem = corpo.saem as { id: string; versao: number }[];
       const entram = corpo.entram as { nome: string; telefone: string; relacao: string; principal: boolean; recebeComunicados: boolean }[];
       if (!saem.length && !entram.length) return erro(route, 400, "VALIDATION_ERROR", { motivo: "MUDANCA_VAZIA" });
       if (entram.some((e) => !normalizar(e.telefone) || !e.nome.trim())) return erro(route, 400, "VALIDATION_ERROR", { campos: ["entram"] });
+      const ficam = ativos(x.id).filter((v) => !saem.some((s) => s.id === v.id));
+      const gatilho = entram.some((e) => e.relacao === "INQUILINO") || ativos(x.id).some((v) => saem.some((s) => s.id === v.id) && v.relacao === "PROPRIETARIO");
+      if (gatilho && (ficam.some((v) => v.relacao === "INQUILINO") || entram.some((e) => e.relacao === "INQUILINO"))
+        && !ficam.some((v) => v.relacao === "PROPRIETARIO") && !entram.some((e) => e.relacao === "PROPRIETARIO")) {
+        return erro(route, 400, "VALIDATION_ERROR", { motivo: "FALTA_PROPRIETARIO" });
+      }
       for (const s of saem) Object.assign(m.vinculos.find((v) => v.id === s.id)!, { estado: "ENCERRADO", principal: false, motivo: "MUDANCA", dataSaida: corpo.data, encerradoEm: "2026-10-16T16:00:00Z" });
       for (const e of entram) {
         const novo = { id: novoId(), nome: e.nome.trim(), telefone: normalizar(e.telefone)!, versao: 1 };
@@ -264,7 +295,7 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
       else { ligar(c.id, x.id, l.relacao, false, true, "PLANILHA"); r.vinculos++; }
     }
     if (linhas.some((l) => l.andar)) m.estrutura.usaAndar = true;
-    return route.fulfill({ status: 201, json: r });
+    return route.fulfill({ status: 201, json: { ...r, semProprietario: resumoMoradores(m).semProprietario } });
   }
   return erro(route, 404, "NOT_FOUND");
 }

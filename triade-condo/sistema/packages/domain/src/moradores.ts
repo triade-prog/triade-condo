@@ -98,6 +98,8 @@ export const incluirContatoSchema = z
     relacao,
     principal: z.boolean().default(false),
     recebeComunicados: z.boolean().default(true),
+    /** Inquilino em unidade sem proprietário no cadastro entra junto com o dono do imóvel (MU-01). */
+    proprietario: z.union([z.object({ contatoId: id }), z.object({ nome, telefone: telefoneContato })]).optional(),
   })
   .refine((c) => c.contatoId || (c.nome && c.telefone), { message: "Informe nome e telefone", path: ["nome"] });
 

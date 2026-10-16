@@ -160,6 +160,8 @@ A migration 0080 também ainda não está no `triade-condo-dev`. As oito telas f
 
 No mesmo dia, a pedido da Carolina, o prédio passou a se organizar do jeito dele: por torre, bloco, quadra ou prédio (ou sem divisão), com ou sem andar. A unidade aparece como "Torre A · 3º andar · 302". O síndico cadastra morador ou proprietário (condômino) pela lista, escolhendo torre, andar e unidade, e a planilha aceita a coluna andar. A ideia MU-01 foi atualizada.
 
+Depois, também a pedido da Carolina e para controle: quando a unidade tem inquilino, o proprietário do imóvel fica no cadastro. O inquilino entra junto com o proprietário (pessoa nova ou já cadastrada), que não é o contato principal e não recebe os comunicados do dia a dia. Na mudança, se entra inquilino ou sai o proprietário, o novo proprietário entra junto. A planilha não barra: a unidade com inquilino e sem proprietário vira pendência no Início, no filtro da lista e na ficha. MU-01 atualizada de novo.
+
 **Próximo passo:**
 
 1. Aplicar as migrations 0070 e 0080 no `triade-condo-dev`.
