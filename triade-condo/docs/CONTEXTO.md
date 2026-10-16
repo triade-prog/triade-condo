@@ -132,7 +132,7 @@ A Plataforma ganhou a página onde o síndico convidado cria a senha. Os testes 
 - Pessoas autorizadas com permissões individuais. O cargo não dá permissão.
 - Quem atende os pedidos, com o responsável padrão da fila.
 
-As migrations 0070 e 0080 foram aplicadas no `triade-condo-dev` em 16/10/2026, em partes (0070_configuracoes_condominio_1 a _5 e 0080_moradores_unidades_1 a _5), porque a ferramenta do Supabase expira em 60 segundos com textos grandes e espera confirmação para SQL com `delete`. A comparação com o banco local deu igual em tabelas, restrições, índices, gatilhos, políticas e funções. Faltam só `plataforma_remover_feriado` e `plataforma_remover_prazo` (fim da 0070), que têm `delete` e precisam ser coladas no SQL Editor.
+As migrations 0070 e 0080 foram aplicadas no `triade-condo-dev` em 16/10/2026, em partes (0070_configuracoes_condominio_1 a _5 e 0080_moradores_unidades_1 a _5), porque a ferramenta do Supabase expira em 60 segundos com textos grandes e espera confirmação para SQL com `delete`. A comparação com o banco local deu igual em tabelas, restrições, índices, gatilhos, políticas e funções. As duas funções com `delete` (`plataforma_remover_feriado` e `plataforma_remover_prazo`) foram coladas pela Carolina no SQL Editor e conferidas. As Edge Functions `api-plataforma` e `api-console` foram publicadas no dev pela ferramenta do Supabase, cada uma num pacote só (o domínio e o `_shared` juntos), porque o token pessoal do Supabase não fica no GitHub (repositório público). Os sites estão na Vercel: Plataforma em `https://plataforma-omega-five.vercel.app` e Console em `https://console-hazel-nine.vercel.app`, com `SUPABASE_FUNCTIONS_URL` e `REPASSE_SEGREDO`. O login de ponta a ponta já responde pelas funções. Mudou alguma função? É preciso publicar de novo.
 
 Decisões deste passo:
 
@@ -164,11 +164,9 @@ Depois, também a pedido da Carolina e para controle: quando a unidade tem inqui
 
 **Próximo passo:**
 
-1. Colar no SQL Editor do `triade-condo-dev` as duas funções que faltam da 0070 (`plataforma_remover_feriado` e `plataforma_remover_prazo`).
-2. Conferir login e convite com o Supabase Auth de verdade (F0.6, F1.5).
-3. Publicar na Vercel (E4).
-4. Liberar o CI (F0.9).
-5. Começar o passo 4 (pedidos no painel) pelo desenho das telas.
+1. Cadastrar a primeira administração (`iniciar_equipe`, no README) e conferir login, autenticador e convite de verdade (F0.6, F1.5).
+2. Liberar o CI (F0.9).
+3. Começar o passo 4 (pedidos no painel) pelo desenho das telas.
 
 ## Como trabalhar
 

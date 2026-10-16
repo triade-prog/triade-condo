@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (organização do prédio por torre, bloco, quadra ou prédio, com ou sem andar; unidades; inquilino sempre com o proprietário do imóvel no cadastro; ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (343 pgTAP, 63 Deno, 54 Vitest, 74 ponta a ponta). As migrations 0070 e 0080 estão no triade-condo-dev, menos duas funções da 0070 que têm delete (remover feriado e remover prazo), a colar no SQL Editor.",
+    "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (organização do prédio por torre, bloco, quadra ou prédio, com ou sem andar; unidades; inquilino sempre com o proprietário do imóvel no cadastro; ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (343 pgTAP, 63 Deno, 54 Vitest, 74 ponta a ponta). O triade-condo-dev tem todas as migrations e as Edge Functions api-plataforma e api-console; a Plataforma e o Console estão na Vercel, falando com elas.",
     "fase_atual": "F3",
-    "proximo_passo": "Colar no SQL Editor do triade-condo-dev as funções plataforma_remover_feriado e plataforma_remover_prazo (fim da 0070). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9). Depois, passo 4: pedidos no painel, começando pelo desenho das telas."
+    "proximo_passo": "Cadastrar a primeira administração com iniciar_equipe (README) e conferir login, autenticador e convite de verdade nos dois sistemas (F0.6, F1.5). Juntar o PR 3. Liberar o GitHub Actions (F0.9). Depois, passo 4: pedidos no painel, começando pelo desenho das telas.""
   },
   "fases": [
     {
@@ -1091,7 +1091,8 @@
       "quem": "TRÍADE",
       "precisa_em": "F1",
       "refs": [],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "plataforma-omega-five.vercel.app e console-hazel-nine.vercel.app (equipe triade-ai), com SUPABASE_FUNCTIONS_URL e REPASSE_SEGREDO; login com e-mail inexistente volta INVALID_CREDENTIALS pelas Edge Functions do triade-condo-dev (16/10/2026)"
     },
     {
       "id": "E5",
@@ -1174,6 +1175,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "16:52",
+      "fim": "17:30",
+      "texto": "Publicação no ambiente de desenvolvimento. A Carolina colou no SQL Editor as duas funções da 0070 com delete (conferidas iguais às do repositório), criou os projetos plataforma e console na Vercel (o duplicado console-hh7n foi apagado), gravou os segredos das funções no Supabase e o REPASSE_SEGREDO na Vercel. Pus SUPABASE_FUNCTIONS_URL nos dois projetos e publiquei as Edge Functions api-plataforma e api-console no triade-condo-dev, cada uma num pacote só (domínio e _shared juntos), testadas antes no Deno local. Teste de ponta a ponta: sem a senha de repasse a função responde 403; login com e-mail inexistente pelos dois sites volta INVALID_CREDENTIALS, passando pela Vercel, pela função, pelo Auth e pelo banco.",
+      "ref": "E4, F0.6, F0.8"
+    },
     {
       "data": "16/10/2026",
       "inicio": "15:26",
