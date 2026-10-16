@@ -19,11 +19,11 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | V-01 | Plataforma que organiza o atendimento e a rotina do condomínio: todo pedido tem responsável, próximo retorno, andamento e conclusão explicada | [A] [INT] |
 | V-02 | Público inicial: síndico morador de prédio com pouca estrutura, sem administradora; evolução até condomínio grande, com ou sem portaria | [A] [BR] |
 | V-03 | Foco geográfico inicial: Brasília/DF | [A] |
-| V-04 | Cenário 1: prédio simples sem portaria (porta, elevador, apartamentos; visitas e entregas direto com o morador) | [A] |
-| V-05 | Cenário 2: portaria remota/virtual (no DF, o STF derrubou em maio/2026 a lei que restringia; mais de 800 condomínios já usam) | [A] [BR] |
+| V-04 | Cenário 1: prédio simples sem portaria (porta, elevador, apartamentos; visitas e entregas direto com o morador). Não presumir porteiro, zelador, administradora ou prestador fixo | [A] |
+| V-05 | Cenário 2: portaria remota/virtual (no DF, o STF derrubou em maio/2026 a lei que restringia; mais de 800 condomínios já usam). Portaria remota não implica manutenção nem integração técnica com o sistema | [A] [BR] |
 | V-06 | Cenário 3: portaria presencial com atendente e troca de turnos | [A] |
 | V-07 | **Morador**: usa só o WhatsApp do condomínio, sem app, portal, login ou senha | [A] [BR] |
-| V-08 | **Síndico**: painel web de gestão e avisos de novidades no próprio WhatsApp | [A] |
+| V-08 | **Síndico**: painel web de gestão e avisos de novidades no próprio WhatsApp. O sistema funciona por completo sem operador TRÍADE | [A] |
 | V-09 | **Secretária e delegados do síndico**: acesso próprio, com permissões individuais por condomínio | [A] |
 | V-10 | **Carolina e equipe TRÍADE**: painel interno com todos os clientes, implantação, pagamentos e suporte | [A] |
 | V-11 | **Prestador ou executor**: recebe escopo e prazo, informa impedimentos e registra execução, sem conta própria | [A] [INT] |
@@ -39,24 +39,24 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 
 | ID | Ideia | Origem |
 |---|---|---|
-| W-01 | Número institucional próprio de cada condomínio (não usar o WhatsApp pessoal do síndico) | [A] |
+| W-01 | Número institucional próprio de cada condomínio (não usar o WhatsApp pessoal do síndico). É pré-requisito de adesão; se o condomínio não tiver, a implantação ajuda a providenciar | [A] |
 | W-02 | Alternativa: número compartilhado da TRÍADE com roteamento seguro por condomínio | [A] |
 | W-03 | **Coexistência**: conectar o número que o condomínio já usa no app WhatsApp Business à API oficial, sem perder o app (Meta) | [BR] |
 | W-04 | Usar a API oficial do WhatsApp (direto ou via provedor), nunca conexão por QR Code ou WhatsApp Web; confiabilidade como argumento de venda | [A] [BR] |
 | W-05 | Morador envia texto, foto, áudio e documento; tudo fica ligado ao pedido certo | [A] |
-| W-06 | Transcrição de áudio | [A] |
+| W-06 | Transcrição de áudio. Nunca prometer ao morador uma transcrição que ainda não existe | [A] |
 | W-07 | **WhatsApp Flows**: formulário dentro da conversa para abrir pedido estruturado (unidade, local, categoria, foto) | [BR] |
 | W-08 | Confirmação imediata de recebimento, com número de protocolo e "o que acontece agora" (Fixflo) | [A] [INT] |
 | W-09 | Morador consulta o andamento do próprio pedido a qualquer momento pelo WhatsApp | [A] [INT] |
 | W-10 | Morador pede revisão ou contesta a conclusão pelo WhatsApp | [A] |
-| W-11 | Síndico recebe no WhatsApp: novo pedido, nova reclamação, retorno vencido e novidades relevantes, sem precisar manter o painel aberto | [A] |
+| W-11 | Síndico recebe no WhatsApp: novo pedido, nova reclamação, retorno vencido e novidades relevantes, sem precisar manter o painel aberto. Decisões são tomadas no painel; não avisar cada alteração técnica | [A] |
 | W-12 | Mensagem automática fora do horário, configurável por condomínio, sem prometer prazo | [A] |
 | W-13 | Estados da mensagem separados do estado do pedido: recebida, envio pendente, aceita, entregue, lida, falhou, resultado desconhecido | [A] |
 | W-14 | Fila durável de envio com novas tentativas limitadas; falha fica visível com responsável | [A] |
-| W-15 | Eventos repetidos não duplicam pedido nem aviso (deduplicação) | [A] |
+| W-15 | Eventos repetidos não duplicam pedido nem aviso (deduplicação). Eventos recebidos têm autenticidade verificada; repetições e eventos fora de ordem são tratados | [A] |
 | W-16 | Registro de preferências e de pedido para não receber avisos (opt-out) | [A] |
 | W-17 | Avisos segmentados por torre ou bloco (MeuVizy) | [BR] |
-| W-18 | Canal alternativo e conciliação quando o WhatsApp ou o provedor ficar fora do ar | [A] |
+| W-18 | Canal alternativo e conciliação quando o WhatsApp ou o provedor ficar fora do ar. Um responsável definido registra o incidente e a conciliação depois | [A] |
 | W-19 | Ligação telefônica ou voz como canal complementar (Latchel, Vendoroo, Condo Control) | [A] [INT] |
 | W-20 | Respostas em vários idiomas para moradores estrangeiros (Fixflo: 40+ idiomas) | [INT] |
 
@@ -71,16 +71,16 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | AT-03 | Responsável real por pedido; quem responde pode ser diferente de quem executa | [A] |
 | AT-04 | Prioridades com significado explícito | [A] |
 | AT-05 | Etapas configuráveis por condomínio e por tipo de pedido, sempre ligadas a aberto, em andamento ou encerrado | [A] |
-| AT-06 | **Próximo retorno**: compromisso de atualizar o morador, separado da previsão de solução (padrão "periodic update" de help desks) | [A] [INT] |
+| AT-06 | **Próximo retorno**: compromisso de atualizar o morador, separado da previsão de solução (padrão "periodic update" de help desks). Toda mudança do próximo retorno fica no histórico, com motivo | [A] [INT] |
 | AT-07 | Previsão de solução só quando conhecida; ausência fica explícita, nunca prazo inventado | [A] |
 | AT-08 | Alerta de retorno vencido | [A] |
 | AT-09 | **Escalonamento automático**: retorno vencido avisa responsável → síndico → substituto ou conselho (Mygate) | [INT] |
 | AT-10 | Prazo-padrão de retorno por categoria, com regras de pausa e feriados | [A] [INT] |
-| AT-11 | Pendências e impedimentos explícitos: aguardando fornecedor, morador, decisão do síndico, peça, acesso | [A] [BR] |
+| AT-11 | Pendências e impedimentos explícitos: aguardando fornecedor, morador, decisão do síndico, peça, acesso. Cada pendência tem responsável e motivo | [A] [BR] |
 | AT-12 | Sem executor disponível: pendência real, nunca pessoa inventada | [A] |
 | AT-13 | Conclusão com explicação ao morador e evidência quando fizer sentido (foto, referência), sem exigir foto sempre. A evidência pode vir do síndico ou de um executor autorizado, sem depender de porteiro ou zelador | [A] |
-| AT-14 | Revisão da conclusão pelo síndico ou revisor antes de encerrar | [A] |
-| AT-15 | Reabertura com motivo, preservando a conclusão anterior | [A] [INT] |
+| AT-14 | Revisão da conclusão pelo síndico ou revisor antes de encerrar. Sem exigir equipe local, segunda pessoa da TRÍADE ou portaria | [A] |
+| AT-15 | Reabertura com motivo, preservando a conclusão anterior. O pedido reaberto ganha responsável e próximo retorno | [A] [INT] |
 | AT-16 | **Pergunta de satisfação ao concluir** ("Resolveu? 1 a 5"); nota baixa sugere reabertura (Property Meld) | [INT] |
 | AT-17 | Histórico completo com autor, data e antes/depois; nada é apagado | [A] [INT] |
 | AT-18 | Relacionar pedidos duplicados e reincidências por local/categoria, mantendo o protocolo e o histórico de cada relato. Reincidência é sinal para investigar, não causa confirmada. Fica mais precisa com o QR por local (AT-30) | [A] [BR] |
@@ -88,7 +88,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | AT-20 | **Responsabilidade da unidade × condomínio**: avisar quando o problema é do morador, com base nas regras do prédio | [INT] |
 | AT-21 | Videochamada com profissional para orientar o morador (Fixflo "Help me Fix") | [INT] |
 | AT-22 | Triagem de urgência e orientação de emergência para o canal do condomínio, com responsáveis definidos por condomínio. Nunca prometer socorro nem equipe TRÍADE sem o serviço contratado (SH-05) | [A] [INT] |
-| AT-23 | Solicitação de decisão ao síndico: alternativas, custo estimado, prazo, justificativa da aprovação ou devolução | [A] |
+| AT-23 | Solicitação de decisão ao síndico: alternativas, custo estimado, prazo, justificativa da aprovação ou devolução. Autoria e justificativa obrigatórias; a aprovação não contrata nem paga nada automaticamente | [A] |
 | AT-24 | Controle de edição simultânea: duas pessoas não sobrescrevem a mesma alteração sem aviso (Zendesk) | [A] |
 | AT-25 | Modelos de resposta prontos por condomínio | [A] |
 | AT-26 | Avisar todos os envolvidos ao mesmo tempo quando um problema é registrado: síndico, prestador, moradores afetados (Plusvecinos) | [INT] |
@@ -132,7 +132,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | CD-01 | Comunicado: rascunho → publicado → substituído/arquivado, com autor, data e versão | [A] |
 | CD-02 | Público autorizado: todo o condomínio, bloco, unidade ou contatos escolhidos (uCondo) | [A] [BR] |
 | CD-03 | Morador recebe e consulta documentos vigentes (regimento, convenção, regras) pelo WhatsApp, em texto, resumo ou PDF | [A] |
-| CD-04 | Arquivos privados com acesso por permissão; nada em pasta pública | [A] |
+| CD-04 | Arquivos privados com acesso por permissão; nada em pasta pública. Links que expiram e podem ser revogados, enviados só aos destinatários necessários; depois do download a cópia não é controlável | [A] |
 | CD-05 | Comunicado ligado a um pedido (ex.: aviso de interrupção por manutenção) | [A] |
 | CD-06 | Campanhas e comunicação programada | [A] |
 | CD-07 | Arquivo administrativo com versões anteriores e revisões | [A] |
@@ -149,9 +149,9 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 |---|---|---|
 | CF-01 | Ficha do condomínio preenchida na implantação e editável depois | [A] |
 | CF-02 | Pessoas autorizadas, cada uma com acesso próprio (sem conta compartilhada) | [A] |
-| CF-03 | Permissões individuais: acompanhar, responder, atualizar, concluir, publicar, configurar | [A] |
+| CF-03 | Permissões individuais: acompanhar, responder, atualizar, concluir, publicar, configurar. Cargo ou função não concede permissão automaticamente; portaria, administradora ou fornecedor não ganham acesso só por existirem | [A] |
 | CF-04 | Vínculo ativo ou revogado; revogado não age mais, mas a autoria antiga fica | [A] |
-| CF-05 | Responsáveis pelo atendimento por condomínio | [A] |
+| CF-05 | Responsáveis pelo atendimento por condomínio. Definir o que acontece com os pedidos de um responsável desativado | [A] |
 | CF-06 | Dias e horários de funcionamento e de atendimento | [A] |
 | CF-07 | Modelo de atendimento humano: equipe do condomínio ou TRÍADE contratada | [A] |
 | CF-08 | Categorias, prioridades, etapas e modelos de resposta por condomínio | [A] |
@@ -180,11 +180,11 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 
 | ID | Ideia | Origem |
 |---|---|---|
-| MP-01 | Coordenação de manutenção: necessidade, área/equipamento, responsável, executor, prioridade, previsão, próximo retorno | [A] |
+| MP-01 | Coordenação de manutenção: necessidade, área/equipamento, responsável, executor, prioridade, previsão, próximo retorno. Coordenar não significa que a TRÍADE executa a manutenção | [A] |
 | MP-02 | Tarefas de manutenção com providência, executor e resultado | [A] |
 | MP-03 | Manutenção preventiva e corretiva; calendário de preventivas | [A] [BR] |
 | MP-04 | Vínculo opcional entre manutenção, pedido do morador e agenda | [A] |
-| MP-05 | Cadastro de prestadores, mantido quando o síndico muda (Nextin) | [A] [BR] |
+| MP-05 | Cadastro de prestadores, mantido quando o síndico muda (Nextin). Começar pelos contratos e acordos que já existem; não presumir prestador fixo, autorização de entrada nem acompanhamento obrigatório | [A] [BR] |
 | MP-06 | Indicação de prestadores avaliados pelos moradores (MeuVizy) | [BR] |
 | MP-07 | Vistorias e checklists quando necessários (sem checklist universal), registrando responsável, acesso, impedimentos e evidências por pedido e por local. O síndico pode fazer ou atribuir; nada é atribuído automaticamente à portaria remota | [A] [BR] |
 | MP-08 | **Check-in e check-out do prestador por QR no local** (Arcsite) | [INT] |
@@ -217,7 +217,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 
 | ID | Ideia | Origem |
 |---|---|---|
-| OC-01 | Fluxo: necessidade → convite a fornecedores → propostas e anexos → comparação → decisão justificada → aceite → acompanhamento | [A] [BR] |
+| OC-01 | Fluxo: necessidade → convite a fornecedores → propostas e anexos → comparação → decisão justificada → aceite → acompanhamento. A TRÍADE não escolhe fornecedor nem compra pelo condomínio; orçamento funciona sem financeiro e sem pagamento | [A] [BR] |
 | OC-02 | Comparar escopo, não só preço: inclusões, exclusões, frete, prazo, validade, garantia | [A] [BR] |
 | OC-03 | Link para o fornecedor enviar proposta sem conta, que expira e pode ser revogado (HabitaOne, Cota Todos) | [A] [BR] |
 | OC-04 | Versões de proposta preservadas; cancelamento não apaga | [A] [BR] |
@@ -293,7 +293,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 
 | ID | Ideia | Origem |
 |---|---|---|
-| CT-01 | Troca de síndico: validar substituição, revogar acessos antigos, preservar autoria | [A] |
+| CT-01 | Troca de síndico: validar substituição, revogar acessos antigos, preservar autoria. Encerra as sessões abertas de quem saiu | [A] |
 | CT-02 | **Dossiê de passagem de bastão**: pendências, prestadores, contratos, documentos e histórico entregues ao novo síndico | [INT] |
 | CT-03 | Memória permanente do prédio que não depende de quem é o síndico (golden thread, Reino Unido) | [INT] |
 | CT-04 | Exportar todo o histórico do condomínio se ele sair da plataforma | [A] |
@@ -307,7 +307,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | PI-01 | Carteira de clientes com estágio: em implantação, ativo, situações a tratar | [A] |
 | PI-02 | Ficha do cliente: contatos, número institucional, contrato, recursos contratados e liberados | [A] |
 | PI-03 | Recurso só disponível se **contratado E liberado**; liberação registrada com autor, data e referência | [A] |
-| PI-04 | Implantação com roteiro de 8 etapas: ficha → dados → documentos → configuração → apresentação → moradores → pendências → entrega | [A] |
+| PI-04 | Implantação com roteiro de 8 etapas: ficha → dados → documentos → configuração → apresentação → moradores → pendências → entrega. Começa levantando como o condomínio já se organiza (atas, regras, contratos, responsáveis) e configura a partir disso, sem impor fluxo novo; a entrega ao cliente é um ato explícito, sem notas internas | [A] |
 | PI-05 | Pendências de implantação com responsável e próximo retorno | [A] |
 | PI-06 | Notas internas nunca visíveis ao cliente | [A] |
 | PI-07 | Pagamentos dos clientes à TRÍADE: obrigação por competência, recebimentos, conferência, ajustes, parcial; valor desconhecido não é zero | [A] |
@@ -320,6 +320,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | PI-14 | Ferramenta interna de rascunho de documentos e atas para o apoio documental | [INT] |
 | PI-15 | Visão de capacidade da equipe (quantos condomínios cada um atende) | [A] |
 | PI-16 | Suspender um recurso sem perder o histórico | [A] |
+| PI-17 | Suporte técnico da plataforma separado do atendimento operacional (do síndico ou da equipe contratada), cada um com responsáveis e cobertura | [A] |
 
 ---
 
@@ -327,12 +328,12 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 
 | ID | Ideia | Origem |
 |---|---|---|
-| SH-01 | **Implantação presencial**: demonstração e orientação em reunião ou assembleia combinada | [A] |
+| SH-01 | **Implantação presencial**: demonstração e orientação em reunião ou assembleia combinada. Em Brasília/DF; não é requisito jurídico nem exclusividade | [A] |
 | SH-02 | **Orientação de novos moradores** em condomínio já cliente | [A] |
-| SH-03 | **Apoio documental**: criar ou revisar regimento, regras e atas (atas sempre de reuniões reais) | [A] |
-| SH-04 | **Atendimento humano no WhatsApp** contratado pelo condomínio | [A] |
+| SH-03 | **Apoio documental**: criar ou revisar regimento, regras e atas (atas sempre de reuniões reais). O condomínio aprova as regras; não é serviço jurídico, com revisão profissional quando aplicável; nunca exigir documentação para usar o sistema | [A] |
+| SH-04 | **Atendimento humano no WhatsApp** contratado pelo condomínio. Com horários, cobertura e substituição definidos no contrato; nunca prometer atendimento humano a quem contratou só a plataforma | [A] |
 | SH-05 | **Plantão fora do horário**: triagem emergência × pode esperar, orientação e registro (Latchel, Vendoroo) | [INT] |
-| SH-06 | Assessoria operacional recorrente: triagem, vistoria, acompanhamento de prestadores | [A] |
+| SH-06 | Assessoria operacional recorrente: triagem, vistoria, acompanhamento de prestadores. Com escopo, exclusões, capacidade e atividades que exigem presença local definidos; ausência de portaria não obriga contratar a TRÍADE | [A] |
 | SH-07 | **Rede de especialistas sob demanda**: contador, advogado, engenheiro ("síndico cooperativo", Matera) | [INT] |
 | SH-08 | Produção e instalação de etiquetas e plaquinhas QR no prédio | [A] [INT] |
 | SH-09 | Pacote de conteúdo de autoajuda adaptado às regras do prédio | [INT] |
@@ -345,7 +346,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 
 | ID | Ideia | Origem |
 |---|---|---|
-| NG-01 | Base completa de atendimento + conjuntos de recursos escolhidos + serviços com escopo separado | [A] |
+| NG-01 | Base completa de atendimento + conjuntos de recursos escolhidos + serviços com escopo separado. Nenhuma parte do atendimento é vendida como extra; módulos opcionais não dependem uns dos outros (pedidos sem financeiro, orçamento sem pagamento) | [A] |
 | NG-02 | Cobrança por condomínio fixo (iSindi R$ 24,90) | [A] [BR] |
 | NG-03 | Cobrança por faixa de unidades (SindIA R$ 197 até 50 un.; R$ 397 até 150) | [A] [BR] |
 | NG-04 | Cobrança por unidade ativa com mínimo (HabitaOne R$ 4,90/un., mín. R$ 149) | [A] [BR] |
@@ -353,7 +354,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | NG-06 | Teste grátis sem cartão (7 a 30 dias) | [BR] |
 | NG-07 | Taxa de implantação | [A] [INT] |
 | NG-08 | **Venda via construtoras**: prédio entregue com TRÍADE implantada; construtora paga a implantação (Aptner, Coreia) | [INT] |
-| NG-09 | Teste assistido com 3–5 síndicos por cerca de 4 semanas | [A] |
+| NG-09 | Teste assistido com 3–5 síndicos por cerca de 4 semanas. Medindo volume, retornos, reaberturas, esforço humano e opinião dos participantes | [A] |
 | NG-10 | Demonstração curta de um pedido do início ao fim como ferramenta de venda | [A] |
 | NG-11 | Conteúdo educativo para síndicos (blog, cursos) como aquisição (uCondo) | [A] [BR] |
 | NG-12 | Índice público de atendimento (TR-06) como marketing e imprensa | [INT] |
@@ -372,6 +373,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | EM-03 | Canais: Instagram, Facebook, WhatsApp comercial e de suporte da TRÍADE | [A] |
 | EM-04 | Site institucional: início, como funciona, serviços e conjuntos, contato | [A] |
 | EM-05 | Mensagem: "Organize os pedidos do seu prédio: saiba quem vai agir, quando dar retorno e como cada problema foi concluído" | [A] |
+| EM-06 | Termos de uso e política de privacidade da plataforma, e contrato separado para serviços humanos, com responsabilidades, dados e limites, revisados por profissional | [A] |
 
 ---
 
@@ -379,22 +381,24 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 
 | ID | Ideia | Origem |
 |---|---|---|
-| PT-01 | Isolamento total entre condomínios, verificado no servidor em toda leitura, escrita, busca, anexo, fila e notificação | [A] |
+| PT-01 | Isolamento total entre condomínios, verificado no servidor em toda leitura, escrita, busca, anexo, fila e notificação. O condomínio vem da sessão, nunca do que o navegador envia; testes negativos de acesso cruzado | [A] |
 | PT-02 | Permissão = pessoa + função + condomínio + ação; negar por padrão (OWASP) | [A] |
 | PT-03 | Histórico e auditoria: nada é apagado em silêncio | [A] |
 | PT-04 | Banco relacional com transações; alteração e intenção de envio salvas juntas (outbox) e um worker envia | [A] |
-| PT-05 | Aplicação modular única (monólito modular) antes de microsserviços; candidatos: TypeScript, Node, PostgreSQL | [A] |
+| PT-05 | Aplicação modular única (monólito modular) antes de microsserviços; candidatos: TypeScript, Node, PostgreSQL. Camadas separadas (interface, API, domínio, adaptadores); configuração por ambiente e segredos fora do código | [A] |
 | PT-06 | Row Level Security no banco como defesa extra | [A] [BR] |
 | PT-07 | Arquivos privados com validação de tipo e tamanho; links temporários | [A] |
-| PT-08 | Login com e-mail verificado, recuperação por token de uso único, MFA para a equipe, sessões revogáveis | [A] |
+| PT-08 | Login com e-mail verificado, recuperação por token de uso único, MFA para a equipe, sessões revogáveis. Resposta neutra na recuperação (não revela se a conta existe); senha e token nunca aparecem no histórico | [A] |
 | PT-09 | Valores monetários exatos (nunca ponto flutuante); moeda explícita | [A] |
 | PT-10 | Acessibilidade WCAG 2.2 AA, uso no celular, estados vazio/erro/carregando | [A] |
-| PT-11 | LGPD: cadastro mínimo, finalidade por campo, retenção, exclusão; TRÍADE provavelmente operadora dos dados do condomínio | [A] [BR] |
-| PT-12 | Cópias de segurança com restauração testada; monitoramento e alertas | [A] |
+| PT-11 | LGPD: cadastro mínimo, finalidade por campo, retenção, exclusão; TRÍADE provavelmente operadora dos dados do condomínio. Inclui fotos e áudios, com links que expiram e preservação legal quando exigida | [A] [BR] |
+| PT-12 | Cópias de segurança com restauração testada; monitoramento e alertas. Cópias cifradas e restritas, restauração testada em ambiente isolado; alertas de fila e de falha de envio com responsável de resposta | [A] |
 | PT-13 | Logs sem senhas, tokens nem conteúdo pessoal desnecessário | [A] |
 | PT-14 | Ambientes separados; dados fictícios em desenvolvimento | [A] |
 | PT-15 | API pública para integrações (HabitaOne, casavi) | [BR] [INT] |
 | PT-16 | Servidores no Brasil | [BR] [INT] |
+| PT-17 | Contratos de API com validação de esquema, paginação, erros padronizados e versão | [A] |
+| PT-18 | Testes automáticos de domínio, concorrência, isolamento, mídia inválida e queda de provedor, rodando em integração contínua; publicação com reversão testada | [A] |
 
 ---
 
@@ -458,14 +462,14 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 13. Áreas comuns e vida em condomínio | 5 |
 | 14. Transparência e indicadores | 9 |
 | 15. Continuidade e troca de síndico | 4 |
-| 16. Painel interno TRÍADE | 16 |
+| 16. Painel interno TRÍADE | 17 |
 | 17. Serviços humanos | 11 |
 | 18. Negócio, planos e preço | 15 |
-| 19. Empresa e marca | 5 |
-| 20. Princípios técnicos | 16 |
+| 19. Empresa e marca | 6 |
+| 20. Princípios técnicos | 18 |
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
-| **Total** | **271** |
+| **Total** | **275** |
 
 ---
 
@@ -490,3 +494,51 @@ Ideias que mudaram de seção ou de código. Os códigos antigos não existem ma
 Textos ajustados: MU-05 passou a descrever o recurso no WhatsApp (a orientação humana é SH-02, que já existia); TR-02 virou "relatório mensal do atendimento" para não se confundir com a prestação de contas financeira da seção 22.
 
 Renumeração para manter a sequência sem buracos: W-18→W-17, W-22→W-18, W-23→W-19, W-24→W-20, AT-28→AT-27, AT-29→AT-28, AT-30→AT-29, IA-15→IA-14, IA-16→IA-15, IA-17→IA-16, FC-07→FC-06, FC-08→FC-07, FC-09→FC-08.
+
+---
+
+## Comparação com o catálogo antigo (16/10/2026)
+
+Os 109 itens do catálogo do plano antigo (`arquivo/outputs/triade-condo/construcao/catalogo.json`) foram comparados com este arquivo. Itens que eram só gestão do projeto (documentos, decisões pendentes, piloto, auditoria) não viram ideia; as regras de produto que estavam neles foram trazidas para cá.
+
+| Ideia | O que veio do catálogo | Item de origem |
+|---|---|---|
+| V-04, V-05 | Não presumir equipe; portaria remota não implica manutenção nem integração | PROD-03, DEC-06 |
+| V-08 | Sistema funciona sem operador TRÍADE | AUTH-01 |
+| W-01 | Número institucional como pré-requisito de adesão | WA-01 |
+| W-06 | Não prometer transcrição inexistente | WA-05 |
+| W-11 | Decisões no painel; sem aviso de cada alteração técnica | WA-04 |
+| W-15 | Autenticidade dos eventos; eventos fora de ordem | WA-02, AUD-03 |
+| W-18 | Responsável pelo incidente e conciliação | INC-01, SERV-07 |
+| AT-06 | Mudança do próximo retorno fica no histórico com motivo | TIC-04, SERV-04 |
+| AT-11 | Pendência com responsável e motivo | TIC-03 |
+| AT-13 | Evidência do síndico ou executor autorizado | EVI-01 |
+| AT-14 | Revisão sem exigir equipe local, segunda pessoa ou portaria | END-01 |
+| AT-15 | Reaberto ganha responsável e próximo retorno | END-02 |
+| AT-18 | Reincidência é sinal, não causa; protocolos preservados | TIC-06 |
+| AT-22 | Responsáveis de emergência; não prometer socorro | SERV-03 |
+| AT-23 | Autoria e justificativa; aprovação não contrata nem paga | SYN-01, SYN-02 |
+| CD-04 | Links que expiram e são revogáveis; limite após download | AUD-04 |
+| CF-03 | Cargo não concede permissão automaticamente | DEC-01, MVP-08 |
+| CF-05 | Pedidos de responsável desativado | AUD-05 |
+| MP-01 | Coordenar não é executar manutenção | PROD-02 |
+| MP-05 | Partir dos contratos existentes; sem prestador fixo presumido | SERV-06 |
+| MP-07 | Vistoria com responsável, acesso, impedimentos e evidências | VIS-01, SERV-05 |
+| OC-01 | TRÍADE não escolhe fornecedor nem compra | PROD-02, SYN-01 |
+| TR-01 | Fuso, período e base de cálculo dos indicadores | MET-01 |
+| CT-01 | Encerrar sessões de quem saiu | AUD-06 |
+| PI-04 | Partir da organização existente; entrega explícita sem notas internas | DEC-06, MVP-11 |
+| **PI-17** | **Nova:** suporte técnico separado do atendimento operacional | INC-01, PIL-04 |
+| SH-01, SH-03 | Limites da implantação e do apoio documental | PROD-02, PIL-03 |
+| SH-04, SH-06 | Cobertura definida; não prometer humano a quem só tem a plataforma | SERV-01, SERV-02, ADD-01 a ADD-05 |
+| NG-01 | Nada do atendimento vendido como extra; módulos independentes | PROD-02, PROD-05 |
+| NG-09 | O que medir no teste assistido | PIL-06 |
+| **EM-06** | **Nova:** termos, privacidade e contrato dos serviços humanos | PIL-01 |
+| PT-01 | Condomínio vem da sessão; testes negativos | TEN-01, TEN-02 |
+| PT-05 | Camadas separadas; segredos fora do código | TEC-01 |
+| PT-08 | Recuperação com resposta neutra; nada secreto no histórico | MVP-13, AUD-06 |
+| PT-11 | Fotos e áudios na política de retenção | DEC-04, EVI-02 |
+| PT-12 | Cópias cifradas; alertas com responsável | INF-04, INF-05 |
+| **PT-17** | **Nova:** contratos de API | API-01 |
+| **PT-18** | **Nova:** testes automáticos e integração contínua | QA-01 a QA-05, INF-01, INF-03 |
+
