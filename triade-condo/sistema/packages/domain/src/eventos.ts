@@ -2,7 +2,7 @@
 // Datas sempre no horário de Brasília.
 
 import { CENARIOS, ESTAGIOS, FUNCOES_CONSOLE } from "./console.ts";
-import { MOTIVOS_ENCERRAMENTO } from "./moradores.ts";
+import { AGRUPAMENTOS, MOTIVOS_ENCERRAMENTO } from "./moradores.ts";
 import { FUSOS, mostrarDataSemHora, PERMISSOES, TIPOS_HORARIO } from "./plataforma.ts";
 
 export interface EventoHistorico {
@@ -110,6 +110,8 @@ export function descreverEvento(e: EventoHistorico): string {
       return d.pendente ? "Acesso revogado · responsável padrão ficou pendente" : "Acesso revogado";
     case "atendimento.alterado":
       return "Responsáveis pelo atendimento alterados";
+    case "estrutura.alterada":
+      return `Organização do prédio: ${nomeDe(Object.fromEntries(Object.entries(AGRUPAMENTOS).map(([k, v]) => [k, v.nome])), d.agrupamento)}${d.usa_andar ? ", com andares" : ", sem andares"}`;
     case "bloco.criado":
       return "Bloco criado";
     case "bloco.alterado":

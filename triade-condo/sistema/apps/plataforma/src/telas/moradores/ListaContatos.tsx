@@ -117,7 +117,7 @@ export function ListaContatos({ estado, salvo }: { estado?: "PENDENTE"; salvo: (
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <Link href={`/moradores/unidade?id=${i.unidadeId}`} className="font-medium text-acao hover:underline">{nomeDaUnidade(i.bloco, i.unidade)}</Link>
+                      <Link href={`/moradores/unidade?id=${i.unidadeId}`} className="font-medium text-acao hover:underline">{nomeDaUnidade(i.bloco, i.andar, i.unidade)}</Link>
                     </td>
                     {aConfirmar ? null : <td className="px-4 py-3"><SeloEstado estado={i.estado} /></td>}
                     {podeMarcar ? (
@@ -140,7 +140,7 @@ export function ListaContatos({ estado, salvo }: { estado?: "PENDENTE"; salvo: (
         </>
       )}
       <Janela aberto={!!recusar} titulo={recusar ? `Recusar ${recusar.nome}` : "Recusar"} campos={[]} iniciais={{}} textoBotao="Recusar contato"
-        explicacao={recusar ? `${recusar.nome} não vai falar por ${nomeDaUnidade(recusar.bloco, recusar.unidade)}. A recusa fica registrada no histórico.` : undefined}
+        explicacao={recusar ? `${recusar.nome} não vai falar por ${nomeDaUnidade(recusar.bloco, recusar.andar, recusar.unidade)}. A recusa fica registrada no histórico.` : undefined}
         aoFechar={() => setRecusar(null)} recarregar={carga.recarregar}
         aoSalvar={async () => {
           const alvo = recusar!;
@@ -148,7 +148,7 @@ export function ListaContatos({ estado, salvo }: { estado?: "PENDENTE"; salvo: (
           if (r.ok) {
             setRecusar(null);
             setMarcados(marcados.filter((x) => x !== alvo.vinculoId));
-            salvo({ tom: "ok", texto: `${alvo.nome} recusado em ${nomeDaUnidade(alvo.bloco, alvo.unidade)}.` });
+            salvo({ tom: "ok", texto: `${alvo.nome} recusado em ${nomeDaUnidade(alvo.bloco, alvo.andar, alvo.unidade)}.` });
           }
           return r;
         }} />

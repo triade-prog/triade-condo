@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { descreverEvento } from "./eventos.ts";
 import {
+  chaveAndar,
   chaveUnidade,
   gerarUnidades,
   incluirContatoSchema,
   lerPlanilhaMoradores,
   MODELO_PLANILHA,
   mudancaSchema,
+  nomeDaUnidade,
   telefoneContato,
 } from "./moradores.ts";
 
@@ -26,10 +28,22 @@ describe("moradores e unidades (passo 3)", () => {
   });
 
   it("numeração de prédio: andar e posição, térreo sem o zero", () => {
-    expect(gerarUnidades({ de: 1, ate: 2, porAndar: 3 })).toEqual(["101", "102", "103", "201", "202", "203"]);
-    expect(gerarUnidades({ de: 0, ate: 0, porAndar: 2 })).toEqual(["1", "2"]);
-    expect(gerarUnidades({ de: 10, ate: 10, porAndar: 1 })).toEqual(["1001"]);
+    const ids = (l: { identificacao: string }[]) => l.map((u) => u.identificacao);
+    expect(ids(gerarUnidades({ de: 1, ate: 2, porAndar: 3 }))).toEqual(["101", "102", "103", "201", "202", "203"]);
+    expect(ids(gerarUnidades({ de: 0, ate: 0, porAndar: 2 }))).toEqual(["1", "2"]);
+    expect(ids(gerarUnidades({ de: 10, ate: 10, porAndar: 1 }))).toEqual(["1001"]);
     expect(gerarUnidades({ de: 1, ate: 200, porAndar: 10 })).toEqual([]);
+    expect(gerarUnidades({ de: 1, ate: 1, porAndar: 1 })[0]!.andar).toBeNull();
+  });
+
+  it("torre e andar: cada unidade gerada já sai com o andar; nome só com as partes que existem", () => {
+    expect(gerarUnidades({ de: 0, ate: 1, porAndar: 1, comAndar: true })).toEqual([
+      { identificacao: "1", andar: "Térreo" }, { identificacao: "101", andar: "1" }]);
+    expect(nomeDaUnidade("Torre A", "3", "302")).toBe("Torre A · 3º andar · 302");
+    expect(nomeDaUnidade(null, "Cobertura", "1")).toBe("Cobertura · 1");
+    expect(nomeDaUnidade(null, null, "Casa 2")).toBe("Casa 2");
+    expect(["10", "Cobertura", "2", "Térreo", "Subsolo 1"].sort((a, b) => chaveAndar(a).localeCompare(chaveAndar(b))))
+      .toEqual(["Subsolo 1", "Térreo", "2", "10", "Cobertura"]);
   });
 
   it("ordem natural igual à do banco", () => {
@@ -54,10 +68,11 @@ describe("moradores e unidades (passo 3)", () => {
     const r = lerPlanilhaMoradores(csv);
     expect(r.faltam).toEqual([]);
     expect(r.linhas).toEqual([
-      { bloco: "A", unidade: "101", nome: "Marina Souza", telefone: "+5561999990001", relacao: "PROPRIETARIO" },
-      { bloco: "A", unidade: "102", nome: "Lima; Joana", telefone: "+5561988887777", relacao: "MORADOR" },
-      { bloco: null, unidade: "Loja 2", nome: "Padaria Sol", telefone: "+556133330000", relacao: "OUTRO" },
+      { bloco: "A", andar: null, unidade: "101", nome: "Marina Souza", telefone: "+5561999990001", relacao: "PROPRIETARIO" },
+      { bloco: "A", andar: null, unidade: "102", nome: "Lima; Joana", telefone: "+5561988887777", relacao: "MORADOR" },
+      { bloco: null, andar: null, unidade: "Loja 2", nome: "Padaria Sol", telefone: "+556133330000", relacao: "OUTRO" },
     ]);
+    expect(r.agrupamento).toBe("TORRE");
     expect(r.erros).toEqual([{ linha: 4, campos: ["unidade", "telefone", "relacao"] }]);
     expect(r.origens).toEqual([2, 3, 5]);
   });
@@ -65,7 +80,10 @@ describe("moradores e unidades (passo 3)", () => {
   it("F3.3: planilha com vírgula e sem coluna de telefone diz o que falta", () => {
     expect(lerPlanilhaMoradores("unidade,nome\n101,Ana\n").faltam).toEqual(["telefone"]);
     expect(lerPlanilhaMoradores("unidade,nome,telefone\n101,Ana,61999990001\n").linhas).toHaveLength(1);
-    expect(lerPlanilhaMoradores(MODELO_PLANILHA).linhas).toHaveLength(1);
+    expect(lerPlanilhaMoradores(MODELO_PLANILHA).linhas).toEqual([
+      { bloco: "Torre A", andar: "1", unidade: "101", nome: "Maria Exemplo", telefone: "+5561999990000", relacao: "PROPRIETARIO" }]);
+    expect(lerPlanilhaMoradores("Quadra;Pavimento;Casa;Nome;Fone\nQ1;Térreo;3;Ana;61999990001\n").linhas[0])
+      .toMatchObject({ bloco: "Q1", andar: "Térreo", unidade: "3" });
   });
 
   it("o histórico da unidade em frases, sem nome nem telefone", () => {

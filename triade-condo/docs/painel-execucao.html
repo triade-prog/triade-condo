@@ -28,7 +28,7 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (unidades por bloco, ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (325 pgTAP, 61 Deno, 53 Vitest, 70 ponta a ponta). As migrations 0070 e 0080 ainda não estão no triade-condo-dev.",
+    "situacao": "Passos 0, 1, 2 e 3 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, moradores e unidades (organização do prédio por torre, bloco, quadra ou prédio, com ou sem andar; unidades; ficha da unidade, contatos confirmados pelo síndico, mudança, importação de planilha), configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (336 pgTAP, 62 Deno, 54 Vitest, 72 ponta a ponta). As migrations 0070 e 0080 ainda não estão no triade-condo-dev.",
     "fase_atual": "F3",
     "proximo_passo": "Aplicar as migrations 0070 e 0080 no triade-condo-dev (supabase db push). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9). Depois, passo 4: pedidos no painel, começando pelo desenho das telas."
   },
@@ -361,13 +361,14 @@
       "itens": [
         {
           "id": "F3.1",
-          "texto": "Torres ou blocos e unidades do condomínio",
+          "texto": "Torres, blocos, quadras ou prédios (ou sem divisão), andares e unidades do condomínio",
           "peca": "S4",
           "refs": [
-            "PT-03"
+            "PT-03",
+            "MU-01"
           ],
           "status": "feito",
-          "nota": "Banco e API prontos: blocos opcionais e unidades, incluídas uma a uma ou geradas pela numeração do prédio, em ordem natural; nada se apaga, só desativa sem nada ativo dentro. Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
+          "nota": "Banco e API prontos: o condomínio diz como o prédio se organiza (torre, bloco, quadra, prédio ou sem divisão; com ou sem andar) e as unidades ficam no bloco e no andar, incluídas uma a uma ou geradas pela numeração do prédio, em ordem natural; nada se apaga, só desativa sem nada ativo dentro. Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
           "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -382,7 +383,7 @@
             "CF-03"
           ],
           "status": "feito",
-          "nota": "Banco e API prontos: contato com nome e telefone, sem CPF; vários por unidade, um principal, relação e preferência de comunicados; o mesmo contato em mais de uma unidade. Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev. Permissão Cadastrar moradores (CF-03): a pessoa autorizada inclui e corrige, e o que ela inclui fica a confirmar pelo síndico.",
+          "nota": "Banco e API prontos: contato com nome e telefone, sem CPF; vários por unidade, um principal, relação e preferência de comunicados; o mesmo contato em mais de uma unidade. Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev. Permissão Cadastrar moradores (CF-03): a pessoa autorizada inclui e corrige, e o que ela inclui fica a confirmar pelo síndico. Cadastrar morador ou proprietário (condômino) pela lista, escolhendo a torre, o andar e a unidade.",
           "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -393,7 +394,7 @@
             "PI-04"
           ],
           "status": "feito",
-          "nota": "Banco, API e leitura do CSV prontos: colunas reconhecidas pelos nomes comuns, prévia com a linha de cada erro, tudo ou nada, sem duplicar; os contatos nascem a confirmar. Necessidade da implantação (PI-04). Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
+          "nota": "Banco, API e leitura do CSV prontos: colunas reconhecidas pelos nomes comuns, prévia com a linha de cada erro, tudo ou nada, sem duplicar; os contatos nascem a confirmar. Necessidade da implantação (PI-04). Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev. Aceita a coluna andar (ou pavimento); planilha com torre ou andar ajusta a organização do prédio.",
           "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -947,7 +948,7 @@
         "CF-03"
       ],
       "status": "feito",
-      "evidencia": "pgTAP 009_moradores_unidades_test.sql (76 testes); Deno api-plataforma/moradores_test.ts (11 testes); Vitest moradores.test.ts (8 testes)"
+      "evidencia": "pgTAP 009_moradores_unidades_test.sql (87 testes); Deno api-plataforma/moradores_test.ts (12 testes); Vitest moradores.test.ts (9 testes)"
     },
     {
       "id": "T17",
@@ -959,7 +960,7 @@
         "MU-07"
       ],
       "status": "feito",
-      "evidencia": "Playwright plataforma-passo3.spec.ts (7 cenários × 2 aparelhos)"
+      "evidencia": "Playwright plataforma-passo3.spec.ts (8 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -1173,6 +1174,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "14:17",
+      "fim": "14:36",
+      "texto": "Ajuste pedido pela Carolina: o prédio se organiza por torre, bloco, quadra ou prédio (ou sem divisão), com ou sem andar. Nova tela Como o prédio se organiza; a unidade ganhou andar (o mesmo número pode repetir em andares diferentes) e aparece como Torre A · 3º andar · 302, com filtro por andar e ordem do subsolo e térreo à cobertura; a numeração gerada já põe cada unidade no andar dela; novo Cadastrar morador ou proprietário (condômino) pela lista, escolhendo torre, andar e unidade; a planilha aceita andar ou pavimento e ajusta a organização. MU-01 atualizada no IDEIAS, MAPA e mapa. 11 pgTAP, 1 Deno, 1 Vitest e 1 cenário ponta a ponta novos; 336 pgTAP e 72 ponta a ponta passando.",
+      "ref": "MU-01, MU-08, F3.1, F3.3"
+    },
     {
       "data": "16/10/2026",
       "inicio": "13:30",

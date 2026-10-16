@@ -1,16 +1,18 @@
 "use client";
-// Janelas da ficha da unidade: incluir contato (novo ou já cadastrado, MU-01, MU-04), editar
+// Janelas da ficha da unidade: incluir contato (novo ou já cadastrado, MU-01, MU-04), cadastrar
+// morador ou proprietário escolhendo a torre ou bloco, o andar e a unidade, editar
 // contato e vínculo (MU-08), encerrar (MU-07), registrar mudança (MU-07) e editar a unidade.
 // No conflito de versão, o que a pessoa escreveu fica (AT-24).
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { AVISOS_CONTATO, mostrarTelefone, MOTIVOS_ENCERRAMENTO, nomeDaUnidade } from "@triade/domain";
+import { AVISOS_CONTATO, chaveUnidade, mostrarAndar, mostrarTelefone, MOTIVOS_ENCERRAMENTO, nomeDaUnidade } from "@triade/domain";
 import {
   AvisoErro, Botao, CampoSelecao, CampoTexto, camposComErro, chamarApi, Carregando, Dialogo, ErroCarregar, textoDoErro, type ErroApi, type Resposta,
 } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
 import type { ContatoDaUnidade, ListaMoradores, Recado, UnidadeDetalhe, Unidades } from "../tipos.ts";
-import { Caixa, Escolha, hojeEmBrasilia, nomeRelacao, opcoesRelacao } from "./comum.tsx";
+import { andaresDe } from "./AbaUnidades.tsx";
+import { Caixa, Escolha, hojeEmBrasilia, nomeRelacao, nomesDivisao, opcoesRelacao } from "./comum.tsx";
 
 type Salvo = (r: Recado) => void;
 
@@ -57,28 +59,93 @@ function aviso(r: Resposta<{ avisos?: string[] }>, texto: string, pendente: bool
 
 // ---------------------------------------------------------------------------------------
 
+/** A unidade que recebe o contato. */
+interface Alvo {
+  id: string;
+  temContatos: boolean;
+  contatoIds: string[];
+}
+
 export function IncluirContato({ aberto, unidade, aoFechar, salvo }: { aberto: boolean; unidade: UnidadeDetalhe; aoFechar: () => void; salvo: Salvo }) {
-  const nome = nomeDaUnidade(unidade.unidade.bloco, unidade.unidade.identificacao);
+  const nome = nomeDaUnidade(unidade.unidade.bloco, unidade.unidade.andar, unidade.unidade.identificacao);
+  const alvo = { id: unidade.unidade.id, temContatos: unidade.contatos.length > 0, contatoIds: unidade.contatos.map((c) => c.contatoId) };
   return (
     <Dialogo aberto={aberto} titulo={`Incluir contato · ${nome}`} aoFechar={aoFechar}>
-      {aberto ? <FormIncluir unidade={unidade} aoFechar={aoFechar} salvo={salvo} /> : null}
+      {aberto ? <FormIncluir alvo={alvo} podeConfirmar={unidade.podeConfirmar} aoFechar={aoFechar} salvo={salvo} /> : null}
     </Dialogo>
   );
 }
 
-function FormIncluir({ unidade, aoFechar, salvo }: { unidade: UnidadeDetalhe; aoFechar: () => void; salvo: Salvo }) {
+/**
+ * Cadastrar morador ou proprietário (condômino) a partir da lista: escolher a torre ou bloco,
+ * o andar e a unidade, do jeito que o prédio se organiza, e depois a pessoa.
+ */
+export function CadastrarMorador({ aberto, dados, aoFechar, salvo }: { aberto: boolean; dados: Unidades; aoFechar: () => void; salvo: Salvo }) {
+  return (
+    <Dialogo aberto={aberto} titulo="Cadastrar morador ou proprietário" aoFechar={aoFechar}>
+      {aberto ? <FormCadastrar dados={dados} aoFechar={aoFechar} salvo={salvo} /> : null}
+    </Dialogo>
+  );
+}
+
+function FormCadastrar({ dados, aoFechar, salvo }: { dados: Unidades; aoFechar: () => void; salvo: Salvo }) {
+  const div = nomesDivisao(dados.estrutura);
+  const ativas = dados.unidades.filter((u) => u.ativa);
+  const blocos = dados.blocos.filter((b) => b.ativo && ativas.some((u) => u.blocoId === b.id));
+  const temSemBloco = ativas.some((u) => !u.blocoId);
+  const pedeBloco = div.usa && blocos.length > 0;
+  const [blocoId, setBlocoId] = useState(pedeBloco ? (blocos.length === 1 && !temSemBloco ? blocos[0]!.id : "") : "-");
+  const noBloco = ativas.filter((u) => (blocoId === "-" ? true : blocoId === "-sem" ? !u.blocoId : u.blocoId === blocoId));
+  const andares = dados.estrutura.usaAndar ? andaresDe(noBloco) : [];
+  const pedeAndar = andares.length > 0;
+  const [andar, setAndar] = useState("");
+  const noAndar = pedeAndar ? noBloco.filter((u) => (u.andar ?? "") === andar) : noBloco;
+  const [unidadeId, setUnidadeId] = useState("");
+  const unidade = noAndar.find((u) => u.id === unidadeId) ?? null;
+  const prontoBloco = !pedeBloco || blocoId !== "";
+  const prontoAndar = !pedeAndar || andar !== "" || noBloco.some((u) => !u.andar);
+
+  return (
+    <div className="grid gap-4">
+      {pedeBloco ? (
+        <CampoSelecao id="cm-bloco" rotulo={div.um} value={blocoId} onChange={(e) => { setBlocoId(e.target.value); setAndar(""); setUnidadeId(""); }}
+          opcoes={[{ valor: "", texto: `Escolha ${div.um === "Torre" || div.um === "Quadra" ? "a" : "o"} ${div.um.toLowerCase()}` },
+            ...blocos.map((b) => ({ valor: b.id, texto: b.nome })), ...(temSemBloco ? [{ valor: "-sem", texto: div.sem }] : [])]} />
+      ) : null}
+      {prontoBloco && pedeAndar ? (
+        <CampoSelecao id="cm-andar" rotulo="Andar" value={andar} onChange={(e) => { setAndar(e.target.value); setUnidadeId(""); }}
+          opcoes={[{ valor: "", texto: noBloco.some((u) => !u.andar) ? "Sem andar" : "Escolha o andar" }, ...andares.map((a) => ({ valor: a, texto: mostrarAndar(a) }))]} />
+      ) : null}
+      {prontoBloco && prontoAndar ? (
+        <CampoSelecao id="cm-unidade" rotulo="Unidade" value={unidadeId} onChange={(e) => setUnidadeId(e.target.value)}
+          opcoes={[{ valor: "", texto: noAndar.length ? "Escolha a unidade" : "Nenhuma unidade aqui" },
+            ...[...noAndar].sort((a, b) => chaveUnidade(a.identificacao).localeCompare(chaveUnidade(b.identificacao)))
+              .map((u) => ({ valor: u.id, texto: `${u.identificacao}${u.principal ? ` · ${u.principal}` : ""}` }))]} />
+      ) : null}
+      {unidade ? (
+        <FormIncluir key={unidade.id} alvo={{ id: unidade.id, temContatos: unidade.confirmados + unidade.pendentes > 0, contatoIds: [] }}
+          podeConfirmar={dados.podeConfirmar} aoFechar={aoFechar} salvo={salvo}
+          nomeUnidade={nomeDaUnidade(dados.blocos.find((b) => b.id === unidade.blocoId)?.nome, unidade.andar, unidade.identificacao)} />
+      ) : (
+        <div className="flex justify-end"><Botao variante="secundario" onClick={aoFechar}>Cancelar</Botao></div>
+      )}
+    </div>
+  );
+}
+
+function FormIncluir({ alvo, podeConfirmar, aoFechar, salvo, nomeUnidade }: { alvo: Alvo; podeConfirmar: boolean; aoFechar: () => void; salvo: Salvo; nomeUnidade?: string }) {
   const [modo, setModo] = useState<"nova" | "cadastrada">("nova");
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
   const [relacao, setRelacao] = useState("MORADOR");
-  const [principal, setPrincipal] = useState(unidade.contatos.length === 0);
+  const [principal, setPrincipal] = useState(!alvo.temContatos);
   const [recebe, setRecebe] = useState(true);
   const [busca, setBusca] = useState("");
   const [buscado, setBuscado] = useState<string | null>(null);
   const [contatoId, setContatoId] = useState<string | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const achados = useCarregar<ListaMoradores>(buscado ? `/v1/condominio/moradores?${new URLSearchParams({ busca: buscado })}` : null);
-  const ja = new Set(unidade.contatos.map((c) => c.contatoId));
+  const ja = new Set(alvo.contatoIds);
   const opcoes = achados.estado === "pronto" && buscado
     ? [...new Map(achados.dados.itens.filter((i) => !ja.has(i.contatoId)).map((i) => [i.contatoId, i])).values()]
     : [];
@@ -87,10 +154,11 @@ function FormIncluir({ unidade, aoFechar, salvo }: { unidade: UnidadeDetalhe; ao
     setErro(null);
     if (modo === "cadastrada" && !contatoId) return setErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: ["contatoId"] } });
     const corpo = modo === "nova" ? { nome, telefone, relacao, principal, recebeComunicados: recebe } : { contatoId, relacao, principal, recebeComunicados: recebe };
-    const r = await chamarApi<{ avisos: string[] }>(`/v1/condominio/unidades/${unidade.unidade.id}/contatos`, { corpo });
+    const r = await chamarApi<{ avisos: string[] }>(`/v1/condominio/unidades/${alvo.id}/contatos`, { corpo });
     if (!r.ok) return setErro(r.erro);
     const quem = modo === "nova" ? nome.trim() : opcoes.find((o) => o.contatoId === contatoId)?.nome ?? "Contato";
-    salvo(aviso(r, `${quem} incluído na unidade.`, !unidade.podeConfirmar));
+    aoFechar();
+    salvo(aviso(r, `${quem} incluído ${nomeUnidade ? `em ${nomeUnidade}` : "na unidade"}.`, !podeConfirmar));
   }
 
   const campos = camposComErro(erro);
@@ -122,7 +190,7 @@ function FormIncluir({ unidade, aoFechar, salvo }: { unidade: UnidadeDetalhe; ao
                 {opcoes.map((o) => (
                   <label key={o.contatoId} className="flex items-start gap-2 rounded-md border border-linha px-3 py-2 text-sm">
                     <input type="radio" name="c-contato" className="mt-1 accent-[var(--color-acao)]" checked={contatoId === o.contatoId} onChange={() => setContatoId(o.contatoId)} />
-                    <span><span className="font-medium">{o.nome}</span><span className="block text-xs text-tinta-suave">{mostrarTelefone(o.telefone)} · {nomeDaUnidade(o.bloco, o.unidade)}</span></span>
+                    <span><span className="font-medium">{o.nome}</span><span className="block text-xs text-tinta-suave">{mostrarTelefone(o.telefone)} · {nomeDaUnidade(o.bloco, o.andar, o.unidade)}</span></span>
                   </label>
                 ))}
               </fieldset>
@@ -135,7 +203,7 @@ function FormIncluir({ unidade, aoFechar, salvo }: { unidade: UnidadeDetalhe; ao
       <Caixa id="c-principal" rotulo="Contato principal da unidade" ajuda="Um por unidade. Marcar este tira o anterior." marcada={principal} aoMudar={setPrincipal} />
       <Caixa id="c-recebe" rotulo="Recebe comunicados do condomínio" marcada={recebe} aoMudar={setRecebe} />
       <p className="text-sm text-tinta-suave">
-        {unidade.podeConfirmar ? "Quem você inclui já fica confirmado." : "O contato fica a confirmar até o síndico conferir."} Ter o telefone não dá acesso a nada além do que a unidade pode ver.
+        {podeConfirmar ? "Quem você inclui já fica confirmado." : "O contato fica a confirmar até o síndico conferir."} Ter o telefone não dá acesso a nada além do que a unidade pode ver.
       </p>
     </Form>
   );
@@ -249,7 +317,7 @@ interface Entrada {
 }
 
 export function RegistrarMudanca({ aberto, unidade, aoFechar, salvo, recarregar }: { aberto: boolean; unidade: UnidadeDetalhe; aoFechar: () => void; salvo: Salvo; recarregar: () => void }) {
-  const nome = nomeDaUnidade(unidade.unidade.bloco, unidade.unidade.identificacao);
+  const nome = nomeDaUnidade(unidade.unidade.bloco, unidade.unidade.andar, unidade.unidade.identificacao);
   return (
     <Dialogo aberto={aberto} titulo={`Registrar mudança · ${nome}`} aoFechar={aoFechar}>
       {aberto ? <FormMudanca unidade={unidade} aoFechar={aoFechar} salvo={salvo} recarregar={recarregar} /> : null}
@@ -342,24 +410,32 @@ function FormUnidade({ unidade, aoFechar, salvo, recarregar }: { unidade: Unidad
   const blocos = useCarregar<Unidades>("/v1/condominio/unidades");
   const [identificacao, setIdentificacao] = useState(u.identificacao);
   const [blocoId, setBlocoId] = useState(u.blocoId ?? "");
+  const [andar, setAndar] = useState(u.andar ?? "");
   const [ativa, setAtiva] = useState(u.ativa);
   const [erro, setErro] = useState<ErroApi | null>(null);
 
   async function salvar() {
     setErro(null);
-    const r = await chamarApi(`/v1/condominio/unidades/${u.id}`, { metodo: "PUT", corpo: { versao: u.versao, identificacao, blocoId: blocoId || null, ativa } });
+    const r = await chamarApi(`/v1/condominio/unidades/${u.id}`, { metodo: "PUT", corpo: { versao: u.versao, identificacao, blocoId: blocoId || null, andar: andar.trim() || null, ativa } });
     if (!r.ok) return setErro(r.erro);
     salvo({ tom: "ok", texto: ativa === u.ativa ? "Unidade atualizada." : ativa ? "Unidade reativada." : "Unidade desativada. Ela continua no histórico." });
   }
 
   if (blocos.estado === "carregando") return <Carregando linhas={2} />;
   if (blocos.estado === "erro") return <ErroCarregar texto={blocos.texto} tentarDeNovo={blocos.recarregar} />;
-  const opcoes = [{ valor: "", texto: "Sem bloco" }, ...blocos.dados.blocos.filter((b) => b.ativo || b.id === u.blocoId).map((b) => ({ valor: b.id, texto: b.nome }))];
+  const div = nomesDivisao(blocos.dados.estrutura);
+  const opcoes = [{ valor: "", texto: div.sem }, ...blocos.dados.blocos.filter((b) => b.ativo || b.id === u.blocoId).map((b) => ({ valor: b.id, texto: b.nome }))];
+  const mostraBloco = div.usa || !!u.blocoId;
+  const mostraAndar = blocos.dados.estrutura.usaAndar || !!u.andar;
   return (
     <Form aoEnviar={salvar} aoFechar={aoFechar} erro={erro} textoBotao="Salvar" recarregar={recarregar}>
       <CampoTexto id="un-ident" rotulo="Identificação" required maxLength={20} value={identificacao} onChange={(e) => setIdentificacao(e.target.value)}
         ajuda="Como o prédio chama a unidade: 101, Casa 12, Loja 3." erro={camposComErro(erro).includes("identificacao") ? "Até 20 caracteres." : null} />
-      <CampoSelecao id="un-bloco" rotulo="Bloco" value={blocoId} onChange={(e) => setBlocoId(e.target.value)} opcoes={opcoes} />
+      {mostraBloco ? <CampoSelecao id="un-bloco" rotulo={div.um} value={blocoId} onChange={(e) => setBlocoId(e.target.value)} opcoes={opcoes} /> : null}
+      {mostraAndar ? (
+        <CampoTexto id="un-andar" rotulo="Andar" opcional maxLength={20} value={andar} onChange={(e) => setAndar(e.target.value)}
+          ajuda="3, Térreo, Subsolo 1, Cobertura." erro={camposComErro(erro).includes("andar") ? "Até 20 caracteres." : null} />
+      ) : null}
       <Caixa id="un-ativa" rotulo="Unidade ativa" ajuda="Só dá para desativar a unidade sem contatos. Nada é apagado." marcada={ativa} aoMudar={setAtiva} />
     </Form>
   );

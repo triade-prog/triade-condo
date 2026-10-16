@@ -3,7 +3,7 @@
 -- (MU-02), telefone que não prova identidade (MU-03), mudança (MU-07), importação de planilha
 -- e remoção dos dados pessoais (PT-11).
 begin;
-select plan(76);
+select plan(87);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -29,6 +29,20 @@ select throws_ok($$ select plataforma_unidades(bruna, ipe) from ids, c $$, 'TC40
 select is((select plataforma_painel(bruna, ipe) ? 'moradores' from ids, c), false, 'e o painel dela não traz o resumo');
 select throws_ok($$ select plataforma_unidades(sindica, jatoba) from ids, c $$, 'TC401', null, 'PT-01: não abre as unidades de outro condomínio');
 
+-- Lista de unidades sem andar, para os testes.
+create function pg_temp.us(variadic p text[]) returns jsonb language sql as $$
+  select jsonb_agg(jsonb_build_object('identificacao', x)) from unnest(p) x $$;
+
+-- Estrutura do prédio: torre, bloco, quadra ou nada; com ou sem andar.
+select is((select (plataforma_unidades(sindica, ipe) -> 'estrutura') - 'versao'::text from ids, c), '{"usaAndar": false, "agrupamento": "NENHUM"}'::jsonb,
+  'o condomínio começa sem divisão e sem andar');
+select is((teste.erro($$ select plataforma_incluir_unidades(sindica, ipe, null, '[{"identificacao": "1", "andar": "Térreo"}]') from ids, c $$))
+  -> 'detalhe' ->> 'motivo', 'SEM_ANDAR', 'andar só quando o condomínio usa andar');
+select lives_ok($$ select plataforma_definir_estrutura(sindica, ipe, (plataforma_unidades(sindica, ipe) -> 'estrutura' ->> 'versao')::int, 'TORRE', true)
+                   from ids, c $$, 'o síndico diz que o prédio tem torres e andares');
+select is((select nome_da_unidade('Torre A', '3', '302') || ' | ' || nome_da_unidade(null, 'Térreo', 'Loja 1') || ' | ' || nome_da_unidade(null, null, '7')),
+  'Torre A · 3º andar · 302 | Térreo · Loja 1 | 7', 'o nome da unidade mostra só as partes que existem');
+
 -- Blocos e unidades (F3.1).
 create temp table bl as select
   (plataforma_salvar_bloco(sindica, ipe, null, null, 'Torre A', null, null) ->> 'id')::uuid as torre_a,
@@ -37,27 +51,41 @@ create temp table bl as select
 select is((select ordem from blocos, bl where id = torre_b), 2::smallint, 'o bloco novo entra no fim');
 select is((teste.erro($$ select plataforma_salvar_bloco(sindica, ipe, null, null, ' torre a ', null, null) from ids, c $$)) -> 'detalhe' ->> 'motivo',
   'NOME_REPETIDO', 'dois blocos ativos com o mesmo nome não');
-select is((select plataforma_incluir_unidades(sindica, ipe, torre_a, array['101', '102', '201', '202', '1001', '102 ']) from ids, c, bl),
+select is((select plataforma_incluir_unidades(sindica, ipe, torre_a, pg_temp.us('101', '102', '201', '202', '1001', '102 ')) from ids, c, bl),
   '{"criadas": 5, "jaExistiam": []}'::jsonb, 'várias unidades de uma vez, sem repetir');
-select is((select plataforma_incluir_unidades(sindica, ipe, torre_a, array['101', '301']) from ids, c, bl),
+select is((select plataforma_incluir_unidades(sindica, ipe, torre_a, pg_temp.us('101', '301')) from ids, c, bl),
   '{"criadas": 1, "jaExistiam": ["101"]}'::jsonb, 'a que já existe volta na resposta e não duplica');
-select is((select plataforma_incluir_unidades(sindica, ipe, torre_b, array['101']) ->> 'criadas' from ids, c, bl), '1',
+select is((select plataforma_incluir_unidades(sindica, ipe, torre_b, pg_temp.us('101')) ->> 'criadas' from ids, c, bl), '1',
   'o mesmo número vale em outro bloco');
-select is((select plataforma_incluir_unidades(sindica, ipe, null, array['Loja 2', 'Loja 10']) ->> 'criadas' from ids, c), '2',
+select is((select plataforma_incluir_unidades(sindica, ipe, null, pg_temp.us('Loja 2', 'Loja 10')) ->> 'criadas' from ids, c), '2',
   'unidade sem bloco');
 select is((select array_agg(x ->> 'identificacao') from jsonb_array_elements((select plataforma_unidades(sindica, ipe) -> 'unidades' from ids, c)) x),
   array['Loja 2', 'Loja 10', '101', '102', '201', '202', '301', '1001', '101'], 'ordem natural: 2 antes de 10, bloco por bloco');
-select throws_ok($$ select plataforma_incluir_unidades(sindica, ipe, null, array['']) from ids, c $$, 'TC422', null, 'identificação vazia não');
-select throws_ok($$ select plataforma_incluir_unidades(sindica, jatoba, null, array['1']) from ids, c $$, 'TC401', null,
+select throws_ok($$ select plataforma_incluir_unidades(sindica, ipe, null, pg_temp.us('')) from ids, c $$, 'TC422', null, 'identificação vazia não');
+select throws_ok($$ select plataforma_incluir_unidades(sindica, jatoba, null, pg_temp.us('1')) from ids, c $$, 'TC401', null,
   'PT-01: não inclui unidade em outro condomínio');
+-- Andar (unidade numerada por andar: o mesmo número em andares diferentes).
+select is((select plataforma_incluir_unidades(sindica, ipe, torre_b, '[{"identificacao": "1", "andar": "10"}, {"identificacao": "1", "andar": "Térreo"},
+            {"identificacao": "1", "andar": "2"}, {"identificacao": "2", "andar": "2"}]') ->> 'criadas' from ids, c, bl), '4',
+  'o mesmo número vale em andares diferentes');
+select is((select plataforma_incluir_unidades(sindica, ipe, torre_b, '[{"identificacao": "1", "andar": "2"}]') -> 'jaExistiam' from ids, c, bl),
+  '["2º andar · 1"]'::jsonb, 'no mesmo andar, não repete');
+select is((select array_agg(x ->> 'andar') from jsonb_array_elements((select plataforma_unidades(sindica, ipe) -> 'unidades' from ids, c)) x
+            where x ->> 'blocoId' = (select torre_b::text from bl) and x ->> 'andar' is not null),
+  array['Térreo', '2', '2', '10'], 'térreo primeiro, depois os andares em ordem');
+select is((teste.erro($$ select plataforma_definir_estrutura(sindica, ipe, (plataforma_unidades(sindica, ipe) -> 'estrutura' ->> 'versao')::int, 'NENHUM', true)
+            from ids, c $$)) -> 'detalhe' ->> 'motivo', 'ESTRUTURA_COM_BLOCOS', 'não tira a divisão com blocos ativos');
+select is((teste.erro($$ select plataforma_definir_estrutura(sindica, ipe, (plataforma_unidades(sindica, ipe) -> 'estrutura' ->> 'versao')::int, 'TORRE', false)
+            from ids, c $$)) -> 'detalhe' ->> 'motivo', 'ESTRUTURA_COM_ANDARES', 'não deixa de usar andar com unidades que têm andar');
+
 create temp table un as select
   (select id from unidades, c where condominio_id = ipe and identificacao = '101' and bloco_id = (select torre_a from bl)) as a101,
   (select id from unidades, c where condominio_id = ipe and identificacao = '102') as a102,
   (select id from unidades, c where condominio_id = ipe and identificacao = '201') as a201,
   (select id from unidades, c where condominio_id = ipe and identificacao = 'Loja 2') as loja2;
-select is((teste.erro($$ select plataforma_alterar_unidade(sindica, ipe, a102, 1, '101', (select torre_a from bl), null) from ids, c, un $$))
+select is((teste.erro($$ select plataforma_alterar_unidade(sindica, ipe, a102, 1, '101', (select torre_a from bl), null, null) from ids, c, un $$))
   -> 'detalhe' ->> 'motivo', 'UNIDADE_REPETIDA', 'renomear para uma que já existe no bloco não');
-select is((select plataforma_alterar_unidade(sindica, ipe, loja2, 1, 'Loja 02', null, null) from ids, c, un), 2, 'renomear a unidade');
+select is((select plataforma_alterar_unidade(sindica, ipe, loja2, 1, 'Loja 02', null, null, null) from ids, c, un), 2, 'renomear a unidade');
 select throws_ok($$ delete from unidades where id = (select a201 from un) $$, 'TC010', null, 'unidade não se apaga');
 
 -- Contato e vínculo (MU-01, MU-08): cadastro breve, vários por unidade, um principal.
@@ -118,11 +146,15 @@ select is((select count(*)::int from contatos_unidade, c where condominio_id = i
   'MU-02: o que vem da planilha nasce pendente');
 select is((select count(*)::int from unidades_do_telefone((select ipe from c), '+5561977770001')), 0,
   'MU-02: vínculo pendente não dá acesso a nada');
-select is((teste.erro($$ select plataforma_importar_moradores(sindica, ipe, '[{"unidade": "1", "nome": "A", "telefone": "+5561977770009"},
+select is((teste.erro($$ select plataforma_importar_moradores(sindica, ipe, '[{"unidade": "X9", "nome": "A", "telefone": "+5561977770009"},
             {"unidade": "", "nome": "B", "telefone": "123"}]') from ids, c $$)) -> 'detalhe',
   '{"campos": ["unidade", "telefone"], "linha": 2, "motivo": "LINHA_INVALIDA"}'::jsonb, 'a linha com erro é apontada');
-select is((select count(*)::int from unidades, c where condominio_id = ipe and identificacao = '1'), 0, 'e nada da planilha com erro fica (tudo ou nada)');
+select is((select count(*)::int from unidades, c where condominio_id = ipe and identificacao = 'X9'), 0, 'e nada da planilha com erro fica (tudo ou nada)');
 select is((select plataforma_painel(sindica, ipe) -> 'moradores' ->> 'aConfirmar' from ids, c), '4', 'o painel conta os contatos a confirmar');
+select is((select plataforma_importar_moradores(davi, jatoba, '[{"bloco": "Quadra 1", "andar": "1", "unidade": "Casa 3", "nome": "Lia Reis",
+            "telefone": "+5561977770002"}]', 'QUADRA') ->> 'unidades' from ids, c), '1', 'a planilha traz o andar');
+select is((select (agrupamento, usa_andar)::text from configuracao_condominio, c where condominio_id = jatoba), '(QUADRA,t)',
+  'planilha com divisão e andar ajusta a estrutura, com o nome da coluna');
 create temp table pend as select array_agg(jsonb_build_object('id', id, 'versao', versao)) as itens
   from contatos_unidade, c where condominio_id = ipe and estado = 'PENDENTE' and unidade_id <> (select id from unidades where identificacao = 'Loja 9');
 select is((select plataforma_confirmar_contatos(sindica, ipe, to_jsonb(itens)) from ids, c, pend), 3, 'confirmar vários de uma vez');
@@ -160,7 +192,7 @@ select is((teste.erro($$ select plataforma_registrar_mudanca(sindica, ipe, a101,
   'quem entra com telefone inválido derruba a mudança inteira');
 
 -- Desativar só sem nada ativo dentro.
-select is((teste.erro($$ select plataforma_alterar_unidade(sindica, ipe, a101, 1, '101', (select torre_a from bl), false) from ids, c, un $$))
+select is((teste.erro($$ select plataforma_alterar_unidade(sindica, ipe, a101, 1, '101', (select torre_a from bl), null, false) from ids, c, un $$))
   -> 'detalhe' ->> 'motivo', 'UNIDADE_COM_CONTATOS', 'unidade com contato ativo não se desativa');
 select is((teste.erro($$ select plataforma_salvar_bloco(sindica, ipe, torre_b, 1, 'Torre B', null, false) from ids, c, bl $$))
   -> 'detalhe' ->> 'motivo', 'BLOCO_COM_UNIDADES', 'bloco com unidade ativa não se desativa');

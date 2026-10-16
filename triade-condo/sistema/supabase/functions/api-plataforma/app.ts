@@ -14,6 +14,7 @@ import {
   buscaMoradoresSchema,
   confirmarContatosSchema,
   encerrarVinculoSchema,
+  estruturaSchema,
   importacaoSchema,
   incluirContatoSchema,
   incluirUnidadesSchema,
@@ -232,9 +233,17 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/blocos", async (c) => c.json(await salvarBloco(c, null), 201));
   app.put("/v1/condominio/blocos/:id", async (c) => c.json(await salvarBloco(c, idDaRota(c, "id"))));
 
+  // Como o prédio se organiza: torre, bloco, quadra ou prédio (ou nada), com ou sem andar.
+  app.put("/v1/condominio/estrutura", async (c) => {
+    const d = await lerCorpo(c, estruturaSchema);
+    return c.json({
+      versao: await rpc<number>("plataforma_definir_estrutura", { ...quem(c), p_versao: d.versao, p_agrupamento: d.agrupamento, p_usa_andar: d.usaAndar }),
+    });
+  });
+
   app.post("/v1/condominio/unidades", async (c) => {
     const d = await lerCorpo(c, incluirUnidadesSchema);
-    return c.json(await rpc("plataforma_incluir_unidades", { ...quem(c), p_bloco: d.blocoId, p_identificacoes: d.identificacoes }), 201);
+    return c.json(await rpc("plataforma_incluir_unidades", { ...quem(c), p_bloco: d.blocoId, p_unidades: d.unidades }), 201);
   });
 
   app.put("/v1/condominio/unidades/:id", async (c) => {
@@ -242,7 +251,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const d = await lerCorpo(c, alterarUnidadeSchema);
     return c.json({
       versao: await rpc<number>("plataforma_alterar_unidade", {
-        ...quem(c), p_id: id, p_versao: d.versao, p_identificacao: d.identificacao, p_bloco: d.blocoId, p_ativa: d.ativa ?? null,
+        ...quem(c), p_id: id, p_versao: d.versao, p_identificacao: d.identificacao, p_bloco: d.blocoId, p_andar: d.andar, p_ativa: d.ativa ?? null,
       }),
     });
   });
@@ -307,7 +316,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   // Planilha (F3.3): a tela lê o arquivo e mostra a prévia; aqui chegam as linhas já lidas.
   app.post("/v1/condominio/importacoes", async (c) => {
     const d = await lerCorpo(c, importacaoSchema);
-    return c.json(await rpc("plataforma_importar_moradores", { ...quem(c), p_linhas: d.linhas }), 201);
+    return c.json(await rpc("plataforma_importar_moradores", { ...quem(c), p_linhas: d.linhas, p_agrupamento: d.agrupamento ?? null }), 201);
   });
 
   return app;

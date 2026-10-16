@@ -49,9 +49,16 @@ export interface Bloco {
   versao: number;
 }
 
+export interface Estrutura {
+  agrupamento: "NENHUM" | "TORRE" | "BLOCO" | "QUADRA" | "PREDIO";
+  usaAndar: boolean;
+  versao: number;
+}
+
 export interface UnidadeResumo {
   id: string;
   blocoId: string | null;
+  andar: string | null;
   identificacao: string;
   ativa: boolean;
   versao: number;
@@ -61,6 +68,7 @@ export interface UnidadeResumo {
 }
 
 export interface Unidades {
+  estrutura: Estrutura;
   blocos: Bloco[];
   unidades: UnidadeResumo[];
   resumo: { unidades: number; semContato: number; aConfirmar: number };
@@ -99,7 +107,7 @@ export interface ContatoAnterior {
 }
 
 export interface UnidadeDetalhe {
-  unidade: { id: string; identificacao: string; blocoId: string | null; bloco: string | null; ativa: boolean; versao: number };
+  unidade: { id: string; identificacao: string; blocoId: string | null; andar: string | null; bloco: string | null; ativa: boolean; versao: number };
   contatos: ContatoDaUnidade[];
   anteriores: ContatoAnterior[];
   podeEditar: boolean;
@@ -113,6 +121,7 @@ export interface MoradorDaLista {
   telefone: string;
   unidadeId: string;
   unidade: string;
+  andar: string | null;
   bloco: string | null;
   relacao: string;
   principal: boolean;

@@ -2,7 +2,8 @@
 // Peças comuns das telas de moradores e unidades (passo 3).
 
 import type { ReactNode } from "react";
-import { ESTADOS_CONTATO_UNIDADE, MOTIVOS_ENCERRAMENTO, RELACOES_UNIDADE } from "@triade/domain";
+import { AGRUPAMENTOS, ESTADOS_CONTATO_UNIDADE, MOTIVOS_ENCERRAMENTO, RELACOES_UNIDADE } from "@triade/domain";
+import type { Estrutura } from "../tipos.ts";
 import { Selo } from "@triade/ui";
 
 export const opcoesRelacao = Object.entries(RELACOES_UNIDADE).map(([valor, texto]) => ({ valor, texto }));
@@ -20,6 +21,12 @@ export function SeloEstado({ estado }: { estado: "PENDENTE" | "CONFIRMADO" }) {
   return estado === "CONFIRMADO"
     ? <Selo tom="ok" marca="ok">{ESTADOS_CONTATO_UNIDADE.CONFIRMADO}</Selo>
     : <Selo tom="atencao" marca="atencao">{ESTADOS_CONTATO_UNIDADE.PENDENTE}</Selo>;
+}
+
+/** Como chamar a divisão do prédio nas telas: "Torre", "Torres", "Sem torre". */
+export function nomesDivisao(e: Estrutura): { um: string; varios: string; sem: string; usa: boolean } {
+  const a = AGRUPAMENTOS[e.agrupamento];
+  return { um: a.um || "Bloco", varios: a.varios || "Blocos", sem: `Sem ${(a.um || "bloco").toLowerCase()}`, usa: e.agrupamento !== "NENHUM" };
 }
 
 /** Hoje no horário de Brasília, como aaaa-mm-dd. */

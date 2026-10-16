@@ -158,6 +158,8 @@ A migration 0080 também ainda não está no `triade-condo-dev`. As oito telas f
 - a planilha é importada em CSV;
 - todo contato importado nasce a confirmar.
 
+No mesmo dia, a pedido da Carolina, o prédio passou a se organizar do jeito dele: por torre, bloco, quadra ou prédio (ou sem divisão), com ou sem andar. A unidade aparece como "Torre A · 3º andar · 302". O síndico cadastra morador ou proprietário (condômino) pela lista, escolhendo torre, andar e unidade, e a planilha aceita a coluna andar. A ideia MU-01 foi atualizada.
+
 **Próximo passo:**
 
 1. Aplicar as migrations 0070 e 0080 no `triade-condo-dev`.

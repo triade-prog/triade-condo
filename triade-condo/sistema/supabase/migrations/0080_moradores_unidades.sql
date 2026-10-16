@@ -2,8 +2,10 @@
 -- MU-07, MU-08, PT-11)
 --
 -- Regras desta parte:
--- 1. O prédio tem blocos (torres, quadras...) opcionais e unidades. Bloco e unidade não se
---    apagam: são desativados, e só quando não têm nada ativo dentro.
+-- 1. O prédio se organiza do jeito dele (estrutura do condomínio): por torre, bloco, quadra
+--    ou prédio, ou sem divisão; e com ou sem andar. A unidade fica no bloco (opcional) e no
+--    andar (opcional). Bloco e unidade não se apagam: são desativados, e só quando não têm
+--    nada ativo dentro.
 -- 2. Contato é quem fala pela unidade (morador, proprietário, inquilino...). Não tem login: o
 --    morador usa só o WhatsApp (V-07). O cadastro é breve (MU-01): nome e telefone. CPF não
 --    entra, porque nenhum recurso do sistema precisa dele ainda (PT-11).
@@ -34,7 +36,12 @@ insert into permissao_acoes (permissao, acao) values
   ('CADASTRAR', 'moradores.editar');
 
 -- ---------------------------------------------------------------------------------------
--- Blocos e unidades.
+-- Estrutura do prédio, blocos e unidades.
+
+-- Como o condomínio chama a divisão maior (torre, bloco, quadra, prédio) e se usa andar.
+alter table configuracao_condominio
+  add column agrupamento text not null default 'NENHUM' check (agrupamento in ('NENHUM', 'TORRE', 'BLOCO', 'QUADRA', 'PREDIO')),
+  add column usa_andar   boolean not null default false;
 
 create table blocos (
   id            uuid primary key default gen_random_uuid(),
@@ -50,12 +57,14 @@ create unique index blocos_nome_ativo on blocos (condominio_id, lower(btrim(nome
 call proteger_tabela_condominio('blocos');
 create trigger blocos_sem_exclusao before delete on blocos for each row execute function somente_insercao();
 
--- Identificação livre: "101", "Casa 12", "Loja 3". Única entre as ativas do mesmo bloco.
+-- Identificação livre: "101", "Casa 12", "Loja 3". Andar livre e opcional: "3", "Térreo",
+-- "Cobertura". Única entre as ativas do mesmo bloco e andar.
 create table unidades (
   id            uuid primary key default gen_random_uuid(),
   condominio_id uuid not null references condominios (id) on delete restrict,
   bloco_id      uuid,
   identificacao text not null check (length(btrim(identificacao)) between 1 and 20),
+  andar         text check (length(btrim(andar)) between 1 and 20),
   ativa         boolean not null default true,
   criado_em     timestamptz not null default app_now(),
   versao        integer not null default 1,
@@ -63,7 +72,8 @@ create table unidades (
   unique (id, condominio_id)
 );
 create unique index unidades_identificacao_ativa on unidades
-  (condominio_id, coalesce(bloco_id, '00000000-0000-0000-0000-000000000000'::uuid), lower(btrim(identificacao))) where ativa;
+  (condominio_id, coalesce(bloco_id, '00000000-0000-0000-0000-000000000000'::uuid), coalesce(lower(btrim(andar)), ''), lower(btrim(identificacao)))
+  where ativa;
 call proteger_tabela_condominio('unidades');
 create trigger unidades_sem_exclusao before delete on unidades for each row execute function somente_insercao();
 
@@ -74,6 +84,29 @@ set search_path = public
 as $$
   select lower(coalesce(substring(btrim(p) from '^\D*'), '')) || lpad(coalesce(substring(btrim(p) from '\d{1,12}'), ''), 12, '0')
          || lower(btrim(p))
+$$;
+
+-- Ordem dos andares: subsolo, térreo, os numerados, e o resto (cobertura...) em ordem alfabética.
+create function chave_andar(p text) returns text
+language sql immutable
+set search_path = public
+as $$
+  select case
+    when p is null then ''
+    when lower(translate(btrim(p), 'ÉéÊê', 'EeEe')) ~ '^(s|ss|subsolo)' then '0' || lpad(coalesce(substring(p from '\d{1,6}'), '0'), 6, '0')
+    when lower(translate(btrim(p), 'ÉéÊê', 'EeEe')) ~ '^(t$|terreo)' then '1'
+    when p ~ '\d' then '2' || lpad(substring(p from '\d{1,6}'), 6, '0')
+    else '3' || lower(btrim(p)) end
+$$;
+
+-- "Torre A · 3º andar · 302", só com as partes que existem.
+create function nome_da_unidade(p_bloco text, p_andar text, p_identificacao text) returns text
+language sql immutable
+set search_path = public
+as $$
+  select concat_ws(' · ', p_bloco,
+    case when p_andar is null then null when btrim(p_andar) ~ '^\d{1,3}$' then btrim(p_andar) || 'º andar' else btrim(p_andar) end,
+    p_identificacao)
 $$;
 
 -- ---------------------------------------------------------------------------------------
@@ -366,16 +399,17 @@ as $$
 begin
   perform entrar_condominio(p_pessoa, p_condominio, 'moradores.ver');
   return jsonb_build_object(
+    'estrutura', (select jsonb_build_object('agrupamento', c.agrupamento, 'usaAndar', c.usa_andar, 'versao', c.versao) from configuracao_condominio c),
     'blocos', coalesce((select jsonb_agg(jsonb_build_object('id', b.id, 'nome', b.nome, 'ordem', b.ordem, 'ativo', b.ativo, 'versao', b.versao)
                                          order by b.ativo desc, b.ordem, lower(b.nome)) from blocos b), '[]'::jsonb),
     'unidades', coalesce((
       select jsonb_agg(jsonb_build_object(
-               'id', u.id, 'blocoId', u.bloco_id, 'identificacao', u.identificacao, 'ativa', u.ativa, 'versao', u.versao,
+               'id', u.id, 'blocoId', u.bloco_id, 'andar', u.andar, 'identificacao', u.identificacao, 'ativa', u.ativa, 'versao', u.versao,
                'confirmados', (select count(*) from contatos_unidade cu where cu.unidade_id = u.id and cu.estado = 'CONFIRMADO'),
                'pendentes', (select count(*) from contatos_unidade cu where cu.unidade_id = u.id and cu.estado = 'PENDENTE'),
                'principal', (select ct.nome from contatos_unidade cu join contatos ct on ct.id = cu.contato_id
                               where cu.unidade_id = u.id and cu.principal and cu.estado <> 'ENCERRADO'))
-             order by u.ativa desc, b.ordem nulls first, lower(b.nome) nulls first, chave_unidade(u.identificacao))
+             order by u.ativa desc, b.ordem nulls first, lower(b.nome) nulls first, chave_andar(u.andar), chave_unidade(u.identificacao))
         from unidades u left join blocos b on b.id = u.bloco_id), '[]'::jsonb),
     'resumo', resumo_moradores(p_condominio),
     'podeEditar', pode(p_pessoa, p_condominio, 'moradores.editar'),
@@ -393,7 +427,7 @@ begin
   perform entrar_condominio(p_pessoa, p_condominio, 'moradores.ver');
   v_u := exigir_unidade(p_unidade);
   return jsonb_build_object(
-    'unidade', jsonb_build_object('id', v_u.id, 'identificacao', v_u.identificacao, 'blocoId', v_u.bloco_id,
+    'unidade', jsonb_build_object('id', v_u.id, 'identificacao', v_u.identificacao, 'blocoId', v_u.bloco_id, 'andar', v_u.andar,
                                   'bloco', (select nome from blocos where id = v_u.bloco_id), 'ativa', v_u.ativa, 'versao', v_u.versao),
     'contatos', coalesce((
       select jsonb_agg(jsonb_build_object(
@@ -402,7 +436,7 @@ begin
                'estado', cu.estado, 'origem', cu.origem, 'desde', coalesce(cu.confirmado_em, cu.criado_em), 'versao', cu.versao,
                'telefoneCompartilhado', telefone_compartilhado(ct.id),
                'outrasUnidades', coalesce((
-                 select jsonb_agg(concat_ws(' · ', b2.nome, u2.identificacao) order by chave_unidade(u2.identificacao))
+                 select jsonb_agg(nome_da_unidade(b2.nome, u2.andar, u2.identificacao) order by chave_andar(u2.andar), chave_unidade(u2.identificacao))
                    from contatos_unidade c2 join unidades u2 on u2.id = c2.unidade_id left join blocos b2 on b2.id = u2.bloco_id
                   where c2.contato_id = ct.id and c2.unidade_id <> v_u.id and c2.estado <> 'ENCERRADO'), '[]'::jsonb))
              order by cu.estado = 'PENDENTE', cu.principal desc, lower(ct.nome))
@@ -464,9 +498,43 @@ begin
   return jsonb_build_object('id', v_id, 'versao', v_versao);
 end $$;
 
--- Incluir uma ou várias unidades num bloco (ou sem bloco). As que já existem ativas ficam
--- como estão e voltam na resposta.
-create function plataforma_incluir_unidades(p_pessoa uuid, p_condominio uuid, p_bloco uuid, p_identificacoes text[]) returns jsonb
+-- Como o prédio se organiza: o nome da divisão maior (torre, bloco, quadra, prédio, ou
+-- nenhuma) e se usa andar. Não dá para tirar a divisão com blocos ativos, nem o andar com
+-- unidades ativas que têm andar: a tela diz o que fazer antes.
+create function plataforma_definir_estrutura(p_pessoa uuid, p_condominio uuid, p_versao integer, p_agrupamento text, p_usa_andar boolean)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_antes configuracao_condominio;
+  v_versao integer;
+begin
+  perform entrar_condominio(p_pessoa, p_condominio, 'moradores.editar');
+  if p_agrupamento is null or p_agrupamento not in ('NENHUM', 'TORRE', 'BLOCO', 'QUADRA', 'PREDIO') then
+    perform recusar_campos('Divisão desconhecida', 'agrupamento');
+  end if;
+  if p_usa_andar is null then perform recusar_campos('Diga se o prédio usa andar', 'usaAndar'); end if;
+  if p_agrupamento = 'NENHUM' and exists (select 1 from blocos where ativo) then
+    perform recusar_motivo('Desative os blocos antes de tirar a divisão', 'ESTRUTURA_COM_BLOCOS');
+  end if;
+  if not p_usa_andar and exists (select 1 from unidades where ativa and andar is not null) then
+    perform recusar_motivo('Tire o andar das unidades antes de deixar de usar andar', 'ESTRUTURA_COM_ANDARES');
+  end if;
+  select * into v_antes from configuracao_condominio;
+  update configuracao_condominio set agrupamento = p_agrupamento, usa_andar = p_usa_andar
+   where id = v_antes.id and versao = p_versao returning versao into v_versao;
+  if v_versao is null then perform conflito_versao('configuracao_condominio', v_antes.id); end if;
+  perform registrar_historico('estrutura.alterada', 'configuracao_condominio', v_antes.id::text,
+    jsonb_build_object('agrupamento', p_agrupamento, 'usa_andar', p_usa_andar));
+  return v_versao;
+end $$;
+
+-- Incluir uma ou várias unidades num bloco (ou sem bloco), cada uma com o andar dela, se
+-- houver. As que já existem ativas ficam como estão e voltam na resposta.
+-- p_unidades: [{"identificacao": "302", "andar": "3"}, {"identificacao": "Loja 1", "andar": null}]
+create function plataforma_incluir_unidades(p_pessoa uuid, p_condominio uuid, p_bloco uuid, p_unidades jsonb) returns jsonb
 language plpgsql
 security definer
 set search_path = public
@@ -476,21 +544,39 @@ declare
   v_criadas integer;
 begin
   perform entrar_condominio(p_pessoa, p_condominio, 'moradores.editar');
-  if p_identificacoes is null or cardinality(p_identificacoes) not between 1 and 1000
-     or exists (select 1 from unnest(p_identificacoes) x where length(btrim(coalesce(x, ''))) not between 1 and 20) then
-    perform recusar_campos('De 1 a 1000 unidades, cada uma com até 20 caracteres', 'identificacoes');
+  if p_unidades is null or jsonb_typeof(p_unidades) <> 'array' or jsonb_array_length(p_unidades) not between 1 and 1000
+     or exists (select 1 from jsonb_array_elements(p_unidades) x
+                 where jsonb_typeof(x) <> 'object' or jsonb_typeof(x -> 'identificacao') <> 'string'
+                    or length(btrim(x ->> 'identificacao')) not between 1 and 20
+                    or (x ? 'andar' and jsonb_typeof(x -> 'andar') not in ('string', 'null'))
+                    or length(btrim(x ->> 'andar')) not between 1 and 20) then
+    perform recusar_campos('De 1 a 1000 unidades, cada uma com até 20 caracteres, e andar com até 20', 'unidades');
   end if;
   if p_bloco is not null and not exists (select 1 from blocos where id = p_bloco and ativo) then
     perform recusar_campos('Bloco não encontrado ou desativado', 'blocoId');
   end if;
-  select coalesce(array_agg(u.identificacao order by chave_unidade(u.identificacao)), '{}') into v_existentes
-    from unidades u
-   where u.ativa and u.bloco_id is not distinct from p_bloco
-     and lower(btrim(u.identificacao)) in (select lower(btrim(x)) from unnest(p_identificacoes) x);
-  insert into unidades (condominio_id, bloco_id, identificacao)
-  select p_condominio, p_bloco, min(btrim(x)) from unnest(p_identificacoes) x
-   where lower(btrim(x)) not in (select lower(btrim(e)) from unnest(v_existentes) e)
-   group by lower(btrim(x));
+  if exists (select 1 from jsonb_array_elements(p_unidades) x where nullif(btrim(x ->> 'andar'), '') is not null)
+     and not (select usa_andar from configuracao_condominio) then
+    perform recusar_motivo('Este condomínio não usa andar', 'SEM_ANDAR');
+  end if;
+  with novas as (
+    select min(btrim(x ->> 'identificacao')) as identificacao, min(nullif(btrim(x ->> 'andar'), '')) as andar
+      from jsonb_array_elements(p_unidades) x
+     group by lower(btrim(x ->> 'identificacao')), coalesce(lower(nullif(btrim(x ->> 'andar'), '')), ''))
+  select coalesce(array_agg(nome_da_unidade(null, u.andar, u.identificacao) order by chave_andar(u.andar), chave_unidade(u.identificacao)), '{}')
+    into v_existentes
+    from unidades u join novas n on lower(btrim(u.identificacao)) = lower(n.identificacao)
+                               and coalesce(lower(btrim(u.andar)), '') = coalesce(lower(n.andar), '')
+   where u.ativa and u.bloco_id is not distinct from p_bloco;
+  insert into unidades (condominio_id, bloco_id, andar, identificacao)
+  with novas as (
+    select min(btrim(x ->> 'identificacao')) as identificacao, min(nullif(btrim(x ->> 'andar'), '')) as andar
+      from jsonb_array_elements(p_unidades) x
+     group by lower(btrim(x ->> 'identificacao')), coalesce(lower(nullif(btrim(x ->> 'andar'), '')), ''))
+  select p_condominio, p_bloco, n.andar, n.identificacao from novas n
+   where not exists (select 1 from unidades u where u.ativa and u.bloco_id is not distinct from p_bloco
+                       and lower(btrim(u.identificacao)) = lower(n.identificacao)
+                       and coalesce(lower(btrim(u.andar)), '') = coalesce(lower(n.andar), ''));
   get diagnostics v_criadas = row_count;
   if v_criadas > 0 then
     perform registrar_historico('unidades.incluidas', 'bloco', coalesce(p_bloco::text, 'sem_bloco'), jsonb_build_object('quantidade', v_criadas));
@@ -500,7 +586,7 @@ end $$;
 
 -- Renomear, mudar de bloco ou desativar uma unidade (desativar só sem contato ativo).
 create function plataforma_alterar_unidade(p_pessoa uuid, p_condominio uuid, p_id uuid, p_versao integer, p_identificacao text,
-                                           p_bloco uuid, p_ativa boolean)
+                                           p_bloco uuid, p_andar text, p_ativa boolean)
 returns integer
 language plpgsql
 security definer
@@ -508,6 +594,7 @@ set search_path = public
 as $$
 declare
   v_antes unidades;
+  v_andar text := nullif(btrim(p_andar), '');
   v_versao integer;
 begin
   perform entrar_condominio(p_pessoa, p_condominio, 'moradores.editar');
@@ -515,21 +602,25 @@ begin
   if p_bloco is not null and p_bloco is distinct from v_antes.bloco_id and not exists (select 1 from blocos where id = p_bloco and ativo) then
     perform recusar_campos('Bloco não encontrado ou desativado', 'blocoId');
   end if;
+  if v_andar is not null and v_andar is distinct from v_antes.andar and not (select usa_andar from configuracao_condominio) then
+    perform recusar_motivo('Este condomínio não usa andar', 'SEM_ANDAR');
+  end if;
   if v_antes.ativa and not coalesce(p_ativa, true)
      and exists (select 1 from contatos_unidade where unidade_id = p_id and estado <> 'ENCERRADO') then
     perform recusar_motivo('Encerre os contatos da unidade antes de desativar', 'UNIDADE_COM_CONTATOS');
   end if;
   begin
-    update unidades set identificacao = btrim(p_identificacao), bloco_id = p_bloco, ativa = coalesce(p_ativa, ativa)
+    update unidades set identificacao = btrim(p_identificacao), bloco_id = p_bloco, andar = v_andar, ativa = coalesce(p_ativa, ativa)
      where id = p_id and versao = p_versao returning versao into v_versao;
   exception
-    when unique_violation then perform recusar_motivo('Já existe uma unidade ativa com esta identificação no bloco', 'UNIDADE_REPETIDA');
-    when check_violation or not_null_violation then perform recusar_campos('Identificação até 20 caracteres', 'identificacao');
+    when unique_violation then perform recusar_motivo('Já existe uma unidade ativa com esta identificação no bloco e andar', 'UNIDADE_REPETIDA');
+    when check_violation or not_null_violation then perform recusar_campos('Identificação e andar até 20 caracteres', 'identificacao', 'andar');
   end;
   if v_versao is null then perform conflito_versao('unidades', p_id); end if;
   perform registrar_historico('unidade.alterada', 'unidade', p_id::text, jsonb_build_object('campos', to_jsonb(array_remove(array[
     case when v_antes.identificacao is distinct from btrim(p_identificacao) then 'identificacao' end,
     case when v_antes.bloco_id is distinct from p_bloco then 'bloco' end,
+    case when v_antes.andar is distinct from v_andar then 'andar' end,
     case when p_ativa is not null and v_antes.ativa is distinct from p_ativa then 'ativa' end], null))));
   return v_versao;
 end $$;
@@ -750,7 +841,7 @@ begin
   v_digitos := nullif(regexp_replace(coalesce(v_busca, ''), '\D', '', 'g'), '');
   v_busca := replace(replace(replace(v_busca, '\', '\\'), '%', '\%'), '_', '\_');
   with lista as (
-    select cu.id, cu.contato_id, ct.nome, ct.telefone, cu.unidade_id, u.identificacao, b.nome as bloco, b.ordem as bloco_ordem,
+    select cu.id, cu.contato_id, ct.nome, ct.telefone, cu.unidade_id, u.identificacao, u.andar, b.nome as bloco, b.ordem as bloco_ordem,
            cu.relacao, cu.principal, cu.estado, cu.origem, cu.versao
       from contatos_unidade cu
       join contatos ct on ct.id = cu.contato_id
@@ -761,15 +852,16 @@ begin
             or ct.nome ilike '%' || v_busca || '%'
             or u.identificacao ilike v_busca || '%'
             or b.nome ilike '%' || v_busca || '%'
+            or u.andar ilike v_busca
             or (length(v_digitos) >= 4 and ct.telefone like '%' || v_digitos || '%'))
   )
   select jsonb_build_object(
     'itens', coalesce((select jsonb_agg(jsonb_build_object(
                'vinculoId', l.id, 'contatoId', l.contato_id, 'nome', l.nome, 'telefone', l.telefone, 'unidadeId', l.unidade_id,
-               'unidade', l.identificacao, 'bloco', l.bloco, 'relacao', l.relacao, 'principal', l.principal,
+               'unidade', l.identificacao, 'andar', l.andar, 'bloco', l.bloco, 'relacao', l.relacao, 'principal', l.principal,
                'estado', l.estado, 'origem', l.origem, 'versao', l.versao) order by l.ordem)
-             from (select *, row_number() over (order by bloco_ordem nulls first, lower(bloco) nulls first, chave_unidade(identificacao),
-                                                         principal desc, lower(nome)) as ordem from lista) l
+             from (select *, row_number() over (order by bloco_ordem nulls first, lower(bloco) nulls first, chave_andar(andar),
+                                                         chave_unidade(identificacao), principal desc, lower(nome)) as ordem from lista) l
             where l.ordem > (v_pagina - 1) * 50 and l.ordem <= v_pagina * 50), '[]'::jsonb),
     'total', (select count(*) from lista),
     'pagina', v_pagina,
@@ -803,8 +895,10 @@ end $$;
 -- Importar unidades e contatos de uma planilha (F3.3, PI-04). Tudo ou nada. Blocos e
 -- unidades que faltam são criados; o contato com o mesmo nome e telefone é reaproveitado; o
 -- vínculo nasce pendente, para o síndico conferir (MU-02); o que já existe é ignorado.
--- p_linhas: [{"bloco": "Torre A" | null, "unidade": "101", "nome": "...", "telefone": "+55...", "relacao": "MORADOR"}]
-create function plataforma_importar_moradores(p_pessoa uuid, p_condominio uuid, p_linhas jsonb) returns jsonb
+-- Planilha com bloco ou andar num condomínio sem divisão ou sem andar passa a usá-los; a
+-- divisão recebe o nome da coluna da planilha (p_agrupamento: TORRE, BLOCO, QUADRA, PREDIO).
+-- p_linhas: [{"bloco": "Torre A" | null, "andar": "3" | null, "unidade": "302", "nome": "...", "telefone": "+55...", "relacao": "MORADOR"}]
+create function plataforma_importar_moradores(p_pessoa uuid, p_condominio uuid, p_linhas jsonb, p_agrupamento text default null) returns jsonb
 language plpgsql
 security definer
 set search_path = public
@@ -820,8 +914,13 @@ declare
   v_vinculos integer := 0;
   v_ignoradas integer := 0;
   v_campos text[];
+  v_andar text;
+  v_config configuracao_condominio;
 begin
   perform entrar_condominio(p_pessoa, p_condominio, 'moradores.editar');
+  if p_agrupamento is not null and p_agrupamento not in ('TORRE', 'BLOCO', 'QUADRA', 'PREDIO') then
+    perform recusar_campos('Divisão desconhecida', 'agrupamento');
+  end if;
   if p_linhas is null or jsonb_typeof(p_linhas) <> 'array' or jsonb_array_length(p_linhas) not between 1 and 2000 then
     perform recusar_campos('De 1 a 2000 linhas', 'linhas');
   end if;
@@ -831,6 +930,8 @@ begin
       case when jsonb_typeof(r.x) <> 'object' then 'linha' end,
       case when jsonb_typeof(r.x) = 'object' and r.x ? 'bloco' and jsonb_typeof(r.x -> 'bloco') <> 'null'
                 and length(btrim(coalesce(r.x ->> 'bloco', ''))) not between 1 and 40 then 'bloco' end,
+      case when jsonb_typeof(r.x) = 'object' and r.x ? 'andar' and jsonb_typeof(r.x -> 'andar') <> 'null'
+                and length(btrim(coalesce(r.x ->> 'andar', ''))) not between 1 and 20 then 'andar' end,
       case when length(btrim(coalesce(r.x ->> 'unidade', ''))) not between 1 and 20 then 'unidade' end,
       case when length(btrim(coalesce(r.x ->> 'nome', ''))) not between 1 and 120 then 'nome' end,
       case when not coalesce(telefone_valido(r.x ->> 'telefone'), false) then 'telefone' end,
@@ -852,10 +953,12 @@ begin
       end if;
     end if;
 
+    v_andar := nullif(btrim(coalesce(r.x ->> 'andar', '')), '');
     select id into v_unidade from unidades
-     where ativa and bloco_id is not distinct from v_bloco and lower(btrim(identificacao)) = lower(btrim(r.x ->> 'unidade'));
+     where ativa and bloco_id is not distinct from v_bloco and lower(btrim(identificacao)) = lower(btrim(r.x ->> 'unidade'))
+       and coalesce(lower(btrim(andar)), '') = coalesce(lower(v_andar), '');
     if v_unidade is null then
-      insert into unidades (condominio_id, bloco_id, identificacao) values (p_condominio, v_bloco, btrim(r.x ->> 'unidade'))
+      insert into unidades (condominio_id, bloco_id, andar, identificacao) values (p_condominio, v_bloco, v_andar, btrim(r.x ->> 'unidade'))
       returning id into v_unidade;
       v_unidades := v_unidades + 1;
     end if;
@@ -876,6 +979,15 @@ begin
       v_vinculos := v_vinculos + 1;
     end if;
   end loop;
+
+  select * into v_config from configuracao_condominio;
+  if (v_config.agrupamento = 'NENHUM' and exists (select 1 from blocos where ativo))
+     or (not v_config.usa_andar and exists (select 1 from unidades where ativa and andar is not null)) then
+    update configuracao_condominio
+       set agrupamento = case when agrupamento = 'NENHUM' and exists (select 1 from blocos where ativo) then coalesce(p_agrupamento, 'BLOCO') else agrupamento end,
+           usa_andar = usa_andar or exists (select 1 from unidades where ativa and andar is not null)
+     where id = v_config.id;
+  end if;
 
   perform registrar_historico('moradores.importados', 'condominio', p_condominio::text, jsonb_build_object(
     'linhas', jsonb_array_length(p_linhas), 'blocos', v_blocos, 'unidades', v_unidades, 'contatos', v_contatos,

@@ -36,38 +36,77 @@ test.describe("Plataforma do síndico · passo 3", () => {
     await expect(page.getByRole("row", { name: /Paulo Lima/ })).toContainText("Torre A · 102");
   });
 
-  test("F3.1: unidades por bloco em ordem natural; novo bloco com unidades geradas pela numeração", async ({ page }) => {
+  test("F3.1: unidades por torre em ordem natural; nova torre; o prédio passa a usar andar e as unidades geradas já saem no andar", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/moradores`);
     await expect(page.getByRole("heading", { level: 1, name: "Moradores e unidades" })).toBeVisible();
+    await expect(page.getByText("Organização do prédio: torres, sem andares")).toBeVisible();
     await page.getByRole("group", { name: "Mostrar unidades" }).getByRole("button", { name: "Torre A" }).click();
     const nomes = await page.getByRole("table").locator("tbody tr td:first-child").allInnerTexts();
     expect(nomes).toEqual(["101", "102", "201", "1001"]);
     await expect(page.getByRole("row", { name: /^102/ })).toContainText("1 a confirmar");
     await conferir(page);
 
-    await page.getByRole("button", { name: "+ Bloco" }).click();
-    await page.getByRole("dialog", { name: "Novo bloco" }).getByLabel("Nome do bloco").fill("Torre C");
-    await page.getByRole("button", { name: "Criar bloco" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Bloco Torre C criado." })).toBeVisible();
+    await page.getByRole("button", { name: "+ Torre" }).click();
+    await page.getByRole("dialog", { name: "Incluir torre" }).getByLabel("Nome (torre)").fill("Torre C");
+    await page.getByRole("dialog", { name: "Incluir torre" }).getByRole("button", { name: "Incluir" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Torre C incluído." })).toBeVisible();
+
+    await page.getByRole("button", { name: "Mudar", exact: true }).click();
+    const org = page.getByRole("dialog", { name: "Como o prédio se organiza" });
+    await expect(org.getByLabel(/Por torre/)).toBeChecked();
+    await org.getByLabel("As unidades ficam em andares").check();
+    await conferir(page);
+    await org.getByRole("button", { name: "Salvar" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Organização do prédio: torres, com andares." })).toBeVisible();
 
     await page.getByRole("button", { name: "+ Unidades" }).click();
     const janela = page.getByRole("dialog", { name: "Incluir unidades" });
-    await janela.getByLabel("Bloco").selectOption({ label: "Torre C" });
+    await janela.getByLabel("Torre").selectOption({ label: "Torre C" });
     await janela.getByRole("button", { name: "Gerar pela numeração" }).click();
+    await janela.getByLabel("Do andar").fill("0");
     await janela.getByLabel("Até o andar").fill("2");
     await janela.getByLabel("Por andar").fill("2");
-    await expect(janela).toContainText("101, 102, 201, 202");
+    await expect(janela).toContainText("Térreo · 1, Térreo · 2, 1º andar · 101, 1º andar · 102, 2º andar · 201, 2º andar · 202");
     await conferir(page);
-    await janela.getByRole("button", { name: "Incluir 4 unidades" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "4 unidades incluídas." })).toBeVisible();
+    await janela.getByRole("button", { name: "Incluir 6 unidades" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "6 unidades incluídas." })).toBeVisible();
+
+    await page.getByRole("group", { name: "Mostrar unidades" }).getByRole("button", { name: "Torre C" }).click();
+    await page.getByLabel("Andar").selectOption({ label: "2º andar" });
+    expect(await page.getByRole("table").locator("tbody tr td:first-child").allInnerTexts()).toEqual(["201", "202"]);
 
     await page.getByRole("button", { name: "+ Unidades" }).click();
-    await janela.getByLabel("Bloco").selectOption({ label: "Torre C" });
-    await janela.getByLabel("Unidades").fill("101, 301");
-    await expect(janela).toContainText("101 já existe e fica como está");
+    await janela.getByLabel("Torre").selectOption({ label: "Torre C" });
+    await janela.getByLabel("Andar").fill("2");
+    await janela.getByLabel("Unidades").fill("201, 203");
+    await expect(janela).toContainText("2º andar · 201 já existe e fica como está");
     await janela.getByRole("button", { name: "Incluir 1 unidade" }).click();
     await expect(page.getByRole("status").filter({ hasText: "1 unidade incluída. 1 já existia" })).toBeVisible();
+  });
+
+  test("MU-01 e MU-08: cadastrar morador ou proprietário escolhendo a torre, o andar e a unidade", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page);
+    const m = estado.moradores;
+    m.estrutura.usaAndar = true;
+    for (const u of m.unidades) u.andar = u.identificacao === "Loja 2" ? "Térreo" : String(Math.floor(Number(u.identificacao) / 100));
+    await page.goto(`${PLATAFORMA}/moradores`);
+    await expect(page.getByRole("row", { name: /Torre A · 2º andar · 201/ })).toBeVisible();
+    await page.getByRole("button", { name: "+ Morador ou proprietário" }).click();
+    const janela = page.getByRole("dialog", { name: "Cadastrar morador ou proprietário" });
+    await janela.getByLabel("Torre").selectOption({ label: "Torre A" });
+    await janela.getByLabel("Andar").selectOption({ label: "2º andar" });
+    await janela.getByLabel("Unidade").selectOption({ label: "201" });
+    await janela.getByLabel("Nome").fill("Helena Prado");
+    await janela.getByLabel("Telefone (WhatsApp)").fill("(61) 94444-0001");
+    await janela.getByLabel("Relação com a unidade").selectOption({ label: "Proprietário (condômino)" });
+    await conferir(page);
+    await janela.getByRole("button", { name: "Incluir contato" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Helena Prado incluído em Torre A · 2º andar · 201." })).toBeVisible();
+    await expect(page.getByRole("row", { name: /Torre A · 2º andar · 201/ })).toContainText("Helena Prado");
+    await page.getByRole("link", { name: "Torre A · 2º andar · 201" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Torre A · 2º andar · 201" })).toBeVisible();
+    await expect(page.getByRole("row", { name: /Helena Prado/ })).toContainText("Proprietário (condômino) · principal");
   });
 
   test("MU-01, MU-03 e MU-08: ficha da unidade, telefone compartilhado, confirmar e incluir contato", async ({ page }) => {
@@ -152,18 +191,18 @@ test.describe("Plataforma do síndico · passo 3", () => {
     await page.getByRole("link", { name: "Importar planilha" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Importar planilha" })).toBeVisible();
     await conferir(page);
-    const csv = "Torre;Apto;Nome;Celular;Tipo\r\nTorre D;11;Lia Reis;(61) 97777-0002;Inquilina\r\nTorre D;;Sem Unidade;123;\r\nTorre D;12;Rui Alves;61977770001;proprietário\r\n";
+    const csv = "Torre;Andar;Apto;Nome;Celular;Tipo\r\nTorre D;1;11;Lia Reis;(61) 97777-0002;Inquilina\r\nTorre D;1;;Sem Unidade;123;\r\nTorre D;1;12;Rui Alves;61977770001;proprietário\r\n";
     await page.getByLabel("Arquivo da planilha (CSV)").setInputFiles({ name: "moradores.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf-8") });
     await expect(page.getByText("2 prontas", { exact: true })).toBeVisible();
     await expect(page.getByRole("row", { name: /^3/ })).toContainText("Unidade em branco");
     await expect(page.getByRole("row", { name: /^3/ })).toContainText("Telefone incompleto");
     await conferir(page);
     await page.getByRole("button", { name: "Importar 2 contatos" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Importados: 1 bloco novo, 2 unidades novas, 2 contatos a confirmar." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Importados: 1 torre ou bloco novo, 2 unidades novas, 2 contatos a confirmar." })).toBeVisible();
     expect(estado.moradores.importacoes).toHaveLength(1);
     await page.getByRole("link", { name: "Conferir os contatos a confirmar" }).click();
     await expect(page.getByRole("tab", { name: "A confirmar (3)", selected: true })).toBeVisible();
-    await expect(page.getByRole("row", { name: /Lia Reis/ })).toContainText("Torre D · 11");
+    await expect(page.getByRole("row", { name: /Lia Reis/ })).toContainText("Torre D · 1º andar · 11");
   });
 
   test("CF-03: quem tem Cadastrar moradores inclui, mas não confirma; quem só vê não tem a parte", async ({ page }) => {

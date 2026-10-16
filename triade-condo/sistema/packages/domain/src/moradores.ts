@@ -1,18 +1,29 @@
-// Plataforma do síndico (passo 3): blocos, unidades e contatos. Os mesmos valores estão no
-// banco (0080_moradores_unidades.sql).
+// Plataforma do síndico (passo 3): estrutura do prédio (torre, bloco, quadra ou prédio, com
+// ou sem andar), unidades e contatos. Os mesmos valores estão no banco
+// (0080_moradores_unidades.sql).
 
 import { z } from "zod";
 import { normalizarTelefone } from "./console.ts";
 
 /** Relação do contato com a unidade (MU-08). */
 export const RELACOES_UNIDADE = {
-  PROPRIETARIO: "Proprietário",
+  PROPRIETARIO: "Proprietário (condômino)",
   INQUILINO: "Inquilino",
   MORADOR: "Morador",
   FAMILIAR: "Familiar ou cônjuge",
   OUTRO: "Outro autorizado",
 } as const;
 export type RelacaoUnidade = keyof typeof RELACOES_UNIDADE;
+
+/** Como o condomínio chama a divisão maior do prédio. NENHUM: as unidades ficam direto no condomínio. */
+export const AGRUPAMENTOS = {
+  NENHUM: { nome: "Sem divisão", um: "", varios: "" },
+  TORRE: { nome: "Torres", um: "Torre", varios: "Torres" },
+  BLOCO: { nome: "Blocos", um: "Bloco", varios: "Blocos" },
+  QUADRA: { nome: "Quadras", um: "Quadra", varios: "Quadras" },
+  PREDIO: { nome: "Prédios", um: "Prédio", varios: "Prédios" },
+} as const;
+export type Agrupamento = keyof typeof AGRUPAMENTOS;
 
 /** Só o vínculo confirmado pelo síndico vale para alguma coisa (MU-02). */
 export const ESTADOS_CONTATO_UNIDADE = {
@@ -57,15 +68,24 @@ export const blocoSchema = z.object({
   ativo: z.boolean().optional(),
 });
 
+const andar = z.string().trim().max(20).nullable().optional().transform((v) => (v ? v : null));
+
+export const estruturaSchema = z.object({
+  versao,
+  agrupamento: z.enum(chaves(AGRUPAMENTOS)),
+  usaAndar: z.boolean(),
+});
+
 export const incluirUnidadesSchema = z.object({
   blocoId: id.nullable(),
-  identificacoes: z.array(identificacao).min(1).max(1000),
+  unidades: z.array(z.object({ identificacao, andar })).min(1).max(1000),
 });
 
 export const alterarUnidadeSchema = z.object({
   versao,
   identificacao,
   blocoId: id.nullable(),
+  andar,
   ativa: z.boolean().optional(),
 });
 
@@ -131,6 +151,7 @@ export const mudancaSchema = z
 
 export const linhaImportacaoSchema = z.object({
   bloco: z.string().trim().min(1).max(40).nullable(),
+  andar: z.string().trim().min(1).max(20).nullable(),
   unidade: identificacao,
   nome,
   telefone: telefoneContato,
@@ -138,7 +159,11 @@ export const linhaImportacaoSchema = z.object({
 });
 export type LinhaImportacao = z.infer<typeof linhaImportacaoSchema>;
 
-export const importacaoSchema = z.object({ linhas: z.array(linhaImportacaoSchema).min(1).max(2000) });
+export const importacaoSchema = z.object({
+  linhas: z.array(linhaImportacaoSchema).min(1).max(2000),
+  /** Nome da divisão pela coluna da planilha (torre, bloco...), para condomínio ainda sem divisão. */
+  agrupamento: z.enum(["TORRE", "BLOCO", "QUADRA", "PREDIO"]).nullable().optional(),
+});
 
 export const removerDadosSchema = z.object({ versao });
 
@@ -148,18 +173,44 @@ export const buscaMoradoresSchema = z.object({
   pagina: z.coerce.number().int().min(1).max(1000).default(1),
 });
 
+export interface UnidadeNova {
+  identificacao: string;
+  andar: string | null;
+}
+
 /**
  * Numeração de prédio: andares de "de" até "ate", "porAndar" unidades em cada um.
  * Andar 1 com 4 por andar: 101, 102, 103, 104. Andar 0 vira térreo: 1, 2, 3, 4.
+ * Com "comAndar", cada unidade já sai com o andar dela ("Térreo", "1", "2"...).
  */
-export function gerarUnidades(o: { de: number; ate: number; porAndar: number }): string[] {
+export function gerarUnidades(o: { de: number; ate: number; porAndar: number; comAndar?: boolean }): UnidadeNova[] {
   if (!Number.isInteger(o.de) || !Number.isInteger(o.ate) || !Number.isInteger(o.porAndar)) return [];
   if (o.de < 0 || o.ate < o.de || o.ate > 200 || o.porAndar < 1 || o.porAndar > 99) return [];
-  const lista: string[] = [];
-  for (let andar = o.de; andar <= o.ate; andar++) {
-    for (let n = 1; n <= o.porAndar; n++) lista.push(andar === 0 ? String(n) : `${andar}${String(n).padStart(2, "0")}`);
+  const lista: UnidadeNova[] = [];
+  for (let a = o.de; a <= o.ate; a++) {
+    for (let n = 1; n <= o.porAndar; n++) {
+      lista.push({ identificacao: a === 0 ? String(n) : `${a}${String(n).padStart(2, "0")}`, andar: o.comAndar ? (a === 0 ? "Térreo" : String(a)) : null });
+    }
   }
   return lista.length <= 1000 ? lista : [];
+}
+
+/** Ordem dos andares, igual à do banco: subsolo, térreo, os numerados, e o resto. */
+export function chaveAndar(a: string | null | undefined): string {
+  if (!a) return "";
+  const s = a.trim();
+  const base = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const numero = /\d{1,6}/.exec(s)?.[0];
+  if (/^(s|ss|subsolo)/.test(base)) return `0${(numero ?? "0").padStart(6, "0")}`;
+  if (/^(t$|terreo)/.test(base)) return "1";
+  if (numero) return `2${numero.padStart(6, "0")}`;
+  return `3${s.toLowerCase()}`;
+}
+
+/** "3" vira "3º andar"; "Térreo" e "Cobertura" ficam como estão. */
+export function mostrarAndar(a: string | null | undefined): string {
+  if (!a) return "";
+  return /^\d{1,3}$/.test(a.trim()) ? `${a.trim()}º andar` : a.trim();
 }
 
 /** Ordem natural, igual à do banco: "2" antes de "10", "Casa 2" antes de "Casa 10". */
@@ -170,9 +221,9 @@ export function chaveUnidade(t: string): string {
   return prefixo.toLowerCase() + numero.padStart(12, "0") + s.toLowerCase();
 }
 
-/** "Torre A · 101" ou só "101". */
-export function nomeDaUnidade(bloco: string | null | undefined, identificacao: string): string {
-  return bloco ? `${bloco} · ${identificacao}` : identificacao;
+/** "Torre A · 3º andar · 302", só com as partes que existem (igual ao banco). */
+export function nomeDaUnidade(bloco: string | null | undefined, andar: string | null | undefined, identificacao: string): string {
+  return [bloco, mostrarAndar(andar), identificacao].filter(Boolean).join(" · ");
 }
 
 // ---------------------------------------------------------------------------------------
@@ -180,6 +231,7 @@ export function nomeDaUnidade(bloco: string | null | undefined, identificacao: s
 
 const COLUNAS: Record<string, keyof LinhaImportacao> = {
   bloco: "bloco", torre: "bloco", quadra: "bloco", predio: "bloco",
+  andar: "andar", pavimento: "andar",
   unidade: "unidade", apartamento: "unidade", apto: "unidade", ap: "unidade", casa: "unidade", sala: "unidade", numero: "unidade",
   nome: "nome", morador: "nome", contato: "nome", responsavel: "nome",
   telefone: "telefone", celular: "telefone", whatsapp: "telefone", fone: "telefone",
@@ -233,18 +285,27 @@ export interface LeituraPlanilha {
   erros: ErroPlanilha[];
   /** Coluna obrigatória que não foi achada no cabeçalho. */
   faltam: string[];
+  /** Nome da divisão pela coluna da planilha (torre, bloco, quadra ou prédio). */
+  agrupamento: "TORRE" | "BLOCO" | "QUADRA" | "PREDIO" | null;
 }
+
+const AGRUPAMENTO_DA_COLUNA: Record<string, LeituraPlanilha["agrupamento"]> = { torre: "TORRE", bloco: "BLOCO", quadra: "QUADRA", predio: "PREDIO" };
 
 /** Lê a planilha e devolve as linhas boas e onde estão os erros, para a prévia. */
 export function lerPlanilhaMoradores(texto: string): LeituraPlanilha {
   const [cabecalho, ...corpo] = lerCsv(texto);
   const indices: Partial<Record<keyof LinhaImportacao, number>> = {};
+  let agrupamento: LeituraPlanilha["agrupamento"] = null;
   (cabecalho ?? []).forEach((c, i) => {
-    const alvo = COLUNAS[simples(c).replace(/[^a-z]/g, "")];
-    if (alvo && indices[alvo] === undefined) indices[alvo] = i;
+    const chave = simples(c).replace(/[^a-z]/g, "");
+    const alvo = COLUNAS[chave];
+    if (alvo && indices[alvo] === undefined) {
+      indices[alvo] = i;
+      if (alvo === "bloco") agrupamento = AGRUPAMENTO_DA_COLUNA[chave] ?? null;
+    }
   });
   const faltam = (["unidade", "nome", "telefone"] as const).filter((c) => indices[c] === undefined);
-  if (faltam.length) return { linhas: [], origens: [], erros: [], faltam };
+  if (faltam.length) return { linhas: [], origens: [], erros: [], faltam, agrupamento };
 
   const linhas: LinhaImportacao[] = [];
   const origens: number[] = [];
@@ -255,6 +316,7 @@ export function lerPlanilhaMoradores(texto: string): LeituraPlanilha {
     const relacaoAchada = RELACOES_TEXTO.find(([re]) => re.test(textoRelacao))?.[1];
     const r = linhaImportacaoSchema.safeParse({
       bloco: valor("bloco") || null,
+      andar: valor("andar") || null,
       unidade: valor("unidade"),
       nome: valor("nome"),
       telefone: valor("telefone"),
@@ -266,12 +328,13 @@ export function lerPlanilhaMoradores(texto: string): LeituraPlanilha {
     }
     else erros.push({ linha: n + 2, campos: [...new Set(r.error.issues.map((i) => String(i.path[0])))] });
   });
-  return { linhas, origens, erros, faltam: [] };
+  return { linhas, origens, erros, faltam: [], agrupamento };
 }
 
 /** O que corrigir em cada campo da planilha, dito para quem usa. */
 export const TEXTOS_CAMPO_PLANILHA: Record<string, string> = {
-  bloco: "Bloco com mais de 40 caracteres",
+  bloco: "Torre ou bloco com mais de 40 caracteres",
+  andar: "Andar com mais de 20 caracteres",
   unidade: "Unidade em branco ou com mais de 20 caracteres",
   nome: "Nome em branco",
   telefone: "Telefone incompleto: precisa do DDD e do número",
@@ -279,4 +342,4 @@ export const TEXTOS_CAMPO_PLANILHA: Record<string, string> = {
 };
 
 /** Modelo de planilha para baixar (separador ";", como o Excel em português salva). */
-export const MODELO_PLANILHA = "Bloco;Unidade;Nome;Telefone;Relação\r\nTorre A;101;Maria Exemplo;(61) 99999-0000;Proprietário\r\n";
+export const MODELO_PLANILHA = "Torre;Andar;Unidade;Nome;Telefone;Relação\r\nTorre A;1;101;Maria Exemplo;(61) 99999-0000;Proprietário\r\n";

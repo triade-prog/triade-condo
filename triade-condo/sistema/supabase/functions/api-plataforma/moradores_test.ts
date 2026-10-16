@@ -1,7 +1,7 @@
 // Passo 3 na Plataforma do síndico: blocos, unidades e contatos. As rotas validam a entrada,
 // mandam ao banco a pessoa e o condomínio da sessão e deixam a permissão para o banco.
 import { assert, assertEquals } from "@std/assert";
-import { MOTIVOS_ENCERRAMENTO, RELACOES_UNIDADE } from "@triade/domain";
+import { AGRUPAMENTOS, MOTIVOS_ENCERRAMENTO, RELACOES_UNIDADE } from "@triade/domain";
 import { criarApiPlataforma } from "./app.ts";
 import { adminFalso, authFalso, bancoFalso, cookieDe, erro, erroBanco, limitesFalsos, pedido } from "../_shared/teste_util.ts";
 
@@ -25,7 +25,8 @@ function montar(handlers: Record<string, (a: Record<string, unknown>) => unknown
     condominio_da_sessao: (a) => sessoes.get(String(a.p_sessao)) ?? null,
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2 }),
     plataforma_unidades: () => ({ blocos: [], unidades: [] }),
-    plataforma_incluir_unidades: (a) => ({ criadas: (a.p_identificacoes as string[]).length, jaExistiam: [] }),
+    plataforma_incluir_unidades: (a) => ({ criadas: (a.p_unidades as unknown[]).length, jaExistiam: [] }),
+    plataforma_definir_estrutura: (a) => Number(a.p_versao) + 1,
     plataforma_incluir_contato: () => ({ vinculoId: ITEM, contatoId: OUTRO, avisos: [] }),
     plataforma_moradores: () => ({ itens: [], total: 0 }),
     plataforma_registrar_mudanca: () => ({ saem: 1, entram: 1 }),
@@ -56,14 +57,26 @@ Deno.test("PT-01: sem sessão nada chega ao banco; com sessão, o condomínio ve
   assertEquals(chamada(m, "plataforma_unidades"), { p_pessoa: ANA, p_condominio: AURORA });
 });
 
-Deno.test("F3.1: várias unidades de uma vez; identificação vazia para antes do banco", async () => {
+Deno.test("F3.1: várias unidades de uma vez, com o andar de cada uma; identificação vazia para antes do banco", async () => {
   const m = montar();
   const cookie = await entrar(m);
-  assertEquals((await erro(await m.pedir("/v1/condominio/unidades", { corpo: { blocoId: null, identificacoes: [" "] }, cookie }))).codigo,
+  assertEquals((await erro(await m.pedir("/v1/condominio/unidades", { corpo: { blocoId: null, unidades: [{ identificacao: " " }] }, cookie }))).codigo,
     "VALIDATION_ERROR");
-  const r = await m.pedir("/v1/condominio/unidades", { corpo: { blocoId: ITEM, identificacoes: [" 101", "102"] }, cookie });
+  const r = await m.pedir("/v1/condominio/unidades", {
+    corpo: { blocoId: ITEM, unidades: [{ identificacao: " 101", andar: " 1 " }, { identificacao: "102", andar: "" }] }, cookie,
+  });
   assertEquals(r.status, 201);
-  assertEquals(chamada(m, "plataforma_incluir_unidades")?.p_identificacoes, ["101", "102"]);
+  assertEquals(chamada(m, "plataforma_incluir_unidades")?.p_unidades, [{ identificacao: "101", andar: "1" }, { identificacao: "102", andar: null }]);
+});
+
+Deno.test("estrutura do prédio: torre, bloco, quadra ou prédio, com ou sem andar", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  assertEquals((await erro(await m.pedir("/v1/condominio/estrutura", { metodo: "PUT", corpo: { versao: 1, agrupamento: "ALA", usaAndar: true }, cookie }))).codigo,
+    "VALIDATION_ERROR");
+  const r = await m.pedir("/v1/condominio/estrutura", { metodo: "PUT", corpo: { versao: 1, agrupamento: "TORRE", usaAndar: true }, cookie });
+  assertEquals(await r.json(), { versao: 2 });
+  assertEquals(chamada(m, "plataforma_definir_estrutura"), { p_pessoa: ANA, p_condominio: AURORA, p_versao: 1, p_agrupamento: "TORRE", p_usa_andar: true });
 });
 
 Deno.test("MU-01: o telefone chega ao banco no formato internacional", async () => {
@@ -118,7 +131,7 @@ Deno.test("AT-24: confirmar com a versão velha volta como conflito", async () =
 Deno.test("F3.3: planilha com linha errada volta com a linha, e nada é gravado", async () => {
   const m = montar({ plataforma_importar_moradores: () => erroBanco("TC422", { motivo: "LINHA_INVALIDA", linha: 2, campos: ["telefone"] }) });
   const cookie = await entrar(m);
-  const linhas = [{ bloco: null, unidade: "101", nome: "Ana", telefone: "61999990001", relacao: "MORADOR" }];
+  const linhas = [{ bloco: null, andar: null, unidade: "101", nome: "Ana", telefone: "61999990001", relacao: "MORADOR" }];
   const r = await m.pedir("/v1/condominio/importacoes", { corpo: { linhas }, cookie });
   assertEquals(await erro(r), { codigo: "VALIDATION_ERROR", detalhes: { motivo: "LINHA_INVALIDA", linha: 2, campos: ["telefone"] } });
   assertEquals((await erro(await m.pedir("/v1/condominio/importacoes", { corpo: { linhas: [] }, cookie }))).codigo, "VALIDATION_ERROR");
@@ -140,5 +153,7 @@ Deno.test("id fora do formato responde como não encontrado", async () => {
 
 Deno.test("as listas do domínio (relações e motivos) são as mesmas do banco", async () => {
   const migration = await Deno.readTextFile(new URL("../../migrations/0080_moradores_unidades.sql", import.meta.url));
-  for (const s of [...Object.keys(RELACOES_UNIDADE), ...Object.keys(MOTIVOS_ENCERRAMENTO)]) assert(migration.includes(`'${s}'`), s);
+  for (const s of [...Object.keys(RELACOES_UNIDADE), ...Object.keys(MOTIVOS_ENCERRAMENTO), ...Object.keys(AGRUPAMENTOS)]) {
+    assert(migration.includes(`'${s}'`), s);
+  }
 });

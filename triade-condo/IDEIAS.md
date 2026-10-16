@@ -171,7 +171,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 
 | ID | Ideia | Origem |
 |---|---|---|
-| MU-01 | Cadastro breve: nome, telefone, apartamento; CPF só se necessário ao financeiro | [A] |
+| MU-01 | Cadastro breve: nome, telefone, apartamento; CPF só se necessário ao financeiro. A unidade fica do jeito que o prédio se organiza: torre, bloco, quadra ou prédio (ou sem divisão), com ou sem andar; vale para morador e para proprietário (condômino) | [A] |
 | MU-02 | Verificação do vínculo contato ↔ unidade; contato desconhecido não acessa nada restrito. O síndico confirma contatos e unidades; informar o número do apartamento não dá acesso a nada; o sistema nunca confirma nomes nem a existência de moradores | [A] |
 | MU-03 | Número de telefone sozinho não prova identidade; tratar número reciclado ou compartilhado | [A] |
 | MU-04 | Pessoa com vínculo em mais de um condomínio | [A] |

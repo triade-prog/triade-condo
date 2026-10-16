@@ -3,7 +3,7 @@
 import type { Route } from "@playwright/test";
 
 interface Bloco { id: string; nome: string; ordem: number; ativo: boolean; versao: number }
-interface Unidade { id: string; blocoId: string | null; identificacao: string; ativa: boolean; versao: number }
+interface Unidade { id: string; blocoId: string | null; andar: string | null; identificacao: string; ativa: boolean; versao: number }
 interface Contato { id: string; nome: string | null; telefone: string | null; versao: number }
 interface Vinculo {
   id: string; contatoId: string; unidadeId: string; relacao: string; principal: boolean; recebeComunicados: boolean;
@@ -22,6 +22,13 @@ function chave(t: string): string {
   return (/^\D*/.exec(s)?.[0] ?? "").toLowerCase() + (/\d{1,12}/.exec(s)?.[0] ?? "").padStart(12, "0") + s.toLowerCase();
 }
 
+function chaveAndar(a: string | null): string {
+  if (!a) return "";
+  const n = /\d{1,6}/.exec(a)?.[0];
+  if (/^t[eé]rreo/i.test(a)) return "1";
+  return n ? `2${n.padStart(6, "0")}` : `3${a.toLowerCase()}`;
+}
+
 function normalizar(t: unknown): string | null {
   const v = String(t ?? "");
   const d = v.replace(/\D/g, "");
@@ -32,7 +39,7 @@ function normalizar(t: unknown): string | null {
 export function criarMoradores() {
   const torreA: Bloco = { id: novoId(), nome: "Torre A", ordem: 1, ativo: true, versao: 1 };
   const torreB: Bloco = { id: novoId(), nome: "Torre B", ordem: 2, ativo: true, versao: 1 };
-  const u = (id: string, blocoId: string | null, identificacao: string): Unidade => ({ id, blocoId, identificacao, ativa: true, versao: 1 });
+  const u = (id: string, blocoId: string | null, identificacao: string): Unidade => ({ id, blocoId, andar: null, identificacao, ativa: true, versao: 1 });
   const unidades = [u(A101, torreA.id, "101"), u(A102, torreA.id, "102"), u(novoId(), torreA.id, "1001"), u(novoId(), torreA.id, "201"), u(novoId(), null, "Loja 2")];
   const ct = (nome: string, telefone: string): Contato => ({ id: novoId(), nome, telefone, versao: 1 });
   const marina = ct("Marina Souza", "+5561999990001");
@@ -42,6 +49,7 @@ export function criarMoradores() {
   const v = (contato: Contato, unidadeId: string, relacao: string, estado: "PENDENTE" | "CONFIRMADO", principal = false, origem: "PAINEL" | "PLANILHA" = "PAINEL"): Vinculo =>
     ({ id: novoId(), contatoId: contato.id, unidadeId, relacao, principal, recebeComunicados: true, estado, origem, criadoEm: "2026-10-16T15:00:00Z", versao: 1 });
   return {
+    estrutura: { agrupamento: "TORRE", usaAndar: false, versao: 1 },
     blocos: [torreA, torreB],
     unidades,
     contatos: [marina, pedro, joana, paulo],
@@ -68,7 +76,7 @@ export function resumoMoradores(m: EstadoMoradores) {
 
 /** Atende as rotas do passo 3; devolve null quando a rota não é daqui. */
 export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: string, metodo: string, corpo: Record<string, unknown>, pode: (a: string) => boolean) {
-  if (!/^\/v1\/condominio\/(unidades|blocos|moradores|contatos|vinculos-unidade|importacoes)/.test(caminho)) return null;
+  if (!/^\/v1\/condominio\/(unidades|blocos|moradores|contatos|vinculos-unidade|importacoes|estrutura)/.test(caminho)) return null;
   if (!pode("moradores.ver")) return erro(route, 403, "FORBIDDEN");
   const edita = pode("moradores.editar");
   const confirma = pode("moradores.confirmar");
@@ -77,7 +85,10 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
   const ativos = (unidadeId: string) => m.vinculos.filter((v) => v.unidadeId === unidadeId && v.estado !== "ENCERRADO");
   const contato = (id: string) => m.contatos.find((c) => c.id === id)!;
   const unidade = (id: string) => m.unidades.find((x) => x.id === id);
-  const nomeUnidade = (x: Unidade) => [m.blocos.find((b) => b.id === x.blocoId)?.nome, x.identificacao].filter(Boolean).join(" · ");
+  const nomeUnidade = (x: Unidade) => [m.blocos.find((b) => b.id === x.blocoId)?.nome, x.andar ? (/^\d+$/.test(x.andar) ? `${x.andar}º andar` : x.andar) : null,
+    x.identificacao].filter(Boolean).join(" · ");
+  const mesma = (x: Unidade, blocoId: unknown, andar: unknown, ident: string) =>
+    x.ativa && x.blocoId === (blocoId ?? null) && (x.andar ?? "").toLowerCase() === String(andar ?? "").toLowerCase() && x.identificacao.toLowerCase() === ident.toLowerCase();
   const compartilhado = (c: Contato) => m.contatos.some((o) => o.id !== c.id && o.telefone === c.telefone && m.vinculos.some((v) => v.contatoId === o.id && v.estado !== "ENCERRADO"));
   const ligar = (contatoId: string, unidadeId: string, relacao: string, principal: boolean, recebe: boolean, origem: "PAINEL" | "PLANILHA" = "PAINEL") => {
     if (principal) for (const v of ativos(unidadeId)) v.principal = false;
@@ -89,8 +100,10 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
 
   if (caminho === "/v1/condominio/unidades" && metodo === "GET") {
     const ordemBloco = (id: string | null) => (id ? m.blocos.find((b) => b.id === id)!.ordem : 0);
-    const lista = [...m.unidades].sort((a, b) => Number(b.ativa) - Number(a.ativa) || ordemBloco(a.blocoId) - ordemBloco(b.blocoId) || chave(a.identificacao).localeCompare(chave(b.identificacao)));
+    const lista = [...m.unidades].sort((a, b) => Number(b.ativa) - Number(a.ativa) || ordemBloco(a.blocoId) - ordemBloco(b.blocoId)
+      || chaveAndar(a.andar).localeCompare(chaveAndar(b.andar)) || chave(a.identificacao).localeCompare(chave(b.identificacao)));
     return route.fulfill({ json: {
+      estrutura: m.estrutura,
       blocos: m.blocos,
       unidades: lista.map((x) => ({ ...x,
         confirmados: ativos(x.id).filter((v) => v.estado === "CONFIRMADO").length,
@@ -123,7 +136,8 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     if (!un[2] && metodo === "PUT") {
       const c = conflito(x, corpo.versao); if (c) return c;
       if (x.ativa && corpo.ativa === false && ativos(x.id).length) return erro(route, 400, "VALIDATION_ERROR", { motivo: "UNIDADE_COM_CONTATOS" });
-      Object.assign(x, { identificacao: String(corpo.identificacao).trim(), blocoId: corpo.blocoId ?? null, ativa: corpo.ativa ?? x.ativa, versao: x.versao + 1 });
+      Object.assign(x, { identificacao: String(corpo.identificacao).trim(), blocoId: corpo.blocoId ?? null, andar: corpo.andar ?? null, ativa: corpo.ativa ?? x.ativa,
+        versao: x.versao + 1 });
       return route.fulfill({ json: { versao: x.versao } });
     }
     if (un[2] === "contatos") {
@@ -154,13 +168,18 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
       return route.fulfill({ json: { saem: saem.length, entram: entram.length } });
     }
   }
+  if (caminho === "/v1/condominio/estrutura") {
+    const c = conflito(m.estrutura, corpo.versao); if (c) return c;
+    if (corpo.agrupamento === "NENHUM" && m.blocos.some((b) => b.ativo)) return erro(route, 400, "VALIDATION_ERROR", { motivo: "ESTRUTURA_COM_BLOCOS" });
+    m.estrutura = { agrupamento: String(corpo.agrupamento), usaAndar: corpo.usaAndar === true, versao: m.estrutura.versao + 1 };
+    return route.fulfill({ json: { versao: m.estrutura.versao } });
+  }
   if (caminho === "/v1/condominio/unidades" && metodo === "POST") {
-    const existentes = new Set(m.unidades.filter((x) => x.ativa && x.blocoId === (corpo.blocoId ?? null)).map((x) => x.identificacao.toLowerCase()));
-    const lista = (corpo.identificacoes as string[]).map((s) => s.trim());
-    const ja = lista.filter((s) => existentes.has(s.toLowerCase()));
-    const novas = lista.filter((s) => !existentes.has(s.toLowerCase()));
-    for (const s of novas) m.unidades.push({ id: novoId(), blocoId: (corpo.blocoId as string) ?? null, identificacao: s, ativa: true, versao: 1 });
-    return route.fulfill({ status: 201, json: { criadas: novas.length, jaExistiam: ja } });
+    const lista = corpo.unidades as { identificacao: string; andar: string | null }[];
+    const ja = lista.filter((l) => m.unidades.some((x) => mesma(x, corpo.blocoId, l.andar, l.identificacao)));
+    const novas = lista.filter((l) => !ja.includes(l));
+    for (const l of novas) m.unidades.push({ id: novoId(), blocoId: (corpo.blocoId as string) ?? null, andar: l.andar ?? null, identificacao: l.identificacao, ativa: true, versao: 1 });
+    return route.fulfill({ status: 201, json: { criadas: novas.length, jaExistiam: ja.map((l) => l.identificacao) } });
   }
   const bl = /^\/v1\/condominio\/blocos(?:\/([^/]+))?$/.exec(caminho);
   if (bl) {
@@ -186,7 +205,7 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
       const c = contato(v.contatoId);
       const x = unidade(v.unidadeId)!;
       return { vinculoId: v.id, contatoId: c.id, nome: c.nome!, telefone: c.telefone!, unidadeId: x.id, unidade: x.identificacao,
-        bloco: m.blocos.find((b) => b.id === x.blocoId)?.nome ?? null, relacao: v.relacao, principal: v.principal, estado: v.estado, origem: v.origem, versao: v.versao };
+        andar: x.andar, bloco: m.blocos.find((b) => b.id === x.blocoId)?.nome ?? null, relacao: v.relacao, principal: v.principal, estado: v.estado, origem: v.origem, versao: v.versao };
     }).filter((i) => !busca || i.nome.toLowerCase().includes(busca) || i.unidade.toLowerCase().startsWith(busca) || (i.bloco ?? "").toLowerCase().includes(busca)
       || (busca.replace(/\D/g, "").length >= 4 && i.telefone.includes(busca.replace(/\D/g, ""))));
     return route.fulfill({ json: { itens, total: itens.length, pagina: 1, porPagina: 50, aConfirmar: resumoMoradores(m).aConfirmar, podeEditar: edita, podeConfirmar: confirma } });
@@ -231,19 +250,20 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     return route.fulfill({ json: { versao: v.versao } });
   }
   if (caminho === "/v1/condominio/importacoes") {
-    const linhas = corpo.linhas as { bloco: string | null; unidade: string; nome: string; telefone: string; relacao: string }[];
+    const linhas = corpo.linhas as { bloco: string | null; andar: string | null; unidade: string; nome: string; telefone: string; relacao: string }[];
     m.importacoes.push(linhas);
     const r = { linhas: linhas.length, blocos: 0, unidades: 0, contatos: 0, vinculos: 0, ignoradas: 0 };
     for (const l of linhas) {
       let b = l.bloco ? m.blocos.find((x) => x.ativo && x.nome.toLowerCase() === l.bloco!.toLowerCase()) : undefined;
       if (l.bloco && !b) { b = { id: novoId(), nome: l.bloco, ordem: m.blocos.length + 1, ativo: true, versao: 1 }; m.blocos.push(b); r.blocos++; }
-      let x = m.unidades.find((y) => y.ativa && y.blocoId === (b?.id ?? null) && y.identificacao.toLowerCase() === l.unidade.toLowerCase());
-      if (!x) { x = { id: novoId(), blocoId: b?.id ?? null, identificacao: l.unidade, ativa: true, versao: 1 }; m.unidades.push(x); r.unidades++; }
+      let x = m.unidades.find((y) => mesma(y, b?.id ?? null, l.andar, l.unidade));
+      if (!x) { x = { id: novoId(), blocoId: b?.id ?? null, andar: l.andar, identificacao: l.unidade, ativa: true, versao: 1 }; m.unidades.push(x); r.unidades++; }
       let c = m.contatos.find((y) => y.telefone === l.telefone && y.nome?.toLowerCase() === l.nome.toLowerCase());
       if (!c) { c = { id: novoId(), nome: l.nome, telefone: l.telefone, versao: 1 }; m.contatos.push(c); r.contatos++; }
       if (ativos(x.id).some((v) => v.contatoId === c!.id)) r.ignoradas++;
       else { ligar(c.id, x.id, l.relacao, false, true, "PLANILHA"); r.vinculos++; }
     }
+    if (linhas.some((l) => l.andar)) m.estrutura.usaAndar = true;
     return route.fulfill({ status: 201, json: r });
   }
   return erro(route, 404, "NOT_FOUND");

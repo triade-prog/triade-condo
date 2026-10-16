@@ -118,10 +118,13 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
 
 ## Moradores e unidades (passo 3)
 
-- **Blocos e unidades.**
-  - Blocos (torre, quadra) são opcionais. A identificação da unidade é livre ("101", "Casa 12") e única entre as ativas do bloco.
+- **Estrutura, blocos e unidades.**
+  - `configuracao_condominio.agrupamento` diz como chamar a divisão maior: `TORRE`, `BLOCO`, `QUADRA`, `PREDIO` ou `NENHUM`. `usa_andar` diz se as unidades ficam em andares. Muda por `plataforma_definir_estrutura`.
+  - A tabela `blocos` guarda as divisões, seja qual for o nome. A unidade tem `andar` opcional ("3", "Térreo", "Cobertura").
+  - A identificação da unidade é livre ("101", "Casa 12") e única entre as ativas do mesmo bloco e andar.
+  - `chave_andar` (banco) e `chaveAndar` (domínio) ordenam do subsolo à cobertura. `nome_da_unidade` e `nomeDaUnidade` montam "Torre A · 3º andar · 302".
   - Nada se apaga. Bloco e unidade só são desativados quando não têm nada ativo dentro.
-  - `chave_unidade` (banco) e `chaveUnidade` (domínio) dão a mesma ordem natural. `gerarUnidades` monta a numeração por andar.
+  - `chave_unidade` (banco) e `chaveUnidade` (domínio) dão a mesma ordem natural. `gerarUnidades` monta a numeração por andar e já põe cada unidade no andar dela.
 - **Contatos (MU-01, MU-08).**
   - O contato não tem login. O cadastro é breve: nome e telefone (`+55...`), sem CPF.
   - `contatos_unidade` liga o contato à unidade, com relação, principal (um por unidade) e preferência de comunicados. O mesmo contato pode estar em mais de uma unidade.

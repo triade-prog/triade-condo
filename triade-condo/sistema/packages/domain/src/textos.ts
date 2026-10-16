@@ -49,8 +49,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PADRAO_NECESSARIO: "Escolha o responsável padrão da fila.",
   PADRAO_INDISPONIVEL: "O responsável padrão precisa estar na lista e disponível.",
   RESPONSAVEL_INVALIDO: "Só o síndico ou uma pessoa autorizada, com acesso ativo, atende os pedidos.",
-  BLOCO_COM_UNIDADES: "Este bloco ainda tem unidades ativas. Desative-as ou mude-as de bloco antes.",
-  UNIDADE_REPETIDA: "Já existe uma unidade ativa com esta identificação neste bloco.",
+  BLOCO_COM_UNIDADES: "Ainda há unidades ativas aqui. Desative-as ou mude-as de lugar antes.",
+  UNIDADE_REPETIDA: "Já existe uma unidade ativa com esta identificação neste lugar (torre ou bloco e andar).",
   UNIDADE_COM_CONTATOS: "Esta unidade ainda tem contatos. Registre a mudança ou encerre os vínculos antes de desativar.",
   UNIDADE_INATIVA: "Esta unidade está desativada.",
   CONTATO_JA_NA_UNIDADE: "Este contato já está nesta unidade.",
@@ -60,6 +60,9 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   NAO_PENDENTE: "Este contato já não está a confirmar. Atualize a lista.",
   PENDENTE_SE_RECUSA: "Contato a confirmar não sai por mudança: confirme ou recuse.",
   MUDANCA_VAZIA: "Diga quem sai ou quem entra na unidade.",
+  ESTRUTURA_COM_BLOCOS: "Ainda há torres ou blocos ativos. Desative-os antes de tirar a divisão.",
+  ESTRUTURA_COM_ANDARES: "Ainda há unidades com andar. Tire o andar delas antes de deixar de usar andar.",
+  SEM_ANDAR: "Este condomínio não usa andar. Ligue o uso de andar em Como o prédio se organiza.",
   LINHA_INVALIDA: "Uma linha da planilha tem dado inválido. Corrija e envie de novo; nada foi gravado.",
 };
 

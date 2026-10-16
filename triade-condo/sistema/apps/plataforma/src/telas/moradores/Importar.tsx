@@ -67,7 +67,7 @@ export function Importar() {
     if (!leitura) return;
     setErro(null);
     setEnviando(true);
-    const r = await chamarApi<Resultado>("/v1/condominio/importacoes", { corpo: { linhas: leitura.linhas } });
+    const r = await chamarApi<Resultado>("/v1/condominio/importacoes", { corpo: { linhas: leitura.linhas, agrupamento: leitura.agrupamento } });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
     setResultado(r.dados);
@@ -91,8 +91,8 @@ export function Importar() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Importar planilha</h1>
         <p className="mt-1 text-tinta-suave">
-          A lista de moradores da administradora, salva como CSV no Excel ou no Google Planilhas. Colunas: bloco (opcional), unidade, nome, telefone e relação (opcional).
-          Os nomes mais comuns são reconhecidos: torre, apto, celular, tipo.
+          A lista de moradores e proprietários da administradora, salva como CSV no Excel ou no Google Planilhas. Colunas: torre ou bloco (opcional), andar
+          (opcional), unidade, nome, telefone e relação (opcional). Os nomes mais comuns são reconhecidos: torre, bloco, quadra, andar, pavimento, apto, celular, tipo.
         </p>
       </div>
       <Passos atual={passo} />
@@ -147,6 +147,7 @@ export function Importar() {
           <p className="text-sm text-tinta-suave">
             {leitura.erros.length ? `Corrija na planilha e escolha o arquivo de novo, ou importe só as ${leitura.linhas.length} prontas. ` : ""}
             O que já existe não se repete. Todo contato importado fica a confirmar: só vale depois que o síndico conferir.
+            {leitura.agrupamento || leitura.linhas.some((l) => l.andar) ? " Se o condomínio ainda não usa torre, bloco ou andar, passa a usar, como na planilha." : ""}
           </p>
           <div className="flex flex-wrap gap-2">
             <Botao variante="secundario" onClick={recomecar}>Escolher outro arquivo</Botao>
@@ -160,7 +161,7 @@ export function Importar() {
       {resultado ? (
         <div className="grid justify-items-start gap-3">
           <Aviso tom="ok">
-            Importados: {plural(resultado.blocos, "bloco novo", "blocos novos")}, {plural(resultado.unidades, "unidade nova", "unidades novas")},{" "}
+            Importados: {plural(resultado.blocos, "torre ou bloco novo", "torres ou blocos novos")}, {plural(resultado.unidades, "unidade nova", "unidades novas")},{" "}
             {plural(resultado.vinculos, "contato a confirmar", "contatos a confirmar")}.
             {resultado.ignoradas ? ` ${plural(resultado.ignoradas, "linha já existia e ficou como estava", "linhas já existiam e ficaram como estavam")}.` : ""}
           </Aviso>

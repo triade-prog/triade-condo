@@ -48,7 +48,7 @@ export function Unidade() {
 
   const d = carga.dados;
   const u = d.unidade;
-  const nome = nomeDaUnidade(u.bloco, u.identificacao);
+  const nome = nomeDaUnidade(u.bloco, u.andar, u.identificacao);
   const salvo = (r: Recado) => { fechar(); setRecado(r); setFalha(null); carga.recarregar(); atualizar(); };
   const compartilham = d.contatos.filter((c) => c.telefoneCompartilhado);
   const edita = d.podeEditar && u.ativa;
