@@ -132,7 +132,7 @@ A Plataforma ganhou a página onde o síndico convidado cria a senha. Os testes 
 - Pessoas autorizadas com permissões individuais. O cargo não dá permissão.
 - Quem atende os pedidos, com o responsável padrão da fila.
 
-A migration 0070 está sendo aplicada no `triade-condo-dev`.
+A migration 0070 ainda não está no `triade-condo-dev`. A aplicação pela ferramenta do Supabase passou do limite de 60 segundos e nada foi gravado; falta aplicá-la de outro jeito (por exemplo, `supabase db push`).
 
 Decisões deste passo:
 
