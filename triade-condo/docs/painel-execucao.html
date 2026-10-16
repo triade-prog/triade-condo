@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0 e 1 construídos; passo 2 com banco e API prontos e telas desenhadas para aprovação. Na Plataforma, o síndico terá painel só do próprio condomínio, horários e feriados, categorias, prioridades, etapas e modelos de resposta, prazos em horas de atendimento, pessoas autorizadas com permissões individuais e quem atende. Tudo testado localmente (banco, API e telas do passo 1 com axe); a migration 0060 está no triade-condo-dev; a 0070 ainda não (a aplicação pela ferramenta excedeu 60 s e nada foi gravado). Falta conferir login e convite com o Supabase Auth de verdade, publicar na Vercel (E4) e liberar o CI do GitHub (F0.9).",
+    "situacao": "Passos 0, 1 e 2 construídos. A Plataforma do síndico tem login, escolha do condomínio, início com o que falta configurar, configurações (horários e fuso, feriados, categorias e prioridades, etapas e modelos de resposta, prazos) e pessoas e acesso (pessoas autorizadas com permissões individuais e quem atende). Nenhuma tela usa emoji. Tudo testado localmente (banco, API e telas com axe). A migration 0060 está no triade-condo-dev; a 0070 ainda não (a aplicação pela ferramenta excedeu 60 s e nada foi gravado). Falta conferir login e convite com o Supabase Auth de verdade, publicar na Vercel (E4) e liberar o CI do GitHub (F0.9).",
     "fase_atual": "F2",
-    "proximo_passo": "Aplicar a migration 0070 no triade-condo-dev (supabase db push, ou de novo pela ferramenta). Carolina aprova (ou ajusta) as telas do passo 2 no design-frontend.html; então construir as telas da Plataforma. Em paralelo, no Supabase: ligar as configurações de login, ajustar os modelos de e-mail de recuperação e convite e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9)."
+    "proximo_passo": "Aplicar a migration 0070 no triade-condo-dev (supabase db push). No Supabase: ligar as configurações de login, ajustar os modelos de e-mail de recuperação e convite e cadastrar a primeira administração com iniciar_equipe (README); conferir login e convite de verdade (F0.6, F1.5). Criar os projetos na Vercel (E4) e liberar o GitHub Actions (F0.9). Depois, passo 3: moradores e unidades, começando pelo desenho das telas."
   },
   "fases": [
     {
@@ -76,7 +76,7 @@
           "peca": "B4",
           "refs": [],
           "status": "andamento",
-          "nota": "Telas do passo 1 e entrada no Console aprovadas pela Carolina em 16/10/2026 e construídas. Telas do passo 2 (Plataforma do síndico) desenhadas em 16/10/2026, aguardando aprovação."
+          "nota": "Telas dos passos 1 e 2 aprovadas pela Carolina em 16/10/2026 e construídas, sem emoji nem emoticon. As telas de cada passo seguinte também são desenhadas e aprovadas antes do código."
         }
       ]
     },
@@ -143,7 +143,7 @@
             "PT-08"
           ],
           "status": "andamento",
-          "nota": "Rotas e telas de login, autenticador, recuperação e redefinição prontas no Console (Playwright console-passo1.spec.ts) e testadas com um Auth falso. Falta conferir com o Supabase Auth de verdade no triade-condo-dev, depois de ligar as configurações de login no painel do Supabase. As telas de login da Plataforma entram no passo 2 (F2.1)."
+          "nota": "Rotas e telas de login, autenticador, recuperação e redefinição prontas no Console (Playwright console-passo1.spec.ts) e testadas com um Auth falso. Falta conferir com o Supabase Auth de verdade no triade-condo-dev, depois de ligar as configurações de login no painel do Supabase. As telas de login da Plataforma foram construídas no passo 2 (F2.1)."
         },
         {
           "id": "F0.7",
@@ -287,8 +287,9 @@
           "refs": [
             "V-08"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: painel só do próprio condomínio, com o que falta configurar e só as ações que a pessoa pode (plataforma_painel). Telas de entrar, escolher o condomínio e início desenhadas no design-frontend.html, aguardando aprovação. Evidência até aqui: pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Vitest plataforma.test.ts."
+          "status": "feito",
+          "nota": "Banco e API prontos: painel só do próprio condomínio, com o que falta configurar e só as ações que a pessoa pode (plataforma_painel). A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F2.2",
@@ -298,8 +299,9 @@
             "CF-06",
             "CF-10"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: funcionamento e atendimento com vários intervalos por dia, fuso pela UF (quatro do Brasil), feriados como data sem hora. Telas desenhadas, aguardando aprovação. Evidência até aqui: pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Vitest plataforma.test.ts."
+          "status": "feito",
+          "nota": "Banco e API prontos: funcionamento e atendimento com vários intervalos por dia, fuso pela UF (quatro do Brasil), feriados como data sem hora. A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F2.3",
@@ -312,8 +314,9 @@
             "AT-25",
             "CF-09"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: tudo nasce pelo modelo do cenário; renomear mantém o id, desativar em vez de apagar, etapa sempre ligada a aberto, em andamento ou encerrado, com pausa de prazo. Mover pedidos de etapa desativada chega com os pedidos (passo 4). Telas desenhadas, aguardando aprovação. Evidência até aqui: pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Vitest plataforma.test.ts."
+          "status": "feito",
+          "nota": "Banco e API prontos: tudo nasce pelo modelo do cenário; renomear mantém o id, desativar em vez de apagar, etapa sempre ligada a aberto, em andamento ou encerrado, com pausa de prazo. Mover pedidos de etapa desativada chega com os pedidos (passo 4). A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F2.4",
@@ -323,8 +326,9 @@
             "CF-03",
             "V-09"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: vínculo de pessoa autorizada com cargo só como rótulo e permissões individuais; só se dá permissão de recurso que já existe (hoje, Configurar). Telas desenhadas, aguardando aprovação. Evidência até aqui: pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Vitest plataforma.test.ts."
+          "status": "feito",
+          "nota": "Banco e API prontos: vínculo de pessoa autorizada com cargo só como rótulo e permissões individuais; só se dá permissão de recurso que já existe (hoje, Configurar). A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F2.5",
@@ -333,8 +337,9 @@
           "refs": [
             "CF-05"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: responsáveis com disponibilidade e responsável padrão da fila; revogar o padrão exige substituto ou pendência explícita. Pedidos em andamento de quem sai entram com os pedidos (passo 4). Telas desenhadas, aguardando aprovação. Evidência até aqui: pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Vitest plataforma.test.ts."
+          "status": "feito",
+          "nota": "Banco e API prontos: responsáveis com disponibilidade e responsável padrão da fila; revogar o padrão exige substituto ou pendência explícita. Pedidos em andamento de quem sai entram com os pedidos (passo 4). A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
           "id": "F2.6",
@@ -343,8 +348,9 @@
           "refs": [
             "AT-10"
           ],
-          "status": "andamento",
-          "nota": "Banco e API prontos: regra geral e exceções por categoria, prioridade ou as duas; vencimento conta só horas de atendimento, no fuso do condomínio, pulando feriados (vencimento_do_prazo). Pausa por etapa entra com os pedidos. Telas desenhadas, aguardando aprovação. Evidência até aqui: pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Vitest plataforma.test.ts."
+          "status": "feito",
+          "nota": "Banco e API prontos: regra geral e exceções por categoria, prioridade ou as duas; vencimento conta só horas de atendimento, no fuso do condomínio, pulando feriados (vencimento_do_prazo). Pausa por etapa entra com os pedidos. A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         }
       ]
     },
@@ -802,7 +808,7 @@
       ],
       "status": "feito",
       "evidencia": "pgTAP 005_vinculos_permissao_test.sql e api-plataforma/app_test.ts",
-      "nota": "Regra do banco pronta no passo 0; a tela de pessoas autorizadas vem no passo 2."
+      "nota": "Regra do banco pronta no passo 0; revogar pessoa autorizada pela tela de pessoas e acesso no passo 2."
     },
     {
       "id": "T6",
@@ -895,6 +901,18 @@
       ],
       "status": "feito",
       "evidencia": "pgTAP 008_configuracoes_test.sql (82 testes); Deno api-plataforma/configuracoes_test.ts (10 testes)"
+    },
+    {
+      "id": "T15",
+      "texto": "Telas da Plataforma do passo 2 no celular e no computador: fluxo, permissões que a tela respeita, acessibilidade (axe, WCAG 2.2 AA) e nenhum emoji",
+      "fase": "F2",
+      "refs": [
+        "PT-10",
+        "V-08",
+        "CF-03"
+      ],
+      "status": "feito",
+      "evidencia": "Playwright plataforma-passo2.spec.ts (9 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -1108,6 +1126,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "12:24",
+      "fim": "12:49",
+      "texto": "Com o desenho aprovado pela Carolina, construídas as telas do passo 2 na Plataforma do síndico: entrar, recuperar e criar senha, escolher e trocar o condomínio, início com o que falta configurar e o que veio pronto, configurações em abas (horários com vários intervalos e fuso, feriados com os nacionais em um toque, categorias e prioridades, etapas e modelos de resposta, prazos) e pessoas e acesso (autorizar, rever, revogar com substituto, quem atende). Nenhuma tela usa emoji nem emoticon: os selos ganharam formas em SVG, também no Console, e o teste ponta a ponta confere. Abas e aviso de conflito passaram para o packages/ui. 9 cenários Playwright com API falsa, no celular e no computador, com axe; 56 testes ponta a ponta passando.",
+      "ref": "V-08, V-09, CF-03, CF-04, CF-05, CF-06, CF-08, CF-09, CF-10, CF-12, AT-04, AT-05, AT-10, AT-25, PT-08, PT-10"
+    },
     {
       "data": "16/10/2026",
       "inicio": "02:37",

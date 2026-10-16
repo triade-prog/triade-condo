@@ -67,7 +67,7 @@ export function Entrar() {
         <h1 className="text-2xl font-semibold tracking-tight">Entrar no Console</h1>
         <ol className="mt-2 flex gap-2 text-xs text-tinta-suave" aria-label="Etapas">
           <li aria-current={etapa === "SENHA" ? "step" : undefined} className={etapa === "SENHA" ? "font-semibold text-selecao-tinta" : ""}>1 Senha</li>
-          <li aria-hidden="true">→</li>
+          <li aria-hidden="true">depois</li>
           <li aria-current={etapa !== "SENHA" ? "step" : undefined} className={etapa !== "SENHA" ? "font-semibold text-selecao-tinta" : ""}>2 Código do autenticador</li>
         </ol>
       </div>

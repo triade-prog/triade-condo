@@ -104,7 +104,7 @@ export function FichaCliente() {
 
   return (
     <div className="grid gap-5">
-      <p className="text-sm"><Link href="/" className="text-acao hover:underline">← Carteira de clientes</Link></p>
+      <p className="text-sm"><Link href="/" className="text-acao hover:underline">Voltar à carteira de clientes</Link></p>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{f.condominio.nome}</h1>

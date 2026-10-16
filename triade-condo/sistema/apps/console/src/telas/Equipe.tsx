@@ -112,7 +112,7 @@ export function Equipe() {
                   <td className="px-4 py-3">
                     <span className="flex flex-wrap gap-1">{m.funcoes.map((f) => <Selo key={f} tom="info">{FUNCOES_CONSOLE[f as FuncaoConsole] ?? f}</Selo>)}</span>
                   </td>
-                  <td className="px-4 py-3">{m.ativa ? <Selo tom="ok" simbolo="✓">Ativa</Selo> : <Selo tom="neutro" simbolo="–">Desativada</Selo>}</td>
+                  <td className="px-4 py-3">{m.ativa ? <Selo tom="ok" marca="ok">Ativa</Selo> : <Selo tom="neutro" marca="inativo">Desativada</Selo>}</td>
                   <td className="px-4 py-3 text-right">
                     {m.ativa ? (
                       <span className="inline-flex gap-1">

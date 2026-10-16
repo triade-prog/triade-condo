@@ -36,6 +36,19 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   FUNCAO_NAO_ATRIBUIDA: "Esta pessoa não tem esta função na equipe. Reveja as funções dela antes.",
   ULTIMA_ADMINISTRACAO: "Sempre precisa sobrar alguém com administração.",
   PROPRIA_CONTA: "Você não pode desativar a sua própria conta.",
+  FERIADO_REPETIDO: "Já existe um feriado nesta data.",
+  NOME_REPETIDO: "Já existe um item ativo com este nome.",
+  PRIORIDADE_ESSENCIAL: "Mantenha ao menos uma prioridade ativa.",
+  ETAPA_ESSENCIAL: "Mantenha ao menos uma etapa geral ativa de aberto e uma de encerrado.",
+  ETAPA_IDENTIDADE_FIXA: "A situação e a categoria de uma etapa não mudam. Para outra, crie uma etapa nova.",
+  PRAZO_REPETIDO: "Já existe um prazo para esta combinação. Mude as horas dele.",
+  PRAZO_GERAL: "A regra geral não sai. Mude as horas dela.",
+  JA_TEM_ACESSO: "Esta pessoa já tem acesso a este condomínio.",
+  SUBSTITUTO_NECESSARIO: "Esta pessoa é a responsável padrão da fila. Escolha quem assume ou deixe a pendência explícita.",
+  SUBSTITUTO_INVALIDO: "Quem assume precisa estar entre os responsáveis e disponível.",
+  PADRAO_NECESSARIO: "Escolha o responsável padrão da fila.",
+  PADRAO_INDISPONIVEL: "O responsável padrão precisa estar na lista e disponível.",
+  RESPONSAVEL_INVALIDO: "Só o síndico ou uma pessoa autorizada, com acesso ativo, atende os pedidos.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

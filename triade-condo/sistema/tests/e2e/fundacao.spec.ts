@@ -3,9 +3,9 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-// A primeira página que abre sem sessão: o início da Plataforma e o login do Console.
+// A primeira página que abre sem sessão: o login de cada app.
 const APPS = [
-  { nome: "Plataforma do síndico", base: "http://localhost:3000", url: "http://localhost:3000", titulo: "Plataforma do síndico" },
+  { nome: "Plataforma do síndico", base: "http://localhost:3000", url: "http://localhost:3000/entrar", titulo: "Entrar na Plataforma" },
   { nome: "Console TRÍADE", base: "http://localhost:3001", url: "http://localhost:3001/entrar", titulo: "Entrar no Console" },
 ];
 

@@ -140,14 +140,15 @@ Decisões deste passo:
 - Só se dá permissão de recurso que já existe.
 - Sem horário de atendimento, o prazo conta em horas corridas e o painel avisa.
 
-As nove telas foram desenhadas no `design-frontend.html` e esperam aprovação.
+As nove telas foram desenhadas no `design-frontend.html`, aprovadas pela Carolina e construídas na Plataforma no mesmo dia. Decisão de design: nenhuma tela usa emoji nem emoticon. Os selos mostram palavra e uma forma desenhada em SVG, e o teste ponta a ponta confere que não aparece emoji.
 
 **Próximo passo:**
 
-1. Aprovar as telas do passo 2 e construí-las na Plataforma.
+1. Aplicar a migration 0070 no `triade-condo-dev`.
 2. Conferir login e convite com o Supabase Auth de verdade (F0.6, F1.5).
 3. Publicar na Vercel (E4).
 4. Liberar o CI (F0.9).
+5. Começar o passo 3 (moradores e unidades) pelo desenho das telas.
 
 ## Como trabalhar
 

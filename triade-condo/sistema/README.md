@@ -110,7 +110,11 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
 - **Rotas.**
   - Todas ficam em `/v1/condominio/...` (painel, configuracoes, fuso, horarios, feriados, categorias, prioridades, etapas, modelos, prazos, pessoas, atendimento).
   - Pessoa e condomínio vêm sempre da sessão.
-- **Telas.** Estão desenhadas em `../docs/design-frontend.html` ("Telas do passo 2") e aguardam aprovação antes do código.
+- **Telas.** Seguem o desenho aprovado em `../docs/design-frontend.html` ("Telas do passo 2").
+  - Ficam em `apps/plataforma/src/telas`, e as rotas em `apps/plataforma/src/app`.
+  - Abas, aviso de conflito e selos com forma em SVG ficam em `packages/ui`.
+  - Nenhuma tela usa emoji nem emoticon; o teste ponta a ponta confere.
+  - Os testes ponta a ponta usam `tests/e2e/api-falsa-plataforma.ts`.
 
 ## Rodar
 

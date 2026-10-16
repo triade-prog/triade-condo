@@ -11,6 +11,9 @@ const PLATAFORMA = "http://localhost:3000";
 async function semErroDeAcessibilidade(page: Page) {
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(r.violations).toEqual([]);
+  // Sem emoji nem emoticon nas telas (decisão da Carolina, 16/10/2026).
+  const texto = await page.locator("body").innerText();
+  expect(texto.match(/\p{Extended_Pictographic}/gu) ?? []).toEqual([]);
 }
 
 test.describe("Console TRÍADE · passo 1", () => {

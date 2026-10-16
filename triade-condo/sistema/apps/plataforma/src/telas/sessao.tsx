@@ -1,0 +1,72 @@
+"use client";
+// Sessão da Plataforma: o condomínio escolhido, o que a pessoa pode fazer nele e o que falta
+// configurar. Sessão ausente leva para o login.
+
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { chamarApi, pedeLogin, textoDoErro, type ErroApi } from "@triade/ui";
+
+export interface Painel {
+  condominio: { id: string; nome: string; cidade: string | null; uf: string | null; cenario: string | null };
+  pessoa: { id: string; nome: string };
+  funcoes: string[];
+  acoes: string[];
+  pendencias: string[];
+}
+
+export interface CondominioDaPessoa {
+  id: string;
+  nome: string;
+  funcoes: string[];
+}
+
+export interface ContextoPlataforma {
+  painel: Painel;
+  condominios: CondominioDaPessoa[];
+  pode: (acao: string) => boolean;
+  /** Recarrega o painel (as pendências mudam depois de configurar). */
+  atualizar: () => void;
+}
+
+export const Contexto = createContext<ContextoPlataforma | null>(null);
+
+export function usePlataforma(): ContextoPlataforma {
+  const c = useContext(Contexto);
+  if (!c) throw new Error("usePlataforma fora do painel");
+  return c;
+}
+
+export type Carga<T> =
+  | { estado: "carregando" }
+  | { estado: "erro"; erro: ErroApi; texto: string }
+  | { estado: "pronto"; dados: T };
+
+/** Busca na API com vazio, erro e carregando; sessão vencida volta para o login. */
+export function useCarregar<T>(caminho: string | null): Carga<T> & { recarregar: () => void } {
+  const router = useRouter();
+  const [carga, setCarga] = useState<Carga<T>>({ estado: "carregando" });
+  const [vez, setVez] = useState(0);
+  const recarregar = useCallback(() => setVez((v) => v + 1), []);
+
+  useEffect(() => {
+    if (!caminho) return;
+    const controle = new AbortController();
+    chamarApi<T>(caminho, { sinal: controle.signal }).then((r) => {
+      if (controle.signal.aborted) return;
+      if (r.ok) return setCarga({ estado: "pronto", dados: r.dados });
+      if (pedeLogin(r.erro)) return router.replace("/entrar");
+      setCarga({ estado: "erro", erro: r.erro, texto: textoDoErro(r.erro) });
+    });
+    return () => controle.abort();
+  }, [caminho, vez, router]);
+
+  return { ...carga, recarregar };
+}
+
+/** Assinatura curta dos dados: muda quando qualquer coisa muda (remonta os formulários). */
+export function assinatura(dados: unknown): string {
+  const texto = JSON.stringify(dados);
+  let h = 5381;
+  for (let i = 0; i < texto.length; i++) h = ((h << 5) + h + texto.charCodeAt(i)) | 0;
+  return String(h >>> 0);
+}

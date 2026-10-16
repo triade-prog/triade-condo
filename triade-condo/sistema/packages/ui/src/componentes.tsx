@@ -96,11 +96,27 @@ const TOM: Record<Tom, string> = {
   neutro: "border-linha bg-superficie-2 text-tinta-suave",
 };
 
-/** Selo de status: símbolo e palavra, além da cor. */
-export function Selo({ tom = "info", simbolo, children }: { tom?: Tom; simbolo?: string; children: ReactNode }) {
+/** Formas desenhadas (SVG) que acompanham a palavra do selo. Nunca emoji nem caractere. */
+export type FormaSelo = "ok" | "andamento" | "atencao" | "inativo" | "interno" | "pausa";
+
+const MARCAS: Record<FormaSelo, ReactNode> = {
+  ok: <path d="M3 8.5 6.5 12 13 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />,
+  andamento: <><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M8 2.5A5.5 5.5 0 0 1 13.5 8H8Z" fill="currentColor" /></>,
+  atencao: <><path d="M8 2.5 14 13H2Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" /><path d="M8 6.5v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /><circle cx="8" cy="11.3" r=".9" fill="currentColor" /></>,
+  inativo: <path d="M4 8h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />,
+  interno: <path d="M8 2.5 13.5 8 8 13.5 2.5 8Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />,
+  pausa: <path d="M5.5 4v8M10.5 4v8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />,
+};
+
+export function IconeMarca({ marca, className = "h-3 w-3" }: { marca: FormaSelo; className?: string }) {
+  return <svg aria-hidden="true" viewBox="0 0 16 16" className={`shrink-0 ${className}`}>{MARCAS[marca]}</svg>;
+}
+
+/** Selo de status: palavra e forma, além da cor. */
+export function Selo({ tom = "info", marca, children }: { tom?: Tom; marca?: FormaSelo; children: ReactNode }) {
   return (
     <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-medium whitespace-nowrap ${TOM[tom]}`}>
-      {simbolo ? <span aria-hidden="true">{simbolo}</span> : null}
+      {marca ? <IconeMarca marca={marca} /> : null}
       {children}
     </span>
   );
@@ -151,9 +167,23 @@ export function Carregando({ linhas = 3, rotulo = "Carregando…" }: { linhas?: 
 /** Faixa que marca área interna: o cliente não vê (PI-06). */
 export function FaixaInterna({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-lg border border-dashed border-lilas bg-lilas-bruma px-3 py-2 text-xs font-medium text-selecao-tinta">
-      <span aria-hidden="true">◈ </span>
+    <p className="flex items-center gap-1.5 rounded-lg border border-dashed border-lilas bg-lilas-bruma px-3 py-2 text-xs font-medium text-selecao-tinta">
+      <IconeMarca marca="interno" />
       {children}
     </p>
+  );
+}
+
+/** Erro de uma ação. No conflito de versão (AT-24), o que a pessoa escreveu fica; ela decide quando carregar a nova. */
+export function AvisoErro({ erro, texto, recarregar }: { erro: { codigo: string }; texto: string; recarregar?: () => void }) {
+  return (
+    <Aviso tom="erro">
+      {texto}
+      {erro.codigo === "VERSION_CONFLICT" && recarregar ? (
+        <span className="mt-2 block">
+          <Botao variante="secundario" onClick={recarregar}>Carregar a versão nova</Botao>
+        </span>
+      ) : null}
+    </Aviso>
   );
 }

@@ -61,7 +61,7 @@ export function ListaHistorico({ caminho }: { caminho: string }) {
               <time dateTime={e.ocorridoEm}>{formatarDataHora(e.ocorridoEm)}</time>
               <span aria-hidden="true">·</span>
               <span>{e.autor ? e.autor.nome ?? "Pessoa sem nome" : "Sistema"}</span>
-              {e.interno ? <Selo tom="neutro" simbolo="◈">interno</Selo> : null}
+              {e.interno ? <Selo tom="neutro" marca="interno">interno</Selo> : null}
             </p>
             <p>{descreverEvento(e)}</p>
           </li>
