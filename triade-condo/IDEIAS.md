@@ -56,11 +56,10 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | W-14 | Fila durável de envio com novas tentativas limitadas; falha fica visível com responsável. Repetir só em falha passageira, com intervalo crescente; erro permanente vai direto para a lista de falhas; reenvio manual registra o motivo; falha de envio é separada de falha ao salvar a alteração | [A] |
 | W-15 | Eventos repetidos não duplicam pedido nem aviso (deduplicação). Eventos recebidos têm autenticidade verificada; repetições e eventos fora de ordem são tratados | [A] |
 | W-16 | Registro de preferências e de pedido para não receber avisos (opt-out) | [A] |
-| W-17 | Avisos segmentados por torre ou bloco (MeuVizy) | [BR] |
-| W-18 | Canal alternativo e conciliação quando o WhatsApp ou o provedor ficar fora do ar. Um responsável definido registra o incidente e a conciliação depois | [A] |
-| W-19 | Ligação telefônica ou voz como canal complementar (Latchel, Vendoroo, Condo Control). Também e-mail e SMS como canais complementares (Nextin, iSindi) | [A] [INT] |
-| W-20 | Respostas em vários idiomas para moradores estrangeiros (Fixflo: 40+ idiomas) | [INT] |
-| W-21 | Respeitar a janela de 24h e os modelos aprovados nas mensagens iniciadas pelo condomínio; a janela técnica não é prazo de atendimento | [A] |
+| W-17 | Canal alternativo e conciliação quando o WhatsApp ou o provedor ficar fora do ar. Um responsável definido registra o incidente e a conciliação depois | [A] |
+| W-18 | Ligação telefônica ou voz como canal complementar (Latchel, Vendoroo, Condo Control). Também e-mail e SMS como canais complementares (Nextin, iSindi) | [A] [INT] |
+| W-19 | Respostas em vários idiomas para moradores estrangeiros (Fixflo: 40+ idiomas) | [INT] |
+| W-20 | Respeitar a janela de 24h e os modelos aprovados nas mensagens iniciadas pelo condomínio; a janela técnica não é prazo de atendimento | [A] |
 
 ---
 
@@ -136,7 +135,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | ID | Ideia | Origem |
 |---|---|---|
 | CD-01 | Comunicado: rascunho → publicado → substituído/arquivado, com autor, data e versão | [A] |
-| CD-02 | Público autorizado: todo o condomínio, bloco, unidade ou contatos escolhidos (uCondo). Os destinatários são recalculados antes de cada envio; contato revogado não recebe nova versão | [A] [BR] |
+| CD-02 | Público autorizado: todo o condomínio, torre ou bloco, unidade ou contatos escolhidos (uCondo, MeuVizy). Os destinatários são recalculados antes de cada envio; contato revogado não recebe nova versão | [A] [BR] |
 | CD-03 | Morador recebe e consulta documentos vigentes (regimento, convenção, regras) pelo WhatsApp, em texto, resumo ou PDF | [A] |
 | CD-04 | Arquivos privados com acesso por permissão; nada em pasta pública. Links que expiram e podem ser revogados, enviados só aos destinatários necessários; depois do download a cópia não é controlável. Conteúdo que precisa de controle depois de compartilhado vai como resumo permitido, não como arquivo | [A] |
 | CD-05 | Comunicado ligado a um pedido (ex.: aviso de interrupção por manutenção) | [A] |
@@ -203,7 +202,6 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | MP-14 | Manual de uso e manutenção do prédio acessível | [INT] |
 | MP-15 | **Canal de defeitos construtivos com a construtora**, separado da manutenção do condomínio (i-Neighbour) | [INT] |
 | MP-16 | Plano de manutenção de longo prazo com previsão orçamentária (strata australiano) | [INT] |
-| MP-17 | Contratos com prestadores ligados às cotações (HabitaOne) | [BR] |
 
 ---
 
@@ -235,6 +233,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | OC-07 | Planilha comparativa exportável em PDF para o conselho (CoteiBem). Documento final com a proposta escolhida, as recusadas e a nota fiscal (Cotato) | [BR] |
 | OC-08 | Compra por itens: lista com quantidade e foto, preço por item, marca e frete; dividir itens entre fornecedores (Cota Todos) | [BR] |
 | OC-09 | Cotação com sugestão de fornecedores da rede, além da cotação direta (CoteiBem) | [BR] |
+| OC-10 | Contratos com prestadores ligados às cotações (HabitaOne) | [BR] |
 
 ---
 
@@ -336,7 +335,6 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | PI-17 | Suporte técnico da plataforma separado do atendimento operacional (do síndico ou da equipe contratada), cada um com responsáveis e cobertura. Suporte técnico não é reparo nem canal de emergência; o morador sabe com clareza quem responde, sem "empurra-empurra" entre sistema e administração (Condomob) | [A] |
 | PI-18 | Recuperação administrativa de emergência: suplente designado e códigos de recuperação guardados fora do painel, com uso registrado; cobre a perda do único administrador | [A] |
 | PI-19 | Ao liberar um conjunto, prévia do que o síndico daquele condomínio passará a ter | [A] |
-| PI-20 | Treinamento da equipe em privacidade e segurança: não expor carteira nem conversas, não compartilhar contas, tratar pedidos de titulares de dados | [A] |
 
 ---
 
@@ -396,6 +394,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | EM-05 | Mensagem: "Organize os pedidos do seu prédio: saiba quem vai agir, quando dar retorno e como cada problema foi concluído" | [A] |
 | EM-06 | Termos de uso e política de privacidade da plataforma, e contrato separado para serviços humanos, com responsabilidades, dados e limites, revisados por profissional. Termo de tratamento de dados: TRÍADE operadora dos dados do condomínio e controladora dos dados dos próprios clientes | [A] |
 | EM-07 | Oferta honesta: dizer o que já existe, o que é planejado e o que é serviço humano; não afirmar exclusividade de mercado nem vender pedido por WhatsApp como novidade exclusiva | [A] [BR] |
+| EM-08 | Treinamento da equipe em privacidade e segurança: não expor carteira nem conversas, não compartilhar contas, tratar pedidos de titulares de dados | [A] |
 
 ---
 
@@ -470,28 +469,28 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | Seção | Ideias |
 |---|---|
 | 1. Visão e pessoas | 17 |
-| 2. Canal WhatsApp | 21 |
+| 2. Canal WhatsApp | 20 |
 | 3. Atendimento | 33 |
 | 4. Inteligência artificial | 20 |
 | 5. Comunicados e documentos | 11 |
 | 6. Configuração e ficha | 12 |
 | 7. Moradores e unidades | 8 |
-| 8. Manutenção e prédio | 17 |
+| 8. Manutenção e prédio | 16 |
 | 9. Agenda | 8 |
-| 10. Orçamentos e compras | 9 |
+| 10. Orçamentos e compras | 10 |
 | 11. Financeiro do condomínio | 11 |
 | 12. Portaria, acesso, encomendas | 11 |
 | 13. Áreas comuns e vida em condomínio | 5 |
 | 14. Transparência e indicadores | 9 |
 | 15. Continuidade e troca de síndico | 4 |
-| 16. Painel interno TRÍADE | 20 |
+| 16. Painel interno TRÍADE | 19 |
 | 17. Serviços humanos | 11 |
 | 18. Negócio, planos e preço | 20 |
-| 19. Empresa e marca | 7 |
+| 19. Empresa e marca | 8 |
 | 20. Princípios técnicos | 18 |
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
-| **Total** | **297** |
+| **Total** | **296** |
 
 ---
 
@@ -577,4 +576,18 @@ Foram conferidos, só para checar ideias (sem telas, fases, MVP nem decisões pe
 **Regras acrescentadas em ideias existentes:** V-06; W-03, W-08, W-12, W-14, W-19; AT-02, AT-03, AT-06, AT-07, AT-10, AT-13, AT-14, AT-15, AT-23, AT-24; IA-08, IA-15; CD-02, CD-04; CF-03, CF-05, CF-07, CF-09, CF-10; MU-02; MP-02, MP-04, MP-05; AG-05, AG-06, AG-07; OC-01, OC-03, OC-04, OC-07; PA-01, PA-06, PA-08, PA-09; CT-01; PI-03, PI-04, PI-06, PI-07, PI-09, PI-10, PI-11, PI-15, PI-16, PI-17; SH-02, SH-04, SH-07, SH-08; NG-01, NG-05, NG-15; EM-06; PT-01, PT-02, PT-07, PT-08, PT-11, PT-12.
 
 Ficaram de fora valores que eram só propostas de decisão (ex.: tempo de expiração do token, número de tentativas, tamanho máximo de arquivo).
+
+---
+
+## Segunda revisão de classificação (16/10/2026)
+
+Conferência das seções depois das 22 ideias novas e dos complementos.
+
+| Antes | Agora | Motivo |
+|---|---|---|
+| W-17 | CD-02 | Avisos por torre ou bloco repetiam o público autorizado dos comunicados; juntados na CD-02 (referência MeuVizy mantida) |
+| MP-17 | OC-10 | Contratos com prestadores nascem das cotações; ficam com orçamentos e compras |
+| PI-20 | EM-08 | Treinamento da equipe é prática da empresa, não recurso do painel interno |
+
+Renumeração para manter a sequência sem buracos: W-18→W-17 (canal alternativo), W-19→W-18 (ligação, e-mail e SMS), W-20→W-19 (vários idiomas), W-21→W-20 (janela de 24h).
 
