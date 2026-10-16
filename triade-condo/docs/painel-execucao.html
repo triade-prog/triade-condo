@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "16/10/2026",
     "total_ideias": 296,
-    "situacao": "Ideias consolidadas (296 no IDEIAS.md, distribuídas em 35 peças no MAPA.md) e tecnologia aprovada: a mesma do T-shirt Club (TypeScript, Next.js, Supabase em São Paulo). Decisões de construção registradas (DC1 a DC10). Nenhum código ainda: o passo 0 (Fundação) está liberado.",
+    "situacao": "Passo 0 (Fundação) construído em triade-condo/sistema/: monorepo com os dois apps, banco com RLS forçado e separação por condomínio, histórico, guardião de transições, controle de versão, relógio da aplicação, vínculos e permissão, login e proteção do servidor. Testes T1 a T5 passando localmente; o CI no GitHub roda a partir deste envio. O login ainda não foi conferido com um Supabase de verdade (E3).",
     "fase_atual": "F0",
-    "proximo_passo": "Passo 0 em triade-condo/sistema/: estrutura do projeto, banco com RLS fechado e separação por condomínio, histórico, relógio da aplicação, login e vínculos, proteção do servidor e CI. Roda com Postgres local; o projeto Supabase de desenvolvimento (E3) só é preciso para publicar."
+    "proximo_passo": "Conferir o CI verde no GitHub e fechar F0.9. Com o projeto Supabase de desenvolvimento (E3), conferir o login de verdade (F0.6). Depois, passo 1: cadastrar condomínio no Console TRÍADE."
   },
   "fases": [
     {
@@ -91,7 +91,8 @@
           "refs": [
             "PT-05"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pnpm build dos dois apps e pnpm typecheck; triade-condo/sistema/README.md"
         },
         {
           "id": "F0.2",
@@ -101,7 +102,8 @@
             "PT-06",
             "PT-16"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 001_acesso_rls_test.sql (RLS forçado, privilégios fechados, tabela nova sem RLS é encontrada)"
         },
         {
           "id": "F0.3",
@@ -110,7 +112,8 @@
           "refs": [
             "PT-01"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 002_isolamento_condominios_test.sql e testes da api-plataforma (condomínio vem da sessão)"
         },
         {
           "id": "F0.4",
@@ -120,15 +123,16 @@
             "PT-03",
             "AT-24"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 003_historico_guardiao_test.sql e 004_versao_test.sql; concorrencia/edicao-simultanea.sh com duas conexões"
         },
         {
           "id": "F0.5",
           "texto": "Relógio da aplicação (app_now) para testar prazos sem esperar o tempo passar",
           "peca": "B2",
           "refs": [],
-          "status": "pendente",
-          "nota": "Base dos testes de próximo retorno e escalonamento (passo 6)"
+          "status": "feito",
+          "evidencia": "pgTAP 006_relogio_limites_dinheiro_test.sql"
         },
         {
           "id": "F0.6",
@@ -137,7 +141,8 @@
           "refs": [
             "PT-08"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Rotas de login, autenticador, saída de todas as sessões, recuperação e redefinição prontas e testadas com um Auth falso (api-console/app_test.ts, api-plataforma/app_test.ts). Falta conferir com o Supabase Auth de verdade quando existir o projeto (E3). As telas de login entram no passo 1."
         },
         {
           "id": "F0.7",
@@ -148,7 +153,8 @@
             "MU-04",
             "CF-04"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "pgTAP 005_vinculos_permissao_test.sql"
         },
         {
           "id": "F0.8",
@@ -157,7 +163,8 @@
           "refs": [
             "PT-13"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "Vitest cabecalhos.test.ts e repasse.test.ts; registro.test.ts e _shared/app_test.ts (logs limpos); Playwright fundacao.spec.ts"
         },
         {
           "id": "F0.9",
@@ -167,7 +174,8 @@
             "PT-18",
             "PT-14"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Workflow .github/workflows/ci.yml com lint, tipos, Vitest, Deno, pgTAP no PostgreSQL 17, Playwright com axe e gitleaks. Tudo passa localmente; falta a primeira execução verde no GitHub."
         },
         {
           "id": "F0.10",
@@ -176,7 +184,8 @@
           "refs": [
             "PT-09"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "Vitest dinheiro.test.ts; tipos centavos e moeda no banco (006)"
         }
       ]
     },
@@ -733,7 +742,8 @@
       "refs": [
         "PT-06"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "pgTAP 001_acesso_rls_test.sql"
     },
     {
       "id": "T2",
@@ -742,7 +752,9 @@
       "refs": [
         "PT-01"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "pgTAP 002_isolamento_condominios_test.sql (lista, leitura, busca, alteração, histórico, pessoas e vínculos)",
+      "nota": "Anexos entram com os arquivos privados (PT-07); o mesmo teste ganha o caso do anexo nessa hora."
     },
     {
       "id": "T3",
@@ -751,7 +763,8 @@
       "refs": [
         "PT-03"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "pgTAP 003_historico_guardiao_test.sql"
     },
     {
       "id": "T4",
@@ -760,7 +773,8 @@
       "refs": [
         "AT-24"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "pgTAP 004_versao_test.sql e concorrencia/edicao-simultanea.sh"
     },
     {
       "id": "T5",
@@ -769,7 +783,9 @@
       "refs": [
         "CF-04"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "pgTAP 005_vinculos_permissao_test.sql e api-plataforma/app_test.ts",
+      "nota": "Regra do banco pronta no passo 0; a tela de pessoas autorizadas vem no passo 2."
     },
     {
       "id": "T6",
@@ -1037,6 +1053,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "01:11",
+      "fim": "01:31",
+      "texto": "Passo 0 (Fundação) construído em triade-condo/sistema/: monorepo pnpm com a Plataforma do síndico e o Console TRÍADE; banco com RLS forçado, privilégios fechados e cada condomínio separado pelo contexto da sessão; histórico só de inserção, guardião de transições e controle de versão; relógio da aplicação; vínculos e permissão negando por padrão; login com autenticador obrigatório para a equipe e recuperação neutra; cabeçalhos de segurança, CSP com nonce, repasse /api e logs sem dados sensíveis; CI. Testes T1 a T5 passando localmente (110 pgTAP, 25 Deno, 34 Vitest, 16 Playwright com axe).",
+      "ref": "PT-01, PT-02, PT-03, PT-05, PT-06, PT-08, PT-09, PT-13, PT-14, PT-16, PT-18, AT-24, MU-04, CF-04"
+    },
     {
       "data": "16/10/2026",
       "inicio": "00:55",

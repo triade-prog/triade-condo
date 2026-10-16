@@ -1,6 +1,6 @@
 # Contexto do projeto — TRÍADE Condo
 
-Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com a base visual adotada e antes do primeiro código.
+Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atualizado em 16/10/2026 (horário de Brasília), com o passo 0 (Fundação) construído.
 
 ## Onde está cada coisa
 
@@ -16,7 +16,8 @@ Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atuali
 | Notas e prévias da base visual (valores extraídos da referência) | `triade-condo/docs/design/` |
 | Instruções para toda sessão do Claude | `CLAUDE.md` (raiz do repositório) |
 | Planejamento, protótipos e pesquisas antigos (só consulta) | `arquivo/` |
-| Código do sistema | `triade-condo/sistema/` (nasce no passo 0) |
+| Código do sistema (como rodar, como a base funciona, tabela nova passo a passo) | `triade-condo/sistema/` e o `README.md` dele |
+| CI (lint, tipos, testes, banco, ponta a ponta, segredos) | `.github/workflows/ci.yml` (raiz do repositório) |
 
 O `arquivo/` **não é base de construção**: o que for útil de lá entra primeiro no `IDEIAS.md`.
 
@@ -63,7 +64,7 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 |---|---|---|
 | Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta) | Carolina (em análise) | Passo 5 |
 | Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio | TRÍADE | Passo 5 |
-| Projeto Supabase de desenvolvimento e projetos na Vercel | TRÍADE | Publicar o passo 1 (o passo 0 roda com Postgres local) |
+| Projeto Supabase de desenvolvimento e projetos na Vercel | TRÍADE | Conferir o login de verdade (F0.6) e publicar o passo 1; o passo 0 roda com Postgres local |
 | Logo oficial (a paleta e a tipografia já estão definidas, DC11) e aprovação do tom das mensagens | TRÍADE | Nada no código; o símbolo triangular atual é provisório |
 | Dados da empresa para termos e privacidade (EM-01, EM-06) | TRÍADE | Publicação |
 | Domínio próprio | TRÍADE | Publicação |
@@ -85,7 +86,16 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 
 **16/10/2026.** A Carolina entregou a nova base visual. A paleta e a tipografia foram adotadas (DC11). O design do frontend e o painel de execução ganharam navegação lateral, busca e tema claro ou escuro, sem mudar os dados do painel.
 
-**Próximo passo:** passo 0 (Fundação) em `triade-condo/sistema/`. Ver as entregas F0 no painel.
+**16/10/2026, madrugada.** O passo 0 (Fundação) foi construído em `triade-condo/sistema/`.
+
+- Monorepo com a Plataforma do síndico e o Console TRÍADE.
+- Banco com RLS forçado, privilégios fechados e cada condomínio separado pelo contexto da sessão.
+- Histórico só de inserção, guardião de transições, controle de versão, relógio da aplicação, vínculos e permissão.
+- Login com autenticador obrigatório para a equipe e recuperação neutra; proteção do servidor; CI.
+- Testes T1 a T5 passando localmente.
+- Ainda abertos: a primeira execução verde do CI no GitHub (F0.9) e a conferência do login com um Supabase de verdade (F0.6, depende do E3).
+
+**Próximo passo:** fechar F0.9 com o CI verde e começar o passo 1 (cadastrar condomínio no Console TRÍADE). Ver as entregas F1 no painel.
 
 ## Como trabalhar
 

@@ -1,0 +1,82 @@
+/* Tema da TRÍADE Condo (DC11): paleta e tipografia da referência Lattice.
+   Neutros frios, destaque lilás, status em fundo suave com detalhe forte.
+   Verde-petróleo nas ações da Plataforma do síndico; violeta no Console TRÍADE.
+   Mesmos valores de docs/tema-triade.css; mudar lá e aqui juntos. */
+
+@theme {
+  --font-sans: Inter, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-papel: #ffffff;
+  --color-superficie: #ffffff;
+  --color-superficie-2: #eff2f8;
+  --color-tinta: #1b1f3a;
+  --color-tinta-suave: #495073;
+  --color-linha: #dbe2ee;
+  --color-lilas: #8576f3;
+  --color-lilas-bruma: #f1f0ff;
+  --color-foco: #196dca;
+
+  --color-plataforma: #007773;
+  --color-plataforma-press: #005e5b;
+  --color-plataforma-bruma: #e3f5f1;
+  --color-console: #6d44ef;
+  --color-console-press: #5530c0;
+  --color-console-bruma: #f1f0ff;
+
+  --color-ok: #165f59;
+  --color-ok-fundo: #e6faf3;
+  --color-ok-borda: #86e6d0;
+  --color-atencao: #8b440f;
+  --color-atencao-fundo: #fbf3c9;
+  --color-atencao-borda: #fcc44c;
+  --color-erro: #bd383f;
+  --color-erro-fundo: #ffeded;
+  --color-erro-borda: #febab6;
+  --color-info: #196dca;
+  --color-info-fundo: #e8f3ff;
+  --color-info-borda: #a9d2fe;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-papel: #141729;
+    --color-superficie: #1e2239;
+    --color-superficie-2: #292e49;
+    --color-tinta: #eceefa;
+    --color-tinta-suave: #afb7d0;
+    --color-linha: #373f5c;
+    --color-lilas-bruma: #393052;
+    --color-plataforma: #65d7bf;
+    --color-plataforma-press: #8de8d4;
+    --color-plataforma-bruma: #203e3c;
+    --color-console: #bca2ff;
+    --color-console-press: #d2beff;
+    --color-console-bruma: #393052;
+    --color-ok: #7ed5a2;
+    --color-ok-fundo: #203c31;
+    --color-atencao: #f1c37b;
+    --color-atencao-fundo: #483921;
+    --color-erro: #ffabb1;
+    --color-erro-fundo: #492c38;
+    --color-info: #a5caff;
+    --color-info-fundo: #263a56;
+  }
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--color-papel);
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-foco);
+  outline-offset: 2px;
+}

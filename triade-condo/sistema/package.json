@@ -1,0 +1,32 @@
+{
+  "name": "triade-condo-sistema",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:plataforma": "pnpm --filter @triade/plataforma dev",
+    "dev:console": "pnpm --filter @triade/console dev",
+    "build": "pnpm -r --filter \"./apps/*\" build",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:db": "bash scripts/test-db.sh",
+    "test:deno": "bash scripts/test-deno.sh",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "1.64.1",
+    "@types/node": "^26.6.2",
+    "deno": "^2.9.6",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^5.0.2"
+  }
+}
