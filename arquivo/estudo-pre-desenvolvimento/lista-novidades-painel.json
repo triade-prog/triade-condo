@@ -1,0 +1,451 @@
+{
+  "version": 1,
+  "updates": {},
+  "custom": [
+    {
+      "id": "LOCAL-901",
+      "phase": "1",
+      "front": "Produto",
+      "kind": "Decisão",
+      "priority": "P1",
+      "title": "[Internacional] NOV-01 Cadeia de escalonamento do retorno vencido",
+      "criteria": "Definir níveis (responsável → síndico → substituto/conselho da ficha), intervalos e se vale fora do horário. Candidato ao MVP; resgata SERV-04 (prazos por categoria).",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-902",
+      "phase": "1",
+      "front": "Produto",
+      "kind": "Decisão",
+      "priority": "P1",
+      "title": "[Internacional] NOV-02 Pergunta de satisfação ao concluir",
+      "criteria": "Definir texto (Resolveu? 1 a 5), se é opcional por condomínio e o custo de mensagem. Nota baixa só sugere reabertura (R4). Candidato ao MVP.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-903",
+      "phase": "1",
+      "front": "Implantação",
+      "kind": "Decisão",
+      "priority": "P1",
+      "title": "[Internacional] NOV-03 Etiquetas QR por local (wa.me com local pré-escrito)",
+      "criteria": "Decidir se entra no serviço de implantação, quem produz e cola. Não confundir com o QR de chegada de visitante (futuro). Candidato ao MVP.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-904",
+      "phase": "1",
+      "front": "Produto",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-04 Relatório mensal de prestação de contas para assembleia",
+      "criteria": "Escolher indicadores do primeiro relatório e quem publica. Resgata MET-01/MET-02. Primeira evolução após o MVP.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-905",
+      "phase": "1",
+      "front": "Produto",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-05 Dossiê de transição de síndico",
+      "criteria": "Definir conteúdo (pendências, prestadores, contratos, documentos, histórico) e se é produto, serviço ou ambos. Amplia o critério 9 da especificação.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-906",
+      "phase": "1",
+      "front": "Produto",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-06 Autoajuda e responsabilidade unidade × condomínio no WhatsApp",
+      "criteria": "Definir tipos iniciais de problema e fluxo (menu ou WhatsApp Flows). Texto sempre aprovado pelo condomínio.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-907",
+      "phase": "1",
+      "front": "Implantação",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-07 Pacote de conteúdo de autoajuda na implantação",
+      "criteria": "Decidir se está incluso na implantação ou é cobrado à parte.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-908",
+      "phase": "1",
+      "front": "Produto",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-08 Rascunho de resposta por IA com aprovação humana",
+      "criteria": "Decisão obrigatória: revisar a regra 'não é autorização para IA'. Proposta: só assistente de redação, nunca envio automático. Definir provedor, custo e dados enviados (LGPD).",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-909",
+      "phase": "1",
+      "front": "Produto",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-09 Respostas automáticas só com documento aprovado, citando versão",
+      "criteria": "Depende de MVP-10 e da decisão de NOV-08. Sem resposta segura, o caso vai à fila com próximo retorno.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-910",
+      "phase": "1",
+      "front": "Produto",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-10 Prontuário digital do prédio (seguros, garantias, laudos, NBR 5674)",
+      "criteria": "Definir escopo mínimo e obter parecer sobre a NBR 5674 antes de usar como argumento. Base do conjunto de coordenação de manutenção.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-911",
+      "phase": "1",
+      "front": "Produto",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-11 Check-in e check-out do prestador por QR",
+      "criteria": "Futuro, com coordenação de manutenção. Sem conta do prestador e sem checklist obrigatório. Resgata VIS-01/EVI-01.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-912",
+      "phase": "1",
+      "front": "Produto",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-12 Canal de defeitos construtivos com a construtora",
+      "criteria": "Avaliar interesse no nicho de prédios novos no DF; verificação jurídica de prazos de garantia.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-913",
+      "phase": "1",
+      "front": "Operação interna",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-13 Ferramenta interna de rascunho de ata e resumo",
+      "criteria": "Depende da decisão sobre IA (NOV-08). Ata só de reunião real, revisada pelo condomínio.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-914",
+      "phase": "1",
+      "front": "Serviço humano",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-14 Plantão fora do horário (triagem emergência × pode esperar)",
+      "criteria": "Definir horários, capacidade e preço como forma do atendimento humano TRÍADE contratado. Sem prometer socorro; resgata SERV-03.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-915",
+      "phase": "1",
+      "front": "Serviço humano",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-15 Rede de especialistas sob demanda (contador, advogado, engenheiro)",
+      "criteria": "Definir especialidades, modelo (parceria × equipe), responsabilidade e preço.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-916",
+      "phase": "1",
+      "front": "Comercial",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-16 Canal de venda via construtoras e incorporadoras",
+      "criteria": "Definir abordagem e quem paga a implantação; avaliar após os primeiros clientes.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    },
+    {
+      "id": "LOCAL-917",
+      "phase": "1",
+      "front": "Comercial",
+      "kind": "Decisão",
+      "priority": "P2",
+      "title": "[Internacional] NOV-17 Índice público de atendimento condominial no DF",
+      "criteria": "Só com volume, dados agregados e anônimos e cláusula contratual; revisão LGPD.",
+      "deps": [
+        "PLAN-01"
+      ],
+      "scope": "A classificar",
+      "status": "A fazer",
+      "owner": "",
+      "notes": "Proposta vinda das referências internacionais (estudo-pre-desenvolvimento/confronto-ideias-internacionais-2026-10-15.md). Carolina decide: incluir, adiar ou descartar. Se aprovada, atualizar a especificação antes de qualquer código.",
+      "evidence": "",
+      "updatedAt": "2026-10-15T12:00:00Z"
+    }
+  ],
+  "history": [
+    {
+      "id": "LOCAL-901",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-01 Cadeia de escalonamento do retorno vencido"
+      }
+    },
+    {
+      "id": "LOCAL-902",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-02 Pergunta de satisfação ao concluir"
+      }
+    },
+    {
+      "id": "LOCAL-903",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-03 Etiquetas QR por local (wa.me com local pré-escrito)"
+      }
+    },
+    {
+      "id": "LOCAL-904",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-04 Relatório mensal de prestação de contas para assembleia"
+      }
+    },
+    {
+      "id": "LOCAL-905",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-05 Dossiê de transição de síndico"
+      }
+    },
+    {
+      "id": "LOCAL-906",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-06 Autoajuda e responsabilidade unidade × condomínio no WhatsApp"
+      }
+    },
+    {
+      "id": "LOCAL-907",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-07 Pacote de conteúdo de autoajuda na implantação"
+      }
+    },
+    {
+      "id": "LOCAL-908",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-08 Rascunho de resposta por IA com aprovação humana"
+      }
+    },
+    {
+      "id": "LOCAL-909",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-09 Respostas automáticas só com documento aprovado, citando versão"
+      }
+    },
+    {
+      "id": "LOCAL-910",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-10 Prontuário digital do prédio (seguros, garantias, laudos, NBR 5674)"
+      }
+    },
+    {
+      "id": "LOCAL-911",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-11 Check-in e check-out do prestador por QR"
+      }
+    },
+    {
+      "id": "LOCAL-912",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-12 Canal de defeitos construtivos com a construtora"
+      }
+    },
+    {
+      "id": "LOCAL-913",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-13 Ferramenta interna de rascunho de ata e resumo"
+      }
+    },
+    {
+      "id": "LOCAL-914",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-14 Plantão fora do horário (triagem emergência × pode esperar)"
+      }
+    },
+    {
+      "id": "LOCAL-915",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-15 Rede de especialistas sob demanda (contador, advogado, engenheiro)"
+      }
+    },
+    {
+      "id": "LOCAL-916",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-16 Canal de venda via construtoras e incorporadoras"
+      }
+    },
+    {
+      "id": "LOCAL-917",
+      "at": "2026-10-15T12:00:00Z",
+      "type": "Tarefa adicional criada a partir do confronto com referências internacionais",
+      "patch": {
+        "title": "[Internacional] NOV-17 Índice público de atendimento condominial no DF"
+      }
+    }
+  ],
+  "sessions": []
+}

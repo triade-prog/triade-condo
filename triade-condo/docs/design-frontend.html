@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Base visual | TRÍADE Condo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700;750&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* ==========================================================================
+   TOKENS · proposta 1 (aguardando aprovação, D1 e D2 do painel de execução)
+   Uma família para os dois sistemas: mesma tipografia, mesmos componentes.
+   A Plataforma do síndico usa o verde-petróleo; o Console TRÍADE usa o índigo,
+   para a equipe nunca confundir a própria tela com a do cliente (PI-06).
+   Claro e escuro nos dois sistemas. Status nunca depende só da cor (PT-10).
+   ========================================================================== */
+:root{
+  color-scheme:light;
+  --papel:#F4F6F7; --superficie:#FFFFFF; --superficie-2:#EBEFF1; --tinta:#16212B; --tinta-suave:#55636F; --linha:#D3DBE0;
+  --plataforma:#0B7360; --plataforma-press:#085A4B; --plataforma-bruma:#DCF0EA; --sobre-plataforma:#FFFFFF;
+  --console:#4338CA; --console-press:#3730A3; --console-bruma:#E5E4FA; --sobre-console:#FFFFFF;
+  --ok:#1D6B42; --ok-fundo:#E1F2E8;
+  --atencao:#8A5208; --atencao-fundo:#FBEFDC;
+  --vencido:#A52A27; --vencido-fundo:#FBE4E3;
+  --info:#2C5D9E; --info-fundo:#E3ECF8;
+  --espera:#6B4FA0; --espera-fundo:#EEE8F7;
+  --neutro:#55636F; --neutro-fundo:#EBEFF1;
+  --whats:#E7F6E1; --whats-tinta:#16212B;
+  --foco:#2563EB;
+  --display:"Inter","Segoe UI",system-ui,sans-serif;
+  --texto:"Inter","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r-campo:8px; --r-cartao:12px; --r-chip:999px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --papel:#0E141A; --superficie:#161F28; --superficie-2:#1D2731; --tinta:#E5EBF1; --tinta-suave:#9AA8B5; --linha:#2B3743;
+  --plataforma:#3CC4A3; --plataforma-press:#5ED3B6; --plataforma-bruma:#12332C; --sobre-plataforma:#0E141A;
+  --console:#9B97F7; --console-press:#B5B2FA; --console-bruma:#25234B; --sobre-console:#0E141A;
+  --ok:#5CC58C; --ok-fundo:#12291D; --atencao:#E0A04A; --atencao-fundo:#33260F;
+  --vencido:#EF7773; --vencido-fundo:#3A1A19; --info:#79A7E6; --info-fundo:#16263B;
+  --espera:#B9A2E8; --espera-fundo:#271F3A; --neutro:#9AA8B5; --neutro-fundo:#1F2730;
+  --whats:#163323; --whats-tinta:#E5EBF1; --foco:#7AA7FF;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --papel:#0E141A; --superficie:#161F28; --superficie-2:#1D2731; --tinta:#E5EBF1; --tinta-suave:#9AA8B5; --linha:#2B3743;
+  --plataforma:#3CC4A3; --plataforma-press:#5ED3B6; --plataforma-bruma:#12332C; --sobre-plataforma:#0E141A;
+  --console:#9B97F7; --console-press:#B5B2FA; --console-bruma:#25234B; --sobre-console:#0E141A;
+  --ok:#5CC58C; --ok-fundo:#12291D; --atencao:#E0A04A; --atencao-fundo:#33260F;
+  --vencido:#EF7773; --vencido-fundo:#3A1A19; --info:#79A7E6; --info-fundo:#16263B;
+  --espera:#B9A2E8; --espera-fundo:#271F3A; --neutro:#9AA8B5; --neutro-fundo:#1F2730;
+  --whats:#163323; --whats-tinta:#E5EBF1; --foco:#7AA7FF;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--texto);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 72px}
+.pagina{max-width:1120px;margin:0 auto;display:grid;gap:8px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(30px,4.5vw,44px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:26px;font-weight:700}
+h3{font-size:18px;font-weight:600}
+p{margin:0;max-width:68ch}
+a{color:var(--plataforma)}
+:focus-visible{outline:2px solid var(--foco);outline-offset:2px}
+.mono{font-family:var(--mono);font-size:.9em}
+.olho{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--plataforma);margin:0}
+.suave{color:var(--tinta-suave)}
+header.topo{padding-block:44px 28px;border-bottom:1px solid var(--linha);display:grid;gap:12px}
+.lede{font-size:18px;color:var(--tinta-suave)}
+section{padding-block:40px 12px;border-bottom:1px solid var(--linha);display:grid;gap:18px}
+section:last-of-type{border-bottom:0}
+.grade{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.cartao{background:var(--superficie);border:1px solid var(--linha);border-radius:var(--r-cartao);padding:16px 18px;display:grid;gap:8px;align-content:start;min-width:0}
+.cartao p{font-size:15px}
+.ref{font-family:var(--mono);font-size:12px;background:var(--superficie-2);border-radius:4px;padding:0 5px;color:var(--tinta-suave);white-space:nowrap}
+.tbl{overflow-x:auto;border:1px solid var(--linha);border-radius:10px;background:var(--superficie)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--linha)}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--tinta-suave);background:var(--superficie-2);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+
+/* sistemas */
+.sistemas{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.sist{border-radius:var(--r-cartao);padding:18px;display:grid;gap:8px;border:1px solid var(--linha);background:var(--superficie)}
+.sist .barra{height:6px;border-radius:3px}
+.sist.plataforma .barra{background:var(--plataforma)} .sist.console .barra{background:var(--console)}
+.sist.plataforma h3{color:var(--plataforma)} .sist.console h3{color:var(--console)}
+.sist ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:15px}
+
+/* amostras de cor */
+.cores{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.cor{border:1px solid var(--linha);border-radius:10px;overflow:hidden;background:var(--superficie);font-size:13px}
+.cor i{display:block;height:54px}
+.cor div{padding:8px 10px;display:grid}
+.cor code{font-family:var(--mono);font-size:11.5px;color:var(--tinta-suave)}
+
+/* tipografia */
+.tipos{display:grid;gap:12px}
+.tipo{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:12px;align-items:baseline;border-bottom:1px dashed var(--linha);padding-bottom:10px}
+.tipo:last-child{border-bottom:0}
+.tipo span:first-child{font-size:13px;color:var(--tinta-suave)}
+@media (max-width:520px){.tipo{grid-template-columns:1fr}}
+
+/* componentes */
+.linha-comp{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font:inherit;font-weight:600;font-size:15px;border-radius:var(--r-campo);padding:10px 16px;min-height:44px;border:1px solid transparent;cursor:pointer}
+.btn.primario{background:var(--plataforma);color:var(--sobre-plataforma)}
+.btn.primario:hover{background:var(--plataforma-press)}
+.btn.console{background:var(--console);color:var(--sobre-console)}
+.btn.console:hover{background:var(--console-press)}
+.btn.secundario{background:var(--superficie);color:var(--tinta);border-color:var(--linha)}
+.btn.perigo{background:var(--superficie);color:var(--vencido);border-color:var(--vencido)}
+.campo{display:grid;gap:6px;max-width:360px}
+.campo label{font-weight:600;font-size:14px}
+.campo input{font:inherit;color:var(--tinta);background:var(--superficie);border:1px solid var(--tinta-suave);border-radius:var(--r-campo);padding:10px 12px;min-height:44px}
+.campo.erro input{border-color:var(--vencido);border-width:2px}
+.campo .ajuda{font-size:13.5px;color:var(--tinta-suave)}
+.campo.erro .ajuda{color:var(--vencido)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;border-radius:var(--r-chip);padding:3px 10px;white-space:nowrap}
+.chip b{font-size:12px;line-height:1}
+.s-novo{background:var(--info-fundo);color:var(--info)}
+.s-analise{background:var(--info-fundo);color:var(--info)}
+.s-andamento{background:var(--atencao-fundo);color:var(--atencao)}
+.s-aguardando{background:var(--espera-fundo);color:var(--espera)}
+.s-concluido{background:var(--ok-fundo);color:var(--ok)}
+.s-reaberto{background:var(--atencao-fundo);color:var(--atencao);outline:1px dashed var(--atencao);outline-offset:-1px}
+.s-cancelado{background:var(--neutro-fundo);color:var(--neutro);text-decoration:line-through}
+.prazo{display:inline-flex;align-items:center;gap:8px;font-size:14px;border-radius:8px;padding:6px 10px;border:1px solid var(--linha);background:var(--superficie)}
+.prazo b{font-weight:700}
+.prazo.no-prazo{border-color:var(--ok);color:var(--ok)}
+.prazo.hoje{border-color:var(--atencao);color:var(--atencao)}
+.prazo.vencido{border-color:var(--vencido);color:var(--vencido);background:repeating-linear-gradient(135deg,var(--vencido-fundo) 0 6px,var(--superficie) 6px 12px)}
+.prazo.sem{color:var(--tinta-suave);border-style:dashed}
+.prazo span{color:var(--tinta)}
+.msg-st{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--tinta-suave)}
+.msg-st.falhou{color:var(--vencido);font-weight:600}
+
+.pedido{background:var(--superficie);border:1px solid var(--linha);border-left:4px solid var(--plataforma);border-radius:var(--r-cartao);padding:14px 16px;display:grid;gap:10px;max-width:560px}
+.pedido .cab{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.pedido .proto{font-family:var(--mono);font-size:13px;color:var(--tinta-suave)}
+.pedido h4{margin:0;font-family:var(--display);font-size:18px;font-weight:600}
+.pedido dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14.5px}
+.pedido dt{color:var(--tinta-suave)}
+.pedido dd{margin:0}
+
+.historico{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid var(--linha);display:grid;gap:12px;max-width:560px}
+.historico li{position:relative;font-size:14.5px;display:grid;gap:2px}
+.historico li::before{content:"";position:absolute;left:-21px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--superficie);border:2px solid var(--plataforma)}
+.historico time{font-family:var(--mono);font-size:12.5px;color:var(--tinta-suave)}
+.historico .antes{color:var(--tinta-suave);text-decoration:line-through}
+
+.estados{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.estado{border:1px dashed var(--linha);border-radius:var(--r-cartao);padding:18px;display:grid;gap:8px;justify-items:start;background:var(--superficie)}
+.estado.erro{border:1px solid var(--vencido);background:var(--vencido-fundo)}
+.esqueleto{height:12px;border-radius:6px;background:var(--superficie-2);width:100%}
+.esqueleto.curto{width:60%}
+
+.faixa-console{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--console);color:var(--sobre-console);border-radius:10px;padding:10px 14px;font-weight:600;font-size:14px}
+.faixa-console span{font-weight:400;opacity:.9}
+
+/* WhatsApp */
+.conversas{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.conversa{background:var(--superficie-2);border-radius:var(--r-cartao);padding:14px;display:grid;gap:8px;align-content:start}
+.conversa h3{font-size:15px}
+.bolha{background:var(--whats);color:var(--whats-tinta);border-radius:10px 10px 10px 2px;padding:10px 12px;font-size:14.5px;max-width:100%;white-space:pre-line;box-shadow:0 1px 0 var(--linha)}
+.bolha .ideia{display:block;margin-top:6px}
+.nota-regra{font-size:13px;color:var(--tinta-suave)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>
+
+/* Base visual TRÍADE Condo — referência de composição: Lattice */
+:root,:root[data-theme="light"]{
+ color-scheme:light;--bg:#f8f9fd;--papel:#f8f9fd;--surface:#fff;--superficie:#fff;--surface-2:#f1f3fa;--superficie-2:#f1f3fa;
+ --ink:#24273f;--tinta:#24273f;--muted:#646d8b;--tinta-suave:#646d8b;--line:#dfe4f1;--linha:#dfe4f1;
+ --accent:#6942dc;--accent-soft:#eee8ff;--plataforma:#007773;--plataforma-press:#005e5b;--plataforma-bruma:#e3f5f1;--sobre-plataforma:#fff;
+ --console:#6942dc;--console-press:#5530c0;--console-bruma:#eee8ff;--sobre-console:#fff;--hero:linear-gradient(115deg,#e1ddff,#efe2fa);--shadow:0 2px 4px #29315b08;
+ --display:Inter,"Segoe UI",sans-serif;--texto:Inter,"Segoe UI",sans-serif;--sans:Inter,"Segoe UI",sans-serif;--r-cartao:14px;--r-campo:8px;
+ --s-pend:#646d8b;--s-pend-bg:#f0f2f8;--s-and:#8a5208;--s-and-bg:#fff3d7;--s-feito:#16704c;--s-feito-bg:#e5f6ed;--s-bloq:#ad353f;--s-bloq-bg:#ffebee;--track:#e8eaf4;
+ --ok:#16704c;--ok-fundo:#e5f6ed;--atencao:#8a5208;--atencao-fundo:#fff3d7;--vencido:#ad353f;--vencido-fundo:#ffebee;--info:#245fa5;--info-fundo:#eaf2ff;--espera:#7653a4;--espera-fundo:#f0eafa;--neutro:#646d8b;--neutro-fundo:#f0f2f8;--whats:#e7f6e8;--whats-tinta:#24273f;
+}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#141729;--papel:#141729;--surface:#1e2239;--superficie:#1e2239;--surface-2:#292e49;--superficie-2:#292e49;--ink:#eceefa;--tinta:#eceefa;--muted:#afb7d0;--tinta-suave:#afb7d0;--line:#373f5c;--linha:#373f5c;--accent:#c0aaff;--accent-soft:#393052;--console:#bca2ff;--console-press:#d2beff;--console-bruma:#393052;--sobre-console:#17192c;--plataforma:#65d7bf;--plataforma-press:#8de8d4;--plataforma-bruma:#203e3c;--sobre-plataforma:#141729;--hero:linear-gradient(115deg,#342d58,#3a2d46);--s-pend:#afb7d0;--s-pend-bg:#292e49;--s-and:#f1c37b;--s-and-bg:#483921;--s-feito:#7ed5a2;--s-feito-bg:#203c31;--s-bloq:#ffabb1;--s-bloq-bg:#492c38;--track:#353c59;--ok:#7ed5a2;--ok-fundo:#203c31;--atencao:#f1c37b;--atencao-fundo:#483921;--vencido:#ffabb1;--vencido-fundo:#492c38;--info:#a5caff;--info-fundo:#263a56;--espera:#d1b4f5;--espera-fundo:#393052;--neutro:#afb7d0;--neutro-fundo:#292e49;--whats:#203c31;--whats-tinta:#eceefa}
+html{scroll-padding-top:98px;scroll-behavior:smooth}body{padding:96px 36px 64px 276px;font-family:var(--sans);font-size:14px;line-height:1.6;background:var(--bg);color:var(--ink)}
+[hidden]{display:none!important}button,input,select{font:inherit}button,a,input,select{outline-offset:4px}a{color:var(--accent)}
+.workspace-bar{position:fixed;inset:0 0 auto;height:72px;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:24px;padding:0 24px;z-index:30}
+.brand{width:218px;flex-shrink:0;display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-size:19px;letter-spacing:-.7px;font-weight:750}.brand small{font-size:11px;letter-spacing:2px;font-weight:500;display:block;line-height:1;color:var(--muted)}.brand-mark{width:32px;height:32px;color:var(--accent)}
+.search-wrap{max-width:520px;flex:1;position:relative}.search-wrap input{width:100%;border:1px solid var(--line);border-radius:24px;min-height:42px;padding:9px 18px 9px 40px;background:var(--bg);color:var(--ink)}.search-wrap svg{position:absolute;left:14px;top:13px;width:17px;height:17px;color:var(--muted)}.search-results{position:absolute;top:49px;left:0;right:0;padding:8px;background:var(--surface);border:1px solid var(--line);box-shadow:0 12px 32px #161b3420;border-radius:12px;max-height:340px;overflow:auto}.search-results a{display:block;padding:9px 12px;border-radius:7px;text-decoration:none}.search-results a:hover{background:var(--accent-soft)}
+.bar-end{margin-left:auto;display:flex;gap:12px;align-items:center}.theme-switch{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;min-height:40px;padding:6px 12px;cursor:pointer}.workspace-label{font-size:12px;color:var(--muted)}
+.app-sidebar{position:fixed;left:16px;top:88px;bottom:20px;width:228px;padding:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:13px;display:flex;flex-direction:column;z-index:25;overflow:auto}.app-sidebar nav{display:grid;gap:3px}.app-sidebar a{display:flex;gap:12px;align-items:center;min-height:44px;border-radius:7px;padding:10px 12px;text-decoration:none;color:var(--muted);font-size:13px;font-weight:500}.app-sidebar a:hover{background:var(--surface-2);color:var(--ink)}.app-sidebar a.active{background:var(--accent);color:var(--surface)}:root[data-theme="dark"] .app-sidebar a.active{color:#19162c}.nav-symbol{width:20px;height:20px;flex-shrink:0}.nav-label{font-size:10px;color:var(--muted);font-weight:650;text-transform:uppercase;letter-spacing:1.3px;margin:18px 12px 8px}.sidebar-bottom{margin-top:auto;padding-top:20px}.sidebar-note{padding:10px 12px;color:var(--muted);font-size:11px;border-top:1px solid var(--line)}
+nav.toc{display:none!important}.shell,.pagina{display:block;max-width:1280px;margin:0 auto}.shell main{min-width:0}header.top,header.topo{background:var(--hero);padding:32px 36px;border:0;border-radius:16px;gap:12px;display:grid;position:relative;margin-bottom:10px}h1{font-family:var(--sans);font-size:clamp(25px,3vw,36px);letter-spacing:-1.1px;line-height:1.2;max-width:24ch}h2{font-family:var(--sans);font-size:22px;letter-spacing:-.5px;font-weight:650}h3{font-family:var(--sans);font-size:16px;font-weight:650}.eyebrow,.olho{color:var(--accent);font-size:11px;letter-spacing:1.3px}.lede{font-size:14px;max-width:83ch;color:var(--muted)}.meta{font-size:11px;gap:8px 16px}.meta a{color:inherit}section{padding:30px 0 8px;border:0;gap:16px}section+section{margin-top:12px}.now,.cartao,.sist,.group,.pedido,.tbl,details.phase{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:12px;background:var(--surface)}.now{padding:24px;gap:28px}.now .big{font-size:16px;font-weight:500;letter-spacing:-.2px}.now .sub{font-size:13px}.nums{gap:12px}.num{border:1px solid var(--line);background:var(--bg);padding:20px 16px;border-radius:10px}.num b{font-size:30px;letter-spacing:-1px;color:var(--accent)}.num span{font-size:12px}.label{font-size:10px!important;letter-spacing:1px!important}.filters{gap:8px}.filters .chip{border:0;background:var(--surface-2);color:var(--muted);min-height:40px;padding:8px 18px}.filters .chip[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}.bar{height:6px}.legend{font-size:11px}.phases{gap:12px}details.phase summary{padding:19px 22px;min-height:80px}.pid{background:var(--accent-soft);padding:7px;border-radius:7px;text-align:center;font-size:13px}details.phase[data-atual="1"]{border-color:var(--accent);box-shadow:var(--shadow)}.items{padding:0 22px 16px}.item{padding:15px 0}.pname{font-size:14px}.badge-atual{font-size:9px}.pcount{font-size:12px}.obj{padding-left:86px}.st{padding:4px 9px;font-size:11px}.tbl th{text-transform:none;letter-spacing:0;font-size:12px;padding:14px 18px;background:var(--surface-2)}.tbl td{padding:15px 18px;font-size:13px}.tbl tr:hover td{background:var(--bg)}.cartao,.sist,.group{padding:22px}.cartao p{font-size:14px}.grade{gap:16px}.cor{border-color:var(--line);border-radius:10px}.cor i{height:70px}.btn{min-height:44px;font-size:13px;padding:10px 16px}.faixa-console{background:var(--console-bruma);color:var(--console);border:1px solid var(--line)}.decs{gap:16px}.decs>div{background:var(--surface);border:1px solid var(--line);padding:16px;border-radius:10px;grid-template-columns:42px 1fr}.conversa{background:var(--surface);border:1px solid var(--line);padding:20px}.bolha{box-shadow:none}.menu-toggle{display:none;background:var(--surface);border:1px solid var(--line);border-radius:7px;color:var(--ink);min-width:40px;min-height:40px}.skip-link{position:fixed;top:-80px;left:16px;z-index:60;background:var(--surface);padding:12px}.skip-link:focus{top:10px}.showcase-note{color:var(--muted);font-size:12px}footer{line-height:1.7}.app-sidebar .page-link{border:1px solid var(--line)}
+@media(min-width:1450px){body{padding-left:300px;padding-right:60px}header.top,header.topo{padding:40px}}
+@media(max-width:1100px){body{padding-left:260px;padding-right:20px}.workspace-label{display:none}.brand{width:212px}.now{grid-template-columns:1fr}.nums{grid-template-columns:repeat(4,minmax(0,1fr))}.num{padding:14px 10px}.num b{font-size:24px}}
+@media(max-width:760px){body{padding:84px 16px 40px}.workspace-bar{height:64px;padding:0 14px;gap:10px}.brand{width:auto;font-size:16px}.brand-mark{width:25px}.brand small{font-size:9px}.search-wrap{display:none}.bar-end{gap:4px}.theme-switch{font-size:12px;padding:5px 8px}.menu-toggle{display:block}.app-sidebar{display:none;top:76px;bottom:16px;box-shadow:0 20px 80px #0003;width:250px}.app-sidebar.is-open{display:flex}header.top,header.topo{padding:25px 22px}h1{font-size:28px}.nums{grid-template-columns:repeat(2,minmax(0,1fr))}.now{padding:18px}.grade,.sistemas,.conversas{grid-template-columns:1fr}.obj{padding-left:18px}.pname{font-size:13px}details.phase summary{padding:16px 12px;gap:8px}.badge-atual{display:block;margin:4px 0 0}.pcount{font-size:10px}.items{padding:0 14px 14px}.tipo{grid-template-columns:1fr}.meta{display:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+</style>
+<style id="lattice-fidelity">
+/* Revisão de fidelidade: tokens extraídos da captura Navattic, tour geral ZIP (2). */
+:root,:root[data-theme="light"]{--bg:#fff;--papel:#fff;--surface-2:#eff2f8;--superficie-2:#eff2f8;--ink:#1b1f3a;--tinta:#1b1f3a;--muted:#495073;--tinta-suave:#495073;--line:#dbe2ee;--linha:#dbe2ee;--accent:#6d44ef;--accent-soft:#f1f0ff;--nav-active:#8576f3;--hero:linear-gradient(#d4d4ff 0px,#e4d3ff 140px);--shadow:0 1px 3px rgba(27,31,58,.2);--console:#6d44ef;--console-bruma:#f1f0ff;--foco:#196dca}
+:root[data-theme="dark"]{--nav-active:#8576f3;--hero:linear-gradient(#302d53,#3b2d50);--shadow:0 1px 3px #0003}
+body{padding:72px 32px 64px 272px;font-size:14px;line-height:1.5;background:var(--bg)}
+.shell,.pagina{max-width:960px;margin:0 auto;display:block}h1{font-size:32px;line-height:40px;letter-spacing:-.4px;font-weight:600;max-width:none}h1 br{display:none}h1 br::after{content:' '}h2{font-size:20px;line-height:28px;letter-spacing:-.2px;font-weight:600}h3{font-size:14px;line-height:20px;font-weight:600}
+.workspace-bar{height:72px;gap:20px;padding:0 20px;border-color:var(--line);box-shadow:0 1px 2px #1b1f3a0d}.brand{width:220px;font-weight:650;letter-spacing:-.5px;font-size:21px;gap:9px}.brand small{font-size:10px;letter-spacing:1.6px}.brand-mark{width:31px;height:31px}.search-wrap{max-width:680px;margin:0 auto;flex:1}.search-wrap input{height:42px;min-height:42px;background:var(--surface);border-color:#c7c8fe;border-radius:40px;font-size:14px;padding-left:38px;box-shadow:inset 0 0 0 1px #f1f0ff}.search-wrap input::placeholder{color:#7d8cb0}.search-wrap input:focus{outline:0;border-color:#8576f3;box-shadow:0 0 0 3px #c7c8fe}.search-wrap svg{color:#7d8cb0}.bar-end{margin-left:auto}.theme-switch{border-color:#a4b1cd;border-radius:6px;min-height:34px;padding:5px 12px;font-weight:600;font-size:13px;white-space:nowrap}.workspace-label{font-size:12px;max-width:110px;line-height:16px}
+.app-sidebar{top:80px;left:8px;bottom:auto;width:240px;max-height:calc(100dvh - 96px);padding:8px;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}.app-sidebar a{min-height:40px;padding:9px 10px;font-size:14px;line-height:20px;font-weight:400;gap:10px;border-radius:6px}.app-sidebar a.active{background:var(--nav-active);color:#fff}.app-sidebar a:hover:not(.active){background:var(--surface-2)}.nav-symbol{width:18px;height:18px;stroke-width:1.4}.nav-label{font-size:10px;letter-spacing:.6px;margin:8px 10px 12px;font-weight:500}.app-sidebar nav{gap:2px}.app-sidebar nav a:nth-child(2),.app-sidebar nav a:nth-child(6){margin-bottom:8px;position:relative}.app-sidebar nav a:nth-child(2)::after,.app-sidebar nav a:nth-child(6)::after{content:'';height:1px;position:absolute;left:0;right:0;bottom:-6px;background:var(--line)}.sidebar-bottom{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}.app-sidebar .page-link{border-color:#a4b1cd;justify-content:center;padding:7px;min-height:36px}.sidebar-note{margin:10px 0 0;padding:8px 6px 2px;border:0;font-size:10px;line-height:15px}
+header.top,header.topo{margin:0 0 12px;padding:32px 0 26px;min-height:164px;border-radius:0;gap:8px;background:var(--hero);box-shadow:0 0 0 100vmax #ded7ff;clip-path:inset(0 -100vmax);isolation:isolate}header.top::before,header.topo::before{content:'';position:absolute;inset:0;left:calc(-100vw);right:calc(-100vw);background:var(--hero);z-index:-1}header.top,header.topo{box-shadow:none;clip-path:none}.eyebrow,.olho{font-size:12px;line-height:18px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--muted)}.lede{font-size:14px;line-height:21px;max-width:90ch}.meta{font-size:11px;gap:6px 14px;margin-top:4px}header a{color:var(--ink);text-underline-offset:3px}
+section{padding:24px 0 8px;gap:16px;position:relative}section+section{margin-top:8px}.grade{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.cartao,.sist,.group{padding:20px;border-radius:12px;box-shadow:0 1px 2px rgba(27,31,58,.1);gap:10px}.cartao p{font-size:13px;line-height:20px}.cartao .ref{font-size:10px}.now{padding:20px;gap:24px;border-radius:12px;box-shadow:0 1px 3px rgba(27,31,58,.1);grid-template-columns:1.15fr 1fr}.now .big{font-size:14px;line-height:22px;font-weight:400;letter-spacing:0}.now .sub{font-size:13px;line-height:20px}.nums{gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.num{padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:10px;min-height:96px}.num b{color:var(--ink);font-size:26px;font-weight:600;letter-spacing:-.4px}.num b small{font-size:12px;margin-left:4px}.num span{font-size:12px;color:var(--muted)}.label{font-size:12px!important;text-transform:none!important;letter-spacing:0!important;font-weight:600!important}.filters{gap:12px}.filters .chip{background:var(--surface-2);color:var(--muted);font-size:13px;font-weight:400;padding:6px 14px;min-height:34px}.filters .chip[aria-pressed="true"]{background:var(--surface-2);color:var(--ink);box-shadow:inset 0 0 0 1px #7d8cb0}.tbl{border-radius:10px;box-shadow:0 1px 3px rgba(27,31,58,.1)}.tbl th{background:var(--surface);font-size:12px;font-weight:600;color:var(--muted);padding:14px 18px;border-bottom-color:#c4cee1}.tbl td{font-size:13px;line-height:20px;padding:16px 18px}.tbl tr:hover td{background:var(--surface-2)}details.phase{border-radius:10px;box-shadow:0 1px 2px rgba(27,31,58,.08)}details.phase[data-atual="1"]{border-color:#c7c8fe;box-shadow:0 0 0 1px #f1f0ff}details.phase summary{padding:16px 18px;min-height:72px}.pid{background:var(--accent-soft);color:var(--accent);font-size:12px;padding:7px}.pname{font-size:14px;font-weight:600}.obj{font-size:13px}.item{padding:14px 0}.st{border-radius:4px;font-weight:500;font-size:11px;padding:3px 8px}.badge-atual{font-size:9px;font-weight:500}.btn{border-radius:6px;font-size:14px;font-weight:600;min-height:36px;padding:6px 14px}.campo input{min-height:40px;border:1px solid #a4b1cd;border-radius:6px}.campo label{font-weight:500;font-size:13px}.chip{font-weight:500}.cor{border-radius:8px}.cor i{height:56px}.conversa{border-radius:12px}.pedido{box-shadow:0 1px 3px rgba(27,31,58,.1)}.decs>div{border:0;border-bottom:1px solid var(--line);border-radius:0;padding:12px 0}.sist .barra{height:4px}.app-sidebar nav a:focus-visible,button:focus-visible{outline:2px solid #196dca;outline-offset:2px}.tbl,.cartao,.sist,.num{min-width:0}
+@media(min-width:1450px){body{padding:72px 48px 64px 280px}header.top,header.topo{padding:32px 0 26px}}
+@media(max-width:1100px){body{padding-left:264px;padding-right:24px}.workspace-label{display:none}.brand{width:220px}.now{grid-template-columns:1fr}.nums{grid-template-columns:repeat(2,minmax(0,1fr))}.grade{grid-template-columns:repeat(2,minmax(0,1fr))}.app-sidebar{width:232px}}
+@media(max-width:760px){body{padding:64px 16px 40px}.workspace-bar{height:64px;padding:0 12px;gap:10px}.brand{width:auto;font-size:18px}.brand-mark{width:26px}.brand small{font-size:9px}.theme-switch{font-size:12px;padding:5px 8px}.app-sidebar{top:72px;max-height:calc(100dvh - 88px);width:250px}.grade,.sistemas,.conversas{grid-template-columns:1fr}header.top,header.topo{padding:26px 0 24px;min-height:140px}h1{font-size:26px;line-height:34px}.lede{font-size:13px;line-height:20px}.now{padding:16px}.tbl th,.tbl td{padding:12px;font-size:12px}.num{padding:14px;min-height:88px}.btn{min-height:44px}.app-sidebar a{min-height:44px}.menu-toggle{min-height:40px}.brand{flex-shrink:1}}
+
+html,body{overflow-x:clip}
+</style><style id="semantic-colors">
+/* Cores semânticas: fundo, contorno e texto separados como na referência. */
+:root,:root[data-theme="light"]{
+ --ok:#165f59;--ok-fundo:#e6faf3;--ok-borda:#86e6d0;--ok-icone:#088075;
+ --atencao:#8b440f;--atencao-fundo:#fbf3c9;--atencao-borda:#fcc44c;--atencao-icone:#d17a00;
+ --vencido:#bd383f;--vencido-fundo:#ffeded;--vencido-borda:#febab6;
+ --info:#196dca;--info-fundo:#e8f3ff;--info-borda:#a9d2fe;
+ --espera:#5e6d96;--espera-fundo:#f1f0ff;--espera-borda:#c7c8fe;
+ --neutro:#5e6d96;--neutro-fundo:#eff2f8;
+ --console:#8576f3;--console-press:#6d44ef;--console-bruma:#f1f0ff;
+ --s-feito:var(--ok);--s-feito-bg:var(--ok-fundo);--s-and:var(--atencao);--s-and-bg:var(--atencao-fundo);--s-bloq:var(--vencido);--s-bloq-bg:var(--vencido-fundo);--s-pend:var(--neutro);--s-pend-bg:var(--neutro-fundo);
+ --bar-done:#13a291;--bar-progress:#f0a732;--bar-blocked:#e5554e;--detail-blue:#5e6d96;
+}
+:root[data-theme="dark"]{--ok-borda:#397264;--ok-icone:#7ed5a2;--atencao-borda:#856b34;--atencao-icone:#f1c37b;--vencido-borda:#91515a;--info-borda:#426b9d;--espera-borda:#665681;--bar-done:#65c9b3;--bar-progress:#e1b555;--bar-blocked:#ef8a91;--detail-blue:#afb7d0}
+.bar .feito{background:var(--bar-done)}.bar .andamento{background:var(--bar-progress)}.bar .bloqueado{background:repeating-linear-gradient(135deg,var(--bar-blocked) 0 3px,var(--s-bloq-bg) 3px 5px)}
+.st,.chip.s-novo,.chip.s-analise,.chip.s-andamento,.chip.s-aguardando,.chip.s-concluido,.chip.s-reaberto,.chip.s-cancelado{border:1px solid transparent;border-radius:5px}
+.st.feito,.s-concluido{border-color:var(--ok-borda)}.st.andamento,.s-andamento,.s-reaberto{border-color:var(--atencao-borda)}.st.bloqueado{border-color:var(--vencido-borda)}.s-novo,.s-analise{border-color:var(--info-borda)}.s-aguardando{border-color:var(--espera-borda)}
+.s-concluido b{color:var(--ok-icone)}.s-andamento b,.s-reaberto b{color:var(--atencao-icone)}
+.prazo.no-prazo{background:var(--ok-fundo);border-color:var(--ok-borda);color:var(--ok)}.prazo.hoje{background:var(--atencao-fundo);border-color:var(--atencao-borda);color:var(--atencao)}.prazo.vencido{border-color:var(--vencido-borda)}
+.app-sidebar a:not(.active) .nav-symbol,.label,.pcount,.iid,.suave,.sub{color:var(--detail-blue)}.pid{color:var(--detail-blue);background:var(--info-fundo)}.num{background:var(--surface)}
+.cor{position:relative}.cor i{height:48px;display:flex;align-items:center;justify-content:flex-start;padding:0 14px;font-style:normal}.cor i::after{content:'';width:24px;height:12px;border-radius:3px;background:var(--swatch-ink,transparent);border:1px solid var(--swatch-border,transparent)}.cor div{padding:12px 14px}.cor code{font-size:11px}.cor[data-tone="ok"] i{background:var(--ok-fundo)!important;--swatch-ink:var(--ok-icone);--swatch-border:var(--ok-borda)}.cor[data-tone="atencao"] i{background:var(--atencao-fundo)!important;--swatch-ink:var(--atencao-icone);--swatch-border:var(--atencao-borda)}.cor[data-tone="vencido"] i{background:var(--vencido-fundo)!important;--swatch-ink:var(--vencido);--swatch-border:var(--vencido-borda)}.cor[data-tone="info"] i{background:var(--info-fundo)!important;--swatch-ink:var(--info);--swatch-border:var(--info-borda)}.cor[data-tone="espera"] i{background:var(--espera-fundo)!important;--swatch-ink:var(--espera);--swatch-border:var(--espera-borda)}.cor[data-tone="neutro"] i{background:var(--neutro-fundo)!important;--swatch-ink:var(--neutro)}
+.cor[data-tone="tinta"] i,.cor[data-tone="tinta-suave"] i{background:var(--superficie-2)!important}.cor[data-tone="tinta"] i{--swatch-ink:var(--tinta)}.cor[data-tone="tinta-suave"] i{--swatch-ink:var(--tinta-suave)}.cor[data-tone="plataforma"] i{background:var(--plataforma-bruma)!important;--swatch-ink:var(--plataforma)}.cor[data-tone="console"] i{background:var(--console-bruma)!important;--swatch-ink:var(--console)}
+</style><style id="status-borders">
+.chip.s-concluido{border-color:var(--ok-borda)}
+.chip.s-andamento,.chip.s-reaberto{border-color:var(--atencao-borda)}
+.chip.s-novo,.chip.s-analise{border-color:var(--info-borda)}
+.chip.s-aguardando{border-color:var(--espera-borda)}
+</style><style id="two-frontends">
+.front-examples{display:grid;gap:24px}.front-example{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}.front-example>figcaption{padding:16px 20px;border-bottom:1px solid var(--line);display:grid;gap:4px}.front-example{margin:0}.front-example figcaption strong{font-size:16px}.front-example figcaption span{font-size:13px;color:var(--muted)}.front-preview{height:390px;display:grid;position:relative;background:#fff;color:#1b1f3a;font-size:12px;line-height:1.5;overflow:auto}.front-preview *{box-sizing:border-box}.front-preview .preview-brand{font-size:15px;font-weight:600;letter-spacing:-.3px}.front-preview aside{font-size:11px}.front-preview aside span{display:block;padding:8px 10px}.front-preview aside .selected{background:#8576f3;color:white;border-radius:5px}.front-preview aside hr{border:0;border-top:1px solid #dbe2ee;margin:10px 0}.front-preview .preview-content{padding:24px;min-width:0}.front-preview h4{font-size:20px;line-height:28px;letter-spacing:-.3px;margin:0 0 6px;font-weight:600}.front-preview p{font-size:11px;color:#5e6d96;margin:0}.preview-card{border:1px solid #dbe2ee;border-radius:10px;background:#fff;padding:16px;box-shadow:0 1px 3px #1b1f3a12}.preview-card strong{display:block;font-weight:600;margin-bottom:12px}.preview-row{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #dbe2ee;align-items:center}.preview-row small{color:#5e6d96}.preview-chip{font-size:10px;padding:2px 7px;border:1px solid #86e6d0;background:#e6faf3;color:#088075;border-radius:4px;white-space:nowrap}.preview-chip.yellow{background:#fbf3c9;border-color:#fcc44c;color:#8b440f}.preview-platform{grid-template-columns:172px 1fr;grid-template-rows:48px 1fr;background:linear-gradient(#d4d4ff 48px,#e4d3ff 168px,#fff 168px)}.preview-platform>header{grid-column:1/-1;background:#fff;border-bottom:1px solid #dbe2ee;display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:16px}.preview-search{border:1px solid #c7c8fe;border-radius:30px;padding:5px 14px;flex:0 1 290px;color:#7d8cb0}.preview-platform aside{background:white;border:1px solid #dbe2ee;box-shadow:0 1px 3px #1b1f3a30;border-radius:10px;margin:10px 0 14px 10px;align-self:start;padding:8px}.preview-platform .preview-content{padding:26px 24px}.preview-platform .preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:32px}.preview-admin{grid-template-columns:172px 1fr}.preview-admin aside{background:#eff2f8;border-right:1px solid #c4cee1;padding:20px 12px;display:flex;flex-direction:column}.admin-identity{display:grid;gap:4px;padding:0 8px 16px}.admin-badge{background:#088075;color:#fff;border-radius:20px;padding:1px 7px;font-size:9px;width:max-content}.preview-admin aside .group-label{font-size:9px;font-weight:600;color:#5e6d96;letter-spacing:.3px;padding-top:16px;padding-bottom:6px}.preview-admin aside .selected{background:#dbe2ee;color:#303653}.preview-admin aside .admin-bottom{margin-top:auto;border-top:1px solid #c4cee1;padding-top:12px}.preview-admin .preview-content{padding:30px 24px}.preview-admin-banner{margin:20px 0 16px;padding:12px 14px;background:#88edb7;border-radius:6px}.preview-admin-banner strong{display:block;font-weight:600}.preview-admin .preview-card{border-radius:6px;box-shadow:none;padding:12px 14px;margin-top:10px}.admin-product{display:flex;gap:12px;align-items:center}.admin-product .preview-icon{color:#088075;background:#e6faf3;border-radius:4px;width:30px;height:30px;display:grid;place-items:center;font-size:16px}.admin-product strong{margin:0;font-size:12px}.front-rule{font-size:13px}.front-rule strong{color:var(--tinta)}
+@media(max-width:760px){.front-preview{min-width:620px}.front-example{overflow:auto}.front-example>figcaption{position:sticky;left:0;max-width:calc(100vw - 34px)}.front-preview .preview-content{overflow:hidden}}
+</style><style>
+.preview-admin{height:auto;min-height:450px;overflow:visible}.preview-admin aside{min-height:450px}
+</style><style id="admin-harmony">
+/* Console: acentos coerentes com a identidade compartilhada. Verde apenas semântico. */
+.preview-admin .admin-badge{background:#8576f3;color:#fff}
+.preview-admin-banner{background:#f1f0ff;border:1px solid #c7c8fe;color:#303653}
+.preview-admin .admin-product .preview-icon{background:#f1f0ff;color:#5e6d96}
+.preview-admin aside .selected{background:#e3dfff;color:#5322c5}
+</style></head>
+<body>
+<a class="skip-link" href="#conteudo">Ir para o conteúdo</a><header class="workspace-bar"><button class="menu-toggle" aria-label="Abrir navegação" aria-controls="app-sidebar" aria-expanded="false">☰</button><a class="brand" href="painel-execucao.html"><svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M4 25 16 5l12 20H4Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="m10 25 6-10 6 10" stroke="currentColor" stroke-width="3"/></svg><span>TRÍADE<small>CONDO</small></span></a><div class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input id="section-search" type="search" aria-label="Buscar seções nesta página" placeholder="Buscar nesta página…" autocomplete="off"><div class="search-results" aria-live="polite" hidden></div></div><div class="bar-end"><span class="workspace-label">Planejamento do produto</span><button class="theme-switch" type="button">Tema escuro</button></div></header><aside class="app-sidebar" id="app-sidebar"><div class="nav-label">Biblioteca de design</div><nav aria-label="Navegação da página"><a href="#sec-h-sit" class="active"><svg class="nav-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3z M9 20v-7h6v7"/></svg>Situação</a><a href="#sec-h-princ"><svg class="nav-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h4"/></svg>Princípios</a><a href="#sec-h-sist"><svg class="nav-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m8 12 3 3 5-6"/></svg>Dois sistemas, uma família</a><a href="#sec-h-cores"><svg class="nav-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10m8 10V4m8 16v-8"/></svg>Cores</a><a href="#sec-h-tipo"><svg class="nav-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3z M9 20v-7h6v7"/></svg>Tipografia</a><a href="#sec-h-comp"><svg class="nav-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h4"/></svg>Componentes base</a><a href="#sec-h-textos"><svg class="nav-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m8 12 3 3 5-6"/></svg>Textos</a><a href="#sec-h-telas"><svg class="nav-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10m8 10V4m8 16v-8"/></svg>Telas a desenhar</a><a href="#sec-h-pend"><svg class="nav-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3z M9 20v-7h6v7"/></svg>Definições e pendências</a></nav><div class="sidebar-bottom"><a class="page-link" href="painel-execucao.html"><svg class="nav-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h4"/></svg>Painel de execução</a><p class="sidebar-note">TRÍADE Condo<br>Base de frontend · em construção</p></div></aside>
+<main class="pagina" id="conteudo">
+
+<header class="topo">
+  <p class="olho">Base visual · referência Lattice</p>
+  <h1>Uma experiência. Dois sistemas.</h1>
+  <p class="lede">Como a Plataforma do síndico e o Console TRÍADE vão parecer e falar. A paleta e a tipografia seguem a referência Lattice e são a base adotada para o frontend; o logo oficial permanece pendente. Esta base segue as ideias do <a href="../IDEIAS.md">IDEIAS.md</a> e as peças do <a href="../mapa.html">mapa</a>. Acompanhamento no <a href="painel-execucao.html">painel de execução</a> (fase D).</p>
+</header>
+
+<section id="sec-h-sit" aria-labelledby="h-sit">
+  <h2 id="h-sit">Situação</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Item</th><th>Situação</th><th>O que falta</th></tr></thead>
+    <tbody>
+      <tr><td>Identidade (paleta e tipografia adotadas; logo e tom de voz pendentes) <span class="ref">D1</span></td><td>Paleta e tipografia definidas</td><td>Usar a referência Lattice conforme esta página. Pendentes: logo oficial (E5) e aprovação do tom das mensagens.</td></tr>
+      <tr><td>Design system: tokens e componentes <span class="ref">D2</span></td><td>Proposta 1 nesta página</td><td>Aprovação da TRÍADE</td></tr>
+      <tr><td>Textos do WhatsApp e da tela <span class="ref">D3</span></td><td>Primeiros textos nesta página</td><td>Aprovação da TRÍADE</td></tr>
+      <tr><td>Telas de cada passo <span class="ref">D4</span></td><td>Não começadas</td><td>Desenhar cada uma antes do código da tela, na ordem dos passos</td></tr>
+    </tbody>
+  </table></div>
+
+  <article class="cartao" id="identidade-adotada" aria-label="Paleta e tipografia adotadas">
+    <h3>Base adotada · paleta e tipografia Lattice</h3>
+    <p>Definição de Carolina em 16/10/2026. Para implementar o frontend, usar esta paleta e esta tipografia como referência vigente. Não substituir por outra identidade nem tratar estas escolhas como pendentes. A referência é a interface do produto Lattice nos prints e nas capturas Navattic fornecidas; não a tipografia do site institucional nem dos balões explicativos do tour.</p>
+    <p><strong>Tipografia:</strong> Inter em títulos, textos, menus, campos e botões. Corpo 14 px com entrelinha de 20–22 px; rótulos e informações auxiliares 12 px/18 px; títulos de seção 20 px/28 px, peso 600; título principal 32 px/40 px, peso 600 e espaçamento de −0,4 px. Texto regular em peso 400 e destaques em 500–600. IBM Plex Mono somente em códigos e referências técnicas.</p>
+    <p><strong>Base:</strong> branco #FFFFFF; texto principal #1B1F3A; secundário #495073; ícones e detalhes azul-acinzentados #5E6D96; bordas #DBE2EE; contornos de campos #A4B1CD; neutro suave #EFF2F8. Seleção lilás #8576F3 e fundo lilás #F1F0FF. Cabeçalho em degradê vertical de #D4D4FF para #E4D3FF.</p>
+    <p><strong>Status:</strong> menta #E6FAF3 com detalhe #088075 e contorno #86E6D0; amarelo #FBF3C9 com detalhe #D17A00 e contorno #FCC44C; erro #FFEDED com detalhe #BD383F; informação #E8F3FF com detalhe #196DCA. Aplicar o tom claro no fundo e o tom forte no ícone, texto ou contorno. Não preencher grandes áreas de status com verde escuro, ocre ou roxo saturado.</p>
+    <p><strong>Aplicação:</strong> verde-petróleo nas ações da Plataforma e lilás nas ações do Console; ambos usam os mesmos neutros, status e fonte. O tema claro é a referência visual principal. O tema escuro é uma adaptação complementar. A marca Lattice não faz parte da identidade TRÍADE.</p>
+    <p class="nota-regra">Paleta e tipografia definidas. Logo oficial, tom das mensagens e aprovação dos demais componentes continuam com seus próprios estados.</p>
+  </article>
+</section>
+
+<section id="sec-h-princ" aria-labelledby="h-princ">
+  <h2 id="h-princ">Princípios</h2>
+  <p class="suave">Regras que valem para toda tela e todo texto. Cada uma vem de uma ideia.</p>
+  <div class="grade">
+    <div class="cartao"><h3>O morador não tem tela</h3><p>A interface do morador é o WhatsApp do condomínio, sem app, portal ou senha. O design dele são as mensagens.</p><p><span class="ref">V-07</span></p></div>
+    <div class="cartao"><h3>Síndico no computador e no celular</h3><p>O painel do síndico funciona inteiro no celular, com áreas de toque de pelo menos 44 px. O Console é ferramenta de trabalho, pensado primeiro para o computador.</p><p><span class="ref">V-08</span> <span class="ref">PT-10</span></p></div>
+    <div class="cartao"><h3>Status nunca só pela cor</h3><p>Todo status tem palavra e símbolo, além da cor. Prazo vencido também tem textura. Contraste mínimo WCAG 2.2 AA, nos temas claro e escuro.</p><p><span class="ref">PT-10</span></p></div>
+    <div class="cartao"><h3>Prazo honesto</h3><p>Próximo retorno e previsão de solução aparecem separados. Sem previsão, a tela diz "sem previsão" e nunca inventa uma data.</p><p><span class="ref">AT-06</span> <span class="ref">AT-07</span></p></div>
+    <div class="cartao"><h3>Enviado não é lido</h3><p>A mensagem mostra o estado real: enviada, entregue, lida ou falhou. A falha aparece com destaque e com quem precisa agir.</p><p><span class="ref">W-13</span> <span class="ref">CD-08</span></p></div>
+    <div class="cartao"><h3>Toda tela tem vazio, erro e carregando</h3><p>Lista vazia explica o que vai aparecer ali e como começar. Erro diz o que houve e como resolver. Carregando mostra o formato do conteúdo.</p><p><span class="ref">PT-10</span></p></div>
+  </div>
+</section>
+
+<section id="sec-h-sist" aria-labelledby="h-sist">
+  <h2 id="h-sist">Dois sistemas, uma família</h2>
+  <p class="suave">Mesma tipografia, mesmos componentes e o mesmo jeito de escrever. A estrutura de navegação e a identificação persistente dizem em qual sistema a pessoa está.</p>
+  <div class="sistemas">
+    <div class="sist plataforma"><div class="barra"></div><h3>Plataforma do síndico</h3>
+      <ul><li>Cor principal: verde-petróleo</li><li>Para síndico, secretária, delegados e conselho</li><li>Celular e computador, claro e escuro</li><li>Linguagem de quem cuida do prédio</li></ul></div>
+    <div class="sist console"><div class="barra"></div><h3>Console TRÍADE</h3>
+      <ul><li>Cor principal: violeta</li><li>Só para a equipe TRÍADE</li><li>Computador primeiro, mais informação por tela</li><li>Identificação persistente “Console TRÍADE · Admin” na lateral; em telas menores, no cabeçalho. Navegação administrativa contínua e agrupada.</li></ul></div>
+  </div>
+  <div class="faixa-console" role="note">Console TRÍADE <span>· você está no sistema interno; notas internas nunca aparecem para o cliente</span></div>
+
+  <div class="cartao front-rule"><h3>Duas estruturas de frontend, uma identidade</h3><p>A Plataforma do síndico usa a referência de navegação clara do produto Lattice: barra superior com busca, menu branco flutuante e destaque lilás na página inicial. O Console TRÍADE usa a referência <em>Admin overview</em> enviada: lateral contínua azul-acinzentada, marca e identificação Admin dentro da lateral, menus agrupados por assunto, área principal branca e destaques lilás/azul-acinzentados. Verde é reservado aos estados de sucesso; não é a cor de banners ou ícones administrativos. A diferença deve ser reconhecível pela estrutura, sem depender apenas da cor dos botões.</p><p>Ambos compartilham Inter, cores semânticas, campos e tabelas. O menu escuro do tour de Goals é uma variante histórica da referência e não é a estrutura escolhida para o Console neste documento.</p></div>
+  <div class="front-examples">
+    <figure class="front-example"><figcaption><strong>Plataforma do síndico</strong><span>Rotina do condomínio · barra superior, navegação flutuante e cabeçalho lilás.</span></figcaption>
+      <div class="front-preview preview-platform" role="img" aria-label="Exemplo visual da Plataforma do síndico com menu branco flutuante, busca no topo, faixa lilás e cartões de atendimento. Dados fictícios.">
+        <header><div class="preview-brand">△ TRÍADE Condo</div><div class="preview-search">⌕ Buscar no condomínio…</div><span>Residencial Ipê</span></header>
+        <aside><span class="selected">⌂ Início</span><span>☷ Atendimentos</span><span>♧ Moradores e unidades</span><hr><span>▤ Comunicados</span><span>▱ Documentos</span><hr><span>⚙ Configurações</span></aside>
+        <div class="preview-content"><p>Plataforma do síndico · exemplo</p><h4>O dia do seu condomínio</h4><div class="preview-grid"><div class="preview-card"><strong>Próximos retornos</strong><div class="preview-row"><span>Vazamento na garagem<br><small>Pedido nº 0142 · Marcos</small></span><span class="preview-chip yellow">Hoje</span></div><div class="preview-row"><span>Regra de mudança<br><small>Pedido nº 0143</small></span><span class="preview-chip">No prazo</span></div></div><div class="preview-card"><strong>Pedidos em acompanhamento</strong><div class="preview-row"><span>Em andamento</span><b>4</b></div><div class="preview-row"><span>Aguardando retorno</span><b>2</b></div><div class="preview-row"><span>Sem responsável</span><b>1</b></div></div></div></div>
+      </div></figure>
+    <figure class="front-example"><figcaption><strong>Console TRÍADE · Admin</strong><span>Operação interna · lateral contínua, navegação por grupos e conteúdo administrativo.</span></figcaption>
+      <div class="front-preview preview-admin" role="img" aria-label="Exemplo visual do Console TRÍADE Admin com barra lateral contínua azul-acinzentada, grupos de navegação, identificação Admin e área central branca. Dados fictícios.">
+        <aside><div class="admin-identity"><div class="preview-brand">△ TRÍADE</div><b class="admin-badge">Admin</b></div><span class="group-label">CLIENTES</span><span class="selected">Visão geral</span><span>Carteira de condomínios</span><span>Implantação</span><hr><span class="group-label">ADMINISTRAÇÃO</span><span>Contratação e liberação</span><span>Pagamentos à TRÍADE</span><span>Suporte e acessos</span><div class="admin-bottom"><span>Equipe TRÍADE</span></div></aside>
+        <div class="preview-content"><h4>Visão geral do Console</h4><p>Carteira, implantação e controles internos da TRÍADE.</p><div class="preview-admin-banner"><strong>Acompanhamento da implantação</strong><span>Exemplo fictício · 2 condomínios com pendências</span></div><div class="preview-card admin-product"><span class="preview-icon">▦</span><div><strong>Carteira de condomínios</strong><p>Cadastro, responsáveis e configuração de cada cliente</p></div></div><div class="preview-card admin-product"><span class="preview-icon">✓</span><div><strong>Contratação e liberação</strong><p>Conferir o contratado e os recursos liberados</p></div></div><div class="preview-card admin-product"><span class="preview-icon">▤</span><div><strong>Implantação e entregas</strong><p>Pendências, responsáveis e documentos internos</p></div></div></div>
+      </div></figure>
+  </div>
+  <div class="tbl"><table><thead><tr><th>Elemento</th><th>Plataforma do síndico</th><th>Console TRÍADE · Admin</th></tr></thead><tbody><tr><td>Navegação</td><td>Menu branco flutuante, com borda, sombra leve e seleção lilás</td><td>Lateral contínua #EFF2F8, divisória #C4CEE1 e grupos com títulos</td></tr><tr><td>Cabeçalho</td><td>Barra global com marca, busca e contexto do condomínio; faixa lilás no início</td><td>Marca e selo Admin na lateral; título e ações no conteúdo, sem repetir a faixa lilás da Plataforma</td></tr><tr><td>Conteúdo</td><td>Cartões de rotina, fila de atendimentos e retornos do condomínio autorizado</td><td>Carteira, implantação, contratação/liberação, pagamentos internos e suporte</td></tr><tr><td>Separação dos sistemas</td><td>Identificação do condomínio e da pessoa autorizada</td><td>Identificação persistente “Console TRÍADE · Admin”, inclusive com a navegação recolhida</td></tr><tr><td>Responsividade</td><td>Rotina completa no celular; menu recolhido com identificação do condomínio</td><td>Computador primeiro; menu recolhível em telas menores mantendo a indicação Admin</td></tr></tbody></table></div>
+  <p class="nota-regra">Os exemplos acima são ilustrações de composição com dados fictícios. Não alteram o escopo do produto, não concedem acesso de suporte e não representam funcionalidades implementadas.</p>
+</section>
+
+<section id="sec-h-cores" aria-labelledby="h-cores">
+  <h2 id="h-cores">Cores</h2>
+  <p class="suave">As amostras seguem o tema selecionado. Neutros frios, superfícies claras e lilás na navegação. Verde-petróleo nas ações da Plataforma e violeta nas ações do Console.</p>
+  <h3>Base e sistemas</h3>
+  <div class="cores">
+    <div class="cor" data-tone="papel"><i style="background:var(--papel)"></i><div>Papel<code>--papel</code></div></div>
+    <div class="cor" data-tone="superficie"><i style="background:var(--superficie)"></i><div>Superfície<code>--superficie</code></div></div>
+    <div class="cor" data-tone="tinta"><i style="background:var(--tinta)"></i><div>Tinta<code>--tinta</code></div></div>
+    <div class="cor" data-tone="tinta-suave"><i style="background:var(--tinta-suave)"></i><div>Tinta suave<code>--tinta-suave</code></div></div>
+    <div class="cor" data-tone="plataforma"><i style="background:var(--plataforma)"></i><div>Plataforma<code>--plataforma</code></div></div>
+    <div class="cor" data-tone="plataforma-bruma"><i style="background:var(--plataforma-bruma)"></i><div>Plataforma bruma<code>--plataforma-bruma</code></div></div>
+    <div class="cor" data-tone="console"><i style="background:var(--console)"></i><div>Console<code>--console</code></div></div>
+    <div class="cor" data-tone="console-bruma"><i style="background:var(--console-bruma)"></i><div>Console bruma<code>--console-bruma</code></div></div>
+  </div>
+  <h3>Significado</h3>
+  <div class="cores">
+    <div class="cor" data-tone="ok"><i style="background:var(--ok)"></i><div>Concluído, no prazo<code>--ok</code></div></div>
+    <div class="cor" data-tone="atencao"><i style="background:var(--atencao)"></i><div>Em andamento, vence hoje<code>--atencao</code></div></div>
+    <div class="cor" data-tone="vencido"><i style="background:var(--vencido)"></i><div>Vencido, falhou, erro<code>--vencido</code></div></div>
+    <div class="cor" data-tone="info"><i style="background:var(--info)"></i><div>Novo, em análise<code>--info</code></div></div>
+    <div class="cor" data-tone="espera"><i style="background:var(--espera)"></i><div>Aguardando terceiro<code>--espera</code></div></div>
+    <div class="cor" data-tone="neutro"><i style="background:var(--neutro)"></i><div>Cancelado, sem dados<code>--neutro</code></div></div>
+  </div>
+</section>
+
+<section id="sec-h-tipo" aria-labelledby="h-tipo">
+  <h2 id="h-tipo">Tipografia</h2>
+  <div class="tipos">
+    <div class="tipo"><span>Título · Inter 600</span><span style="font-family:var(--display);font-size:32px;line-height:40px;letter-spacing:-.4px;font-weight:600">Pedidos do Residencial Ipê</span></div>
+    <div class="tipo"><span>Subtítulo · Inter 600</span><span style="font-family:var(--display);font-size:20px;font-weight:600">Vazamento na garagem, bloco A</span></div>
+    <div class="tipo"><span>Texto · Inter 400</span><span>O prestador vem avaliar na quinta. Ainda não há previsão de conclusão.</span></div>
+    <div class="tipo"><span>Rótulo · Inter 600</span><span style="font-weight:600;font-size:14px">Próximo retorno</span></div>
+    <div class="tipo"><span>Código · IBM Plex Mono 500</span><span class="mono">Pedido nº 0142 · AT-06</span></div>
+  </div>
+</section>
+
+<section id="sec-h-comp" aria-labelledby="h-comp">
+  <h2 id="h-comp">Componentes base</h2>
+  <p class="suave">Os blocos que as telas dos passos 1 a 7 vão usar. Os dados são exemplos.</p>
+
+  <div class="cartao"><h3>Botões</h3>
+    <div class="linha-comp">
+      <button type="button" class="btn primario">Registrar pedido</button>
+      <button type="button" class="btn secundario">Cancelar</button>
+      <button type="button" class="btn perigo">Cancelar pedido</button>
+      <button type="button" class="btn console">Liberar conjunto</button>
+    </div>
+    <p class="nota-regra">O botão diz exatamente o que acontece. O verde-petróleo identifica ações da Plataforma; o violeta, ações do Console e navegação desta base visual.</p>
+  </div>
+
+  <div class="cartao"><h3>Campos</h3>
+    <div class="linha-comp" style="align-items:start">
+      <div class="campo"><label for="ex-local">Local do problema</label><input id="ex-local" value="Garagem, bloco A"><span class="ajuda">Onde fica, do jeito que o morador falou.</span></div>
+      <div class="campo erro"><label for="ex-retorno">Próximo retorno</label><input id="ex-retorno" value="14/10/2026 18:00" aria-invalid="true" aria-describedby="ex-retorno-erro"><span class="ajuda" id="ex-retorno-erro">Essa data já passou. Escolha uma data a partir de agora.</span></div>
+    </div>
+  </div>
+
+  <div class="cartao"><h3>Situação do pedido</h3>
+    <div class="linha-comp">
+      <span class="chip s-novo"><b aria-hidden="true">●</b>Novo</span>
+      <span class="chip s-analise"><b aria-hidden="true">◔</b>Em análise</span>
+      <span class="chip s-andamento"><b aria-hidden="true">◐</b>Em andamento</span>
+      <span class="chip s-aguardando"><b aria-hidden="true">⏸</b>Aguardando peça</span>
+      <span class="chip s-concluido"><b aria-hidden="true">✓</b>Concluído</span>
+      <span class="chip s-reaberto"><b aria-hidden="true">↺</b>Reaberto</span>
+      <span class="chip s-cancelado"><b aria-hidden="true">✕</b>Cancelado</span>
+    </div>
+    <p class="nota-regra">São os status que o morador também vê <span class="ref">AT-28</span>. As etapas de cada condomínio sempre caem num destes <span class="ref">AT-05</span>.</p>
+  </div>
+
+  <div class="cartao"><h3>Próximo retorno e previsão</h3>
+    <div class="linha-comp">
+      <span class="prazo no-prazo"><b aria-hidden="true">✓</b><span>No prazo · retorno até <b>16/10 às 18h</b></span></span>
+      <span class="prazo hoje"><b aria-hidden="true">!</b><span>Vence hoje às <b>17h</b></span></span>
+      <span class="prazo vencido"><b aria-hidden="true">✕</b><span>Vencido há <b>2 h</b></span></span>
+      <span class="prazo sem"><b aria-hidden="true">–</b><span>Sem previsão de solução</span></span>
+    </div>
+    <p class="nota-regra">O próximo retorno é o compromisso de dar notícia; a previsão de solução só aparece quando é conhecida <span class="ref">AT-06</span> <span class="ref">AT-07</span>.</p>
+  </div>
+
+  <div class="cartao"><h3>Cartão de pedido</h3>
+    <article class="pedido" aria-label="Exemplo de pedido">
+      <div class="cab"><span class="proto">Pedido nº 0142 · aberto há 1 dia</span><span class="chip s-andamento"><b aria-hidden="true">◐</b>Em andamento</span></div>
+      <h4>Vazamento na garagem, bloco A</h4>
+      <dl>
+        <dt>Unidade</dt><dd>Apto 304, bloco A</dd>
+        <dt>Responsável</dt><dd>Marcos (zelador) · aceitou em 15/10</dd>
+        <dt>Previsão</dt><dd>Sem previsão de solução</dd>
+      </dl>
+      <span class="prazo hoje"><b aria-hidden="true">!</b><span>Próximo retorno vence hoje às <b>18h</b></span></span>
+    </article>
+  </div>
+
+  <div class="cartao"><h3>Histórico</h3>
+    <ol class="historico">
+      <li><time>15/10 14:05 · Marcos</time><span>Próximo retorno: <span class="antes">15/10 12h</span> → 15/10 18h. Motivo: prestador confirmou visita à tarde.</span></li>
+      <li><time>15/10 09:12 · Síndica Ana</time><span>Responsável definido: Marcos (zelador).</span></li>
+      <li><time>14/10 21:40 · WhatsApp do apto 304</time><span>Pedido registrado com 2 fotos.</span></li>
+    </ol>
+    <p class="nota-regra">Nada é apagado; mudança mostra antes e depois, autor e motivo <span class="ref">AT-17</span>.</p>
+  </div>
+
+  <div class="cartao"><h3>Estado da mensagem</h3>
+    <div class="linha-comp">
+      <span class="msg-st">◷ Envio pendente</span>
+      <span class="msg-st">✓ Enviada</span>
+      <span class="msg-st">✓✓ Entregue</span>
+      <span class="msg-st">✓✓ Lida</span>
+      <span class="msg-st falhou">⚠ Falhou · tentar de novo ou avisar por outro canal</span>
+    </div>
+    <p class="nota-regra">O estado da mensagem é separado do estado do pedido <span class="ref">W-13</span>.</p>
+  </div>
+
+  <div class="cartao"><h3>Vazio, erro e carregando</h3>
+    <div class="estados">
+      <div class="estado"><strong>Nenhum pedido aberto</strong><span class="suave">Os pedidos dos moradores aparecem aqui. Você também pode registrar um pedido que chegou por telefone.</span><button type="button" class="btn primario">Registrar pedido</button></div>
+      <div class="estado erro" role="alert"><strong>Não foi possível carregar os pedidos</strong><span>A conexão caiu. Os dados não se perderam: tente de novo em alguns segundos.</span><button type="button" class="btn secundario">Tentar de novo</button></div>
+      <div class="estado" aria-label="Carregando"><div class="esqueleto"></div><div class="esqueleto curto"></div><div class="esqueleto"></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="sec-h-textos" aria-labelledby="h-textos">
+  <h2 id="h-textos">Textos</h2>
+  <p class="suave">Tom de voz: claro, curto e sem prometer o que ninguém confirmou. Fala do jeito que o morador e o síndico falam; nada de termos técnicos. Os nomes e datas são exemplos.</p>
+
+  <h3>Mensagens do WhatsApp</h3>
+  <div class="conversas">
+    <div class="conversa"><h3>Confirmação do pedido</h3>
+      <div class="bolha">Recebemos seu pedido nº 0142 sobre *vazamento na garagem, bloco A*.
+Ele está registrado e vai para o responsável do condomínio. A próxima notícia chega até amanhã, 16/10, às 18h.
+Para ver o andamento quando quiser, responda *andamento*.</div>
+      <p class="nota-regra">Diz que foi registrado, sem afirmar que alguém já está trabalhando <span class="ref">W-08</span>.</p></div>
+    <div class="conversa"><h3>Fora do horário</h3>
+      <div class="bolha">O atendimento do Residencial Ipê funciona de segunda a sexta, das 8h às 18h.
+Seu pedido nº 0142 está registrado e continua na fila. A próxima notícia vem no próximo horário de atendimento.
+Em caso de emergência, ligue para o número de emergência do condomínio.</div>
+      <p class="nota-regra">Não fecha o pedido e não promete prazo <span class="ref">W-12</span> <span class="ref">AT-22</span>.</p></div>
+    <div class="conversa"><h3>Retorno sem solução ainda</h3>
+      <div class="bolha">Atualização do pedido nº 0142: o encanador vem avaliar na quinta, 17/10.
+Ainda não há previsão de conclusão.
+A próxima notícia chega até sexta, 18/10, às 18h.</div>
+      <p class="nota-regra">Notícia mesmo sem solução; previsão só quando conhecida <span class="ref">AT-06</span> <span class="ref">AT-07</span>.</p></div>
+    <div class="conversa"><h3>Conclusão</h3>
+      <div class="bolha">Pedido nº 0142 concluído: o registro da garagem foi trocado em 17/10.
+Resolveu? Responda de 1 a 5.
+Se o problema voltar, responda *revisar*.</div>
+      <p class="nota-regra">Conclusão explicada, satisfação e revisão pelo WhatsApp <span class="ref">AT-13</span> <span class="ref">AT-16</span> <span class="ref">W-10</span>.</p></div>
+    <div class="conversa"><h3>Aviso ao síndico</h3>
+      <div class="bolha">Retorno vencido: pedido nº 0142 (vazamento na garagem) devia ter notícia às 18h.
+Responsável: Marcos.
+Para ver e decidir, abra o pedido no painel.</div>
+      <p class="nota-regra">Aviso no WhatsApp do síndico; a decisão é tomada no painel <span class="ref">W-11</span> <span class="ref">AT-08</span>.</p></div>
+  </div>
+
+  <h3>Erros e avisos na tela</h3>
+  <div class="tbl"><table>
+    <thead><tr><th>Situação</th><th>Texto</th><th>Ideia</th></tr></thead>
+    <tbody>
+      <tr><td>Data de retorno no passado</td><td>Essa data já passou. Escolha uma data a partir de agora.</td><td><span class="ref">AT-06</span></td></tr>
+      <tr><td>Duas pessoas editando o mesmo pedido</td><td>Outra pessoa alterou este pedido enquanto você editava. Veja a versão nova abaixo; o que você escreveu continua guardado.</td><td><span class="ref">AT-24</span></td></tr>
+      <tr><td>Concluir sem explicação</td><td>Conte ao morador como o problema foi resolvido antes de concluir.</td><td><span class="ref">AT-13</span></td></tr>
+      <tr><td>Reabrir sem motivo</td><td>Diga por que o pedido volta a ficar aberto. A conclusão anterior continua no histórico.</td><td><span class="ref">AT-15</span></td></tr>
+      <tr><td>Sem permissão</td><td>Você não tem permissão para concluir pedidos neste condomínio. Peça ao síndico para liberar.</td><td><span class="ref">CF-03</span></td></tr>
+      <tr><td>Mensagem não entregue</td><td>A mensagem para o apto 304 não foi entregue. Tente de novo ou avise o morador por outro canal.</td><td><span class="ref">W-14</span></td></tr>
+      <tr><td>Indicador sem dados</td><td>Ainda não há pedidos suficientes neste período para calcular.</td><td><span class="ref">TR-07</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="sec-h-telas" aria-labelledby="h-telas">
+  <h2 id="h-telas">Telas a desenhar</h2>
+  <p class="suave">Cada tela é desenhada e aprovada antes do código dela, na ordem dos passos do painel de execução. Nenhuma tela foi desenhada ainda.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Passo</th><th>Sistema</th><th>Telas</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">F0</td><td>Os dois</td><td>Entrar, recuperar acesso, minha conta</td></tr>
+      <tr><td class="mono">F1</td><td>Console TRÍADE</td><td>Carteira de clientes, ficha do condomínio, escolher cenário, convidar síndico</td></tr>
+      <tr><td class="mono">F2</td><td>Plataforma</td><td>Configurações: horários, categorias e prazos, pessoas e permissões</td></tr>
+      <tr><td class="mono">F3</td><td>Plataforma</td><td>Unidades e moradores, importar planilha, confirmar contatos</td></tr>
+      <tr><td class="mono">F4</td><td>Plataforma</td><td>Fila de pedidos, registrar pedido, detalhe do pedido com histórico</td></tr>
+      <tr><td class="mono">F5</td><td>WhatsApp</td><td>Mensagens do morador: abrir, consultar, revisar, fora do horário</td></tr>
+      <tr><td class="mono">F6</td><td>Plataforma e WhatsApp</td><td>Avisos ao síndico e alertas de prazo</td></tr>
+      <tr><td class="mono">F7</td><td>Plataforma</td><td>Início: o dia do síndico e os indicadores do atendimento</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="sec-h-pend" aria-labelledby="h-pend">
+  <h2 id="h-pend">Definições e pendências</h2>
+  <div class="grade">
+    <div class="cartao"><h3>Marca oficial</h3><p>Somente o logo oficial permanece pendente nesta parte da identidade. O símbolo triangular atual é provisório; sua substituição não altera a paleta nem a tipografia adotadas.</p><p><span class="ref">EM-02</span></p></div>
+    <div class="cartao"><h3>Paleta e tipografia definidas</h3><p>Adotadas por Carolina em 16/10/2026: paleta e tipografia das referências Lattice. Aplicar os valores desta página nos dois sistemas e nas próximas telas, preservando fundos suaves e cores fortes em detalhes.</p></div>
+    <div class="cartao"><h3>Tom das mensagens</h3><p>Aprovar os textos do WhatsApp acima ou ajustar o jeito de falar com o morador.</p><p><span class="ref">EM-05</span></p></div>
+  </div>
+</section>
+
+</main>
+<script>(()=>{
+const root=document.documentElement;
+try{root.dataset.theme=localStorage.getItem('triade-theme')||'light'}catch{root.dataset.theme='light'}
+const theme=document.querySelector('.theme-switch');
+function label(){theme.textContent=root.dataset.theme==='dark'?'☀ Tema claro':'☾ Tema escuro';theme.setAttribute('aria-label',theme.textContent)}label();
+theme.addEventListener('click',()=>{root.dataset.theme=root.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('triade-theme',root.dataset.theme)}catch{}label()});
+const sidebar=document.querySelector('.app-sidebar'),menu=document.querySelector('.menu-toggle');
+menu.addEventListener('click',()=>{const open=sidebar.classList.toggle('is-open');menu.setAttribute('aria-expanded',String(open))});
+const links=[...sidebar.querySelectorAll('a[href^="#"]')];
+links.forEach(a=>a.addEventListener('click',e=>{e.preventDefault();sidebar.classList.remove('is-open');menu.setAttribute('aria-expanded','false');const target=document.getElementById(a.hash.slice(1));if(target){history.replaceState(null,'',a.hash);target.scrollIntoView({behavior:'instant',block:'start'});}}));
+const sections=[...document.querySelectorAll('section[aria-labelledby]')];
+const observer=new IntersectionObserver(entries=>{for(const e of entries)if(e.isIntersecting){links.forEach(a=>{const active=a.hash==='#'+e.target.id;a.classList.toggle('active',active);if(active)a.setAttribute('aria-current','location');else a.removeAttribute('aria-current')})}},{rootMargin:'-90px 0px -65% 0px'});sections.forEach(s=>observer.observe(s));
+const search=document.querySelector('#section-search'),results=document.querySelector('.search-results');
+search.addEventListener('input',()=>{results.replaceChildren();const q=search.value.trim().toLocaleLowerCase('pt-BR');results.hidden=!q;if(!q)return;const found=sections.filter(s=>s.textContent.toLocaleLowerCase('pt-BR').includes(q));found.forEach(s=>{const a=document.createElement('a');a.href='#'+s.id;a.textContent=s.querySelector('h2').textContent;a.addEventListener('click',()=>{results.hidden=true;search.value='';s.setAttribute('tabindex','-1');s.focus({preventScroll:true})});results.append(a)});if(!found.length)results.textContent='Nenhuma seção encontrada.'});
+document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))results.hidden=true});document.addEventListener('keydown',e=>{if(e.key==='Escape'){results.hidden=true;sidebar.classList.remove('is-open');menu.setAttribute('aria-expanded','false')}});
+})();</script>
+</body>
+</html>
