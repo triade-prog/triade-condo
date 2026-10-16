@@ -9,8 +9,8 @@ Versão visual e interativa (com busca e filtro por forma): [`mapa.html`](mapa.h
 
 | Parte | Peças | Ideias |
 |---|---|---|
-| Plataforma do síndico | 16 | 190 |
-| Console TRÍADE | 9 | 36 |
+| Plataforma do síndico | 16 | 189 |
+| Console TRÍADE | 9 | 37 |
 | Base comum | 6 | 36 |
 | Fora do software | 4 | 34 |
 | **Total** | **35** | **296** |
@@ -20,7 +20,7 @@ Versão visual e interativa (com busca e filtro por forma): [`mapa.html`](mapa.h
 ```mermaid
 mindmap
   root((TRÍADE Condo · 296 ideias))
-    Plataforma do síndico · 190
+    Plataforma do síndico · 189
       Painel web do síndico
         Início · 3
         Pedidos · 25
@@ -35,17 +35,17 @@ mindmap
         Vida em condomínio · 5
         Indicadores e relatórios · 9
         Memória do prédio · 7
-        Configurações · 19
+        Configurações · 18
       WhatsApp do condomínio
         WhatsApp do morador · 23
       Participação sem conta
         Links e QR · 6
-    Console TRÍADE · 36
+    Console TRÍADE · 37
       Carteira de clientes · 4
       Implantação · 5
       Planos e liberação · 6
       Pagamentos dos clientes · 2
-      Suporte e acessos · 3
+      Suporte e acessos · 4
       Serviços contratados · 8
       Equipe interna · 3
       Saúde e capacidade · 3
@@ -53,7 +53,7 @@ mindmap
     Base comum · 36
       Segurança e acesso · 8
       Dados e histórico · 6
-      Motor do WhatsApp · 8
+      Motor de mensagens · 8
       Infraestrutura e qualidade · 8
       Princípios do produto · 3
       Motor de IA · 3
@@ -89,7 +89,7 @@ Sistema do condomínio. Inclui o WhatsApp do morador, porque o canal é do condo
 
 #### Início (3)
 
-O dia do síndico: o que vence hoje, o que espera decisão e o resumo do que aconteceu.
+O dia do síndico: o que vence hoje, o que espera decisão, o resumo do que aconteceu e os avisos que chegam no WhatsApp dele.
 
 | ID | Ideia | Forma |
 |---|---|---|
@@ -320,7 +320,7 @@ O que fica com o prédio quando o síndico muda: prontuário, dossiê e históri
 | MP-14 | Manual de uso e manutenção do prédio acessível | Função |
 | CT-03 | Memória permanente do prédio que não depende de quem é o síndico | Regra |
 
-#### Configurações (19)
+#### Configurações (18)
 
 Ficha do condomínio, pessoas e permissões, horários, categorias, prazos e modelos.
 
@@ -328,7 +328,6 @@ Ficha do condomínio, pessoas e permissões, horários, categorias, prazos e mod
 |---|---|---|
 | CF-01 | Ficha do condomínio preenchida na implantação e editável depois | Aba |
 | CF-02 | Pessoas autorizadas, cada uma com acesso próprio | Aba |
-| CT-01 | Troca de síndico: validar substituição, revogar acessos antigos, preservar autoria | Função |
 | V-09 | Secretária e delegados do síndico: acesso próprio, com permissões individuais por condomínio | Função |
 | CF-03 | Permissões individuais: acompanhar, responder, atualizar, concluir, publicar, configurar | Regra |
 | CF-04 | Vínculo ativo ou revogado; revogado não age mais, mas a autoria antiga fica | Regra |
@@ -444,12 +443,13 @@ O que cada cliente pagou à TRÍADE, mês a mês.
 | PI-07 | Pagamentos dos clientes à TRÍADE: obrigação por competência, recebimentos, conferência, ajustes, parcial; valor desco… | Aba |
 | PI-08 | Atraso de pagamento não bloqueia o cliente automaticamente | Regra |
 
-#### Suporte e acessos (3)
+#### Suporte e acessos (4)
 
-Ajuda técnica e recuperação de acesso com segurança.
+Ajuda técnica, recuperação de acesso e troca de síndico com segurança.
 
 | ID | Ideia | Forma |
 |---|---|---|
+| CT-01 | Troca de síndico: validar substituição, revogar acessos antigos, preservar autoria | Função |
 | PI-09 | Suporte de acesso: pedido → verificar identidade e vínculo → redefinição segura → registro | Função |
 | PI-11 | Acesso excepcional de suporte aos dados do cliente, com motivo e registro | Regra |
 | PI-17 | Suporte técnico da plataforma separado do atendimento operacional (do síndico ou da equipe contratada), cada um com r… | Regra |
@@ -532,9 +532,9 @@ Nada se apaga em silêncio, alterações não se atropelam, valores exatos.
 | PT-07 | Arquivos privados com validação de tipo e tamanho; links temporários | Regra |
 | PT-09 | Valores monetários exatos (nunca ponto flutuante); moeda explícita | Regra |
 
-#### Motor do WhatsApp (8)
+#### Motor de mensagens (8)
 
-Como as mensagens entram e saem com segurança, sem duplicar nem se perder.
+Como as mensagens entram e saem com segurança (WhatsApp e canais complementares), sem duplicar nem se perder.
 
 | ID | Ideia | Forma |
 |---|---|---|
