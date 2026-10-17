@@ -192,7 +192,7 @@ function DarRetorno({ d, opcoes, aoFechar, enviar, recarregar }: { d: PedidoDeta
         ajuda={tipo === "NOTA" ? "Só a gestão lê. Não conta como retorno ao morador (cobrar o fornecedor, por exemplo)." : undefined} />
       {tipo === "RETORNO" ? <p className="text-sm text-tinta-suave">Ao salvar, o próximo retorno é recalculado pelo prazo. A previsão de solução não muda.</p> : null}
       <div className="flex justify-end gap-2">
-        <Botao variante="secundario" onClick={aoFechar}>Cancelar</Botao>
+        <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" disabled={enviando}>{enviando ? "Salvando…" : tipo === "RETORNO" ? "Registrar retorno" : "Salvar nota"}</Botao>
       </div>
     </form>
@@ -219,7 +219,7 @@ function Revisar({ conclusao, aoFechar, enviar, recarregar }: { conclusao: Concl
     <div className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={() => { aoFechar(); recarregar(); }} /> : null}
       {conclusao ? (
-        <div className="grid gap-1 rounded-lg border border-linha bg-superficie-2 p-3 text-sm">
+        <div className="grid gap-1 rounded-2xl border border-linha bg-superficie-2 p-3 text-sm">
           <span className="text-xs text-tinta-suave">Concluído por {conclusao.concluidaPor} em {diaHora(conclusao.concluidaEm)} · {conclusao.etapa} · {REVISOES_CONCLUSAO[conclusao.revisao]}</span>
           <span>{conclusao.explicacao}</span>
           {conclusao.evidencia ? <span className="text-xs text-tinta-suave">Evidência: {conclusao.evidencia}</span> : null}
@@ -228,8 +228,8 @@ function Revisar({ conclusao, aoFechar, enviar, recarregar }: { conclusao: Concl
       <CampoAreaTexto id="v-motivo" rotulo="Se for devolver, o que falta" maxLength={500} rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)}
         erro={comErro.includes("motivo") ? "Explique o que falta (3 a 500 caracteres)." : null} />
       <div className="flex flex-wrap justify-end gap-2">
-        <Botao variante="secundario" onClick={aoFechar}>Fechar</Botao>
-        <Botao variante="secundario" disabled={enviando} onClick={() => void decidir(false)}>Devolver</Botao>
+        <Botao variante="discreto" onClick={aoFechar}>Fechar</Botao>
+        <Botao variante="contorno" disabled={enviando} onClick={() => void decidir(false)}>Devolver</Botao>
         <Botao disabled={enviando} onClick={() => void decidir(true)}>Aprovar e encerrar</Botao>
       </div>
     </div>

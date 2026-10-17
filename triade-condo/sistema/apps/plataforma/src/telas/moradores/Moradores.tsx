@@ -35,7 +35,7 @@ export function Moradores() {
   if (carga.estado === "erro") {
     return (
       <div className="grid gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Moradores e unidades</h1>
+        <h1 className="text-[28px] font-normal tracking-tight">Moradores e unidades</h1>
         <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />
       </div>
     );
@@ -54,14 +54,14 @@ export function Moradores() {
     <div className="grid gap-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Moradores e unidades</h1>
+          <h1 className="text-[28px] font-normal tracking-tight">Moradores e unidades</h1>
           <p className="mt-1 text-tinta-suave">Moradores e proprietários de cada unidade. Ninguém aqui tem senha: falam com o condomínio pelo WhatsApp.</p>
         </div>
         {dados.podeEditar ? (
           <div className="flex flex-wrap gap-2">
-            <Link href="/moradores/importar" className={classeBotao("secundario")}>Importar planilha</Link>
-            {div.usa ? <Botao variante="secundario" onClick={() => setJanela("bloco")}>+ {div.um}</Botao> : null}
-            <Botao variante="secundario" onClick={() => setJanela("unidades")}>+ Unidades</Botao>
+            <Link href="/moradores/importar" className={classeBotao("contorno")}>Importar planilha</Link>
+            {div.usa ? <Botao variante="contorno" onClick={() => setJanela("bloco")}>+ {div.um}</Botao> : null}
+            <Botao variante="contorno" onClick={() => setJanela("unidades")}>+ Unidades</Botao>
             {dados.unidades.some((u) => u.ativa) ? <Botao onClick={() => setJanela("morador")}>+ Morador ou proprietário</Botao> : null}
           </div>
         ) : null}

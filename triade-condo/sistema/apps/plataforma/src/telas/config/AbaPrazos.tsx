@@ -22,7 +22,7 @@ export function AbaPrazos(props: PropsAba) {
     <div className="grid gap-6">
       <RegrasAviso {...props} />
       <section aria-labelledby="t-prazos" className="grid gap-3">
-        <h2 id="t-prazos" className="font-semibold">Prazos de retorno</h2>
+        <h2 id="t-prazos" className="text-lg font-medium">Prazos de retorno</h2>
         <TabelaPrazos {...props} />
       </section>
     </div>
@@ -88,7 +88,7 @@ function TabelaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
           </tbody>
         </table>
       </div>
-      {pode ? <Botao variante="secundario" className="justify-self-start" onClick={() => setNova(true)}>+ Exceção</Botao> : null}
+      {pode ? <Botao variante="contorno" className="justify-self-start" onClick={() => setNova(true)}>+ Exceção</Botao> : null}
       <Aviso tom="info">
         Exemplo: pedido aberto quinta às 17h com prazo de 4 h, atendimento de segunda a sexta até as 18h. Conta 1 h na quinta; se sexta for feriado, o retorno vence segunda às 11h.
       </Aviso>

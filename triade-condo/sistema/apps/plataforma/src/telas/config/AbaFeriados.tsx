@@ -46,7 +46,7 @@ export function AbaFeriados({ config, pode, salvo }: PropsAba) {
         {pode ? (
           <div className="flex flex-wrap gap-2">
             {[ano, ano + 1].map((a) => (
-              <Botao key={a} variante="secundario" disabled={trazendo} onClick={() => void trazer(a)}>Trazer feriados nacionais de {a}</Botao>
+              <Botao key={a} variante="contorno" disabled={trazendo} onClick={() => void trazer(a)}>Trazer feriados nacionais de {a}</Botao>
             ))}
             <Botao onClick={() => setNovo(true)}>+ Feriado</Botao>
           </div>

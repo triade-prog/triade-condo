@@ -43,7 +43,7 @@ function FormAtribuir({ ficha, aoConcluir }: { ficha: PropsAba["ficha"]; aoConcl
         ajuda="Só as funções que a pessoa tem na equipe."
         opcoes={[{ valor: "", texto: "Escolha" }, ...(escolhida?.funcoes ?? []).map((f) => ({ valor: f, texto: nomeFuncao(f) }))]} />
       <div className="flex justify-end gap-2">
-        <Botao variante="secundario" onClick={() => aoConcluir(false)}>Cancelar</Botao>
+        <Botao variante="contorno" onClick={() => aoConcluir(false)}>Cancelar</Botao>
         <Botao type="submit" disabled={!pessoaId || !funcao}>Atribuir</Botao>
       </div>
     </form>
@@ -69,8 +69,8 @@ export function AbaEquipe({ ficha, pode, recarregar, avisar }: PropsAba) {
     <div className="grid gap-4">
       <FaixaInterna>Interno · o cliente não vê como a equipe se organiza</FaixaInterna>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Equipe do cliente</h2>
-        {podeAtribuir ? <Botao variante="secundario" onClick={() => { setErro(null); setAtribuindo(true); }}>Atribuir pessoa</Botao> : null}
+        <h2 className="text-lg font-medium">Equipe do cliente</h2>
+        {podeAtribuir ? <Botao variante="contorno" onClick={() => { setErro(null); setAtribuindo(true); }}>Atribuir pessoa</Botao> : null}
       </div>
       {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
       <ul className="divide-y divide-linha rounded-lg border border-linha">
@@ -94,7 +94,7 @@ export function AbaEquipe({ ficha, pode, recarregar, avisar }: PropsAba) {
       <Dialogo aberto={retirar !== null} titulo="Retirar atribuição" aoFechar={() => setRetirar(null)}>
         <p>{retirar ? `${retirar.nome} deixa de atender este cliente como ${nomeFuncao(retirar.funcao).toLowerCase()}.` : ""} O que a pessoa já fez continua no histórico.</p>
         <div className="flex justify-end gap-2">
-          <Botao variante="secundario" onClick={() => setRetirar(null)}>Cancelar</Botao>
+          <Botao variante="contorno" onClick={() => setRetirar(null)}>Cancelar</Botao>
           <Botao variante="perigo" onClick={confirmarRetirada}>Retirar</Botao>
         </div>
       </Dialogo>

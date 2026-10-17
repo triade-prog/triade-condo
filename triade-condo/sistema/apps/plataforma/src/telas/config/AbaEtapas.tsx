@@ -81,8 +81,8 @@ export function AbaEtapas({ config, pode, recarregar, salvo }: PropsAba) {
     <div className="grid gap-8 lg:grid-cols-2">
       <section aria-labelledby="t-etapas" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="t-etapas" className="text-lg font-semibold">Etapas</h2>
-          {pode ? <Botao variante="secundario" onClick={() => setEdicao({ tipo: "etapa", item: null })}>+ Etapa</Botao> : null}
+          <h2 id="t-etapas" className="text-lg font-medium">Etapas</h2>
+          {pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "etapa", item: null })}>+ Etapa</Botao> : null}
         </div>
         {(Object.keys(SITUACOES_ETAPA) as (keyof typeof SITUACOES_ETAPA)[]).map((sit) => (
           <div key={sit} className="grid gap-1">
@@ -106,8 +106,8 @@ export function AbaEtapas({ config, pode, recarregar, salvo }: PropsAba) {
       </section>
       <section aria-labelledby="t-modelos" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="t-modelos" className="text-lg font-semibold">Modelos de resposta</h2>
-          {pode ? <Botao variante="secundario" onClick={() => setEdicao({ tipo: "modelo", item: null })}>+ Modelo</Botao> : null}
+          <h2 id="t-modelos" className="text-lg font-medium">Modelos de resposta</h2>
+          {pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "modelo", item: null })}>+ Modelo</Botao> : null}
         </div>
         <ul className="divide-y divide-linha rounded-lg border border-linha">
           {config.modelos.map((m) => (

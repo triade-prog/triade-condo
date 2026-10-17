@@ -1,13 +1,6 @@
-import { Marca } from "@triade/ui";
+import { TelaAcesso } from "@triade/ui";
 
-// Telas de acesso: caixa central sobre o fundo neutro, com a marca da Plataforma.
+// Telas de acesso da Plataforma: a arte da marca ao lado do formulário (DC13).
 export default function LayoutAcesso({ children }: { children: React.ReactNode }) {
-  return (
-    <main id="conteudo" className="grid min-h-dvh place-items-center bg-superficie-2 px-4 py-10">
-      <div className="grid w-full max-w-sm gap-6 rounded-xl border border-linha bg-superficie p-6 shadow-sm">
-        <Marca sistema="Plataforma do síndico" />
-        {children}
-      </div>
-    </main>
-  );
+  return <TelaAcesso frase="Os pedidos do condomínio, os retornos aos moradores e os avisos num lugar só." sistema="Plataforma do síndico">{children}</TelaAcesso>;
 }

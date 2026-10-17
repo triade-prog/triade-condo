@@ -84,7 +84,7 @@ export function Equipe() {
     <div className="grid gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Pessoas e funções</h1>
+          <h1 className="text-[28px] font-normal tracking-tight">Pessoas e funções</h1>
           <p className="text-tinta-suave">Cada função só age nos clientes atribuídos.</p>
         </div>
         <Botao onClick={abrirConvite}>+ Convidar pessoa</Botao>
@@ -136,7 +136,7 @@ export function Equipe() {
           <EscolhaFuncoes valor={funcoes} aoMudar={setFuncoes} erro={campos.includes("funcoes")} />
           <p className="text-sm text-tinta-suave">A pessoa recebe um e-mail para criar a senha e, no primeiro acesso, cadastra o autenticador.</p>
           <div className="flex justify-end gap-2">
-            <Botao variante="secundario" onClick={() => setConvidando(false)}>Cancelar</Botao>
+            <Botao variante="contorno" onClick={() => setConvidando(false)}>Cancelar</Botao>
             <Botao type="submit">Enviar convite</Botao>
           </div>
         </form>
@@ -146,7 +146,7 @@ export function Equipe() {
           {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
           <EscolhaFuncoes valor={funcoes} aoMudar={setFuncoes} erro={campos.includes("funcoes")} />
           <div className="flex justify-end gap-2">
-            <Botao variante="secundario" onClick={() => setRevendo(null)}>Cancelar</Botao>
+            <Botao variante="contorno" onClick={() => setRevendo(null)}>Cancelar</Botao>
             <Botao type="submit" disabled={funcoes.length === 0}>Salvar funções</Botao>
           </div>
         </form>
@@ -154,7 +154,7 @@ export function Equipe() {
       <Dialogo aberto={desativando !== null} titulo="Desativar pessoa" aoFechar={() => setDesativando(null)}>
         <p>{desativando?.nome} deixa de entrar no Console na hora. O que a pessoa fez continua no histórico, com o nome dela.</p>
         <div className="flex justify-end gap-2">
-          <Botao variante="secundario" onClick={() => setDesativando(null)}>Cancelar</Botao>
+          <Botao variante="contorno" onClick={() => setDesativando(null)}>Cancelar</Botao>
           <Botao variante="perigo" onClick={desativar}>Desativar</Botao>
         </div>
       </Dialogo>

@@ -38,7 +38,7 @@ export function AbaSindico({ ficha, pode, recarregar, avisar }: PropsAba) {
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Síndico</h2>
+        <h2 className="text-lg font-medium">Síndico</h2>
         {podeConvidar ? <Botao onClick={abrir}>Convidar síndico</Botao> : null}
       </div>
       {ficha.sindicos.length === 0 ? (
@@ -65,7 +65,7 @@ export function AbaSindico({ ficha, pode, recarregar, avisar }: PropsAba) {
             A pessoa recebe um e-mail para criar a própria senha. O link só pode ser usado uma vez. Se ela já tiver conta, o condomínio aparece no próximo acesso.
           </p>
           <div className="flex justify-end gap-2">
-            <Botao variante="secundario" onClick={() => setAberto(false)}>Cancelar</Botao>
+            <Botao variante="contorno" onClick={() => setAberto(false)}>Cancelar</Botao>
             <Botao type="submit" disabled={enviando}>{enviando ? "Enviando…" : "Enviar convite"}</Botao>
           </div>
         </form>

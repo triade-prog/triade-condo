@@ -67,7 +67,7 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
       <Vazio titulo="Nenhuma unidade ainda"
         acao={dados.podeEditar ? (
           <span className="flex flex-wrap gap-2">
-            <Botao variante="secundario" onClick={aoOrganizar}>Como o prédio se organiza</Botao>
+            <Botao variante="contorno" onClick={aoOrganizar}>Como o prédio se organiza</Botao>
             <Botao onClick={aoIncluir}>+ Unidades</Botao>
           </span>
         ) : undefined}>
@@ -254,7 +254,7 @@ function FormEstrutura({ estrutura, aoFechar, salvo, recarregar }: { estrutura: 
       <Caixa id="e-andar" rotulo="As unidades ficam em andares" marcada={usaAndar} aoMudar={setUsaAndar}
         ajuda="Com andar, a unidade aparece como Torre A · 3º andar · 302, e a lista filtra por andar. Serve também para térreo, subsolo e cobertura." />
       <div className="flex justify-end gap-2">
-        <Botao variante="secundario" onClick={aoFechar}>Cancelar</Botao>
+        <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" disabled={enviando}>{enviando ? "Salvando…" : "Salvar"}</Botao>
       </div>
     </form>
@@ -383,7 +383,7 @@ function FormUnidades({ dados, blocoInicial, aoFechar, salvo }: { dados: Unidade
         </p>
       ) : null}
       <div className="flex justify-end gap-2">
-        <Botao variante="secundario" onClick={aoFechar}>Cancelar</Botao>
+        <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" disabled={enviando || novas < 1 || longas}>
           {enviando ? "Incluindo…" : `Incluir ${plural(Math.max(novas, 0), "unidade", "unidades")}`}
         </Botao>

@@ -50,7 +50,7 @@ export function Importar() {
 
   if (!pode("moradores.editar")) {
     return (
-      <div className="grid gap-3">{voltar}<h1 className="text-2xl font-semibold tracking-tight">Importar planilha</h1>
+      <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Importar planilha</h1>
         <Aviso tom="atencao">Você não tem acesso a esta ação. Peça ao síndico a permissão Cadastrar moradores.</Aviso></div>
     );
   }
@@ -90,7 +90,7 @@ export function Importar() {
     <div className="grid gap-5">
       {voltar}
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Importar planilha</h1>
+        <h1 className="text-[28px] font-normal tracking-tight">Importar planilha</h1>
         <p className="mt-1 text-tinta-suave">
           A lista de moradores e proprietários da administradora, salva como CSV no Excel ou no Google Planilhas. Colunas: torre ou bloco (opcional), andar
           (opcional), unidade, nome, telefone e relação (opcional). Também opcionais: mora na unidade e responsável pela unidade (sim ou não), parentesco e
@@ -100,7 +100,7 @@ export function Importar() {
       <Passos atual={passo} />
 
       {passo === 1 ? (
-        <div className="grid justify-items-start gap-3 rounded-xl border border-linha bg-superficie p-5">
+        <div className="grid justify-items-start gap-3 rounded-[18px] border border-linha bg-superficie p-5">
           <label htmlFor="i-arquivo" className="text-[13px] font-medium">Arquivo da planilha (CSV)</label>
           <input id="i-arquivo" type="file" accept=".csv,text/csv" onChange={(e) => void escolher(e)} aria-describedby="i-ajuda"
             className="text-sm file:mr-3 file:min-h-10 file:rounded-md file:border file:border-contorno file:bg-superficie file:px-3.5 file:text-sm file:font-semibold" />
@@ -110,7 +110,7 @@ export function Importar() {
               Não achamos {leitura.faltam.length === 1 ? "a coluna" : "as colunas"} {leitura.faltam.join(", ")} em {arquivo}. A primeira linha precisa ter os nomes das colunas, como no modelo.
             </Aviso>
           ) : null}
-          <a href={MODELO} download="modelo-moradores.csv" className={classeBotao("secundario")}>Baixar modelo de planilha</a>
+          <a href={MODELO} download="modelo-moradores.csv" className={classeBotao("contorno")}>Baixar modelo de planilha</a>
         </div>
       ) : null}
 
@@ -152,7 +152,7 @@ export function Importar() {
             {leitura.agrupamento || leitura.linhas.some((l) => l.andar) ? " Se o condomínio ainda não usa torre, bloco ou andar, passa a usar, como na planilha." : ""}
           </p>
           <div className="flex flex-wrap gap-2">
-            <Botao variante="secundario" onClick={recomecar}>Escolher outro arquivo</Botao>
+            <Botao variante="contorno" onClick={recomecar}>Escolher outro arquivo</Botao>
             <Botao disabled={enviando || leitura.linhas.length === 0 || leitura.linhas.length > LIMITE} onClick={() => void importar()}>
               {enviando ? "Importando…" : `Importar ${plural(leitura.linhas.length, "contato", "contatos")}`}
             </Botao>
@@ -176,7 +176,7 @@ export function Importar() {
           ) : null}
           <div className="flex flex-wrap gap-2">
             <Link href="/moradores?aba=confirmar" className={classeBotao("primario")}>Conferir os contatos a confirmar</Link>
-            <Botao variante="secundario" onClick={recomecar}>Importar outra planilha</Botao>
+            <Botao variante="contorno" onClick={recomecar}>Importar outra planilha</Botao>
           </div>
         </div>
       ) : null}

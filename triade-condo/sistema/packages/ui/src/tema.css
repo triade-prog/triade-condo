@@ -271,6 +271,27 @@ body {
   .campo[aria-invalid="true"] { border-color: var(--color-erro); box-shadow: 0 0 0 4px #bc14501a; }
   .campo:disabled { background: var(--color-superficie-2); border-color: transparent; color: #8a8296; }
 
+  /* Lateral clara dos dois sistemas: ícone em cada item, grupos separados por linha, item
+     escolhido com o degradê e contagem em laranja. */
+  .lateral { display: grid; align-content: start; gap: 2px; padding: 10px; border-radius: 18px; border: 1px solid var(--color-linha); background: #fff; box-shadow: var(--shadow-s1); }
+  .lateral a { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 12px; font-size: 15px; color: var(--color-tinta); text-decoration: none; }
+  .lateral a svg { width: 20px; height: 20px; color: var(--color-tinta-suave); }
+  .lateral a:hover { background: var(--color-violeta-50); }
+  .lateral a[aria-current="page"] { background: var(--grad-acao); color: #fff; box-shadow: inset 0 1px 0 #ffffff47, 0 10px 22px -12px #5808ccb3; }
+  .lateral a[aria-current="page"] svg { color: #fff; }
+  .lateral hr { border: 0; border-top: 1px solid var(--color-linha); margin: 6px 8px; }
+  .lateral .grupo { padding: 8px 12px 2px; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--color-tinta-suave); }
+  .contagem { margin-left: auto; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; display: inline-grid; place-items: center; background: var(--color-laranja-500); color: var(--color-violeta-900); font-size: 12px; font-weight: 600; }
+
+  /* Emblema: botão quadrado com ícone e, quando há o que ver, a contagem em laranja. */
+  .emblema { position: relative; display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: var(--color-superficie-2); color: var(--color-tinta); border: 0; cursor: pointer; }
+  .emblema:hover { background: var(--color-violeta-100); }
+  .emblema svg { width: 20px; height: 20px; }
+  .emblema[data-contagem]::after { content: attr(data-contagem); position: absolute; right: -6px; top: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; display: grid; place-items: center; border: 2px solid #fff; background: var(--color-laranja-500); color: var(--color-violeta-900); font-size: 11px; font-weight: 600; }
+
+  /* Iniciais da pessoa, no topo e nas listas. */
+  .iniciais { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; background: var(--color-violeta-100); color: var(--color-violeta-700); font-size: 12px; font-weight: 600; }
+
   /* Tela vazia com as órbitas da marca, bem leves. */
   .vazio { position: relative; overflow: hidden; display: grid; justify-items: center; gap: 8px; text-align: center; padding: 32px 20px; border-radius: 18px; border: 1px solid var(--color-linha); background: #fff; }
   .vazio::before, .vazio::after { content: ""; position: absolute; border-radius: 50%; border: 1px solid #5808cc1f; pointer-events: none; }

@@ -125,8 +125,8 @@ export function EscolherArquivos({ itens, aoMudar, rotulo, enviando }: {
       <div onDragOver={(e) => e.preventDefault()} onDrop={soltar}
         className="grid justify-items-center gap-2 rounded-lg border border-dashed border-contorno bg-superficie-2 p-3 text-center text-sm">
         <div className="flex flex-wrap justify-center gap-2">
-          <Botao variante="secundario" disabled={enviando} onClick={() => escolher.current?.click()}>Escolher arquivos</Botao>
-          <Botao variante="secundario" disabled={enviando} onClick={() => camera.current?.click()}>Tirar foto</Botao>
+          <Botao variante="contorno" disabled={enviando} onClick={() => escolher.current?.click()}>Escolher arquivos</Botao>
+          <Botao variante="contorno" disabled={enviando} onClick={() => camera.current?.click()}>Tirar foto</Botao>
         </div>
         <span className="text-xs text-tinta-suave">Ou arraste aqui. Fotos (JPG, PNG, WEBP) e PDF, até 10 MB cada e {ARQUIVOS_POR_ENVIO} de uma vez.</span>
         <input ref={escolher} type="file" multiple accept={ACEITOS} className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => incluir(e.target.files)} />
@@ -189,7 +189,7 @@ export function JanelaEnviarArquivos({ aberto, pedidoId, protocolo, parte, aoFec
           <EscolherArquivos rotulo={`Fotos e documentos · ${PARTES_ARQUIVO[parte].toLowerCase()}`} itens={itens} aoMudar={setItens} enviando={enviando} />
           <p className="text-xs text-tinta-suave">O nome do arquivo é só para mostrar. Antes de liberar, o sistema confere o conteúdo e tira a localização das fotos.</p>
           <div className="flex justify-end gap-2">
-            <Botao variante="secundario" onClick={fechar} disabled={enviando}>Cancelar</Botao>
+            <Botao variante="discreto" onClick={fechar} disabled={enviando}>Cancelar</Botao>
             <Botao disabled={!validos || enviando} onClick={() => void enviar()}>
               {enviando ? "Enviando…" : validos === 1 ? "Enviar 1 arquivo" : `Enviar ${validos} arquivos`}
             </Botao>
@@ -254,7 +254,7 @@ export function AbaArquivos({ pedidoId, protocolo, carga, avisar }: {
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-tinta-suave">Os arquivos são privados do condomínio. Cada vez que alguém abre, o link vale por 5 minutos.</p>
-        {podeEnviar ? <Botao variante="secundario" onClick={() => setEnviar(true)}>+ Enviar arquivos</Botao> : null}
+        {podeEnviar ? <Botao variante="contorno" onClick={() => setEnviar(true)}>+ Enviar arquivos</Botao> : null}
       </div>
       {arquivos.length === 0 ? <Vazio titulo="Nenhuma foto ou documento ainda.">Fotos do problema, orçamentos e notas ficam aqui, só para quem vê o pedido.</Vazio> : (
         (Object.keys(PARTES_ARQUIVO) as ParteArquivo[]).map((p) => {
@@ -265,7 +265,7 @@ export function AbaArquivos({ pedidoId, protocolo, carga, avisar }: {
               <h3 id={`arq-${p}`} className="text-sm font-semibold">{PARTES_ARQUIVO[p]}</h3>
               <ul className="grid gap-2">
                 {daParte.map((a) => (
-                  <li key={a.id} className="flex items-center gap-3 rounded-lg border border-linha bg-superficie px-3 py-2 text-sm">
+                  <li key={a.id} className="flex items-center gap-3 rounded-2xl border border-linha bg-superficie px-3 py-2 text-sm">
                     <Miniatura pedidoId={pedidoId} a={a} />
                     <span className="grid min-w-0 flex-1 gap-0.5">
                       {a.situacao === "LIBERADO"
@@ -344,10 +344,10 @@ function Visualizador({ pedidoId, fotos, indice, aoMudar, aoTirar }: {
           </div>
           <p className="text-sm">{a.descricao ? `${a.descricao} · ` : ""}<span className="text-tinta-suave">{PARTES_ARQUIVO[a.parte]} · {a.enviadoPor} · {diaHora(a.enviadoEm)} · {mostrarTamanho(a.tamanho)}</span></p>
           <div className="flex flex-wrap justify-between gap-2">
-            <Botao variante="secundario" disabled={indice === 0} onClick={() => aoMudar(indice! - 1)}>Anterior</Botao>
-            {a.podeTirar ? <Botao variante="secundario" onClick={() => aoTirar(a)}>Tirar do pedido</Botao> : null}
-            <Botao variante="secundario" onClick={() => void baixar()}>Baixar</Botao>
-            <Botao variante="secundario" disabled={indice === fotos.length - 1} onClick={() => aoMudar(indice! + 1)}>Próxima</Botao>
+            <Botao variante="contorno" disabled={indice === 0} onClick={() => aoMudar(indice! - 1)}>Anterior</Botao>
+            {a.podeTirar ? <Botao variante="contorno" onClick={() => aoTirar(a)}>Tirar do pedido</Botao> : null}
+            <Botao variante="contorno" onClick={() => void baixar()}>Baixar</Botao>
+            <Botao variante="contorno" disabled={indice === fotos.length - 1} onClick={() => aoMudar(indice! + 1)}>Próxima</Botao>
           </div>
           <div className="flex justify-end"><Botao onClick={() => aoMudar(null)}>Fechar</Botao></div>
         </div>

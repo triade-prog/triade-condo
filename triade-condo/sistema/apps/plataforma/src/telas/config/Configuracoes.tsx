@@ -51,7 +51,7 @@ export function Configuracoes() {
   if (config.estado === "erro") {
     return (
       <div className="grid gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
+        <h1 className="text-[28px] font-normal tracking-tight">Configurações</h1>
         <ErroCarregar texto={config.texto} tentarDeNovo={config.recarregar} />
       </div>
     );
@@ -67,7 +67,7 @@ export function Configuracoes() {
   return (
     <div className="grid gap-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
+        <h1 className="text-[28px] font-normal tracking-tight">Configurações</h1>
         <p className="mt-1 text-tinta-suave">Tudo começou pronto pelo cenário do prédio. Ajuste só o que for diferente no seu condomínio.</p>
       </div>
       {!c.podeEditar ? <Aviso tom="info">Você pode ver as configurações. Para mudar, o síndico precisa dar a você a permissão Configurar.</Aviso> : null}

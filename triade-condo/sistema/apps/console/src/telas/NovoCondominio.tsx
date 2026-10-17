@@ -63,7 +63,7 @@ export function NovoCondominio() {
   return (
     <form onSubmit={enviar} className="grid max-w-3xl gap-5" noValidate>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Cadastrar condomínio</h1>
+        <h1 className="text-[28px] font-normal tracking-tight">Cadastrar condomínio</h1>
         <p className="text-tinta-suave">O resto da ficha pode ser preenchido depois.</p>
       </div>
       {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
@@ -79,7 +79,7 @@ export function NovoCondominio() {
       <EscolhaCenario valor={cenario} aoMudar={setCenario} />
       <div className="flex gap-2">
         <Botao type="submit" disabled={enviando}>{enviando ? "Cadastrando…" : "Cadastrar condomínio"}</Botao>
-        <Link href="/" className={classeBotao("secundario")}>Cancelar</Link>
+        <Link href="/" className={classeBotao("contorno")}>Cancelar</Link>
       </div>
     </form>
   );

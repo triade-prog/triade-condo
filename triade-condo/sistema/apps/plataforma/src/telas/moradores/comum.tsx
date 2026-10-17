@@ -40,15 +40,9 @@ export function Escolha<T extends string>({ opcoes, atual, aoMudar, rotulo }: {
   rotulo: string;
 }) {
   return (
-    <div role="group" aria-label={rotulo} className="flex flex-wrap gap-2">
+    <div role="group" aria-label={rotulo} className="trilho justify-self-start">
       {opcoes.map((o) => (
-        <button
-          key={o.valor}
-          type="button"
-          aria-pressed={atual === o.valor}
-          onClick={() => aoMudar(o.valor)}
-          className="min-h-10 rounded-full border border-contorno bg-superficie px-3.5 text-sm aria-pressed:border-acao aria-pressed:bg-plataforma-bruma aria-pressed:font-semibold aria-pressed:text-acao-press"
-        >
+        <button key={o.valor} type="button" className="chip" aria-pressed={atual === o.valor} onClick={() => aoMudar(o.valor)}>
           {o.texto}
         </button>
       ))}

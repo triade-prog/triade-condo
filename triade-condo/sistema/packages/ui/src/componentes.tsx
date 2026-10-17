@@ -107,10 +107,11 @@ const ICONE_DO_TOM: Record<Tom, NomeIcone> = {
   info: "info", ok: "check", atencao: "relogio", erro: "alerta", neutro: "info", andamento: "relogio",
 };
 
-/** Aviso na tela: cartão branco com faixa e ícone. Erro é anunciado na hora (role=alert); o resto, com calma (role=status). */
-export function Aviso({ tom = "info", titulo, children, className = "" }: { tom?: Tom; titulo?: string; children?: ReactNode; className?: string }) {
+/** Aviso na tela: cartão branco com faixa e ícone. Erro é anunciado na hora (role=alert); o resto, com calma (role=status).
+ * Um estado que já estava lá ao abrir a tela (como o retorno vencido) usa papel="status" mesmo em rubi. */
+export function Aviso({ tom = "info", titulo, children, className = "", papel }: { tom?: Tom; titulo?: string; children?: ReactNode; className?: string; papel?: "alert" | "status" }) {
   return (
-    <div role={tom === "erro" ? "alert" : "status"} data-tom={tom} className={`aviso ${className}`}>
+    <div role={papel ?? (tom === "erro" ? "alert" : "status")} data-tom={tom} className={`aviso ${className}`}>
       <span className="quadro"><Icone nome={ICONE_DO_TOM[tom]} /></span>
       <div className="texto">
         {titulo ? <strong className="block font-semibold">{titulo}</strong> : null}
@@ -198,4 +199,11 @@ export function AvisoErro({ erro, texto, recarregar }: { erro: { codigo: string 
       ) : null}
     </Aviso>
   );
+}
+
+/** Iniciais da pessoa (duas letras), no topo e nas listas. Quem lê a tela ouve o nome ao lado. */
+export function Iniciais({ nome, className = "" }: { nome: string; className?: string }) {
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+  const letras = partes.length > 1 ? partes[0]![0]! + partes[partes.length - 1]![0]! : (partes[0] ?? "?").slice(0, 2);
+  return <span aria-hidden="true" className={`iniciais ${className}`}>{letras.toUpperCase()}</span>;
 }

@@ -18,7 +18,7 @@ const ANTERIOR: Record<PeriodoIndicadores, string> = {
 
 function Cartao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <section aria-label={titulo} className="grid content-start gap-1 rounded-xl border border-linha bg-superficie p-4 shadow-sm">
+    <section aria-label={titulo} className="grid content-start gap-1 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
       <h2 className="text-sm font-semibold">{titulo}</h2>
       {children}
     </section>
@@ -36,7 +36,7 @@ export function Indicadores() {
 
   const cabecalho = (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Indicadores</h1>
+      <h1 className="text-[28px] font-normal tracking-tight">Indicadores</h1>
       <p className="mt-1 text-tinta-suave">Como o condomínio está respondendo aos moradores. Tudo sai do histórico dos pedidos.</p>
     </div>
   );
@@ -80,7 +80,7 @@ export function Indicadores() {
         </Cartao>
       </div>
       {a.porCategoria.length ? (
-        <div className="overflow-x-auto rounded-lg border border-linha bg-superficie">
+        <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
           <table className="w-full text-sm">
             <caption className="sr-only">Indicadores por categoria</caption>
             <thead className="bg-superficie-2 text-left text-tinta-suave">
