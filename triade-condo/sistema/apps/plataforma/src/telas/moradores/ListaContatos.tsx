@@ -122,7 +122,7 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
                     {aConfirmar ? null : <td className="px-4 py-3"><SeloEstado estado={i.estado} /></td>}
                     {podeMarcar ? (
                       <td className="px-4 py-3 text-right">
-                        <Botao variante="texto" onClick={() => setRecusar(i)} aria-label={`Recusar ${i.nome}`}>Recusar</Botao>
+                        <Botao variante="discreto" onClick={() => setRecusar(i)} aria-label={`Recusar ${i.nome}`}>Recusar</Botao>
                       </td>
                     ) : null}
                   </tr>

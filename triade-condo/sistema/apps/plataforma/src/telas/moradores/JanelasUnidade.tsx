@@ -487,7 +487,7 @@ function FormMudanca({ unidade, aoFechar, salvo, recarregar }: { unidade: Unidad
             <CamposVinculo prefixo={`m-${e.chave}`} quem={`A pessoa ${i + 1}`} de={` da pessoa ${i + 1}`} valor={e.vinculo} comPeriodo={false} aoMudar={(v) => mudarVinculo(e.chave, v)}
               responsavelAtual={((r) => (r && !saem.includes(r.vinculoId) ? { nome: r.nome, mora: r.mora } : null))(unidade.contatos.find((c) => c.principal))} />
             {entram.length > 1 ? (
-              <div className="flex justify-end"><Botao variante="texto" onClick={() => setEntram(entram.filter((x) => x.chave !== e.chave))}>Tirar pessoa {i + 1}</Botao></div>
+              <div className="flex justify-end"><Botao variante="discreto" onClick={() => setEntram(entram.filter((x) => x.chave !== e.chave))}>Tirar pessoa {i + 1}</Botao></div>
             ) : null}
           </div>
         ))}

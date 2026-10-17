@@ -74,7 +74,7 @@ export function Unidade() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
-            {nome}{u.ativa ? null : <Selo tom="neutro" marca="inativo">Desativada</Selo>}
+            {nome}{u.ativa ? null : <Selo tom="neutro">Desativada</Selo>}
           </h1>
           <p className="mt-1 text-tinta-suave">Quem fala por esta unidade. Só a pessoa confirmada vale.</p>
         </div>
@@ -130,15 +130,15 @@ export function Unidade() {
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       {c.estado === "PENDENTE" && d.podeConfirmar ? (
                         <>
-                          <Botao variante="texto" onClick={() => void confirmar(c)} aria-label={`Confirmar ${c.nome}`}>Confirmar</Botao>
-                          <Botao variante="texto" onClick={() => setJanela({ tipo: "recusar", contato: c })} aria-label={`Recusar ${c.nome}`}>Recusar</Botao>
+                          <Botao variante="discreto" onClick={() => void confirmar(c)} aria-label={`Confirmar ${c.nome}`}>Confirmar</Botao>
+                          <Botao variante="discreto" onClick={() => setJanela({ tipo: "recusar", contato: c })} aria-label={`Recusar ${c.nome}`}>Recusar</Botao>
                         </>
                       ) : null}
                       {d.podeEditar ? (
-                        <Botao variante="texto" onClick={() => setJanela({ tipo: "editar", contato: c })} aria-label={`Editar ${c.nome}`}>Editar</Botao>
+                        <Botao variante="discreto" onClick={() => setJanela({ tipo: "editar", contato: c })} aria-label={`Editar ${c.nome}`}>Editar</Botao>
                       ) : null}
                       {d.podeEditar && c.estado === "CONFIRMADO" ? (
-                        <Botao variante="texto" onClick={() => setJanela({ tipo: "encerrar", contato: c })} aria-label={`Encerrar o vínculo de ${c.nome}`}>Encerrar</Botao>
+                        <Botao variante="discreto" onClick={() => setJanela({ tipo: "encerrar", contato: c })} aria-label={`Encerrar o vínculo de ${c.nome}`}>Encerrar</Botao>
                       ) : null}
                     </td>
                   ) : null}
@@ -169,7 +169,7 @@ export function Unidade() {
                   </span>
                 </span>
                 {d.podeEditar && a.semVinculoAtivo && !a.dadosRemovidos ? (
-                  <Botao variante="texto" onClick={() => setJanela({ tipo: "remover", anterior: a })} aria-label={`Remover os dados de ${a.nome}`}>Remover dados</Botao>
+                  <Botao variante="discreto" onClick={() => setJanela({ tipo: "remover", anterior: a })} aria-label={`Remover os dados de ${a.nome}`}>Remover dados</Botao>
                 ) : null}
               </li>
             ))}

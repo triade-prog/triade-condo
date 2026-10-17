@@ -17,8 +17,8 @@ export function nomeMotivo(m: string): string {
 /** Confirmado ou a confirmar: palavra e forma, além da cor (MU-02). */
 export function SeloEstado({ estado }: { estado: "PENDENTE" | "CONFIRMADO" }) {
   return estado === "CONFIRMADO"
-    ? <Selo tom="ok" marca="ok">{ESTADOS_CONTATO_UNIDADE.CONFIRMADO}</Selo>
-    : <Selo tom="atencao" marca="atencao">{ESTADOS_CONTATO_UNIDADE.PENDENTE}</Selo>;
+    ? <Selo tom="ok">{ESTADOS_CONTATO_UNIDADE.CONFIRMADO}</Selo>
+    : <Selo tom="atencao">{ESTADOS_CONTATO_UNIDADE.PENDENTE}</Selo>;
 }
 
 /** Como chamar a divisão do prédio nas telas: "Torre", "Torres", "Sem torre". */

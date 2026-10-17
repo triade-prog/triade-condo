@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Letra de destaque · comparar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;1,9..144,300;1,9..144,400&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,300;1,6..72,300;1,6..72,400&family=Playfair+Display:ital,wght@0,400;1,400&display=swap">
+<style>
+/* Segunda letra só para destaque (17/10/2026): a Manrope continua em tudo; a letra de
+   destaque entra só em palavras de títulos grandes. Quatro opções para escolher. */
+:root{--violeta:#5808CC;--profundo:#180567;--laranja:#FF8D01;--papel:#F8F6FC;--lavanda:#F1E9FC;--tinta:#211A32;--suave:#665D74;--linha:#E6DFEF;
+  --vencido:#B91C1C;--vencido-fundo:#FEE2E2;--grad:linear-gradient(135deg,#180567 0%,#5808CC 55%,#9E37F5 100%);color-scheme:light;--destaque:serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--tinta);font:15px/1.6 Manrope,system-ui,sans-serif}
+.doc{max-width:1240px;margin:0 auto;padding:24px 20px 80px}
+.doc-topo{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.doc-topo img{width:160px}
+h1{font-weight:300;font-size:clamp(28px,4vw,42px);letter-spacing:-.025em;margin:24px 0 6px;line-height:1.15}
+h1 em{font-family:Fraunces,serif;font-style:italic;font-weight:300;color:var(--violeta)}
+.sub{color:var(--suave);max-width:780px;margin:0 0 20px}
+.regras{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin:0 0 28px}
+.regra{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:16px}
+.regra b{display:block;font-weight:500;margin-bottom:4px}
+.regra p{margin:0;font-size:14px;color:var(--suave)}
+.opcoes{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,560px),1fr))}
+.opcao{background:#fff;border:1px solid var(--linha);border-radius:18px;overflow:hidden}
+.opcao>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:16px 20px;border-bottom:1px solid var(--linha)}
+.opcao>header b{font-weight:500;font-size:17px}
+.opcao>header span{font-size:13px;color:var(--suave)}
+.amostra{padding:18px;display:grid;gap:14px;background:var(--papel)}
+/* A letra de destaque: só no <em> dos títulos. */
+.amostra em{font-family:var(--destaque);font-style:italic;font-weight:300;letter-spacing:0}
+.dia{position:relative;overflow:hidden;border-radius:16px;background:var(--grad);color:#fff;padding:22px 24px}
+.dia .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#E7D3FF;font-weight:500}
+.dia h2{font-size:34px;font-weight:300;letter-spacing:-.02em;margin:8px 0 6px;line-height:1.15}
+.dia h2 em{color:#FFD39E}
+.dia p{margin:0;color:#EDE0FF}
+.dia .trilha{position:absolute;right:30px;top:60px;width:70px;height:180px;border-radius:70px;transform:rotate(26deg);background:linear-gradient(160deg,#FFBD48,#FF8D01 55%,#EA5508)}
+.dia .orbita{position:absolute;width:300px;height:300px;border-radius:50%;border:1px solid #ffffff2e;right:-90px;top:-120px}
+.dia .texto{position:relative;z-index:1;max-width:72%}
+.botao{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:10px;font-weight:500;font-size:14px;margin-top:14px;background:#fff;color:var(--profundo)}
+.dupla{display:grid;gap:14px;grid-template-columns:1fr 1fr}
+.prioridade{border-radius:16px;background:linear-gradient(150deg,#FFF7EA,#FFEFD6);border:1px solid #F5DDBB;padding:18px}
+.prioridade .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#7C3900;font-weight:500}
+.prioridade h3{color:#552600;font-size:24px;font-weight:300;margin:6px 0;line-height:1.2}
+.prioridade p{margin:0;color:#6B4119;font-size:14px}
+.vazio{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:18px;text-align:center}
+.vazio h3{font-size:24px;font-weight:300;margin:0 0 4px;line-height:1.2}
+.vazio h3 em{color:var(--violeta)}
+.vazio p{margin:0;font-size:14px;color:var(--suave)}
+.trabalho{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:14px;font-size:14px;display:grid;gap:4px}
+.trabalho .t{font-size:16px;font-weight:500}
+.trabalho .s{font-size:13px;color:var(--suave)}
+.selo{display:inline-flex;font-size:13px;font-weight:500;padding:3px 10px;border-radius:999px;color:var(--vencido);background:var(--vencido-fundo);justify-self:start}
+.nota{font-size:13px;color:var(--suave);padding:12px 20px;border-top:1px solid var(--linha);margin:0}
+.f-fraunces{--destaque:Fraunces,serif}
+.f-instrument{--destaque:"Instrument Serif",serif}
+.f-instrument .amostra em{font-weight:400}
+.f-newsreader{--destaque:Newsreader,serif}
+.f-playfair{--destaque:"Playfair Display",serif}
+.f-playfair .amostra em{font-weight:400}
+.fontes{font-size:13px;color:var(--suave);margin-top:32px}
+.fontes a{color:var(--violeta)}
+@media (max-width:560px){
+  .dupla{grid-template-columns:1fr}
+  .dia h2{font-size:28px}
+  .dia .texto{max-width:100%}
+  .dia .trilha{opacity:.4}
+}
+</style>
+</head>
+<body>
+<div class="doc">
+<div class="doc-topo"><img src="logo-violeta.png" alt="TRÍADE Condo"><a href="fontes.html">Voltar à comparação de letras</a></div>
+<main>
+<h1>Uma segunda letra, <em>só para o que importa</em>.</h1>
+<p class="sub">É o que fazem os grandes sistemas de design: uma letra de trabalho para tudo, a Manrope, e uma letra de personalidade usada pouco, só em títulos grandes. O Material Design, do Google, chama as duas de "marca" e "simples": a de marca vai nos títulos curtos e a simples no texto, nos rótulos e nos campos. Aqui, a letra de destaque é serifada e em itálico, e entra em uma palavra ou num trecho curto do título.</p>
+<div class="regras">
+  <div class="regra"><b>Onde entra</b><p>Em uma palavra ou num trecho curto de títulos grandes: o cabeçalho do dia, a prioridade do dia, telas vazias, a tela de entrar.</p></div>
+  <div class="regra"><b>Onde não entra</b><p>Em números, tabelas, botões, menus, selos, campos e texto corrido. Ali a Manrope é mais clara, e serifa fina em tamanho pequeno fica difícil de ler.</p></div>
+  <div class="regra"><b>Quanto</b><p>No máximo um destaque por bloco e poucos por tela. Se tudo é destaque, nada é. Com os dois pesos leves de cada letra, a tela continua leve para carregar.</p></div>
+</div>
+
+<div class="opcoes">
+<template id="modelo">
+  <div class="amostra">
+    <div class="dia" role="img" aria-label="Cabeçalho: Sexta, 17 de outubro. Bom dia, Ana. 2 retornos vencidos e 3 vencem hoje.">
+      <span class="orbita" aria-hidden="true"></span><span class="trilha" aria-hidden="true"></span>
+      <div class="texto"><div class="eyebrow">Sexta, 17 de outubro</div><h2>Bom dia, <em>Ana</em>.</h2><p>2 retornos vencidos e 3 vencem hoje.</p><span class="botao">Ver os vencidos</span></div>
+    </div>
+    <div class="dupla">
+      <div class="prioridade"><div class="eyebrow">Prioridade do dia</div><h3>Um retorno faz <em>diferença</em>.</h3><p>Dê notícia ao morador, mesmo sem solução.</p></div>
+      <div class="vazio"><h3>Nenhum pedido <em>esperando</em>.</h3><p>Quando um morador pedir algo, ele aparece aqui.</p></div>
+    </div>
+    <div class="trabalho"><span class="s">2026-0012 · Torre A · 101</span><span class="t">Vazamento no banheiro</span><span class="s">Manutenção · responsável: Bruna</span><span class="selo">Venceu às 11h</span><span class="s">Aqui é trabalho: tudo em Manrope.</span></div>
+  </div>
+</template>
+
+<section class="opcao f-fraunces" aria-labelledby="o1"><header><b id="o1">A · Fraunces itálico</b><span>Suave e acolhedora</span></header><div class="slot"></div>
+  <p class="nota">Serifa macia, de traço arredondado. É a parceira mais citada para a Manrope e combina com o "cuidar" da marca. A que eu recomendo.</p></section>
+<section class="opcao f-instrument" aria-labelledby="o2"><header><b id="o2">B · Instrument Serif itálico</b><span>Fina e editorial</span></header><div class="slot"></div>
+  <p class="nota">A mais delicada e alta, com ar de revista. Muito elegante nos títulos grandes; em título pequeno perde força.</p></section>
+<section class="opcao f-newsreader" aria-labelledby="o3"><header><b id="o3">C · Newsreader itálico</b><span>Clássica e sóbria</span></header><div class="slot"></div>
+  <p class="nota">Feita para leitura; o itálico é discreto e sério. Combina com documentos e prestação de contas.</p></section>
+<section class="opcao f-playfair" aria-labelledby="o4"><header><b id="o4">D · Playfair Display itálico</b><span>Contraste alto</span></header><div class="slot"></div>
+  <p class="nota">Mais dramática, com traços finos e grossos bem marcados. Chama muita atenção; usada demais, cansa.</p></section>
+</div>
+
+<p class="fontes">Referências da pesquisa:
+  <a href="https://material.io/design/typography">Material Design, sistema de tipografia</a> ·
+  <a href="https://material-web.dev/theming/typography">Material Web, letras de marca e simples</a> ·
+  <a href="https://get.convictional.com/handbook/brand/typography">Convictional, serifa de destaque e sem serifa de trabalho</a> ·
+  <a href="https://madegooddesigns.com/font-pairing/">Made Good Designs, como combinar letras</a> ·
+  <a href="https://madegooddesigns.com/?p=40182">Made Good Designs, pares para a Manrope</a> ·
+  <a href="https://v1.designsystem.digital.gov/components/typography">U.S. Web Design System, poucos pesos</a> ·
+  <a href="https://madegooddesigns.com/trending-fonts/">Made Good Designs, letras em 2026</a></p>
+</main>
+</div>
+<script>
+// O mesmo trecho em cada opção.
+const modelo = document.getElementById("modelo");
+document.querySelectorAll(".slot").forEach((s) => s.replaceWith(modelo.content.cloneNode(true)));
+</script>
+</body>
+</html>

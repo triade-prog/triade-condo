@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Letras TRÍADE Condo · comparar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Manrope:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Figtree:wght@300;400;500;600&display=swap">
+<style>
+/* Comparação de famílias de letra para a proposta de identidade (17/10/2026). O mesmo trecho
+   de tela em cada uma, com os mesmos pesos leves. Só para escolher; nada aplicado. */
+:root{--violeta:#5808CC;--profundo:#180567;--laranja:#FF8D01;--papel:#F8F6FC;--lavanda:#F1E9FC;--tinta:#211A32;--suave:#665D74;--linha:#E6DFEF;
+  --vencido:#B91C1C;--vencido-fundo:#FEE2E2;--atencao:#854D0E;--atencao-fundo:#FEF3C7;
+  --grad:linear-gradient(135deg,#180567 0%,#5808CC 55%,#9E37F5 100%);color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--tinta);font:15px/1.6 Inter,system-ui,sans-serif}
+.doc{max-width:1240px;margin:0 auto;padding:24px 20px 80px}
+.doc-topo{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.doc-topo img{width:160px}
+h1{font-weight:300;font-size:clamp(28px,4vw,40px);letter-spacing:-.025em;margin:24px 0 6px}
+.sub{color:var(--suave);max-width:760px;margin:0 0 28px}
+.opcoes{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,560px),1fr))}
+.opcao{background:#fff;border:1px solid var(--linha);border-radius:18px;overflow:hidden}
+.opcao>header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:16px 20px;border-bottom:1px solid var(--linha);font-family:Inter,sans-serif}
+.opcao>header b{font-weight:500;font-size:17px}
+.opcao>header span{font-size:13px;color:var(--suave)}
+.amostra{padding:18px;display:grid;gap:14px;background:var(--papel)}
+.dia{position:relative;overflow:hidden;border-radius:16px;background:var(--grad);color:#fff;padding:22px 24px}
+.dia .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#E7D3FF;font-weight:500}
+.dia h2{font-size:30px;font-weight:300;letter-spacing:-.02em;margin:8px 0 6px;line-height:1.15}
+.dia p{margin:0;color:#EDE0FF}
+.dia .trilha{position:absolute;right:30px;top:60px;width:70px;height:180px;border-radius:70px;transform:rotate(26deg);background:linear-gradient(160deg,#FFBD48,#FF8D01 55%,#EA5508)}
+.dia .orbita{position:absolute;width:300px;height:300px;border-radius:50%;border:1px solid #ffffff2e;right:-90px;top:-120px}
+.dia .texto{position:relative;z-index:1;max-width:72%}
+.botoes{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.botao{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:10px;font-weight:500;font-size:14px}
+.b-claro{background:#fff;color:var(--profundo)}
+.b-contorno{border:1px solid #ffffff66;color:#fff}
+.numeros{display:grid;gap:10px;grid-template-columns:repeat(3,1fr)}
+.numero{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:12px 14px}
+.numero span{display:block;font-size:13px;color:var(--suave)}
+.numero strong{display:block;font-size:30px;font-weight:300;line-height:1.15;letter-spacing:-.02em}
+.linhas{display:grid;grid-template-columns:180px 1fr;gap:14px}
+.menu{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:8px;display:grid;gap:2px}
+.menu span{min-height:38px;display:flex;align-items:center;padding:0 10px;border-radius:9px;font-size:14px}
+.menu .sel{background:var(--lavanda);color:var(--violeta);font-weight:500;position:relative}
+.menu .sel::before{content:"";position:absolute;left:-8px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--laranja)}
+.pedido{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:14px;display:grid;gap:4px;font-size:14px}
+.pedido .prot{font-size:12px;color:var(--suave);letter-spacing:.02em}
+.pedido .ass{font-size:16px;font-weight:500}
+.pedido .loc{font-size:13px;color:var(--suave)}
+.selos{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.selo{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.s-v{color:var(--vencido);background:var(--vencido-fundo)}
+.s-a{color:var(--atencao);background:var(--atencao-fundo)}
+.botao-p{background:var(--violeta);color:#fff;justify-self:start;margin-top:6px}
+.nota{font-size:13px;color:var(--suave);padding:12px 20px;border-top:1px solid var(--linha);font-family:Inter,sans-serif}
+.f-inter .amostra{font-family:Inter,sans-serif}
+.f-manrope .amostra{font-family:Manrope,sans-serif}
+.f-jakarta .amostra{font-family:"Plus Jakarta Sans",sans-serif}
+.f-figtree .amostra{font-family:Figtree,sans-serif}
+@media (max-width:560px){
+  .linhas{grid-template-columns:1fr}
+  .numeros{grid-template-columns:1fr 1fr 1fr}
+  .numero strong{font-size:24px}
+  .dia h2{font-size:24px}
+  .dia .texto{max-width:100%}
+  .dia .trilha{opacity:.4}
+}
+</style>
+</head>
+<body>
+<div class="doc">
+<div class="doc-topo"><img src="logo-violeta.png" alt="TRÍADE Condo"><a href="proposta.html">Voltar à proposta de identidade</a></div>
+<main>
+<h1>Qual letra combina com a TRÍADE?</h1>
+<p class="sub">O mesmo trecho do início em quatro famílias, todas gratuitas, com acentos completos e números da mesma largura, bons para tabela. Em todas, os títulos e os números ficam leves (300), os rótulos e botões em 500 e o texto em 400.</p>
+
+<div class="opcoes">
+<template id="modelo">
+  <div class="amostra">
+    <div class="dia" role="img" aria-label="Cabeçalho do dia: Sexta, 17 de outubro. Bom dia, Ana. 2 retornos vencidos e 3 vencem hoje.">
+      <span class="orbita" aria-hidden="true"></span><span class="trilha" aria-hidden="true"></span>
+      <div class="texto"><div class="eyebrow">Sexta, 17 de outubro</div><h2>Bom dia, Ana.</h2><p>2 retornos vencidos e 3 vencem hoje. Dê notícia ao morador, mesmo sem solução.</p>
+        <div class="botoes"><span class="botao b-claro">Ver os vencidos</span><span class="botao b-contorno">Registrar pedido</span></div></div>
+    </div>
+    <div class="numeros"><div class="numero"><span>Em acompanhamento</span><strong>5</strong></div><div class="numero"><span>Retornos vencidos</span><strong>2</strong></div><div class="numero"><span>No prazo</span><strong>86%</strong></div></div>
+    <div class="linhas">
+      <div class="menu"><span class="sel">Início</span><span>Pedidos</span><span>Moradores e unidades</span><span>Indicadores</span></div>
+      <div class="pedido"><span class="prot">2026-0012 · Torre A · 101</span><span class="ass">Vazamento no banheiro</span><span class="loc">Manutenção · responsável: Bruna</span>
+        <span class="selos"><span class="selo s-v">Venceu às 11h</span><span class="selo s-a">Previsão: quinta</span></span>
+        <span class="botao botao-p">Dar retorno ao morador</span></div>
+    </div>
+  </div>
+</template>
+
+<section class="opcao f-inter" aria-labelledby="o1"><header><b id="o1">A · Inter leve</b><span>A atual, com pesos leves</span></header><div class="slot"></div>
+  <p class="nota">Neutra e muito legível em tamanho pequeno. Mais técnica que delicada.</p></section>
+<section class="opcao f-manrope" aria-labelledby="o2"><header><b id="o2">B · Manrope</b><span>Geométrica e arejada</span></header><div class="slot"></div>
+  <p class="nota">Traço fino e formas abertas; fica elegante nos títulos e continua clara nos números. A que mais combina com as curvas do logo.</p></section>
+<section class="opcao f-jakarta" aria-labelledby="o3"><header><b id="o3">C · Plus Jakarta Sans</b><span>Moderna e acolhedora</span></header><div class="slot"></div>
+  <p class="nota">Um pouco mais larga e simpática; boa para títulos, com texto confortável.</p></section>
+<section class="opcao f-figtree" aria-labelledby="o4"><header><b id="o4">D · Figtree</b><span>Suave e amigável</span></header><div class="slot"></div>
+  <p class="nota">Cantos mais redondos e jeito leve; a mais calorosa das quatro.</p></section>
+</div>
+</main>
+</div>
+<script>
+// O mesmo trecho em cada opção.
+const modelo = document.getElementById("modelo");
+document.querySelectorAll(".slot").forEach((s) => s.replaceWith(modelo.content.cloneNode(true)));
+</script>
+</body>
+</html>

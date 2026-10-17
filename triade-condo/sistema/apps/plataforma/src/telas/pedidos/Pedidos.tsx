@@ -46,7 +46,7 @@ function Item({ p, agora }: { p: PedidoDaFila; agora: string }) {
         <span className="block text-xs text-tinta-suave">
           {[p.unidade ?? p.local, p.categoria, p.prioridade.nome].filter(Boolean).join(" · ")}
         </span>
-        {p.privado ? <span className="mt-1 inline-block"><Selo tom="neutro" marca="interno">Privado</Selo></span> : null}
+        {p.privado ? <span className="mt-1 inline-block"><Selo tom="neutro">Privado</Selo></span> : null}
       </div>
       <div>
         <span className="md:hidden text-xs text-tinta-suave">Etapa: </span>
@@ -61,7 +61,7 @@ function Item({ p, agora }: { p: PedidoDaFila; agora: string }) {
             {p.responsavel.eu ? "Você" : p.responsavel.nome}
             {!p.aceito && p.estado !== "ENCERRADO" && p.estado !== "CANCELADO" ? <span className="block text-xs text-atencao">esperando aceite</span> : null}
           </>
-        ) : <Selo tom="atencao" marca="atencao">Sem responsável</Selo>}
+        ) : <Selo tom="atencao">Sem responsável</Selo>}
       </div>
       <div>
         <span className="md:hidden text-xs text-tinta-suave">Aberto há </span>
@@ -69,7 +69,7 @@ function Item({ p, agora }: { p: PedidoDaFila; agora: string }) {
       </div>
       <div>
         <span className="md:hidden text-xs text-tinta-suave">Próximo retorno: </span>
-        {p.retornoVencido && p.proximoRetorno ? <Selo tom="atencao" marca="atencao">{faltaPara(p.proximoRetorno, agora)}</Selo>
+        {p.retornoVencido && p.proximoRetorno ? <Selo tom="atencao">{faltaPara(p.proximoRetorno, agora)}</Selo>
           : p.proximoRetorno ? diaHora(p.proximoRetorno) : <span className="text-tinta-suave">—</span>}
       </div>
     </li>
@@ -146,7 +146,7 @@ export function Pedidos() {
               </button>
             );
           })}
-          {filtrando ? <Botao variante="texto" onClick={() => router.replace("/pedidos", { scroll: false })}>Limpar filtros</Botao> : null}
+          {filtrando ? <Botao variante="discreto" onClick={() => router.replace("/pedidos", { scroll: false })}>Limpar filtros</Botao> : null}
         </div>
       </div>
 

@@ -163,8 +163,8 @@ export function AbaPessoas(props: PropsPessoas) {
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     {p.funcao === "AUTORIZADO" ? (
                       <>
-                        <Botao variante="texto" onClick={() => setJanela({ tipo: "rever", pessoa: p })} aria-label={`Rever o acesso de ${p.nome}`}>Rever</Botao>
-                        <Botao variante="texto" onClick={() => setJanela({ tipo: "revogar", pessoa: p })} aria-label={`Revogar o acesso de ${p.nome}`}>Revogar</Botao>
+                        <Botao variante="discreto" onClick={() => setJanela({ tipo: "rever", pessoa: p })} aria-label={`Rever o acesso de ${p.nome}`}>Rever</Botao>
+                        <Botao variante="discreto" onClick={() => setJanela({ tipo: "revogar", pessoa: p })} aria-label={`Revogar o acesso de ${p.nome}`}>Revogar</Botao>
                       </>
                     ) : null}
                   </td>

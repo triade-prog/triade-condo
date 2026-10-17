@@ -62,12 +62,12 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
             <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
               <span className="flex flex-wrap items-center gap-2">
                 <span className={c.ativa ? "font-medium" : "text-tinta-suave"}>{c.nome}</span>
-                {c.ativa ? <Selo tom="ok" marca="ok">Ativa</Selo> : <Selo tom="neutro" marca="inativo">Desativada</Selo>}
+                {c.ativa ? <Selo tom="ok">Ativa</Selo> : <Selo tom="neutro">Desativada</Selo>}
               </span>
               {pode ? (
                 <span className="flex gap-1">
-                  {c.ativa ? <Botao variante="texto" onClick={() => setEdicao({ tipo: "categoria", item: c })} aria-label={`Renomear ${c.nome}`}>Renomear</Botao> : null}
-                  <Botao variante="texto" onClick={() => void alternar(c)} aria-label={`${c.ativa ? "Desativar" : "Reativar"} ${c.nome}`}>{c.ativa ? "Desativar" : "Reativar"}</Botao>
+                  {c.ativa ? <Botao variante="discreto" onClick={() => setEdicao({ tipo: "categoria", item: c })} aria-label={`Renomear ${c.nome}`}>Renomear</Botao> : null}
+                  <Botao variante="discreto" onClick={() => void alternar(c)} aria-label={`${c.ativa ? "Desativar" : "Reativar"} ${c.nome}`}>{c.ativa ? "Desativar" : "Reativar"}</Botao>
                 </span>
               ) : null}
             </li>
@@ -86,11 +86,11 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
               <span className="grid gap-0.5">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className={p.ativa ? "font-medium" : "text-tinta-suave"}>{p.nome}</span>
-                  {p.ativa ? null : <Selo tom="neutro" marca="inativo">Desativada</Selo>}
+                  {p.ativa ? null : <Selo tom="neutro">Desativada</Selo>}
                 </span>
                 <span className="text-tinta-suave">{p.significado}</span>
               </span>
-              {pode ? <Botao variante="texto" onClick={() => setEdicao({ tipo: "prioridade", item: p })} aria-label={`Editar a prioridade ${p.nome}`}>Editar</Botao> : null}
+              {pode ? <Botao variante="discreto" onClick={() => setEdicao({ tipo: "prioridade", item: p })} aria-label={`Editar a prioridade ${p.nome}`}>Editar</Botao> : null}
             </li>
           ))}
         </ul>

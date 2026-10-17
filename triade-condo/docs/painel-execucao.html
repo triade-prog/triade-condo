@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "17/10/2026",
     "total_ideias": 308,
-    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado) e os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (605 pgTAP, 96 Deno, 72 Vitest, 120 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0120, com a conferência de prazos no pg_cron) e as Edge Functions api-plataforma (versão 8) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
+    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado) e os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (605 pgTAP, 96 Deno, 75 Vitest, 124 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, parte A do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0120, com a conferência de prazos no pg_cron) e as Edge Functions api-plataforma (versão 8) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F7",
-    "proximo_passo": "Juntar a branch dos passos 6 e 7 ao main e conferir os avisos com pedidos de verdade no Águas Claras (E8). Com a Carolina: liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1), que destrava o passo 5 e os avisos no WhatsApp (F6.3, F6.4)."
+    "proximo_passo": "Aprovar a proposta de identidade (docs/identidade/proposta.html) e aplicá-la ao design-frontend.html e às duas aplicações. Juntar a branch dos passos 6 e 7 ao main e conferir os avisos com pedidos de verdade no Águas Claras (E8). Com a Carolina: liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
   "fases": [
     {
@@ -1046,6 +1046,17 @@
       ],
       "status": "feito",
       "evidencia": "Playwright plataforma-passo4.spec.ts (5 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T20",
+      "texto": "Identidade TRÍADE no código: sempre claro mesmo com o aparelho no modo escuro, fontes servidas pelo próprio sistema (nenhum pedido para fora), contraste AA em todas as telas e classes certas dos componentes base",
+      "fase": "D4",
+      "refs": [
+        "DC13",
+        "PT-10"
+      ],
+      "status": "feito",
+      "evidencia": "Playwright fundacao.spec.ts (sempre claro e fontes, 2 apps × 2 aparelhos) e axe nas 8 suítes (124 cenários); Vitest packages/ui componentes.test.ts (3 testes)"
     }
   ],
   "publicacao": [
@@ -1186,7 +1197,7 @@
       "precisa_em": "D",
       "refs": [],
       "status": "pendente",
-      "nota": "Paleta e tipografia já definidas em 16/10 (DC11); o símbolo triangular atual é provisório"
+      "nota": "Identidade definida em 17/10 (DC13); o símbolo triangular atual é provisório"
     },
     {
       "id": "E6",
@@ -1267,14 +1278,74 @@
     ],
     [
       "DC11",
-      "Paleta e tipografia da referência Lattice (Inter, neutros frios, destaque lilás); verde-petróleo nas ações da Plataforma e violeta no Console"
+      "Paleta e tipografia da referência Lattice (Inter, neutros frios, destaque lilás); verde-petróleo nas ações da Plataforma e violeta no Console (substituída pela DC13 em 17/10/2026)"
     ],
     [
       "DC12",
       "Domínio do sistema: t3condo.trihub.com.br (Carolina, 17/10/2026), começando pelos e-mails, enviados pelo Resend"
+    ],
+    [
+      "DC13",
+      "Identidade TRÍADE (Carolina, 17/10/2026), substitui a DC11: sistema de design em docs/identidade/sistema.html; violeta nas ações dos dois sistemas; botão em degradê com brilho, selos com faixa, paleta Brilho; sempre claro; Manrope, Playfair e Plex Mono servidas pelo próprio sistema"
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "15:25",
+      "fim": "15:27",
+      "texto": "Identidade, parte A do plano no código: tema.css reescrito com a paleta Brilho, o violeta nas ações dos dois sistemas, sombras e degradês, sem o tema escuro; Manrope, Playfair Display itálico e IBM Plex Mono servidas pelo próprio sistema (Fontsource, a CSP continua só com o próprio endereço); componentes base no desenho aprovado: botão em seis estilos e três tamanhos com anel de foco duplo, selo com faixa lateral (tom novo andamento), aviso em cartão branco com quadro de ícone, campos de 44 px, janela, abas, tela vazia com órbitas, e os novos Chip, Trilho e Icone (52 ícones). Testes: 75 Vitest e 124 ponta a ponta com axe, lint e typecheck passam. As molduras e as telas uma a uma ficam para a parte B.",
+      "ref": "DC13, D4, PT-10"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "15:15",
+      "fim": "15:15",
+      "texto": "Carolina aprovou as três decisões do plano de identidade (violeta nas ações dos dois sistemas, sempre claro, fontes no próprio sistema): DC13 registrada no CONTEXTO e no painel, e o design-frontend passa a apontar para o sistema de design. Etapa 1: cinco telas-modelo (Entrar, Início, Fila de pedidos, Pedido e Carteira do Console) no computador e no celular, em docs/identidade/telas-modelo.html, para aprovação antes do código.",
+      "ref": "DC13, D4"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "14:20",
+      "fim": "15:10",
+      "texto": "Sistema de design: neutros e cores de significado em cartões com borda em degradê, como o botão secundário, com amostra do selo em cada cor de estado; escalas violeta e laranja e tokens de uso no mesmo estilo. Restos da paleta antiga apagados (valores nos tokens, campos, pessoas, textos e a paleta de comparação em versoes.html).",
+      "ref": "D4"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "13:55",
+      "fim": "14:49",
+      "texto": "Escolhas da Carolina aplicadas ao sistema de design: botão C (degradê com brilho), selos e chips D (faixa lateral) com o brilho do C e filtros num trilho, e a paleta Brilho derivada dos dois (neutros lavanda, jade, âmbar, rubi e petróleo, todas AA). Plano de aplicação no código (docs/identidade/plano-aplicacao.html): três decisões para confirmar (violeta nas ações dos dois sistemas, sempre claro, fontes servidas pelo próprio sistema) e sete etapas, de tokens e componentes até as telas e a limpeza.",
+      "ref": "D4"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "13:05",
+      "fim": "13:46",
+      "texto": "Versões para escolher (docs/identidade/versoes.html): quatro jeitos de botão (pílula macia, sólido sóbrio, degradê com brilho, tinta profunda), quatro de selos e chips (pastel com contorno, ponto sobre branco, etiqueta sólida, faixa lateral) e quatro paletas de neutros e significado (lavanda presente, grafite limpo, giz suave, joia), ao lado da de hoje, com contraste medido e cada paleta aplicada em avisos e selos. Anel de foco duplo, que passa 3 : 1. Aguarda a escolha da Carolina.",
+      "ref": "D4"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "08:20",
+      "fim": "08:52",
+      "texto": "Sistema de design revisto: cores de estado harmonizadas com o violeta (verde azulado, mel, framboesa e índigo, todas com contraste AA), avisos em cartão branco com ícone em quadro tingido, sem botão laranja (o laranja fica só como acento), mais 19 ícones e mais componentes das referências: barra superior, trilha, links, menus, lista de escolha, janela, gaveta, balão, área de texto, envio de arquivo, paginação, progresso, persona, tela vazia, dicas e emblemas. Nada aplicado ao produto até a aprovação.",
+      "ref": "D4"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "06:05",
+      "fim": "06:05",
+      "texto": "Sistema de design TRÍADE para aprovar em docs/identidade/sistema.html, no formato das 18 referências que a Carolina deixou no Google Drive: sumário, cores com contraste conferido, tipografia (Manrope e Playfair Display), espaço e cantos, sombras, ícones próprios, botão, campo, selos e chips, escolhas, tabela e avatar, calendário, lateral e cartões com vida, avisos e grade. Nada aplicado ao produto até a aprovação.",
+      "ref": "D4"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "05:21",
+      "fim": "05:21",
+      "texto": "Identidade visual: proposta para aprovar em docs/identidade/proposta.html, a partir da ideia 01 (violeta institucional) e do estudo cromático enviados pela Carolina. Violeta e laranja no lugar de verde-petróleo e lilás; lateral clara e flutuante nos dois sistemas; órbitas, arcos, trilha e cartão solto como elementos de fundo, com regras de uso; Plataforma, celular, tela de entrar e Console desenhados; contraste conferido. Nada aplicado ao produto até a aprovação.",
+      "ref": "D4"
+    },
     {
       "data": "17/10/2026",
       "inicio": "04:20",

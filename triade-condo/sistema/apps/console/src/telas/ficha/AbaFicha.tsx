@@ -91,7 +91,7 @@ function FormFicha({ ficha, pode, recarregar, avisar }: PropsAba) {
               <CampoTexto id={`c-${i}-telefone`} rotulo="Telefone" inputMode="tel" value={x.telefone} onChange={(e) => mudarContato(i, "telefone", e.target.value)} />
               <CampoTexto id={`c-${i}-email`} rotulo="E-mail" type="email" value={x.email} onChange={(e) => mudarContato(i, "email", e.target.value)} />
               {editavel ? (
-                <Botao variante="texto" onClick={() => setContatos((l) => l.filter((_, j) => j !== i))} aria-label={`Tirar o contato ${x.nome || i + 1}`}>Tirar</Botao>
+                <Botao variante="discreto" onClick={() => setContatos((l) => l.filter((_, j) => j !== i))} aria-label={`Tirar o contato ${x.nome || i + 1}`}>Tirar</Botao>
               ) : null}
             </div>
           ))}

@@ -58,7 +58,7 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
             return (
               <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                 <span className="flex flex-wrap items-center gap-2">
-                  <Selo tom={a.tipo === "SEM_RESPONSAVEL" || a.tipo === "PENDENCIA_PARADA" ? "info" : "atencao"} marca="atencao">{TIPOS_AVISO[a.tipo]}</Selo>
+                  <Selo tom={a.tipo === "SEM_RESPONSAVEL" || a.tipo === "PENDENCIA_PARADA" ? "info" : "atencao"}>{TIPOS_AVISO[a.tipo]}</Selo>
                   {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
                 </span>
                 <span><strong className="font-semibold">{a.protocolo}</strong> {a.assunto ?? "Pedido privado"}</span>
@@ -68,7 +68,7 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                     onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
                     Ver pedido {a.protocolo}
                   </Link>
-                  {a.vistoEm ? null : <Botao variante="texto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso do pedido ${a.protocolo}`}>Marcar como visto</Botao>}
+                  {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso do pedido ${a.protocolo}`}>Marcar como visto</Botao>}
                 </span>
               </li>
             );

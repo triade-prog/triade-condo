@@ -112,12 +112,12 @@ export function Equipe() {
                   <td className="px-4 py-3">
                     <span className="flex flex-wrap gap-1">{m.funcoes.map((f) => <Selo key={f} tom="info">{FUNCOES_CONSOLE[f as FuncaoConsole] ?? f}</Selo>)}</span>
                   </td>
-                  <td className="px-4 py-3">{m.ativa ? <Selo tom="ok" marca="ok">Ativa</Selo> : <Selo tom="neutro" marca="inativo">Desativada</Selo>}</td>
+                  <td className="px-4 py-3">{m.ativa ? <Selo tom="ok">Ativa</Selo> : <Selo tom="neutro">Desativada</Selo>}</td>
                   <td className="px-4 py-3 text-right">
                     {m.ativa ? (
                       <span className="inline-flex gap-1">
-                        <Botao variante="texto" onClick={() => abrirRevisao(m)} aria-label={`Rever funções de ${m.nome}`}>Rever funções</Botao>
-                        {m.id !== sessao.pessoaId ? <Botao variante="texto" onClick={() => { setErro(null); setDesativando(m); }} aria-label={`Desativar ${m.nome}`}>Desativar</Botao> : null}
+                        <Botao variante="discreto" onClick={() => abrirRevisao(m)} aria-label={`Rever funções de ${m.nome}`}>Rever funções</Botao>
+                        {m.id !== sessao.pessoaId ? <Botao variante="discreto" onClick={() => { setErro(null); setDesativando(m); }} aria-label={`Desativar ${m.nome}`}>Desativar</Botao> : null}
                       </span>
                     ) : null}
                   </td>

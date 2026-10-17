@@ -1,0 +1,970 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistema de design TRÍADE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Playfair+Display:ital,wght@1,400&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Sistema de design TRÍADE Condo (proposta, 17/10/2026). Documentação no formato das
+   referências enviadas pela Carolina: cada parte com cabeçalho, variações, estados e regras
+   de uso. Cores do estudo cromático, Manrope com Playfair Display de destaque. Nada aplicado
+   ao produto antes da aprovação. */
+:root{
+  --v50:#F8F3FF;--v100:#F1E9FC;--v200:#DDC8F8;--v300:#C3A0EF;--v400:#A16DE5;--v500:#7B3BDC;--v600:#5808CC;--v700:#4706A6;--v800:#350580;--v900:#180567;--v950:#10033F;
+  --l50:#FFF7EB;--l100:#FFEBCF;--l200:#FFD39E;--l300:#FFB96A;--l400:#FFA338;--l500:#FF8D01;--l600:#CF6300;--l700:#A54C00;--l800:#7C3900;--l900:#552600;
+  --n0:#FFFFFF;--n50:#F7F4FC;--n100:#F1EFF5;--n200:#E4DCF1;--n300:#CFC6DB;--n400:#9184AA;--n500:#83758F;--n600:#5E5475;--n700:#4A4258;--n900:#1E1531;
+  --ok:#0B7558;--ok-f:#EDFAF5;--ok-b:#BCE8D7;--at:#95560A;--at-f:#FFF6E6;--at-b:#F6DCAE;--er:#BC1450;--er-f:#FFF0F4;--er-b:#F8CBDA;--in:#0D6E8C;--in-f:#EBF8FC;--in-b:#B9E3EF;
+  /* Faixas com brilho: do tom forte ao claro, na lateral de selos e avisos. */
+  --fx-and:linear-gradient(180deg,#8B3DF0,#5808CC);--fx-ok:linear-gradient(180deg,#3DBE91,#0B7558);--fx-at:linear-gradient(180deg,#F2A33A,#95560A);--fx-er:linear-gradient(180deg,#F0598A,#BC1450);--fx-in:linear-gradient(180deg,#38B2CF,#0D6E8C);--fx-ab:linear-gradient(180deg,#C3B8D6,#7C7090);
+  --fundo:var(--n50);--superficie:#fff;--texto:var(--n900);--texto-suave:var(--n600);--linha:var(--n200);--marca:var(--v600);--acento:var(--l500);
+  --grad-violeta:radial-gradient(120% 140% at 100% 0%,#9E37F5 0%,#7018DC 28%,transparent 62%),linear-gradient(135deg,#180567 0%,#3A07A0 40%,#5808CC 100%);
+  --grad-trilha:linear-gradient(165deg,#FFE0A8 0%,#FFB45C 38%,#FF8D01 72%,#F2700A 100%);
+  --s1:0 1px 2px #211a320d,0 4px 12px #3a1a7a0a;--s2:0 2px 4px #211a320d,0 12px 28px #3a1a7a14;--s3:0 4px 8px #211a3212,0 24px 48px #3a1a7a1f;
+  --destaque:"Playfair Display",Georgia,serif;color-scheme:light}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--fundo);color:var(--texto);font:15px/1.6 Manrope,system-ui,sans-serif}
+a{color:var(--marca)}
+:focus-visible{outline:3px solid var(--v400);outline-offset:3px}
+h1,h2,h3,h4{margin:0;letter-spacing:-.02em;line-height:1.2}
+em.d{font-family:var(--destaque);font-style:italic;font-weight:400;letter-spacing:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500}
+.pular{position:absolute;left:16px;top:-60px;background:#fff;padding:10px 14px;border-radius:8px;z-index:10}
+.pular:focus{top:12px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px 96px}
+.topo{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0;flex-wrap:wrap}
+.topo img{width:156px}
+.topo nav{display:flex;flex-wrap:wrap;gap:6px}
+.pilula{font-size:13px;font-weight:500;padding:5px 12px;border-radius:999px;background:var(--n100);color:var(--n700);text-decoration:none}
+.pilula:hover{background:var(--v100);color:var(--v700)}
+.pilula[aria-current]{background:var(--v100);color:var(--v700)}
+
+/* Cabeçalho de cada parte: a moldura com alças, como nas referências, em violeta. */
+.parte{margin-top:72px;scroll-margin-top:16px}
+.moldura{position:relative;border:1.5px solid var(--v400);padding:22px 24px;margin-bottom:28px;background:linear-gradient(180deg,#fff,#fdfbff)}
+.moldura::before,.moldura::after,.moldura .a3,.moldura .a4{content:"";position:absolute;width:9px;height:9px;background:var(--v600)}
+.moldura::before{left:-5px;top:-5px}.moldura::after{right:-5px;top:-5px}
+.moldura .a3{left:-5px;bottom:-5px}.moldura .a4{right:-5px;bottom:-5px}
+.moldura h2{font-size:clamp(28px,3.6vw,40px);font-weight:400}
+.moldura p{margin:8px 0 0;color:var(--texto-suave);max-width:680px}
+h3.sub{font-size:20px;font-weight:500;margin:36px 0 12px}
+.nota{font-size:14px;color:var(--texto-suave);max-width:760px;margin:0 0 16px}
+.painel{background:var(--superficie);border:1px solid var(--linha);border-radius:16px;padding:20px}
+.estudo{background:#FBFAFD;border:1px solid var(--linha);border-radius:16px;padding:24px;overflow-x:auto}
+.grade2{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr))}
+.grade3{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.rot{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:500;color:var(--texto-suave)}
+
+/* Abertura */
+.abertura{position:relative;overflow:hidden;border-radius:22px;background:var(--grad-violeta);color:#fff;padding:48px 40px;min-height:300px}
+.abertura .t{position:relative;z-index:1;max-width:620px}
+.abertura h1{font-size:clamp(34px,5vw,58px);font-weight:300;letter-spacing:-.03em;margin:12px 0}
+.abertura h1 em.d{color:#FFD39E}
+.abertura p{color:#EDE0FF;margin:0}
+.abertura .numeros{display:flex;gap:28px;flex-wrap:wrap;margin-top:22px;color:#E7D3FF;font-size:15px}
+.abertura .numeros b{display:block;font-size:30px;font-weight:300;color:#fff}
+.arte{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.arte .orb{position:absolute;border-radius:50%;border:1px solid #ffffff2e}
+.arte .arco{position:absolute;border-radius:200px 200px 0 0;transform:rotate(26deg);border:1px solid #e9d4ff40;background:linear-gradient(170deg,#c27bff33 0%,#7a2be026 55%,#5808cc00 100%)}
+.arte .tri{position:absolute;border-radius:200px;transform:rotate(26deg);background:var(--grad-trilha);box-shadow:inset 0 2px 0 #ffffff55,0 18px 40px #d9570a33}
+@media (max-width:760px){.abertura{padding:30px 22px}.abertura .arte{opacity:.4}}
+
+/* Sumário: cartões com aba de pasta, como na referência. */
+.sumario{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))}
+.pasta{text-decoration:none;color:var(--texto);display:grid;gap:8px}
+.pasta .capa{position:relative;height:150px;border-radius:4px 14px 14px 14px;background:#FBFAFD;border:1px solid var(--linha);display:grid;place-items:center;margin-top:12px}
+.pasta .capa::before{content:"";position:absolute;left:-1px;top:-13px;width:46%;height:14px;border:1px solid var(--linha);border-bottom:0;border-radius:10px 10px 0 0;background:#FBFAFD}
+.pasta .pronto{position:absolute;left:10px;top:10px;font-size:12px;font-weight:500;padding:2px 9px;border-radius:999px;background:var(--n100);color:var(--n700)}
+.pasta b{display:flex;justify-content:space-between;align-items:center;font-weight:500;text-decoration:underline;text-underline-offset:3px}
+.pasta small{font-size:13px;color:var(--texto-suave)}
+.pasta:hover .capa{border-color:var(--v300);box-shadow:var(--s1)}
+
+/* Neutros e significado: cartão com borda em degradê, como o botão secundário. */
+.cores-b{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));margin-bottom:18px}
+.cor{border:1.5px solid transparent;border-radius:18px;padding:12px;display:grid;gap:10px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,var(--b1,#A16DE5),var(--b2,#FFB96A)) border-box}
+.cor .tinta{height:64px;border-radius:12px;position:relative;box-shadow:inset 0 1px 0 #ffffff59,inset 0 0 0 1px #1e15310f}
+.cor .tinta span{font-style:normal;position:absolute;right:8px;top:8px;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#ffffffd9;color:var(--n900)}
+.cor b{display:block;font-weight:500;font-size:14px;line-height:1.3}
+.cor code{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--texto-suave)}
+.cor .par{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.cor .amostra{position:relative;overflow:hidden;display:inline-flex;align-items:center;font-size:12.5px;font-weight:500;padding:3px 10px 3px 12px;border-radius:7px;border:1px solid var(--tb);color:var(--t);background:linear-gradient(180deg,#fff -40%,var(--tf))}
+.cor .amostra::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx)}
+
+/* Ícones */
+.ic{width:20px;height:20px;flex-shrink:0}
+svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+/* Cores */
+.escala{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));margin-bottom:18px}
+.am{border:1.5px solid transparent;border-radius:18px;padding:10px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box}
+.am i{display:block;height:72px;position:relative;border-radius:12px;box-shadow:inset 0 1px 0 #ffffff59,inset 0 0 0 1px #1e15310f}
+.am i span{position:absolute;right:8px;top:8px;font-style:normal;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#ffffffd9;color:var(--n900)}
+.am div{padding:8px 2px 0;font-size:13px}
+.am b{display:block;font-weight:500}
+.am code{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--texto-suave)}
+.tokens{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.tok{display:flex;gap:12px;align-items:center;border:1.5px solid transparent;border-radius:18px;padding:10px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box}
+.tok i{width:52px;height:52px;border-radius:12px;flex-shrink:0;box-shadow:inset 0 1px 0 #ffffff59,inset 0 0 0 1px #1e15311a}
+.tok b{display:block;font-weight:500;font-size:14px}
+.tok small{font-size:13px;color:var(--texto-suave)}
+
+/* Tipografia */
+.especime{display:grid;gap:24px;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:center}
+.especime .grande{font-size:clamp(80px,13vw,170px);font-weight:300;letter-spacing:-.05em;line-height:.9}
+.especime .grande em.d{color:var(--v600)}
+.pesos{display:grid;gap:8px;font-size:22px}
+.pesos span:nth-child(1){font-weight:300}.pesos span:nth-child(2){font-weight:400}.pesos span:nth-child(3){font-weight:500}.pesos span:nth-child(4){font-weight:600}
+.tipos{display:grid;gap:0}
+.tipo{display:grid;grid-template-columns:150px minmax(0,1fr) 220px;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--linha)}
+.tipo .n{font-size:13px;color:var(--texto-suave)}
+.tipo .m{font-size:12px;color:var(--texto-suave);font-family:"IBM Plex Mono",monospace}
+@media (max-width:760px){.tipo{grid-template-columns:1fr}.especime{grid-template-columns:1fr}}
+
+/* Espaçamento e cantos */
+.espacos{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:0;border:1px solid var(--linha);border-radius:14px;overflow:hidden;background:#fff}
+.esp{padding:12px;border-right:1px solid var(--linha);border-bottom:1px solid var(--linha);min-height:120px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px}
+.esp .tag{align-self:flex-start;font-size:11px;font-family:"IBM Plex Mono",monospace;background:var(--n100);border-radius:6px;padding:1px 6px;margin-bottom:auto}
+.esp i{display:block;background:var(--v500);border-radius:2px}
+.esp b{font-weight:500;font-size:13px}
+.cantos{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.canto{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:12px;display:grid;gap:8px}
+.canto i{display:block;height:80px;background:var(--v100);border:1.5px solid var(--v400)}
+.canto b{font-weight:500;font-size:13px}
+
+/* Sombras */
+.sombras{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:16px}
+.sombra{background:#FBFAFD;border:1px solid var(--linha);border-radius:14px;padding:28px;display:grid;place-items:center;gap:14px}
+.sombra i{width:110px;height:110px;border-radius:18px;background:#fff;display:block}
+.sombra b{font-weight:500}
+.sombra small{font-size:12px;color:var(--texto-suave);text-align:center}
+
+/* Ícones */
+.icones{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.icone{border:1.5px dashed var(--v300);border-radius:12px;padding:16px;display:flex;align-items:center;justify-content:space-around;color:var(--v900);background:#fff}
+.icone + .legenda{font-size:12px}
+.icone-grupo{display:grid;gap:6px}
+.icone-grupo span{font-size:13px;color:var(--texto-suave);text-align:center}
+
+/* Componentes */
+/* Botão aprovado em 17/10/2026: versão C, degradê com brilho. */
+.botao{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:14px;font:500 14px Manrope,sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap}
+.botao .ic{width:18px;height:18px}
+.bt-m{min-height:36px;padding:0 14px;font-size:13px;border-radius:11px}
+.bt-p{min-height:30px;padding:0 10px;font-size:13px;border-radius:10px}
+.so-ic{padding:0;width:44px}.bt-m.so-ic{width:36px}.bt-p.so-ic{width:30px}
+.primario{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff;box-shadow:inset 0 1px 0 #ffffff47,0 10px 22px -10px #5808ccb3}
+.primario.hover{background:linear-gradient(135deg,#7B2BE8 0%,#4706A6 60%,#2E0585 100%)}
+.primario.pressionado{background:linear-gradient(135deg,#4706A6,#2E0585);box-shadow:inset 0 2px 6px #0004}
+.secundario{border:1.5px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box;color:var(--v700)}
+.secundario.hover{background:linear-gradient(var(--v50),var(--v50)) padding-box,linear-gradient(135deg,#7B3BDC,#FF8D01) border-box}
+.secundario.pressionado{background:linear-gradient(var(--v100),var(--v100)) padding-box,linear-gradient(135deg,#7B3BDC,#FF8D01) border-box}
+.contorno{background:linear-gradient(180deg,#fff,#F8F3FF);color:var(--v600);border-color:var(--v200);box-shadow:var(--s1)}
+.contorno.hover{border-color:var(--v300)}
+.contorno.pressionado{background:var(--v100);box-shadow:none}
+.fantasma{background:transparent;color:var(--v600)}
+.fantasma.hover{background:linear-gradient(90deg,var(--v100),#f8f3ff00)}
+.fantasma.pressionado{background:var(--v100)}
+.perigo{background:linear-gradient(180deg,#FFF6F8,#FFE9EF);color:var(--er);border-color:var(--er-b)}
+.perigo.hover{background:#FFE3EA}
+.perigo.pressionado{background:var(--er-b)}
+.claro{background:linear-gradient(180deg,#fff,#F1E9FC);color:var(--v900);box-shadow:0 8px 18px -8px #0008}.claro.hover{background:#fff}.claro.pressionado{background:var(--v100);box-shadow:none}
+.celula-escura{background:var(--grad-violeta);border-radius:16px;padding:6px}
+.foco{outline:3px solid var(--v300);outline-offset:2px}
+/* Anel de foco duplo (branco e violeta 500): passa 3 : 1 em qualquer fundo. */
+.botao.foco{outline:0;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--v500)}
+.primario.foco{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--v500),0 10px 22px -10px #5808ccb3}
+.celula-escura .botao.foco{box-shadow:0 0 0 2px var(--v800),0 0 0 4px #FFD39E}
+.desab{background:var(--n100)!important;color:#8A8296!important;border-color:transparent!important;box-shadow:none!important;cursor:not-allowed}
+.matriz{border-collapse:separate;border-spacing:10px 8px;margin:-8px -10px}
+.matriz th{font-size:12px;font-weight:500;color:var(--v600);text-align:left;white-space:nowrap}
+.matriz td{vertical-align:middle}
+.faca{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));margin-top:16px}
+.faca .q{border:1.5px solid var(--ok-b);border-radius:14px;padding:20px;background:#fff;display:grid;gap:10px;justify-items:center;min-height:150px;align-content:center}
+.faca .q.nao{border-color:var(--er-b)}
+.faca .r{display:inline-flex;gap:6px;align-items:center;font-size:13px;font-weight:500;padding:2px 10px;border-radius:999px;background:var(--ok-f);color:var(--ok);margin-bottom:6px}
+.faca .r.nao{background:var(--er-f);color:var(--er)}
+.faca p{font-size:13px;color:var(--texto-suave);margin:8px 0 0}
+
+.campo{display:grid;gap:6px;min-width:0}
+.campo label{font-size:13px;font-weight:500}
+.campo label .ob{color:var(--er)}
+.entrada{display:flex;align-items:center;gap:8px;min-height:44px;border:1px solid var(--n400);border-radius:12px;padding:0 12px;background:#FDFCFF;color:var(--texto);font-size:15px}
+.entrada .ic{width:18px;height:18px;color:var(--n500)}
+.entrada .ph{color:#8A8296}
+.entrada.hover{border-color:var(--n500)}
+.entrada.ativo{border-color:var(--v600);box-shadow:0 0 0 4px #5808cc1f;background:#fff}
+.entrada.erro{border-color:var(--er);box-shadow:0 0 0 4px #bc14501a}
+.entrada.alerta{border-color:var(--at)}
+.entrada.certo{border-color:var(--ok)}
+.entrada.desab{border-color:transparent}
+.dica{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--texto-suave)}
+.dica .ic{width:14px;height:14px}
+.dica.erro{color:var(--er)}.dica.alerta{color:var(--at)}.dica.certo{color:var(--ok)}
+
+/* Selos e chips aprovados em 17/10/2026: faixa lateral (D) com o brilho do botão C. */
+.chip{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 13px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid var(--n200);background:#fff;color:var(--n700);white-space:nowrap}
+.chip .ic{width:16px;height:16px}
+.chip.sel{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff;border-color:transparent;box-shadow:inset 0 1px 0 #ffffff47,0 8px 16px -8px #5808ccb3}
+.chip.ac{border:1.5px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box;color:var(--l800)}
+.chip.ac>.ic:first-child{color:var(--l600)}
+.chip.inc{border-style:dashed;border-color:var(--v300);color:var(--v600)}
+.chip .av{width:24px;height:24px;font-size:10px;margin-left:-7px;border:0}
+.trilho{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;background:var(--n100);border-radius:14px;box-shadow:inset 0 1px 2px #211a320f}
+.trilho .chip{border-color:transparent;background:transparent;min-height:32px}
+.trilho .chip.sel{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff}
+.selo{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;padding:4px 12px 4px 13px;border-radius:7px;border:1px solid var(--tb);color:var(--t);background:linear-gradient(180deg,#fff -40%,var(--tf) 100%);box-shadow:inset 0 1px 0 #fff;white-space:nowrap}
+.selo::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx)}
+.selo .f{display:none}
+.s-novo{--t:#5B5368;--tf:#F4F2F7;--tb:#E3DEEB;--fx:var(--fx-ab)}
+.s-and{--t:var(--v600);--tf:var(--v50);--tb:#E6D9FB;--fx:var(--fx-and)}
+.s-at{--t:var(--at);--tf:var(--at-f);--tb:var(--at-b);--fx:var(--fx-at)}
+.s-ve{--t:var(--er);--tf:var(--er-f);--tb:var(--er-b);--fx:var(--fx-er)}
+.s-ok{--t:var(--ok);--tf:var(--ok-f);--tb:var(--ok-b);--fx:var(--fx-ok)}
+
+.cx{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--n500);background:#fff;display:inline-grid;place-items:center;color:#fff}
+.cx.on{background:var(--v600);border-color:var(--v600)}
+.cx.on.hover{background:var(--v700)}
+.cx.hover{border-color:var(--n700)}
+.cx.foco{outline:3px solid var(--v300);outline-offset:2px}
+.cx.des{border-color:var(--n300);background:var(--n100)}
+.cx.des.on{background:var(--n300);border-color:var(--n300)}
+.cx .ic{width:14px;height:14px;stroke-width:2.4}
+.rb{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--n500);background:#fff;display:inline-grid;place-items:center}
+.rb.on{border-color:var(--v600)}.rb.on::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--v600)}
+.chave{width:42px;height:24px;border-radius:999px;background:var(--n300);position:relative;display:inline-block}
+.chave::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003}
+.chave.on{background:var(--v600)}.chave.on::after{left:21px}
+
+.av{width:34px;height:34px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:600;flex-shrink:0;border:2px solid #fff}
+.av1{background:var(--v100);color:var(--v700)}.av2{background:var(--l100);color:var(--l800)}.av3{background:var(--ok-f);color:var(--ok)}.av4{background:var(--in-f);color:var(--in)}.av5{background:var(--er-f);color:var(--er)}
+.pilha{display:inline-flex}.pilha .av{margin-left:-8px}.pilha .av:first-child{margin-left:0}
+.pilha .mais{background:var(--n100);color:var(--n700)}
+
+/* Tabela */
+.tabela{width:100%;border-collapse:collapse;font-size:14px;background:#fff}
+.tabela th{font-size:12px;font-weight:500;color:var(--texto-suave);text-align:left;padding:10px 12px;border-bottom:1px solid var(--linha);background:#FCFAFF}
+.tabela td{padding:12px;border-bottom:1px solid #F0ECF5;vertical-align:middle}
+.tabela tr.sel td{background:var(--v50)}
+.tabela .pessoa{display:flex;align-items:center;gap:8px}
+.tabela .pessoa .av{width:28px;height:28px;font-size:10px}
+.tabela .ass{font-weight:500}
+.tabela .prot{font-size:12px;color:var(--texto-suave)}
+.tab-wrap{position:relative;border:1px solid var(--linha);border-radius:16px;overflow:auto;background:#fff}
+.paginacao{display:flex;gap:6px;align-items:center;justify-content:space-between;padding:10px 12px;font-size:13px;color:var(--texto-suave);flex-wrap:wrap}
+.pag{display:flex;gap:4px}
+.pag span{min-width:32px;height:32px;display:grid;place-items:center;border-radius:9px;color:var(--n700)}
+.pag .at{background:var(--v600);color:#fff}
+
+/* Calendário */
+.cal{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:16px;box-shadow:var(--s2);max-width:320px}
+.cal .cab{display:flex;justify-content:space-between;align-items:center;font-weight:500;margin-bottom:8px}
+.cal .cab .ic{width:18px;height:18px;color:var(--n600)}
+.dias{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:13px}
+.dias .h{font-size:12px;color:var(--texto-suave);padding:4px 0}
+.dias span{height:36px;display:grid;place-items:center;border-radius:50%}
+.dias .fora{color:#B5ADC2}
+.dias .hoje{box-shadow:inset 0 0 0 1.5px var(--v600)}
+.dias .es{background:var(--v600);color:#fff}
+.dias .fer{color:var(--l700);text-decoration:underline dotted;text-underline-offset:3px}
+.cal .pe{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+
+/* Lateral com vida, em claro. */
+.lat{width:260px;background:#fff;border:1px solid var(--linha);border-radius:18px;padding:12px;display:grid;gap:2px;box-shadow:var(--s1)}
+.it{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:12px;font-size:15px;color:var(--texto);text-decoration:none;position:relative}
+.it .ic{color:var(--n600)}
+.it .seta{margin-left:auto;width:16px;height:16px;color:var(--n500)}
+.it:hover{background:var(--n50)}
+.it.at{background:linear-gradient(180deg,#7B3BDC,#5808CC);color:#fff;font-weight:500;box-shadow:0 6px 14px #5808cc33}
+.it.at .ic{color:#fff}
+.it .cont{margin-left:auto;font-size:12px;font-weight:600;background:var(--l500);color:var(--v900);border-radius:999px;padding:0 8px}
+.lat hr{border:0;border-top:1px solid var(--linha);margin:6px 8px}
+.lat .trocar{margin-top:6px;justify-content:center;border:1px solid var(--n300);background:#fff;color:var(--texto)}
+.lat .sub-itens{display:grid;gap:2px;margin:0 0 4px 30px;padding-left:12px;border-left:1px solid var(--linha)}
+.lat .sub-itens a{font-size:14px;color:var(--n700);text-decoration:none;min-height:36px;display:flex;align-items:center;padding:0 10px;border-radius:9px}
+.lat .sub-itens a:hover{background:var(--n50)}
+
+/* Cartões com vida */
+.cartao{background:#fff;border:1px solid var(--linha);border-radius:18px;padding:22px;box-shadow:var(--s1)}
+.cartao h4{font-size:19px;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+.cartao h4 a{font-size:14px;font-weight:500;text-decoration:underline;text-underline-offset:3px;color:var(--texto)}
+.dia-t{font-size:15px;font-weight:500;color:var(--n600);margin:16px 0 8px}
+.vazio-l{border-left:3px solid var(--n200);padding:2px 0 2px 12px;color:var(--n600)}
+.evento{display:flex;align-items:center;gap:12px;padding:8px 0}
+.evento .barra{width:3px;align-self:stretch;border-radius:3px;background:var(--v300)}
+.evento .barra.v{background:var(--er)}.evento .barra.h{background:var(--l400)}
+.evento .txt{flex:1;min-width:0}
+.evento .txt b{display:flex;align-items:center;gap:8px;font-weight:500}
+.evento .txt small{display:block;color:var(--n600);font-size:14px}
+.btn-prep{border:1.5px solid transparent;border-radius:10px;min-height:36px;padding:0 12px;display:inline-flex;gap:6px;align-items:center;font-weight:500;font-size:14px;color:var(--v900);background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#5808CC,#FF8D01) border-box}
+.btn-prep .ic{width:18px;height:18px;color:var(--v600)}
+.tarefa{display:flex;gap:14px;align-items:center;padding:10px 0}
+.quad{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;flex-shrink:0}
+.quad .ic{width:22px;height:22px}
+.q-v{background:var(--v100);color:var(--v600)}.q-l{background:var(--l100);color:var(--l800)}.q-ok{background:var(--ok-f);color:var(--ok)}.q-er{background:var(--er-f);color:var(--er)}.q-at{background:var(--at-f);color:var(--at)}
+.tarefa b{display:flex;align-items:center;gap:8px;font-weight:500;flex-wrap:wrap}
+.tarefa small{display:block;color:var(--n600);font-size:14px}
+.tarefa .pilha .av{width:26px;height:26px;font-size:10px}
+
+/* Avisos (snackbar) */
+.aviso{display:flex;align-items:center;gap:12px;padding:12px 14px 12px 12px;border-radius:14px;border:1px solid var(--linha);background:#fff;box-shadow:var(--s2);max-width:480px;position:relative;overflow:hidden}
+.aviso::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx-in)}
+.aviso .quad{width:36px;height:36px;border-radius:10px}
+.aviso .quad .ic{width:18px;height:18px}
+.aviso .t{flex:1;min-width:0}
+.aviso .t b{display:block;font-weight:500;font-size:14px}
+.aviso .t small{font-size:13px;color:var(--n600)}
+.aviso.ok::before{background:var(--fx-ok)}.aviso.at::before{background:var(--fx-at)}.aviso.er::before{background:var(--fx-er)}
+.aviso.marca{background:var(--grad-violeta);color:#fff;border-color:transparent}.aviso.marca::before{background:var(--l500)}
+.aviso.marca small{color:#E7D3FF}.aviso.marca .quad{background:#ffffff1f;color:#FFD39E}
+/* Abas, segmentado, dica, emblema */
+.abas{display:flex;gap:22px;border-bottom:1px solid var(--linha)}
+.abas span{padding:10px 0;font-weight:500;color:var(--n600);border-bottom:2px solid transparent;margin-bottom:-1px}
+.abas .at{color:var(--v600);border-color:var(--v600)}
+.seg{display:inline-flex;background:var(--n100);border-radius:12px;padding:4px;gap:2px}
+.seg span{padding:6px 14px;border-radius:9px;font-size:14px;font-weight:500;color:var(--n700)}
+.seg .at{background:#fff;color:var(--v700);box-shadow:var(--s1)}
+.dicatip{position:relative;display:inline-block;background:var(--v900);color:#fff;font-size:13px;padding:6px 10px;border-radius:8px}
+.dicatip::after{content:"";position:absolute;left:50%;bottom:-5px;width:10px;height:10px;background:var(--v900);transform:translateX(-50%) rotate(45deg)}
+.emb{position:relative;display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--n100);color:var(--n700)}
+.emb b{position:absolute;right:-6px;top:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--l500);color:var(--v900);font-size:11px;display:grid;place-items:center;border:2px solid #fff}
+.linha{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.progresso{height:8px;border-radius:999px;background:var(--n100);overflow:hidden;width:220px}
+.progresso i{display:block;height:100%;width:62%;border-radius:999px;background:linear-gradient(90deg,#7B3BDC,#5808CC)}
+.esqueleto{display:grid;gap:8px;width:220px}
+.esqueleto i{display:block;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--n100),#F7F4FB,var(--n100))}
+
+/* Grade */
+.colunas{display:grid;gap:8px;padding:16px;background:#fff;border:1px solid var(--linha);border-radius:14px}
+.colunas div{height:90px;background:#FBF5FF;border:1px dashed var(--v300);border-radius:6px}
+.c12{grid-template-columns:repeat(12,1fr)}.c8{grid-template-columns:repeat(8,1fr)}.c4{grid-template-columns:repeat(4,1fr)}
+.legenda{font-size:13px;color:var(--texto-suave);margin:8px 0 18px}
+
+.aprovar{counter-reset:d;display:grid;gap:10px;padding:0;list-style:none}
+.aprovar li{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:14px 16px 14px 52px;position:relative}
+.aprovar li::before{counter-increment:d;content:counter(d);position:absolute;left:14px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--v100);color:var(--v600);font-weight:600;display:grid;place-items:center;font-size:13px}
+.aprovar b{display:block;font-weight:500}
+.aprovar span{color:var(--texto-suave);font-size:14px}
+
+/* Mais componentes (das referências): barra superior, trilha, links, menus, janelas,
+   gaveta, balão, área de texto, envio de arquivo, paginação, progresso, persona, vazio. */
+.appbar{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--linha);border-radius:16px;padding:10px 14px;flex-wrap:wrap}
+.appbar img{width:110px}
+.appbar .busca{flex:1;min-width:200px}
+.appbar .abas{border:0;gap:18px}
+.appbar .abas span{padding:8px 0}
+.trilha-nav{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--n600);flex-wrap:wrap}
+.trilha-nav a{color:var(--n600);text-decoration:none;display:inline-flex;gap:6px;align-items:center}
+.trilha-nav a:hover{color:var(--v600)}
+.trilha-nav .ic{width:16px;height:16px}
+.trilha-nav b{font-weight:500;color:var(--texto)}
+.lk{color:var(--v600);font-weight:500;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#5808cc55}
+.lk.h{text-decoration-color:var(--v600)}.lk.f{outline:3px solid var(--v300);outline-offset:2px;border-radius:4px}.lk.d{color:#8A8296;text-decoration:none}
+.menu-sus{background:#fff;border:1px solid var(--linha);border-radius:14px;box-shadow:var(--s2);padding:6px;min-width:230px;display:grid;gap:2px}
+.menu-sus span{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:9px;font-size:14px}
+.menu-sus span .ic{width:18px;height:18px;color:var(--n600)}
+.menu-sus span.h{background:var(--v50);color:var(--v700)}.menu-sus span.h .ic{color:var(--v600)}
+.menu-sus span.p{color:var(--er)}.menu-sus span.p .ic{color:var(--er)}
+.menu-sus span kbd{margin-left:auto;font:12px Manrope,sans-serif;color:var(--n500)}
+.menu-sus hr{border:0;border-top:1px solid var(--linha);margin:4px 6px}
+.menu-sus .sel .ic:last-child{margin-left:auto;color:var(--v600)}
+.janela{background:#fff;border-radius:20px;box-shadow:var(--s3);width:min(100%,420px);overflow:hidden;border:1px solid var(--linha)}
+.janela .cab{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 6px}
+.janela .cab b{font-size:18px;font-weight:500}
+.janela .cab .ic{color:var(--n600)}
+.janela .corpo{padding:6px 20px 16px;display:grid;gap:12px;font-size:14px;color:var(--n700)}
+.janela .pe{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--linha);background:#FCFBFE}
+.fundo-janela{background:#18056740;border-radius:18px;padding:28px;display:grid;place-items:center;backdrop-filter:blur(2px)}
+.gaveta{background:#fff;border-radius:20px 0 0 20px;box-shadow:var(--s3);width:300px;border:1px solid var(--linha);display:grid;grid-template-rows:auto 1fr auto;min-height:330px;margin-left:auto}
+.gaveta .cab{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--linha)}
+.gaveta .cab b{font-weight:500}
+.gaveta .lst{padding:8px;display:grid;gap:2px;align-content:start}
+.gaveta .lst span{display:flex;gap:10px;align-items:center;min-height:42px;padding:0 10px;border-radius:9px;font-size:14px}
+.gaveta .lst .ic{width:18px;height:18px;color:var(--n600)}
+.gaveta .pe{padding:12px 18px;border-top:1px solid var(--linha);display:flex;justify-content:flex-end}
+.balao{position:relative;background:#fff;border:1px solid var(--linha);border-radius:14px;box-shadow:var(--s2);padding:14px;width:240px;display:grid;gap:10px;font-size:14px}
+.balao::after{content:"";position:absolute;left:28px;bottom:-7px;width:12px;height:12px;background:#fff;border-right:1px solid var(--linha);border-bottom:1px solid var(--linha);transform:rotate(45deg)}
+.balao b{font-weight:500}
+.area{min-height:110px;border:1px solid var(--n400);border-radius:12px;padding:10px 12px;background:#FDFCFF;font-size:15px;color:var(--texto)}
+.contador{display:flex;justify-content:space-between;font-size:12px;color:var(--texto-suave)}
+.envio{border:1.5px dashed var(--v300);border-radius:16px;background:var(--v50);padding:22px;display:grid;justify-items:center;gap:8px;text-align:center;font-size:14px;color:var(--n700)}
+.envio .quad{width:48px;height:48px}
+.arquivo{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--linha);border-radius:12px;padding:10px 12px;font-size:14px}
+.arquivo .quad{width:40px;height:40px;border-radius:10px}
+.arquivo .t{flex:1;min-width:0;display:grid;gap:4px}
+.arquivo .t small{color:var(--n600);font-size:12px}
+.arquivo .progresso{width:100%;height:6px}
+.pag-var{display:grid;gap:14px}
+.pag2{display:flex;gap:4px;align-items:center;font-size:14px;color:var(--n700);flex-wrap:wrap}
+.pag2 span{min-width:34px;height:34px;display:grid;place-items:center;border-radius:10px;padding:0 6px}
+.pag2 .at{background:var(--v600);color:#fff}
+.pag2 .tx{color:var(--n600)}.pag2 .ds{color:#B5ADC2}
+.pag2 .ic{width:16px;height:16px}
+.linhas-pag{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--n600);flex-wrap:wrap}
+.linhas-pag .entrada{min-height:34px;padding:0 10px;gap:14px;border-radius:10px}
+.circ{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:500;color:var(--v700);background:conic-gradient(var(--v600) var(--p),var(--v100) 0);position:relative}
+.circ::before{content:"";position:absolute;inset:5px;border-radius:50%;background:#fff}
+.circ span{position:relative}
+.persona{display:flex;gap:10px;align-items:center}
+.persona b{display:block;font-weight:500;font-size:14px}
+.persona small{display:block;font-size:13px;color:var(--n600)}
+.vazio{position:relative;overflow:hidden;background:#fff;border:1px solid var(--linha);border-radius:18px;padding:32px 20px;display:grid;justify-items:center;text-align:center;gap:8px}
+.vazio .orb{position:absolute;border-radius:50%;border:1px solid #5808cc1f}
+.vazio .quad{width:56px;height:56px;border-radius:16px;position:relative}
+.vazio h4{font-size:20px;font-weight:300;position:relative}
+.vazio p{margin:0;font-size:14px;color:var(--n600);max-width:320px;position:relative}
+.vazio .botao{position:relative}
+.dicas{display:flex;gap:28px;flex-wrap:wrap;align-items:center;padding:12px 0}
+.dicatip.cima::after{bottom:auto;top:-5px}
+.dicatip.esq::after{left:-5px;top:50%;bottom:auto;transform:translateY(-50%) rotate(45deg)}
+.dicatip.dir::after{left:auto;right:-5px;top:50%;bottom:auto;transform:translateY(-50%) rotate(45deg)}
+.dicatip.claro{background:#fff;color:var(--texto);border:1px solid var(--linha);box-shadow:var(--s1)}
+.dicatip.claro::after{background:#fff}
+.emb-ponto{position:relative;display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--n100);color:var(--n700)}
+.emb-ponto i{position:absolute;right:8px;top:8px;width:9px;height:9px;border-radius:50%;background:var(--l500);border:2px solid #fff}
+@media (max-width:760px){.lat{width:100%}.gaveta{width:100%;border-radius:20px}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a class="pular" href="#conteudo">Ir para o conteúdo</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+  <symbol id="i-casa" viewBox="0 0 24 24"><path d="m3 10.5 9-7 9 7V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-pedido" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-predio" viewBox="0 0 24 24"><path d="M4 21V7l8-4v18M12 10h8v11M2 21h20M7 9h2M7 13h2M7 17h2M15 13h2M15 17h2"/></symbol>
+  <symbol id="i-pessoas" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5a3 3 0 0 1 0 6M21 20v-1a6 6 0 0 0-3-5"/></symbol>
+  <symbol id="i-pessoa" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-pessoa-mais" viewBox="0 0 24 24"><circle cx="10" cy="8" r="4"/><path d="M2 21a8 8 0 0 1 13-6M19 14v6M16 17h6"/></symbol>
+  <symbol id="i-grafico" viewBox="0 0 24 24"><path d="M4 20V11m6 9V4m6 16v-7m5 7H3"/></symbol>
+  <symbol id="i-ajuste" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+  <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="i-sino" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6.5 2.5 8 2.5 8h-17S6 15.5 6 9"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-seta" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+  <symbol id="i-baixo" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-esq" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+  <symbol id="i-dir" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-fechar" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-pontos" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></symbol>
+  <symbol id="i-balao" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l2-3A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 10h8M8 14h5"/></symbol>
+  <symbol id="i-retorno" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></symbol>
+  <symbol id="i-calendario" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-ferramenta" viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5.3 5.3L3.5 17.5 6.5 20.5l5.7-5.7a4 4 0 0 0 5.3-5.3l-2.5 2.5-2.5-.5-.5-2.5z"/></symbol>
+  <symbol id="i-chave" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3 4.5 6v6c0 4.5 3.2 7.8 7.5 9 4.3-1.2 7.5-4.5 7.5-9V6z"/></symbol>
+  <symbol id="i-clipe" viewBox="0 0 24 24"><path d="m20 11.5-7.8 7.8a5 5 0 0 1-7-7l8.2-8.2a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/></symbol>
+  <symbol id="i-documento" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-whats" viewBox="0 0 24 24"><path d="M4 20l1.3-3.8A8.5 8.5 0 1 1 8 19z"/><path d="M9 9.5c.5 2 2.5 4 4.5 4.5l1.3-1.2 2 1-.4 1.6c-3.5.5-7.6-3.6-7.1-7.1L11 8l1 2z"/></symbol>
+  <symbol id="i-trocar" viewBox="0 0 24 24"><path d="M7 4v16M3.5 7.5 7 4l3.5 3.5M17 20V4M13.5 16.5 17 20l3.5-3.5"/></symbol>
+  <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-preparar" viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-mudanca" viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></symbol>
+  <symbol id="i-engrenagem" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></symbol>
+  <symbol id="i-copiar" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-lista" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".9"/><circle cx="4.5" cy="12" r=".9"/><circle cx="4.5" cy="18" r=".9"/></symbol>
+  <symbol id="i-compartilhar" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></symbol>
+  <symbol id="i-estrela" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.8-4.4 4.3 1 6.1L12 17l-5.4 2.8 1-6.1-4.4-4.3 6.1-.8z"/></symbol>
+  <symbol id="i-filtro" viewBox="0 0 24 24"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/></symbol>
+  <symbol id="i-editar" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+  <symbol id="i-baixar" viewBox="0 0 24 24"><path d="M12 4v11m-4.5-4.5L12 15l4.5-4.5M4 19h16"/></symbol>
+  <symbol id="i-enviar" viewBox="0 0 24 24"><path d="M12 15V4m-4.5 4.5L12 4l4.5 4.5M4 19h16"/></symbol>
+  <symbol id="i-olho" viewBox="0 0 24 24"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-cadeado" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-telefone" viewBox="0 0 24 24"><path d="M5 3.5h3.5l1.8 4.5-2.3 1.5a11 11 0 0 0 6.5 6.5l1.5-2.3 4.5 1.8V19a2 2 0 0 1-2 2A16.5 16.5 0 0 1 3 5.5a2 2 0 0 1 2-2"/></symbol>
+  <symbol id="i-email" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H8l1.5-2h5L16 6h1.5A2.5 2.5 0 0 1 20 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-imprimir" viewBox="0 0 24 24"><path d="M7 9V3.5h10V9M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></symbol>
+  <symbol id="i-sair" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+<div class="topo">
+  <img src="logo-violeta.png" alt="TRÍADE Condo">
+  <nav aria-label="Partes do sistema de design">
+    <a class="pilula" href="#sumario">Sumário</a><a class="pilula" href="#cores">Cores</a><a class="pilula" href="#tipografia">Tipografia</a><a class="pilula" href="#espaco">Espaço e cantos</a><a class="pilula" href="#sombra">Sombras</a><a class="pilula" href="#icones">Ícones</a><a class="pilula" href="#botao">Componentes</a><a class="pilula" href="#navegacao">Mais componentes</a><a class="pilula" href="#vida">Telas com vida</a><a class="pilula" href="#grade">Grade</a><a class="pilula" href="versoes.html">Versões para escolher</a><a class="pilula" href="telas-modelo.html">Telas-modelo</a>
+  </nav>
+</div>
+
+<main id="conteudo">
+<header class="abertura" aria-labelledby="t-ab">
+  <div class="t">
+    <p class="rot" style="color:#E7D3FF">Proposta para aprovar · 17/10/2026</p>
+    <h1 id="t-ab">Sistema de design <em class="d">TRÍADE</em></h1>
+    <p>Fundamentos, componentes e regras de uso para a Plataforma do síndico e o Console TRÍADE. Violeta e laranja, Manrope com Playfair Display de destaque, ícones de traço fino e cartões com vida.</p>
+    <div class="numeros"><span><b>28</b>componentes</span><span><b>60+</b>ícones</span><span><b>60+</b>tokens</span><span><b>1</b>tema claro</span></div>
+  </div>
+  <div class="arte" aria-hidden="true"><span class="orb" style="width:560px;height:560px;right:-140px;top:-220px"></span><span class="orb" style="width:380px;height:380px;right:-50px;top:-120px"></span><span class="arco" style="width:220px;height:400px;right:60px;top:10px"></span><span class="tri" style="width:110px;height:280px;right:250px;top:150px"></span></div>
+</header>
+
+<!-- Sumário -->
+<section class="parte" id="sumario" aria-labelledby="t-sum">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-sum">Sumário</h2><p>O mapa do sistema. Fundamentos são as decisões de base; componentes são as peças das telas. Cada parte mostra variações, estados e quando usar.</p></div>
+  <h3 class="sub" style="margin-top:0">Fundamentos</h3>
+  <div class="sumario">
+    <a class="pasta" href="#cores"><span class="capa"><span class="pronto">Pronto</span><span style="display:flex"><i style="width:54px;height:70px;border-radius:8px;background:var(--v200)"></i><i style="width:54px;height:70px;border-radius:8px;background:var(--v600);margin-left:-18px;margin-top:10px"></i><i style="width:54px;height:70px;border-radius:8px;background:var(--l500);margin-left:-18px;margin-top:20px"></i></span></span><b>Cores <svg class="ic"><use href="#i-seta"/></svg></b><small>Escalas, tokens e contraste</small></a>
+    <a class="pasta" href="#tipografia"><span class="capa"><span class="pronto">Pronto</span><span style="font-size:56px;font-weight:300">A<em class="d" style="color:var(--v600)">a</em></span></span><b>Tipografia <svg class="ic"><use href="#i-seta"/></svg></b><small>Manrope e Playfair Display</small></a>
+    <a class="pasta" href="#espaco"><span class="capa"><span class="pronto">Pronto</span><span style="display:grid;gap:6px"><i style="width:90px;height:12px;background:var(--v600);border-radius:3px"></i><i style="width:90px;height:12px;background:var(--v600);border-radius:3px"></i><i style="width:90px;height:12px;background:var(--v600);border-radius:3px"></i></span></span><b>Espaço e cantos <svg class="ic"><use href="#i-seta"/></svg></b><small>Múltiplos de 4</small></a>
+    <a class="pasta" href="#sombra"><span class="capa"><span class="pronto">Pronto</span><i style="width:70px;height:70px;border-radius:14px;background:#fff;box-shadow:var(--s3)"></i></span><b>Sombras <svg class="ic"><use href="#i-seta"/></svg></b><small>Três níveis de altura</small></a>
+    <a class="pasta" href="#icones"><span class="capa"><span class="pronto">Pronto</span><svg class="ic" style="width:56px;height:56px;color:var(--v700)"><use href="#i-predio"/></svg></span><b>Ícones <svg class="ic"><use href="#i-seta"/></svg></b><small>Traço fino, três tamanhos</small></a>
+    <a class="pasta" href="#grade"><span class="capa"><span class="pronto">Pronto</span><span style="display:flex;gap:4px"><i style="width:10px;height:60px;background:#FBF5FF;border:1px dashed var(--v400)"></i><i style="width:10px;height:60px;background:#FBF5FF;border:1px dashed var(--v400)"></i><i style="width:10px;height:60px;background:#FBF5FF;border:1px dashed var(--v400)"></i><i style="width:10px;height:60px;background:#FBF5FF;border:1px dashed var(--v400)"></i><i style="width:10px;height:60px;background:#FBF5FF;border:1px dashed var(--v400)"></i><i style="width:10px;height:60px;background:#FBF5FF;border:1px dashed var(--v400)"></i></span></span><b>Grade <svg class="ic"><use href="#i-seta"/></svg></b><small>12, 8 e 4 colunas</small></a>
+  </div>
+  <h3 class="sub">Componentes</h3>
+  <div class="sumario">
+    <a class="pasta" href="#botao"><span class="capa"><span class="pronto">Pronto</span><span class="botao primario bt-m"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></span><b>Botão <svg class="ic"><use href="#i-seta"/></svg></b><small>Seis estilos, três tamanhos</small></a>
+    <a class="pasta" href="#campo"><span class="capa"><span class="pronto">Pronto</span><span class="entrada ativo" style="width:150px"><svg class="ic"><use href="#i-busca"/></svg>Torre A</span></span><b>Campo <svg class="ic"><use href="#i-seta"/></svg></b><small>Sete estados</small></a>
+    <a class="pasta" href="#selos"><span class="capa"><span class="pronto">Pronto</span><span style="display:grid;gap:6px;justify-items:center"><span class="selo s-ve"><span class="f"></span>Vencido</span><span class="chip sel">Torre A</span></span></span><b>Selos e chips <svg class="ic"><use href="#i-seta"/></svg></b><small>Situação e filtro</small></a>
+    <a class="pasta" href="#escolha"><span class="capa"><span class="pronto">Pronto</span><span class="linha"><span class="cx on"><svg class="ic"><use href="#i-check"/></svg></span><span class="rb on"></span><span class="chave on"></span></span></span><b>Escolhas <svg class="ic"><use href="#i-seta"/></svg></b><small>Caixa, opção e chave</small></a>
+    <a class="pasta" href="#tabela"><span class="capa"><span class="pronto">Pronto</span><span class="pilha"><span class="av av1">AL</span><span class="av av2">BS</span><span class="av av3">ES</span></span></span><b>Tabela e avatar <svg class="ic"><use href="#i-seta"/></svg></b><small>Fila de pedidos</small></a>
+    <a class="pasta" href="#calendario"><span class="capa"><span class="pronto">Pronto</span><svg class="ic" style="width:56px;height:56px;color:var(--v700)"><use href="#i-calendario"/></svg></span><b>Calendário <svg class="ic"><use href="#i-seta"/></svg></b><small>Data e feriados</small></a>
+    <a class="pasta" href="#vida"><span class="capa"><span class="pronto">Pronto</span><span class="quad q-v"><svg class="ic"><use href="#i-retorno"/></svg></span></span><b>Lateral e cartões <svg class="ic"><use href="#i-seta"/></svg></b><small>Telas com vida</small></a>
+    <a class="pasta" href="#avisos"><span class="capa"><span class="pronto">Pronto</span><span class="emb"><svg class="ic"><use href="#i-sino"/></svg><b>3</b></span></span><b>Avisos e mais <svg class="ic"><use href="#i-seta"/></svg></b><small>Aviso, abas, dica, emblema</small></a>
+    <a class="pasta" href="#navegacao"><span class="capa"><span class="pronto">Pronto</span><span class="trilha-nav" style="font-size:13px"><svg class="ic"><use href="#i-casa"/></svg><svg class="ic"><use href="#i-dir"/></svg><b>Pedido</b></span></span><b>Barra e trilha <svg class="ic"><use href="#i-seta"/></svg></b><small>Onde a pessoa está</small></a>
+    <a class="pasta" href="#menus"><span class="capa"><span class="pronto">Pronto</span><span style="display:grid;gap:6px"><i style="width:110px;height:10px;background:var(--v600);border-radius:3px"></i><i style="width:110px;height:10px;background:var(--n300);border-radius:3px"></i><i style="width:110px;height:10px;background:var(--n300);border-radius:3px"></i></span></span><b>Menus <svg class="ic"><use href="#i-seta"/></svg></b><small>Ações e listas de escolha</small></a>
+    <a class="pasta" href="#janelas"><span class="capa"><span class="pronto">Pronto</span><i style="width:100px;height:70px;border-radius:12px;background:#fff;box-shadow:var(--s3);border:1px solid var(--linha)"></i></span><b>Janela e gaveta <svg class="ic"><use href="#i-seta"/></svg></b><small>Decidir sem sair da tela</small></a>
+    <a class="pasta" href="#envio"><span class="capa"><span class="pronto">Pronto</span><span class="quad q-v"><svg class="ic"><use href="#i-camera"/></svg></span></span><b>Texto e arquivo <svg class="ic"><use href="#i-seta"/></svg></b><small>Relato, conclusão e fotos</small></a>
+    <a class="pasta" href="#progresso"><span class="capa"><span class="pronto">Pronto</span><span class="circ" style="--p:62%"><span>62%</span></span></span><b>Paginação e progresso <svg class="ic"><use href="#i-seta"/></svg></b><small>Listas longas e espera</small></a>
+    <a class="pasta" href="#vazio"><span class="capa"><span class="pronto">Pronto</span><span class="dicatip">Dica</span></span><b>Vazio e dicas <svg class="ic"><use href="#i-seta"/></svg></b><small>Próximo passo e explicação</small></a>
+  </div>
+</section>
+
+<!-- Cores -->
+<section class="parte" id="cores" aria-labelledby="t-cores">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-cores">Cores</h2><p>Duas famílias de marca, violeta (principal) e laranja (acento), uma de neutros com um toque de lavanda e quatro de significado em tom de joia: jade, âmbar, rubi e petróleo, sempre em fundo claro com o tom forte só no ícone, na palavra e na borda. Cada amostra mostra o contraste com o texto que vai em cima dela (tinta nas claras, branco nas escuras): AA a partir de 4,5 : 1, AAA a partir de 7 : 1.</p></div>
+  <h3 class="sub" style="margin-top:0">Violeta · marca</h3>
+  <div class="escala">
+    <div class="am"><i style="background:#F8F3FF"><span>AAA 15,3</span></i><div><b>50</b><code>#F8F3FF</code></div></div>
+    <div class="am"><i style="background:#F1E9FC"><span>AAA 14,2</span></i><div><b>100</b><code>#F1E9FC</code></div></div>
+    <div class="am"><i style="background:#DDC8F8"><span>AAA 10,9</span></i><div><b>200</b><code>#DDC8F8</code></div></div>
+    <div class="am"><i style="background:#C3A0EF"><span>AAA 7,6</span></i><div><b>300</b><code>#C3A0EF</code></div></div>
+    <div class="am"><i style="background:#A16DE5"><span>AA 4,6</span></i><div><b>400</b><code>#A16DE5</code></div></div>
+    <div class="am"><i style="background:#7B3BDC;color:#fff"><span>AA 6,0</span></i><div><b>500</b><code>#7B3BDC</code></div></div>
+    <div class="am"><i style="background:#5808CC;color:#fff"><span>AAA 9,1</span></i><div><b>600 · principal</b><code>#5808CC</code></div></div>
+    <div class="am"><i style="background:#4706A6;color:#fff"><span>AAA 11,4</span></i><div><b>700</b><code>#4706A6</code></div></div>
+    <div class="am"><i style="background:#180567;color:#fff"><span>AAA 16,7</span></i><div><b>900 · profundo</b><code>#180567</code></div></div>
+  </div>
+  <h3 class="sub">Laranja · energia</h3>
+  <div class="escala">
+    <div class="am"><i style="background:#FFF7EB"><span>AAA 15,7</span></i><div><b>50 · fundo quente</b><code>#FFF7EB</code></div></div>
+    <div class="am"><i style="background:#FFEBCF"><span>AAA 14,3</span></i><div><b>100 · quadrinho</b><code>#FFEBCF</code></div></div>
+    <div class="am"><i style="background:#FFD39E"><span>AAA 12,0</span></i><div><b>200 · destaque no violeta</b><code>#FFD39E</code></div></div>
+    <div class="am"><i style="background:#FFB96A"><span>AAA 9,9</span></i><div><b>300 · trilha</b><code>#FFB96A</code></div></div>
+    <div class="am"><i style="background:#FF8D01;color:#180567"><span>AAA 7,2*</span></i><div><b>500 · principal</b><code>#FF8D01</code></div></div>
+    <div class="am"><i style="background:#7C3900;color:#fff"><span>AAA 8,6</span></i><div><b>800 · texto quente</b><code>#7C3900</code></div></div>
+  </div>
+  <p class="nota">* O laranja 500 só leva texto em violeta profundo (7,21 : 1). O laranja é acento: aparece em pouco espaço (contagem, marcador, trilha) e nunca como botão nem como situação. Os tons escuros saíram da escala porque ficavam marrons e brigavam com o violeta; só o 800 fica, para texto sobre laranja claro.</p>
+  <h3 class="sub">Neutros e significado</h3>
+  <p class="nota">Paleta Brilho: neutros com um toque de lavanda e cores de estado em tom de joia, cada uma em cartão com borda em degradê, como o botão secundário. Nos neutros, o número é o contraste da tinta (ou do branco) sobre a cor; nas cores de estado, o contraste do tom sobre o próprio fundo, que é como aparecem no selo.</p>
+  <div class="cores-b">
+    <div class="cor"><i class="tinta" style="background:#F7F4FC"><span>AAA 16,1</span></i><div><b>Névoa 50</b><code>#F7F4FC</code></div><small style="font-size:12.5px;color:var(--texto-suave)">Fundo das telas</small></div>
+    <div class="cor"><i class="tinta" style="background:#E4DCF1"><span>AAA 13,1</span></i><div><b>Linha 200</b><code>#E4DCF1</code></div><small style="font-size:12.5px;color:var(--texto-suave)">Divisórias e bordas de cartão</small></div>
+    <div class="cor"><i class="tinta" style="background:#9184AA"><span>3,5 : 1</span></i><div><b>Borda de campo</b><code>#9184AA</code></div><small style="font-size:12.5px;color:var(--texto-suave)">Contorno de campo</small></div>
+    <div class="cor"><i class="tinta" style="background:#5E5475"><span>AAA 7,0</span></i><div><b>Tinta suave</b><code>#5E5475</code></div><small style="font-size:12.5px;color:var(--texto-suave)">Legendas e apoio</small></div>
+    <div class="cor"><i class="tinta" style="background:#1E1531"><span>AAA 17,4</span></i><div><b>Tinta</b><code>#1E1531</code></div><small style="font-size:12.5px;color:var(--texto-suave)">Títulos e texto</small></div>
+  </div>
+  <div class="cores-b">
+    <div class="cor" style="--b1:#5808CC;--b2:#8B3DF0;--t:#5808CC;--tf:#F8F3FF;--tb:#E6D9FB;--fx:var(--fx-and)"><i class="tinta" style="background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 70%)"><span>AAA 8,3</span></i><div><b>Em andamento · violeta</b><code>#5808CC · fundo #F8F3FF</code></div><div class="par"><span class="amostra">Em andamento</span></div></div>
+    <div class="cor" style="--b1:#0B7558;--b2:#3DBE91;--t:#0B7558;--tf:#EDFAF5;--tb:#BCE8D7;--fx:var(--fx-ok)"><i class="tinta" style="background:linear-gradient(135deg,#3DBE91 0%,#0B7558 70%)"><span>AA 5,3</span></i><div><b>Concluído, no prazo · jade</b><code>#0B7558 · fundo #EDFAF5</code></div><div class="par"><span class="amostra">Concluído</span></div></div>
+    <div class="cor" style="--b1:#95560A;--b2:#F2A33A;--t:#95560A;--tf:#FFF6E6;--tb:#F6DCAE;--fx:var(--fx-at)"><i class="tinta" style="background:linear-gradient(135deg,#F2A33A 0%,#95560A 70%)"><span>AA 5,4</span></i><div><b>Atenção, vence hoje · âmbar</b><code>#95560A · fundo #FFF6E6</code></div><div class="par"><span class="amostra">Vence hoje</span></div></div>
+    <div class="cor" style="--b1:#BC1450;--b2:#F0598A;--t:#BC1450;--tf:#FFF0F4;--tb:#F8CBDA;--fx:var(--fx-er)"><i class="tinta" style="background:linear-gradient(135deg,#F0598A 0%,#BC1450 70%)"><span>AA 5,7</span></i><div><b>Vencido, erro · rubi</b><code>#BC1450 · fundo #FFF0F4</code></div><div class="par"><span class="amostra">Retorno vencido</span></div></div>
+    <div class="cor" style="--b1:#0D6E8C;--b2:#38B2CF;--t:#0D6E8C;--tf:#EBF8FC;--tb:#B9E3EF;--fx:var(--fx-in)"><i class="tinta" style="background:linear-gradient(135deg,#38B2CF 0%,#0D6E8C 70%)"><span>AA 5,3</span></i><div><b>Informação · petróleo</b><code>#0D6E8C · fundo #EBF8FC</code></div><div class="par"><span class="amostra">Regras mudaram</span></div></div>
+  </div>
+  <h3 class="sub">Tokens de uso</h3>
+  <p class="nota">As telas usam os tokens, nunca a cor direta. Assim dá para ajustar o sistema inteiro num lugar só.</p>
+  <div class="tokens">
+    <div class="tok"><i style="background:#F7F4FC"></i><div><b>--fundo</b><small>Fundo das telas</small></div></div>
+    <div class="tok"><i style="background:#fff"></i><div><b>--superficie</b><small>Cartões, janelas, lateral</small></div></div>
+    <div class="tok"><i style="background:#5808CC"></i><div><b>--marca</b><small>Ação principal, item escolhido, links</small></div></div>
+    <div class="tok"><i style="background:#F1E9FC"></i><div><b>--marca-suave</b><small>Fundo de seleção e quadrinhos de ícone</small></div></div>
+    <div class="tok"><i style="background:#FF8D01"></i><div><b>--acento</b><small>Contagem, marcador, selo Admin, trilha</small></div></div>
+    <div class="tok"><i style="background:#1E1531"></i><div><b>--texto</b><small>Títulos e texto</small></div></div>
+    <div class="tok"><i style="background:#5E5475"></i><div><b>--texto-suave</b><small>Legendas e apoio</small></div></div>
+    <div class="tok"><i style="background:#9184AA"></i><div><b>--borda-campo</b><small>Contorno de campo (3 : 1)</small></div></div>
+    <div class="tok"><i style="background:#E4DCF1"></i><div><b>--linha</b><small>Divisórias e bordas de cartão</small></div></div>
+  </div>
+</section>
+
+<!-- Tipografia -->
+<section class="parte" id="tipografia" aria-labelledby="t-tipo">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-tipo">Tipografia</h2><p>Manrope faz o trabalho, em pesos leves. A Playfair Display em itálico entra só como destaque, numa palavra de título grande.</p></div>
+  <div class="painel especime">
+    <div class="grande" aria-hidden="true">Man<em class="d">rope</em></div>
+    <div class="pesos"><span>Leve 300 · títulos e números</span><span>Normal 400 · texto</span><span>Média 500 · rótulos e botões</span><span>Seminegrito 600 · avatares</span></div>
+  </div>
+  <div class="painel" style="margin-top:16px">
+    <div class="tipos">
+      <div class="tipo"><span class="n">Título 1</span><span style="font-size:44px;font-weight:300;letter-spacing:-.03em">Bom dia, <em class="d" style="color:var(--v600)">Ana</em>.</span><span class="m">44/52 · 300</span></div>
+      <div class="tipo"><span class="n">Título 2</span><span style="font-size:32px;font-weight:300;letter-spacing:-.02em">Pedidos do Residencial Ipê</span><span class="m">32/40 · 300</span></div>
+      <div class="tipo"><span class="n">Título 3</span><span style="font-size:24px;font-weight:400">Vazamento no banheiro</span><span class="m">24/32 · 400</span></div>
+      <div class="tipo"><span class="n">Título 4</span><span style="font-size:19px;font-weight:500">Próximos retornos</span><span class="m">19/26 · 500</span></div>
+      <div class="tipo"><span class="n">Número</span><span style="font-size:36px;font-weight:300;letter-spacing:-.02em">86%</span><span class="m">36/40 · 300</span></div>
+      <div class="tipo"><span class="n">Texto</span><span style="font-size:15px">O prestador vem avaliar na quinta. Ainda não há previsão de conclusão.</span><span class="m">15/24 · 400</span></div>
+      <div class="tipo"><span class="n">Rótulo e botão</span><span style="font-size:14px;font-weight:500">Próximo retorno</span><span class="m">14/20 · 500</span></div>
+      <div class="tipo"><span class="n">Legenda</span><span style="font-size:13px;color:var(--texto-suave)">Torre A · 101 · Manutenção</span><span class="m">13/18 · 400</span></div>
+      <div class="tipo"><span class="n">Sobretítulo</span><span class="rot">Prioridade do dia</span><span class="m">12/16 · 500 · 0,12em</span></div>
+      <div class="tipo"><span class="n">Protocolo</span><span class="mono" style="font-size:13px">2026-0012</span><span class="m">IBM Plex Mono 13 · 500</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Espaço e cantos -->
+<section class="parte" id="espaco" aria-labelledby="t-esp">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-esp">Espaço e cantos</h2><p>Espaços em múltiplos de 4 px (o 2 é a exceção para detalhes finos). Os cantos crescem com o tamanho da peça: botão 12, cartão 16 a 18, painel de destaque 22.</p></div>
+  <div class="espacos">
+    <div class="esp"><span class="tag">esp-1</span><i style="width:4px;height:4px"></i><b>4 px</b></div>
+    <div class="esp"><span class="tag">esp-2</span><i style="width:8px;height:8px"></i><b>8 px</b></div>
+    <div class="esp"><span class="tag">esp-3</span><i style="width:12px;height:12px"></i><b>12 px</b></div>
+    <div class="esp"><span class="tag">esp-4</span><i style="width:16px;height:16px"></i><b>16 px</b></div>
+    <div class="esp"><span class="tag">esp-5</span><i style="width:20px;height:20px"></i><b>20 px</b></div>
+    <div class="esp"><span class="tag">esp-6</span><i style="width:24px;height:24px"></i><b>24 px</b></div>
+    <div class="esp"><span class="tag">esp-8</span><i style="width:32px;height:32px"></i><b>32 px</b></div>
+    <div class="esp"><span class="tag">esp-10</span><i style="width:40px;height:40px"></i><b>40 px</b></div>
+    <div class="esp"><span class="tag">esp-12</span><i style="width:48px;height:48px"></i><b>48 px</b></div>
+    <div class="esp"><span class="tag">esp-16</span><i style="width:64px;height:64px"></i><b>64 px</b></div>
+  </div>
+  <h3 class="sub">Cantos</h3>
+  <div class="cantos">
+    <div class="canto"><i style="border-radius:6px"></i><b>6 px · caixa de seleção</b></div>
+    <div class="canto"><i style="border-radius:9px"></i><b>9 px · botão pequeno</b></div>
+    <div class="canto"><i style="border-radius:12px"></i><b>12 px · botão, campo</b></div>
+    <div class="canto"><i style="border-radius:16px"></i><b>16 px · cartão</b></div>
+    <div class="canto"><i style="border-radius:22px"></i><b>22 px · destaque</b></div>
+    <div class="canto"><i style="border-radius:999px"></i><b>Redondo · selo, chip</b></div>
+  </div>
+</section>
+
+<!-- Sombras -->
+<section class="parte" id="sombra" aria-labelledby="t-som">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-som">Sombras</h2><p>Sombras macias, com um toque de violeta, em três alturas. Quanto mais alta a peça, mais ela flutua: cartão, menu aberto, janela.</p></div>
+  <div class="sombras">
+    <div class="sombra"><i style="border:1px solid var(--linha)"></i><b>Nenhuma</b><small>Peças dentro de cartões</small></div>
+    <div class="sombra"><i style="box-shadow:var(--s1)"></i><b>Pequena</b><small>Cartões, lateral<br>0 4 12 · violeta 4%</small></div>
+    <div class="sombra"><i style="box-shadow:var(--s2)"></i><b>Média</b><small>Menus, calendário, avisos<br>0 12 28 · violeta 8%</small></div>
+    <div class="sombra"><i style="box-shadow:var(--s3)"></i><b>Grande</b><small>Janelas e gaveta<br>0 24 48 · violeta 12%</small></div>
+  </div>
+</section>
+
+<!-- Ícones -->
+<section class="parte" id="icones" aria-labelledby="t-ic">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-ic">Ícones</h2><p>Traço de 1,7 px, pontas redondas, em 24, 20 e 16 px. Sempre acompanham uma palavra; ícone sozinho só em botão com nome para o leitor de tela. Os do condomínio são desenhos próprios.</p></div>
+  <h3 class="sub" style="margin-top:0">Ação</h3>
+  <div class="icones">
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-mais"/></svg><svg class="ic"><use href="#i-mais"/></svg><svg class="ic" style="width:16px;height:16px"><use href="#i-mais"/></svg></div><span>Registrar</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-retorno"/></svg><svg class="ic"><use href="#i-retorno"/></svg><svg class="ic" style="width:16px;height:16px"><use href="#i-retorno"/></svg></div><span>Dar retorno</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-busca"/></svg><svg class="ic"><use href="#i-busca"/></svg><svg class="ic" style="width:16px;height:16px"><use href="#i-busca"/></svg></div><span>Buscar</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-ajuste"/></svg><svg class="ic"><use href="#i-ajuste"/></svg><svg class="ic" style="width:16px;height:16px"><use href="#i-ajuste"/></svg></div><span>Configurar</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-clipe"/></svg><svg class="ic"><use href="#i-clipe"/></svg><svg class="ic" style="width:16px;height:16px"><use href="#i-clipe"/></svg></div><span>Anexar</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-calendario"/></svg><svg class="ic"><use href="#i-calendario"/></svg><svg class="ic" style="width:16px;height:16px"><use href="#i-calendario"/></svg></div><span>Data</span></div>
+  </div>
+  <h3 class="sub">Navegação</h3>
+  <div class="icones">
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-menu"/></svg><svg class="ic"><use href="#i-baixo"/></svg><svg class="ic"><use href="#i-pontos"/></svg></div><span>Menu, abrir, mais</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic"><use href="#i-esq"/></svg><svg class="ic"><use href="#i-dir"/></svg><svg class="ic"><use href="#i-seta"/></svg></div><span>Voltar, avançar, ir</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic"><use href="#i-fechar"/></svg><svg class="ic"><use href="#i-check"/></svg><svg class="ic"><use href="#i-trocar"/></svg></div><span>Fechar, confirmar, trocar</span></div>
+  </div>
+  <h3 class="sub">Condomínio</h3>
+  <div class="icones">
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-predio"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-casa"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-chave"/></svg></div><span>Prédio, início, acesso</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-pedido"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-ferramenta"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-mudanca"/></svg></div><span>Pedido, manutenção, mudança</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-pessoa"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-pessoas"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-pessoa-mais"/></svg></div><span>Morador, equipe, autorizar</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-sino"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-balao"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-whats"/></svg></div><span>Aviso, mensagem, WhatsApp</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-documento"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-escudo"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-grafico"/></svg></div><span>Documento, privado, indicadores</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-relogio"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-alerta"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-info"/></svg></div><span>Prazo, atenção, informação</span></div>
+  </div>
+  <h3 class="sub">Conteúdo e conta</h3>
+  <div class="icones">
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-editar"/></svg><svg class="ic"><use href="#i-editar"/></svg><svg class="ic" style="width:16px;height:16px"><use href="#i-editar"/></svg></div><span>Editar</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-filtro"/></svg><svg class="ic"><use href="#i-filtro"/></svg><svg class="ic" style="width:16px;height:16px"><use href="#i-filtro"/></svg></div><span>Filtrar</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-lista"/></svg><svg class="ic"><use href="#i-lista"/></svg><svg class="ic" style="width:16px;height:16px"><use href="#i-lista"/></svg></div><span>Lista</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-copiar"/></svg><svg class="ic"><use href="#i-copiar"/></svg><svg class="ic" style="width:16px;height:16px"><use href="#i-copiar"/></svg></div><span>Copiar</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-link"/></svg><svg class="ic"><use href="#i-link"/></svg><svg class="ic" style="width:16px;height:16px"><use href="#i-link"/></svg></div><span>Link</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-compartilhar"/></svg><svg class="ic"><use href="#i-compartilhar"/></svg><svg class="ic" style="width:16px;height:16px"><use href="#i-compartilhar"/></svg></div><span>Compartilhar</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-baixar"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-enviar"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-imprimir"/></svg></div><span>Baixar, enviar, imprimir</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-camera"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-olho"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-estrela"/></svg></div><span>Foto, ver, importante</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-telefone"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-email"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-pin"/></svg></div><span>Telefone, e-mail, local</span></div>
+    <div class="icone-grupo"><div class="icone"><svg class="ic" style="width:28px;height:28px"><use href="#i-cadeado"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-engrenagem"/></svg><svg class="ic" style="width:28px;height:28px"><use href="#i-sair"/></svg></div><span>Senha, conta, sair</span></div>
+  </div>
+</section>
+
+<!-- Botão -->
+<section class="parte" id="botao" aria-labelledby="t-bt">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-bt">Botão</h2><p>Faz uma ação. Seis estilos, do mais forte ao mais discreto, em três tamanhos e cinco estados. Um único botão principal por tela.</p></div>
+  <div class="estudo">
+    <table class="matriz" aria-label="Botões por estilo e estado">
+      <thead><tr><th scope="col"></th><th scope="col">Principal</th><th scope="col">Secundário</th><th scope="col">Contorno</th><th scope="col">Discreto</th><th scope="col">Perigo</th><th scope="col">Sobre o violeta</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Normal</th><td><span class="botao primario"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></td><td><span class="botao secundario">Repassar</span></td><td><span class="botao contorno">Exportar</span></td><td><span class="botao fantasma">Ver todos<svg class="ic"><use href="#i-seta"/></svg></span></td><td><span class="botao perigo">Cancelar</span></td><td class="celula-escura"><span class="botao claro">Ver vencidos</span></td></tr>
+        <tr><th scope="row">Sob o mouse</th><td><span class="botao primario hover"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></td><td><span class="botao secundario hover">Repassar</span></td><td><span class="botao contorno hover">Exportar</span></td><td><span class="botao fantasma hover">Ver todos<svg class="ic"><use href="#i-seta"/></svg></span></td><td><span class="botao perigo hover">Cancelar</span></td><td class="celula-escura"><span class="botao claro hover">Ver vencidos</span></td></tr>
+        <tr><th scope="row">Pressionado</th><td><span class="botao primario pressionado"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></td><td><span class="botao secundario pressionado">Repassar</span></td><td><span class="botao contorno pressionado">Exportar</span></td><td><span class="botao fantasma pressionado">Ver todos<svg class="ic"><use href="#i-seta"/></svg></span></td><td><span class="botao perigo pressionado">Cancelar</span></td><td class="celula-escura"><span class="botao claro pressionado">Ver vencidos</span></td></tr>
+        <tr><th scope="row">Foco</th><td><span class="botao primario foco"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></td><td><span class="botao secundario foco">Repassar</span></td><td><span class="botao contorno foco">Exportar</span></td><td><span class="botao fantasma foco">Ver todos<svg class="ic"><use href="#i-seta"/></svg></span></td><td><span class="botao perigo foco">Cancelar</span></td><td class="celula-escura"><span class="botao claro foco">Ver vencidos</span></td></tr>
+        <tr><th scope="row">Indisponível</th><td><span class="botao primario desab"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></td><td><span class="botao secundario desab">Repassar</span></td><td><span class="botao contorno desab">Exportar</span></td><td><span class="botao fantasma desab">Ver todos<svg class="ic"><use href="#i-seta"/></svg></span></td><td><span class="botao perigo desab">Cancelar</span></td><td class="celula-escura"><span class="botao claro desab">Ver vencidos</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <h3 class="sub">Tamanhos</h3>
+  <div class="estudo linha"><span class="botao primario"><svg class="ic"><use href="#i-mais"/></svg>Grande · 44</span><span class="botao primario bt-m"><svg class="ic"><use href="#i-mais"/></svg>Médio · 36</span><span class="botao primario bt-p">Pequeno · 30</span><span class="botao primario so-ic" aria-label="Registrar pedido"><svg class="ic"><use href="#i-mais"/></svg></span><span class="botao secundario bt-m so-ic" aria-label="Mais ações"><svg class="ic"><use href="#i-pontos"/></svg></span><span class="botao fantasma bt-p so-ic" aria-label="Fechar"><svg class="ic"><use href="#i-fechar"/></svg></span></div>
+  <p class="nota" style="margin-top:10px">No celular, todo botão tem 44 px de área de toque, mesmo os médios e pequenos. O laranja não vira botão: ele fica nos detalhes (contagem, marcador, selo Admin), para não competir com o violeta.</p>
+  <div class="faca">
+    <div><div class="q"><span class="botao primario" style="width:200px">Dar retorno</span><span class="botao secundario" style="width:200px">Repassar</span><span class="botao fantasma" style="width:200px">Cancelar</span></div><p><span class="r"><svg class="ic" style="width:14px;height:14px"><use href="#i-check"/></svg>Faça</span> Um principal e os outros mais discretos, do mais para o menos importante.</p></div>
+    <div><div class="q nao"><span class="botao primario" style="width:200px">Dar retorno</span><span class="botao primario" style="width:200px">Repassar</span><span class="botao perigo" style="width:200px;background:var(--er);color:#fff">Cancelar</span></div><p><span class="r nao"><svg class="ic" style="width:14px;height:14px"><use href="#i-fechar"/></svg>Não faça</span> Vários botões fortes juntos: a pessoa não sabe qual é o passo certo.</p></div>
+  </div>
+</section>
+
+<!-- Campo -->
+<section class="parte" id="campo" aria-labelledby="t-campo">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-campo">Campo</h2><p>Recebe texto, número ou data. Tem rótulo em cima, a caixa e uma dica embaixo. O ícone é opcional, à esquerda ou à direita.</p></div>
+  <div class="estudo">
+    <div class="grade3">
+      <div class="campo"><label>Assunto <span class="ob">*</span></label><span class="entrada"><span class="ph">Ex.: vazamento no banheiro</span></span><span class="dica"><svg class="ic"><use href="#i-info"/></svg>Normal, vazio</span></div>
+      <div class="campo"><label>Assunto <span class="ob">*</span></label><span class="entrada hover">Vazamento no banheiro</span><span class="dica"><svg class="ic"><use href="#i-info"/></svg>Sob o mouse</span></div>
+      <div class="campo"><label>Unidade <span class="ob">*</span></label><span class="entrada ativo"><svg class="ic"><use href="#i-busca"/></svg>Torre A · 1|</span><span class="dica"><svg class="ic"><use href="#i-info"/></svg>Escrevendo: borda violeta e halo</span></div>
+      <div class="campo"><label style="color:#8A8296">Protocolo</label><span class="entrada desab" style="background:var(--n100);color:#8A8296">2026-0012</span><span class="dica"><svg class="ic"><use href="#i-info"/></svg>Indisponível: não muda</span></div>
+      <div class="campo"><label>Próximo retorno <span class="ob">*</span></label><span class="entrada erro"><svg class="ic"><use href="#i-calendario"/></svg>14/10, 18h</span><span class="dica erro"><svg class="ic"><use href="#i-alerta"/></svg>Essa data já passou. Escolha a partir de agora.</span></div>
+      <div class="campo"><label>Telefone</label><span class="entrada alerta">(61) 9999-0001</span><span class="dica alerta"><svg class="ic"><use href="#i-alerta"/></svg>Parece faltar um dígito.</span></div>
+      <div class="campo"><label>Telefone</label><span class="entrada certo">(61) 99999-0001<svg class="ic" style="margin-left:auto;color:var(--ok)"><use href="#i-check"/></svg></span><span class="dica certo"><svg class="ic"><use href="#i-check"/></svg>Confirmado pelo morador.</span></div>
+      <div class="campo"><label>Buscar</label><span class="entrada"><svg class="ic"><use href="#i-busca"/></svg><span class="ph">Pedido, unidade ou morador…</span></span><span class="dica"><svg class="ic"><use href="#i-info"/></svg>Com ícone à esquerda</span></div>
+      <div class="campo"><label>Categoria</label><span class="entrada">Manutenção<svg class="ic" style="margin-left:auto"><use href="#i-baixo"/></svg></span><span class="dica"><svg class="ic"><use href="#i-info"/></svg>Lista de escolha</span></div>
+    </div>
+  </div>
+  <div class="faca">
+    <div><div class="q"><div class="campo" style="width:240px"><label>Senha <span class="ob">*</span></label><span class="entrada"><span class="ph">Sua senha</span></span><span class="dica"><svg class="ic"><use href="#i-info"/></svg>Pelo menos 12 caracteres.</span></div></div><p><span class="r"><svg class="ic" style="width:14px;height:14px"><use href="#i-check"/></svg>Faça</span> A regra fica na dica, sempre visível.</p></div>
+    <div><div class="q nao"><div class="campo" style="width:240px"><label>Senha <span class="ob">*</span></label><span class="entrada"><span class="ph">Pelo menos 12 caracteres, com…</span></span></div></div><p><span class="r nao"><svg class="ic" style="width:14px;height:14px"><use href="#i-fechar"/></svg>Não faça</span> A regra dentro da caixa some quando a pessoa começa a escrever.</p></div>
+  </div>
+</section>
+
+<!-- Selos e chips -->
+<section class="parte" id="selos" aria-labelledby="t-selos">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-selos">Selos e chips</h2><p>O selo diz a situação e não se clica: faixa lateral com brilho e palavra, nunca só a cor. O chip filtra ou escolhe e pode ser tirado; os filtros da fila ficam num trilho, e o escolhido ganha o degradê do botão principal.</p></div>
+  <div class="estudo" style="display:grid;gap:18px">
+    <div><span class="rot">Situação do pedido</span><div class="linha" style="margin-top:8px"><span class="selo s-novo"><span class="f" aria-hidden="true"></span>Aberto</span><span class="selo s-and"><span class="f" aria-hidden="true"></span>Em andamento</span><span class="selo s-at"><span class="f" aria-hidden="true"></span>Vence hoje</span><span class="selo s-ve"><span class="f" aria-hidden="true"></span>Retorno vencido</span><span class="selo s-ok"><span class="f" aria-hidden="true"></span>Concluído</span></div></div>
+    <div><span class="rot">Filtros da fila</span><div class="linha" style="margin-top:8px"><span class="trilho"><span class="chip sel"><svg class="ic"><use href="#i-check"/></svg>Ativos</span><span class="chip"><svg class="ic"><use href="#i-relogio"/></svg>Retorno vencido</span><span class="chip"><svg class="ic"><use href="#i-pessoa"/></svg>Sem responsável</span></span><span class="chip sel">Torre A<svg class="ic"><use href="#i-fechar"/></svg></span><span class="chip ac"><svg class="ic"><use href="#i-ferramenta"/></svg>Manutenção<svg class="ic"><use href="#i-fechar"/></svg></span></div></div>
+    <div><span class="rot">Pessoas</span><div class="linha" style="margin-top:8px"><span class="chip"><span class="av av1">AL</span>Ana Lima</span><span class="chip"><span class="av av2">BS</span>Bruna Souza</span><span class="chip"><span class="av av3">ES</span>Edu Santos<svg class="ic"><use href="#i-fechar"/></svg></span><span class="chip inc"><svg class="ic"><use href="#i-pessoa-mais"/></svg>Incluir pessoa</span></div></div>
+  </div>
+</section>
+
+<!-- Escolhas -->
+<section class="parte" id="escolha" aria-labelledby="t-esc">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-esc">Caixa, opção e chave</h2><p>Caixa para marcar várias coisas; opção para escolher uma entre poucas; chave para ligar e desligar na hora. O texto ao lado também marca.</p></div>
+  <div class="estudo">
+    <table class="matriz" aria-label="Escolhas por estado">
+      <thead><tr><th scope="col"></th><th scope="col">Normal</th><th scope="col">Sob o mouse</th><th scope="col">Foco</th><th scope="col">Indisponível</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Desmarcada</th><td><span class="cx"></span></td><td><span class="cx hover"></span></td><td><span class="cx foco"></span></td><td><span class="cx des"></span></td></tr>
+        <tr><th scope="row">Marcada</th><td><span class="cx on"><svg class="ic"><use href="#i-check"/></svg></span></td><td><span class="cx on hover"><svg class="ic"><use href="#i-check"/></svg></span></td><td><span class="cx on foco"><svg class="ic"><use href="#i-check"/></svg></span></td><td><span class="cx on des"><svg class="ic"><use href="#i-check"/></svg></span></td></tr>
+        <tr><th scope="row">Parcial</th><td><span class="cx on"><svg class="ic"><path d="M6 12h12"/></svg></span></td><td><span class="cx on hover"><svg class="ic"><path d="M6 12h12"/></svg></span></td><td><span class="cx on foco"><svg class="ic"><path d="M6 12h12"/></svg></span></td><td><span class="cx on des"><svg class="ic"><path d="M6 12h12"/></svg></span></td></tr>
+        <tr><th scope="row">Opção</th><td><span class="rb"></span> <span class="rb on"></span></td><td></td><td></td><td></td></tr>
+        <tr><th scope="row">Chave</th><td><span class="chave"></span> <span class="chave on"></span></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="linha" style="margin-top:18px;gap:28px"><span class="linha" style="gap:10px"><span class="cx on"><svg class="ic"><use href="#i-check"/></svg></span>Recebe comunicados</span><span class="linha" style="gap:10px"><span class="rb on"></span>Por telefone</span><span class="linha" style="gap:10px"><span class="chave on"></span>Revisar a conclusão antes de encerrar</span></div>
+  </div>
+</section>
+
+<!-- Tabela -->
+<section class="parte" id="tabela" aria-labelledby="t-tab">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-tab">Tabela e avatar</h2><p>Mostra muitos itens para comparar. Cabeçalho discreto, linhas espaçadas, pessoa com avatar de iniciais e a situação em selo. Linha escolhida em lilás claro. No celular, cada linha vira um cartão.</p></div>
+  <div class="tab-wrap">
+    <table class="tabela">
+      <thead><tr><th scope="col"><span class="cx on"><svg class="ic"><path d="M6 12h12"/></svg></span><span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Escolher</span></th><th scope="col">Pedido</th><th scope="col">Situação</th><th scope="col">Próximo retorno</th><th scope="col">Responsável</th><th scope="col"><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Ações</span></th></tr></thead>
+      <tbody>
+        <tr><td><span class="cx"></span></td><td><span class="prot mono">2026-0012</span><br><span class="ass">Vazamento no banheiro</span></td><td><span class="selo s-ve"><span class="f"></span>Vencido às 11h</span></td><td>Hoje, 11h</td><td><span class="pessoa"><span class="av av2">BS</span>Bruna Souza</span></td><td><svg class="ic" style="color:var(--n500)"><use href="#i-pontos"/></svg></td></tr>
+        <tr class="sel"><td><span class="cx on"><svg class="ic"><use href="#i-check"/></svg></span></td><td><span class="prot mono">2026-0014</span><br><span class="ass">Reserva do salão de festas</span></td><td><span class="selo s-at"><span class="f"></span>Vence hoje</span></td><td>Hoje, 17h</td><td><span class="pessoa"><span class="av av1">AL</span>Ana Lima</span></td><td><svg class="ic" style="color:var(--n500)"><use href="#i-pontos"/></svg></td></tr>
+        <tr><td><span class="cx"></span></td><td><span class="prot mono">2026-0015</span><br><span class="ass">Portão da garagem não fecha</span></td><td><span class="selo s-and"><span class="f"></span>Em andamento</span></td><td>18/10, 9h</td><td><span class="pessoa"><span class="av av3">ES</span>Edu Santos</span></td><td><svg class="ic" style="color:var(--n500)"><use href="#i-pontos"/></svg></td></tr>
+        <tr><td><span class="cx"></span></td><td><span class="prot mono">2026-0016</span><br><span class="ass">Lâmpada apagada no corredor</span></td><td><span class="selo s-novo"><span class="f"></span>Aberto</span></td><td>18/10, 10h</td><td><span class="pessoa" style="color:var(--at)"><span class="av" style="background:var(--at-f);color:var(--at)">?</span>Sem responsável</span></td><td><svg class="ic" style="color:var(--n500)"><use href="#i-pontos"/></svg></td></tr>
+      </tbody>
+    </table>
+    <div class="paginacao"><span>1 a 4 de 32 pedidos</span><span class="pag"><span><svg class="ic" style="width:16px;height:16px"><use href="#i-esq"/></svg></span><span class="at">1</span><span>2</span><span>3</span><span>…</span><span>8</span><span><svg class="ic" style="width:16px;height:16px"><use href="#i-dir"/></svg></span></span></div>
+  </div>
+  <h3 class="sub">Avatar</h3>
+  <div class="estudo linha" style="gap:24px"><span class="av av1" style="width:48px;height:48px;font-size:16px">AL</span><span class="av av2">BS</span><span class="av av3" style="width:28px;height:28px;font-size:10px">ES</span><span class="av av4" style="width:48px;height:48px"><svg class="ic"><use href="#i-pessoa"/></svg></span><span class="pilha"><span class="av av1">AL</span><span class="av av2">BS</span><span class="av av3">ES</span><span class="av av4">MR</span><span class="av mais">+3</span></span><span style="font-size:13px;color:var(--texto-suave)">Iniciais em tons da paleta, nunca foto de morador.</span></div>
+</section>
+
+<!-- Calendário -->
+<section class="parte" id="calendario" aria-labelledby="t-cal">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-cal">Calendário</h2><p>Escolhe a data do próximo retorno ou da previsão. Hoje com contorno, a escolhida em violeta, os feriados do condomínio sublinhados em laranja escuro. Um mês por vez.</p></div>
+  <div class="grade2" style="align-items:start">
+    <div class="cal" role="img" aria-label="Calendário de outubro de 2026, hoje 17 escolhido, feriado no dia 12">
+      <div class="cab"><svg class="ic"><use href="#i-esq"/></svg><span>Outubro de 2026 <svg class="ic" style="width:14px;height:14px;vertical-align:-2px"><use href="#i-baixo"/></svg></span><svg class="ic"><use href="#i-dir"/></svg></div>
+      <div class="dias"><span class="h">Seg</span><span class="h">Ter</span><span class="h">Qua</span><span class="h">Qui</span><span class="h">Sex</span><span class="h">Sáb</span><span class="h">Dom</span>
+        <span class="fora">28</span><span class="fora">29</span><span class="fora">30</span><span>1</span><span>2</span><span>3</span><span>4</span>
+        <span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span>
+        <span class="fer">12</span><span>13</span><span>14</span><span>15</span><span>16</span><span class="hoje">17</span><span>18</span>
+        <span>19</span><span class="es">20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span>
+        <span>26</span><span>27</span><span>28</span><span>29</span><span>30</span><span>31</span><span class="fora">1</span></div>
+      <div class="pe"><span class="botao fantasma bt-m">Cancelar</span><span class="botao primario bt-m">Escolher 20/10</span></div>
+    </div>
+    <div class="painel" style="display:grid;gap:12px">
+      <div class="campo"><label>Próximo retorno <span class="ob">*</span></label><span class="entrada ativo">20/10/2026, 10h<svg class="ic" style="margin-left:auto;color:var(--v600)"><use href="#i-calendario"/></svg></span><span class="dica"><svg class="ic"><use href="#i-info"/></svg>Conta só o horário de atendimento; 12/10 é feriado.</span></div>
+      <p class="nota" style="margin:0">O calendário abre embaixo do campo, com a sombra média. Não aumentar o calendário para ocupar a tela: ele fica no tamanho padrão.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Telas com vida -->
+<section class="parte" id="vida" aria-labelledby="t-vida">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-vida">Lateral e cartões <em class="d">com vida</em></h2><p>A partir das referências enviadas: a lateral clara com ícone em cada item, grupos separados por linha, setas para abrir subitens e um botão para trocar de sistema; cartões com barrinha de cor, quadrinho de ícone, avatares e botão com ícone. Dados fictícios.</p></div>
+  <div style="display:grid;gap:24px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),max-content) );align-items:start">
+    <nav class="lat" aria-label="Exemplo de lateral da Plataforma">
+      <a class="it at" href="#vida"><svg class="ic"><use href="#i-casa"/></svg>Início</a>
+      <a class="it" href="#vida"><svg class="ic"><use href="#i-pedido"/></svg>Pedidos<span class="cont">5</span></a>
+      <hr>
+      <a class="it" href="#vida" aria-expanded="true"><svg class="ic"><use href="#i-predio"/></svg>Moradores e unidades<svg class="ic seta" style="transform:rotate(180deg)"><use href="#i-baixo"/></svg></a>
+      <div class="sub-itens"><a href="#vida">Unidades</a><a href="#vida">A confirmar</a><a href="#vida">Importar planilha</a></div>
+      <a class="it" href="#vida"><svg class="ic"><use href="#i-sino"/></svg>Avisos<span class="cont">3</span></a>
+      <a class="it" href="#vida"><svg class="ic"><use href="#i-grafico"/></svg>Indicadores</a>
+      <hr>
+      <a class="it" href="#vida"><svg class="ic"><use href="#i-ajuste"/></svg>Configurações<svg class="ic seta"><use href="#i-baixo"/></svg></a>
+      <a class="it" href="#vida"><svg class="ic"><use href="#i-pessoas"/></svg>Pessoas e acesso</a>
+      <hr>
+      <a class="it" href="#vida"><svg class="ic"><use href="#i-documento"/></svg>Ajuda<svg class="ic seta"><use href="#i-baixo"/></svg></a>
+      <a class="botao trocar" href="#vida"><svg class="ic"><use href="#i-trocar"/></svg>Trocar de condomínio</a>
+    </nav>
+    <div style="display:grid;gap:20px;min-width:0">
+      <div class="grade2">
+        <section class="cartao" aria-labelledby="t-prox">
+          <h4 id="t-prox">Próximos retornos</h4>
+          <div class="dia-t">Hoje</div>
+          <div class="evento"><span class="barra v"></span><div class="txt"><b>Vazamento no banheiro <span class="av av2" style="width:24px;height:24px;font-size:9px">BS</span></b><small>Venceu às 11h · Torre A · 101</small></div><span class="btn-prep"><svg class="ic"><use href="#i-retorno"/></svg>Dar retorno</span></div>
+          <div class="evento"><span class="barra h"></span><div class="txt"><b>Reserva do salão <span class="av av1" style="width:24px;height:24px;font-size:9px">AL</span></b><small>17h · Torre B · 304</small></div><span class="btn-prep"><svg class="ic"><use href="#i-preparar"/></svg>Preparar</span></div>
+          <div class="dia-t">Amanhã, 18/10</div>
+          <div class="evento"><span class="barra"></span><div class="txt"><b>Portão da garagem <span class="av av3" style="width:24px;height:24px;font-size:9px">ES</span></b><small>9h · 2 andamentos</small></div><span class="btn-prep"><svg class="ic"><use href="#i-preparar"/></svg>Preparar</span></div>
+          <div class="dia-t">Domingo, 19/10</div>
+          <div class="vazio-l">Nenhum retorno combinado.</div>
+        </section>
+        <section class="cartao" aria-labelledby="t-tar">
+          <h4 id="t-tar">Para você <a href="#vida">Ver tudo</a></h4>
+          <div class="tarefa"><span class="quad q-er"><svg class="ic"><use href="#i-relogio"/></svg></span><div><b>Dar notícia a 2 moradores <span class="pilha"><span class="av av2">BS</span><span class="av av3">ES</span></span></b><small>Retornos vencidos hoje</small></div></div>
+          <div class="tarefa"><span class="quad q-v"><svg class="ic"><use href="#i-pessoa"/></svg></span><div><b>Aceitar 1 pedido</b><small>Lâmpada apagada no corredor</small></div></div>
+          <div class="tarefa"><span class="quad q-l"><svg class="ic"><use href="#i-pessoa-mais"/></svg></span><div><b>Confirmar 4 contatos <span class="pilha"><span class="av av1">MR</span><span class="av av4">JL</span><span class="av mais">+2</span></span></b><small>Vindos da planilha da administradora</small></div></div>
+          <div class="tarefa"><span class="quad q-ok"><svg class="ic"><use href="#i-check"/></svg></span><div><b>Revisar 1 conclusão</b><small>Limpeza da área de convivência</small></div></div>
+        </section>
+      </div>
+      <p class="nota" style="margin:0">O item escolhido da lateral ganha o degradê violeta e a sombra suave; as contagens ficam em laranja com texto violeta profundo. Cada linha dos cartões leva ao pedido. A barrinha da esquerda repete a cor da situação (vermelho vencido, laranja hoje, lilás no prazo), sempre com a palavra junto.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Avisos e mais -->
+<section class="parte" id="avisos" aria-labelledby="t-av">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-av">Avisos, abas e detalhes</h2><p>Peças pequenas que dão retorno à pessoa: aviso depois de uma ação, abas para partes da mesma tela, dica, emblema de contagem, progresso e carregando.</p></div>
+  <div class="grade2">
+    <div class="estudo" style="display:grid;gap:12px">
+      <div class="aviso ok" role="status"><span class="quad q-ok"><svg class="ic"><use href="#i-check"/></svg></span><div class="t"><b>Retorno registrado</b><small>O próximo retorno ficou para 20/10, 10h.</small></div><span class="botao fantasma bt-p">Desfazer</span></div>
+      <div class="aviso at"><span class="quad q-at"><svg class="ic"><use href="#i-relogio"/></svg></span><div class="t"><b>Vence hoje às 17h</b><small>Reserva do salão de festas.</small></div><span class="botao fantasma bt-p">Abrir</span></div>
+      <div class="aviso er"><span class="quad q-er"><svg class="ic"><use href="#i-alerta"/></svg></span><div class="t"><b>Não foi possível salvar</b><small>Os dados não se perderam. Tente de novo.</small></div><span class="botao fantasma bt-p">Tentar</span></div>
+      <div class="aviso marca"><span class="quad"><svg class="ic"><use href="#i-sino"/></svg></span><div class="t"><b>Escalado a você</b><small>2026-0012 venceu há 2 h.</small></div><span class="botao claro bt-p">Ver</span></div>
+    </div>
+    <div class="estudo" style="display:grid;gap:22px;align-content:start">
+      <div class="abas"><span class="at">Andamento</span><span>Histórico</span><span>Fotos e documentos (2)</span></div>
+      <div class="seg"><span class="at">Este mês</span><span>Mês passado</span><span>3 meses</span></div>
+      <div class="linha" style="gap:24px"><span class="dicatip">Retorno vencido há 2 h</span><span class="emb"><svg class="ic"><use href="#i-sino"/></svg><b>3</b></span><span class="emb"><svg class="ic"><use href="#i-balao"/></svg><b>12</b></span></div>
+      <div class="linha" style="gap:24px"><span><span class="rot">Enviando foto</span><span class="progresso" style="display:block;margin-top:6px"><i></i></span></span><span class="esqueleto" aria-label="Carregando"><i></i><i style="width:70%"></i><i style="width:85%"></i></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Mais componentes -->
+<section class="parte" id="navegacao" aria-labelledby="t-nav">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-nav">Barra superior, trilha e links</h2><p>Mostram onde a pessoa está e para onde ela pode ir. A barra superior tem a busca, o sino e a pessoa; a trilha aparece nas telas de dentro (um pedido, uma unidade).</p></div>
+  <div class="estudo" style="display:grid;gap:22px">
+    <div class="appbar"><img src="logo-violeta.png" alt=""><span class="entrada busca"><svg class="ic"><use href="#i-busca"/></svg><span class="ph">Buscar pedido, unidade ou morador…</span></span><span class="emb"><svg class="ic"><use href="#i-sino"/></svg><b>3</b></span><span class="persona"><span class="av av1">AL</span><span><b>Ana Lima</b><small>Síndica · Residencial Ipê</small></span></span></div>
+    <div class="appbar"><b style="font-weight:500;font-size:16px">Pedidos</b><span class="abas"><span class="at">Ativos</span><span>Encerrados</span><span>Todos</span></span><span style="margin-left:auto" class="linha"><span class="botao contorno bt-m"><svg class="ic"><use href="#i-filtro"/></svg>Filtrar</span><span class="botao primario bt-m"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></span></div>
+    <nav class="trilha-nav" aria-label="Exemplo de trilha"><a href="#navegacao"><svg class="ic"><use href="#i-casa"/></svg>Início</a><svg class="ic"><use href="#i-dir"/></svg><a href="#navegacao"><svg class="ic"><use href="#i-pedido"/></svg>Pedidos</a><svg class="ic"><use href="#i-dir"/></svg><b>2026-0012 · Vazamento no banheiro</b></nav>
+    <div class="linha" style="gap:22px"><span class="lk">Ver histórico</span><span class="lk h">Sob o mouse</span><span class="lk f">Com foco</span><span class="lk d">Indisponível</span></div>
+  </div>
+</section>
+
+<section class="parte" id="menus" aria-labelledby="t-menus">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-menus">Menus e listas de escolha</h2><p>O menu abre ações a partir do botão "Mais ações". A lista de escolha mostra opções para um campo. Linha divide grupos; a ação que desfaz algo fica por último, em rubi.</p></div>
+  <div class="estudo linha" style="align-items:flex-start;gap:28px">
+    <div style="display:grid;gap:8px"><span class="botao secundario bt-m so-ic" aria-label="Mais ações"><svg class="ic"><use href="#i-pontos"/></svg></span>
+      <div class="menu-sus"><span class="h"><svg class="ic"><use href="#i-editar"/></svg>Editar pedido</span><span><svg class="ic"><use href="#i-pessoa"/></svg>Repassar</span><span><svg class="ic"><use href="#i-calendario"/></svg>Mudar o próximo retorno</span><hr><span><svg class="ic"><use href="#i-copiar"/></svg>Copiar protocolo<kbd>Ctrl C</kbd></span><span><svg class="ic"><use href="#i-imprimir"/></svg>Imprimir</span><hr><span class="p"><svg class="ic"><use href="#i-fechar"/></svg>Cancelar pedido</span></div></div>
+    <div style="display:grid;gap:8px;width:260px"><div class="campo"><label>Categoria <span class="ob">*</span></label><span class="entrada ativo">Manutenção<svg class="ic" style="margin-left:auto;transform:rotate(180deg)"><use href="#i-baixo"/></svg></span></div>
+      <div class="menu-sus"><span class="sel h"><svg class="ic"><use href="#i-ferramenta"/></svg>Manutenção<svg class="ic"><use href="#i-check"/></svg></span><span><svg class="ic"><use href="#i-balao"/></svg>Barulho e convivência</span><span><svg class="ic"><use href="#i-escudo"/></svg>Segurança</span><span><svg class="ic"><use href="#i-predio"/></svg>Áreas comuns</span><hr><span><svg class="ic"><use href="#i-pontos"/></svg>Outros assuntos</span></div></div>
+  </div>
+</section>
+
+<section class="parte" id="janelas" aria-labelledby="t-jan">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-jan">Janela, gaveta e balão</h2><p>A janela pede uma decisão sem sair da tela; a gaveta mostra um detalhe ao lado da lista; o balão explica algo curto perto de onde a pessoa tocou. Todos fecham com Esc e devolvem o foco.</p></div>
+  <div class="grade2">
+    <div class="fundo-janela"><div class="janela" role="img" aria-label="Janela Dar retorno ao morador"><div class="cab"><b>Dar retorno ao morador</b><svg class="ic"><use href="#i-fechar"/></svg></div><div class="corpo"><span>2026-0012 · Vazamento no banheiro · Marta, Torre A · 101</span><div class="campo"><label>Como o retorno foi dado</label><span class="entrada">Por mensagem<svg class="ic" style="margin-left:auto"><use href="#i-baixo"/></svg></span></div></div><div class="pe"><span class="botao fantasma bt-m">Cancelar</span><span class="botao primario bt-m">Registrar retorno</span></div></div></div>
+    <div style="display:grid;gap:24px">
+      <div class="gaveta"><div class="cab"><b>2026-0015 · Portão</b><svg class="ic" style="color:var(--n600)"><use href="#i-fechar"/></svg></div><div class="lst"><span><svg class="ic"><use href="#i-relogio"/></svg>Próximo retorno: 18/10, 9h</span><span><svg class="ic"><use href="#i-pessoa"/></svg>Responsável: Edu Santos</span><span><svg class="ic"><use href="#i-pin"/></svg>Garagem · acesso principal</span><span><svg class="ic"><use href="#i-clipe"/></svg>2 fotos</span></div><div class="pe"><span class="botao primario bt-m">Abrir o pedido</span></div></div>
+      <div style="padding-left:8px"><div class="balao"><b>Por que está vencido?</b><span style="color:var(--n700)">O retorno combinado era hoje às 11h e ninguém deu notícia ao morador.</span><span class="lk" style="font-size:14px">Dar retorno agora</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="parte" id="envio" aria-labelledby="t-envio">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-envio">Área de texto e envio de arquivo</h2><p>Para o relato, a conclusão e as fotos do pedido. A área de texto mostra quanto ainda cabe; o envio aceita arrastar ou escolher, mostra o progresso e diz quando terminou.</p></div>
+  <div class="grade2">
+    <div class="estudo" style="display:grid;gap:8px;align-content:start"><div class="campo"><label>O que foi feito <span class="ob">*</span></label><div class="area">Trocamos o cano do banheiro e secamos o teto. A moradora acompanhou.</div><span class="contador"><span>Explique para o morador entender.</span><span>72 de 2000</span></span></div></div>
+    <div class="estudo" style="display:grid;gap:10px"><div class="envio"><span class="quad q-v"><svg class="ic"><use href="#i-camera"/></svg></span><b style="font-weight:500">Arraste as fotos ou <span class="lk">escolha no aparelho</span></b><span style="font-size:13px;color:var(--n600)">JPG, PNG, WEBP ou PDF, até 10 MB. A localização das fotos é tirada.</span></div>
+      <div class="arquivo"><span class="quad q-v"><svg class="ic"><use href="#i-camera"/></svg></span><span class="t"><span>teto-banheiro.jpg</span><span class="progresso"><i></i></span><small>Enviando · 62%</small></span><svg class="ic" style="color:var(--n500)"><use href="#i-fechar"/></svg></div>
+      <div class="arquivo"><span class="quad q-ok"><svg class="ic"><use href="#i-check"/></svg></span><span class="t"><span>orcamento-encanador.pdf</span><small>Liberado · 240 KB</small></span><svg class="ic" style="color:var(--n500)"><use href="#i-baixar"/></svg></div></div>
+  </div>
+</section>
+
+<section class="parte" id="progresso" aria-labelledby="t-prog">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-prog">Paginação, progresso e persona</h2><p>Paginação para listas longas, progresso para o que leva tempo, persona para mostrar quem cuida de algo.</p></div>
+  <div class="grade2">
+    <div class="estudo pag-var">
+      <div class="pag2"><span class="tx">Anterior</span><span class="at">1</span><span>2</span><span>3</span><span>4</span><span class="tx">Próxima</span></div>
+      <div class="pag2"><span class="ds"><svg class="ic"><use href="#i-esq"/></svg></span><span>1</span><span>…</span><span>5</span><span class="at">6</span><span>7</span><span>…</span><span>10</span><span><svg class="ic"><use href="#i-dir"/></svg></span></div>
+      <div class="linhas-pag">Por página <span class="entrada">20<svg class="ic"><use href="#i-baixo"/></svg></span> 1 a 20 de 132 <span class="pag2"><span class="ds"><svg class="ic"><use href="#i-esq"/></svg></span><span><svg class="ic"><use href="#i-dir"/></svg></span></span></div>
+    </div>
+    <div class="estudo" style="display:grid;gap:20px">
+      <div class="linha" style="gap:18px"><span class="circ" style="--p:25%"><span>25%</span></span><span class="circ" style="--p:50%"><span>50%</span></span><span class="circ" style="--p:75%"><span>75%</span></span><span class="circ" style="--p:100%"><span>100%</span></span><span class="progresso" style="display:block"><i></i></span></div>
+      <div class="linha" style="gap:28px"><span class="persona"><span class="av av1" style="width:44px;height:44px;font-size:14px">AL</span><span><b>Ana Lima</b><small>Síndica</small></span></span><span class="persona"><span class="av av2">BS</span><span><b>Bruna Souza</b><small>Secretária · 2 pedidos</small></span></span><span class="persona"><span class="av av3" style="width:28px;height:28px;font-size:10px">ES</span><span><b>Edu Santos</b></span></span></div>
+    </div>
+  </div>
+</section>
+
+<section class="parte" id="vazio" aria-labelledby="t-vazio">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-vazio">Tela vazia, dicas e emblemas</h2><p>Quando não há nada, a tela explica e oferece o próximo passo, com as órbitas da marca bem leves. Dicas aparecem ao passar o mouse ou focar; emblemas contam o que é novo.</p></div>
+  <div class="grade2">
+    <div class="vazio"><span class="orb" style="width:420px;height:420px;left:50%;top:50%;transform:translate(-50%,-50%)"></span><span class="orb" style="width:280px;height:280px;left:50%;top:50%;transform:translate(-50%,-50%)"></span><span class="quad q-v"><svg class="ic" style="width:26px;height:26px"><use href="#i-pedido"/></svg></span><h4>Nenhum pedido <em class="d" style="color:var(--v600)">esperando</em>.</h4><p>Quando um morador pedir algo, ele aparece aqui com o prazo de retorno.</p><span class="botao primario bt-m"><svg class="ic"><use href="#i-mais"/></svg>Registrar pedido</span></div>
+    <div class="estudo" style="display:grid;gap:18px;align-content:start">
+      <div class="dicas"><span class="dicatip">Embaixo</span><span class="dicatip cima">Em cima</span><span class="dicatip esq">À esquerda</span><span class="dicatip dir">À direita</span><span class="dicatip claro">Clara</span></div>
+      <div class="linha" style="gap:22px"><span class="emb"><svg class="ic"><use href="#i-sino"/></svg><b>3</b></span><span class="emb"><svg class="ic"><use href="#i-pedido"/></svg><b>12</b></span><span class="emb-ponto"><svg class="ic"><use href="#i-balao"/></svg><i></i></span><span style="font-size:13px;color:var(--n600)">Número quando a quantidade importa; ponto quando só há novidade.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Grade -->
+<section class="parte" id="grade" aria-labelledby="t-grade">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-grade">Grade</h2><p>A tela se organiza em colunas que acompanham o aparelho, todas com espaços de 4 em 4 px. A lateral da Plataforma ocupa 3 colunas no computador e vira o botão Menu no celular.</p></div>
+  <div class="colunas c12" aria-hidden="true"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+  <p class="legenda">Computador · a partir de 1200 px · 12 colunas · margem 32 · espaço entre colunas 20</p>
+  <div class="grade2">
+    <div><div class="colunas c8" aria-hidden="true"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div><p class="legenda">Tablet · 768 a 1199 px · 8 colunas · margem 24 · espaço 16</p></div>
+    <div><div class="colunas c4" aria-hidden="true" style="max-width:300px"><div></div><div></div><div></div><div></div></div><p class="legenda">Celular · até 767 px · 4 colunas · margem 16 · espaço 12</p></div>
+  </div>
+</section>
+
+<section class="parte" aria-labelledby="t-apr">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-apr">Para aprovar</h2><p>Junto com a proposta de identidade (cores, lateral clara, elementos de fundo, Manrope e Playfair, logo violeta).</p></div>
+  <ol class="aprovar">
+    <li><b>Escolhas de 17/10/2026 aplicadas.</b><span>Botão C (degradê com brilho), selos e chips D (faixa lateral) com o brilho do C, e a paleta "Brilho" derivada dos dois. As outras versões continuam em versoes.html para consulta.</span></li>
+    <li><b>Este documento vira o sistema de design oficial.</b><span>Ele substitui as partes "Cores", "Tipografia" e "Componentes base" do design-frontend.html, que passa a apontar para cá.</span></li>
+    <li><b>Lateral com vida.</b><span>Ícone em cada item, grupos separados por linha, subitens que abrem com seta, item escolhido com degradê violeta e contagens em laranja, botão de trocar no fim.</span></li>
+    <li><b>Cartões com vida no início.</b><span>"Próximos retornos" agrupado por dia, com barrinha de cor e botão de dar retorno; "Para você" com quadrinhos de ícone e avatares de iniciais.</span></li>
+    <li><b>Ícones próprios de traço fino.</b><span>Desenhados para o condomínio (prédio, mudança, chave, WhatsApp), sempre com palavra junto.</span></li>
+    <li><b>Componentes das referências incluídos.</b><span>Barra superior, trilha, links, menus, lista de escolha aberta, janela, gaveta, balão, área de texto, envio de arquivo, paginação, progresso, persona, tela vazia, dicas e emblemas. O modo escuro das referências fica de fora: o sistema segue sempre claro, como já decidido.</span></li>
+    <li><b>Tokens no código.</b><span>As duas aplicações passam a usar os mesmos tokens (cores, espaços, cantos, sombras), e os testes de acessibilidade continuam em todas as telas.</span></li>
+  </ol>
+</section>
+</main>
+</div>
+</body>
+</html>

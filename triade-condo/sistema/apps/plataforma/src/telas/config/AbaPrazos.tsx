@@ -78,8 +78,8 @@ function TabelaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
                   <td className="px-4 py-2.5 whitespace-nowrap">{horas(p.horas)}</td>
                   {pode ? (
                     <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                      <Botao variante="texto" onClick={() => { setFalha(null); setMudando(p); }} aria-label={`Mudar o prazo de ${valePara(p)}`}>Mudar</Botao>
-                      {geral ? null : <Botao variante="texto" onClick={() => void tirar(p)} aria-label={`Tirar a exceção de ${valePara(p)}`}>Tirar</Botao>}
+                      <Botao variante="discreto" onClick={() => { setFalha(null); setMudando(p); }} aria-label={`Mudar o prazo de ${valePara(p)}`}>Mudar</Botao>
+                      {geral ? null : <Botao variante="discreto" onClick={() => void tirar(p)} aria-label={`Tirar a exceção de ${valePara(p)}`}>Tirar</Botao>}
                     </td>
                   ) : null}
                 </tr>

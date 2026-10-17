@@ -118,8 +118,8 @@ export function Importar() {
         <div className="grid gap-4">
           <p className="flex flex-wrap items-center gap-2 text-sm">
             {arquivo} · {plural(leitura.linhas.length + leitura.erros.length, "linha", "linhas")}
-            <Selo tom="ok" marca="ok">{plural(leitura.linhas.length, "pronta", "prontas")}</Selo>
-            {leitura.erros.length ? <Selo tom="atencao" marca="atencao">{plural(leitura.erros.length, "com erro", "com erro")}</Selo> : null}
+            <Selo tom="ok">{plural(leitura.linhas.length, "pronta", "prontas")}</Selo>
+            {leitura.erros.length ? <Selo tom="atencao">{plural(leitura.erros.length, "com erro", "com erro")}</Selo> : null}
           </p>
           {erro ? (
             <AvisoErro erro={erro} texto={`${textoDoErro(erro)}${linhaNaPlanilha ? ` Linha ${linhaNaPlanilha} da planilha.` : ""}`} />

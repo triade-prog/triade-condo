@@ -86,14 +86,14 @@ function Semana({ tipo, config, pode, recarregar, salvo }: PropsAba & { tipo: Ti
                             value={l.inicio} onChange={(e) => mudar(l.chave, "inicio", e.target.value)} />
                           <CampoTexto id={`h-${l.chave}-f`} rotulo={`${DIAS_SEMANA[dia]}, fim`} className="w-28" inputMode="numeric" maxLength={5}
                             value={l.fim} onChange={(e) => mudar(l.chave, "fim", e.target.value)} />
-                          <Botao variante="texto" onClick={() => setLinhas((x) => x.filter((y) => y.chave !== l.chave))}
+                          <Botao variante="discreto" onClick={() => setLinhas((x) => x.filter((y) => y.chave !== l.chave))}
                             aria-label={`Tirar o intervalo de ${DIAS_SEMANA[dia]} das ${l.inicio} às ${l.fim}`}>Tirar</Botao>
                         </div>
                       ) : (
                         <span key={l.chave} className="w-max rounded border border-info-borda bg-info-fundo px-2 py-0.5 text-info">{l.inicio} às {l.fim}</span>
                       ))}
                       {pode ? (
-                        <Botao variante="texto" className="justify-self-start" onClick={() => incluir(dia)} aria-label={`Acrescentar intervalo na ${DIAS_SEMANA[dia]}`}>
+                        <Botao variante="discreto" className="justify-self-start" onClick={() => incluir(dia)} aria-label={`Acrescentar intervalo na ${DIAS_SEMANA[dia]}`}>
                           + Intervalo
                         </Botao>
                       ) : null}

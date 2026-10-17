@@ -31,7 +31,7 @@ export function Abas<T extends string>({ abas, atual, aoMudar, rotulo, children 
 
   return (
     <>
-      <div role="tablist" aria-label={rotulo} className="flex gap-5 overflow-x-auto border-b border-linha" onKeyDown={teclas}>
+      <div role="tablist" aria-label={rotulo} className="flex gap-6 overflow-x-auto border-b border-linha" onKeyDown={teclas}>
         {abas.map((a) => (
           <button
             key={a.id}
@@ -43,7 +43,7 @@ export function Abas<T extends string>({ abas, atual, aoMudar, rotulo, children 
             aria-controls={`painel-${a.id}`}
             tabIndex={atual === a.id ? 0 : -1}
             onClick={() => aoMudar(a.id)}
-            className="-mb-px min-h-11 border-b-2 border-transparent px-0.5 text-sm whitespace-nowrap text-tinta-suave aria-selected:border-acao aria-selected:font-semibold aria-selected:text-tinta"
+            className="-mb-px min-h-11 border-b-2 border-transparent px-0.5 text-sm font-medium whitespace-nowrap text-tinta-suave hover:text-tinta aria-selected:border-violeta-600 aria-selected:text-violeta-600"
           >
             {a.texto}
           </button>
