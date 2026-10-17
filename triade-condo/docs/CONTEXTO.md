@@ -23,7 +23,7 @@ O `arquivo/` **não é base de construção**: o que for útil de lá entra prim
 
 ## Decisões fechadas
 
-As mesmas decisões estão no painel de execução (DC1 a DC12). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
+As mesmas decisões estão no painel de execução (DC1 a DC13). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
 
 - **DC1 · Dois sistemas.** Plataforma do síndico (painel web do síndico, WhatsApp do morador e acessos por link ou QR) e Console TRÍADE (sistema interno da equipe). A Base comum são as regras que os dois seguem por baixo; não é um terceiro sistema.
 - **DC2 · O cliente é o condomínio.** É a unidade que contrata e a unidade de separação dos dados: toda informação pertence a um condomínio e nunca aparece em outro (PT-01). Uma pessoa pode ter vínculo com mais de um condomínio (MU-04), o que atende o síndico profissional.
@@ -35,13 +35,19 @@ As mesmas decisões estão no painel de execução (DC1 a DC12). Mudar qualquer 
 - **DC8 · Quadro de permissões e fluxos detalhados só quando houver funcionalidade pronta para eles.** A fundação traz o mecanismo de permissão (pessoa + função + condomínio + ação, negar por padrão), não a tabela completa de quem pode o quê.
 - **DC9 · Rastreio até a ideia.** O `IDEIAS.md` é a fonte única. Cada entrega do painel cita em `refs` os códigos das ideias que atende; cada regra vira teste automático com o código da ideia no nome (ex.: `AT-06: próximo retorno não altera a previsão`).
 - **DC10 · Pedidos funcionam primeiro pelo painel.** O WhatsApp entra no passo 5 como mais uma entrada para o mesmo pedido, quando o provedor oficial estiver escolhido.
-- **DC11 · Paleta e tipografia definidas (Carolina, 16/10/2026).**
+- **DC11 · Paleta e tipografia definidas (Carolina, 16/10/2026).** Substituída pela DC13 em 17/10/2026; vale para o código até a parte A do plano de aplicação.
   - Seguem a interface do produto Lattice nas referências fornecidas: fonte Inter, neutros frios, destaque lilás e cores de status em fundo suave com detalhe forte.
   - Verde-petróleo nas ações da Plataforma do síndico e violeta no Console TRÍADE.
   - A Plataforma usa barra superior com busca e menu branco flutuante. O Console usa lateral contínua com grupos e a identificação "Console TRÍADE · Admin".
   - Os valores estão no `design-frontend.html`, na seção "Base adotada". Não tratar como provisórios.
   - A marca Lattice não faz parte da identidade da TRÍADE. O logo oficial continua pendente.
 - **DC12 · Domínio do sistema: `t3condo.trihub.com.br`** (Carolina, 17/10/2026). Vale para todo o sistema. Começa pelos e-mails, que saem pelo Resend como `nao-responda@t3condo.trihub.com.br`; os endereços da Plataforma e do Console vêm depois, com os subdomínios e o DNS.
+- **DC13 · Identidade TRÍADE (Carolina, 17/10/2026).** Substitui a DC11.
+  - Referência: `docs/identidade/sistema.html` (sistema de design), com as telas-modelo em `docs/identidade/telas-modelo.html` e a ordem de entrada no código em `docs/identidade/plano-aplicacao.html`.
+  - Violeta da marca nas ações dos dois sistemas (sai o verde-petróleo da Plataforma); o Console se distingue pelo nome e pelo selo laranja "Admin". Laranja só como acento.
+  - Botão principal em degradê com brilho (versão C), selos com faixa lateral e filtros no trilho (versão D com o brilho do C), paleta Brilho (neutros lavanda; jade, âmbar, rubi e petróleo).
+  - Sempre claro: o tema escuro sai do código.
+  - Manrope, Playfair Display itálico (só destaque) e IBM Plex Mono, servidas pelo próprio sistema; a CSP continua aceitando só fontes do próprio endereço.
 
 ## Como as ideias viram código
 
@@ -66,7 +72,7 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 | Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta) | Carolina (em análise) | Passo 5 |
 | Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio | TRÍADE | Passo 5 |
 | E-mail próprio no Supabase Auth (E9): configurar o Resend como SMTP e pôr os modelos de convite e de recuperação em português, com `{{ .RedirectTo }}?token_hash={{ .TokenHash }}`. Sem SMTP próprio o Supabase não deixa editar os modelos; os links do modelo padrão já funcionam | Carolina | E-mails em nome da TRÍADE e sem o limite baixo do Supabase |
-| Logo oficial (a paleta e a tipografia já estão definidas, DC11) e aprovação do tom das mensagens | TRÍADE | Nada no código; o símbolo triangular atual é provisório |
+| Logo oficial (a identidade já está definida, DC13) e aprovação do tom das mensagens | TRÍADE | Nada no código; o símbolo triangular atual é provisório |
 | Dados da empresa para termos e privacidade (EM-01, EM-06) | TRÍADE | Publicação |
 | Domínio próprio | TRÍADE | Publicação |
 | Condomínio de teste com síndico disposto (NG-09) | TRÍADE | Teste dos passos 4 a 7 |
@@ -193,12 +199,15 @@ Passo 4b (F4.8), fotos e documentos dos pedidos, aprovado e construído em 17/10
 
 Passos 6 e 7 (F6.1, F6.2, F7.1, F7.2), prazos, avisos e o início do dia, sem WhatsApp, aprovados pela Carolina e construídos em 17/10/2026. A migration 0120 (aplicada pela Carolina no triade-condo-dev; api-plataforma versão 8 publicada) cria os avisos dentro do painel e a conferência de prazos, que o próprio banco roda a cada 5 minutos pelo pg_cron (`verificar_prazos`). Retorno vencido avisa o responsável na hora (sem responsável, o síndico); se continuar vencido, o aviso sobe para o síndico e depois para o substituto escolhido, uma pessoa autorizada (padrão 2 h e 8 h de atendimento, cada condomínio muda em Configurações › Prazos e avisos). Também avisam o pedido sem responsável (4 h) e a pendência parada (3 dias). As horas contam só o horário de atendimento e pulam feriados; etapa que pausa o prazo pausa o aviso; ninguém recebe o mesmo aviso duas vezes; cada aviso vai para o histórico do pedido, sem nome do morador. Ver o aviso não resolve o pedido: o vencimento só acaba com o retorno ao morador. O início mostra o Agora (vencidos, o que vence hoje, para aceitar, sem responsável, pendências paradas) e o mês fechado, fixo. A tela Indicadores mostra a porcentagem de retornos no prazo (registrado antes do retorno combinado vencer; vencido sem retorno conta como fora do prazo), o primeiro retorno, concluídos e reabertos, por categoria; sem caso no período, "sem dados", nunca zero.
 
+Identidade TRÍADE aprovada pela Carolina em 17/10/2026 (DC13): sistema de design em `docs/identidade/sistema.html` (botão C, selos com faixa, paleta Brilho, Manrope e Playfair, sempre claro, violeta nos dois sistemas) e plano de aplicação em três partes. A etapa 1, as cinco telas-modelo (`docs/identidade/telas-modelo.html`), espera aprovação; nada mudou no código ainda.
+
 **Próximo passo:**
 
 1. Testar os pedidos com um condomínio de verdade (E8). A produção da Vercel sai do `main` (PR 3 e PR 4 juntados).
 2. Passo 4b (F4.8) juntado ao `main` (PR 5): conferir um envio de verdade num pedido do Águas Claras.
 3. Passos 6 e 7 construídos na branch: juntar ao `main` para as telas chegarem ao site e conferir os avisos com pedidos de verdade no Águas Claras. O passo 5 (WhatsApp) espera o provedor (E1); o aviso no WhatsApp do síndico (W-11) usa as mesmas regras quando o canal existir.
 4. Com a Carolina, liberar o CI (F0.9).
+5. Identidade: com as telas-modelo aprovadas, parte A do plano (tokens, fontes e componentes), depois de juntar o PR 7.
 
 ## Como trabalhar
 
