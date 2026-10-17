@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "17/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (487 pgTAP, 89 Deno, 63 Vitest, 100 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 3) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
+    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (487 pgTAP, 89 Deno, 63 Vitest, 100 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0100) e as Edge Functions api-plataforma (versão 6) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F4",
-    "proximo_passo": "Aplicar a 0100 no triade-condo-dev (Carolina) e publicar a api-plataforma com fotos e documentos (F4.8); depois, conferir um envio de verdade. Em paralelo, a síndica do Condomínio Águas Claras entra na Plataforma, escolhe quem atende (Pessoas e acesso), cadastra unidades e moradores e registra os primeiros pedidos (E8). Com a Carolina: liberar o GitHub Actions (F0.9; os testes do GitHub nem chegam a rodar)."
+    "proximo_passo": "Juntar o passo 4b ao main para as telas de fotos e documentos chegarem ao site e conferir um envio de verdade (F4.8). Em paralelo, a síndica do Condomínio Águas Claras entra na Plataforma, escolhe quem atende (Pessoas e acesso), cadastra unidades e moradores e registra os primeiros pedidos (E8). Com a Carolina: liberar o GitHub Actions (F0.9; os testes do GitHub nem chegam a rodar)."
   },
   "fases": [
     {
@@ -520,7 +520,7 @@
           ],
           "status": "feito",
           "evidencia": "Migration 0100 (arquivos_pedido, bucket privado pedidos, funções de iniciar, verificar, abrir e tirar); pgTAP 011_arquivos_pedido_test.sql (37); Deno _shared/arquivos_test.ts (verificação: tipo pelo conteúdo, GPS tirado do JPG mantendo a orientação, PNG e WEBP sem metadados, PDF sem conteúdo ativo; armazenamento com chave de serviço) e api-plataforma/arquivos_test.ts; Vitest arquivos.test.ts e CSP; Playwright plataforma-passo4b.spec.ts (celular e computador, axe WCAG 2.2 AA)",
-          "nota": "Falta no triade-condo-dev: aplicar a 0100 (pela Carolina, no SQL Editor) e publicar a api-plataforma nova."
+          "nota": "No triade-condo-dev desde 17/10/2026: 0100 aplicada pela Carolina (6 funções, bucket pedidos privado com 10 MB e só fotos e PDF, nenhuma política de acesso direto, só a API executa as funções) e api-plataforma versão 6 publicada e respondendo pelo condominio.trihub.com.br. As telas chegam ao site quando a branch for juntada ao main; depois, conferir um envio de verdade."
         }
       ]
     },
@@ -1246,6 +1246,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "00:22",
+      "fim": "00:33",
+      "texto": "Passo 4b no triade-condo-dev: a Carolina aplicou a 0100 no SQL Editor; conferido no banco (6 funções, bucket pedidos privado, 10 MB, só fotos e PDF, sem política de acesso direto, só a API executa). api-plataforma versão 6 publicada (pacote conferido igual ao testado) e respondendo pelo condominio.trihub.com.br.",
+      "ref": "F4.8, PT-07, PT-01"
+    },
     {
       "data": "17/10/2026",
       "inicio": "23:55",
