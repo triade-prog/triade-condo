@@ -30,7 +30,7 @@
     "total_ideias": 308,
     "situacao": "Passos 0 a 4 e o 3b (vínculo detalhado) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (532 pgTAP, 91 Deno, 66 Vitest, 108 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0110) e as Edge Functions api-plataforma (versão 7) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F4",
-    "proximo_passo": "Juntar a branch ao main para as telas do vínculo detalhado chegarem ao site (F3.6). Conferir um envio de verdade de fotos e documentos num pedido do Águas Claras (F4.8). A síndica do Águas Claras cadastra unidades e moradores (E8). Com a Carolina: liberar o GitHub Actions (F0.9)."
+    "proximo_passo": "Aprovar as telas dos passos 6 e 7 (prazos, avisos e início do dia) no design-frontend.html e construir. A síndica do Águas Claras cadastra unidades e moradores (E8). Com a Carolina: liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
   "fases": [
     {
@@ -637,7 +637,8 @@
           "refs": [
             "AT-08"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Passos 6 e 7: cinco telas desenhadas no design-frontend.html para aprovar (17/10/2026): início com o agora e o mês fechado, avisos dentro do painel, regras de prazo e aviso, o aviso no pedido e os indicadores."
         },
         {
           "id": "F6.2",
@@ -647,7 +648,8 @@
             "AT-09",
             "V-14"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Passos 6 e 7: cinco telas desenhadas no design-frontend.html para aprovar (17/10/2026): início com o agora e o mês fechado, avisos dentro do painel, regras de prazo e aviso, o aviso no pedido e os indicadores."
         },
         {
           "id": "F6.3",
@@ -656,7 +658,8 @@
           "refs": [
             "W-11"
           ],
-          "status": "pendente"
+          "status": "pendente",
+          "nota": "Depende do WhatsApp (passo 5, provedor E1). As regras de aviso do passo 6 já valem para este canal quando ele existir."
         },
         {
           "id": "F6.4",
@@ -665,7 +668,8 @@
           "refs": [
             "AT-26"
           ],
-          "status": "pendente"
+          "status": "pendente",
+          "nota": "Depende do WhatsApp (passo 5, provedor E1). As regras de aviso do passo 6 já valem para este canal quando ele existir."
         }
       ]
     },
@@ -679,7 +683,8 @@
           "texto": "Painel do dia: retornos que vencem hoje, pendências e pedidos sem responsável",
           "peca": "S1",
           "refs": [],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Passos 6 e 7: cinco telas desenhadas no design-frontend.html para aprovar (17/10/2026): início com o agora e o mês fechado, avisos dentro do painel, regras de prazo e aviso, o aviso no pedido e os indicadores."
         },
         {
           "id": "F7.2",
@@ -690,7 +695,8 @@
             "TR-03",
             "TR-07"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Passos 6 e 7: cinco telas desenhadas no design-frontend.html para aprovar (17/10/2026): início com o agora e o mês fechado, avisos dentro do painel, regras de prazo e aviso, o aviso no pedido e os indicadores."
         }
       ]
     },
@@ -1262,6 +1268,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "04:15",
+      "fim": "04:15",
+      "texto": "PR 6 juntado ao main (passo 3b no site). Passos 6 e 7 começaram pelo desenho, sem WhatsApp: cinco telas no design-frontend.html (início com o agora e o mês fechado, avisos dentro do painel, regras de prazo e aviso, o aviso no pedido, indicadores) com as decisões para aprovar.",
+      "ref": "F6.1, F6.2, F7.1, F7.2, AT-08, AT-09, TR-01, TR-03, TR-07, TR-11, D4"
+    },
     {
       "data": "17/10/2026",
       "inicio": "04:01",
