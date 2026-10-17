@@ -30,7 +30,7 @@
     "total_ideias": 308,
     "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (487 pgTAP, 89 Deno, 63 Vitest, 100 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0100) e as Edge Functions api-plataforma (versão 6) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F4",
-    "proximo_passo": "Juntar o passo 4b ao main para as telas de fotos e documentos chegarem ao site e conferir um envio de verdade (F4.8). Em paralelo, a síndica do Condomínio Águas Claras entra na Plataforma, escolhe quem atende (Pessoas e acesso), cadastra unidades e moradores e registra os primeiros pedidos (E8). Com a Carolina: liberar o GitHub Actions (F0.9; os testes do GitHub nem chegam a rodar)."
+    "proximo_passo": "Aprovar as telas do passo 3b (vínculo detalhado, F3.6) no design-frontend.html e construir. Conferir um envio de verdade de fotos e documentos num pedido do Águas Claras (F4.8). Em paralelo, a síndica do Condomínio Águas Claras cadastra unidades e moradores e registra os primeiros pedidos (E8). Com a Carolina: liberar o GitHub Actions (F0.9)."
   },
   "fases": [
     {
@@ -420,6 +420,21 @@
           "status": "feito",
           "nota": "Banco e API prontos: mudança numa operação (data, quem sai, quem entra); vínculo encerrado não volta nem muda; quem não está mais em nenhuma unidade pode ter nome e telefone removidos (PT-11). Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
           "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
+        },
+        {
+          "id": "F3.6",
+          "texto": "Vínculo detalhado (passo 3b): proprietário, responsável e mora na unidade, ligação, parentesco e período de ocupação",
+          "peca": "S4",
+          "refs": [
+            "MU-10",
+            "MU-08",
+            "MU-07",
+            "MU-01",
+            "MU-11",
+            "PT-11"
+          ],
+          "status": "andamento",
+          "nota": "Passo 3b: cinco telas desenhadas no design-frontend.html para aprovar (17/10/2026): ficha da unidade com o vínculo detalhado, incluir pessoa com as três marcações, trocar o responsável, registrar mudança com as datas e unidades com a ocupação. Para aprovar: o responsável substitui o contato principal; ligação inquilino, familiar ou outro; parentesco opcional; ocupa desde em branco quer dizer que sempre ocupou, e com data a pessoa não vê o histórico anterior (vale no WhatsApp, passo 5); conversão automática dos cadastros atuais; colunas novas e opcionais na planilha. Depois de aprovado: banco, API e telas."
         }
       ]
     },
@@ -1246,6 +1261,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "01:05",
+      "fim": "01:20",
+      "texto": "PR 5 juntado ao main. Passo 3b começou pelo desenho: cinco telas do vínculo detalhado no design-frontend.html (ficha da unidade, incluir pessoa com as três marcações, trocar o responsável, registrar mudança com as datas e unidades com a ocupação), com as decisões para aprovar: responsável no lugar do contato principal, ligação e parentesco, período de ocupação e a regra do histórico, conversão dos cadastros atuais e planilha.",
+      "ref": "F3.6, MU-10, MU-08, MU-07, MU-11, PT-11, D4"
+    },
     {
       "data": "17/10/2026",
       "inicio": "00:50",
