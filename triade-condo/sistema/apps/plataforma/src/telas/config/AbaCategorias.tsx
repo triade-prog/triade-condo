@@ -57,7 +57,7 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
           <h2 id="t-categorias" className="text-lg font-medium">Categorias</h2>
           {pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "categoria", item: null })}>+ Categoria</Botao> : null}
         </div>
-        <ul className="divide-y divide-linha rounded-lg border border-linha">
+        <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
           {config.categorias.map((c) => (
             <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
               <span className="flex flex-wrap items-center gap-2">
@@ -80,7 +80,7 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
           <h2 id="t-prioridades" className="text-lg font-medium">Prioridades</h2>
           {pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "prioridade", item: null })}>+ Prioridade</Botao> : null}
         </div>
-        <ul className="divide-y divide-linha rounded-lg border border-linha">
+        <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
           {prioridades.map((p) => (
             <li key={p.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
               <span className="grid gap-0.5">

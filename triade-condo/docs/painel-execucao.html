@@ -28,7 +28,7 @@
   "meta": {
     "atualizado_em": "17/10/2026",
     "total_ideias": 308,
-    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado) e os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (605 pgTAP, 96 Deno, 75 Vitest, 124 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, parte A do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0120, com a conferência de prazos no pg_cron) e as Edge Functions api-plataforma (versão 8) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
+    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado) e os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (605 pgTAP, 96 Deno, 79 Vitest, 124 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0120, com a conferência de prazos no pg_cron) e as Edge Functions api-plataforma (versão 8) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F7",
     "proximo_passo": "Aprovar a proposta de identidade (docs/identidade/proposta.html) e aplicá-la ao design-frontend.html e às duas aplicações. Juntar a branch dos passos 6 e 7 ao main e conferir os avisos com pedidos de verdade no Águas Claras (E8). Com a Carolina: liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
@@ -1056,7 +1056,7 @@
         "PT-10"
       ],
       "status": "feito",
-      "evidencia": "Playwright fundacao.spec.ts (sempre claro e fontes, 2 apps × 2 aparelhos) e axe nas 8 suítes (124 cenários); Vitest packages/ui componentes.test.ts (3 testes)"
+      "evidencia": "Playwright fundacao.spec.ts (sempre claro e fontes, 2 apps × 2 aparelhos) e axe nas 8 suítes (124 cenários); Vitest packages/ui componentes.test.ts (3 testes) e tema.test.ts (4 testes: nenhuma cor escrita direto, nenhum nome de cor antigo, tema sem os nomes antigos e sem escuro)"
     }
   ],
   "publicacao": [
@@ -1290,6 +1290,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "16:10",
+      "fim": "16:18",
+      "texto": "Identidade, parte C: moldura do Console como a da Plataforma (barra superior branca com Console TRÍADE e o selo laranja Admin, iniciais e Sair; lateral clara com os grupos Clientes e Equipe e ícones), carteira com filtros no trilho e cartões no celular, listas brancas sobre o fundo lavanda. Nomes antigos de cor (acao, plataforma, console, lilas, seleção, lateral, faixa, detalhe) saíram do tema e das telas; novo teste tema.test.ts falha com cor escrita direto ou nome antigo. 79 Vitest e 124 ponta a ponta com axe passam.",
+      "ref": "DC13, D4, PT-10"
+    },
     {
       "data": "17/10/2026",
       "inicio": "15:50",

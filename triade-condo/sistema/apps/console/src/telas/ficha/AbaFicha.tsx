@@ -85,7 +85,7 @@ function FormFicha({ ficha, pode, recarregar, avisar }: PropsAba) {
           {campos.includes("contatos") ? <p className="text-xs text-erro">Confira os contatos: cada um precisa de nome, papel e telefone ou e-mail.</p> : null}
           {contatos.length === 0 ? <p className="text-sm text-tinta-suave">Nenhum contato ainda.</p> : null}
           {contatos.map((x, i) => (
-            <div key={i} className="grid gap-2 rounded-lg border border-linha p-3 sm:grid-cols-[1fr_1fr_1fr_1fr_auto] sm:items-end">
+            <div key={i} className="grid gap-2 rounded-2xl border border-linha bg-superficie p-3 sm:grid-cols-[1fr_1fr_1fr_1fr_auto] sm:items-end">
               <CampoTexto id={`c-${i}-nome`} rotulo="Nome" value={x.nome} onChange={(e) => mudarContato(i, "nome", e.target.value)} />
               <CampoTexto id={`c-${i}-papel`} rotulo="Papel" placeholder="Síndica, conselho…" value={x.papel} onChange={(e) => mudarContato(i, "papel", e.target.value)} />
               <CampoTexto id={`c-${i}-telefone`} rotulo="Telefone" inputMode="tel" value={x.telefone} onChange={(e) => mudarContato(i, "telefone", e.target.value)} />

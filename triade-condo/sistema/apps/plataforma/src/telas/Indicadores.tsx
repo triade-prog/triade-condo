@@ -46,7 +46,7 @@ export function Indicadores() {
     <div role="group" aria-label="Período" className="flex flex-wrap gap-2">
       {(Object.entries(PERIODOS_INDICADORES) as [PeriodoIndicadores, string][]).map(([valor, texto]) => (
         <button key={valor} type="button" aria-pressed={valor === periodo} onClick={() => router.replace(`/indicadores?periodo=${valor}`, { scroll: false })}
-          className="min-h-10 rounded-full border border-linha px-4 text-sm aria-pressed:border-acao aria-pressed:bg-selecao aria-pressed:font-medium aria-pressed:text-selecao-tinta">
+          className="min-h-10 rounded-full border border-linha px-4 text-sm aria-pressed:border-violeta-600 aria-pressed:bg-violeta-100 aria-pressed:font-medium aria-pressed:text-violeta-700">
           {texto}
         </button>
       ))}

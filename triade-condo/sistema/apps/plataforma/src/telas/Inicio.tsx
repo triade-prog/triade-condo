@@ -154,7 +154,7 @@ function Pronto({ config }: { config: Configuracoes }) {
           <li key={l} className="flex items-center justify-between gap-3 py-2.5 text-sm">{l}<Selo tom="ok">Pronto</Selo></li>
         ))}
       </ul>
-      <p className="text-sm text-tinta-suave">Tudo pode ser ajustado em <Link href="/configuracoes" className="font-medium text-acao hover:underline">Configurações</Link>.</p>
+      <p className="text-sm text-tinta-suave">Tudo pode ser ajustado em <Link href="/configuracoes" className="font-medium text-violeta-600 hover:underline">Configurações</Link>.</p>
     </section>
   );
 }

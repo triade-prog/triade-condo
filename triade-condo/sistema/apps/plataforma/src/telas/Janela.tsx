@@ -60,7 +60,7 @@ function Formulario({ campos, iniciais, textoBotao, aoFechar, aoSalvar, recarreg
         if (c.tipo === "caixa") {
           return (
             <label key={c.id} className="flex items-start gap-2 text-sm">
-              <input type="checkbox" className="mt-1 h-4 w-4 accent-[var(--color-acao)]" checked={valores[c.id] === true} disabled={c.desligado}
+              <input type="checkbox" className="mt-1 h-4 w-4 accent-violeta-600" checked={valores[c.id] === true} disabled={c.desligado}
                 onChange={(e) => mudar(c.id, e.target.checked)} />
               <span>{c.rotulo}{c.ajuda ? <span className="block text-xs text-tinta-suave">{c.ajuda}</span> : null}</span>
             </label>

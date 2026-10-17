@@ -53,7 +53,7 @@ export function Escolha<T extends string>({ opcoes, atual, aoMudar, rotulo }: {
 export function Caixa({ id, rotulo, ajuda, marcada, aoMudar }: { id: string; rotulo: string; ajuda?: string; marcada: boolean; aoMudar: (v: boolean) => void }) {
   return (
     <label htmlFor={id} className="flex items-start gap-2 text-sm">
-      <input id={id} type="checkbox" className="mt-1 h-4 w-4 accent-[var(--color-acao)]" checked={marcada} onChange={(e) => aoMudar(e.target.checked)} />
+      <input id={id} type="checkbox" className="mt-1 h-4 w-4 accent-violeta-600" checked={marcada} onChange={(e) => aoMudar(e.target.checked)} />
       <span>{rotulo}{ajuda ? <span className="block text-xs text-tinta-suave">{ajuda}</span> : null}</span>
     </label>
   );

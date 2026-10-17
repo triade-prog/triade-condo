@@ -44,7 +44,7 @@ export function AbaSindico({ ficha, pode, recarregar, avisar }: PropsAba) {
       {ficha.sindicos.length === 0 ? (
         <Vazio titulo="Nenhum síndico convidado ainda">A implantação só conclui depois do convite. Cada pessoa tem o seu acesso; nada de conta compartilhada.</Vazio>
       ) : (
-        <ul className="divide-y divide-linha rounded-lg border border-linha">
+        <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
           {ficha.sindicos.map((s) => (
             <li key={s.vinculoId} className="flex flex-wrap justify-between gap-2 px-4 py-3">
               <span className="font-medium">{s.nome}</span>

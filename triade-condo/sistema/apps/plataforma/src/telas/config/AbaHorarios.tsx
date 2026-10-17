@@ -65,7 +65,7 @@ function Semana({ tipo, config, pode, recarregar, salvo }: PropsAba & { tipo: Ti
     <form onSubmit={salvar} noValidate className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar} /> : null}
       {aviso ? <p role="alert" className="text-sm text-erro">{aviso}</p> : null}
-      <div className="overflow-x-auto rounded-lg border border-linha">
+      <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
         <table className="w-full text-sm">
           <caption className="sr-only">Horário de {nome} por dia da semana</caption>
           <thead className="bg-superficie-2 text-left text-tinta-suave">
@@ -144,7 +144,7 @@ export function AbaHorarios(props: PropsAba) {
       <div className="flex flex-wrap gap-2" role="group" aria-label="Qual horário">
         {(["ATENDIMENTO", "FUNCIONAMENTO"] as const).map((t) => (
           <button key={t} type="button" aria-pressed={tipo === t} onClick={() => setTipo(t)}
-            className="min-h-10 rounded-full border border-linha px-4 text-sm aria-pressed:border-acao aria-pressed:bg-plataforma-bruma aria-pressed:font-semibold">
+            className="min-h-10 rounded-full border border-linha px-4 text-sm aria-pressed:border-violeta-600 aria-pressed:bg-violeta-50 aria-pressed:font-semibold">
             {TIPOS_HORARIO[t]}
           </button>
         ))}

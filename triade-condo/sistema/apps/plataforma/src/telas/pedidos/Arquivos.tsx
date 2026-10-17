@@ -151,7 +151,7 @@ export function EscolherArquivos({ itens, aoMudar, rotulo, enviando }: {
                 <CampoTexto id={`desc-${it.chave}`} rotulo={`Descrição de ${it.arquivo.name}`} opcional maxLength={300} value={it.descricao} disabled={enviando}
                   onChange={(e) => aoMudar(itens.map((x) => (x.chave === it.chave ? { ...x, descricao: e.target.value } : x)))} />
               ) : null}
-              {enviando && !it.problema ? <progress className="h-1.5 w-full accent-[var(--color-acao)]" max={100} value={it.progresso} aria-label={`Envio de ${it.arquivo.name}`} /> : null}
+              {enviando && !it.problema ? <progress className="h-1.5 w-full accent-violeta-600" max={100} value={it.progresso} aria-label={`Envio de ${it.arquivo.name}`} /> : null}
             </li>
           ))}
         </ul>
@@ -269,7 +269,7 @@ export function AbaArquivos({ pedidoId, protocolo, carga, avisar }: {
                     <Miniatura pedidoId={pedidoId} a={a} />
                     <span className="grid min-w-0 flex-1 gap-0.5">
                       {a.situacao === "LIBERADO"
-                        ? <button type="button" className="w-fit [overflow-wrap:anywhere] text-left font-medium text-acao hover:underline" onClick={() => void abrir(a)}>{a.nome}</button>
+                        ? <button type="button" className="w-fit [overflow-wrap:anywhere] text-left font-medium text-violeta-600 hover:underline" onClick={() => void abrir(a)}>{a.nome}</button>
                         : <span className="font-medium [overflow-wrap:anywhere]">{a.nome}</span>}
                       {a.descricao ? <span className="text-xs">{a.descricao}</span> : null}
                       <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-tinta-suave">

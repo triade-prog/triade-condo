@@ -56,7 +56,7 @@ export function AbaFeriados({ config, pode, salvo }: PropsAba) {
       {config.feriados.length === 0 ? (
         <Vazio titulo="Nenhum feriado cadastrado">Traga os nacionais e acrescente os da cidade.</Vazio>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-linha">
+        <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
           <table className="w-full text-sm">
             <caption className="sr-only">Feriados do condomínio</caption>
             <thead className="bg-superficie-2 text-left text-tinta-suave">
