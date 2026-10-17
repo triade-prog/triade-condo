@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { PARTES_ARQUIVO } from "./arquivos.ts";
 import { mostrarDataSemHora } from "./plataforma.ts";
+import { descreverAvisoPedido } from "./prazos.ts";
 
 /** Situação do pedido (guardião). A etapa configurada fica dentro de cada situação (AT-05). */
 export const ESTADOS_PEDIDO = {
@@ -223,6 +224,6 @@ export function descreverEventoPedido(acao: string, d: Record<string, unknown>):
     case "pedido.arquivo_tirado":
       return comMotivo(`Tirou ${String(d.arquivoNome ?? "um arquivo")} do pedido`);
     default:
-      return acao;
+      return descreverAvisoPedido(acao, d) ?? acao;
   }
 }

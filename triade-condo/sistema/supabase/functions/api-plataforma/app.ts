@@ -1,8 +1,9 @@
 // API da Plataforma do síndico. Login (F0.6) e escolha do condomínio na sessão (F0.3):
 // o navegador nunca manda o condomínio nas chamadas; ele vem da sessão, conferida no banco.
 // Passo 2: painel, configurações, pessoas autorizadas e quem atende. Passo 3: blocos,
-// unidades e contatos. Passo 4: pedidos no painel. Passo 4b: fotos e documentos dos pedidos. Quem pode o quê é decidido no banco (vínculo e permissões
-// individuais, CF-03); aqui só se valida a entrada.
+// unidades e contatos. Passo 4: pedidos no painel. Passo 4b: fotos e documentos dos pedidos.
+// Passos 6 e 7: avisos, regras de aviso, prazo do pedido e indicadores. Quem pode o quê é
+// decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
 import type { Context, MiddlewareHandler } from "hono";
 import {
@@ -57,6 +58,9 @@ import {
   tirarArquivoSchema,
   VALIDADE_LINK_ARQUIVO_S,
   type TipoArquivo,
+  marcarAvisosSchema,
+  periodoIndicadoresSchema,
+  regrasAvisoSchema,
 } from "@triade/domain";
 import { verificarArquivo, type Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -464,6 +468,35 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/pedidos/:id/arquivos/:arquivo/tirar", async (c) => {
     const d = await lerCorpo(c, tirarArquivoSchema);
     return c.json(await rpc("plataforma_tirar_arquivo", { ...arquivo(c), p_motivo: d.motivo }));
+  });
+
+  // Avisos dentro do painel (passo 6; F6.1, F6.2, AT-08, AT-09). O banco confere os prazos
+  // sozinho; aqui só se lê e se marca como visto. Ver o aviso não resolve o pedido.
+  app.get("/v1/condominio/avisos", async (c) => c.json(await rpc("plataforma_avisos", quem(c))));
+
+  app.post("/v1/condominio/avisos/vistos", async (c) => {
+    const d = await lerCorpo(c, marcarAvisosSchema);
+    return c.json({ marcados: await rpc<number>("plataforma_marcar_avisos", { ...quem(c), p_ids: d.ids }) });
+  });
+
+  app.put("/v1/condominio/regras-aviso", async (c) => {
+    const d = await lerCorpo(c, regrasAvisoSchema);
+    return c.json({
+      versao: await rpc<number>("plataforma_definir_avisos", {
+        ...quem(c), p_versao: d.versao, p_sindico_horas: d.sindicoHoras, p_substituto_horas: d.substitutoHoras,
+        p_substituto: d.substitutoId, p_sem_responsavel_horas: d.semResponsavelHoras, p_pendencia_dias: d.pendenciaDias,
+      }),
+    });
+  });
+
+  app.get("/v1/condominio/pedidos/:id/prazo", async (c) =>
+    c.json(await rpc("plataforma_pedido_prazo", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  // Indicadores do atendimento (passo 7; F7.2, TR-01, TR-03, TR-07).
+  app.get("/v1/condominio/indicadores", async (c) => {
+    const r = periodoIndicadoresSchema.safeParse(c.req.query());
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["periodo"] });
+    return c.json(await rpc("plataforma_indicadores", { ...quem(c), p_periodo: r.data.periodo }));
   });
 
   return app;

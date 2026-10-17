@@ -146,6 +146,8 @@ export function descreverEvento(e: EventoHistorico): string {
       return `Vínculos passaram a ter proprietário, responsável e mora na unidade (${String(d.quantidade)})`;
     case "mudanca.registrada":
       return `Mudança registrada em ${mostrarDataSemHora(String(d.data))}: ${String(d.saem)} saíram, ${String(d.entram)} entraram`;
+    case "regras_aviso.alteradas":
+      return `Regras de aviso: síndico depois de ${String(d.sindico_horas)} h, ${d.com_substituto ? `substituto depois de ${String(d.substituto_horas)} h` : "sem substituto"}`;
     case "moradores.importados":
       return `Planilha importada: ${String(d.vinculos)} contatos a confirmar`;
     default:
