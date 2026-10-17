@@ -280,13 +280,13 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     });
   });
 
-  // Contatos (MU-01, MU-02, MU-03, MU-08).
+  // Contatos e vínculo detalhado (MU-01, MU-02, MU-03, MU-08, MU-10).
   app.post("/v1/condominio/unidades/:id/contatos", async (c) => {
     const unidade = idDaRota(c, "id");
     const d = await lerCorpo(c, incluirContatoSchema);
-    return c.json(await rpc("plataforma_incluir_contato", {
+    return c.json(await rpc("plataforma_incluir_pessoa_unidade", {
       ...quem(c), p_unidade: unidade, p_contato: d.contatoId ?? null, p_nome: d.contatoId ? null : d.nome,
-      p_telefone: d.contatoId ? null : d.telefone, p_relacao: d.relacao, p_principal: d.principal, p_recebe: d.recebeComunicados,
+      p_telefone: d.contatoId ? null : d.telefone, p_marcas: d.marcas, p_recebe: d.recebeComunicados,
       p_proprietario: d.proprietario ?? null,
     }), 201);
   });
@@ -320,8 +320,8 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const id = idDaRota(c, "id");
     const d = await lerCorpo(c, alterarVinculoUnidadeSchema);
     return c.json({
-      versao: await rpc<number>("plataforma_alterar_vinculo_unidade", {
-        ...quem(c), p_id: id, p_versao: d.versao, p_relacao: d.relacao, p_principal: d.principal, p_recebe: d.recebeComunicados,
+      versao: await rpc<number>("plataforma_alterar_marcas_vinculo", {
+        ...quem(c), p_id: id, p_versao: d.versao, p_marcas: d.marcas, p_recebe: d.recebeComunicados,
       }),
     });
   });

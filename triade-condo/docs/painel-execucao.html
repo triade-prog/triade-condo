@@ -30,7 +30,7 @@
     "total_ideias": 308,
     "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (487 pgTAP, 89 Deno, 63 Vitest, 100 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0100) e as Edge Functions api-plataforma (versão 6) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F4",
-    "proximo_passo": "Aprovar as telas do passo 3b (vínculo detalhado, F3.6) no design-frontend.html e construir. Conferir um envio de verdade de fotos e documentos num pedido do Águas Claras (F4.8). Em paralelo, a síndica do Condomínio Águas Claras cadastra unidades e moradores e registra os primeiros pedidos (E8). Com a Carolina: liberar o GitHub Actions (F0.9)."
+    "proximo_passo": "Aplicar a 0110 no triade-condo-dev (SQL Editor) e construir as telas do passo 3b (F3.6). Conferir um envio de verdade de fotos e documentos num pedido do Águas Claras (F4.8). A síndica do Águas Claras cadastra unidades e moradores (E8). Com a Carolina: liberar o GitHub Actions (F0.9)."
   },
   "fases": [
     {
@@ -434,7 +434,8 @@
             "PT-11"
           ],
           "status": "andamento",
-          "nota": "Passo 3b: cinco telas desenhadas no design-frontend.html para aprovar (17/10/2026): ficha da unidade com o vínculo detalhado, incluir pessoa com as três marcações, trocar o responsável, registrar mudança com as datas e unidades com a ocupação. Para aprovar: o responsável substitui o contato principal; ligação inquilino, familiar ou outro; parentesco opcional; ocupa desde em branco quer dizer que sempre ocupou, e com data a pessoa não vê o histórico anterior (vale no WhatsApp, passo 5); conversão automática dos cadastros atuais; colunas novas e opcionais na planilha. Depois de aprovado: banco, API e telas."
+          "nota": "Telas aprovadas pela Carolina em 17/10/2026. Banco e API prontos: migration 0110 com as três marcações (proprietário, responsável, mora na unidade), ligação, parentesco e período de ocupação; a relação de antes passa a ser calculada; conversão dos vínculos existentes conferida com os dados do Águas Claras (dono de unidade alugada fica sem morar, versões e saídas preservadas, histórico registra); mudança preenche ocupa desde e ocupou até; contadores de ocupação; planilha com colunas novas e opcionais; chamadas antigas continuam valendo. Telas a seguir.",
+          "evidencia": "pgTAP 012_vinculo_detalhado_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts"
         }
       ]
     },
@@ -1261,6 +1262,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "01:25",
+      "fim": "01:34",
+      "texto": "Passo 3b aprovado e começado pelo banco e pela API: migration 0110 (marcações, ligação, parentesco, período de ocupação, relação calculada, conversão dos vínculos existentes, ocupação da unidade e contadores, planilha com colunas novas, chamadas antigas mantidas) e rotas da api-plataforma com as marcações. 532 pgTAP, 91 Deno, 66 Vitest. Migration enviada à Carolina para aplicar.",
+      "ref": "F3.6, MU-10, MU-08, MU-07, MU-11, PT-11"
+    },
     {
       "data": "17/10/2026",
       "inicio": "01:05",

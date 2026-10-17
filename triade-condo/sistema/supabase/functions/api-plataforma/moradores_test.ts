@@ -1,7 +1,7 @@
-// Passo 3 na Plataforma do síndico: blocos, unidades e contatos. As rotas validam a entrada,
+// Passo 3 e 3b na Plataforma do síndico: blocos, unidades, contatos e o vínculo detalhado. As rotas validam a entrada,
 // mandam ao banco a pessoa e o condomínio da sessão e deixam a permissão para o banco.
 import { assert, assertEquals } from "@std/assert";
-import { AGRUPAMENTOS, MOTIVOS_ENCERRAMENTO, RELACOES_UNIDADE } from "@triade/domain";
+import { AGRUPAMENTOS, LIGACOES, MOTIVOS_ENCERRAMENTO, OCUPACOES, PARENTESCOS, RELACOES_UNIDADE } from "@triade/domain";
 import { criarApiPlataforma } from "./app.ts";
 import { adminFalso, authFalso, bancoFalso, cookieDe, erro, erroBanco, limitesFalsos, pedido, armazenamentoFalso } from "../_shared/teste_util.ts";
 
@@ -27,7 +27,8 @@ function montar(handlers: Record<string, (a: Record<string, unknown>) => unknown
     plataforma_unidades: () => ({ blocos: [], unidades: [] }),
     plataforma_incluir_unidades: (a) => ({ criadas: (a.p_unidades as unknown[]).length, jaExistiam: [] }),
     plataforma_definir_estrutura: (a) => Number(a.p_versao) + 1,
-    plataforma_incluir_contato: () => ({ vinculoId: ITEM, contatoId: OUTRO, avisos: [] }),
+    plataforma_incluir_pessoa_unidade: () => ({ vinculoId: ITEM, contatoId: OUTRO, avisos: [] }),
+    plataforma_alterar_marcas_vinculo: (a) => Number(a.p_versao) + 1,
     plataforma_moradores: () => ({ itens: [], total: 0 }),
     plataforma_registrar_mudanca: () => ({ saem: 1, entram: 1 }),
     plataforma_confirmar_contatos: (a) => (a.p_itens as unknown[]).length,
@@ -85,7 +86,7 @@ Deno.test("MU-01: o telefone chega ao banco no formato internacional", async () 
   const corpo = { nome: " Marina Souza ", telefone: "(61) 99999-0001", relacao: "PROPRIETARIO", principal: true };
   const r = await m.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo, cookie });
   assertEquals(r.status, 201);
-  const args = chamada(m, "plataforma_incluir_contato")!;
+  const args = chamada(m, "plataforma_incluir_pessoa_unidade")!;
   assertEquals([args.p_unidade, args.p_nome, args.p_telefone, args.p_recebe], [ITEM, "Marina Souza", "+5561999990001", true]);
   const ruim = await m.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo: { ...corpo, telefone: "9999" }, cookie });
   assertEquals(await erro(ruim), { codigo: "VALIDATION_ERROR", detalhes: { campos: ["telefone"] } });
@@ -95,7 +96,7 @@ Deno.test("MU-04: contato que já existe vai pelo id, sem nome nem telefone", as
   const m = montar();
   const cookie = await entrar(m);
   await m.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo: { contatoId: OUTRO, nome: "Outro nome", relacao: "PROPRIETARIO" }, cookie });
-  const args = chamada(m, "plataforma_incluir_contato")!;
+  const args = chamada(m, "plataforma_incluir_pessoa_unidade")!;
   assertEquals([args.p_contato, args.p_nome, args.p_telefone], [OUTRO, null, null]);
 });
 
@@ -104,16 +105,16 @@ Deno.test("MU-01: inquilino leva junto o proprietário do imóvel, novo ou já c
   const cookie = await entrar(m);
   const inquilino = { nome: "Joana Lima", telefone: "61988887777", relacao: "INQUILINO" };
   await m.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo: { ...inquilino, proprietario: { nome: " Rita Prado ", telefone: "(61) 94444-0001" } }, cookie });
-  assertEquals(chamada(m, "plataforma_incluir_contato")?.p_proprietario, { nome: "Rita Prado", telefone: "+5561944440001" });
+  assertEquals(chamada(m, "plataforma_incluir_pessoa_unidade")?.p_proprietario, { nome: "Rita Prado", telefone: "+5561944440001" });
   const m2 = montar();
   const cookie2 = await entrar(m2);
   await m2.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo: { ...inquilino, proprietario: { contatoId: OUTRO } }, cookie: cookie2 });
-  assertEquals(chamada(m2, "plataforma_incluir_contato")?.p_proprietario, { contatoId: OUTRO });
+  assertEquals(chamada(m2, "plataforma_incluir_pessoa_unidade")?.p_proprietario, { contatoId: OUTRO });
   const ruim = await m2.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo: { ...inquilino, proprietario: { nome: "Rita", telefone: "123" } }, cookie: cookie2 });
   assertEquals((await erro(ruim)).codigo, "VALIDATION_ERROR");
   const sem = montar();
   await sem.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo: inquilino, cookie: await entrar(sem) });
-  assertEquals(chamada(sem, "plataforma_incluir_contato")?.p_proprietario, null);
+  assertEquals(chamada(sem, "plataforma_incluir_pessoa_unidade")?.p_proprietario, null);
 });
 
 Deno.test("MU-07: mudança valida a data e quem entra antes do banco", async () => {
@@ -127,7 +128,42 @@ Deno.test("MU-07: mudança valida a data e quem entra antes do banco", async () 
   });
   assertEquals(await r.json(), { saem: 1, entram: 1 });
   const args = chamada(m, "plataforma_registrar_mudanca")!;
-  assertEquals(args.p_entram, [{ ...entra, telefone: "+5561966660001", principal: false, recebeComunicados: true }]);
+  assertEquals(args.p_entram, [{
+    nome: "Caio", telefone: "+5561966660001", proprietario: false, principal: false, mora: true, ligacao: "INQUILINO", parentesco: null,
+    recebeComunicados: true,
+  }]);
+});
+
+Deno.test("MU-10: incluir pessoa com as três marcações, a ligação, o parentesco e a entrada", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  const marcas = { mora: true, ligacao: "FAMILIAR", parentesco: "CONJUGE", ocupaDesde: "2025-03-01" };
+  const r = await m.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo: { nome: "Paulo Lima", telefone: "61988887778", marcas }, cookie });
+  assertEquals(r.status, 201);
+  assertEquals(chamada(m, "plataforma_incluir_pessoa_unidade")?.p_marcas, { ...marcas, proprietario: false, principal: false });
+  for (const ruim of [{ mora: true }, { proprietario: true, ligacao: "INQUILINO" }, { ligacao: "OUTRO", parentesco: "FILHO" }, { ligacao: "OUTRO", ocupaDesde: "2025-02-30" }]) {
+    const e = await m.pedir(`/v1/condominio/unidades/${ITEM}/contatos`, { corpo: { nome: "Paulo", telefone: "61988887778", marcas: ruim }, cookie });
+    assertEquals(await erro(e), { codigo: "VALIDATION_ERROR", detalhes: { campos: ["marcas"] } }, JSON.stringify(ruim));
+  }
+});
+
+Deno.test("MU-10: alterar as marcações segue a versão lida; a chamada de antes, com a relação, ainda vale", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  const r = await m.pedir(`/v1/condominio/vinculos-unidade/${ITEM}`, {
+    metodo: "PUT", corpo: { versao: 3, marcas: { proprietario: true, principal: true }, recebeComunicados: false }, cookie,
+  });
+  assertEquals(await r.json(), { versao: 4 });
+  assertEquals(chamada(m, "plataforma_alterar_marcas_vinculo"), {
+    p_pessoa: ANA, p_condominio: AURORA, p_id: ITEM, p_versao: 3, p_recebe: false,
+    p_marcas: { proprietario: true, principal: true, mora: false, ligacao: null, parentesco: null, ocupaDesde: null },
+  });
+  const m2 = montar();
+  await m2.pedir(`/v1/condominio/vinculos-unidade/${ITEM}`, {
+    metodo: "PUT", corpo: { versao: 1, relacao: "INQUILINO", principal: true, recebeComunicados: true }, cookie: await entrar(m2),
+  });
+  assertEquals(chamada(m2, "plataforma_alterar_marcas_vinculo")?.p_marcas,
+    { proprietario: false, principal: true, mora: true, ligacao: "INQUILINO", parentesco: null, ocupaDesde: null });
 });
 
 Deno.test("MU-02: confirmar vários de uma vez, cada um com a versão lida", async () => {
@@ -172,5 +208,9 @@ Deno.test("as listas do domínio (relações e motivos) são as mesmas do banco"
   const migration = await Deno.readTextFile(new URL("../../migrations/0080_moradores_unidades.sql", import.meta.url));
   for (const s of [...Object.keys(RELACOES_UNIDADE), ...Object.keys(MOTIVOS_ENCERRAMENTO), ...Object.keys(AGRUPAMENTOS)]) {
     assert(migration.includes(`'${s}'`), s);
+  }
+  const vinculo = await Deno.readTextFile(new URL("../../migrations/0110_vinculo_detalhado.sql", import.meta.url));
+  for (const s of [...Object.keys(LIGACOES), ...Object.keys(PARENTESCOS), ...Object.keys(OCUPACOES)]) {
+    assert(vinculo.includes(`'${s}'`), s);
   }
 });

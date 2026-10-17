@@ -204,7 +204,7 @@ select is((select jsonb_array_length(plataforma_unidade(sindica, ipe, a101) -> '
 select is((select count(*)::int from unidades_do_telefone((select ipe from c), '+5561999990002')), 0, 'MU-07: quem saiu não fala mais pela unidade');
 select is((select count(*)::int from unidades_do_telefone((select ipe from c), '+5561999990001')), 1,
   'a proprietária continua só na outra unidade dela');
-select throws_ok($$ update contatos_unidade set relacao = 'OUTRO' where id = (select (pedro ->> 'vinculoId')::uuid from ct) $$, 'TC422', null,
+select throws_ok($$ update contatos_unidade set mora = false where id = (select (pedro ->> 'vinculoId')::uuid from ct) $$, 'TC422', null,
   'vínculo encerrado não muda');
 select is((teste.erro($$ select plataforma_registrar_mudanca(sindica, ipe, a101, '2026-10-01', '[]', '[]') from ids, c, un $$)) -> 'detalhe' ->> 'motivo',
   'MUDANCA_VAZIA', 'mudança sem ninguém não');
