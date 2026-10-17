@@ -205,7 +205,7 @@ Agenda (peça R7; AG-01 a AG-05, AG-07 a AG-09, MP-04) aprovada pela Carolina e 
 
 **Próximo passo:**
 
-1. Manutenção e prestadores (R6): desenho das telas e das decisões em `docs/telas/manutencao.html`, para a Carolina aprovar antes do código.
+1. Manutenção e prestadores (R6): a Carolina aprova as sete telas e as dez decisões de `docs/telas/manutencao.html`; depois vêm a migration 0140, a API e as telas.
 2. Com a Carolina: conferir a Agenda no `condominio.trihub.com.br` e testar com pedidos de verdade no Águas Claras (E8), incluindo um envio de foto (4b) e os avisos de prazo (6 e 7). A produção da Vercel sai do `main`, que já tem tudo até a Agenda.
 3. Com a Carolina, liberar o CI (F0.9).
 4. O passo 5 (WhatsApp) espera o provedor (E1); o aviso no WhatsApp do síndico (W-11) e os lembretes da agenda (AG-06) usam as regras que já existem quando o canal chegar.
