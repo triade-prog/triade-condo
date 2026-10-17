@@ -7,7 +7,7 @@ Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atuali
 | O quê | Onde |
 |---|---|
 | O que é a TRÍADE Condo (público, ideais, mercado, glossário) | `triade-condo/SOBRE.md` |
-| Todas as ideias (296), com código por seção | `triade-condo/IDEIAS.md` |
+| Todas as ideias (308), com código por seção | `triade-condo/IDEIAS.md` |
 | Onde cada ideia entra no sistema real (sistema, peça e forma) | `triade-condo/MAPA.md` e a versão visual `triade-condo/mapa.html` |
 | Transparência do dinheiro (pesquisa e regras de tom) | `triade-condo/transparencia-do-dinheiro.md` |
 | Painel de execução (fases, entregas, testes, publicação, dependências, decisões, histórico) | `triade-condo/docs/painel-execucao.html` |
@@ -76,8 +76,8 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 **15/10/2026.** A fase de ideias terminou e a de construção foi liberada.
 
 - O planejamento antigo foi arquivado em `arquivo/` e a pasta `triade-condo/` foi criada como o lugar onde nasce o sistema.
-- O `IDEIAS.md` reúne 296 ideias em 22 seções. Elas foram conferidas contra todos os documentos do arquivo e contra as pesquisas brasileira e internacional. A classificação foi revisada duas vezes.
-- O `MAPA.md` e o `mapa.html` distribuem as 296 ideias em 35 peças, com o índice de códigos:
+- O `IDEIAS.md` reúne 308 ideias em 22 seções. Elas foram conferidas contra todos os documentos do arquivo e contra as pesquisas brasileira e internacional. A classificação foi revisada duas vezes.
+- O `MAPA.md` e o `mapa.html` distribuem as 308 ideias em 35 peças, com o índice de códigos:
   - Plataforma do síndico: 189 ideias.
   - Console TRÍADE: 37.
   - Base comum: 36.

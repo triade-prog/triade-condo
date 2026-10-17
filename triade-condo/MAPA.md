@@ -9,54 +9,54 @@ Versão visual e interativa (com busca e filtro por forma): [`mapa.html`](mapa.h
 
 | Parte | Peças | Ideias |
 |---|---|---|
-| Plataforma do síndico | 16 | 189 |
-| Console TRÍADE | 9 | 37 |
-| Base comum | 6 | 36 |
+| Plataforma do síndico | 16 | 199 |
+| Console TRÍADE | 9 | 38 |
+| Base comum | 6 | 37 |
 | Fora do software | 4 | 34 |
-| **Total** | **35** | **296** |
+| **Total** | **35** | **308** |
 
 ## Mapa mental
 
 ```mermaid
 mindmap
-  root((TRÍADE Condo · 296 ideias))
-    Plataforma do síndico · 189
+  root((TRÍADE Condo · 308 ideias))
+    Plataforma do síndico · 199
       Painel web do síndico
-        Início · 3
+        Início · 4
         Pedidos · 25
         Decisões e aprovações · 4
-        Moradores e unidades · 5
+        Moradores e unidades · 8
         Comunicados e documentos · 13
         Manutenção e prestadores · 14
-        Agenda · 8
+        Agenda · 9
         Orçamentos e compras · 9
         Dinheiro do prédio · 30
         Portaria e encomendas · 10
-        Vida em condomínio · 5
-        Indicadores e relatórios · 9
+        Vida em condomínio · 7
+        Indicadores e relatórios · 10
         Memória do prédio · 7
-        Configurações · 18
+        Configurações · 19
       WhatsApp do condomínio
-        WhatsApp do morador · 23
+        WhatsApp do morador · 24
       Participação sem conta
         Links e QR · 6
-    Console TRÍADE · 37
+    Console TRÍADE · 38
       Carteira de clientes · 4
       Implantação · 5
       Planos e liberação · 6
       Pagamentos dos clientes · 2
-      Suporte e acessos · 4
+      Suporte e acessos · 5
       Serviços contratados · 8
       Equipe interna · 3
       Saúde e capacidade · 3
       Mensagens e custos · 2
-    Base comum · 36
+    Base comum · 37
       Segurança e acesso · 8
       Dados e histórico · 6
       Motor de mensagens · 8
       Infraestrutura e qualidade · 8
       Princípios do produto · 3
-      Motor de IA · 3
+      Motor de IA · 4
     Fora do software · 34
       Serviços fora do sistema · 3
       Negócio e preço · 19
@@ -72,21 +72,21 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 
 | Peça | Códigos |
 |---|---|
-| Início | AT-08; W-11; IA-10 |
+| Início | AT-08; W-11; IA-10; TR-11 |
 | Pedidos | AT-01 a 04, 06, 07, 09, 11 a 15, 17, 18, 20, 26, 27, 31 a 33; IA-03, 04, 12, 13, 19 |
 | Decisões e aprovações | V-14; AT-23; IA-08; FC-10 |
-| Moradores e unidades | MU-01, 02, 06 a 08 |
+| Moradores e unidades | MU-01, 02, 06 a 11 |
 | Comunicados e documentos | CD-01, 02, 04 a 11; IA-05 a 07 |
 | Manutenção e prestadores | V-13; MP-01 a 07, 09 a 11, 13, 15, 16 |
-| Agenda | AG-01 a 08 |
+| Agenda | AG-01 a 09 |
 | Orçamentos e compras | OC-01, 02, 04 a 10 |
 | Dinheiro do prédio | FC-01 a 03, 05 a 09, 11; DR-01 a 13, 15 a 22 |
 | Portaria e encomendas | PA-01 a 05, 07 a 11 |
-| Vida em condomínio | AC-01 a 05 |
-| Indicadores e relatórios | TR-01 a 05, 07 a 09; IA-14 |
+| Vida em condomínio | AC-01 a 07 |
+| Indicadores e relatórios | TR-01 a 05, 07 a 10; IA-14 |
 | Memória do prédio | MP-12, 14; CT-02 a 04; IA-09, 17 |
-| Configurações | V-04 a 06, 09; AT-05, 10, 25, 29; CF-01 a 08, 10, 12 |
-| WhatsApp do morador | V-07; W-05 a 10, 12, 16, 19; AT-16, 19, 21, 22, 28; CD-03; IA-01, 02, 18, 20; MU-05; FC-04; DR-14 |
+| Configurações | V-04 a 06, 09; AT-05, 10, 25, 29; CF-01 a 08, 10, 12; NG-21 |
+| WhatsApp do morador | V-07; W-05 a 10, 12, 16, 19, 21; AT-16, 19, 21, 22, 28; CD-03; IA-01, 02, 18, 20; MU-05; FC-04; DR-14 |
 | Links e QR | V-11, 12; AT-30; MP-08; OC-03; PA-06 |
 
 **Console TRÍADE**
@@ -97,7 +97,7 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Implantação | W-01, 03; PI-04, 05; SH-01 |
 | Planos e liberação | CF-11; PI-03, 16, 19; NG-01, 06 |
 | Pagamentos dos clientes | PI-07, 08 |
-| Suporte e acessos | PI-09, 11, 17; CT-01 |
+| Suporte e acessos | PI-09, 11, 17, 20; CT-01 |
 | Serviços contratados | SH-02 a 06, 09, 10; PI-14 |
 | Equipe interna | PI-10, 12, 18 |
 | Saúde e capacidade | PI-13, 15; TR-06 |
@@ -112,7 +112,7 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Motor de mensagens | W-02, 04, 13 a 15, 17, 18, 20 |
 | Infraestrutura e qualidade | PT-05, 10, 12, 14 a 18 |
 | Princípios do produto | V-01, 08, 17 |
-| Motor de IA | IA-11, 15, 16 |
+| Motor de IA | IA-11, 15, 16, 21 |
 
 **Fora do software**
 
@@ -146,13 +146,14 @@ Sistema do condomínio. Inclui o WhatsApp do morador, porque o canal é do condo
 
 ### Painel web do síndico
 
-#### Início (3)
+#### Início (4)
 
 O dia do síndico: o que vence hoje, o que espera decisão, o resumo do que aconteceu e os avisos que chegam no WhatsApp dele.
 
 | ID | Ideia | Forma |
 |---|---|---|
 | IA-10 | Resumo diário para o síndico | Função |
+| TR-11 | Início com cartões de agora separados dos de mês fechado; cada cartão abre a lista de onde veio | Função |
 | AT-08 | Alerta de retorno vencido | Aviso |
 | W-11 | Síndico recebe no WhatsApp: novo pedido, nova reclamação, retorno vencido e novidades relevantes, sem precisar manter… | Aviso |
 
@@ -199,7 +200,7 @@ O que precisa do síndico, do subsíndico ou do conselho para seguir em frente.
 | IA-08 | Assistente jurídico para o síndico com base na lei e na convenção, com aviso de que não substitui advogado (Seu Síndi… | Função |
 | V-14 | Conselho e subsíndico como níveis de escalonamento e de aprovação | Regra |
 
-#### Moradores e unidades (5)
+#### Moradores e unidades (8)
 
 Quem mora em cada unidade, os contatos autorizados e as mudanças.
 
@@ -209,6 +210,9 @@ Quem mora em cada unidade, os contatos autorizados e as mudanças.
 | MU-06 | Família, veículos e pets no cadastro | Função |
 | MU-07 | Mudança de morador: entrada e saída com revogação do vínculo | Função |
 | MU-08 | Múltiplos contatos autorizados por unidade (titular, cônjuge, inquilino), com preferências e revogação | Função |
+| MU-09 | Link de cadastro de morador com validade e campos escolhidos; fila de pendentes para aprovar, corrigir ou recusar | Função |
+| MU-10 | Vínculo detalhado: proprietário, responsável e morador, parentesco e período de ocupação | Função |
+| MU-11 | Lista de unidades com contadores, etiquetas à venda e à locação, busca por nome, telefone e placa | Função |
 | MU-02 | Verificação do vínculo contato ↔ unidade; contato desconhecido não acessa nada restrito | Regra |
 
 #### Comunicados e documentos (13)
@@ -252,7 +256,7 @@ Preventivas, tarefas, vistorias e quem executa cada serviço.
 | MP-04 | Vínculo opcional entre manutenção, pedido do morador e agenda | Regra |
 | MP-13 | Programa de manutenção alinhado à ABNT NBR 5674 | Regra |
 
-#### Agenda (8)
+#### Agenda (9)
 
 Reuniões, visitas técnicas e lembretes.
 
@@ -261,6 +265,7 @@ Reuniões, visitas técnicas e lembretes.
 | AG-03 | Lista cronológica e calendário mensal/semanal | Aba |
 | AG-01 | Compromissos: reunião, visita técnica, atividade programada, lembrete administrativo | Função |
 | AG-05 | Recorrência simples | Função |
+| AG-09 | Agenda que reúne datas de outras telas (feriados, reservas, votações, vencimentos), respeitando a permissão de cada uma | Função |
 | AG-02 | Estados: planejado, a confirmar, confirmado, realizado, cancelado; reagendar guarda o anterior | Regra |
 | AG-07 | Morador recebe só o que lhe diz respeito (ex.: visita no apartamento dele) | Regra |
 | AG-08 | Agenda independente do atendimento: o próximo retorno não depende dela, a previsão de solução não vira evento sozinha… | Regra |
@@ -337,7 +342,7 @@ Encomendas, visitantes, turnos de portaria e chaves.
 | PA-08 | Receptor sonoro local: interfone coletivo, campainha sem fio por unidade, controlador integrável (Intelbras, Shelly) | Integração |
 | PA-09 | Armário de encomendas em locação, com sistema, manutenção e aviso no WhatsApp | Integração |
 
-#### Vida em condomínio (5)
+#### Vida em condomínio (7)
 
 Reservas, enquetes, assembleias e convivência.
 
@@ -347,9 +352,11 @@ Reservas, enquetes, assembleias e convivência.
 | AC-02 | Assembleias digitais e votação online | Função |
 | AC-03 | Enquetes e pesquisas com moradores | Função |
 | AC-05 | Classificados entre moradores | Função |
+| AC-06 | Limite de reservas por unidade e por período, com tolerância | Regra |
+| AC-07 | Áreas comuns já cadastradas com regras sugeridas, para o síndico ajustar e ativar | Configuração |
 | AC-04 | Marketplace de serviços para o morador: internet, energia, serviços residenciais | Integração |
 
-#### Indicadores e relatórios (9)
+#### Indicadores e relatórios (10)
 
 Como está o atendimento, em números, e o relatório para a assembleia.
 
@@ -358,6 +365,7 @@ Como está o atendimento, em números, e o relatório para a assembleia.
 | IA-14 | Relatórios gerados por IA | Função |
 | TR-02 | Relatório mensal do atendimento para a assembleia: pedidos, retornos no prazo, concluídos e reabertos (Property Meld,… | Função |
 | TR-05 | Relatório por categoria, bloco/torre e tempo médio de fechamento | Função |
+| TR-10 | Dossiê do mês: PDF com relatórios, anexos, texto livre e resumo, reaproveitado como modelo | Função |
 | TR-07 | Distinguir "sem dados" de zero | Regra |
 | TR-08 | Exportação respeitando permissões | Regra |
 | TR-01 | Indicadores: tempo até triagem, retornos vencidos, pendências por responsável, tempo de solução por categoria, reaber… | Indicador |
@@ -379,7 +387,7 @@ O que fica com o prédio quando o síndico muda: prontuário, dossiê e históri
 | MP-14 | Manual de uso e manutenção do prédio acessível | Função |
 | CT-03 | Memória permanente do prédio que não depende de quem é o síndico | Regra |
 
-#### Configurações (18)
+#### Configurações (19)
 
 Ficha do condomínio, pessoas e permissões, horários, categorias, prazos e modelos.
 
@@ -388,6 +396,7 @@ Ficha do condomínio, pessoas e permissões, horários, categorias, prazos e mod
 | CF-01 | Ficha do condomínio preenchida na implantação e editável depois | Aba |
 | CF-02 | Pessoas autorizadas, cada uma com acesso próprio | Aba |
 | V-09 | Secretária e delegados do síndico: acesso próprio, com permissões individuais por condomínio | Função |
+| NG-21 | Tela Meu plano: o que está contratado, as telas de cada conjunto e o teste grátis por conjunto | Função |
 | CF-03 | Permissões individuais: acompanhar, responder, atualizar, concluir, publicar, configurar, cadastrar moradores | Regra |
 | CF-04 | Vínculo ativo ou revogado; revogado não age mais, mas a autoria antiga fica | Regra |
 | CF-12 | Configuração proporcional: começa simples e só ajusta opções dos recursos que existem; não é construtor de fluxos; na… | Regra |
@@ -406,7 +415,7 @@ Ficha do condomínio, pessoas e permissões, horários, categorias, prazos e mod
 
 ### WhatsApp do condomínio
 
-#### WhatsApp do morador (23)
+#### WhatsApp do morador (24)
 
 Tudo o que o morador faz e recebe pelo WhatsApp, sem app e sem senha.
 
@@ -434,6 +443,7 @@ Tudo o que o morador faz e recebe pelo WhatsApp, sem app e sem senha.
 | V-07 | Morador: usa só o WhatsApp do condomínio, sem app, portal, login ou senha | Regra |
 | W-08 | Confirmação imediata de recebimento, com número de protocolo e "o que acontece agora" (Fixflo) | Aviso |
 | W-12 | Mensagem automática fora do horário, configurável por condomínio, sem prometer prazo | Aviso |
+| W-21 | Aviso fixo contra golpes: o condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem | Aviso |
 | FC-04 | 2ª via de boleto pelo WhatsApp | Integração |
 
 ### Participação sem conta
@@ -502,7 +512,7 @@ O que cada cliente pagou à TRÍADE, mês a mês.
 | PI-07 | Pagamentos dos clientes à TRÍADE: obrigação por competência, recebimentos, conferência, ajustes, parcial; valor desco… | Aba |
 | PI-08 | Atraso de pagamento não bloqueia o cliente automaticamente | Regra |
 
-#### Suporte e acessos (4)
+#### Suporte e acessos (5)
 
 Ajuda técnica, recuperação de acesso e troca de síndico com segurança.
 
@@ -510,6 +520,7 @@ Ajuda técnica, recuperação de acesso e troca de síndico com segurança.
 |---|---|---|
 | CT-01 | Troca de síndico: validar substituição, revogar acessos antigos, preservar autoria | Função |
 | PI-09 | Suporte de acesso: pedido → verificar identidade e vínculo → redefinição segura → registro | Função |
+| PI-20 | Abrir chamado de suporte com tipo, área, descrição e print colado; a IA revisa o texto antes do envio | Função |
 | PI-11 | Acesso excepcional de suporte aos dados do cliente, com motivo e registro | Regra |
 | PI-17 | Suporte técnico da plataforma separado do atendimento operacional (do síndico ou da equipe contratada), cada um com r… | Regra |
 
@@ -631,13 +642,14 @@ O que a TRÍADE Condo é e o que ela nunca faz.
 | V-08 | Síndico: painel web de gestão e avisos de novidades no próprio WhatsApp | Regra |
 | V-17 | O que a TRÍADE não faz: o síndico mantém o cargo, a representação legal e as decisões que lhe cabem; a TRÍADE, inclus… | Regra |
 
-#### Motor de IA (3)
+#### Motor de IA (4)
 
 As regras que toda função de IA segue, nos dois sistemas.
 
 | ID | Ideia | Forma |
 |---|---|---|
 | IA-11 | Agentes especializados: triagem, síndico, operação/manutenção, morador | Função |
+| IA-21 | Ajuda de cada tela, cujo texto também alimenta o assistente que tira dúvidas do síndico | Função |
 | IA-15 | Regra de ouro vista lá fora: todo texto de IA é rascunho até uma pessoa aprovar | Regra |
 | IA-16 | Observar a política da Meta: bot de atendimento da própria empresa é permitido; IA de uso geral no WhatsApp não | Regra |
 
@@ -716,10 +728,10 @@ Ferramentas do planejamento, guardadas no arquivo.
 | Forma | Ideias |
 |---|---|
 | Aba | 18 |
-| Função | 112 |
-| Regra | 78 |
-| Aviso | 9 |
-| Configuração | 14 |
+| Função | 121 |
+| Regra | 79 |
+| Aviso | 10 |
+| Configuração | 15 |
 | Indicador | 11 |
 | Integração | 12 |
 | Serviço | 11 |
