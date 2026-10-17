@@ -1,19 +1,21 @@
 "use client";
-// Janelas da ficha da unidade: incluir contato (novo ou já cadastrado, MU-01, MU-04), cadastrar
-// morador ou proprietário escolhendo a torre ou bloco, o andar e a unidade, editar
-// contato e vínculo (MU-08), encerrar (MU-07), registrar mudança (MU-07) e editar a unidade.
+// Janelas da ficha da unidade: incluir pessoa (nova ou já cadastrada, MU-01, MU-04), cadastrar
+// morador ou proprietário escolhendo a torre ou bloco, o andar e a unidade, editar a pessoa e
+// o vínculo (MU-08, MU-10), encerrar (MU-07), registrar mudança (MU-07) e editar a unidade.
+// O vínculo tem as três marcações, a ligação, o parentesco e o período de ocupação (MU-10).
 // Inquilino em unidade sem proprietário entra junto com o proprietário do imóvel (MU-01).
 // No conflito de versão, o que a pessoa escreveu fica (AT-24).
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { AVISOS_CONTATO, chaveUnidade, mostrarAndar, mostrarTelefone, MOTIVOS_ENCERRAMENTO, nomeDaUnidade } from "@triade/domain";
+import { AVISOS_CONTATO, chaveUnidade, mostrarAndar, mostrarTelefone, MOTIVOS_ENCERRAMENTO, nomeDaUnidade, relacaoDasMarcas } from "@triade/domain";
 import {
   Aviso, AvisoErro, Botao, CampoSelecao, CampoTexto, camposComErro, chamarApi, Carregando, Dialogo, ErroCarregar, textoDoErro, type ErroApi, type Resposta,
 } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
 import type { ContatoDaUnidade, ListaMoradores, Recado, UnidadeDetalhe, Unidades } from "../tipos.ts";
 import { andaresDe } from "./AbaUnidades.tsx";
-import { Caixa, Escolha, hojeEmBrasilia, nomeRelacao, nomesDivisao, opcoesRelacao } from "./comum.tsx";
+import { Caixa, Escolha, hojeEmBrasilia, nomeRelacao, nomesDivisao } from "./comum.tsx";
+import { CamposVinculo, marcasDe, VINCULO_NOVO, vinculoDe, type CamposDoVinculo } from "./Vinculo.tsx";
 
 type Salvo = (r: Recado) => void;
 
@@ -49,8 +51,10 @@ function Form({ aoEnviar, aoFechar, erro, textoBotao, recarregar, children, peri
 const ERRO_CAMPO: Record<string, string> = {
   nome: "Escreva o nome (até 120 caracteres).",
   telefone: "Telefone com DDD, como (61) 99999-0000.",
-  relacao: "Escolha a relação com a unidade.",
 };
+
+/** Campos do vínculo com erro: o banco aponta cada um; a validação da API diz só "marcas". */
+const errosDoVinculo = (campos: string[]) => (campos.includes("marcas") ? ["ligacao", "parentesco", "ocupaDesde"] : campos);
 
 function aviso(r: Resposta<{ avisos?: string[] }>, texto: string, pendente: boolean): Recado {
   const compartilhado = r.ok && r.dados.avisos?.includes("TELEFONE_COMPARTILHADO");
@@ -67,6 +71,8 @@ interface Alvo {
   /** Já tem proprietário no cadastro; sem ele, o inquilino entra junto com o proprietário (MU-01). */
   temProprietario: boolean;
   contatoIds: string[];
+  /** Quem é o responsável hoje (para avisar a troca e dizer de quem é o parentesco). */
+  responsavel: { nome: string; mora: boolean } | null;
 }
 
 export function IncluirContato({ aberto, unidade, relacaoInicial, aoFechar, salvo }: {
@@ -82,9 +88,10 @@ export function IncluirContato({ aberto, unidade, relacaoInicial, aoFechar, salv
     temContatos: unidade.contatos.length > 0,
     temProprietario: unidade.contatos.some((c) => c.relacao === "PROPRIETARIO"),
     contatoIds: unidade.contatos.map((c) => c.contatoId),
+    responsavel: ((r) => (r ? { nome: r.nome, mora: r.mora } : null))(unidade.contatos.find((c) => c.principal)),
   };
   return (
-    <Dialogo aberto={aberto} titulo={`${relacaoInicial === "PROPRIETARIO" ? "Incluir proprietário" : "Incluir contato"} · ${nome}`} aoFechar={aoFechar}>
+    <Dialogo aberto={aberto} titulo={`${relacaoInicial === "PROPRIETARIO" ? "Incluir proprietário" : "Incluir pessoa"} · ${nome}`} aoFechar={aoFechar}>
       {aberto ? <FormIncluir alvo={alvo} podeConfirmar={unidade.podeConfirmar} relacaoInicial={relacaoInicial} aoFechar={aoFechar} salvo={salvo} /> : null}
     </Dialogo>
   );
@@ -137,7 +144,8 @@ function FormCadastrar({ dados, aoFechar, salvo }: { dados: Unidades; aoFechar: 
               .map((u) => ({ valor: u.id, texto: `${u.identificacao}${u.principal ? ` · ${u.principal}` : ""}` }))]} />
       ) : null}
       {unidade ? (
-        <FormIncluir key={unidade.id} alvo={{ id: unidade.id, temContatos: unidade.confirmados + unidade.pendentes > 0, temProprietario: unidade.temProprietario, contatoIds: [] }}
+        <FormIncluir key={unidade.id} alvo={{ id: unidade.id, temContatos: unidade.confirmados + unidade.pendentes > 0, temProprietario: unidade.temProprietario, contatoIds: [],
+          responsavel: unidade.principal ? { nome: unidade.principal, mora: false } : null }}
           podeConfirmar={dados.podeConfirmar} aoFechar={aoFechar} salvo={salvo}
           nomeUnidade={nomeDaUnidade(dados.blocos.find((b) => b.id === unidade.blocoId)?.nome, unidade.andar, unidade.identificacao)} />
       ) : (
@@ -238,17 +246,21 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
 }) {
   const [pessoa, setPessoa] = useState<Pessoa>(PESSOA_VAZIA);
   const [dono, setDono] = useState<Pessoa>(PESSOA_VAZIA);
-  const [relacao, setRelacao] = useState(relacaoInicial ?? "MORADOR");
-  const [principal, setPrincipal] = useState(!alvo.temContatos);
+  // Unidade vazia: a primeira pessoa costuma ser o proprietário que mora e responde por ela.
+  const [vinculo, setVinculo] = useState<CamposDoVinculo>(
+    relacaoInicial === "PROPRIETARIO" ? { ...VINCULO_NOVO, proprietario: true, mora: false }
+      : !alvo.temContatos ? { ...VINCULO_NOVO, proprietario: true, principal: true }
+      : { ...VINCULO_NOVO, ligacao: "FAMILIAR" });
   const [recebe, setRecebe] = useState(relacaoInicial === "PROPRIETARIO" ? false : true);
   const [erro, setErro] = useState<ErroApi | null>(null);
-  const pedeDono = relacao === "INQUILINO" && !alvo.temProprietario;
+  const pedeDono = !vinculo.proprietario && vinculo.ligacao === "INQUILINO" && !alvo.temProprietario;
 
   async function incluir() {
     setErro(null);
     if (pessoa.modo === "cadastrada" && !pessoa.contatoId) return setErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: ["contatoId"] } });
     if (pedeDono && dono.modo === "cadastrada" && !dono.contatoId) return setErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: ["proprietario"] } });
-    const corpo = { ...corpoDaPessoa(pessoa), relacao, principal, recebeComunicados: recebe, ...(pedeDono ? { proprietario: corpoDaPessoa(dono) } : {}) };
+    const marcas = { ...marcasDe(vinculo), ocupaDesde: vinculo.ocupaDesde || null };
+    const corpo = { ...corpoDaPessoa(pessoa), marcas, recebeComunicados: recebe, ...(pedeDono ? { proprietario: corpoDaPessoa(dono) } : {}) };
     const r = await chamarApi<{ avisos: string[] }>(`/v1/condominio/unidades/${alvo.id}/contatos`, { corpo });
     if (!r.ok) return setErro(r.erro);
     const onde = nomeUnidade ? `em ${nomeUnidade}` : "na unidade";
@@ -260,29 +272,28 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
   const campos = camposComErro(erro);
   const erroDono = campos.includes("proprietario") ? (dono.modo === "nova" ? "Confira o nome e o telefone (com DDD) do proprietário." : "Busque e escolha o proprietário.") : null;
   return (
-    <Form aoEnviar={incluir} aoFechar={aoFechar} erro={erro} textoBotao={pedeDono ? "Incluir inquilino e proprietário" : "Incluir contato"}>
+    <Form aoEnviar={incluir} aoFechar={aoFechar} erro={erro} textoBotao={pedeDono ? "Incluir inquilino e proprietário" : "Incluir pessoa"}>
       <EscolherPessoa prefixo="c" rotulo="Quem é" textoCadastrada="Já cadastrada em outra unidade" pessoa={pessoa} excluir={alvo.contatoIds}
         aoMudar={(p) => { setPessoa(p); setErro(null); }}
         erros={{ nome: campos.includes("nome") ? ERRO_CAMPO.nome : null, telefone: campos.includes("telefone") ? ERRO_CAMPO.telefone : null,
           contato: campos.includes("contatoId") ? "Busque e escolha a pessoa." : null }} />
-      <CampoSelecao id="c-relacao" rotulo="Relação com a unidade" value={relacao} onChange={(e) => setRelacao(e.target.value)} opcoes={opcoesRelacao}
-        erro={campos.includes("relacao") ? ERRO_CAMPO.relacao : null} />
+      <CamposVinculo prefixo="c" valor={vinculo} aoMudar={(v) => { setVinculo(v); setErro(null); }} responsavelAtual={alvo.responsavel}
+        erros={errosDoVinculo(campos)} />
       {pedeDono ? (
         <fieldset className="grid gap-3 rounded-lg border border-linha bg-superficie-2 p-3">
           <legend className="px-1 text-[13px] font-semibold">Proprietário do imóvel</legend>
           <p className="text-sm text-tinta-suave">
             A unidade ainda não tem proprietário no cadastro. Para controle, o inquilino entra junto com o dono do imóvel. O proprietário fica registrado
-            mesmo sem morar aqui, não é o contato principal e não recebe os comunicados do dia a dia (dá para mudar depois).
+            sem morar aqui, não é o responsável e não recebe os comunicados do dia a dia (dá para mudar depois).
           </p>
           <EscolherPessoa prefixo="p" rotulo="O proprietário é" textoCadastrada="Já cadastrado no condomínio" de=" do proprietário" pessoa={dono} excluir={[]}
             aoMudar={(p) => { setDono(p); setErro(null); }}
             erros={{ nome: dono.modo === "nova" ? erroDono : null, telefone: null, contato: dono.modo === "cadastrada" ? erroDono : null }} />
         </fieldset>
       ) : null}
-      <Caixa id="c-principal" rotulo="Contato principal da unidade" ajuda="Um por unidade. Marcar este tira o anterior." marcada={principal} aoMudar={setPrincipal} />
       <Caixa id="c-recebe" rotulo="Recebe comunicados do condomínio" marcada={recebe} aoMudar={setRecebe} />
       <p className="text-sm text-tinta-suave">
-        {podeConfirmar ? "Quem você inclui já fica confirmado." : "O contato fica a confirmar até o síndico conferir."} Ter o telefone não dá acesso a nada além do que a unidade pode ver.
+        {podeConfirmar ? "Quem você inclui já fica confirmado." : "A pessoa fica a confirmar até o síndico conferir."} Ter o telefone não dá acesso a nada além do que a unidade pode ver.
       </p>
     </Form>
   );
@@ -290,23 +301,37 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
 
 // ---------------------------------------------------------------------------------------
 
-export function EditarContato({ contato, aoFechar, salvo, recarregar }: { contato: ContatoDaUnidade | null; aoFechar: () => void; salvo: Salvo; recarregar: () => void }) {
+export function EditarContato({ contato, responsavel, aoFechar, salvo, recarregar }: {
+  contato: ContatoDaUnidade | null;
+  /** O responsável de hoje, se for outra pessoa. */
+  responsavel: { nome: string; mora: boolean } | null;
+  aoFechar: () => void;
+  salvo: Salvo;
+  recarregar: () => void;
+}) {
   return (
-    <Dialogo aberto={!!contato} titulo={contato ? `Editar ${contato.nome}` : "Editar contato"} aoFechar={aoFechar}>
-      {contato ? <FormEditar contato={contato} aoFechar={aoFechar} salvo={salvo} recarregar={recarregar} /> : null}
+    <Dialogo aberto={!!contato} titulo={contato ? `Editar ${contato.nome}` : "Editar pessoa"} aoFechar={aoFechar}>
+      {contato ? <FormEditar contato={contato} responsavel={responsavel} aoFechar={aoFechar} salvo={salvo} recarregar={recarregar} /> : null}
     </Dialogo>
   );
 }
 
-function FormEditar({ contato, aoFechar, salvo, recarregar }: { contato: ContatoDaUnidade; aoFechar: () => void; salvo: Salvo; recarregar: () => void }) {
+function FormEditar({ contato, responsavel, aoFechar, salvo, recarregar }: {
+  contato: ContatoDaUnidade;
+  responsavel: { nome: string; mora: boolean } | null;
+  aoFechar: () => void;
+  salvo: Salvo;
+  recarregar: () => void;
+}) {
   const [nome, setNome] = useState(contato.nome);
   const [telefone, setTelefone] = useState(mostrarTelefone(contato.telefone));
-  const [relacao, setRelacao] = useState(contato.relacao);
-  const [principal, setPrincipal] = useState(contato.principal);
+  const [vinculo, setVinculo] = useState<CamposDoVinculo>(vinculoDe(contato));
   const [recebe, setRecebe] = useState(contato.recebeComunicados);
   const [erro, setErro] = useState<ErroApi | null>(null);
+  const marcas = { ...marcasDe(vinculo), ocupaDesde: vinculo.ocupaDesde || null };
   const mudouContato = nome.trim() !== contato.nome || telefone !== mostrarTelefone(contato.telefone);
-  const mudouVinculo = relacao !== contato.relacao || principal !== contato.principal || recebe !== contato.recebeComunicados;
+  const mudouVinculo = JSON.stringify(marcas) !== JSON.stringify({ ...marcasDe(vinculoDe(contato)), ocupaDesde: contato.ocupaDesde })
+    || recebe !== contato.recebeComunicados;
 
   async function salvar() {
     setErro(null);
@@ -320,11 +345,11 @@ function FormEditar({ contato, aoFechar, salvo, recarregar }: { contato: Contato
     }
     if (mudouVinculo) {
       const r = await chamarApi(`/v1/condominio/vinculos-unidade/${contato.vinculoId}`, {
-        metodo: "PUT", corpo: { versao: contato.versao, relacao, principal, recebeComunicados: recebe },
+        metodo: "PUT", corpo: { versao: contato.versao, marcas, recebeComunicados: recebe },
       });
       if (!r.ok) return setErro(r.erro);
     }
-    salvo(avisos ? aviso(avisos, "Contato atualizado.", false) : { tom: "ok", texto: mudouVinculo ? "Contato atualizado." : "Nada mudou." });
+    salvo(avisos ? aviso(avisos, `${nome.trim()} atualizado.`, false) : { tom: "ok", texto: mudouVinculo ? `${nome.trim()} atualizado.` : "Nada mudou." });
   }
 
   const campos = camposComErro(erro);
@@ -335,8 +360,9 @@ function FormEditar({ contato, aoFechar, salvo, recarregar }: { contato: Contato
       <CampoTexto id="e-telefone" rotulo="Telefone (WhatsApp)" type="tel" inputMode="tel" required value={telefone} onChange={(e) => setTelefone(e.target.value)}
         ajuda={contato.outrasUnidades.length ? `Nome e telefone mudam também em ${contato.outrasUnidades.join(", ")}.` : undefined}
         erro={campos.includes("telefone") ? ERRO_CAMPO.telefone : null} />
-      <CampoSelecao id="e-relacao" rotulo="Relação com a unidade" value={relacao} onChange={(e) => setRelacao(e.target.value)} opcoes={opcoesRelacao} />
-      <Caixa id="e-principal" rotulo="Contato principal da unidade" ajuda="Um por unidade. Marcar este tira o anterior." marcada={principal} aoMudar={setPrincipal} />
+      <CamposVinculo prefixo="e" valor={vinculo} aoMudar={(v) => { setVinculo(v); setErro(null); }}
+        responsavelAtual={contato.principal ? null : responsavel} erros={errosDoVinculo(campos)} />
+      <p className="text-xs text-tinta-suave">O &quot;ocupou até&quot; é preenchido quando o vínculo é encerrado ou numa mudança.</p>
       <Caixa id="e-recebe" rotulo="Recebe comunicados do condomínio" marcada={recebe} aoMudar={setRecebe} />
     </Form>
   );
@@ -368,7 +394,7 @@ function FormEncerrar({ contato, nomeUnidade, aoFechar, salvo, recarregar }: { c
   async function encerrar() {
     setErro(null);
     const r = await chamarApi(`/v1/condominio/vinculos-unidade/${contato.vinculoId}/encerrar`, {
-      corpo: { versao: contato.versao, motivo, dataSaida: motivo === "MUDANCA" ? data : null },
+      corpo: { versao: contato.versao, motivo, dataSaida: data },
     });
     if (!r.ok) return setErro(r.erro);
     salvo({ tom: "ok", texto: `${contato.nome} não fala mais por ${nomeUnidade}.` });
@@ -377,10 +403,9 @@ function FormEncerrar({ contato, nomeUnidade, aoFechar, salvo, recarregar }: { c
   return (
     <Form aoEnviar={encerrar} aoFechar={aoFechar} erro={erro} textoBotao="Encerrar vínculo" recarregar={recarregar} perigo>
       <CampoSelecao id="x-motivo" rotulo="Motivo" value={motivo} onChange={(e) => setMotivo(e.target.value)} opcoes={MOTIVOS_SAIDA} />
-      {motivo === "MUDANCA" ? (
-        <CampoTexto id="x-data" rotulo="Data da saída" type="date" value={data} onChange={(e) => setData(e.target.value)}
-          erro={camposComErro(erro).includes("dataSaida") ? "Confira a data." : null} />
-      ) : null}
+      <CampoTexto id="x-data" rotulo="Ocupou até" type="date" value={data} onChange={(e) => setData(e.target.value)}
+        ajuda="A data de saída fica no período de ocupação da pessoa."
+        erro={camposComErro(erro).includes("dataSaida") ? (contato.ocupaDesde ? "A saída não pode ser antes da entrada. Confira a data." : "Confira a data.") : null} />
       <p className="text-sm">{contato.nome} deixa de falar pela unidade agora. O vínculo encerrado não volta; se precisar, inclua de novo.</p>
     </Form>
   );
@@ -392,7 +417,7 @@ interface Entrada {
   chave: number;
   nome: string;
   telefone: string;
-  relacao: string;
+  vinculo: CamposDoVinculo;
 }
 
 export function RegistrarMudanca({ aberto, unidade, aoFechar, salvo, recarregar }: { aberto: boolean; unidade: UnidadeDetalhe; aoFechar: () => void; salvo: Salvo; recarregar: () => void }) {
@@ -407,27 +432,30 @@ export function RegistrarMudanca({ aberto, unidade, aoFechar, salvo, recarregar 
 function FormMudanca({ unidade, aoFechar, salvo, recarregar }: { unidade: UnidadeDetalhe; aoFechar: () => void; salvo: Salvo; recarregar: () => void }) {
   const [data, setData] = useState(hojeEmBrasilia());
   const [saem, setSaem] = useState<string[]>([]);
-  const [entram, setEntram] = useState<Entrada[]>([{ chave: 1, nome: "", telefone: "", relacao: "INQUILINO" }]);
-  const [principal, setPrincipal] = useState(1);
+  const [entram, setEntram] = useState<Entrada[]>([{ chave: 1, nome: "", telefone: "", vinculo: { ...VINCULO_NOVO, principal: true } }]);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const preenchidos = entram.filter((e) => e.nome.trim() || e.telefone.trim());
   const ficam = unidade.contatos.filter((c) => !saem.includes(c.vinculoId));
-  const mudar = (chave: number, campo: keyof Entrada, v: string) => setEntram((l) => l.map((e) => (e.chave === chave ? { ...e, [campo]: v } : e)));
-  const incluirPessoa = (relacao: string) => setEntram([...entram, { chave: Math.max(...entram.map((x) => x.chave)) + 1, nome: "", telefone: "", relacao }]);
+  const relacao = (e: Entrada) => relacaoDasMarcas(marcasDe(e.vinculo));
+  const mudar = (chave: number, p: Partial<Omit<Entrada, "chave">>) => setEntram((l) => l.map((e) => (e.chave === chave ? { ...e, ...p } : e)));
+  // Um responsável só entre quem entra: marcar um tira dos outros.
+  const mudarVinculo = (chave: number, v: CamposDoVinculo) =>
+    setEntram((l) => l.map((e) => (e.chave === chave ? { ...e, vinculo: v } : v.principal ? { ...e, vinculo: { ...e.vinculo, principal: false } } : e)));
+  const incluirPessoa = (vinculo: CamposDoVinculo) => setEntram([...entram, { chave: Math.max(...entram.map((x) => x.chave)) + 1, nome: "", telefone: "", vinculo }]);
   // Inquilino fica ou entra, e o proprietário sai ou não existe: o novo proprietário entra junto (MU-01).
-  const temInquilino = ficam.some((c) => c.relacao === "INQUILINO") || preenchidos.some((e) => e.relacao === "INQUILINO");
-  const saiDono = unidade.contatos.some((c) => saem.includes(c.vinculoId) && c.relacao === "PROPRIETARIO");
-  const faltaDono = temInquilino && (saiDono || preenchidos.some((e) => e.relacao === "INQUILINO"))
-    && !ficam.some((c) => c.relacao === "PROPRIETARIO") && !preenchidos.some((e) => e.relacao === "PROPRIETARIO");
+  const temInquilino = ficam.some((c) => c.relacao === "INQUILINO") || preenchidos.some((e) => relacao(e) === "INQUILINO");
+  const saiDono = unidade.contatos.some((c) => saem.includes(c.vinculoId) && c.proprietario);
+  const faltaDono = temInquilino && (saiDono || preenchidos.some((e) => relacao(e) === "INQUILINO"))
+    && !ficam.some((c) => c.proprietario) && !preenchidos.some((e) => e.vinculo.proprietario);
 
   async function registrar() {
     setErro(null);
     const corpo = {
       data,
       saem: unidade.contatos.filter((c) => saem.includes(c.vinculoId)).map((c) => ({ id: c.vinculoId, versao: c.versao })),
+      // Quem entra ocupa desde a data da mudança; o dono que não mora fica sem os comunicados do dia a dia.
       entram: preenchidos.map((e) => ({
-        nome: e.nome, telefone: e.telefone, relacao: e.relacao, principal: e.chave === principal,
-        recebeComunicados: !(e.relacao === "PROPRIETARIO" && temInquilino),
+        nome: e.nome, telefone: e.telefone, ...marcasDe(e.vinculo), recebeComunicados: !(e.vinculo.proprietario && !e.vinculo.mora),
       })),
     };
     const r = await chamarApi<{ saem: number; entram: number }>(`/v1/condominio/unidades/${unidade.unidade.id}/mudanca`, { corpo });
@@ -444,7 +472,7 @@ function FormMudanca({ unidade, aoFechar, salvo, recarregar }: { unidade: Unidad
       <fieldset className="grid gap-1.5">
         <legend className="mb-1 text-[13px] font-medium">Quem sai</legend>
         {unidade.contatos.length === 0 ? <p className="text-sm text-tinta-suave">Ninguém na unidade agora.</p> : unidade.contatos.map((c) => (
-          <Caixa key={c.vinculoId} id={`m-sai-${c.vinculoId}`} rotulo={`${c.nome} · ${nomeRelacao(c.relacao).toLowerCase()}`} marcada={saem.includes(c.vinculoId)}
+          <Caixa key={c.vinculoId} id={`m-sai-${c.vinculoId}`} rotulo={`${c.nome} · ${nomeRelacao(c.relacao).toLowerCase()}${c.principal ? " · responsável" : ""}`} marcada={saem.includes(c.vinculoId)}
             aoMudar={(v) => setSaem(v ? [...saem, c.vinculoId] : saem.filter((x) => x !== c.vinculoId))} />
         ))}
         {saem.length && ficam.length ? <p className="text-xs text-tinta-suave">Ficam: {ficam.map((c) => c.nome).join(", ")}.</p> : null}
@@ -453,37 +481,34 @@ function FormMudanca({ unidade, aoFechar, salvo, recarregar }: { unidade: Unidad
         <legend className="mb-1 text-[13px] font-medium">Quem entra</legend>
         {entram.map((e, i) => (
           <div key={e.chave} className="grid gap-2 rounded-lg border border-linha p-3">
-            <CampoTexto id={`m-nome-${e.chave}`} rotulo={`Nome da pessoa ${i + 1}`} maxLength={120} value={e.nome} onChange={(ev) => mudar(e.chave, "nome", ev.target.value)} />
+            <CampoTexto id={`m-nome-${e.chave}`} rotulo={`Nome da pessoa ${i + 1}`} maxLength={120} value={e.nome} onChange={(ev) => mudar(e.chave, { nome: ev.target.value })} />
             <CampoTexto id={`m-tel-${e.chave}`} rotulo={`Telefone da pessoa ${i + 1}`} type="tel" inputMode="tel" placeholder="(61) 99999-0000" value={e.telefone}
-              onChange={(ev) => mudar(e.chave, "telefone", ev.target.value)} />
-            <CampoSelecao id={`m-rel-${e.chave}`} rotulo={`Relação da pessoa ${i + 1}`} value={e.relacao} onChange={(ev) => mudar(e.chave, "relacao", ev.target.value)} opcoes={opcoesRelacao} />
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="radio" name="m-principal" className="accent-[var(--color-acao)]" checked={principal === e.chave} onChange={() => setPrincipal(e.chave)} />
-                Contato principal
-              </label>
-              {entram.length > 1 ? <Botao variante="texto" onClick={() => setEntram(entram.filter((x) => x.chave !== e.chave))}>Tirar pessoa {i + 1}</Botao> : null}
-            </div>
+              onChange={(ev) => mudar(e.chave, { telefone: ev.target.value })} />
+            <CamposVinculo prefixo={`m-${e.chave}`} quem={`A pessoa ${i + 1}`} de={` da pessoa ${i + 1}`} valor={e.vinculo} comPeriodo={false} aoMudar={(v) => mudarVinculo(e.chave, v)}
+              responsavelAtual={((r) => (r && !saem.includes(r.vinculoId) ? { nome: r.nome, mora: r.mora } : null))(unidade.contatos.find((c) => c.principal))} />
+            {entram.length > 1 ? (
+              <div className="flex justify-end"><Botao variante="texto" onClick={() => setEntram(entram.filter((x) => x.chave !== e.chave))}>Tirar pessoa {i + 1}</Botao></div>
+            ) : null}
           </div>
         ))}
         {faltaDono ? (
           <Aviso tom="atencao">
             <span className="flex flex-wrap items-center justify-between gap-2">
               <span>A unidade vai ficar com inquilino e sem proprietário. Para controle, inclua o proprietário do imóvel entre quem entra.</span>
-              {entram.length < 20 ? <Botao variante="secundario" onClick={() => incluirPessoa("PROPRIETARIO")}>+ Proprietário</Botao> : null}
+              {entram.length < 20 ? <Botao variante="secundario" onClick={() => incluirPessoa({ ...VINCULO_NOVO, proprietario: true, mora: false })}>+ Proprietário</Botao> : null}
             </span>
           </Aviso>
         ) : null}
         {entram.length < 20 ? (
-          <Botao variante="secundario" className="justify-self-start" onClick={() => incluirPessoa("FAMILIAR")}>+ Mais uma pessoa</Botao>
+          <Botao variante="secundario" className="justify-self-start" onClick={() => incluirPessoa({ ...VINCULO_NOVO, ligacao: "FAMILIAR" })}>+ Mais uma pessoa</Botao>
         ) : null}
-        {campos.includes("entram") ? <p className="text-sm text-erro">Confira nome e telefone (com DDD) de quem entra.</p> : null}
-        <p className="text-xs text-tinta-suave">Deixe em branco se ninguém entra agora.</p>
+        {campos.includes("entram") || campos.includes("ligacao") ? <p className="text-sm text-erro">Confira nome, telefone (com DDD) e a ligação de quem entra.</p> : null}
+        <p className="text-xs text-tinta-suave">Deixe em branco se ninguém entra agora. Quem entra ocupa desde a data da mudança.</p>
       </fieldset>
       <p className="text-sm">
-        {saem.length ? "Quem sai deixa de falar pela unidade agora. Se não estiver em outra unidade, depois você pode remover os dados. " : ""}
+        {saem.length ? "Quem sai deixa de falar pela unidade agora e fica com o \"ocupou até\" nesta data. Se não estiver em outra unidade, depois você pode remover os dados. " : ""}
         {unidade.podeConfirmar ? "Quem entra já fica confirmado." : "Quem entra fica a confirmar pelo síndico."}
-        {temInquilino ? " O proprietário que não mora na unidade fica no cadastro sem os comunicados do dia a dia." : ""}
+        {preenchidos.some((e) => e.vinculo.proprietario && !e.vinculo.mora) ? " O proprietário que não mora na unidade fica no cadastro sem os comunicados do dia a dia." : ""}
       </p>
     </Form>
   );

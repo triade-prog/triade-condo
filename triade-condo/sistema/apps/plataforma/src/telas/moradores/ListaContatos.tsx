@@ -113,7 +113,7 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
                     <td className="min-w-44 px-4 py-3">
                       <span className="font-medium">{i.nome}</span>
                       <span className="block text-xs text-tinta-suave">
-                        {[nomeRelacao(i.relacao), i.principal ? "principal" : null, mostrarTelefone(i.telefone), i.origem === "PLANILHA" ? "veio da planilha" : null].filter(Boolean).join(" · ")}
+                        {[nomeRelacao(i.relacao), i.principal ? "responsável" : null, mostrarTelefone(i.telefone), i.origem === "PLANILHA" ? "veio da planilha" : null].filter(Boolean).join(" · ")}
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">

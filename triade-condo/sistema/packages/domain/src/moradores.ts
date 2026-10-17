@@ -15,6 +15,62 @@ export const RELACOES_UNIDADE = {
 } as const;
 export type RelacaoUnidade = keyof typeof RELACOES_UNIDADE;
 
+/** Ligação de quem não é proprietário com a unidade (MU-10). */
+export const LIGACOES = {
+  INQUILINO: "Inquilino",
+  FAMILIAR: "Familiar",
+  OUTRO: "Outro (cedido, procurador, funcionário)",
+} as const;
+export type Ligacao = keyof typeof LIGACOES;
+
+/** Parentesco do familiar com o responsável pela unidade. Opcional (PT-11). */
+export const PARENTESCOS = {
+  CONJUGE: "Cônjuge ou companheiro(a)",
+  FILHO: "Filho(a)",
+  PAI_MAE: "Pai ou mãe",
+  IRMAO: "Irmão ou irmã",
+  OUTRO_PARENTE: "Outro parente",
+} as const;
+export type Parentesco = keyof typeof PARENTESCOS;
+
+/** Ocupação da unidade, calculada das marcações de quem está nela (MU-10). */
+export const OCUPACOES = {
+  PROPRIETARIO_MORA: "O proprietário mora",
+  ALUGADA: "Alugada",
+  CEDIDA: "Cedida",
+  VAZIA: "Vazia",
+  SEM_CADASTRO: "Sem cadastro",
+} as const;
+export type Ocupacao = keyof typeof OCUPACOES;
+
+/** Marcações do vínculo (passo 3b, MU-10). "principal" é o responsável pela unidade. */
+export interface Marcas {
+  proprietario: boolean;
+  principal: boolean;
+  mora: boolean;
+  ligacao: Ligacao | null;
+  parentesco: Parentesco | null;
+  ocupaDesde?: string | null;
+}
+
+/** A relação de antes vira marcações (igual a marcas_da_relacao no banco). */
+export function marcasDaRelacao(r: RelacaoUnidade): Omit<Marcas, "principal" | "parentesco" | "ocupaDesde"> {
+  switch (r) {
+    case "PROPRIETARIO": return { proprietario: true, mora: true, ligacao: null };
+    case "INQUILINO": return { proprietario: false, mora: true, ligacao: "INQUILINO" };
+    case "MORADOR": return { proprietario: false, mora: true, ligacao: "OUTRO" };
+    case "FAMILIAR": return { proprietario: false, mora: true, ligacao: "FAMILIAR" };
+    case "OUTRO": return { proprietario: false, mora: false, ligacao: "OUTRO" };
+  }
+}
+
+/** A relação de antes, calculada das marcações (igual à coluna relacao do banco). */
+export function relacaoDasMarcas(m: Pick<Marcas, "proprietario" | "mora" | "ligacao">): RelacaoUnidade {
+  if (m.proprietario) return "PROPRIETARIO";
+  if (m.ligacao === "INQUILINO" || m.ligacao === "FAMILIAR") return m.ligacao;
+  return m.mora ? "MORADOR" : "OUTRO";
+}
+
 /** Como o condomínio chama a divisão maior do prédio. NENHUM: as unidades ficam direto no condomínio. */
 export const AGRUPAMENTOS = {
   NENHUM: { nome: "Sem divisão", um: "", varios: "" },
@@ -89,28 +145,59 @@ export const alterarUnidadeSchema = z.object({
   ativa: z.boolean().optional(),
 });
 
-/** Contato novo (nome e telefone) ou um que já existe no condomínio (contatoId). */
-export const incluirContatoSchema = z
+/** Data sem hora, conferida no calendário. */
+const data = z.string().refine((t) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+  if (!m) return false;
+  const [a, mes, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  return a >= 2000 && a <= 2100 && mes >= 1 && mes <= 12 && d >= 1 && d <= new Date(Date.UTC(a, mes, 0)).getUTCDate();
+}, { message: "Data inválida" });
+
+const camposMarcas = {
+  proprietario: z.boolean().default(false),
+  principal: z.boolean().default(false),
+  mora: z.boolean().default(false),
+  ligacao: z.enum(chaves(LIGACOES)).nullable().default(null),
+  parentesco: z.enum(chaves(PARENTESCOS)).nullable().default(null),
+};
+
+/** Proprietário não tem ligação; quem não é proprietário diz qual é; parentesco só para familiar. */
+function conferirMarcas(m: { proprietario: boolean; ligacao: Ligacao | null; parentesco: Parentesco | null }, ctx: z.RefinementCtx) {
+  if (m.proprietario && m.ligacao) ctx.addIssue({ code: "custom", message: "Proprietário não tem ligação", path: ["ligacao"] });
+  if (!m.proprietario && !m.ligacao) ctx.addIssue({ code: "custom", message: "Diga a ligação com a unidade", path: ["ligacao"] });
+  if (m.parentesco && m.ligacao !== "FAMILIAR") ctx.addIssue({ code: "custom", message: "Parentesco só para familiar", path: ["parentesco"] });
+}
+
+export const marcasSchema = z.object({ ...camposMarcas, ocupaDesde: data.nullable().default(null) }).superRefine(conferirMarcas);
+
+/** A tela de antes mandava a relação: vira marcações. */
+const comRelacaoAntiga = (v: unknown) => {
+  if (!v || typeof v !== "object" || !("relacao" in v) || "marcas" in v) return v;
+  const { relacao, principal, ...resto } = v as { relacao: unknown; principal?: unknown };
+  const conhecida = typeof relacao === "string" && relacao in RELACOES_UNIDADE;
+  return { ...resto, marcas: conhecida ? { ...marcasDaRelacao(relacao as RelacaoUnidade), principal: principal ?? false } : { ligacao: relacao } };
+};
+
+/** Contato novo (nome e telefone) ou um que já existe no condomínio (contatoId), com as marcações. */
+export const incluirContatoSchema = z.preprocess(comRelacaoAntiga, z
   .object({
     contatoId: id.optional(),
     nome: nome.optional(),
     telefone: telefoneContato.optional(),
-    relacao,
-    principal: z.boolean().default(false),
+    marcas: marcasSchema,
     recebeComunicados: z.boolean().default(true),
     /** Inquilino em unidade sem proprietário no cadastro entra junto com o dono do imóvel (MU-01). */
     proprietario: z.union([z.object({ contatoId: id }), z.object({ nome, telefone: telefoneContato })]).optional(),
   })
-  .refine((c) => c.contatoId || (c.nome && c.telefone), { message: "Informe nome e telefone", path: ["nome"] });
+  .refine((c) => c.contatoId || (c.nome && c.telefone), { message: "Informe nome e telefone", path: ["nome"] }));
 
 export const alterarContatoSchema = z.object({ versao, nome, telefone: telefoneContato });
 
-export const alterarVinculoUnidadeSchema = z.object({
+export const alterarVinculoUnidadeSchema = z.preprocess(comRelacaoAntiga, z.object({
   versao,
-  relacao,
-  principal: z.boolean(),
+  marcas: marcasSchema,
   recebeComunicados: z.boolean(),
-});
+}));
 
 const itensComVersao = (max: number) =>
   z
@@ -120,27 +207,22 @@ const itensComVersao = (max: number) =>
 
 export const confirmarContatosSchema = z.object({ itens: itensComVersao(2000).refine((l) => l.length > 0, { message: "Nada a confirmar" }) });
 
-/** Data sem hora, conferida no calendário. */
-const data = z.string().refine((t) => {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
-  if (!m) return false;
-  const [a, mes, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  return a >= 2000 && a <= 2100 && mes >= 1 && mes <= 12 && d >= 1 && d <= new Date(Date.UTC(a, mes, 0)).getUTCDate();
-}, { message: "Data inválida" });
-
 export const encerrarVinculoSchema = z.object({
   versao,
   motivo: z.enum(chaves(MOTIVOS_ENCERRAMENTO)),
   dataSaida: data.nullable().optional(),
 });
 
-export const novoContatoSchema = z.object({
+/** Quem entra na mudança: entra com "ocupa desde" igual à data da mudança. */
+export const novoContatoSchema = z.preprocess((v) => {
+  const c = comRelacaoAntiga(v);
+  return c && typeof c === "object" && "marcas" in c ? (({ marcas, ...resto }) => ({ ...resto, ...(marcas as object) }))(c as { marcas: unknown }) : c;
+}, z.object({
   nome,
   telefone: telefoneContato,
-  relacao,
-  principal: z.boolean().default(false),
+  ...camposMarcas,
   recebeComunicados: z.boolean().default(true),
-});
+}).superRefine(conferirMarcas));
 
 export const mudancaSchema = z
   .object({
@@ -149,7 +231,7 @@ export const mudancaSchema = z
     entram: z.array(novoContatoSchema).max(20),
   })
   .refine((m) => m.saem.length + m.entram.length > 0, { message: "Diga quem sai ou quem entra", path: ["entram"] })
-  .refine((m) => m.entram.filter((e) => e.principal).length <= 1, { message: "Só um contato principal", path: ["entram"] });
+  .refine((m) => m.entram.filter((e) => e.principal).length <= 1, { message: "Só um responsável", path: ["entram"] });
 
 export const linhaImportacaoSchema = z.object({
   bloco: z.string().trim().min(1).max(40).nullable(),
@@ -158,6 +240,13 @@ export const linhaImportacaoSchema = z.object({
   nome,
   telefone: telefoneContato,
   relacao: relacao.default("MORADOR"),
+  /** Colunas opcionais do vínculo (passo 3b). Em branco, o banco decide como antes. */
+  mora: z.boolean().nullable().default(null),
+  responsavel: z.boolean().nullable().default(null),
+  parentesco: z.enum(chaves(PARENTESCOS)).nullable().default(null),
+  ocupaDesde: data.nullable().default(null),
+}).superRefine((l, ctx) => {
+  if (l.parentesco && l.relacao !== "FAMILIAR") ctx.addIssue({ code: "custom", message: "Parentesco só para familiar", path: ["parentesco"] });
 });
 export type LinhaImportacao = z.infer<typeof linhaImportacaoSchema>;
 
@@ -238,7 +327,33 @@ const COLUNAS: Record<string, keyof LinhaImportacao> = {
   nome: "nome", morador: "nome", contato: "nome", responsavel: "nome",
   telefone: "telefone", celular: "telefone", whatsapp: "telefone", fone: "telefone",
   relacao: "relacao", tipo: "relacao", vinculo: "relacao", situacao: "relacao",
+  mora: "mora", moranaunidade: "mora", reside: "mora",
+  responsavelpelaunidade: "responsavel", eresponsavel: "responsavel", principal: "responsavel",
+  parentesco: "parentesco", grauparentesco: "parentesco", grau: "parentesco",
+  ocupadesde: "ocupaDesde", desde: "ocupaDesde", entrada: "ocupaDesde", dataentrada: "ocupaDesde", datadeentrada: "ocupaDesde",
 };
+
+const PARENTESCOS_TEXTO: [RegExp, Parentesco][] = [
+  [/^(conjuge|esposa|esposo|marido|mulher|companheir[oa]|parceir[oa])$/, "CONJUGE"],
+  [/^(filh[oa]|enteado|enteada)$/, "FILHO"],
+  [/^(pai|mae|padrasto|madrasta)$/, "PAI_MAE"],
+  [/^(irma|irmao)$/, "IRMAO"],
+  [/^(outro parente|parente|av[oó]|net[oa]|ti[oa]|sobrinh[oa]|prim[oa]|sogr[oa]|genro|nora|cunhad[oa])$/, "OUTRO_PARENTE"],
+];
+
+/** "sim", "x" ou "não"; em branco fica sem valor; outra coisa é erro. */
+function simNao(t: string): boolean | null | "INVALIDO" {
+  if (t === "") return null;
+  if (/^(sim|s|x|1|verdadeiro)$/.test(t)) return true;
+  if (/^(nao|n|0|falso)$/.test(t)) return false;
+  return "INVALIDO";
+}
+
+/** "01/03/2025" ou "2025-03-01" viram "2025-03-01". */
+function dataDaPlanilha(t: string): string {
+  const br = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(t);
+  return br ? `${br[3]}-${br[2]!.padStart(2, "0")}-${br[1]!.padStart(2, "0")}` : t;
+}
 
 const RELACOES_TEXTO: [RegExp, RelacaoUnidade][] = [
   [/^(proprietari[oa]|dono|dona|titular)$/, "PROPRIETARIO"],
@@ -316,6 +431,12 @@ export function lerPlanilhaMoradores(texto: string): LeituraPlanilha {
     const valor = (c: keyof LinhaImportacao) => (indices[c] === undefined ? "" : (celulas[indices[c]!] ?? "").trim());
     const textoRelacao = simples(valor("relacao"));
     const relacaoAchada = RELACOES_TEXTO.find(([re]) => re.test(textoRelacao))?.[1];
+    // Sem a coluna parentesco, "filho" ou "esposa" na relação já dizem o parentesco.
+    const acharParentesco = (t: string) => PARENTESCOS_TEXTO.find(([re]) => re.test(t))?.[1];
+    const textoParentesco = simples(valor("parentesco"));
+    const parentesco = textoParentesco
+      ? acharParentesco(textoParentesco) ?? "INVALIDO"
+      : relacaoAchada === "FAMILIAR" ? acharParentesco(textoRelacao) ?? null : null;
     const r = linhaImportacaoSchema.safeParse({
       bloco: valor("bloco") || null,
       andar: valor("andar") || null,
@@ -323,6 +444,10 @@ export function lerPlanilhaMoradores(texto: string): LeituraPlanilha {
       nome: valor("nome"),
       telefone: valor("telefone"),
       relacao: relacaoAchada ?? "INVALIDA",
+      mora: simNao(simples(valor("mora"))),
+      responsavel: simNao(simples(valor("responsavel"))),
+      parentesco,
+      ocupaDesde: valor("ocupaDesde") ? dataDaPlanilha(valor("ocupaDesde")) : null,
     });
     if (r.success) {
       linhas.push(r.data);
@@ -341,7 +466,14 @@ export const TEXTOS_CAMPO_PLANILHA: Record<string, string> = {
   nome: "Nome em branco",
   telefone: "Telefone incompleto: precisa do DDD e do número",
   relacao: "Relação não reconhecida: use proprietário, inquilino, morador, familiar ou outro",
+  mora: "Mora na unidade: use sim ou não",
+  responsavel: "Responsável pela unidade: use sim ou não",
+  parentesco: "Parentesco não reconhecido (cônjuge, filho, pai ou mãe, irmão, outro parente) ou em quem não é familiar",
+  ocupaDesde: "Ocupa desde: use a data no formato 01/03/2025",
 };
 
 /** Modelo de planilha para baixar (separador ";", como o Excel em português salva). */
-export const MODELO_PLANILHA = "Torre;Andar;Unidade;Nome;Telefone;Relação\r\nTorre A;1;101;Maria Exemplo;(61) 99999-0000;Proprietário\r\n";
+export const MODELO_PLANILHA =
+  "Torre;Andar;Unidade;Nome;Telefone;Relação;Mora na unidade;Responsável pela unidade;Parentesco;Ocupa desde\r\n" +
+  "Torre A;1;101;Maria Exemplo;(61) 99999-0000;Proprietário;sim;sim;;\r\n" +
+  "Torre A;1;101;João Exemplo;(61) 99999-0001;Familiar;sim;não;Filho;01/03/2025\r\n";

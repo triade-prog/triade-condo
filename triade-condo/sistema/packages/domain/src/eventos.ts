@@ -20,6 +20,18 @@ const CAMPOS_FICHA: Record<string, string> = {
   contatos: "contatos",
 };
 
+const CAMPOS_VINCULO: Record<string, string> = {
+  relacao: "relação",
+  principal: "responsável",
+  responsavel: "responsável",
+  proprietario: "proprietário",
+  mora: "mora na unidade",
+  ligacao: "ligação",
+  parentesco: "parentesco",
+  ocupa_desde: "ocupa desde",
+  recebe_comunicados: "comunicados",
+};
+
 function nomeDe<T extends Record<string, string>>(lista: T, codigo: unknown): string {
   return typeof codigo === "string" && codigo in lista ? lista[codigo as keyof T]! : String(codigo ?? "");
 }
@@ -126,8 +138,12 @@ export function descreverEvento(e: EventoHistorico): string {
       return "Contato corrigido";
     case "contato.dados_removidos":
       return "Dados pessoais do contato removidos";
-    case "vinculo_unidade.alterado":
-      return "Relação ou preferências do contato alteradas";
+    case "vinculo_unidade.alterado": {
+      const campos = Array.isArray(d.campos) ? d.campos.map((c) => CAMPOS_VINCULO[String(c)] ?? String(c)) : [];
+      return campos.length ? `Vínculo alterado: ${campos.join(", ")}` : "Vínculo alterado";
+    }
+    case "vinculos.convertidos":
+      return `Vínculos passaram a ter proprietário, responsável e mora na unidade (${String(d.quantidade)})`;
     case "mudanca.registrada":
       return `Mudança registrada em ${mostrarDataSemHora(String(d.data))}: ${String(d.saem)} saíram, ${String(d.entram)} entraram`;
     case "moradores.importados":

@@ -1,14 +1,37 @@
-// Parte de moradores e unidades da API falsa da Plataforma (passo 3). As regras de verdade
-// estão testadas no banco (pgTAP 009) e na API (Deno); aqui só o bastante para a tela.
+// Parte de moradores e unidades da API falsa da Plataforma (passos 3 e 3b). As regras de
+// verdade estão testadas no banco (pgTAP 009 e 012) e na API (Deno); aqui só o bastante para a
+// tela. O vínculo guarda as marcações; a relação de antes é calculada delas, como no banco.
 import type { Route } from "@playwright/test";
 
 interface Bloco { id: string; nome: string; ordem: number; ativo: boolean; versao: number }
 interface Unidade { id: string; blocoId: string | null; andar: string | null; identificacao: string; ativa: boolean; versao: number }
 interface Contato { id: string; nome: string | null; telefone: string | null; versao: number }
-interface Vinculo {
-  id: string; contatoId: string; unidadeId: string; relacao: string; principal: boolean; recebeComunicados: boolean;
+interface Marcas { proprietario: boolean; principal: boolean; mora: boolean; ligacao: string | null; parentesco: string | null; ocupaDesde: string | null }
+interface Vinculo extends Marcas {
+  id: string; contatoId: string; unidadeId: string; relacao: string; recebeComunicados: boolean;
   estado: "PENDENTE" | "CONFIRMADO" | "ENCERRADO"; origem: "PAINEL" | "PLANILHA"; criadoEm: string; versao: number;
   motivo?: string; dataSaida?: string | null; encerradoEm?: string;
+}
+
+const MARCAS_DA_RELACAO: Record<string, Pick<Marcas, "proprietario" | "mora" | "ligacao">> = {
+  PROPRIETARIO: { proprietario: true, mora: true, ligacao: null },
+  INQUILINO: { proprietario: false, mora: true, ligacao: "INQUILINO" },
+  MORADOR: { proprietario: false, mora: true, ligacao: "OUTRO" },
+  FAMILIAR: { proprietario: false, mora: true, ligacao: "FAMILIAR" },
+  OUTRO: { proprietario: false, mora: false, ligacao: "OUTRO" },
+};
+
+function relacaoDe(m: Pick<Marcas, "proprietario" | "mora" | "ligacao">): string {
+  return m.proprietario ? "PROPRIETARIO" : m.ligacao === "INQUILINO" || m.ligacao === "FAMILIAR" ? m.ligacao : m.mora ? "MORADOR" : "OUTRO";
+}
+
+/** Marcações vindas da tela, com as regras do banco: devolve o campo errado, se houver. */
+function lerMarcas(c: Record<string, unknown>): Marcas | string {
+  const m: Marcas = { proprietario: c.proprietario === true, principal: c.principal === true, mora: c.mora === true,
+    ligacao: (c.ligacao as string) ?? null, parentesco: (c.parentesco as string) ?? null, ocupaDesde: (c.ocupaDesde as string) ?? null };
+  if (m.proprietario === !!m.ligacao) return "ligacao";
+  if (m.parentesco && m.ligacao !== "FAMILIAR") return "parentesco";
+  return m;
 }
 
 let n = 0;
@@ -46,14 +69,16 @@ export function criarMoradores() {
   const pedro = ct("Pedro Souza", "+5561999990002");
   const joana = ct("Joana Lima", "+5561988887777");
   const paulo = ct("Paulo Lima", "+5561988887777");
-  const v = (contato: Contato, unidadeId: string, relacao: string, estado: "PENDENTE" | "CONFIRMADO", principal = false, origem: "PAINEL" | "PLANILHA" = "PAINEL"): Vinculo =>
-    ({ id: novoId(), contatoId: contato.id, unidadeId, relacao, principal, recebeComunicados: true, estado, origem, criadoEm: "2026-10-16T15:00:00Z", versao: 1 });
+  const v = (contato: Contato, unidadeId: string, relacao: string, estado: "PENDENTE" | "CONFIRMADO", principal = false, origem: "PAINEL" | "PLANILHA" = "PAINEL",
+    ocupaDesde: string | null = null): Vinculo =>
+    ({ id: novoId(), contatoId: contato.id, unidadeId, relacao, ...MARCAS_DA_RELACAO[relacao]!, principal, parentesco: null, ocupaDesde, recebeComunicados: true, estado, origem,
+      criadoEm: "2026-10-16T15:00:00Z", versao: 1 });
   return {
     estrutura: { agrupamento: "TORRE", usaAndar: false, versao: 1 },
     blocos: [torreA, torreB],
     unidades,
     contatos: [marina, pedro, joana, paulo],
-    vinculos: [v(marina, A101, "PROPRIETARIO", "CONFIRMADO", true), v(pedro, A101, "FAMILIAR", "CONFIRMADO"), v(joana, A102, "INQUILINO", "CONFIRMADO", true),
+    vinculos: [v(marina, A101, "PROPRIETARIO", "CONFIRMADO", true), v(pedro, A101, "FAMILIAR", "CONFIRMADO"), v(joana, A102, "INQUILINO", "CONFIRMADO", true, "PAINEL", "2025-03-01"),
       v(paulo, A102, "FAMILIAR", "PENDENTE", false, "PLANILHA")],
     importacoes: [] as unknown[],
   };
@@ -78,8 +103,18 @@ export function resumoMoradores(m: EstadoMoradores) {
 /** Inquilino ativo e nenhum proprietário ativo na unidade (MU-01). */
 function faltaDono(m: EstadoMoradores, unidadeId: string): boolean {
   const ativos = m.vinculos.filter((v) => v.unidadeId === unidadeId && v.estado !== "ENCERRADO");
-  return ativos.some((v) => v.relacao === "INQUILINO") && !ativos.some((v) => v.relacao === "PROPRIETARIO");
+  return ativos.some((v) => v.relacao === "INQUILINO") && !ativos.some((v) => v.proprietario);
 }
+
+/** Ocupação da unidade, igual a ocupacao_unidade() no banco. */
+function ocupacao(ativos: Vinculo[]): string {
+  if (!ativos.length) return "SEM_CADASTRO";
+  if (ativos.some((v) => v.proprietario && v.mora)) return "PROPRIETARIO_MORA";
+  if (ativos.some((v) => v.mora && v.ligacao === "INQUILINO")) return "ALUGADA";
+  return ativos.some((v) => v.mora) ? "CEDIDA" : "VAZIA";
+}
+const naoMora = (ativos: Vinculo[]) => ativos.some((v) => v.proprietario) && !ativos.some((v) => v.proprietario && v.mora);
+const semResponsavel = (ativos: Vinculo[]) => ativos.length > 0 && !ativos.some((v) => v.principal);
 
 /** Atende as rotas do passo 3; devolve null quando a rota não é daqui. */
 export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: string, metodo: string, corpo: Record<string, unknown>, pode: (a: string) => boolean) {
@@ -97,10 +132,10 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
   const mesma = (x: Unidade, blocoId: unknown, andar: unknown, ident: string) =>
     x.ativa && x.blocoId === (blocoId ?? null) && (x.andar ?? "").toLowerCase() === String(andar ?? "").toLowerCase() && x.identificacao.toLowerCase() === ident.toLowerCase();
   const compartilhado = (c: Contato) => m.contatos.some((o) => o.id !== c.id && o.telefone === c.telefone && m.vinculos.some((v) => v.contatoId === o.id && v.estado !== "ENCERRADO"));
-  const ligar = (contatoId: string, unidadeId: string, relacao: string, principal: boolean, recebe: boolean, origem: "PAINEL" | "PLANILHA" = "PAINEL") => {
-    if (principal) for (const v of ativos(unidadeId)) v.principal = false;
-    const v: Vinculo = { id: novoId(), contatoId, unidadeId, relacao, principal, recebeComunicados: recebe, estado: origem === "PAINEL" && confirma ? "CONFIRMADO" : "PENDENTE",
-      origem, criadoEm: "2026-10-16T16:00:00Z", versao: 1 };
+  const ligar = (contatoId: string, unidadeId: string, marcas: Marcas, recebe: boolean, origem: "PAINEL" | "PLANILHA" = "PAINEL") => {
+    if (marcas.principal) for (const v of ativos(unidadeId)) v.principal = false;
+    const v: Vinculo = { id: novoId(), contatoId, unidadeId, relacao: relacaoDe(marcas), ...marcas, recebeComunicados: recebe,
+      estado: origem === "PAINEL" && confirma ? "CONFIRMADO" : "PENDENTE", origem, criadoEm: "2026-10-16T16:00:00Z", versao: 1 };
     m.vinculos.push(v);
     return v;
   };
@@ -115,10 +150,22 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
       unidades: lista.map((x) => ({ ...x,
         confirmados: ativos(x.id).filter((v) => v.estado === "CONFIRMADO").length,
         pendentes: ativos(x.id).filter((v) => v.estado === "PENDENTE").length,
-        temProprietario: ativos(x.id).some((v) => v.relacao === "PROPRIETARIO"),
+        temProprietario: ativos(x.id).some((v) => v.proprietario),
         semProprietario: x.ativa && faltaDono(m, x.id),
-        principal: (() => { const p = ativos(x.id).find((v) => v.principal); return p ? contato(p.contatoId).nome : null; })() })),
-      resumo: resumoMoradores(m), podeEditar: edita, podeConfirmar: confirma,
+        principal: (() => { const p = ativos(x.id).find((v) => v.principal); return p ? contato(p.contatoId).nome : null; })(),
+        principalRelacao: ativos(x.id).find((v) => v.principal)?.relacao ?? null,
+        ocupacao: ocupacao(ativos(x.id)),
+        proprietario: (() => { const p = ativos(x.id).find((v) => v.proprietario); return p ? contato(p.contatoId).nome : null; })(),
+        proprietarioNaoMora: naoMora(ativos(x.id)),
+        semResponsavel: x.ativa && semResponsavel(ativos(x.id)) })),
+      resumo: resumoMoradores(m),
+      ocupacao: ((as) => ({
+        comMorador: as.filter((x) => ["PROPRIETARIO_MORA", "ALUGADA", "CEDIDA"].includes(ocupacao(ativos(x.id)))).length,
+        alugadas: as.filter((x) => ocupacao(ativos(x.id)) === "ALUGADA").length,
+        proprietarioNaoMora: as.filter((x) => naoMora(ativos(x.id))).length,
+        semResponsavel: as.filter((x) => semResponsavel(ativos(x.id))).length,
+      }))(m.unidades.filter((x) => x.ativa)),
+      podeEditar: edita, podeConfirmar: confirma,
     } });
   }
   const un = /^\/v1\/condominio\/unidades\/([^/]+)(?:\/(contatos|mudanca))?$/.exec(caminho);
@@ -131,14 +178,17 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
         contatos: ativos(x.id).sort((a, b) => Number(a.estado === "PENDENTE") - Number(b.estado === "PENDENTE") || Number(b.principal) - Number(a.principal)).map((v) => {
           const c = contato(v.contatoId);
           return { vinculoId: v.id, contatoId: c.id, nome: c.nome, telefone: c.telefone, contatoVersao: c.versao, relacao: v.relacao, principal: v.principal,
+            proprietario: v.proprietario, mora: v.mora, ligacao: v.ligacao, parentesco: v.parentesco, ocupaDesde: v.ocupaDesde,
             recebeComunicados: v.recebeComunicados, estado: v.estado, origem: v.origem, desde: v.criadoEm, versao: v.versao, telefoneCompartilhado: compartilhado(c),
             outrasUnidades: m.vinculos.filter((o) => o.contatoId === c.id && o.unidadeId !== x.id && o.estado !== "ENCERRADO").map((o) => nomeUnidade(unidade(o.unidadeId)!)) };
         }),
         anteriores: m.vinculos.filter((v) => v.unidadeId === x.id && v.estado === "ENCERRADO").map((v) => {
           const c = contato(v.contatoId);
           return { vinculoId: v.id, contatoId: c.id, nome: c.nome, relacao: v.relacao, motivo: v.motivo, dataSaida: v.dataSaida ?? null, encerradoEm: v.encerradoEm,
+            proprietario: v.proprietario, mora: v.mora, ligacao: v.ligacao, parentesco: v.parentesco, ocupaDesde: v.ocupaDesde,
             dadosRemovidos: c.nome === null, contatoVersao: c.versao, semVinculoAtivo: !m.vinculos.some((o) => o.contatoId === c.id && o.estado !== "ENCERRADO") };
         }),
+        ocupacao: { situacao: ocupacao(ativos(x.id)), moram: ativos(x.id).filter((v) => v.mora).length, proprietarioNaoMora: naoMora(ativos(x.id)) },
         faltaProprietario: faltaDono(m, x.id),
         podeEditar: edita, podeConfirmar: confirma,
       } });
@@ -160,8 +210,10 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
         m.contatos.push(novo);
         id = novo.id;
       }
+      const marcas = lerMarcas((corpo.marcas ?? {}) as Record<string, unknown>);
+      if (typeof marcas === "string") return erro(route, 400, "VALIDATION_ERROR", { campos: [marcas] });
       if (ativos(x.id).some((v) => v.contatoId === id)) return erro(route, 400, "VALIDATION_ERROR", { motivo: "CONTATO_JA_NA_UNIDADE" });
-      const pedeDono = corpo.relacao === "INQUILINO" && !ativos(x.id).some((v) => v.relacao === "PROPRIETARIO");
+      const pedeDono = relacaoDe(marcas) === "INQUILINO" && !ativos(x.id).some((v) => v.proprietario);
       const p = corpo.proprietario as { contatoId?: string; nome?: string; telefone?: string } | undefined;
       let dono: string | null = null;
       if (pedeDono) {
@@ -175,26 +227,28 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
           dono = novo.id;
         }
       }
-      const v = ligar(id, x.id, String(corpo.relacao), corpo.principal === true, corpo.recebeComunicados !== false);
-      if (dono) ligar(dono, x.id, "PROPRIETARIO", false, false);
+      const v = ligar(id, x.id, marcas, corpo.recebeComunicados !== false);
+      if (dono) ligar(dono, x.id, { proprietario: true, principal: false, mora: false, ligacao: null, parentesco: null, ocupaDesde: null }, false);
       return route.fulfill({ status: 201, json: { vinculoId: v.id, contatoId: id, proprietarioId: dono, avisos: compartilhado(contato(id)) ? ["TELEFONE_COMPARTILHADO"] : [] } });
     }
     if (un[2] === "mudanca") {
       const saem = corpo.saem as { id: string; versao: number }[];
-      const entram = corpo.entram as { nome: string; telefone: string; relacao: string; principal: boolean; recebeComunicados: boolean }[];
+      const entram = (corpo.entram as (Record<string, unknown> & { nome: string; telefone: string; recebeComunicados: boolean })[])
+        .map((e) => ({ ...e, marcas: lerMarcas({ ...e, ocupaDesde: corpo.data }) }));
       if (!saem.length && !entram.length) return erro(route, 400, "VALIDATION_ERROR", { motivo: "MUDANCA_VAZIA" });
-      if (entram.some((e) => !normalizar(e.telefone) || !e.nome.trim())) return erro(route, 400, "VALIDATION_ERROR", { campos: ["entram"] });
+      if (entram.some((e) => !normalizar(e.telefone) || !e.nome.trim() || typeof e.marcas === "string")) return erro(route, 400, "VALIDATION_ERROR", { campos: ["entram"] });
+      const rel = (e: { marcas: Marcas | string }) => relacaoDe(e.marcas as Marcas);
       const ficam = ativos(x.id).filter((v) => !saem.some((s) => s.id === v.id));
-      const gatilho = entram.some((e) => e.relacao === "INQUILINO") || ativos(x.id).some((v) => saem.some((s) => s.id === v.id) && v.relacao === "PROPRIETARIO");
-      if (gatilho && (ficam.some((v) => v.relacao === "INQUILINO") || entram.some((e) => e.relacao === "INQUILINO"))
-        && !ficam.some((v) => v.relacao === "PROPRIETARIO") && !entram.some((e) => e.relacao === "PROPRIETARIO")) {
+      const gatilho = entram.some((e) => rel(e) === "INQUILINO") || ativos(x.id).some((v) => saem.some((s) => s.id === v.id) && v.proprietario);
+      if (gatilho && (ficam.some((v) => v.relacao === "INQUILINO") || entram.some((e) => rel(e) === "INQUILINO"))
+        && !ficam.some((v) => v.proprietario) && !entram.some((e) => (e.marcas as Marcas).proprietario)) {
         return erro(route, 400, "VALIDATION_ERROR", { motivo: "FALTA_PROPRIETARIO" });
       }
       for (const s of saem) Object.assign(m.vinculos.find((v) => v.id === s.id)!, { estado: "ENCERRADO", principal: false, motivo: "MUDANCA", dataSaida: corpo.data, encerradoEm: "2026-10-16T16:00:00Z" });
       for (const e of entram) {
         const novo = { id: novoId(), nome: e.nome.trim(), telefone: normalizar(e.telefone)!, versao: 1 };
         m.contatos.push(novo);
-        ligar(novo.id, x.id, e.relacao, e.principal, e.recebeComunicados);
+        ligar(novo.id, x.id, e.marcas as Marcas, e.recebeComunicados);
       }
       return route.fulfill({ json: { saem: saem.length, entram: entram.length } });
     }
@@ -273,15 +327,22 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     const c = conflito(v, corpo.versao); if (c) return c;
     if (vu[2]) {
       if (corpo.motivo === "RECUSADO" && !confirma) return erro(route, 403, "FORBIDDEN");
-      Object.assign(v, { estado: "ENCERRADO", principal: false, motivo: corpo.motivo, dataSaida: corpo.dataSaida ?? null, encerradoEm: "2026-10-16T16:00:00Z", versao: v.versao + 1 });
+      if (corpo.motivo !== "RECUSADO" && corpo.dataSaida && v.ocupaDesde && String(corpo.dataSaida) < v.ocupaDesde) {
+        return erro(route, 400, "VALIDATION_ERROR", { campos: ["dataSaida"] });
+      }
+      Object.assign(v, { estado: "ENCERRADO", principal: false, motivo: corpo.motivo, dataSaida: corpo.motivo === "RECUSADO" ? null : corpo.dataSaida ?? null,
+        encerradoEm: "2026-10-16T16:00:00Z", versao: v.versao + 1 });
       return route.fulfill({ json: { ok: true } });
     }
-    if (corpo.principal && !v.principal) for (const o of ativos(v.unidadeId)) o.principal = false;
-    Object.assign(v, { relacao: corpo.relacao, principal: corpo.principal, recebeComunicados: corpo.recebeComunicados, versao: v.versao + 1 });
+    const marcas = lerMarcas((corpo.marcas ?? {}) as Record<string, unknown>);
+    if (typeof marcas === "string") return erro(route, 400, "VALIDATION_ERROR", { campos: [marcas] });
+    if (marcas.principal && !v.principal) for (const o of ativos(v.unidadeId)) o.principal = false;
+    Object.assign(v, marcas, { relacao: relacaoDe(marcas), recebeComunicados: corpo.recebeComunicados, versao: v.versao + 1 });
     return route.fulfill({ json: { versao: v.versao } });
   }
   if (caminho === "/v1/condominio/importacoes") {
-    const linhas = corpo.linhas as { bloco: string | null; andar: string | null; unidade: string; nome: string; telefone: string; relacao: string }[];
+    const linhas = corpo.linhas as { bloco: string | null; andar: string | null; unidade: string; nome: string; telefone: string; relacao: string;
+      mora?: boolean | null; responsavel?: boolean | null; parentesco?: string | null; ocupaDesde?: string | null }[];
     m.importacoes.push(linhas);
     const r = { linhas: linhas.length, blocos: 0, unidades: 0, contatos: 0, vinculos: 0, ignoradas: 0 };
     for (const l of linhas) {
@@ -292,7 +353,12 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
       let c = m.contatos.find((y) => y.telefone === l.telefone && y.nome?.toLowerCase() === l.nome.toLowerCase());
       if (!c) { c = { id: novoId(), nome: l.nome, telefone: l.telefone, versao: 1 }; m.contatos.push(c); r.contatos++; }
       if (ativos(x.id).some((v) => v.contatoId === c!.id)) r.ignoradas++;
-      else { ligar(c.id, x.id, l.relacao, false, true, "PLANILHA"); r.vinculos++; }
+      else {
+        const base = MARCAS_DA_RELACAO[l.relacao]!;
+        ligar(c.id, x.id, { ...base, mora: l.mora ?? base.mora, principal: !!l.responsavel && !ativos(x.id).some((v) => v.principal),
+          parentesco: l.parentesco ?? null, ocupaDesde: l.ocupaDesde ?? null }, true, "PLANILHA");
+        r.vinculos++;
+      }
     }
     if (linhas.some((l) => l.andar)) m.estrutura.usaAndar = true;
     return route.fulfill({ status: 201, json: { ...r, semProprietario: resumoMoradores(m).semProprietario } });

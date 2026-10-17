@@ -100,14 +100,15 @@ test.describe("Plataforma do síndico · passo 3", () => {
     await janela.getByLabel("Unidade").selectOption({ label: "201" });
     await janela.getByLabel("Nome").fill("Helena Prado");
     await janela.getByLabel("Telefone (WhatsApp)").fill("(61) 94444-0001");
-    await janela.getByLabel("Relação com a unidade").selectOption({ label: "Proprietário (condômino)" });
+    // Unidade vazia: a primeira pessoa já vem como proprietária, responsável e moradora (MU-10).
+    for (const marca of ["Proprietário", "Responsável pela unidade", "Mora na unidade"]) await expect(janela.getByRole("checkbox", { name: marca, exact: true })).toBeChecked();
     await conferir(page);
-    await janela.getByRole("button", { name: "Incluir contato" }).click();
+    await janela.getByRole("button", { name: "Incluir pessoa" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Helena Prado incluído em Torre A · 2º andar · 201." })).toBeVisible();
     await expect(page.getByRole("row", { name: /Torre A · 2º andar · 201/ })).toContainText("Helena Prado");
     await page.getByRole("link", { name: "Torre A · 2º andar · 201" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Torre A · 2º andar · 201" })).toBeVisible();
-    await expect(page.getByRole("row", { name: /Helena Prado/ })).toContainText("Proprietário (condômino) · principal");
+    await expect(page.getByRole("row", { name: /Helena Prado/ })).toContainText("Responsável · Proprietário · Mora aqui");
   });
 
   test("MU-01, MU-03 e MU-08: ficha da unidade, telefone compartilhado, confirmar e incluir contato", async ({ page }) => {
@@ -121,18 +122,20 @@ test.describe("Plataforma do síndico · passo 3", () => {
     await expect(page.getByRole("status").filter({ hasText: "Paulo Lima confirmado." })).toBeVisible();
     await expect(page.getByRole("row", { name: /Paulo Lima/ })).toContainText("Confirmado");
 
-    await page.getByRole("button", { name: "+ Contato" }).click();
-    const janela = page.getByRole("dialog", { name: "Incluir contato · Torre A · 102" });
+    await page.getByRole("button", { name: "+ Pessoa" }).click();
+    const janela = page.getByRole("dialog", { name: "Incluir pessoa · Torre A · 102" });
     await janela.getByLabel("Nome").fill("Rita Lima");
     await janela.getByLabel("Telefone (WhatsApp)").fill("9999");
-    await janela.getByLabel("Relação com a unidade").selectOption({ label: "Familiar ou cônjuge" });
-    await janela.getByRole("button", { name: "Incluir contato" }).click();
+    await expect(janela.getByLabel("Ligação com a unidade")).toHaveValue("FAMILIAR");
+    await janela.getByLabel("Parentesco com Joana Lima (responsável)").selectOption({ label: "Filho(a)" });
+    await janela.getByRole("button", { name: "Incluir pessoa" }).click();
     await expect(janela.getByText("Telefone com DDD, como (61) 99999-0000.")).toBeVisible();
     await conferir(page);
     await janela.getByLabel("Telefone (WhatsApp)").fill("(61) 97777-1234");
-    await janela.getByRole("button", { name: "Incluir contato" }).click();
+    await janela.getByRole("button", { name: "Incluir pessoa" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Rita Lima incluído na unidade." })).toBeVisible();
-    await expect(page.getByRole("row", { name: /Rita Lima/ })).toContainText("+55 61 97777-1234");
+    await expect(page.getByRole("row", { name: /Rita Lima/ })).toContainText("Mora aqui");
+    await expect(page.getByRole("row", { name: /Rita Lima/ })).toContainText("familiar: filho(a) · +55 61 97777-1234");
 
     await page.getByRole("button", { name: "Editar Joana Lima" }).click();
     await page.getByRole("dialog", { name: "Editar Joana Lima" }).getByLabel("Recebe comunicados do condomínio").uncheck();
@@ -156,16 +159,18 @@ test.describe("Plataforma do síndico · passo 3", () => {
     await expect(page.getByRole("status").filter({ hasText: "Esta unidade tem inquilino e o proprietário do imóvel não está no cadastro." })).toBeVisible();
     await page.getByRole("button", { name: "Incluir proprietário" }).click();
     const incluir = page.getByRole("dialog", { name: "Incluir proprietário · Torre A · 102" });
-    await expect(incluir.getByLabel("Relação com a unidade")).toHaveValue("PROPRIETARIO");
+    await expect(incluir.getByRole("checkbox", { name: "Proprietário", exact: true })).toBeChecked();
+    await expect(incluir.getByRole("checkbox", { name: "Mora na unidade" })).not.toBeChecked();
     await expect(incluir.getByLabel("Recebe comunicados do condomínio")).not.toBeChecked();
     await incluir.getByRole("button", { name: "Já cadastrada em outra unidade" }).click();
     await incluir.getByLabel("Buscar pelo nome ou telefone").fill("Marina");
     await incluir.getByRole("button", { name: "Buscar" }).click();
     await incluir.getByLabel(/Marina Souza/).check();
     await conferir(page);
-    await incluir.getByRole("button", { name: "Incluir contato" }).click();
+    await incluir.getByRole("button", { name: "Incluir pessoa" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Marina Souza incluído na unidade." })).toBeVisible();
-    await expect(page.getByRole("row", { name: /Marina Souza/ })).toContainText("Proprietário (condômino) · +55 61 99999-0001 · não recebe comunicados");
+    await expect(page.getByRole("row", { name: /Marina Souza/ })).toContainText("não mora aqui · +55 61 99999-0001 · não recebe comunicados");
+    await expect(page.getByText("Alugada · 2 moram aqui · o proprietário não mora")).toBeVisible();
     await expect(page.getByText("Esta unidade tem inquilino e o proprietário")).toHaveCount(0);
 
     await page.goto(`${PLATAFORMA}/moradores`);
@@ -175,7 +180,8 @@ test.describe("Plataforma do síndico · passo 3", () => {
     await janela.getByLabel("Unidade").selectOption({ label: "201" });
     await janela.getByLabel("Nome", { exact: true }).fill("Caio Nunes");
     await janela.getByLabel("Telefone (WhatsApp)", { exact: true }).fill("61966660001");
-    await janela.getByLabel("Relação com a unidade").selectOption({ label: "Inquilino" });
+    await janela.getByRole("checkbox", { name: "Proprietário", exact: true }).uncheck();
+    await expect(janela.getByLabel("Ligação com a unidade")).toHaveValue("INQUILINO");
     const dono = janela.getByRole("group", { name: "Proprietário do imóvel" });
     await expect(dono).toContainText("A unidade ainda não tem proprietário no cadastro.");
     await janela.getByRole("button", { name: "Incluir inquilino e proprietário" }).click();
@@ -189,13 +195,15 @@ test.describe("Plataforma do síndico · passo 3", () => {
     await page.goto(`${PLATAFORMA}/moradores/unidade?id=${A101}`);
     await page.getByRole("button", { name: "Registrar mudança" }).click();
     const mudanca = page.getByRole("dialog", { name: "Registrar mudança · Torre A · 101" });
-    await mudanca.getByLabel("Marina Souza · proprietário (condômino)").check();
+    await mudanca.getByLabel("Marina Souza · proprietário (condômino) · responsável").check();
     await mudanca.getByLabel("Pedro Souza · familiar ou cônjuge").check();
     await mudanca.getByLabel("Nome da pessoa 1").fill("Lia Reis");
     await mudanca.getByLabel("Telefone da pessoa 1").fill("61977770002");
     await expect(mudanca.getByRole("status").filter({ hasText: "A unidade vai ficar com inquilino e sem proprietário." })).toBeVisible();
     await mudanca.getByRole("button", { name: "+ Proprietário" }).click();
-    await expect(mudanca.getByLabel("Relação da pessoa 2")).toHaveValue("PROPRIETARIO");
+    const pessoa2 = mudanca.getByRole("group", { name: "A pessoa 2 é" });
+    await expect(pessoa2.getByRole("checkbox", { name: "Proprietário", exact: true })).toBeChecked();
+    await expect(pessoa2.getByRole("checkbox", { name: "Mora na unidade" })).not.toBeChecked();
     await mudanca.getByLabel("Nome da pessoa 2").fill("Rui Alves");
     await mudanca.getByLabel("Telefone da pessoa 2").fill("61977770001");
     await expect(mudanca.getByText("A unidade vai ficar com inquilino e sem proprietário.")).toHaveCount(0);
@@ -218,10 +226,11 @@ test.describe("Plataforma do síndico · passo 3", () => {
     await conferir(page);
     await janela.getByRole("button", { name: "Registrar mudança" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Mudança registrada: 1 saiu, 1 entrou." })).toBeVisible();
-    await expect(page.getByRole("row", { name: /Caio Nunes/ })).toContainText("Inquilino · principal");
+    await expect(page.getByRole("row", { name: /Caio Nunes/ })).toContainText("Responsável · Mora aqui");
+    await expect(page.getByRole("row", { name: /Caio Nunes/ })).toContainText(/inquilino · desde \d{2}\/\d{2}\/\d{4}/);
     const anteriores = page.getByRole("region", { name: "Anteriores" });
     await expect(anteriores).toContainText("Pedro Souza");
-    await expect(anteriores).toContainText("mudou-se em");
+    await expect(anteriores).toContainText(/saiu em \d{2}\/\d{2}\/\d{4} · mudou-se/);
 
     await anteriores.getByRole("button", { name: "Remover os dados de Pedro Souza" }).click();
     await page.getByRole("dialog", { name: "Remover os dados de Pedro Souza" }).getByRole("button", { name: "Remover dados" }).click();
@@ -236,7 +245,7 @@ test.describe("Plataforma do síndico · passo 3", () => {
     const m = estado.moradores;
     m.contatos.push({ id: "8b9c0d1e-2f3a-4b4c-9d5e-c00000000001", nome: "Padaria Sol", telefone: "+556133330000", versao: 1 });
     m.vinculos.push({ id: "8b9c0d1e-2f3a-4b4c-9d5e-d00000000001", contatoId: "8b9c0d1e-2f3a-4b4c-9d5e-c00000000001", unidadeId: m.unidades[4]!.id,
-      relacao: "OUTRO", principal: false, recebeComunicados: true, estado: "PENDENTE", origem: "PLANILHA", criadoEm: "2026-10-16T15:00:00Z", versao: 1 });
+      relacao: "OUTRO", proprietario: false, mora: false, ligacao: "OUTRO", parentesco: null, ocupaDesde: null, principal: false, recebeComunicados: true, estado: "PENDENTE", origem: "PLANILHA", criadoEm: "2026-10-16T15:00:00Z", versao: 1 });
     await page.goto(`${PLATAFORMA}/moradores?aba=confirmar`);
     await expect(page.getByRole("tab", { name: "A confirmar (2)", selected: true })).toBeVisible();
     await expect(page.getByRole("status").filter({ hasText: "Contato a confirmar não recebe nada e não acessa nada." })).toBeVisible();
@@ -280,11 +289,11 @@ test.describe("Plataforma do síndico · passo 3", () => {
     await expect(page.getByRole("button", { name: /Recusar/ })).toHaveCount(0);
     await conferir(page);
     await page.goto(`${PLATAFORMA}/moradores/unidade?id=${A101}`);
-    await page.getByRole("button", { name: "+ Contato" }).click();
-    const janela = page.getByRole("dialog", { name: "Incluir contato · Torre A · 101" });
+    await page.getByRole("button", { name: "+ Pessoa" }).click();
+    const janela = page.getByRole("dialog", { name: "Incluir pessoa · Torre A · 101" });
     await janela.getByLabel("Nome").fill("Teo Dias");
     await janela.getByLabel("Telefone (WhatsApp)").fill("61955550001");
-    await janela.getByRole("button", { name: "Incluir contato" }).click();
+    await janela.getByRole("button", { name: "Incluir pessoa" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Teo Dias incluído na unidade. Fica a confirmar pelo síndico." })).toBeVisible();
     await expect(page.getByRole("row", { name: /Teo Dias/ })).toContainText("A confirmar");
     await expect(page.getByRole("button", { name: "Confirmar Teo Dias" })).toHaveCount(0);

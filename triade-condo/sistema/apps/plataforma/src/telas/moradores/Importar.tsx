@@ -93,7 +93,8 @@ export function Importar() {
         <h1 className="text-2xl font-semibold tracking-tight">Importar planilha</h1>
         <p className="mt-1 text-tinta-suave">
           A lista de moradores e proprietários da administradora, salva como CSV no Excel ou no Google Planilhas. Colunas: torre ou bloco (opcional), andar
-          (opcional), unidade, nome, telefone e relação (opcional). Os nomes mais comuns são reconhecidos: torre, bloco, quadra, andar, pavimento, apto, celular, tipo.
+          (opcional), unidade, nome, telefone e relação (opcional). Também opcionais: mora na unidade e responsável pela unidade (sim ou não), parentesco e
+          ocupa desde. Os nomes mais comuns são reconhecidos: torre, bloco, quadra, andar, pavimento, apto, celular, tipo.
         </p>
       </div>
       <Passos atual={passo} />

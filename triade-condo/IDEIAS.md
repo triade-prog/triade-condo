@@ -60,6 +60,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | W-18 | Ligação telefônica ou voz como canal complementar (Latchel, Vendoroo, Condo Control). Também e-mail e SMS como canais complementares (Nextin, iSindi) | [A] [INT] |
 | W-19 | Respostas em vários idiomas para moradores estrangeiros (Fixflo: 40+ idiomas) | [INT] |
 | W-20 | Respeitar a janela de 24h e os modelos aprovados nas mensagens iniciadas pelo condomínio; a janela técnica não é prazo de atendimento | [A] |
+| W-21 | **Aviso fixo contra golpes**: no painel e nas boas-vindas do WhatsApp, lembrar que o condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem, e dizer como conferir um contato suspeito (SeuCondomínio) | [BR] |
 
 ---
 
@@ -127,6 +128,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | IA-18 | Responder moradores dentro do grupo de WhatsApp quando mencionado, segundo regras do síndico (Seu Síndico IA) | [BR] |
 | IA-19 | Classificar o pedido automaticamente a partir da mensagem (gateway de IA, MeuSíndico.IA) | [BR] |
 | IA-20 | IA conversa com o morador para completar a descrição e pedir foto antes de registrar o pedido (Vendoroo) | [INT] |
+| IA-21 | **Ajuda de cada tela**: texto curto sobre o que a tela faz e como usar, aberto por um botão na própria tela. O mesmo texto alimenta o assistente que tira dúvidas do síndico e é atualizado na mesma entrega que muda a tela (SeuCondomínio) | [BR] |
 
 ---
 
@@ -179,6 +181,9 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | MU-06 | Família, veículos e pets no cadastro (Gruvi) | [BR] |
 | MU-07 | Mudança de morador: entrada e saída com revogação do vínculo | [A] |
 | MU-08 | Múltiplos contatos autorizados por unidade (titular, cônjuge, inquilino), com preferências e revogação | [A] |
+| MU-09 | **Link de cadastro de morador**: o síndico gera um link com validade, para uma unidade fixa ou para a pessoa escolher a dela, e decide quais campos pedir. O que chega vai para uma fila de cadastros pendentes, onde o síndico aprova, corrige antes de aprovar ou recusa com motivo; nada vale antes da aprovação (MU-02) (SeuCondomínio) | [BR] |
+| MU-10 | **Vínculo detalhado**: marcações independentes de proprietário, responsável pela unidade e morador (a mesma pessoa pode ter as três), parentesco e período de ocupação (ocupa desde, ocupou até). Em branco, a pessoa sempre ocupou a unidade; com data de entrada, ela deixa de ver o histórico de quem ocupava antes. Permite contar as unidades em que o proprietário não mora (SeuCondomínio) | [BR] |
+| MU-11 | **Lista de unidades com resumo**: contadores no topo (unidades, ocupadas, com inquilino, proprietário não mora, cadastros pendentes), etiquetas à venda e à locação, busca por nome, telefone, placa e etiqueta, e um menu por unidade com garagens, histórico, link de cadastro, pendentes e aniversariantes (SeuCondomínio) | [BR] |
 
 ---
 
@@ -217,6 +222,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | AG-06 | Lembretes pelo WhatsApp a quem participa. Só para destinatários autorizados; cancelar ou reagendar atualiza o lembrete sem duplicar mensagem; falha de envio fica visível | [A] |
 | AG-07 | Morador recebe só o que lhe diz respeito (ex.: visita no apartamento dele). Aviso de visita não autoriza entrada; o morador não vê a agenda geral; compromissos internos da TRÍADE não aparecem ao condomínio | [A] |
 | AG-08 | Agenda independente do atendimento: o próximo retorno não depende dela, a previsão de solução não vira evento sozinha, pendência sem data nunca aparece como compromisso; separar data pretendida, combinada e realizada; datas divergentes entre agenda e pedido são sinalizadas | [A] |
+| AG-09 | **Agenda que reúne datas de outras telas**: feriados, reservas, votações e vencimentos de contratos e documentos aparecem junto dos compromissos. Cada data respeita a permissão da tela de origem, as fontes sensíveis vêm marcadas e o filtro escolhido fica guardado (SeuCondomínio) | [BR] |
 
 ---
 
@@ -282,6 +288,8 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | AC-03 | Enquetes e pesquisas com moradores | [BR] [INT] |
 | AC-04 | Marketplace de serviços para o morador: internet, energia, serviços residenciais (Gruvi, Aptner) | [BR] [INT] |
 | AC-05 | Classificados entre moradores (SindIA) | [BR] |
+| AC-06 | Limite de reservas por unidade e por período (ex.: duas por mês na churrasqueira), com tolerância configurável e aviso claro quando o limite foi atingido (SeuCondomínio) | [BR] |
+| AC-07 | **Áreas comuns já cadastradas**: os tipos comuns (salão de festas, churrasqueira, quadra, academia) vêm prontos, com regras sugeridas de aprovação, antecedência, horário, capacidade e limite, para o síndico só ajustar e ativar (SeuCondomínio) | [BR] |
 
 ---
 
@@ -298,6 +306,8 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | TR-07 | Distinguir "sem dados" de zero | [A] |
 | TR-08 | Exportação respeitando permissões | [A] |
 | TR-09 | Health score do condomínio (MeuSíndico.IA) | [BR] |
+| TR-10 | **Dossiê do mês**: PDF montado pelo síndico com os relatórios escolhidos, anexos, texto livre e um resumo, guardado como modelo para os meses seguintes. Serve de base para TR-02, DR-20 e CT-02 (SeuCondomínio) | [BR] |
+| TR-11 | **Início com "agora" e "mês fechado" separados**: os cartões do que está acontecendo (pedidos abertos, retornos vencendo) ficam separados dos números do mês anterior. Cada cartão abre a lista de onde veio e só aparece para quem tem permissão nela (SeuCondomínio) | [BR] |
 
 ---
 
@@ -335,6 +345,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | PI-17 | Suporte técnico da plataforma separado do atendimento operacional (do síndico ou da equipe contratada), cada um com responsáveis e cobertura. Suporte técnico não é reparo nem canal de emergência; o morador sabe com clareza quem responde, sem "empurra-empurra" entre sistema e administração (Condomob) | [A] |
 | PI-18 | Recuperação administrativa de emergência: suplente designado e códigos de recuperação guardados fora do painel, com uso registrado; cobre a perda do único administrador | [A] |
 | PI-19 | Ao liberar um conjunto, prévia do que o síndico daquele condomínio passará a ter | [A] |
+| PI-20 | **Abrir chamado de suporte** pela plataforma: tipo (dúvida, problema ou sugestão), área do sistema, título, descrição e print ou vídeo, com imagem colada direto (Ctrl+V). A IA revisa o texto antes do envio, para que chegue claro e completo. Segue a separação do PI-17 (SeuCondomínio) | [BR] |
 
 ---
 
@@ -380,6 +391,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | NG-18 | Nível de suporte conforme o plano: e-mail, chat, gerente dedicado; suporte prioritário para administradoras (HabitaOne, Seu Síndico IA) | [BR] |
 | NG-19 | Modelo misto: mensalidade fixa + valor por unidade (Fixflo £0,40/unidade + £50/mês); plantão cobrado por porta (Vendoroo) | [INT] |
 | NG-20 | Indicação por morador como canal de aquisição (uCondo) | [BR] |
+| NG-21 | **Tela "Meu plano"** para o síndico: o que está contratado, quais telas cada conjunto traz e o teste grátis de cada conjunto, sem esconder o que não está liberado (NG-01, NG-06) (SeuCondomínio) | [BR] |
 
 ---
 
@@ -469,28 +481,28 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | Seção | Ideias |
 |---|---|
 | 1. Visão e pessoas | 17 |
-| 2. Canal WhatsApp | 20 |
+| 2. Canal WhatsApp | 21 |
 | 3. Atendimento | 33 |
-| 4. Inteligência artificial | 20 |
+| 4. Inteligência artificial | 21 |
 | 5. Comunicados e documentos | 11 |
 | 6. Configuração e ficha | 12 |
-| 7. Moradores e unidades | 8 |
+| 7. Moradores e unidades | 11 |
 | 8. Manutenção e prédio | 16 |
-| 9. Agenda | 8 |
+| 9. Agenda | 9 |
 | 10. Orçamentos e compras | 10 |
 | 11. Financeiro do condomínio | 11 |
 | 12. Portaria, acesso, encomendas | 11 |
-| 13. Áreas comuns e vida em condomínio | 5 |
-| 14. Transparência e indicadores | 9 |
+| 13. Áreas comuns e vida em condomínio | 7 |
+| 14. Transparência e indicadores | 11 |
 | 15. Continuidade e troca de síndico | 4 |
-| 16. Painel interno TRÍADE | 19 |
+| 16. Painel interno TRÍADE | 20 |
 | 17. Serviços humanos | 11 |
-| 18. Negócio, planos e preço | 20 |
+| 18. Negócio, planos e preço | 21 |
 | 19. Empresa e marca | 8 |
 | 20. Princípios técnicos | 18 |
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
-| **Total** | **296** |
+| **Total** | **308** |
 
 ---
 
@@ -591,3 +603,12 @@ Conferência das seções depois das 22 ideias novas e dos complementos.
 
 Renumeração para manter a sequência sem buracos: W-18→W-17 (canal alternativo), W-19→W-18 (ligação, e-mail e SMS), W-20→W-19 (vários idiomas), W-21→W-20 (janela de 24h).
 
+---
+
+## Ideias vistas no SeuCondomínio (17/10/2026)
+
+Fontes: páginas salvas do sistema SeuCondomínio (menu, ajuda de cada tela, painel, agenda, plano) e prints de telas por dentro. Só as ideias vieram para cá; nada do material foi guardado no repositório.
+
+**12 ideias novas:** W-21 (aviso fixo contra golpes), IA-21 (ajuda de cada tela, que também alimenta o assistente), MU-09 (link de cadastro com fila de pendentes), MU-10 (vínculo detalhado com período de ocupação), MU-11 (lista de unidades com resumo), AG-09 (agenda que reúne datas de outras telas), AC-06 (limite de reservas por unidade), AC-07 (áreas comuns já cadastradas), TR-10 (dossiê do mês), TR-11 (início com agora e mês fechado separados), PI-20 (abrir chamado de suporte), NG-21 (tela Meu plano).
+
+**Ficaram de fora:** cobrança da reserva por Pix e etiqueta de inadimplente na lista de unidades (a TRÍADE não lida com o dinheiro do condomínio nesta fase); hospedagem e TV no elevador (muito específicos); exclusão definitiva de visitantes (aqui o histórico fica, PT-03).

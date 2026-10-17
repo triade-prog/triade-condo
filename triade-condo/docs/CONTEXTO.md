@@ -7,7 +7,7 @@ Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atuali
 | O quê | Onde |
 |---|---|
 | O que é a TRÍADE Condo (público, ideais, mercado, glossário) | `triade-condo/SOBRE.md` |
-| Todas as ideias (296), com código por seção | `triade-condo/IDEIAS.md` |
+| Todas as ideias (308), com código por seção | `triade-condo/IDEIAS.md` |
 | Onde cada ideia entra no sistema real (sistema, peça e forma) | `triade-condo/MAPA.md` e a versão visual `triade-condo/mapa.html` |
 | Transparência do dinheiro (pesquisa e regras de tom) | `triade-condo/transparencia-do-dinheiro.md` |
 | Painel de execução (fases, entregas, testes, publicação, dependências, decisões, histórico) | `triade-condo/docs/painel-execucao.html` |
@@ -76,8 +76,8 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 **15/10/2026.** A fase de ideias terminou e a de construção foi liberada.
 
 - O planejamento antigo foi arquivado em `arquivo/` e a pasta `triade-condo/` foi criada como o lugar onde nasce o sistema.
-- O `IDEIAS.md` reúne 296 ideias em 22 seções. Elas foram conferidas contra todos os documentos do arquivo e contra as pesquisas brasileira e internacional. A classificação foi revisada duas vezes.
-- O `MAPA.md` e o `mapa.html` distribuem as 296 ideias em 35 peças, com o índice de códigos:
+- O `IDEIAS.md` reúne 308 ideias em 22 seções. Elas foram conferidas contra todos os documentos do arquivo e contra as pesquisas brasileira e internacional. A classificação foi revisada duas vezes.
+- O `MAPA.md` e o `mapa.html` distribuem as 308 ideias em 35 peças, com o índice de códigos:
   - Plataforma do síndico: 189 ideias.
   - Console TRÍADE: 37.
   - Base comum: 36.
@@ -194,8 +194,9 @@ Passo 4b (F4.8), fotos e documentos dos pedidos, aprovado e construído em 17/10
 **Próximo passo:**
 
 1. Testar os pedidos com um condomínio de verdade (E8). A produção da Vercel sai do `main` (PR 3 e PR 4 juntados).
-2. Passo 4b (F4.8) no `triade-condo-dev` (0100 aplicada, `api-plataforma` versão 6): falta juntar a branch ao `main` para as telas chegarem ao site e conferir um envio de verdade.
-3. Com a Carolina, liberar o CI (F0.9).
+2. Passo 4b (F4.8) juntado ao `main` (PR 5): conferir um envio de verdade num pedido do Águas Claras.
+3. Passo 3b (F3.6) construído: a 0110 e a `api-plataforma` versão 7 já estão no `triade-condo-dev`; falta juntar a branch ao `main` para as telas chegarem ao site.
+4. Com a Carolina, liberar o CI (F0.9).
 
 ## Como trabalhar
 

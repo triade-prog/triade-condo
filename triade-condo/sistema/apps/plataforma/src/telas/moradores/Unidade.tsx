@@ -1,7 +1,8 @@
 "use client";
-// Ficha da unidade (MU-01, MU-03, MU-04, MU-07, MU-08): os contatos ativos, com relação,
-// telefone, principal e comunicados; confirmar ou recusar o que está a confirmar; a mudança;
-// quem saiu, com o motivo e a data, e a remoção dos dados pessoais de quem saiu (PT-11).
+// Ficha da unidade (MU-01, MU-03, MU-04, MU-07, MU-08, MU-10): a ocupação da unidade e as
+// pessoas ativas, com as marcações (responsável, proprietário, mora aqui), a ligação, o
+// parentesco, desde quando ocupam, o telefone e os comunicados; confirmar ou recusar o que está a confirmar; a mudança;
+// quem saiu, com o período de ocupação e o motivo, e a remoção dos dados pessoais de quem saiu (PT-11).
 // Unidade com inquilino e sem proprietário no cadastro pede o proprietário (MU-01).
 
 import Link from "next/link";
@@ -12,7 +13,8 @@ import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Selo, textoDoErro, V
 import { Janela } from "../Janela.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { ContatoAnterior, ContatoDaUnidade, Recado, UnidadeDetalhe } from "../tipos.ts";
-import { nomeMotivo, nomeRelacao, SeloEstado } from "./comum.tsx";
+import { nomeMotivo, SeloEstado } from "./comum.tsx";
+import { descreverVinculo, LinhaOcupacao } from "./Vinculo.tsx";
 import { EditarContato, EditarUnidade, Encerrar, IncluirContato, RegistrarMudanca } from "./JanelasUnidade.tsx";
 
 type JanelaAberta =
@@ -23,13 +25,18 @@ type JanelaAberta =
 
 function detalhes(c: ContatoDaUnidade): string {
   return [
-    nomeRelacao(c.relacao),
-    c.principal ? "principal" : null,
+    ...descreverVinculo(c).resto,
     mostrarTelefone(c.telefone),
     c.recebeComunicados ? "recebe comunicados" : "não recebe comunicados",
     c.origem === "PLANILHA" ? "veio da planilha" : null,
     c.outrasUnidades.length ? `também em ${c.outrasUnidades.join(", ")}` : null,
   ].filter(Boolean).join(" · ");
+}
+
+/** "ocupou de 10/01/2023 a 28/02/2025"; sem entrada, "saiu em 28/02/2025". */
+function periodo(a: ContatoAnterior): string {
+  const saida = a.dataSaida ? mostrarDataSemHora(a.dataSaida) : formatarData(a.encerradoEm);
+  return a.ocupaDesde ? `ocupou de ${mostrarDataSemHora(a.ocupaDesde)} a ${saida}` : `saiu em ${saida}`;
 }
 
 export function Unidade() {
@@ -69,7 +76,7 @@ export function Unidade() {
           <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
             {nome}{u.ativa ? null : <Selo tom="neutro" marca="inativo">Desativada</Selo>}
           </h1>
-          <p className="mt-1 text-tinta-suave">Quem fala por esta unidade. Só o contato confirmado vale.</p>
+          <p className="mt-1 text-tinta-suave">Quem fala por esta unidade. Só a pessoa confirmada vale.</p>
         </div>
         {d.podeEditar ? (
           <div className="flex flex-wrap gap-2">
@@ -77,12 +84,13 @@ export function Unidade() {
             {u.ativa ? (
               <>
                 <Botao variante="secundario" onClick={() => setJanela({ tipo: "mudanca" })}>Registrar mudança</Botao>
-                <Botao onClick={() => setJanela({ tipo: "incluir" })}>+ Contato</Botao>
+                <Botao onClick={() => setJanela({ tipo: "incluir" })}>+ Pessoa</Botao>
               </>
             ) : null}
           </div>
         ) : null}
       </div>
+      <LinhaOcupacao ocupacao={d.ocupacao} />
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
       {falha ? <Aviso tom="erro">{falha}</Aviso> : null}
       {d.faltaProprietario ? (
@@ -95,16 +103,16 @@ export function Unidade() {
       ) : null}
 
       {d.contatos.length === 0 ? (
-        <Vazio titulo="Nenhum contato nesta unidade" acao={edita ? <Botao onClick={() => setJanela({ tipo: "incluir" })}>+ Contato</Botao> : undefined}>
+        <Vazio titulo="Ninguém cadastrado nesta unidade" acao={edita ? <Botao onClick={() => setJanela({ tipo: "incluir" })}>+ Pessoa</Botao> : undefined}>
           Inclua quem mora ou responde pela unidade: proprietário, inquilino, familiar.
         </Vazio>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-linha">
           <table className="w-full text-sm">
-            <caption className="sr-only">Contatos de {nome}</caption>
+            <caption className="sr-only">Pessoas de {nome}</caption>
             <thead className="bg-superficie-2 text-left text-tinta-suave">
               <tr>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Contato</th>
+                <th scope="col" className="px-4 py-2.5 font-semibold">Pessoa</th>
                 <th scope="col" className="px-4 py-2.5 font-semibold">Situação</th>
                 {d.podeEditar || d.podeConfirmar ? <th scope="col" className="px-4 py-2.5"><span className="sr-only">Ações</span></th> : null}
               </tr>
@@ -114,6 +122,7 @@ export function Unidade() {
                 <tr key={c.vinculoId} className="border-t border-linha align-top">
                   <td className="min-w-52 px-4 py-3">
                     <span className="font-medium">{c.nome}</span>
+                    {descreverVinculo(c).marcas ? <span className="block text-xs font-semibold">{descreverVinculo(c).marcas}</span> : null}
                     <span className="block text-xs text-tinta-suave">{detalhes(c)}</span>
                   </td>
                   <td className="px-4 py-3"><SeloEstado estado={c.estado} /></td>
@@ -155,7 +164,8 @@ export function Unidade() {
                 <span>
                   <span className="font-medium">{a.dadosRemovidos ? "Dados removidos" : a.nome}</span>
                   <span className="block text-xs text-tinta-suave">
-                    {nomeRelacao(a.relacao)} · {nomeMotivo(a.motivo).toLowerCase()} em {a.dataSaida ? mostrarDataSemHora(a.dataSaida) : formatarData(a.encerradoEm)}
+                    {[descreverVinculo(a).marcas, ...descreverVinculo({ ...a, ocupaDesde: null }).resto].filter(Boolean).join(" · ")}
+                    {" · "}{periodo(a)} · {nomeMotivo(a.motivo).toLowerCase()}
                   </span>
                 </span>
                 {d.podeEditar && a.semVinculoAtivo && !a.dadosRemovidos ? (
@@ -171,7 +181,8 @@ export function Unidade() {
       <IncluirContato aberto={janela?.tipo === "incluir"} unidade={d} relacaoInicial={janela?.tipo === "incluir" ? janela.relacao : undefined} aoFechar={fechar} salvo={salvo} />
       <RegistrarMudanca aberto={janela?.tipo === "mudanca"} unidade={d} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
       <EditarUnidade aberto={janela?.tipo === "unidade"} unidade={d} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
-      <EditarContato contato={janela?.tipo === "editar" ? janela.contato : null} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
+      <EditarContato contato={janela?.tipo === "editar" ? janela.contato : null} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar}
+        responsavel={((r) => (r ? { nome: r.nome, mora: r.mora } : null))(d.contatos.find((c) => c.principal))} />
       <Encerrar contato={janela?.tipo === "encerrar" ? janela.contato : null} nomeUnidade={nome} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
       <Janela aberto={janela?.tipo === "recusar"} titulo={janela?.tipo === "recusar" ? `Recusar ${janela.contato.nome}` : "Recusar"} campos={[]} iniciais={{}}
         textoBotao="Recusar contato" explicacao={`Esta pessoa não vai falar por ${nome}. A recusa fica registrada no histórico.`}
