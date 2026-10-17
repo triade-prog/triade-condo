@@ -82,21 +82,32 @@ h3.sub{font-size:20px;font-weight:500;margin:36px 0 12px}
 .pasta small{font-size:13px;color:var(--texto-suave)}
 .pasta:hover .capa{border-color:var(--v300);box-shadow:var(--s1)}
 
+/* Neutros e significado: cartão com borda em degradê, como o botão secundário. */
+.cores-b{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));margin-bottom:18px}
+.cor{border:1.5px solid transparent;border-radius:18px;padding:12px;display:grid;gap:10px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,var(--b1,#A16DE5),var(--b2,#FFB96A)) border-box}
+.cor .tinta{height:64px;border-radius:12px;position:relative;box-shadow:inset 0 1px 0 #ffffff59,inset 0 0 0 1px #1e15310f}
+.cor .tinta span{font-style:normal;position:absolute;right:8px;top:8px;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#ffffffd9;color:var(--n900)}
+.cor b{display:block;font-weight:500;font-size:14px;line-height:1.3}
+.cor code{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--texto-suave)}
+.cor .par{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.cor .amostra{position:relative;overflow:hidden;display:inline-flex;align-items:center;font-size:12.5px;font-weight:500;padding:3px 10px 3px 12px;border-radius:7px;border:1px solid var(--tb);color:var(--t);background:linear-gradient(180deg,#fff -40%,var(--tf))}
+.cor .amostra::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx)}
+
 /* Ícones */
 .ic{width:20px;height:20px;flex-shrink:0}
 svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 
 /* Cores */
 .escala{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));margin-bottom:18px}
-.am{border:1px solid var(--linha);border-radius:14px;overflow:hidden;background:#fff}
-.am i{display:block;height:84px;position:relative}
-.am i span{position:absolute;right:8px;top:8px;font-style:normal;font-size:11px;font-weight:500}
-.am div{padding:8px 10px;font-size:13px}
+.am{border:1.5px solid transparent;border-radius:18px;padding:10px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box}
+.am i{display:block;height:72px;position:relative;border-radius:12px;box-shadow:inset 0 1px 0 #ffffff59,inset 0 0 0 1px #1e15310f}
+.am i span{position:absolute;right:8px;top:8px;font-style:normal;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#ffffffd9;color:var(--n900)}
+.am div{padding:8px 2px 0;font-size:13px}
 .am b{display:block;font-weight:500}
 .am code{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--texto-suave)}
 .tokens{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
-.tok{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--linha);border-radius:14px;padding:10px}
-.tok i{width:52px;height:52px;border-radius:10px;flex-shrink:0;border:1px solid var(--linha)}
+.tok{display:flex;gap:12px;align-items:center;border:1.5px solid transparent;border-radius:18px;padding:10px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box}
+.tok i{width:52px;height:52px;border-radius:12px;flex-shrink:0;box-shadow:inset 0 1px 0 #ffffff59,inset 0 0 0 1px #1e15311a}
 .tok b{display:block;font-weight:500;font-size:14px}
 .tok small{font-size:13px;color:var(--texto-suave)}
 
@@ -185,9 +196,9 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
 .entrada .ph{color:#8A8296}
 .entrada.hover{border-color:var(--n500)}
 .entrada.ativo{border-color:var(--v600);box-shadow:0 0 0 4px #5808cc1f;background:#fff}
-.entrada.erro{border-color:var(--er);box-shadow:0 0 0 4px #b91c1c14}
-.entrada.alerta{border-color:#D99B1E}
-.entrada.certo{border-color:#2F9E5B}
+.entrada.erro{border-color:var(--er);box-shadow:0 0 0 4px #bc14501a}
+.entrada.alerta{border-color:var(--at)}
+.entrada.certo{border-color:var(--ok)}
 .entrada.desab{border-color:transparent}
 .dica{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--texto-suave)}
 .dica .ic{width:14px;height:14px}
@@ -228,7 +239,7 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
 .chave.on{background:var(--v600)}.chave.on::after{left:21px}
 
 .av{width:34px;height:34px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:600;flex-shrink:0;border:2px solid #fff}
-.av1{background:var(--v100);color:var(--v700)}.av2{background:var(--l100);color:var(--l800)}.av3{background:var(--ok-f);color:var(--ok)}.av4{background:var(--in-f);color:var(--in)}.av5{background:#FCE7F3;color:#9D174D}
+.av1{background:var(--v100);color:var(--v700)}.av2{background:var(--l100);color:var(--l800)}.av3{background:var(--ok-f);color:var(--ok)}.av4{background:var(--in-f);color:var(--in)}.av5{background:var(--er-f);color:var(--er)}
 .pilha{display:inline-flex}.pilha .av{margin-left:-8px}.pilha .av:first-child{margin-left:0}
 .pilha .mais{background:var(--n100);color:var(--n700)}
 
@@ -260,7 +271,7 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
 .dias .fer{color:var(--l700);text-decoration:underline dotted;text-underline-offset:3px}
 .cal .pe{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
 
-/* Lateral com vida (referência Lattice), em claro. */
+/* Lateral com vida, em claro. */
 .lat{width:260px;background:#fff;border:1px solid var(--linha);border-radius:18px;padding:12px;display:grid;gap:2px;box-shadow:var(--s1)}
 .it{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:12px;font-size:15px;color:var(--texto);text-decoration:none;position:relative}
 .it .ic{color:var(--n600)}
@@ -529,7 +540,7 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
 
 <!-- Cores -->
 <section class="parte" id="cores" aria-labelledby="t-cores">
-  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-cores">Cores</h2><p>Duas famílias de marca, violeta (principal) e laranja (acento), uma de neutros levemente violeta e quatro de significado afinadas com o violeta: verde azulado, mel, framboesa e índigo, sempre em fundo claro com o tom forte só no ícone, na palavra e na borda. Cada amostra mostra o contraste com o texto que vai em cima dela (tinta nas claras, branco nas escuras): AA a partir de 4,5 : 1, AAA a partir de 7 : 1.</p></div>
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-cores">Cores</h2><p>Duas famílias de marca, violeta (principal) e laranja (acento), uma de neutros com um toque de lavanda e quatro de significado em tom de joia: jade, âmbar, rubi e petróleo, sempre em fundo claro com o tom forte só no ícone, na palavra e na borda. Cada amostra mostra o contraste com o texto que vai em cima dela (tinta nas claras, branco nas escuras): AA a partir de 4,5 : 1, AAA a partir de 7 : 1.</p></div>
   <h3 class="sub" style="margin-top:0">Violeta · marca</h3>
   <div class="escala">
     <div class="am"><i style="background:#F8F3FF"><span>AAA 15,3</span></i><div><b>50</b><code>#F8F3FF</code></div></div>
@@ -553,31 +564,33 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
   </div>
   <p class="nota">* O laranja 500 só leva texto em violeta profundo (7,21 : 1). O laranja é acento: aparece em pouco espaço (contagem, marcador, trilha) e nunca como botão nem como situação. Os tons escuros saíram da escala porque ficavam marrons e brigavam com o violeta; só o 800 fica, para texto sobre laranja claro.</p>
   <h3 class="sub">Neutros e significado</h3>
-  <p class="nota">Paleta "Brilho", feita a partir das escolhas de 17/10: neutros com um toque de lavanda e cores de estado em tom de joia (jade, âmbar, rubi e petróleo), longe o bastante do violeta para não se confundirem com a marca. A informação sai do azul e vai para o petróleo, porque o azul brigava com o degradê do botão. O número é o contraste do tom sobre o próprio fundo.</p>
-  <div class="escala">
-    <div class="am"><i style="background:#F7F4FC"><span>AAA 16,1</span></i><div><b>Névoa 50</b><code>#F7F4FC</code></div></div>
-    <div class="am"><i style="background:#E4DCF1"><span>AAA 13,1</span></i><div><b>Linha 200</b><code>#E4DCF1</code></div></div>
-    <div class="am"><i style="background:#9184AA;color:#fff"><span>3,5</span></i><div><b>Borda de campo</b><code>#9184AA</code></div></div>
-    <div class="am"><i style="background:#5E5475;color:#fff"><span>AAA 7,0</span></i><div><b>Tinta suave</b><code>#5E5475</code></div></div>
-    <div class="am"><i style="background:#1E1531;color:#fff"><span>AAA 17,4</span></i><div><b>Tinta</b><code>#1E1531</code></div></div>
-    <div class="am"><i style="background:linear-gradient(180deg,#fff -40%,#F8F3FF);box-shadow:inset 4px 0 0 #7B3BDC"><span style="color:#5808CC">AAA 8,3</span></i><div><b>Em andamento</b><code>#5808CC</code></div></div>
-    <div class="am"><i style="background:linear-gradient(180deg,#fff -40%,#EDFAF5);box-shadow:inset 4px 0 0 #0B7558"><span style="color:#0B7558">AA 5,3</span></i><div><b>Concluído, no prazo · jade</b><code>#0B7558</code></div></div>
-    <div class="am"><i style="background:linear-gradient(180deg,#fff -40%,#FFF6E6);box-shadow:inset 4px 0 0 #95560A"><span style="color:#95560A">AA 5,4</span></i><div><b>Atenção, vence hoje · âmbar</b><code>#95560A</code></div></div>
-    <div class="am"><i style="background:linear-gradient(180deg,#fff -40%,#FFF0F4);box-shadow:inset 4px 0 0 #BC1450"><span style="color:#BC1450">AA 5,7</span></i><div><b>Vencido, erro · rubi</b><code>#BC1450</code></div></div>
-    <div class="am"><i style="background:linear-gradient(180deg,#fff -40%,#EBF8FC);box-shadow:inset 4px 0 0 #0D6E8C"><span style="color:#0D6E8C">AA 5,3</span></i><div><b>Informação · petróleo</b><code>#0D6E8C</code></div></div>
+  <p class="nota">Paleta Brilho: neutros com um toque de lavanda e cores de estado em tom de joia, cada uma em cartão com borda em degradê, como o botão secundário. Nos neutros, o número é o contraste da tinta (ou do branco) sobre a cor; nas cores de estado, o contraste do tom sobre o próprio fundo, que é como aparecem no selo.</p>
+  <div class="cores-b">
+    <div class="cor"><i class="tinta" style="background:#F7F4FC"><span>AAA 16,1</span></i><div><b>Névoa 50</b><code>#F7F4FC</code></div><small style="font-size:12.5px;color:var(--texto-suave)">Fundo das telas</small></div>
+    <div class="cor"><i class="tinta" style="background:#E4DCF1"><span>AAA 13,1</span></i><div><b>Linha 200</b><code>#E4DCF1</code></div><small style="font-size:12.5px;color:var(--texto-suave)">Divisórias e bordas de cartão</small></div>
+    <div class="cor"><i class="tinta" style="background:#9184AA"><span>3,5 : 1</span></i><div><b>Borda de campo</b><code>#9184AA</code></div><small style="font-size:12.5px;color:var(--texto-suave)">Contorno de campo</small></div>
+    <div class="cor"><i class="tinta" style="background:#5E5475"><span>AAA 7,0</span></i><div><b>Tinta suave</b><code>#5E5475</code></div><small style="font-size:12.5px;color:var(--texto-suave)">Legendas e apoio</small></div>
+    <div class="cor"><i class="tinta" style="background:#1E1531"><span>AAA 17,4</span></i><div><b>Tinta</b><code>#1E1531</code></div><small style="font-size:12.5px;color:var(--texto-suave)">Títulos e texto</small></div>
+  </div>
+  <div class="cores-b">
+    <div class="cor" style="--b1:#5808CC;--b2:#8B3DF0;--t:#5808CC;--tf:#F8F3FF;--tb:#E6D9FB;--fx:var(--fx-and)"><i class="tinta" style="background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 70%)"><span>AAA 8,3</span></i><div><b>Em andamento · violeta</b><code>#5808CC · fundo #F8F3FF</code></div><div class="par"><span class="amostra">Em andamento</span></div></div>
+    <div class="cor" style="--b1:#0B7558;--b2:#3DBE91;--t:#0B7558;--tf:#EDFAF5;--tb:#BCE8D7;--fx:var(--fx-ok)"><i class="tinta" style="background:linear-gradient(135deg,#3DBE91 0%,#0B7558 70%)"><span>AA 5,3</span></i><div><b>Concluído, no prazo · jade</b><code>#0B7558 · fundo #EDFAF5</code></div><div class="par"><span class="amostra">Concluído</span></div></div>
+    <div class="cor" style="--b1:#95560A;--b2:#F2A33A;--t:#95560A;--tf:#FFF6E6;--tb:#F6DCAE;--fx:var(--fx-at)"><i class="tinta" style="background:linear-gradient(135deg,#F2A33A 0%,#95560A 70%)"><span>AA 5,4</span></i><div><b>Atenção, vence hoje · âmbar</b><code>#95560A · fundo #FFF6E6</code></div><div class="par"><span class="amostra">Vence hoje</span></div></div>
+    <div class="cor" style="--b1:#BC1450;--b2:#F0598A;--t:#BC1450;--tf:#FFF0F4;--tb:#F8CBDA;--fx:var(--fx-er)"><i class="tinta" style="background:linear-gradient(135deg,#F0598A 0%,#BC1450 70%)"><span>AA 5,7</span></i><div><b>Vencido, erro · rubi</b><code>#BC1450 · fundo #FFF0F4</code></div><div class="par"><span class="amostra">Retorno vencido</span></div></div>
+    <div class="cor" style="--b1:#0D6E8C;--b2:#38B2CF;--t:#0D6E8C;--tf:#EBF8FC;--tb:#B9E3EF;--fx:var(--fx-in)"><i class="tinta" style="background:linear-gradient(135deg,#38B2CF 0%,#0D6E8C 70%)"><span>AA 5,3</span></i><div><b>Informação · petróleo</b><code>#0D6E8C · fundo #EBF8FC</code></div><div class="par"><span class="amostra">Regras mudaram</span></div></div>
   </div>
   <h3 class="sub">Tokens de uso</h3>
   <p class="nota">As telas usam os tokens, nunca a cor direta. Assim dá para ajustar o sistema inteiro num lugar só.</p>
   <div class="tokens">
-    <div class="tok"><i style="background:#F8F6FC"></i><div><b>--fundo</b><small>Fundo das telas</small></div></div>
+    <div class="tok"><i style="background:#F7F4FC"></i><div><b>--fundo</b><small>Fundo das telas</small></div></div>
     <div class="tok"><i style="background:#fff"></i><div><b>--superficie</b><small>Cartões, janelas, lateral</small></div></div>
     <div class="tok"><i style="background:#5808CC"></i><div><b>--marca</b><small>Ação principal, item escolhido, links</small></div></div>
     <div class="tok"><i style="background:#F1E9FC"></i><div><b>--marca-suave</b><small>Fundo de seleção e quadrinhos de ícone</small></div></div>
     <div class="tok"><i style="background:#FF8D01"></i><div><b>--acento</b><small>Contagem, marcador, selo Admin, trilha</small></div></div>
-    <div class="tok"><i style="background:#211A32"></i><div><b>--texto</b><small>Títulos e texto</small></div></div>
-    <div class="tok"><i style="background:#665D74"></i><div><b>--texto-suave</b><small>Legendas e apoio</small></div></div>
-    <div class="tok"><i style="background:#968AA6"></i><div><b>--borda-campo</b><small>Contorno de campo (3 : 1)</small></div></div>
-    <div class="tok"><i style="background:#E6DFEF"></i><div><b>--linha</b><small>Divisórias e bordas de cartão</small></div></div>
+    <div class="tok"><i style="background:#1E1531"></i><div><b>--texto</b><small>Títulos e texto</small></div></div>
+    <div class="tok"><i style="background:#5E5475"></i><div><b>--texto-suave</b><small>Legendas e apoio</small></div></div>
+    <div class="tok"><i style="background:#9184AA"></i><div><b>--borda-campo</b><small>Contorno de campo (3 : 1)</small></div></div>
+    <div class="tok"><i style="background:#E4DCF1"></i><div><b>--linha</b><small>Divisórias e bordas de cartão</small></div></div>
   </div>
 </section>
 
@@ -872,7 +885,7 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
 </section>
 
 <section class="parte" id="menus" aria-labelledby="t-menus">
-  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-menus">Menus e listas de escolha</h2><p>O menu abre ações a partir do botão "Mais ações". A lista de escolha mostra opções para um campo. Linha divide grupos; a ação que desfaz algo fica por último, em framboesa.</p></div>
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-menus">Menus e listas de escolha</h2><p>O menu abre ações a partir do botão "Mais ações". A lista de escolha mostra opções para um campo. Linha divide grupos; a ação que desfaz algo fica por último, em rubi.</p></div>
   <div class="estudo linha" style="align-items:flex-start;gap:28px">
     <div style="display:grid;gap:8px"><span class="botao secundario bt-m so-ic" aria-label="Mais ações"><svg class="ic"><use href="#i-pontos"/></svg></span>
       <div class="menu-sus"><span class="h"><svg class="ic"><use href="#i-editar"/></svg>Editar pedido</span><span><svg class="ic"><use href="#i-pessoa"/></svg>Repassar</span><span><svg class="ic"><use href="#i-calendario"/></svg>Mudar o próximo retorno</span><hr><span><svg class="ic"><use href="#i-copiar"/></svg>Copiar protocolo<kbd>Ctrl C</kbd></span><span><svg class="ic"><use href="#i-imprimir"/></svg>Imprimir</span><hr><span class="p"><svg class="ic"><use href="#i-fechar"/></svg>Cancelar pedido</span></div></div>
