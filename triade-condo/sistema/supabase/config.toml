@@ -42,6 +42,27 @@ secure_password_change = true
 otp_expiry = 3600
 max_frequency = "60s"
 
+# E-mail próprio (E9): Resend como SMTP, com o domínio t3condo.trihub.com.br verificado no
+# Resend. A senha é uma chave do Resend só de envio; fica no painel do Supabase (e, no
+# ambiente local, na variável RESEND_API_KEY), nunca no repositório.
+[auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(RESEND_API_KEY)"
+admin_email = "nao-responda@t3condo.trihub.com.br"
+sender_name = "TRÍADE Condo"
+
+# Modelos em português; o link leva ao app com o token (token_hash).
+[auth.email.template.invite]
+subject = "Seu acesso à TRÍADE Condo"
+content_path = "./supabase/templates/convite.html"
+
+[auth.email.template.recovery]
+subject = "Criar uma senha nova na TRÍADE Condo"
+content_path = "./supabase/templates/redefinir.html"
+
 # Autenticador (TOTP): obrigatório para a equipe no Console; opcional para o síndico.
 [auth.mfa]
 max_enrolled_factors = 4

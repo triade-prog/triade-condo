@@ -23,7 +23,7 @@ O `arquivo/` **não é base de construção**: o que for útil de lá entra prim
 
 ## Decisões fechadas
 
-As mesmas decisões estão no painel de execução (DC1 a DC11). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
+As mesmas decisões estão no painel de execução (DC1 a DC12). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
 
 - **DC1 · Dois sistemas.** Plataforma do síndico (painel web do síndico, WhatsApp do morador e acessos por link ou QR) e Console TRÍADE (sistema interno da equipe). A Base comum são as regras que os dois seguem por baixo; não é um terceiro sistema.
 - **DC2 · O cliente é o condomínio.** É a unidade que contrata e a unidade de separação dos dados: toda informação pertence a um condomínio e nunca aparece em outro (PT-01). Uma pessoa pode ter vínculo com mais de um condomínio (MU-04), o que atende o síndico profissional.
@@ -41,6 +41,7 @@ As mesmas decisões estão no painel de execução (DC1 a DC11). Mudar qualquer 
   - A Plataforma usa barra superior com busca e menu branco flutuante. O Console usa lateral contínua com grupos e a identificação "Console TRÍADE · Admin".
   - Os valores estão no `design-frontend.html`, na seção "Base adotada". Não tratar como provisórios.
   - A marca Lattice não faz parte da identidade da TRÍADE. O logo oficial continua pendente.
+- **DC12 · Domínio do sistema: `t3condo.trihub.com.br`** (Carolina, 17/10/2026). Vale para todo o sistema. Começa pelos e-mails, que saem pelo Resend como `nao-responda@t3condo.trihub.com.br`; os endereços da Plataforma e do Console vêm depois, com os subdomínios e o DNS.
 
 ## Como as ideias viram código
 
@@ -132,7 +133,7 @@ A Plataforma ganhou a página onde o síndico convidado cria a senha. Os testes 
 - Pessoas autorizadas com permissões individuais. O cargo não dá permissão.
 - Quem atende os pedidos, com o responsável padrão da fila.
 
-As migrations 0070 e 0080 foram aplicadas no `triade-condo-dev` em 16/10/2026, em partes (0070_configuracoes_condominio_1 a _5 e 0080_moradores_unidades_1 a _5), porque a ferramenta do Supabase expira em 60 segundos com textos grandes e espera confirmação para SQL com `delete`. A comparação com o banco local deu igual em tabelas, restrições, índices, gatilhos, políticas e funções. As duas funções com `delete` (`plataforma_remover_feriado` e `plataforma_remover_prazo`) foram coladas pela Carolina no SQL Editor e conferidas. As Edge Functions `api-plataforma` e `api-console` foram publicadas no dev pela ferramenta do Supabase, cada uma num pacote só (o domínio e o `_shared` juntos), porque o token pessoal do Supabase não fica no GitHub (repositório público). Os sites estão na Vercel: Plataforma em `https://plataforma-omega-five.vercel.app` e Console em `https://console-hazel-nine.vercel.app`, com `SUPABASE_FUNCTIONS_URL` e `REPASSE_SEGREDO`. O login de ponta a ponta já responde pelas funções. Mudou alguma função? É preciso publicar de novo.
+As migrations 0070 e 0080 foram aplicadas no `triade-condo-dev` em 16/10/2026, em partes (0070_configuracoes_condominio_1 a _5 e 0080_moradores_unidades_1 a _5), porque a ferramenta do Supabase expira em 60 segundos com textos grandes e espera confirmação para SQL com `delete`. A comparação com o banco local deu igual em tabelas, restrições, índices, gatilhos, políticas e funções. As duas funções com `delete` (`plataforma_remover_feriado` e `plataforma_remover_prazo`) foram coladas pela Carolina no SQL Editor e conferidas. As Edge Functions `api-plataforma` e `api-console` foram publicadas no dev pela ferramenta do Supabase, cada uma num pacote só (o domínio e o `_shared` juntos), porque o token pessoal do Supabase não fica no GitHub (repositório público). Os sites estão na Vercel: Plataforma em `https://condominio.trihub.com.br` e Console em `https://t3condo.trihub.com.br` (desde 17/10/2026; antes, `plataforma-omega-five.vercel.app` e `console-hazel-nine.vercel.app`), com `SUPABASE_FUNCTIONS_URL` e `REPASSE_SEGREDO`. O login de ponta a ponta já responde pelas funções. Mudou alguma função? É preciso publicar de novo.
 
 Decisões deste passo:
 
@@ -186,11 +187,13 @@ Decisões do passo 4:
 
 No fim do dia, dois ajustes pedidos pela Carolina. O link de nova senha (e o de convite) passou a funcionar também com o modelo padrão do Supabase, que manda o acesso depois do `#` no endereço; o servidor só aceita esse acesso se ele nasceu do mesmo tipo de link. E a Plataforma passou a seguir a estrutura de "Dois sistemas, uma família": busca no condomínio na barra superior e faixa lilás no alto. As duas Edge Functions foram publicadas de novo.
 
+Em 17/10/2026 o sistema passou a ter e-mail e endereços próprios (DC12). E-mails pelo Resend, de `nao-responda@t3condo.trihub.com.br`, com os modelos de `supabase/templates`. Plataforma em `https://condominio.trihub.com.br` e Console em `https://t3condo.trihub.com.br`. No Supabase, a Site URL é a da Plataforma, as URLs de redirecionamento são `https://condominio.trihub.com.br/**` e `https://t3condo.trihub.com.br/**`, e os segredos `PLATAFORMA_URL` e `CONSOLE_URL` das funções apontam para os dois endereços. A Carolina conferiu a nova senha e o convite pelos links dos e-mails. As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro; o escuro só entra com `data-theme="dark"`.
+
 **Próximo passo:**
 
 1. Juntar o PR 3: a produção da Vercel sai do `main` (as prévias da branch não têm o `REPASSE_SEGREDO`). Depois, testar os pedidos com um condomínio de verdade (E8).
 2. Passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho.
-3. Com a Carolina: e-mail próprio (E9) para conferir o convite e a recuperação (F1.5); liberar o CI (F0.9).
+3. Com a Carolina, liberar o CI (F0.9).
 
 ## Como trabalhar
 

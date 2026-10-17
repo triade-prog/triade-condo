@@ -40,6 +40,13 @@ for (const app of APPS) {
       expect(r.violations).toEqual([]);
     });
 
+    test("tema claro mesmo com o aparelho no modo escuro (design-frontend.html)", async ({ page }) => {
+      await page.emulateMedia({ colorScheme: "dark" });
+      await page.goto(app.url);
+      const fundo = await page.locator("body").evaluate((b) => getComputedStyle(b).backgroundColor);
+      expect(fundo).toBe("rgb(255, 255, 255)");
+    });
+
     test("o repasse /api não chama nada sem a configuração do servidor", async ({ request }) => {
       const r = await request.get(`${app.base}/api/v1/saude`);
       expect(r.status()).toBe(503);

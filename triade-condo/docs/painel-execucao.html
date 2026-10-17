@@ -26,11 +26,11 @@
 <script type="application/json" id="dados">
 {
   "meta": {
-    "atualizado_em": "16/10/2026",
+    "atualizado_em": "17/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 76 Deno, 58 Vitest, 88 ponta a ponta). O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 3) e api-console (versão 2); a Plataforma e o Console estão na Vercel, falando com elas.",
+    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 76 Deno, 58 Vitest, 92 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 3) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F4",
-    "proximo_passo": "Juntar o PR 3 para as telas dos pedidos chegarem ao site da Vercel (a produção sai do main; as prévias da branch não têm o REPASSE_SEGREDO) e testar com um condomínio de verdade (E8). Depois, passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho. Em paralelo, com a Carolina: e-mail próprio com Resend (E9) para o F1.5 e liberar o GitHub Actions (F0.9)."
+    "proximo_passo": "A síndica do Condomínio Águas Claras entra na Plataforma, escolhe quem atende (Pessoas e acesso), cadastra unidades e moradores e registra os primeiros pedidos (E8). Depois, passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho. Com a Carolina: liberar o GitHub Actions (F0.9; os testes do GitHub nem chegam a rodar)."
   },
   "fases": [
     {
@@ -143,8 +143,7 @@
             "PT-08"
           ],
           "status": "feito",
-          "evidencia": "Login real no Console do triade-condo-dev (console-hazel-nine.vercel.app) com admin@triadecondo.com: senha e cadastro do autenticador no primeiro acesso, 16/10/2026",
-          "nota": "Falta conferir de verdade a recuperação de senha e o convite por e-mail (F1.5)."
+          "evidencia": "Login real no Console do triade-condo-dev (console-hazel-nine.vercel.app) com admin@triadecondo.com: senha e cadastro do autenticador no primeiro acesso, 16/10/2026. Recuperação de senha e convite reais pelo e-mail do Resend, com o link levando ao endereço novo (17/10/2026)"
         },
         {
           "id": "F0.7",
@@ -252,7 +251,7 @@
           ],
           "status": "feito",
           "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)",
-          "nota": "Login real conferido (F0.6). Falta conferir o e-mail de convite de verdade no triade-condo-dev (modelo do e-mail com token_hash)."
+          "nota": "Login real conferido (F0.6). Convite de verdade conferido pela Carolina em 17/10/2026: e-mail do Resend com token_hash e senha criada no endereço novo."
         },
         {
           "id": "F1.6",
@@ -1148,7 +1147,7 @@
       "precisa_em": "F1",
       "refs": [],
       "status": "feito",
-      "evidencia": "plataforma-omega-five.vercel.app e console-hazel-nine.vercel.app (equipe triade-ai), com SUPABASE_FUNCTIONS_URL e REPASSE_SEGREDO; login com e-mail inexistente volta INVALID_CREDENTIALS pelas Edge Functions do triade-condo-dev (16/10/2026)"
+      "evidencia": "condominio.trihub.com.br (Plataforma) e t3condo.trihub.com.br (Console) desde 17/10/2026, antes plataforma-omega-five.vercel.app e console-hazel-nine.vercel.app (equipe triade-ai), com SUPABASE_FUNCTIONS_URL e REPASSE_SEGREDO; login com e-mail inexistente volta INVALID_CREDENTIALS pelas Edge Functions do triade-condo-dev (16/10/2026)"
     },
     {
       "id": "E5",
@@ -1173,7 +1172,8 @@
       "quem": "TRÍADE",
       "precisa_em": "Publicação",
       "refs": [],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "Domínio trihub.com.br (DNS fora da Vercel): e-mails de nao-responda@t3condo.trihub.com.br; Plataforma em condominio.trihub.com.br e Console em t3condo.trihub.com.br, os dois respondendo 200 com CNAME para a Vercel (17/10/2026)"
     },
     {
       "id": "E8",
@@ -1181,7 +1181,8 @@
       "quem": "TRÍADE",
       "precisa_em": "F4",
       "refs": [],
-      "status": "pendente"
+      "status": "andamento",
+      "nota": "Condomínio Águas Claras cadastrado pela Carolina no Console, com a síndica convidada (16/10/2026). Falta a síndica usar no dia a dia: escolher quem atende, cadastrar unidades e moradores e registrar os primeiros pedidos."
     },
     {
       "id": "E9",
@@ -1189,8 +1190,8 @@
       "quem": "TRÍADE",
       "precisa_em": "F1",
       "refs": [],
-      "status": "pendente",
-      "nota": "A Site URL já aponta para a Plataforma, e desde 16/10/2026 a Plataforma e o Console aceitam também o link do modelo padrão do Supabase (o acesso vem depois do #). O Resend continua necessário para os e-mails saírem em nome da TRÍADE, em português e sem o limite baixo de envios do Supabase; com ele, os modelos usam {{ .RedirectTo }}?token_hash={{ .TokenHash }}."
+      "status": "feito",
+      "evidencia": "SMTP do Resend, modelos em português e URL Configuration ligados no Supabase pela Carolina (Site URL https://condominio.trihub.com.br; redirecionamentos condominio e t3condo com /**; segredos PLATAFORMA_URL e CONSOLE_URL nos endereços novos). Pedido de nova senha: e-mail chegou de nao-responda@t3condo.trihub.com.br e o link trocou a senha e liberou o acesso (17/10/2026)"
     }
   ],
   "decisoes": [
@@ -1237,9 +1238,41 @@
     [
       "DC11",
       "Paleta e tipografia da referência Lattice (Inter, neutros frios, destaque lilás); verde-petróleo nas ações da Plataforma e violeta no Console"
+    ],
+    [
+      "DC12",
+      "Domínio do sistema: t3condo.trihub.com.br (Carolina, 17/10/2026), começando pelos e-mails, enviados pelo Resend"
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "23:40",
+      "fim": "23:46",
+      "texto": "Convite de verdade conferido pela Carolina (F1.5) e endereços antigos tirados do Supabase. Correção do tema: a Plataforma e o Console seguiam o modo escuro do aparelho, e o design-frontend.html tem o tema claro como referência. Agora o claro vale sempre; o escuro fica guardado para entrar só com data-theme=\"dark\". Teste ponta a ponta novo emula o aparelho no modo escuro e confere o fundo branco nos dois apps (falhava antes, passa agora; 92 ponta a ponta).",
+      "ref": "F1.5, DC11, PT-10, E9"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "23:31",
+      "fim": "23:40",
+      "texto": "Endereços próprios: Plataforma em condominio.trihub.com.br e Console em t3condo.trihub.com.br, com o DNS apontando para a Vercel. No Supabase, pela Carolina: Site URL da Plataforma, URLs de redirecionamento dos dois sites com /** e os segredos PLATAFORMA_URL e CONSOLE_URL nos endereços novos. Recuperação de senha conferida de verdade: e-mail do Resend em português e senha trocada pelo link. E7 e E9 feitos; falta conferir o convite (F1.5).",
+      "ref": "E7, E9, E4, F0.6, F1.5, DC12, PT-08"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "22:57",
+      "fim": "22:57",
+      "texto": "Resend pronto pela Carolina com o domínio t3condo.trihub.com.br, que passa a ser o domínio do sistema (DC12). Modelos de e-mail de convite e de nova senha em português em supabase/templates, com o link token_hash, e o config.toml com o SMTP do Resend (a chave fica só no painel do Supabase). Antes, o limite de envio do e-mail embutido do Supabase (cerca de 2 por hora) barrou recuperações e um convite; nada ficou pela metade.",
+      "ref": "E9, E7, DC12, F1.5"
+    },
+    {
+      "data": "16/10/2026",
+      "inicio": "19:10",
+      "fim": "19:17",
+      "texto": "PR 3 juntado no main (os testes do GitHub falham sem rodar, pelo bloqueio do F0.9; localmente tudo passa). A Vercel publicou a Plataforma e o Console de produção a partir do main. Teste no banco do triade-condo-dev com o Condomínio Águas Claras, como a síndica, dentro de uma transação desfeita no fim (nada ficou gravado): quem atende, unidade, morador, pedido 2026-0001 registrado e já aceito, retorno ao morador com próximo retorno em 24 h, previsão, pendência que impede concluir, resolução, conclusão, reabertura, um pedido privado cancelado, a fila e o resumo do Início. Tudo respondeu como nos testes.",
+      "ref": "E8, F4.1, F4.2, F4.3, F4.4, F4.5, F4.6, F4.7"
+    },
     {
       "data": "16/10/2026",
       "inicio": "18:46",

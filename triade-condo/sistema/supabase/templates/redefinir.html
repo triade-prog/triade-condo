@@ -1,0 +1,21 @@
+<!-- Recuperação de senha (PT-08): assunto "Criar uma senha nova na TRÍADE Condo". O link leva
+     a /redefinir do sistema em que a pessoa pediu (Plataforma ou Console, pelo RedirectTo). -->
+<div style="font-family: Inter, Segoe UI, Arial, sans-serif; color: #1b1f3a; max-width: 520px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 18px; font-weight: 600; margin: 0 0 16px;">TRÍADE Condo</p>
+  <p style="font-size: 15px; line-height: 1.5; margin: 0 0 12px;">Olá!</p>
+  <p style="font-size: 15px; line-height: 1.5; margin: 0 0 20px;">
+    Recebemos um pedido para criar uma senha nova para esta conta. Use o botão abaixo.
+  </p>
+  <p style="margin: 0 0 24px;">
+    <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}"
+       style="display: inline-block; background: #007773; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 15px; padding: 12px 20px; border-radius: 6px;">
+      Criar senha nova
+    </a>
+  </p>
+  <p style="font-size: 13px; line-height: 1.5; color: #495073; margin: 0 0 8px;">
+    O link vale por uma hora e só pode ser usado uma vez. Depois de trocar a senha, as sessões abertas são encerradas.
+  </p>
+  <p style="font-size: 13px; line-height: 1.5; color: #495073; margin: 0;">
+    Se não foi você que pediu, ignore este e-mail: a sua senha continua a mesma.
+  </p>
+</div>
