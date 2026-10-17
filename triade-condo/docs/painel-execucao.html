@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "17/10/2026",
     "total_ideias": 308,
-    "situacao": "Passos 0 a 4 e o 3b (vínculo detalhado) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (532 pgTAP, 91 Deno, 66 Vitest, 108 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0110) e as Edge Functions api-plataforma (versão 7) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
-    "fase_atual": "F4",
-    "proximo_passo": "Juntar a branch ao main para as telas do vínculo detalhado chegarem ao site (F3.6). Conferir um envio de verdade de fotos e documentos num pedido do Águas Claras (F4.8). A síndica do Águas Claras cadastra unidades e moradores (E8). Com a Carolina: liberar o GitHub Actions (F0.9)."
+    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado) e os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (605 pgTAP, 96 Deno, 72 Vitest, 120 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0120, com a conferência de prazos no pg_cron) e as Edge Functions api-plataforma (versão 8) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
+    "fase_atual": "F7",
+    "proximo_passo": "Juntar a branch dos passos 6 e 7 ao main e conferir os avisos com pedidos de verdade no Águas Claras (E8). Com a Carolina: liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1), que destrava o passo 5 e os avisos no WhatsApp (F6.3, F6.4)."
   },
   "fases": [
     {
@@ -637,7 +637,9 @@
           "refs": [
             "AT-08"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Avisos dentro do painel: o banco confere os prazos a cada 5 minutos (horas de atendimento, sem feriados, pausa nas etapas que pausam) e avisa o responsável na hora; sino na barra superior com os avisos sem ver; o pedido vencido mostra quem já foi avisado e quando o próximo será. Ver o aviso não resolve o pedido. Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Falta juntar a branch ao main para as telas chegarem ao site.",
+          "evidencia": "pgTAP 013_prazos_avisos_test.sql; Deno api-plataforma/prazos_test.ts; Vitest prazos.test.ts; Playwright plataforma-passo6e7.spec.ts"
         },
         {
           "id": "F6.2",
@@ -647,7 +649,9 @@
             "AT-09",
             "V-14"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Escalonamento: síndico depois de 2 h e substituto (pessoa autorizada) depois de 8 h de atendimento, mudáveis em Configurações › Prazos e avisos; também avisos de pedido sem responsável e de pendência parada. Sem repetir aviso. O conselho entra quando existir (V-14). Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Falta juntar a branch ao main para as telas chegarem ao site.",
+          "evidencia": "pgTAP 013_prazos_avisos_test.sql; Deno api-plataforma/prazos_test.ts; Vitest prazos.test.ts; Playwright plataforma-passo6e7.spec.ts"
         },
         {
           "id": "F6.3",
@@ -656,7 +660,8 @@
           "refs": [
             "W-11"
           ],
-          "status": "pendente"
+          "status": "pendente",
+          "nota": "Depende do WhatsApp (passo 5, provedor E1). As regras de aviso do passo 6 já valem para este canal quando ele existir."
         },
         {
           "id": "F6.4",
@@ -665,7 +670,8 @@
           "refs": [
             "AT-26"
           ],
-          "status": "pendente"
+          "status": "pendente",
+          "nota": "Depende do WhatsApp (passo 5, provedor E1). As regras de aviso do passo 6 já valem para este canal quando ele existir."
         }
       ]
     },
@@ -678,8 +684,13 @@
           "id": "F7.1",
           "texto": "Painel do dia: retornos que vencem hoje, pendências e pedidos sem responsável",
           "peca": "S1",
-          "refs": [],
-          "status": "pendente"
+          "refs": [
+            "AT-08",
+            "TR-11"
+          ],
+          "status": "feito",
+          "nota": "Início com o Agora (retornos vencidos e o mais antigo, o que vence hoje, para aceitar, sem responsável, pendências paradas), cada linha levando à fila filtrada, e o mês fechado, fixo. Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Falta juntar a branch ao main para as telas chegarem ao site.",
+          "evidencia": "pgTAP 013_prazos_avisos_test.sql; Deno api-plataforma/prazos_test.ts; Vitest prazos.test.ts; Playwright plataforma-passo6e7.spec.ts"
         },
         {
           "id": "F7.2",
@@ -690,7 +701,9 @@
             "TR-03",
             "TR-07"
           ],
-          "status": "pendente"
+          "status": "feito",
+          "nota": "Tela Indicadores: retornos no prazo como métrica principal, primeiro retorno, concluídos e reabertos, por categoria, com período (este mês, mês passado, 3 meses) e comparação; sem caso, \"sem dados\", nunca zero. Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Falta juntar a branch ao main para as telas chegarem ao site.",
+          "evidencia": "pgTAP 013_prazos_avisos_test.sql; Deno api-plataforma/prazos_test.ts; Vitest prazos.test.ts; Playwright plataforma-passo6e7.spec.ts"
         }
       ]
     },
@@ -1262,6 +1275,20 @@
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "04:20",
+      "fim": "04:50",
+      "texto": "Passos 6 e 7 construídos, sem WhatsApp: migration 0120 (avisos, conferência de prazos a cada 5 minutos no pg_cron, regras de aviso, início do dia e indicadores) aplicada pela Carolina e conferida; API (avisos, marcar como visto, regras de aviso, prazo do pedido, indicadores) publicada como api-plataforma versão 8 no triade-condo-dev; telas: Agora e mês fechado no início, sino de avisos, aba Prazos e avisos, faixa do aviso no pedido e a tela Indicadores. Testes: 605 pgTAP, 96 Deno, 72 Vitest, 120 ponta a ponta.",
+      "ref": "F6.1, F6.2, F7.1, F7.2, AT-08, AT-09, AT-10, AT-17, TR-01, TR-03, TR-07, TR-11"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "04:15",
+      "fim": "04:15",
+      "texto": "PR 6 juntado ao main (passo 3b no site). Passos 6 e 7 começaram pelo desenho, sem WhatsApp: cinco telas no design-frontend.html (início com o agora e o mês fechado, avisos dentro do painel, regras de prazo e aviso, o aviso no pedido, indicadores) com as decisões para aprovar.",
+      "ref": "F6.1, F6.2, F7.1, F7.2, AT-08, AT-09, TR-01, TR-03, TR-07, TR-11, D4"
+    },
     {
       "data": "17/10/2026",
       "inicio": "04:01",

@@ -48,6 +48,12 @@ export function criarPedidos(c: Config, vAna: string, vBruna: string) {
   return [
     base("2026-0001", "Vazamento no banheiro", {
       unidadeId: A101, estado: "EM_ANDAMENTO", etapaId: etapa("Aguardando prestador"), responsavelId: vBruna, desde: depois(-47), proximoRetorno: depois(-4),
+      historico: [
+        { acao: "pedido.registrado", em: depois(-48), autor: "Ana Souza", dados: { protocolo: "2026-0001", canal: "TELEFONE" } },
+        { acao: "pedido.retorno_venceu", em: depois(-4), autor: null, dados: { de: depois(-4) } },
+        { acao: "pedido.aviso", em: depois(-4), autor: null, dados: { tipo: "RETORNO_VENCIDO", para: "RESPONSAVEL" } },
+        { acao: "pedido.aviso", em: depois(-2), autor: null, dados: { tipo: "ESCALADO_SINDICO", para: "SINDICO" } },
+      ],
       pendencias: [{ id: novoId(), tipo: "SEM_EXECUTOR", motivo: "Nenhum encanador disponível esta semana", responsavelId: vAna, abertaEm: depois(-30),
         abertaPor: "Ana Souza", resolvidaEm: null, resolvidaPor: null, resolucao: null }],
     }),
@@ -62,11 +68,14 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
 }
 
 const ativo = (p: PedidoFalso) => p.estado === "ABERTO" || p.estado === "EM_ANDAMENTO";
-const vencido = (p: PedidoFalso, c: Config) =>
+export const vencido = (p: PedidoFalso, c: Config) =>
   ativo(p) && !!p.proximoRetorno && p.proximoRetorno < AGORA && !c.etapas.find((e) => e.id === p.etapaId)?.pausaPrazo;
 
 export function resumoPedidos(lista: PedidoFalso[], c: Config, eu: string) {
   const at = lista.filter((p) => ["ABERTO", "EM_ANDAMENTO", "EM_REVISAO"].includes(p.estado));
+  const dia = (iso: string) => new Date(Date.parse(iso) - 3 * HORA).toISOString().slice(0, 10);
+  const hoje = at.filter((p) => ativo(p) && !vencido(p, c) && p.proximoRetorno && dia(p.proximoRetorno) === dia(AGORA));
+  const maisAntigo = vencidoMaisAntigo(lista, c);
   return {
     ativos: at.length,
     semResponsavel: at.filter((p) => !p.responsavelId).length,
@@ -76,7 +85,18 @@ export function resumoPedidos(lista: PedidoFalso[], c: Config, eu: string) {
     emRevisao: at.filter((p) => p.estado === "EM_REVISAO").length,
     comPendencia: at.filter((p) => p.pendencias.some((x) => !x.resolvidaEm)).length,
     meus: at.filter((p) => p.responsavelId === eu).length,
+    // O início do dia (passo 7).
+    vencemHoje: hoje.length,
+    ...(hoje.length ? { proximoHoje: hoje.map((p) => p.proximoRetorno!).sort()[0] } : {}),
+    ...(maisAntigo ? { vencidoMaisAntigo: maisAntigo.proximoRetorno } : {}),
+    vencidoMaisAntigoEscalado: false,
+    pendenciasParadas: at.reduce((t, p) => t + p.pendencias.filter((x) => !x.resolvidaEm && Date.parse(AGORA) - Date.parse(x.abertaEm) >= 3 * 24 * HORA).length, 0),
   };
+}
+
+/** O vencido mais antigo, para o início e para saber se já subiu ao síndico. */
+export function vencidoMaisAntigo(lista: PedidoFalso[], c: Config) {
+  return lista.filter((p) => vencido(p, c)).sort((a, b) => a.proximoRetorno!.localeCompare(b.proximoRetorno!))[0];
 }
 
 /** Atende as rotas do passo 4; devolve null quando a rota não é daqui. */

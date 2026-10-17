@@ -1,13 +1,15 @@
 "use client";
 // Prazos de retorno (AT-10): uma regra geral e exceções por categoria, por prioridade ou
 // pelas duas. Vale a mais específica, e a prioridade vem antes da categoria. Conta em horas
-// de atendimento e para fora do horário, nos feriados e nas etapas que pausam.
+// de atendimento e para fora do horário, nos feriados e nas etapas que pausam. Em cima, as
+// regras de aviso (passo 6).
 
 import { useState } from "react";
 import { AvisoErro, Aviso, Botao, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
 import { Janela, type Valores } from "../Janela.tsx";
 import type { Configuracoes } from "../tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
+import { RegrasAviso } from "./RegrasAviso.tsx";
 
 type Prazo = Configuracoes["prazos"][number];
 
@@ -15,7 +17,19 @@ function horas(n: number): string {
   return `${n} h de atendimento`;
 }
 
-export function AbaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
+export function AbaPrazos(props: PropsAba) {
+  return (
+    <div className="grid gap-6">
+      <RegrasAviso {...props} />
+      <section aria-labelledby="t-prazos" className="grid gap-3">
+        <h2 id="t-prazos" className="font-semibold">Prazos de retorno</h2>
+        <TabelaPrazos {...props} />
+      </section>
+    </div>
+  );
+}
+
+function TabelaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
   const [mudando, setMudando] = useState<Prazo | null>(null);
   const [nova, setNova] = useState(false);
   const [falha, setFalha] = useState<ErroApi | null>(null);

@@ -1,13 +1,14 @@
 "use client";
 // Início do síndico (V-08, CF-12): o resumo de moradores e unidades (passo 3), o que falta
-// configurar, sem obrigar nada, e o que já veio pronto pelo cenário. Os pedidos (passo 4)
-// mostram o que pede atenção agora; o dia do síndico completo chega no passo 7.
+// configurar, sem obrigar nada, e o que já veio pronto pelo cenário. O dia do condomínio
+// (passo 7, F7.1): o que pede atenção agora e o mês fechado, separado do agora.
 
 import Link from "next/link";
-import { CENARIOS, PENDENCIAS_CONFIG } from "@triade/domain";
+import { CENARIOS, mostrarHoras, mostrarPorcentagem, nomeDoMes, nomeDoMesAnterior, PENDENCIAS_CONFIG } from "@triade/domain";
 import { Carregando, classeBotao, ErroCarregar, IconeMarca, Selo } from "@triade/ui";
+import { diaHora } from "./pedidos/comum.tsx";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
-import type { Configuracoes } from "./tipos.ts";
+import type { Configuracoes, MesFechado } from "./tipos.ts";
 
 const ONDE: Record<string, { href: string; texto: string; acao: string }> = {
   SEM_HORARIO_ATENDIMENTO: { href: "/configuracoes?aba=horarios", texto: "Definir", acao: "config.editar" },
@@ -55,26 +56,44 @@ function Moradores({ resumo }: { resumo: NonNullable<ReturnType<typeof usePlataf
   );
 }
 
-/** Pedidos (AT-02, AT-03): o que pede atenção agora, cada um levando à fila filtrada. */
-function Pedidos({ resumo, registrar }: { resumo: NonNullable<ReturnType<typeof usePlataforma>["painel"]["pedidos"]>; registrar: boolean }) {
+const HOJE = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "numeric", month: "long" });
+const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+
+/** Agora (F7.1, AT-08, TR-11): o que pede atenção agora, cada linha levando à fila filtrada. */
+function Agora({ resumo, registrar, paradaDias }: {
+  resumo: NonNullable<ReturnType<typeof usePlataforma>["painel"]["pedidos"]>;
+  registrar: boolean;
+  paradaDias: number | null;
+}) {
   const linhas = [
-    ...(resumo.meusParaAceitar ? [{ texto: plural(resumo.meusParaAceitar, "pedido para você aceitar", "pedidos para você aceitar"),
-      href: "/pedidos?responsavel=EU&atencao=AGUARDANDO_ACEITE", botao: "Ver e aceitar", ajuda: null as string | null, primario: true }] : []),
-    ...(resumo.retornoVencido ? [{ texto: plural(resumo.retornoVencido, "com retorno vencido", "com retorno vencido"), href: "/pedidos?atencao=RETORNO_VENCIDO",
-      botao: "Ver quais", ajuda: "O morador está esperando notícia.", primario: false }] : []),
-    ...(resumo.semResponsavel ? [{ texto: plural(resumo.semResponsavel, "sem responsável", "sem responsável"), href: "/pedidos?atencao=SEM_RESPONSAVEL",
-      botao: "Ver quais", ajuda: null, primario: false }] : []),
-    ...(resumo.emRevisao ? [{ texto: plural(resumo.emRevisao, "em revisão", "em revisão"), href: "/pedidos?situacao=EM_REVISAO", botao: "Revisar", ajuda: null, primario: false }] : []),
+    ...(resumo.retornoVencido ? [{ selo: "Vencido", tom: "atencao" as const, texto: plural(resumo.retornoVencido, "retorno vencido", "retornos vencidos"),
+      href: "/pedidos?atencao=RETORNO_VENCIDO", botao: "Ver quais", primario: true,
+      ajuda: resumo.vencidoMaisAntigo
+        ? `O mais antigo venceu em ${diaHora(resumo.vencidoMaisAntigo)}${resumo.vencidoMaisAntigoEscalado ? ", já avisado ao síndico" : ""}. O morador está esperando notícia.`
+        : null }] : []),
+    ...(resumo.vencemHoje ? [{ selo: "Hoje", tom: "info" as const, texto: plural(resumo.vencemHoje, "retorno vence hoje", "retornos vencem hoje"),
+      href: "/pedidos?situacao=ATIVOS", botao: "Ver quais", primario: false,
+      ajuda: resumo.proximoHoje ? `O próximo às ${HORA.format(new Date(resumo.proximoHoje))}.` : null }] : []),
+    ...(resumo.meusParaAceitar ? [{ selo: null, tom: "info" as const, texto: plural(resumo.meusParaAceitar, "pedido para você aceitar", "pedidos para você aceitar"),
+      href: "/pedidos?responsavel=EU&atencao=AGUARDANDO_ACEITE", botao: "Ver e aceitar", ajuda: null as string | null, primario: false }] : []),
+    ...(resumo.semResponsavel ? [{ selo: null, tom: "info" as const, texto: plural(resumo.semResponsavel, "sem responsável", "sem responsável"),
+      href: "/pedidos?atencao=SEM_RESPONSAVEL", botao: "Atribuir", ajuda: null, primario: false }] : []),
+    ...(resumo.pendenciasParadas ? [{ selo: null, tom: "info" as const,
+      texto: `${plural(resumo.pendenciasParadas, "pendência parada", "pendências paradas")}${paradaDias ? ` há mais de ${paradaDias} ${paradaDias === 1 ? "dia" : "dias"}` : ""}`,
+      href: "/pedidos?atencao=COM_PENDENCIA", botao: "Ver quais", ajuda: null, primario: false }] : []),
+    ...(resumo.emRevisao ? [{ selo: null, tom: "info" as const, texto: plural(resumo.emRevisao, "em revisão", "em revisão"), href: "/pedidos?situacao=EM_REVISAO",
+      botao: "Revisar", ajuda: null, primario: false }] : []),
   ];
   return (
-    <section aria-labelledby="t-pedidos" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
-      <h2 id="t-pedidos" className="font-semibold">Pedidos</h2>
+    <section aria-labelledby="t-agora" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
+      <h2 id="t-agora" className="font-semibold">Agora</h2>
       {linhas.length ? (
         <ul className="divide-y divide-linha">
           {linhas.map((l) => (
-            <li key={l.href} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-              <span className="flex items-start gap-2">
-                <IconeMarca marca="atencao" className="mt-0.5 h-4 w-4 text-atencao" />
+            <li key={l.href + l.texto} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+              <span className="flex flex-wrap items-start gap-2">
+                {l.selo ? <Selo tom={l.tom} marca={l.tom === "atencao" ? "atencao" : "andamento"}>{l.selo}</Selo>
+                  : <IconeMarca marca="atencao" className="mt-0.5 h-4 w-4 text-atencao" />}
                 <span>{l.texto}{l.ajuda ? <span className="block text-xs text-tinta-suave">{l.ajuda}</span> : null}</span>
               </span>
               <Link href={l.href} className={classeBotao(l.primario ? "primario" : "secundario")}>{l.botao}</Link>
@@ -91,6 +110,26 @@ function Pedidos({ resumo, registrar }: { resumo: NonNullable<ReturnType<typeof 
           <Link href="/pedidos" className={classeBotao("texto")}>Ver todos</Link>
         </span>
       </p>
+    </section>
+  );
+}
+
+/** Mês fechado (F7.1, TR-01, TR-03): os números do mês anterior, fixos, separados do agora. */
+function MesFechadoCartao({ mes }: { mes: MesFechado }) {
+  const r = mes.retornos;
+  return (
+    <section aria-labelledby="t-mes" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
+      <h2 id="t-mes" className="font-semibold">Mês fechado · {nomeDoMes(mes.mes)}</h2>
+      <ul className="divide-y divide-linha text-sm">
+        <li className="py-2.5">
+          <strong className="text-lg">{mostrarPorcentagem(r.porcentagem)}</strong> {r.porcentagem === undefined || r.porcentagem === null ? "de retornos no prazo: nenhum retorno no mês" : "dos retornos no prazo"}
+          {r.total ? <span className="block text-xs text-tinta-suave">{r.noPrazo} de {r.total}. {nomeDoMesAnterior(mes.mes).replace(/^./, (x) => x.toUpperCase())}: {mostrarPorcentagem(mes.porcentagemAnterior)}.</span> : null}
+        </li>
+        <li className="py-2.5"><strong>{mes.concluidos}</strong> {mes.concluidos === 1 ? "pedido concluído" : "pedidos concluídos"} · <strong>{mes.reabertos}</strong> {mes.reabertos === 1 ? "reaberto" : "reabertos"}</li>
+        <li className="py-2.5">Primeiro retorno em <strong>{mostrarHoras(mes.primeiroRetornoHoras)}</strong>{mes.primeiroRetornoHoras === undefined || mes.primeiroRetornoHoras === null ? "" : ", em média"}</li>
+      </ul>
+      <p className="text-xs text-tinta-suave">Os números do mês fechado não mudam com o dia.</p>
+      <Link href="/indicadores" className={classeBotao("texto", "justify-self-start")}>Ver indicadores</Link>
     </section>
   );
 }
@@ -128,14 +167,18 @@ export function Inicio() {
   return (
     <div className="grid gap-6">
       <div>
-        <p className="text-sm text-tinta-suave">Plataforma do síndico</p>
+        <p className="text-sm text-tinta-suave">{HOJE.format(new Date()).replace(/^./, (x) => x.toUpperCase())}</p>
         <h1 className="text-2xl font-semibold tracking-tight">{c.nome}</h1>
         <p className="mt-1 text-tinta-suave">
           {[c.cenario ? CENARIOS[c.cenario as keyof typeof CENARIOS] ?? c.cenario : null, c.cidade, c.uf].filter(Boolean).join(" · ")}
         </p>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
-        {painel.pedidos ? <Pedidos resumo={painel.pedidos} registrar={pode("pedidos.atualizar")} /> : null}
+        {painel.pedidos ? (
+          <Agora resumo={painel.pedidos} registrar={pode("pedidos.atualizar")}
+            paradaDias={config.estado === "pronto" ? config.dados.avisos.pendenciaDias : null} />
+        ) : null}
+        {painel.mesFechado ? <MesFechadoCartao mes={painel.mesFechado} /> : null}
         {painel.moradores ? <Moradores resumo={painel.moradores} /> : null}
         <section aria-labelledby="t-falta" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
           <h2 id="t-falta" className="font-semibold">O que falta configurar</h2>
