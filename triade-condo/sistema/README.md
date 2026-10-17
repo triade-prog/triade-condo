@@ -11,7 +11,7 @@ apps/plataforma     Plataforma do síndico (Next.js 16, porta 3000)
 apps/console        Console TRÍADE (Next.js 16, porta 3001)
 packages/domain     regras puras em TypeScript: dinheiro, erros, textos, esquemas, logs limpos
                     (roda no Node e no Deno)
-packages/ui         tema (DC11) e componentes React
+packages/ui         tema (DC13) e componentes React
 packages/servidor   cabeçalhos de segurança, CSP com nonce e o repasse /api
 supabase/           migrations, Edge Functions (Deno + Hono) e testes pgTAP
 tests/e2e           Playwright com axe, no celular e no computador

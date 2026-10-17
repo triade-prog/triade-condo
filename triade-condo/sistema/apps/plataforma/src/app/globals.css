@@ -2,7 +2,7 @@
 @import "@triade/ui/tema.css";
 @source "../../../../packages/ui/src";
 
-/* Cor das ações da Plataforma: verde-petróleo (DC11). */
+/* Cor das ações: violeta da marca, igual nos dois sistemas (DC13). */
 @theme {
   --color-acao: var(--color-plataforma);
   --color-acao-press: var(--color-plataforma-press);

@@ -144,7 +144,7 @@ export function EscolherArquivos({ itens, aoMudar, rotulo, enviando }: {
                   {it.problema ? <span className="text-atencao"> {it.problema}</span>
                     : <span className="text-xs text-tinta-suave"> · {mostrarTamanho(it.arquivo.size)}{enviando ? ` · ${it.progresso}%` : ""}</span>}
                 </span>
-                {!enviando ? <Botao variante="texto" aria-label={`Tirar ${it.arquivo.name} da lista`}
+                {!enviando ? <Botao variante="discreto" aria-label={`Tirar ${it.arquivo.name} da lista`}
                   onClick={() => aoMudar(itens.filter((x) => x.chave !== it.chave))}>Tirar</Botao> : null}
               </span>
               {!it.problema ? (
@@ -273,13 +273,13 @@ export function AbaArquivos({ pedidoId, protocolo, carga, avisar }: {
                         : <span className="font-medium [overflow-wrap:anywhere]">{a.nome}</span>}
                       {a.descricao ? <span className="text-xs">{a.descricao}</span> : null}
                       <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-tinta-suave">
-                        {a.situacao === "ENVIANDO" ? <Selo tom="info" marca="pausa">Verificando</Selo> : null}
-                        {a.situacao === "NAO_LIBERADO" ? <Selo tom="atencao" marca="atencao">Não liberado</Selo> : null}
+                        {a.situacao === "ENVIANDO" ? <Selo tom="info">Verificando</Selo> : null}
+                        {a.situacao === "NAO_LIBERADO" ? <Selo tom="atencao">Não liberado</Selo> : null}
                         {a.situacao === "NAO_LIBERADO" ? <span className="text-atencao">{a.motivoRecusa}</span>
                           : <span>{ehFoto(a.tipo) ? "Foto" : "PDF"} · {mostrarTamanho(a.tamanho)} · {a.enviadoPor} · {diaHora(a.enviadoEm)}</span>}
                       </span>
                     </span>
-                    {a.podeTirar ? <Botao variante="texto" aria-label={`Tirar ${a.nome} do pedido`} onClick={() => setTirar(a)}>Tirar</Botao> : null}
+                    {a.podeTirar ? <Botao variante="discreto" aria-label={`Tirar ${a.nome} do pedido`} onClick={() => setTirar(a)}>Tirar</Botao> : null}
                   </li>
                 ))}
               </ul>

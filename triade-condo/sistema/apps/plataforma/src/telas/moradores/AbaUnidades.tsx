@@ -22,13 +22,13 @@ function plural(n: number, um: string, varios: string): string {
 }
 
 function Contatos({ u }: { u: UnidadeResumo }) {
-  if (!u.ativa) return <Selo tom="neutro" marca="inativo">Desativada</Selo>;
-  if (!u.confirmados && !u.pendentes) return <Selo tom="neutro" marca="inativo">Sem contato</Selo>;
+  if (!u.ativa) return <Selo tom="neutro">Desativada</Selo>;
+  if (!u.confirmados && !u.pendentes) return <Selo tom="neutro">Sem contato</Selo>;
   return (
     <span className="flex flex-wrap gap-1">
-      {u.confirmados ? <Selo tom="ok" marca="ok">{plural(u.confirmados, "confirmado", "confirmados")}</Selo> : null}
-      {u.pendentes ? <Selo tom="atencao" marca="atencao">{u.pendentes} a confirmar</Selo> : null}
-      {u.semProprietario ? <Selo tom="atencao" marca="atencao">Falta o proprietário</Selo> : null}
+      {u.confirmados ? <Selo tom="ok">{plural(u.confirmados, "confirmado", "confirmados")}</Selo> : null}
+      {u.pendentes ? <Selo tom="atencao">{u.pendentes} a confirmar</Selo> : null}
+      {u.semProprietario ? <Selo tom="atencao">Falta o proprietário</Selo> : null}
     </span>
   );
 }
@@ -113,7 +113,7 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
     <div className="grid gap-4">
       <p className="flex flex-wrap items-center gap-x-2 text-sm text-tinta-suave">
         Organização do prédio: {textoEstrutura(dados.estrutura).toLowerCase()}
-        {dados.podeEditar ? <><span aria-hidden="true">·</span><Botao variante="texto" onClick={aoOrganizar}>Mudar</Botao></> : null}
+        {dados.podeEditar ? <><span aria-hidden="true">·</span><Botao variante="discreto" onClick={aoOrganizar}>Mudar</Botao></> : null}
       </p>
       <Escolha rotulo="Mostrar unidades" opcoes={opcoes} atual={filtro} aoMudar={(f) => { setFiltro(f); setAndar(""); }} />
       {contadores.length ? (
@@ -126,8 +126,8 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
       {bloco && dados.podeEditar ? (
         <p className="flex flex-wrap items-center gap-x-2 text-sm text-tinta-suave">
           {bloco.nome} · {plural(doFiltro.filter((u) => u.ativa).length, "unidade ativa", "unidades ativas")} ·
-          <Botao variante="texto" onClick={() => setJanela({ tipo: "renomear", bloco })}>Renomear</Botao>·
-          <Botao variante="texto" onClick={() => setJanela({ tipo: "desativar", bloco })}>Desativar</Botao>
+          <Botao variante="discreto" onClick={() => setJanela({ tipo: "renomear", bloco })}>Renomear</Botao>·
+          <Botao variante="discreto" onClick={() => setJanela({ tipo: "desativar", bloco })}>Desativar</Botao>
         </p>
       ) : null}
       {lista.length === 0 ? (
@@ -173,7 +173,7 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
         <p className="flex flex-wrap items-center gap-x-2 text-sm text-tinta-suave">
           {div.varios} desativados:
           {inativos.map((b) => (
-            <Botao key={b.id} variante="texto" onClick={() => setJanela({ tipo: "reativar", bloco: b })} aria-label={`Reativar ${b.nome}`}>{b.nome}</Botao>
+            <Botao key={b.id} variante="discreto" onClick={() => setJanela({ tipo: "reativar", bloco: b })} aria-label={`Reativar ${b.nome}`}>{b.nome}</Botao>
           ))}
         </p>
       ) : null}

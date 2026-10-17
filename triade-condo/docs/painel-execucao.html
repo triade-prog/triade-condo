@@ -28,7 +28,7 @@
   "meta": {
     "atualizado_em": "17/10/2026",
     "total_ideias": 308,
-    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado) e os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (605 pgTAP, 96 Deno, 72 Vitest, 120 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0120, com a conferência de prazos no pg_cron) e as Edge Functions api-plataforma (versão 8) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
+    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado) e os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (605 pgTAP, 96 Deno, 75 Vitest, 124 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, parte A do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0120, com a conferência de prazos no pg_cron) e as Edge Functions api-plataforma (versão 8) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F7",
     "proximo_passo": "Aprovar a proposta de identidade (docs/identidade/proposta.html) e aplicá-la ao design-frontend.html e às duas aplicações. Juntar a branch dos passos 6 e 7 ao main e conferir os avisos com pedidos de verdade no Águas Claras (E8). Com a Carolina: liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
@@ -1046,6 +1046,17 @@
       ],
       "status": "feito",
       "evidencia": "Playwright plataforma-passo4.spec.ts (5 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T20",
+      "texto": "Identidade TRÍADE no código: sempre claro mesmo com o aparelho no modo escuro, fontes servidas pelo próprio sistema (nenhum pedido para fora), contraste AA em todas as telas e classes certas dos componentes base",
+      "fase": "D4",
+      "refs": [
+        "DC13",
+        "PT-10"
+      ],
+      "status": "feito",
+      "evidencia": "Playwright fundacao.spec.ts (sempre claro e fontes, 2 apps × 2 aparelhos) e axe nas 8 suítes (124 cenários); Vitest packages/ui componentes.test.ts (3 testes)"
     }
   ],
   "publicacao": [
@@ -1279,6 +1290,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "15:25",
+      "fim": "15:27",
+      "texto": "Identidade, parte A do plano no código: tema.css reescrito com a paleta Brilho, o violeta nas ações dos dois sistemas, sombras e degradês, sem o tema escuro; Manrope, Playfair Display itálico e IBM Plex Mono servidas pelo próprio sistema (Fontsource, a CSP continua só com o próprio endereço); componentes base no desenho aprovado: botão em seis estilos e três tamanhos com anel de foco duplo, selo com faixa lateral (tom novo andamento), aviso em cartão branco com quadro de ícone, campos de 44 px, janela, abas, tela vazia com órbitas, e os novos Chip, Trilho e Icone (52 ícones). Testes: 75 Vitest e 124 ponta a ponta com axe, lint e typecheck passam. As molduras e as telas uma a uma ficam para a parte B.",
+      "ref": "DC13, D4, PT-10"
+    },
     {
       "data": "17/10/2026",
       "inicio": "15:15",

@@ -17,11 +17,11 @@ export function nomeDe(o: Record<string, string>, codigo: string | null | undefi
 /** Situação do pedido: palavra e forma, além da cor. */
 export function SeloEstadoPedido({ estado }: { estado: EstadoPedido }) {
   const nome = ESTADOS_PEDIDO[estado];
-  if (estado === "ENCERRADO") return <Selo tom="ok" marca="ok">{nome}</Selo>;
-  if (estado === "CANCELADO") return <Selo tom="neutro" marca="inativo">{nome}</Selo>;
-  if (estado === "EM_REVISAO") return <Selo tom="info" marca="interno">{nome}</Selo>;
-  if (estado === "EM_ANDAMENTO") return <Selo tom="info" marca="andamento">{nome}</Selo>;
-  return <Selo tom="neutro" marca="andamento">{nome}</Selo>;
+  if (estado === "ENCERRADO") return <Selo tom="ok">{nome}</Selo>;
+  if (estado === "CANCELADO") return <Selo tom="neutro">{nome}</Selo>;
+  if (estado === "EM_REVISAO") return <Selo tom="info">{nome}</Selo>;
+  if (estado === "EM_ANDAMENTO") return <Selo tom="andamento">{nome}</Selo>;
+  return <Selo tom="neutro">{nome}</Selo>;
 }
 
 const DIA_HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });

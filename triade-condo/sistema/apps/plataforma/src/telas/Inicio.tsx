@@ -92,7 +92,7 @@ function Agora({ resumo, registrar, paradaDias }: {
           {linhas.map((l) => (
             <li key={l.href + l.texto} className="flex items-center justify-between gap-3 py-2.5 text-sm">
               <span className="flex flex-wrap items-start gap-2">
-                {l.selo ? <Selo tom={l.tom} marca={l.tom === "atencao" ? "atencao" : "andamento"}>{l.selo}</Selo>
+                {l.selo ? <Selo tom={l.tom}>{l.selo}</Selo>
                   : <IconeMarca marca="atencao" className="mt-0.5 h-4 w-4 text-atencao" />}
                 <span>{l.texto}{l.ajuda ? <span className="block text-xs text-tinta-suave">{l.ajuda}</span> : null}</span>
               </span>
@@ -107,7 +107,7 @@ function Agora({ resumo, registrar, paradaDias }: {
         <span className="text-tinta-suave">{plural(resumo.ativos, "pedido ativo", "pedidos ativos")}</span>
         <span className="flex gap-2">
           {registrar ? <Link href="/pedidos" className={classeBotao("secundario")}>Registrar pedido</Link> : null}
-          <Link href="/pedidos" className={classeBotao("texto")}>Ver todos</Link>
+          <Link href="/pedidos" className={classeBotao("discreto")}>Ver todos</Link>
         </span>
       </p>
     </section>
@@ -129,7 +129,7 @@ function MesFechadoCartao({ mes }: { mes: MesFechado }) {
         <li className="py-2.5">Primeiro retorno em <strong>{mostrarHoras(mes.primeiroRetornoHoras)}</strong>{mes.primeiroRetornoHoras === undefined || mes.primeiroRetornoHoras === null ? "" : ", em média"}</li>
       </ul>
       <p className="text-xs text-tinta-suave">Os números do mês fechado não mudam com o dia.</p>
-      <Link href="/indicadores" className={classeBotao("texto", "justify-self-start")}>Ver indicadores</Link>
+      <Link href="/indicadores" className={classeBotao("discreto", "justify-self-start")}>Ver indicadores</Link>
     </section>
   );
 }
@@ -151,7 +151,7 @@ function Pronto({ config }: { config: Configuracoes }) {
       <h2 id="t-pronto" className="font-semibold">Já veio pronto pelo cenário</h2>
       <ul className="divide-y divide-linha">
         {linhas.map((l) => (
-          <li key={l} className="flex items-center justify-between gap-3 py-2.5 text-sm">{l}<Selo tom="ok" marca="ok">Pronto</Selo></li>
+          <li key={l} className="flex items-center justify-between gap-3 py-2.5 text-sm">{l}<Selo tom="ok">Pronto</Selo></li>
         ))}
       </ul>
       <p className="text-sm text-tinta-suave">Tudo pode ser ajustado em <Link href="/configuracoes" className="font-medium text-acao hover:underline">Configurações</Link>.</p>

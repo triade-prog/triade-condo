@@ -40,11 +40,22 @@ for (const app of APPS) {
       expect(r.violations).toEqual([]);
     });
 
-    test("tema claro mesmo com o aparelho no modo escuro (design-frontend.html)", async ({ page }) => {
+    test("sempre claro, mesmo com o aparelho no modo escuro (DC13)", async ({ page }) => {
       await page.emulateMedia({ colorScheme: "dark" });
       await page.goto(app.url);
       const fundo = await page.locator("body").evaluate((b) => getComputedStyle(b).backgroundColor);
-      expect(fundo).toBe("rgb(255, 255, 255)");
+      expect(fundo).toBe("rgb(247, 244, 252)");
+    });
+
+    test("fontes da identidade servidas pelo próprio sistema (DC13)", async ({ page }) => {
+      const externas: string[] = [];
+      page.on("request", (r) => { if (!r.url().startsWith(app.base) && !r.url().startsWith("data:")) externas.push(r.url()); });
+      await page.goto(app.url);
+      await page.evaluate(() => document.fonts.ready);
+      const familia = await page.locator("body").evaluate((b) => getComputedStyle(b).fontFamily);
+      expect(familia).toContain("Manrope");
+      expect(await page.evaluate(() => document.fonts.check('15px "Manrope Variable"'))).toBe(true);
+      expect(externas).toEqual([]);
     });
 
     test("o repasse /api não chama nada sem a configuração do servidor", async ({ request }) => {

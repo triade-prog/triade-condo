@@ -20,11 +20,11 @@ export function Dialogo({ aberto, titulo, aoFechar, children }: { aberto: boolea
       ref={ref}
       aria-labelledby={idTitulo}
       onClose={aoFechar}
-      className="m-auto w-[min(440px,calc(100vw-32px))] rounded-xl border border-linha bg-superficie p-5 text-tinta shadow-xl backdrop:bg-tinta/40"
+      className="m-auto w-[min(460px,calc(100vw-32px))] rounded-[20px] border border-linha bg-superficie p-6 text-tinta shadow-s3 backdrop:bg-violeta-900/35 backdrop:backdrop-blur-[2px]"
     >
       {aberto ? (
         <div className="grid gap-4">
-          <h2 id={idTitulo} className="text-base font-semibold">{titulo}</h2>
+          <h2 id={idTitulo} className="text-lg font-medium">{titulo}</h2>
           {children}
         </div>
       ) : null}

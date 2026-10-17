@@ -1,101 +1,286 @@
-/* Tema da TRÍADE Condo (DC11): paleta e tipografia da referência Lattice.
-   Neutros frios, destaque lilás, status em fundo suave com detalhe forte.
-   Verde-petróleo nas ações da Plataforma do síndico; violeta no Console TRÍADE.
-   Mesmos valores de docs/tema-triade.css; mudar lá e aqui juntos. */
+/* Tema da TRÍADE Condo (DC13, 17/10/2026): sistema de design em docs/identidade/sistema.html.
+   Violeta da marca nas ações dos dois sistemas, laranja só como acento, neutros com toque de
+   lavanda e a paleta Brilho nas situações (jade, âmbar, rubi e petróleo). Sempre claro.
+   As fontes vêm do próprio sistema (a CSP só aceita fontes do próprio endereço). */
+
+@import "@fontsource-variable/manrope/index.css";
+@import "@fontsource/playfair-display/latin-400-italic.css";
+@import "@fontsource/playfair-display/latin-ext-400-italic.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";
+@import "@fontsource/ibm-plex-mono/latin-ext-500.css";
 
 @theme {
-  --font-sans: Inter, "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Manrope Variable", Manrope, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-destaque: "Playfair Display", Georgia, serif;
 
+  /* Escalas da marca */
+  --color-violeta-50: #f8f3ff;
+  --color-violeta-100: #f1e9fc;
+  --color-violeta-200: #ddc8f8;
+  --color-violeta-300: #c3a0ef;
+  --color-violeta-400: #a16de5;
+  --color-violeta-500: #7b3bdc;
+  --color-violeta-600: #5808cc;
+  --color-violeta-700: #4706a6;
+  --color-violeta-800: #350580;
+  --color-violeta-900: #180567;
+  --color-laranja-50: #fff7eb;
+  --color-laranja-100: #ffebcf;
+  --color-laranja-200: #ffd39e;
+  --color-laranja-300: #ffb96a;
+  --color-laranja-500: #ff8d01;
+  --color-laranja-800: #7c3900;
+
+  /* Uso: fundo, superfícies, texto e linhas */
+  --color-fundo: #f7f4fc;
   --color-papel: #ffffff;
   --color-superficie: #ffffff;
-  --color-superficie-2: #eff2f8;
-  --color-tinta: #1b1f3a;
-  --color-tinta-suave: #495073;
-  --color-linha: #dbe2ee;
-  --color-lilas: #8576f3;
-  --color-lilas-bruma: #f1f0ff;
-  --color-foco: #196dca;
-  /* Contorno de campos, ícones e detalhes, lateral do Console e seleção lilás (DC11). */
-  --color-contorno: #a4b1cd;
-  --color-detalhe: #5e6d96;
-  --color-lateral: #eff2f8;
-  --color-lateral-borda: #c4cee1;
-  --color-selecao: #e3dfff;
-  --color-selecao-tinta: #5322c5;
+  --color-superficie-2: #f1eff5;
+  --color-tinta: #1e1531;
+  --color-tinta-suave: #5e5475;
+  --color-linha: #e4dcf1;
+  /* Contorno de campo: passa 3 : 1 sobre o branco. */
+  --color-contorno: #9184aa;
+  --color-detalhe: #5e5475;
+  --color-foco: #7b3bdc;
+  --color-lateral: #ffffff;
+  --color-lateral-borda: #e4dcf1;
+  --color-selecao: #f1e9fc;
+  --color-selecao-tinta: #4706a6;
+  --color-lilas: #7b3bdc;
+  --color-lilas-bruma: #f8f3ff;
+  --color-acento: #ff8d01;
 
-  --color-plataforma: #007773;
-  --color-plataforma-press: #005e5b;
-  --color-plataforma-bruma: #e3f5f1;
-  /* Faixa lilás do alto da Plataforma (cabeçalho da referência Lattice). */
-  --color-faixa-alto: #d4d4ff;
-  --color-faixa-baixo: #e4d3ff;
-  --color-console: #6d44ef;
-  --color-console-press: #5530c0;
-  --color-console-bruma: #f1f0ff;
+  /* Ação nos dois sistemas (DC13). Os nomes por sistema ficam até a parte C do plano. */
+  --color-plataforma: #5808cc;
+  --color-plataforma-press: #4706a6;
+  --color-plataforma-bruma: #f8f3ff;
+  --color-console: #5808cc;
+  --color-console-press: #4706a6;
+  --color-console-bruma: #f8f3ff;
+  --color-faixa-alto: #f1e9fc;
+  --color-faixa-baixo: #f8f3ff;
 
-  --color-ok: #165f59;
-  --color-ok-fundo: #e6faf3;
-  --color-ok-borda: #86e6d0;
-  --color-atencao: #8b440f;
-  --color-atencao-fundo: #fbf3c9;
-  --color-atencao-borda: #fcc44c;
-  --color-erro: #bd383f;
-  --color-erro-fundo: #ffeded;
-  --color-erro-borda: #febab6;
-  --color-info: #196dca;
-  --color-info-fundo: #e8f3ff;
-  --color-info-borda: #a9d2fe;
-}
+  /* Situações: paleta Brilho. O tom forte passa AA sobre o próprio fundo. */
+  --color-ok: #0b7558;
+  --color-ok-fundo: #edfaf5;
+  --color-ok-borda: #bce8d7;
+  --color-atencao: #95560a;
+  --color-atencao-fundo: #fff6e6;
+  --color-atencao-borda: #f6dcae;
+  --color-erro: #bc1450;
+  --color-erro-fundo: #fff0f4;
+  --color-erro-borda: #f8cbda;
+  --color-info: #0d6e8c;
+  --color-info-fundo: #ebf8fc;
+  --color-info-borda: #b9e3ef;
+  --color-andamento: #5808cc;
+  --color-andamento-fundo: #f8f3ff;
+  --color-andamento-borda: #e6d9fb;
+  --color-neutro: #5b5368;
+  --color-neutro-fundo: #f4f2f7;
+  --color-neutro-borda: #e3deeb;
 
-/* O tema claro é a referência (design-frontend.html) e vale sempre, mesmo com o aparelho no
-   modo escuro. O escuro é complementar: só entra com data-theme="dark" no <html>. */
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --color-papel: #141729;
-  --color-superficie: #1e2239;
-  --color-superficie-2: #292e49;
-  --color-tinta: #eceefa;
-  --color-tinta-suave: #afb7d0;
-  --color-linha: #373f5c;
-  --color-contorno: #5b6588;
-  --color-detalhe: #a5b0cf;
-  --color-lateral: #1a1e33;
-  --color-lateral-borda: #373f5c;
-  --color-selecao: #393052;
-  --color-selecao-tinta: #d2beff;
-  --color-lilas-bruma: #393052;
-  --color-plataforma: #65d7bf;
-  --color-plataforma-press: #8de8d4;
-  --color-plataforma-bruma: #203e3c;
-  --color-faixa-alto: #302d53;
-  --color-faixa-baixo: #3b2d50;
-  --color-console: #bca2ff;
-  --color-console-press: #d2beff;
-  --color-console-bruma: #393052;
-  --color-ok: #7ed5a2;
-  --color-ok-fundo: #203c31;
-  --color-atencao: #f1c37b;
-  --color-atencao-fundo: #483921;
-  --color-erro: #ffabb1;
-  --color-erro-fundo: #492c38;
-  --color-info: #a5caff;
-  --color-info-fundo: #263a56;
+  --shadow-s1: 0 1px 2px #1e15310d, 0 4px 12px #3a1a7a0a;
+  --shadow-s2: 0 2px 4px #1e15310d, 0 12px 28px #3a1a7a14;
+  --shadow-s3: 0 4px 8px #1e153112, 0 24px 48px #3a1a7a1f;
 }
 
 :root {
   color-scheme: light;
+  --grad-acao: linear-gradient(135deg, #8b3df0 0%, #5808cc 55%, #3a07a0 100%);
+  --grad-acao-hover: linear-gradient(135deg, #7b2be8 0%, #4706a6 60%, #2e0585 100%);
+  --grad-acao-press: linear-gradient(135deg, #4706a6, #2e0585);
+  --grad-borda: linear-gradient(135deg, #a16de5, #ffb96a);
+  --grad-borda-forte: linear-gradient(135deg, #7b3bdc, #ff8d01);
+  --grad-violeta: radial-gradient(120% 140% at 100% 0%, #9e37f5 0%, #7018dc 28%, transparent 62%), linear-gradient(135deg, #180567 0%, #3a07a0 40%, #5808cc 100%);
+  --grad-trilha: linear-gradient(165deg, #ffe0a8 0%, #ffb45c 38%, #ff8d01 72%, #f2700a 100%);
+  --fx-andamento: linear-gradient(180deg, #8b3df0, #5808cc);
+  --fx-ok: linear-gradient(180deg, #3dbe91, #0b7558);
+  --fx-atencao: linear-gradient(180deg, #f2a33a, #95560a);
+  --fx-erro: linear-gradient(180deg, #f0598a, #bc1450);
+  --fx-info: linear-gradient(180deg, #38b2cf, #0d6e8c);
+  --fx-neutro: linear-gradient(180deg, #c3b8d6, #7c7090);
+  --anel: 0 0 0 2px #fff, 0 0 0 4px var(--color-foco);
 }
 
 body {
-  background: var(--color-papel);
+  background: var(--color-fundo);
   color: var(--color-tinta);
   font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
 :focus-visible {
   outline: 2px solid var(--color-foco);
   outline-offset: 2px;
+}
+
+/* Componentes base (packages/ui/src/componentes.tsx). Ficam aqui porque bordas em degradê e
+   faixas com brilho não cabem bem em classes utilitárias. */
+@layer components {
+  .bt {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 14px;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .bt svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .bt-m { min-height: 36px; padding: 0 14px; font-size: 13px; border-radius: 11px; }
+  .bt-p { min-height: 30px; padding: 0 10px; font-size: 13px; border-radius: 10px; }
+  .bt-so { padding: 0; width: 44px; }
+  .bt-m.bt-so { width: 36px; }
+  .bt-p.bt-so { width: 30px; }
+  .bt:focus-visible { outline: 0; box-shadow: var(--anel); }
+
+  .bt-primario { background: var(--grad-acao); color: #fff; box-shadow: inset 0 1px 0 #ffffff47, 0 10px 22px -10px #5808ccb3; }
+  .bt-primario:hover { background: var(--grad-acao-hover); }
+  .bt-primario:active { background: var(--grad-acao-press); box-shadow: inset 0 2px 6px #0004; }
+  .bt-primario:focus-visible { box-shadow: var(--anel), 0 10px 22px -10px #5808ccb3; }
+
+  .bt-secundario { border: 1.5px solid transparent; background: linear-gradient(#fff, #fff) padding-box, var(--grad-borda) border-box; color: var(--color-violeta-700); }
+  .bt-secundario:hover { background: linear-gradient(var(--color-violeta-50), var(--color-violeta-50)) padding-box, var(--grad-borda-forte) border-box; }
+  .bt-secundario:active { background: linear-gradient(var(--color-violeta-100), var(--color-violeta-100)) padding-box, var(--grad-borda-forte) border-box; }
+
+  .bt-contorno { background: linear-gradient(180deg, #fff, var(--color-violeta-50)); color: var(--color-violeta-600); border-color: var(--color-violeta-200); box-shadow: var(--shadow-s1); }
+  .bt-contorno:hover { border-color: var(--color-violeta-300); }
+  .bt-contorno:active { background: var(--color-violeta-100); box-shadow: none; }
+
+  .bt-discreto { background: transparent; color: var(--color-violeta-600); padding: 0 10px; }
+  .bt-discreto:hover { background: linear-gradient(90deg, var(--color-violeta-100), #f8f3ff00); }
+  .bt-discreto:active { background: var(--color-violeta-100); }
+
+  .bt-perigo { background: linear-gradient(180deg, #fff6f8, #ffe9ef); color: var(--color-erro); border-color: var(--color-erro-borda); }
+  .bt-perigo:hover { background: #ffe3ea; }
+  .bt-perigo:active { background: var(--color-erro-borda); }
+
+  .bt-claro { background: linear-gradient(180deg, #fff, var(--color-violeta-100)); color: var(--color-violeta-900); box-shadow: 0 8px 18px -8px #0008; }
+  .bt-claro:hover { background: #fff; }
+  .bt-claro:focus-visible { box-shadow: 0 0 0 2px var(--color-violeta-800), 0 0 0 4px var(--color-laranja-200); }
+
+  .bt:disabled, .bt[aria-disabled="true"] {
+    background: var(--color-superficie-2);
+    color: #8a8296;
+    border-color: transparent;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  /* Selo: faixa lateral com brilho e palavra (versão D com o brilho do C). */
+  .selo {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px 3px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--selo-borda);
+    color: var(--selo-tinta);
+    background: linear-gradient(180deg, #fff -40%, var(--selo-fundo) 100%);
+    box-shadow: inset 0 1px 0 #fff;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .selo::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--selo-faixa); }
+  .selo[data-tom="ok"] { --selo-tinta: var(--color-ok); --selo-fundo: var(--color-ok-fundo); --selo-borda: var(--color-ok-borda); --selo-faixa: var(--fx-ok); }
+  .selo[data-tom="atencao"] { --selo-tinta: var(--color-atencao); --selo-fundo: var(--color-atencao-fundo); --selo-borda: var(--color-atencao-borda); --selo-faixa: var(--fx-atencao); }
+  .selo[data-tom="erro"] { --selo-tinta: var(--color-erro); --selo-fundo: var(--color-erro-fundo); --selo-borda: var(--color-erro-borda); --selo-faixa: var(--fx-erro); }
+  .selo[data-tom="info"] { --selo-tinta: var(--color-info); --selo-fundo: var(--color-info-fundo); --selo-borda: var(--color-info-borda); --selo-faixa: var(--fx-info); }
+  .selo[data-tom="andamento"] { --selo-tinta: var(--color-andamento); --selo-fundo: var(--color-andamento-fundo); --selo-borda: var(--color-andamento-borda); --selo-faixa: var(--fx-andamento); }
+  .selo[data-tom="neutro"] { --selo-tinta: var(--color-neutro); --selo-fundo: var(--color-neutro-fundo); --selo-borda: var(--color-neutro-borda); --selo-faixa: var(--fx-neutro); }
+
+  /* Aviso: cartão branco com a mesma faixa e o ícone num quadro tingido. */
+  .aviso {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px 12px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--color-linha);
+    background: #fff;
+    box-shadow: var(--shadow-s1);
+    font-size: 14px;
+  }
+  .aviso::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--selo-faixa); }
+  .aviso > .quadro { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; background: var(--selo-fundo); color: var(--selo-tinta); }
+  .aviso > .quadro svg { width: 18px; height: 18px; }
+  .aviso > .texto { flex: 1; min-width: 0; align-self: center; }
+  .aviso[data-tom="ok"] { --selo-tinta: var(--color-ok); --selo-fundo: var(--color-ok-fundo); --selo-faixa: var(--fx-ok); }
+  .aviso[data-tom="atencao"] { --selo-tinta: var(--color-atencao); --selo-fundo: var(--color-atencao-fundo); --selo-faixa: var(--fx-atencao); }
+  .aviso[data-tom="erro"] { --selo-tinta: var(--color-erro); --selo-fundo: var(--color-erro-fundo); --selo-faixa: var(--fx-erro); }
+  .aviso[data-tom="info"] { --selo-tinta: var(--color-info); --selo-fundo: var(--color-info-fundo); --selo-faixa: var(--fx-info); }
+  .aviso[data-tom="andamento"] { --selo-tinta: var(--color-andamento); --selo-fundo: var(--color-andamento-fundo); --selo-faixa: var(--fx-andamento); }
+  .aviso[data-tom="neutro"] { --selo-tinta: var(--color-neutro); --selo-fundo: var(--color-neutro-fundo); --selo-faixa: var(--fx-neutro); }
+
+  /* Chip e trilho: filtro, escolha que se tira e pessoa. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 34px;
+    padding: 0 13px;
+    border-radius: 10px;
+    border: 1px solid var(--color-linha);
+    background: #fff;
+    color: var(--color-tinta);
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .chip svg { width: 16px; height: 16px; flex-shrink: 0; }
+  button.chip { cursor: pointer; }
+  button.chip:hover { border-color: var(--color-violeta-300); }
+  .chip[aria-pressed="true"], .chip[data-escolhido] { background: var(--grad-acao); color: #fff; border-color: transparent; box-shadow: inset 0 1px 0 #ffffff47, 0 8px 16px -8px #5808ccb3; }
+  .chip[data-acento] { border: 1.5px solid transparent; background: linear-gradient(#fff, #fff) padding-box, var(--grad-borda) border-box; color: var(--color-laranja-800); }
+  .chip[data-incluir] { border-style: dashed; border-color: var(--color-violeta-300); color: var(--color-violeta-600); }
+  .chip .tirar { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-right: -6px; border-radius: 7px; color: inherit; background: transparent; border: 0; cursor: pointer; }
+  .chip .tirar:hover { background: #ffffff33; }
+  .trilho { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 14px; background: var(--color-superficie-2); box-shadow: inset 0 1px 2px #1e15310f; }
+  .trilho .chip { border-color: transparent; background: transparent; min-height: 32px; }
+  .trilho .chip[aria-pressed="true"] { background: var(--grad-acao); color: #fff; }
+
+  /* Campo de formulário */
+  .campo {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--color-contorno);
+    background: #fdfcff;
+    padding: 9px 12px;
+    font-size: 15px;
+    color: var(--color-tinta);
+  }
+  .campo:hover { border-color: #83758f; }
+  .campo:focus-visible { outline: 0; border-color: var(--color-violeta-600); box-shadow: 0 0 0 4px #5808cc1f; background: #fff; }
+  .campo[aria-invalid="true"] { border-color: var(--color-erro); box-shadow: 0 0 0 4px #bc14501a; }
+  .campo:disabled { background: var(--color-superficie-2); border-color: transparent; color: #8a8296; }
+
+  /* Tela vazia com as órbitas da marca, bem leves. */
+  .vazio { position: relative; overflow: hidden; display: grid; justify-items: center; gap: 8px; text-align: center; padding: 32px 20px; border-radius: 18px; border: 1px solid var(--color-linha); background: #fff; }
+  .vazio::before, .vazio::after { content: ""; position: absolute; border-radius: 50%; border: 1px solid #5808cc1f; pointer-events: none; }
+  .vazio::before { width: 260px; height: 260px; top: -150px; right: -90px; }
+  .vazio::after { width: 380px; height: 380px; top: -210px; right: -150px; }
+  .vazio > * { position: relative; }
+}
+
+/* Alto contraste do Windows: as bordas em degradê somem, então entra uma borda sólida. */
+@media (forced-colors: active) {
+  .bt, .chip, .selo, .aviso { border: 1px solid CanvasText; }
+  .selo::before, .aviso::before { background: CanvasText; }
 }

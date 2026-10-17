@@ -95,7 +95,7 @@ export function Pedido() {
           <h1 className="text-2xl font-semibold tracking-tight"><span className="font-mono text-lg text-tinta-suave">{p.protocolo}</span> · {p.assunto}</h1>
           <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-tinta-suave">
             <SeloEstadoPedido estado={p.estado} />
-            {p.privado ? <Selo tom="neutro" marca="interno">Privado</Selo> : null}
+            {p.privado ? <Selo tom="neutro">Privado</Selo> : null}
             <span>{[ativo ? p.etapa.nome : null, p.categoria.nome, p.prioridade.nome, onde, quem, `por ${nomeDe(CANAIS_PEDIDO, p.canal).toLowerCase()}`].filter(Boolean).join(" · ")}</span>
           </p>
           <p className="mt-1 text-xs text-tinta-suave">Registrado por {p.registradoPor} em {diaHora(p.abertoEm)} · aberto há {tempoAberto(p.abertoEm, p.encerradoEm ?? p.cancelamento?.em ?? d.agora)}</p>
@@ -121,11 +121,11 @@ export function Pedido() {
       {!fechado ? (
         <div className="grid gap-3 sm:grid-cols-2">
           <Compromisso titulo="Próximo retorno ao morador"
-            acao={d.pode.responder && ativo ? <Botao variante="texto" onClick={() => setAcao("proximo")}>Mudar</Botao> : undefined}>
+            acao={d.pode.responder && ativo ? <Botao variante="discreto" onClick={() => setAcao("proximo")}>Mudar</Botao> : undefined}>
             {p.proximoRetorno ? (
               <p className="flex flex-wrap items-center gap-2">
                 <span className="font-medium">{diaHora(p.proximoRetorno)}</span>
-                {p.retornoVencido ? <Selo tom="atencao" marca="atencao">{faltaPara(p.proximoRetorno, d.agora)}</Selo>
+                {p.retornoVencido ? <Selo tom="atencao">{faltaPara(p.proximoRetorno, d.agora)}</Selo>
                   : <span className="text-sm text-tinta-suave">{faltaPara(p.proximoRetorno, d.agora)}</span>}
               </p>
             ) : <p className="text-sm text-tinta-suave">{p.estado === "EM_REVISAO" ? "Em revisão: sem novo retorno combinado." : "Sem prazo configurado."}</p>}
@@ -133,7 +133,7 @@ export function Pedido() {
             <p className="text-xs text-tinta-suave">Compromisso de dar notícia, mesmo sem solução.</p>
           </Compromisso>
           <Compromisso titulo="Previsão de solução"
-            acao={d.pode.atualizar && ativo ? <Botao variante="texto" onClick={() => setAcao("previsao")}>{p.previsao ? "Mudar" : "Definir"}</Botao> : undefined}>
+            acao={d.pode.atualizar && ativo ? <Botao variante="discreto" onClick={() => setAcao("previsao")}>{p.previsao ? "Mudar" : "Definir"}</Botao> : undefined}>
             <p className="font-medium">{p.previsao ? mostrarDataSemHora(p.previsao) : "Sem previsão"}</p>
             <p className="text-xs text-tinta-suave">Só quando for conhecida.</p>
           </Compromisso>
@@ -145,11 +145,11 @@ export function Pedido() {
         {p.responsavel ? (
           <>
             <span>{p.responsavel.eu ? "Você" : p.responsavel.nome}</span>
-            {p.responsavel.aceitoEm ? <Selo tom="ok" marca="ok">Aceito</Selo> : !fechado ? <Selo tom="atencao" marca="atencao">Esperando aceite</Selo> : null}
+            {p.responsavel.aceitoEm ? <Selo tom="ok">Aceito</Selo> : !fechado ? <Selo tom="atencao">Esperando aceite</Selo> : null}
             <span className="text-tinta-suave">desde {diaHora(p.responsavel.desde)}</span>
           </>
-        ) : <Selo tom="atencao" marca="atencao">Sem responsável</Selo>}
-        {d.pode.repassar && !fechado ? <Botao variante="texto" onClick={() => setAcao("repassar")}>{p.responsavel ? "Repassar" : "Atribuir"}</Botao> : null}
+        ) : <Selo tom="atencao">Sem responsável</Selo>}
+        {d.pode.repassar && !fechado ? <Botao variante="discreto" onClick={() => setAcao("repassar")}>{p.responsavel ? "Repassar" : "Atribuir"}</Botao> : null}
       </p>
 
       {abertas.length ? (
@@ -206,8 +206,8 @@ export function Pedido() {
                 {d.andamentos.map((a) => (
                   <li key={a.id} className="grid gap-0.5 px-4 py-3 text-sm">
                     <span className="flex flex-wrap items-center gap-2 text-xs text-tinta-suave">
-                      {a.tipo === "RETORNO" ? <Selo tom="ok" marca="ok">Retorno {nomeDe({ TELEFONE: "por telefone", PRESENCIAL: "pessoalmente", MENSAGEM: "por mensagem", EMAIL: "por e-mail", OUTRO: "por outro meio" }, a.meio)}</Selo>
-                        : <Selo tom="neutro" marca="interno">Nota interna</Selo>}
+                      {a.tipo === "RETORNO" ? <Selo tom="ok">Retorno {nomeDe({ TELEFONE: "por telefone", PRESENCIAL: "pessoalmente", MENSAGEM: "por mensagem", EMAIL: "por e-mail", OUTRO: "por outro meio" }, a.meio)}</Selo>
+                        : <Selo tom="neutro">Nota interna</Selo>}
                       {a.autor} · {diaHora(a.em)}
                     </span>
                     <span className="whitespace-pre-line">{a.texto}</span>
@@ -238,7 +238,7 @@ export function Pedido() {
                 {d.conclusoes.map((c) => (
                   <li key={c.id} className="grid gap-1 rounded-lg border border-linha bg-superficie p-4 text-sm">
                     <span className="flex flex-wrap items-center gap-2 text-xs text-tinta-suave">
-                      <Selo tom={c.revisao === "DEVOLVIDA" ? "atencao" : c.revisao === "AGUARDANDO" ? "info" : "ok"} marca={c.revisao === "DEVOLVIDA" ? "atencao" : c.revisao === "AGUARDANDO" ? "interno" : "ok"}>
+                      <Selo tom={c.revisao === "DEVOLVIDA" ? "atencao" : c.revisao === "AGUARDANDO" ? "info" : "ok"}>
                         {c.etapa} · {REVISOES_CONCLUSAO[c.revisao]}
                       </Selo>
                       {c.concluidaPor} · {diaHora(c.concluidaEm)}

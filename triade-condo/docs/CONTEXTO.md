@@ -35,7 +35,7 @@ As mesmas decisões estão no painel de execução (DC1 a DC13). Mudar qualquer 
 - **DC8 · Quadro de permissões e fluxos detalhados só quando houver funcionalidade pronta para eles.** A fundação traz o mecanismo de permissão (pessoa + função + condomínio + ação, negar por padrão), não a tabela completa de quem pode o quê.
 - **DC9 · Rastreio até a ideia.** O `IDEIAS.md` é a fonte única. Cada entrega do painel cita em `refs` os códigos das ideias que atende; cada regra vira teste automático com o código da ideia no nome (ex.: `AT-06: próximo retorno não altera a previsão`).
 - **DC10 · Pedidos funcionam primeiro pelo painel.** O WhatsApp entra no passo 5 como mais uma entrada para o mesmo pedido, quando o provedor oficial estiver escolhido.
-- **DC11 · Paleta e tipografia definidas (Carolina, 16/10/2026).** Substituída pela DC13 em 17/10/2026; vale para o código até a parte A do plano de aplicação.
+- **DC11 · Paleta e tipografia definidas (Carolina, 16/10/2026).** Substituída pela DC13 em 17/10/2026; saiu do código com a parte A do plano de aplicação.
   - Seguem a interface do produto Lattice nas referências fornecidas: fonte Inter, neutros frios, destaque lilás e cores de status em fundo suave com detalhe forte.
   - Verde-petróleo nas ações da Plataforma do síndico e violeta no Console TRÍADE.
   - A Plataforma usa barra superior com busca e menu branco flutuante. O Console usa lateral contínua com grupos e a identificação "Console TRÍADE · Admin".
@@ -199,7 +199,7 @@ Passo 4b (F4.8), fotos e documentos dos pedidos, aprovado e construído em 17/10
 
 Passos 6 e 7 (F6.1, F6.2, F7.1, F7.2), prazos, avisos e o início do dia, sem WhatsApp, aprovados pela Carolina e construídos em 17/10/2026. A migration 0120 (aplicada pela Carolina no triade-condo-dev; api-plataforma versão 8 publicada) cria os avisos dentro do painel e a conferência de prazos, que o próprio banco roda a cada 5 minutos pelo pg_cron (`verificar_prazos`). Retorno vencido avisa o responsável na hora (sem responsável, o síndico); se continuar vencido, o aviso sobe para o síndico e depois para o substituto escolhido, uma pessoa autorizada (padrão 2 h e 8 h de atendimento, cada condomínio muda em Configurações › Prazos e avisos). Também avisam o pedido sem responsável (4 h) e a pendência parada (3 dias). As horas contam só o horário de atendimento e pulam feriados; etapa que pausa o prazo pausa o aviso; ninguém recebe o mesmo aviso duas vezes; cada aviso vai para o histórico do pedido, sem nome do morador. Ver o aviso não resolve o pedido: o vencimento só acaba com o retorno ao morador. O início mostra o Agora (vencidos, o que vence hoje, para aceitar, sem responsável, pendências paradas) e o mês fechado, fixo. A tela Indicadores mostra a porcentagem de retornos no prazo (registrado antes do retorno combinado vencer; vencido sem retorno conta como fora do prazo), o primeiro retorno, concluídos e reabertos, por categoria; sem caso no período, "sem dados", nunca zero.
 
-Identidade TRÍADE aprovada pela Carolina em 17/10/2026 (DC13): sistema de design em `docs/identidade/sistema.html` (botão C, selos com faixa, paleta Brilho, Manrope e Playfair, sempre claro, violeta nos dois sistemas) e plano de aplicação em três partes. A etapa 1, as cinco telas-modelo (`docs/identidade/telas-modelo.html`), espera aprovação; nada mudou no código ainda.
+Identidade TRÍADE aprovada pela Carolina em 17/10/2026 (DC13): sistema de design em `docs/identidade/sistema.html` (botão C, selos com faixa, paleta Brilho, Manrope e Playfair, sempre claro, violeta nos dois sistemas) e plano de aplicação em três partes. As cinco telas-modelo (`docs/identidade/telas-modelo.html`) foram aprovadas e a parte A entrou no código: `packages/ui/src/tema.css` com a paleta Brilho e sem tema escuro, fontes servidas pelo próprio sistema (Fontsource) e os componentes base no novo desenho, mais `Chip`, `Trilho` e `Icone`. As telas já mudam de cara pelos tokens; molduras e ajustes de cada tela ficam para a parte B.
 
 **Próximo passo:**
 
@@ -207,7 +207,7 @@ Identidade TRÍADE aprovada pela Carolina em 17/10/2026 (DC13): sistema de desig
 2. Passo 4b (F4.8) juntado ao `main` (PR 5): conferir um envio de verdade num pedido do Águas Claras.
 3. Passos 6 e 7 construídos na branch: juntar ao `main` para as telas chegarem ao site e conferir os avisos com pedidos de verdade no Águas Claras. O passo 5 (WhatsApp) espera o provedor (E1); o aviso no WhatsApp do síndico (W-11) usa as mesmas regras quando o canal existir.
 4. Com a Carolina, liberar o CI (F0.9).
-5. Identidade: com as telas-modelo aprovadas, parte A do plano (tokens, fontes e componentes), depois de juntar o PR 7.
+5. Identidade: juntar a parte A e seguir para a parte B (molduras com a lateral clara e as telas da Plataforma, um botão principal por tela).
 
 ## Como trabalhar
 

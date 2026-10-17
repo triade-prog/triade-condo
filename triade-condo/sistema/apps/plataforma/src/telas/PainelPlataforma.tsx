@@ -85,12 +85,12 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
           <span className="font-medium">
             {painel.condominio.nome}
             {sessao.condominios.length > 1 ? (
-              <Botao variante="texto" onClick={() => setTrocando(true)}>Trocar condomínio</Botao>
+              <Botao variante="discreto" onClick={() => setTrocando(true)}>Trocar condomínio</Botao>
             ) : null}
           </span>
           {painel.avisosNaoVistos !== undefined ? <SinoAvisos naoVistos={painel.avisosNaoVistos} /> : null}
           <span className="text-tinta-suave">{painel.pessoa.nome} · {nomeFuncoes(painel.funcoes)}</span>
-          <Botao variante="texto" onClick={sair}>Sair</Botao>
+          <Botao variante="discreto" onClick={sair}>Sair</Botao>
           <button
             type="button"
             className="min-h-10 rounded-md border border-contorno px-3 text-sm font-semibold md:hidden"

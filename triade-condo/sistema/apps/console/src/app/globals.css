@@ -2,7 +2,7 @@
 @import "@triade/ui/tema.css";
 @source "../../../../packages/ui/src";
 
-/* Cor das ações do Console: violeta (DC11). */
+/* Cor das ações: violeta da marca, igual nos dois sistemas (DC13). */
 @theme {
   --color-acao: var(--color-console);
   --color-acao-press: var(--color-console-press);

@@ -92,11 +92,11 @@ export function AbaEtapas({ config, pode, recarregar, salvo }: PropsAba) {
                 <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className={e.ativa ? "font-medium" : "text-tinta-suave"}>{e.nome}</span>
-                    {e.pausaPrazo ? <Selo tom="atencao" marca="pausa">pausa o prazo</Selo> : null}
+                    {e.pausaPrazo ? <Selo tom="atencao">pausa o prazo</Selo> : null}
                     {e.categoriaId ? <Selo tom="info">{nomeCategoria(e.categoriaId) ?? "Categoria"}</Selo> : null}
-                    {e.ativa ? null : <Selo tom="neutro" marca="inativo">Desativada</Selo>}
+                    {e.ativa ? null : <Selo tom="neutro">Desativada</Selo>}
                   </span>
-                  {pode ? <Botao variante="texto" onClick={() => setEdicao({ tipo: "etapa", item: e })} aria-label={`Editar a etapa ${e.nome}`}>Editar</Botao> : null}
+                  {pode ? <Botao variante="discreto" onClick={() => setEdicao({ tipo: "etapa", item: e })} aria-label={`Editar a etapa ${e.nome}`}>Editar</Botao> : null}
                 </li>
               ))}
             </ul>
@@ -116,11 +116,11 @@ export function AbaEtapas({ config, pode, recarregar, salvo }: PropsAba) {
                 <span className="flex flex-wrap items-center gap-2">
                   <span className={m.ativo ? "font-medium" : "text-tinta-suave"}>{m.titulo}</span>
                   {m.categoriaId ? <Selo tom="info">{nomeCategoria(m.categoriaId) ?? "Categoria"}</Selo> : null}
-                  {m.ativo ? null : <Selo tom="neutro" marca="inativo">Desativado</Selo>}
+                  {m.ativo ? null : <Selo tom="neutro">Desativado</Selo>}
                 </span>
                 <span className="whitespace-pre-line text-tinta-suave">{m.texto}</span>
               </span>
-              {pode ? <Botao variante="texto" onClick={() => setEdicao({ tipo: "modelo", item: m })} aria-label={`Editar o modelo ${m.titulo}`}>Editar</Botao> : null}
+              {pode ? <Botao variante="discreto" onClick={() => setEdicao({ tipo: "modelo", item: m })} aria-label={`Editar o modelo ${m.titulo}`}>Editar</Botao> : null}
             </li>
           ))}
         </ul>

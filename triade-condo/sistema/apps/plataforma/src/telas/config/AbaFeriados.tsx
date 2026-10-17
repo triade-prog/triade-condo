@@ -73,7 +73,7 @@ export function AbaFeriados({ config, pode, salvo }: PropsAba) {
                   <td className="px-4 py-2.5">{f.descricao}</td>
                   {pode ? (
                     <td className="px-4 py-2.5 text-right">
-                      <Botao variante="texto" onClick={() => void tirar(f.id, f.descricao)} aria-label={`Tirar o feriado ${f.descricao} de ${mostrarDataSemHora(f.data)}`}>Tirar</Botao>
+                      <Botao variante="discreto" onClick={() => void tirar(f.id, f.descricao)} aria-label={`Tirar o feriado ${f.descricao} de ${mostrarDataSemHora(f.data)}`}>Tirar</Botao>
                     </td>
                   ) : null}
                 </tr>

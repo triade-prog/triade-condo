@@ -80,7 +80,7 @@ export function AbaEquipe({ ficha, pode, recarregar, avisar }: PropsAba) {
               <span className="block font-medium">{m.nome}</span>
               <span className="text-xs text-tinta-suave">{nomeFuncao(m.funcao)} · desde {formatarData(m.desde)}</span>
             </span>
-            {podeAtribuir ? <Botao variante="texto" onClick={() => setRetirar(m)} aria-label={`Retirar ${m.nome} (${nomeFuncao(m.funcao)})`}>Retirar</Botao> : null}
+            {podeAtribuir ? <Botao variante="discreto" onClick={() => setRetirar(m)} aria-label={`Retirar ${m.nome} (${nomeFuncao(m.funcao)})`}>Retirar</Botao> : null}
           </li>
         ))}
       </ul>
