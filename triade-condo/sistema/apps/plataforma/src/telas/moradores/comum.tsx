@@ -6,8 +6,6 @@ import { AGRUPAMENTOS, ESTADOS_CONTATO_UNIDADE, MOTIVOS_ENCERRAMENTO, RELACOES_U
 import type { Estrutura } from "../tipos.ts";
 import { Selo } from "@triade/ui";
 
-export const opcoesRelacao = Object.entries(RELACOES_UNIDADE).map(([valor, texto]) => ({ valor, texto }));
-
 export function nomeRelacao(r: string): string {
   return RELACOES_UNIDADE[r as keyof typeof RELACOES_UNIDADE] ?? r;
 }

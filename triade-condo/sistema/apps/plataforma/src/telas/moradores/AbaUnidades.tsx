@@ -1,20 +1,21 @@
 "use client";
 // Unidades (F3.1, MU-08), do jeito que o prédio se organiza: por torre, bloco, quadra ou
 // prédio (ou sem divisão), com ou sem andar. Ordem natural (2 antes de 10; térreo antes do
-// 1º andar), o contato principal de cada unidade e se há contato a confirmar. Divisão e
-// unidade não se apagam: são desativadas, e só quando não têm nada ativo dentro.
+// 1º andar), o responsável de cada unidade, a ocupação (MU-10, MU-11) e se há contato a
+// confirmar. Os contadores de ocupação filtram a lista. Divisão e unidade não se apagam: são
+// desativadas, e só quando não têm nada ativo dentro.
 
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
-import { AGRUPAMENTOS, chaveAndar, chaveUnidade, gerarUnidades, mostrarAndar, nomeDaUnidade, type UnidadeNova } from "@triade/domain";
+import { AGRUPAMENTOS, chaveAndar, chaveUnidade, gerarUnidades, mostrarAndar, nomeDaUnidade, OCUPACOES, type UnidadeNova } from "@triade/domain";
 import {
   AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, Dialogo, Selo, textoDoErro, Vazio, type ErroApi,
 } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import type { Bloco, Estrutura, Recado, UnidadeResumo, Unidades } from "../tipos.ts";
-import { Caixa, Escolha, nomesDivisao } from "./comum.tsx";
+import { Caixa, Escolha, nomeRelacao, nomesDivisao } from "./comum.tsx";
 
-type Filtro = "todos" | "sem-bloco" | "sem-contato" | "sem-proprietario" | string;
+type Filtro = "todos" | "sem-bloco" | "sem-contato" | "sem-proprietario" | "com-morador" | "alugadas" | "nao-mora" | "sem-responsavel" | string;
 
 function plural(n: number, um: string, varios: string): string {
   return `${n} ${n === 1 ? um : varios}`;
@@ -81,7 +82,11 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
       : filtro === "sem-bloco" ? !u.blocoId
         : filtro === "sem-contato" ? u.ativa && u.confirmados === 0
           : filtro === "sem-proprietario" ? u.semProprietario
-            : u.blocoId === filtro);
+            : filtro === "com-morador" ? u.ativa && ["PROPRIETARIO_MORA", "ALUGADA", "CEDIDA"].includes(u.ocupacao)
+              : filtro === "alugadas" ? u.ativa && u.ocupacao === "ALUGADA"
+                : filtro === "nao-mora" ? u.ativa && u.proprietarioNaoMora
+                  : filtro === "sem-responsavel" ? u.semResponsavel
+                    : u.blocoId === filtro);
   const andares = dados.estrutura.usaAndar ? andaresDe(doFiltro) : [];
   const lista = andar ? doFiltro.filter((u) => u.andar === andar) : doFiltro;
   const nomeBloco = (id: string | null) => dados.blocos.find((b) => b.id === id)?.nome ?? null;
@@ -92,8 +97,17 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
     { valor: "sem-contato", texto: "Sem contato confirmado" },
     ...(dados.resumo.semProprietario || filtro === "sem-proprietario" ? [{ valor: "sem-proprietario", texto: "Inquilino sem proprietário" }] : []),
   ];
+  const o = dados.ocupacao;
+  const contadores = [
+    { valor: "com-morador", texto: `${o.comMorador} com morador`, n: o.comMorador },
+    { valor: "alugadas", texto: plural(o.alugadas, "alugada", "alugadas"), n: o.alugadas },
+    { valor: "nao-mora", texto: `${o.proprietarioNaoMora} proprietário não mora`, n: o.proprietarioNaoMora },
+    { valor: "sem-responsavel", texto: `${o.semResponsavel} sem responsável`, n: o.semResponsavel },
+  ].filter((c) => c.n > 0 || c.valor === filtro);
   const resolvido = filtro === "sem-contato" ? "Todas as unidades têm contato confirmado"
-    : filtro === "sem-proprietario" ? "Toda unidade com inquilino tem o proprietário no cadastro" : null;
+    : filtro === "sem-proprietario" ? "Toda unidade com inquilino tem o proprietário no cadastro"
+      : filtro === "sem-responsavel" ? "Toda unidade com gente cadastrada tem um responsável"
+        : ["com-morador", "alugadas", "nao-mora"].includes(filtro) ? "Nenhuma unidade nesta situação" : null;
 
   return (
     <div className="grid gap-4">
@@ -102,6 +116,9 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
         {dados.podeEditar ? <><span aria-hidden="true">·</span><Botao variante="texto" onClick={aoOrganizar}>Mudar</Botao></> : null}
       </p>
       <Escolha rotulo="Mostrar unidades" opcoes={opcoes} atual={filtro} aoMudar={(f) => { setFiltro(f); setAndar(""); }} />
+      {contadores.length ? (
+        <Escolha rotulo="Ocupação" opcoes={contadores} atual={filtro} aoMudar={(f) => { setFiltro(f === filtro ? "todos" : f); setAndar(""); }} />
+      ) : null}
       {andares.length ? (
         <CampoSelecao id="u-filtro-andar" rotulo="Andar" className="max-w-56" value={andar} onChange={(e) => setAndar(e.target.value)}
           opcoes={[{ valor: "", texto: "Todos os andares" }, ...andares.map((a) => ({ valor: a, texto: mostrarAndar(a) }))]} />
@@ -124,7 +141,8 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
             <thead className="bg-superficie-2 text-left text-tinta-suave">
               <tr>
                 <th scope="col" className="px-4 py-2.5 font-semibold">Unidade</th>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Contato principal</th>
+                <th scope="col" className="px-4 py-2.5 font-semibold">Responsável</th>
+                <th scope="col" className="px-4 py-2.5 font-semibold">Ocupação</th>
                 <th scope="col" className="px-4 py-2.5 font-semibold">Contatos</th>
               </tr>
             </thead>
@@ -136,7 +154,14 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
                       {nomeDaUnidade(filtro === u.blocoId ? null : nomeBloco(u.blocoId), andar ? null : u.andar, u.identificacao)}
                     </Link>
                   </td>
-                  <td className="px-4 py-3">{u.principal ?? <span className="text-tinta-suave">Nenhum</span>}</td>
+                  <td className="px-4 py-3">
+                    {u.principal ? <>{u.principal}{u.principalRelacao ? <span className="block text-xs text-tinta-suave">{nomeRelacao(u.principalRelacao)}</span> : null}</>
+                      : <span className="text-tinta-suave">Nenhum</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {u.ocupacao === "SEM_CADASTRO" ? <span className="text-tinta-suave">{OCUPACOES.SEM_CADASTRO}</span> : OCUPACOES[u.ocupacao]}
+                    {u.proprietarioNaoMora && u.proprietario ? <span className="block text-xs text-tinta-suave">{u.proprietario}, proprietário, não mora</span> : null}
+                  </td>
                   <td className="px-4 py-3"><Contatos u={u} /></td>
                 </tr>
               ))}

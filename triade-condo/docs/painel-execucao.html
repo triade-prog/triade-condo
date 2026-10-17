@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "17/10/2026",
     "total_ideias": 308,
-    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (487 pgTAP, 89 Deno, 63 Vitest, 100 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0100) e as Edge Functions api-plataforma (versão 6) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
+    "situacao": "Passos 0 a 4 e o 3b (vínculo detalhado) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (532 pgTAP, 91 Deno, 66 Vitest, 108 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0110) e as Edge Functions api-plataforma (versão 6) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F4",
-    "proximo_passo": "Aplicar a 0110 no triade-condo-dev (SQL Editor) e construir as telas do passo 3b (F3.6). Conferir um envio de verdade de fotos e documentos num pedido do Águas Claras (F4.8). A síndica do Águas Claras cadastra unidades e moradores (E8). Com a Carolina: liberar o GitHub Actions (F0.9)."
+    "proximo_passo": "Publicar a api-plataforma nova (passo 3b) e juntar a branch ao main para as telas do vínculo detalhado chegarem ao site (F3.6). Conferir um envio de verdade de fotos e documentos num pedido do Águas Claras (F4.8). A síndica do Águas Claras cadastra unidades e moradores (E8). Com a Carolina: liberar o GitHub Actions (F0.9)."
   },
   "fases": [
     {
@@ -433,9 +433,9 @@
             "MU-11",
             "PT-11"
           ],
-          "status": "andamento",
-          "nota": "Telas aprovadas pela Carolina em 17/10/2026. Banco e API prontos: migration 0110 com as três marcações (proprietário, responsável, mora na unidade), ligação, parentesco e período de ocupação; a relação de antes passa a ser calculada; conversão dos vínculos existentes conferida com os dados do Águas Claras (dono de unidade alugada fica sem morar, versões e saídas preservadas, histórico registra); mudança preenche ocupa desde e ocupou até; contadores de ocupação; planilha com colunas novas e opcionais; chamadas antigas continuam valendo. Telas a seguir.",
-          "evidencia": "pgTAP 012_vinculo_detalhado_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts"
+          "status": "feito",
+          "nota": "Telas aprovadas pela Carolina em 17/10/2026 e construídas: ficha da unidade com a linha de ocupação e cada pessoa com as marcações, a ligação, o parentesco e desde quando ocupa; incluir e editar pessoa com as três marcações (aviso ao trocar o responsável); encerrar com o ocupou até em qualquer motivo; mudança com as marcações de quem entra e as datas preenchidas sozinhas; lista de unidades com a coluna Ocupação e os contadores que filtram; planilha com colunas novas e opcionais. Migration 0110 aplicada pela Carolina no triade-condo-dev e conferida (vínculos convertidos e registrados no histórico). Falta publicar a api-plataforma nova; a versão 6 continua funcionando com o banco novo.",
+          "evidencia": "pgTAP 012_vinculo_detalhado_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3b.spec.ts e plataforma-passo3.spec.ts"
         }
       ]
     },
@@ -1262,6 +1262,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "01:40",
+      "fim": "03:57",
+      "texto": "Passo 3b construído (F3.6): telas do vínculo detalhado na Plataforma (ficha com a ocupação e as marcações, incluir e editar pessoa com as três marcações, ligação, parentesco e ocupa desde, aviso ao trocar o responsável, encerrar com o ocupou até, mudança com as datas, lista de unidades com a ocupação e os contadores, planilha com colunas novas). A Carolina aplicou a 0110 no triade-condo-dev; conferido no banco (8 vínculos convertidos, nenhuma incoerência). 532 pgTAP, 91 Deno, 66 Vitest, 108 ponta a ponta. Falta publicar a api-plataforma nova.",
+      "ref": "F3.6, MU-10, MU-08, MU-07, MU-11, MU-01, PT-11, D4"
+    },
     {
       "data": "17/10/2026",
       "inicio": "01:25",

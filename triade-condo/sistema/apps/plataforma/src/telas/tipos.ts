@@ -1,7 +1,7 @@
 // O que a API da Plataforma devolve nas configurações (plataforma_configuracoes), nas
 // pessoas (plataforma_pessoas), nos moradores e unidades (passo 3) e nos pedidos (passo 4).
 
-import type { Intervalo } from "@triade/domain";
+import type { Intervalo, Ligacao, Ocupacao, Parentesco } from "@triade/domain";
 
 export interface Configuracoes {
   fuso: string;
@@ -70,6 +70,12 @@ export interface UnidadeResumo {
   temProprietario: boolean;
   semProprietario: boolean;
   principal: string | null;
+  /** Passo 3b (MU-10, MU-11): ocupação, o proprietário e quem é o responsável. */
+  principalRelacao: string | null;
+  ocupacao: Ocupacao;
+  proprietario: string | null;
+  proprietarioNaoMora: boolean;
+  semResponsavel: boolean;
 }
 
 export interface Unidades {
@@ -77,6 +83,8 @@ export interface Unidades {
   blocos: Bloco[];
   unidades: UnidadeResumo[];
   resumo: { unidades: number; semContato: number; aConfirmar: number; semProprietario: number };
+  /** Contadores do topo da lista (passo 3b, MU-11). */
+  ocupacao: { comMorador: number; alugadas: number; proprietarioNaoMora: number; semResponsavel: number };
   podeEditar: boolean;
   podeConfirmar: boolean;
 }
@@ -90,6 +98,11 @@ export interface ContatoDaUnidade {
   relacao: string;
   principal: boolean;
   recebeComunicados: boolean;
+  proprietario: boolean;
+  mora: boolean;
+  ligacao: Ligacao | null;
+  parentesco: Parentesco | null;
+  ocupaDesde: string | null;
   estado: "PENDENTE" | "CONFIRMADO";
   origem: "PAINEL" | "PLANILHA";
   desde: string;
@@ -104,6 +117,11 @@ export interface ContatoAnterior {
   nome: string | null;
   relacao: string;
   motivo: string;
+  proprietario: boolean;
+  mora: boolean;
+  ligacao: Ligacao | null;
+  parentesco: Parentesco | null;
+  ocupaDesde: string | null;
   dataSaida: string | null;
   encerradoEm: string;
   dadosRemovidos: boolean;
@@ -115,6 +133,7 @@ export interface UnidadeDetalhe {
   unidade: { id: string; identificacao: string; blocoId: string | null; andar: string | null; bloco: string | null; ativa: boolean; versao: number };
   contatos: ContatoDaUnidade[];
   anteriores: ContatoAnterior[];
+  ocupacao: { situacao: Ocupacao; moram: number; proprietarioNaoMora: boolean };
   faltaProprietario: boolean;
   podeEditar: boolean;
   podeConfirmar: boolean;
