@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plano de aplicação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Playfair+Display:ital,wght@1,400&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Plano para levar a nova identidade (sistema.html, escolhas de 17/10/2026) ao código da
+   Plataforma do síndico e do Console TRÍADE. Documento para aprovação; nada aplicado ainda. */
+:root{--v50:#F8F3FF;--v100:#F1E9FC;--v200:#DDC8F8;--v300:#C3A0EF;--v400:#A16DE5;--v600:#5808CC;--v700:#4706A6;--v900:#180567;
+  --l50:#FFF7EB;--l200:#FFD39E;--l800:#7C3900;
+  --n50:#F7F4FC;--n100:#F1EFF5;--n200:#E4DCF1;--n300:#CFC6DB;--n600:#5E5475;--n900:#1E1531;
+  --ok:#0B7558;--ok-f:#EDFAF5;--at:#95560A;--at-f:#FFF6E6;--er:#BC1450;--er-f:#FFF0F4;--in:#0D6E8C;--in-f:#EBF8FC;
+  --grad-violeta:radial-gradient(120% 140% at 100% 0%,#9E37F5 0%,#7018DC 28%,transparent 62%),linear-gradient(135deg,#180567 0%,#3A07A0 40%,#5808CC 100%);
+  --s1:0 1px 2px #211a320d,0 4px 12px #3a1a7a0a;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--n50);color:var(--n900);font:15px/1.65 Manrope,system-ui,sans-serif}
+a{color:var(--v600)}
+:focus-visible{outline:3px solid #7B3BDC;outline-offset:3px}
+h1,h2,h3{margin:0;letter-spacing:-.02em;line-height:1.2}
+em.d{font-family:"Playfair Display",Georgia,serif;font-style:italic;font-weight:400;letter-spacing:0}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;background:var(--n100);border-radius:6px;padding:1px 6px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 96px}
+.topo{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0;flex-wrap:wrap}
+.topo img{width:156px}
+.topo nav{display:flex;flex-wrap:wrap;gap:6px}
+.pilula{font-size:13px;font-weight:500;padding:5px 12px;border-radius:999px;background:var(--n100);color:#4A4258;text-decoration:none}
+.pilula:hover{background:var(--v100);color:var(--v700)}
+.abertura{border-radius:22px;background:var(--grad-violeta);color:#fff;padding:40px;display:grid;gap:14px}
+.abertura h1{font-size:clamp(32px,4.6vw,50px);font-weight:300;letter-spacing:-.03em}
+.abertura h1 em.d{color:#FFD39E}
+.abertura p{margin:0;color:#EDE0FF;max-width:720px}
+.escolhas{display:flex;flex-wrap:wrap;gap:8px}
+.escolhas span{background:#ffffff1f;border:1px solid #ffffff40;border-radius:10px;padding:6px 12px;font-size:14px}
+.escolhas b{font-weight:600}
+section{margin-top:56px;scroll-margin-top:16px}
+section>h2{font-size:clamp(26px,3.2vw,34px);font-weight:400;margin-bottom:6px}
+section>p.nota{color:var(--n600);margin:0 0 18px;max-width:760px}
+.cartao{background:#fff;border:1px solid var(--n200);border-radius:18px;padding:20px 22px}
+.grade{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.decisao{position:relative;overflow:hidden;padding-left:26px}
+.decisao::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#F2A33A,#95560A)}
+.decisao h3,.etapa h3{font-size:18px;font-weight:500;margin-bottom:6px}
+.decisao p,.etapa p{margin:0 0 8px;color:var(--n600);font-size:14px}
+.decisao .pergunta{color:var(--n900);font-weight:500}
+.fatos{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.fato{background:#fff;border:1px solid var(--n200);border-radius:16px;padding:16px}
+.fato b{display:block;font-size:28px;font-weight:300;color:var(--v600);line-height:1.1}
+.fato span{font-size:13px;color:var(--n600)}
+.etapas{display:grid;gap:16px;counter-reset:e}
+.etapa{display:grid;grid-template-columns:52px 1fr;gap:16px;align-items:start}
+.etapa .n{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:20px;font-weight:600;color:#fff;background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);box-shadow:inset 0 1px 0 #ffffff47,0 10px 22px -10px #5808ccb3}
+.etapa ul{margin:6px 0 10px;padding-left:18px;font-size:14px}
+.etapa li{margin:3px 0}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.tag{position:relative;overflow:hidden;font-size:12.5px;font-weight:500;padding:3px 10px 3px 12px;border-radius:7px;border:1px solid var(--tb);color:var(--t);background:linear-gradient(180deg,#fff -40%,var(--tf))}
+.tag::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--t)}
+.t-apr{--t:var(--at);--tf:var(--at-f);--tb:#F6DCAE}
+.t-ok{--t:var(--ok);--tf:var(--ok-f);--tb:#BCE8D7}
+.t-in{--t:var(--in);--tf:var(--in-f);--tb:#B9E3EF}
+.t-and{--t:var(--v600);--tf:var(--v50);--tb:#E6D9FB}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--n200);vertical-align:top}
+th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:500;color:var(--n600)}
+.rolar{overflow-x:auto}
+.lista{margin:0;padding-left:18px}
+.lista li{margin:6px 0}
+@media (max-width:640px){.abertura{padding:28px 22px}.etapa{grid-template-columns:1fr}.etapa .n{width:44px;height:44px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="topo">
+  <img src="logo-violeta.png" alt="TRÍADE Condo">
+  <nav aria-label="Partes do plano"><a class="pilula" href="sistema.html">Sistema de design</a><a class="pilula" href="#decisoes">Decisões</a><a class="pilula" href="#hoje">Como está hoje</a><a class="pilula" href="#etapas">Etapas</a><a class="pilula" href="#testes">Testes</a><a class="pilula" href="#entrega">Entrega</a></nav>
+</div>
+<main>
+<header class="abertura">
+  <span style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#E7D3FF">Plano para aprovação · 17/10/2026</span>
+  <h1>Nova identidade no <em class="d">sistema</em></h1>
+  <p>Como levar o sistema de design aprovado para a Plataforma do síndico e o Console TRÍADE sem quebrar nada que já funciona. A troca começa pelos tokens e pelos componentes base, então a maior parte das telas muda sozinha; depois vêm as molduras e os ajustes de cada tela.</p>
+  <div class="escolhas"><span><b>Botão</b> · C, degradê com brilho</span><span><b>Selos e chips</b> · D, faixa lateral com o brilho do C</span><span><b>Cores</b> · paleta Brilho (jade, âmbar, rubi, petróleo)</span></div>
+</header>
+
+<section id="decisoes" aria-labelledby="t-dec">
+  <h2 id="t-dec">Três decisões para confirmar</h2>
+  <p class="nota">A nova identidade muda decisões que estão fechadas no CONTEXTO (DC11). Antes do código, preciso do seu sim nestes três pontos. Com o sim, a DC11 vira histórico e entra a DC13 · Identidade TRÍADE.</p>
+  <div class="grade">
+    <div class="cartao decisao"><h3>1. Violeta nas ações dos dois sistemas</h3><p>Hoje a Plataforma usa verde-petróleo nas ações e o Console usa violeta (DC11). No sistema de design, o botão principal é o degradê violeta nos dois.</p><p>Os sistemas continuam diferentes pelo nome no topo e pelo selo laranja "Admin" no Console.</p><p class="pergunta">Proposta: violeta nos dois.</p></div>
+    <div class="cartao decisao"><h3>2. Sempre claro</h3><p>Hoje existe um tema escuro complementar (<code>data-theme="dark"</code>). O sistema de design decidiu "sempre claro".</p><p>O tema escuro sai do código, e o teste passa a garantir que a tela fica clara mesmo com o aparelho no modo escuro.</p><p class="pergunta">Proposta: tirar o tema escuro.</p></div>
+    <div class="cartao decisao"><h3>3. Manrope, Playfair e Plex Mono servidas pelo próprio sistema</h3><p>Hoje a fonte declarada é a Inter, que nem chega a ser carregada. A proteção do servidor só aceita fontes do próprio endereço, e é bom que continue assim.</p><p>As três fontes entram como arquivos do próprio sistema: só os pesos usados e só o alfabeto latino. São todas de licença livre (OFL).</p><p class="pergunta">Proposta: fontes no próprio sistema, sem Google Fonts nas telas.</p></div>
+  </div>
+</section>
+
+<section id="hoje" aria-labelledby="t-hoje">
+  <h2 id="t-hoje">Como está o código hoje</h2>
+  <p class="nota">Medi o código antes de planejar. A boa notícia: as telas já usam tokens de cor, quase nunca a cor direta, então trocar a paleta é trocar um arquivo.</p>
+  <div class="fatos">
+    <div class="fato"><b>1</b><span>arquivo de tema para os dois sistemas (<code>packages/ui/src/tema.css</code>, 101 linhas)</span></div>
+    <div class="fato"><b>~450</b><span>usos de classes de token nas telas; só 1 cor escrita direto</span></div>
+    <div class="fato"><b>15</b><span>componentes base em <code>packages/ui</code> (botão, campos, selo, aviso, vazio, janela, abas…)</span></div>
+    <div class="fato"><b>83</b><span>arquivos de tela nas duas aplicações</span></div>
+    <div class="fato"><b>8</b><span>suítes de teste de ponta a ponta, todas com verificação de acessibilidade (axe, WCAG 2.2 AA)</span></div>
+  </div>
+</section>
+
+<section id="etapas" aria-labelledby="t-et">
+  <h2 id="t-et">Etapas</h2>
+  <p class="nota">Cada etapa termina com testes passando e prints de computador e celular. A regra de sempre continua valendo: as telas são desenhadas e aprovadas antes do código.</p>
+  <div class="etapas">
+    <article class="cartao etapa"><span class="n">1</span><div><h3>Desenho das telas-modelo</h3>
+      <p>Atualizar o <code>design-frontend.html</code>: "Base adotada" passa a apontar para o sistema de design. Redesenhar quatro telas que servem de modelo para as outras.</p>
+      <ul><li>Entrar, com a arte de fundo (órbitas e trilha)</li><li>Início da Plataforma: abertura em degradê, "Para você" e "Próximos retornos"</li><li>Fila de pedidos (filtros no trilho, selos com faixa) e Pedido aberto</li><li>Carteira do Console, com a lateral clara</li></ul>
+      <div class="tags"><span class="tag t-apr">Sua aprovação</span><span class="tag t-in">Só documentação</span></div></div></article>
+    <article class="cartao etapa"><span class="n">2</span><div><h3>Tokens e fontes</h3>
+      <p>Reescrever <code>packages/ui/src/tema.css</code> e <code>docs/tema-triade.css</code> com os valores do sistema de design: escalas violeta e laranja, neutros, cores de estado, faixas com brilho, degradês, sombras e cantos.</p>
+      <ul><li>Os nomes antigos (<code>tinta-suave</code>, <code>linha</code>, <code>acao</code>…) ficam como apelidos dos novos valores. Assim, as cerca de 450 classes continuam funcionando no primeiro dia.</li><li>Sai o bloco do tema escuro; entram Manrope, Playfair Display itálico e IBM Plex Mono servidas pelo sistema.</li><li>O texto base passa de 14 para 15 px, como no sistema de design.</li></ul>
+      <div class="tags"><span class="tag t-and">Muda a cara das duas aplicações de uma vez</span></div></div></article>
+    <article class="cartao etapa"><span class="n">3</span><div><h3>Componentes base</h3>
+      <p>Refazer os componentes de <code>packages/ui</code> no desenho aprovado. As telas usam esses componentes, então a mudança se espalha sozinha.</p>
+      <ul>
+        <li><b>Botão:</b> seis estilos (principal, secundário, contorno, discreto, perigo, sobre o violeta), três tamanhos, versão só ícone e anel de foco duplo. O estilo "texto" de hoje vira "discreto".</li>
+        <li><b>Selo:</b> faixa lateral com brilho e os tons aberto, andamento, atenção, vencido, ok e informação.</li>
+        <li><b>Chip e trilho</b> (novos): filtro, filtro que se tira, pessoa e "incluir".</li>
+        <li><b>Aviso:</b> cartão branco com faixa e quadro de ícone, mantendo <code>role=alert</code> no erro.</li>
+        <li><b>Campos:</b> 44 px, cantos de 12 e anel de foco violeta.</li>
+        <li><b>Janela</b> (o Diálogo de hoje), abas, tela vazia com órbitas e carregando.</li>
+        <li><b>Ícones:</b> os 60+ do sistema de design viram um componente <code>Icone</code>, sempre com palavra junto ou rótulo para leitor de tela.</li>
+      </ul>
+      <div class="tags"><span class="tag t-ok">Testes de unidade dos mapas de estilo</span></div></div></article>
+    <article class="cartao etapa"><span class="n">4</span><div><h3>Molduras dos dois sistemas</h3>
+      <ul><li><b>Plataforma:</b> barra superior branca (busca, sino, pessoa). A lateral clara tem ícones, grupos, o item escolhido com o degradê e as contagens em laranja. A faixa lilás do início vira a abertura em degradê violeta com órbitas.</li>
+      <li><b>Console:</b> a mesma lateral clara, com "Console TRÍADE" e o selo laranja "Admin". Em tela pequena ela recolhe, como hoje.</li>
+      <li><b>Entrar e acesso por link:</b> a arte de fundo só aparece aqui, no início, nas telas vazias e na prioridade, como diz o sistema de design.</li></ul></div></article>
+    <article class="cartao etapa"><span class="n">5</span><div><h3>Telas da Plataforma</h3>
+      <p>Revisar cada tela no novo desenho: botão principal único, selos no lugar certo e filtros no trilho.</p>
+      <ul><li>Início, Avisos, Indicadores, Busca</li><li>Pedidos: fila, registrar, pedido, janelas de ação, arquivos</li><li>Moradores: unidades, ficha, janelas da unidade, importar planilha</li><li>Pessoas, Configurações (horários e regras de prazo), Entrar e Acesso</li></ul></div></article>
+    <article class="cartao etapa"><span class="n">6</span><div><h3>Telas do Console</h3>
+      <ul><li>Carteira, Ficha do condomínio (abas), Equipe, Novo condomínio, Histórico, Entrar e Acesso</li></ul></div></article>
+    <article class="cartao etapa"><span class="n">7</span><div><h3>Limpeza e registro</h3>
+      <ul><li>Tirar os nomes antigos de token (<code>lilas</code>, <code>plataforma</code>, <code>faixa-*</code>, <code>console-*</code>) depois que nenhuma tela usar mais.</li><li>Um teste novo falha se aparecer cor escrita direto numa tela ou token antigo.</li><li>Atualizar CONTEXTO (DC13), README, <code>design-frontend.html</code> e o painel de execução.</li></ul></div></article>
+  </div>
+</section>
+
+<section id="testes" aria-labelledby="t-tes">
+  <h2 id="t-tes">Testes e garantias</h2>
+  <div class="cartao rolar"><table>
+    <thead><tr><th scope="col">O quê</th><th scope="col">Como</th></tr></thead>
+    <tbody>
+      <tr><td>Acessibilidade e contraste</td><td>axe (WCAG 2.2 AA) nas 8 suítes de ponta a ponta, que já existem, incluindo o contraste de cada selo, botão e aviso. Todas as cores novas já foram medidas: o texto passa AA, e o anel de foco e a borda de campo passam 3 : 1.</td></tr>
+      <tr><td>Celular e computador</td><td>Prints a 1360 e 390 px de cada tela tocada, conferindo que nada passa da largura.</td></tr>
+      <tr><td>Alto contraste do Windows</td><td>Bordas em degradê ganham borda sólida de reserva no modo de cores forçadas.</td></tr>
+      <tr><td>O que não pode mudar</td><td>Typecheck, lint, Vitest, pgTAP e os testes da API seguem verdes. Banco, API e Edge Function não mudam, então não há migração nem deploy de servidor.</td></tr>
+      <tr><td>Proteção do servidor</td><td>A política de segurança continua só com fontes e estilos do próprio endereço. Há um teste de que nenhuma fonte externa é pedida.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="entrega" aria-labelledby="t-ent">
+  <h2 id="t-ent">Como entra</h2>
+  <div class="grade">
+    <div class="cartao"><h3 style="font-size:18px;font-weight:500;margin-bottom:6px">Em três partes</h3><ol class="lista">
+      <li><b>Parte A</b> (etapas 2 e 3): tokens, fontes e componentes. As duas aplicações já ficam com a nova cara.</li>
+      <li><b>Parte B</b> (etapas 4 e 5): molduras e telas da Plataforma.</li>
+      <li><b>Parte C</b> (etapas 6 e 7): telas do Console e limpeza.</li></ol></div>
+    <div class="cartao"><h3 style="font-size:18px;font-weight:500;margin-bottom:6px">Ordem</h3><ol class="lista">
+      <li>Seu sim nas três decisões e nas telas-modelo (etapa 1).</li>
+      <li>O PR 7 (passos 6 e 7) é juntado primeiro, para a identidade nova partir do código mais recente.</li>
+      <li>Cada parte vai num PR próprio, com prints de antes e depois. Você junta quando aprovar.</li></ol></div>
+  </div>
+</section>
+</main>
+</div>
+</body>
+</html>

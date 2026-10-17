@@ -15,8 +15,10 @@
 :root{
   --v50:#F8F3FF;--v100:#F1E9FC;--v200:#DDC8F8;--v300:#C3A0EF;--v400:#A16DE5;--v500:#7B3BDC;--v600:#5808CC;--v700:#4706A6;--v800:#350580;--v900:#180567;--v950:#10033F;
   --l50:#FFF7EB;--l100:#FFEBCF;--l200:#FFD39E;--l300:#FFB96A;--l400:#FFA338;--l500:#FF8D01;--l600:#CF6300;--l700:#A54C00;--l800:#7C3900;--l900:#552600;
-  --n0:#FFFFFF;--n50:#F8F6FC;--n100:#F1EFF5;--n200:#E6DFEF;--n300:#CFC6DB;--n400:#968AA6;--n500:#83758F;--n600:#665D74;--n700:#4A4258;--n900:#211A32;
-  --ok:#1D7A55;--ok-f:#EFFAF5;--ok-b:#CBEBDD;--at:#8C5A0A;--at-f:#FFF8E6;--at-b:#F3E0B5;--er:#C02650;--er-f:#FFF1F4;--er-b:#F7D0DB;--in:#4338CA;--in-f:#F1F0FF;--in-b:#D9D6FB;
+  --n0:#FFFFFF;--n50:#F7F4FC;--n100:#F1EFF5;--n200:#E4DCF1;--n300:#CFC6DB;--n400:#9184AA;--n500:#83758F;--n600:#5E5475;--n700:#4A4258;--n900:#1E1531;
+  --ok:#0B7558;--ok-f:#EDFAF5;--ok-b:#BCE8D7;--at:#95560A;--at-f:#FFF6E6;--at-b:#F6DCAE;--er:#BC1450;--er-f:#FFF0F4;--er-b:#F8CBDA;--in:#0D6E8C;--in-f:#EBF8FC;--in-b:#B9E3EF;
+  /* Faixas com brilho: do tom forte ao claro, na lateral de selos e avisos. */
+  --fx-and:linear-gradient(180deg,#8B3DF0,#5808CC);--fx-ok:linear-gradient(180deg,#3DBE91,#0B7558);--fx-at:linear-gradient(180deg,#F2A33A,#95560A);--fx-er:linear-gradient(180deg,#F0598A,#BC1450);--fx-in:linear-gradient(180deg,#38B2CF,#0D6E8C);--fx-ab:linear-gradient(180deg,#C3B8D6,#7C7090);
   --fundo:var(--n50);--superficie:#fff;--texto:var(--n900);--texto-suave:var(--n600);--linha:var(--n200);--marca:var(--v600);--acento:var(--l500);
   --grad-violeta:radial-gradient(120% 140% at 100% 0%,#9E37F5 0%,#7018DC 28%,transparent 62%),linear-gradient(135deg,#180567 0%,#3A07A0 40%,#5808CC 100%);
   --grad-trilha:linear-gradient(165deg,#FFE0A8 0%,#FFB45C 38%,#FF8D01 72%,#F2700A 100%);
@@ -136,29 +138,34 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
 .icone-grupo span{font-size:13px;color:var(--texto-suave);text-align:center}
 
 /* Componentes */
-.botao{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:12px;font:500 14px Manrope,sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap}
+/* Botão aprovado em 17/10/2026: versão C, degradê com brilho. */
+.botao{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:14px;font:500 14px Manrope,sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap}
 .botao .ic{width:18px;height:18px}
-.bt-m{min-height:36px;padding:0 14px;font-size:13px;border-radius:10px}
-.bt-p{min-height:30px;padding:0 10px;font-size:13px;border-radius:9px}
+.bt-m{min-height:36px;padding:0 14px;font-size:13px;border-radius:11px}
+.bt-p{min-height:30px;padding:0 10px;font-size:13px;border-radius:10px}
 .so-ic{padding:0;width:44px}.bt-m.so-ic{width:36px}.bt-p.so-ic{width:30px}
-.primario{background:linear-gradient(180deg,#6214DA,#5808CC);color:#fff;box-shadow:0 1px 0 #ffffff26 inset,0 2px 6px #5808cc29}
-.primario.hover{background:linear-gradient(180deg,#5D12D6,#4706A6)}
-.primario.pressionado{background:#350580;box-shadow:none}
-.secundario{background:var(--v50);color:var(--v600);border-color:#E4D6FB}
-.secundario.hover{background:var(--v100);border-color:var(--v200)}
-.secundario.pressionado{background:var(--v200)}
-.contorno{background:#fff;color:var(--v600);border-color:var(--v300)}
-.contorno.hover{background:var(--v50)}
-.contorno.pressionado{background:var(--v100)}
+.primario{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff;box-shadow:inset 0 1px 0 #ffffff47,0 10px 22px -10px #5808ccb3}
+.primario.hover{background:linear-gradient(135deg,#7B2BE8 0%,#4706A6 60%,#2E0585 100%)}
+.primario.pressionado{background:linear-gradient(135deg,#4706A6,#2E0585);box-shadow:inset 0 2px 6px #0004}
+.secundario{border:1.5px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box;color:var(--v700)}
+.secundario.hover{background:linear-gradient(var(--v50),var(--v50)) padding-box,linear-gradient(135deg,#7B3BDC,#FF8D01) border-box}
+.secundario.pressionado{background:linear-gradient(var(--v100),var(--v100)) padding-box,linear-gradient(135deg,#7B3BDC,#FF8D01) border-box}
+.contorno{background:linear-gradient(180deg,#fff,#F8F3FF);color:var(--v600);border-color:var(--v200);box-shadow:var(--s1)}
+.contorno.hover{border-color:var(--v300)}
+.contorno.pressionado{background:var(--v100);box-shadow:none}
 .fantasma{background:transparent;color:var(--v600)}
-.fantasma.hover{background:var(--v50)}
+.fantasma.hover{background:linear-gradient(90deg,var(--v100),#f8f3ff00)}
 .fantasma.pressionado{background:var(--v100)}
-.perigo{background:var(--er-f);color:var(--er);border-color:var(--er-b)}
-.perigo.hover{background:#FFE6EC}
+.perigo{background:linear-gradient(180deg,#FFF6F8,#FFE9EF);color:var(--er);border-color:var(--er-b)}
+.perigo.hover{background:#FFE3EA}
 .perigo.pressionado{background:var(--er-b)}
-.claro{background:#fff;color:var(--v900)}.claro.hover{background:var(--v50)}.claro.pressionado{background:var(--v100)}
-.celula-escura{background:var(--grad-violeta);border-radius:12px;padding:6px}
+.claro{background:linear-gradient(180deg,#fff,#F1E9FC);color:var(--v900);box-shadow:0 8px 18px -8px #0008}.claro.hover{background:#fff}.claro.pressionado{background:var(--v100);box-shadow:none}
+.celula-escura{background:var(--grad-violeta);border-radius:16px;padding:6px}
 .foco{outline:3px solid var(--v300);outline-offset:2px}
+/* Anel de foco duplo (branco e violeta 500): passa 3 : 1 em qualquer fundo. */
+.botao.foco{outline:0;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--v500)}
+.primario.foco{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--v500),0 10px 22px -10px #5808ccb3}
+.celula-escura .botao.foco{box-shadow:0 0 0 2px var(--v800),0 0 0 4px #FFD39E}
 .desab{background:var(--n100)!important;color:#8A8296!important;border-color:transparent!important;box-shadow:none!important;cursor:not-allowed}
 .matriz{border-collapse:separate;border-spacing:10px 8px;margin:-8px -10px}
 .matriz th{font-size:12px;font-weight:500;color:var(--v600);text-align:left;white-space:nowrap}
@@ -186,18 +193,25 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
 .dica .ic{width:14px;height:14px}
 .dica.erro{color:var(--er)}.dica.alerta{color:var(--at)}.dica.certo{color:var(--ok)}
 
-.chip{display:inline-flex;align-items:center;gap:7px;min-height:32px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:500;border:1px solid var(--n200);background:#fff;color:var(--n700)}
+/* Selos e chips aprovados em 17/10/2026: faixa lateral (D) com o brilho do botão C. */
+.chip{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 13px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid var(--n200);background:#fff;color:var(--n700);white-space:nowrap}
 .chip .ic{width:16px;height:16px}
-.chip.sel{background:var(--v600);color:#fff;border-color:var(--v600)}
-.chip.ac{background:var(--l50);color:var(--l800);border-color:var(--l200)}
-.chip .av{width:22px;height:22px;font-size:10px;margin-left:-6px}
-.selo{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;padding:4px 11px 4px 9px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
-.selo .f{width:7px;height:7px;background:currentColor;border-radius:50%}
-.s-novo{color:#5B5368;background:#F4F2F7;border-color:#E7E3EE}.s-novo .f{background:none;border:1.5px solid;border-radius:2px}
-.s-and{color:var(--v600);background:var(--v50);border-color:#E6D9FB}
-.s-at{color:var(--at);background:var(--at-f);border-color:var(--at-b)}.s-at .f{border-radius:0;transform:rotate(45deg)}
-.s-ve{color:var(--er);background:var(--er-f);border-color:var(--er-b)}.s-ve .f{width:0;height:0;background:none;border-radius:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid currentColor}
-.s-ok{color:var(--ok);background:var(--ok-f);border-color:var(--ok-b)}.s-ok .f{width:9px;height:5px;background:none;border-left:2px solid;border-bottom:2px solid;border-radius:0;transform:rotate(-45deg) translateY(-1px)}
+.chip.sel{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff;border-color:transparent;box-shadow:inset 0 1px 0 #ffffff47,0 8px 16px -8px #5808ccb3}
+.chip.ac{border:1.5px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box;color:var(--l800)}
+.chip.ac>.ic:first-child{color:var(--l600)}
+.chip.inc{border-style:dashed;border-color:var(--v300);color:var(--v600)}
+.chip .av{width:24px;height:24px;font-size:10px;margin-left:-7px;border:0}
+.trilho{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;background:var(--n100);border-radius:14px;box-shadow:inset 0 1px 2px #211a320f}
+.trilho .chip{border-color:transparent;background:transparent;min-height:32px}
+.trilho .chip.sel{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff}
+.selo{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;padding:4px 12px 4px 13px;border-radius:7px;border:1px solid var(--tb);color:var(--t);background:linear-gradient(180deg,#fff -40%,var(--tf) 100%);box-shadow:inset 0 1px 0 #fff;white-space:nowrap}
+.selo::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx)}
+.selo .f{display:none}
+.s-novo{--t:#5B5368;--tf:#F4F2F7;--tb:#E3DEEB;--fx:var(--fx-ab)}
+.s-and{--t:var(--v600);--tf:var(--v50);--tb:#E6D9FB;--fx:var(--fx-and)}
+.s-at{--t:var(--at);--tf:var(--at-f);--tb:var(--at-b);--fx:var(--fx-at)}
+.s-ve{--t:var(--er);--tf:var(--er-f);--tb:var(--er-b);--fx:var(--fx-er)}
+.s-ok{--t:var(--ok);--tf:var(--ok-f);--tb:var(--ok-b);--fx:var(--fx-ok)}
 
 .cx{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--n500);background:#fff;display:inline-grid;place-items:center;color:#fff}
 .cx.on{background:var(--v600);border-color:var(--v600)}
@@ -285,13 +299,13 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
 
 /* Avisos (snackbar) */
 .aviso{display:flex;align-items:center;gap:12px;padding:12px 14px 12px 12px;border-radius:14px;border:1px solid var(--linha);background:#fff;box-shadow:var(--s2);max-width:480px;position:relative;overflow:hidden}
-.aviso::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--v400)}
+.aviso::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx-in)}
 .aviso .quad{width:36px;height:36px;border-radius:10px}
 .aviso .quad .ic{width:18px;height:18px}
 .aviso .t{flex:1;min-width:0}
 .aviso .t b{display:block;font-weight:500;font-size:14px}
 .aviso .t small{font-size:13px;color:var(--n600)}
-.aviso.ok::before{background:var(--ok)}.aviso.at::before{background:#D9A12E}.aviso.er::before{background:var(--er)}
+.aviso.ok::before{background:var(--fx-ok)}.aviso.at::before{background:var(--fx-at)}.aviso.er::before{background:var(--fx-er)}
 .aviso.marca{background:var(--grad-violeta);color:#fff;border-color:transparent}.aviso.marca::before{background:var(--l500)}
 .aviso.marca small{color:#E7D3FF}.aviso.marca .quad{background:#ffffff1f;color:#FFD39E}
 /* Abas, segmentado, dica, emblema */
@@ -539,16 +553,18 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
   </div>
   <p class="nota">* O laranja 500 só leva texto em violeta profundo (7,21 : 1). O laranja é acento: aparece em pouco espaço (contagem, marcador, trilha) e nunca como botão nem como situação. Os tons escuros saíram da escala porque ficavam marrons e brigavam com o violeta; só o 800 fica, para texto sobre laranja claro.</p>
   <h3 class="sub">Neutros e significado</h3>
+  <p class="nota">Paleta "Brilho", feita a partir das escolhas de 17/10: neutros com um toque de lavanda e cores de estado em tom de joia (jade, âmbar, rubi e petróleo), longe o bastante do violeta para não se confundirem com a marca. A informação sai do azul e vai para o petróleo, porque o azul brigava com o degradê do botão. O número é o contraste do tom sobre o próprio fundo.</p>
   <div class="escala">
-    <div class="am"><i style="background:#F8F6FC"></i><div><b>Névoa 50</b><code>#F8F6FC</code></div></div>
-    <div class="am"><i style="background:#E6DFEF"></i><div><b>Linha 200</b><code>#E6DFEF</code></div></div>
-    <div class="am"><i style="background:#968AA6;color:#fff"><span>3,2</span></i><div><b>Borda de campo</b><code>#968AA6</code></div></div>
-    <div class="am"><i style="background:#665D74;color:#fff"><span>AA 6,2</span></i><div><b>Tinta suave</b><code>#665D74</code></div></div>
-    <div class="am"><i style="background:#211A32;color:#fff"><span>AAA 16,7</span></i><div><b>Tinta</b><code>#211A32</code></div></div>
-    <div class="am"><i style="background:#EFFAF5;box-shadow:inset 0 -26px 0 #1D7A55"><span style="color:#1D7A55">AA 5,3</span></i><div><b>Concluído, no prazo</b><code>#1D7A55</code></div></div>
-    <div class="am"><i style="background:#FFF8E6;box-shadow:inset 0 -26px 0 #8C5A0A"><span style="color:#8C5A0A">AA 5,9</span></i><div><b>Atenção, vence hoje</b><code>#8C5A0A</code></div></div>
-    <div class="am"><i style="background:#FFF1F4;box-shadow:inset 0 -26px 0 #C02650"><span style="color:#C02650">AA 5,8</span></i><div><b>Vencido, erro</b><code>#C02650</code></div></div>
-    <div class="am"><i style="background:#F1F0FF;box-shadow:inset 0 -26px 0 #4338CA"><span style="color:#4338CA">AAA 7,9</span></i><div><b>Informação</b><code>#4338CA</code></div></div>
+    <div class="am"><i style="background:#F7F4FC"><span>AAA 16,1</span></i><div><b>Névoa 50</b><code>#F7F4FC</code></div></div>
+    <div class="am"><i style="background:#E4DCF1"><span>AAA 13,1</span></i><div><b>Linha 200</b><code>#E4DCF1</code></div></div>
+    <div class="am"><i style="background:#9184AA;color:#fff"><span>3,5</span></i><div><b>Borda de campo</b><code>#9184AA</code></div></div>
+    <div class="am"><i style="background:#5E5475;color:#fff"><span>AAA 7,0</span></i><div><b>Tinta suave</b><code>#5E5475</code></div></div>
+    <div class="am"><i style="background:#1E1531;color:#fff"><span>AAA 17,4</span></i><div><b>Tinta</b><code>#1E1531</code></div></div>
+    <div class="am"><i style="background:linear-gradient(180deg,#fff -40%,#F8F3FF);box-shadow:inset 4px 0 0 #7B3BDC"><span style="color:#5808CC">AAA 8,3</span></i><div><b>Em andamento</b><code>#5808CC</code></div></div>
+    <div class="am"><i style="background:linear-gradient(180deg,#fff -40%,#EDFAF5);box-shadow:inset 4px 0 0 #0B7558"><span style="color:#0B7558">AA 5,3</span></i><div><b>Concluído, no prazo · jade</b><code>#0B7558</code></div></div>
+    <div class="am"><i style="background:linear-gradient(180deg,#fff -40%,#FFF6E6);box-shadow:inset 4px 0 0 #95560A"><span style="color:#95560A">AA 5,4</span></i><div><b>Atenção, vence hoje · âmbar</b><code>#95560A</code></div></div>
+    <div class="am"><i style="background:linear-gradient(180deg,#fff -40%,#FFF0F4);box-shadow:inset 4px 0 0 #BC1450"><span style="color:#BC1450">AA 5,7</span></i><div><b>Vencido, erro · rubi</b><code>#BC1450</code></div></div>
+    <div class="am"><i style="background:linear-gradient(180deg,#fff -40%,#EBF8FC);box-shadow:inset 4px 0 0 #0D6E8C"><span style="color:#0D6E8C">AA 5,3</span></i><div><b>Informação · petróleo</b><code>#0D6E8C</code></div></div>
   </div>
   <h3 class="sub">Tokens de uso</h3>
   <p class="nota">As telas usam os tokens, nunca a cor direta. Assim dá para ajustar o sistema inteiro num lugar só.</p>
@@ -677,7 +693,7 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
         <tr><th scope="row">Normal</th><td><span class="botao primario"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></td><td><span class="botao secundario">Repassar</span></td><td><span class="botao contorno">Exportar</span></td><td><span class="botao fantasma">Ver todos<svg class="ic"><use href="#i-seta"/></svg></span></td><td><span class="botao perigo">Cancelar</span></td><td class="celula-escura"><span class="botao claro">Ver vencidos</span></td></tr>
         <tr><th scope="row">Sob o mouse</th><td><span class="botao primario hover"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></td><td><span class="botao secundario hover">Repassar</span></td><td><span class="botao contorno hover">Exportar</span></td><td><span class="botao fantasma hover">Ver todos<svg class="ic"><use href="#i-seta"/></svg></span></td><td><span class="botao perigo hover">Cancelar</span></td><td class="celula-escura"><span class="botao claro hover">Ver vencidos</span></td></tr>
         <tr><th scope="row">Pressionado</th><td><span class="botao primario pressionado"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></td><td><span class="botao secundario pressionado">Repassar</span></td><td><span class="botao contorno pressionado">Exportar</span></td><td><span class="botao fantasma pressionado">Ver todos<svg class="ic"><use href="#i-seta"/></svg></span></td><td><span class="botao perigo pressionado">Cancelar</span></td><td class="celula-escura"><span class="botao claro pressionado">Ver vencidos</span></td></tr>
-        <tr><th scope="row">Foco</th><td><span class="botao primario foco"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></td><td><span class="botao secundario foco">Repassar</span></td><td><span class="botao contorno foco">Exportar</span></td><td><span class="botao fantasma foco">Ver todos<svg class="ic"><use href="#i-seta"/></svg></span></td><td><span class="botao perigo foco">Cancelar</span></td><td class="celula-escura"><span class="botao claro foco" style="outline-color:#FFD39E">Ver vencidos</span></td></tr>
+        <tr><th scope="row">Foco</th><td><span class="botao primario foco"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></td><td><span class="botao secundario foco">Repassar</span></td><td><span class="botao contorno foco">Exportar</span></td><td><span class="botao fantasma foco">Ver todos<svg class="ic"><use href="#i-seta"/></svg></span></td><td><span class="botao perigo foco">Cancelar</span></td><td class="celula-escura"><span class="botao claro foco">Ver vencidos</span></td></tr>
         <tr><th scope="row">Indisponível</th><td><span class="botao primario desab"><svg class="ic"><use href="#i-mais"/></svg>Registrar</span></td><td><span class="botao secundario desab">Repassar</span></td><td><span class="botao contorno desab">Exportar</span></td><td><span class="botao fantasma desab">Ver todos<svg class="ic"><use href="#i-seta"/></svg></span></td><td><span class="botao perigo desab">Cancelar</span></td><td class="celula-escura"><span class="botao claro desab">Ver vencidos</span></td></tr>
       </tbody>
     </table>
@@ -715,11 +731,11 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
 
 <!-- Selos e chips -->
 <section class="parte" id="selos" aria-labelledby="t-selos">
-  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-selos">Selos e chips</h2><p>O selo diz a situação e não se clica. O chip filtra ou escolhe e pode ser tirado. Os dois têm forma e palavra, além da cor.</p></div>
+  <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-selos">Selos e chips</h2><p>O selo diz a situação e não se clica: faixa lateral com brilho e palavra, nunca só a cor. O chip filtra ou escolhe e pode ser tirado; os filtros da fila ficam num trilho, e o escolhido ganha o degradê do botão principal.</p></div>
   <div class="estudo" style="display:grid;gap:18px">
     <div><span class="rot">Situação do pedido</span><div class="linha" style="margin-top:8px"><span class="selo s-novo"><span class="f" aria-hidden="true"></span>Aberto</span><span class="selo s-and"><span class="f" aria-hidden="true"></span>Em andamento</span><span class="selo s-at"><span class="f" aria-hidden="true"></span>Vence hoje</span><span class="selo s-ve"><span class="f" aria-hidden="true"></span>Retorno vencido</span><span class="selo s-ok"><span class="f" aria-hidden="true"></span>Concluído</span></div></div>
-    <div><span class="rot">Filtros da fila</span><div class="linha" style="margin-top:8px"><span class="chip sel"><svg class="ic"><use href="#i-check"/></svg>Ativos</span><span class="chip"><svg class="ic"><use href="#i-relogio"/></svg>Retorno vencido</span><span class="chip"><svg class="ic"><use href="#i-pessoa"/></svg>Sem responsável</span><span class="chip sel">Torre A<svg class="ic"><use href="#i-fechar"/></svg></span><span class="chip ac"><svg class="ic"><use href="#i-ferramenta"/></svg>Manutenção<svg class="ic"><use href="#i-fechar"/></svg></span></div></div>
-    <div><span class="rot">Pessoas</span><div class="linha" style="margin-top:8px"><span class="chip"><span class="av av1">AL</span>Ana Lima</span><span class="chip"><span class="av av2">BS</span>Bruna Souza</span><span class="chip"><span class="av av3">ES</span>Edu Santos<svg class="ic"><use href="#i-fechar"/></svg></span><span class="chip" style="border-style:dashed;color:var(--v600)"><svg class="ic"><use href="#i-pessoa-mais"/></svg>Incluir pessoa</span></div></div>
+    <div><span class="rot">Filtros da fila</span><div class="linha" style="margin-top:8px"><span class="trilho"><span class="chip sel"><svg class="ic"><use href="#i-check"/></svg>Ativos</span><span class="chip"><svg class="ic"><use href="#i-relogio"/></svg>Retorno vencido</span><span class="chip"><svg class="ic"><use href="#i-pessoa"/></svg>Sem responsável</span></span><span class="chip sel">Torre A<svg class="ic"><use href="#i-fechar"/></svg></span><span class="chip ac"><svg class="ic"><use href="#i-ferramenta"/></svg>Manutenção<svg class="ic"><use href="#i-fechar"/></svg></span></div></div>
+    <div><span class="rot">Pessoas</span><div class="linha" style="margin-top:8px"><span class="chip"><span class="av av1">AL</span>Ana Lima</span><span class="chip"><span class="av av2">BS</span>Bruna Souza</span><span class="chip"><span class="av av3">ES</span>Edu Santos<svg class="ic"><use href="#i-fechar"/></svg></span><span class="chip inc"><svg class="ic"><use href="#i-pessoa-mais"/></svg>Incluir pessoa</span></div></div>
   </div>
 </section>
 
@@ -926,6 +942,7 @@ svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;strok
 <section class="parte" aria-labelledby="t-apr">
   <div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="t-apr">Para aprovar</h2><p>Junto com a proposta de identidade (cores, lateral clara, elementos de fundo, Manrope e Playfair, logo violeta).</p></div>
   <ol class="aprovar">
+    <li><b>Escolhas de 17/10/2026 aplicadas.</b><span>Botão C (degradê com brilho), selos e chips D (faixa lateral) com o brilho do C, e a paleta "Brilho" derivada dos dois. As outras versões continuam em versoes.html para consulta.</span></li>
     <li><b>Este documento vira o sistema de design oficial.</b><span>Ele substitui as partes "Cores", "Tipografia" e "Componentes base" do design-frontend.html, que passa a apontar para cá.</span></li>
     <li><b>Lateral com vida.</b><span>Ícone em cada item, grupos separados por linha, subitens que abrem com seta, item escolhido com degradê violeta e contagens em laranja, botão de trocar no fim.</span></li>
     <li><b>Cartões com vida no início.</b><span>"Próximos retornos" agrupado por dia, com barrinha de cor e botão de dar retorno; "Para você" com quadrinhos de ícone e avatares de iniciais.</span></li>
