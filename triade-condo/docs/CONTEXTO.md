@@ -189,10 +189,12 @@ No fim do dia, dois ajustes pedidos pela Carolina. O link de nova senha (e o de 
 
 Em 17/10/2026 o sistema passou a ter e-mail e endereços próprios (DC12). E-mails pelo Resend, de `nao-responda@t3condo.trihub.com.br`, com os modelos de `supabase/templates`. Plataforma em `https://condominio.trihub.com.br` e Console em `https://t3condo.trihub.com.br`. No Supabase, a Site URL é a da Plataforma, as URLs de redirecionamento são `https://condominio.trihub.com.br/**` e `https://t3condo.trihub.com.br/**`, e os segredos `PLATAFORMA_URL` e `CONSOLE_URL` das funções apontam para os dois endereços. A Carolina conferiu a nova senha e o convite pelos links dos e-mails. As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro; o escuro só entra com `data-theme="dark"`.
 
+Passo 4b (F4.8), fotos e documentos dos pedidos, aprovado e construído em 17/10/2026. A migration 0100 guarda os arquivos (`arquivos_pedido`) e cria o bucket privado `pedidos`, sem nenhuma política de acesso: só a API, com a chave de serviço, lê e grava. O navegador envia direto para o armazenamento por um link de envio que a API gera depois de o banco conferir quem envia, o tipo, o tamanho e o limite (10 MB, 30 por pedido). Depois do envio, a API confere o conteúdo pelos primeiros bytes, tira a localização das fotos (o GPS do EXIF é zerado e a orientação fica; XMP, IPTC e textos saem), recusa PDF com script ou arquivo embutido e só então libera. Abrir e baixar usam link de 5 minutos. Tirar do pedido pede motivo e não apaga. A CSP da Plataforma libera só `https://<projeto>.supabase.co/storage/v1/object/` em `connect-src` e `img-src`. Vídeo e áudio ficam para o WhatsApp (passo 5).
+
 **Próximo passo:**
 
-1. Juntar o PR 3: a produção da Vercel sai do `main` (as prévias da branch não têm o `REPASSE_SEGREDO`). Depois, testar os pedidos com um condomínio de verdade (E8).
-2. Passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho.
+1. Testar os pedidos com um condomínio de verdade (E8). A produção da Vercel sai do `main` (PR 3 e PR 4 juntados).
+2. Passo 4b (F4.8) no `triade-condo-dev` (0100 aplicada, `api-plataforma` versão 6): falta juntar a branch ao `main` para as telas chegarem ao site e conferir um envio de verdade.
 3. Com a Carolina, liberar o CI (F0.9).
 
 ## Como trabalhar

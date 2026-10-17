@@ -9,3 +9,4 @@ export * from "./eventos.ts";
 export * from "./plataforma.ts";
 export * from "./moradores.ts";
 export * from "./pedidos.ts";
+export * from "./arquivos.ts";

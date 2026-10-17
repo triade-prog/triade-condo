@@ -2,6 +2,7 @@
 
 import type { AdminAuth, CadastroTotp, Fator, Portador, ProvedorAuth, ResultadoSenha, SessaoAuth } from "./auth.ts";
 import { ErroBanco, type Banco } from "./banco.ts";
+import type { Armazenamento } from "./arquivos.ts";
 import { base64url } from "./cripto.ts";
 
 export const SEGREDO = "segredo-de-repasse-de-teste";
@@ -192,4 +193,29 @@ export function adminFalso(contas: Record<string, string> = {}) {
     },
   };
   return { admin, enviados, contas };
+}
+
+/** Armazenamento em memória: guarda o que foi "enviado" e registra o que a API pediu. */
+export function armazenamentoFalso() {
+  const objetos = new Map<string, Uint8Array>();
+  const apagados: string[] = [];
+  const links: { caminho: string; segundos: number; baixarComo?: string }[] = [];
+  const armazenamento: Armazenamento = {
+    linkEnvio: (caminho) => Promise.resolve(`https://armazenamento.exemplo/envio/${caminho}?token=t`),
+    ler: (caminho) => Promise.resolve(objetos.get(caminho) ?? null),
+    gravar: (caminho, bytes) => {
+      objetos.set(caminho, bytes);
+      return Promise.resolve();
+    },
+    apagar: (caminho) => {
+      objetos.delete(caminho);
+      apagados.push(caminho);
+      return Promise.resolve();
+    },
+    linkLeitura: (caminho, segundos, baixarComo) => {
+      links.push({ caminho, segundos, baixarComo });
+      return Promise.resolve(`https://armazenamento.exemplo/ler/${caminho}?token=t${baixarComo ? "&download=" + baixarComo : ""}`);
+    },
+  };
+  return { armazenamento, objetos, apagados, links };
 }

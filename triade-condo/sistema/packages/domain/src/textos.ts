@@ -80,6 +80,11 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   SEM_REVISAO: "Este pedido não está esperando revisão. Atualize a página.",
   NAO_ENCERRADO: "Só pedido encerrado pode ser reaberto. Pedido cancelado continua cancelado.",
   REABERTURA_DESLIGADA: "Este condomínio não reabre pedidos. Registre um pedido novo.",
+  TIPO_NAO_ACEITO: "Só fotos (JPG, PNG, WEBP) e PDF.",
+  ARQUIVO_GRANDE: "O arquivo passa de 10 MB.",
+  LIMITE_ARQUIVOS: "Este pedido já tem 30 arquivos. Tire do pedido o que não serve antes de enviar mais.",
+  ARQUIVO_NAO_LIBERADO: "Este arquivo ainda não foi liberado.",
+  JA_VERIFICADO: "Este arquivo já foi verificado. Atualize a página.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

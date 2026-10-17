@@ -2,6 +2,7 @@
 // (0090_pedidos.sql).
 
 import { z } from "zod";
+import { PARTES_ARQUIVO } from "./arquivos.ts";
 import { mostrarDataSemHora } from "./plataforma.ts";
 
 /** Situação do pedido (guardião). A etapa configurada fica dentro de cada situação (AT-05). */
@@ -215,6 +216,12 @@ export function descreverEventoPedido(acao: string, d: Record<string, unknown>):
       return `Pendência aberta · ${nomeDe(TIPOS_PENDENCIA, d.tipo)}`;
     case "pedido.pendencia_resolvida":
       return `Pendência resolvida · ${nomeDe(TIPOS_PENDENCIA, d.tipo)}`;
+    case "pedido.arquivo_enviado":
+      return `Arquivo enviado no ${nomeDe(PARTES_ARQUIVO, d.parte).toLowerCase()}: ${String(d.arquivoNome ?? "")}`;
+    case "pedido.arquivo_recusado":
+      return `${String(d.arquivoNome ?? "Arquivo")} não liberado: ${String(d.motivo ?? "")}`;
+    case "pedido.arquivo_tirado":
+      return comMotivo(`Tirou ${String(d.arquivoNome ?? "um arquivo")} do pedido`);
     default:
       return acao;
   }

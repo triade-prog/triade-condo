@@ -2,7 +2,8 @@
 // Pedido (design "Telas do passo 4", telas 4 e 10): protocolo, situação e etapa; os dois
 // compromissos separados, próximo retorno ao morador e previsão de solução (AT-06, AT-07);
 // o responsável e o aceite (AT-03); as pendências (AT-11); as ações de quem pode cada uma;
-// e, em abas, o andamento, o histórico completo (AT-17), o relato e as conclusões.
+// e, em abas, o andamento, o histórico completo (AT-17), o relato, as conclusões e as fotos e
+// documentos (passo 4b, PT-07).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -12,6 +13,7 @@ import { Abas, Aviso, Botao, Carregando, chamarApi, ErroCarregar, IconeMarca, Se
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { OpcoesPedidos, PedidoDetalhe, PendenciaPedido, Recado } from "../tipos.ts";
 import { nomeRelacao } from "../moradores/comum.tsx";
+import { AbaArquivos, type ArquivosDoPedido } from "./Arquivos.tsx";
 import { JanelasPedido, type AcaoPedido } from "./JanelasPedido.tsx";
 import { diaHora, faltaPara, nomeDe, SeloEstadoPedido } from "./comum.tsx";
 
@@ -20,6 +22,7 @@ const ABAS = [
   { id: "historico", texto: "Histórico" },
   { id: "relato", texto: "O que foi relatado" },
   { id: "conclusoes", texto: "Conclusões" },
+  { id: "arquivos", texto: "Fotos e documentos" },
 ] as const;
 type IdAba = (typeof ABAS)[number]["id"];
 
@@ -39,6 +42,7 @@ export function Pedido() {
   const { atualizar } = usePlataforma();
   const carga = useCarregar<PedidoDetalhe>(id ? `/v1/condominio/pedidos/${id}` : null);
   const opcoes = useCarregar<OpcoesPedidos>("/v1/condominio/pedidos/opcoes");
+  const arquivos = useCarregar<ArquivosDoPedido>(id ? `/v1/condominio/pedidos/${id}/arquivos` : null);
   const [recado, setRecado] = useState<Recado>(busca.get("novo") ? { tom: "ok", texto: "Pedido registrado." } : null);
   const [falha, setFalha] = useState<string | null>(null);
   const [acao, setAcao] = useState<AcaoPedido | null>(null);
@@ -61,7 +65,11 @@ export function Pedido() {
   const ativo = p.estado === "ABERTO" || p.estado === "EM_ANDAMENTO";
   const fechado = p.estado === "ENCERRADO" || p.estado === "CANCELADO";
   const fechar = () => { setAcao(null); setResolver(null); };
-  const salvo = (texto: string) => { fechar(); setRecado({ tom: "ok", texto }); setFalha(null); carga.recarregar(); atualizar(); };
+  const salvo = (texto: string, tom: "ok" | "atencao" = "ok") => {
+    fechar(); setRecado({ tom, texto }); setFalha(null); carga.recarregar(); arquivos.recarregar(); atualizar();
+  };
+  const qtdArquivos = arquivos.estado === "pronto" ? arquivos.dados.arquivos.length : 0;
+  const abas = ABAS.map((a) => (a.id === "arquivos" && qtdArquivos ? { ...a, texto: `${a.texto} (${qtdArquivos})` } : a));
   const abertas = d.pendencias.filter((x) => !x.resolvidaEm);
   const resolvidas = d.pendencias.filter((x) => x.resolvidaEm);
   const anotar = (d.pode.responder || d.pode.atualizar) && !fechado;
@@ -185,7 +193,7 @@ export function Pedido() {
       {d.pode.concluir && p.estado === "ENCERRADO" && !d.regras.reabertura
         ? <p className="text-sm text-tinta-suave">Este condomínio não reabre pedidos. Se o problema voltou, registre um pedido novo.</p> : null}
 
-      <Abas abas={ABAS} atual={aba} aoMudar={setAba} rotulo="Partes do pedido">
+      <Abas abas={abas} atual={aba} aoMudar={setAba} rotulo="Partes do pedido">
         <div className="pt-4">
           {aba === "andamento" ? (
             d.andamentos.length === 0 ? <Vazio titulo="Nenhum retorno nem nota ainda">O primeiro retorno ao morador fica aqui.</Vazio> : (
@@ -238,6 +246,10 @@ export function Pedido() {
                 ))}
               </ul>
             )
+          ) : null}
+          {aba === "arquivos" ? (
+            <AbaArquivos pedidoId={p.id} protocolo={p.protocolo} carga={arquivos}
+              avisar={(r, recarregar) => { if (r) { setRecado(r); setFalha(null); } if (recarregar) { arquivos.recarregar(); carga.recarregar(); } }} />
           ) : null}
         </div>
       </Abas>

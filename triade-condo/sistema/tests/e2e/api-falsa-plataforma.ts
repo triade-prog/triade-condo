@@ -3,7 +3,8 @@
 // (Deno); aqui se confere a tela: fluxo, textos, o que cada pessoa vê e acessibilidade.
 import type { Page, Route } from "@playwright/test";
 import { criarMoradores, resumoMoradores, rotasMoradores } from "./api-falsa-moradores";
-import { criarPedidos, resumoPedidos, rotasPedidos } from "./api-falsa-pedidos";
+import { AGORA, criarPedidos, resumoPedidos, rotasPedidos } from "./api-falsa-pedidos";
+import { rotasArmazenamento, semearArquivos } from "./api-falsa-arquivos";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -75,6 +76,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     pedidos: [] as ReturnType<typeof criarPedidos>,
   };
   estado.pedidos = criarPedidos(estado.config, V_ANA, V_BRUNA);
+  semearArquivos(estado.pedidos[0]!.id, AGORA);
   if (opcoes.comAtendimento) {
     for (const p of estado.pessoas) { p.responsavel = true; p.disponivel = true; }
     estado.responsavelPadrao = V_ANA;
@@ -104,6 +106,9 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     const url = new URL(req.url());
     const caminho = url.pathname.replace(/^\/api/, "");
     const metodo = req.method();
+    // O "armazenamento" recebe o arquivo em binário: atende antes de ler o corpo como JSON.
+    const armazenamento = await rotasArmazenamento(route, caminho, metodo);
+    if (armazenamento !== null) return armazenamento;
     const corpo = (req.postDataJSON() ?? {}) as Record<string, unknown>;
     const c = estado.config;
 

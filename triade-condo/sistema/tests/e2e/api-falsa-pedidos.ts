@@ -3,6 +3,7 @@
 import type { Route } from "@playwright/test";
 import { A101 } from "./api-falsa-moradores";
 import type { EstadoMoradores } from "./api-falsa-moradores";
+import { rotasArquivos } from "./api-falsa-arquivos";
 
 export const AGORA = "2026-10-16T18:00:00.000Z";
 const HORA = 3600_000;
@@ -161,6 +162,16 @@ export async function rotasPedidos(route: Route, ped: PedidoFalso[], c: Config, 
     };
     ped.push(p);
     return route.fulfill({ status: 201, json: { id: p.id, protocolo, versao: 1 } });
+  }
+
+  const ra = /^\/v1\/condominio\/pedidos\/([^/]+)\/arquivos(.*)$/.exec(caminho);
+  if (ra) {
+    const pa = ped.find((x) => x.id === ra[1]);
+    if (!pa) return erro(route, 404, "NOT_FOUND");
+    const dele = pa.responsavelId === eu.vinculo;
+    return rotasArquivos(route, pa, ra[2]!, metodo, corpo, eu, AGORA, {
+      enviar: pode("pedidos.responder") || pode("pedidos.atualizar") || dele, atualizar: pode("pedidos.atualizar"),
+    });
   }
 
   const r = /^\/v1\/condominio\/pedidos\/([^/]+)(\/[a-z-]+)?(?:\/([^/]+)\/resolver)?$/.exec(caminho);

@@ -3,7 +3,7 @@
 // prioridade, etapa, modelo, prazo, feriado) e pelas ações dos pedidos. Erro da API aparece dentro dela, com os campos
 // destacados; no conflito de versão, o que a pessoa escreveu fica.
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Dialogo, textoDoErro, type ErroApi, type Resposta } from "@triade/ui";
 
 export type Campo =
@@ -14,7 +14,7 @@ export type Campo =
 
 export type Valores = Record<string, string | boolean>;
 
-export function Janela({ aberto, titulo, campos, iniciais, textoBotao, aoFechar, aoSalvar, recarregar, explicacao }: {
+export function Janela({ aberto, titulo, campos, iniciais, textoBotao, aoFechar, aoSalvar, recarregar, explicacao, extra }: {
   aberto: boolean;
   titulo: string;
   campos: Campo[];
@@ -24,15 +24,17 @@ export function Janela({ aberto, titulo, campos, iniciais, textoBotao, aoFechar,
   aoSalvar: (v: Valores) => Promise<Resposta<unknown>>;
   recarregar?: () => void;
   explicacao?: string;
+  /** Parte a mais do formulário, depois dos campos (ex.: arquivos da conclusão). */
+  extra?: ReactNode;
 }) {
   return (
     <Dialogo aberto={aberto} titulo={titulo} aoFechar={aoFechar}>
-      {aberto ? <Formulario campos={campos} iniciais={iniciais} textoBotao={textoBotao} aoFechar={aoFechar} aoSalvar={aoSalvar} recarregar={recarregar} explicacao={explicacao} /> : null}
+      {aberto ? <Formulario campos={campos} iniciais={iniciais} textoBotao={textoBotao} aoFechar={aoFechar} aoSalvar={aoSalvar} recarregar={recarregar} explicacao={explicacao} extra={extra} /> : null}
     </Dialogo>
   );
 }
 
-function Formulario({ campos, iniciais, textoBotao, aoFechar, aoSalvar, recarregar, explicacao }: Omit<Parameters<typeof Janela>[0], "aberto" | "titulo">) {
+function Formulario({ campos, iniciais, textoBotao, aoFechar, aoSalvar, recarregar, explicacao, extra }: Omit<Parameters<typeof Janela>[0], "aberto" | "titulo">) {
   const [valores, setValores] = useState<Valores>(iniciais);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -76,6 +78,7 @@ function Formulario({ campos, iniciais, textoBotao, aoFechar, aoSalvar, recarreg
           type={c.tipo === "data" ? "date" : c.tipo === "datahora" ? "datetime-local" : "text"} inputMode={c.tipo === "numero" ? "numeric" : undefined}
           value={String(valores[c.id] ?? "")} onChange={(e) => mudar(c.id, e.target.value)} />;
       })}
+      {extra}
       <div className="flex justify-end gap-2">
         <Botao variante="secundario" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" disabled={enviando}>{enviando ? "Salvando…" : textoBotao}</Botao>
