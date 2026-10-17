@@ -66,14 +66,15 @@ select throws_ok($$ select escolher_condominio(pb, sessao, b) from ids $$, null,
 -- Negar por padrão (PT-02): ação sem permissão cadastrada não passa.
 select throws_ok($$ select entrar_condominio(pa, a, 'exemplos.apagar') from ids $$, 'TC401', null, 'ação não cadastrada é negada');
 
--- Só quatro funções gravam o contexto da transação (pessoa, equipe e condomínio). A quarta,
--- abrir_condominio_novo, é o cadastro de condomínio no Console (passo 1).
+-- Só cinco funções gravam o contexto da transação (pessoa, equipe e condomínio). A quarta,
+-- abrir_condominio_novo, é o cadastro de condomínio no Console (passo 1); a quinta,
+-- verificar_prazos, é a conferência de prazos a cada 5 minutos (passo 6), que só o servidor chama.
 select is(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.prosrc ~ 'app\.(pessoa_id|condominio_id|equipe)'
       and p.prosrc ~ 'set_config'),
-  array['abrir_condominio_novo', 'entrar_condominio', 'limpar_contexto', 'tentar_definir_pessoa'],
-  'só limpar_contexto, tentar_definir_pessoa, entrar_condominio e abrir_condominio_novo gravam o contexto');
+  array['abrir_condominio_novo', 'entrar_condominio', 'limpar_contexto', 'tentar_definir_pessoa', 'verificar_prazos'],
+  'só limpar_contexto, tentar_definir_pessoa, entrar_condominio, abrir_condominio_novo e verificar_prazos gravam o contexto');
 
 select * from finish();
 rollback;
