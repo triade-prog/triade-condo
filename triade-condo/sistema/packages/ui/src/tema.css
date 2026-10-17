@@ -48,42 +48,43 @@
   --color-info-borda: #a9d2fe;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-papel: #141729;
-    --color-superficie: #1e2239;
-    --color-superficie-2: #292e49;
-    --color-tinta: #eceefa;
-    --color-tinta-suave: #afb7d0;
-    --color-linha: #373f5c;
-    --color-contorno: #5b6588;
-    --color-detalhe: #a5b0cf;
-    --color-lateral: #1a1e33;
-    --color-lateral-borda: #373f5c;
-    --color-selecao: #393052;
-    --color-selecao-tinta: #d2beff;
-    --color-lilas-bruma: #393052;
-    --color-plataforma: #65d7bf;
-    --color-plataforma-press: #8de8d4;
-    --color-plataforma-bruma: #203e3c;
-    --color-faixa-alto: #302d53;
-    --color-faixa-baixo: #3b2d50;
-    --color-console: #bca2ff;
-    --color-console-press: #d2beff;
-    --color-console-bruma: #393052;
-    --color-ok: #7ed5a2;
-    --color-ok-fundo: #203c31;
-    --color-atencao: #f1c37b;
-    --color-atencao-fundo: #483921;
-    --color-erro: #ffabb1;
-    --color-erro-fundo: #492c38;
-    --color-info: #a5caff;
-    --color-info-fundo: #263a56;
-  }
+/* O tema claro é a referência (design-frontend.html) e vale sempre, mesmo com o aparelho no
+   modo escuro. O escuro é complementar: só entra com data-theme="dark" no <html>. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-papel: #141729;
+  --color-superficie: #1e2239;
+  --color-superficie-2: #292e49;
+  --color-tinta: #eceefa;
+  --color-tinta-suave: #afb7d0;
+  --color-linha: #373f5c;
+  --color-contorno: #5b6588;
+  --color-detalhe: #a5b0cf;
+  --color-lateral: #1a1e33;
+  --color-lateral-borda: #373f5c;
+  --color-selecao: #393052;
+  --color-selecao-tinta: #d2beff;
+  --color-lilas-bruma: #393052;
+  --color-plataforma: #65d7bf;
+  --color-plataforma-press: #8de8d4;
+  --color-plataforma-bruma: #203e3c;
+  --color-faixa-alto: #302d53;
+  --color-faixa-baixo: #3b2d50;
+  --color-console: #bca2ff;
+  --color-console-press: #d2beff;
+  --color-console-bruma: #393052;
+  --color-ok: #7ed5a2;
+  --color-ok-fundo: #203c31;
+  --color-atencao: #f1c37b;
+  --color-atencao-fundo: #483921;
+  --color-erro: #ffabb1;
+  --color-erro-fundo: #492c38;
+  --color-info: #a5caff;
+  --color-info-fundo: #263a56;
 }
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 body {

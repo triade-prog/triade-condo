@@ -187,13 +187,13 @@ Decisões do passo 4:
 
 No fim do dia, dois ajustes pedidos pela Carolina. O link de nova senha (e o de convite) passou a funcionar também com o modelo padrão do Supabase, que manda o acesso depois do `#` no endereço; o servidor só aceita esse acesso se ele nasceu do mesmo tipo de link. E a Plataforma passou a seguir a estrutura de "Dois sistemas, uma família": busca no condomínio na barra superior e faixa lilás no alto. As duas Edge Functions foram publicadas de novo.
 
-Em 17/10/2026 o sistema passou a ter e-mail e endereços próprios (DC12). E-mails pelo Resend, de `nao-responda@t3condo.trihub.com.br`, com os modelos de `supabase/templates`. Plataforma em `https://condominio.trihub.com.br` e Console em `https://t3condo.trihub.com.br`. No Supabase, a Site URL é a da Plataforma, as URLs de redirecionamento são `https://condominio.trihub.com.br/**` e `https://t3condo.trihub.com.br/**`, e os segredos `PLATAFORMA_URL` e `CONSOLE_URL` das funções apontam para os dois endereços. A Carolina pediu nova senha e trocou pelo link do e-mail.
+Em 17/10/2026 o sistema passou a ter e-mail e endereços próprios (DC12). E-mails pelo Resend, de `nao-responda@t3condo.trihub.com.br`, com os modelos de `supabase/templates`. Plataforma em `https://condominio.trihub.com.br` e Console em `https://t3condo.trihub.com.br`. No Supabase, a Site URL é a da Plataforma, as URLs de redirecionamento são `https://condominio.trihub.com.br/**` e `https://t3condo.trihub.com.br/**`, e os segredos `PLATAFORMA_URL` e `CONSOLE_URL` das funções apontam para os dois endereços. A Carolina conferiu a nova senha e o convite pelos links dos e-mails. As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro; o escuro só entra com `data-theme="dark"`.
 
 **Próximo passo:**
 
 1. Juntar o PR 3: a produção da Vercel sai do `main` (as prévias da branch não têm o `REPASSE_SEGREDO`). Depois, testar os pedidos com um condomínio de verdade (E8).
 2. Passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho.
-3. Conferir um convite de verdade pelo Resend (F1.5); com a Carolina, liberar o CI (F0.9).
+3. Com a Carolina, liberar o CI (F0.9).
 
 ## Como trabalhar
 

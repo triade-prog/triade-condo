@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export const viewport: Viewport = { colorScheme: "light dark" };
+export const viewport: Viewport = { colorScheme: "light" };
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
   // Lê o cabeçalho do proxy: a página fica dinâmica e o Next aplica o nonce aos scripts.

@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "17/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 76 Deno, 58 Vitest, 88 ponta a ponta). O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 3) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
+    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 76 Deno, 58 Vitest, 92 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 3) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F4",
-    "proximo_passo": "A síndica do Condomínio Águas Claras entra na Plataforma, escolhe quem atende (Pessoas e acesso), cadastra unidades e moradores e registra os primeiros pedidos (E8). Depois, passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho. Conferir um convite de verdade pelo e-mail (F1.5). Com a Carolina: liberar o GitHub Actions (F0.9; os testes do GitHub nem chegam a rodar)."
+    "proximo_passo": "A síndica do Condomínio Águas Claras entra na Plataforma, escolhe quem atende (Pessoas e acesso), cadastra unidades e moradores e registra os primeiros pedidos (E8). Depois, passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho. Com a Carolina: liberar o GitHub Actions (F0.9; os testes do GitHub nem chegam a rodar)."
   },
   "fases": [
     {
@@ -143,8 +143,7 @@
             "PT-08"
           ],
           "status": "feito",
-          "evidencia": "Login real no Console do triade-condo-dev (console-hazel-nine.vercel.app) com admin@triadecondo.com: senha e cadastro do autenticador no primeiro acesso, 16/10/2026. Recuperação de senha real pelo e-mail do Resend, com o link levando ao endereço novo e a senha trocada (17/10/2026)",
-          "nota": "Falta conferir de verdade o convite por e-mail (F1.5)."
+          "evidencia": "Login real no Console do triade-condo-dev (console-hazel-nine.vercel.app) com admin@triadecondo.com: senha e cadastro do autenticador no primeiro acesso, 16/10/2026. Recuperação de senha e convite reais pelo e-mail do Resend, com o link levando ao endereço novo (17/10/2026)"
         },
         {
           "id": "F0.7",
@@ -252,7 +251,7 @@
           ],
           "status": "feito",
           "evidencia": "pgTAP 007_console_clientes_test.sql; Deno api-console/clientes_test.ts; Playwright console-passo1.spec.ts (celular e computador, axe WCAG 2.2 AA em cada tela)",
-          "nota": "Login real conferido (F0.6). Falta conferir o e-mail de convite de verdade no triade-condo-dev (modelo do e-mail com token_hash)."
+          "nota": "Login real conferido (F0.6). Convite de verdade conferido pela Carolina em 17/10/2026: e-mail do Resend com token_hash e senha criada no endereço novo."
         },
         {
           "id": "F1.6",
@@ -1246,6 +1245,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "23:40",
+      "fim": "23:46",
+      "texto": "Convite de verdade conferido pela Carolina (F1.5) e endereços antigos tirados do Supabase. Correção do tema: a Plataforma e o Console seguiam o modo escuro do aparelho, e o design-frontend.html tem o tema claro como referência. Agora o claro vale sempre; o escuro fica guardado para entrar só com data-theme=\"dark\". Teste ponta a ponta novo emula o aparelho no modo escuro e confere o fundo branco nos dois apps (falhava antes, passa agora; 92 ponta a ponta).",
+      "ref": "F1.5, DC11, PT-10, E9"
+    },
     {
       "data": "16/10/2026",
       "inicio": "23:31",
