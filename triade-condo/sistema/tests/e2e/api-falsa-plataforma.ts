@@ -1,4 +1,4 @@
-// API da Plataforma falsa, dentro do navegador (page.route): as telas dos passos 2 a 7 rodam
+// API da Plataforma falsa, dentro do navegador (page.route): as telas dos passos 2 a 7 e a agenda rodam
 // sem Supabase. As regras de verdade estão testadas no banco (pgTAP 008, 009 e 010) e na API
 // (Deno); aqui se confere a tela: fluxo, textos, o que cada pessoa vê e acessibilidade.
 import type { Page, Route } from "@playwright/test";
@@ -6,6 +6,7 @@ import { criarMoradores, resumoMoradores, rotasMoradores } from "./api-falsa-mor
 import { AGORA, criarPedidos, resumoPedidos, rotasPedidos, vencido, vencidoMaisAntigo } from "./api-falsa-pedidos";
 import { criarAvisos, escalado, MES_FECHADO, naoVistos, regrasAvisoIniciais, rotasPrazos } from "./api-falsa-prazos";
 import { rotasArmazenamento, semearArquivos } from "./api-falsa-arquivos";
+import { criarAgenda, rotasAgenda } from "./api-falsa-agenda";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -81,6 +82,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   estado.pedidos = criarPedidos(estado.config, V_ANA, V_BRUNA);
   estado.avisos = criarAvisos(estado.pedidos, V_ANA, V_BRUNA);
   semearArquivos(estado.pedidos[0]!.id, AGORA);
+  const agenda = criarAgenda(V_ANA, V_BRUNA, estado.pedidos[0]!);
   if (opcoes.comAtendimento) {
     for (const p of estado.pessoas) { p.responsavel = true; p.disponivel = true; }
     estado.responsavelPadrao = V_ANA;
@@ -88,10 +90,10 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const eu = quem === "SINDICA" ? { vinculo: V_ANA, nome: "Ana Souza" } : quem === "SECRETARIA" ? { vinculo: V_BRUNA, nome: "Bruna" } : { vinculo: "caio", nome: "Caio" };
 
   const acoes = () => quem === "SINDICA"
-    ? ["atendimento.responsaveis", "config.editar", "config.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pedidos.atualizar", "pedidos.concluir",
+    ? ["agenda.editar", "agenda.ver", "atendimento.responsaveis", "config.editar", "config.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pedidos.atualizar", "pedidos.concluir",
       "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver"]
     : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver"]
-      : ["config.ver", "pedidos.ver", "plataforma.painel.ver"];
+      : ["agenda.ver", "config.ver", "pedidos.ver", "plataforma.painel.ver"];
   const pendencias = () => {
     const p: string[] = [];
     if (estado.config.horarios.ATENDIMENTO.intervalos.length === 0) p.push("SEM_HORARIO_ATENDIMENTO");
@@ -162,6 +164,9 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       (id) => vencido(estado.pedidos.find((p) => p.id === id)!, estado.config));
     if (prazos !== null) return prazos;
 
+    const naAgenda = await rotasAgenda(route, agenda, { pessoas: estado.pessoas, pedidos: estado.pedidos, moradores: estado.moradores,
+      feriados: c.feriados, eu }, caminho, metodo, corpo, url, pode);
+    if (naAgenda !== null) return naAgenda;
     const moradores = await rotasMoradores(route, estado.moradores, caminho, metodo, corpo, pode);
     if (moradores !== null) return moradores;
     const pedidos = await rotasPedidos(route, estado.pedidos, c, estado.pessoas, estado.moradores, eu, caminho, metodo, corpo, url, pode);

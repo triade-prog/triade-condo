@@ -13,6 +13,8 @@ export const PERMISSOES = {
   CONFIGURAR: "Configurar",
   APROVAR: "Aprovar",
   CADASTRAR: "Cadastrar moradores",
+  VER_AGENDA: "Ver a agenda",
+  AGENDA: "Cuidar da agenda",
 } as const;
 export type Permissao = keyof typeof PERMISSOES;
 
@@ -140,7 +142,7 @@ export const prazoSchema = z.object({
   horas: z.number().int().min(1).max(720),
 });
 
-const permissoes = z.array(z.enum(chaves(PERMISSOES))).max(8);
+const permissoes = z.array(z.enum(chaves(PERMISSOES))).max(10);
 const cargo = z.string().trim().max(60).optional().nullable().transform((v) => (v ? v : null));
 
 export const autorizarPessoaSchema = z.object({

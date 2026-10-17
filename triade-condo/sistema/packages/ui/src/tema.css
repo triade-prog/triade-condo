@@ -282,6 +282,51 @@ body {
   .vazio::before { width: 260px; height: 260px; top: -150px; right: -90px; }
   .vazio::after { width: 380px; height: 380px; top: -210px; right: -150px; }
   .vazio > * { position: relative; }
+
+  /* Agenda (peça R7): a cor de cada tipo numa faixa, sempre com o nome do tipo ao lado. */
+  [data-tipo="REUNIAO"] { --fx: var(--fx-andamento); }
+  [data-tipo="VISITA"] { --fx: var(--fx-atencao); }
+  [data-tipo="ATIVIDADE"] { --fx: var(--fx-ok); }
+  [data-tipo="LEMBRETE"] { --fx: var(--fx-info); }
+  [data-tipo="FERIADO"] { --fx: var(--fx-neutro); }
+  .tp { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--color-tinta-suave); }
+  .tp::before { content: ""; width: 8px; height: 8px; border-radius: 3px; background: var(--fx); }
+  .ag-dia { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-top: 1px solid var(--color-linha); }
+  .ag-dia:first-child { border-top: 0; }
+  .ag-dia .data b { display: block; font-size: 26px; font-weight: 300; line-height: 1.1; }
+  .ag-dia .data span { font-size: 13px; color: var(--color-tinta-suave); }
+  .ag-hoje, .ag-dia .data .ag-hoje { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: var(--color-violeta-600); border-radius: 999px; padding: 1px 8px; }
+  .ag-ev { display: grid; grid-template-columns: 62px 4px minmax(0, 1fr) auto; gap: 12px; align-items: center; background: #fff; border: 1px solid var(--color-linha); border-radius: 14px; padding: 10px 14px; }
+  .ag-ev .hora { font-size: 14px; font-weight: 500; }
+  .ag-ev .hora small { display: block; font-size: 12px; font-weight: 400; color: var(--color-tinta-suave); }
+  .ag-ev .barra { align-self: stretch; border-radius: 4px; background: var(--fx); }
+  .ag-ev[data-fonte] { background: transparent; border-style: dashed; }
+  .ag-ev[data-cancelado] .titulo { text-decoration: line-through; color: var(--color-tinta-suave); }
+  @media (max-width: 640px) {
+    .ag-dia { grid-template-columns: 1fr; gap: 8px; }
+    .ag-ev { grid-template-columns: 52px 4px minmax(0, 1fr); }
+    .ag-ev > :last-child:not(.titulos) { grid-column: 3; }
+  }
+  .ag-cal { border: 1px solid var(--color-linha); border-radius: 18px; overflow: hidden; background: #fff; }
+  .ag-cal .sem { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); background: var(--color-violeta-50); font-size: 12px; font-weight: 500; color: var(--color-tinta-suave); }
+  .ag-cal .sem span { padding: 8px 10px; }
+  .ag-cal .grade { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .ag-cal .c { min-height: 104px; border-top: 1px solid var(--color-linha); border-left: 1px solid var(--color-linha); padding: 6px; display: grid; align-content: start; gap: 4px; min-width: 0; text-align: left; background: #fff; cursor: pointer; }
+  .ag-cal .c:nth-child(7n + 1) { border-left: 0; }
+  .ag-cal .c:hover { background: var(--color-violeta-50); }
+  .ag-cal .c .n { font-size: 13px; font-weight: 500; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; }
+  .ag-cal .c[data-fora] .n { color: var(--color-tinta-suave); font-weight: 400; }
+  .ag-cal .c[aria-current="date"] .n { background: var(--color-violeta-600); color: #fff; }
+  .ag-cal .c .p { display: flex; gap: 5px; align-items: center; font-size: 11.5px; line-height: 1.25; padding: 2px 6px; border-radius: 6px; background: var(--color-violeta-50); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ag-cal .c .p::before { content: ""; flex-shrink: 0; width: 3px; align-self: stretch; border-radius: 2px; background: var(--fx); }
+  .ag-cal .c .p[data-fonte] { background: transparent; border: 1px dashed var(--color-contorno); }
+  .ag-cal .c .mais { font-size: 11.5px; color: var(--color-violeta-600); font-weight: 500; padding-left: 6px; }
+  @media (max-width: 640px) {
+    .ag-cal .c { min-height: 64px; padding: 4px; }
+    .ag-cal .c .p { font-size: 0; padding: 0; height: 4px; background: var(--fx); }
+    .ag-cal .c .p::before { display: none; }
+    .ag-cal .sem span { padding: 6px 4px; text-align: center; }
+  }
 }
 
 /* Alto contraste do Windows: as bordas em degradê somem, então entra uma borda sólida. */

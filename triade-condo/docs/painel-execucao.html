@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "17/10/2026",
     "total_ideias": 308,
-    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado) e os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (605 pgTAP, 96 Deno, 79 Vitest, 124 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0120, com a conferência de prazos no pg_cron) e as Edge Functions api-plataforma (versão 8) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
+    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) e a Agenda (R7) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (657 pgTAP, 102 Deno, 86 Vitest, 140 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0120 (a 0130, da agenda, espera ser aplicada; com a conferência de prazos no pg_cron) e as Edge Functions api-plataforma (versão 8) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F7",
-    "proximo_passo": "Aprovar a proposta de identidade (docs/identidade/proposta.html) e aplicá-la ao design-frontend.html e às duas aplicações. Juntar a branch dos passos 6 e 7 ao main e conferir os avisos com pedidos de verdade no Águas Claras (E8). Com a Carolina: liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
+    "proximo_passo": "Aplicar a migration 0130 (agenda) no triade-condo-dev e publicar a api-plataforma com as rotas da agenda; juntar o PR da agenda ao main. Com a Carolina: liberar o GitHub Actions (F0.9), escolher o provedor do WhatsApp (E1) e a próxima peça."
   },
   "fases": [
     {
@@ -758,8 +758,20 @@
           "id": "R7",
           "texto": "Agenda",
           "peca": "S7",
-          "refs": [],
-          "status": "pendente"
+          "refs": [
+            "AG-01",
+            "AG-02",
+            "AG-03",
+            "AG-04",
+            "AG-05",
+            "AG-07",
+            "AG-08",
+            "AG-09",
+            "MP-04"
+          ],
+          "status": "feito",
+          "evidencia": "Desenho aprovado em docs/telas/agenda.html. Migration 0130_agenda.sql (compromissos, repetição, conflitos, situações, reagendar e cancelar com motivo, agenda do pedido, permissões Ver a agenda e Cuidar da agenda); telas /agenda (lista, semana, mês, filtro por tipo, feriados), /agenda/compromisso, Na agenda no pedido e Hoje na agenda no início",
+          "nota": "Falta aplicar a 0130 no triade-condo-dev e publicar a api-plataforma com as rotas da agenda."
         },
         {
           "id": "R8",
@@ -1057,6 +1069,24 @@
       ],
       "status": "feito",
       "evidencia": "Playwright fundacao.spec.ts (sempre claro e fontes, 2 apps × 2 aparelhos) e axe nas 8 suítes (124 cenários); Vitest packages/ui componentes.test.ts (3 testes) e tema.test.ts (4 testes: nenhuma cor escrita direto, nenhum nome de cor antigo, tema sem os nomes antigos e sem escuro)"
+    },
+    {
+      "id": "T21",
+      "texto": "Agenda: tipos e situações, conflito por pessoa ou lugar que avisa sem impedir, repetição de até 2 anos, só esta data ou esta e as próximas sem mexer no passado, reagendar e cancelar com motivo no histórico, realizado e cancelado sem volta, separada do pedido (com aviso de datas diferentes), feriados e permissões; telas no celular e no computador com axe e sem emoji",
+      "fase": "R7",
+      "refs": [
+        "AG-01",
+        "AG-02",
+        "AG-03",
+        "AG-04",
+        "AG-05",
+        "AG-07",
+        "AG-08",
+        "AG-09",
+        "MP-04"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 014_agenda_test.sql (52 testes); Deno api-plataforma/agenda_test.ts (6 testes); Vitest agenda.test.ts (7 testes); Playwright plataforma-agenda.spec.ts (8 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -1290,6 +1320,20 @@
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "16:55",
+      "fim": "17:22",
+      "texto": "Agenda (peça R7) construída depois do aprovado da Carolina. Banco: migration 0130 com as permissões Ver a agenda e Cuidar da agenda (o síndico tem as duas), compromissos de quatro tipos e cinco situações (realizado e cancelado não voltam), conflito por pessoa autorizada ou lugar que avisa e deixa salvar, repetição semanal, quinzenal ou a cada N meses por até 2 anos, mudança em só esta data ou nesta e nas próximas sem mexer no passado, reagendar e cancelar com motivo no histórico e a agenda do pedido com aviso quando a visita cai depois da previsão, sem mudar nada sozinho. API com 9 rotas, domínio com as datas sem o fuso do aparelho, e as telas: Agenda em lista, semana e mês com filtro por tipo guardado para a pessoa e os feriados das Configurações tracejados, novo compromisso, compromisso aberto, Na agenda no pedido com Marcar visita e Hoje na agenda no início. Testes: 657 pgTAP, 102 Deno, 86 Vitest e 140 ponta a ponta passando.",
+      "ref": "R7, AG-01, AG-02, AG-03, AG-04, AG-05, AG-07, AG-08, AG-09, MP-04"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "16:50",
+      "fim": "16:47",
+      "texto": "Agenda (peça R7) escolhida pela Carolina como próxima peça. Desenho para aprovação em docs/telas/agenda.html, no visual da DC13: agenda em lista (por dia, com tipo, situação, pedido ligado, repetição e feriados das Configurações) e no mês, novo compromisso com aviso de conflito que não impede, compromisso aberto com reagendar guardando a data anterior e escolha entre só esta data ou esta e as próximas, a agenda dentro do pedido com aviso de datas diferentes sem mudar nada sozinho, e o cartão Hoje na agenda no início. Oito decisões para aprovar: permissões, tipos e situações, repetição, conflito, separação do atendimento, datas de outras telas, fuso e o que fica para o passo 5 (lembretes no WhatsApp).",
+      "ref": "R7, D4, AG-01, AG-02, AG-03, AG-04, AG-05, AG-08, AG-09, MP-04"
+    },
     {
       "data": "17/10/2026",
       "inicio": "16:10",

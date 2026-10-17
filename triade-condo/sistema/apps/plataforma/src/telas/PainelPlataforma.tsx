@@ -123,6 +123,7 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
               Pedidos
             </ItemMenu>
           ) : null}
+          {pode("agenda.ver") ? <ItemMenu href="/agenda" icone="calendario" atual={caminho.startsWith("/agenda")}>Agenda</ItemMenu> : null}
           {pode("moradores.ver") ? <ItemMenu href="/moradores" icone="predio" atual={caminho.startsWith("/moradores")}>Moradores e unidades</ItemMenu> : null}
           {pode("pedidos.ver") ? <ItemMenu href="/indicadores" icone="grafico" atual={caminho.startsWith("/indicadores")}>Indicadores</ItemMenu> : null}
           {pode("config.ver") || pode("pessoas.ver") ? <hr /> : null}
