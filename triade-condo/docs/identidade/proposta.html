@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Identidade TRÍADE Condo · proposta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Proposta de identidade (17/10/2026), a partir da ideia 01 "Violeta institucional" e do
+   estudo cromático. Só para aprovar: nada aqui está aplicado ao produto ainda. */
+:root{
+  --violeta:#5808CC; --violeta-hover:#4706A6; --violeta-profundo:#180567; --violeta-vivo:#7018DC; --lilas:#9E37F5;
+  --laranja:#FF8D01; --laranja-claro:#FFB96A; --brasa:#DA3D08; --amarelo:#FCD53F;
+  --papel:#F8F6FC; --superficie:#FFFFFF; --lavanda:#F1E9FC; --lavanda-2:#DDC8F8;
+  --tinta:#211A32; --tinta-suave:#665D74; --linha:#E6DFEF; --contorno:#83758F;
+  --ok:#166534; --ok-fundo:#DCFCE7; --atencao:#854D0E; --atencao-fundo:#FEF3C7;
+  --vencido:#B91C1C; --vencido-fundo:#FEE2E2; --info:#1E40AF; --info-fundo:#DBEAFE;
+  --grad-violeta:linear-gradient(135deg,#180567 0%,#5808CC 55%,#9E37F5 100%);
+  --grad-quente:linear-gradient(135deg,#FCD53F 0%,#FF8D01 55%,#DA3D08 100%);
+  --grad-console:linear-gradient(135deg,#10033F 0%,#180567 50%,#4706A6 100%);
+  --raio:14px; --sombra:0 1px 2px #211a320a,0 8px 24px #3a1a7a0f;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--papel);color:var(--tinta);font:15px/1.6 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:var(--violeta)}
+img{max-width:100%;display:block}
+:focus-visible{outline:3px solid var(--violeta-vivo);outline-offset:3px}
+.pular{position:absolute;left:16px;top:-60px;background:#fff;padding:10px 14px;border-radius:8px;z-index:10}
+.pular:focus{top:12px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------- Página do documento ---------- */
+.doc{max-width:1240px;margin:0 auto;padding:0 20px 80px}
+.doc-topo{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0}
+.doc-topo img{width:168px}
+.doc-topo span{font-size:13px;color:var(--tinta-suave)}
+.selo-aprovar{display:inline-flex;gap:8px;align-items:center;font-size:12px;font-weight:600;color:var(--atencao);background:var(--atencao-fundo);border-radius:999px;padding:4px 12px}
+section.bloco{margin-top:56px}
+h1,h2,h3{letter-spacing:-.02em;line-height:1.2;margin:0}
+h2.titulo{font-size:28px;margin-bottom:8px}
+.sub{color:var(--tinta-suave);max-width:760px;margin:0 0 24px}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--tinta-suave)}
+.grade{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.cartao{background:var(--superficie);border:1px solid var(--linha);border-radius:var(--raio);padding:20px;box-shadow:var(--sombra)}
+.cartao h3{font-size:17px;margin-bottom:6px}
+.cartao p{margin:0;color:var(--tinta-suave);font-size:14px}
+.cartao .ref{display:inline-block;margin-top:10px;font-size:12px;color:var(--violeta);font-weight:600}
+.lista-mudou li{margin:6px 0}
+.legenda{font-size:13px;color:var(--tinta-suave);margin-top:10px}
+
+/* ---------- Motivos de fundo (o sistema) ---------- */
+.arte{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.arte .orbita{position:absolute;border-radius:50%;border:1px solid #ffffff2e}
+.arte .arco{position:absolute;border-radius:200px 200px 0 0;transform:rotate(26deg);border:1px solid #e3c4ff55}
+.arte .arco.a1{background:linear-gradient(160deg,#b351ff40,#590bce80)}
+.arte .arco.a2{background:linear-gradient(120deg,#ffffff24,#ffffff00)}
+.arte .trilha{position:absolute;border-radius:200px;transform:rotate(26deg);background:linear-gradient(160deg,#FFBD48,#FF8D01 55%,#EA5508)}
+.cartao-solto{position:absolute;background:#fff;border-radius:14px;box-shadow:0 16px 32px #17053c33;transform:rotate(-5deg);display:flex;gap:12px;align-items:center;padding:14px 20px;color:var(--violeta-profundo);font-size:15px;line-height:1.35}
+.cartao-solto .check{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--lavanda);color:var(--violeta)}
+.cartao-solto svg{width:18px;height:18px}
+
+/* Abertura do documento */
+.abertura{position:relative;overflow:hidden;border-radius:22px;background:var(--grad-violeta);color:#fff;padding:44px 40px;min-height:340px}
+.abertura .texto{position:relative;z-index:1;max-width:560px}
+.abertura .eyebrow{color:#E7D3FF}
+.abertura h1{font-size:clamp(30px,4vw,46px);margin:14px 0 14px}
+.abertura p{color:#EDE0FF;margin:0 0 8px;max-width:520px}
+.abertura .arte .o1{width:520px;height:520px;right:-120px;top:-180px}
+.abertura .arte .o2{width:360px;height:360px;right:-40px;top:-100px}
+.abertura .arte .a1{width:220px;height:400px;right:40px;top:10px}
+.abertura .arte .a2{width:160px;height:320px;right:170px;top:60px}
+.abertura .arte .trilha{width:110px;height:280px;right:250px;top:170px}
+.abertura .cartao-solto{right:70px;top:70px}
+@media (max-width:760px){
+  .abertura{padding:28px 22px;min-height:0}
+  .abertura .arte{opacity:.35}
+  .abertura .cartao-solto{display:none}
+}
+
+/* Vitrine dos motivos */
+.motivos{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.motivo{border-radius:var(--raio);overflow:hidden;border:1px solid var(--linha);background:var(--superficie)}
+.motivo .amostra{position:relative;height:150px;background:var(--grad-violeta)}
+.motivo .amostra.claro{background:var(--lavanda)}
+.motivo .amostra.claro .orbita{border-color:#5808cc2b}
+.motivo .info{padding:14px 16px}
+.motivo h3{font-size:15px}
+.motivo p{margin:4px 0 0;font-size:13px;color:var(--tinta-suave)}
+
+/* ---------- Cores ---------- */
+.cores{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.cor{background:#fff;border:1px solid var(--linha);border-radius:12px;overflow:hidden}
+.cor i{display:block;height:64px}
+.cor div{padding:10px 12px;font-size:13px}
+.cor b{display:block;font-size:14px}
+.cor code{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--tinta-suave)}
+.degrades{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:12px}
+.degrade{border-radius:12px;height:76px;display:flex;align-items:flex-end;padding:10px 14px;font-size:13px;font-weight:600}
+.tabela{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--linha);border-radius:12px;overflow:hidden;font-size:14px}
+.tabela th,.tabela td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--linha)}
+.tabela th{background:#FCFAFF;font-weight:600;font-size:13px;color:var(--tinta-suave)}
+.par{display:inline-block;padding:3px 10px;border-radius:6px;font-weight:600}
+.tabela-rolagem{overflow-x:auto}
+
+/* ---------- Componentes ---------- */
+.botao{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:10px;font:600 14px Inter,sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none}
+.botao svg{width:16px;height:16px}
+.b-primario{background:var(--violeta);color:#fff}
+.b-primario:hover{background:var(--violeta-hover)}
+.b-secundario{background:#fff;color:var(--violeta);border-color:#C3A0EF}
+.b-texto{background:none;color:var(--violeta);padding:0 6px}
+.b-perigo{background:#fff;color:var(--vencido);border-color:#F3B4B4}
+.selo{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px}
+.selo .f{width:8px;height:8px;background:currentColor;border-radius:50%}
+.s-andamento{color:var(--violeta);background:var(--lavanda)}
+.s-atencao{color:var(--atencao);background:var(--atencao-fundo)}
+.s-atencao .f{border-radius:0;transform:rotate(45deg)}
+.s-vencido{color:var(--vencido);background:var(--vencido-fundo)}
+.s-vencido .f{border-radius:1px;width:0;height:0;background:none;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid currentColor}
+.s-ok{color:var(--ok);background:var(--ok-fundo)}
+.s-ok .f{width:9px;height:5px;background:none;border-left:2px solid;border-bottom:2px solid;border-radius:0;transform:rotate(-45deg) translateY(-1px)}
+.s-novo{color:var(--tinta-suave);background:#F1EFF5}
+.s-novo .f{background:none;border:1.5px solid;border-radius:2px}
+.campo{display:grid;gap:6px;max-width:320px}
+.campo label{font-size:13px;font-weight:600}
+.campo input{min-height:44px;border:1px solid var(--contorno);border-radius:10px;padding:0 12px;font:15px Inter,sans-serif;color:var(--tinta);background:#fff}
+.campo small{font-size:12px;color:var(--tinta-suave)}
+.linha-comp{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:10px 0 18px}
+
+/* ---------- Moldura das telas (mock) ---------- */
+.tela{border:1px solid var(--linha);border-radius:18px;overflow:hidden;background:var(--papel);box-shadow:0 20px 50px #2a0f6a14}
+.tela-barra{height:30px;background:#fff;border-bottom:1px solid var(--linha);display:flex;align-items:center;gap:6px;padding:0 12px}
+.tela-barra i{width:9px;height:9px;border-radius:50%;background:#E3DCEC}
+.app{display:grid;grid-template-columns:236px minmax(0,1fr);gap:20px;padding:18px;min-height:640px}
+/* A lateral clara e flutuante: o que muda em relação à ideia 01. */
+.lateral{background:#fff;border:1px solid var(--linha);border-radius:18px;padding:18px 12px;display:flex;flex-direction:column;gap:4px;align-self:start;position:sticky;top:18px;box-shadow:var(--sombra)}
+.lateral .marca{padding:4px 8px 14px}
+.lateral .marca img{width:150px}
+.lateral .ambiente{display:flex;gap:10px;align-items:center;padding:12px 8px;border-top:1px solid var(--linha);border-bottom:1px solid var(--linha);margin-bottom:10px}
+.lateral .ambiente .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--lavanda);color:var(--violeta)}
+.lateral .ambiente b{display:block;font-size:14px}
+.lateral .ambiente small{display:block;font-size:12px;color:var(--tinta-suave)}
+.lateral .grupo{font-size:11px;letter-spacing:.14em;font-weight:600;color:var(--tinta-suave);padding:8px 10px 4px}
+.item{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:10px;color:var(--tinta);text-decoration:none;font-size:14px;position:relative}
+.item svg{width:18px;height:18px;color:var(--tinta-suave)}
+.item:hover{background:var(--papel)}
+.item[aria-current="page"]{background:var(--lavanda);color:var(--violeta);font-weight:600}
+.item[aria-current="page"] svg{color:var(--violeta)}
+.item[aria-current="page"]::before{content:"";position:absolute;left:-12px;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:var(--laranja)}
+.item .conta{margin-left:auto;font-size:12px;font-weight:600;background:#fff;border:1px solid var(--lavanda-2);color:var(--violeta);border-radius:999px;padding:0 8px}
+.lateral .rodape{margin-top:14px;padding:12px 8px 0;border-top:1px solid var(--linha);display:flex;gap:10px;align-items:center}
+.avatar{width:34px;height:34px;border-radius:50%;display:inline-grid;place-items:center;background:var(--lavanda);color:var(--violeta);font-size:12px;font-weight:700;flex-shrink:0}
+.lateral .rodape b{display:block;font-size:13px}
+.lateral .rodape small{display:block;font-size:12px;color:var(--tinta-suave)}
+.lateral .cuidado{margin-top:auto;border-radius:12px;background:var(--papel);padding:14px;font-size:13px;color:var(--tinta-suave);position:relative;overflow:hidden}
+.lateral .cuidado b{display:block;color:var(--violeta-profundo);font-size:13px;margin-bottom:2px}
+.lateral .cuidado::after{content:"";position:absolute;width:120px;height:120px;border-radius:50%;border:1px solid #5808cc22;right:-50px;bottom:-60px}
+
+.principal{min-width:0;display:grid;gap:18px;align-content:start}
+.topo{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--linha);border-radius:14px;padding:8px 10px 8px 16px}
+.topo .busca{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:8px;color:var(--tinta-suave);font-size:14px;min-height:40px}
+.topo .busca svg{width:18px;height:18px}
+.sino{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--tinta);min-height:40px;padding:0 10px;border-radius:10px}
+.sino svg{width:18px;height:18px}
+.sino .n{background:var(--laranja);color:var(--violeta-profundo);border-radius:999px;font-size:12px;padding:0 7px}
+
+/* Cabeçalho do dia: o motivo de fundo com informação de verdade. */
+.dia{position:relative;overflow:hidden;border-radius:18px;background:var(--grad-violeta);color:#fff;padding:26px 28px;min-height:220px}
+.dia .texto{position:relative;z-index:1;max-width:520px}
+.dia .eyebrow{color:#E7D3FF}
+.dia h2{font-size:30px;margin:10px 0 8px}
+.dia p{margin:0;color:#EDE0FF}
+.dia .acoes{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.dia .b-claro{background:#fff;color:var(--violeta-profundo)}
+.dia .b-contorno{background:#ffffff14;color:#fff;border-color:#ffffff66}
+.dia .arte .o1{width:420px;height:420px;right:-120px;top:-160px}
+.dia .arte .a1{width:180px;height:330px;right:20px;top:0}
+.dia .arte .a2{width:130px;height:260px;right:130px;top:40px}
+.dia .arte .trilha{width:90px;height:220px;right:200px;top:130px}
+.dia .cartao-solto{right:40px;top:44px;font-size:14px}
+.dia.console{background:var(--grad-console)}
+@media (max-width:900px){.dia .cartao-solto{display:none}}
+
+.numeros{display:grid;gap:12px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.numero{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:16px;text-decoration:none;color:var(--tinta);display:grid;gap:4px;position:relative}
+.numero:hover{border-color:#B495E0}
+.numero .rot{font-size:13px;color:var(--tinta-suave);padding-right:34px}
+.numero strong{font-size:30px;line-height:1.1}
+.numero small{font-size:13px;color:var(--tinta-suave)}
+.numero .ic{position:absolute;right:14px;top:14px;width:30px;height:30px;border-radius:9px;display:grid;place-items:center}
+.numero .ic svg{width:16px;height:16px}
+.ic-violeta{background:var(--lavanda);color:var(--violeta)}
+.ic-vencido{background:var(--vencido-fundo);color:var(--vencido)}
+.ic-neutro{background:#F1EFF5;color:var(--tinta-suave)}
+.ic-ok{background:var(--ok-fundo);color:var(--ok)}
+
+.duas{display:grid;gap:18px;grid-template-columns:minmax(0,1fr) 280px;align-items:start}
+.painel{background:#fff;border:1px solid var(--linha);border-radius:16px;overflow:hidden}
+.painel-cab{padding:18px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.painel-cab h3{font-size:20px}
+.painel-cab p{margin:2px 0 0;font-size:13px;color:var(--tinta-suave)}
+.fila{width:100%;border-collapse:collapse;font-size:14px}
+.fila th{font-size:12px;font-weight:600;color:var(--tinta-suave);text-align:left;padding:10px 14px;background:#FCFAFF;border-top:1px solid var(--linha);border-bottom:1px solid var(--linha)}
+.fila td{padding:14px;border-bottom:1px solid #F0ECF5;vertical-align:top}
+.fila td:first-child,.fila th:first-child{padding-left:20px}
+.fila .prot{font-size:12px;color:var(--tinta-suave)}
+.fila .ass{font-weight:600}
+.fila .loc{font-size:13px;color:var(--tinta-suave)}
+.venceu{color:var(--vencido);font-weight:600}
+.lado{display:grid;gap:18px}
+.prioridade{position:relative;overflow:hidden;border-radius:16px;background:linear-gradient(150deg,#FFF7EA,#FFEFD6);border:1px solid #F5DDBB;padding:20px}
+.prioridade .eyebrow{color:#7C3900}
+.prioridade h3{color:#552600;font-size:20px;margin:8px 0}
+.prioridade p{color:#6B4119;font-size:14px;margin:0 0 12px}
+.prioridade a{color:#552600;font-weight:600;font-size:14px}
+.prioridade .trilha-mini{position:absolute;right:-26px;bottom:-40px;width:60px;height:150px;border-radius:60px;transform:rotate(26deg);background:var(--grad-quente);opacity:.55}
+.equipe{padding:16px 18px}
+.equipe h3{font-size:15px;margin-bottom:6px}
+.pessoa{display:flex;gap:10px;align-items:center;padding:8px 0;font-size:14px}
+.pessoa small{display:block;font-size:12px;color:var(--tinta-suave)}
+.pessoa span:last-child{margin-left:auto;font-size:13px;color:var(--tinta-suave)}
+
+/* Console: mesma família, lateral clara com identificação Admin. */
+.admin-id{display:flex;align-items:center;gap:8px;padding:2px 8px 12px}
+.admin-id .badge{font-size:12px;font-weight:700;color:var(--violeta-profundo);background:var(--laranja);border-radius:6px;padding:2px 8px}
+.faixa-admin{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--violeta-profundo);background:#FFF3E1;border:1px solid #FFD39E;border-radius:12px;padding:8px 14px}
+
+/* Celular */
+.celulares{display:grid;gap:24px;grid-template-columns:repeat(auto-fit,minmax(300px,360px));justify-content:center}
+.celular{border:10px solid #1e1530;border-radius:38px;overflow:hidden;background:var(--papel);max-width:360px}
+.celular .barra-cel{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#fff;border-bottom:1px solid var(--linha)}
+.celular .barra-cel img{width:110px}
+.celular .menu{margin-left:auto;min-height:40px;padding:0 12px;border:1px solid var(--contorno);border-radius:10px;font:600 14px Inter,sans-serif;background:#fff;color:var(--tinta)}
+.celular .corpo{padding:14px;display:grid;gap:12px}
+.celular .dia{padding:20px;min-height:0}
+.celular .dia h2{font-size:24px}
+.celular .dia .arte{opacity:.45}
+.celular .numeros{grid-template-columns:1fr 1fr}
+.celular .numero strong{font-size:26px}
+.celular .numero .rot{padding-right:0}
+.celular .entrar{min-height:700px}
+.item-cel{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:14px;display:grid;gap:6px;font-size:14px}
+.entrar{position:relative;overflow:hidden;min-height:620px;background:var(--grad-violeta);display:grid;place-items:center;padding:24px}
+.entrar .caixa{position:relative;z-index:1;background:#fff;border-radius:18px;padding:24px;width:100%;max-width:320px;display:grid;gap:14px;box-shadow:0 20px 40px #10033f40}
+.entrar .caixa img{width:150px}
+.entrar .caixa h3{font-size:20px}
+.entrar .arte .o1{width:520px;height:520px;left:-200px;top:-160px}
+.entrar .arte .o2{width:380px;height:380px;right:-200px;bottom:-140px}
+.entrar .arte .trilha{width:90px;height:260px;right:-10px;bottom:-60px}
+.entrar .arte .a1{width:160px;height:300px;left:-40px;bottom:-120px}
+
+@media (max-width:1100px){
+  .app{grid-template-columns:1fr}
+  .lateral{position:static;display:none}
+  .duas{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .numeros{grid-template-columns:1fr 1fr}
+  .fila thead{display:none}
+  .fila tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:12px 16px;border-bottom:1px solid #F0ECF5}
+  .fila td{padding:0;border:0}
+  .fila td:first-child{grid-column:1/-1;padding:0}
+  .dia{padding:20px}
+  .dia .arte{opacity:.45}
+}
+.decisoes{counter-reset:d;display:grid;gap:12px;padding:0;list-style:none}
+.decisoes li{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:14px 16px 14px 52px;position:relative}
+.decisoes li::before{counter-increment:d;content:counter(d);position:absolute;left:14px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--lavanda);color:var(--violeta);font-weight:700;display:grid;place-items:center;font-size:13px}
+.decisoes b{display:block}
+.decisoes span{color:var(--tinta-suave);font-size:14px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<a class="pular" href="#conteudo">Ir para o conteúdo</a>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-casa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10h-6v-7H9v7H3z"/></symbol>
+  <symbol id="i-pedidos" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-pessoas" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M21 21v-3a6 6 0 0 0-3-5"/></symbol>
+  <symbol id="i-predio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V7l8-4v18M12 10h8v11M2 21h20M7 9h2M7 13h2M7 17h2M15 13h2M15 17h2"/></symbol>
+  <symbol id="i-grafico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></symbol>
+  <symbol id="i-ajuste" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+  <symbol id="i-busca" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></symbol>
+  <symbol id="i-sino" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></symbol>
+  <symbol id="i-relogio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-mais" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+  <symbol id="i-balao" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11a8 8 0 0 1-8 8H5l-3 3V11a9 9 0 0 1 19 0Z"/><path d="M7 10h9M7 14h5"/></symbol>
+  <symbol id="i-carteira" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M7 3h10"/></symbol>
+</svg>
+
+<div class="doc">
+<div class="doc-topo">
+  <img src="logo-violeta.png" alt="TRÍADE Condo">
+  <span class="selo-aprovar">Proposta para aprovar · 17/10/2026</span>
+</div>
+
+<main id="conteudo">
+<header class="abertura" aria-labelledby="t-abertura">
+  <div class="texto">
+    <p class="eyebrow">Identidade visual · sistema de design</p>
+    <h1 id="t-abertura">Violeta e laranja, com um fundo que cuida.</h1>
+    <p>Evolução da ideia 01 para os dois sistemas da TRÍADE Condo. As cores, os elementos de fundo e as telas viram regras, para a Plataforma do síndico e o Console TRÍADE serem da mesma família sem se confundirem.</p>
+  </div>
+  <div class="arte" aria-hidden="true">
+    <span class="orbita o1"></span><span class="orbita o2"></span>
+    <span class="arco a1"></span><span class="arco a2"></span><span class="trilha"></span>
+    <div class="cartao-solto"><span class="check"><svg><use href="#i-check"/></svg></span><span>Gestão com<br><b>proximidade.</b></span></div>
+  </div>
+</header>
+
+<section class="bloco" aria-labelledby="t-mudou">
+  <h2 class="titulo" id="t-mudou">O que vem da ideia 01 e o que muda</h2>
+  <p class="sub">A ideia 01 tem a direção certa: violeta como presença, laranja como energia, e um cabeçalho com arcos, trilha e cartão solto. Para virar sistema, ela precisa de regras e de algumas trocas.</p>
+  <div class="grade">
+    <div class="cartao"><h3>Fica</h3><ul class="lista-mudou"><li>Violeta #5808CC nas ações e na seleção.</li><li>Laranja #FF8D01 como destaque de marca, com texto violeta profundo em cima.</li><li>Os degradês violeta e quente.</li><li>Arcos, trilha e cartão solto como fundo.</li><li>Números do dia em cartões que levam à fila.</li><li>Cartão quente de "prioridade do dia".</li></ul></div>
+    <div class="cartao"><h3>Muda</h3><ul class="lista-mudou"><li><b>Lateral clara e flutuante</b> no lugar da escura, com marcador laranja no item escolhido.</li><li>O logo aparece inteiro, sem caixa branca recortada.</li><li>O cabeçalho mostra o dia de verdade (o que pede atenção), não uma frase de campanha.</li><li>Letras com pelo menos 12 px; o texto corrido fica em 15 px (na ideia 01 havia textos de 8 e 9 px).</li><li>Laranja nunca indica situação: atenção é âmbar, vencido é vermelho, sempre com forma e palavra.</li></ul></div>
+    <div class="cartao"><h3>Por sistema</h3><ul class="lista-mudou"><li><b>Plataforma do síndico:</b> degradê violeta luminoso, lateral clara, linguagem de quem cuida do prédio.</li><li><b>Console TRÍADE:</b> mesma lateral clara com o selo laranja "Admin", cabeçalho em violeta profundo e a faixa que lembra que é sistema interno.</li><li>Mesmos componentes, mesma tipografia (Inter), mesmo jeito de escrever.</li></ul></div>
+  </div>
+</section>
+
+<section class="bloco" aria-labelledby="t-cores">
+  <h2 class="titulo" id="t-cores">Cores</h2>
+  <p class="sub">Do estudo cromático, com nome de uso. O laranja é da marca. Situação de pedido tem cores próprias, que nunca usam o laranja.</p>
+  <div class="degrades">
+    <div class="degrade" style="background:var(--grad-violeta);color:#fff">Degradê violeta · cabeçalho da Plataforma</div>
+    <div class="degrade" style="background:var(--grad-console);color:#fff">Degradê profundo · cabeçalho do Console</div>
+    <div class="degrade" style="background:var(--grad-quente);color:var(--violeta-profundo)">Degradê quente · trilha e detalhes</div>
+  </div>
+  <div class="cores">
+    <div class="cor"><i style="background:#5808CC"></i><div><b>Violeta</b><code>--violeta #5808CC</code><br>Ações, seleção, links</div></div>
+    <div class="cor"><i style="background:#180567"></i><div><b>Violeta profundo</b><code>#180567</code><br>Texto sobre laranja, Console</div></div>
+    <div class="cor"><i style="background:#FF8D01"></i><div><b>Laranja</b><code>--laranja #FF8D01</code><br>Marcador, selo Admin, contagem</div></div>
+    <div class="cor"><i style="background:#F1E9FC"></i><div><b>Lavanda</b><code>--lavanda #F1E9FC</code><br>Item escolhido, ícones</div></div>
+    <div class="cor"><i style="background:#F8F6FC;border-bottom:1px solid var(--linha)"></i><div><b>Névoa</b><code>--papel #F8F6FC</code><br>Fundo das telas</div></div>
+    <div class="cor"><i style="background:#211A32"></i><div><b>Tinta</b><code>--tinta #211A32</code><br>Texto</div></div>
+    <div class="cor"><i style="background:#665D74"></i><div><b>Tinta suave</b><code>#665D74</code><br>Legendas</div></div>
+    <div class="cor"><i style="background:#83758F"></i><div><b>Contorno</b><code>#83758F</code><br>Borda de campo</div></div>
+  </div>
+  <h3 style="margin:24px 0 10px;font-size:17px">Contraste conferido (WCAG 2.2 AA)</h3>
+  <div class="tabela-rolagem"><table class="tabela">
+    <thead><tr><th>Par</th><th>Uso</th><th>Contraste</th></tr></thead>
+    <tbody>
+      <tr><td><span class="par" style="background:#5808CC;color:#fff">Branco sobre violeta</span></td><td>Botão principal</td><td>9,05 : 1</td></tr>
+      <tr><td><span class="par" style="background:#FF8D01;color:#180567">Violeta profundo sobre laranja</span></td><td>Selo Admin, contagem de avisos</td><td>7,21 : 1</td></tr>
+      <tr><td><span class="par" style="background:#F1E9FC;color:#5808CC">Violeta sobre lavanda</span></td><td>Item escolhido no menu</td><td>7,67 : 1</td></tr>
+      <tr><td><span class="par" style="background:#5808CC;color:#E0C7FF">Lilás claro sobre violeta</span></td><td>Texto de apoio no cabeçalho (sobre a parte escura do degradê)</td><td>5,94 : 1</td></tr>
+      <tr><td><span class="par" style="background:#F8F6FC;color:#665D74">Tinta suave sobre névoa</span></td><td>Legendas</td><td>5,79 : 1</td></tr>
+      <tr><td><span class="par" style="background:#fff;color:#83758F;border:1px solid #83758F">Contorno do campo</span></td><td>Borda de campo (pede 3 : 1)</td><td>4,28 : 1</td></tr>
+      <tr><td><span class="par" style="background:#fff;color:#FF8D01;border:1px solid var(--linha)">Laranja sobre branco</span></td><td><b>Não usar para texto</b> (só forma e fundo)</td><td>2,32 : 1</td></tr>
+    </tbody>
+  </table></div>
+  <p class="legenda">O texto do cabeçalho fica sempre na metade esquerda, sobre a parte escura do degradê. Branco sobre o lilás da ponta (#9E37F5) ainda passa (4,86 : 1), mas sem folga.</p>
+</section>
+
+<section class="bloco" aria-labelledby="t-fundo">
+  <h2 class="titulo" id="t-fundo">Elementos de fundo</h2>
+  <p class="sub">Os desenhos da sua imagem viram quatro peças. Elas se combinam, mas seguem as mesmas regras: são decoração, não informação; ficam atrás do texto, nunca embaixo de dados; e nunca há mais de uma composição por tela.</p>
+  <div class="motivos">
+    <div class="motivo"><div class="amostra"><div class="arte" aria-hidden="true"><span class="orbita" style="width:240px;height:240px;right:-70px;top:-70px"></span><span class="orbita" style="width:160px;height:160px;right:-30px;top:-30px"></span></div></div>
+      <div class="info"><h3>Órbitas</h3><p>Círculos finos e concêntricos. A peça mais leve: também entra em fundo claro, no rodapé da lateral e em telas vazias.</p></div></div>
+    <div class="motivo"><div class="amostra"><div class="arte" aria-hidden="true"><span class="arco a1" style="width:110px;height:200px;right:30px;top:-10px"></span><span class="arco a2" style="width:80px;height:160px;right:110px;top:20px"></span></div></div>
+      <div class="info"><h3>Arcos</h3><p>Formas de portal inclinadas a 26°, o mesmo ângulo do símbolo do logo. Dão profundidade ao cabeçalho.</p></div></div>
+    <div class="motivo"><div class="amostra"><div class="arte" aria-hidden="true"><span class="trilha" style="width:64px;height:190px;right:80px;top:20px"></span></div></div>
+      <div class="info"><h3>Trilha</h3><p>A faixa laranja que sobe, como a seta do símbolo. Uma por tela, sempre no canto direito, nunca atrás de texto.</p></div></div>
+    <div class="motivo"><div class="amostra claro"><div class="arte" aria-hidden="true"><div class="cartao-solto" style="right:24px;top:44px;font-size:13px"><span class="check"><svg><use href="#i-check"/></svg></span><span>Gestão com<br><b>proximidade.</b></span></div></div></div>
+      <div class="info"><h3>Cartão solto</h3><p>Um cartão branco girado com uma frase da marca. Só no computador, só no cabeçalho do início e no login. Leitores de tela não o anunciam.</p></div></div>
+  </div>
+  <div class="grade" style="margin-top:16px">
+    <div class="cartao"><h3>Onde entra</h3><p>No cabeçalho do início, na tela de entrar, nas telas vazias ("nenhum pedido ainda") e no cartão de prioridade do dia (só a trilha, pequena).</p></div>
+    <div class="cartao"><h3>Onde não entra</h3><p>Em listas, tabelas, formulários, janelas e na ficha do pedido. Ali a pessoa está trabalhando e o fundo atrapalha a leitura.</p></div>
+    <div class="cartao"><h3>No celular e com movimento reduzido</h3><p>No celular, sai o cartão solto e o resto do desenho fica mais fraco. Nada se mexe: a composição é parada, então não depende da opção de reduzir movimento.</p></div>
+  </div>
+</section>
+
+<section class="bloco" aria-labelledby="t-plataforma">
+  <h2 class="titulo" id="t-plataforma">Plataforma do síndico · início no computador</h2>
+  <p class="sub">A lateral clara e flutuante com o logo inteiro e o condomínio logo abaixo. O item escolhido fica em lavanda, com o marcador laranja. O cabeçalho mostra o dia com o fundo da marca e, embaixo, os números levam à fila. Dados fictícios.</p>
+  <div class="tela" role="img" aria-label="Início da Plataforma do síndico no computador. Lateral branca com o logo TRÍADE Condo, o Residencial Ipê e o menu: Início escolhido, Pedidos com 5, Moradores e unidades, Indicadores, Configurações e Pessoas e acesso. Barra superior com busca, avisos 3 e a síndica Ana Lima. Cabeçalho violeta com arcos, trilha laranja e o cartão Gestão com proximidade, dizendo: Sexta, 17 de outubro. Bom dia, Ana. 2 retornos vencidos e 3 vencem hoje. Quatro números: 5 em acompanhamento, 2 retornos vencidos, 1 sem responsável, 86 por cento no prazo em setembro. Fila de pedidos e, ao lado, prioridade do dia e quem está cuidando.">
+    <div class="tela-barra" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="app" aria-hidden="true">
+      <aside class="lateral">
+        <div class="marca"><img src="logo-violeta.png" alt=""></div>
+        <div class="ambiente"><span class="ic"><svg width="18" height="18"><use href="#i-predio"/></svg></span><div><b>Residencial Ipê</b><small>Plataforma do síndico</small></div></div>
+        <span class="grupo">SEU CONDOMÍNIO</span>
+        <a class="item" aria-current="page"><svg><use href="#i-casa"/></svg>Início</a>
+        <a class="item"><svg><use href="#i-pedidos"/></svg>Pedidos<span class="conta">5</span></a>
+        <a class="item"><svg><use href="#i-predio"/></svg>Moradores e unidades</a>
+        <a class="item"><svg><use href="#i-grafico"/></svg>Indicadores</a>
+        <span class="grupo">AJUSTES</span>
+        <a class="item"><svg><use href="#i-ajuste"/></svg>Configurações</a>
+        <a class="item"><svg><use href="#i-pessoas"/></svg>Pessoas e acesso</a>
+        <div class="cuidado" style="margin-top:18px"><b>Mais perto de quem mora.</b>Cada pedido é uma chance de cuidar.</div>
+        <div class="rodape"><span class="avatar">AL</span><div><b>Ana Lima</b><small>Síndica</small></div></div>
+      </aside>
+      <div class="principal">
+        <div class="topo"><span class="busca"><svg><use href="#i-busca"/></svg>Buscar pedido, unidade ou morador…</span><span class="sino"><svg><use href="#i-sino"/></svg>Avisos <span class="n">3</span></span><span class="avatar">AL</span></div>
+        <div class="dia">
+          <div class="texto"><p class="eyebrow">Sexta, 17 de outubro · Residencial Ipê</p><h2>Bom dia, Ana.</h2><p>2 retornos vencidos e 3 vencem hoje. O mais antigo venceu às 11h e já foi avisado a você.</p>
+            <div class="acoes"><span class="botao b-claro">Ver os vencidos</span><span class="botao b-contorno">Registrar pedido</span></div></div>
+          <div class="arte"><span class="orbita o1"></span><span class="arco a1"></span><span class="arco a2"></span><span class="trilha"></span>
+            <div class="cartao-solto"><span class="check"><svg><use href="#i-check"/></svg></span><span>Gestão com<br><b>proximidade.</b></span></div></div>
+        </div>
+        <div class="numeros">
+          <a class="numero"><span class="ic ic-violeta"><svg><use href="#i-pedidos"/></svg></span><span class="rot">Em acompanhamento</span><strong>5</strong><small>Ver pedidos</small></a>
+          <a class="numero"><span class="ic ic-vencido"><svg><use href="#i-relogio"/></svg></span><span class="rot">Retornos vencidos</span><strong>2</strong><small>Precisam de notícia</small></a>
+          <a class="numero"><span class="ic ic-neutro"><svg><use href="#i-pessoas"/></svg></span><span class="rot">Sem responsável</span><strong>1</strong><small>Escolher quem cuida</small></a>
+          <a class="numero"><span class="ic ic-ok"><svg><use href="#i-check"/></svg></span><span class="rot">No prazo em setembro</span><strong>86%</strong><small>37 de 43 retornos</small></a>
+        </div>
+        <div class="duas">
+          <div class="painel">
+            <div class="painel-cab"><div><h3>Pedidos</h3><p>Do primeiro relato à solução.</p></div><span class="botao b-primario"><svg><use href="#i-mais"/></svg>Registrar pedido</span></div>
+            <table class="fila"><thead><tr><th>Pedido</th><th>Situação</th><th>Próximo retorno</th><th>Responsável</th></tr></thead><tbody>
+              <tr><td><span class="prot mono">2026-0012</span><br><span class="ass">Vazamento no banheiro</span><br><span class="loc">Torre A · 101 · Manutenção</span></td><td><span class="selo s-andamento"><span class="f"></span>Em andamento</span></td><td><span class="venceu">Venceu às 11h</span></td><td>Bruna</td></tr>
+              <tr><td><span class="prot mono">2026-0015</span><br><span class="ass">Portão da garagem não fecha</span><br><span class="loc">Garagem · Manutenção</span></td><td><span class="selo s-andamento"><span class="f"></span>Em andamento</span></td><td><span class="venceu">Venceu às 12h</span></td><td>Edu</td></tr>
+              <tr><td><span class="prot mono">2026-0014</span><br><span class="ass">Reserva do salão de festas</span><br><span class="loc">Torre B · 304 · Convivência</span></td><td><span class="selo s-atencao"><span class="f"></span>Vence hoje</span></td><td>Hoje, 17h</td><td>Ana</td></tr>
+              <tr><td><span class="prot mono">2026-0016</span><br><span class="ass">Lâmpada apagada no corredor</span><br><span class="loc">Torre A · 3º andar</span></td><td><span class="selo s-novo"><span class="f"></span>Aberto</span></td><td>18/10, 10h</td><td>Sem responsável</td></tr>
+            </tbody></table>
+          </div>
+          <div class="lado">
+            <div class="prioridade"><p class="eyebrow">Prioridade do dia</p><h3>Um retorno faz diferença.</h3><p>2 pedidos estão com retorno vencido. Dê notícia ao morador, mesmo sem solução.</p><a>Ver retornos vencidos</a><span class="trilha-mini"></span></div>
+            <div class="painel equipe"><h3>Quem está cuidando</h3>
+              <div class="pessoa"><span class="avatar">AL</span><div>Ana Lima<small>Síndica</small></div><span>1 pedido</span></div>
+              <div class="pessoa"><span class="avatar" style="background:#FFF0DC;color:#7C3900">BS</span><div>Bruna Souza<small>Secretária</small></div><span>2 pedidos</span></div>
+              <div class="pessoa"><span class="avatar" style="background:var(--ok-fundo);color:var(--ok)">ES</span><div>Edu Santos<small>Zelador</small></div><span>1 pedido</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bloco" aria-labelledby="t-celular">
+  <h2 class="titulo" id="t-celular">No celular, e a tela de entrar</h2>
+  <p class="sub">No celular, a lateral vira o botão Menu, que abre o mesmo menu claro. O cabeçalho continua com o fundo, mais fraco e sem o cartão solto. A tela de entrar usa a composição completa, que é o primeiro contato com a marca.</p>
+  <div class="celulares">
+    <div class="celular" role="img" aria-label="Início no celular: barra com o logo e o botão Menu; cabeçalho violeta com Bom dia, Ana e 2 retornos vencidos; quatro números em duas colunas; primeiro pedido vencido. Dados fictícios.">
+      <div class="barra-cel" aria-hidden="true"><img src="logo-violeta.png" alt=""><span class="sino" style="margin-left:auto;padding:0 6px"><svg><use href="#i-sino"/></svg><span class="n">3</span></span><span class="menu" style="display:inline-flex;align-items:center;margin-left:0">Menu</span></div>
+      <div class="corpo" aria-hidden="true">
+        <div class="dia"><div class="texto"><p class="eyebrow">Sexta, 17 de outubro</p><h2>Bom dia, Ana.</h2><p>2 retornos vencidos e 3 vencem hoje.</p><div class="acoes"><span class="botao" style="background:#fff;color:#180567">Ver os vencidos</span></div></div>
+          <div class="arte"><span class="orbita o1"></span><span class="arco a1"></span><span class="trilha"></span></div></div>
+        <div class="numeros">
+          <a class="numero"><span class="rot">Em acompanhamento</span><strong>5</strong></a>
+          <a class="numero"><span class="rot">Retornos vencidos</span><strong>2</strong></a>
+          <a class="numero"><span class="rot">Sem responsável</span><strong>1</strong></a>
+          <a class="numero"><span class="rot">No prazo em setembro</span><strong>86%</strong></a>
+        </div>
+        <div class="item-cel"><span class="prot mono" style="font-size:12px;color:var(--tinta-suave)">2026-0012</span><b>Vazamento no banheiro</b><span style="font-size:13px;color:var(--tinta-suave)">Torre A · 101 · Bruna</span><span><span class="selo s-vencido"><span class="f"></span>Venceu às 11h</span></span></div>
+      </div>
+    </div>
+    <div class="celular" role="img" aria-label="Tela de entrar no celular: fundo violeta com órbitas, arcos e trilha laranja; caixa branca com o logo, título Entrar na Plataforma, campos de e-mail e senha e botão Entrar.">
+      <div class="entrar" aria-hidden="true">
+        <div class="arte"><span class="orbita o1"></span><span class="orbita o2"></span><span class="arco a1"></span><span class="trilha"></span></div>
+        <div class="caixa"><img src="logo-violeta.png" alt=""><h3>Entrar na Plataforma</h3>
+          <div class="campo"><label>E-mail</label><input value="ana@exemplo.com" readonly></div>
+          <div class="campo"><label>Senha</label><input type="password" value="12345678" readonly></div>
+          <span class="botao b-primario" style="justify-content:center">Entrar</span>
+          <span style="font-size:13px;color:var(--violeta);font-weight:600;text-align:center">Esqueci a senha</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bloco" aria-labelledby="t-console">
+  <h2 class="titulo" id="t-console">Console TRÍADE · mesma família, outro lugar</h2>
+  <p class="sub">A equipe TRÍADE reconhece na hora que está no sistema interno: selo laranja "Admin" ao lado do logo, cabeçalho em violeta profundo (sem o cartão solto), faixa de aviso interno e menus agrupados. A lateral também é clara. Dados fictícios.</p>
+  <div class="tela" role="img" aria-label="Console TRÍADE no computador. Lateral branca com o logo e o selo Admin laranja, grupos Clientes e Administração, Visão geral escolhida. Faixa avisando que é o sistema interno. Cabeçalho violeta profundo com órbitas: Visão geral da carteira, 12 condomínios, 2 em implantação com pendências. Números da carteira.">
+    <div class="tela-barra" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="app" aria-hidden="true" style="min-height:520px">
+      <aside class="lateral">
+        <div class="marca" style="padding-bottom:4px"><img src="logo-violeta.png" alt=""></div>
+        <div class="admin-id"><span class="badge">Admin</span><span style="font-size:13px;color:var(--tinta-suave)">Console TRÍADE</span></div>
+        <span class="grupo">CLIENTES</span>
+        <a class="item" aria-current="page"><svg><use href="#i-casa"/></svg>Visão geral</a>
+        <a class="item"><svg><use href="#i-predio"/></svg>Carteira de condomínios<span class="conta">12</span></a>
+        <a class="item"><svg><use href="#i-pedidos"/></svg>Implantação</a>
+        <span class="grupo">ADMINISTRAÇÃO</span>
+        <a class="item"><svg><use href="#i-pessoas"/></svg>Equipe TRÍADE</a>
+        <a class="item"><svg><use href="#i-carteira"/></svg>Contratos</a>
+        <div class="rodape" style="margin-top:18px"><span class="avatar">CA</span><div><b>Carolina</b><small>Administração</small></div></div>
+      </aside>
+      <div class="principal">
+        <div class="faixa-admin"><b>Console TRÍADE</b> · você está no sistema interno; notas internas nunca aparecem para o cliente.</div>
+        <div class="dia console" style="min-height:180px">
+          <div class="texto"><p class="eyebrow">Equipe TRÍADE</p><h2>Visão geral da carteira</h2><p>12 condomínios ativos. 2 em implantação com pendências.</p></div>
+          <div class="arte"><span class="orbita o1"></span><span class="orbita" style="width:260px;height:260px;right:-40px;top:-80px"></span><span class="arco a1" style="opacity:.6"></span></div>
+        </div>
+        <div class="numeros">
+          <a class="numero"><span class="rot">Condomínios ativos</span><strong>12</strong><small>Ver carteira</small></a>
+          <a class="numero"><span class="rot">Em implantação</span><strong>3</strong><small>2 com pendências</small></a>
+          <a class="numero"><span class="rot">Síndicos sem acesso</span><strong>1</strong><small>Reenviar convite</small></a>
+          <a class="numero"><span class="rot">Contratos a renovar</span><strong>0</strong><small>Nos próximos 30 dias</small></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bloco" aria-labelledby="t-comp">
+  <h2 class="titulo" id="t-comp">Componentes</h2>
+  <p class="sub">Os mesmos nos dois sistemas. A área de toque tem no mínimo 44 px, o foco aparece como contorno violeta, e cada situação traz forma e palavra, além da cor.</p>
+  <div class="cartao">
+    <div class="eyebrow">Botões</div>
+    <div class="linha-comp"><button class="botao b-primario" type="button"><svg aria-hidden="true"><use href="#i-mais"/></svg>Registrar pedido</button><button class="botao b-secundario" type="button">Repassar</button><button class="botao b-texto" type="button">Ver todos</button><button class="botao b-perigo" type="button">Cancelar pedido</button></div>
+    <div class="eyebrow">Situação</div>
+    <div class="linha-comp"><span class="selo s-novo"><span class="f" aria-hidden="true"></span>Aberto</span><span class="selo s-andamento"><span class="f" aria-hidden="true"></span>Em andamento</span><span class="selo s-atencao"><span class="f" aria-hidden="true"></span>Vence hoje</span><span class="selo s-vencido"><span class="f" aria-hidden="true"></span>Retorno vencido</span><span class="selo s-ok"><span class="f" aria-hidden="true"></span>Concluído</span></div>
+    <div class="eyebrow">Campo</div>
+    <div class="linha-comp"><div class="campo"><label for="ex-assunto">Assunto</label><input id="ex-assunto" value="Vazamento no banheiro"><small>Do jeito que o morador falou.</small></div></div>
+  </div>
+</section>
+
+<section class="bloco" aria-labelledby="t-decidir">
+  <h2 class="titulo" id="t-decidir">Para aprovar</h2>
+  <ol class="decisoes">
+    <li><b>Cores: violeta e laranja no lugar de verde-petróleo e lilás.</b><span>A Plataforma deixa o verde-petróleo; verde fica só para "concluído" e "no prazo". O Console também passa ao violeta, diferenciado pelo selo Admin e pelo cabeçalho profundo.</span></li>
+    <li><b>Lateral clara e flutuante nos dois sistemas.</b><span>Nada de lateral escura. O item escolhido fica em lavanda, com o marcador laranja à esquerda.</span></li>
+    <li><b>Elementos de fundo: órbitas, arcos, trilha e cartão solto, com as regras acima.</b><span>Entram no início, no login, nas telas vazias e na prioridade do dia; nunca em listas, formulários ou na ficha do pedido.</span></li>
+    <li><b>Logo violeta (o "logo 2") como assinatura do produto.</b><span>O logo laranja fica para materiais de divulgação. As duas versões estão em <code>docs/identidade</code>.</span></li>
+    <li><b>Ordem de mudança.</b><span>Depois de aprovado: primeiro o design-frontend.html (cores, componentes e as telas já aprovadas com a nova cara), depois o código das duas aplicações, com os testes de acessibilidade de sempre. Nenhuma regra de tela muda, só a aparência.</span></li>
+  </ol>
+</section>
+</main>
+</div>
+</body>
+</html>
