@@ -47,7 +47,7 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
     <form onSubmit={buscar} role="search" className="flex flex-wrap items-end gap-2">
       <CampoTexto id="m-busca" rotulo="Buscar por nome, unidade ou telefone" className="min-w-0 flex-1 basis-64" value={texto} maxLength={60}
         onChange={(e) => setTexto(e.target.value)} />
-      <Botao type="submit" variante="secundario">Buscar</Botao>
+      <Botao type="submit" variante="contorno">Buscar</Botao>
     </form>
   );
 
@@ -132,9 +132,9 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
           </div>
           {paginas > 1 ? (
             <nav aria-label="Páginas" className="flex items-center justify-between gap-3 text-sm">
-              <Botao variante="secundario" disabled={pagina <= 1} onClick={() => { setPagina(pagina - 1); setMarcados([]); }}>Anterior</Botao>
+              <Botao variante="contorno" disabled={pagina <= 1} onClick={() => { setPagina(pagina - 1); setMarcados([]); }}>Anterior</Botao>
               <span>Página {pagina} de {paginas} · {d.total} contatos</span>
-              <Botao variante="secundario" disabled={pagina >= paginas} onClick={() => { setPagina(pagina + 1); setMarcados([]); }}>Próxima</Botao>
+              <Botao variante="contorno" disabled={pagina >= paginas} onClick={() => { setPagina(pagina + 1); setMarcados([]); }}>Próxima</Botao>
             </nav>
           ) : <p className="text-sm text-tinta-suave">{d.total === 1 ? "1 contato" : `${d.total} contatos`}</p>}
         </>

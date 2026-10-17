@@ -33,7 +33,7 @@ export function Pessoas() {
   if (carga.estado === "erro") {
     return (
       <div className="grid gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Pessoas e acesso</h1>
+        <h1 className="text-[28px] font-normal tracking-tight">Pessoas e acesso</h1>
         <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />
       </div>
     );
@@ -48,7 +48,7 @@ export function Pessoas() {
   return (
     <div className="grid gap-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Pessoas e acesso</h1>
+        <h1 className="text-[28px] font-normal tracking-tight">Pessoas e acesso</h1>
         <p className="mt-1 text-tinta-suave">Quem entra na Plataforma deste condomínio. Cada pessoa tem o seu acesso; nada de conta compartilhada.</p>
       </div>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}

@@ -67,7 +67,7 @@ export function ListaHistorico({ caminho }: { caminho: string }) {
           </li>
         ))}
       </ol>
-      {temMais ? <Botao variante="secundario" className="justify-self-start" onClick={() => void maisAntigos()}>Carregar mais antigos</Botao> : null}
+      {temMais ? <Botao variante="contorno" className="justify-self-start" onClick={() => void maisAntigos()}>Carregar mais antigos</Botao> : null}
     </div>
   );
 }

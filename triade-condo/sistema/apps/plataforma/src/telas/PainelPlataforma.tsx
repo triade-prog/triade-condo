@@ -1,14 +1,14 @@
 "use client";
-// Moldura da Plataforma do síndico (design "Dois sistemas, uma família" e "Telas do passo 2",
-// aprovados em 16/10/2026): barra superior com a marca, a busca no condomínio, o condomínio e a
-// pessoa; faixa lilás no alto; menu branco flutuante com seleção lilás; ação em verde-petróleo.
+// Moldura da Plataforma do síndico (telas-modelo da identidade, aprovadas em 17/10/2026, DC13):
+// barra superior branca com a marca, a busca, o condomínio, o sino e a pessoa; lateral clara com
+// ícone em cada item, o escolhido em degradê violeta e a contagem de vencidos em laranja.
 // O condomínio vem da sessão no servidor; quem atende mais de um escolhe e troca aqui (MU-04).
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FUNCOES_PLATAFORMA } from "@triade/domain";
-import { Aviso, Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Marca, textoDoErro, type ErroApi } from "@triade/ui";
+import { Aviso, Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, Iniciais, Marca, textoDoErro, type ErroApi, type NomeIcone } from "@triade/ui";
 import { SinoAvisos } from "./Avisos.tsx";
 import { Contexto, useCarregar, type CondominioDaPessoa, type Painel } from "./sessao.tsx";
 
@@ -32,7 +32,7 @@ function ListaCondominios({ condominios, atual, aoEscolher }: { condominios: Con
             type="button"
             onClick={() => aoEscolher(c.id)}
             aria-current={c.id === atual ? "true" : undefined}
-            className="grid w-full gap-0.5 rounded-lg border border-linha px-4 py-3 text-left hover:border-acao aria-[current=true]:border-acao aria-[current=true]:bg-plataforma-bruma"
+            className="grid w-full gap-0.5 rounded-[18px] border border-linha bg-superficie px-4 py-3 text-left hover:border-violeta-300 aria-[current=true]:border-violeta-600 aria-[current=true]:bg-violeta-50"
           >
             <span className="font-semibold">{c.nome}</span>
             <span className="text-sm text-tinta-suave">{nomeFuncoes(c.funcoes)}</span>
@@ -43,14 +43,12 @@ function ListaCondominios({ condominios, atual, aoEscolher }: { condominios: Con
   );
 }
 
-function ItemMenu({ href, children, atual }: { href: string; children: ReactNode; atual: boolean }) {
+function ItemMenu({ href, icone, children, atual, contagem }: { href: string; icone: NomeIcone; children: ReactNode; atual: boolean; contagem?: ReactNode }) {
   return (
-    <Link
-      href={href}
-      aria-current={atual ? "page" : undefined}
-      className={`flex min-h-11 items-center rounded-md px-3 text-sm ${atual ? "bg-selecao font-medium text-selecao-tinta" : "text-tinta hover:bg-superficie-2"}`}
-    >
+    <Link href={href} aria-current={atual ? "page" : undefined}>
+      <Icone nome={icone} />
       {children}
+      {contagem}
     </Link>
   );
 }
@@ -72,55 +70,71 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
       <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-superficie focus:px-3 focus:py-2">
         Ir para o conteúdo
       </a>
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-linha bg-superficie px-4 py-2.5">
+      <header className="flex flex-wrap items-center gap-3 border-b border-linha bg-superficie px-4 py-2.5">
+        <button
+          type="button"
+          className="emblema md:hidden"
+          aria-label="Menu"
+          aria-expanded={menuAberto}
+          aria-controls="menu-plataforma"
+          onClick={() => setMenuAberto((v) => !v)}
+        >
+          <Icone nome="menu" />
+        </button>
         <Marca sistema="Plataforma do síndico" />
         {pode("pedidos.ver") || pode("moradores.ver") ? (
-          <form role="search" action="/busca" className="order-last w-full md:order-none md:w-auto md:max-w-xs md:flex-1"
+          <form role="search" action="/busca" className="relative order-last w-full md:order-none md:ml-4 md:w-auto md:max-w-md md:flex-1"
             onSubmit={(e) => { e.preventDefault(); const q = new FormData(e.currentTarget).get("q"); router.push(`/busca?q=${encodeURIComponent(String(q ?? "").trim())}`); }}>
-            <input type="search" name="q" maxLength={60} aria-label="Buscar no condomínio" placeholder="Buscar no condomínio…" key={caminho}
-              className="min-h-10 w-full rounded-full border border-[#c7c8fe] bg-superficie px-4 text-sm text-tinta placeholder:text-tinta-suave" />
+            <Icone nome="busca" className="pointer-events-none absolute top-1/2 left-3.5 h-[18px] w-[18px] -translate-y-1/2 text-tinta-suave" />
+            <input type="search" name="q" maxLength={60} aria-label="Buscar no condomínio" placeholder="Buscar pedido, unidade ou pessoa" key={caminho}
+              className="campo min-h-10 pl-10 text-sm placeholder:text-tinta-suave" />
           </form>
         ) : null}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          <span className="font-medium">
+        <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+          <span className="inline-flex min-h-10 items-center gap-2 rounded-[18px] border border-linha bg-superficie px-3 font-medium">
+            <Icone nome="predio" className="h-4 w-4 text-tinta-suave" />
             {painel.condominio.nome}
             {sessao.condominios.length > 1 ? (
-              <Botao variante="discreto" onClick={() => setTrocando(true)}>Trocar condomínio</Botao>
+              <Botao variante="discreto" tamanho="p" aria-label="Trocar condomínio" onClick={() => setTrocando(true)}>Trocar</Botao>
             ) : null}
           </span>
           {painel.avisosNaoVistos !== undefined ? <SinoAvisos naoVistos={painel.avisosNaoVistos} /> : null}
-          <span className="text-tinta-suave">{painel.pessoa.nome} · {nomeFuncoes(painel.funcoes)}</span>
-          <Botao variante="discreto" onClick={sair}>Sair</Botao>
-          <button
-            type="button"
-            className="min-h-10 rounded-md border border-contorno px-3 text-sm font-semibold md:hidden"
-            aria-expanded={menuAberto}
-            aria-controls="menu-plataforma"
-            onClick={() => setMenuAberto((v) => !v)}
-          >
-            Menu
-          </button>
+          <span className="flex items-center gap-2">
+            <Iniciais nome={painel.pessoa.nome} />
+            <span className="hidden leading-tight sm:block">
+              <span className="block font-medium">{painel.pessoa.nome}</span>
+              <span className="block text-xs text-tinta-suave">{nomeFuncoes(painel.funcoes)}</span>
+            </span>
+            <span className="sr-only sm:hidden">{painel.pessoa.nome} · {nomeFuncoes(painel.funcoes)}</span>
+          </span>
+          <Botao variante="discreto" tamanho="m" onClick={sair}>Sair</Botao>
         </div>
       </header>
-      <div className="min-h-[calc(100dvh-57px)] bg-[linear-gradient(var(--color-faixa-alto),var(--color-faixa-baixo)_140px,var(--color-papel)_220px)] md:grid md:grid-cols-[232px_1fr] md:gap-6 md:p-4">
+      <div className="min-h-[calc(100dvh-63px)] md:grid md:grid-cols-[248px_1fr] md:gap-6 md:p-5">
         <nav
           id="menu-plataforma"
           aria-label="Plataforma"
-          className={`${menuAberto ? "grid" : "hidden"} m-3 content-start gap-1 rounded-xl border border-linha bg-superficie p-2 shadow-sm md:sticky md:top-4 md:m-0 md:grid md:self-start`}
+          className={`${menuAberto ? "grid" : "hidden"} lateral m-3 md:sticky md:top-5 md:m-0 md:grid md:self-start`}
         >
-          <ItemMenu href="/" atual={caminho === "/"}>Início</ItemMenu>
-          {pode("pedidos.ver") ? <ItemMenu href="/pedidos" atual={caminho.startsWith("/pedidos")}>Pedidos</ItemMenu> : null}
-          {pode("moradores.ver") ? <ItemMenu href="/moradores" atual={caminho.startsWith("/moradores")}>Moradores e unidades</ItemMenu> : null}
-          {pode("pedidos.ver") ? <ItemMenu href="/indicadores" atual={caminho.startsWith("/indicadores")}>Indicadores</ItemMenu> : null}
-          {pode("config.ver") ? <ItemMenu href="/configuracoes" atual={caminho.startsWith("/configuracoes")}>Configurações</ItemMenu> : null}
-          {pode("pessoas.ver") ? <ItemMenu href="/pessoas" atual={caminho.startsWith("/pessoas")}>Pessoas e acesso</ItemMenu> : null}
-          <p className="mt-2 border-t border-linha px-3 pt-2 text-xs text-tinta-suave">O WhatsApp do condomínio chega num próximo passo. Até lá, os avisos ficam aqui no painel.</p>
+          <ItemMenu href="/" icone="casa" atual={caminho === "/"}>Início</ItemMenu>
+          {pode("pedidos.ver") ? (
+            <ItemMenu href="/pedidos" icone="pedido" atual={caminho.startsWith("/pedidos")}
+              contagem={painel.pedidos?.retornoVencido ? <span className="contagem">{painel.pedidos.retornoVencido}<span className="sr-only"> com retorno vencido</span></span> : null}>
+              Pedidos
+            </ItemMenu>
+          ) : null}
+          {pode("moradores.ver") ? <ItemMenu href="/moradores" icone="predio" atual={caminho.startsWith("/moradores")}>Moradores e unidades</ItemMenu> : null}
+          {pode("pedidos.ver") ? <ItemMenu href="/indicadores" icone="grafico" atual={caminho.startsWith("/indicadores")}>Indicadores</ItemMenu> : null}
+          {pode("config.ver") || pode("pessoas.ver") ? <hr /> : null}
+          {pode("config.ver") ? <ItemMenu href="/configuracoes" icone="ajuste" atual={caminho.startsWith("/configuracoes")}>Configurações</ItemMenu> : null}
+          {pode("pessoas.ver") ? <ItemMenu href="/pessoas" icone="pessoas" atual={caminho.startsWith("/pessoas")}>Pessoas e acesso</ItemMenu> : null}
+          <p className="mt-2 border-t border-linha px-3 pt-3 text-xs text-tinta-suave">O WhatsApp do condomínio chega num próximo passo. Até lá, os avisos ficam aqui no painel.</p>
         </nav>
-        <main id="conteudo" className="min-w-0 px-4 py-6 md:px-2 md:py-4">{children}</main>
+        <main id="conteudo" className="min-w-0 px-4 py-6 md:px-2 md:py-2">{children}</main>
       </div>
       <Dialogo aberto={trocando} titulo="Trocar condomínio" aoFechar={() => setTrocando(false)}>
         <ListaCondominios condominios={sessao.condominios} atual={painel.condominio.id} aoEscolher={(id) => { setTrocando(false); aoTrocar(id); }} />
-        <div className="flex justify-end"><Botao variante="secundario" onClick={() => setTrocando(false)}>Cancelar</Botao></div>
+        <div className="flex justify-end"><Botao variante="discreto" onClick={() => setTrocando(false)}>Cancelar</Botao></div>
       </Dialogo>
     </>
   );
@@ -181,10 +195,10 @@ export function PainelPlataforma({ children }: { children: ReactNode }) {
   const s = sessao.dados;
   if (!s.condominioAtual) {
     return (
-      <main id="conteudo" className="grid min-h-dvh place-items-center bg-superficie-2 px-4 py-10">
-        <div className="grid w-full max-w-md gap-5 rounded-xl border border-linha bg-superficie p-6 shadow-sm">
+      <main id="conteudo" className="grid min-h-dvh place-items-center px-4 py-10">
+        <div className="grid w-full max-w-md gap-5 rounded-[20px] border border-linha bg-superficie p-6 shadow-s2">
           <Marca sistema="Plataforma do síndico" />
-          <h1 className="text-2xl font-semibold tracking-tight">Em qual condomínio?</h1>
+          <h1 className="text-2xl font-light tracking-tight">Em qual condomínio?</h1>
           {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
           {s.condominios.length ? (
             <>

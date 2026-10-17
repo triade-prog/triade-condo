@@ -40,7 +40,7 @@ export function Entrar() {
 
   return (
     <div className="grid gap-5">
-      <h1 className="text-2xl font-semibold tracking-tight">Entrar na Plataforma</h1>
+      <h1 className="text-[28px] font-normal tracking-tight">Entrar na Plataforma</h1>
       {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
       {etapa === "SENHA" ? (
         <form onSubmit={enviarSenha} className="grid gap-4">

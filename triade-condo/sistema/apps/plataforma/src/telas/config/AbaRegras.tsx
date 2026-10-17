@@ -24,8 +24,8 @@ export function AbaRegras({ config, pode, recarregar, salvo }: PropsAba) {
 
   const mudou = revisao !== config.regrasPedidos.revisao || reabertura !== config.regrasPedidos.reabertura;
   return (
-    <section aria-labelledby="t-regras" className="grid max-w-2xl gap-4 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
-      <h2 id="t-regras" className="font-semibold">Regras dos pedidos</h2>
+    <section aria-labelledby="t-regras" className="grid max-w-2xl gap-4 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+      <h2 id="t-regras" className="text-lg font-medium">Regras dos pedidos</h2>
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar} /> : null}
       {pode ? (
         <>

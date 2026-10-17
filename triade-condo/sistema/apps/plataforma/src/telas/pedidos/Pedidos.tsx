@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { FILTROS_ATENCAO, FILTROS_SITUACAO, tempoAberto } from "@triade/domain";
-import { Aviso, Botao, Carregando, CampoSelecao, CampoTexto, ErroCarregar, IconeMarca, Selo, Vazio } from "@triade/ui";
+import { Aviso, Botao, Carregando, CampoSelecao, CampoTexto, Chip, ErroCarregar, Selo, Vazio, type NomeIcone } from "@triade/ui";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { FilaPedidos, OpcoesPedidos, PedidoDaFila, Recado } from "../tipos.ts";
 import { Escolha } from "../moradores/comum.tsx";
@@ -69,7 +69,7 @@ function Item({ p, agora }: { p: PedidoDaFila; agora: string }) {
       </div>
       <div>
         <span className="md:hidden text-xs text-tinta-suave">Próximo retorno: </span>
-        {p.retornoVencido && p.proximoRetorno ? <Selo tom="atencao">{faltaPara(p.proximoRetorno, agora)}</Selo>
+        {p.retornoVencido && p.proximoRetorno ? <Selo tom="erro">{faltaPara(p.proximoRetorno, agora)}</Selo>
           : p.proximoRetorno ? diaHora(p.proximoRetorno) : <span className="text-tinta-suave">—</span>}
       </div>
     </li>
@@ -86,6 +86,10 @@ function Busca({ inicial, aoBuscar }: { inicial: string; aoBuscar: (b: string) =
     </form>
   );
 }
+
+const ICONE_ATENCAO: Record<string, NomeIcone> = {
+  SEM_RESPONSAVEL: "pessoa", AGUARDANDO_ACEITE: "check", RETORNO_VENCIDO: "relogio", COM_PENDENCIA: "alerta",
+};
 
 export function Pedidos() {
   const busca = useSearchParams();
@@ -105,7 +109,7 @@ export function Pedidos() {
 
   if (opcoes.estado === "carregando") return <Carregando rotulo="Carregando os pedidos…" />;
   if (opcoes.estado === "erro") {
-    return <div className="grid gap-3"><h1 className="text-2xl font-semibold tracking-tight">Pedidos</h1><ErroCarregar texto={opcoes.texto} tentarDeNovo={opcoes.recarregar} /></div>;
+    return <div className="grid gap-3"><h1 className="text-[28px] font-normal tracking-tight">Pedidos</h1><ErroCarregar texto={opcoes.texto} tentarDeNovo={opcoes.recarregar} /></div>;
   }
   const o = opcoes.dados;
   const r = fila.estado === "pronto" ? fila.dados.resumo : null;
@@ -115,7 +119,7 @@ export function Pedidos() {
     <div className="grid gap-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Pedidos</h1>
+          <h1 className="text-[28px] font-normal tracking-tight">Pedidos</h1>
           <p className="mt-1 text-tinta-suave">O que os moradores pediram e o que a gestão viu no prédio, do registro até a conclusão explicada.</p>
         </div>
         {o.pode.registrar ? <Botao onClick={() => setRegistrando(true)}>+ Registrar pedido</Botao> : null}
@@ -139,11 +143,10 @@ export function Pedidos() {
           {Object.entries(FILTROS_ATENCAO).map(([codigo, nome]) => {
             const n = r ? { SEM_RESPONSAVEL: r.semResponsavel, AGUARDANDO_ACEITE: r.aguardandoAceite, RETORNO_VENCIDO: r.retornoVencido, COM_PENDENCIA: r.comPendencia }[codigo] : null;
             return (
-              <button key={codigo} type="button" aria-pressed={f.atencao === codigo} onClick={() => mudar({ atencao: f.atencao === codigo ? "" : codigo })}
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-contorno bg-superficie px-3.5 text-sm aria-pressed:border-acao aria-pressed:bg-plataforma-bruma aria-pressed:font-semibold aria-pressed:text-acao-press">
-                {n ? <IconeMarca marca="atencao" className="h-3.5 w-3.5 text-atencao" /> : null}
+              <Chip key={codigo} ativo={f.atencao === codigo} icone={n ? ICONE_ATENCAO[codigo] : undefined}
+                onClick={() => mudar({ atencao: f.atencao === codigo ? "" : codigo })}>
                 {nome}{n !== null ? ` (${n})` : ""}
-              </button>
+              </Chip>
             );
           })}
           {filtrando ? <Botao variante="discreto" onClick={() => router.replace("/pedidos", { scroll: false })}>Limpar filtros</Botao> : null}
@@ -154,7 +157,7 @@ export function Pedidos() {
       {fila.estado === "erro" ? <ErroCarregar texto={fila.texto} tentarDeNovo={fila.recarregar} /> : null}
       {fila.estado === "pronto" ? (
         fila.dados.itens.length === 0 ? (
-          filtrando ? <Vazio titulo="Nenhum pedido com estes filtros" acao={<Botao variante="secundario" onClick={() => router.replace("/pedidos")}>Limpar filtros</Botao>} />
+          filtrando ? <Vazio titulo="Nenhum pedido com estes filtros" acao={<Botao variante="contorno" onClick={() => router.replace("/pedidos")}>Limpar filtros</Botao>} />
             : (
               <Vazio titulo="Nenhum pedido ativo" acao={o.pode.registrar ? <Botao onClick={() => setRegistrando(true)}>+ Registrar pedido</Botao> : undefined}>
                 Quando alguém pedir algo por telefone ou pessoalmente, registre aqui.
@@ -163,8 +166,8 @@ export function Pedidos() {
         ) : (
           <section aria-labelledby="t-fila" className="grid gap-2">
             <h2 id="t-fila" className="sr-only">Pedidos encontrados</h2>
-            <div className="overflow-hidden rounded-lg border border-linha bg-superficie">
-              <div aria-hidden="true" className="hidden bg-superficie-2 px-4 py-2.5 text-sm font-semibold text-tinta-suave md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.1fr)_5.5rem_8.5rem] md:gap-4">
+            <div className="overflow-hidden rounded-2xl border border-linha bg-superficie">
+              <div aria-hidden="true" className="hidden border-b border-linha bg-violeta-50/60 px-4 py-2.5 text-[13px] font-medium text-tinta-suave md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.1fr)_5.5rem_8.5rem] md:gap-4">
                 <span>Pedido</span><span>Etapa</span><span>Responsável</span><span>Aberto há</span><span>Próximo retorno</span>
               </div>
               <ul>{fila.dados.itens.map((p) => <Item key={p.id} p={p} agora={fila.dados.agora} />)}</ul>
@@ -173,8 +176,8 @@ export function Pedidos() {
               <span>{fila.dados.total === 1 ? "1 pedido" : `${fila.dados.total} pedidos`}</span>
               {fila.dados.total > fila.dados.porPagina ? (
                 <span className="flex gap-2">
-                  <Botao variante="secundario" disabled={f.pagina <= 1} onClick={() => router.replace(`/pedidos?${consulta({ ...f, pagina: f.pagina - 1 })}`)}>Anteriores</Botao>
-                  <Botao variante="secundario" disabled={f.pagina * fila.dados.porPagina >= fila.dados.total}
+                  <Botao variante="contorno" disabled={f.pagina <= 1} onClick={() => router.replace(`/pedidos?${consulta({ ...f, pagina: f.pagina - 1 })}`)}>Anteriores</Botao>
+                  <Botao variante="contorno" disabled={f.pagina * fila.dados.porPagina >= fila.dados.total}
                     onClick={() => router.replace(`/pedidos?${consulta({ ...f, pagina: f.pagina + 1 })}`)}>Próximos</Botao>
                 </span>
               ) : null}

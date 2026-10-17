@@ -41,7 +41,7 @@ function Form({ aoEnviar, aoFechar, erro, textoBotao, recarregar, children, peri
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar ? () => { aoFechar(); recarregar(); } : undefined} /> : null}
       {children}
       <div className="flex justify-end gap-2">
-        <Botao variante="secundario" onClick={aoFechar}>Cancelar</Botao>
+        <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" variante={perigo ? "perigo" : "primario"} disabled={enviando}>{enviando ? "Salvando…" : textoBotao}</Botao>
       </div>
     </form>
@@ -149,7 +149,7 @@ function FormCadastrar({ dados, aoFechar, salvo }: { dados: Unidades; aoFechar: 
           podeConfirmar={dados.podeConfirmar} aoFechar={aoFechar} salvo={salvo}
           nomeUnidade={nomeDaUnidade(dados.blocos.find((b) => b.id === unidade.blocoId)?.nome, unidade.andar, unidade.identificacao)} />
       ) : (
-        <div className="flex justify-end"><Botao variante="secundario" onClick={aoFechar}>Cancelar</Botao></div>
+        <div className="flex justify-end"><Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao></div>
       )}
     </div>
   );
@@ -212,7 +212,7 @@ function EscolherPessoa({ prefixo, rotulo, textoCadastrada, de = "", pessoa, aoM
             <CampoTexto id={`${prefixo}-busca`} rotulo={de ? `Buscar${de} pelo nome ou telefone` : "Buscar pelo nome ou telefone"} className="min-w-0 flex-1" value={busca} maxLength={60}
               onChange={(e) => setBusca(e.target.value)} erro={erros.contato}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); buscar(); } }} />
-            <Botao variante="secundario" onClick={buscar}>Buscar</Botao>
+            <Botao variante="contorno" onClick={buscar}>Buscar</Botao>
           </div>
           {achados.estado === "carregando" && buscado ? <Carregando linhas={1} rotulo="Buscando…" /> : null}
           {achados.estado === "erro" ? <ErroCarregar texto={achados.texto} tentarDeNovo={achados.recarregar} /> : null}
@@ -280,7 +280,7 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
       <CamposVinculo prefixo="c" valor={vinculo} aoMudar={(v) => { setVinculo(v); setErro(null); }} responsavelAtual={alvo.responsavel}
         erros={errosDoVinculo(campos)} />
       {pedeDono ? (
-        <fieldset className="grid gap-3 rounded-lg border border-linha bg-superficie-2 p-3">
+        <fieldset className="grid gap-3 rounded-2xl border border-linha bg-superficie-2 p-3">
           <legend className="px-1 text-[13px] font-semibold">Proprietário do imóvel</legend>
           <p className="text-sm text-tinta-suave">
             A unidade ainda não tem proprietário no cadastro. Para controle, o inquilino entra junto com o dono do imóvel. O proprietário fica registrado
@@ -495,12 +495,12 @@ function FormMudanca({ unidade, aoFechar, salvo, recarregar }: { unidade: Unidad
           <Aviso tom="atencao">
             <span className="flex flex-wrap items-center justify-between gap-2">
               <span>A unidade vai ficar com inquilino e sem proprietário. Para controle, inclua o proprietário do imóvel entre quem entra.</span>
-              {entram.length < 20 ? <Botao variante="secundario" onClick={() => incluirPessoa({ ...VINCULO_NOVO, proprietario: true, mora: false })}>+ Proprietário</Botao> : null}
+              {entram.length < 20 ? <Botao variante="contorno" onClick={() => incluirPessoa({ ...VINCULO_NOVO, proprietario: true, mora: false })}>+ Proprietário</Botao> : null}
             </span>
           </Aviso>
         ) : null}
         {entram.length < 20 ? (
-          <Botao variante="secundario" className="justify-self-start" onClick={() => incluirPessoa({ ...VINCULO_NOVO, ligacao: "FAMILIAR" })}>+ Mais uma pessoa</Botao>
+          <Botao variante="contorno" className="justify-self-start" onClick={() => incluirPessoa({ ...VINCULO_NOVO, ligacao: "FAMILIAR" })}>+ Mais uma pessoa</Botao>
         ) : null}
         {campos.includes("entram") || campos.includes("ligacao") ? <p className="text-sm text-erro">Confira nome, telefone (com DDD) e a ligação de quem entra.</p> : null}
         <p className="text-xs text-tinta-suave">Deixe em branco se ninguém entra agora. Quem entra ocupa desde a data da mudança.</p>

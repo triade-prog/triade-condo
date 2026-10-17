@@ -22,7 +22,7 @@ function ErroOuConflito({ erro, recarregar }: { erro: ErroApi; recarregar: () =>
       {textoDoErro(erro)}
       {erro.codigo === "VERSION_CONFLICT" ? (
         <span className="mt-2 block">
-          <Botao variante="secundario" onClick={recarregar}>Carregar a versão nova</Botao>
+          <Botao variante="contorno" onClick={recarregar}>Carregar a versão nova</Botao>
         </span>
       ) : null}
     </Aviso>
@@ -96,7 +96,7 @@ function FormFicha({ ficha, pode, recarregar, avisar }: PropsAba) {
             </div>
           ))}
           {editavel && contatos.length < 10 ? (
-            <Botao variante="secundario" className="justify-self-start" onClick={() => setContatos((l) => [...l, { nome: "", papel: "", telefone: "", email: "" }])}>
+            <Botao variante="contorno" className="justify-self-start" onClick={() => setContatos((l) => [...l, { nome: "", papel: "", telefone: "", email: "" }])}>
               + Adicionar contato
             </Botao>
           ) : null}
@@ -125,7 +125,7 @@ function FormCenario({ ficha, pode, recarregar, avisar }: PropsAba) {
     <form onSubmit={salvar} className="grid gap-3 border-t border-linha pt-5">
       {erro ? <ErroOuConflito erro={erro} recarregar={recarregar} /> : null}
       <EscolhaCenario valor={cenario} aoMudar={setCenario} nome="cenario-ficha" />
-      <Botao type="submit" variante="secundario" className="justify-self-start" disabled={!mudou || !cenario}>
+      <Botao type="submit" variante="contorno" className="justify-self-start" disabled={!mudou || !cenario}>
         {ficha.condominio.cenario ? "Trocar cenário" : "Escolher cenário"}
       </Botao>
     </form>
@@ -155,7 +155,7 @@ function AreaInterna({ ficha, pode, recarregar, avisar }: PropsAba) {
         <CampoTexto id="f-contrato" rotulo="Referência do contrato" maxLength={120} disabled={!podeContrato} value={referencia}
           onChange={(e) => setReferencia(e.target.value)} ajuda={podeContrato ? undefined : "Só a administração muda."} />
         {podeContrato ? (
-          <Botao type="submit" variante="secundario" className="justify-self-start" disabled={referencia === (ficha.cliente.referenciaContrato ?? "")}>
+          <Botao type="submit" variante="contorno" className="justify-self-start" disabled={referencia === (ficha.cliente.referenciaContrato ?? "")}>
             Salvar referência
           </Botao>
         ) : null}

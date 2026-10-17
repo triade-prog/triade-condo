@@ -109,7 +109,7 @@ function Semana({ tipo, config, pode, recarregar, salvo }: PropsAba & { tipo: Ti
       {pode ? (
         <div className="flex flex-wrap gap-2">
           <Botao type="submit">Salvar horário de {nome}</Botao>
-          <Botao variante="secundario" onClick={copiarSegunda}>Copiar segunda para terça a sexta</Botao>
+          <Botao variante="contorno" onClick={copiarSegunda}>Copiar segunda para terça a sexta</Botao>
         </div>
       ) : null}
     </form>
@@ -132,7 +132,7 @@ function Fuso({ config, pode, recarregar, salvo }: PropsAba) {
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar} /> : null}
       <CampoSelecao id="fuso" rotulo="Fuso do condomínio" disabled={!pode} value={fuso} onChange={(e) => setFuso(e.target.value)}
         opcoes={Object.entries(FUSOS).map(([valor, texto]) => ({ valor, texto }))} ajuda="Os horários e os prazos seguem este fuso." />
-      {pode ? <Botao type="submit" variante="secundario" className="justify-self-start" disabled={fuso === config.fuso}>Salvar fuso</Botao> : null}
+      {pode ? <Botao type="submit" variante="contorno" className="justify-self-start" disabled={fuso === config.fuso}>Salvar fuso</Botao> : null}
     </form>
   );
 }

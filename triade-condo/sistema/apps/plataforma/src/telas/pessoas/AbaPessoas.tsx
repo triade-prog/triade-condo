@@ -61,7 +61,7 @@ function Autorizar({ dados, salvo, aoFechar }: PropsPessoas & { aoFechar: () => 
       <Permissoes disponiveis={dados.permissoesDisponiveis} marcadas={permissoes} aoMudar={setPermissoes} />
       <p className="text-sm text-tinta-suave">A pessoa recebe um e-mail para criar a própria senha. O link só pode ser usado uma vez. Se ela já tiver conta, o condomínio aparece no próximo acesso.</p>
       <div className="flex justify-end gap-2">
-        <Botao variante="secundario" onClick={aoFechar}>Cancelar</Botao>
+        <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" disabled={enviando}>{enviando ? "Enviando…" : "Enviar convite"}</Botao>
       </div>
     </form>
@@ -87,7 +87,7 @@ function Rever({ dados, pessoa, recarregar, salvo, aoFechar }: PropsPessoas & { 
       <CampoTexto id="r-cargo" rotulo="Cargo" opcional maxLength={60} value={cargo} onChange={(e) => setCargo(e.target.value)} ajuda="O cargo não dá permissão." />
       <Permissoes disponiveis={dados.permissoesDisponiveis} marcadas={permissoes} aoMudar={setPermissoes} />
       <div className="flex justify-end gap-2">
-        <Botao variante="secundario" onClick={aoFechar}>Cancelar</Botao>
+        <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit">Salvar</Botao>
       </div>
     </form>
@@ -118,7 +118,7 @@ function Revogar({ dados, pessoa, recarregar, salvo, aoFechar }: PropsPessoas & 
       ) : null}
       <p>{pessoa.nome} para de entrar na hora. O que foi feito com este acesso continua no histórico, com o nome de quem fez.</p>
       <div className="flex justify-end gap-2">
-        <Botao variante="secundario" onClick={aoFechar}>Cancelar</Botao>
+        <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" variante="perigo">Revogar acesso</Botao>
       </div>
     </form>

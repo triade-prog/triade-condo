@@ -50,8 +50,8 @@ export function RegrasAviso({ config, pode, recarregar, salvo }: PropsAba) {
   );
 
   return (
-    <section aria-labelledby="t-avisos" className="grid gap-4 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
-      <h2 id="t-avisos" className="font-semibold">Quando o retorno vence</h2>
+    <section aria-labelledby="t-avisos" className="grid gap-4 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+      <h2 id="t-avisos" className="text-lg font-medium">Quando o retorno vence</h2>
       {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={recarregar} /> : null}
       {pode ? (
         <>

@@ -49,10 +49,10 @@ export function Unidade() {
   const fechar = () => setJanela(null);
   const voltar = <Link href="/moradores" className="text-sm font-medium text-acao hover:underline">Voltar às unidades</Link>;
 
-  if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-2xl font-semibold tracking-tight">Unidade</h1><Vazio titulo="Unidade não encontrada" /></div>;
+  if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Unidade</h1><Vazio titulo="Unidade não encontrada" /></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando a unidade…" />;
   if (carga.estado === "erro") {
-    return <div className="grid gap-3">{voltar}<h1 className="text-2xl font-semibold tracking-tight">Unidade</h1><ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+    return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Unidade</h1><ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
   }
 
   const d = carga.dados;
@@ -73,17 +73,17 @@ export function Unidade() {
       {voltar}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-tight">
+          <h1 className="flex flex-wrap items-center gap-2 text-[28px] font-normal tracking-tight">
             {nome}{u.ativa ? null : <Selo tom="neutro">Desativada</Selo>}
           </h1>
           <p className="mt-1 text-tinta-suave">Quem fala por esta unidade. Só a pessoa confirmada vale.</p>
         </div>
         {d.podeEditar ? (
           <div className="flex flex-wrap gap-2">
-            <Botao variante="secundario" onClick={() => setJanela({ tipo: "unidade" })}>Editar unidade</Botao>
+            <Botao variante="contorno" onClick={() => setJanela({ tipo: "unidade" })}>Editar unidade</Botao>
             {u.ativa ? (
               <>
-                <Botao variante="secundario" onClick={() => setJanela({ tipo: "mudanca" })}>Registrar mudança</Botao>
+                <Botao variante="contorno" onClick={() => setJanela({ tipo: "mudanca" })}>Registrar mudança</Botao>
                 <Botao onClick={() => setJanela({ tipo: "incluir" })}>+ Pessoa</Botao>
               </>
             ) : null}
@@ -97,7 +97,7 @@ export function Unidade() {
         <Aviso tom="atencao">
           <span className="flex flex-wrap items-center justify-between gap-2">
             <span>Esta unidade tem inquilino e o proprietário do imóvel não está no cadastro. Para controle, inclua o proprietário, mesmo que não more aqui.</span>
-            {edita ? <Botao variante="secundario" onClick={() => setJanela({ tipo: "incluir", relacao: "PROPRIETARIO" })}>Incluir proprietário</Botao> : null}
+            {edita ? <Botao variante="contorno" onClick={() => setJanela({ tipo: "incluir", relacao: "PROPRIETARIO" })}>Incluir proprietário</Botao> : null}
           </span>
         </Aviso>
       ) : null}
@@ -157,8 +157,8 @@ export function Unidade() {
 
       {d.anteriores.length ? (
         <section aria-labelledby="t-anteriores" className="grid gap-2">
-          <h2 id="t-anteriores" className="font-semibold">Anteriores</h2>
-          <ul className="divide-y divide-linha rounded-lg border border-linha bg-superficie">
+          <h2 id="t-anteriores" className="text-lg font-medium">Anteriores</h2>
+          <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
             {d.anteriores.map((a) => (
               <li key={a.vinculoId} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
                 <span>

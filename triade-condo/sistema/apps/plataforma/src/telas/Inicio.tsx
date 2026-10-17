@@ -32,12 +32,12 @@ function Moradores({ resumo }: { resumo: NonNullable<ReturnType<typeof usePlataf
       href: "/moradores?filtro=sem-proprietario", botao: "Ver quais", ajuda: "Para controle, o dono do imóvel fica no cadastro.", aviso: true }] : []),
   ];
   return (
-    <section aria-labelledby="t-moradores" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
-      <h2 id="t-moradores" className="font-semibold">Moradores e unidades</h2>
+    <section aria-labelledby="t-moradores" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+      <h2 id="t-moradores" className="text-lg font-medium">Moradores e unidades</h2>
       {resumo.unidades === 0 ? (
         <div className="grid justify-items-start gap-2 text-sm">
           <p>Nenhuma unidade ainda. Cadastre as unidades ou importe a planilha da administradora.</p>
-          <Link href="/moradores" className={classeBotao("secundario")}>Cadastrar unidades</Link>
+          <Link href="/moradores" className={classeBotao("contorno")}>Cadastrar unidades</Link>
         </div>
       ) : (
         <ul className="divide-y divide-linha">
@@ -47,7 +47,7 @@ function Moradores({ resumo }: { resumo: NonNullable<ReturnType<typeof usePlataf
                 {l.aviso ? <IconeMarca marca="atencao" className="mt-0.5 h-4 w-4 text-atencao" /> : null}
                 <span>{l.texto}{l.ajuda ? <span className="block text-xs text-tinta-suave">{l.ajuda}</span> : null}</span>
               </span>
-              <Link href={l.href} className={classeBotao("secundario")}>{l.botao}</Link>
+              <Link href={l.href} className={classeBotao("discreto", "", "m")}>{l.botao}</Link>
             </li>
           ))}
         </ul>
@@ -66,12 +66,12 @@ function Agora({ resumo, registrar, paradaDias }: {
   paradaDias: number | null;
 }) {
   const linhas = [
-    ...(resumo.retornoVencido ? [{ selo: "Vencido", tom: "atencao" as const, texto: plural(resumo.retornoVencido, "retorno vencido", "retornos vencidos"),
+    ...(resumo.retornoVencido ? [{ selo: "Vencido", tom: "erro" as const, texto: plural(resumo.retornoVencido, "retorno vencido", "retornos vencidos"),
       href: "/pedidos?atencao=RETORNO_VENCIDO", botao: "Ver quais", primario: true,
       ajuda: resumo.vencidoMaisAntigo
         ? `O mais antigo venceu em ${diaHora(resumo.vencidoMaisAntigo)}${resumo.vencidoMaisAntigoEscalado ? ", já avisado ao síndico" : ""}. O morador está esperando notícia.`
         : null }] : []),
-    ...(resumo.vencemHoje ? [{ selo: "Hoje", tom: "info" as const, texto: plural(resumo.vencemHoje, "retorno vence hoje", "retornos vencem hoje"),
+    ...(resumo.vencemHoje ? [{ selo: "Hoje", tom: "atencao" as const, texto: plural(resumo.vencemHoje, "retorno vence hoje", "retornos vencem hoje"),
       href: "/pedidos?situacao=ATIVOS", botao: "Ver quais", primario: false,
       ajuda: resumo.proximoHoje ? `O próximo às ${HORA.format(new Date(resumo.proximoHoje))}.` : null }] : []),
     ...(resumo.meusParaAceitar ? [{ selo: null, tom: "info" as const, texto: plural(resumo.meusParaAceitar, "pedido para você aceitar", "pedidos para você aceitar"),
@@ -85,8 +85,8 @@ function Agora({ resumo, registrar, paradaDias }: {
       botao: "Revisar", ajuda: null, primario: false }] : []),
   ];
   return (
-    <section aria-labelledby="t-agora" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
-      <h2 id="t-agora" className="font-semibold">Agora</h2>
+    <section aria-labelledby="t-agora" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+      <h2 id="t-agora" className="text-lg font-medium">Agora</h2>
       {linhas.length ? (
         <ul className="divide-y divide-linha">
           {linhas.map((l) => (
@@ -96,7 +96,7 @@ function Agora({ resumo, registrar, paradaDias }: {
                   : <IconeMarca marca="atencao" className="mt-0.5 h-4 w-4 text-atencao" />}
                 <span>{l.texto}{l.ajuda ? <span className="block text-xs text-tinta-suave">{l.ajuda}</span> : null}</span>
               </span>
-              <Link href={l.href} className={classeBotao(l.primario ? "primario" : "secundario")}>{l.botao}</Link>
+              <Link href={l.href} className={classeBotao(l.primario ? "secundario" : "discreto", "", "m")}>{l.botao}</Link>
             </li>
           ))}
         </ul>
@@ -106,7 +106,7 @@ function Agora({ resumo, registrar, paradaDias }: {
       <p className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <span className="text-tinta-suave">{plural(resumo.ativos, "pedido ativo", "pedidos ativos")}</span>
         <span className="flex gap-2">
-          {registrar ? <Link href="/pedidos" className={classeBotao("secundario")}>Registrar pedido</Link> : null}
+          {registrar ? <Link href="/pedidos" className={classeBotao("contorno")}>Registrar pedido</Link> : null}
           <Link href="/pedidos" className={classeBotao("discreto")}>Ver todos</Link>
         </span>
       </p>
@@ -118,8 +118,8 @@ function Agora({ resumo, registrar, paradaDias }: {
 function MesFechadoCartao({ mes }: { mes: MesFechado }) {
   const r = mes.retornos;
   return (
-    <section aria-labelledby="t-mes" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
-      <h2 id="t-mes" className="font-semibold">Mês fechado · {nomeDoMes(mes.mes)}</h2>
+    <section aria-labelledby="t-mes" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+      <h2 id="t-mes" className="text-lg font-medium">Mês fechado · {nomeDoMes(mes.mes)}</h2>
       <ul className="divide-y divide-linha text-sm">
         <li className="py-2.5">
           <strong className="text-lg">{mostrarPorcentagem(r.porcentagem)}</strong> {r.porcentagem === undefined || r.porcentagem === null ? "de retornos no prazo: nenhum retorno no mês" : "dos retornos no prazo"}
@@ -147,8 +147,8 @@ function Pronto({ config }: { config: Configuracoes }) {
     geral ? `Prazo geral: ${geral.horas} h de atendimento${excecoes(config.prazos.length - 1)}` : "Sem prazo geral",
   ];
   return (
-    <section aria-labelledby="t-pronto" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
-      <h2 id="t-pronto" className="font-semibold">Já veio pronto pelo cenário</h2>
+    <section aria-labelledby="t-pronto" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+      <h2 id="t-pronto" className="text-lg font-medium">Já veio pronto pelo cenário</h2>
       <ul className="divide-y divide-linha">
         {linhas.map((l) => (
           <li key={l} className="flex items-center justify-between gap-3 py-2.5 text-sm">{l}<Selo tom="ok">Pronto</Selo></li>
@@ -166,13 +166,32 @@ export function Inicio() {
 
   return (
     <div className="grid gap-6">
-      <div>
-        <p className="text-sm text-tinta-suave">{HOJE.format(new Date()).replace(/^./, (x) => x.toUpperCase())}</p>
-        <h1 className="text-2xl font-semibold tracking-tight">{c.nome}</h1>
-        <p className="mt-1 text-tinta-suave">
-          {[c.cenario ? CENARIOS[c.cenario as keyof typeof CENARIOS] ?? c.cenario : null, c.cidade, c.uf].filter(Boolean).join(" · ")}
-        </p>
-      </div>
+      <header className="relative overflow-hidden rounded-[20px] bg-[image:var(--grad-violeta)] px-6 py-6 text-white md:px-8">
+        <span aria-hidden="true" className="pointer-events-none absolute -top-32 -right-24 h-[340px] w-[340px] rounded-full border border-white/20" />
+        <span aria-hidden="true" className="pointer-events-none absolute -top-52 -right-48 h-[520px] w-[520px] rounded-full border border-white/15" />
+        <span aria-hidden="true" className="pointer-events-none absolute top-8 right-10 hidden h-56 w-8 rotate-[26deg] rounded-full bg-[image:var(--grad-trilha)] opacity-90 sm:block" />
+        <div className="relative">
+          <p className="text-xs font-medium tracking-[.08em] text-violeta-100 uppercase">{HOJE.format(new Date())}</p>
+          <h1 className="mt-1.5 text-[32px] leading-tight font-light tracking-tight">{c.nome}</h1>
+          <p className="mt-1 text-violeta-100">
+            {[c.cenario ? CENARIOS[c.cenario as keyof typeof CENARIOS] ?? c.cenario : null, c.cidade, c.uf].filter(Boolean).join(" · ")}
+          </p>
+          {painel.pedidos ? (
+            <ul className="mt-4 flex flex-wrap gap-2.5">
+              {[
+                [painel.pedidos.retornoVencido, painel.pedidos.retornoVencido === 1 ? "retorno vencido" : "retornos vencidos"],
+                [painel.pedidos.vencemHoje, painel.pedidos.vencemHoje === 1 ? "vence hoje" : "vencem hoje"],
+                [painel.pedidos.meusParaAceitar, "para você aceitar"],
+              ].map(([n, t]) => (
+                <li key={String(t)} className="min-w-32 flex-1 rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 sm:flex-none">
+                  <b className="block text-2xl leading-tight font-light">{n}</b>
+                  <span className="text-sm text-violeta-100">{t}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      </header>
       <div className="grid gap-4 lg:grid-cols-2">
         {painel.pedidos ? (
           <Agora resumo={painel.pedidos} registrar={pode("pedidos.atualizar")}
@@ -180,8 +199,8 @@ export function Inicio() {
         ) : null}
         {painel.mesFechado ? <MesFechadoCartao mes={painel.mesFechado} /> : null}
         {painel.moradores ? <Moradores resumo={painel.moradores} /> : null}
-        <section aria-labelledby="t-falta" className="grid content-start gap-3 rounded-xl border border-linha bg-superficie p-5 shadow-sm">
-          <h2 id="t-falta" className="font-semibold">O que falta configurar</h2>
+        <section aria-labelledby="t-falta" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+          <h2 id="t-falta" className="text-lg font-medium">O que falta configurar</h2>
           {painel.pendencias.length === 0 ? (
             <p className="flex items-center gap-2 text-sm"><IconeMarca marca="ok" className="h-4 w-4 text-ok" />Nada pendente. O condomínio está pronto para receber pedidos.</p>
           ) : (
@@ -194,7 +213,7 @@ export function Inicio() {
                       <IconeMarca marca="atencao" className="mt-0.5 h-4 w-4 text-atencao" />
                       {PENDENCIAS_CONFIG[p as keyof typeof PENDENCIAS_CONFIG] ?? p}
                     </span>
-                    {onde && pode(onde.acao) ? <Link href={onde.href} className={classeBotao("secundario")}>{onde.texto}</Link> : null}
+                    {onde && pode(onde.acao) ? <Link href={onde.href} className={classeBotao("contorno")}>{onde.texto}</Link> : null}
                   </li>
                 );
               })}

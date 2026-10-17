@@ -31,14 +31,14 @@ export function FaixaPrazo({ pedidoId, agora, versao, semResponsavel, aoDarRetor
     return `${quem}, ${a.nomes.join(" e ")}, ${aHora(a.em, agora)}`;
   });
   return (
-    <Aviso tom="atencao" titulo={`Retorno vencido há ${mostrarHoras(p.horas)} de atendimento`}>
+    <Aviso tom="erro" papel="status" titulo={`Retorno vencido há ${mostrarHoras(p.horas)} de atendimento`}>
       <span className="flex flex-wrap items-center justify-between gap-2">
         <span>
           {avisados.length ? `Avisado ${avisados.join("; ")}.` : "O aviso sai na próxima conferência, em até 5 minutos."}
           {p.proximo ? ` ${p.proximo.tipo === "ESCALADO_SINDICO" ? "O síndico" : "O substituto"} será avisado ${aHora(p.proximo.em, agora)} se nada mudar.` : ""}
           {" "}O vencimento só acaba com o retorno ao morador.
         </span>
-        {aoDarRetorno ? <Botao onClick={aoDarRetorno}>Registrar retorno</Botao> : null}
+        {aoDarRetorno ? <Botao variante="secundario" tamanho="m" onClick={aoDarRetorno}>Registrar retorno</Botao> : null}
       </span>
     </Aviso>
   );

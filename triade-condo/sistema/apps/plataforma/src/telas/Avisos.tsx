@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { formatarDataHora, TIPOS_AVISO } from "@triade/domain";
-import { Aviso, AvisoErro, Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
+import { Aviso, AvisoErro, Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
 import type { AvisoDoPainel, Avisos as ListaAvisos } from "./tipos.ts";
 
@@ -46,7 +46,7 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
       {naoVistos ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm">{naoVistos === 1 ? "1 aviso sem ver" : `${naoVistos} avisos sem ver`}</p>
-          <Botao variante="secundario" onClick={() => void marcar(null)}>Marcar todos como vistos</Botao>
+          <Botao variante="contorno" onClick={() => void marcar(null)}>Marcar todos como vistos</Botao>
         </div>
       ) : null}
       {itens.length === 0 ? (
@@ -85,16 +85,14 @@ export function SinoAvisos({ naoVistos }: { naoVistos: number }) {
   const [aberto, setAberto] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setAberto(true)}
-        className={`inline-flex min-h-10 items-center gap-1.5 rounded-md px-2 text-sm ${naoVistos ? "font-semibold text-tinta" : "text-tinta-suave"} hover:bg-superficie-2`}>
-        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-        </svg>
-        Avisos{naoVistos ? <> ({naoVistos})<span className="sr-only"> sem ver</span></> : null}
+      {/* A contagem vem do CSS (data-contagem): o nome do botão diz a mesma coisa por extenso. */}
+      <button type="button" onClick={() => setAberto(true)} className="emblema" data-contagem={naoVistos || undefined}
+        aria-label={naoVistos ? `Avisos (${naoVistos}) sem ver` : "Avisos"}>
+        <Icone nome="sino" />
       </button>
       <Dialogo aberto={aberto} titulo="Avisos" aoFechar={() => setAberto(false)}>
         {aberto ? <Lista aoFechar={() => setAberto(false)} /> : null}
-        <div className="flex justify-end"><Botao variante="secundario" onClick={() => setAberto(false)}>Fechar</Botao></div>
+        <div className="flex justify-end"><Botao variante="discreto" onClick={() => setAberto(false)}>Fechar</Botao></div>
       </Dialogo>
     </>
   );

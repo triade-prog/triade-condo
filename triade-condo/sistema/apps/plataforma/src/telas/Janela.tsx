@@ -80,7 +80,7 @@ function Formulario({ campos, iniciais, textoBotao, aoFechar, aoSalvar, recarreg
       })}
       {extra}
       <div className="flex justify-end gap-2">
-        <Botao variante="secundario" onClick={aoFechar}>Cancelar</Botao>
+        <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" disabled={enviando}>{enviando ? "Salvando…" : textoBotao}</Botao>
       </div>
     </form>

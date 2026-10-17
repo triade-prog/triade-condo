@@ -25,20 +25,20 @@ export function Busca() {
   return (
     <div className="grid gap-5">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Buscar no condomínio</h1>
+        <h1 className="text-[28px] font-normal tracking-tight">Buscar no condomínio</h1>
         {valida ? <p className="mt-1 text-tinta-suave">Resultados para “{q}”.</p> : null}
       </div>
       {!valida ? <Vazio titulo="Digite ao menos 2 letras ou números">Use a busca no topo: protocolo, assunto, unidade, nome ou telefone.</Vazio> : null}
 
       {valida && pode("pedidos.ver") ? (
         <section aria-labelledby="t-b-pedidos" className="grid gap-2">
-          <h2 id="t-b-pedidos" className="font-semibold">Pedidos</h2>
+          <h2 id="t-b-pedidos" className="text-lg font-medium">Pedidos</h2>
           {pedidos.estado === "carregando" ? <Carregando linhas={2} rotulo="Buscando pedidos…" /> : null}
           {pedidos.estado === "erro" ? <ErroCarregar texto={pedidos.texto} tentarDeNovo={pedidos.recarregar} /> : null}
           {pedidos.estado === "pronto" ? (
             pedidos.dados.itens.length === 0 ? <p className="text-sm text-tinta-suave">Nenhum pedido encontrado.</p> : (
               <>
-                <ul className="divide-y divide-linha rounded-lg border border-linha bg-superficie">
+                <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
                   {pedidos.dados.itens.slice(0, MOSTRAR).map((p) => (
                     <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
                       <span>
@@ -62,13 +62,13 @@ export function Busca() {
 
       {valida && pode("moradores.ver") ? (
         <section aria-labelledby="t-b-moradores" className="grid gap-2">
-          <h2 id="t-b-moradores" className="font-semibold">Moradores</h2>
+          <h2 id="t-b-moradores" className="text-lg font-medium">Moradores</h2>
           {moradores.estado === "carregando" ? <Carregando linhas={2} rotulo="Buscando moradores…" /> : null}
           {moradores.estado === "erro" ? <ErroCarregar texto={moradores.texto} tentarDeNovo={moradores.recarregar} /> : null}
           {moradores.estado === "pronto" ? (
             moradores.dados.itens.length === 0 ? <p className="text-sm text-tinta-suave">Nenhum morador encontrado.</p> : (
               <>
-                <ul className="divide-y divide-linha rounded-lg border border-linha bg-superficie">
+                <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
                   {moradores.dados.itens.slice(0, MOSTRAR).map((m) => (
                     <li key={m.vinculoId} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
                       <span>

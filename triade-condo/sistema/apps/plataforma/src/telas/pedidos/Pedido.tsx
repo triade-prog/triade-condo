@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { CANAIS_PEDIDO, descreverEventoPedido, mostrarDataSemHora, mostrarTelefone, REVISOES_CONCLUSAO, TIPOS_PENDENCIA, tempoAberto } from "@triade/domain";
-import { Abas, Aviso, Botao, Carregando, chamarApi, ErroCarregar, IconeMarca, Selo, textoDoErro, Vazio } from "@triade/ui";
+import { Abas, Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, IconeMarca, Selo, textoDoErro, Vazio } from "@triade/ui";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { OpcoesPedidos, PedidoDetalhe, PendenciaPedido, Recado } from "../tipos.ts";
 import { nomeRelacao } from "../moradores/comum.tsx";
@@ -29,8 +29,8 @@ type IdAba = (typeof ABAS)[number]["id"];
 
 function Compromisso({ titulo, children, acao }: { titulo: string; children: React.ReactNode; acao?: React.ReactNode }) {
   return (
-    <section aria-label={titulo} className="grid content-start gap-1 rounded-xl border border-linha bg-superficie p-4 shadow-sm">
-      <h2 className="text-sm font-semibold">{titulo}</h2>
+    <section aria-label={titulo} className="grid content-start gap-1 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
+      <h2 className="text-xs font-medium tracking-[.1em] text-tinta-suave uppercase">{titulo}</h2>
       {children}
       {acao ? <div className="pt-1">{acao}</div> : null}
     </section>
@@ -51,12 +51,12 @@ export function Pedido() {
   const [aba, setAba] = useState<IdAba>("andamento");
   const voltar = <Link href="/pedidos" className="text-sm font-medium text-acao hover:underline">Voltar aos pedidos</Link>;
 
-  if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-2xl font-semibold tracking-tight">Pedido</h1><Vazio titulo="Pedido não encontrado" /></div>;
+  if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Pedido</h1><Vazio titulo="Pedido não encontrado" /></div>;
   if (carga.estado === "carregando" || opcoes.estado === "carregando") return <Carregando rotulo="Carregando o pedido…" />;
   if (carga.estado === "erro" || opcoes.estado === "erro") {
     const e = carga.estado === "erro" ? carga : opcoes.estado === "erro" ? opcoes : null;
     return (
-      <div className="grid gap-3">{voltar}<h1 className="text-2xl font-semibold tracking-tight">Pedido</h1>
+      <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Pedido</h1>
         <ErroCarregar texto={e?.texto ?? ""} tentarDeNovo={() => { carga.recarregar(); opcoes.recarregar(); }} /></div>
     );
   }
@@ -92,7 +92,7 @@ export function Pedido() {
       {voltar}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight"><span className="font-mono text-lg text-tinta-suave">{p.protocolo}</span> · {p.assunto}</h1>
+          <h1 className="text-[28px] font-normal tracking-tight"><span className="font-mono text-lg text-tinta-suave">{p.protocolo}</span> · {p.assunto}</h1>
           <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-tinta-suave">
             <SeloEstadoPedido estado={p.estado} />
             {p.privado ? <Selo tom="neutro">Privado</Selo> : null}
@@ -113,7 +113,7 @@ export function Pedido() {
         <Aviso tom="info">
           <span className="flex flex-wrap items-center justify-between gap-2">
             <span>Concluído e esperando a revisão do síndico.</span>
-            {d.pode.revisar ? <Botao variante="secundario" onClick={() => setAcao("revisar")}>Revisar conclusão</Botao> : null}
+            {d.pode.revisar ? <Botao variante="contorno" onClick={() => setAcao("revisar")}>Revisar conclusão</Botao> : null}
           </span>
         </Aviso>
       ) : null}
@@ -125,7 +125,7 @@ export function Pedido() {
             {p.proximoRetorno ? (
               <p className="flex flex-wrap items-center gap-2">
                 <span className="font-medium">{diaHora(p.proximoRetorno)}</span>
-                {p.retornoVencido ? <Selo tom="atencao">{faltaPara(p.proximoRetorno, d.agora)}</Selo>
+                {p.retornoVencido ? <Selo tom="erro">{faltaPara(p.proximoRetorno, d.agora)}</Selo>
                   : <span className="text-sm text-tinta-suave">{faltaPara(p.proximoRetorno, d.agora)}</span>}
               </p>
             ) : <p className="text-sm text-tinta-suave">{p.estado === "EM_REVISAO" ? "Em revisão: sem novo retorno combinado." : "Sem prazo configurado."}</p>}
@@ -154,17 +154,18 @@ export function Pedido() {
 
       {abertas.length ? (
         <section aria-labelledby="t-pendencias" className="grid gap-2">
-          <h2 id="t-pendencias" className="font-semibold">Pendências abertas</h2>
+          <h2 id="t-pendencias" className="text-lg font-medium">Pendências abertas</h2>
           <ul className="grid gap-2">
             {abertas.map((x) => (
-              <li key={x.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-atencao-borda bg-atencao-fundo px-3 py-2 text-sm">
-                <span>
-                  <span className="flex items-center gap-1.5 font-semibold text-atencao"><IconeMarca marca="atencao" />{nomeDe(TIPOS_PENDENCIA, x.tipo)}</span>
+              <li key={x.id} data-tom="atencao" className="aviso flex-wrap items-center justify-between">
+                <span className="quadro"><Icone nome="ferramenta" /></span>
+                <span className="texto">
+                  <span className="block font-semibold">{nomeDe(TIPOS_PENDENCIA, x.tipo)}</span>
                   <span className="block">{x.motivo}</span>
                   <span className="block text-xs text-tinta-suave">cuida: {x.responsavel.nome}{x.responsavel.ativo ? "" : " (sem acesso)"} · aberta por {x.abertaPor} em {diaHora(x.abertaEm)}</span>
                 </span>
                 {ativo && (d.pode.atualizar || x.responsavel.vinculoId === opcoes.dados.meuVinculo) ? (
-                  <Botao variante="secundario" onClick={() => setResolver(x)}>Resolver</Botao>
+                  <Botao variante="contorno" onClick={() => setResolver(x)}>Resolver</Botao>
                 ) : null}
               </li>
             ))}
@@ -185,15 +186,15 @@ export function Pedido() {
         </details>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        {d.pode.responder && ativo ? <Botao onClick={() => setAcao("retorno")}>Dar retorno ao morador</Botao>
-          : anotar ? <Botao variante="secundario" onClick={() => setAcao("retorno")}>Nota interna</Botao> : null}
+      <div className="flex flex-wrap items-center gap-2.5">
+        {d.pode.responder && ativo ? <Botao variante={d.pode.aceitar ? "secundario" : "primario"} onClick={() => setAcao("retorno")}>Dar retorno ao morador</Botao>
+          : anotar ? <Botao variante="contorno" onClick={() => setAcao("retorno")}>Nota interna</Botao> : null}
         {d.pode.atualizar && ativo ? <Botao variante="secundario" onClick={() => setAcao("etapa")}>Mudar etapa</Botao> : null}
-        {d.pode.atualizar && ativo ? <Botao variante="secundario" onClick={() => setAcao("pendencia")}>+ Pendência</Botao> : null}
-        {d.pode.concluir && ativo ? <Botao variante="secundario" onClick={() => setAcao("concluir")}>Concluir</Botao> : null}
-        {d.pode.atualizar && ativo ? <Botao variante="secundario" onClick={() => setAcao("editar")}>Editar</Botao> : null}
-        {d.pode.concluir && ativo ? <Botao variante="secundario" onClick={() => setAcao("cancelar")}>Cancelar pedido</Botao> : null}
-        {d.pode.concluir && p.estado === "ENCERRADO" && d.regras.reabertura ? <Botao variante="secundario" onClick={() => setAcao("reabrir")}>Reabrir</Botao> : null}
+        {d.pode.atualizar && ativo ? <Botao variante="contorno" onClick={() => setAcao("pendencia")}>+ Pendência</Botao> : null}
+        {d.pode.concluir && ativo ? <Botao variante="contorno" onClick={() => setAcao("concluir")}>Concluir</Botao> : null}
+        {d.pode.atualizar && ativo ? <Botao variante="discreto" onClick={() => setAcao("editar")}>Editar</Botao> : null}
+        {d.pode.concluir && ativo ? <Botao variante="discreto" className="text-erro" onClick={() => setAcao("cancelar")}>Cancelar pedido</Botao> : null}
+        {d.pode.concluir && p.estado === "ENCERRADO" && d.regras.reabertura ? <Botao variante="contorno" onClick={() => setAcao("reabrir")}>Reabrir</Botao> : null}
       </div>
       {d.pode.concluir && p.estado === "ENCERRADO" && !d.regras.reabertura
         ? <p className="text-sm text-tinta-suave">Este condomínio não reabre pedidos. Se o problema voltou, registre um pedido novo.</p> : null}
@@ -202,7 +203,7 @@ export function Pedido() {
         <div className="pt-4">
           {aba === "andamento" ? (
             d.andamentos.length === 0 ? <Vazio titulo="Nenhum retorno nem nota ainda">O primeiro retorno ao morador fica aqui.</Vazio> : (
-              <ul className="divide-y divide-linha rounded-lg border border-linha bg-superficie">
+              <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
                 {d.andamentos.map((a) => (
                   <li key={a.id} className="grid gap-0.5 px-4 py-3 text-sm">
                     <span className="flex flex-wrap items-center gap-2 text-xs text-tinta-suave">
@@ -217,7 +218,7 @@ export function Pedido() {
             )
           ) : null}
           {aba === "historico" ? (
-            <ol className="divide-y divide-linha rounded-lg border border-linha bg-superficie">
+            <ol className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
               {d.historico.map((h, i) => (
                 <li key={i} className="grid gap-0.5 px-4 py-2.5 text-sm">
                   <span className="text-xs text-tinta-suave">{diaHora(h.em)} · {h.autor ?? "Sistema"}</span>
@@ -227,7 +228,7 @@ export function Pedido() {
             </ol>
           ) : null}
           {aba === "relato" ? (
-            <div className="grid gap-2 rounded-lg border border-linha bg-superficie p-4 text-sm">
+            <div className="grid gap-2 rounded-2xl border border-linha bg-superficie p-4 text-sm">
               <p className="whitespace-pre-line">{p.descricao}</p>
               <p className="text-xs text-tinta-suave">O relato não muda depois de registrado. O que vier a mais vira nota.</p>
             </div>
@@ -236,7 +237,7 @@ export function Pedido() {
             d.conclusoes.length === 0 ? <Vazio titulo="Ainda não concluído" /> : (
               <ul className="grid gap-3">
                 {d.conclusoes.map((c) => (
-                  <li key={c.id} className="grid gap-1 rounded-lg border border-linha bg-superficie p-4 text-sm">
+                  <li key={c.id} className="grid gap-1 rounded-2xl border border-linha bg-superficie p-4 text-sm">
                     <span className="flex flex-wrap items-center gap-2 text-xs text-tinta-suave">
                       <Selo tom={c.revisao === "DEVOLVIDA" ? "atencao" : c.revisao === "AGUARDANDO" ? "info" : "ok"}>
                         {c.etapa} · {REVISOES_CONCLUSAO[c.revisao]}

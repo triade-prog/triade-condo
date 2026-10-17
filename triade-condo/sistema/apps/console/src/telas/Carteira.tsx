@@ -36,7 +36,7 @@ export function Carteira() {
     <div className="grid gap-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Carteira de clientes</h1>
+          <h1 className="text-[28px] font-normal tracking-tight">Carteira de clientes</h1>
           <p className="text-tinta-suave">Os condomínios que você atende.</p>
         </div>
         {podeCadastrar ? <Link href="/clientes/novo" className={classeBotao()}>+ Cadastrar condomínio</Link> : null}

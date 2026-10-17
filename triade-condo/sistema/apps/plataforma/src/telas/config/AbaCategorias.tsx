@@ -54,8 +54,8 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
       {falha ? <div className="lg:col-span-2"><AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={recarregar} /></div> : null}
       <section aria-labelledby="t-categorias" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="t-categorias" className="text-lg font-semibold">Categorias</h2>
-          {pode ? <Botao variante="secundario" onClick={() => setEdicao({ tipo: "categoria", item: null })}>+ Categoria</Botao> : null}
+          <h2 id="t-categorias" className="text-lg font-medium">Categorias</h2>
+          {pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "categoria", item: null })}>+ Categoria</Botao> : null}
         </div>
         <ul className="divide-y divide-linha rounded-lg border border-linha">
           {config.categorias.map((c) => (
@@ -77,8 +77,8 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
       </section>
       <section aria-labelledby="t-prioridades" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="t-prioridades" className="text-lg font-semibold">Prioridades</h2>
-          {pode ? <Botao variante="secundario" onClick={() => setEdicao({ tipo: "prioridade", item: null })}>+ Prioridade</Botao> : null}
+          <h2 id="t-prioridades" className="text-lg font-medium">Prioridades</h2>
+          {pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "prioridade", item: null })}>+ Prioridade</Botao> : null}
         </div>
         <ul className="divide-y divide-linha rounded-lg border border-linha">
           {prioridades.map((p) => (

@@ -42,7 +42,7 @@ function ConcluirImplantacao({ ficha, recarregar, avisar }: PropsAba) {
 
   return (
     <>
-      <Botao variante="secundario" onClick={() => { setErro(null); setAberto(true); }}>Concluir implantação</Botao>
+      <Botao variante="contorno" onClick={() => { setErro(null); setAberto(true); }}>Concluir implantação</Botao>
       <Dialogo aberto={aberto} titulo="Concluir implantação" aoFechar={() => setAberto(false)}>
         <form onSubmit={concluir} className="grid gap-4">
           {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
@@ -54,7 +54,7 @@ function ConcluirImplantacao({ ficha, recarregar, avisar }: PropsAba) {
           <CampoAreaTexto id="e-motivo" rotulo="O que foi feito" opcional maxLength={300} value={motivo} onChange={(e) => setMotivo(e.target.value)}
             ajuda="Ex.: a síndica registrou o primeiro pedido sozinha." />
           <div className="flex justify-end gap-2">
-            <Botao variante="secundario" onClick={() => setAberto(false)}>Cancelar</Botao>
+            <Botao variante="contorno" onClick={() => setAberto(false)}>Cancelar</Botao>
             <Botao type="submit" disabled={ficha.situacoes.includes("SEM_SINDICO")}>Concluir implantação</Botao>
           </div>
         </form>
@@ -84,7 +84,7 @@ export function FichaCliente() {
   if (ficha.estado === "erro") {
     return (
       <div className="grid gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Ficha do condomínio</h1>
+        <h1 className="text-[28px] font-normal tracking-tight">Ficha do condomínio</h1>
         {ficha.erro.codigo === "FORBIDDEN" || ficha.erro.codigo === "NOT_FOUND" ? (
           <Aviso tom="atencao" titulo="Cliente fora da sua carteira">Você só abre os clientes atribuídos a você. <Link href="/" className="font-semibold underline">Voltar à carteira</Link></Aviso>
         ) : <ErroCarregar texto={ficha.texto} tentarDeNovo={ficha.recarregar} />}
@@ -107,7 +107,7 @@ export function FichaCliente() {
       <p className="text-sm"><Link href="/" className="text-acao hover:underline">Voltar à carteira de clientes</Link></p>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{f.condominio.nome}</h1>
+          <h1 className="text-[28px] font-normal tracking-tight">{f.condominio.nome}</h1>
           <p className="mt-1 flex flex-wrap items-center gap-2 text-tinta-suave">
             {[f.condominio.cidade, f.condominio.uf].filter(Boolean).join(" · ")}
             <SeloEstagio estagio={f.cliente.estagio} />
