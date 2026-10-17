@@ -195,7 +195,7 @@ Passo 4b (F4.8), fotos e documentos dos pedidos, aprovado e construído em 17/10
 
 1. Testar os pedidos com um condomínio de verdade (E8). A produção da Vercel sai do `main` (PR 3 e PR 4 juntados).
 2. Passo 4b (F4.8) juntado ao `main` (PR 5): conferir um envio de verdade num pedido do Águas Claras.
-3. Passo 3b (F3.6) construído: a 0110 já está no `triade-condo-dev`; falta publicar a `api-plataforma` nova e juntar a branch ao `main` para as telas chegarem ao site.
+3. Passo 3b (F3.6) construído: a 0110 e a `api-plataforma` versão 7 já estão no `triade-condo-dev`; falta juntar a branch ao `main` para as telas chegarem ao site.
 4. Com a Carolina, liberar o CI (F0.9).
 
 ## Como trabalhar
