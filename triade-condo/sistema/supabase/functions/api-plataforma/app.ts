@@ -2,7 +2,8 @@
 // o navegador nunca manda o condomínio nas chamadas; ele vem da sessão, conferida no banco.
 // Passo 2: painel, configurações, pessoas autorizadas e quem atende. Passo 3: blocos,
 // unidades e contatos. Passo 4: pedidos no painel. Passo 4b: fotos e documentos dos pedidos.
-// Passos 6 e 7: avisos, regras de aviso, prazo do pedido e indicadores. Quem pode o quê é
+// Passos 6 e 7: avisos, regras de aviso, prazo do pedido e indicadores. Peça R7: agenda.
+// Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
 import type { Context, MiddlewareHandler } from "hono";
@@ -61,6 +62,12 @@ import {
   marcarAvisosSchema,
   periodoIndicadoresSchema,
   regrasAvisoSchema,
+  alterarCompromissoSchema,
+  cancelarCompromissoSchema,
+  marcarCompromissoSchema,
+  periodoAgendaSchema,
+  reagendarCompromissoSchema,
+  situacaoCompromissoSchema,
 } from "@triade/domain";
 import { verificarArquivo, type Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -498,6 +505,62 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["periodo"] });
     return c.json(await rpc("plataforma_indicadores", { ...quem(c), p_periodo: r.data.periodo }));
   });
+
+  // Agenda do condomínio (peça R7; AG-01 a AG-05, AG-08, AG-09, MP-04). O banco confere quem
+  // pode, os conflitos de horário e a repetição; aqui só se valida a entrada.
+  app.get("/v1/condominio/agenda/opcoes", async (c) => c.json(await rpc("plataforma_agenda_opcoes", quem(c))));
+
+  app.get("/v1/condominio/agenda", async (c) => {
+    const r = periodoAgendaSchema.safeParse(c.req.query());
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
+    return c.json(await rpc("plataforma_agenda", { ...quem(c), p_de: r.data.de, p_ate: r.data.ate }));
+  });
+
+  app.get("/v1/condominio/agenda/:id", async (c) =>
+    c.json(await rpc("plataforma_compromisso", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  app.post("/v1/condominio/agenda", async (c) => {
+    const d = await lerCorpo(c, marcarCompromissoSchema);
+    const r = await rpc("plataforma_marcar_compromisso", {
+      ...quem(c), p_tipo: d.tipo, p_titulo: d.titulo, p_data: d.data, p_inicio: d.horaInicio, p_fim: d.horaFim, p_onde: d.onde,
+      p_unidade: d.unidadeId, p_local: d.local, p_participantes: d.participantes, p_de_fora: d.deFora, p_pedido: d.pedidoId,
+      p_observacao: d.observacao, p_estado: d.estado, p_repetir: d.repetir, p_intervalo: d.intervalo, p_ate: d.ate,
+      p_vezes: d.vezes, p_aceitar_conflito: d.aceitarConflito,
+    });
+    return c.json(r, 201);
+  });
+
+  app.put("/v1/condominio/agenda/:id", async (c) => {
+    const d = await lerCorpo(c, alterarCompromissoSchema);
+    return c.json(await rpc("plataforma_alterar_compromisso", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_tipo: d.tipo, p_titulo: d.titulo, p_inicio: d.horaInicio,
+      p_fim: d.horaFim, p_onde: d.onde, p_unidade: d.unidadeId, p_local: d.local, p_participantes: d.participantes,
+      p_de_fora: d.deFora, p_pedido: d.pedidoId, p_observacao: d.observacao, p_escopo: d.escopo, p_aceitar_conflito: d.aceitarConflito,
+    }));
+  });
+
+  app.post("/v1/condominio/agenda/:id/reagendar", async (c) => {
+    const d = await lerCorpo(c, reagendarCompromissoSchema);
+    return c.json(await rpc("plataforma_reagendar_compromisso", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_data: d.data, p_inicio: d.horaInicio, p_fim: d.horaFim,
+      p_motivo: d.motivo, p_escopo: d.escopo, p_aceitar_conflito: d.aceitarConflito,
+    }));
+  });
+
+  app.post("/v1/condominio/agenda/:id/situacao", async (c) => {
+    const d = await lerCorpo(c, situacaoCompromissoSchema);
+    return c.json(await rpc("plataforma_situacao_compromisso", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_estado: d.estado }));
+  });
+
+  app.post("/v1/condominio/agenda/:id/cancelar", async (c) => {
+    const d = await lerCorpo(c, cancelarCompromissoSchema);
+    return c.json(await rpc("plataforma_cancelar_compromisso", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo, p_escopo: d.escopo,
+    }));
+  });
+
+  app.get("/v1/condominio/pedidos/:id/agenda", async (c) =>
+    c.json(await rpc("plataforma_agenda_do_pedido", { ...quem(c), p_id: idDaRota(c, "id") })));
 
   return app;
 }
