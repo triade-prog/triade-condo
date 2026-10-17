@@ -4,6 +4,7 @@
 // o responsável e o aceite (AT-03); as pendências (AT-11); as ações de quem pode cada uma;
 // e, em abas, o andamento, o histórico completo (AT-17), o relato, as conclusões e as fotos e
 // documentos (passo 4b, PT-07). Com o retorno vencido, a faixa do aviso (passo 6, AT-09).
+// A visita marcada na agenda, separada dos dois compromissos (peça R7, AG-08, MP-04).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -17,6 +18,7 @@ import { AbaArquivos, type ArquivosDoPedido } from "./Arquivos.tsx";
 import { JanelasPedido, type AcaoPedido } from "./JanelasPedido.tsx";
 import { diaHora, faltaPara, nomeDe, SeloEstadoPedido } from "./comum.tsx";
 import { FaixaPrazo } from "./FaixaPrazo.tsx";
+import { NaAgenda } from "../agenda/NaAgenda.tsx";
 
 const ABAS = [
   { id: "andamento", texto: "Andamento" },
@@ -139,6 +141,7 @@ export function Pedido() {
           </Compromisso>
         </div>
       ) : null}
+      <NaAgenda key={`${p.id}-${p.previsao ?? ""}`} pedido={p} ativo={!fechado} avisar={(texto) => { setRecado({ tom: "ok", texto }); setFalha(null); }} />
 
       <p className="flex flex-wrap items-center gap-2 text-sm">
         <span className="font-medium">Responsável:</span>

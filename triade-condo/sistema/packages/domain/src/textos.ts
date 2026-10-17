@@ -85,6 +85,9 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   LIMITE_ARQUIVOS: "Este pedido já tem 30 arquivos. Tire do pedido o que não serve antes de enviar mais.",
   ARQUIVO_NAO_LIBERADO: "Este arquivo ainda não foi liberado.",
   JA_VERIFICADO: "Este arquivo já foi verificado. Atualize a página.",
+  CONFLITO_HORARIO: "Este horário conflita com outro compromisso. Confira e, se for o caso, salve mesmo assim.",
+  COMPROMISSO_ENCERRADO: "Compromisso realizado ou cancelado não muda. Marque outro, se for o caso.",
+  AINDA_NAO_ACONTECEU: "Só dá para marcar como realizado no dia do compromisso ou depois.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

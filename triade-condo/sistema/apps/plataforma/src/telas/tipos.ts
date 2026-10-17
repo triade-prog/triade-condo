@@ -352,3 +352,79 @@ export interface PedidoDetalhe {
   regras: { revisao: boolean; reabertura: boolean };
   agora: string;
 }
+
+// Agenda do condomínio (peça R7).
+
+export type TipoCompromisso = "REUNIAO" | "VISITA" | "ATIVIDADE" | "LEMBRETE";
+export type SituacaoCompromisso = "PLANEJADO" | "A_CONFIRMAR" | "CONFIRMADO" | "REALIZADO" | "CANCELADO";
+export type LugarCompromisso = "NENHUM" | "UNIDADE" | "AREA_COMUM" | "OUTRO";
+
+export interface CompromissoAgenda {
+  id: string;
+  tipo: TipoCompromisso;
+  titulo: string;
+  data: string;
+  horaInicio?: string;
+  horaFim?: string;
+  diaTodo: boolean;
+  onde: LugarCompromisso;
+  unidadeId?: string;
+  local?: string;
+  lugar?: string;
+  participantes: { vinculoId: string; nome: string }[];
+  deFora?: string;
+  observacao?: string;
+  estado: SituacaoCompromisso;
+  versao: number;
+  pedido?: { id: string; protocolo: string; assunto: string };
+  pedidoOculto?: boolean;
+  serie?: { id: string; frequencia: string; intervalo: number; ate: string; total: number };
+  cancelamento?: { em: string; motivo: string; por: string | null };
+  realizadoEm?: string;
+}
+
+export interface DataDeOutraTela {
+  data: string;
+  titulo: string;
+  fonte: "FERIADO";
+}
+
+export interface Agenda {
+  compromissos: CompromissoAgenda[];
+  datas: DataDeOutraTela[];
+  hoje: string;
+  pode: { editar: boolean };
+}
+
+export interface OpcoesAgenda {
+  pessoas: { vinculoId: string; nome: string; eu: boolean }[];
+  unidades: { id: string; nome: string }[];
+  pedidos: { id: string; protocolo: string; assunto: string; unidadeId: string | null; responsavelId: string | null }[];
+  pode: { editar: boolean };
+  hoje: string;
+}
+
+export interface ConflitoCompromisso {
+  id: string;
+  titulo: string;
+  data: string;
+  horaInicio?: string;
+  horaFim?: string;
+  motivo: "LUGAR" | "PESSOA";
+  pessoas?: string[];
+}
+
+export interface CompromissoDetalhe {
+  compromisso: CompromissoAgenda & { registradoPor: string | null; registradoEm: string };
+  conflitos: ConflitoCompromisso[];
+  historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
+  hoje: string;
+  pode: { editar: boolean };
+}
+
+export interface AgendaDoPedido {
+  podeVer: boolean;
+  podeMarcar: boolean;
+  compromissos: CompromissoAgenda[];
+  divergencia: { previsao: string; compromissoId: string; titulo: string; data: string } | null;
+}
