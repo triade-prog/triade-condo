@@ -191,8 +191,8 @@ Em 17/10/2026 o sistema passou a ter e-mail e endereços próprios (DC12). E-mai
 
 **Próximo passo:**
 
-1. Juntar o PR 3: a produção da Vercel sai do `main` (as prévias da branch não têm o `REPASSE_SEGREDO`). Depois, testar os pedidos com um condomínio de verdade (E8).
-2. Passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho.
+1. Testar os pedidos com um condomínio de verdade (E8). A produção da Vercel sai do `main` (PR 3 e PR 4 juntados).
+2. Passo 4b: fotos e documentos dos pedidos (F4.8). As seis telas estão desenhadas no `design-frontend.html`, com as decisões para aprovar; depois de aprovadas, banco (Storage privado), API e telas.
 3. Com a Carolina, liberar o CI (F0.9).
 
 ## Como trabalhar

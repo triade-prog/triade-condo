@@ -30,7 +30,7 @@
     "total_ideias": 296,
     "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 76 Deno, 58 Vitest, 92 ponta a ponta). As telas seguem sempre o tema claro do design-frontend.html, mesmo com o aparelho no modo escuro. O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 3) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F4",
-    "proximo_passo": "A síndica do Condomínio Águas Claras entra na Plataforma, escolhe quem atende (Pessoas e acesso), cadastra unidades e moradores e registra os primeiros pedidos (E8). Depois, passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho. Com a Carolina: liberar o GitHub Actions (F0.9; os testes do GitHub nem chegam a rodar)."
+    "proximo_passo": "Aprovar as telas do passo 4b (fotos e documentos dos pedidos, F4.8) no design-frontend.html e construir. Em paralelo, a síndica do Condomínio Águas Claras entra na Plataforma, escolhe quem atende (Pessoas e acesso), cadastra unidades e moradores e registra os primeiros pedidos (E8). Com a Carolina: liberar o GitHub Actions (F0.9; os testes do GitHub nem chegam a rodar)."
   },
   "fases": [
     {
@@ -518,8 +518,8 @@
           "refs": [
             "PT-07"
           ],
-          "status": "pendente",
-          "nota": "Proposto como passo 4b, logo depois das telas do passo 4 (Supabase Storage privado, validação de tipo e tamanho, link que expira). Até lá, a evidência da conclusão é texto."
+          "status": "andamento",
+          "nota": "Passo 4b: seis telas desenhadas no design-frontend.html para aprovar (17/10/2026): aba Fotos e documentos do pedido, enviar, verificando, ver, registrar e concluir com arquivos, tirar do pedido e histórico. Para aprovar: fotos JPG, PNG e WEBP e PDF, até 10 MB, 30 por pedido; conferência do conteúdo e tirar a localização das fotos antes de liberar; link de 5 minutos; tirar do pedido sem apagar. Até lá, a evidência da conclusão é texto."
         }
       ]
     },
@@ -1245,6 +1245,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "23:47",
+      "fim": "23:51",
+      "texto": "PR 4 juntado ao main (e-mail e endereços próprios, tema claro sempre, dados fictícios do Águas Claras). Passo 4b começou pelo desenho: seis telas de fotos e documentos dos pedidos no design-frontend.html, com as decisões para aprovar (tipos e tamanhos, conferência antes de liberar e sem localização nas fotos, link de 5 minutos, quem envia e quem tira, tirar do pedido sem apagar).",
+      "ref": "F4.8, PT-07, PT-01, PT-11, AT-01, AT-13, AT-17, AT-32, D4"
+    },
     {
       "data": "16/10/2026",
       "inicio": "23:40",
