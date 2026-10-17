@@ -26,7 +26,7 @@
 <script type="application/json" id="dados">
 {
   "meta": {
-    "atualizado_em": "16/10/2026",
+    "atualizado_em": "17/10/2026",
     "total_ideias": 296,
     "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 76 Deno, 58 Vitest, 88 ponta a ponta). O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 3) e api-console (versão 2); a Plataforma e o Console estão na Vercel, falando com elas.",
     "fase_atual": "F4",
@@ -1173,7 +1173,8 @@
       "quem": "TRÍADE",
       "precisa_em": "Publicação",
       "refs": [],
-      "status": "pendente"
+      "status": "andamento",
+      "nota": "Domínio escolhido pela Carolina em 17/10/2026: t3condo.trihub.com.br, para todo o sistema. Já vale nos e-mails (Resend); os endereços da Plataforma e do Console esperam a escolha dos subdomínios e o DNS."
     },
     {
       "id": "E8",
@@ -1190,8 +1191,8 @@
       "quem": "TRÍADE",
       "precisa_em": "F1",
       "refs": [],
-      "status": "pendente",
-      "nota": "A Site URL já aponta para a Plataforma, e desde 16/10/2026 a Plataforma e o Console aceitam também o link do modelo padrão do Supabase (o acesso vem depois do #). O Resend continua necessário para os e-mails saírem em nome da TRÍADE, em português e sem o limite baixo de envios do Supabase; com ele, os modelos usam {{ .RedirectTo }}?token_hash={{ .TokenHash }}."
+      "status": "andamento",
+      "nota": "Resend pronto pela Carolina em 17/10/2026, com o domínio t3condo.trihub.com.br. Falta ligar no Supabase (Authentication → Emails → SMTP Settings: smtp.resend.com, porta 465, usuário resend, senha = chave do Resend só de envio; remetente nao-responda@t3condo.trihub.com.br, nome TRÍADE Condo), colar os modelos de supabase/templates (convite e redefinir) e subir o limite em Rate Limits. Depois, conferir o F1.5."
     }
   ],
   "decisoes": [
@@ -1238,9 +1239,20 @@
     [
       "DC11",
       "Paleta e tipografia da referência Lattice (Inter, neutros frios, destaque lilás); verde-petróleo nas ações da Plataforma e violeta no Console"
+    ],
+    [
+      "DC12",
+      "Domínio do sistema: t3condo.trihub.com.br (Carolina, 17/10/2026), começando pelos e-mails, enviados pelo Resend"
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "22:57",
+      "fim": "22:57",
+      "texto": "Resend pronto pela Carolina com o domínio t3condo.trihub.com.br, que passa a ser o domínio do sistema (DC12). Modelos de e-mail de convite e de nova senha em português em supabase/templates, com o link token_hash, e o config.toml com o SMTP do Resend (a chave fica só no painel do Supabase). Antes, o limite de envio do e-mail embutido do Supabase (cerca de 2 por hora) barrou recuperações e um convite; nada ficou pela metade.",
+      "ref": "E9, E7, DC12, F1.5"
+    },
     {
       "data": "16/10/2026",
       "inicio": "19:10",

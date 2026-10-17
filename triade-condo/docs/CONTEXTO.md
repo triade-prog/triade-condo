@@ -23,7 +23,7 @@ O `arquivo/` **não é base de construção**: o que for útil de lá entra prim
 
 ## Decisões fechadas
 
-As mesmas decisões estão no painel de execução (DC1 a DC11). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
+As mesmas decisões estão no painel de execução (DC1 a DC12). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
 
 - **DC1 · Dois sistemas.** Plataforma do síndico (painel web do síndico, WhatsApp do morador e acessos por link ou QR) e Console TRÍADE (sistema interno da equipe). A Base comum são as regras que os dois seguem por baixo; não é um terceiro sistema.
 - **DC2 · O cliente é o condomínio.** É a unidade que contrata e a unidade de separação dos dados: toda informação pertence a um condomínio e nunca aparece em outro (PT-01). Uma pessoa pode ter vínculo com mais de um condomínio (MU-04), o que atende o síndico profissional.
@@ -41,6 +41,7 @@ As mesmas decisões estão no painel de execução (DC1 a DC11). Mudar qualquer 
   - A Plataforma usa barra superior com busca e menu branco flutuante. O Console usa lateral contínua com grupos e a identificação "Console TRÍADE · Admin".
   - Os valores estão no `design-frontend.html`, na seção "Base adotada". Não tratar como provisórios.
   - A marca Lattice não faz parte da identidade da TRÍADE. O logo oficial continua pendente.
+- **DC12 · Domínio do sistema: `t3condo.trihub.com.br`** (Carolina, 17/10/2026). Vale para todo o sistema. Começa pelos e-mails, que saem pelo Resend como `nao-responda@t3condo.trihub.com.br`; os endereços da Plataforma e do Console vêm depois, com os subdomínios e o DNS.
 
 ## Como as ideias viram código
 
