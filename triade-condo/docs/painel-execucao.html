@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "17/10/2026",
     "total_ideias": 296,
-    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 76 Deno, 58 Vitest, 88 ponta a ponta). O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 3) e api-console (versão 2); a Plataforma e o Console estão na Vercel, falando com elas.",
+    "situacao": "Passos 0 a 4 construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (450 pgTAP, 76 Deno, 58 Vitest, 88 ponta a ponta). O triade-condo-dev tem todas as migrations (até a 0090) e as Edge Functions api-plataforma (versão 3) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F4",
-    "proximo_passo": "A síndica do Condomínio Águas Claras entra na Plataforma, escolhe quem atende (Pessoas e acesso), cadastra unidades e moradores e registra os primeiros pedidos (E8). Depois, passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho. Com a Carolina: Resend (E9) e liberar o GitHub Actions (F0.9; os testes do GitHub nem chegam a rodar)."
+    "proximo_passo": "A síndica do Condomínio Águas Claras entra na Plataforma, escolhe quem atende (Pessoas e acesso), cadastra unidades e moradores e registra os primeiros pedidos (E8). Depois, passo 4b: fotos e documentos dos pedidos (F4.8), começando pelo desenho. Conferir um convite de verdade pelo e-mail (F1.5). Com a Carolina: liberar o GitHub Actions (F0.9; os testes do GitHub nem chegam a rodar)."
   },
   "fases": [
     {
@@ -143,8 +143,8 @@
             "PT-08"
           ],
           "status": "feito",
-          "evidencia": "Login real no Console do triade-condo-dev (console-hazel-nine.vercel.app) com admin@triadecondo.com: senha e cadastro do autenticador no primeiro acesso, 16/10/2026",
-          "nota": "Falta conferir de verdade a recuperação de senha e o convite por e-mail (F1.5)."
+          "evidencia": "Login real no Console do triade-condo-dev (console-hazel-nine.vercel.app) com admin@triadecondo.com: senha e cadastro do autenticador no primeiro acesso, 16/10/2026. Recuperação de senha real pelo e-mail do Resend, com o link levando ao endereço novo e a senha trocada (17/10/2026)",
+          "nota": "Falta conferir de verdade o convite por e-mail (F1.5)."
         },
         {
           "id": "F0.7",
@@ -1148,7 +1148,7 @@
       "precisa_em": "F1",
       "refs": [],
       "status": "feito",
-      "evidencia": "plataforma-omega-five.vercel.app e console-hazel-nine.vercel.app (equipe triade-ai), com SUPABASE_FUNCTIONS_URL e REPASSE_SEGREDO; login com e-mail inexistente volta INVALID_CREDENTIALS pelas Edge Functions do triade-condo-dev (16/10/2026)"
+      "evidencia": "condominio.trihub.com.br (Plataforma) e t3condo.trihub.com.br (Console) desde 17/10/2026, antes plataforma-omega-five.vercel.app e console-hazel-nine.vercel.app (equipe triade-ai), com SUPABASE_FUNCTIONS_URL e REPASSE_SEGREDO; login com e-mail inexistente volta INVALID_CREDENTIALS pelas Edge Functions do triade-condo-dev (16/10/2026)"
     },
     {
       "id": "E5",
@@ -1173,8 +1173,8 @@
       "quem": "TRÍADE",
       "precisa_em": "Publicação",
       "refs": [],
-      "status": "andamento",
-      "nota": "Domínio escolhido pela Carolina em 17/10/2026: t3condo.trihub.com.br, para todo o sistema. Já vale nos e-mails (Resend); os endereços da Plataforma e do Console esperam a escolha dos subdomínios e o DNS."
+      "status": "feito",
+      "evidencia": "Domínio trihub.com.br (DNS fora da Vercel): e-mails de nao-responda@t3condo.trihub.com.br; Plataforma em condominio.trihub.com.br e Console em t3condo.trihub.com.br, os dois respondendo 200 com CNAME para a Vercel (17/10/2026)"
     },
     {
       "id": "E8",
@@ -1191,8 +1191,8 @@
       "quem": "TRÍADE",
       "precisa_em": "F1",
       "refs": [],
-      "status": "andamento",
-      "nota": "Resend pronto pela Carolina em 17/10/2026, com o domínio t3condo.trihub.com.br. Falta ligar no Supabase (Authentication → Emails → SMTP Settings: smtp.resend.com, porta 465, usuário resend, senha = chave do Resend só de envio; remetente nao-responda@t3condo.trihub.com.br, nome TRÍADE Condo), colar os modelos de supabase/templates (convite e redefinir) e subir o limite em Rate Limits. Depois, conferir o F1.5."
+      "status": "feito",
+      "evidencia": "SMTP do Resend, modelos em português e URL Configuration ligados no Supabase pela Carolina (Site URL https://condominio.trihub.com.br; redirecionamentos condominio e t3condo com /**; segredos PLATAFORMA_URL e CONSOLE_URL nos endereços novos). Pedido de nova senha: e-mail chegou de nao-responda@t3condo.trihub.com.br e o link trocou a senha e liberou o acesso (17/10/2026)"
     }
   ],
   "decisoes": [
@@ -1246,6 +1246,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "16/10/2026",
+      "inicio": "23:31",
+      "fim": "23:40",
+      "texto": "Endereços próprios: Plataforma em condominio.trihub.com.br e Console em t3condo.trihub.com.br, com o DNS apontando para a Vercel. No Supabase, pela Carolina: Site URL da Plataforma, URLs de redirecionamento dos dois sites com /** e os segredos PLATAFORMA_URL e CONSOLE_URL nos endereços novos. Recuperação de senha conferida de verdade: e-mail do Resend em português e senha trocada pelo link. E7 e E9 feitos; falta conferir o convite (F1.5).",
+      "ref": "E7, E9, E4, F0.6, F1.5, DC12, PT-08"
+    },
     {
       "data": "17/10/2026",
       "inicio": "22:57",
