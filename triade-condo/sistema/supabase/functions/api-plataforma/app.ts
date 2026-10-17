@@ -1,7 +1,7 @@
 // API da Plataforma do síndico. Login (F0.6) e escolha do condomínio na sessão (F0.3):
 // o navegador nunca manda o condomínio nas chamadas; ele vem da sessão, conferida no banco.
 // Passo 2: painel, configurações, pessoas autorizadas e quem atende. Passo 3: blocos,
-// unidades e contatos. Passo 4: pedidos no painel. Quem pode o quê é decidido no banco (vínculo e permissões
+// unidades e contatos. Passo 4: pedidos no painel. Passo 4b: fotos e documentos dos pedidos. Quem pode o quê é decidido no banco (vínculo e permissões
 // individuais, CF-03); aqui só se valida a entrada.
 
 import type { Context, MiddlewareHandler } from "hono";
@@ -53,7 +53,12 @@ import {
   resolverPendenciaSchema,
   retornoSchema,
   revisarPedidoSchema,
+  enviarArquivoSchema,
+  tirarArquivoSchema,
+  VALIDADE_LINK_ARQUIVO_S,
+  type TipoArquivo,
 } from "@triade/domain";
+import { verificarArquivo, type Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
@@ -71,6 +76,8 @@ export interface DepsPlataforma extends DepsSessao {
   /** Convite das pessoas autorizadas (V-09). */
   admin: AdminAuth;
   urlApp: string;
+  /** Armazenamento privado das fotos e documentos (PT-07). */
+  armazenamento: Armazenamento;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -413,6 +420,50 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const pendencia = idDaRota(c, "pendencia");
     const d = await lerCorpo(c, resolverPendenciaSchema);
     return c.json(await rpc("plataforma_resolver_pendencia", { ...quem(c), p_id: id, p_versao: d.versao, p_pendencia: pendencia, p_resolucao: d.resolucao }));
+  });
+
+  // Fotos e documentos (passo 4b; PT-07). O banco decide quem envia, vê e tira; aqui ficam o
+  // armazenamento e a verificação do conteúdo. Arquivo não muda a versão do pedido.
+  const arquivo = (c: Context<VarsPlataforma>) => ({ ...quem(c), p_id: idDaRota(c, "id"), p_arquivo: idDaRota(c, "arquivo") });
+
+  app.get("/v1/condominio/pedidos/:id/arquivos", async (c) =>
+    c.json(await rpc("plataforma_arquivos_pedido", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  app.post("/v1/condominio/pedidos/:id/arquivos", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, enviarArquivoSchema);
+    const r = await rpc<{ arquivoId: string; caminho: string; tipo: string }>("plataforma_iniciar_arquivo", {
+      ...quem(c), p_id: id, p_parte: d.parte, p_nome: d.nome, p_descricao: d.descricao, p_tipo: d.tipo, p_tamanho: d.tamanho,
+    });
+    return c.json({ arquivoId: r.arquivoId, envio: { url: await deps.armazenamento.linkEnvio(r.caminho), metodo: "PUT", tipo: r.tipo } }, 201);
+  });
+
+  // Depois do envio: confere o conteúdo, tira a localização das fotos e só então libera.
+  app.post("/v1/condominio/pedidos/:id/arquivos/:arquivo/verificar", async (c) => {
+    const ids = arquivo(c);
+    const a = await rpc<{ caminho: string; tipo: string }>("plataforma_arquivo_a_verificar", ids);
+    const bytes = await deps.armazenamento.ler(a.caminho);
+    const r = bytes ? verificarArquivo(bytes, a.tipo as TipoArquivo) : { ok: false as const, motivo: "O arquivo não chegou. Envie de novo." };
+    if (r.ok) {
+      await deps.armazenamento.gravar(a.caminho, r.bytes, a.tipo);
+      return c.json(await rpc("plataforma_verificar_arquivo", { ...ids, p_liberado: true, p_tamanho: r.bytes.length, p_motivo: null }));
+    }
+    if (bytes) await deps.armazenamento.apagar(a.caminho);
+    const fim = await rpc<{ situacao: string }>("plataforma_verificar_arquivo", { ...ids, p_liberado: false, p_tamanho: null, p_motivo: r.motivo });
+    return c.json({ ...fim, motivo: r.motivo });
+  });
+
+  // Abrir ou baixar: link de 5 minutos, gerado só depois de o banco conferir quem pede.
+  app.get("/v1/condominio/pedidos/:id/arquivos/:arquivo/link", async (c) => {
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("plataforma_abrir_arquivo", arquivo(c));
+    const baixar = c.req.query("baixar") === "1";
+    const url = await deps.armazenamento.linkLeitura(a.caminho, VALIDADE_LINK_ARQUIVO_S, baixar ? a.nome : undefined);
+    return c.json({ url, tipo: a.tipo, expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString() });
+  });
+
+  app.post("/v1/condominio/pedidos/:id/arquivos/:arquivo/tirar", async (c) => {
+    const d = await lerCorpo(c, tirarArquivoSchema);
+    return c.json(await rpc("plataforma_tirar_arquivo", { ...arquivo(c), p_motivo: d.motivo }));
   });
 
   return app;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cabecalhosSeguranca, gerarNonce, montarCsp } from "./cabecalhos.ts";
+import { cabecalhosSeguranca, gerarNonce, montarCsp, origemArmazenamento } from "./cabecalhos.ts";
 
 describe("F0.8: cabeçalhos de segurança e CSP com nonce", () => {
   it("o nonce muda a cada requisição", () => {
@@ -17,6 +17,18 @@ describe("F0.8: cabeçalhos de segurança e CSP com nonce", () => {
     expect(csp).not.toContain("unsafe-eval");
     expect(csp).not.toMatch(/https?:\/\//);
     expect(csp).toContain("upgrade-insecure-requests");
+  });
+
+  it("PT-07: a Plataforma libera só o caminho dos objetos do armazenamento privado", () => {
+    const origem = origemArmazenamento("https://projeto.supabase.co/functions/v1");
+    expect(origem).toBe("https://projeto.supabase.co/storage/v1/object/");
+    const csp = montarCsp({ nonce: "abc", armazenamento: origem });
+    expect(csp).toContain("connect-src 'self' https://projeto.supabase.co/storage/v1/object/");
+    expect(csp).toContain("img-src 'self' data: blob: https://projeto.supabase.co/storage/v1/object/");
+    expect(csp).toContain("frame-src 'none'");
+    expect(origemArmazenamento(undefined)).toBeUndefined();
+    expect(origemArmazenamento("http://projeto.supabase.co/functions/v1")).toBeUndefined();
+    expect(montarCsp({ nonce: "abc" })).toContain("connect-src 'self';");
   });
 
   it("em desenvolvimento libera só o necessário para o recarregamento", () => {

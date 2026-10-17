@@ -41,7 +41,7 @@ export interface Pessoas {
 }
 
 /** Recado no topo depois de uma ação (salvo, convite enviado...). */
-export type Recado = { tom: "ok" | "info"; texto: string } | null;
+export type Recado = { tom: "ok" | "info" | "atencao"; texto: string } | null;
 
 export interface Bloco {
   id: string;

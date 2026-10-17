@@ -2,13 +2,15 @@
 // Registrar pedido (AT-01, AT-03, AT-32; design "Telas do passo 4", tela 3): onde é (unidade
 // ou área comum), quem pediu (só contato confirmado da unidade, MU-02), como chegou,
 // categoria, prioridade com o significado, assunto e o relato. O responsável vem com o padrão
-// da fila. O protocolo aparece depois de salvar.
+// da fila. O protocolo aparece depois de salvar. Fotos e documentos (opcional, passo 4b) entram
+// como parte do relato, enviados logo depois do registro.
 
 import { useEffect, useState, type FormEvent } from "react";
 import { AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, chamarApi, camposComErro, Dialogo, textoDoErro, type ErroApi } from "@triade/ui";
 import type { OpcoesPedidos } from "../tipos.ts";
 import { Caixa, Escolha, nomeRelacao } from "../moradores/comum.tsx";
 import { opcoesCanal } from "./comum.tsx";
+import { EscolherArquivos, enviarArquivos, type ItemEnvio } from "./Arquivos.tsx";
 
 interface ContatoConfirmado { contatoId: string; nome: string; relacao: string; principal: boolean }
 
@@ -38,6 +40,7 @@ function Formulario({ opcoes, aoFechar, registrado }: { opcoes: OpcoesPedidos; a
   const [carga, setCarga] = useState<{ unidade: string; lista: ContatoConfirmado[] } | null>(null);
   const contatos = carga && carga.unidade === v.unidadeId ? carga.lista : null;
   const [erro, setErro] = useState<ErroApi | null>(null);
+  const [arquivos, setArquivos] = useState<ItemEnvio[]>([]);
   const [enviando, setEnviando] = useState(false);
   const mudar = (m: Partial<typeof v>) => setV((x) => ({ ...x, ...m }));
 
@@ -62,8 +65,9 @@ function Formulario({ opcoes, aoFechar, registrado }: { opcoes: OpcoesPedidos; a
       canal: v.canal, categoriaId: v.categoriaId, prioridadeId: v.prioridadeId,
       assunto: v.assunto, descricao: v.descricao, privado: v.privado, responsavelId: v.responsavelId || null,
     } });
+    if (!r.ok) { setEnviando(false); return setErro(r.erro); }
+    await enviarArquivos(r.dados.id, "RELATO", arquivos, (chave, p) => setArquivos((xs) => xs.map((x) => (x.chave === chave ? { ...x, progresso: p } : x))));
     setEnviando(false);
-    if (!r.ok) return setErro(r.erro);
     registrado(r.dados.protocolo, r.dados.id);
   }
 
@@ -108,6 +112,7 @@ function Formulario({ opcoes, aoFechar, registrado }: { opcoes: OpcoesPedidos; a
         opcoes={[{ valor: "", texto: "Sem responsável agora" },
           ...disponiveis.map((r) => ({ valor: r.vinculoId, texto: `${r.eu ? "Eu" : r.nome}${r.vinculoId === opcoes.responsavelPadrao ? " (padrão da fila)" : ""}` }))]} />
       <Caixa id="p-privado" rotulo="Pedido privado" ajuda="Só o síndico, quem registrou e o responsável veem." marcada={v.privado} aoMudar={(x) => mudar({ privado: x })} />
+      <EscolherArquivos rotulo="Fotos e documentos (opcional)" itens={arquivos} aoMudar={setArquivos} enviando={enviando} />
       <div className="flex justify-end gap-2">
         <Botao variante="secundario" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" disabled={enviando}>{enviando ? "Registrando…" : "Registrar pedido"}</Botao>

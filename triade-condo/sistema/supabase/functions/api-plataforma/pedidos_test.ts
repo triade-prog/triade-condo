@@ -3,7 +3,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { CANAIS_PEDIDO, MEIOS_RETORNO, TIPOS_PENDENCIA } from "@triade/domain";
 import { criarApiPlataforma } from "./app.ts";
-import { adminFalso, authFalso, bancoFalso, cookieDe, erro, erroBanco, limitesFalsos, pedido } from "../_shared/teste_util.ts";
+import { adminFalso, authFalso, bancoFalso, cookieDe, erro, erroBanco, limitesFalsos, pedido, armazenamentoFalso } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 const AURORA = "3e0f6c3b-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -33,7 +33,7 @@ function montar(handlers: Record<string, (a: Record<string, unknown>) => unknown
     ...handlers,
   });
   const app = criarApiPlataforma("segredo-de-repasse-de-teste", {
-    banco: db.banco, auth: falso.auth, admin: adminFalso().admin, urlApp: "https://plataforma.exemplo",
+    banco: db.banco, auth: falso.auth, admin: adminFalso().admin, urlApp: "https://plataforma.exemplo", armazenamento: armazenamentoFalso().armazenamento,
   });
   return { pedir: pedido(app, "api-plataforma"), ...db };
 }

@@ -6,6 +6,22 @@ export type App = "plataforma" | "console";
 export interface OpcoesCsp {
   nonce: string;
   dev?: boolean;
+  /**
+   * Endereço do Supabase (ex.: https://<projeto>.supabase.co). Só a Plataforma passa: o
+   * navegador envia e abre fotos e documentos direto no armazenamento privado, por links
+   * assinados que a API gera (PT-07). Fica liberado só o caminho dos objetos.
+   */
+  armazenamento?: string;
+}
+
+/** Origem do armazenamento a partir da URL das funções; vazio se não for uma URL https. */
+export function origemArmazenamento(urlFuncoes: string | undefined): string | undefined {
+  try {
+    const u = new URL(urlFuncoes ?? "");
+    return u.protocol === "https:" ? `${u.origin}/storage/v1/object/` : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function gerarNonce(): string {
@@ -14,16 +30,17 @@ export function gerarNonce(): string {
   return btoa(String.fromCharCode(...bytes));
 }
 
-export function montarCsp({ nonce, dev = false }: OpcoesCsp): string {
+export function montarCsp({ nonce, dev = false, armazenamento }: OpcoesCsp): string {
+  const arq = armazenamento ? [armazenamento] : [];
   const diretivas: Record<string, string[]> = {
     "default-src": ["'self'"],
     "script-src": ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", ...(dev ? ["'unsafe-eval'"] : [])],
     "style-src": ["'self'", `'nonce-${nonce}'`, ...(dev ? ["'unsafe-inline'"] : [])],
     // Atributos style não executam código; <style> e scripts continuam presos ao nonce.
     "style-src-attr": ["'unsafe-inline'"],
-    "img-src": ["'self'", "data:", "blob:"],
+    "img-src": ["'self'", "data:", "blob:", ...arq],
     "font-src": ["'self'"],
-    "connect-src": ["'self'", ...(dev ? ["ws:"] : [])],
+    "connect-src": ["'self'", ...arq, ...(dev ? ["ws:"] : [])],
     "frame-src": ["'none'"],
     "worker-src": ["'self'", "blob:"],
     "manifest-src": ["'self'"],

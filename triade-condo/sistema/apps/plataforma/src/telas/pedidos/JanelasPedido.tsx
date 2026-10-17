@@ -1,7 +1,8 @@
 "use client";
 // Janelas das ações sobre um pedido (design "Telas do passo 4", telas 5 a 9): retorno ao
 // morador e nota interna, próximo retorno, previsão, pendência, concluir, revisar, reabrir,
-// cancelar, repassar, mudar etapa e editar. Toda ação leva a versão lida (AT-24); no
+// cancelar, repassar, mudar etapa e editar. A conclusão pode levar fotos e documentos como
+// evidência (passo 4b, AT-13), enviados depois de concluir. Toda ação leva a versão lida (AT-24); no
 // conflito, a janela avisa e o que a pessoa escreveu fica.
 
 import { useState, type FormEvent } from "react";
@@ -10,6 +11,7 @@ import { AvisoErro, Botao, CampoAreaTexto, CampoSelecao, camposComErro, chamarAp
 import { Janela, type Campo, type Valores } from "../Janela.tsx";
 import type { ConclusaoPedido, OpcoesPedidos, PedidoDetalhe, PendenciaPedido } from "../tipos.ts";
 import { Escolha } from "../moradores/comum.tsx";
+import { EscolherArquivos, enviarArquivos, resumoEnvio, type ItemEnvio } from "./Arquivos.tsx";
 import { deDataHoraLocal, diaHora, nomeDe, opcoesMeio, opcoesPendencia, paraDataHoraLocal } from "./comum.tsx";
 
 export type AcaoPedido =
@@ -21,7 +23,7 @@ interface PropsJanelas {
   d: PedidoDetalhe;
   opcoes: OpcoesPedidos;
   aoFechar: () => void;
-  salvo: (texto: string) => void;
+  salvo: (texto: string, tom?: "ok" | "atencao") => void;
   recarregar: () => void;
 }
 
@@ -39,6 +41,17 @@ export function JanelasPedido({ acao, resolver, d, opcoes, aoFechar, salvo, reca
   const disponiveis = opcoes.responsaveis.filter((r) => r.disponivel);
   const nomeResp = (r: { nome: string; eu: boolean }) => (r.eu ? "Eu" : r.nome);
   const texto = (v: Valores, k: string) => String(v[k] ?? "").trim();
+  const [evidencias, setEvidencias] = useState<ItemEnvio[]>([]);
+  const textoConcluido = d.regras.revisao && !d.pode.revisar ? "Conclusão enviada para a revisão do síndico." : "Pedido concluído.";
+
+  async function concluir(v: Valores): Promise<Resposta<unknown>> {
+    const r = await chamarApi(`${base}/concluir`, { corpo: { versao: p.versao, etapaId: v.etapaId, explicacao: texto(v, "explicacao"), evidencia: texto(v, "evidencia") || null } });
+    if (!r.ok) return r;
+    const resumo = resumoEnvio(await enviarArquivos(p.id, "CONCLUSAO", evidencias));
+    setEvidencias([]);
+    salvo(resumo ? `${textoConcluido} ${resumo.texto}` : textoConcluido, resumo?.tom ?? "ok");
+    return r;
+  }
 
   const janela = (aberto: boolean, titulo: string, campos: Campo[], iniciais: Valores, textoBotao: string, aoSalvar: (v: Valores) => Promise<Resposta<unknown>>, explicacao?: string) => (
     <Janela aberto={aberto} titulo={titulo} campos={campos} iniciais={iniciais} textoBotao={textoBotao} aoFechar={aoFechar} recarregar={recarregar}
@@ -83,15 +96,14 @@ export function JanelasPedido({ acao, resolver, d, opcoes, aoFechar, salvo, reca
       ], { resolucao: "" }, "Resolver pendência",
       (v) => enviar(`/pendencias/${resolver?.id}/resolver`, { resolucao: texto(v, "resolucao") }, "Pendência resolvida."), resolver?.motivo)}
 
-      {janela(acao === "concluir", `Concluir · ${p.protocolo}`, [
+      <Janela aberto={acao === "concluir"} titulo={`Concluir · ${p.protocolo}`} aoFechar={() => { setEvidencias([]); aoFechar(); }} recarregar={recarregar} campos={[
         { id: "etapaId", rotulo: "Como termina", tipo: "selecao", opcoes: etapasFim.map((e) => ({ valor: e.id, texto: e.nome })) },
         { id: "explicacao", rotulo: "Explicação ao morador", tipo: "area", obrigatorio: true, max: 2000, erro: "Explique o que foi feito (10 a 2000 caracteres)." },
-        { id: "evidencia", rotulo: "Evidência (opcional)", tipo: "texto", max: 300, ajuda: "Referência da nota, do laudo ou onde está a foto. Foto não substitui laudo." },
-      ], { etapaId: etapasFim[0]?.id ?? "", explicacao: "", evidencia: "" },
-      d.regras.revisao && !d.pode.revisar ? "Enviar para revisão" : "Concluir pedido",
-      (v) => enviar("/concluir", { etapaId: v.etapaId, explicacao: texto(v, "explicacao"), evidencia: texto(v, "evidencia") || null },
-        d.regras.revisao && !d.pode.revisar ? "Conclusão enviada para a revisão do síndico." : "Pedido concluído."),
-      d.regras.revisao && !d.pode.revisar ? "Neste condomínio a conclusão passa pela revisão do síndico antes de encerrar." : undefined)}
+        { id: "evidencia", rotulo: "Evidência em texto (opcional)", tipo: "texto", max: 300, ajuda: "Referência da nota ou do laudo. Foto não substitui laudo." },
+      ]} iniciais={{ etapaId: etapasFim[0]?.id ?? "", explicacao: "", evidencia: "" }}
+        textoBotao={d.regras.revisao && !d.pode.revisar ? "Enviar para revisão" : "Concluir pedido"} aoSalvar={concluir}
+        explicacao={d.regras.revisao && !d.pode.revisar ? "Neste condomínio a conclusão passa pela revisão do síndico antes de encerrar." : undefined}
+        extra={<EscolherArquivos rotulo="Evidência em arquivo (opcional)" itens={evidencias} aoMudar={setEvidencias} />} />
 
       {janela(acao === "reabrir", `Reabrir · ${p.protocolo}`, [
         { id: "motivo", rotulo: "Por que reabrir", tipo: "area", obrigatorio: true, max: 500, erro: "Explique o motivo (3 a 500 caracteres)." },
