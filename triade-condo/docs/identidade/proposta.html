@@ -6,7 +6,7 @@
 <title>Identidade TRÍADE Condo · proposta</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 /* Proposta de identidade (17/10/2026), a partir da ideia 01 "Violeta institucional" e do
    estudo cromático. Só para aprovar: nada aqui está aplicado ao produto ainda. */
@@ -273,6 +273,21 @@ h2.titulo{font-size:28px;margin-bottom:8px}
 .decisoes li::before{counter-increment:d;content:counter(d);position:absolute;left:14px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--lavanda);color:var(--violeta);font-weight:700;display:grid;place-items:center;font-size:13px}
 .decisoes b{display:block}
 .decisoes span{color:var(--tinta-suave);font-size:14px}
+
+/* Pesos leves (pedido da Carolina em 17/10/2026): títulos grandes finos, rótulos e botões
+   em 500, nada acima de 600. O texto corrido fica em 400 para continuar fácil de ler. */
+h1,.abertura h1{font-weight:300;letter-spacing:-.025em}
+h2,h2.titulo,.dia h2{font-weight:400;letter-spacing:-.02em}
+h3,.cartao h3,.painel-cab h3,.motivo h3,.prioridade h3,.equipe h3,.entrar .caixa h3{font-weight:500}
+b,strong{font-weight:500}
+.numero strong,.celular .numero strong{font-weight:300;letter-spacing:-.02em}
+.eyebrow,.lateral .grupo{font-weight:500}
+.botao,.celular .menu{font-weight:500}
+.selo,.selo-aprovar,.campo label,.tabela th,.fila th,.degrade,.par,.sino,.item .conta,.admin-id .badge{font-weight:500}
+.item[aria-current="page"]{font-weight:500}
+.fila .ass,.venceu,.prioridade a,.decisoes b,.cor b,.lateral .ambiente b,.lateral .rodape b,.lateral .cuidado b{font-weight:500}
+.avatar{font-weight:600}
+.cartao-solto b{font-weight:600}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 </head>
@@ -320,7 +335,7 @@ h2.titulo{font-size:28px;margin-bottom:8px}
   <p class="sub">A ideia 01 tem a direção certa: violeta como presença, laranja como energia, e um cabeçalho com arcos, trilha e cartão solto. Para virar sistema, ela precisa de regras e de algumas trocas.</p>
   <div class="grade">
     <div class="cartao"><h3>Fica</h3><ul class="lista-mudou"><li>Violeta #5808CC nas ações e na seleção.</li><li>Laranja #FF8D01 como destaque de marca, com texto violeta profundo em cima.</li><li>Os degradês violeta e quente.</li><li>Arcos, trilha e cartão solto como fundo.</li><li>Números do dia em cartões que levam à fila.</li><li>Cartão quente de "prioridade do dia".</li></ul></div>
-    <div class="cartao"><h3>Muda</h3><ul class="lista-mudou"><li><b>Lateral clara e flutuante</b> no lugar da escura, com marcador laranja no item escolhido.</li><li>O logo aparece inteiro, sem caixa branca recortada.</li><li>O cabeçalho mostra o dia de verdade (o que pede atenção), não uma frase de campanha.</li><li>Letras com pelo menos 12 px; o texto corrido fica em 15 px (na ideia 01 havia textos de 8 e 9 px).</li><li>Laranja nunca indica situação: atenção é âmbar, vencido é vermelho, sempre com forma e palavra.</li></ul></div>
+    <div class="cartao"><h3>Muda</h3><ul class="lista-mudou"><li><b>Lateral clara e flutuante</b> no lugar da escura, com marcador laranja no item escolhido.</li><li>O logo aparece inteiro, sem caixa branca recortada.</li><li>O cabeçalho mostra o dia de verdade (o que pede atenção), não uma frase de campanha.</li><li>Letras com pelo menos 12 px; o texto corrido fica em 15 px (na ideia 01 havia textos de 8 e 9 px).</li><li>Letra mais fina e delicada: títulos grandes e números em Inter 300 e 400, rótulos e botões em 500, nada acima de 600. O texto corrido fica em 400 para continuar fácil de ler.</li><li>Laranja nunca indica situação: atenção é âmbar, vencido é vermelho, sempre com forma e palavra.</li></ul></div>
     <div class="cartao"><h3>Por sistema</h3><ul class="lista-mudou"><li><b>Plataforma do síndico:</b> degradê violeta luminoso, lateral clara, linguagem de quem cuida do prédio.</li><li><b>Console TRÍADE:</b> mesma lateral clara com o selo laranja "Admin", cabeçalho em violeta profundo e a faixa que lembra que é sistema interno.</li><li>Mesmos componentes, mesma tipografia (Inter), mesmo jeito de escrever.</li></ul></div>
   </div>
 </section>
