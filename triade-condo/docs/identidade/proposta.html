@@ -296,6 +296,53 @@ h1 em,h2 em,h3 em{font-family:"Playfair Display",Georgia,serif;font-style:italic
 .abertura h1 em,.dia h2 em{color:#FFD39E}
 .prioridade h3 em{color:#7C3900}
 .entrar .caixa h3 em{color:var(--violeta)}
+
+/* Componentes refinados e degradês suaves (17/10/2026): cantos mais redondos, fundos
+   em tom sobre tom, bordas que somem no lugar de contornos duros e sombras macias. A borda
+   do campo continua com 3 : 1 (#968AA6), porque é ela que mostra onde se escreve. */
+:root{--grad-trilha:linear-gradient(165deg,#FFE0A8 0%,#FFB45C 38%,#FF8D01 72%,#F2700A 100%);
+  --grad-violeta:radial-gradient(120% 140% at 100% 0%,#9E37F5 0%,#7018DC 28%,transparent 62%),linear-gradient(135deg,#180567 0%,#3A07A0 40%,#5808CC 100%)}
+.arte .trilha{background:var(--grad-trilha);box-shadow:inset 0 2px 0 #ffffff55,0 18px 40px #d9570a33}
+.arte .arco.a1{background:linear-gradient(170deg,#c27bff33 0%,#7a2be026 55%,#5808cc00 100%);border-color:#e9d4ff40}
+.arte .arco.a2{background:linear-gradient(150deg,#ffffff1f,#ffffff00 70%);border-color:#ffffff30}
+.botao{border-radius:12px;font-weight:500;transition:background-color .15s,box-shadow .15s,border-color .15s;letter-spacing:.005em}
+.b-primario{background:linear-gradient(180deg,#6A1BE0 0%,#5808CC 100%);color:#fff;box-shadow:0 1px 0 #ffffff33 inset,0 6px 16px #5808cc33}
+.b-primario:hover{background:linear-gradient(180deg,#5D12D6 0%,#4706A6 100%)}
+.b-secundario{background:#F6F0FE;color:var(--violeta);border-color:#E4D6FB}
+.b-secundario:hover{background:#EFE5FD;border-color:#D3BDF6}
+.b-texto{color:var(--violeta);padding:0 8px;gap:6px}
+.b-texto:hover{background:#F6F0FE}
+.b-perigo{background:#FEF2F2;color:var(--vencido);border-color:#FBD9D9}
+.b-perigo:hover{background:#FDE7E7}
+.botao[aria-disabled="true"]{background:#F1EFF5;color:#8A8296;border-color:transparent;box-shadow:none}
+.botao.foco{outline:3px solid #B98CF5;outline-offset:2px}
+.selo{font-size:13px;font-weight:500;padding:4px 11px 4px 9px;gap:7px;border:1px solid transparent}
+.selo .f{width:7px;height:7px}
+.s-novo{color:#5B5368;background:#F4F2F7;border-color:#E7E3EE}
+.s-andamento{color:var(--violeta);background:#F6F0FE;border-color:#E6D9FB}
+.s-atencao{color:#7A4A0B;background:#FFF6DB;border-color:#F8E3A6}
+.s-vencido{color:var(--vencido);background:#FEF2F2;border-color:#FBD5D5}
+.s-ok{color:var(--ok);background:#EEFBF2;border-color:#CDEFD8}
+.s-atencao .f{width:7px;height:7px}
+.campo label{font-weight:500}
+.campo input{border-radius:12px;border-color:#968AA6;background:#FDFCFF;transition:border-color .15s,box-shadow .15s}
+.campo input:hover{border-color:#7E7290}
+.campo input:focus,.campo input.foco{outline:none;border-color:var(--violeta);box-shadow:0 0 0 4px #5808cc1f;background:#fff}
+.campo.erro input{border-color:var(--vencido);box-shadow:0 0 0 4px #b91c1c14}
+.campo.erro small{color:var(--vencido)}
+.grade-campos{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:10px 0 6px}
+.estado{font-size:12px;color:var(--tinta-suave);display:block;margin-top:4px}
+/* Prioridade do dia: luz quente difusa, órbitas finas e a trilha inteira, sem corte duro. */
+.prioridade{background:radial-gradient(90% 120% at 100% 100%,#FFE2B8 0%,#FFF1DC 45%,#FFF8EE 100%);border-color:#F7E3C6;box-shadow:0 8px 24px #e48a1a14;padding:22px}
+.prioridade .deco{position:absolute;right:0;bottom:0;width:150px;height:150px;pointer-events:none}
+.prioridade .deco i{position:absolute;border-radius:50%;border:1px solid #ff8d0126}
+.prioridade .deco .c1{width:180px;height:180px;right:-70px;bottom:-80px}
+.prioridade .deco .c2{width:120px;height:120px;right:-40px;bottom:-50px}
+.prioridade .deco .t{position:absolute;right:30px;bottom:14px;width:30px;height:84px;border-radius:40px;transform:rotate(26deg);background:var(--grad-trilha);opacity:.85;box-shadow:0 10px 24px #f2700a2e;border:0}
+.prioridade a{display:inline-flex;align-items:center;gap:6px;font-weight:500;text-decoration:none;border-bottom:1px solid #55260040;padding-bottom:1px}
+.prioridade a svg{width:15px;height:15px}
+.prioridade>*:not(.deco){position:relative;z-index:1}
+.prioridade p{max-width:520px}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 </head>
@@ -447,7 +494,7 @@ h1 em,h2 em,h3 em{font-family:"Playfair Display",Georgia,serif;font-style:italic
             </tbody></table>
           </div>
           <div class="lado">
-            <div class="prioridade"><p class="eyebrow">Prioridade do dia</p><h3>Um retorno faz <em>diferença</em>.</h3><p>2 pedidos estão com retorno vencido. Dê notícia ao morador, mesmo sem solução.</p><a>Ver retornos vencidos</a><span class="trilha-mini"></span></div>
+            <div class="prioridade"><p class="eyebrow">Prioridade do dia</p><h3>Um retorno faz <em>diferença</em>.</h3><p>2 pedidos estão com retorno vencido. Dê notícia ao morador, mesmo sem solução.</p><a>Ver retornos vencidos <svg><use href="#i-seta"/></svg></a><span class="deco" aria-hidden="true"><i class="c1"></i><i class="c2"></i><span class="t"></span></span></div>
             <div class="painel equipe"><h3>Quem está cuidando</h3>
               <div class="pessoa"><span class="avatar">AL</span><div>Ana Lima<small>Síndica</small></div><span>1 pedido</span></div>
               <div class="pessoa"><span class="avatar" style="background:#FFF0DC;color:#7C3900">BS</span><div>Bruna Souza<small>Secretária</small></div><span>2 pedidos</span></div>
@@ -527,14 +574,19 @@ h1 em,h2 em,h3 em{font-family:"Playfair Display",Georgia,serif;font-style:italic
 
 <section class="bloco" aria-labelledby="t-comp">
   <h2 class="titulo" id="t-comp">Componentes</h2>
-  <p class="sub">Os mesmos nos dois sistemas. A área de toque tem no mínimo 44 px, o foco aparece como contorno violeta, e cada situação traz forma e palavra, além da cor.</p>
+  <p class="sub">Os mesmos nos dois sistemas, agora mais suaves: cantos de 12 px, fundos em tom sobre tom e bordas que quase somem. O botão principal ganha um degradê leve e uma sombra macia. A área de toque continua com no mínimo 44 px, o foco tem contorno violeta e cada situação traz forma e palavra, além da cor.</p>
   <div class="cartao">
     <div class="eyebrow">Botões</div>
-    <div class="linha-comp"><button class="botao b-primario" type="button"><svg aria-hidden="true"><use href="#i-mais"/></svg>Registrar pedido</button><button class="botao b-secundario" type="button">Repassar</button><button class="botao b-texto" type="button">Ver todos</button><button class="botao b-perigo" type="button">Cancelar pedido</button></div>
+    <div class="linha-comp"><button class="botao b-primario" type="button"><svg aria-hidden="true"><use href="#i-mais"/></svg>Registrar pedido</button><button class="botao b-secundario" type="button">Repassar</button><button class="botao b-texto" type="button">Ver todos <svg aria-hidden="true"><use href="#i-seta"/></svg></button><button class="botao b-perigo" type="button">Cancelar pedido</button></div>
+    <div class="linha-comp"><span><button class="botao b-primario foco" type="button">Registrar pedido</button><span class="estado">Com foco do teclado</span></span><span><span class="botao b-primario" aria-disabled="true">Registrar pedido</span><span class="estado">Indisponível, com o motivo ao lado</span></span></div>
     <div class="eyebrow">Situação</div>
     <div class="linha-comp"><span class="selo s-novo"><span class="f" aria-hidden="true"></span>Aberto</span><span class="selo s-andamento"><span class="f" aria-hidden="true"></span>Em andamento</span><span class="selo s-atencao"><span class="f" aria-hidden="true"></span>Vence hoje</span><span class="selo s-vencido"><span class="f" aria-hidden="true"></span>Retorno vencido</span><span class="selo s-ok"><span class="f" aria-hidden="true"></span>Concluído</span></div>
     <div class="eyebrow">Campo</div>
-    <div class="linha-comp"><div class="campo"><label for="ex-assunto">Assunto</label><input id="ex-assunto" value="Vazamento no banheiro"><small>Do jeito que o morador falou.</small></div></div>
+    <div class="grade-campos">
+      <div class="campo"><label for="ex-assunto">Assunto</label><input id="ex-assunto" value="Vazamento no banheiro"><small>Do jeito que o morador falou.</small></div>
+      <div class="campo"><label for="ex-local">Local</label><input id="ex-local" class="foco" value="Torre A · 101"><small>Com foco: borda violeta e um halo suave.</small></div>
+      <div class="campo erro"><label for="ex-retorno">Próximo retorno</label><input id="ex-retorno" value="14/10, 18h" aria-invalid="true" aria-describedby="ex-retorno-erro"><small id="ex-retorno-erro">Essa data já passou. Escolha a partir de agora.</small></div>
+    </div>
   </div>
 </section>
 
