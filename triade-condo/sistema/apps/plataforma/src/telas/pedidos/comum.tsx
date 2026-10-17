@@ -56,3 +56,8 @@ export function paraDataHoraLocal(iso: string): string {
   }).formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
   return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
 }
+
+/** "às 13:00" no mesmo dia; senão "em 16/10 13:00". */
+export function aHora(iso: string, agoraIso: string): string {
+  return DIA.format(new Date(iso)) === DIA.format(new Date(agoraIso)) ? `às ${HORA.format(new Date(iso))}` : `em ${diaHora(iso)}`;
+}

@@ -15,6 +15,8 @@ export interface Configuracoes {
   prazos: { id: string; categoriaId: string | null; prioridadeId: string | null; horas: number; versao: number }[];
   /** Revisão da conclusão e reabertura dos pedidos (AT-14, AT-15). */
   regrasPedidos: { revisao: boolean; reabertura: boolean };
+  /** Quando o aviso sobe e os outros avisos (passo 6; F6.2, AT-09). */
+  avisos: RegrasAviso;
   pendencias: string[];
   podeEditar: boolean;
 }
@@ -190,7 +192,72 @@ export interface ResumoPedidos {
   emRevisao: number;
   comPendencia: number;
   meus: number;
+  /** O início do dia (passo 7, F7.1). */
+  vencemHoje: number;
+  proximoHoje?: string;
+  vencidoMaisAntigo?: string;
+  vencidoMaisAntigoEscalado: boolean;
+  pendenciasParadas: number;
 }
+
+export interface RegrasAviso {
+  sindicoHoras: number;
+  substitutoHoras: number;
+  substitutoId: string | null;
+  semResponsavelHoras: number;
+  pendenciaDias: number;
+  substitutosPossiveis: { vinculoId: string; nome: string; cargo: string | null }[];
+}
+
+/** Um aviso dentro do painel (passo 6, F6.1). Assunto vazio: pedido privado que a pessoa não vê. */
+export interface AvisoDoPainel {
+  id: string;
+  tipo: "RETORNO_VENCIDO" | "ESCALADO_SINDICO" | "ESCALADO_SUBSTITUTO" | "SEM_RESPONSAVEL" | "PENDENCIA_PARADA";
+  pedidoId: string;
+  protocolo: string;
+  assunto: string | null;
+  responsavel: string | null;
+  referencia: string;
+  criadoEm: string;
+  vistoEm: string | null;
+}
+
+export interface Avisos {
+  itens: AvisoDoPainel[];
+  naoVistos: number;
+}
+
+/** O aviso no pedido (AT-08, AT-09). */
+export type PrazoDoPedido =
+  | { vencido: false }
+  | {
+      vencido: true;
+      desde: string;
+      horas: number;
+      avisos: { tipo: AvisoDoPainel["tipo"]; em: string; nomes: string[] }[];
+      proximo: { tipo: "ESCALADO_SINDICO" | "ESCALADO_SUBSTITUTO"; em: string } | null;
+    };
+
+/** Números de um período (passo 7; F7.2, TR-01, TR-03, TR-07). Null é "sem dados". */
+export interface NumerosAtendimento {
+  de: string;
+  ate: string;
+  retornos: { total: number; noPrazo: number; porcentagem: number | null };
+  primeiroRetornoHoras: number | null;
+  registrados: number;
+  concluidos: number;
+  reabertos: number;
+}
+
+export interface Indicadores {
+  periodo: "ESTE_MES" | "MES_PASSADO" | "TRES_MESES";
+  atual: NumerosAtendimento & {
+    porCategoria: { categoriaId: string; nome: string; retornos: number | null; noPrazo: number | null; porcentagem: number | null; concluidos: number }[];
+  };
+  porcentagemAnterior: number | null;
+}
+
+export type MesFechado = NumerosAtendimento & { mes: string; porcentagemAnterior?: number | null };
 
 export type EstadoPedido = "ABERTO" | "EM_ANDAMENTO" | "EM_REVISAO" | "ENCERRADO" | "CANCELADO";
 

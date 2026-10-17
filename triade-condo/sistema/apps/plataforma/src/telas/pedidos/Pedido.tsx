@@ -3,7 +3,7 @@
 // compromissos separados, próximo retorno ao morador e previsão de solução (AT-06, AT-07);
 // o responsável e o aceite (AT-03); as pendências (AT-11); as ações de quem pode cada uma;
 // e, em abas, o andamento, o histórico completo (AT-17), o relato, as conclusões e as fotos e
-// documentos (passo 4b, PT-07).
+// documentos (passo 4b, PT-07). Com o retorno vencido, a faixa do aviso (passo 6, AT-09).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -16,6 +16,7 @@ import { nomeRelacao } from "../moradores/comum.tsx";
 import { AbaArquivos, type ArquivosDoPedido } from "./Arquivos.tsx";
 import { JanelasPedido, type AcaoPedido } from "./JanelasPedido.tsx";
 import { diaHora, faltaPara, nomeDe, SeloEstadoPedido } from "./comum.tsx";
+import { FaixaPrazo } from "./FaixaPrazo.tsx";
 
 const ABAS = [
   { id: "andamento", texto: "Andamento" },
@@ -103,6 +104,10 @@ export function Pedido() {
       </div>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
       {falha ? <Aviso tom="erro">{falha}</Aviso> : null}
+      {p.retornoVencido && ativo ? (
+        <FaixaPrazo pedidoId={p.id} agora={d.agora} versao={p.versao} semResponsavel={!p.responsavel}
+          aoDarRetorno={d.pode.responder ? () => setAcao("retorno") : undefined} />
+      ) : null}
       {p.cancelamento ? <Aviso tom="info" titulo="Pedido cancelado">{p.cancelamento.por} em {diaHora(p.cancelamento.em)}. Motivo: {p.cancelamento.motivo}</Aviso> : null}
       {p.estado === "EM_REVISAO" ? (
         <Aviso tom="info">

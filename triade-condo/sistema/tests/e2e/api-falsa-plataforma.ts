@@ -1,9 +1,10 @@
-// API da Plataforma falsa, dentro do navegador (page.route): as telas dos passos 2, 3 e 4 rodam
+// API da Plataforma falsa, dentro do navegador (page.route): as telas dos passos 2 a 7 rodam
 // sem Supabase. As regras de verdade estão testadas no banco (pgTAP 008, 009 e 010) e na API
 // (Deno); aqui se confere a tela: fluxo, textos, o que cada pessoa vê e acessibilidade.
 import type { Page, Route } from "@playwright/test";
 import { criarMoradores, resumoMoradores, rotasMoradores } from "./api-falsa-moradores";
-import { AGORA, criarPedidos, resumoPedidos, rotasPedidos } from "./api-falsa-pedidos";
+import { AGORA, criarPedidos, resumoPedidos, rotasPedidos, vencido, vencidoMaisAntigo } from "./api-falsa-pedidos";
+import { criarAvisos, escalado, MES_FECHADO, naoVistos, regrasAvisoIniciais, rotasPrazos } from "./api-falsa-prazos";
 import { rotasArmazenamento, semearArquivos } from "./api-falsa-arquivos";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -74,8 +75,11 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     convites: [] as string[],
     moradores: criarMoradores(),
     pedidos: [] as ReturnType<typeof criarPedidos>,
+    avisos: [] as ReturnType<typeof criarAvisos>,
+    regras: regrasAvisoIniciais(),
   };
   estado.pedidos = criarPedidos(estado.config, V_ANA, V_BRUNA);
+  estado.avisos = criarAvisos(estado.pedidos, V_ANA, V_BRUNA);
   semearArquivos(estado.pedidos[0]!.id, AGORA);
   if (opcoes.comAtendimento) {
     for (const p of estado.pessoas) { p.responsavel = true; p.disponivel = true; }
@@ -142,10 +146,21 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         pessoa: { id: ANA, nome: quem === "SINDICA" ? "Ana Souza" : quem === "SECRETARIA" ? "Bruna" : "Caio" },
         funcoes: [quem === "SINDICA" ? "SINDICO" : "AUTORIZADO"], acoes: acoes(), pendencias: pendencias(),
         ...(acoes().includes("moradores.ver") ? { moradores: resumoMoradores(estado.moradores) } : {}),
-        ...(acoes().includes("pedidos.ver") ? { pedidos: resumoPedidos(estado.pedidos, estado.config, eu.vinculo) } : {}),
+        ...(acoes().includes("pedidos.ver") ? {
+          pedidos: { ...resumoPedidos(estado.pedidos, estado.config, eu.vinculo),
+            vencidoMaisAntigoEscalado: escalado(estado.avisos, vencidoMaisAntigo(estado.pedidos, estado.config)?.id) },
+          mesFechado: MES_FECHADO,
+        } : {}),
+        avisosNaoVistos: naoVistos(estado.avisos, eu.vinculo),
       } });
     }
-    if (caminho === "/v1/condominio/configuracoes") return route.fulfill({ json: { ...c, pendencias: pendencias(), podeEditar: pode("config.editar") } });
+    if (caminho === "/v1/condominio/configuracoes") {
+      const substitutosPossiveis = estado.pessoas.filter((p) => p.funcao === "AUTORIZADO").map((p) => ({ vinculoId: p.vinculoId, nome: p.nome, cargo: p.cargo }));
+      return route.fulfill({ json: { ...c, avisos: { ...estado.regras, substitutosPossiveis }, pendencias: pendencias(), podeEditar: pode("config.editar") } });
+    }
+    const prazos = await rotasPrazos(route, estado, eu, caminho, metodo, corpo, url, pode,
+      (id) => vencido(estado.pedidos.find((p) => p.id === id)!, estado.config));
+    if (prazos !== null) return prazos;
 
     const moradores = await rotasMoradores(route, estado.moradores, caminho, metodo, corpo, pode);
     if (moradores !== null) return moradores;

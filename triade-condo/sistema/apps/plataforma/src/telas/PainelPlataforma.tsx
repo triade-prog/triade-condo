@@ -9,6 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FUNCOES_PLATAFORMA } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Marca, textoDoErro, type ErroApi } from "@triade/ui";
+import { SinoAvisos } from "./Avisos.tsx";
 import { Contexto, useCarregar, type CondominioDaPessoa, type Painel } from "./sessao.tsx";
 
 interface Sessao {
@@ -87,6 +88,7 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
               <Botao variante="texto" onClick={() => setTrocando(true)}>Trocar condomínio</Botao>
             ) : null}
           </span>
+          {painel.avisosNaoVistos !== undefined ? <SinoAvisos naoVistos={painel.avisosNaoVistos} /> : null}
           <span className="text-tinta-suave">{painel.pessoa.nome} · {nomeFuncoes(painel.funcoes)}</span>
           <Botao variante="texto" onClick={sair}>Sair</Botao>
           <button
@@ -109,9 +111,10 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
           <ItemMenu href="/" atual={caminho === "/"}>Início</ItemMenu>
           {pode("pedidos.ver") ? <ItemMenu href="/pedidos" atual={caminho.startsWith("/pedidos")}>Pedidos</ItemMenu> : null}
           {pode("moradores.ver") ? <ItemMenu href="/moradores" atual={caminho.startsWith("/moradores")}>Moradores e unidades</ItemMenu> : null}
+          {pode("pedidos.ver") ? <ItemMenu href="/indicadores" atual={caminho.startsWith("/indicadores")}>Indicadores</ItemMenu> : null}
           {pode("config.ver") ? <ItemMenu href="/configuracoes" atual={caminho.startsWith("/configuracoes")}>Configurações</ItemMenu> : null}
           {pode("pessoas.ver") ? <ItemMenu href="/pessoas" atual={caminho.startsWith("/pessoas")}>Pessoas e acesso</ItemMenu> : null}
-          <p className="mt-2 border-t border-linha px-3 pt-2 text-xs text-tinta-suave">O WhatsApp do condomínio e os avisos chegam nos próximos passos.</p>
+          <p className="mt-2 border-t border-linha px-3 pt-2 text-xs text-tinta-suave">O WhatsApp do condomínio chega num próximo passo. Até lá, os avisos ficam aqui no painel.</p>
         </nav>
         <main id="conteudo" className="min-w-0 px-4 py-6 md:px-2 md:py-4">{children}</main>
       </div>

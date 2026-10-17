@@ -5,7 +5,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { chamarApi, pedeLogin, textoDoErro, type ErroApi } from "@triade/ui";
-import type { ResumoPedidos } from "./tipos.ts";
+import type { MesFechado, ResumoPedidos } from "./tipos.ts";
 
 export interface Painel {
   condominio: { id: string; nome: string; cidade: string | null; uf: string | null; cenario: string | null };
@@ -17,6 +17,10 @@ export interface Painel {
   moradores?: { unidades: number; semContato: number; aConfirmar: number; semProprietario: number };
   /** Resumo dos pedidos que a pessoa enxerga, para quem pode ver (passo 4). */
   pedidos?: ResumoPedidos;
+  /** O mês anterior, fixo (passo 7, F7.1). */
+  mesFechado?: MesFechado;
+  /** Avisos sem ver (passo 6, F6.1). */
+  avisosNaoVistos?: number;
 }
 
 export interface CondominioDaPessoa {

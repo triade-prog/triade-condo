@@ -19,7 +19,7 @@ const ABAS = [
   { id: "feriados", texto: "Feriados" },
   { id: "categorias", texto: "Categorias e prioridades" },
   { id: "etapas", texto: "Etapas e respostas" },
-  { id: "prazos", texto: "Prazos" },
+  { id: "prazos", texto: "Prazos e avisos" },
   { id: "regras", texto: "Regras dos pedidos" },
 ] as const;
 type IdAba = (typeof ABAS)[number]["id"];
