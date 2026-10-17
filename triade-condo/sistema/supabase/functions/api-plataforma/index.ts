@@ -20,6 +20,7 @@ const app = criarApiPlataforma(Deno.env.get("REPASSE_SEGREDO"), {
   admin: adminGoTrue(url, chaveServico),
   urlApp: exigir("PLATAFORMA_URL"),
   armazenamento: armazenamentoSupabase(url, chaveServico),
+  armazenamentoManutencao: armazenamentoSupabase(url, chaveServico, fetch, "manutencoes"),
 });
 
 Deno.serve(app.fetch);
