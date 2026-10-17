@@ -21,6 +21,8 @@ function detalhe(a: AvisoDoPainel): string {
       return "Sem ninguém cuidando do pedido.";
     case "PENDENCIA_PARADA":
       return "Pendência aberta e parada. Confira se ainda está de pé.";
+    case "MANUTENCAO_RETORNO_VENCIDO":
+      return "Retorno da manutenção vencido. Combine o próximo ou atualize a situação.";
   }
 }
 
@@ -55,10 +57,29 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
         <ul className="grid max-h-[60vh] gap-2 overflow-y-auto">
           {itens.map((a) => {
             const escalado = a.tipo === "ESCALADO_SINDICO" || a.tipo === "ESCALADO_SUBSTITUTO";
+            if (a.tipo === "MANUTENCAO_RETORNO_VENCIDO") {
+              return (
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Selo tom="atencao">Manutenção</Selo>
+                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                  </span>
+                  <span className="font-semibold">{a.titulo}</span>
+                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="flex flex-wrap gap-2">
+                    <Link href={`/manutencao/manutencao?id=${a.manutencaoId}`} className="font-medium text-violeta-600 hover:underline"
+                      onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
+                      Ver manutenção
+                    </Link>
+                    {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso da manutenção ${a.titulo}`}>Marcar como visto</Botao>}
+                  </span>
+                </li>
+              );
+            }
             return (
               <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                 <span className="flex flex-wrap items-center gap-2">
-                  <Selo tom={a.tipo === "SEM_RESPONSAVEL" || a.tipo === "PENDENCIA_PARADA" ? "info" : "atencao"}>{TIPOS_AVISO[a.tipo]}</Selo>
+                  <Selo tom={a.tipo === "SEM_RESPONSAVEL" || a.tipo === "PENDENCIA_PARADA" ? "info" : "atencao"}>{TIPOS_AVISO[a.tipo as keyof typeof TIPOS_AVISO]}</Selo>
                   {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
                 </span>
                 <span><strong className="font-semibold">{a.protocolo}</strong> {a.assunto ?? "Pedido privado"}</span>

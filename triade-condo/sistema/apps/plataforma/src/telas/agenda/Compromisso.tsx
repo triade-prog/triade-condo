@@ -75,6 +75,10 @@ export function Compromisso() {
       {c.pedido ? (
         <p className="text-sm">Pedido ligado: <Link href={`/pedidos/pedido?id=${c.pedido.id}`} className="font-medium text-violeta-600 hover:underline">{c.pedido.protocolo} · {c.pedido.assunto}</Link></p>
       ) : c.pedidoOculto ? <p className="text-sm text-tinta-suave">Ligado a um pedido que você não vê.</p> : null}
+      {c.manutencao ? (
+        <p className="text-sm">Manutenção ligada: <Link href={`/manutencao/manutencao?id=${c.manutencao.id}`} className="font-medium text-violeta-600 hover:underline">{c.manutencao.titulo}</Link>
+          <span className="text-tinta-suave"> · cancelar a visita não apaga a manutenção</span></p>
+      ) : null}
       {c.observacao ? <p className="whitespace-pre-line rounded-2xl border border-linha bg-superficie p-4 text-sm">{c.observacao}</p> : null}
 
       {pode ? (

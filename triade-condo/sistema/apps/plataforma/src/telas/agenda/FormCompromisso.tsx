@@ -17,6 +17,11 @@ export interface InicioCompromisso {
   unidadeId?: string | null;
   pedidoId?: string | null;
   participantes?: string[];
+  /** Visita marcada a partir da manutenção (peça R6, MP-04): nasce ligada a ela, sem repetição. */
+  manutencaoId?: string;
+  onde?: LugarCompromisso;
+  local?: string;
+  deFora?: string;
 }
 
 type Props = {
@@ -47,11 +52,11 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, compromisso, inicio }
     diaTodo: c ? c.diaTodo : false,
     horaInicio: c?.horaInicio ?? "",
     horaFim: c?.horaFim ?? "",
-    onde: (c?.onde ?? (inicio?.unidadeId ? "UNIDADE" : "NENHUM")) as LugarCompromisso,
+    onde: (c?.onde ?? inicio?.onde ?? (inicio?.unidadeId ? "UNIDADE" : "NENHUM")) as LugarCompromisso,
     unidadeId: c?.unidadeId ?? inicio?.unidadeId ?? "",
-    local: c?.local ?? "",
+    local: c?.local ?? inicio?.local ?? "",
     participantes: c ? c.participantes.map((p) => p.vinculoId) : inicio?.participantes ?? [],
-    deFora: c?.deFora ?? "",
+    deFora: c?.deFora ?? inicio?.deFora ?? "",
     pedidoId: c?.pedido?.id ?? inicio?.pedidoId ?? "",
     observacao: c?.observacao ?? "",
     estado: "PLANEJADO",
@@ -67,6 +72,7 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, compromisso, inicio }
   const [enviando, setEnviando] = useState(false);
   const mudar = (m: Partial<typeof v>) => { setV((x) => ({ ...x, ...m })); setConflitos(null); };
   const repete = Boolean(c?.serie);
+  const daManutencao = !c && inicio?.manutencaoId ? inicio.manutencaoId : null;
 
   async function salvar(ev: FormEvent) {
     ev.preventDefault();
@@ -82,7 +88,8 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, compromisso, inicio }
     };
     const r = c
       ? await chamarApi<{ alterados: number }>(`/v1/condominio/agenda/${c.id}`, { metodo: "PUT", corpo: { ...comuns, versao: c.versao, escopo: repete ? v.escopo : "ESTA" } })
-      : await chamarApi<{ id: string; datas: number; conflitos: ConflitoCompromisso[] }>("/v1/condominio/agenda", { corpo: {
+      : await chamarApi<{ id: string; datas: number; conflitos: ConflitoCompromisso[] }>(
+        daManutencao ? `/v1/condominio/manutencao/${daManutencao}/visita` : "/v1/condominio/agenda", { corpo: {
         ...comuns, data: v.data, estado: v.estado,
         repetir: v.repetir || null,
         intervalo: v.repetir === "MENSAL" ? Number(v.intervalo) || null : null,
@@ -157,7 +164,8 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, compromisso, inicio }
           onChange={(e) => mudar({ deFora: e.target.value })} />
       </fieldset>
 
-      {opcoes.pedidos.length || v.pedidoId ? (
+      {daManutencao ? <p className="text-xs text-tinta-suave">A visita fica ligada à manutenção (e ao pedido dela). Cancelar a visita não apaga a manutenção.</p> : null}
+      {!daManutencao && (opcoes.pedidos.length || v.pedidoId) ? (
         <CampoSelecao id="ag-pedido" rotulo="Pedido ligado" opcional value={v.pedidoId} erro={msg("pedidoId", "Pedido não encontrado.")}
           ajuda="Ligar não muda o próximo retorno nem a previsão do pedido."
           onChange={(e) => mudar({ pedidoId: e.target.value })}
@@ -168,9 +176,9 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, compromisso, inicio }
 
       {c ? null : (
         <>
-          <CampoSelecao id="ag-repetir" rotulo="Repetir" value={v.repetir} erro={msg("repetir", "Escolha a repetição.")}
+          {daManutencao ? null : <CampoSelecao id="ag-repetir" rotulo="Repetir" value={v.repetir} erro={msg("repetir", "Escolha a repetição.")}
             onChange={(e) => mudar({ repetir: e.target.value })}
-            opcoes={[{ valor: "", texto: "Não repete" }, ...opcoesDe(REPETICOES)]} />
+            opcoes={[{ valor: "", texto: "Não repete" }, ...opcoesDe(REPETICOES)]} />}
           {v.repetir ? (
             <div className="grid gap-3 rounded-2xl border border-linha p-3">
               {v.repetir === "MENSAL" ? (

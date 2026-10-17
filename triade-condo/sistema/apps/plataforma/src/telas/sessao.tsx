@@ -5,7 +5,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { chamarApi, pedeLogin, textoDoErro, type ErroApi } from "@triade/ui";
-import type { MesFechado, ResumoPedidos } from "./tipos.ts";
+import type { MesFechado, ResumoManutencao, ResumoPedidos } from "./tipos.ts";
 
 export interface Painel {
   condominio: { id: string; nome: string; cidade: string | null; uf: string | null; cenario: string | null };
@@ -21,6 +21,8 @@ export interface Painel {
   mesFechado?: MesFechado;
   /** Avisos sem ver (passo 6, F6.1). */
   avisosNaoVistos?: number;
+  /** Resumo da manutenção, para quem vê (peça R6). */
+  manutencao?: ResumoManutencao;
 }
 
 export interface CondominioDaPessoa {

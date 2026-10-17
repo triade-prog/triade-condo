@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "17/10/2026",
     "total_ideias": 308,
-    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) e a Agenda (R7) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (657 pgTAP, 102 Deno, 86 Vitest, 140 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0130 (com a conferência de prazos no pg_cron) e as Edge Functions api-plataforma (versão 9, com a agenda) e api-console; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
+    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7) e Manutenção e prestadores (R6) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (724 pgTAP, 108 Deno, 94 Vitest, 154 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0130 (a 0140, da manutenção, espera ser aplicada) (com a conferência de prazos no pg_cron) e as Edge Functions api-plataforma (versão 9, com a agenda) e api-console; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F7",
-    "proximo_passo": "Carolina aprovar as telas e as dez decisões de Manutenção e prestadores (docs/telas/manutencao.html); depois, banco, API e telas. Com a Carolina: conferir a Agenda no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
+    "proximo_passo": "Manutenção (R6): a Carolina aplica a 0140 no triade-condo-dev; depois, publicar a api-plataforma com as rotas da manutenção e juntar o PR ao main. Com a Carolina: conferir a Agenda e a Manutenção no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
   "fases": [
     {
@@ -761,8 +761,9 @@
             "MP-09",
             "MP-13"
           ],
-          "status": "andamento",
-          "nota": "Desenho para aprovação em docs/telas/manutencao.html: sete telas (manutenções, nova, aberta com concluir, vistoria, preventivas com sugestões da NBR 5674, prestadores e ficha, e onde a manutenção aparece no pedido, na agenda e no início) e dez decisões. MP-09 entra em parte (reserva registrada; a troca automática espera o WhatsApp). Ficam para depois, com o motivo na página: MP-06, MP-10, MP-11, MP-15, MP-16 e V-13."
+          "status": "feito",
+          "evidencia": "Desenho aprovado em docs/telas/manutencao.html. Migration 0140_manutencao.sql (prestadores, etapas, manutenções, providências, vistoria, preventivas que abrem sozinhas, fotos no bucket manutencoes, avisos de retorno vencido, visita ligada na agenda, permissões Ver a manutenção e Cuidar da manutenção); telas /manutencao, /manutencao/manutencao, /manutencao/preventivas, /manutencao/prestadores, /manutencao/prestador, Manutenção ligada no pedido, cartão no início e aba Manutenção nas configurações",
+          "nota": "Falta aplicar a 0140 no triade-condo-dev e publicar a api-plataforma com as rotas da manutenção; o bucket privado manutencoes nasce com a própria migration. MP-09 em parte: a reserva fica registrada; a troca automática espera o WhatsApp. Ficam para depois, com o motivo no desenho: MP-06, MP-10, MP-11, MP-15, MP-16 e V-13."
         },
         {
           "id": "R7",
@@ -1097,6 +1098,23 @@
       ],
       "status": "feito",
       "evidencia": "pgTAP 014_agenda_test.sql (52 testes); Deno api-plataforma/agenda_test.ts (6 testes); Vitest agenda.test.ts (7 testes); Playwright plataforma-agenda.spec.ts (8 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T22",
+      "texto": "Manutenção: permissões, prestadores do condomínio com reserva e contrato perto do fim, manutenção separada do pedido (concluir não encerra o pedido), situações fixas com pendência e etapas, providências, vistoria com lista própria e item que vira manutenção, preventivas que abrem sozinhas e contam da data prevista, retorno vencido avisado uma vez, visita ligada na agenda e preventivas na agenda; telas no celular e no computador com axe e sem emoji",
+      "fase": "R6",
+      "refs": [
+        "MP-01",
+        "MP-02",
+        "MP-03",
+        "MP-04",
+        "MP-05",
+        "MP-07",
+        "MP-09",
+        "MP-13"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 015_manutencao_test.sql (67 testes); Deno api-plataforma/manutencao_test.ts (6 testes); Vitest manutencao.test.ts (8 testes); Playwright plataforma-manutencao.spec.ts (7 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -1330,6 +1348,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "19:46",
+      "fim": "20:22",
+      "texto": "Manutenção e prestadores (peça R6) construída depois do aprovado da Carolina. Banco: migration 0140 com as permissões Ver a manutenção e Cuidar da manutenção, prestadores do condomínio (com contrato ou por chamado, reserva indicada, arquivar sem apagar), etapas por situação, manutenções com cinco situações fixas, pendência com tipo e motivo, próximo retorno e previsão separados e com motivo, providências com resultado, vistoria com lista própria e item com problema que vira corretiva, preventivas que abrem a manutenção alguns dias antes e contam a próxima data da data prevista, fotos e documentos no bucket privado manutencoes, aviso de retorno vencido no sino, visita marcada ligada à manutenção e preventivas na agenda; concluir a manutenção não encerra o pedido. A rotina verificar_manutencao roda de hora em hora no pg_cron. API com as rotas da manutenção e telas: Manutenção (lista com atalhos), nova, aberta, vistoria, Preventivas com as sugestões da NBR 5674, Prestadores e a ficha, Manutenção ligada no pedido, cartão no início e aba Manutenção nas configurações. Testes: 724 pgTAP, 108 Deno, 94 Vitest e 154 ponta a ponta passando.",
+      "ref": "R6, MP-01, MP-02, MP-03, MP-04, MP-05, MP-07, MP-09, MP-13"
+    },
     {
       "data": "17/10/2026",
       "inicio": "19:37",

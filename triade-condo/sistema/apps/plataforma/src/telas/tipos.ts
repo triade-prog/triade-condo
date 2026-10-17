@@ -212,10 +212,13 @@ export interface RegrasAviso {
 /** Um aviso dentro do painel (passo 6, F6.1). Assunto vazio: pedido privado que a pessoa não vê. */
 export interface AvisoDoPainel {
   id: string;
-  tipo: "RETORNO_VENCIDO" | "ESCALADO_SINDICO" | "ESCALADO_SUBSTITUTO" | "SEM_RESPONSAVEL" | "PENDENCIA_PARADA";
-  pedidoId: string;
-  protocolo: string;
-  assunto: string | null;
+  tipo: "RETORNO_VENCIDO" | "ESCALADO_SINDICO" | "ESCALADO_SUBSTITUTO" | "SEM_RESPONSAVEL" | "PENDENCIA_PARADA" | "MANUTENCAO_RETORNO_VENCIDO";
+  pedidoId?: string;
+  protocolo?: string;
+  assunto?: string | null;
+  /** No aviso da manutenção (peça R6). */
+  manutencaoId?: string;
+  titulo?: string;
   responsavel: string | null;
   referencia: string;
   criadoEm: string;
@@ -378,6 +381,8 @@ export interface CompromissoAgenda {
   versao: number;
   pedido?: { id: string; protocolo: string; assunto: string };
   pedidoOculto?: boolean;
+  /** A manutenção ligada (peça R6), para quem vê a manutenção. */
+  manutencao?: { id: string; titulo: string; estado: string };
   serie?: { id: string; frequencia: string; intervalo: number; ate: string; total: number };
   cancelamento?: { em: string; motivo: string; por: string | null };
   realizadoEm?: string;
@@ -386,7 +391,9 @@ export interface CompromissoAgenda {
 export interface DataDeOutraTela {
   data: string;
   titulo: string;
-  fonte: "FERIADO";
+  fonte: "FERIADO" | "PREVENTIVA";
+  /** Na preventiva, o id dela. */
+  id?: string;
 }
 
 export interface Agenda {
@@ -427,4 +434,173 @@ export interface AgendaDoPedido {
   podeMarcar: boolean;
   compromissos: CompromissoAgenda[];
   divergencia: { previsao: string; compromissoId: string; titulo: string; data: string } | null;
+}
+
+// Manutenção e prestadores (peça R6).
+
+export type TipoManutencao = "CORRETIVA" | "PREVENTIVA" | "VISTORIA";
+export type SituacaoManutencao = "PLANEJADA" | "EM_ANDAMENTO" | "PENDENTE" | "CONCLUIDA" | "CANCELADA";
+export type Executor = { tipo: "PRESTADOR" | "EQUIPE" | "TEXTO"; id?: string; nome: string };
+
+export interface ManutencaoResumo {
+  id: string;
+  tipo: TipoManutencao;
+  titulo: string;
+  local: string;
+  estado: SituacaoManutencao;
+  etapa?: { id: string; nome: string };
+  prioridade?: { id: string; nome: string; nivel: number };
+  responsavel: { vinculoId: string; nome: string | null };
+  executor?: Executor;
+  proximoRetorno?: string;
+  retornoVencido: boolean;
+  previsao?: string;
+  dataPrevista?: string;
+  atrasada: boolean;
+  pendencia?: { tipo: string; motivo: string; desde: string };
+  pedido?: { id: string; protocolo: string; assunto: string; estado: string };
+  preventivaId?: string;
+  visita?: { id: string; data: string; horaInicio?: string };
+  realizadaEm?: string;
+  concluidaEm?: string;
+  criadoEm: string;
+  versao: number;
+}
+
+export interface ListaManutencoes {
+  itens: ManutencaoResumo[];
+  total: number;
+  pagina: number;
+  atalhos: { retornoVencido: number; preventivasMes: number; pendentesParadas: number };
+  pendenciaDias: number;
+  pode: { editar: boolean };
+}
+
+export interface OpcoesManutencao {
+  pessoas: { vinculoId: string; nome: string; cargo: string | null; eu: boolean; veManutencao: boolean }[];
+  prestadores: { id: string; nome: string; servico: string }[];
+  prioridades: { id: string; nome: string; significado: string; nivel: number }[];
+  etapas: { id: string; nome: string; situacao: SituacaoManutencao }[];
+  locais: string[];
+  pedidos: { id: string; protocolo: string; assunto: string }[];
+  pode: { editar: boolean; agenda: boolean };
+  pendenciaDias: number;
+  hoje: string;
+}
+
+export interface Providencia {
+  id: string;
+  texto: string;
+  executor?: Executor;
+  feitaEm?: string;
+  feitaPor?: string;
+  resultado?: string;
+  criadoEm: string;
+}
+
+export interface ItemVistoria {
+  id: string;
+  texto: string;
+  ordem: number;
+  resultado?: "CERTO" | "PROBLEMA" | "NAO_DEU";
+  observacao?: string;
+  respondidoEm?: string;
+  fotos: number;
+  gerada?: { id: string; titulo: string; estado: SituacaoManutencao };
+}
+
+export interface ManutencaoDetalhe {
+  manutencao: ManutencaoResumo & {
+    detalhes?: string;
+    acesso?: string;
+    impedimento?: string;
+    registradaPor?: string;
+    conclusao?: { texto: string; realizadaEm: string; em: string; por: string | null };
+    cancelamento?: { motivo: string; em: string; por: string | null };
+    origem?: { id: string; titulo: string; tipo: TipoManutencao };
+    preventiva?: { id: string; unidadeTempo: "SEMANA" | "MES" | "ANO"; intervalo: number; proximaData: string };
+    pedidoOculto?: boolean;
+  };
+  prestador?: { id: string; nome: string; servico: string; acordo: string; contato?: string; telefone?: string; email?: string;
+    reserva?: { id: string; nome: string } };
+  providencias: Providencia[];
+  itens: ItemVistoria[];
+  geradas: { id: string; titulo: string; estado: SituacaoManutencao }[];
+  compromissos?: CompromissoAgenda[];
+  historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
+  pode: { editar: boolean; reabrir: boolean; enviar: boolean; marcarVisita: boolean };
+  hoje: string;
+}
+
+export interface PrestadorItem {
+  id: string;
+  nome: string;
+  servico: string;
+  contato?: string;
+  telefone?: string;
+  email?: string;
+  documento?: string;
+  acordo: "CONTRATO" | "CHAMADO";
+  contratoAte?: string;
+  desde?: string;
+  observacao?: string;
+  reserva?: { id: string; nome: string };
+  arquivado: boolean;
+  abertas: number;
+  pendentes: number;
+  contratoVence: boolean;
+  contratoVencido: boolean;
+  versao: number;
+}
+
+export interface ListaPrestadores {
+  itens: PrestadorItem[];
+  arquivados: number;
+  pode: { editar: boolean };
+}
+
+export interface PrestadorDetalhe {
+  prestador: PrestadorItem;
+  manutencoes: ManutencaoResumo[];
+  reservaDe: { id: string; nome: string }[];
+  pode: { editar: boolean };
+}
+
+export interface PreventivaItem {
+  id: string;
+  atividade: string;
+  local: string;
+  unidadeTempo: "SEMANA" | "MES" | "ANO";
+  intervalo: number;
+  proximaData: string;
+  antecedenciaDias: number;
+  responsavel: { vinculoId: string; nome: string | null };
+  executor?: Executor;
+  observacao?: string;
+  ativa: boolean;
+  versao: number;
+  aberta?: ManutencaoResumo;
+  ultima?: { id: string; realizadaEm: string };
+}
+
+export interface ListaPreventivas {
+  itens: PreventivaItem[];
+  hoje: string;
+  pode: { editar: boolean };
+}
+
+export interface ManutencoesDoPedido {
+  podeVer: boolean;
+  podeAbrir: boolean;
+  manutencoes: ManutencaoResumo[];
+}
+
+export interface ResumoManutencao {
+  abertas: number;
+  retornoVencido: number;
+  vencidaMaisAntiga?: { id: string; titulo: string; desde: string };
+  preventivasAtrasadas: number;
+  atrasadaMaisAntiga?: { id: string; titulo: string; data: string };
+  contratosAVencer: number;
+  contratoMaisProximo?: { id: string; nome: string; ate: string };
 }

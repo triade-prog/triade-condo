@@ -50,7 +50,7 @@ const ehFoto = (tipo: string) => tipo.startsWith("image/");
 const ACEITOS = "image/jpeg,image/png,image/webp,application/pdf";
 
 /** Envia ao armazenamento com PUT, mostrando o progresso. */
-function subir(url: string, arquivo: File, tipo: string, aoProgresso: (p: number) => void): Promise<boolean> {
+export function subir(url: string, arquivo: File, tipo: string, aoProgresso: (p: number) => void): Promise<boolean> {
   return new Promise((resolver) => {
     const x = new XMLHttpRequest();
     x.open("PUT", url);
