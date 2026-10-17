@@ -73,7 +73,7 @@ export function AbaEquipe({ ficha, pode, recarregar, avisar }: PropsAba) {
         {podeAtribuir ? <Botao variante="contorno" onClick={() => { setErro(null); setAtribuindo(true); }}>Atribuir pessoa</Botao> : null}
       </div>
       {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
-      <ul className="divide-y divide-linha rounded-lg border border-linha">
+      <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
         {ficha.equipe.map((m) => (
           <li key={m.vinculoId} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
             <span>

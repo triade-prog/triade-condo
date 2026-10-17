@@ -19,7 +19,7 @@ function Permissoes({ disponiveis, marcadas, aoMudar }: { disponiveis: PropsPess
       <legend className="mb-1 text-[13px] font-medium">Permissões</legend>
       {disponiveis.map((p) => (
         <label key={p.codigo} className="flex items-start gap-2 text-sm">
-          <input type="checkbox" className="mt-1 h-4 w-4 accent-[var(--color-acao)]" checked={marcadas.includes(p.codigo)}
+          <input type="checkbox" className="mt-1 h-4 w-4 accent-violeta-600" checked={marcadas.includes(p.codigo)}
             onChange={(e) => aoMudar(e.target.checked ? [...marcadas, p.codigo] : marcadas.filter((x) => x !== p.codigo))} />
           <span><span className="font-medium">{p.nome}</span><span className="block text-xs text-tinta-suave">{p.descricao}</span></span>
         </label>
@@ -134,7 +134,7 @@ export function AbaPessoas(props: PropsPessoas) {
   return (
     <div className="grid gap-4">
       {autoriza ? <Botao className="justify-self-start" onClick={() => setJanela({ tipo: "autorizar" })}>+ Autorizar pessoa</Botao> : null}
-      <div className="overflow-x-auto rounded-lg border border-linha">
+      <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
         <table className="w-full text-sm">
           <caption className="sr-only">Pessoas com acesso a este condomínio</caption>
           <thead className="bg-superficie-2 text-left text-tinta-suave">

@@ -64,7 +64,7 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                 <span><strong className="font-semibold">{a.protocolo}</strong> {a.assunto ?? "Pedido privado"}</span>
                 <span className="text-xs text-tinta-suave">{escalado ? "Escalado a você. " : ""}{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
                 <span className="flex flex-wrap gap-2">
-                  <Link href={`/pedidos/pedido?id=${a.pedidoId}`} className="font-medium text-acao hover:underline"
+                  <Link href={`/pedidos/pedido?id=${a.pedidoId}`} className="font-medium text-violeta-600 hover:underline"
                     onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
                     Ver pedido {a.protocolo}
                   </Link>

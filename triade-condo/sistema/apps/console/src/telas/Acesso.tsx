@@ -23,7 +23,7 @@ export function Recuperar() {
     return (
       <div className="grid gap-4">
         <Aviso tom="info">{mensagem}</Aviso>
-        <Link href="/entrar" className="text-sm font-medium text-acao hover:underline">Voltar para entrar</Link>
+        <Link href="/entrar" className="text-sm font-medium text-violeta-600 hover:underline">Voltar para entrar</Link>
       </div>
     );
   }
@@ -33,7 +33,7 @@ export function Recuperar() {
       {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
       <CampoTexto id="email" rotulo="E-mail" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
       <Botao type="submit">Enviar link</Botao>
-      <Link href="/entrar" className="justify-self-center text-sm font-medium text-acao hover:underline">Voltar para entrar</Link>
+      <Link href="/entrar" className="justify-self-center text-sm font-medium text-violeta-600 hover:underline">Voltar para entrar</Link>
     </form>
   );
 }
@@ -53,7 +53,7 @@ export function SenhaPeloLink({ tipo }: { tipo: "redefinir" | "convite" }) {
               ? "Senha criada. Agora entre com o seu e-mail e a senha; no primeiro acesso, você cadastra o aplicativo autenticador."
               : "Senha nova salva. Por segurança, todas as sessões abertas foram encerradas."}
           </Aviso>
-          <Link href="/entrar" className="text-sm font-medium text-acao hover:underline">Entrar no Console</Link>
+          <Link href="/entrar" className="text-sm font-medium text-violeta-600 hover:underline">Entrar no Console</Link>
         </div>
       }
     />

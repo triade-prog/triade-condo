@@ -49,7 +49,7 @@ export function Pedido() {
   const [acao, setAcao] = useState<AcaoPedido | null>(null);
   const [resolver, setResolver] = useState<PendenciaPedido | null>(null);
   const [aba, setAba] = useState<IdAba>("andamento");
-  const voltar = <Link href="/pedidos" className="text-sm font-medium text-acao hover:underline">Voltar aos pedidos</Link>;
+  const voltar = <Link href="/pedidos" className="text-sm font-medium text-violeta-600 hover:underline">Voltar aos pedidos</Link>;
 
   if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Pedido</h1><Vazio titulo="Pedido não encontrado" /></div>;
   if (carga.estado === "carregando" || opcoes.estado === "carregando") return <Carregando rotulo="Carregando o pedido…" />;
@@ -175,7 +175,7 @@ export function Pedido() {
 
       {resolvidas.length ? (
         <details className="text-sm">
-          <summary className="cursor-pointer font-medium text-acao">{resolvidas.length === 1 ? "1 pendência resolvida" : `${resolvidas.length} pendências resolvidas`}</summary>
+          <summary className="cursor-pointer font-medium text-violeta-600">{resolvidas.length === 1 ? "1 pendência resolvida" : `${resolvidas.length} pendências resolvidas`}</summary>
           <ul className="mt-2 grid gap-1">
             {resolvidas.map((x) => (
               <li key={x.id} className="text-tinta-suave">

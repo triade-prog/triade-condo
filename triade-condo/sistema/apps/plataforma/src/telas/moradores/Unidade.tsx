@@ -47,7 +47,7 @@ export function Unidade() {
   const [janela, setJanela] = useState<JanelaAberta | null>(null);
   const [falha, setFalha] = useState<string | null>(null);
   const fechar = () => setJanela(null);
-  const voltar = <Link href="/moradores" className="text-sm font-medium text-acao hover:underline">Voltar às unidades</Link>;
+  const voltar = <Link href="/moradores" className="text-sm font-medium text-violeta-600 hover:underline">Voltar às unidades</Link>;
 
   if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Unidade</h1><Vazio titulo="Unidade não encontrada" /></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando a unidade…" />;
@@ -107,7 +107,7 @@ export function Unidade() {
           Inclua quem mora ou responde pela unidade: proprietário, inquilino, familiar.
         </Vazio>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-linha">
+        <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
           <table className="w-full text-sm">
             <caption className="sr-only">Pessoas de {nome}</caption>
             <thead className="bg-superficie-2 text-left text-tinta-suave">

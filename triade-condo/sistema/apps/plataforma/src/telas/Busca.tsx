@@ -42,7 +42,7 @@ export function Busca() {
                   {pedidos.dados.itens.slice(0, MOSTRAR).map((p) => (
                     <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
                       <span>
-                        <Link href={`/pedidos/pedido?id=${p.id}`} className="font-medium hover:text-acao hover:underline">
+                        <Link href={`/pedidos/pedido?id=${p.id}`} className="font-medium hover:text-violeta-600 hover:underline">
                           <span className="font-mono text-xs text-tinta-suave">{p.protocolo}</span> · {p.assunto}
                         </Link>
                         <span className="block text-xs text-tinta-suave">{[p.unidade ?? p.local, p.categoria].filter(Boolean).join(" · ")}</span>
@@ -52,7 +52,7 @@ export function Busca() {
                   ))}
                 </ul>
                 {pedidos.dados.total > MOSTRAR ? (
-                  <Link href={`/pedidos?situacao=TODOS&busca=${enc}`} className="text-sm font-medium text-acao-press hover:underline">Ver os {pedidos.dados.total} pedidos na fila</Link>
+                  <Link href={`/pedidos?situacao=TODOS&busca=${enc}`} className="text-sm font-medium text-violeta-700 hover:underline">Ver os {pedidos.dados.total} pedidos na fila</Link>
                 ) : null}
               </>
             )
@@ -72,7 +72,7 @@ export function Busca() {
                   {moradores.dados.itens.slice(0, MOSTRAR).map((m) => (
                     <li key={m.vinculoId} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
                       <span>
-                        <Link href={`/moradores/unidade?id=${m.unidadeId}`} className="font-medium hover:text-acao hover:underline">{m.nome}</Link>
+                        <Link href={`/moradores/unidade?id=${m.unidadeId}`} className="font-medium hover:text-violeta-600 hover:underline">{m.nome}</Link>
                         <span className="block text-xs text-tinta-suave">
                           {nomeDaUnidade(m.bloco, m.andar, m.unidade)} · {nomeRelacao(m.relacao)} · {mostrarTelefone(m.telefone)}
                         </span>
@@ -82,7 +82,7 @@ export function Busca() {
                   ))}
                 </ul>
                 {moradores.dados.total > MOSTRAR ? (
-                  <Link href={`/moradores?aba=moradores&busca=${enc}`} className="text-sm font-medium text-acao-press hover:underline">Ver os {moradores.dados.total} moradores</Link>
+                  <Link href={`/moradores?aba=moradores&busca=${enc}`} className="text-sm font-medium text-violeta-700 hover:underline">Ver os {moradores.dados.total} moradores</Link>
                 ) : null}
               </>
             )

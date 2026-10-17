@@ -80,7 +80,7 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
           {podeMarcar ? (
             <div className="flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="h-4 w-4 accent-[var(--color-acao)]" checked={todosMarcados}
+                <input type="checkbox" className="h-4 w-4 accent-violeta-600" checked={todosMarcados}
                   onChange={(e) => setMarcados(e.target.checked ? [...new Set([...marcados, ...daPagina])] : marcados.filter((id) => !daPagina.includes(id)))} />
                 Marcar todos desta página
               </label>
@@ -89,7 +89,7 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
               </Botao>
             </div>
           ) : null}
-          <div className="overflow-x-auto rounded-lg border border-linha">
+          <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
             <table className="w-full text-sm">
               <caption className="sr-only">{aConfirmar ? "Contatos a confirmar" : "Moradores do condomínio"}</caption>
               <thead className="bg-superficie-2 text-left text-tinta-suave">
@@ -106,7 +106,7 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
                   <tr key={i.vinculoId} className="border-t border-linha align-top">
                     {podeMarcar ? (
                       <td className="px-4 py-3">
-                        <input type="checkbox" className="h-4 w-4 accent-[var(--color-acao)]" aria-label={`Selecionar ${i.nome}`} checked={marcados.includes(i.vinculoId)}
+                        <input type="checkbox" className="h-4 w-4 accent-violeta-600" aria-label={`Selecionar ${i.nome}`} checked={marcados.includes(i.vinculoId)}
                           onChange={(e) => setMarcados(e.target.checked ? [...marcados, i.vinculoId] : marcados.filter((x) => x !== i.vinculoId))} />
                       </td>
                     ) : null}
@@ -117,7 +117,7 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <Link href={`/moradores/unidade?id=${i.unidadeId}`} className="font-medium text-acao hover:underline">{nomeDaUnidade(i.bloco, i.andar, i.unidade)}</Link>
+                      <Link href={`/moradores/unidade?id=${i.unidadeId}`} className="font-medium text-violeta-600 hover:underline">{nomeDaUnidade(i.bloco, i.andar, i.unidade)}</Link>
                     </td>
                     {aConfirmar ? null : <td className="px-4 py-3"><SeloEstado estado={i.estado} /></td>}
                     {podeMarcar ? (

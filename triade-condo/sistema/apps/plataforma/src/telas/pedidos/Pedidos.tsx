@@ -40,7 +40,7 @@ function Item({ p, agora }: { p: PedidoDaFila; agora: string }) {
   return (
     <li className="grid gap-2 border-t border-linha px-4 py-3 text-sm first:border-t-0 md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.1fr)_5.5rem_8.5rem] md:items-center md:gap-4">
       <div className="min-w-0">
-        <Link href={`/pedidos/pedido?id=${p.id}`} className="font-medium text-tinta hover:text-acao hover:underline">
+        <Link href={`/pedidos/pedido?id=${p.id}`} className="font-medium text-tinta hover:text-violeta-600 hover:underline">
           <span className="font-mono text-xs text-tinta-suave">{p.protocolo}</span> · {p.assunto}
         </Link>
         <span className="block text-xs text-tinta-suave">

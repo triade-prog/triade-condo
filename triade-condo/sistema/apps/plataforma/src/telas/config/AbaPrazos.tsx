@@ -56,7 +56,7 @@ function TabelaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
     <div className="grid gap-4">
       {semHorario ? <Aviso tom="atencao">Sem horário de atendimento definido, os prazos contam em horas corridas. Defina o horário na aba Horários.</Aviso> : null}
       {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={recarregar} /> : null}
-      <div className="overflow-x-auto rounded-lg border border-linha">
+      <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
         <table className="w-full text-sm">
           <caption className="sr-only">Prazos de retorno</caption>
           <thead className="bg-superficie-2 text-left text-tinta-suave">

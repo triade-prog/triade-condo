@@ -31,6 +31,7 @@ export function Carteira() {
   const carga = useCarregar<{ clientes: Cliente[] }>("/v1/clientes");
   const [filtro, setFiltro] = useState<(typeof FILTROS)[number]["id"]>("todos");
   const podeCadastrar = sessao.acoes.includes("console.condominios.criar");
+  const visiveis = carga.estado === "pronto" ? carga.dados.clientes.filter(FILTROS.find((f) => f.id === filtro)!.aceita) : [];
 
   return (
     <div className="grid gap-5">
@@ -53,32 +54,46 @@ export function Carteira() {
       ) : null}
       {carga.estado === "pronto" && carga.dados.clientes.length > 0 ? (
         <>
-          <div role="group" aria-label="Filtrar a carteira" className="flex flex-wrap gap-2">
+          <div role="group" aria-label="Filtrar a carteira" className="trilho justify-self-start">
             {FILTROS.map((f) => (
               <button
                 key={f.id}
                 type="button"
                 aria-pressed={filtro === f.id}
                 onClick={() => setFiltro(f.id)}
-                className="min-h-9 rounded-full border border-linha px-3 text-xs aria-pressed:border-lilas aria-pressed:bg-selecao aria-pressed:font-semibold aria-pressed:text-selecao-tinta"
+                className="chip"
               >
                 {f.texto} · {carga.dados.clientes.filter(f.aceita).length}
               </button>
             ))}
           </div>
-          <div className="overflow-x-auto rounded-lg border border-linha">
-            <table className="w-full min-w-[720px] text-sm">
+          <ul className="grid gap-2.5 md:hidden">
+            {visiveis.map((c) => (
+              <li key={c.id} className="grid gap-2 rounded-2xl border border-linha bg-superficie p-4 shadow-s1">
+                <span className="flex flex-wrap items-start justify-between gap-2">
+                  <Link href={`/clientes/${c.id}`} className="font-semibold text-tinta hover:underline">{c.nome}</Link>
+                  <SeloEstagio estagio={c.estagio} />
+                </span>
+                <span className="text-xs text-tinta-suave">{[c.cidade, c.uf].filter(Boolean).join(" · ")} · {c.funcoes.map(nomeFuncao).join(", ")}</span>
+                {c.situacoes.length ? (
+                  <span className="flex flex-wrap gap-1">{c.situacoes.map((s) => <SeloSituacao key={s} situacao={s} />)}</span>
+                ) : <span className="text-xs text-tinta-suave">Nada a tratar</span>}
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto rounded-2xl border border-linha bg-superficie shadow-s1 md:block">
+            <table className="w-full text-sm">
               <caption className="sr-only">Clientes da carteira</caption>
               <thead>
-                <tr className="text-left text-xs text-tinta-suave">
-                  <th scope="col" className="px-4 py-3 font-semibold">Condomínio</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">Estágio</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">Situações a tratar</th>
-                  <th scope="col" className="px-4 py-3 font-semibold">Sua função</th>
+                <tr className="bg-violeta-50/60 text-left text-[13px] text-tinta-suave">
+                  <th scope="col" className="px-4 py-3 font-medium">Condomínio</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Estágio</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Situações a tratar</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Sua função</th>
                 </tr>
               </thead>
               <tbody>
-                {carga.dados.clientes.filter(FILTROS.find((f) => f.id === filtro)!.aceita).map((c) => (
+                {visiveis.map((c) => (
                   <tr key={c.id} className="border-t border-linha align-top hover:bg-superficie-2">
                     <td className="px-4 py-3">
                       <Link href={`/clientes/${c.id}`} className="font-semibold text-tinta hover:underline">{c.nome}</Link>

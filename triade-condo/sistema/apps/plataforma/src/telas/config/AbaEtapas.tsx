@@ -86,8 +86,8 @@ export function AbaEtapas({ config, pode, recarregar, salvo }: PropsAba) {
         </div>
         {(Object.keys(SITUACOES_ETAPA) as (keyof typeof SITUACOES_ETAPA)[]).map((sit) => (
           <div key={sit} className="grid gap-1">
-            <h3 className="text-xs font-semibold tracking-wide text-detalhe uppercase">{SITUACOES_ETAPA[sit]}</h3>
-            <ul className="divide-y divide-linha rounded-lg border border-linha">
+            <h3 className="text-xs font-semibold tracking-wide text-tinta-suave uppercase">{SITUACOES_ETAPA[sit]}</h3>
+            <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
               {config.etapas.filter((e) => e.situacao === sit).map((e) => (
                 <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
                   <span className="flex flex-wrap items-center gap-2">
@@ -109,7 +109,7 @@ export function AbaEtapas({ config, pode, recarregar, salvo }: PropsAba) {
           <h2 id="t-modelos" className="text-lg font-medium">Modelos de resposta</h2>
           {pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "modelo", item: null })}>+ Modelo</Botao> : null}
         </div>
-        <ul className="divide-y divide-linha rounded-lg border border-linha">
+        <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
           {config.modelos.map((m) => (
             <li key={m.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
               <span className="grid gap-0.5">

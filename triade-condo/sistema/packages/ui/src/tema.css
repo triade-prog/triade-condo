@@ -42,25 +42,8 @@
   --color-linha: #e4dcf1;
   /* Contorno de campo: passa 3 : 1 sobre o branco. */
   --color-contorno: #9184aa;
-  --color-detalhe: #5e5475;
   --color-foco: #7b3bdc;
-  --color-lateral: #ffffff;
-  --color-lateral-borda: #e4dcf1;
-  --color-selecao: #f1e9fc;
-  --color-selecao-tinta: #4706a6;
-  --color-lilas: #7b3bdc;
-  --color-lilas-bruma: #f8f3ff;
   --color-acento: #ff8d01;
-
-  /* Ação nos dois sistemas (DC13). Os nomes por sistema ficam até a parte C do plano. */
-  --color-plataforma: #5808cc;
-  --color-plataforma-press: #4706a6;
-  --color-plataforma-bruma: #f8f3ff;
-  --color-console: #5808cc;
-  --color-console-press: #4706a6;
-  --color-console-bruma: #f8f3ff;
-  --color-faixa-alto: #f1e9fc;
-  --color-faixa-baixo: #f8f3ff;
 
   /* Situações: paleta Brilho. O tom forte passa AA sobre o próprio fundo. */
   --color-ok: #0b7558;
@@ -96,6 +79,7 @@
   --grad-borda-forte: linear-gradient(135deg, #7b3bdc, #ff8d01);
   --grad-violeta: radial-gradient(120% 140% at 100% 0%, #9e37f5 0%, #7018dc 28%, transparent 62%), linear-gradient(135deg, #180567 0%, #3a07a0 40%, #5808cc 100%);
   --grad-trilha: linear-gradient(165deg, #ffe0a8 0%, #ffb45c 38%, #ff8d01 72%, #f2700a 100%);
+  --grad-arco: linear-gradient(170deg, #c27bff33 0%, #7a2be026 55%, #5808cc00 100%);
   --fx-andamento: linear-gradient(180deg, #8b3df0, #5808cc);
   --fx-ok: linear-gradient(180deg, #3dbe91, #0b7558);
   --fx-atencao: linear-gradient(180deg, #f2a33a, #95560a);

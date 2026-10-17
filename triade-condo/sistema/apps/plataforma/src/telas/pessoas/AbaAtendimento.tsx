@@ -31,7 +31,7 @@ export function AbaAtendimento({ dados, recarregar, salvo }: PropsPessoas) {
     <form onSubmit={salvar} className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar} /> : null}
       <p className="text-sm text-tinta-suave">Novos pedidos caem para o responsável padrão da fila. Ele precisa estar disponível; quem sai de férias fica indisponível.</p>
-      <div className="overflow-x-auto rounded-lg border border-linha">
+      <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
         <table className="w-full text-sm">
           <caption className="sr-only">Quem atende os pedidos</caption>
           <thead className="bg-superficie-2 text-left text-tinta-suave">
@@ -47,15 +47,15 @@ export function AbaAtendimento({ dados, recarregar, salvo }: PropsPessoas) {
               <tr key={l.id} className="border-t border-linha">
                 <td className="px-4 py-3"><span className="font-medium">{l.nome}</span><span className="block text-xs text-tinta-suave">{l.papel}</span></td>
                 <td className="px-4 py-3">
-                  <input type="checkbox" className="h-5 w-5 accent-[var(--color-acao)]" checked={l.atende} aria-label={`${l.nome} atende os pedidos`}
+                  <input type="checkbox" className="h-5 w-5 accent-violeta-600" checked={l.atende} aria-label={`${l.nome} atende os pedidos`}
                     onChange={(e) => mudar(l.id, "atende", e.target.checked)} />
                 </td>
                 <td className="px-4 py-3">
-                  <input type="checkbox" className="h-5 w-5 accent-[var(--color-acao)]" checked={l.atende && l.disponivel} disabled={!l.atende}
+                  <input type="checkbox" className="h-5 w-5 accent-violeta-600" checked={l.atende && l.disponivel} disabled={!l.atende}
                     aria-label={`${l.nome} está disponível`} onChange={(e) => mudar(l.id, "disponivel", e.target.checked)} />
                 </td>
                 <td className="px-4 py-3">
-                  <input type="radio" name="padrao" className="h-5 w-5 accent-[var(--color-acao)]" checked={padraoValido === l.id} disabled={!valido(l.id)}
+                  <input type="radio" name="padrao" className="h-5 w-5 accent-violeta-600" checked={padraoValido === l.id} disabled={!valido(l.id)}
                     aria-label={`${l.nome} é o padrão da fila`} onChange={() => setPadrao(l.id)} />
                 </td>
               </tr>

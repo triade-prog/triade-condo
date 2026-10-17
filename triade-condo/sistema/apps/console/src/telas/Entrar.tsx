@@ -66,9 +66,9 @@ export function Entrar() {
       <div>
         <h1 className="text-[28px] font-normal tracking-tight">Entrar no Console</h1>
         <ol className="mt-2 flex gap-2 text-xs text-tinta-suave" aria-label="Etapas">
-          <li aria-current={etapa === "SENHA" ? "step" : undefined} className={etapa === "SENHA" ? "font-semibold text-selecao-tinta" : ""}>1 Senha</li>
+          <li aria-current={etapa === "SENHA" ? "step" : undefined} className={etapa === "SENHA" ? "font-semibold text-violeta-700" : ""}>1 Senha</li>
           <li aria-hidden="true">depois</li>
-          <li aria-current={etapa !== "SENHA" ? "step" : undefined} className={etapa !== "SENHA" ? "font-semibold text-selecao-tinta" : ""}>2 Código do autenticador</li>
+          <li aria-current={etapa !== "SENHA" ? "step" : undefined} className={etapa !== "SENHA" ? "font-semibold text-violeta-700" : ""}>2 Código do autenticador</li>
         </ol>
       </div>
       {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
@@ -78,7 +78,7 @@ export function Entrar() {
           <CampoTexto id="email" rotulo="E-mail" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <CampoTexto id="senha" rotulo="Senha" type="password" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)} />
           <Botao type="submit" disabled={enviando}>{enviando ? "Conferindo…" : "Entrar"}</Botao>
-          <Link href="/recuperar" className="justify-self-center text-sm font-medium text-acao hover:underline">Esqueci a senha</Link>
+          <Link href="/recuperar" className="justify-self-center text-sm font-medium text-violeta-600 hover:underline">Esqueci a senha</Link>
           <p className="text-xs text-tinta-suave">Só a equipe TRÍADE entra aqui. Síndico usa a Plataforma do síndico.</p>
         </form>
       ) : (

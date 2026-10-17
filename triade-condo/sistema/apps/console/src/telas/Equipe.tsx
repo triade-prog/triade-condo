@@ -20,7 +20,7 @@ function EscolhaFuncoes({ valor, aoMudar, erro }: { valor: string[]; aoMudar: (f
       <legend className="mb-1 text-[13px] font-medium">Funções</legend>
       {(Object.keys(FUNCOES_CONSOLE) as FuncaoConsole[]).map((f) => (
         <label key={f} className="flex min-h-9 items-center gap-2 text-sm">
-          <input type="checkbox" className="h-4 w-4 accent-console" checked={valor.includes(f)}
+          <input type="checkbox" className="h-4 w-4 accent-violeta-600" checked={valor.includes(f)}
             onChange={(e) => aoMudar(e.target.checked ? [...valor, f] : valor.filter((x) => x !== f))} />
           {FUNCOES_CONSOLE[f]}
         </label>
@@ -94,7 +94,7 @@ export function Equipe() {
       {equipe.estado === "carregando" ? <Carregando /> : null}
       {equipe.estado === "erro" ? <ErroCarregar texto={equipe.texto} tentarDeNovo={equipe.recarregar} /> : null}
       {equipe.estado === "pronto" ? (
-        <div className="overflow-x-auto rounded-lg border border-linha">
+        <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
           <table className="w-full min-w-[640px] text-sm">
             <caption className="sr-only">Pessoas da equipe TRÍADE</caption>
             <thead>

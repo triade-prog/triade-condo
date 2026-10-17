@@ -59,13 +59,15 @@ test.describe("Console TRÍADE · passo 1", () => {
   test("PI-01: carteira com estágio, situações a tratar e filtros", async ({ page }) => {
     await instalarApiFalsa(page);
     await page.goto(CONSOLE);
-    const linha = page.getByRole("row", { name: /Residencial Ipê/ });
+    // No computador a carteira é tabela; no celular, cartões (DC13).
+    const cliente = () => page.getByRole("row", { name: /Residencial Ipê/ }).or(page.getByRole("listitem").filter({ hasText: "Residencial Ipê" }));
+    const linha = cliente();
     await expect(linha).toContainText("Em implantação");
     await expect(linha).toContainText("Síndico ainda não convidado");
     await expect(linha).toContainText("Sem referência do contrato");
     await expect(page.getByText("Console TRÍADE · Admin").first()).toBeAttached();
     await page.getByRole("button", { name: "Ativos · 0" }).click();
-    await expect(page.getByRole("row", { name: /Residencial Ipê/ })).toHaveCount(0);
+    await expect(cliente()).toHaveCount(0);
     await page.getByRole("button", { name: "Todos · 1" }).click();
     await semErroDeAcessibilidade(page);
   });

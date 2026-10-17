@@ -104,7 +104,7 @@ export function FichaCliente() {
 
   return (
     <div className="grid gap-5">
-      <p className="text-sm"><Link href="/" className="text-acao hover:underline">Voltar à carteira de clientes</Link></p>
+      <p className="text-sm"><Link href="/" className="text-violeta-600 hover:underline">Voltar à carteira de clientes</Link></p>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-[28px] font-normal tracking-tight">{f.condominio.nome}</h1>
@@ -129,7 +129,7 @@ export function FichaCliente() {
             aria-controls={`painel-${a.id}`}
             tabIndex={aba === a.id ? 0 : -1}
             onClick={() => { setAba(a.id); setRecado(null); }}
-            className="-mb-px min-h-11 border-b-2 border-transparent px-0.5 text-sm whitespace-nowrap text-tinta-suave aria-selected:border-console aria-selected:font-semibold aria-selected:text-selecao-tinta"
+            className="-mb-px min-h-11 border-b-2 border-transparent px-0.5 text-sm whitespace-nowrap text-tinta-suave aria-selected:border-violeta-600 aria-selected:font-semibold aria-selected:text-violeta-700"
           >
             {a.texto}
           </button>

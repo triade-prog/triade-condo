@@ -222,7 +222,7 @@ function EscolherPessoa({ prefixo, rotulo, textoCadastrada, de = "", pessoa, aoM
                 <legend className="sr-only">Escolha a pessoa</legend>
                 {opcoes.map((o) => (
                   <label key={o.contatoId} className="flex items-start gap-2 rounded-md border border-linha px-3 py-2 text-sm">
-                    <input type="radio" name={`${prefixo}-contato`} className="mt-1 accent-[var(--color-acao)]" checked={pessoa.contatoId === o.contatoId}
+                    <input type="radio" name={`${prefixo}-contato`} className="mt-1 accent-violeta-600" checked={pessoa.contatoId === o.contatoId}
                       onChange={() => aoMudar({ ...pessoa, contatoId: o.contatoId, nomeEscolhido: o.nome })} />
                     <span><span className="font-medium">{o.nome}</span><span className="block text-xs text-tinta-suave">{mostrarTelefone(o.telefone)} · {nomeDaUnidade(o.bloco, o.andar, o.unidade)}</span></span>
                   </label>
@@ -480,7 +480,7 @@ function FormMudanca({ unidade, aoFechar, salvo, recarregar }: { unidade: Unidad
       <fieldset className="grid gap-3">
         <legend className="mb-1 text-[13px] font-medium">Quem entra</legend>
         {entram.map((e, i) => (
-          <div key={e.chave} className="grid gap-2 rounded-lg border border-linha p-3">
+          <div key={e.chave} className="grid gap-2 rounded-2xl border border-linha bg-superficie p-3">
             <CampoTexto id={`m-nome-${e.chave}`} rotulo={`Nome da pessoa ${i + 1}`} maxLength={120} value={e.nome} onChange={(ev) => mudar(e.chave, { nome: ev.target.value })} />
             <CampoTexto id={`m-tel-${e.chave}`} rotulo={`Telefone da pessoa ${i + 1}`} type="tel" inputMode="tel" placeholder="(61) 99999-0000" value={e.telefone}
               onChange={(ev) => mudar(e.chave, { telefone: ev.target.value })} />

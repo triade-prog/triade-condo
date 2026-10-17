@@ -135,7 +135,7 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
           {resolvido ? "Nada a fazer por enquanto." : "Inclua unidades pelo botão + Unidades."}
         </Vazio>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-linha">
+        <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
           <table className="w-full text-sm">
             <caption className="sr-only">Unidades do condomínio</caption>
             <thead className="bg-superficie-2 text-left text-tinta-suave">
@@ -150,7 +150,7 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
               {lista.map((u) => (
                 <tr key={u.id} className="border-t border-linha align-top">
                   <td className="px-4 py-3">
-                    <Link href={`/moradores/unidade?id=${u.id}`} className="font-medium text-acao hover:underline">
+                    <Link href={`/moradores/unidade?id=${u.id}`} className="font-medium text-violeta-600 hover:underline">
                       {nomeDaUnidade(filtro === u.blocoId ? null : nomeBloco(u.blocoId), andar ? null : u.andar, u.identificacao)}
                     </Link>
                   </td>
@@ -244,8 +244,8 @@ function FormEstrutura({ estrutura, aoFechar, salvo, recarregar }: { estrutura: 
       <fieldset className="grid gap-2">
         <legend className="mb-1 text-[13px] font-medium">Divisão do condomínio</legend>
         {(Object.keys(AGRUPAMENTOS) as Estrutura["agrupamento"][]).map((a) => (
-          <label key={a} className="flex items-start gap-2 rounded-md border border-linha px-3 py-2 text-sm has-[:checked]:border-acao has-[:checked]:bg-plataforma-bruma">
-            <input type="radio" name="e-agrupamento" className="mt-1 accent-[var(--color-acao)]" checked={agrupamento === a} onChange={() => setAgrupamento(a)} />
+          <label key={a} className="flex items-start gap-2 rounded-md border border-linha px-3 py-2 text-sm has-[:checked]:border-violeta-600 has-[:checked]:bg-violeta-50">
+            <input type="radio" name="e-agrupamento" className="mt-1 accent-violeta-600" checked={agrupamento === a} onChange={() => setAgrupamento(a)} />
             <span><span className="font-medium">{a === "NENHUM" ? "Sem divisão" : `Por ${AGRUPAMENTOS[a].um.toLowerCase()}`}</span>
               <span className="block text-xs text-tinta-suave">{EXPLICA[a]}</span></span>
           </label>

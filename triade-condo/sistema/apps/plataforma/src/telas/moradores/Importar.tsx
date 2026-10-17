@@ -31,7 +31,7 @@ function Passos({ atual }: { atual: 1 | 2 | 3 }) {
     <ol className="flex flex-wrap gap-2 text-sm">
       {["Escolher arquivo", "Conferir", "Importar"].map((p, i) => (
         <li key={p} aria-current={atual === i + 1 ? "step" : undefined}
-          className="rounded-full border border-linha px-3 py-1 aria-[current=step]:border-acao aria-[current=step]:bg-plataforma-bruma aria-[current=step]:font-semibold aria-[current=step]:text-acao-press">
+          className="rounded-full border border-linha px-3 py-1 aria-[current=step]:border-violeta-600 aria-[current=step]:bg-violeta-50 aria-[current=step]:font-semibold aria-[current=step]:text-violeta-700">
           {i + 1} · {p}
         </li>
       ))}
@@ -46,7 +46,7 @@ export function Importar() {
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const voltar = <Link href="/moradores" className="text-sm font-medium text-acao hover:underline">Voltar às unidades</Link>;
+  const voltar = <Link href="/moradores" className="text-sm font-medium text-violeta-600 hover:underline">Voltar às unidades</Link>;
 
   if (!pode("moradores.editar")) {
     return (
@@ -125,7 +125,7 @@ export function Importar() {
             <AvisoErro erro={erro} texto={`${textoDoErro(erro)}${linhaNaPlanilha ? ` Linha ${linhaNaPlanilha} da planilha.` : ""}`} />
           ) : null}
           {leitura.erros.length ? (
-            <div className="overflow-x-auto rounded-lg border border-linha">
+            <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
               <table className="w-full text-sm">
                 <caption className="sr-only">Linhas da planilha com erro</caption>
                 <thead className="bg-superficie-2 text-left text-tinta-suave">
@@ -171,7 +171,7 @@ export function Importar() {
             <Aviso tom="atencao">
               {plural(resultado.semProprietario, "unidade ficou", "unidades ficaram")} com inquilino e sem proprietário. Para controle, inclua o proprietário do
               imóvel em cada uma.{" "}
-              <Link href="/moradores?filtro=sem-proprietario" className="font-medium text-acao underline">Ver quais</Link>
+              <Link href="/moradores?filtro=sem-proprietario" className="font-medium text-violeta-600 underline">Ver quais</Link>
             </Aviso>
           ) : null}
           <div className="flex flex-wrap gap-2">

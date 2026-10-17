@@ -21,9 +21,9 @@ export function EscolhaCenario({ valor, aoMudar, nome = "cenario" }: { valor: Ce
       <legend className="mb-1 text-[13px] font-medium">Cenário do prédio <span className="font-normal text-tinta-suave">(opcional agora)</span></legend>
       <div className="grid gap-2 md:grid-cols-3">
         {(Object.keys(CENARIOS) as Cenario[]).map((c) => (
-          <label key={c} className="grid cursor-pointer gap-1 rounded-lg border border-linha p-3 has-checked:border-console has-checked:bg-console-bruma has-checked:ring-1 has-checked:ring-console">
+          <label key={c} className="grid cursor-pointer gap-1 rounded-2xl border border-linha bg-superficie p-3 has-checked:border-violeta-600 has-checked:bg-violeta-50 has-checked:ring-1 has-checked:ring-violeta-600">
             <span className="flex items-center gap-2 text-sm font-semibold">
-              <input type="radio" name={nome} value={c} checked={valor === c} onChange={() => aoMudar(c)} className="accent-console" />
+              <input type="radio" name={nome} value={c} checked={valor === c} onChange={() => aoMudar(c)} className="accent-violeta-600" />
               {CENARIOS[c]}
             </span>
             <span className="text-xs text-tinta-suave">{DESCRICAO_CENARIO[c]}</span>

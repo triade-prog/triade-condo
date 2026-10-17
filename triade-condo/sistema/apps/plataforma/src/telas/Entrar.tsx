@@ -47,7 +47,7 @@ export function Entrar() {
           <CampoTexto id="email" rotulo="E-mail" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <CampoTexto id="senha" rotulo="Senha" type="password" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)} />
           <Botao type="submit" disabled={enviando}>{enviando ? "Conferindo…" : "Entrar"}</Botao>
-          <Link href="/recuperar" className="justify-self-center text-sm font-medium text-acao hover:underline">Esqueci a senha</Link>
+          <Link href="/recuperar" className="justify-self-center text-sm font-medium text-violeta-600 hover:underline">Esqueci a senha</Link>
           <p className="text-xs text-tinta-suave">Morador não precisa de senha: fala com o condomínio pelo WhatsApp.</p>
         </form>
       ) : (

@@ -54,7 +54,7 @@ export function ListaHistorico({ caminho }: { caminho: string }) {
 
   return (
     <div className="grid gap-3">
-      <ol className="divide-y divide-linha rounded-lg border border-linha">
+      <ol className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
         {eventos.map((e) => (
           <li key={e.id} className="grid gap-1 px-4 py-3">
             <p className="flex flex-wrap items-center gap-2 text-xs text-tinta-suave">
