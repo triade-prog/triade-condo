@@ -61,7 +61,8 @@ export function cabecalhosSeguranca(_app: App, caminho = "/"): Record<string, st
     "X-Content-Type-Options": "nosniff",
     // Os links de redefinir senha e de convite levam o token na URL: nada de referrer ali.
     "Referrer-Policy": caminho.startsWith("/redefinir") || caminho.startsWith("/convite") ? "no-referrer" : "strict-origin-when-cross-origin",
-    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), browsing-topics=(), payment=()",
+    // A câmera só no link do prestador, para ler a etiqueta do local (MP-08).
+    "Permissions-Policy": `camera=${caminho.startsWith("/p/") ? "(self)" : "()"}, microphone=(), geolocation=(), browsing-topics=(), payment=()`,
     "Cross-Origin-Opener-Policy": "same-origin",
     "X-Frame-Options": "DENY",
     "X-Robots-Tag": "noindex, nofollow",

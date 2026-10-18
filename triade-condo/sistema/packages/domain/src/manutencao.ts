@@ -6,6 +6,7 @@ import { z } from "zod";
 import { normalizarTelefone } from "./console.ts";
 import { TIPOS_PENDENCIA } from "./pedidos.ts";
 import { mostrarDataCurta } from "./agenda.ts";
+import { descreverEventoLinkPrestador } from "./links.ts";
 
 /** Tipos (MP-03, MP-07). A preventiva nasce pela preventiva, não à mão. */
 export const TIPOS_MANUTENCAO = {
@@ -342,6 +343,6 @@ export function descreverEventoManutencao(acao: string, d: Record<string, unknow
       if (d.para === "CANCELADA") return "Cancelada";
       return SITUACOES_MANUTENCAO[d.para as SituacaoManutencao] ?? "Situação mudou";
     default:
-      return "Alteração";
+      return descreverEventoLinkPrestador(acao, d) ?? "Alteração";
   }
 }

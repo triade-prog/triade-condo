@@ -33,6 +33,10 @@ function detalhe(a: AvisoDoPainel): string {
       return "O e-mail voltou: o endereço não existe. Corrija no cadastro.";
     case "EMAIL_SPAM":
       return "Marcou o e-mail como spam e não recebe mais por e-mail.";
+    case "PRESTADOR_IMPEDIMENTO":
+      return `${a.nome ?? "O prestador"} não conseguiu fazer o serviço. Veja o motivo e combine o próximo passo.`;
+    case "PRESTADOR_TERMINOU":
+      return `${a.nome ?? "O prestador"} contou o que fez. Confira e conclua a manutenção.`;
   }
 }
 
@@ -108,11 +112,11 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                 </li>
               );
             }
-            if (a.tipo === "MANUTENCAO_RETORNO_VENCIDO") {
+            if (a.tipo === "MANUTENCAO_RETORNO_VENCIDO" || a.tipo === "PRESTADOR_IMPEDIMENTO" || a.tipo === "PRESTADOR_TERMINOU") {
               return (
                 <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
-                    <Selo tom="atencao">Manutenção</Selo>
+                    <Selo tom="atencao">{a.tipo === "MANUTENCAO_RETORNO_VENCIDO" ? "Manutenção" : "Prestador"}</Selo>
                     {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
                   </span>
                   <span className="font-semibold">{a.titulo}</span>

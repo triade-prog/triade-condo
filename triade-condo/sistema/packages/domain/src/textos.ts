@@ -103,6 +103,14 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   DOCUMENTO_NAO_VAI_POR_EMAIL: "Só vai por e-mail documento marcado \"pode ir ao morador\", não restrito e com versão em vigor.",
   PEDIDO_JA_DECIDIDO: "Este pedido já foi decidido. Atualize a página.",
   LINK_VENCIDO: "Este link venceu ou foi cancelado. Peça um novo ao condomínio.",
+  SEM_NUMERO_WHATSAPP: "O condomínio ainda não tem número de WhatsApp cadastrado. Peça à TRÍADE para cadastrar.",
+  LOCAL_REPETIDO: "Já existe uma etiqueta em uso para este local.",
+  LIMITE_ETIQUETAS: "O condomínio já tem 999 etiquetas.",
+  ETIQUETA_DESATIVADA: "Esta etiqueta está desativada e não muda mais.",
+  SEM_EXECUTOR: "Escolha antes quem executa: um prestador do cadastro ou um nome.",
+  LINK_CANCELADO: "Este link já foi cancelado.",
+  LINK_ENCERRADO: "Este link não vale mais. Peça um novo ao condomínio.",
+  LIMITE_REGISTROS: "Este link já recebeu muitos registros. Fale com o condomínio.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

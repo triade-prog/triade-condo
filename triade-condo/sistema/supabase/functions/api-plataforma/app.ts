@@ -5,6 +5,7 @@
 // Passos 6 e 7: avisos, regras de aviso, prazo do pedido e indicadores. Peça R7: agenda.
 // Peça R6: manutenção, prestadores, preventivas e vistorias. Peça R1: comunicados e documentos,
 // com o mural online e o e-mail (CD-12 a CD-14), as primeiras rotas sem conta (/v1/publico).
+// Peça R13: etiquetas por local e o link do prestador (AT-30, MP-08, V-11).
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
@@ -110,6 +111,15 @@ import {
   muralEmailSchema,
   pedirDocumentoSchema,
   trocarLinkMuralSchema,
+  cancelarLinkSchema,
+  chegadaSchema,
+  envioLinkSchema,
+  etiquetaSchema,
+  fotoPrestadorSchema,
+  impedimentoSchema,
+  linkPrestadorSchema,
+  motivoEtiquetaSchema,
+  termineiSchema,
 } from "@triade/domain";
 import { verificarArquivo, type Armazenamento } from "../_shared/arquivos.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
@@ -829,6 +839,62 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json(await rpc("plataforma_tirar_arquivo_manutencao", { ...arquivoManutencao(c), p_motivo: d.motivo }));
   });
 
+  // ---------------------------------------------------------------------------------------
+  // Links e QR (peça R13; AT-30, V-11): etiquetas por local e o link do prestador na manutenção.
+  app.get("/v1/condominio/links-qr", async (c) => c.json(await rpc("plataforma_links_qr", quem(c))));
+  app.get("/v1/condominio/locais", async (c) => c.json(await rpc("plataforma_locais", quem(c))));
+  app.get("/v1/condominio/etiquetas/:id", async (c) => c.json(await rpc("plataforma_etiqueta", { ...quem(c), p_id: idDaRota(c, "id") })));
+  async function salvarEtiqueta(c: Context<VarsPlataforma>, id: string | null) {
+    const d = await lerCorpo(c, etiquetaSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("plataforma_salvar_etiqueta", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_local: d.local, p_onde: d.onde, p_recado: d.recado, p_recado_ate: d.recadoAte,
+    });
+  }
+  app.post("/v1/condominio/etiquetas", async (c) => c.json(await salvarEtiqueta(c, null), 201));
+  app.put("/v1/condominio/etiquetas/:id", async (c) => c.json(await salvarEtiqueta(c, idDaRota(c, "id"))));
+  for (const [rota, funcao] of [["trocar-codigo", "plataforma_trocar_codigo_etiqueta"], ["desativar", "plataforma_desativar_etiqueta"]] as const) {
+    app.post(`/v1/condominio/etiquetas/:id/${rota}`, async (c) => {
+      const d = await lerCorpo(c, motivoEtiquetaSchema);
+      return c.json(await rpc(funcao, { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+    });
+  }
+
+  app.get("/v1/condominio/manutencao/:id/link-prestador", async (c) =>
+    c.json(await rpc("plataforma_link_prestador", { ...quem(c), p_manutencao: idDaRota(c, "id") })));
+  app.post("/v1/condominio/manutencao/:id/link-prestador", async (c) => {
+    const d = await lerCorpo(c, linkPrestadorSchema);
+    return c.json(await rpc("plataforma_criar_link_prestador", {
+      ...quem(c), p_manutencao: idDaRota(c, "id"), p_versao: d.versao, p_o_que_fazer: d.oQueFazer, p_quando: d.quando,
+      p_como_entrar: d.comoEntrar, p_vale_ate: d.valeAte, p_arquivos: d.arquivos,
+    }), 201);
+  });
+  app.post("/v1/condominio/manutencao/:id/link-prestador/:link/envio", async (c) => {
+    const d = await lerCorpo(c, envioLinkSchema);
+    return c.json(await rpc("plataforma_envio_link_prestador", {
+      ...quem(c), p_manutencao: idDaRota(c, "id"), p_link: idDaRota(c, "link"), p_canal: d.canal,
+    }));
+  });
+  app.post("/v1/condominio/manutencao/:id/link-prestador/:link/cancelar", async (c) => {
+    const d = await lerCorpo(c, cancelarLinkSchema);
+    return c.json(await rpc("plataforma_cancelar_link_prestador", {
+      ...quem(c), p_manutencao: idDaRota(c, "id"), p_link: idDaRota(c, "link"), p_motivo: d.motivo,
+    }));
+  });
+  app.get("/v1/condominio/manutencao/:id/fotos-prestador/:arquivo/link", async (c) => {
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("plataforma_abrir_foto_prestador", {
+      ...quem(c), p_manutencao: idDaRota(c, "id"), p_arquivo: idDaRota(c, "arquivo"),
+    });
+    const url = await armazenamentoManutencao().linkLeitura(a.caminho, VALIDADE_LINK_ARQUIVO_S, c.req.query("baixar") === "1" ? a.nome : undefined);
+    return c.json({ url, tipo: a.tipo, expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString() });
+  });
+  app.post("/v1/condominio/manutencao/:id/fotos-prestador/:arquivo/tirar", async (c) => {
+    const d = await lerCorpo(c, tirarArquivoSchema);
+    return c.json(await rpc("plataforma_tirar_foto_prestador", {
+      ...quem(c), p_manutencao: idDaRota(c, "id"), p_arquivo: idDaRota(c, "arquivo"), p_motivo: d.motivo,
+    }));
+  });
+
   // Comunicados e documentos (peça R1; CD-01, CD-02, CD-04 a CD-07, CD-09, CD-11, MP-12). O banco
   // decide quem vê e quem publica, calcula quem recebe e guarda as versões; aqui só se valida a entrada.
   const invalido = (r: { error: { issues: { path: PropertyKey[] }[] } }) =>
@@ -1117,6 +1183,69 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       return c.json(await rpc(funcao!, { p_codigo: d.codigo }));
     });
   }
+
+  // Etiqueta por local (AT-30): quem aponta a câmera vê o local e o botão do WhatsApp.
+  app.get("/v1/publico/etiqueta/:codigo", async (c) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("etiqueta", await aparelho(c));
+    return c.json(await rpc("publico_etiqueta", { p_codigo: codigo }));
+  });
+
+  // Link do prestador (V-11, MP-08): o serviço, a chegada, o "não consegui fazer", o "terminei" e as fotos.
+  const prestador = async (c: Context) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("prestador", await aparelho(c));
+    return codigo;
+  };
+  app.get("/v1/publico/p/:codigo", async (c) => c.json(await rpc("publico_prestador", { p_codigo: await prestador(c) })));
+  app.get("/v1/publico/p/:codigo/arquivos/:arquivo", async (c) => {
+    const codigo = await prestador(c);
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("publico_prestador_arquivo", {
+      p_codigo: codigo, p_arquivo: idDaRota(c, "arquivo"),
+    });
+    return c.json(await linkPublico(armazenamentoManutencao(), a));
+  });
+  app.post("/v1/publico/p/:codigo/chegada", async (c) => {
+    const codigo = await prestador(c);
+    const d = await lerCorpo(c, chegadaSchema);
+    return c.json(await rpc("publico_prestador_chegada", { p_codigo: codigo, p_etiqueta: d.etiqueta }));
+  });
+  app.post("/v1/publico/p/:codigo/fotos", async (c) => {
+    const codigo = await prestador(c);
+    const d = await lerCorpo(c, fotoPrestadorSchema);
+    const r = await rpc<{ arquivoId: string; caminho: string; tipo: string }>("publico_prestador_iniciar_foto", {
+      p_codigo: codigo, p_nome: d.nome, p_tipo: d.tipo, p_tamanho: d.tamanho,
+    });
+    return c.json({ arquivoId: r.arquivoId, envio: { url: await armazenamentoManutencao().linkEnvio(r.caminho), metodo: "PUT", tipo: r.tipo } }, 201);
+  });
+  app.post("/v1/publico/p/:codigo/fotos/:arquivo/verificar", async (c) => {
+    const codigo = await prestador(c);
+    const ids = { p_codigo: codigo, p_arquivo: idDaRota(c, "arquivo") };
+    const guarda = armazenamentoManutencao();
+    const a = await rpc<{ caminho: string; tipo: string }>("publico_prestador_foto_a_verificar", ids);
+    const bytes = await guarda.ler(a.caminho);
+    const r = bytes ? verificarArquivo(bytes, a.tipo as TipoArquivo) : { ok: false as const, motivo: "A foto não chegou. Envie de novo." };
+    if (r.ok) {
+      await guarda.gravar(a.caminho, r.bytes, a.tipo);
+      return c.json(await rpc("publico_prestador_verificar_foto", { ...ids, p_liberado: true, p_tamanho: r.bytes.length, p_motivo: null }));
+    }
+    if (bytes) await guarda.apagar(a.caminho);
+    const fim = await rpc<{ situacao: string }>("publico_prestador_verificar_foto", { ...ids, p_liberado: false, p_tamanho: null, p_motivo: r.motivo });
+    return c.json({ ...fim, motivo: r.motivo });
+  });
+  app.post("/v1/publico/p/:codigo/impedimento", async (c) => {
+    const codigo = await prestador(c);
+    const d = await lerCorpo(c, impedimentoSchema);
+    return c.json(await rpc("publico_prestador_impedimento", { p_codigo: codigo, p_impedimento: d.impedimento, p_texto: d.texto, p_fotos: d.fotos }));
+  });
+  app.post("/v1/publico/p/:codigo/terminei", async (c) => {
+    const codigo = await prestador(c);
+    const d = await lerCorpo(c, termineiSchema);
+    return c.json(await rpc("publico_prestador_terminei", {
+      p_codigo: codigo, p_texto: d.texto, p_ficou_pendente: d.ficouPendente, p_pendente_texto: d.pendenteTexto, p_quem_fez: d.quemFez,
+      p_fotos: d.fotos,
+    }));
+  });
 
   // "Parar de receber" em um clique, chamado pelo próprio programa de e-mail (sem repasse).
   app.post("/v1/email/parar/:codigo", async (c) => {
