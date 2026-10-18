@@ -6,12 +6,17 @@
 // Peça R6: manutenção, prestadores, preventivas e vistorias. Peça R1: comunicados e documentos,
 // com o mural online e o e-mail (CD-12 a CD-14), as primeiras rotas sem conta (/v1/publico).
 // Peça R13: etiquetas por local e o link do prestador (AT-30, MP-08, V-11). Peça R10: memória do
-// prédio (MP-12, MP-14, CT-02 a CT-04), com a exportação montada aqui em segundo plano.
+// prédio (MP-12, MP-14, CT-02 a CT-04), com a exportação montada aqui em segundo plano. Peça R4:
+// Ajuda e suporte (PI-17, PI-20) e a aprovação do acesso excepcional da TRÍADE (PI-11).
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
 import type { Context, MiddlewareHandler } from "hono";
 import {
+  abrirChamadoSchema,
+  decidirAcessoExcepcionalSchema,
+  iniciarImagemChamadoSchema,
+  responderChamadoSchema,
   alterarContatoSchema,
   alterarPessoaSchema,
   alterarUnidadeSchema,
@@ -162,6 +167,8 @@ export interface DepsPlataforma extends DepsSessao {
   armazenamentoDocumentos?: Armazenamento;
   /** Pacotes da exportação (peça R10, CT-04). */
   armazenamentoExportacoes?: Armazenamento;
+  /** Imagens dos chamados de suporte (peça R4, PI-20). */
+  armazenamentoSuporte?: Armazenamento;
   /** E-mail dos comunicados e documentos (CD-13, CD-14). Sem correio, a fila espera. */
   correio?: Correio;
   remetente?: string;
@@ -1490,6 +1497,73 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const p = montarExportacao().catch((erro) => registrar("erro", { funcao: "api-plataforma", rota: "exportacao", erro }));
     (deps.aoFundo ?? (() => {}))(p);
   }
+
+  // Ajuda e suporte (peça R4; PI-17, PI-20): chamados de suporte técnico com até 3 imagens,
+  // com as regras das fotos dos pedidos.
+  app.get("/v1/condominio/chamados", async (c) => c.json(await rpc("plataforma_chamados", quem(c))));
+
+  app.post("/v1/condominio/chamados", async (c) => {
+    const d = await lerCorpo(c, abrirChamadoSchema);
+    return c.json(await rpc("plataforma_abrir_chamado", { ...quem(c), p_tipo: d.tipo, p_area: d.area, p_titulo: d.titulo, p_texto: d.texto }), 201);
+  });
+
+  app.get("/v1/condominio/chamados/:id", async (c) => c.json(await rpc("plataforma_chamado", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  app.post("/v1/condominio/chamados/:id/responder", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, responderChamadoSchema);
+    return c.json(await rpc("plataforma_responder_chamado", { ...quem(c), p_id: id, p_texto: d.texto }), 201);
+  });
+
+  app.post("/v1/condominio/chamados/:id/resolver", async (c) =>
+    c.json(await rpc("plataforma_resolver_chamado", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  const suporte = () => {
+    if (!deps.armazenamentoSuporte) throw new ErroDominio("INTERNAL_ERROR");
+    return deps.armazenamentoSuporte;
+  };
+  const imagem = (c: Context<VarsPlataforma>) => ({ ...quem(c), p_id: idDaRota(c, "id"), p_arquivo: idDaRota(c, "arquivo") });
+
+  app.post("/v1/condominio/chamados/:id/imagens", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, iniciarImagemChamadoSchema);
+    const r = await rpc<{ arquivoId: string; caminho: string; tipo: string }>("plataforma_iniciar_arquivo_chamado", {
+      ...quem(c), p_id: id, p_nome: d.nome, p_tipo: d.tipo, p_tamanho: d.tamanho,
+    });
+    return c.json({ arquivoId: r.arquivoId, envio: { url: await suporte().linkEnvio(r.caminho), metodo: "PUT", tipo: r.tipo } }, 201);
+  });
+
+  app.post("/v1/condominio/chamados/:id/imagens/:arquivo/verificar", async (c) => {
+    const ids = imagem(c);
+    const a = await rpc<{ caminho: string; tipo: string }>("plataforma_arquivo_chamado_a_verificar", ids);
+    const bytes = await suporte().ler(a.caminho);
+    const r = bytes ? verificarArquivo(bytes, a.tipo as TipoArquivo) : { ok: false as const, motivo: "A imagem não chegou. Envie de novo." };
+    if (r.ok) {
+      await suporte().gravar(a.caminho, r.bytes, a.tipo);
+      return c.json(await rpc("plataforma_verificar_arquivo_chamado", { ...ids, p_liberado: true, p_tamanho: r.bytes.length, p_motivo: null }));
+    }
+    if (bytes) await suporte().apagar(a.caminho);
+    const fim = await rpc<{ situacao: string }>("plataforma_verificar_arquivo_chamado", { ...ids, p_liberado: false, p_tamanho: null, p_motivo: r.motivo });
+    return c.json({ ...fim, motivo: r.motivo });
+  });
+
+  app.get("/v1/condominio/chamados/:id/imagens/:arquivo/link", async (c) => {
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("plataforma_abrir_arquivo_chamado", imagem(c));
+    const url = await suporte().linkLeitura(a.caminho, VALIDADE_LINK_ARQUIVO_S);
+    return c.json({ url, tipo: a.tipo, expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString() });
+  });
+
+  // Acesso excepcional da TRÍADE (PI-11): só o síndico aprova, recusa ou encerra.
+  app.get("/v1/condominio/acessos-excepcionais", async (c) => c.json({ acessos: await rpc("plataforma_acessos_excepcionais", quem(c)) }));
+
+  app.post("/v1/condominio/acessos-excepcionais/:id/decidir", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, decidirAcessoExcepcionalSchema);
+    return c.json(await rpc("plataforma_decidir_acesso_excepcional", { ...quem(c), p_id: id, p_aprovar: d.aprovar, p_motivo: d.motivo }));
+  });
+
+  app.post("/v1/condominio/acessos-excepcionais/:id/encerrar", async (c) =>
+    c.json(await rpc("plataforma_encerrar_acesso_excepcional", { ...quem(c), p_id: idDaRota(c, "id") })));
 
   return app;
 }

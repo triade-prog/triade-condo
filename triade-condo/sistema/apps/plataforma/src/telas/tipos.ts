@@ -223,7 +223,8 @@ export interface AvisoDoPainel {
   id: string;
   tipo: "RETORNO_VENCIDO" | "ESCALADO_SINDICO" | "ESCALADO_SUBSTITUTO" | "SEM_RESPONSAVEL" | "PENDENCIA_PARADA" | "MANUTENCAO_RETORNO_VENCIDO"
     | "DOCUMENTO_VENCENDO" | "DOCUMENTO_PEDIDO" | "EMAIL_DEVOLVIDO" | "EMAIL_SPAM" | "PRESTADOR_IMPEDIMENTO" | "PRESTADOR_TERMINOU"
-    | "PRONTUARIO_VENCE" | "PRONTUARIO_VENCEU" | "EXPORTACAO_PRONTA" | "EXPORTACAO_FALHOU";
+    | "PRONTUARIO_VENCE" | "PRONTUARIO_VENCEU" | "EXPORTACAO_PRONTA" | "EXPORTACAO_FALHOU"
+    | "ENTREGA" | "CHAMADO_RESPOSTA" | "ACESSO_PEDIDO";
   pedidoId?: string;
   protocolo?: string;
   assunto?: string | null;
@@ -240,6 +241,11 @@ export interface AvisoDoPainel {
   /** No aviso do prontuário e da exportação (peça R10). */
   itemId?: string;
   exportacaoId?: string;
+  /** Nos avisos da TRÍADE (peça R4): o recado da entrega, o chamado respondido, o pedido de acesso. */
+  texto?: string;
+  chamadoId?: string;
+  numero?: number;
+  acessoId?: string;
   responsavel?: string | null;
   referencia?: string;
   criadoEm: string;

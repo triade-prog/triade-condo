@@ -109,15 +109,9 @@ test.describe("Console TRÍADE · passo 1", () => {
     expect(estado.clientes[0]!.condominio.endereco).toBe("SQS 308 bloco D");
   });
 
-  test("CF-02 e PI-01: convidar o síndico e concluir a implantação", async ({ page }) => {
+  test("CF-02: convidar o síndico", async ({ page }) => {
     await instalarApiFalsa(page);
     await page.goto(`${CONSOLE}/clientes/${IPE}`);
-    await page.getByRole("button", { name: "Concluir implantação" }).click();
-    const dialogo = page.getByRole("dialog", { name: "Concluir implantação" });
-    await expect(dialogo).toContainText("convide o síndico antes");
-    await expect(dialogo.getByRole("button", { name: "Concluir implantação" })).toBeDisabled();
-    await dialogo.getByRole("button", { name: "Cancelar" }).click();
-
     await page.getByRole("tab", { name: "Síndico" }).click();
     await expect(page.getByText("Nenhum síndico convidado ainda")).toBeVisible();
     await page.getByRole("button", { name: "Convidar síndico" }).click();
@@ -128,11 +122,7 @@ test.describe("Console TRÍADE · passo 1", () => {
     await convite.getByRole("button", { name: "Enviar convite" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Convite enviado" })).toBeVisible();
     await expect(page.getByRole("tabpanel")).toContainText("Ana Souza");
-
-    await page.getByRole("button", { name: "Concluir implantação" }).click();
-    await page.getByLabel("O que foi feito (opcional)").fill("A síndica fez o primeiro acesso");
-    await page.getByRole("dialog").getByRole("button", { name: "Concluir implantação" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Implantação concluída" })).toBeVisible();
+    // A conclusão da implantação agora é a entrega, na aba Implantação (peça R4).
     await expect(page.getByRole("button", { name: "Concluir implantação" })).toHaveCount(0);
   });
 

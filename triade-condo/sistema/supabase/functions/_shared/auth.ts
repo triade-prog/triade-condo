@@ -195,12 +195,16 @@ export function authGoTrue(url: string, apiKey: string, buscar: typeof fetch = f
  */
 export interface AdminAuth {
   convidar(email: string, voltarPara: string): Promise<{ userId: string; contaNova: boolean }>;
+  /** E-mail já cadastrado da conta (suporte de acesso, PI-09): nunca muda por aqui. */
+  emailDe(userId: string): Promise<string | null>;
+  /** Tira os autenticadores da conta (autenticador perdido, PI-09). Devolve quantos saíram. */
+  removerAutenticadores(userId: string): Promise<number>;
 }
 
 export function adminGoTrue(url: string, chaveServico: string, buscar: typeof fetch = fetch): AdminAuth {
-  async function chamar(caminho: string, corpo?: unknown): Promise<Response> {
+  async function chamar(caminho: string, corpo?: unknown, metodo?: string): Promise<Response> {
     return await buscar(`${url}/auth/v1${caminho}`, {
-      method: corpo === undefined ? "GET" : "POST",
+      method: metodo ?? (corpo === undefined ? "GET" : "POST"),
       headers: { apikey: chaveServico, authorization: `Bearer ${chaveServico}`, "content-type": "application/json" },
       body: corpo === undefined ? undefined : JSON.stringify(corpo),
       signal: AbortSignal.timeout(8000),
@@ -227,6 +231,22 @@ export function adminGoTrue(url: string, chaveServico: string, buscar: typeof fe
       if (!r.ok) throw new Error(`Auth respondeu ${r.status}`);
       const u = (await r.json()) as { id: string };
       return { userId: u.id, contaNova: true };
+    },
+    async emailDe(userId) {
+      const r = await chamar(`/admin/users/${encodeURIComponent(userId)}`);
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error(`Auth respondeu ${r.status}`);
+      return ((await r.json()) as { email?: string }).email ?? null;
+    },
+    async removerAutenticadores(userId) {
+      const r = await chamar(`/admin/users/${encodeURIComponent(userId)}/factors`);
+      if (!r.ok) throw new Error(`Auth respondeu ${r.status}`);
+      const fatores = (await r.json()) as { id: string }[];
+      for (const f of fatores) {
+        const x = await chamar(`/admin/users/${encodeURIComponent(userId)}/factors/${encodeURIComponent(f.id)}`, undefined, "DELETE");
+        if (!x.ok && x.status !== 404) throw new Error(`Auth respondeu ${x.status}`);
+      }
+      return fatores.length;
     },
   };
 }

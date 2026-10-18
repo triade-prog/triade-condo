@@ -21,7 +21,7 @@ export interface Ficha {
     criadoEm: string;
   };
   cliente: { estagio: string; referenciaContrato: string | null; versao: number };
-  sindicos: { vinculoId: string; pessoaId: string; nome: string; desde: string }[];
+  sindicos: { vinculoId: string; pessoaId: string; nome: string; desde: string; versao: number }[];
   equipe: { vinculoId: string; pessoaId: string; nome: string; funcao: string; desde: string; versao: number }[];
   situacoes: string[];
   /** Exportações que o síndico pediu (peça R10, CT-04): a TRÍADE fica sabendo. */

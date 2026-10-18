@@ -11,6 +11,7 @@ import { criarManutencao, resumoManutencao, rotasManutencao } from "./api-falsa-
 import { criarComunicados, resumoComunicados, rotasComunicados, rotasPublicas } from "./api-falsa-comunicados";
 import { criarLinks, rotasLinks, rotasLinksPublicas } from "./api-falsa-links";
 import { criarMemoria, manualDoMural, resumoProntuario, rotasMemoria } from "./api-falsa-memoria";
+import { criarSuporte, resumoAcessos, rotasSuporte } from "./api-falsa-suporte";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -24,6 +25,8 @@ export interface OpcoesPlataforma {
   quem?: "SINDICA" | "SECRETARIA" | "SO_VE";
   /** Com dois condomínios, a pessoa escolhe em qual entrar (MU-04). */
   doisCondominios?: boolean;
+  /** A TRÍADE pediu acesso excepcional e espera a síndica (peça R4, PI-11). */
+  comAcessoPedido?: boolean;
   /** A síndica e a secretária já atendem os pedidos (passo 4). */
   comAtendimento?: boolean;
 }
@@ -91,6 +94,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const comunicados = criarComunicados(estado.pedidos[0]!.id);
   const links = criarLinks();
   const memoria = criarMemoria();
+  const suporte = criarSuporte();
+  if (!opcoes.comAcessoPedido) suporte.acessos = [];
   if (opcoes.comAtendimento) {
     for (const p of estado.pessoas) { p.responsavel = true; p.disponivel = true; }
     estado.responsavelPadrao = V_ANA;
@@ -100,9 +105,10 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const acoes = () => quem === "SINDICA"
     ? ["agenda.editar", "agenda.ver", "atendimento.responsaveis", "comunicados.publicar", "comunicados.ver", "config.editar", "config.ver",
       "documentos.editar", "documentos.restritos", "documentos.ver", "manutencao.editar", "manutencao.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pedidos.atualizar", "pedidos.concluir",
-      "memoria.dossie", "memoria.exportar", "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver"]
-    : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver"]
-      : ["agenda.ver", "comunicados.ver", "config.ver", "documentos.ver", "pedidos.ver", "plataforma.painel.ver"];
+      "memoria.dossie", "memoria.exportar", "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver",
+      "suporte.chamados", "acesso_excepcional.aprovar"]
+    : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"]
+      : ["agenda.ver", "comunicados.ver", "config.ver", "documentos.ver", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"];
   const pendencias = () => {
     const p: string[] = [];
     if (estado.config.horarios.ATENDIMENTO.intervalos.length === 0) p.push("SEM_HORARIO_ATENDIMENTO");
@@ -170,6 +176,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         ...(acoes().includes("manutencao.ver") ? { manutencao: resumoManutencao(manutencao) } : {}),
         ...(acoes().includes("comunicados.ver") || acoes().includes("documentos.ver") ? { comunicados: resumoComunicados(comunicados, pode) } : {}),
         ...(acoes().includes("documentos.ver") ? { memoria: { prontuario: resumoProntuario(memoria) } } : {}),
+        ...(acoes().includes("acesso_excepcional.aprovar") ? { acessosExcepcionais: resumoAcessos(suporte) } : {}),
         avisosNaoVistos: naoVistos(estado.avisos, eu.vinculo),
       } });
     }
@@ -186,6 +193,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (naAgenda !== null) return naAgenda;
     const nosComunicados = await rotasComunicados(route, comunicados, { moradores: estado.moradores, pedidos: estado.pedidos, eu }, caminho, metodo, corpo, url, pode);
     if (nosComunicados !== null) return nosComunicados;
+    const noSuporte = await rotasSuporte(route, suporte, caminho, metodo, corpo, pode, eu);
+    if (noSuporte !== null) return noSuporte;
     const naMemoria = await rotasMemoria(route, memoria, caminho, metodo, corpo, url, pode, eu);
     if (naMemoria !== null) return naMemoria;
     const nosLinks = await rotasLinks(route, links, manutencao, caminho, metodo, corpo, pode, eu);
@@ -302,5 +311,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     }
     return erro(route, 404, "NOT_FOUND");
   });
-  return Object.assign(estado, { links, memoria });
+  return Object.assign(estado, { links, memoria, suporte });
 }

@@ -34,6 +34,7 @@ export const SITUACOES = {
   SEM_NUMERO_WHATSAPP: "Sem número institucional de WhatsApp",
   SEM_CONTATO: "Sem contato na ficha",
   SEM_CONTRATO: "Sem referência do contrato",
+  PENDENCIA_VENCIDA: "Pendência de implantação vencida",
 } as const;
 export type Situacao = keyof typeof SITUACOES;
 

@@ -5,21 +5,37 @@
 
 import type { Context } from "hono";
 import {
+  abrirSuporteAcessoSchema,
   atribuirSchema,
+  atualizarChamadoSchema,
   cadastrarMembroSchema,
   cenarioSchema,
   contratoSchema,
   convidarPessoaSchema,
   COOKIES_CONSOLE,
   criarCondominioSchema,
+  decidirSuporteAcessoSchema,
+  entregaSchema,
   ErroDominio,
   estagioSchema,
+  etapaImplantacaoSchema,
   fichaSchema,
+  FILTROS_CHAMADO,
   funcoesSchema,
+  mascararEmail,
   notaSchema,
+  pedirAcessoExcepcionalSchema,
+  pendenciaImplantacaoSchema,
+  resolverPendenciaImplantacaoSchema,
+  responderChamadoSchema,
+  trocaSindicoSchema,
+  VALIDADE_LINK_ARQUIVO_S,
+  verificarSuporteAcessoSchema,
   versaoSchema,
 } from "@triade/domain";
+import type { Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
+import { registrar } from "../_shared/registro.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
@@ -30,7 +46,17 @@ export interface DepsConsole extends DepsSessao {
   urlApp: string;
   /** Endereço da Plataforma (convite do síndico). */
   urlPlataforma: string;
+  /** Imagens dos chamados de suporte (bucket "suporte"), só leitura no Console. */
+  armazenamentoSuporte?: Armazenamento;
 }
+
+/** Área do acesso excepcional na rota (PI-11). */
+const AREAS_ROTA: Record<string, "PEDIDOS" | "MORADORES" | "COMUNICADOS" | "MANUTENCAO"> = {
+  pedidos: "PEDIDOS",
+  moradores: "MORADORES",
+  comunicados: "COMUNICADOS",
+  manutencao: "MANUTENCAO",
+};
 
 interface LinhaCarteira {
   condominio_id: string;
@@ -105,7 +131,8 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   app.get("/v1/saude", (c) => c.json({ ok: true, servico: "api-console" }));
   sessao.rotas(app);
 
-  for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*"]) app.use(rota, sessao.exigirSessao);
+  for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/contagens", "/v1/implantacoes",
+                      "/v1/suporte-acesso", "/v1/chamados"]) app.use(rota, sessao.exigirSessao);
   const pessoa = (c: Context<VarsSessao>) => c.get("sessao").pessoaId;
 
   // Quem está no Console: nome, funções e o que pode fazer fora de um cliente.
@@ -256,6 +283,212 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   app.get("/v1/equipe/historico", async (c) => {
     const linhas = await rpc<LinhaHistorico[]>("console_historico_equipe", { p_pessoa: pessoa(c), ...paginacao(c) });
     return c.json({ eventos: linhas.map(historico) });
+  });
+
+
+  // ---------------------------------------------------------------------------------------
+  // Peça R4: implantação, troca de síndico, suporte de acesso, acesso excepcional e chamados.
+  // A permissão de cada função interna (PI-10) é conferida no banco.
+
+  app.get("/v1/contagens", async (c) => c.json(await rpc("console_contagens", { p_pessoa: pessoa(c) })));
+
+  // Implantação (PI-04, PI-05, SH-01).
+  app.get("/v1/implantacoes", async (c) => c.json({ implantacoes: await rpc("console_implantacoes", { p_pessoa: pessoa(c) }) }));
+
+  app.get("/v1/clientes/:id/implantacao", async (c) =>
+    c.json(await rpc("console_implantacao", { p_pessoa: pessoa(c), p_condominio: idDaRota(c, "id") })));
+
+  app.put("/v1/clientes/:id/implantacao/etapas/:numero", async (c) => {
+    const id = idDaRota(c, "id");
+    const numero = Number(c.req.param("numero"));
+    if (!Number.isInteger(numero) || numero < 1 || numero > 20) throw new ErroDominio("NOT_FOUND");
+    const d = await lerCorpo(c, etapaImplantacaoSchema);
+    return c.json({
+      versao: await rpc<number>("console_salvar_etapa", {
+        p_pessoa: pessoa(c), p_condominio: id, p_numero: numero, p_versao: d.versao, p_situacao: d.situacao,
+        p_responsavel: d.responsavelId, p_substituto: d.substitutoId, p_feito: d.feito, p_motivo: d.motivo,
+        p_modalidade: d.modalidade, p_quando: d.quando,
+      }),
+    });
+  });
+
+  async function salvarPendencia(c: Context<VarsSessao>, pendencia: string | null) {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, pendenciaImplantacaoSchema);
+    if (pendencia && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc<{ id: string; versao: number }>("console_salvar_pendencia", {
+      p_pessoa: pessoa(c), p_condominio: id, p_id: pendencia, p_versao: d.versao, p_etapa: d.etapa, p_texto: d.texto,
+      p_com_quem: d.comQuem, p_responsavel: d.responsavelId, p_proximo_retorno: d.proximoRetorno,
+    });
+  }
+  app.post("/v1/clientes/:id/implantacao/pendencias", async (c) => c.json(await salvarPendencia(c, null), 201));
+  app.put("/v1/clientes/:id/implantacao/pendencias/:pendencia", async (c) => c.json(await salvarPendencia(c, idDaRota(c, "pendencia"))));
+
+  app.post("/v1/clientes/:id/implantacao/pendencias/:pendencia/resolver", async (c) => {
+    const id = idDaRota(c, "id");
+    const pendencia = idDaRota(c, "pendencia");
+    const d = await lerCorpo(c, resolverPendenciaImplantacaoSchema);
+    return c.json({
+      versao: await rpc<number>("console_resolver_pendencia", {
+        p_pessoa: pessoa(c), p_condominio: id, p_id: pendencia, p_versao: d.versao, p_resolucao: d.resolucao,
+      }),
+    });
+  });
+
+  app.post("/v1/clientes/:id/implantacao/entregar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, entregaSchema);
+    return c.json({ versao: await rpc<number>("console_entregar_implantacao", { p_pessoa: pessoa(c), p_condominio: id, p_versao: d.versao, p_recado: d.recado }) });
+  });
+
+  // Troca de síndico (CT-01). Confere a permissão antes do convite; a troca é uma só operação no banco.
+  app.post("/v1/clientes/:id/troca-sindico", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, trocaSindicoSchema);
+    const ficha = await rpc<{ permissoes: string[] }>("console_ficha", { p_pessoa: pessoa(c), p_condominio: id });
+    if (!ficha.permissoes.includes("console.troca.fazer")) throw new ErroDominio("FORBIDDEN");
+    const conta = await convidar(pessoa(c), d.email, deps.urlPlataforma);
+    const r = await rpc<{ trocaId: string; vinculoId: string; autorizados: unknown[] }>("console_trocar_sindico", {
+      p_pessoa: pessoa(c), p_condominio: id, p_vinculo: d.vinculoId, p_versao: d.versao, p_novo: conta.userId, p_nome: d.nome,
+      p_pedido_por: d.pedidoPor, p_canal: d.canal, p_conferido: d.conferido,
+    });
+    return c.json({ ...r, contaNova: conta.contaNova }, 201);
+  });
+
+  app.get("/v1/clientes/:id/trocas", async (c) =>
+    c.json({ trocas: await rpc("console_trocas", { p_pessoa: pessoa(c), p_condominio: idDaRota(c, "id") }) }));
+
+  // Suporte de acesso (PI-09). A equipe nunca vê nem escolhe senha: o link vai para o e-mail
+  // já cadastrado, que aparece mascarado.
+  app.get("/v1/suporte-acesso", async (c) => c.json({ pedidos: await rpc("console_suportes_acesso", { p_pessoa: pessoa(c) }) }));
+
+  app.get("/v1/clientes/:id/pessoas-plataforma", async (c) =>
+    c.json({ pessoas: await rpc("console_pessoas_plataforma", { p_pessoa: pessoa(c), p_condominio: idDaRota(c, "id") }) }));
+
+  app.post("/v1/clientes/:id/suporte-acesso", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, abrirSuporteAcessoSchema);
+    return c.json({
+      id: await rpc<string>("console_abrir_suporte_acesso", {
+        p_pessoa: pessoa(c), p_condominio: id, p_alvo: d.pessoaId, p_tipo: d.tipo, p_canal: d.canal, p_descricao: d.descricao,
+      }),
+    }, 201);
+  });
+
+  const pedidoSuporte = (c: Context<VarsSessao>) => ({ p_pessoa: pessoa(c), p_condominio: idDaRota(c, "id"), p_id: idDaRota(c, "pedido") });
+
+  app.get("/v1/clientes/:id/suporte-acesso/:pedido", async (c) => {
+    const r = await rpc<{ pessoaId: string }>("console_suporte_acesso", pedidoSuporte(c));
+    const email = await deps.admin.emailDe(r.pessoaId);
+    return c.json({ ...r, emailMascarado: email ? mascararEmail(email) : null });
+  });
+
+  app.put("/v1/clientes/:id/suporte-acesso/:pedido/verificar", async (c) => {
+    const ids = pedidoSuporte(c);
+    const d = await lerCorpo(c, verificarSuporteAcessoSchema);
+    return c.json({
+      versao: await rpc<number>("console_verificar_suporte_acesso", {
+        ...ids, p_versao: d.versao, p_tipo: d.tipo, p_dados_conferidos: d.dadosConferidos, p_canal_conhecido: d.canalConhecido,
+      }),
+    });
+  });
+
+  app.post("/v1/clientes/:id/suporte-acesso/:pedido/decidir", async (c) => {
+    const ids = pedidoSuporte(c);
+    const d = await lerCorpo(c, decidirSuporteAcessoSchema);
+    const r = await rpc<{ situacao: string; pessoaId: string; versao: number }>("console_decidir_suporte_acesso", {
+      ...ids, p_versao: d.versao, p_decisao: d.decisao, p_motivo: d.motivo,
+    });
+    if (r.situacao !== "ENVIADO" && r.situacao !== "AUTENTICADOR_TIRADO") return c.json(r);
+    try {
+      if (r.situacao === "ENVIADO") {
+        const email = await deps.admin.emailDe(r.pessoaId);
+        if (!email) throw new Error("conta sem e-mail");
+        await deps.auth.pedirRecuperacao(email, `${deps.urlPlataforma}/redefinir`);
+      } else {
+        await deps.admin.removerAutenticadores(r.pessoaId);
+      }
+    } catch (e) {
+      registrar("erro", { funcao: "api-console", rota: "suporte-acesso", erro: e });
+      await rpc("console_falha_suporte_acesso", ids);
+      throw new ErroDominio("INTERNAL_ERROR");
+    }
+    return c.json(r);
+  });
+
+  // Acesso excepcional (PI-11): pedido ao síndico; com a aprovação, só leitura e cada abertura
+  // registrada no histórico do condomínio.
+  app.get("/v1/clientes/:id/acessos-excepcionais", async (c) =>
+    c.json(await rpc("console_acessos_excepcionais", { p_pessoa: pessoa(c), p_condominio: idDaRota(c, "id") })));
+
+  app.post("/v1/clientes/:id/acessos-excepcionais", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, pedirAcessoExcepcionalSchema);
+    return c.json({
+      id: await rpc<string>("console_pedir_acesso_excepcional", {
+        p_pessoa: pessoa(c), p_condominio: id, p_motivo: d.motivo, p_areas: d.areas, p_horas: d.horas, p_chamado: d.chamadoId,
+      }),
+    }, 201);
+  });
+
+  app.get("/v1/clientes/:id/excepcional/:area", async (c) => {
+    const id = idDaRota(c, "id");
+    const area = AREAS_ROTA[c.req.param("area") ?? ""];
+    if (!area) throw new ErroDominio("NOT_FOUND");
+    const quem = { p_pessoa: pessoa(c), p_condominio: id };
+    const acesso = await rpc<{ validoAte: string }>("console_ler_excepcional", { ...quem, p_area: area });
+    const pagina = Math.max(1, Number(c.req.query("pagina")) || 1);
+    const busca = (c.req.query("busca") ?? "").trim().slice(0, 60) || null;
+    let dados: unknown;
+    if (area === "PEDIDOS") {
+      dados = await rpc("plataforma_pedidos", {
+        ...quem, p_situacao: "TODOS", p_responsavel: null, p_prioridade: null, p_categoria: null, p_atencao: null, p_busca: busca, p_pagina: pagina,
+      });
+    } else if (area === "MORADORES") {
+      dados = await rpc("plataforma_moradores", { ...quem, p_busca: busca, p_estado: null, p_pagina: pagina });
+    } else if (area === "MANUTENCAO") {
+      dados = await rpc("plataforma_manutencoes", {
+        ...quem, p_situacao: null, p_tipo: null, p_prestador: null, p_atencao: null, p_busca: busca, p_pagina: pagina,
+      });
+    } else {
+      dados = {
+        comunicados: await rpc("plataforma_comunicados", { ...quem, p_filtro: null, p_assunto: null, p_atencao: null, p_busca: busca, p_pagina: pagina }),
+        documentos: await rpc("plataforma_documentos", { ...quem, p_filtro: null, p_busca: busca }),
+      };
+    }
+    return c.json({ area, validoAte: acesso.validoAte, dados });
+  });
+
+  // Chamados (PI-17, PI-20).
+  app.get("/v1/chamados", async (c) => {
+    const filtro = c.req.query("filtro") ?? "ABERTOS";
+    if (!(filtro in FILTROS_CHAMADO)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["filtro"] });
+    return c.json({ chamados: await rpc("console_chamados", { p_pessoa: pessoa(c), p_filtro: filtro }) });
+  });
+
+  const chamado = (c: Context<VarsSessao>) => ({ p_pessoa: pessoa(c), p_condominio: idDaRota(c, "id"), p_id: idDaRota(c, "chamado") });
+
+  app.get("/v1/clientes/:id/chamados/:chamado", async (c) => c.json(await rpc("console_chamado", chamado(c))));
+
+  app.post("/v1/clientes/:id/chamados/:chamado/responder", async (c) => {
+    const ids = chamado(c);
+    const d = await lerCorpo(c, responderChamadoSchema);
+    return c.json(await rpc("console_responder_chamado", { ...ids, p_texto: d.texto, p_interna: d.interna }), 201);
+  });
+
+  app.put("/v1/clientes/:id/chamados/:chamado", async (c) => {
+    const ids = chamado(c);
+    const d = await lerCorpo(c, atualizarChamadoSchema);
+    return c.json({
+      versao: await rpc<number>("console_atualizar_chamado", { ...ids, p_versao: d.versao, p_situacao: d.situacao, p_responsavel: d.responsavelId }),
+    });
+  });
+
+  app.get("/v1/clientes/:id/chamados/:chamado/imagens/:arquivo/link", async (c) => {
+    if (!deps.armazenamentoSuporte) throw new ErroDominio("INTERNAL_ERROR");
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("console_abrir_arquivo_chamado", { ...chamado(c), p_arquivo: idDaRota(c, "arquivo") });
+    const url = await deps.armazenamentoSuporte.linkLeitura(a.caminho, VALIDADE_LINK_ARQUIVO_S);
+    return c.json({ url, tipo: a.tipo, expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString() });
   });
 
   return app;

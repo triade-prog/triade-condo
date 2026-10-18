@@ -1,6 +1,7 @@
 // Entrada da Edge Function api-console. As dependências reais ficam aqui; os testes montam o
 // mesmo app com dependências falsas.
 
+import { armazenamentoSupabase } from "../_shared/arquivos.ts";
 import { adminGoTrue, authGoTrue } from "../_shared/auth.ts";
 import { bancoPostgrest } from "../_shared/banco.ts";
 import { criarApiConsole } from "./app.ts";
@@ -19,6 +20,7 @@ const app = criarApiConsole(Deno.env.get("REPASSE_SEGREDO"), {
   admin: adminGoTrue(url, chaveServico),
   urlApp: exigir("CONSOLE_URL"),
   urlPlataforma: exigir("PLATAFORMA_URL"),
+  armazenamentoSuporte: armazenamentoSupabase(url, chaveServico, fetch, "suporte"),
 });
 
 Deno.serve(app.fetch);
