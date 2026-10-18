@@ -19,6 +19,7 @@ import { ArquivosManutencao } from "./ArquivosManutencao.tsx";
 import { executorParaApi, nomeExecutor, nomePendencia, opcoesExecutor, PartesManutencao, SeloManutencao, textoTipo } from "./comum.tsx";
 import { FormManutencao } from "./FormManutencao.tsx";
 import { MarcarVisita } from "./MarcarVisita.tsx";
+import { LinkPrestador } from "./LinkPrestador.tsx";
 import { NosComunicados } from "../comunicados/NosComunicados.tsx";
 
 type Acao =
@@ -379,6 +380,8 @@ export function Manutencao() {
               </>
             ) : <p className="text-sm">{nomeExecutor(m.executor)}</p>}
           </section>
+
+          <LinkPrestador manutencaoId={m.id} titulo={m.titulo} versao={m.versao} recarregarManutencao={carga.recarregar} />
         </div>
       </div>
 

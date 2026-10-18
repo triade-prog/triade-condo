@@ -11,6 +11,7 @@ import type { OpcoesPedidos } from "../tipos.ts";
 import { Caixa, Escolha, nomeRelacao } from "../moradores/comum.tsx";
 import { opcoesCanal } from "./comum.tsx";
 import { EscolherArquivos, enviarArquivos, type ItemEnvio } from "./Arquivos.tsx";
+import { ListaLocais } from "../Locais.tsx";
 
 interface ContatoConfirmado { contatoId: string; nome: string; relacao: string; principal: boolean }
 
@@ -93,8 +94,10 @@ function Formulario({ opcoes, aoFechar, registrado }: { opcoes: OpcoesPedidos; a
         </div>
       ) : null}
       <CampoTexto id="p-local" rotulo={onde === "AREA" ? "Local" : "Onde, na unidade"} opcional={onde === "UNIDADE"} maxLength={120} value={v.local}
+        list={onde === "AREA" ? "p-locais" : undefined}
         onChange={(e) => mudar({ local: e.target.value })} erro={msg("local", "Diga onde é (2 a 120 caracteres).")}
         ajuda={onde === "AREA" ? "Ex.: portão da garagem, elevador social da Torre A." : undefined} />
+      {onde === "AREA" ? <ListaLocais id="p-locais" /> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <CampoSelecao id="p-canal" rotulo="Como chegou" value={v.canal} onChange={(e) => mudar({ canal: e.target.value })} opcoes={opcoesCanal} />
         <CampoSelecao id="p-categoria" rotulo="Categoria" value={v.categoriaId} erro={msg("categoriaId", "Escolha uma categoria ativa.")}

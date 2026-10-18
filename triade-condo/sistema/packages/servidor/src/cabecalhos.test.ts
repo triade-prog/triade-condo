@@ -51,4 +51,10 @@ describe("F0.8: cabeçalhos de segurança e CSP com nonce", () => {
     expect(cabecalhosSeguranca("plataforma", "/redefinir")["Referrer-Policy"]).toBe("no-referrer");
     expect(cabecalhosSeguranca("plataforma", "/")["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
   });
+
+  it("MP-08: a câmera só no link do prestador, para ler a etiqueta", () => {
+    expect(cabecalhosSeguranca("plataforma", "/p/codigo")["Permissions-Policy"]).toMatch(/^camera=\(self\),/);
+    expect(cabecalhosSeguranca("plataforma", "/")["Permissions-Policy"]).toMatch(/^camera=\(\),/);
+    expect(cabecalhosSeguranca("plataforma", "/pedidos")["Permissions-Policy"]).toMatch(/^camera=\(\),/);
+  });
 });

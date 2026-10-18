@@ -4,16 +4,18 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
-import { chamarApi, Icone, Marca, Selo } from "@triade/ui";
+import { chamarApi, Icone, Marca, Selo, type NomeIcone } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import type { ComunicadoPublico } from "../tipos.ts";
 
-export function TelaPublica({ titulo, subtitulo, children }: { titulo: string; subtitulo?: string; children: ReactNode }) {
+export function TelaPublica({ titulo, subtitulo, icone = "megafone", rodape, children }: {
+  titulo: string; subtitulo?: string; icone?: NomeIcone; rodape?: string; children: ReactNode;
+}) {
   return (
     <div className="min-h-dvh bg-fundo">
       <main className="mx-auto grid max-w-2xl gap-4 pb-10">
         <header className="flex items-center gap-3 bg-violeta-700 px-5 py-4 text-white sm:mt-6 sm:rounded-2xl">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 text-laranja-200"><Icone nome="megafone" /></span>
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 text-laranja-200"><Icone nome={icone} /></span>
           <span className="grid min-w-0">
             <h1 className="text-lg leading-snug font-medium">{titulo}</h1>
             {subtitulo ? <span className="text-[13px] text-violeta-100">{subtitulo}</span> : null}
@@ -21,7 +23,7 @@ export function TelaPublica({ titulo, subtitulo, children }: { titulo: string; s
         </header>
         <div className="grid gap-3 px-4 sm:px-0">{children}</div>
         <footer className="grid gap-2 px-5 text-[13px] text-tinta-suave sm:px-1">
-          <p>Não precisa de conta nem senha. O condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem.</p>
+          <p>{rodape ?? "Não precisa de conta nem senha."} O condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem.</p>
           <Marca sistema="Condomínio" />
         </footer>
       </main>

@@ -222,7 +222,7 @@ export interface RegrasAviso {
 export interface AvisoDoPainel {
   id: string;
   tipo: "RETORNO_VENCIDO" | "ESCALADO_SINDICO" | "ESCALADO_SUBSTITUTO" | "SEM_RESPONSAVEL" | "PENDENCIA_PARADA" | "MANUTENCAO_RETORNO_VENCIDO"
-    | "DOCUMENTO_VENCENDO" | "DOCUMENTO_PEDIDO" | "EMAIL_DEVOLVIDO" | "EMAIL_SPAM";
+    | "DOCUMENTO_VENCENDO" | "DOCUMENTO_PEDIDO" | "EMAIL_DEVOLVIDO" | "EMAIL_SPAM" | "PRESTADOR_IMPEDIMENTO" | "PRESTADOR_TERMINOU";
   pedidoId?: string;
   protocolo?: string;
   assunto?: string | null;
@@ -876,4 +876,97 @@ export interface ResumoComunicados {
   rascunhoMaisAntigo?: { id: string; titulo: string; desde: string };
   documentosVencendo: number;
   documentoMaisProximo?: { id: string; titulo: string; valeAte: string };
+}
+
+// ---------------------------------------------------------------------------------------
+// Links e QR (peça R13; AT-30, MP-08, V-11).
+
+export interface Etiqueta {
+  id: string;
+  numero: number;
+  rotulo: string;
+  local: string;
+  onde?: string;
+  codigo: string;
+  recado?: string;
+  recadoAte?: string;
+  ativa: boolean;
+  motivoDesativacao?: string;
+  desativadaEm?: string;
+  aberturas7: number;
+  aberturasHoje: number;
+  semUso?: boolean;
+  criadoEm: string;
+  versao: number;
+}
+
+export interface LinksQr {
+  numeroWhatsapp?: string;
+  mural: { ligado: boolean; aberturas: number };
+  etiquetas: Etiqueta[];
+  prestador: { validos: number; venceEm?: string; links?: { id: string; manutencaoId: string; titulo: string; para: string; expiraEm: string }[] };
+  documentos: { validos: number; venceEm?: string };
+  podeEditar: boolean;
+}
+
+export interface EtiquetaDetalhe {
+  etiqueta: Etiqueta;
+  historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
+  podeEditar: boolean;
+}
+
+export interface RegistroPrestador {
+  id: string;
+  tipo: "CHEGOU" | "IMPEDIMENTO" | "TERMINOU";
+  confirmado?: boolean;
+  impedimento?: "SEM_ACESSO" | "FALTA_PECA" | "OUTRO_SERVICO" | "OUTRO";
+  texto?: string;
+  ficouPendente?: boolean;
+  pendenteTexto?: string;
+  quemFez?: string;
+  em: string;
+  etiqueta?: { rotulo: string; local: string };
+  fotos: number;
+}
+
+export interface LinkPrestadorInfo {
+  link?: {
+    id: string; para: string; oQueFazer: string; quando?: string; comoEntrar?: string; expiraEm: string; abertoEm?: string;
+    criadoEm: string; criadoPor?: string; situacao: "VALE" | "CANCELADO" | "CONCLUIDA" | "MANUTENCAO_CANCELADA" | "VENCIDO"; motivoCancelamento?: string;
+  };
+  registros: RegistroPrestador[];
+  fotos: { id: string; nome: string; registroId: string; enviadoEm: string }[];
+  para?: { nome: string; telefone?: string; email?: string };
+  local: string;
+  sugestao: { oQueFazer: string };
+  etiqueta?: { rotulo: string; local: string };
+  arquivos: { id: string; nome: string; tipo: string }[];
+  pode: { mandar: boolean; cancelar: boolean };
+  semExecutor?: boolean;
+}
+
+export interface EtiquetaPublica {
+  condominio: string;
+  foraDeUso?: boolean;
+  local?: string;
+  rotulo?: string;
+  recado?: string;
+  recadoEm?: string;
+  whatsapp?: string;
+}
+
+export interface PrestadorPublico {
+  condominio: string;
+  encerrado?: boolean;
+  motivo?: "CANCELADO" | "CONCLUIDA" | "MANUTENCAO_CANCELADA" | "VENCIDO";
+  para?: string;
+  tipo?: "CORRETIVA" | "PREVENTIVA" | "VISTORIA";
+  titulo?: string;
+  local?: string;
+  oQueFazer?: string;
+  quando?: string;
+  comoEntrar?: string;
+  expiraEm?: string;
+  arquivos?: { id: string; nome: string; tipo: string }[];
+  registros?: { tipo: "CHEGOU" | "IMPEDIMENTO" | "TERMINOU"; confirmado?: boolean; em: string; etiqueta?: string }[];
 }

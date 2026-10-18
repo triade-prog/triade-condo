@@ -9,6 +9,7 @@ import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camp
 import { Caixa, Escolha } from "../moradores/comum.tsx";
 import type { CompromissoAgenda, ConflitoCompromisso, LugarCompromisso, OpcoesAgenda, TipoCompromisso } from "../tipos.ts";
 import { ListaConflitos } from "./comum.tsx";
+import { ListaLocais } from "../Locais.tsx";
 
 export interface InicioCompromisso {
   tipo?: TipoCompromisso;
@@ -142,10 +143,11 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, compromisso, inicio }
             opcoes={[{ valor: "", texto: "Escolha a unidade" }, ...opcoes.unidades.map((u) => ({ valor: u.id, texto: u.nome }))]} />
         ) : null}
         {v.onde === "AREA_COMUM" || v.onde === "OUTRO" ? (
-          <CampoTexto id="ag-local" rotulo={v.onde === "AREA_COMUM" ? "Qual área" : "Qual lugar"} maxLength={120} value={v.local}
+          <CampoTexto id="ag-local" rotulo={v.onde === "AREA_COMUM" ? "Qual área" : "Qual lugar"} maxLength={120} value={v.local} list="ag-locais"
             ajuda={v.onde === "AREA_COMUM" ? "Ex.: salão de festas, cobertura, garagem." : undefined}
             erro={msg("local", "Diga onde, de 2 a 120 caracteres.")} onChange={(e) => mudar({ local: e.target.value })} />
         ) : null}
+        {v.onde === "AREA_COMUM" || v.onde === "OUTRO" ? <ListaLocais id="ag-locais" /> : null}
       </fieldset>
 
       <fieldset className="grid gap-2">

@@ -10,6 +10,7 @@ import { Caixa, Escolha } from "../moradores/comum.tsx";
 import { deDataHoraLocal } from "../pedidos/comum.tsx";
 import type { ManutencaoDetalhe, OpcoesManutencao } from "../tipos.ts";
 import { executorParaApi, opcoesExecutor, valorExecutor } from "./comum.tsx";
+import { ListaLocais } from "../Locais.tsx";
 
 export interface InicioManutencao {
   titulo?: string;
@@ -98,7 +99,7 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, manutencao, inicio }:
         <CampoTexto id="mn-local" rotulo="Local ou equipamento" required maxLength={120} value={v.local} list="mn-locais"
           ajuda="Ex.: casa de bombas, bomba 2, fachada leste." erro={msg("local", "Diga o local ou o equipamento.")}
           onChange={(e) => mudar({ local: e.target.value })} />
-        <datalist id="mn-locais">{opcoes.locais.map((l) => <option key={l} value={l} />)}</datalist>
+        <ListaLocais id="mn-locais" extras={opcoes.locais} />
         <CampoSelecao id="mn-prioridade" rotulo="Prioridade" value={v.prioridadeId} erro={msg("prioridadeId", "Escolha a prioridade.")}
           onChange={(e) => mudar({ prioridadeId: e.target.value })}
           opcoes={[{ valor: "", texto: m?.tipo === "PREVENTIVA" ? "Sem prioridade" : "Escolha a prioridade" },
