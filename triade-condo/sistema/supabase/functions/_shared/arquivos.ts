@@ -22,7 +22,7 @@ export interface Armazenamento {
  * condomínio/manutenção/prestador/arquivo.
  */
 export function armazenamentoSupabase(url: string, chaveServico: string, buscar: typeof fetch = fetch,
-  bucket: "pedidos" | "manutencoes" | "comunicados" | "documentos" | "exportacoes" = "pedidos"): Armazenamento {
+  bucket: "pedidos" | "manutencoes" | "comunicados" | "documentos" | "exportacoes" | "suporte" = "pedidos"): Armazenamento {
   const base = `${url.replace(/\/$/, "")}/storage/v1`;
   const auth = { apikey: chaveServico, authorization: `Bearer ${chaveServico}` };
   const objeto = (caminho: string) => {

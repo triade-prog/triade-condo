@@ -3,7 +3,9 @@
 // quantos estão sem ver e a lista dos últimos 30 dias. Cada aviso leva ao pedido. Marcar como
 // visto não resolve o pedido: ele só sai dos vencidos quando o morador recebe um retorno. Também
 // chegam aqui o retorno vencido da manutenção (R6), o documento perto de vencer (R1), o pedido de
-// documento pelo mural e o e-mail que voltou ou foi marcado como spam (CD-13, CD-14).
+// documento pelo mural e o e-mail que voltou ou foi marcado como spam (CD-13, CD-14). Da peça R4:
+// o recado da entrega da implantação, a resposta da TRÍADE num chamado e o pedido de acesso
+// excepcional (PI-04, PI-20, PI-11).
 
 import Link from "next/link";
 import { useState } from "react";
@@ -45,6 +47,12 @@ function detalhe(a: AvisoDoPainel): string {
       return "A exportação ficou pronta. Os links valem 7 dias.";
     case "EXPORTACAO_FALHOU":
       return "A exportação não deu certo. Peça de novo.";
+    case "ENTREGA":
+      return a.texto ?? "A implantação foi entregue.";
+    case "CHAMADO_RESPOSTA":
+      return "A TRÍADE respondeu o seu chamado.";
+    case "ACESSO_PEDIDO":
+      return `${a.nome ?? "A TRÍADE"} pediu para ver dados do condomínio. Aprove ou recuse no Início.`;
   }
 }
 
@@ -136,6 +144,26 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                       {prontuario ? "Ver prontuário" : "Ver exportação"}
                     </Link>
                     {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso ${prontuario ? `do prontuário ${a.titulo ?? ""}` : "da exportação"}`}>Marcar como visto</Botao>}
+                  </span>
+                </li>
+              );
+            }
+            if (a.tipo === "ENTREGA" || a.tipo === "CHAMADO_RESPOSTA" || a.tipo === "ACESSO_PEDIDO") {
+              const destino = a.tipo === "CHAMADO_RESPOSTA" ? `/suporte?id=${a.chamadoId}` : a.tipo === "ACESSO_PEDIDO" ? "/" : "/suporte";
+              const rotulo = a.tipo === "CHAMADO_RESPOSTA" ? "Ver chamado" : a.tipo === "ACESSO_PEDIDO" ? "Aprovar ou recusar" : "Ajuda e suporte";
+              return (
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Selo tom={a.tipo === "ACESSO_PEDIDO" ? "atencao" : "info"}>TRÍADE</Selo>
+                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                  </span>
+                  {a.titulo ? <span className="font-semibold">{a.titulo}</span> : null}
+                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="flex flex-wrap gap-2">
+                    <Link href={destino} className="font-medium text-violeta-600 hover:underline" onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
+                      {rotulo}
+                    </Link>
+                    {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label="Marcar como visto o aviso da TRÍADE">Marcar como visto</Botao>}
                   </span>
                 </li>
               );

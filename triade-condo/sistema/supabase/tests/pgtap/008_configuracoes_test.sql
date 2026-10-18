@@ -160,8 +160,8 @@ create temp table pa as select
   plataforma_autorizar_pessoa(sindica, ipe, caio, 'Caio', 'Subsíndico', '{}') as v_caio
   from ids, c;
 select ok((select plataforma_painel(bruna, ipe) -> 'acoes' ? 'config.editar' from ids, c), 'CF-03: com a permissão, a secretária configura');
-select is((select plataforma_painel(caio, ipe) -> 'acoes' from ids, c), '["config.ver", "plataforma.painel.ver"]'::jsonb,
-  'CF-03: subsíndico sem permissão só vê');
+select is((select plataforma_painel(caio, ipe) -> 'acoes' from ids, c), '["config.ver", "plataforma.painel.ver", "suporte.chamados"]'::jsonb,
+  'CF-03: subsíndico sem permissão só vê (e abre chamado de suporte, PI-20)');
 select throws_ok($$ select plataforma_salvar_categoria(caio, ipe, null, null, 'Obras', null) from ids, c $$, 'TC401', null,
   'CF-03: o cargo não concede permissão');
 select is((teste.erro($$ select plataforma_autorizar_pessoa(sindica, ipe, davi, 'Davi', null, array['APROVAR']) from ids, c $$)) -> 'detalhe',

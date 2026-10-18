@@ -2,6 +2,7 @@
 // Supabase. As regras de verdade estão testadas no banco (pgTAP) e na API (Deno); aqui se
 // confere a tela: fluxo, textos, permissões que ela respeita e acessibilidade.
 import type { Page, Route } from "@playwright/test";
+import { criarSuporteConsole, rotasSuporteConsole } from "./api-falsa-console-suporte";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const NOVO = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -11,8 +12,11 @@ const INES = "1c8d4a1f-6e2b-4d3c-8f9a-2b3c4d5e6f7a";
 const TODAS = [
   "console.carteira.ver", "console.ficha.ver", "console.ficha.editar", "console.contrato.editar", "console.estagio.mudar",
   "console.sindicos.convidar", "console.notas.ver", "console.notas.escrever", "console.historico.ver", "console.equipe.atribuir",
+  "console.implantacao.ver", "console.implantacao.editar", "console.troca.fazer", "console.suporte.acesso", "console.casos_duvidosos",
+  "console.chamados.ver", "console.chamados.responder", "console.acesso_excepcional.pedir",
 ];
-const IMPLANTACAO = TODAS.filter((a) => a !== "console.contrato.editar" && a !== "console.equipe.atribuir");
+const IMPLANTACAO = TODAS.filter((a) => !["console.contrato.editar", "console.equipe.atribuir", "console.suporte.acesso", "console.casos_duvidosos",
+  "console.acesso_excepcional.pedir"].includes(a));
 
 export interface Opcoes {
   logado?: boolean;
@@ -38,12 +42,13 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
           criadoEm: "2026-10-16T13:00:00Z",
         },
         cliente: { estagio: "IMPLANTACAO", referenciaContrato: null as string | null, versao: 1 },
-        sindicos: [] as { vinculoId: string; pessoaId: string; nome: string; desde: string }[],
+        sindicos: [] as { vinculoId: string; pessoaId: string; nome: string; desde: string; versao?: number }[],
         equipe: [{ vinculoId: "4f1a7d42-9b5e-4a6f-9c2d-5e6f7a8b9c0d", pessoaId: CAROLINA, nome: "Carolina", funcao: "ADMINISTRACAO", desde: "2026-10-16T13:00:00Z", versao: 1 }],
         notas: [] as { id: string; texto: string; criadoEm: string; autor: { id: string; nome: string } }[],
       },
     ],
   };
+  const suporte = criarSuporteConsole();
   const situacoes = (c: (typeof estado.clientes)[number]) => [
     ...(c.sindicos.length ? [] : ["SEM_SINDICO"]),
     ...(c.condominio.cenario ? [] : ["SEM_CENARIO"]),
@@ -153,7 +158,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
         return route.fulfill({ json: { versao: c.cliente.versao } });
       }
       if (resto === "/sindicos") {
-        c.sindicos.push({ vinculoId: "6b7c8d9e-0f1a-4b2c-8d3e-4f5a6b7c8d9e", pessoaId: "7c8d9e0f-1a2b-4c3d-8e4f-5a6b7c8d9e0f", nome: corpo.nome, desde: "2026-10-16T16:00:00Z" });
+        c.sindicos.push({ vinculoId: "6b7c8d9e-0f1a-4b2c-8d3e-4f5a6b7c8d9e", pessoaId: "7c8d9e0f-1a2b-4c3d-8e4f-5a6b7c8d9e0f", nome: corpo.nome, desde: "2026-10-16T16:00:00Z", versao: 1 });
         return route.fulfill({ status: 201, json: { vinculoId: "6b7c8d9e-0f1a-4b2c-8d3e-4f5a6b7c8d9e", contaNova: true } });
       }
       if (resto === "/notas" && metodo === "GET") return route.fulfill({ json: { notas: c.notas } });
@@ -189,7 +194,12 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     if (caminho === "/v1/equipe/historico") {
       return route.fulfill({ json: { eventos: [{ id: 9, ocorridoEm: "2026-10-16T12:30:00Z", autor: { id: CAROLINA, nome: "Carolina" }, acao: "equipe.membro_cadastrado", entidade: "pessoa", dados: { funcoes: ["IMPLANTACAO"] } }] } });
     }
+    const r4 = await rotasSuporteConsole(route, suporte, caminho, metodo, corpo, c ? {
+      id: c.condominio.id, nome: c.condominio.nome, sindicos: c.sindicos, estagio: () => c.cliente.estagio,
+      ativar: () => { c.cliente.estagio = "ATIVO"; },
+    } : undefined, url);
+    if (r4 !== null) return r4;
     return erro(route, 404, "NOT_FOUND");
   });
-  return estado;
+  return Object.assign(estado, { suporte });
 }

@@ -1,15 +1,17 @@
 "use client";
-// Ficha do condomínio no Console: cabeçalho com estágio e as abas Ficha, Síndico, Equipe,
-// Notas internas e Histórico (design "Telas do passo 1", aprovado em 16/10/2026).
+// Ficha do condomínio no Console: cabeçalho com estágio e as abas Ficha, Implantação, Síndico,
+// Equipe, Notas internas e Histórico (design "Telas do passo 1", aprovado em 16/10/2026; a aba
+// Implantação, com a entrega no lugar do antigo "Concluir implantação", é da peça R4).
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { Aviso, Botao, CampoAreaTexto, Carregando, chamarApi, Dialogo, ErroCarregar, textoDoErro, type ErroApi } from "@triade/ui";
+import { useRef, useState, type KeyboardEvent } from "react";
+import { Aviso, Carregando, classeBotao, ErroCarregar } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
 import { SeloEstagio } from "../rotulos.tsx";
 import { ListaHistorico } from "../ListaHistorico.tsx";
 import { AbaFicha } from "./AbaFicha.tsx";
+import { AbaImplantacao } from "./AbaImplantacao.tsx";
 import { AbaSindico } from "./AbaSindico.tsx";
 import { AbaEquipe } from "./AbaEquipe.tsx";
 import { AbaNotas } from "./AbaNotas.tsx";
@@ -17,51 +19,13 @@ import type { Ficha, PropsAba, Recado } from "./tipos.ts";
 
 const ABAS = [
   { id: "ficha", texto: "Ficha" },
+  { id: "implantacao", texto: "Implantação" },
   { id: "sindico", texto: "Síndico" },
   { id: "equipe", texto: "Equipe" },
   { id: "notas", texto: "Notas internas" },
   { id: "historico", texto: "Histórico" },
 ] as const;
 type Aba = (typeof ABAS)[number]["id"];
-
-function ConcluirImplantacao({ ficha, recarregar, avisar }: PropsAba) {
-  const [aberto, setAberto] = useState(false);
-  const [motivo, setMotivo] = useState("");
-  const [erro, setErro] = useState<ErroApi | null>(null);
-
-  async function concluir(ev: FormEvent) {
-    ev.preventDefault();
-    const r = await chamarApi(`/v1/clientes/${ficha.condominio.id}/estagio`, {
-      metodo: "PUT", corpo: { versao: ficha.cliente.versao, estagio: "ATIVO", motivo },
-    });
-    if (!r.ok) return setErro(r.erro);
-    setAberto(false);
-    avisar({ tom: "ok", texto: "Implantação concluída. O cliente está ativo." });
-    recarregar();
-  }
-
-  return (
-    <>
-      <Botao variante="contorno" onClick={() => { setErro(null); setAberto(true); }}>Concluir implantação</Botao>
-      <Dialogo aberto={aberto} titulo="Concluir implantação" aoFechar={() => setAberto(false)}>
-        <form onSubmit={concluir} className="grid gap-4">
-          {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
-          {ficha.situacoes.includes("SEM_SINDICO") ? (
-            <Aviso tom="atencao">Para concluir a implantação, convide o síndico antes.</Aviso>
-          ) : (
-            <p>O cliente passa de “em implantação” para “ativo”. Essa mudança não volta atrás e fica no histórico.</p>
-          )}
-          <CampoAreaTexto id="e-motivo" rotulo="O que foi feito" opcional maxLength={300} value={motivo} onChange={(e) => setMotivo(e.target.value)}
-            ajuda="Ex.: a síndica registrou o primeiro pedido sozinha." />
-          <div className="flex justify-end gap-2">
-            <Botao variante="contorno" onClick={() => setAberto(false)}>Cancelar</Botao>
-            <Botao type="submit" disabled={ficha.situacoes.includes("SEM_SINDICO")}>Concluir implantação</Botao>
-          </div>
-        </form>
-      </Dialogo>
-    </>
-  );
-}
 
 export function FichaCliente() {
   const { id } = useParams<{ id: string }>();
@@ -113,7 +77,7 @@ export function FichaCliente() {
             <SeloEstagio estagio={f.cliente.estagio} />
           </p>
         </div>
-        {f.cliente.estagio === "IMPLANTACAO" && props.pode("console.estagio.mudar") ? <ConcluirImplantacao key={chave} {...props} /> : null}
+        <Link href={`/clientes/${f.condominio.id}/acesso-excepcional`} className={classeBotao("contorno", "", "m")}>Acesso excepcional</Link>
       </div>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
 
@@ -137,6 +101,7 @@ export function FichaCliente() {
       </div>
       <div role="tabpanel" id={`painel-${aba}`} aria-labelledby={`aba-${aba}`} tabIndex={0} key={`${aba}-${chave}`}>
         {aba === "ficha" ? <AbaFicha {...props} /> : null}
+        {aba === "implantacao" ? <AbaImplantacao {...props} /> : null}
         {aba === "sindico" ? <AbaSindico {...props} /> : null}
         {aba === "equipe" ? <AbaEquipe {...props} /> : null}
         {aba === "notas" ? <AbaNotas {...props} /> : null}

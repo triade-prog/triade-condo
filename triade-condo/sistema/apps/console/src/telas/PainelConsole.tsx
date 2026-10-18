@@ -1,7 +1,8 @@
 "use client";
 // Moldura do Console TRÍADE (telas-modelo da identidade, DC13): a mesma barra superior branca da
 // Plataforma, com "Console TRÍADE" e o selo laranja "Admin", e a lateral clara com os grupos
-// Clientes e Equipe. Em tela pequena, a lateral abre pelo botão de menu.
+// Clientes, Suporte e Equipe (peça R4: Implantações, Chamados e Suporte de acesso, com o número
+// do que está aberto). Em tela pequena, a lateral abre pelo botão de menu.
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -24,18 +25,28 @@ function Identidade() {
   );
 }
 
-function ItemMenu({ href, icone, children, atual }: { href: string; icone: NomeIcone; children: ReactNode; atual: boolean }) {
+function ItemMenu({ href, icone, children, atual, numero }: { href: string; icone: NomeIcone; children: ReactNode; atual: boolean; numero?: number }) {
   return (
     <Link href={href} aria-current={atual ? "page" : undefined}>
       <Icone nome={icone} />
       {children}
+      {numero ? <span className="ml-auto rounded-full bg-violeta-100 px-2 text-xs font-semibold text-violeta-700">{numero}<span className="sr-only"> em aberto</span></span> : null}
     </Link>
   );
+}
+
+interface Contagens {
+  carteira: number;
+  implantacoes: number;
+  chamados: number;
+  suporteAcesso: number;
 }
 
 export function PainelConsole({ children }: { children: ReactNode }) {
   const sessao = useCarregar<SessaoConsole>("/v1/sessao");
   const caminho = usePathname();
+  const contagens = useCarregar<Contagens>(sessao.estado === "pronto" ? `/v1/contagens?v=${caminho}` : null);
+  const n = contagens.estado === "pronto" ? contagens.dados : null;
   const router = useRouter();
   const [menuAberto, setMenuAberto] = useState(false);
 
@@ -57,6 +68,9 @@ export function PainelConsole({ children }: { children: ReactNode }) {
   const cuidaDaEquipe = s.acoes.includes("console.equipe.gerenciar");
   const veHistoricoEquipe = s.acoes.includes("console.historico.equipe");
   const clientesAtual = caminho === "/" || caminho.startsWith("/clientes");
+  const suporte = s.funcoes.some((f) => f === "ADMINISTRACAO" || f === "SUPORTE");
+  const implantacao = s.funcoes.some((f) => f === "ADMINISTRACAO" || f === "IMPLANTACAO" || f === "SUPORTE");
+  const chamados = s.funcoes.some((f) => f === "ADMINISTRACAO" || f === "IMPLANTACAO" || f === "SUPORTE");
   const funcoes = s.funcoes.map((f) => FUNCOES_CONSOLE[f as keyof typeof FUNCOES_CONSOLE] ?? f).join(", ") || "Sem função";
 
   return (
@@ -91,7 +105,18 @@ export function PainelConsole({ children }: { children: ReactNode }) {
       <div className="min-h-[calc(100dvh-63px)] md:grid md:grid-cols-[248px_1fr] md:gap-6 md:p-5">
         <nav id="menu-console" aria-label="Console" className={`${menuAberto ? "grid" : "hidden"} lateral m-3 md:sticky md:top-5 md:m-0 md:grid md:self-start`}>
           <p className="grupo">Clientes</p>
-          <ItemMenu href="/" icone="predio" atual={clientesAtual}>Carteira de clientes</ItemMenu>
+          <ItemMenu href="/" icone="predio" atual={clientesAtual} numero={n?.carteira}>Carteira de clientes</ItemMenu>
+          {implantacao ? <ItemMenu href="/implantacoes" icone="preparar" atual={caminho === "/implantacoes"} numero={n?.implantacoes}>Implantações</ItemMenu> : null}
+          {chamados || suporte ? (
+            <>
+              <hr />
+              <p className="grupo">Suporte</p>
+              {chamados ? <ItemMenu href="/chamados" icone="balao" atual={caminho.startsWith("/chamados")} numero={n?.chamados}>Chamados</ItemMenu> : null}
+              {suporte ? (
+                <ItemMenu href="/suporte-acesso" icone="cadeado" atual={caminho.startsWith("/suporte-acesso")} numero={n?.suporteAcesso}>Suporte de acesso</ItemMenu>
+              ) : null}
+            </>
+          ) : null}
           {cuidaDaEquipe || veHistoricoEquipe ? (
             <>
               <hr />

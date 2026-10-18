@@ -12,6 +12,7 @@ import { HojeNaAgenda } from "./agenda/HojeNaAgenda.tsx";
 import { CartaoManutencao } from "./manutencao/CartaoManutencao.tsx";
 import { CartaoComunicados } from "./comunicados/CartaoComunicados.tsx";
 import { CartaoMemoria } from "./memoria/CartaoMemoria.tsx";
+import { CartaoAcessoExcepcional } from "./suporte/CartaoAcessoExcepcional.tsx";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
 import type { Configuracoes, MesFechado } from "./tipos.ts";
 
@@ -198,6 +199,9 @@ export function Inicio() {
         </div>
       </header>
       <div className="grid gap-4 lg:grid-cols-2">
+        {painel.acessosExcepcionais && (painel.acessosExcepcionais.pedidos.length || painel.acessosExcepcionais.valendo) ? (
+          <CartaoAcessoExcepcional pedidos={painel.acessosExcepcionais.pedidos} valendo={painel.acessosExcepcionais.valendo} />
+        ) : null}
         {painel.pedidos ? (
           <Agora resumo={painel.pedidos} registrar={pode("pedidos.atualizar")}
             paradaDias={config.estado === "pronto" ? config.dados.avisos.pendenciaDias : null} />

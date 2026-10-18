@@ -184,7 +184,15 @@ export async function erro(r: Response): Promise<{ codigo: string; detalhes?: Re
 /** Convites em memória: e-mail já cadastrado devolve a mesma conta, sem e-mail novo. */
 export function adminFalso(contas: Record<string, string> = {}) {
   const enviados: { email: string; voltarPara: string }[] = [];
+  const autenticadoresTirados: string[] = [];
   const admin: AdminAuth = {
+    emailDe(userId) {
+      return Promise.resolve(Object.entries(contas).find(([, id]) => id === userId)?.[0] ?? null);
+    },
+    removerAutenticadores(userId) {
+      autenticadoresTirados.push(userId);
+      return Promise.resolve(1);
+    },
     convidar(email, voltarPara) {
       if (contas[email]) return Promise.resolve({ userId: contas[email]!, contaNova: false });
       contas[email] = crypto.randomUUID();
@@ -192,7 +200,7 @@ export function adminFalso(contas: Record<string, string> = {}) {
       return Promise.resolve({ userId: contas[email]!, contaNova: true });
     },
   };
-  return { admin, enviados, contas };
+  return { admin, enviados, contas, autenticadoresTirados };
 }
 
 /** Armazenamento em memória: guarda o que foi "enviado" e registra o que a API pediu. */

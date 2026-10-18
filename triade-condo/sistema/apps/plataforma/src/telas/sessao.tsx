@@ -6,6 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { useRouter } from "next/navigation";
 import { chamarApi, pedeLogin, textoDoErro, type ErroApi } from "@triade/ui";
 import type { MesFechado, ResumoComunicados, ResumoManutencao, ResumoPedidos, ResumoProntuario } from "./tipos.ts";
+import type { PedidoAcessoExcepcional } from "./suporte/CartaoAcessoExcepcional.tsx";
 
 export interface Painel {
   condominio: { id: string; nome: string; cidade: string | null; uf: string | null; cenario: string | null };
@@ -27,6 +28,8 @@ export interface Painel {
   comunicados?: ResumoComunicados;
   /** O prontuário do prédio, para quem vê os documentos (peça R10). */
   memoria?: { prontuario: ResumoProntuario };
+  /** Pedidos de acesso excepcional da TRÍADE esperando o síndico e os que valem (peça R4, PI-11). */
+  acessosExcepcionais?: { pedidos: PedidoAcessoExcepcional[]; valendo: number };
 }
 
 export interface CondominioDaPessoa {

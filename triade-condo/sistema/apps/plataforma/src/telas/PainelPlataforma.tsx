@@ -138,9 +138,10 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
           {pode("documentos.ver") ? <ItemMenu href="/memoria" icone="documento" atual={caminho.startsWith("/memoria")}>Memória do prédio</ItemMenu> : null}
           {pode("moradores.ver") ? <ItemMenu href="/moradores" icone="predio" atual={caminho.startsWith("/moradores")}>Moradores e unidades</ItemMenu> : null}
           {pode("pedidos.ver") ? <ItemMenu href="/indicadores" icone="grafico" atual={caminho.startsWith("/indicadores")}>Indicadores</ItemMenu> : null}
-          {pode("config.ver") || pode("pessoas.ver") ? <hr /> : null}
+          {pode("config.ver") || pode("pessoas.ver") || pode("suporte.chamados") ? <hr /> : null}
           {pode("config.ver") ? <ItemMenu href="/configuracoes" icone="ajuste" atual={caminho.startsWith("/configuracoes")}>Configurações</ItemMenu> : null}
           {pode("pessoas.ver") ? <ItemMenu href="/pessoas" icone="pessoas" atual={caminho.startsWith("/pessoas")}>Pessoas e acesso</ItemMenu> : null}
+          {pode("suporte.chamados") ? <ItemMenu href="/suporte" icone="balao" atual={caminho.startsWith("/suporte")}>Ajuda e suporte</ItemMenu> : null}
           <p className="mt-2 border-t border-linha px-3 pt-3 text-xs text-tinta-suave">O WhatsApp do condomínio chega num próximo passo. Até lá, os avisos ficam aqui no painel.</p>
         </nav>
         <main id="conteudo" className="min-w-0 px-4 py-6 md:px-2 md:py-2">{children}</main>
