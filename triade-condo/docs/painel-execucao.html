@@ -29,7 +29,7 @@
     "atualizado_em": "18/10/2026",
     "total_ideias": 311,
     "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7), Manutenção e prestadores (R6) e Comunicados e documentos (R1), com o mural online e o e-mail (R1b), construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), comunicados (rascunho, programado e publicado, com versões, público calculado, copiar para o grupo e versão para o mural, mural online por link e QR e envio por e-mail) e documentos do prédio com versões, validade e envio por e-mail, moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (870 pgTAP, 130 Deno, 116 Vitest, 186 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0160 (com as rotinas de prazos, manutenção, comunicados e fila de e-mails no pg_cron) e as Edge Functions api-plataforma (versão 12, com o mural e o e-mail) e api-console; o envio de e-mails espera os segredos no Vault e na função; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
-    "fase_atual": "F7",
+    "fase_atual": "R",
     "proximo_passo": "Mural online e e-mail (R1b): a Carolina grava os segredos do e-mail (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault) e cadastra o aviso do Resend (o PR 14 já foi juntado ao main). Com a Carolina: conferir Comunicados e documentos, a Agenda e a Manutenção no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
   "fases": [
@@ -47,7 +47,7 @@
             "EM-05"
           ],
           "status": "andamento",
-          "nota": "Paleta e tipografia da referência Lattice adotadas por Carolina em 16/10/2026, descritas em design-frontend.html. Logo oficial e tom de voz continuam pendentes; D1 não está concluído."
+          "nota": "Paleta e tipografia definidas pela identidade TRÍADE (DC13, 17/10/2026), que substituiu a DC11. Falta o logo oficial (E5; o símbolo triangular atual é provisório) e a aprovação do tom das mensagens."
         },
         {
           "id": "D2",
@@ -56,8 +56,9 @@
           "refs": [
             "PT-10"
           ],
-          "status": "andamento",
-          "nota": "Proposta 1 no design-frontend.html, aguardando aprovação"
+          "status": "feito",
+          "nota": "Sistema de design aprovado pela Carolina em 17/10/2026 (DC13) e aplicado nas duas aplicações (partes A, B e C do plano). Sempre claro por decisão: não há tema escuro.",
+          "evidencia": "docs/identidade/sistema.html e plano-aplicacao.html; packages/ui com os componentes e o tema; T20 (Vitest tema.test.ts e componentes.test.ts, Playwright fundacao.spec.ts) e axe WCAG 2.2 AA nas 12 suítes do Playwright"
         },
         {
           "id": "D3",
@@ -68,7 +69,7 @@
             "W-12"
           ],
           "status": "andamento",
-          "nota": "Primeiros textos no design-frontend.html, aguardando aprovação"
+          "nota": "Os textos das telas e avisos são aprovados junto com o desenho de cada passo e peça. As mensagens do WhatsApp ao morador e ao síndico esperam o passo 5 (E1) e a aprovação do tom."
         },
         {
           "id": "D4",
@@ -76,7 +77,7 @@
           "peca": "B4",
           "refs": [],
           "status": "andamento",
-          "nota": "Telas dos passos 1 a 4 aprovadas pela Carolina em 16/10/2026 e construídas, sem emoji nem emoticon. As telas de cada passo seguinte também são desenhadas e aprovadas antes do código."
+          "nota": "Telas aprovadas pela Carolina antes do código em todos os passos e peças construídos: passos 1 a 4 (16/10/2026), 3b, 6 e 7 (17/10/2026), Agenda, Manutenção, Comunicados e documentos e Mural online e e-mail (docs/telas). Continua valendo para cada peça seguinte; nenhuma tela usa emoji."
         }
       ]
     },
@@ -176,7 +177,7 @@
             "PT-14"
           ],
           "status": "bloqueado",
-          "nota": "As execuções 1 e 2 do CI no GitHub (runs 38851124190 e 38853140218) falharam em 2 segundos, sem nenhuma máquina alocada e sem registro: o GitHub não chegou a rodar os passos. Esse padrão costuma ser a conta sem minutos do GitHub Actions ou com cobrança pendente. Conferir em github.com/settings/billing (ou nas configurações da organização triade-prog). Os mesmos passos passam localmente."
+          "nota": "As execuções 1 e 2 do CI no GitHub (runs 38851124190 e 38853140218) falharam em 2 segundos, sem nenhuma máquina alocada e sem registro: o GitHub não chegou a rodar os passos. Esse padrão costuma ser a conta sem minutos do GitHub Actions ou com cobrança pendente. Conferir em github.com/settings/billing (ou nas configurações da organização triade-prog). Os mesmos passos passam localmente. Continua igual em 18/10/2026: no PR 14 (run 39115970724) nenhum dos trabalhos ganhou máquina."
         },
         {
           "id": "F0.10",
@@ -288,7 +289,7 @@
             "V-08"
           ],
           "status": "feito",
-          "nota": "Banco e API prontos: painel só do próprio condomínio, com o que falta configurar e só as ações que a pessoa pode (plataforma_painel). A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "nota": "Banco e API prontos: painel só do próprio condomínio, com o que falta configurar e só as ações que a pessoa pode (plataforma_painel). A migration 0070 foi aplicada no triade-condo-dev em 16/10/2026.",
           "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -300,7 +301,7 @@
             "CF-10"
           ],
           "status": "feito",
-          "nota": "Banco e API prontos: funcionamento e atendimento com vários intervalos por dia, fuso pela UF (quatro do Brasil), feriados como data sem hora. A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "nota": "Banco e API prontos: funcionamento e atendimento com vários intervalos por dia, fuso pela UF (quatro do Brasil), feriados como data sem hora. A migration 0070 foi aplicada no triade-condo-dev em 16/10/2026.",
           "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -315,7 +316,7 @@
             "CF-09"
           ],
           "status": "feito",
-          "nota": "Banco e API prontos: tudo nasce pelo modelo do cenário; renomear mantém o id, desativar em vez de apagar, etapa sempre ligada a aberto, em andamento ou encerrado, com pausa de prazo. Mover pedidos de etapa desativada chega com os pedidos (passo 4). A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "nota": "Banco e API prontos: tudo nasce pelo modelo do cenário; renomear mantém o id, desativar em vez de apagar, etapa sempre ligada a aberto, em andamento ou encerrado, com pausa de prazo. Mover pedidos de etapa desativada chega com os pedidos (passo 4). A migration 0070 foi aplicada no triade-condo-dev em 16/10/2026.",
           "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -327,7 +328,7 @@
             "V-09"
           ],
           "status": "feito",
-          "nota": "Banco e API prontos: vínculo de pessoa autorizada com cargo só como rótulo e permissões individuais; só se dá permissão de recurso que já existe (hoje, Configurar). A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "nota": "Banco e API prontos: vínculo de pessoa autorizada com cargo só como rótulo e permissões individuais; só se dá permissão de recurso que já existe (hoje, Configurar). A migration 0070 foi aplicada no triade-condo-dev em 16/10/2026.",
           "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -338,7 +339,7 @@
             "CF-05"
           ],
           "status": "feito",
-          "nota": "Banco e API prontos: responsáveis com disponibilidade e responsável padrão da fila; revogar o padrão exige substituto ou pendência explícita. Pedidos em andamento de quem sai entram com os pedidos (passo 4). A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "nota": "Banco e API prontos: responsáveis com disponibilidade e responsável padrão da fila; revogar o padrão exige substituto ou pendência explícita. Pedidos em andamento de quem sai entram com os pedidos (passo 4). A migration 0070 foi aplicada no triade-condo-dev em 16/10/2026.",
           "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -349,7 +350,7 @@
             "AT-10"
           ],
           "status": "feito",
-          "nota": "Banco e API prontos: regra geral e exceções por categoria, prioridade ou as duas; vencimento conta só horas de atendimento, no fuso do condomínio, pulando feriados (vencimento_do_prazo). Pausa por etapa entra com os pedidos. A migration 0070 ainda precisa ser aplicada no triade-condo-dev.",
+          "nota": "Banco e API prontos: regra geral e exceções por categoria, prioridade ou as duas; vencimento conta só horas de atendimento, no fuso do condomínio, pulando feriados (vencimento_do_prazo). Pausa por etapa entra com os pedidos. A migration 0070 foi aplicada no triade-condo-dev em 16/10/2026.",
           "evidencia": "pgTAP 008_configuracoes_test.sql; Deno api-plataforma/configuracoes_test.ts; Playwright plataforma-passo2.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         }
       ]
@@ -368,7 +369,7 @@
             "MU-01"
           ],
           "status": "feito",
-          "nota": "Banco e API prontos: o condomínio diz como o prédio se organiza (torre, bloco, quadra, prédio ou sem divisão; com ou sem andar) e as unidades ficam no bloco e no andar, incluídas uma a uma ou geradas pela numeração do prédio, em ordem natural; nada se apaga, só desativa sem nada ativo dentro. Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
+          "nota": "Banco e API prontos: o condomínio diz como o prédio se organiza (torre, bloco, quadra, prédio ou sem divisão; com ou sem andar) e as unidades ficam no bloco e no andar, incluídas uma a uma ou geradas pela numeração do prédio, em ordem natural; nada se apaga, só desativa sem nada ativo dentro. Telas construídas conforme o desenho aprovado. A migration 0080 foi aplicada no triade-condo-dev em 16/10/2026.",
           "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -383,7 +384,7 @@
             "CF-03"
           ],
           "status": "feito",
-          "nota": "Banco e API prontos: contato com nome e telefone, sem CPF; vários por unidade, um principal, relação e preferência de comunicados; o mesmo contato em mais de uma unidade. Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev. Permissão Cadastrar moradores (CF-03): a pessoa autorizada inclui e corrige, e o que ela inclui fica a confirmar pelo síndico. Cadastrar morador ou proprietário (condômino) pela lista, escolhendo a torre, o andar e a unidade.",
+          "nota": "Banco e API prontos: contato com nome e telefone, sem CPF; vários por unidade, um principal, relação e preferência de comunicados; o mesmo contato em mais de uma unidade. Telas construídas conforme o desenho aprovado. A migration 0080 foi aplicada no triade-condo-dev em 16/10/2026. Permissão Cadastrar moradores (CF-03): a pessoa autorizada inclui e corrige, e o que ela inclui fica a confirmar pelo síndico. Cadastrar morador ou proprietário (condômino) pela lista, escolhendo a torre, o andar e a unidade.",
           "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -394,7 +395,7 @@
             "PI-04"
           ],
           "status": "feito",
-          "nota": "Banco, API e leitura do CSV prontos: colunas reconhecidas pelos nomes comuns, prévia com a linha de cada erro, tudo ou nada, sem duplicar; os contatos nascem a confirmar. Necessidade da implantação (PI-04). Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev. Aceita a coluna andar (ou pavimento); planilha com torre ou andar ajusta a organização do prédio.",
+          "nota": "Banco, API e leitura do CSV prontos: colunas reconhecidas pelos nomes comuns, prévia com a linha de cada erro, tudo ou nada, sem duplicar; os contatos nascem a confirmar. Necessidade da implantação (PI-04). Telas construídas conforme o desenho aprovado. A migration 0080 foi aplicada no triade-condo-dev em 16/10/2026. Aceita a coluna andar (ou pavimento); planilha com torre ou andar ajusta a organização do prédio.",
           "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -406,7 +407,7 @@
             "MU-03"
           ],
           "status": "feito",
-          "nota": "Banco e API prontos: só o vínculo confirmado pelo síndico vale; o pendente não acessa nada; confirmar vários de uma vez ou recusar; telefone compartilhado só avisa e leva a todas as unidades para perguntar qual (unidades_do_telefone, para o passo 5). Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
+          "nota": "Banco e API prontos: só o vínculo confirmado pelo síndico vale; o pendente não acessa nada; confirmar vários de uma vez ou recusar; telefone compartilhado só avisa e leva a todas as unidades para perguntar qual (unidades_do_telefone, para o passo 5). Telas construídas conforme o desenho aprovado. A migration 0080 foi aplicada no triade-condo-dev em 16/10/2026.",
           "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -418,7 +419,7 @@
             "PT-11"
           ],
           "status": "feito",
-          "nota": "Banco e API prontos: mudança numa operação (data, quem sai, quem entra); vínculo encerrado não volta nem muda; quem não está mais em nenhuma unidade pode ter nome e telefone removidos (PT-11). Telas construídas conforme o desenho aprovado. A migration 0080 ainda precisa ser aplicada no triade-condo-dev.",
+          "nota": "Banco e API prontos: mudança numa operação (data, quem sai, quem entra); vínculo encerrado não volta nem muda; quem não está mais em nenhuma unidade pode ter nome e telefone removidos (PT-11). Telas construídas conforme o desenho aprovado. A migration 0080 foi aplicada no triade-condo-dev em 16/10/2026.",
           "evidencia": "pgTAP 009_moradores_unidades_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3.spec.ts (celular e computador, axe WCAG 2.2 AA e sem emoji em cada tela)"
         },
         {
@@ -536,7 +537,7 @@
           ],
           "status": "feito",
           "evidencia": "Migration 0100 (arquivos_pedido, bucket privado pedidos, funções de iniciar, verificar, abrir e tirar); pgTAP 011_arquivos_pedido_test.sql (37); Deno _shared/arquivos_test.ts (verificação: tipo pelo conteúdo, GPS tirado do JPG mantendo a orientação, PNG e WEBP sem metadados, PDF sem conteúdo ativo; armazenamento com chave de serviço) e api-plataforma/arquivos_test.ts; Vitest arquivos.test.ts e CSP; Playwright plataforma-passo4b.spec.ts (celular e computador, axe WCAG 2.2 AA)",
-          "nota": "No triade-condo-dev desde 17/10/2026: 0100 aplicada pela Carolina (6 funções, bucket pedidos privado com 10 MB e só fotos e PDF, nenhuma política de acesso direto, só a API executa as funções) e api-plataforma versão 6 publicada e respondendo pelo condominio.trihub.com.br. As telas chegam ao site quando a branch for juntada ao main; depois, conferir um envio de verdade."
+          "nota": "No triade-condo-dev desde 17/10/2026: 0100 aplicada pela Carolina (6 funções, bucket pedidos privado com 10 MB e só fotos e PDF, nenhuma política de acesso direto, só a API executa as funções) e api-plataforma versão 6 publicada e respondendo pelo condominio.trihub.com.br. As telas já estão no main e no condominio.trihub.com.br; falta conferir um envio de verdade, com a Carolina, no Águas Claras."
         }
       ]
     },
@@ -729,7 +730,7 @@
           ],
           "status": "feito",
           "evidencia": "Desenho aprovado em docs/telas/comunicados.html. Migration 0150_comunicados_documentos.sql (comunicados com versões, rascunho, programado, publicado, substituído e arquivado, público calculado, publicação programada pela rotina verificar_comunicados a cada 5 minutos, fotos no bucket comunicados, documentos com versões no bucket documentos, restritos, validade com aviso no sino, plano de comunicação, permissões Ver comunicados e documentos e Cuidar dos documentos); telas /comunicados, /comunicados/escrever, /comunicados/comunicado, /comunicados/documentos, /comunicados/documento, /mural, Comunicados no pedido e na manutenção, cartão no início, aviso no sino e aba Comunicados nas configurações",
-          "nota": "A 0150 foi aplicada pela Carolina no triade-condo-dev e conferida (tabelas, permissões, buckets privados comunicados e documentos, rotina verificar_comunicados a cada 5 minutos e RLS forçado); a api-plataforma versão 11, com as rotas dos comunicados e documentos, está publicada; PR 13 para juntar ao main. Sem WhatsApp, o comunicado sai copiado para o grupo ou impresso para o mural. CD-06 em parte (programar; campanhas esperam o WhatsApp) e MP-12 em parte (validade dos documentos). Ficam para depois, com o motivo no desenho: CD-08, CD-10, IA-05, IA-06 e IA-07."
+          "nota": "A 0150 foi aplicada pela Carolina no triade-condo-dev e conferida (tabelas, permissões, buckets privados comunicados e documentos, rotina verificar_comunicados a cada 5 minutos e RLS forçado); a api-plataforma versão 11, com as rotas dos comunicados e documentos, está publicada; PR 13 juntado ao main. Sem WhatsApp, o comunicado sai copiado para o grupo ou impresso para o mural. CD-06 em parte (programar; campanhas esperam o WhatsApp) e MP-12 em parte (validade dos documentos). Ficam para depois, com o motivo no desenho: CD-08, CD-10, IA-05, IA-06 e IA-07."
         },
         {
           "id": "R1b",
@@ -742,7 +743,7 @@
           ],
           "status": "feito",
           "evidencia": "Desenho aprovado em docs/telas/mural-email.html. Migration 0160_mural_email.sql (mural com link de 12 caracteres, trocar link com motivo, aberturas sem saber quem; e-mail do contato confirmado pela própria pessoa; fila de e-mails com lote, resultado e avisos do provedor; link pessoal de 90 dias; parar de receber; pedidos de documento com resposta neutra; envio de documento por link de 7 dias que pode ser cancelado; rotina enviar-emails a cada 2 minutos pelo pg_net); api-plataforma com as rotas sem conta (/v1/publico), o envio pelo Resend e o aviso assinado do provedor; telas /m/[código], /c/[código], /e/confirmar, /e/parar, /d/[código], /mural/cartaz, Configurações › Comunicados com mural e e-mail, como vai chegar, como chegou, e-mail no contato e pedidos por e-mail",
-          "nota": "A 0160 foi aplicada pela Carolina no triade-condo-dev e conferida, e a api-plataforma versão 12 está publicada. Falta gravar os segredos (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault) e cadastrar o aviso do Resend; até lá a rotina enviar-emails não chama nada. O e-mail começa desligado em cada condomínio; antes de ligar num prédio de verdade, trocar o plano gratuito do Resend (100 e-mails por dia). Ficam para depois: mural pessoal permanente, pedir documento pelo WhatsApp, saber quem leu e carta formal."
+          "nota": "A 0160 foi aplicada pela Carolina no triade-condo-dev e conferida, e a api-plataforma versão 12 está publicada; PR 14 juntado ao main. Falta gravar os segredos (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault) e cadastrar o aviso do Resend; até lá a rotina enviar-emails não chama nada. O e-mail começa desligado em cada condomínio; antes de ligar num prédio de verdade, trocar o plano gratuito do Resend (100 e-mails por dia). Ficam para depois: mural pessoal permanente, pedir documento pelo WhatsApp, saber quem leu e carta formal."
         },
         {
           "id": "R2",
@@ -788,7 +789,7 @@
           ],
           "status": "feito",
           "evidencia": "Desenho aprovado em docs/telas/manutencao.html. Migration 0140_manutencao.sql (prestadores, etapas, manutenções, providências, vistoria, preventivas que abrem sozinhas, fotos no bucket manutencoes, avisos de retorno vencido, visita ligada na agenda, permissões Ver a manutenção e Cuidar da manutenção); telas /manutencao, /manutencao/manutencao, /manutencao/preventivas, /manutencao/prestadores, /manutencao/prestador, Manutenção ligada no pedido, cartão no início e aba Manutenção nas configurações",
-          "nota": "Migration 0140 aplicada pela Carolina no triade-condo-dev e conferida (8 tabelas, 2 permissões, bucket privado manutencoes, as 63 funções iguais às testadas e a verificar-manutencao no pg_cron de hora em hora). api-plataforma versão 10 publicada (pacote conferido igual ao testado) e inicializando sem erro. As telas chegam ao site quando o PR for juntado ao main. MP-09 em parte: a reserva fica registrada; a troca automática espera o WhatsApp. Ficam para depois, com o motivo no desenho: MP-06, MP-10, MP-11, MP-15, MP-16 e V-13. Juntado ao main (PR 12)."
+          "nota": "Migration 0140 aplicada pela Carolina no triade-condo-dev e conferida (8 tabelas, 2 permissões, bucket privado manutencoes, as 63 funções iguais às testadas e a verificar-manutencao no pg_cron de hora em hora). api-plataforma versão 10 publicada (pacote conferido igual ao testado) e inicializando sem erro. PR 12 juntado ao main. MP-09 em parte: a reserva fica registrada; a troca automática espera o WhatsApp. Ficam para depois, com o motivo no desenho: MP-06, MP-10, MP-11, MP-15, MP-16 e V-13. Juntado ao main (PR 12)."
         },
         {
           "id": "R7",
@@ -928,7 +929,8 @@
       "refs": [
         "AT-06"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "pgTAP 010_pedidos_test.sql (AT-06: o retorno ao morador recalcula o próximo retorno e não mexe na previsão; nota interna não conta como retorno)"
     },
     {
       "id": "T7",
@@ -965,7 +967,8 @@
         "AT-08",
         "AT-09"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "pgTAP 013_prazos_avisos_test.sql (relógio adiantado com ajustar_relogio: aviso ao responsável no vencimento, ao síndico depois de 2 h e ao substituto depois de 8 h de atendimento, sem repetir)"
     },
     {
       "id": "T11",
@@ -974,7 +977,8 @@
       "refs": [
         "PT-10"
       ],
-      "status": "pendente"
+      "status": "feito",
+      "evidencia": "axe WCAG 2.2 AA em todas as telas das 12 suítes do Playwright (186 cenários, celular e computador); rodado localmente enquanto o CI está bloqueado (F0.9)"
     },
     {
       "id": "T12",
@@ -1183,13 +1187,15 @@
             "PT-12",
             "PT-16"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "O triade-condo-dev está em sa-east-1 (conferido em 18/10/2026). Falta o projeto de produção com backup diário e um ensaio de restauração."
         },
         {
           "id": "P2",
           "texto": "Plataforma e Console na Vercel, com HTTPS e domínio próprio",
           "refs": [],
-          "status": "pendente"
+          "status": "feito",
+          "evidencia": "Plataforma em https://condominio.trihub.com.br e Console em https://t3condo.trihub.com.br, na Vercel com HTTPS (DC12, 17/10/2026)"
         },
         {
           "id": "P3",
@@ -1197,7 +1203,8 @@
           "refs": [
             "PT-05"
           ],
-          "status": "pendente"
+          "status": "andamento",
+          "nota": "Os segredos ficam nas variáveis da Vercel, das funções e no Vault do Supabase, nunca no código. A varredura automática de segredos existe no CI, mas espera o F0.9 para rodar."
         }
       ]
     },
@@ -1403,6 +1410,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "18/10/2026",
+      "inicio": "07:00",
+      "fim": "07:15",
+      "texto": "Painel revisto item a item. Corrigido o que estava atrasado: as notas dos passos 2 e 3 diziam que as migrations 0070 e 0080 faltavam (foram aplicadas em 16/10); o envio de arquivo do passo 4, a Manutenção e os Comunicados já estão no main (PRs 12, 13 e 14); o CI continua sem máquina no PR 14. Marcados como feitos, com evidência: D2 (sistema de design aprovado e aplicado), T6, T10 e T11 (os testes já existiam no pgTAP e no Playwright) e P2 (endereços próprios com HTTPS). P1 e P3 em andamento. A fase atual passa a ser a das peças seguintes (R), já que o passo 7 está pronto e o 5 espera o provedor do WhatsApp.",
+      "ref": "D2, T6, T10, T11, P1, P2, P3, F0.9"
+    },
     {
       "data": "18/10/2026",
       "inicio": "06:45",
