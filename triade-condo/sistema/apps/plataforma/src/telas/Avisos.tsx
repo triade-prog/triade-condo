@@ -37,6 +37,14 @@ function detalhe(a: AvisoDoPainel): string {
       return `${a.nome ?? "O prestador"} não conseguiu fazer o serviço. Veja o motivo e combine o próximo passo.`;
     case "PRESTADOR_TERMINOU":
       return `${a.nome ?? "O prestador"} contou o que fez. Confira e conclua a manutenção.`;
+    case "PRONTUARIO_VENCE":
+      return `Vale até ${mostrarDataCurta(a.referencia ?? "")}. Guarde o documento renovado e ligue no prontuário.`;
+    case "PRONTUARIO_VENCEU":
+      return `Venceu em ${mostrarDataCurta(a.referencia ?? "")}. Providencie a renovação.`;
+    case "EXPORTACAO_PRONTA":
+      return "A exportação ficou pronta. Os links valem 7 dias.";
+    case "EXPORTACAO_FALHOU":
+      return "A exportação não deu certo. Peça de novo.";
   }
 }
 
@@ -108,6 +116,26 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                       {a.tipo === "DOCUMENTO_PEDIDO" ? "Ver pedidos" : "Ver documento"}
                     </Link>
                     {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso do documento ${a.titulo}`}>Marcar como visto</Botao>}
+                  </span>
+                </li>
+              );
+            }
+            if (a.tipo === "PRONTUARIO_VENCE" || a.tipo === "PRONTUARIO_VENCEU" || a.tipo === "EXPORTACAO_PRONTA" || a.tipo === "EXPORTACAO_FALHOU") {
+              const prontuario = a.tipo.startsWith("PRONTUARIO");
+              return (
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Selo tom={a.tipo === "EXPORTACAO_PRONTA" ? "ok" : "atencao"}>{prontuario ? "Prontuário" : "Exportação"}</Selo>
+                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                  </span>
+                  {a.titulo ? <span className="font-semibold">{a.titulo}</span> : null}
+                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="flex flex-wrap gap-2">
+                    <Link href={prontuario ? "/memoria" : "/memoria?aba=exportar"} className="font-medium text-violeta-600 hover:underline"
+                      onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
+                      {prontuario ? "Ver prontuário" : "Ver exportação"}
+                    </Link>
+                    {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso ${prontuario ? `do prontuário ${a.titulo ?? ""}` : "da exportação"}`}>Marcar como visto</Botao>}
                   </span>
                 </li>
               );

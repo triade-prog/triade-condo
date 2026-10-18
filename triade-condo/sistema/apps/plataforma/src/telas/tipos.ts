@@ -222,7 +222,8 @@ export interface RegrasAviso {
 export interface AvisoDoPainel {
   id: string;
   tipo: "RETORNO_VENCIDO" | "ESCALADO_SINDICO" | "ESCALADO_SUBSTITUTO" | "SEM_RESPONSAVEL" | "PENDENCIA_PARADA" | "MANUTENCAO_RETORNO_VENCIDO"
-    | "DOCUMENTO_VENCENDO" | "DOCUMENTO_PEDIDO" | "EMAIL_DEVOLVIDO" | "EMAIL_SPAM" | "PRESTADOR_IMPEDIMENTO" | "PRESTADOR_TERMINOU";
+    | "DOCUMENTO_VENCENDO" | "DOCUMENTO_PEDIDO" | "EMAIL_DEVOLVIDO" | "EMAIL_SPAM" | "PRESTADOR_IMPEDIMENTO" | "PRESTADOR_TERMINOU"
+    | "PRONTUARIO_VENCE" | "PRONTUARIO_VENCEU" | "EXPORTACAO_PRONTA" | "EXPORTACAO_FALHOU";
   pedidoId?: string;
   protocolo?: string;
   assunto?: string | null;
@@ -236,6 +237,9 @@ export interface AvisoDoPainel {
   nome?: string;
   unidades?: string;
   comunicadoId?: string;
+  /** No aviso do prontuário e da exportação (peça R10). */
+  itemId?: string;
+  exportacaoId?: string;
   responsavel?: string | null;
   referencia?: string;
   criadoEm: string;
@@ -866,6 +870,8 @@ export interface MuralPublico {
   foraDoAr?: boolean;
   comunicados?: ComunicadoPublico[];
   documentos?: { id: string; titulo: string; tipo: TipoDocumento }[];
+  /** As seções do manual do prédio marcadas "no mural" (peça R10, MP-14). */
+  manual?: { id: string; titulo: string; resumo?: string; texto: string; atualizadoEm: string }[];
   atualizadoEm?: string;
 }
 
@@ -969,4 +975,144 @@ export interface PrestadorPublico {
   expiraEm?: string;
   arquivos?: { id: string; nome: string; tipo: string }[];
   registros?: { tipo: "CHEGOU" | "IMPEDIMENTO" | "TERMINOU"; confirmado?: boolean; em: string; etiqueta?: string }[];
+}
+
+// ---------------------------------------------------------------------------------------
+// Memória do prédio (peça R10; MP-12, MP-14, CT-02, CT-03, CT-04).
+
+export interface ResumoProntuario {
+  total: number;
+  emDia: number;
+  vence: number;
+  venceu: number;
+  falta: number;
+  naoSeAplica: number;
+}
+
+export interface ItemProntuario {
+  id?: string;
+  chave?: string;
+  grupo: "CONSTITUICAO" | "SEGUROS" | "LAUDOS" | "PLANTAS" | "OUTRO";
+  nome: string;
+  situacao: "EM_DIA" | "VENCE" | "VENCEU" | "FALTA" | "NAO_SE_APLICA";
+  avisarDias: number;
+  motivo?: string;
+  versao?: number;
+  valeAte?: string;
+  documento?: { id?: string; titulo?: string; tipo?: string; restrito?: boolean; arquivado?: boolean; emVigor?: { numero: number; vigenteDesde: string } };
+}
+
+export interface DocumentoOpcao {
+  id: string;
+  titulo: string;
+  tipo: string;
+  valeAte?: string | null;
+}
+
+export interface Prontuario {
+  itens: ItemProntuario[];
+  resumo: ResumoProntuario;
+  contratos?: { total: number; vencendo: { id: string; prestador: string; ate: string }[] };
+  preventivas?: { ativas: number; atrasadas: number };
+  documentos: DocumentoOpcao[];
+  podeEditar: boolean;
+}
+
+export interface EventoMemoria {
+  fonte: "ANOTADO" | "MANUTENCAO" | "DOCUMENTO" | "PRONTUARIO" | "COMUNICADO" | "PESSOA";
+  categoria: string;
+  id: string;
+  data: string;
+  titulo: string;
+  detalhe?: string;
+  /** Só na anotação. */
+  tipo?: string;
+  texto?: string;
+  autor?: string;
+  corrigida?: boolean;
+  versao?: number;
+  aconteceuEm?: string;
+  ligacao?: { tipo: "DOCUMENTO" | "PEDIDO" | "MANUTENCAO"; id?: string; titulo?: string; protocolo?: string; restrito?: boolean; privado?: boolean };
+  manutencaoId?: string;
+  documentoId?: string;
+}
+
+export interface LinhaDoTempo {
+  eventos: EventoMemoria[];
+  maisAntigosAntes?: string;
+  podeAnotar: boolean;
+}
+
+export interface OpcoesMemoria {
+  documentos: DocumentoOpcao[];
+  pedidos: { id: string; protocolo: string; titulo: string }[];
+  manutencoes: { id: string; titulo: string }[];
+}
+
+export interface AnotacaoDetalhe {
+  anotacao: EventoMemoria & { tipo: string; texto: string; aconteceuEm: string; versao: number };
+  versoes: { numero: number; tipo: string; titulo: string; texto: string; aconteceuEm: string; escritaEm: string; autor?: string; substituidaEm: string }[];
+  podeEditar: boolean;
+}
+
+export interface SecaoManual {
+  id: string;
+  titulo: string;
+  resumo?: string;
+  texto: string;
+  ordem: number;
+  noMural: boolean;
+  escritaEm: string;
+  autor?: string;
+  versoes: number;
+  versao: number;
+}
+
+export interface Manual {
+  secoes: SecaoManual[];
+  muralLigado: boolean;
+  podeEditar: boolean;
+}
+
+export interface Dossie {
+  id: string;
+  geradoEm: string;
+  autor?: string;
+  conteudo: {
+    condominio: { nome: string; cidade?: string; uf?: string };
+    geradoPor?: string;
+    pendencias: {
+      pedidosAbertos: number;
+      pedidos: { protocolo: string; assunto: string; unidade?: string; estado: string; proximoRetorno?: string; retornoVencido?: boolean; responsavel?: string }[];
+      manutencoes: { titulo: string; tipo: string; local: string; estado: string; previsao?: string; pendencia?: string; responsavel?: string }[];
+      prontuario: { item: string; situacao: ItemProntuario["situacao"]; valeAte?: string }[];
+    };
+    prestadores: { prestador: string; servico: string; acordo: string; contratoAte?: string; contato?: string; telefone?: string }[];
+    documentos: { tipo: string; titulo: string; restrito?: boolean; valeAte?: string; emVigor?: number }[];
+    preventivas: { atividade: string; local: string; proxima: string; intervalo: number; unidadeTempo: string }[];
+    anotacoes: { tipo: string; titulo: string; texto: string; aconteceuEm: string }[];
+    agenda: { titulo: string; tipo: string; data: string; hora?: string; local?: string }[];
+    comunicados: { titulo: string; assunto: string; publicadoEm: string }[];
+    acesso: { pessoa: string; funcao: string; cargo?: string; desde: string; permissoes?: string[] }[];
+    manual: { titulo: string; texto: string; noMural?: boolean }[];
+    resumoProntuario: ResumoProntuario;
+  };
+}
+
+export interface Exportacao {
+  id: string;
+  situacao: "MONTANDO" | "PRONTA" | "VENCIDA" | "FALHOU";
+  pedidaEm: string;
+  autor?: string;
+  prontaEm?: string;
+  expiraEm?: string;
+  erro?: string;
+  partes: { numero: number; tipo: "DADOS" | "ARQUIVOS"; situacao: string; tamanho?: number; arquivos?: number }[];
+}
+
+export interface Exportacoes {
+  exportacoes: Exportacao[];
+  podePedir: boolean;
+  motivo?: "MONTANDO" | "UMA_POR_DIA";
+  montando: boolean;
 }

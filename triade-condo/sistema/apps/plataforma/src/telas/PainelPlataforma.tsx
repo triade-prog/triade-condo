@@ -135,6 +135,7 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
               Comunicados e documentos
             </ItemMenu>
           ) : null}
+          {pode("documentos.ver") ? <ItemMenu href="/memoria" icone="documento" atual={caminho.startsWith("/memoria")}>Memória do prédio</ItemMenu> : null}
           {pode("moradores.ver") ? <ItemMenu href="/moradores" icone="predio" atual={caminho.startsWith("/moradores")}>Moradores e unidades</ItemMenu> : null}
           {pode("pedidos.ver") ? <ItemMenu href="/indicadores" icone="grafico" atual={caminho.startsWith("/indicadores")}>Indicadores</ItemMenu> : null}
           {pode("config.ver") || pode("pessoas.ver") ? <hr /> : null}

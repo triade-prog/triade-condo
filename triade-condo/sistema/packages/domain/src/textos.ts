@@ -111,6 +111,18 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   LINK_CANCELADO: "Este link já foi cancelado.",
   LINK_ENCERRADO: "Este link não vale mais. Peça um novo ao condomínio.",
   LIMITE_REGISTROS: "Este link já recebeu muitos registros. Fale com o condomínio.",
+  ITEM_REPETIDO: "Já existe um item do prontuário com este nome.",
+  LIMITE_ITENS: "O prontuário já tem 100 itens próprios.",
+  SEM_DOCUMENTO: "Este item não tem documento ligado.",
+  JA_VALE: "Este item já vale.",
+  ANOTACAO_RETIRADA: "Esta anotação já saiu da linha do tempo.",
+  SECAO_REPETIDA: "Já existe uma seção do manual com este título.",
+  LIMITE_SECOES: "O manual já tem 60 seções.",
+  SECAO_RETIRADA: "Esta seção já saiu do manual.",
+  LIMITE_DOSSIES: "Já foram gerados 20 dossiês hoje. Tente amanhã.",
+  EXPORTACAO_MONTANDO: "Já há uma exportação sendo montada. Espere ficar pronta.",
+  EXPORTACAO_RECENTE: "Só dá para pedir uma exportação por dia. Use a de hoje ou peça amanhã.",
+  EXPORTACAO_INDISPONIVEL: "Esta exportação venceu ou não ficou pronta. Peça outra.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

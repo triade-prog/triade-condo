@@ -5,7 +5,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { chamarApi, pedeLogin, textoDoErro, type ErroApi } from "@triade/ui";
-import type { MesFechado, ResumoComunicados, ResumoManutencao, ResumoPedidos } from "./tipos.ts";
+import type { MesFechado, ResumoComunicados, ResumoManutencao, ResumoPedidos, ResumoProntuario } from "./tipos.ts";
 
 export interface Painel {
   condominio: { id: string; nome: string; cidade: string | null; uf: string | null; cenario: string | null };
@@ -25,6 +25,8 @@ export interface Painel {
   manutencao?: ResumoManutencao;
   /** Programados, rascunhos parados e documentos perto de vencer (peça R1). */
   comunicados?: ResumoComunicados;
+  /** O prontuário do prédio, para quem vê os documentos (peça R10). */
+  memoria?: { prontuario: ResumoProntuario };
 }
 
 export interface CondominioDaPessoa {

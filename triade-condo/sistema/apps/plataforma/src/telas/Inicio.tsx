@@ -11,6 +11,7 @@ import { diaHora } from "./pedidos/comum.tsx";
 import { HojeNaAgenda } from "./agenda/HojeNaAgenda.tsx";
 import { CartaoManutencao } from "./manutencao/CartaoManutencao.tsx";
 import { CartaoComunicados } from "./comunicados/CartaoComunicados.tsx";
+import { CartaoMemoria } from "./memoria/CartaoMemoria.tsx";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
 import type { Configuracoes, MesFechado } from "./tipos.ts";
 
@@ -204,6 +205,7 @@ export function Inicio() {
         {pode("agenda.ver") ? <HojeNaAgenda /> : null}
         {painel.manutencao ? <CartaoManutencao resumo={painel.manutencao} /> : null}
         {painel.comunicados ? <CartaoComunicados resumo={painel.comunicados} verComunicados={pode("comunicados.ver")} /> : null}
+        {painel.memoria ? <CartaoMemoria resumo={painel.memoria.prontuario} /> : null}
         {painel.mesFechado ? <MesFechadoCartao mes={painel.mesFechado} /> : null}
         {painel.moradores ? <Moradores resumo={painel.moradores} /> : null}
         <section aria-labelledby="t-falta" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
