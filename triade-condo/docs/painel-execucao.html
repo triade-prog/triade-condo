@@ -30,7 +30,7 @@
     "total_ideias": 311,
     "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7), Manutenção e prestadores (R6) e Comunicados e documentos (R1) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), comunicados (rascunho, programado e publicado, com versões, público calculado, copiar para o grupo e versão para o mural) e documentos do prédio com versões e validade, moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (787 pgTAP, 116 Deno, 108 Vitest, 172 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0140 (com a conferência de prazos e a da manutenção no pg_cron) e as Edge Functions api-plataforma (versão 10, com a agenda e a manutenção) e api-console; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F7",
-    "proximo_passo": "Desenhar para aprovação o mural online (CD-12), os comunicados por e-mail (CD-13) e o documento por e-mail quando pedido (CD-14). Com a Carolina: conferir Comunicados e documentos, a Agenda e a Manutenção no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
+    "proximo_passo": "A Carolina aprova as telas e as decisões do mural online e do e-mail (docs/telas/mural-email.html; CD-12 a CD-14); depois, banco, API e telas. Com a Carolina: conferir Comunicados e documentos, a Agenda e a Manutenção no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
   "fases": [
     {
@@ -732,6 +732,18 @@
           "nota": "A 0150 foi aplicada pela Carolina no triade-condo-dev e conferida (tabelas, permissões, buckets privados comunicados e documentos, rotina verificar_comunicados a cada 5 minutos e RLS forçado); a api-plataforma versão 11, com as rotas dos comunicados e documentos, está publicada; PR 13 para juntar ao main. Sem WhatsApp, o comunicado sai copiado para o grupo ou impresso para o mural. CD-06 em parte (programar; campanhas esperam o WhatsApp) e MP-12 em parte (validade dos documentos). Ficam para depois, com o motivo no desenho: CD-08, CD-10, IA-05, IA-06 e IA-07."
         },
         {
+          "id": "R1b",
+          "texto": "Mural online e e-mail dos comunicados e documentos",
+          "peca": "S5",
+          "refs": [
+            "CD-12",
+            "CD-13",
+            "CD-14"
+          ],
+          "status": "andamento",
+          "nota": "Desenho para aprovação em docs/telas/mural-email.html: sete telas (mural do morador, configurações, escrever, comunicado publicado, o e-mail, e-mail no contato, documento por e-mail) e catorze decisões. Antes de ligar o e-mail num condomínio de verdade, trocar o plano gratuito do Resend."
+        },
+        {
           "id": "R2",
           "texto": "Planos e liberação (quando houver um segundo conjunto para vender)",
           "peca": "C3",
@@ -1378,6 +1390,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "18/10/2026",
+      "inicio": "02:15",
+      "fim": "03:05",
+      "texto": "Desenhadas para aprovação as telas do mural online e do e-mail, em docs/telas/mural-email.html: o mural que o morador abre pelo link ou QR, Configurações › Comunicados com link, QR, cartaz, trocar link, e-mail e documentos pedidos, o cartão Como vai chegar ao escrever, Como chegou no comunicado publicado (e-mails enviados, que voltaram e link pessoal aberto), o e-mail que o morador recebe com parar de receber, o e-mail no cadastro do contato com confirmação pela própria pessoa, e o documento por e-mail (pedido no mural com resposta neutra, fila Pedidos por e-mail e envio pela tela do documento). Catorze decisões para aprovar e quatro itens para depois.",
+      "ref": "R1b, CD-12, CD-13, CD-14"
+    },
     {
       "data": "18/10/2026",
       "inicio": "01:55",

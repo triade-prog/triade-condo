@@ -632,4 +632,4 @@ Pedidas pela Carolina depois de Comunicados e documentos (R1) ir ao ar: um mural
 - Quem recebe é sempre a conta da CD-02, refeita a cada envio; contato que sai da unidade perde o link pessoal e deixa de receber.
 - O e-mail é canal complementar (W-18) e não substitui o WhatsApp do passo 5. Usa o Resend que já manda os e-mails do sistema (DC12).
 
-**Ficam para decidir no desenho:** se o mural do prédio mostra também os comunicados de cada bloco (um link por bloco) ou só os gerais; se documentos de contatos confirmados saem sem aprovação; para quem vão as respostas dos e-mails; e o plano do Resend, porque o gratuito manda até 100 e-mails por dia e um comunicado num prédio de 200 unidades já passa disso.
+**Ficam para decidir no desenho:** se o mural do prédio mostra também os comunicados de cada bloco (um link por bloco) ou só os gerais; se documentos de contatos confirmados saem sem aprovação; para quem vão as respostas dos e-mails; e o plano do Resend, porque o gratuito manda até 100 e-mails por dia e um comunicado num prédio de 200 unidades já passa disso. O desenho com as propostas está em `docs/telas/mural-email.html`.

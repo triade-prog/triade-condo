@@ -209,7 +209,7 @@ Comunicados e documentos (peça R1; CD-01, CD-02, CD-04, CD-05, CD-06 em parte, 
 
 **Próximo passo:**
 
-1. Desenhar para aprovação as ideias da Carolina de 18/10/2026: mural online do prédio (CD-12), comunicados por e-mail (CD-13) e documento por e-mail quando pedido (CD-14). O que fica para decidir está no fim do `IDEIAS.md`.
+1. A Carolina aprova as telas e as catorze decisões do mural online e do e-mail (CD-12 a CD-14), em `docs/telas/mural-email.html`; depois, banco, API e telas. Antes de ligar o e-mail num condomínio de verdade, trocar o plano gratuito do Resend (100 e-mails por dia).
 2. Com a Carolina: conferir Comunicados e documentos e a Manutenção no `condominio.trihub.com.br` (os PRs 12 e 13 foram juntados ao `main`).
 3. Com a Carolina: conferir a Agenda no `condominio.trihub.com.br` e testar com pedidos de verdade no Águas Claras (E8), incluindo um envio de foto (4b) e os avisos de prazo (6 e 7). A produção da Vercel sai do `main`, que já tem tudo até Comunicados e documentos.
 4. Com a Carolina, liberar o CI (F0.9).
