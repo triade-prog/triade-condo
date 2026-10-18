@@ -212,14 +212,17 @@ export interface RegrasAviso {
 /** Um aviso dentro do painel (passo 6, F6.1). Assunto vazio: pedido privado que a pessoa não vê. */
 export interface AvisoDoPainel {
   id: string;
-  tipo: "RETORNO_VENCIDO" | "ESCALADO_SINDICO" | "ESCALADO_SUBSTITUTO" | "SEM_RESPONSAVEL" | "PENDENCIA_PARADA" | "MANUTENCAO_RETORNO_VENCIDO";
+  tipo: "RETORNO_VENCIDO" | "ESCALADO_SINDICO" | "ESCALADO_SUBSTITUTO" | "SEM_RESPONSAVEL" | "PENDENCIA_PARADA" | "MANUTENCAO_RETORNO_VENCIDO"
+    | "DOCUMENTO_VENCENDO";
   pedidoId?: string;
   protocolo?: string;
   assunto?: string | null;
   /** No aviso da manutenção (peça R6). */
   manutencaoId?: string;
   titulo?: string;
-  responsavel: string | null;
+  /** No aviso do documento perto de vencer (peça R1); a referência é a data "vale até". */
+  documentoId?: string;
+  responsavel?: string | null;
   referencia: string;
   criadoEm: string;
   vistoEm: string | null;
@@ -603,4 +606,185 @@ export interface ResumoManutencao {
   atrasadaMaisAntiga?: { id: string; titulo: string; data: string };
   contratosAVencer: number;
   contratoMaisProximo?: { id: string; nome: string; ate: string };
+}
+
+// ---------------------------------------------------------------------------------------
+// Comunicados e documentos (peça R1).
+
+export type AssuntoComunicado = "AVISO" | "OBRAS" | "SEGURANCA" | "ASSEMBLEIA" | "LEMBRETE";
+export type SituacaoComunicado = "RASCUNHO" | "PROGRAMADO" | "PUBLICADO" | "SUBSTITUIDO" | "ARQUIVADO";
+export type PublicoComunicado = "TODOS" | "BLOCOS" | "UNIDADES" | "CONTATOS";
+
+export interface EventoHistorico {
+  acao: string;
+  em: string;
+  autor: string | null;
+  dados: Record<string, unknown>;
+}
+
+export interface ComunicadoResumo {
+  id: string;
+  familiaId: string;
+  numero: number;
+  assunto: AssuntoComunicado;
+  titulo: string;
+  estado: SituacaoComunicado;
+  publico: PublicoComunicado;
+  publicoResumo: string;
+  destinatarios?: number;
+  programadoPara?: string;
+  publicadoEm?: string;
+  publicadoPor?: string;
+  autor?: string;
+  pedido?: { id: string; protocolo: string; assunto: string };
+  manutencao?: { id: string; titulo: string; estado: string };
+  arquivadoEm?: string;
+  substituidoEm?: string;
+  criadoEm: string;
+  atualizadoEm: string;
+  versao: number;
+}
+
+export interface ListaComunicados {
+  itens: ComunicadoResumo[];
+  total: number;
+  pagina: number;
+  atalhos: { rascunhosParados: number; programadosHoje: number };
+  pode: { publicar: boolean };
+}
+
+export interface PublicoCalculado {
+  contatos: number;
+  unidades: number;
+  semNinguem: { id: string; nome: string }[];
+  quem?: { contatoId: string; nome: string; unidades: string[] }[];
+  blocos?: { id: string; nome: string }[];
+  unidadesEscolhidas?: { id: string; nome: string }[];
+  contatosEscolhidos?: { id: string; nome: string }[];
+}
+
+export interface ArquivoComunicado {
+  id: string;
+  nome: string;
+  tipo: string;
+  tamanho: number;
+  situacao: "ENVIANDO" | "LIBERADO" | "NAO_LIBERADO";
+  motivoRecusa?: string;
+  enviadoEm: string;
+  enviadoPor?: string;
+  podeTirar: boolean;
+}
+
+export interface ComunicadoDetalhe {
+  comunicado: ComunicadoResumo & {
+    texto: string;
+    assinatura?: string;
+    mudanca?: string;
+    blocos: string[];
+    unidades: string[];
+    contatos: string[];
+    pedidoId?: string;
+    manutencaoId?: string;
+    arquivamento?: { motivo: string; em: string; por?: string };
+    pedidoOculto?: boolean;
+  };
+  publicoAgora: PublicoCalculado;
+  versoes: { id: string; numero: number; estado: SituacaoComunicado; titulo: string; texto: string; mudanca?: string;
+    publicadoEm?: string; publicadoPor?: string; substituidoEm?: string }[];
+  arquivos: ArquivoComunicado[];
+  historico: EventoHistorico[];
+  pode: { editar: boolean; corrigir: boolean; arquivar: boolean; enviar: boolean; copiar: boolean };
+  condominio: string;
+  limites: { arquivos: number; tamanho: number };
+}
+
+export interface OpcoesComunicado {
+  assuntos: AssuntoComunicado[];
+  plano?: string;
+  assinatura?: string;
+  silencio: { inicio: string; fim: string };
+  fuso: string;
+  blocos: { id: string; nome: string }[];
+  unidades: { id: string; nome: string; blocoId?: string }[];
+  contatos?: { id: string; nome: string; unidades: string[] }[];
+  pedidos?: { id: string; protocolo: string; assunto: string }[];
+  manutencoes?: { id: string; titulo: string; local: string }[];
+  pode: { publicar: boolean; verMoradores: boolean };
+  agora: string;
+}
+
+export interface ComunicadosLigados {
+  podeVer: boolean;
+  podeEscrever: boolean;
+  comunicados: ComunicadoResumo[];
+}
+
+export interface PlanoComunicacao {
+  assuntos: AssuntoComunicado[];
+  plano?: string;
+  assinatura?: string;
+  silencioInicio: string;
+  silencioFim: string;
+  versao: number;
+  podeEditar: boolean;
+}
+
+export type TipoDocumento = "CONVENCAO" | "REGIMENTO" | "ATA" | "CONTRATO" | "LAUDO" | "ORCAMENTO" | "OUTRO";
+
+export interface DocumentoResumo {
+  id: string;
+  tipo: TipoDocumento;
+  titulo: string;
+  descricao?: string;
+  restrito: boolean;
+  aoMorador: boolean;
+  valeAte?: string;
+  vencendo: boolean;
+  vencido: boolean;
+  emVigor?: { id: string; numero: number; vigenteDesde: string; aprovadoEm?: string; nome: string };
+  proxima?: { id: string; numero: number; vigenteDesde: string };
+  arquivadoEm?: string;
+  atualizadoEm: string;
+  versao: number;
+}
+
+export interface ListaDocumentos {
+  itens: DocumentoResumo[];
+  total: number;
+  vencendo: number;
+  pode: { editar: boolean; restritos: boolean };
+}
+
+export interface VersaoDocumento {
+  id: string;
+  numero?: number;
+  mudanca?: string;
+  vigenteDesde: string;
+  aprovadoEm?: string;
+  nome: string;
+  tipo: string;
+  tamanho: number;
+  situacao: "ENVIANDO" | "LIBERADO" | "NAO_LIBERADO";
+  motivoRecusa?: string;
+  enviadoEm: string;
+  enviadoPor?: string;
+  emVigor?: boolean;
+}
+
+export interface DocumentoDetalhe {
+  documento: DocumentoResumo & { criadoPor?: string; criadoEm: string; arquivamento?: { motivo: string; em: string; por?: string } };
+  versoes: VersaoDocumento[];
+  historico: EventoHistorico[];
+  pode: { editar: boolean; enviar: boolean; restritos: boolean };
+  limites: { tamanho: number };
+  hoje: string;
+}
+
+export interface ResumoComunicados {
+  programadosHoje?: number;
+  proximoProgramado?: { id: string; titulo: string; em: string };
+  rascunhosParados?: number;
+  rascunhoMaisAntigo?: { id: string; titulo: string; desde: string };
+  documentosVencendo: number;
+  documentoMaisProximo?: { id: string; titulo: string; valeAte: string };
 }

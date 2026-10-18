@@ -1,11 +1,12 @@
 "use client";
 // Avisos dentro do painel (passo 6; F6.1, F6.2, AT-08, AT-09): o sino na barra superior com
 // quantos estão sem ver e a lista dos últimos 30 dias. Cada aviso leva ao pedido. Marcar como
-// visto não resolve o pedido: ele só sai dos vencidos quando o morador recebe um retorno.
+// visto não resolve o pedido: ele só sai dos vencidos quando o morador recebe um retorno. Também
+// chegam aqui o retorno vencido da manutenção (R6) e o documento perto de vencer (R1).
 
 import Link from "next/link";
 import { useState } from "react";
-import { formatarDataHora, TIPOS_AVISO } from "@triade/domain";
+import { formatarDataHora, mostrarDataCurta, TIPOS_AVISO } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
 import type { AvisoDoPainel, Avisos as ListaAvisos } from "./tipos.ts";
@@ -23,6 +24,8 @@ function detalhe(a: AvisoDoPainel): string {
       return "Pendência aberta e parada. Confira se ainda está de pé.";
     case "MANUTENCAO_RETORNO_VENCIDO":
       return "Retorno da manutenção vencido. Combine o próximo ou atualize a situação.";
+    case "DOCUMENTO_VENCENDO":
+      return `Vale até ${mostrarDataCurta(a.referencia)}. Guarde a versão renovada quando chegar.`;
   }
 }
 
@@ -57,6 +60,25 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
         <ul className="grid max-h-[60vh] gap-2 overflow-y-auto">
           {itens.map((a) => {
             const escalado = a.tipo === "ESCALADO_SINDICO" || a.tipo === "ESCALADO_SUBSTITUTO";
+            if (a.tipo === "DOCUMENTO_VENCENDO") {
+              return (
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Selo tom="atencao">Documento</Selo>
+                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                  </span>
+                  <span className="font-semibold">{a.titulo}</span>
+                  <span className="text-xs text-tinta-suave">{detalhe(a)} Avisado em {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="flex flex-wrap gap-2">
+                    <Link href={`/comunicados/documento?id=${a.documentoId}`} className="font-medium text-violeta-600 hover:underline"
+                      onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
+                      Ver documento
+                    </Link>
+                    {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso do documento ${a.titulo}`}>Marcar como visto</Botao>}
+                  </span>
+                </li>
+              );
+            }
             if (a.tipo === "MANUTENCAO_RETORNO_VENCIDO") {
               return (
                 <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>

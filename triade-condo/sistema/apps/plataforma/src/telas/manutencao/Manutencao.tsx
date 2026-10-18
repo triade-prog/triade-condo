@@ -19,6 +19,7 @@ import { ArquivosManutencao } from "./ArquivosManutencao.tsx";
 import { executorParaApi, nomeExecutor, nomePendencia, opcoesExecutor, PartesManutencao, SeloManutencao, textoTipo } from "./comum.tsx";
 import { FormManutencao } from "./FormManutencao.tsx";
 import { MarcarVisita } from "./MarcarVisita.tsx";
+import { NosComunicados } from "../comunicados/NosComunicados.tsx";
 
 type Acao =
   | { tipo: "editar" | "pendencia" | "etapa" | "retorno" | "previsao" | "concluir" | "cancelar" | "reabrir" | "providencia" | "itens" | "visita" }
@@ -361,6 +362,8 @@ export function Manutencao() {
               ? <p className="text-sm text-tinta-suave">Sem pedido nem visita ligados.</p> : null}
             <p className="text-xs text-tinta-suave">Concluir a manutenção não encerra o pedido; cancelar a visita não apaga a manutenção.</p>
           </section>
+
+          <NosComunicados manutencaoId={m.id} ativo={m.estado !== "CONCLUIDA" && m.estado !== "CANCELADA"} />
 
           <section aria-labelledby="t-executor" className="grid content-start gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
             <h2 id="t-executor" className="text-lg font-medium">Quem executa</h2>

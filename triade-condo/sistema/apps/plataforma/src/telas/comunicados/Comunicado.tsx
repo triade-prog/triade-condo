@@ -1,0 +1,204 @@
+"use client";
+// Comunicado aberto (design "Telas dos Comunicados", tela 3; CD-01, CD-02, CD-08): o texto como o
+// morador lê, com a assinatura; autor, data, versão e para quem à vista. Corrigir cria a versão
+// seguinte e guarda a anterior. Sem WhatsApp, o comunicado sai copiado para o grupo do prédio ou
+// impresso para o mural, e os dois ficam no histórico.
+
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { descreverAlcance, descreverEventoComunicado, mostrarTamanho, textoParaCopiar } from "@triade/domain";
+import { Aviso, AvisoErro, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
+import { Janela } from "../Janela.tsx";
+import { diaHora } from "../pedidos/comum.tsx";
+import { useCarregar, usePlataforma } from "../sessao.tsx";
+import type { ComunicadoDetalhe, Recado } from "../tipos.ts";
+import { abrirLink, nomeAssunto, PartesComunicados, SeloComunicado } from "./comum.tsx";
+
+const FEITO: Record<string, string> = {
+  PUBLICAR: "Comunicado publicado.",
+  PROGRAMAR: "Comunicado programado. Ele é publicado sozinho na hora marcada.",
+  RASCUNHO: "Rascunho salvo.",
+  CORRIGIR: "Correção publicada. A versão anterior ficou guardada como substituída.",
+};
+
+/** Trocar de versão troca o id: a tela recomeça, com o recado da ação que trouxe até aqui. */
+export function Comunicado() {
+  const busca = useSearchParams();
+  return <ComunicadoAberto key={`${busca.get("id")}-${busca.get("feito")}`} />;
+}
+
+function ComunicadoAberto() {
+  const busca = useSearchParams();
+  const router = useRouter();
+  const id = busca.get("id");
+  const { atualizar } = usePlataforma();
+  const carga = useCarregar<ComunicadoDetalhe>(id ? `/v1/condominio/comunicados/${id}` : null);
+  const [acao, setAcao] = useState<"corrigir" | "arquivar" | null>(null);
+  const [recado, setRecado] = useState<Recado>(FEITO[busca.get("feito") ?? ""] ? { tom: "ok", texto: FEITO[busca.get("feito")!]! } : null);
+  const [falha, setFalha] = useState<ErroApi | null>(null);
+  const voltar = <Link href="/comunicados" className="text-sm font-medium text-violeta-600 hover:underline">Voltar aos comunicados</Link>;
+
+  if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Comunicado</h1><Vazio titulo="Comunicado não encontrado" /></div>;
+  if (carga.estado === "carregando") return <Carregando rotulo="Carregando o comunicado…" />;
+  if (carga.estado === "erro") {
+    return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Comunicado</h1><ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+  }
+
+  const d = carga.dados;
+  const c = d.comunicado;
+  const atualVersao = d.versoes.find((x) => x.estado === "PUBLICADO" && x.id !== c.id);
+  const fotos = d.arquivos.filter((a) => a.situacao === "LIBERADO");
+
+  async function copiar() {
+    setFalha(null);
+    try {
+      await navigator.clipboard.writeText(textoParaCopiar(c));
+    } catch {
+      return setRecado({ tom: "atencao", texto: "O navegador não deixou copiar. Selecione o texto e copie à mão." });
+    }
+    const r = await chamarApi(`/v1/condominio/comunicados/${c.id}/uso`, { corpo: { uso: "COPIADO" } });
+    if (!r.ok) return setFalha(r.erro);
+    setRecado({ tom: "ok", texto: "Texto copiado, com o título e a assinatura. Cole no grupo do prédio." });
+    carga.recarregar();
+  }
+
+  return (
+    <div className="grid gap-5">
+      <PartesComunicados />
+      {voltar}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="grid gap-2">
+          <h1 className="text-[28px] font-normal tracking-tight">{c.titulo}</h1>
+          <p className="flex flex-wrap items-center gap-2 text-sm">
+            <SeloComunicado estado={c.estado} />
+            <Selo tom="info">{nomeAssunto(c.assunto)}</Selo>
+            <Selo tom="andamento">Versão {c.numero}</Selo>
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {d.pode.copiar ? <Botao variante="contorno" onClick={() => void copiar()}>Copiar texto</Botao> : null}
+          {d.pode.copiar ? <Link href={`/mural?id=${c.id}`} target="_blank" className={classeBotao("contorno")}>Versão para o mural</Link> : null}
+          {d.pode.editar ? <Link href={`/comunicados/escrever?id=${c.id}`} className={classeBotao("primario")}>Editar</Link> : null}
+          {d.pode.corrigir ? <Botao onClick={() => setAcao("corrigir")}>Corrigir</Botao> : null}
+          {d.pode.arquivar ? <Botao variante="discreto" onClick={() => setAcao("arquivar")}>Arquivar</Botao> : null}
+        </div>
+      </div>
+
+      {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
+      {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={() => { setFalha(null); carga.recarregar(); }} /> : null}
+      {c.estado === "SUBSTITUIDO" ? (
+        <Aviso tom="info" titulo="Esta versão foi trocada">
+          {atualVersao ? <>A versão em uso é a {atualVersao.numero}. <Link href={`/comunicados/comunicado?id=${atualVersao.id}`} className="font-medium underline">Ver a versão {atualVersao.numero}</Link></> : "Veja as versões abaixo."}
+        </Aviso>
+      ) : null}
+      {c.arquivamento ? <Aviso tom="info" titulo="Comunicado arquivado">{c.arquivamento.por ?? "Alguém"} em {diaHora(c.arquivamento.em)}. Motivo: {c.arquivamento.motivo}</Aviso> : null}
+      {c.estado === "PROGRAMADO" && c.programadoPara ? <Aviso tom="info" titulo={`Programado para ${diaHora(c.programadoPara)}`}>É publicado sozinho na hora marcada. Até lá dá para mudar ou voltar a rascunho.</Aviso> : null}
+
+      <dl className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-4 text-sm shadow-s1 sm:grid-cols-3">
+        <div><dt className="text-xs text-tinta-suave">{c.publicadoEm ? "Publicado" : "Escrito"}</dt>
+          <dd>{c.publicadoEm ? `${diaHora(c.publicadoEm)} por ${c.publicadoPor ?? "alguém"}` : `${diaHora(c.criadoEm)} por ${c.autor ?? "alguém"}`}</dd></div>
+        <div><dt className="text-xs text-tinta-suave">Para quem</dt>
+          <dd>{c.publicoResumo}{c.destinatarios !== undefined ? ` · ${c.destinatarios === 1 ? "1 contato" : `${c.destinatarios} contatos`} na publicação` : ""}</dd></div>
+        <div><dt className="text-xs text-tinta-suave">Ligado a</dt>
+          <dd className="grid">
+            {c.pedido ? <Link href={`/pedidos/pedido?id=${c.pedido.id}`} className="text-violeta-600 hover:underline">Pedido {c.pedido.protocolo}</Link> : null}
+            {c.pedidoOculto ? <span className="text-tinta-suave">Um pedido que você não vê</span> : null}
+            {c.manutencao ? <Link href={`/manutencao/manutencao?id=${c.manutencao.id}`} className="text-violeta-600 hover:underline">Manutenção: {c.manutencao.titulo}</Link> : null}
+            {!c.pedido && !c.pedidoOculto && !c.manutencao ? <span className="text-tinta-suave">Nada</span> : null}
+          </dd></div>
+      </dl>
+
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div className="grid gap-4">
+          <section aria-labelledby="t-texto" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+            <h2 id="t-texto" className="text-lg font-medium">Texto</h2>
+            <div className="rounded-xl border border-linha bg-superficie-2 p-4 text-[15px] whitespace-pre-line">
+              {c.texto}
+              {c.assinatura ? <span className="mt-4 block">{c.assinatura}</span> : null}
+            </div>
+            {fotos.length ? (
+              <ul className="grid gap-2">
+                {fotos.map((a) => (
+                  <li key={a.id} className="flex items-center justify-between gap-2 rounded-2xl border border-linha px-3 py-2 text-sm">
+                    <button type="button" className="text-left font-medium text-violeta-600 [overflow-wrap:anywhere] hover:underline"
+                      onClick={() => void abrirLink(`/v1/condominio/comunicados/${c.id}/arquivos/${a.id}/link`).then((e) => { if (e) setRecado({ tom: "atencao", texto: e }); })}>
+                      {a.nome}
+                    </button>
+                    <span className="text-xs text-tinta-suave">{a.tipo.startsWith("image/") ? "Foto" : "PDF"} · {mostrarTamanho(a.tamanho)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {fotos.length ? <p className="text-xs text-tinta-suave">Abrem por link de 5 minutos.</p> : null}
+          </section>
+
+          <section aria-labelledby="t-versoes" className="grid gap-2">
+            <h2 id="t-versoes" className="text-lg font-medium">Versões</h2>
+            <ol className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
+              {d.versoes.map((x) => (
+                <li key={x.id} className="grid gap-0.5 px-4 py-2.5 text-sm">
+                  <span className="flex flex-wrap items-center gap-2">
+                    {x.id === c.id ? <span className="font-medium">Versão {x.numero}</span>
+                      : <Link href={`/comunicados/comunicado?id=${x.id}`} className="font-medium text-violeta-600 hover:underline">Versão {x.numero}</Link>}
+                    <SeloComunicado estado={x.estado} />
+                  </span>
+                  {x.mudanca ? <span>{x.mudanca}</span> : null}
+                  <span className="text-xs text-tinta-suave">{x.publicadoEm ? `Publicada ${diaHora(x.publicadoEm)}${x.publicadoPor ? ` por ${x.publicadoPor}` : ""}` : "Ainda não publicada"}
+                    {x.substituidoEm ? ` · trocada ${diaHora(x.substituidoEm)}` : ""}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        </div>
+
+        <div className="grid gap-4">
+          <section aria-labelledby="t-chega" className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
+            <h2 id="t-chega" className="text-lg font-medium">Como chega ao morador</h2>
+            <ul className="grid gap-2 text-sm">
+              <li className="rounded-xl border border-linha px-3 py-2"><span className="block font-medium">Copiar texto</span><span className="text-xs text-tinta-suave">Para colar no grupo do prédio, com título e assinatura.</span></li>
+              <li className="rounded-xl border border-linha px-3 py-2"><span className="block font-medium">Versão para o mural</span><span className="text-xs text-tinta-suave">Folha A4 com o nome do condomínio, a data e a versão.</span></li>
+              <li className="rounded-xl border border-linha px-3 py-2"><span className="block font-medium">WhatsApp do condomínio</span><span className="text-xs text-tinta-suave">Chega com o passo 5. Enviado não quer dizer lido.</span></li>
+            </ul>
+            <p className="text-xs text-tinta-suave">Quem recebe agora: {descreverAlcance(d.publicoAgora.contatos, d.publicoAgora.unidades)}. A conta é refeita a cada envio.</p>
+          </section>
+
+          <section aria-labelledby="t-hist" className="grid gap-2">
+            <h2 id="t-hist" className="text-lg font-medium">Histórico</h2>
+            <ol className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
+              {d.historico.map((h, i) => (
+                <li key={i} className="grid gap-0.5 px-4 py-2.5 text-sm">
+                  <span>{descreverEventoComunicado(h.acao, h.dados)}</span>
+                  <span className="text-xs text-tinta-suave">{h.autor ?? "Sistema"} · {diaHora(h.em)}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        </div>
+      </div>
+
+      <Janela aberto={acao === "corrigir"} titulo="Corrigir comunicado" textoBotao={`Publicar versão ${c.numero + 1}`} aoFechar={() => setAcao(null)} recarregar={carga.recarregar}
+        explicacao={`Vira a versão ${c.numero + 1}. A versão ${c.numero} fica marcada como substituída, com o texto guardado. Quem já copiou ou imprimiu a versão ${c.numero} continua com ela: avise de novo pelo mesmo caminho.`}
+        campos={[
+          { id: "titulo", rotulo: "Título", tipo: "texto", obrigatorio: true, max: 120, erro: "De 3 a 120 caracteres." },
+          { id: "texto", rotulo: "Texto", tipo: "area", obrigatorio: true, max: 4000, erro: "De 3 a 4000 caracteres, diferente do atual." },
+          { id: "mudanca", rotulo: "O que mudou", tipo: "area", obrigatorio: true, max: 500, erro: "Diga o que mudou, de 3 a 500 caracteres." },
+        ]}
+        iniciais={{ titulo: c.titulo, texto: c.texto, mudanca: "" }}
+        aoSalvar={async (v) => {
+          const r = await chamarApi<{ id: string }>(`/v1/condominio/comunicados/${c.id}/corrigir`, { corpo: { versao: c.versao, titulo: v.titulo, texto: v.texto, mudanca: v.mudanca } });
+          if (r.ok) { setAcao(null); atualizar(); router.push(`/comunicados/comunicado?id=${r.dados.id}&feito=CORRIGIR`); }
+          return r;
+        }} />
+      <Janela aberto={acao === "arquivar"} titulo="Arquivar comunicado" textoBotao="Arquivar" aoFechar={() => setAcao(null)} recarregar={carga.recarregar}
+        explicacao="Sai da lista em uso e não volta. Nada é apagado: o texto e as versões ficam guardados."
+        campos={[{ id: "motivo", rotulo: "Por que arquivar", tipo: "area", obrigatorio: true, max: 500, erro: "Diga o motivo, de 3 a 500 caracteres." }]}
+        iniciais={{ motivo: "" }}
+        aoSalvar={async (v) => {
+          const r = await chamarApi(`/v1/condominio/comunicados/${c.id}/arquivar`, { corpo: { versao: c.versao, motivo: v.motivo } });
+          if (r.ok) { setAcao(null); setRecado({ tom: "ok", texto: "Comunicado arquivado." }); carga.recarregar(); atualizar(); }
+          return r;
+        }} />
+    </div>
+  );
+}

@@ -1,0 +1,358 @@
+// Parte de comunicados e documentos da API falsa da Plataforma (peça R1). As regras de verdade
+// estão testadas no banco (pgTAP 016) e na API (Deno); aqui só o bastante para a tela: lista com
+// atalhos, escrever com o público calculado, publicar, programar, corrigir em versão nova,
+// arquivar, copiar, plano de comunicação e documentos com versões.
+import type { Route } from "@playwright/test";
+import { hojeFalso, somar } from "./api-falsa-agenda";
+import { conferir, conteudoEnviado } from "./api-falsa-arquivos";
+import type { EstadoMoradores } from "./api-falsa-moradores";
+
+let n = 0;
+const novoId = () => `8f9a0b1c-2d3e-4f4a-9b5c-${String(++n).padStart(12, "0")}`;
+
+type Historico = { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
+interface ComunicadoFalso {
+  id: string; familiaId: string; numero: number; assunto: string; titulo: string; texto: string; publico: string;
+  blocos: string[]; unidades: string[]; contatos: string[]; pedidoId: string | null; manutencaoId: string | null; estado: string;
+  programadoPara: string | null; publicadoEm: string | null; publicadoPor: string | null; destinatarios: number | null; assinatura: string | null;
+  mudanca: string | null; substituidoEm: string | null; arquivamento: { motivo: string; em: string; por: string } | null;
+  autor: string; criadoEm: string; atualizadoEm: string; versao: number;
+}
+interface ArquivoFalso { id: string; familiaId: string; nome: string; tipo: string; tamanho: number; situacao: string; motivoRecusa?: string; enviadoEm: string }
+interface VersaoFalsa {
+  id: string; numero?: number; mudanca?: string; vigenteDesde: string; aprovadoEm?: string; nome: string; tipo: string; tamanho: number;
+  situacao: string; motivoRecusa?: string; enviadoEm: string; enviadoPor: string;
+}
+interface DocumentoFalso {
+  id: string; tipo: string; titulo: string; descricao: string | null; restrito: boolean; aoMorador: boolean; valeAte: string | null;
+  arquivado: { motivo: string; em: string; por: string } | null; criadoEm: string; versao: number; versoes: VersaoFalsa[]; historico: Historico;
+}
+
+export interface EstadoComunicados {
+  comunicados: ComunicadoFalso[];
+  arquivos: ArquivoFalso[];
+  historico: Map<string, Historico>;
+  documentos: DocumentoFalso[];
+  plano: { assuntos: string[]; plano: string | null; assinatura: string | null; silencioInicio: string; silencioFim: string; versao: number };
+}
+
+/** O Residencial Ipê: a falta de água publicada, um rascunho parado, o regimento em vigor e o AVCB perto de vencer (restrito). */
+export function criarComunicados(pedidoId: string): EstadoComunicados {
+  const agora = Date.now();
+  const h = hojeFalso();
+  const iso = (ms: number) => new Date(ms).toISOString();
+  const agua = novoId();
+  const rascunho = novoId();
+  const c = (x: Partial<ComunicadoFalso> & { id: string; titulo: string }): ComunicadoFalso => ({
+    familiaId: x.id, numero: 1, assunto: "OBRAS", texto: "A água será desligada das 9h às 13h para a troca da bomba.", publico: "TODOS", blocos: [], unidades: [], contatos: [],
+    pedidoId: null, manutencaoId: null, estado: "RASCUNHO", programadoPara: null, publicadoEm: null, publicadoPor: null, destinatarios: null, assinatura: null,
+    mudanca: null, substituidoEm: null, arquivamento: null, autor: "Ana Souza", criadoEm: iso(agora - 2 * 86400_000), atualizadoEm: iso(agora - 2 * 86400_000), versao: 1, ...x,
+  });
+  const regimento = novoId();
+  const avcb = novoId();
+  return {
+    comunicados: [
+      c({ id: agua, titulo: "Falta de água na quinta", estado: "PUBLICADO", publicadoEm: iso(agora - 86400_000), publicadoPor: "Ana Souza", destinatarios: 3,
+        assinatura: "Ana, síndica do Residencial Ipê", pedidoId }),
+      c({ id: rascunho, titulo: "Assembleia geral ordinária: convocação", assunto: "ASSEMBLEIA", texto: "Convocamos todos para a assembleia.",
+        atualizadoEm: iso(agora - 4 * 86400_000) }),
+    ],
+    arquivos: [],
+    historico: new Map([[agua, [{ acao: "comunicado.publicado", em: iso(agora - 86400_000), autor: "Ana Souza", dados: { numero: 1 } }]],
+      [rascunho, [{ acao: "comunicado.escrito", em: iso(agora - 4 * 86400_000), autor: "Ana Souza", dados: {} }]]]),
+    documentos: [
+      { id: regimento, tipo: "REGIMENTO", titulo: "Regimento interno", descricao: null, restrito: false, aoMorador: true, valeAte: null, arquivado: null,
+        criadoEm: iso(agora - 30 * 86400_000), versao: 1, historico: [],
+        versoes: [{ id: novoId(), numero: 1, vigenteDesde: "2025-04-12", aprovadoEm: "AGE de 05/04/2025", nome: "regimento-v1.pdf", tipo: "application/pdf",
+          tamanho: 1_800_000, situacao: "LIBERADO", enviadoEm: iso(agora - 30 * 86400_000), enviadoPor: "Ana Souza" }] },
+      { id: avcb, tipo: "LAUDO", titulo: "AVCB", descricao: "Auto de vistoria do Corpo de Bombeiros", restrito: true, aoMorador: false, valeAte: somar(h, 42),
+        arquivado: null, criadoEm: iso(agora - 30 * 86400_000), versao: 1, historico: [], versoes: [] },
+    ],
+    plano: { assuntos: ["AVISO", "OBRAS", "SEGURANCA", "ASSEMBLEIA", "LEMBRETE"], plano: null, assinatura: "Ana, síndica do Residencial Ipê",
+      silencioInicio: "21:00", silencioFim: "08:00", versao: 1 },
+  };
+}
+
+export function resumoComunicados(est: EstadoComunicados, pode: (a: string) => boolean) {
+  const h = hojeFalso();
+  const parados = est.comunicados.filter((c) => c.estado === "RASCUNHO" && Date.parse(c.atualizadoEm) < Date.now() - 3 * 86400_000);
+  const hoje = est.comunicados.filter((c) => c.estado === "PROGRAMADO" && c.programadoPara && new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" })
+    .format(new Date(c.programadoPara)) === h);
+  const vencendo = est.documentos.filter((d) => !d.arquivado && d.valeAte && d.valeAte <= somar(h, 60) && (!d.restrito || pode("documentos.restritos")));
+  return {
+    ...(pode("comunicados.ver") ? { programadosHoje: hoje.length, rascunhosParados: parados.length,
+      ...(parados[0] ? { rascunhoMaisAntigo: { id: parados[0].id, titulo: parados[0].titulo, desde: parados[0].atualizadoEm } } : {}),
+      ...(hoje[0] ? { proximoProgramado: { id: hoje[0].id, titulo: hoje[0].titulo, em: hoje[0].programadoPara } } : {}) } : {}),
+    documentosVencendo: vencendo.length,
+    ...(vencendo[0] ? { documentoMaisProximo: { id: vencendo[0].id, titulo: vencendo[0].titulo, valeAte: vencendo[0].valeAte } } : {}),
+  };
+}
+
+function erro(route: Route, status: number, codigo: string, detalhes?: Record<string, unknown>) {
+  return route.fulfill({ status, json: { erro: detalhes ? { codigo, detalhes } : { codigo } } });
+}
+
+export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx: {
+  moradores: EstadoMoradores; pedidos: { id: string; protocolo: string; assunto: string; estado: string }[]; eu: { nome: string };
+}, caminho: string, metodo: string, corpo: Record<string, unknown>, url: URL, pode: (a: string) => boolean): Promise<unknown> {
+  const ligado = /^\/v1\/condominio\/(pedidos|manutencao)\/([^/]+)\/comunicados$/.exec(caminho);
+  if (!caminho.startsWith("/v1/condominio/comunicados") && !caminho.startsWith("/v1/condominio/documentos")
+    && caminho !== "/v1/condominio/plano-comunicacao" && !ligado) return null;
+  const agora = new Date().toISOString();
+  const h = hojeFalso();
+  const m = ctx.moradores;
+  const nomeUnidade = (id: string) => {
+    const u = m.unidades.find((x) => x.id === id)!;
+    const b = m.blocos.find((x) => x.id === u.blocoId);
+    return b ? `${b.nome} · ${u.identificacao}` : u.identificacao;
+  };
+  const destinatarios = (assunto: string, publico: string, blocos: string[], unidades: string[], contatos: string[]) =>
+    m.vinculos.filter((v) => v.estado === "CONFIRMADO" && (v.recebeComunicados || (assunto === "ASSEMBLEIA" && v.relacao === "PROPRIETARIO"))
+      && (publico === "TODOS" || (publico === "BLOCOS" && blocos.includes(m.unidades.find((u) => u.id === v.unidadeId)?.blocoId ?? ""))
+        || (publico === "UNIDADES" && unidades.includes(v.unidadeId)) || (publico === "CONTATOS" && contatos.includes(v.contatoId))));
+  const calcular = (assunto: string, publico: string, blocos: string[], unidades: string[], contatos: string[]) => {
+    const d = destinatarios(assunto, publico, blocos, unidades, contatos);
+    const escopo = m.unidades.filter((u) => u.ativa && publico !== "CONTATOS"
+      && (publico === "TODOS" || (publico === "BLOCOS" && blocos.includes(u.blocoId ?? "")) || (publico === "UNIDADES" && unidades.includes(u.id))));
+    return {
+      contatos: new Set(d.map((v) => v.contatoId)).size, unidades: new Set(d.map((v) => v.unidadeId)).size,
+      semNinguem: escopo.filter((u) => !destinatarios(assunto, "UNIDADES", [], [u.id], []).length).map((u) => ({ id: u.id, nome: nomeUnidade(u.id) })),
+      ...(pode("moradores.ver") ? { quem: [...new Set(d.map((v) => v.contatoId))].map((id) => ({ contatoId: id, nome: m.contatos.find((x) => x.id === id)!.nome,
+        unidades: d.filter((v) => v.contatoId === id).map((v) => nomeUnidade(v.unidadeId)) })) } : {}),
+    };
+  };
+  const resumoPublico = (c: ComunicadoFalso) => c.publico === "TODOS" ? "Todo o condomínio"
+    : c.publico === "BLOCOS" ? m.blocos.filter((b) => c.blocos.includes(b.id)).map((b) => b.nome).join(", ")
+      : c.publico === "UNIDADES" ? `${c.unidades.length} ${c.unidades.length === 1 ? "unidade" : "unidades"}` : `${c.contatos.length} contatos`;
+  const json = (c: ComunicadoFalso) => {
+    const ped = ctx.pedidos.find((p) => p.id === c.pedidoId);
+    return {
+      id: c.id, familiaId: c.familiaId, numero: c.numero, assunto: c.assunto, titulo: c.titulo, estado: c.estado, publico: c.publico, publicoResumo: resumoPublico(c),
+      destinatarios: c.destinatarios ?? undefined, programadoPara: c.programadoPara ?? undefined, publicadoEm: c.publicadoEm ?? undefined,
+      publicadoPor: c.publicadoPor ?? undefined, autor: c.autor, pedido: ped && pode("pedidos.ver") ? { id: ped.id, protocolo: ped.protocolo, assunto: ped.assunto } : undefined,
+      substituidoEm: c.substituidoEm ?? undefined, criadoEm: c.criadoEm, atualizadoEm: c.atualizadoEm, versao: c.versao,
+    };
+  };
+  const hist = (familia: string, acao: string, dados: Record<string, unknown> = {}) => {
+    const l = est.historico.get(familia) ?? [];
+    l.unshift({ acao, em: agora, autor: ctx.eu.nome, dados });
+    est.historico.set(familia, l);
+  };
+  const publicar = (c: ComunicadoFalso) => {
+    c.estado = "PUBLICADO"; c.publicadoEm = agora; c.publicadoPor = ctx.eu.nome; c.assinatura = est.plano.assinatura;
+    c.destinatarios = new Set(destinatarios(c.assunto, c.publico, c.blocos, c.unidades, c.contatos).map((v) => v.contatoId)).size;
+    hist(c.familiaId, "comunicado.publicado", { numero: c.numero });
+  };
+
+  if (ligado) {
+    if (!pode("comunicados.ver")) return route.fulfill({ json: { podeVer: false, podeEscrever: false, comunicados: [] } });
+    const lista = est.comunicados.filter((c) => ["RASCUNHO", "PROGRAMADO", "PUBLICADO"].includes(c.estado)
+      && (ligado[1] === "pedidos" ? c.pedidoId === ligado[2] : c.manutencaoId === ligado[2]));
+    return route.fulfill({ json: { podeVer: true, podeEscrever: pode("comunicados.publicar"), comunicados: lista.map(json) } });
+  }
+
+  if (caminho === "/v1/condominio/plano-comunicacao") {
+    if (metodo === "GET") return route.fulfill({ json: { ...est.plano, plano: est.plano.plano ?? undefined, podeEditar: pode("config.editar") } });
+    if (!pode("config.editar")) return erro(route, 403, "FORBIDDEN");
+    if (!(corpo.assuntos as string[]).length) return erro(route, 400, "VALIDATION_ERROR", { campos: ["assuntos"] });
+    Object.assign(est.plano, { assuntos: corpo.assuntos, plano: corpo.plano ?? null, assinatura: corpo.assinatura, silencioInicio: corpo.silencioInicio,
+      silencioFim: corpo.silencioFim, versao: est.plano.versao + 1 });
+    return route.fulfill({ json: { versao: est.plano.versao } });
+  }
+
+  // Documentos.
+  if (caminho.startsWith("/v1/condominio/documentos")) {
+    if (!pode("documentos.ver")) return erro(route, 403, "FORBIDDEN");
+    const visiveis = est.documentos.filter((d) => !d.restrito || pode("documentos.restritos"));
+    const vigor = (d: DocumentoFalso) => d.versoes.filter((v) => v.situacao === "LIBERADO" && v.vigenteDesde <= h).sort((a, b) => b.numero! - a.numero!)[0];
+    const docJson = (d: DocumentoFalso) => {
+      const v = vigor(d);
+      const prox = d.versoes.filter((x) => x.situacao === "LIBERADO" && x.vigenteDesde > h).sort((a, b) => b.numero! - a.numero!)[0];
+      return { id: d.id, tipo: d.tipo, titulo: d.titulo, descricao: d.descricao ?? undefined, restrito: d.restrito, aoMorador: d.aoMorador, valeAte: d.valeAte ?? undefined,
+        vencendo: !!d.valeAte && !d.arquivado && d.valeAte <= somar(h, 60), vencido: !!d.valeAte && d.valeAte < h,
+        emVigor: v ? { id: v.id, numero: v.numero, vigenteDesde: v.vigenteDesde, aprovadoEm: v.aprovadoEm, nome: v.nome } : undefined,
+        proxima: prox ? { id: prox.id, numero: prox.numero, vigenteDesde: prox.vigenteDesde } : undefined, atualizadoEm: d.criadoEm, versao: d.versao };
+    };
+    if (caminho === "/v1/condominio/documentos" && metodo === "GET") {
+      const f = url.searchParams.get("filtro") ?? "VIGOR";
+      const itens = visiveis.filter((d) => (f === "ARQUIVADOS" ? !!d.arquivado : !d.arquivado) && (f !== "VENCENDO" || (!!d.valeAte && d.valeAte <= somar(h, 60))));
+      return route.fulfill({ json: { itens: itens.map(docJson), total: itens.length,
+        vencendo: visiveis.filter((d) => !d.arquivado && d.valeAte && d.valeAte <= somar(h, 60)).length,
+        pode: { editar: pode("documentos.editar"), restritos: pode("documentos.restritos") } } });
+    }
+    if (caminho === "/v1/condominio/documentos" && metodo === "POST") {
+      if (!pode("documentos.editar")) return erro(route, 403, "FORBIDDEN");
+      if (String(corpo.titulo ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["titulo"] });
+      const d: DocumentoFalso = { id: novoId(), tipo: String(corpo.tipo), titulo: String(corpo.titulo).trim(), descricao: (corpo.descricao as string) ?? null,
+        restrito: corpo.restrito === true, aoMorador: corpo.aoMorador === true, valeAte: (corpo.valeAte as string) ?? null, arquivado: null, criadoEm: agora,
+        versao: 1, versoes: [], historico: [{ acao: "documento.criado", em: agora, autor: ctx.eu.nome, dados: {} }] };
+      est.documentos.push(d);
+      return route.fulfill({ status: 201, json: { id: d.id, versao: 1 } });
+    }
+    const r = /^\/v1\/condominio\/documentos\/([^/]+)(\/arquivar|\/versoes(?:\/([^/]+)\/(verificar|link))?)?$/.exec(caminho);
+    const d = r ? visiveis.find((x) => x.id === r[1]) : undefined;
+    if (!r || !d) return erro(route, 404, "NOT_FOUND");
+    const dh = (acao: string, dados: Record<string, unknown>) => d.historico.unshift({ acao, em: agora, autor: ctx.eu.nome, dados });
+    if (!r[2] && metodo === "GET") {
+      return route.fulfill({ json: { documento: { ...docJson(d), criadoEm: d.criadoEm, criadoPor: "Ana Souza",
+        arquivamento: d.arquivado ?? undefined }, versoes: [...d.versoes].reverse().map((v) => ({ ...v, emVigor: v.id === vigor(d)?.id })),
+        historico: d.historico, pode: { editar: pode("documentos.editar") && !d.arquivado, enviar: pode("documentos.editar") && !d.arquivado,
+          restritos: pode("documentos.restritos") }, limites: { tamanho: 20971520 }, hoje: h } });
+    }
+    if (!pode("documentos.editar")) return erro(route, 403, "FORBIDDEN");
+    if (!r[2] && metodo === "PUT") {
+      Object.assign(d, { tipo: corpo.tipo, titulo: corpo.titulo, descricao: corpo.descricao ?? null, restrito: corpo.restrito === true,
+        aoMorador: corpo.aoMorador === true, valeAte: corpo.valeAte ?? null, versao: d.versao + 1 });
+      dh("documento.alterado", {});
+      return route.fulfill({ json: { id: d.id, versao: d.versao } });
+    }
+    if (r[2] === "/arquivar") {
+      if (String(corpo.motivo ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
+      d.arquivado = { motivo: String(corpo.motivo).trim(), em: agora, por: ctx.eu.nome }; d.versao++;
+      dh("documento.arquivado", { motivo: d.arquivado.motivo });
+      return route.fulfill({ json: { versao: d.versao } });
+    }
+    if (r[2] === "/versoes" && metodo === "POST") {
+      if (!corpo.vigenteDesde) return erro(route, 400, "VALIDATION_ERROR", { campos: ["vigenteDesde"] });
+      if (d.versoes.some((v) => v.situacao === "LIBERADO") && String(corpo.mudanca ?? "").trim().length < 3) {
+        return erro(route, 400, "VALIDATION_ERROR", { campos: ["mudanca"] });
+      }
+      const v: VersaoFalsa = { id: novoId(), mudanca: (corpo.mudanca as string) ?? undefined, vigenteDesde: String(corpo.vigenteDesde),
+        aprovadoEm: (corpo.aprovadoEm as string) ?? undefined, nome: String(corpo.nome), tipo: String(corpo.tipo), tamanho: Number(corpo.tamanho),
+        situacao: "ENVIANDO", enviadoEm: agora, enviadoPor: ctx.eu.nome };
+      d.versoes.push(v);
+      return route.fulfill({ status: 201, json: { versaoId: v.id, envio: { url: `/api/v1/armazenamento/${v.id}`, metodo: "PUT", tipo: v.tipo } } });
+    }
+    const v = d.versoes.find((x) => x.id === r[3]);
+    if (!v) return erro(route, 404, "NOT_FOUND");
+    if (r[4] === "verificar") {
+      const motivo = conferir(conteudoEnviado(v.id), v.tipo);
+      if (motivo) { v.situacao = "NAO_LIBERADO"; v.motivoRecusa = motivo; return route.fulfill({ json: { situacao: v.situacao, motivo } }); }
+      v.situacao = "LIBERADO"; v.numero = Math.max(0, ...d.versoes.map((x) => x.numero ?? 0)) + 1;
+      dh("documento.versao_guardada", { numero: v.numero, vigenteDesde: v.vigenteDesde });
+      return route.fulfill({ json: { situacao: "LIBERADO", numero: v.numero } });
+    }
+    dh(url.searchParams.get("baixar") === "1" ? "documento.baixado" : "documento.aberto", { numero: v.numero });
+    return route.fulfill({ json: { url: `/api/v1/armazenamento/${v.id}`, tipo: v.tipo, expiraEm: agora } });
+  }
+
+  // Comunicados.
+  if (!pode("comunicados.ver")) return erro(route, 403, "FORBIDDEN");
+  if (caminho === "/v1/condominio/comunicados/opcoes") {
+    return route.fulfill({ json: {
+      assuntos: est.plano.assuntos, plano: est.plano.plano ?? undefined, assinatura: est.plano.assinatura ?? undefined,
+      silencio: { inicio: est.plano.silencioInicio, fim: est.plano.silencioFim }, fuso: "America/Sao_Paulo",
+      blocos: m.blocos.filter((b) => b.ativo).map((b) => ({ id: b.id, nome: b.nome })),
+      unidades: m.unidades.filter((u) => u.ativa).map((u) => ({ id: u.id, nome: nomeUnidade(u.id), blocoId: u.blocoId ?? undefined })),
+      ...(pode("moradores.ver") ? { contatos: m.contatos.map((x) => ({ id: x.id, nome: x.nome, unidades: m.vinculos.filter((v) => v.contatoId === x.id).map((v) => nomeUnidade(v.unidadeId)) })) } : {}),
+      ...(pode("pedidos.ver") ? { pedidos: ctx.pedidos.filter((p) => p.estado !== "ENCERRADO" && p.estado !== "CANCELADO").map((p) => ({ id: p.id, protocolo: p.protocolo, assunto: p.assunto })) } : {}),
+      pode: { publicar: pode("comunicados.publicar"), verMoradores: pode("moradores.ver") }, agora,
+    } });
+  }
+  if (caminho === "/v1/condominio/comunicados/publico") {
+    return route.fulfill({ json: calcular(String(corpo.assunto), String(corpo.publico), (corpo.blocos as string[]) ?? [], (corpo.unidades as string[]) ?? [],
+      (corpo.contatos as string[]) ?? []) });
+  }
+  if (caminho === "/v1/condominio/comunicados" && metodo === "GET") {
+    const f = url.searchParams.get("filtro") ?? "EM_USO";
+    const at = url.searchParams.get("atencao");
+    const parado = (c: ComunicadoFalso) => c.estado === "RASCUNHO" && Date.parse(c.atualizadoEm) < Date.now() - 3 * 86400_000;
+    const itens = est.comunicados.filter((c) => (f === "EM_USO" ? ["RASCUNHO", "PROGRAMADO", "PUBLICADO"].includes(c.estado) : c.estado === f)
+      && (at !== "RASCUNHOS_PARADOS" || parado(c)) && (at !== "PROGRAMADOS_HOJE" || c.estado === "PROGRAMADO"));
+    return route.fulfill({ json: { itens: itens.map(json), total: itens.length, pagina: 1,
+      atalhos: { rascunhosParados: est.comunicados.filter(parado).length, programadosHoje: est.comunicados.filter((c) => c.estado === "PROGRAMADO").length },
+      pode: { publicar: pode("comunicados.publicar") } } });
+  }
+  const salvar = (c: ComunicadoFalso | null) => {
+    if (!pode("comunicados.publicar")) return erro(route, 403, "FORBIDDEN");
+    const campos: string[] = [];
+    if (String(corpo.titulo ?? "").trim().length < 3) campos.push("titulo");
+    if (String(corpo.texto ?? "").trim().length < 3) campos.push("texto");
+    if (corpo.publico === "BLOCOS" && !(corpo.blocos as string[]).length) campos.push("blocos");
+    if (corpo.acao === "PROGRAMAR" && (!corpo.programadoPara || Date.parse(String(corpo.programadoPara)) < Date.now())) campos.push("programadoPara");
+    if (campos.length) return erro(route, 400, "VALIDATION_ERROR", { campos });
+    const dados = { assunto: String(corpo.assunto), titulo: String(corpo.titulo).trim(), texto: String(corpo.texto).trim(), publico: String(corpo.publico),
+      blocos: (corpo.blocos as string[]) ?? [], unidades: (corpo.unidades as string[]) ?? [], contatos: (corpo.contatos as string[]) ?? [],
+      pedidoId: (corpo.pedidoId as string) ?? null, manutencaoId: (corpo.manutencaoId as string) ?? null, atualizadoEm: agora };
+    if (!c) {
+      const id = novoId();
+      c = { id, familiaId: id, numero: 1, ...dados, estado: "RASCUNHO", programadoPara: null, publicadoEm: null, publicadoPor: null, destinatarios: null,
+        assinatura: null, mudanca: null, substituidoEm: null, arquivamento: null, autor: ctx.eu.nome, criadoEm: agora, versao: 1 };
+      est.comunicados.push(c);
+      hist(id, "comunicado.escrito");
+    } else {
+      if (!["RASCUNHO", "PROGRAMADO"].includes(c.estado)) return erro(route, 422, "VALIDATION_ERROR", { motivo: "COMUNICADO_PUBLICADO" });
+      if (corpo.versao !== c.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: c.versao });
+      Object.assign(c, dados, { versao: c.versao + 1 });
+      hist(c.familiaId, "comunicado.alterado", { campos: [] });
+    }
+    c.estado = corpo.acao === "PROGRAMAR" ? "PROGRAMADO" : "RASCUNHO";
+    c.programadoPara = corpo.acao === "PROGRAMAR" ? String(corpo.programadoPara) : null;
+    if (corpo.acao === "PROGRAMAR") hist(c.familiaId, "comunicado.programado");
+    if (corpo.acao === "PUBLICAR") publicar(c);
+    return route.fulfill({ status: metodo === "POST" ? 201 : 200, json: { id: c.id, versao: c.versao } });
+  };
+  if (caminho === "/v1/condominio/comunicados" && metodo === "POST") return salvar(null);
+
+  const r = /^\/v1\/condominio\/comunicados\/([^/]+)(?:\/(corrigir|arquivar|uso|arquivos)(?:\/([^/]+)\/(verificar|link|tirar))?)?$/.exec(caminho);
+  const c = r ? est.comunicados.find((x) => x.id === r[1]) : undefined;
+  if (!r || !c) return erro(route, 404, "NOT_FOUND");
+  if (!r[2] && metodo === "PUT") return salvar(c);
+  if (!r[2]) {
+    const familia = est.comunicados.filter((x) => x.familiaId === c.familiaId);
+    return route.fulfill({ json: {
+      comunicado: { ...json(c), texto: c.texto, assinatura: c.assinatura ?? est.plano.assinatura ?? undefined, mudanca: c.mudanca ?? undefined,
+        blocos: c.blocos, unidades: c.unidades, contatos: c.contatos, pedidoId: c.pedidoId ?? undefined, manutencaoId: c.manutencaoId ?? undefined,
+        arquivamento: c.arquivamento ?? undefined },
+      publicoAgora: calcular(c.assunto, c.publico, c.blocos, c.unidades, c.contatos),
+      versoes: familia.sort((a, b) => b.numero - a.numero).map((x) => ({ id: x.id, numero: x.numero, estado: x.estado, titulo: x.titulo, texto: x.texto,
+        mudanca: x.mudanca ?? undefined, publicadoEm: x.publicadoEm ?? undefined, publicadoPor: x.publicadoPor ?? undefined, substituidoEm: x.substituidoEm ?? undefined })),
+      arquivos: est.arquivos.filter((a) => a.familiaId === c.familiaId).map((a) => ({ ...a, enviadoPor: ctx.eu.nome, podeTirar: pode("comunicados.publicar") })),
+      historico: est.historico.get(c.familiaId) ?? [],
+      pode: { editar: pode("comunicados.publicar") && ["RASCUNHO", "PROGRAMADO"].includes(c.estado), corrigir: pode("comunicados.publicar") && c.estado === "PUBLICADO",
+        arquivar: pode("comunicados.publicar") && ["RASCUNHO", "PROGRAMADO", "PUBLICADO"].includes(c.estado),
+        enviar: pode("comunicados.publicar") && ["RASCUNHO", "PROGRAMADO"].includes(c.estado), copiar: c.estado === "PUBLICADO" },
+      condominio: "Residencial Ipê", limites: { arquivos: 4, tamanho: 10485760 },
+    } });
+  }
+  if (r[2] === "uso") {
+    if (c.estado !== "PUBLICADO") return erro(route, 422, "VALIDATION_ERROR", { motivo: "COMUNICADO_NAO_PUBLICADO" });
+    hist(c.familiaId, corpo.uso === "COPIADO" ? "comunicado.copiado" : "comunicado.mural", { numero: c.numero });
+    return route.fulfill({ json: { ok: true } });
+  }
+  if (!pode("comunicados.publicar")) return erro(route, 403, "FORBIDDEN");
+  if (r[2] === "corrigir") {
+    if (String(corpo.mudanca ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["mudanca"] });
+    c.estado = "SUBSTITUIDO"; c.substituidoEm = agora; c.versao++;
+    const nova: ComunicadoFalso = { ...c, id: novoId(), numero: c.numero + 1, titulo: String(corpo.titulo).trim(), texto: String(corpo.texto).trim(),
+      estado: "PUBLICADO", mudanca: String(corpo.mudanca).trim(), substituidoEm: null, publicadoEm: agora, publicadoPor: ctx.eu.nome, versao: 1, criadoEm: agora, atualizadoEm: agora };
+    est.comunicados.push(nova);
+    hist(c.familiaId, "comunicado.corrigido", { numero: nova.numero, mudanca: nova.mudanca });
+    return route.fulfill({ status: 201, json: { id: nova.id, versao: 1 } });
+  }
+  if (r[2] === "arquivar") {
+    if (String(corpo.motivo ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
+    c.estado = "ARQUIVADO"; c.arquivamento = { motivo: String(corpo.motivo).trim(), em: agora, por: ctx.eu.nome }; c.versao++;
+    hist(c.familiaId, "estado.mudou", { para: "ARQUIVADO", motivo: c.arquivamento.motivo });
+    return route.fulfill({ json: { versao: c.versao } });
+  }
+  if (r[2] === "arquivos" && !r[3]) {
+    const a: ArquivoFalso = { id: novoId(), familiaId: c.familiaId, nome: String(corpo.nome), tipo: String(corpo.tipo), tamanho: Number(corpo.tamanho),
+      situacao: "ENVIANDO", enviadoEm: agora };
+    est.arquivos.push(a);
+    return route.fulfill({ status: 201, json: { arquivoId: a.id, envio: { url: `/api/v1/armazenamento/${a.id}`, metodo: "PUT", tipo: a.tipo } } });
+  }
+  const a = est.arquivos.find((x) => x.id === r[3]);
+  if (!a) return erro(route, 404, "NOT_FOUND");
+  if (r[4] === "verificar") {
+    const motivo = conferir(conteudoEnviado(a.id), a.tipo);
+    a.situacao = motivo ? "NAO_LIBERADO" : "LIBERADO";
+    if (motivo) a.motivoRecusa = motivo;
+    hist(c.familiaId, motivo ? "comunicado.arquivo_recusado" : "comunicado.arquivo_enviado", { arquivoNome: a.nome });
+    return route.fulfill({ json: { situacao: a.situacao, ...(motivo ? { motivo } : {}) } });
+  }
+  if (r[4] === "link") return route.fulfill({ json: { url: `/api/v1/armazenamento/${a.id}`, tipo: a.tipo, expiraEm: agora } });
+  est.arquivos = est.arquivos.filter((x) => x.id !== a.id);
+  hist(c.familiaId, "comunicado.arquivo_tirado", { arquivoNome: a.nome });
+  return route.fulfill({ json: { ok: true } });
+}
