@@ -166,6 +166,20 @@ function AreaInterna({ ficha, pode, recarregar, avisar }: PropsAba) {
           <ul className="flex flex-wrap gap-1">{ficha.situacoes.map((s) => <li key={s}><SeloSituacao situacao={s} /></li>)}</ul>
         ) : <p className="text-sm text-tinta-suave">Nada a tratar.</p>}
       </div>
+      {ficha.exportacoes?.length ? (
+        <div className="grid gap-2">
+          <h3 className="text-sm font-semibold">Exportações pedidas pelo síndico</h3>
+          <ul className="grid gap-1 text-sm">
+            {ficha.exportacoes.map((e) => (
+              <li key={e.id}>
+                {new Date(e.pedidaEm).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}
+                {e.autor ? ` · ${e.autor}` : ""} · {e.situacao === "PRONTA" ? "pronta" : e.situacao === "FALHOU" ? "não deu certo" : "montando"}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-tinta-suave">Exportar não tira o condomínio da plataforma. Vale conversar com o síndico.</p>
+        </div>
+      ) : null}
     </aside>
   );
 }

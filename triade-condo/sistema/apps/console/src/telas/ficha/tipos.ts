@@ -24,6 +24,8 @@ export interface Ficha {
   sindicos: { vinculoId: string; pessoaId: string; nome: string; desde: string }[];
   equipe: { vinculoId: string; pessoaId: string; nome: string; funcao: string; desde: string; versao: number }[];
   situacoes: string[];
+  /** Exportações que o síndico pediu (peça R10, CT-04): a TRÍADE fica sabendo. */
+  exportacoes?: { id: string; situacao: "MONTANDO" | "PRONTA" | "FALHOU"; pedidaEm: string; autor?: string; prontaEm?: string }[];
   permissoes: string[];
 }
 

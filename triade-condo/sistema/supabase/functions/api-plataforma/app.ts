@@ -5,7 +5,8 @@
 // Passos 6 e 7: avisos, regras de aviso, prazo do pedido e indicadores. Peça R7: agenda.
 // Peça R6: manutenção, prestadores, preventivas e vistorias. Peça R1: comunicados e documentos,
 // com o mural online e o e-mail (CD-12 a CD-14), as primeiras rotas sem conta (/v1/publico).
-// Peça R13: etiquetas por local e o link do prestador (AT-30, MP-08, V-11).
+// Peça R13: etiquetas por local e o link do prestador (AT-30, MP-08, V-11). Peça R10: memória do
+// prédio (MP-12, MP-14, CT-02 a CT-04), com a exportação montada aqui em segundo plano.
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
@@ -120,6 +121,14 @@ import {
   linkPrestadorSchema,
   motivoEtiquetaSchema,
   termineiSchema,
+  anotacaoSchema,
+  buscaLinhaDoTempoSchema,
+  CHAVE_PRONTUARIO,
+  itemProntuarioSchema,
+  novoItemProntuarioSchema,
+  ordemManualSchema,
+  retirarSchema,
+  secaoManualSchema,
 } from "@triade/domain";
 import { verificarArquivo, type Armazenamento } from "../_shared/arquivos.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
@@ -130,6 +139,7 @@ import type { AdminAuth } from "../_shared/auth.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
+import { montarZip, planilhaCsv, type ItemZip } from "../_shared/zip.ts";
 
 export type VarsPlataforma = { Variables: VarsSessao["Variables"] & { condominioId: string } };
 
@@ -150,6 +160,8 @@ export interface DepsPlataforma extends DepsSessao {
   /** Armazenamento privado das fotos dos comunicados e dos documentos do prédio (peça R1). */
   armazenamentoComunicados?: Armazenamento;
   armazenamentoDocumentos?: Armazenamento;
+  /** Pacotes da exportação (peça R10, CT-04). */
+  armazenamentoExportacoes?: Armazenamento;
   /** E-mail dos comunicados e documentos (CD-13, CD-14). Sem correio, a fila espera. */
   correio?: Correio;
   remetente?: string;
@@ -909,6 +921,95 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString(),
   });
 
+  // ---------------------------------------------------------------------------------------
+  // Memória do prédio (peça R10; MP-12, MP-14, CT-02, CT-03, CT-04).
+  app.get("/v1/condominio/memoria/prontuario", async (c) => c.json(await rpc("plataforma_prontuario", quem(c))));
+  app.post("/v1/condominio/memoria/prontuario/itens", async (c) => {
+    const d = await lerCorpo(c, novoItemProntuarioSchema);
+    return c.json(await rpc("plataforma_item_prontuario", {
+      ...quem(c), p_id: null, p_chave: null, p_versao: null, p_acao: "CRIAR", p_nome: d.nome, p_grupo: d.grupo,
+      p_documento: null, p_avisar_dias: null, p_motivo: null,
+    }), 201);
+  });
+  // O item é o id (já guardado) ou a chave da lista sugerida (CONVENCAO, AVCB...).
+  app.post("/v1/condominio/memoria/prontuario/itens/:item", async (c) => {
+    const item = c.req.param("item");
+    const porId = UUID.test(item);
+    if (!porId && !CHAVE_PRONTUARIO.test(item)) throw new ErroDominio("NOT_FOUND");
+    const d = await lerCorpo(c, itemProntuarioSchema);
+    return c.json(await rpc("plataforma_item_prontuario", {
+      ...quem(c), p_id: porId ? item.toLowerCase() : null, p_chave: porId ? null : item, p_versao: d.versao ?? null, p_acao: d.acao,
+      p_nome: null, p_grupo: null, p_documento: d.acao === "LIGAR" ? d.documentoId : null,
+      p_avisar_dias: d.acao === "LIGAR" ? d.avisarDias : null, p_motivo: d.acao === "NAO_SE_APLICA" ? d.motivo : null,
+    }));
+  });
+
+  app.get("/v1/condominio/memoria/linha-do-tempo", async (c) => {
+    const r = buscaLinhaDoTempoSchema.safeParse({ filtro: c.req.query("filtro") || undefined, antes: c.req.query("antes") || undefined });
+    if (!r.success) throw invalido(r);
+    return c.json(await rpc("plataforma_linha_do_tempo", { ...quem(c), p_filtro: r.data.filtro, p_antes: r.data.antes ?? null }));
+  });
+  app.get("/v1/condominio/memoria/opcoes", async (c) => c.json(await rpc("plataforma_opcoes_memoria", quem(c))));
+  app.get("/v1/condominio/memoria/anotacoes/:id", async (c) => c.json(await rpc("plataforma_anotacao", { ...quem(c), p_id: idDaRota(c, "id") })));
+  async function salvarAnotacao(c: Context<VarsPlataforma>, id: string | null) {
+    const d = await lerCorpo(c, anotacaoSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("plataforma_salvar_anotacao", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_tipo: d.tipo, p_titulo: d.titulo, p_texto: d.texto, p_aconteceu_em: d.aconteceuEm,
+      p_documento: d.documentoId, p_pedido: d.pedidoId, p_manutencao: d.manutencaoId,
+    });
+  }
+  app.post("/v1/condominio/memoria/anotacoes", async (c) => c.json(await salvarAnotacao(c, null), 201));
+  app.put("/v1/condominio/memoria/anotacoes/:id", async (c) => c.json(await salvarAnotacao(c, idDaRota(c, "id"))));
+  app.post("/v1/condominio/memoria/anotacoes/:id/retirar", async (c) => {
+    const d = await lerCorpo(c, retirarSchema);
+    return c.json(await rpc("plataforma_retirar_anotacao", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  app.get("/v1/condominio/memoria/manual", async (c) => c.json(await rpc("plataforma_manual", quem(c))));
+  app.put("/v1/condominio/memoria/manual/ordem", async (c) => {
+    const d = await lerCorpo(c, ordemManualSchema);
+    return c.json(await rpc("plataforma_ordem_manual", { ...quem(c), p_ids: d.ids }));
+  });
+  app.get("/v1/condominio/memoria/manual/:id", async (c) => c.json(await rpc("plataforma_secao_manual", { ...quem(c), p_id: idDaRota(c, "id") })));
+  async function salvarSecao(c: Context<VarsPlataforma>, id: string | null) {
+    const d = await lerCorpo(c, secaoManualSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("plataforma_salvar_secao_manual", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_titulo: d.titulo, p_resumo: d.resumo, p_texto: d.texto, p_no_mural: d.noMural ?? null,
+    });
+  }
+  app.post("/v1/condominio/memoria/manual", async (c) => c.json(await salvarSecao(c, null), 201));
+  app.put("/v1/condominio/memoria/manual/:id", async (c) => c.json(await salvarSecao(c, idDaRota(c, "id"))));
+  app.post("/v1/condominio/memoria/manual/:id/retirar", async (c) => {
+    const d = await lerCorpo(c, retirarSchema);
+    return c.json(await rpc("plataforma_retirar_secao_manual", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  app.get("/v1/condominio/memoria/dossies", async (c) => c.json(await rpc("plataforma_dossies", quem(c))));
+  app.post("/v1/condominio/memoria/dossies", async (c) => c.json(await rpc("plataforma_gerar_dossie", quem(c)), 201));
+  app.get("/v1/condominio/memoria/dossies/:id", async (c) => c.json(await rpc("plataforma_dossie", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  // Exportação (CT-04): o banco monta a lista dos pacotes e esta função monta cada um em segundo
+  // plano. Abrir a tela continua a montagem, mesmo sem a chamada do banco a cada minuto.
+  app.get("/v1/condominio/memoria/exportacoes", async (c) => {
+    const r = await rpc<{ montando?: boolean }>("plataforma_exportacoes", quem(c));
+    if (r.montando) montarAoFundo();
+    return c.json(r);
+  });
+  app.post("/v1/condominio/memoria/exportacoes", async (c) => {
+    const r = await rpc("plataforma_pedir_exportacao", quem(c));
+    montarAoFundo();
+    return c.json(r, 201);
+  });
+  app.get("/v1/condominio/memoria/exportacoes/:id/pacotes/:numero/link", async (c) => {
+    const numero = Number(c.req.param("numero"));
+    if (!Number.isInteger(numero) || numero < 1 || numero > 999) throw new ErroDominio("NOT_FOUND");
+    const x = await rpc<{ caminho: string; arquivo: string }>("plataforma_baixar_exportacao", { ...quem(c), p_id: idDaRota(c, "id"), p_numero: numero });
+    const url = await guarda(deps.armazenamentoExportacoes).linkLeitura(x.caminho, VALIDADE_LINK_ARQUIVO_S, x.arquivo);
+    return c.json({ url, arquivo: x.arquivo, expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString() });
+  });
+
   app.get("/v1/condominio/comunicados/opcoes", async (c) => c.json(await rpc("plataforma_comunicado_opcoes", quem(c))));
 
   app.post("/v1/condominio/comunicados/publico", async (c) => {
@@ -1305,6 +1406,88 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   function esvaziarFila() {
     if (!deps.correio) return;
     const p = processarFila().catch((erro) => registrar("erro", { funcao: "api-plataforma", rota: "fila-email", erro }));
+    (deps.aoFundo ?? (() => {}))(p);
+  }
+
+  // O banco chama (pg_cron + pg_net, com o segredo de repasse) quando há pacote da exportação esperando.
+  app.post("/v1/interno/exportacao", async (c) => c.json({ montados: await montarExportacao() }));
+
+  interface ParteExportacao {
+    condominio: string;
+    exportacao: string;
+    parte: string;
+    numero: number;
+    tipo: "DADOS" | "ARQUIVOS";
+    caminho: string;
+    arquivos: { b: "pedidos" | "manutencoes" | "comunicados" | "documentos"; c: string; n: string }[];
+  }
+  const LEIA_ME = [
+    "Exportação da TRÍADE Condo",
+    "",
+    "dados.json: tudo o que o condomínio guardou, tabela por tabela, com o histórico.",
+    "planilhas/: as mesmas tabelas em CSV (separadas por ponto e vírgula), para abrir no Excel ou no LibreOffice.",
+    "Os arquivos (fotos, PDFs e documentos) vêm nos pacotes \"arquivos\", em pastas por pedido, manutenção, comunicado e documento.",
+    "",
+    "Guarde com cuidado: há dados pessoais dos moradores.",
+  ].join("\r\n");
+
+  /** Um pacote: o dos dados (JSON e planilhas) ou um dos arquivos. Arquivo que sumiu entra numa lista. */
+  async function montarPacote(p: ParteExportacao): Promise<Uint8Array> {
+    const enc = new TextEncoder();
+    if (p.tipo === "DADOS") {
+      const dados = await rpc<{ tabelas: Record<string, Record<string, unknown>[]> }>("exportacao_dados", {
+        p_condominio: p.condominio, p_parte: p.parte,
+      }, 60_000);
+      const itens: ItemZip[] = [
+        { nome: "LEIA-ME.txt", bytes: enc.encode(LEIA_ME), comprimir: true },
+        { nome: "dados.json", bytes: enc.encode(JSON.stringify(dados, null, 1)), comprimir: true },
+        ...Object.entries(dados.tabelas).map(([t, linhas]) => ({ nome: `planilhas/${t}.csv`, bytes: enc.encode(planilhaCsv(linhas)), comprimir: true })),
+      ];
+      return await montarZip(itens);
+    }
+    const guardas = {
+      pedidos: deps.armazenamento,
+      manutencoes: armazenamentoManutencao(),
+      comunicados: guarda(deps.armazenamentoComunicados),
+      documentos: guarda(deps.armazenamentoDocumentos),
+    };
+    const itens: ItemZip[] = [];
+    const faltando: string[] = [];
+    for (const a of p.arquivos) {
+      const bytes = await guardas[a.b].ler(a.c);
+      if (bytes) itens.push({ nome: a.n, bytes });
+      else faltando.push(a.n);
+    }
+    if (faltando.length) itens.push({ nome: "arquivos-que-nao-vieram.txt", bytes: enc.encode(faltando.join("\r\n")), comprimir: true });
+    return await montarZip(itens);
+  }
+
+  /** Monta pacotes até acabar ou até perto do tempo da função. */
+  async function montarExportacao(tempoMs = 90_000): Promise<number> {
+    const destino = deps.armazenamentoExportacoes;
+    if (!destino) return 0;
+    const inicio = Date.now();
+    let n = 0;
+    while (Date.now() - inicio < tempoMs) {
+      const p = await rpc<ParteExportacao | null>("exportacao_pegar_parte", {});
+      if (!p) break;
+      try {
+        const bytes = await montarPacote(p);
+        await destino.gravar(p.caminho, bytes, "application/zip");
+        await rpc("exportacao_parte_pronta", { p_condominio: p.condominio, p_parte: p.parte, p_tamanho: bytes.length, p_erro: null });
+        n++;
+      } catch (erro) {
+        registrar("erro", { funcao: "api-plataforma", rota: "exportacao", erro });
+        await rpc("exportacao_parte_pronta", {
+          p_condominio: p.condominio, p_parte: p.parte, p_tamanho: null, p_erro: String(erro instanceof Error ? erro.message : erro).slice(0, 200),
+        });
+      }
+    }
+    return n;
+  }
+  function montarAoFundo() {
+    if (!deps.armazenamentoExportacoes) return;
+    const p = montarExportacao().catch((erro) => registrar("erro", { funcao: "api-plataforma", rota: "exportacao", erro }));
     (deps.aoFundo ?? (() => {}))(p);
   }
 

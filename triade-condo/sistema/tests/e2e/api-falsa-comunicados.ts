@@ -91,7 +91,8 @@ export function criarComunicados(pedidoId: string): EstadoComunicados {
 }
 
 /** Sem conta (CD-12 a CD-14): o mural, os links do e-mail e o pedido de documento. */
-export async function rotasPublicas(route: Route, est: EstadoComunicados, caminho: string, metodo: string, corpo: Record<string, unknown>): Promise<unknown> {
+export async function rotasPublicas(route: Route, est: EstadoComunicados, caminho: string, metodo: string, corpo: Record<string, unknown>,
+  manual: () => unknown[] = () => []): Promise<unknown> {
   if (!caminho.startsWith("/v1/publico/")) return null;
   const mu = est.mural;
   const pub = (c: ComunicadoFalso) => ({ id: c.id, assunto: c.assunto, titulo: c.titulo, texto: c.texto, assinatura: c.assinatura ?? undefined,
@@ -116,7 +117,7 @@ export async function rotasPublicas(route: Route, est: EstadoComunicados, caminh
     const lista = doMural().sort((a, b) => String(b.publicadoEm).localeCompare(String(a.publicadoEm)));
     return route.fulfill({ json: { condominio: "Residencial Ipê", comunicados: lista.map(pub),
       documentos: mu.documentosNoMural && mu.emailLigado ? docs().map((d) => ({ id: d.id, titulo: d.titulo, tipo: d.tipo })) : [],
-      atualizadoEm: lista[0]?.publicadoEm } });
+      manual: manual(), atualizadoEm: lista[0]?.publicadoEm } });
   }
   const c = /^\/v1\/publico\/c\/([^/]+)(?:\/arquivos\/([^/]+))?$/.exec(caminho);
   if (c) {

@@ -1,7 +1,8 @@
 "use client";
 // Mural online do prédio (design "Mural online e e-mail", tela 1; CD-12, CD-14): os comunicados
 // para todo o condomínio, do mais novo ao mais antigo, sem conta nem senha, e o pedido de
-// documento por e-mail, com resposta sempre neutra. Nada de nomes, telefones ou unidades.
+// documento por e-mail, com resposta sempre neutra. Nada de nomes, telefones ou unidades. As
+// seções do manual do prédio marcadas "no mural" ficam numa aba ao lado (peça R10, MP-14).
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
@@ -15,7 +16,9 @@ type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { es
 
 export function Mural() {
   const { codigo } = useParams<{ codigo: string }>();
-  const aberto = useSearchParams().get("c");
+  const busca = useSearchParams();
+  const aberto = busca.get("c");
+  const verManual = busca.get("aba") === "manual";
   const router = useRouter();
   const [carga, setCarga] = useState<Carga>({ estado: "carregando" });
   const [pedir, setPedir] = useState(false);
@@ -39,6 +42,32 @@ export function Mural() {
   const subtitulo = `Avisos para todo o condomínio${m.atualizadoEm ? ` · atualizado ${diaHora(m.atualizadoEm)}` : ""}`;
   const comunicado = aberto ? m.comunicados?.find((c) => c.id === aberto) : undefined;
   const voltar = () => { setPedir(false); router.replace(`/m/${codigo}`, { scroll: false }); };
+  const abas = m.manual?.length ? (
+    <span className="trilho" role="group" aria-label="Mostrar">
+      <button type="button" className="chip" aria-pressed={!verManual} data-escolhido={!verManual ? "" : undefined}
+        onClick={() => router.replace(`/m/${codigo}`, { scroll: false })}>Avisos</button>
+      <button type="button" className="chip" aria-pressed={verManual} data-escolhido={verManual ? "" : undefined}
+        onClick={() => router.replace(`/m/${codigo}?aba=manual`, { scroll: false })}>Manual do prédio</button>
+    </span>
+  ) : null;
+
+  if (verManual && m.manual?.length) {
+    return (
+      <TelaPublica titulo={titulo} subtitulo="Manual do prédio">
+        {abas}
+        <ul className="grid gap-3" aria-label="Manual do prédio">
+          {m.manual.map((s) => (
+            <li key={s.id}>
+              <Cartao>
+                <h2 className="text-base font-medium">{s.titulo}</h2>
+                <p className="text-sm whitespace-pre-line">{s.texto}</p>
+              </Cartao>
+            </li>
+          ))}
+        </ul>
+      </TelaPublica>
+    );
+  }
 
   if (comunicado) {
     return (
@@ -58,6 +87,7 @@ export function Mural() {
   }
   return (
     <TelaPublica titulo={titulo} subtitulo={subtitulo}>
+      {abas}
       {m.comunicados?.length ? (
         <ul className="grid gap-3" aria-label="Comunicados">
           {m.comunicados.map((c) => (

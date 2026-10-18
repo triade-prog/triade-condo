@@ -15,3 +15,4 @@ export * from "./agenda.ts";
 export * from "./manutencao.ts";
 export * from "./comunicados.ts";
 export * from "./links.ts";
+export * from "./memoria.ts";
