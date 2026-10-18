@@ -211,7 +211,7 @@ Mural online e e-mail (R1b; CD-12, CD-13, CD-14) aprovados pela Carolina e const
 
 **Próximo passo:**
 
-1. Mural online e e-mail (R1b): a 0160 está aplicada e a `api-plataforma` versão 12 publicada; falta a Carolina gravar os segredos do e-mail (na função e no Vault, como descrito acima) e cadastrar o aviso do Resend, e juntar o PR ao `main`. Antes de ligar o e-mail num condomínio de verdade, trocar o plano gratuito do Resend.
+1. Mural online e e-mail (R1b): a 0160 está aplicada e a `api-plataforma` versão 12 publicada; falta a Carolina gravar os segredos do e-mail (na função e no Vault, como descrito acima) e cadastrar o aviso do Resend (o PR 14 já foi juntado ao `main`). Antes de ligar o e-mail num condomínio de verdade, trocar o plano gratuito do Resend.
 2. Com a Carolina: conferir Comunicados e documentos e a Manutenção no `condominio.trihub.com.br` (os PRs 12 e 13 foram juntados ao `main`).
 3. Com a Carolina: conferir a Agenda no `condominio.trihub.com.br` e testar com pedidos de verdade no Águas Claras (E8), incluindo um envio de foto (4b) e os avisos de prazo (6 e 7). A produção da Vercel sai do `main`, que já tem tudo até Comunicados e documentos.
 4. Com a Carolina, liberar o CI (F0.9).
