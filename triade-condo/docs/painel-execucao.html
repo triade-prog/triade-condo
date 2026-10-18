@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "17/10/2026",
     "total_ideias": 308,
-    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) e a Agenda (R7) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (657 pgTAP, 102 Deno, 86 Vitest, 140 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0120 (a 0130, da agenda, espera ser aplicada; com a conferência de prazos no pg_cron) e as Edge Functions api-plataforma (versão 8) e api-console (versão 2); a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
+    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7) e Manutenção e prestadores (R6) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (724 pgTAP, 108 Deno, 94 Vitest, 154 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0140 (com a conferência de prazos e a da manutenção no pg_cron) e as Edge Functions api-plataforma (versão 10, com a agenda e a manutenção) e api-console; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F7",
-    "proximo_passo": "Aplicar a migration 0130 (agenda) no triade-condo-dev e publicar a api-plataforma com as rotas da agenda; juntar o PR da agenda ao main. Com a Carolina: liberar o GitHub Actions (F0.9), escolher o provedor do WhatsApp (E1) e a próxima peça."
+    "proximo_passo": "Manutenção (R6): juntar o PR ao main para as telas chegarem ao site (a 0140 e a api-plataforma versão 10 já estão no triade-condo-dev). Com a Carolina: conferir a Agenda e a Manutenção no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
   "fases": [
     {
@@ -434,7 +434,7 @@
             "PT-11"
           ],
           "status": "feito",
-          "nota": "Telas aprovadas pela Carolina em 17/10/2026 e construídas: ficha da unidade com a linha de ocupação e cada pessoa com as marcações, a ligação, o parentesco e desde quando ocupa; incluir e editar pessoa com as três marcações (aviso ao trocar o responsável); encerrar com o ocupou até em qualquer motivo; mudança com as marcações de quem entra e as datas preenchidas sozinhas; lista de unidades com a coluna Ocupação e os contadores que filtram; planilha com colunas novas e opcionais. Migration 0110 aplicada pela Carolina no triade-condo-dev e conferida (vínculos convertidos e registrados no histórico). api-plataforma versão 7 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br (aceita também o formato antigo, então o site atual não quebra). Falta juntar a branch ao main para as telas chegarem ao site.",
+          "nota": "Telas aprovadas pela Carolina em 17/10/2026 e construídas: ficha da unidade com a linha de ocupação e cada pessoa com as marcações, a ligação, o parentesco e desde quando ocupa; incluir e editar pessoa com as três marcações (aviso ao trocar o responsável); encerrar com o ocupou até em qualquer motivo; mudança com as marcações de quem entra e as datas preenchidas sozinhas; lista de unidades com a coluna Ocupação e os contadores que filtram; planilha com colunas novas e opcionais. Migration 0110 aplicada pela Carolina no triade-condo-dev e conferida (vínculos convertidos e registrados no histórico). api-plataforma versão 7 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br (aceita também o formato antigo, então o site atual não quebra). Juntado ao main; as telas estão no site.",
           "evidencia": "pgTAP 012_vinculo_detalhado_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3b.spec.ts e plataforma-passo3.spec.ts"
         }
       ]
@@ -638,7 +638,7 @@
             "AT-08"
           ],
           "status": "feito",
-          "nota": "Avisos dentro do painel: o banco confere os prazos a cada 5 minutos (horas de atendimento, sem feriados, pausa nas etapas que pausam) e avisa o responsável na hora; sino na barra superior com os avisos sem ver; o pedido vencido mostra quem já foi avisado e quando o próximo será. Ver o aviso não resolve o pedido. Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Falta juntar a branch ao main para as telas chegarem ao site.",
+          "nota": "Avisos dentro do painel: o banco confere os prazos a cada 5 minutos (horas de atendimento, sem feriados, pausa nas etapas que pausam) e avisa o responsável na hora; sino na barra superior com os avisos sem ver; o pedido vencido mostra quem já foi avisado e quando o próximo será. Ver o aviso não resolve o pedido. Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Juntado ao main; as telas estão no site.",
           "evidencia": "pgTAP 013_prazos_avisos_test.sql; Deno api-plataforma/prazos_test.ts; Vitest prazos.test.ts; Playwright plataforma-passo6e7.spec.ts"
         },
         {
@@ -650,7 +650,7 @@
             "V-14"
           ],
           "status": "feito",
-          "nota": "Escalonamento: síndico depois de 2 h e substituto (pessoa autorizada) depois de 8 h de atendimento, mudáveis em Configurações › Prazos e avisos; também avisos de pedido sem responsável e de pendência parada. Sem repetir aviso. O conselho entra quando existir (V-14). Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Falta juntar a branch ao main para as telas chegarem ao site.",
+          "nota": "Escalonamento: síndico depois de 2 h e substituto (pessoa autorizada) depois de 8 h de atendimento, mudáveis em Configurações › Prazos e avisos; também avisos de pedido sem responsável e de pendência parada. Sem repetir aviso. O conselho entra quando existir (V-14). Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Juntado ao main; as telas estão no site.",
           "evidencia": "pgTAP 013_prazos_avisos_test.sql; Deno api-plataforma/prazos_test.ts; Vitest prazos.test.ts; Playwright plataforma-passo6e7.spec.ts"
         },
         {
@@ -689,7 +689,7 @@
             "TR-11"
           ],
           "status": "feito",
-          "nota": "Início com o Agora (retornos vencidos e o mais antigo, o que vence hoje, para aceitar, sem responsável, pendências paradas), cada linha levando à fila filtrada, e o mês fechado, fixo. Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Falta juntar a branch ao main para as telas chegarem ao site.",
+          "nota": "Início com o Agora (retornos vencidos e o mais antigo, o que vence hoje, para aceitar, sem responsável, pendências paradas), cada linha levando à fila filtrada, e o mês fechado, fixo. Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Juntado ao main; as telas estão no site.",
           "evidencia": "pgTAP 013_prazos_avisos_test.sql; Deno api-plataforma/prazos_test.ts; Vitest prazos.test.ts; Playwright plataforma-passo6e7.spec.ts"
         },
         {
@@ -702,7 +702,7 @@
             "TR-07"
           ],
           "status": "feito",
-          "nota": "Tela Indicadores: retornos no prazo como métrica principal, primeiro retorno, concluídos e reabertos, por categoria, com período (este mês, mês passado, 3 meses) e comparação; sem caso, \"sem dados\", nunca zero. Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Falta juntar a branch ao main para as telas chegarem ao site.",
+          "nota": "Tela Indicadores: retornos no prazo como métrica principal, primeiro retorno, concluídos e reabertos, por categoria, com período (este mês, mês passado, 3 meses) e comparação; sem caso, \"sem dados\", nunca zero. Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Juntado ao main; as telas estão no site.",
           "evidencia": "pgTAP 013_prazos_avisos_test.sql; Deno api-plataforma/prazos_test.ts; Vitest prazos.test.ts; Playwright plataforma-passo6e7.spec.ts"
         }
       ]
@@ -751,8 +751,19 @@
           "id": "R6",
           "texto": "Manutenção e prestadores",
           "peca": "S6",
-          "refs": [],
-          "status": "pendente"
+          "refs": [
+            "MP-01",
+            "MP-02",
+            "MP-03",
+            "MP-04",
+            "MP-05",
+            "MP-07",
+            "MP-09",
+            "MP-13"
+          ],
+          "status": "feito",
+          "evidencia": "Desenho aprovado em docs/telas/manutencao.html. Migration 0140_manutencao.sql (prestadores, etapas, manutenções, providências, vistoria, preventivas que abrem sozinhas, fotos no bucket manutencoes, avisos de retorno vencido, visita ligada na agenda, permissões Ver a manutenção e Cuidar da manutenção); telas /manutencao, /manutencao/manutencao, /manutencao/preventivas, /manutencao/prestadores, /manutencao/prestador, Manutenção ligada no pedido, cartão no início e aba Manutenção nas configurações",
+          "nota": "Migration 0140 aplicada pela Carolina no triade-condo-dev e conferida (8 tabelas, 2 permissões, bucket privado manutencoes, as 63 funções iguais às testadas e a verificar-manutencao no pg_cron de hora em hora). api-plataforma versão 10 publicada (pacote conferido igual ao testado) e inicializando sem erro. As telas chegam ao site quando o PR for juntado ao main. MP-09 em parte: a reserva fica registrada; a troca automática espera o WhatsApp. Ficam para depois, com o motivo no desenho: MP-06, MP-10, MP-11, MP-15, MP-16 e V-13."
         },
         {
           "id": "R7",
@@ -771,7 +782,7 @@
           ],
           "status": "feito",
           "evidencia": "Desenho aprovado em docs/telas/agenda.html. Migration 0130_agenda.sql (compromissos, repetição, conflitos, situações, reagendar e cancelar com motivo, agenda do pedido, permissões Ver a agenda e Cuidar da agenda); telas /agenda (lista, semana, mês, filtro por tipo, feriados), /agenda/compromisso, Na agenda no pedido e Hoje na agenda no início",
-          "nota": "Falta aplicar a 0130 no triade-condo-dev e publicar a api-plataforma com as rotas da agenda."
+          "nota": "Migration 0130 no triade-condo-dev (tabelas e as nove funções da agenda conferidas) e api-plataforma versão 9 publicada com as rotas da agenda. PR 11 juntado ao main."
         },
         {
           "id": "R8",
@@ -1087,6 +1098,23 @@
       ],
       "status": "feito",
       "evidencia": "pgTAP 014_agenda_test.sql (52 testes); Deno api-plataforma/agenda_test.ts (6 testes); Vitest agenda.test.ts (7 testes); Playwright plataforma-agenda.spec.ts (8 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T22",
+      "texto": "Manutenção: permissões, prestadores do condomínio com reserva e contrato perto do fim, manutenção separada do pedido (concluir não encerra o pedido), situações fixas com pendência e etapas, providências, vistoria com lista própria e item que vira manutenção, preventivas que abrem sozinhas e contam da data prevista, retorno vencido avisado uma vez, visita ligada na agenda e preventivas na agenda; telas no celular e no computador com axe e sem emoji",
+      "fase": "R6",
+      "refs": [
+        "MP-01",
+        "MP-02",
+        "MP-03",
+        "MP-04",
+        "MP-05",
+        "MP-07",
+        "MP-09",
+        "MP-13"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 015_manutencao_test.sql (67 testes); Deno api-plataforma/manutencao_test.ts (6 testes); Vitest manutencao.test.ts (8 testes); Playwright plataforma-manutencao.spec.ts (7 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -1320,6 +1348,34 @@
     ]
   ],
   "historico": [
+    {
+      "data": "17/10/2026",
+      "inicio": "21:05",
+      "fim": "21:20",
+      "texto": "Manutenção no triade-condo-dev: a Carolina aplicou a 0140 e ela foi conferida no banco (8 tabelas, permissões Ver a manutenção e Cuidar da manutenção, bucket privado manutencoes, as 63 funções com o mesmo conteúdo das testadas e a rotina verificar-manutencao no pg_cron de hora em hora). api-plataforma versão 10 publicada às 21h17 com as rotas da manutenção (pacote conferido igual ao testado); a função inicializa e responde. Falta juntar o PR ao main para as telas chegarem ao condominio.trihub.com.br.",
+      "ref": "R6, MP-01, MP-02, MP-03, MP-04, MP-05, MP-07, MP-09, MP-13"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "19:46",
+      "fim": "20:22",
+      "texto": "Manutenção e prestadores (peça R6) construída depois do aprovado da Carolina. Banco: migration 0140 com as permissões Ver a manutenção e Cuidar da manutenção, prestadores do condomínio (com contrato ou por chamado, reserva indicada, arquivar sem apagar), etapas por situação, manutenções com cinco situações fixas, pendência com tipo e motivo, próximo retorno e previsão separados e com motivo, providências com resultado, vistoria com lista própria e item com problema que vira corretiva, preventivas que abrem a manutenção alguns dias antes e contam a próxima data da data prevista, fotos e documentos no bucket privado manutencoes, aviso de retorno vencido no sino, visita marcada ligada à manutenção e preventivas na agenda; concluir a manutenção não encerra o pedido. A rotina verificar_manutencao roda de hora em hora no pg_cron. API com as rotas da manutenção e telas: Manutenção (lista com atalhos), nova, aberta, vistoria, Preventivas com as sugestões da NBR 5674, Prestadores e a ficha, Manutenção ligada no pedido, cartão no início e aba Manutenção nas configurações. Testes: 724 pgTAP, 108 Deno, 94 Vitest e 154 ponta a ponta passando.",
+      "ref": "R6, MP-01, MP-02, MP-03, MP-04, MP-05, MP-07, MP-09, MP-13"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "19:37",
+      "fim": "19:43",
+      "texto": "Manutenção e prestadores (peça R6) como próxima peça. Desenho para aprovação em docs/telas/manutencao.html, no visual da DC13: lista de manutenções com atalhos do que pede atenção, nova manutenção (corretiva, preventiva ou vistoria, ligada a pedido e agenda se quiser), manutenção aberta com providências, fotos, histórico e concluir sem encerrar o pedido, vistoria com lista própria, preventivas com sugestões da NBR 5674 que só entram se o síndico escolher, prestadores com contrato ou por chamado e a ficha, e onde a manutenção aparece no pedido, na agenda e no início. Dez decisões para aprovar e o que fica para depois, com o motivo.",
+      "ref": "R6, D4, MP-01, MP-02, MP-03, MP-04, MP-05, MP-07, MP-09, MP-13"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "19:31",
+      "fim": "19:36",
+      "texto": "Agenda conferida no triade-condo-dev: a migration 0130 está aplicada (compromissos, séries e as nove funções) e a api-plataforma versão 9, publicada às 19h28, já tem as rotas da agenda. O 404 da agenda registrado às 17h36 era da versão 8. Painel e CONTEXTO.md acertados: a agenda e os passos 6 e 7 estão no main e no site. Próxima peça: Manutenção e prestadores (R6).",
+      "ref": "R7"
+    },
     {
       "data": "17/10/2026",
       "inicio": "16:55",

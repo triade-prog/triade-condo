@@ -3,6 +3,7 @@
 // Passo 2: painel, configurações, pessoas autorizadas e quem atende. Passo 3: blocos,
 // unidades e contatos. Passo 4: pedidos no painel. Passo 4b: fotos e documentos dos pedidos.
 // Passos 6 e 7: avisos, regras de aviso, prazo do pedido e indicadores. Peça R7: agenda.
+// Peça R6: manutenção, prestadores, preventivas e vistorias.
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
@@ -68,6 +69,25 @@ import {
   periodoAgendaSchema,
   reagendarCompromissoSchema,
   situacaoCompromissoSchema,
+  alterarManutencaoSchema,
+  arquivarPrestadorSchema,
+  buscaManutencoesSchema,
+  cancelarManutencaoSchema,
+  concluirManutencaoSchema,
+  enviarArquivoManutencaoSchema,
+  etapaManutencaoSchema,
+  fazerProvidenciaSchema,
+  itensVistoriaSchema,
+  prestadorSchema,
+  preventivaSchema,
+  previsaoManutencaoSchema,
+  providenciaSchema,
+  reabrirManutencaoSchema,
+  registrarManutencaoSchema,
+  responderItemSchema,
+  retornoManutencaoSchema,
+  situacaoManutencaoSchema,
+  virarManutencaoSchema,
 } from "@triade/domain";
 import { verificarArquivo, type Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -89,6 +109,8 @@ export interface DepsPlataforma extends DepsSessao {
   urlApp: string;
   /** Armazenamento privado das fotos e documentos (PT-07). */
   armazenamento: Armazenamento;
+  /** Armazenamento privado das fotos e documentos da manutenção (peça R6). */
+  armazenamentoManutencao?: Armazenamento;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -561,6 +583,201 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
 
   app.get("/v1/condominio/pedidos/:id/agenda", async (c) =>
     c.json(await rpc("plataforma_agenda_do_pedido", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  // Manutenção e prestadores (peça R6; MP-01 a MP-05, MP-07, MP-09, MP-13). O banco decide quem
+  // vê e quem mexe, confere quem executa, as situações e as preventivas; aqui só se valida a entrada.
+  const executorArgs = (d: { prestadorId: string | null; executorVinculoId: string | null; executorTexto: string | null }) =>
+    ({ p_prestador: d.prestadorId, p_executor_vinculo: d.executorVinculoId, p_executor_texto: d.executorTexto });
+
+  app.get("/v1/condominio/manutencao/opcoes", async (c) => c.json(await rpc("plataforma_manutencao_opcoes", quem(c))));
+
+  app.get("/v1/condominio/manutencao", async (c) => {
+    const r = buscaManutencoesSchema.safeParse(c.req.query());
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
+    const q = r.data;
+    return c.json(await rpc("plataforma_manutencoes", {
+      ...quem(c), p_situacao: q.situacao ?? null, p_tipo: q.tipo ?? null, p_prestador: q.prestador ?? null,
+      p_atencao: q.atencao ?? null, p_busca: q.busca ?? null, p_pagina: q.pagina,
+    }));
+  });
+
+  app.post("/v1/condominio/manutencao", async (c) => {
+    const d = await lerCorpo(c, registrarManutencaoSchema);
+    return c.json(await rpc("plataforma_registrar_manutencao", {
+      ...quem(c), p_tipo: d.tipo, p_titulo: d.titulo, p_local: d.local, p_detalhes: d.detalhes, p_prioridade: d.prioridadeId,
+      p_responsavel: d.responsavelId, ...executorArgs(d), p_proximo_retorno: d.proximoRetorno, p_previsao: d.previsao,
+      p_pedido: d.pedidoId, p_itens: d.itens,
+    }), 201);
+  });
+
+  // Preventivas e prestadores vêm antes de /:id para não se confundirem com um id.
+  app.get("/v1/condominio/manutencao/preventivas", async (c) => c.json(await rpc("plataforma_preventivas", quem(c))));
+
+  const salvarPreventiva = async (c: Context<VarsPlataforma>, id: string | null) => {
+    const d = await lerCorpo(c, preventivaSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("plataforma_salvar_preventiva", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_atividade: d.atividade, p_local: d.local, p_unidade_tempo: d.unidadeTempo,
+      p_intervalo: d.intervalo, p_proxima_data: d.proximaData, p_antecedencia: d.antecedenciaDias, p_responsavel: d.responsavelId,
+      ...executorArgs(d), p_observacao: d.observacao, p_ativa: d.ativa,
+    });
+  };
+  app.post("/v1/condominio/manutencao/preventivas", async (c) => c.json(await salvarPreventiva(c, null), 201));
+  app.put("/v1/condominio/manutencao/preventivas/:id", async (c) => c.json(await salvarPreventiva(c, idDaRota(c, "id"))));
+
+  app.get("/v1/condominio/manutencao/prestadores", async (c) =>
+    c.json(await rpc("plataforma_prestadores", { ...quem(c), p_arquivados: c.req.query("arquivados") === "1" })));
+  app.get("/v1/condominio/manutencao/prestadores/:id", async (c) =>
+    c.json(await rpc("plataforma_prestador", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  const salvarPrestador = async (c: Context<VarsPlataforma>, id: string | null) => {
+    const d = await lerCorpo(c, prestadorSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("plataforma_salvar_prestador", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_nome: d.nome, p_servico: d.servico, p_contato: d.contato,
+      p_telefone: d.telefone, p_email: d.email, p_documento: d.documento, p_acordo: d.acordo, p_contrato_ate: d.contratoAte,
+      p_desde: d.desde, p_reserva: d.reservaId, p_observacao: d.observacao,
+    });
+  };
+  app.post("/v1/condominio/manutencao/prestadores", async (c) => c.json(await salvarPrestador(c, null), 201));
+  app.put("/v1/condominio/manutencao/prestadores/:id", async (c) => c.json(await salvarPrestador(c, idDaRota(c, "id"))));
+  app.post("/v1/condominio/manutencao/prestadores/:id/arquivar", async (c) => {
+    const d = await lerCorpo(c, arquivarPrestadorSchema);
+    return c.json(await rpc("plataforma_arquivar_prestador", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_arquivar: d.arquivar }));
+  });
+
+  // Etapas da manutenção, nas Configurações (MP-02).
+  app.get("/v1/condominio/etapas-manutencao", async (c) => c.json(await rpc("plataforma_etapas_manutencao", quem(c))));
+  const salvarEtapaManutencao = async (c: Context<VarsPlataforma>, id: string | null) => {
+    const d = await lerCorpo(c, etapaManutencaoSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("plataforma_salvar_etapa_manutencao", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_nome: d.nome, p_situacao: d.situacao ?? null, p_ativa: d.ativa ?? null,
+    });
+  };
+  app.post("/v1/condominio/etapas-manutencao", async (c) => c.json(await salvarEtapaManutencao(c, null), 201));
+  app.put("/v1/condominio/etapas-manutencao/:id", async (c) => c.json(await salvarEtapaManutencao(c, idDaRota(c, "id"))));
+
+  app.get("/v1/condominio/manutencao/:id", async (c) => c.json(await rpc("plataforma_manutencao", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  app.put("/v1/condominio/manutencao/:id", async (c) => {
+    const d = await lerCorpo(c, alterarManutencaoSchema);
+    return c.json(await rpc("plataforma_alterar_manutencao", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_titulo: d.titulo, p_local: d.local, p_detalhes: d.detalhes,
+      p_prioridade: d.prioridadeId, p_responsavel: d.responsavelId, ...executorArgs(d), p_pedido: d.pedidoId,
+      p_acesso: d.acesso, p_impedimento: d.impedimento,
+    }));
+  });
+
+  const acoesManutencao = [
+    { rota: "/proximo-retorno", metodo: "put", schema: retornoManutencaoSchema, funcao: "plataforma_retorno_manutencao",
+      args: (d: ReturnType<typeof retornoManutencaoSchema.parse>) => ({ p_quando: d.quando, p_motivo: d.motivo }) },
+    { rota: "/previsao", metodo: "put", schema: previsaoManutencaoSchema, funcao: "plataforma_previsao_manutencao",
+      args: (d: ReturnType<typeof previsaoManutencaoSchema.parse>) => ({ p_data: d.data, p_motivo: d.motivo }) },
+    { rota: "/situacao", metodo: "post", schema: situacaoManutencaoSchema, funcao: "plataforma_situacao_manutencao",
+      args: (d: ReturnType<typeof situacaoManutencaoSchema.parse>) => ({
+        p_estado: d.estado, p_etapa: d.etapaId, p_pendencia_tipo: d.pendenciaTipo, p_pendencia_motivo: d.pendenciaMotivo }) },
+    { rota: "/concluir", metodo: "post", schema: concluirManutencaoSchema, funcao: "plataforma_concluir_manutencao",
+      args: (d: ReturnType<typeof concluirManutencaoSchema.parse>) => ({
+        p_conclusao: d.conclusao, p_realizada_em: d.realizadaEm, p_fechar_providencias: d.fecharProvidencias }) },
+    { rota: "/cancelar", metodo: "post", schema: cancelarManutencaoSchema, funcao: "plataforma_cancelar_manutencao",
+      args: (d: ReturnType<typeof cancelarManutencaoSchema.parse>) => ({ p_motivo: d.motivo }) },
+    { rota: "/reabrir", metodo: "post", schema: reabrirManutencaoSchema, funcao: "plataforma_reabrir_manutencao",
+      args: (d: ReturnType<typeof reabrirManutencaoSchema.parse>) => ({ p_motivo: d.motivo }) },
+    { rota: "/providencias", metodo: "post", schema: providenciaSchema, funcao: "plataforma_incluir_providencia",
+      args: (d: ReturnType<typeof providenciaSchema.parse>) => ({ p_texto: d.texto, ...executorArgs(d) }) },
+    { rota: "/itens", metodo: "put", schema: itensVistoriaSchema, funcao: "plataforma_itens_vistoria",
+      args: (d: ReturnType<typeof itensVistoriaSchema.parse>) => ({ p_incluir: d.incluir, p_tirar: d.tirar }) },
+  ];
+  for (const a of acoesManutencao) {
+    app[a.metodo as "put" | "post"](`/v1/condominio/manutencao/:id${a.rota}`, async (c) => {
+      const id = idDaRota(c, "id");
+      const d = await lerCorpo(c, a.schema as Parameters<typeof lerCorpo>[1]) as { versao: number };
+      // deno-lint-ignore no-explicit-any
+      return c.json(await rpc(a.funcao, { ...quem(c), p_id: id, p_versao: d.versao, ...(a.args as (x: any) => object)(d) }));
+    });
+  }
+
+  app.post("/v1/condominio/manutencao/:id/providencias/:providencia/fazer", async (c) => {
+    const d = await lerCorpo(c, fazerProvidenciaSchema);
+    return c.json(await rpc("plataforma_fazer_providencia", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_providencia: idDaRota(c, "providencia"), p_resultado: d.resultado,
+    }));
+  });
+
+  app.post("/v1/condominio/manutencao/:id/itens/:item/responder", async (c) => {
+    const d = await lerCorpo(c, responderItemSchema);
+    return c.json(await rpc("plataforma_responder_item", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_item: idDaRota(c, "item"), p_resultado: d.resultado, p_observacao: d.observacao,
+    }));
+  });
+
+  app.post("/v1/condominio/manutencao/:id/itens/:item/manutencao", async (c) => {
+    const d = await lerCorpo(c, virarManutencaoSchema);
+    return c.json(await rpc("plataforma_item_virar_manutencao", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_item: idDaRota(c, "item"),
+    }), 201);
+  });
+
+  // Visita marcada a partir da manutenção: nasce ligada a ela (MP-04).
+  app.post("/v1/condominio/manutencao/:id/visita", async (c) => {
+    const d = await lerCorpo(c, marcarCompromissoSchema);
+    if (d.repetir) throw new ErroDominio("VALIDATION_ERROR", { campos: ["repetir"] });
+    return c.json(await rpc("plataforma_marcar_visita_manutencao", {
+      ...quem(c), p_manutencao: idDaRota(c, "id"), p_tipo: d.tipo, p_titulo: d.titulo, p_data: d.data, p_inicio: d.horaInicio,
+      p_fim: d.horaFim, p_onde: d.onde, p_unidade: d.unidadeId, p_local: d.local, p_participantes: d.participantes,
+      p_de_fora: d.deFora, p_observacao: d.observacao, p_estado: d.estado, p_aceitar_conflito: d.aceitarConflito,
+    }), 201);
+  });
+
+  app.get("/v1/condominio/pedidos/:id/manutencao", async (c) =>
+    c.json(await rpc("plataforma_manutencoes_do_pedido", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  // Fotos e documentos da manutenção: as mesmas regras dos pedidos, no bucket "manutencoes".
+  const armazenamentoManutencao = () => {
+    if (!deps.armazenamentoManutencao) throw new ErroDominio("INTERNAL_ERROR");
+    return deps.armazenamentoManutencao;
+  };
+  const arquivoManutencao = (c: Context<VarsPlataforma>) => ({ ...quem(c), p_id: idDaRota(c, "id"), p_arquivo: idDaRota(c, "arquivo") });
+
+  app.get("/v1/condominio/manutencao/:id/arquivos", async (c) =>
+    c.json(await rpc("plataforma_arquivos_manutencao", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  app.post("/v1/condominio/manutencao/:id/arquivos", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, enviarArquivoManutencaoSchema);
+    const r = await rpc<{ arquivoId: string; caminho: string; tipo: string }>("plataforma_iniciar_arquivo_manutencao", {
+      ...quem(c), p_id: id, p_item: d.itemId, p_nome: d.nome, p_descricao: d.descricao, p_tipo: d.tipo, p_tamanho: d.tamanho,
+    });
+    return c.json({ arquivoId: r.arquivoId, envio: { url: await armazenamentoManutencao().linkEnvio(r.caminho), metodo: "PUT", tipo: r.tipo } }, 201);
+  });
+
+  app.post("/v1/condominio/manutencao/:id/arquivos/:arquivo/verificar", async (c) => {
+    const ids = arquivoManutencao(c);
+    const guarda = armazenamentoManutencao();
+    const a = await rpc<{ caminho: string; tipo: string }>("plataforma_arquivo_manutencao_a_verificar", ids);
+    const bytes = await guarda.ler(a.caminho);
+    const r = bytes ? verificarArquivo(bytes, a.tipo as TipoArquivo) : { ok: false as const, motivo: "O arquivo não chegou. Envie de novo." };
+    if (r.ok) {
+      await guarda.gravar(a.caminho, r.bytes, a.tipo);
+      return c.json(await rpc("plataforma_verificar_arquivo_manutencao", { ...ids, p_liberado: true, p_tamanho: r.bytes.length, p_motivo: null }));
+    }
+    if (bytes) await guarda.apagar(a.caminho);
+    const fim = await rpc<{ situacao: string }>("plataforma_verificar_arquivo_manutencao", { ...ids, p_liberado: false, p_tamanho: null, p_motivo: r.motivo });
+    return c.json({ ...fim, motivo: r.motivo });
+  });
+
+  app.get("/v1/condominio/manutencao/:id/arquivos/:arquivo/link", async (c) => {
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("plataforma_abrir_arquivo_manutencao", arquivoManutencao(c));
+    const baixar = c.req.query("baixar") === "1";
+    const url = await armazenamentoManutencao().linkLeitura(a.caminho, VALIDADE_LINK_ARQUIVO_S, baixar ? a.nome : undefined);
+    return c.json({ url, tipo: a.tipo, expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString() });
+  });
+
+  app.post("/v1/condominio/manutencao/:id/arquivos/:arquivo/tirar", async (c) => {
+    const d = await lerCorpo(c, tirarArquivoSchema);
+    return c.json(await rpc("plataforma_tirar_arquivo_manutencao", { ...arquivoManutencao(c), p_motivo: d.motivo }));
+  });
 
   return app;
 }

@@ -165,6 +165,19 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
   - Os testes ponta a ponta usam `tests/e2e/api-falsa-pedidos.ts`.
 - **Publicar.** Mudou a `api-plataforma`? Ela precisa ser publicada de novo no Supabase, num pacote só (o domínio e o `_shared` juntos).
 
+## Manutenção e prestadores (peça R6)
+
+- **Permissão (CF-03).** `manutencao.ver` e `manutencao.editar`, pelas permissões Ver a manutenção e Cuidar da manutenção; o síndico tem as duas. O cadastro de prestadores fica em Cuidar da manutenção.
+- **Prestadores (MP-05, MP-09).** `prestadores` é do condomínio: com contrato (`contrato_ate`) ou por chamado, com uma reserva (`reserva_id`). Nome ativo não se repete. Arquivar não apaga.
+- **Manutenção (MP-01, MP-02).** `manutencoes` passa pelo guardião: `PLANEJADA`, `EM_ANDAMENTO`, `PENDENTE` (com `pendencia_tipo` e `pendencia_motivo`), `CONCLUIDA` e `CANCELADA`; as duas últimas só voltam por `plataforma_reabrir_manutencao`, com motivo. A etapa (`etapas_manutencao`) combina sempre com a situação. Próximo retorno e previsão mudam com motivo. Quem executa é um prestador, uma pessoa com acesso ou um nome (`exigir_executor`).
+- **Separada do pedido (MP-04).** `pedido_id` é opcional; concluir grava `pedido.manutencao_concluida` no histórico do pedido e não muda o pedido. A visita marcada por `plataforma_marcar_visita_manutencao` fica com `compromissos.manutencao_id`.
+- **Vistoria (MP-07).** `itens_vistoria` é a lista de cada vistoria; `plataforma_item_virar_manutencao` abre a corretiva com `origem_id`.
+- **Preventivas (MP-03, MP-13).** `preventivas` guarda a frequência e a próxima data. `abrir_preventivas` abre a manutenção `antecedencia_dias` antes (uma por data prevista); concluir ou cancelar faz a preventiva andar a partir da data prevista (`proxima_da_preventiva`). As sugestões da NBR 5674 estão no domínio (`SUGESTOES_PREVENTIVAS`) e só entram se escolhidas.
+- **Rotina.** `verificar_manutencao` roda de hora em hora no pg_cron: abre as preventivas e avisa o retorno vencido em `avisos_manutencao`, uma vez por vencimento.
+- **Arquivos.** `arquivos_manutencao`, com as regras de 0100, no bucket privado `manutencoes` (`armazenamentoManutencao` na `api-plataforma`).
+- **Rotas.** `/v1/condominio/manutencao` (lista e registro), `manutencao/opcoes`, `manutencao/:id` e as ações `proximo-retorno`, `previsao`, `situacao`, `concluir`, `cancelar`, `reabrir`, `providencias`, `providencias/:id/fazer`, `itens`, `itens/:id/responder`, `itens/:id/manutencao`, `visita`, `arquivos`; `manutencao/preventivas`, `manutencao/prestadores`, `etapas-manutencao` e `pedidos/:id/manutencao`.
+- **Telas.** Em `apps/plataforma/src/telas/manutencao`, com as rotas `/manutencao`, `/manutencao/manutencao?id=`, `/manutencao/preventivas`, `/manutencao/prestadores` e `/manutencao/prestador?id=`. Os testes ponta a ponta usam `tests/e2e/api-falsa-manutencao.ts`.
+
 ## Rodar
 
 Requisitos: Node 22, pnpm 10 e PostgreSQL 16 ou 17 com pgTAP (`postgresql-17-pgtap`).

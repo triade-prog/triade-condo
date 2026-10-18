@@ -15,14 +15,17 @@ export interface Armazenamento {
   linkLeitura(caminho: string, segundos: number, baixarComo?: string): Promise<string>;
 }
 
-const BUCKET = "pedidos";
-
-export function armazenamentoSupabase(url: string, chaveServico: string, buscar: typeof fetch = fetch): Armazenamento {
+/**
+ * Um bucket privado por parte do sistema: "pedidos" (passo 4b) e "manutencoes" (peça R6). O
+ * caminho é sempre condomínio/registro/arquivo.
+ */
+export function armazenamentoSupabase(url: string, chaveServico: string, buscar: typeof fetch = fetch,
+  bucket: "pedidos" | "manutencoes" = "pedidos"): Armazenamento {
   const base = `${url.replace(/\/$/, "")}/storage/v1`;
   const auth = { apikey: chaveServico, authorization: `Bearer ${chaveServico}` };
   const objeto = (caminho: string) => {
     if (!/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}$/.test(caminho)) throw new Error("Caminho de arquivo inválido");
-    return `${BUCKET}/${caminho}`;
+    return `${bucket}/${caminho}`;
   };
   function exigirOk(r: Response, oQue: string): Response {
     if (!r.ok) throw new Error(`Armazenamento: falha ao ${oQue} (${r.status})`);

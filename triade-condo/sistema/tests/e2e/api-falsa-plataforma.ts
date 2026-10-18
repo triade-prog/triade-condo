@@ -7,6 +7,7 @@ import { AGORA, criarPedidos, resumoPedidos, rotasPedidos, vencido, vencidoMaisA
 import { criarAvisos, escalado, MES_FECHADO, naoVistos, regrasAvisoIniciais, rotasPrazos } from "./api-falsa-prazos";
 import { rotasArmazenamento, semearArquivos } from "./api-falsa-arquivos";
 import { criarAgenda, rotasAgenda } from "./api-falsa-agenda";
+import { criarManutencao, resumoManutencao, rotasManutencao } from "./api-falsa-manutencao";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -83,6 +84,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   estado.avisos = criarAvisos(estado.pedidos, V_ANA, V_BRUNA);
   semearArquivos(estado.pedidos[0]!.id, AGORA);
   const agenda = criarAgenda(V_ANA, V_BRUNA, estado.pedidos[0]!);
+  const manutencao = criarManutencao(V_ANA, V_BRUNA, estado.pedidos[0]!, pris[2]!.id);
   if (opcoes.comAtendimento) {
     for (const p of estado.pessoas) { p.responsavel = true; p.disponivel = true; }
     estado.responsavelPadrao = V_ANA;
@@ -90,7 +92,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const eu = quem === "SINDICA" ? { vinculo: V_ANA, nome: "Ana Souza" } : quem === "SECRETARIA" ? { vinculo: V_BRUNA, nome: "Bruna" } : { vinculo: "caio", nome: "Caio" };
 
   const acoes = () => quem === "SINDICA"
-    ? ["agenda.editar", "agenda.ver", "atendimento.responsaveis", "config.editar", "config.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pedidos.atualizar", "pedidos.concluir",
+    ? ["agenda.editar", "agenda.ver", "atendimento.responsaveis", "config.editar", "config.ver", "manutencao.editar", "manutencao.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pedidos.atualizar", "pedidos.concluir",
       "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver"]
     : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver"]
       : ["agenda.ver", "config.ver", "pedidos.ver", "plataforma.painel.ver"];
@@ -153,6 +155,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
             vencidoMaisAntigoEscalado: escalado(estado.avisos, vencidoMaisAntigo(estado.pedidos, estado.config)?.id) },
           mesFechado: MES_FECHADO,
         } : {}),
+        ...(acoes().includes("manutencao.ver") ? { manutencao: resumoManutencao(manutencao) } : {}),
         avisosNaoVistos: naoVistos(estado.avisos, eu.vinculo),
       } });
     }
@@ -167,6 +170,9 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     const naAgenda = await rotasAgenda(route, agenda, { pessoas: estado.pessoas, pedidos: estado.pedidos, moradores: estado.moradores,
       feriados: c.feriados, eu }, caminho, metodo, corpo, url, pode);
     if (naAgenda !== null) return naAgenda;
+    const naManutencao = await rotasManutencao(route, manutencao, { pessoas: estado.pessoas, pedidos: estado.pedidos, prioridades: c.prioridades, eu },
+      caminho, metodo, corpo, url, pode);
+    if (naManutencao !== null) return naManutencao;
     const moradores = await rotasMoradores(route, estado.moradores, caminho, metodo, corpo, pode);
     if (moradores !== null) return moradores;
     const pedidos = await rotasPedidos(route, estado.pedidos, c, estado.pessoas, estado.moradores, eu, caminho, metodo, corpo, url, pode);

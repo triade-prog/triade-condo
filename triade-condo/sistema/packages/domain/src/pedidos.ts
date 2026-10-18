@@ -223,6 +223,10 @@ export function descreverEventoPedido(acao: string, d: Record<string, unknown>):
       return `${String(d.arquivoNome ?? "Arquivo")} não liberado: ${String(d.motivo ?? "")}`;
     case "pedido.arquivo_tirado":
       return comMotivo(`Tirou ${String(d.arquivoNome ?? "um arquivo")} do pedido`);
+    case "pedido.manutencao_ligada":
+      return "Manutenção ligada ao pedido";
+    case "pedido.manutencao_concluida":
+      return "Manutenção ligada concluída: dê o retorno ao morador";
     default:
       return descreverAvisoPedido(acao, d) ?? acao;
   }

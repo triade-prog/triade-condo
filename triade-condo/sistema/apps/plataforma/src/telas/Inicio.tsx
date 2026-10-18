@@ -2,13 +2,14 @@
 // Início do síndico (V-08, CF-12): o resumo de moradores e unidades (passo 3), o que falta
 // configurar, sem obrigar nada, e o que já veio pronto pelo cenário. O dia do condomínio
 // (passo 7, F7.1): o que pede atenção agora e o mês fechado, separado do agora. Hoje na
-// agenda (peça R7).
+// agenda (peça R7) e o cartão da manutenção (peça R6).
 
 import Link from "next/link";
 import { CENARIOS, mostrarHoras, mostrarPorcentagem, nomeDoMes, nomeDoMesAnterior, PENDENCIAS_CONFIG } from "@triade/domain";
 import { Carregando, classeBotao, ErroCarregar, IconeMarca, Selo } from "@triade/ui";
 import { diaHora } from "./pedidos/comum.tsx";
 import { HojeNaAgenda } from "./agenda/HojeNaAgenda.tsx";
+import { CartaoManutencao } from "./manutencao/CartaoManutencao.tsx";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
 import type { Configuracoes, MesFechado } from "./tipos.ts";
 
@@ -200,6 +201,7 @@ export function Inicio() {
             paradaDias={config.estado === "pronto" ? config.dados.avisos.pendenciaDias : null} />
         ) : null}
         {pode("agenda.ver") ? <HojeNaAgenda /> : null}
+        {painel.manutencao ? <CartaoManutencao resumo={painel.manutencao} /> : null}
         {painel.mesFechado ? <MesFechadoCartao mes={painel.mesFechado} /> : null}
         {painel.moradores ? <Moradores resumo={painel.moradores} /> : null}
         <section aria-labelledby="t-falta" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">

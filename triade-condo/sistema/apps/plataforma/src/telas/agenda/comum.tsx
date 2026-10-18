@@ -54,6 +54,11 @@ export function LinhaCompromisso({ c, acao }: { c: CompromissoAgenda; acao?: Rea
             <Icone nome="pedido" className="h-3.5 w-3.5" />Pedido {c.pedido.protocolo} · {c.pedido.assunto}
           </Link>
         ) : null}
+        {c.manutencao ? (
+          <Link href={`/manutencao/manutencao?id=${c.manutencao.id}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-violeta-600 hover:underline">
+            <Icone nome="ferramenta" className="h-3.5 w-3.5" />Manutenção · {c.manutencao.titulo}
+          </Link>
+        ) : null}
         {c.serie ? (
           <span className="inline-flex items-center gap-1 text-[12.5px] text-tinta-suave"><Icone nome="trocar" className="h-3.5 w-3.5" />{descreverRepeticao({ ...c.serie, ate: null })}</span>
         ) : null}
@@ -64,15 +69,20 @@ export function LinhaCompromisso({ c, acao }: { c: CompromissoAgenda; acao?: Rea
   );
 }
 
-/** Data de outra tela (AG-09): tracejada, com a tela de onde vem. */
+/** Data de outra tela (AG-09): tracejada, com a tela de onde vem (feriado ou preventiva). */
 export function LinhaDataDeFora({ d }: { d: DataDeOutraTela }) {
+  const preventiva = d.fonte === "PREVENTIVA";
   return (
-    <li className="ag-ev" data-tipo="FERIADO" data-fonte="">
+    <li className="ag-ev" data-tipo={d.fonte} data-fonte="">
       <span className="hora">Dia todo</span>
       <span className="barra" aria-hidden="true" />
       <span className="grid min-w-0 gap-0.5">
-        <span className="font-medium">{d.titulo}</span>
-        <span className="text-[13px] text-tinta-suave">Feriado · vem de Configurações › Feriados · os prazos não correm</span>
+        <span className="font-medium">{preventiva ? `Preventiva: ${d.titulo}` : d.titulo}</span>
+        <span className="text-[13px] text-tinta-suave">
+          {preventiva
+            ? <>Vem de <Link href="/manutencao/preventivas" className="font-medium text-violeta-600 hover:underline">Manutenção › Preventivas</Link></>
+            : "Feriado · vem de Configurações › Feriados · os prazos não correm"}
+        </span>
       </span>
       <span />
     </li>
