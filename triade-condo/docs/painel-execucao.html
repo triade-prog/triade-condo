@@ -1126,10 +1126,9 @@
     },
     {
       "id": "T20",
-      "texto": "Identidade TRÍADE no código: sempre claro mesmo com o aparelho no modo escuro, fontes servidas pelo próprio sistema (nenhum pedido para fora), contraste AA em todas as telas e classes certas dos componentes base",
+      "texto": "Identidade TRÍADE no código (DC13): sempre claro mesmo com o aparelho no modo escuro, fontes servidas pelo próprio sistema (nenhum pedido para fora), contraste AA em todas as telas e classes certas dos componentes base",
       "fase": "D4",
       "refs": [
-        "DC13",
         "PT-10"
       ],
       "status": "feito",
@@ -1199,6 +1198,49 @@
       ],
       "status": "feito",
       "evidencia": "pgTAP 017_mural_email_test.sql (83 testes); Deno api-plataforma/mural_email_test.ts (14 testes); Vitest mural_email.test.ts (8 testes); Playwright plataforma-mural-email.spec.ts (7 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T25",
+      "texto": "Links e QR: etiqueta por local que abre o WhatsApp do condomínio sem mostrar dados de ninguém, link do prestador que vence e se cancela, chegada pela etiqueta registrada e páginas públicas sem conta",
+      "fase": "R13",
+      "refs": [
+        "AT-30",
+        "MP-08",
+        "V-11"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 018_links_qr_test.sql (62 testes); Deno links_test.ts (6 testes); Vitest links.test.ts (9 testes) e cabecalhos.test.ts; Playwright plataforma-links-qr.spec.ts (5 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T26",
+      "texto": "Memória do prédio: só o próprio condomínio, prontuário com o que falta, linha do tempo que não se apaga, manual do prédio no mural só com o que é de todos, dossiê de passagem de bastão e exportação de todo o histórico só para quem pode",
+      "fase": "R10",
+      "refs": [
+        "MP-12",
+        "MP-14",
+        "CT-02",
+        "CT-03",
+        "CT-04"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 019_memoria_test.sql (80 testes); Deno memoria_test.ts (5 testes) e zip_test.ts (4 testes); Vitest memoria.test.ts (5 testes); Playwright plataforma-memoria.spec.ts (6 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T27",
+      "texto": "Implantação e suporte: entrega só com as etapas 1 a 7, síndico e pedido de teste concluído; troca de síndico atômica com o anterior saindo na hora; link de senha nova só depois da verificação e só ao e-mail cadastrado; acesso excepcional só aprovado pelo síndico, só leitura, com prazo e cada abertura no histórico; chamados com imagem verificada e nota interna que o cliente não vê",
+      "fase": "R4",
+      "refs": [
+        "PI-04",
+        "PI-05",
+        "CT-01",
+        "PI-09",
+        "PI-11",
+        "PI-17",
+        "PI-20",
+        "SH-01"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 020_implantacao_suporte_test.sql (138 testes); Deno suporte_test.ts no Console (8 testes) e na Plataforma (4 testes); Vitest suporte.test.ts (10 testes); Playwright console-suporte.spec.ts e plataforma-suporte.spec.ts (10 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -1342,7 +1384,8 @@
       "precisa_em": "D",
       "refs": [],
       "status": "feito",
-      "nota": "Logo oficial enviado pela Carolina (versões violeta e laranja, atualizadas em 18/10/2026) e em uso: o violeta na Plataforma e no Console, o símbolo como ícone da aba; arquivos em docs/identidade."
+      "nota": "Logo oficial enviado pela Carolina (versões violeta e laranja, atualizadas em 18/10/2026) e em uso: o violeta na Plataforma e no Console, o símbolo como ícone da aba; arquivos em docs/identidade.",
+      "evidencia": "docs/identidade/logo-violeta.png, logo-laranja.png e simbolo.png (com as versões grandes); componente Logo em packages/ui/src/Marca.tsx, usado nas duas aplicações; ícone da aba em apps/plataforma/src/app/icon.png e apps/console/src/app/icon.png."
     },
     {
       "id": "E6",
@@ -1435,6 +1478,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "18/10/2026",
+      "inicio": "18:00",
+      "fim": "18:04",
+      "texto": "Painel conferido: duas linhas do histórico com a data trocada (passo 4b e Resend, de 16/10); a DC13 saiu das ideias citadas do T20 (é decisão, não ideia); evidência do logo oficial (E5); testes de Links e QR, Memória do prédio e Implantação e suporte registrados (T25 a T27).",
+      "ref": "R13, R10, R4"
+    },
     {
       "data": "18/10/2026",
       "inicio": "17:15",
@@ -1737,7 +1787,7 @@
       "ref": "F4.8, PT-07, PT-01"
     },
     {
-      "data": "17/10/2026",
+      "data": "16/10/2026",
       "inicio": "23:55",
       "fim": "00:15",
       "texto": "Passo 4b construído (F4.8), com as telas aprovadas pela Carolina: migration 0100 com os arquivos dos pedidos e o armazenamento privado (bucket pedidos, sem acesso direto); API com link de envio, verificação do conteúdo antes de liberar (tipo pelos primeiros bytes, localização tirada das fotos sem perder a orientação, PDF sem script nem arquivo embutido), link de 5 minutos para abrir e baixar, e tirar do pedido com motivo, sem apagar; CSP da Plataforma liberando só o caminho dos objetos do armazenamento; telas: aba Fotos e documentos, enviar (escolher, arrastar ou tirar foto), verificando e não liberado com motivo, visualizador, arquivos no registro e na conclusão. 487 pgTAP, 89 Deno, 63 Vitest, 100 ponta a ponta. Falta aplicar a 0100 e publicar a função no triade-condo-dev.",
@@ -1765,7 +1815,7 @@
       "ref": "E7, E9, E4, F0.6, F1.5, DC12, PT-08"
     },
     {
-      "data": "17/10/2026",
+      "data": "16/10/2026",
       "inicio": "22:57",
       "fim": "22:57",
       "texto": "Resend pronto pela Carolina com o domínio t3condo.trihub.com.br, que passa a ser o domínio do sistema (DC12). Modelos de e-mail de convite e de nova senha em português em supabase/templates, com o link token_hash, e o config.toml com o SMTP do Resend (a chave fica só no painel do Supabase). Antes, o limite de envio do e-mail embutido do Supabase (cerca de 2 por hora) barrou recuperações e um convite; nada ficou pela metade.",
