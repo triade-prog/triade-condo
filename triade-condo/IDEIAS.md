@@ -7,6 +7,7 @@ Arquivo único de partida para construir o sistema. Junta, sem filtro de MVP ou 
 | **[A]** | Documentos do projeto (03–15/10/2026) | `arquivo/` |
 | **[BR]** | Pesquisa de mercado brasileiro | `arquivo/estudo-pre-desenvolvimento/estudo-de-mercado-2026-10-15.md` e `arquivo/outputs/triade-condo/pesquisa/` |
 | **[INT]** | Pesquisa de referências internacionais | `arquivo/estudo-pre-desenvolvimento/referencias-internacionais-2026-10-15.md` |
+| **[C]** | Pedido da Carolina durante a construção | Seção do dia, no fim deste arquivo |
 
 Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parênteses vai a referência de onde a ideia foi vista. Nada aqui está decidido nem priorizado: é o cardápio completo.
 
@@ -147,6 +148,9 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | CD-09 | Avisos com foto | [BR] |
 | CD-10 | Carta física ou eletrônica para convocação formal (casavi ePost) | [INT] |
 | CD-11 | **Plano de comunicação do condomínio**: o que o morador recebe, quando, e sobre o que é consultado (estratégia de engajamento, Reino Unido) | [INT] |
+| CD-12 | **Mural online do prédio**: um link (e um QR para o elevador e o hall) que qualquer morador abre sem app, conta ou senha e mostra os comunicados em uso para todo o condomínio, do mais novo ao mais antigo, com fotos e a versão corrigida no lugar da antiga. O síndico escolhe, em cada comunicado, se ele aparece no mural (assuntos de segurança começam desligados), troca o link quando ele vazar (o antigo para na hora) ou desliga o mural. A página não mostra nomes, telefones nem unidades, não entra em buscadores e abre os arquivos por links que expiram em minutos (CD-04). Comunicados de bloco ou unidade e documentos não aparecem no link do prédio; a lista de documentos que podem ir ao morador aparece só como "pedir por e-mail" (CD-14). Conta quantas vezes o mural foi aberto, sem saber quem abriu | [C] |
+| CD-13 | **Comunicados por e-mail**: o contato pode ter um e-mail, confirmado por ele num link antes do primeiro envio, e escolhe receber os comunicados também por e-mail. Ao publicar, o e-mail vai para os mesmos destinatários da CD-02 que têm e-mail confirmado, respeitando o horário sem envio do plano de comunicação (CD-11); a tela mostra antes quantos recebem por e-mail e quantos ficam só no grupo ou no mural. Cada e-mail traz o texto, as fotos e um link pessoal para o comunicado (com os arquivos), que deixa de funcionar quando o vínculo com a unidade termina; traz também "parar de receber" em um clique. Correção só reenvia se o síndico pedir, dizendo o que mudou. Sai pelo Resend em nome do condomínio, com respostas indo para quem o síndico indicar; devoluções e marcações de spam desligam aquele e-mail e aparecem para o síndico. O histórico guarda quantos e-mails saíram, voltaram ou foram recusados. Em convocação, o e-mail é prova de envio, não de recebimento, e só vale como convocação formal se a convenção aceitar (CD-10) | [C] (W-18) |
+| CD-14 | **Documento por e-mail quando pedido**: o morador pede pelo mural (CD-12), e depois pelo WhatsApp (CD-03), um documento marcado "pode ir ao morador", e o síndico também pode enviar pela tela do documento. Vai a versão em vigor, por um link que expira em 7 dias e pode ser revogado (CD-04), nunca como anexo solto. Se o e-mail pedido for de um contato com vínculo confirmado, o envio é automático ou passa pela aprovação do síndico, conforme a configuração; se não for, o pedido fica numa fila para o síndico decidir (comprador, imobiliária, advogado). A resposta na tela é sempre neutra ("se o e-mail estiver cadastrado, o documento chega em instantes"), para não revelar quem mora no prédio, e há limite de pedidos por e-mail e por aparelho. Cada envio e cada abertura ficam no histórico do documento | [C] |
 
 ---
 
@@ -484,7 +488,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 2. Canal WhatsApp | 21 |
 | 3. Atendimento | 33 |
 | 4. Inteligência artificial | 21 |
-| 5. Comunicados e documentos | 11 |
+| 5. Comunicados e documentos | 14 |
 | 6. Configuração e ficha | 12 |
 | 7. Moradores e unidades | 11 |
 | 8. Manutenção e prédio | 16 |
@@ -502,7 +506,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 20. Princípios técnicos | 18 |
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
-| **Total** | **308** |
+| **Total** | **311** |
 
 ---
 
@@ -612,3 +616,20 @@ Fontes: páginas salvas do sistema SeuCondomínio (menu, ajuda de cada tela, pai
 **12 ideias novas:** W-21 (aviso fixo contra golpes), IA-21 (ajuda de cada tela, que também alimenta o assistente), MU-09 (link de cadastro com fila de pendentes), MU-10 (vínculo detalhado com período de ocupação), MU-11 (lista de unidades com resumo), AG-09 (agenda que reúne datas de outras telas), AC-06 (limite de reservas por unidade), AC-07 (áreas comuns já cadastradas), TR-10 (dossiê do mês), TR-11 (início com agora e mês fechado separados), PI-20 (abrir chamado de suporte), NG-21 (tela Meu plano).
 
 **Ficaram de fora:** cobrança da reserva por Pix e etiqueta de inadimplente na lista de unidades (a TRÍADE não lida com o dinheiro do condomínio nesta fase); hospedagem e TV no elevador (muito específicos); exclusão definitiva de visitantes (aqui o histórico fica, PT-03).
+
+---
+
+## Ideias da Carolina sobre comunicados (18/10/2026)
+
+Pedidas pela Carolina depois de Comunicados e documentos (R1) ir ao ar: um mural online que todo morador consegue acompanhar e o envio dos comunicados por e-mail, assim como dos documentos quando pedidos.
+
+**3 ideias novas:** CD-12 (mural online do prédio), CD-13 (comunicados por e-mail) e CD-14 (documento por e-mail quando pedido).
+
+**Como conversam com o que já está decidido:**
+
+- O morador continua sem app, conta, login ou senha (V-07): o mural é só leitura, por link ou QR, como os acessos sem conta da Plataforma (DC1).
+- Nada fica em pasta pública (CD-04): o link do prédio mostra só o que é para todo o condomínio e abre arquivos por links curtos; o que é de bloco ou unidade e os documentos vão pelo link pessoal do e-mail ou por envio pedido.
+- Quem recebe é sempre a conta da CD-02, refeita a cada envio; contato que sai da unidade perde o link pessoal e deixa de receber.
+- O e-mail é canal complementar (W-18) e não substitui o WhatsApp do passo 5. Usa o Resend que já manda os e-mails do sistema (DC12).
+
+**Ficam para decidir no desenho:** se o mural do prédio mostra também os comunicados de cada bloco (um link por bloco) ou só os gerais; se documentos de contatos confirmados saem sem aprovação; para quem vão as respostas dos e-mails; e o plano do Resend, porque o gratuito manda até 100 e-mails por dia e um comunicado num prédio de 200 unidades já passa disso.
