@@ -4,7 +4,11 @@
 import { adminGoTrue, authGoTrue } from "../_shared/auth.ts";
 import { armazenamentoSupabase } from "../_shared/arquivos.ts";
 import { bancoPostgrest } from "../_shared/banco.ts";
+import { correioResend } from "../_shared/email.ts";
 import { criarApiPlataforma } from "./app.ts";
+
+// O runtime do Supabase deixa terminar o que continua depois da resposta.
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 
 function exigir(nome: string): string {
   const v = Deno.env.get(nome);
@@ -23,6 +27,12 @@ const app = criarApiPlataforma(Deno.env.get("REPASSE_SEGREDO"), {
   armazenamentoManutencao: armazenamentoSupabase(url, chaveServico, fetch, "manutencoes"),
   armazenamentoComunicados: armazenamentoSupabase(url, chaveServico, fetch, "comunicados"),
   armazenamentoDocumentos: armazenamentoSupabase(url, chaveServico, fetch, "documentos"),
+  // E-mail (CD-13, CD-14): sem RESEND_API_KEY, a fila só espera.
+  correio: Deno.env.get("RESEND_API_KEY") ? correioResend(Deno.env.get("RESEND_API_KEY")!) : undefined,
+  remetente: Deno.env.get("EMAIL_REMETENTE") || undefined,
+  urlFuncao: `${url}/functions/v1/api-plataforma`,
+  segredoWebhook: Deno.env.get("RESEND_WEBHOOK_SECRET") || undefined,
+  aoFundo: (p) => (typeof EdgeRuntime !== "undefined" ? EdgeRuntime.waitUntil(p) : void p),
 });
 
 Deno.serve(app.fetch);

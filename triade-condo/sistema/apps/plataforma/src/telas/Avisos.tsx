@@ -2,7 +2,8 @@
 // Avisos dentro do painel (passo 6; F6.1, F6.2, AT-08, AT-09): o sino na barra superior com
 // quantos estão sem ver e a lista dos últimos 30 dias. Cada aviso leva ao pedido. Marcar como
 // visto não resolve o pedido: ele só sai dos vencidos quando o morador recebe um retorno. Também
-// chegam aqui o retorno vencido da manutenção (R6) e o documento perto de vencer (R1).
+// chegam aqui o retorno vencido da manutenção (R6), o documento perto de vencer (R1), o pedido de
+// documento pelo mural e o e-mail que voltou ou foi marcado como spam (CD-13, CD-14).
 
 import Link from "next/link";
 import { useState } from "react";
@@ -25,7 +26,13 @@ function detalhe(a: AvisoDoPainel): string {
     case "MANUTENCAO_RETORNO_VENCIDO":
       return "Retorno da manutenção vencido. Combine o próximo ou atualize a situação.";
     case "DOCUMENTO_VENCENDO":
-      return `Vale até ${mostrarDataCurta(a.referencia)}. Guarde a versão renovada quando chegar.`;
+      return `Vale até ${mostrarDataCurta(a.referencia ?? "")}. Guarde a versão renovada quando chegar.`;
+    case "DOCUMENTO_PEDIDO":
+      return "Pedido pelo mural, esperando você enviar ou recusar.";
+    case "EMAIL_DEVOLVIDO":
+      return "O e-mail voltou: o endereço não existe. Corrija no cadastro.";
+    case "EMAIL_SPAM":
+      return "Marcou o e-mail como spam e não recebe mais por e-mail.";
   }
 }
 
@@ -60,7 +67,28 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
         <ul className="grid max-h-[60vh] gap-2 overflow-y-auto">
           {itens.map((a) => {
             const escalado = a.tipo === "ESCALADO_SINDICO" || a.tipo === "ESCALADO_SUBSTITUTO";
-            if (a.tipo === "DOCUMENTO_VENCENDO") {
+            if (a.tipo === "EMAIL_DEVOLVIDO" || a.tipo === "EMAIL_SPAM") {
+              return (
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Selo tom="atencao">E-mail</Selo>
+                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                  </span>
+                  <span className="font-semibold">{a.nome ?? "Contato"}{a.unidades ? ` · ${a.unidades}` : ""}</span>
+                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="flex flex-wrap gap-2">
+                    {a.comunicadoId ? (
+                      <Link href={`/comunicados/comunicado?id=${a.comunicadoId}`} className="font-medium text-violeta-600 hover:underline"
+                        onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
+                        Ver comunicado
+                      </Link>
+                    ) : null}
+                    {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso do e-mail de ${a.nome ?? "contato"}`}>Marcar como visto</Botao>}
+                  </span>
+                </li>
+              );
+            }
+            if (a.tipo === "DOCUMENTO_VENCENDO" || a.tipo === "DOCUMENTO_PEDIDO") {
               return (
                 <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
@@ -70,9 +98,10 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                   <span className="font-semibold">{a.titulo}</span>
                   <span className="text-xs text-tinta-suave">{detalhe(a)} Avisado em {formatarDataHora(a.criadoEm)}.</span>
                   <span className="flex flex-wrap gap-2">
-                    <Link href={`/comunicados/documento?id=${a.documentoId}`} className="font-medium text-violeta-600 hover:underline"
+                    <Link href={a.tipo === "DOCUMENTO_PEDIDO" ? "/comunicados/documentos?filtro=PEDIDOS" : `/comunicados/documento?id=${a.documentoId}`}
+                      className="font-medium text-violeta-600 hover:underline"
                       onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
-                      Ver documento
+                      {a.tipo === "DOCUMENTO_PEDIDO" ? "Ver pedidos" : "Ver documento"}
                     </Link>
                     {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso do documento ${a.titulo}`}>Marcar como visto</Botao>}
                   </span>

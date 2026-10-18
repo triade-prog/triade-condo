@@ -85,6 +85,10 @@ sign_in_sign_ups = 30
 # caracteres), PLATAFORMA_URL e CONSOLE_URL (links de redefinir senha e de convite; a
 # api-console usa os dois: convite da equipe vai para o Console, do síndico para a Plataforma).
 # SUPABASE_URL, SUPABASE_ANON_KEY e SUPABASE_SERVICE_ROLE_KEY o Supabase já entrega.
+# E-mail dos comunicados e documentos (CD-13, CD-14), só na api-plataforma: RESEND_API_KEY
+# (sem ela a fila só espera), RESEND_WEBHOOK_SECRET (o "signing secret" do aviso do Resend) e,
+# se quiser outro remetente, EMAIL_REMETENTE. No Vault do Supabase: api_plataforma_url e
+# repasse_segredo, para a rotina enviar-emails chamar a fila.
 # Os modelos dos e-mails de recuperação e de convite levam ao app com o token:
 # {{ .RedirectTo }}?token_hash={{ .TokenHash }}
 # (recuperação vai para /redefinir; convite, para /convite, onde a pessoa cria a senha).

@@ -8,7 +8,7 @@ import { criarAvisos, escalado, MES_FECHADO, naoVistos, regrasAvisoIniciais, rot
 import { rotasArmazenamento, semearArquivos } from "./api-falsa-arquivos";
 import { criarAgenda, rotasAgenda } from "./api-falsa-agenda";
 import { criarManutencao, resumoManutencao, rotasManutencao } from "./api-falsa-manutencao";
-import { criarComunicados, resumoComunicados, rotasComunicados } from "./api-falsa-comunicados";
+import { criarComunicados, resumoComunicados, rotasComunicados, rotasPublicas } from "./api-falsa-comunicados";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -132,6 +132,9 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (caminho === "/v1/auth/recuperar") {
       return route.fulfill({ json: { mensagem: "Se este e-mail tiver acesso à TRÍADE Condo, enviamos um link para criar uma senha nova." } });
     }
+    // Sem conta (CD-12 a CD-14): o mural e os links do e-mail não pedem login.
+    const publicas = await rotasPublicas(route, comunicados, caminho, metodo, corpo);
+    if (publicas !== null) return publicas;
     if (!estado.logado) return erro(route, 401, "UNAUTHORIZED");
 
     if (caminho === "/v1/sessao") {

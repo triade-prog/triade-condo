@@ -111,6 +111,11 @@ export interface ContatoDaUnidade {
   versao: number;
   telefoneCompartilhado: boolean;
   outrasUnidades: string[];
+  /** E-mail do contato (CD-13): só a própria pessoa confirma. */
+  email?: string;
+  emailSituacao?: "PENDENTE" | "CONFIRMADO" | "DEVOLVIDO" | "PAROU";
+  emailComunicados?: boolean;
+  emailParouMotivo?: "PEDIDO" | "SPAM";
 }
 
 export interface ContatoAnterior {
@@ -139,6 +144,7 @@ export interface UnidadeDetalhe {
   faltaProprietario: boolean;
   podeEditar: boolean;
   podeConfirmar: boolean;
+  emailLigado?: boolean;
 }
 
 export interface MoradorDaLista {
@@ -155,6 +161,7 @@ export interface MoradorDaLista {
   estado: "PENDENTE" | "CONFIRMADO";
   origem: "PAINEL" | "PLANILHA";
   versao: number;
+  emailSituacao?: "PENDENTE" | "CONFIRMADO" | "DEVOLVIDO" | "PAROU";
 }
 
 export interface ListaMoradores {
@@ -163,6 +170,8 @@ export interface ListaMoradores {
   pagina: number;
   porPagina: number;
   aConfirmar: number;
+  /** Contatos sem e-mail confirmado (CD-13). */
+  semEmail?: number;
   podeEditar: boolean;
   podeConfirmar: boolean;
 }
@@ -213,7 +222,7 @@ export interface RegrasAviso {
 export interface AvisoDoPainel {
   id: string;
   tipo: "RETORNO_VENCIDO" | "ESCALADO_SINDICO" | "ESCALADO_SUBSTITUTO" | "SEM_RESPONSAVEL" | "PENDENCIA_PARADA" | "MANUTENCAO_RETORNO_VENCIDO"
-    | "DOCUMENTO_VENCENDO";
+    | "DOCUMENTO_VENCENDO" | "DOCUMENTO_PEDIDO" | "EMAIL_DEVOLVIDO" | "EMAIL_SPAM";
   pedidoId?: string;
   protocolo?: string;
   assunto?: string | null;
@@ -222,8 +231,13 @@ export interface AvisoDoPainel {
   titulo?: string;
   /** No aviso do documento perto de vencer (peça R1); a referência é a data "vale até". */
   documentoId?: string;
+  /** No aviso de e-mail que voltou ou virou spam (CD-13). */
+  contatoId?: string;
+  nome?: string;
+  unidades?: string;
+  comunicadoId?: string;
   responsavel?: string | null;
-  referencia: string;
+  referencia?: string;
   criadoEm: string;
   vistoEm: string | null;
 }
@@ -657,7 +671,9 @@ export interface PublicoCalculado {
   contatos: number;
   unidades: number;
   semNinguem: { id: string; nome: string }[];
-  quem?: { contatoId: string; nome: string; unidades: string[] }[];
+  quem?: { contatoId: string; nome: string; unidades: string[]; email?: boolean }[];
+  /** Quantos recebem por e-mail (e-mail confirmado e sem ter parado). */
+  comEmail?: number;
   blocos?: { id: string; nome: string }[];
   unidadesEscolhidas?: { id: string; nome: string }[];
   contatosEscolhidos?: { id: string; nome: string }[];
@@ -693,9 +709,15 @@ export interface ComunicadoDetalhe {
     publicadoEm?: string; publicadoPor?: string; substituidoEm?: string }[];
   arquivos: ArquivoComunicado[];
   historico: EventoHistorico[];
-  pode: { editar: boolean; corrigir: boolean; arquivar: boolean; enviar: boolean; copiar: boolean };
+  pode: { editar: boolean; corrigir: boolean; arquivar: boolean; enviar: boolean; copiar: boolean; mural?: boolean; avisarEmail?: boolean };
   condominio: string;
   limites: { arquivos: number; tamanho: number };
+  /** Onde aparece (CD-12, CD-13). */
+  canais?: { noMural: boolean; porEmail: boolean; muralLigado: boolean; emailLigado: boolean };
+  email?: { total: number; naFila: number; enviados: number; entregues: number; devolvidos: number; spam: number; falharam: number;
+    cancelados: number; abertos: number; enviarApos?: string };
+  problemas?: { envioId: string; contatoId: string; nome: string; unidades?: string; estado: "DEVOLVIDO" | "SPAM" | "FALHOU";
+    motivo?: string; situacaoEmail?: string }[];
 }
 
 export interface OpcoesComunicado {
@@ -711,6 +733,7 @@ export interface OpcoesComunicado {
   manutencoes?: { id: string; titulo: string; local: string }[];
   pode: { publicar: boolean; verMoradores: boolean };
   agora: string;
+  canais?: { muralLigado: boolean; muralAssuntos: AssuntoComunicado[]; emailLigado: boolean };
 }
 
 export interface ComunicadosLigados {
@@ -727,6 +750,9 @@ export interface PlanoComunicacao {
   silencioFim: string;
   versao: number;
   podeEditar: boolean;
+  mural: { ligado: boolean; codigo?: string; assuntos: AssuntoComunicado[]; aberturas: number };
+  email: { ligado: boolean; responderPara?: string; comEmail: number; contatos: number };
+  documentos: { noMural: boolean; automatico: boolean };
 }
 
 export type TipoDocumento = "CONVENCAO" | "REGIMENTO" | "ATA" | "CONTRATO" | "LAUDO" | "ORCAMENTO" | "OUTRO";
@@ -753,6 +779,42 @@ export interface ListaDocumentos {
   total: number;
   vencendo: number;
   pode: { editar: boolean; restritos: boolean };
+  pedidosEsperando?: number;
+}
+
+/** Pedido de documento pelo mural (CD-14). */
+export interface PedidoDocumento {
+  id: string;
+  documentoId: string;
+  titulo: string;
+  email?: string;
+  estado: "ESPERANDO" | "ENVIADO" | "RECUSADO";
+  automatico: boolean;
+  criadoEm: string;
+  decididoEm?: string;
+  decididoPor?: string;
+  motivo?: string;
+  contato?: { id: string; nome: string; unidades?: string };
+  abertoEm?: string;
+}
+
+export interface PedidosDocumento {
+  itens: PedidoDocumento[];
+  esperando: number;
+  podeDecidir: boolean;
+}
+
+export interface EnvioDocumento {
+  id: string;
+  para: string;
+  contato?: string;
+  estado: string;
+  criadoEm: string;
+  abertoEm?: string;
+  pedido: boolean;
+  numero?: number;
+  cancelado: boolean;
+  vence?: string;
 }
 
 export interface VersaoDocumento {
@@ -775,9 +837,36 @@ export interface DocumentoDetalhe {
   documento: DocumentoResumo & { criadoPor?: string; criadoEm: string; arquivamento?: { motivo: string; em: string; por?: string } };
   versoes: VersaoDocumento[];
   historico: EventoHistorico[];
-  pode: { editar: boolean; enviar: boolean; restritos: boolean };
+  pode: { editar: boolean; enviar: boolean; restritos: boolean; enviarEmail?: boolean };
   limites: { tamanho: number };
   hoje: string;
+  envios?: EnvioDocumento[];
+  contatosComEmail?: { id: string; nome: string; unidades?: string }[];
+  vaiPorEmail?: boolean;
+}
+
+// ---------------------------------------------------------------------------------------
+// Sem conta: o mural e os links do e-mail (CD-12 a CD-14).
+
+export interface ComunicadoPublico {
+  id: string;
+  assunto: AssuntoComunicado;
+  titulo: string;
+  texto: string;
+  assinatura?: string;
+  publicadoEm: string;
+  numero: number;
+  mudanca?: string;
+  arquivos: { id: string; nome: string; tipo: string }[];
+}
+
+export interface MuralPublico {
+  condominio: string;
+  trocado?: boolean;
+  foraDoAr?: boolean;
+  comunicados?: ComunicadoPublico[];
+  documentos?: { id: string; titulo: string; tipo: TipoDocumento }[];
+  atualizadoEm?: string;
 }
 
 export interface ResumoComunicados {

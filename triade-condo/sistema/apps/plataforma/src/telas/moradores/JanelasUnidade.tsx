@@ -7,7 +7,7 @@
 // No conflito de versão, o que a pessoa escreveu fica (AT-24).
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { AVISOS_CONTATO, chaveUnidade, mostrarAndar, mostrarTelefone, MOTIVOS_ENCERRAMENTO, nomeDaUnidade, relacaoDasMarcas } from "@triade/domain";
+import { AVISOS_CONTATO, chaveUnidade, mostrarAndar, mostrarTelefone, MOTIVOS_ENCERRAMENTO, nomeDaUnidade, relacaoDasMarcas, SITUACOES_EMAIL } from "@triade/domain";
 import {
   Aviso, AvisoErro, Botao, CampoSelecao, CampoTexto, camposComErro, chamarApi, Carregando, Dialogo, ErroCarregar, textoDoErro, type ErroApi, type Resposta,
 } from "@triade/ui";
@@ -301,8 +301,10 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
 
 // ---------------------------------------------------------------------------------------
 
-export function EditarContato({ contato, responsavel, aoFechar, salvo, recarregar }: {
+export function EditarContato({ contato, responsavel, emailLigado, aoFechar, salvo, recarregar }: {
   contato: ContatoDaUnidade | null;
+  /** O envio por e-mail está ligado no condomínio (CD-13). */
+  emailLigado?: boolean;
   /** O responsável de hoje, se for outra pessoa. */
   responsavel: { nome: string; mora: boolean } | null;
   aoFechar: () => void;
@@ -311,14 +313,15 @@ export function EditarContato({ contato, responsavel, aoFechar, salvo, recarrega
 }) {
   return (
     <Dialogo aberto={!!contato} titulo={contato ? `Editar ${contato.nome}` : "Editar pessoa"} aoFechar={aoFechar}>
-      {contato ? <FormEditar contato={contato} responsavel={responsavel} aoFechar={aoFechar} salvo={salvo} recarregar={recarregar} /> : null}
+      {contato ? <FormEditar contato={contato} responsavel={responsavel} emailLigado={emailLigado ?? false} aoFechar={aoFechar} salvo={salvo} recarregar={recarregar} /> : null}
     </Dialogo>
   );
 }
 
-function FormEditar({ contato, responsavel, aoFechar, salvo, recarregar }: {
+function FormEditar({ contato, responsavel, emailLigado, aoFechar, salvo, recarregar }: {
   contato: ContatoDaUnidade;
   responsavel: { nome: string; mora: boolean } | null;
+  emailLigado: boolean;
   aoFechar: () => void;
   salvo: Salvo;
   recarregar: () => void;
@@ -327,7 +330,11 @@ function FormEditar({ contato, responsavel, aoFechar, salvo, recarregar }: {
   const [telefone, setTelefone] = useState(mostrarTelefone(contato.telefone));
   const [vinculo, setVinculo] = useState<CamposDoVinculo>(vinculoDe(contato));
   const [recebe, setRecebe] = useState(contato.recebeComunicados);
+  const [email, setEmail] = useState(contato.email ?? "");
+  const [recebeEmail, setRecebeEmail] = useState(contato.emailComunicados ?? true);
+  const [reenvio, setReenvio] = useState<string | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
+  const mudouEmail = email.trim().toLowerCase() !== (contato.email ?? "").toLowerCase() || recebeEmail !== (contato.emailComunicados ?? true);
   const marcas = { ...marcasDe(vinculo), ocupaDesde: vinculo.ocupaDesde || null };
   const mudouContato = nome.trim() !== contato.nome || telefone !== mostrarTelefone(contato.telefone);
   const mudouVinculo = JSON.stringify(marcas) !== JSON.stringify({ ...marcasDe(vinculoDe(contato)), ocupaDesde: contato.ocupaDesde })
@@ -343,13 +350,28 @@ function FormEditar({ contato, responsavel, aoFechar, salvo, recarregar }: {
       if (!r.ok) return setErro(r.erro);
       avisos = r;
     }
+    if (mudouEmail) {
+      const r = await chamarApi(`/v1/condominio/contatos/${contato.contatoId}/email`, {
+        metodo: "PUT", corpo: { versao: contato.contatoVersao + (mudouContato ? 1 : 0), email: email.trim(), recebe: recebeEmail },
+      });
+      if (!r.ok) return setErro(r.erro);
+    }
     if (mudouVinculo) {
       const r = await chamarApi(`/v1/condominio/vinculos-unidade/${contato.vinculoId}`, {
         metodo: "PUT", corpo: { versao: contato.versao, marcas, recebeComunicados: recebe },
       });
       if (!r.ok) return setErro(r.erro);
     }
-    salvo(avisos ? aviso(avisos, `${nome.trim()} atualizado.`, false) : { tom: "ok", texto: mudouVinculo ? `${nome.trim()} atualizado.` : "Nada mudou." });
+    const novoEmail = mudouEmail && email.trim() && email.trim().toLowerCase() !== (contato.email ?? "").toLowerCase();
+    const texto = novoEmail ? `${nome.trim()} atualizado. ${emailLigado ? "Mandamos um e-mail para a pessoa confirmar o endereço." : "O e-mail fica esperando confirmação até o envio por e-mail ser ligado."}`
+      : `${nome.trim()} atualizado.`;
+    salvo(avisos ? aviso(avisos, texto, false) : { tom: "ok", texto: mudouVinculo || mudouEmail ? texto : "Nada mudou." });
+  }
+
+  async function reenviar() {
+    setReenvio(null);
+    const r = await chamarApi(`/v1/condominio/contatos/${contato.contatoId}/email/reenviar`, { corpo: {} });
+    setReenvio(r.ok ? "Pedido de confirmação enviado de novo." : textoDoErro(r.erro));
   }
 
   const campos = camposComErro(erro);
@@ -364,6 +386,21 @@ function FormEditar({ contato, responsavel, aoFechar, salvo, recarregar }: {
         responsavelAtual={contato.principal ? null : responsavel} erros={errosDoVinculo(campos)} />
       <p className="text-xs text-tinta-suave">O &quot;ocupou até&quot; é preenchido quando o vínculo é encerrado ou numa mudança.</p>
       <Caixa id="e-recebe" rotulo="Recebe comunicados do condomínio" marcada={recebe} aoMudar={setRecebe} />
+      <CampoTexto id="e-email" rotulo="E-mail" opcional type="email" maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)}
+        erro={campos.includes("email") ? "Confira o e-mail: precisa do @ e do domínio." : null}
+        ajuda={contato.emailSituacao && email.trim().toLowerCase() === (contato.email ?? "").toLowerCase()
+          ? `${SITUACOES_EMAIL[contato.emailSituacao]}${contato.emailSituacao === "PAROU" ? (contato.emailParouMotivo === "SPAM" ? ": marcou como spam" : ": pediu pelo próprio e-mail") : ""}.`
+          : "Só a própria pessoa confirma, pelo link que chega no e-mail. Vazio tira o e-mail."} />
+      {contato.emailSituacao === "PENDENTE" && emailLigado && email.trim().toLowerCase() === (contato.email ?? "").toLowerCase() ? (
+        <span className="flex flex-wrap items-center gap-2 text-sm">
+          <Botao variante="discreto" tamanho="p" onClick={() => void reenviar()}>Mandar a confirmação de novo</Botao>
+          {reenvio ? <span className="text-xs text-tinta-suave" role="status">{reenvio}</span> : null}
+        </span>
+      ) : null}
+      {email.trim() ? (
+        <Caixa id="e-recebe-email" rotulo="Recebe comunicados por e-mail" marcada={recebeEmail} aoMudar={setRecebeEmail}
+          ajuda={contato.emailSituacao === "PAROU" ? "A pessoa parou de receber; só ela volta, pelo link do e-mail." : "Começa a valer quando a pessoa confirmar o e-mail."} />
+      ) : null}
     </Form>
   );
 }

@@ -5,7 +5,11 @@ import type { Route } from "@playwright/test";
 
 interface Bloco { id: string; nome: string; ordem: number; ativo: boolean; versao: number }
 interface Unidade { id: string; blocoId: string | null; andar: string | null; identificacao: string; ativa: boolean; versao: number }
-interface Contato { id: string; nome: string | null; telefone: string | null; versao: number }
+interface Contato {
+  id: string; nome: string | null; telefone: string | null; versao: number;
+  /** E-mail do contato (CD-13). */
+  email?: string; emailSituacao?: "PENDENTE" | "CONFIRMADO" | "DEVOLVIDO" | "PAROU"; emailComunicados?: boolean;
+}
 interface Marcas { proprietario: boolean; principal: boolean; mora: boolean; ligacao: string | null; parentesco: string | null; ocupaDesde: string | null }
 interface Vinculo extends Marcas {
   id: string; contatoId: string; unidadeId: string; relacao: string; recebeComunicados: boolean;
@@ -65,7 +69,7 @@ export function criarMoradores() {
   const u = (id: string, blocoId: string | null, identificacao: string): Unidade => ({ id, blocoId, andar: null, identificacao, ativa: true, versao: 1 });
   const unidades = [u(A101, torreA.id, "101"), u(A102, torreA.id, "102"), u(novoId(), torreA.id, "1001"), u(novoId(), torreA.id, "201"), u(novoId(), null, "Loja 2")];
   const ct = (nome: string, telefone: string): Contato => ({ id: novoId(), nome, telefone, versao: 1 });
-  const marina = ct("Marina Souza", "+5561999990001");
+  const marina: Contato = { ...ct("Marina Souza", "+5561999990001"), email: "marina@exemplo.com.br", emailSituacao: "CONFIRMADO" };
   const pedro = ct("Pedro Souza", "+5561999990002");
   const joana = ct("Joana Lima", "+5561988887777");
   const paulo = ct("Paulo Lima", "+5561988887777");
@@ -180,7 +184,8 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
           return { vinculoId: v.id, contatoId: c.id, nome: c.nome, telefone: c.telefone, contatoVersao: c.versao, relacao: v.relacao, principal: v.principal,
             proprietario: v.proprietario, mora: v.mora, ligacao: v.ligacao, parentesco: v.parentesco, ocupaDesde: v.ocupaDesde,
             recebeComunicados: v.recebeComunicados, estado: v.estado, origem: v.origem, desde: v.criadoEm, versao: v.versao, telefoneCompartilhado: compartilhado(c),
-            outrasUnidades: m.vinculos.filter((o) => o.contatoId === c.id && o.unidadeId !== x.id && o.estado !== "ENCERRADO").map((o) => nomeUnidade(unidade(o.unidadeId)!)) };
+            outrasUnidades: m.vinculos.filter((o) => o.contatoId === c.id && o.unidadeId !== x.id && o.estado !== "ENCERRADO").map((o) => nomeUnidade(unidade(o.unidadeId)!)),
+            email: c.email, emailSituacao: c.emailSituacao, emailComunicados: c.emailComunicados ?? true };
         }),
         anteriores: m.vinculos.filter((v) => v.unidadeId === x.id && v.estado === "ENCERRADO").map((v) => {
           const c = contato(v.contatoId);
@@ -286,14 +291,32 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     const url = new URL(route.request().url());
     const busca = (url.searchParams.get("busca") ?? "").toLowerCase();
     const estado = url.searchParams.get("estado");
-    const itens = m.vinculos.filter((v) => v.estado !== "ENCERRADO" && (!estado || v.estado === estado)).map((v) => {
+    const itens = m.vinculos.filter((v) => v.estado !== "ENCERRADO" && (!estado || v.estado === estado
+      || (estado === "SEM_EMAIL" && contato(v.contatoId).emailSituacao !== "CONFIRMADO"))).map((v) => {
       const c = contato(v.contatoId);
       const x = unidade(v.unidadeId)!;
       return { vinculoId: v.id, contatoId: c.id, nome: c.nome!, telefone: c.telefone!, unidadeId: x.id, unidade: x.identificacao,
-        andar: x.andar, bloco: m.blocos.find((b) => b.id === x.blocoId)?.nome ?? null, relacao: v.relacao, principal: v.principal, estado: v.estado, origem: v.origem, versao: v.versao };
+        andar: x.andar, bloco: m.blocos.find((b) => b.id === x.blocoId)?.nome ?? null, relacao: v.relacao, principal: v.principal, estado: v.estado, origem: v.origem, versao: v.versao,
+        emailSituacao: c.emailSituacao };
     }).filter((i) => !busca || i.nome.toLowerCase().includes(busca) || i.unidade.toLowerCase().startsWith(busca) || (i.bloco ?? "").toLowerCase().includes(busca)
       || (busca.replace(/\D/g, "").length >= 4 && i.telefone.includes(busca.replace(/\D/g, ""))));
-    return route.fulfill({ json: { itens, total: itens.length, pagina: 1, porPagina: 50, aConfirmar: resumoMoradores(m).aConfirmar, podeEditar: edita, podeConfirmar: confirma } });
+    const semEmail = new Set(m.vinculos.filter((v) => v.estado !== "ENCERRADO" && contato(v.contatoId).emailSituacao !== "CONFIRMADO").map((v) => v.contatoId)).size;
+    return route.fulfill({ json: { itens, total: itens.length, pagina: 1, porPagina: 50, aConfirmar: resumoMoradores(m).aConfirmar, semEmail, podeEditar: edita, podeConfirmar: confirma } });
+  }
+  // E-mail do contato (CD-13): vira "esperando confirmação"; só a própria pessoa confirma.
+  const em = /^\/v1\/condominio\/contatos\/([^/]+)\/email(\/reenviar)?$/.exec(caminho);
+  if (em) {
+    const c = m.contatos.find((x) => x.id === em[1]);
+    if (!c) return route.fulfill({ status: 404, json: { erro: { codigo: "NOT_FOUND" } } });
+    if (!edita) return route.fulfill({ status: 403, json: { erro: { codigo: "FORBIDDEN" } } });
+    if (em[2]) return route.fulfill({ json: { ok: true } });
+    if (corpo.versao !== c.versao) return route.fulfill({ status: 409, json: { erro: { codigo: "VERSION_CONFLICT", detalhes: { versao: c.versao } } } });
+    const novo = corpo.email ? String(corpo.email).trim() : "";
+    if (novo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(novo)) return route.fulfill({ status: 400, json: { erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["email"] } } } });
+    if (novo.toLowerCase() !== (c.email ?? "").toLowerCase()) Object.assign(c, { email: novo || undefined, emailSituacao: novo ? "PENDENTE" : undefined });
+    c.emailComunicados = corpo.recebe !== false;
+    c.versao++;
+    return route.fulfill({ json: { versao: c.versao, situacao: c.emailSituacao ?? null, confirmacaoNaFila: !!novo } });
   }
   const co = /^\/v1\/condominio\/contatos\/([^/]+)(\/remover-dados)?$/.exec(caminho);
   if (co) {

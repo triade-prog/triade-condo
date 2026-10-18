@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { formatarData, mostrarDataSemHora, mostrarTelefone, nomeDaUnidade } from "@triade/domain";
+import { formatarData, mostrarDataSemHora, mostrarTelefone, nomeDaUnidade, SITUACOES_EMAIL } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Selo, textoDoErro, Vazio } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
@@ -28,6 +28,7 @@ function detalhes(c: ContatoDaUnidade): string {
     ...descreverVinculo(c).resto,
     mostrarTelefone(c.telefone),
     c.recebeComunicados ? "recebe comunicados" : "não recebe comunicados",
+    c.emailSituacao ? SITUACOES_EMAIL[c.emailSituacao].toLowerCase() : null,
     c.origem === "PLANILHA" ? "veio da planilha" : null,
     c.outrasUnidades.length ? `também em ${c.outrasUnidades.join(", ")}` : null,
   ].filter(Boolean).join(" · ");
@@ -181,7 +182,7 @@ export function Unidade() {
       <IncluirContato aberto={janela?.tipo === "incluir"} unidade={d} relacaoInicial={janela?.tipo === "incluir" ? janela.relacao : undefined} aoFechar={fechar} salvo={salvo} />
       <RegistrarMudanca aberto={janela?.tipo === "mudanca"} unidade={d} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
       <EditarUnidade aberto={janela?.tipo === "unidade"} unidade={d} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
-      <EditarContato contato={janela?.tipo === "editar" ? janela.contato : null} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar}
+      <EditarContato contato={janela?.tipo === "editar" ? janela.contato : null} emailLigado={d.emailLigado} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar}
         responsavel={((r) => (r ? { nome: r.nome, mora: r.mora } : null))(d.contatos.find((c) => c.principal))} />
       <Encerrar contato={janela?.tipo === "encerrar" ? janela.contato : null} nomeUnidade={nome} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
       <Janela aberto={janela?.tipo === "recusar"} titulo={janela?.tipo === "recusar" ? `Recusar ${janela.contato.nome}` : "Recusar"} campos={[]} iniciais={{}}

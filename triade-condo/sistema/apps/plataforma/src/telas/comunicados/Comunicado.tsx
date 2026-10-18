@@ -2,12 +2,14 @@
 // Comunicado aberto (design "Telas dos Comunicados", tela 3; CD-01, CD-02, CD-08): o texto como o
 // morador lê, com a assinatura; autor, data, versão e para quem à vista. Corrigir cria a versão
 // seguinte e guarda a anterior. Sem WhatsApp, o comunicado sai copiado para o grupo do prédio ou
-// impresso para o mural, e os dois ficam no histórico.
+// impresso para o mural, e os dois ficam no histórico. "Como chegou" (design "Mural online e
+// e-mail", tela 4; CD-12, CD-13): o mural online, os e-mails enviados, entregues e que voltaram,
+// e quantos abriram o link pessoal.
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { descreverAlcance, descreverEventoComunicado, mostrarTamanho, textoParaCopiar } from "@triade/domain";
+import { descreverAlcance, descreverEnvioEmail, descreverEventoComunicado, mostrarTamanho, textoParaCopiar } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { diaHora } from "../pedidos/comum.tsx";
@@ -62,6 +64,16 @@ function ComunicadoAberto() {
     setRecado({ tom: "ok", texto: "Texto copiado, com o título e a assinatura. Cole no grupo do prédio." });
     carga.recarregar();
   }
+
+  async function mural(noMural: boolean) {
+    setFalha(null);
+    const r = await chamarApi(`/v1/condominio/comunicados/${c.id}/mural`, { metodo: "PUT", corpo: { versao: c.versao, noMural } });
+    if (!r.ok) return setFalha(r.erro);
+    setRecado({ tom: "ok", texto: noMural ? "Comunicado posto no mural online." : "Comunicado tirado do mural online." });
+    carga.recarregar();
+  }
+  const canais = d.canais;
+  const email = d.email;
 
   return (
     <div className="grid gap-5">
@@ -154,14 +166,51 @@ function ComunicadoAberto() {
 
         <div className="grid gap-4">
           <section aria-labelledby="t-chega" className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
-            <h2 id="t-chega" className="text-lg font-medium">Como chega ao morador</h2>
+            <h2 id="t-chega" className="text-lg font-medium">{c.estado === "PUBLICADO" || c.estado === "SUBSTITUIDO" ? "Como chegou" : "Como vai chegar"}</h2>
             <ul className="grid gap-2 text-sm">
+              {canais?.muralLigado ? (
+                <li className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-linha px-3 py-2">
+                  <span><span className="block font-medium">Mural online</span>
+                    <span className="text-xs text-tinta-suave">{c.publico !== "TODOS" ? "Só comunicado para todo o condomínio vai ao mural."
+                      : canais.noMural ? (c.estado === "PUBLICADO" ? "Aparece no mural agora." : "Vai aparecer ao publicar.") : "Fora do mural."}</span></span>
+                  {d.pode.mural ? <Botao variante="discreto" tamanho="m" onClick={() => void mural(!canais.noMural)}>{canais.noMural ? "Tirar do mural" : "Pôr no mural"}</Botao> : null}
+                </li>
+              ) : null}
+              {email && (email.total > 0 || canais?.emailLigado) ? (
+                <li className="rounded-xl border border-linha px-3 py-2">
+                  <span className="block font-medium">E-mail{email.enviados ? ` · ${email.enviados === 1 ? "1 enviado" : `${email.enviados} enviados`}` : ""}</span>
+                  <span className="text-xs text-tinta-suave">
+                    {email.total === 0 ? (canais?.porEmail ? "Sai ao publicar, para quem tem e-mail confirmado." : "Este comunicado não vai por e-mail.")
+                      : descreverEnvioEmail(email) || "Saindo agora."}
+                    {email.naFila && email.enviarApos ? ` Esperando o fim do horário sem envio (${diaHora(email.enviarApos)}).` : ""}
+                  </span>
+                  {email.abertos ? <span className="block text-xs text-tinta-suave">Link pessoal aberto por {email.abertos === 1 ? "1 pessoa" : `${email.abertos} pessoas`}. Não usamos rastreio escondido no e-mail.</span> : null}
+                </li>
+              ) : null}
               <li className="rounded-xl border border-linha px-3 py-2"><span className="block font-medium">Copiar texto</span><span className="text-xs text-tinta-suave">Para colar no grupo do prédio, com título e assinatura.</span></li>
               <li className="rounded-xl border border-linha px-3 py-2"><span className="block font-medium">Versão para o mural</span><span className="text-xs text-tinta-suave">Folha A4 com o nome do condomínio, a data e a versão.</span></li>
               <li className="rounded-xl border border-linha px-3 py-2"><span className="block font-medium">WhatsApp do condomínio</span><span className="text-xs text-tinta-suave">Chega com o passo 5. Enviado não quer dizer lido.</span></li>
             </ul>
             <p className="text-xs text-tinta-suave">Quem recebe agora: {descreverAlcance(d.publicoAgora.contatos, d.publicoAgora.unidades)}. A conta é refeita a cada envio.</p>
           </section>
+
+          {d.problemas?.length ? (
+            <section aria-labelledby="t-voltaram" className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
+              <h2 id="t-voltaram" className="text-lg font-medium">E-mails que não chegaram</h2>
+              <ul className="grid gap-2 text-sm">
+                {d.problemas.map((x) => (
+                  <li key={x.envioId} className="rounded-xl border border-linha px-3 py-2">
+                    <span className="block font-medium">{x.nome}{x.unidades ? ` · ${x.unidades}` : ""}</span>
+                    <span className="text-xs text-tinta-suave">
+                      {x.estado === "SPAM" ? "Marcou como spam. Não recebe mais por e-mail."
+                        : x.estado === "DEVOLVIDO" ? `${x.motivo ?? "Endereço não existe"}. O e-mail foi desligado: corrija no cadastro.`
+                        : `Não saiu: ${x.motivo ?? "o provedor recusou"}.`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           <section aria-labelledby="t-hist" className="grid gap-2">
             <h2 id="t-hist" className="text-lg font-medium">Histórico</h2>
@@ -183,10 +232,13 @@ function ComunicadoAberto() {
           { id: "titulo", rotulo: "Título", tipo: "texto", obrigatorio: true, max: 120, erro: "De 3 a 120 caracteres." },
           { id: "texto", rotulo: "Texto", tipo: "area", obrigatorio: true, max: 4000, erro: "De 3 a 4000 caracteres, diferente do atual." },
           { id: "mudanca", rotulo: "O que mudou", tipo: "area", obrigatorio: true, max: 500, erro: "Diga o que mudou, de 3 a 500 caracteres." },
+          ...(d.pode.avisarEmail ? [{ id: "avisarEmail", rotulo: `Avisar por e-mail quem recebeu a versão ${c.numero}`, tipo: "caixa" as const,
+            ajuda: `O e-mail começa com o que mudou. Desligado, a versão ${c.numero + 1} só aparece no mural e no link pessoal.` }] : []),
         ]}
-        iniciais={{ titulo: c.titulo, texto: c.texto, mudanca: "" }}
+        iniciais={{ titulo: c.titulo, texto: c.texto, mudanca: "", avisarEmail: false }}
         aoSalvar={async (v) => {
-          const r = await chamarApi<{ id: string }>(`/v1/condominio/comunicados/${c.id}/corrigir`, { corpo: { versao: c.versao, titulo: v.titulo, texto: v.texto, mudanca: v.mudanca } });
+          const r = await chamarApi<{ id: string }>(`/v1/condominio/comunicados/${c.id}/corrigir`, {
+            corpo: { versao: c.versao, titulo: v.titulo, texto: v.texto, mudanca: v.mudanca, avisarEmail: v.avisarEmail === true } });
           if (r.ok) { setAcao(null); atualizar(); router.push(`/comunicados/comunicado?id=${r.dados.id}&feito=CORRIGIR`); }
           return r;
         }} />

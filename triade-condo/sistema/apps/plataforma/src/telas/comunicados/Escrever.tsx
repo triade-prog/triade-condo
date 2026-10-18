@@ -3,6 +3,8 @@
 // assunto, título e texto; fotos e a ligação com pedido ou manutenção são opcionais. Ao escolher
 // para quem, a tela mostra quantos contatos recebem e as unidades que ficam sem ninguém. Fica
 // como rascunho até publicar ou programar. O publicado não volta aqui: corrige-se em versão nova.
+// "Como vai chegar" (design "Mural online e e-mail", tela 3; CD-12, CD-13): se aparece no mural
+// online e se vai por e-mail, com quantos recebem por e-mail antes de publicar.
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -69,6 +71,9 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
     manutencaoId: c?.manutencaoId ?? manutencaoLigada,
     quando: c?.estado === "PROGRAMADO" && c.programadoPara ? "PROGRAMAR" : "PUBLICAR" as "PUBLICAR" | "PROGRAMAR",
     programadoPara: c?.programadoPara ? paraDataHoraLocal(c.programadoPara) : "",
+    // Sem escolha, o mural segue os assuntos marcados nas Configurações.
+    noMural: (detalhe?.canais?.noMural ?? null) as boolean | null,
+    porEmail: detalhe?.canais?.porEmail ?? true,
   });
   const [novos, setNovos] = useState<{ arquivo: File; problema: string | null }[]>([]);
   const [tirar, setTirar] = useState<ArquivoComunicado | null>(null);
@@ -105,6 +110,8 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
   const silencio = v.quando === "PROGRAMAR" && /^\d\d:\d\d$/.test(horaProgramada) && noHorarioSemEnvio(horaProgramada, o.silencio.inicio, o.silencio.fim);
 
   const alternar = (lista: string[], x: string) => (lista.includes(x) ? lista.filter((y) => y !== x) : [...lista, x]);
+  const canais = o.canais ?? { muralLigado: false, muralAssuntos: [], emailLigado: false };
+  const noMural = v.publico === "TODOS" && (v.noMural ?? canais.muralAssuntos.includes(v.assunto));
 
   async function salvar(acao: Acao, ev?: FormEvent) {
     ev?.preventDefault();
@@ -115,6 +122,7 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
       assunto: v.assunto, titulo: v.titulo, texto: v.texto, publico: v.publico, blocos: v.blocos, unidades: v.unidades, contatos: v.contatos,
       pedidoId: v.pedidoId || null, manutencaoId: v.manutencaoId || null,
       programadoPara: acao === "PROGRAMAR" ? deDataHoraLocal(v.programadoPara) : null,
+      noMural, porEmail: v.porEmail,
     };
     const validos = novos.filter((n) => !n.problema);
     // Com fotos novas, guarda primeiro como rascunho, envia as fotos e só então publica ou programa.
@@ -308,6 +316,38 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
             ) : null}
           </section>
 
+          {canais.muralLigado || canais.emailLigado ? (
+            <section aria-labelledby="t-chegar" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+              <h2 id="t-chegar" className="text-lg font-medium">Como vai chegar</h2>
+              {canais.muralLigado ? (
+                <label className="flex items-start gap-3 text-sm">
+                  <input type="checkbox" role="switch" className="mt-0.5 h-5 w-5 shrink-0 accent-violeta-600" checked={noMural} disabled={v.publico !== "TODOS"}
+                    onChange={(e) => mudar({ noMural: e.target.checked })} />
+                  <span className="grid gap-0.5"><span className="font-medium">Aparece no mural online</span>
+                    <span className="text-[13px] text-tinta-suave">{v.publico === "TODOS" ? "Só para comunicados de todo o condomínio." : "Este comunicado não é para todo o condomínio: não vai ao mural do prédio."}</span></span>
+                </label>
+              ) : null}
+              {canais.emailLigado ? (
+                <>
+                  <label className="flex items-start gap-3 text-sm">
+                    <input type="checkbox" role="switch" className="mt-0.5 h-5 w-5 shrink-0 accent-violeta-600" checked={v.porEmail}
+                      onChange={(e) => mudar({ porEmail: e.target.checked })} />
+                    <span className="grid gap-0.5"><span className="font-medium">Vai por e-mail</span>
+                      <span className="text-[13px] text-tinta-suave">
+                        {publico && !incompleto ? (publico.comEmail === 1 ? "1 contato com e-mail confirmado." : `${publico.comEmail ?? 0} contatos com e-mail confirmado.`) : "Para quem tem e-mail confirmado."}
+                      </span></span>
+                  </label>
+                  {v.porEmail && publico && !incompleto && publico.contatos - (publico.comEmail ?? 0) > 0 ? (
+                    <Aviso tom="atencao" titulo={publico.contatos - (publico.comEmail ?? 0) === 1 ? "1 contato sem e-mail confirmado" : `${publico.contatos - (publico.comEmail ?? 0)} contatos sem e-mail confirmado`}>
+                      Ficam com o grupo do prédio{canais.muralLigado ? " e o mural" : ""}.
+                    </Aviso>
+                  ) : null}
+                  <p className="text-xs text-tinta-suave">Entre {o.silencio.inicio} e {o.silencio.fim}, o e-mail espera até as {o.silencio.fim}.</p>
+                </>
+              ) : null}
+            </section>
+          ) : null}
+
           <section aria-labelledby="t-quando" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
             <h2 id="t-quando" className="text-lg font-medium">Quando</h2>
             <Escolha rotulo="Quando" atual={v.quando} aoMudar={(x) => mudar({ quando: x })}
@@ -316,7 +356,7 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
               <CampoTexto id="cm-programado" rotulo="Dia e hora" type="datetime-local" value={v.programadoPara} onChange={(e) => mudar({ programadoPara: e.target.value })}
                 erro={msg("programadoPara", "Daqui a pelo menos 2 minutos e até um ano.")} ajuda="Até a hora marcada dá para mudar ou voltar a rascunho." />
             ) : null}
-            {silencio ? <Aviso tom="atencao">Essa hora cai no horário sem envio ({o.silencio.inicio} às {o.silencio.fim}). Vale para o WhatsApp, quando ele chegar.</Aviso> : null}
+            {silencio ? <Aviso tom="atencao">Essa hora cai no horário sem envio ({o.silencio.inicio} às {o.silencio.fim}). O e-mail espera até as {o.silencio.fim}; o WhatsApp, quando chegar, também.</Aviso> : null}
           </section>
 
           <div className="flex flex-wrap gap-2">

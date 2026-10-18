@@ -1,12 +1,13 @@
 "use client";
 // Lista de moradores e a confirmar (MU-02, PT-17): busca por nome, unidade ou telefone, em
 // páginas. O que veio da planilha espera o síndico: confirmar vários de uma vez ou recusar
-// quem ele não reconhece. Contato a confirmar não acessa nada.
+// quem ele não reconhece. Contato a confirmar não acessa nada. O filtro "sem e-mail confirmado"
+// mostra quem ainda não recebe por e-mail (CD-13).
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
-import { mostrarTelefone, nomeDaUnidade } from "@triade/domain";
-import { Aviso, Botao, Carregando, CampoTexto, chamarApi, ErroCarregar, textoDoErro, Vazio } from "@triade/ui";
+import { mostrarTelefone, nomeDaUnidade, SITUACOES_EMAIL } from "@triade/domain";
+import { Aviso, Botao, Carregando, CampoTexto, chamarApi, Chip, ErroCarregar, textoDoErro, Vazio } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { ListaMoradores, MoradorDaLista, Recado } from "../tipos.ts";
@@ -20,7 +21,9 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
   const [recusar, setRecusar] = useState<MoradorDaLista | null>(null);
   const [falha, setFalha] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const qs = new URLSearchParams({ pagina: String(pagina), ...(busca ? { busca } : {}), ...(estado ? { estado } : {}) });
+  const [semEmail, setSemEmail] = useState(false);
+  const filtro = estado ?? (semEmail ? "SEM_EMAIL" : undefined);
+  const qs = new URLSearchParams({ pagina: String(pagina), ...(busca ? { busca } : {}), ...(filtro ? { estado: filtro } : {}) });
   const carga = useCarregar<ListaMoradores>(`/v1/condominio/moradores?${qs}`);
   const aConfirmar = estado === "PENDENTE";
 
@@ -48,6 +51,11 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
       <CampoTexto id="m-busca" rotulo="Buscar por nome, unidade ou telefone" className="min-w-0 flex-1 basis-64" value={texto} maxLength={60}
         onChange={(e) => setTexto(e.target.value)} />
       <Botao type="submit" variante="contorno">Buscar</Botao>
+      {estado ? null : (
+        <Chip ativo={semEmail} icone="email" onClick={() => { setSemEmail((x) => !x); setPagina(1); }}>
+          Sem e-mail confirmado{carga.estado === "pronto" && carga.dados.semEmail !== undefined ? ` · ${carga.dados.semEmail}` : ""}
+        </Chip>
+      )}
     </form>
   );
 
@@ -113,7 +121,8 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
                     <td className="min-w-44 px-4 py-3">
                       <span className="font-medium">{i.nome}</span>
                       <span className="block text-xs text-tinta-suave">
-                        {[nomeRelacao(i.relacao), i.principal ? "responsável" : null, mostrarTelefone(i.telefone), i.origem === "PLANILHA" ? "veio da planilha" : null].filter(Boolean).join(" · ")}
+                        {[nomeRelacao(i.relacao), i.principal ? "responsável" : null, mostrarTelefone(i.telefone), i.origem === "PLANILHA" ? "veio da planilha" : null,
+                          i.emailSituacao ? SITUACOES_EMAIL[i.emailSituacao].toLowerCase() : null].filter(Boolean).join(" · ")}
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
