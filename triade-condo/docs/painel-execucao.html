@@ -30,7 +30,7 @@
     "total_ideias": 311,
     "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7), Manutenção e prestadores (R6) e Comunicados e documentos (R1), com o mural online e o e-mail (R1b), construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), comunicados (rascunho, programado e publicado, com versões, público calculado, copiar para o grupo e versão para o mural, mural online por link e QR e envio por e-mail) e documentos do prédio com versões, validade e envio por e-mail, moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (870 pgTAP, 130 Deno, 116 Vitest, 186 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0160 (com as rotinas de prazos, manutenção, comunicados e fila de e-mails no pg_cron) e as Edge Functions api-plataforma (versão 12, com o mural e o e-mail) e api-console; o envio de e-mails espera os segredos no Vault e na função; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "R",
-    "proximo_passo": "Mural online e e-mail (R1b): a Carolina grava os segredos do e-mail (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault) e cadastra o aviso do Resend (o PR 14 já foi juntado ao main). Com a Carolina: conferir Comunicados e documentos, a Agenda e a Manutenção no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
+    "proximo_passo": "Aprovar o desenho de Links e QR (R13, docs/telas/links-qr.html) para construir. Mural online e e-mail (R1b): a Carolina grava os segredos do e-mail (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault) e cadastra o aviso do Resend. Com a Carolina: testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
   "fases": [
     {
@@ -77,7 +77,7 @@
           "peca": "B4",
           "refs": [],
           "status": "andamento",
-          "nota": "Telas aprovadas pela Carolina antes do código em todos os passos e peças construídos: passos 1 a 4 (16/10/2026), 3b, 6 e 7 (17/10/2026), Agenda, Manutenção, Comunicados e documentos e Mural online e e-mail (docs/telas). Continua valendo para cada peça seguinte; nenhuma tela usa emoji."
+          "nota": "Telas aprovadas pela Carolina antes do código em todos os passos e peças construídos: passos 1 a 4 (16/10/2026), 3b, 6 e 7 (17/10/2026), Agenda, Manutenção, Comunicados e documentos e Mural online e e-mail (docs/telas). Links e QR (R13) desenhado em 18/10/2026, esperando aprovação. Continua valendo para cada peça seguinte; nenhuma tela usa emoji."
         }
       ]
     },
@@ -849,8 +849,13 @@
           "id": "R13",
           "texto": "Links e QR",
           "peca": "S16",
-          "refs": [],
-          "status": "pendente"
+          "refs": [
+            "AT-30",
+            "MP-08",
+            "V-11"
+          ],
+          "status": "andamento",
+          "nota": "Desenho para aprovação em docs/telas/links-qr.html (18/10/2026): Configurações › Links e QR com tudo o que abre sem conta, etiquetas QR por local que abrem o WhatsApp do condomínio com o local escrito, impressão das etiquetas e link do prestador na manutenção (o que fazer, chegada pela etiqueta, não consegui fazer e terminei). Ficam para depois: proposta do fornecedor (OC-03, com R5 e R8), plaquinha de chegada (PA-06) e perfil do visitante (V-12), com a Portaria (R11) e o WhatsApp."
         },
         {
           "id": "R14",
@@ -1412,22 +1417,29 @@
   "historico": [
     {
       "data": "18/10/2026",
-      "inicio": "07:20",
-      "fim": "07:50",
+      "inicio": "07:06",
+      "fim": "07:15",
+      "texto": "PR 15 (logo oficial e painel revisto) juntado ao main. Desenhado o R13, Links e QR, em docs/telas/links-qr.html, para aprovação: Configurações › Links e QR mostra tudo o que abre sem conta (mural, etiquetas, links de prestador e documentos por e-mail); etiquetas QR por local abrem o WhatsApp do condomínio com o local escrito, com recado opcional, impressão em folha A4 e troca de código com motivo; o link do prestador na manutenção mostra só o que foi escrito para ele e recebe a chegada pela etiqueta, o não consegui fazer e o terminei, sem mudar a situação sozinho. 6 telas e 13 decisões; proposta do fornecedor, plaquinha de chegada e perfil do visitante ficam para depois. Corrigidos os horários das três linhas anteriores do histórico, que estavam adiantados.",
+      "ref": "R13, AT-30, MP-08, V-11, D4"
+    },
+    {
+      "data": "18/10/2026",
+      "inicio": "06:42",
+      "fim": "07:00",
       "texto": "Logo oficial no sistema. O painel e o CONTEXTO tratavam o logo como pendente e o código usava um triângulo provisório (e o ícone da aba ainda no verde antigo), embora a proposta aprovada (DC13) já fizesse do logo violeta a assinatura do produto. Com a versão atual enviada pela Carolina (torre laranja, triângulos e letras violeta), foram gerados os arquivos com fundo transparente (logo violeta e laranja, versões grandes e o símbolo) em docs/identidade; o componente Marca e a identidade do Console passam a mostrar o logo, e o símbolo vira o ícone da aba nas duas aplicações. E5 feito. Testes: eslint e tipos limpos, 116 Vitest e 186 ponta a ponta.",
       "ref": "D1, E5, DC13, EM-02"
     },
     {
       "data": "18/10/2026",
-      "inicio": "07:00",
-      "fim": "07:15",
+      "inicio": "06:38",
+      "fim": "06:41",
       "texto": "Painel revisto item a item. Corrigido o que estava atrasado: as notas dos passos 2 e 3 diziam que as migrations 0070 e 0080 faltavam (foram aplicadas em 16/10); o envio de arquivo do passo 4, a Manutenção e os Comunicados já estão no main (PRs 12, 13 e 14); o CI continua sem máquina no PR 14. Marcados como feitos, com evidência: D2 (sistema de design aprovado e aplicado), T6, T10 e T11 (os testes já existiam no pgTAP e no Playwright) e P2 (endereços próprios com HTTPS). P1 e P3 em andamento. A fase atual passa a ser a das peças seguintes (R), já que o passo 7 está pronto e o 5 espera o provedor do WhatsApp.",
       "ref": "D2, T6, T10, T11, P1, P2, P3, F0.9"
     },
     {
       "data": "18/10/2026",
-      "inicio": "06:45",
-      "fim": "06:55",
+      "inicio": "06:36",
+      "fim": "06:38",
       "texto": "PR 14 (mural online e e-mail) juntado ao main; os testes do GitHub não rodaram pelo mesmo bloqueio de máquina do F0.9, e os locais tinham passado. Painel revisto para escolher a próxima peça.",
       "ref": "R1b, F0.9"
     },
