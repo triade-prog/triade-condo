@@ -134,6 +134,8 @@ Deno.test("PT-07: armazenamento privado só com a chave de serviço e links assi
     "https://projeto.supabase.co/storage/v1/object/sign/pedidos/x?token=b&download=teto%20banheiro.jpg");
   assertEquals(JSON.parse(String(pedidos[1]!.init!.body)), { expiresIn: 300 });
   assertEquals([...(await a.ler(caminho))!], [1, 2]);
+  const doPrestador = "11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222/prestador/33333333-3333-4333-8333-333333333333";
+  assertEquals(await a.linkEnvio(doPrestador), "https://projeto.supabase.co/storage/v1/object/upload/sign/pedidos/x?token=a", "V-11: a foto do prestador tem caminho próprio");
   await a.gravar(caminho, new Uint8Array([3]), "image/jpeg");
   assertEquals((pedidos.at(-1)!.init!.headers as Record<string, string>)["x-upsert"], "true");
   assert(pedidos.every((p) => (p.init?.headers as Record<string, string>).authorization === "Bearer chave-servico"));
