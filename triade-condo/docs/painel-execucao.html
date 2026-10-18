@@ -30,7 +30,7 @@
     "total_ideias": 311,
     "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7), Manutenção e prestadores (R6) e Comunicados e documentos (R1), com o mural online e o e-mail (R1b), e Links e QR (R13) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), comunicados (rascunho, programado e publicado, com versões, público calculado, copiar para o grupo e versão para o mural, mural online por link e QR e envio por e-mail) e documentos do prédio com versões, validade e envio por e-mail, etiquetas QR por local que abrem o WhatsApp do condomínio e o link do prestador na manutenção, com a chegada pela etiqueta, moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (932 pgTAP, 136 Deno, 126 Vitest, 196 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0170 (com as rotinas de prazos, manutenção, comunicados e fila de e-mails no pg_cron) e as Edge Functions api-plataforma (versão 13, com o mural, o e-mail e Links e QR) e api-console; o envio de e-mails espera os segredos no Vault e na função; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "R",
-    "proximo_passo": "Com a Carolina: testar Links e QR num celular de verdade (etiqueta e câmera do prestador) e no Águas Claras (E8). Mural online e e-mail (R1b): gravar os segredos do e-mail (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault) e cadastrar o aviso do Resend. Liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
+    "proximo_passo": "Com a Carolina: aprovar o desenho da Memória do prédio (R10, docs/telas/memoria.html) para começar a construção. Testar Links e QR num celular de verdade (etiqueta e câmera do prestador) e no Águas Claras (E8). Mural online e e-mail (R1b): gravar os segredos do e-mail (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault) e cadastrar o aviso do Resend. Liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
   "fases": [
     {
@@ -828,8 +828,15 @@
           "id": "R10",
           "texto": "Memória do prédio",
           "peca": "S13",
-          "refs": [],
-          "status": "pendente"
+          "refs": [
+            "MP-12",
+            "MP-14",
+            "CT-02",
+            "CT-03",
+            "CT-04"
+          ],
+          "status": "andamento",
+          "nota": "Telas e decisões desenhadas em docs/telas/memoria.html (prontuário, linha do tempo, manual do prédio, dossiê de passagem de bastão e exportação), esperando aprovação da Carolina."
         },
         {
           "id": "R11",
@@ -1416,6 +1423,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "18/10/2026",
+      "inicio": "11:35",
+      "fim": "11:50",
+      "texto": "Desenho da Memória do prédio (R10) para aprovação: 6 telas (prontuário que aponta para Documentos, contratos e preventivas; ligar documento e não se aplica; linha do tempo com anotar na memória; manual do prédio com aba no mural; dossiê de passagem de bastão; exportar tudo) e 12 decisões. Memória por pergunta (IA-09), leitura do grupo de WhatsApp (IA-17) e troca de síndico no Console (CT-01) ficam para depois.",
+      "ref": "R10, MP-12, MP-14, CT-02, CT-03, CT-04"
+    },
     {
       "data": "18/10/2026",
       "inicio": "11:00",
