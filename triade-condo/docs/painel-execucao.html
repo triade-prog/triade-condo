@@ -26,11 +26,11 @@
 <script type="application/json" id="dados">
 {
   "meta": {
-    "atualizado_em": "17/10/2026",
+    "atualizado_em": "18/10/2026",
     "total_ideias": 308,
     "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7), Manutenção e prestadores (R6) e Comunicados e documentos (R1) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), comunicados (rascunho, programado e publicado, com versões, público calculado, copiar para o grupo e versão para o mural) e documentos do prédio com versões e validade, moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (787 pgTAP, 116 Deno, 108 Vitest, 172 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0140 (com a conferência de prazos e a da manutenção no pg_cron) e as Edge Functions api-plataforma (versão 10, com a agenda e a manutenção) e api-console; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F7",
-    "proximo_passo": "Comunicados e documentos (R1): a Carolina aplica a 0150 no triade-condo-dev; depois, publicar a api-plataforma com as rotas dos comunicados e documentos e juntar o PR ao main. Com a Carolina: conferir a Agenda e a Manutenção no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
+    "proximo_passo": "Com a Carolina: conferir Comunicados e documentos, a Agenda e a Manutenção no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
   "fases": [
     {
@@ -729,7 +729,7 @@
           ],
           "status": "feito",
           "evidencia": "Desenho aprovado em docs/telas/comunicados.html. Migration 0150_comunicados_documentos.sql (comunicados com versões, rascunho, programado, publicado, substituído e arquivado, público calculado, publicação programada pela rotina verificar_comunicados a cada 5 minutos, fotos no bucket comunicados, documentos com versões no bucket documentos, restritos, validade com aviso no sino, plano de comunicação, permissões Ver comunicados e documentos e Cuidar dos documentos); telas /comunicados, /comunicados/escrever, /comunicados/comunicado, /comunicados/documentos, /comunicados/documento, /mural, Comunicados no pedido e na manutenção, cartão no início, aviso no sino e aba Comunicados nas configurações",
-          "nota": "Falta aplicar a 0150 no triade-condo-dev e publicar a api-plataforma com as rotas dos comunicados e documentos; os buckets privados comunicados e documentos nascem com a própria migration. Sem WhatsApp, o comunicado sai copiado para o grupo ou impresso para o mural. CD-06 em parte (programar; campanhas esperam o WhatsApp) e MP-12 em parte (validade dos documentos). Ficam para depois, com o motivo no desenho: CD-08, CD-10, IA-05, IA-06 e IA-07."
+          "nota": "A 0150 foi aplicada pela Carolina no triade-condo-dev e conferida (tabelas, permissões, buckets privados comunicados e documentos, rotina verificar_comunicados a cada 5 minutos e RLS forçado); a api-plataforma versão 11, com as rotas dos comunicados e documentos, está publicada; PR 13 para juntar ao main. Sem WhatsApp, o comunicado sai copiado para o grupo ou impresso para o mural. CD-06 em parte (programar; campanhas esperam o WhatsApp) e MP-12 em parte (validade dos documentos). Ficam para depois, com o motivo no desenho: CD-08, CD-10, IA-05, IA-06 e IA-07."
         },
         {
           "id": "R2",
@@ -1378,6 +1378,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "18/10/2026",
+      "inicio": "01:25",
+      "fim": "01:50",
+      "texto": "A Carolina aplicou a 0150 no triade-condo-dev pelo SQL Editor. Conferido no banco: as cinco tabelas novas com RLS forçado, as permissões, os buckets privados comunicados e documentos, as funções e a rotina verificar_comunicados a cada 5 minutos no pg_cron. A api-plataforma versão 11, com as rotas dos comunicados, do plano de comunicação e dos documentos, foi publicada e responde (403 sem o segredo de repasse, como deve). Aberto o PR 13 para juntar a peça R1 ao main.",
+      "ref": "R1, CD-01, CD-02, CD-04, CD-05, CD-06, CD-07, CD-09, CD-11, MP-12"
+    },
     {
       "data": "17/10/2026",
       "inicio": "21:40",
