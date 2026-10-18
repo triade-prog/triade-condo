@@ -1,4 +1,4 @@
-export { Marca } from "./Marca.tsx";
+export { Logo, Marca } from "./Marca.tsx";
 export * from "./api.ts";
 export * from "./componentes.tsx";
 export { Dialogo } from "./Dialogo.tsx";

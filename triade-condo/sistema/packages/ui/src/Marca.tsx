@@ -1,15 +1,18 @@
-// Marca provisória (o logo oficial está pendente, E5): símbolo triangular e o nome.
+// Marca: o logo violeta da TRÍADE Condo, assinatura do produto (DC13), e o nome do sistema.
+// O arquivo fica em public/marca/logo.png de cada aplicação (480 × 153, fundo transparente).
+
+export const LOGO = { src: "/marca/logo.png", largura: 480, altura: 153 } as const;
+
+export function Logo({ className = "h-10 w-auto" }: { className?: string }) {
+  // eslint-disable-next-line @next/next/no-img-element -- pacote compartilhado, sem next/image
+  return <img src={LOGO.src} width={LOGO.largura} height={LOGO.altura} alt="TRÍADE Condo" className={className} />;
+}
 
 export function Marca({ sistema }: { sistema: string }) {
   return (
-    <span className="inline-flex items-center gap-2 font-semibold tracking-tight">
-      <svg aria-hidden="true" viewBox="0 0 32 32" className="h-7 w-7 text-violeta-500">
-        <path d="M16 3 29 27H3Z" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" />
-      </svg>
-      <span>
-        TRÍADE Condo
-        <small className="block text-[10px] font-medium tracking-widest text-tinta-suave uppercase">{sistema}</small>
-      </span>
+    <span className="inline-flex flex-col items-start gap-0.5">
+      <Logo />
+      <small className="block text-[10px] font-medium tracking-widest text-tinta-suave uppercase">{sistema}</small>
     </span>
   );
 }

@@ -3,7 +3,7 @@
 Abra design-frontend.html para ver a biblioteca visual ou painel-execucao.html para acompanhar o planejamento. Os HTMLs têm os estilos e a navegação incorporados e podem ser abertos diretamente no navegador.
 
 ## Direção visual
-Navegação lateral clara, cabeçalho de busca, destaque lilás, cartões com bordas suaves e tabelas com bastante espaço. A referência de composição é a Lattice; a marca e o conteúdo são da TRÍADE. O símbolo triangular é provisório. Plataforma: verde-petróleo; Console e navegação: violeta. Inter é a fonte principal, com alternativas locais caso não haja internet.
+Navegação lateral clara, cabeçalho de busca, destaque lilás, cartões com bordas suaves e tabelas com bastante espaço. A referência de composição é a Lattice; a marca e o conteúdo são da TRÍADE. O logo oficial está em `docs/identidade` (DC13). Plataforma: verde-petróleo; Console e navegação: violeta. Inter é a fonte principal, com alternativas locais caso não haja internet.
 
 ## Arquivos reutilizáveis
 - tema-triade.css: camada de tema utilizada nos dois HTMLs, para reutilizar com as estruturas e estilos base desses documentos.
