@@ -66,18 +66,19 @@ select throws_ok($$ select escolher_condominio(pb, sessao, b) from ids $$, null,
 -- Negar por padrão (PT-02): ação sem permissão cadastrada não passa.
 select throws_ok($$ select entrar_condominio(pa, a, 'exemplos.apagar') from ids $$, 'TC401', null, 'ação não cadastrada é negada');
 
--- Só seis funções gravam o contexto da transação (pessoa, equipe e condomínio). A quarta,
+-- Só sete funções gravam o contexto da transação (pessoa, equipe e condomínio). A quarta,
 -- abrir_condominio_novo, é o cadastro de condomínio no Console (passo 1); a quinta,
 -- verificar_prazos, é a conferência de prazos a cada 5 minutos (passo 6); a sexta,
--- verificar_manutencao, abre as preventivas e avisa os retornos vencidos da manutenção (R6).
--- As duas rotinas só o servidor chama.
+-- verificar_manutencao, abre as preventivas e avisa os retornos vencidos da manutenção (R6); a
+-- sétima, verificar_comunicados, publica os programados e avisa os documentos perto de vencer
+-- (R1). As três rotinas só o servidor chama.
 select is(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.prosrc ~ 'app\.(pessoa_id|condominio_id|equipe)'
       and p.prosrc ~ 'set_config'),
-  array['abrir_condominio_novo', 'entrar_condominio', 'limpar_contexto', 'tentar_definir_pessoa', 'verificar_manutencao',
-        'verificar_prazos'],
-  'só limpar_contexto, tentar_definir_pessoa, entrar_condominio, abrir_condominio_novo e as rotinas verificar_prazos e verificar_manutencao gravam o contexto');
+  array['abrir_condominio_novo', 'entrar_condominio', 'limpar_contexto', 'tentar_definir_pessoa', 'verificar_comunicados',
+        'verificar_manutencao', 'verificar_prazos'],
+  'só limpar_contexto, tentar_definir_pessoa, entrar_condominio, abrir_condominio_novo e as rotinas verificar_prazos, verificar_manutencao e verificar_comunicados gravam o contexto');
 
 select * from finish();
 rollback;

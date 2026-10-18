@@ -88,6 +88,13 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   CONFLITO_HORARIO: "Este horário conflita com outro compromisso. Confira e, se for o caso, salve mesmo assim.",
   COMPROMISSO_ENCERRADO: "Compromisso realizado ou cancelado não muda. Marque outro, se for o caso.",
   AINDA_NAO_ACONTECEU: "Só dá para marcar como realizado no dia do compromisso ou depois.",
+  MANUTENCAO_ENCERRADA: "Esta manutenção está concluída ou cancelada. Reabra para mudar alguma coisa.",
+  COMUNICADO_PUBLICADO: "Comunicado publicado não se edita. Use Corrigir: vira uma versão nova e a anterior fica guardada.",
+  COMUNICADO_NAO_PUBLICADO: "Só o comunicado publicado vai para os moradores. Este é rascunho, programado ou já foi trocado.",
+  COMUNICADO_FORA_DE_USO: "Este comunicado já foi substituído ou arquivado. Atualize a página.",
+  LIMITE_ARQUIVOS_COMUNICADO: "O comunicado já tem 4 arquivos. Tire um antes de enviar outro.",
+  DOCUMENTO_ARQUIVADO: "Este documento está arquivado e não muda mais.",
+  DOCUMENTO_GRANDE: "O arquivo passa de 20 MB.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

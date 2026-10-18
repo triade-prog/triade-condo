@@ -21,6 +21,7 @@ import { diaHora, faltaPara, nomeDe, SeloEstadoPedido } from "./comum.tsx";
 import { FaixaPrazo } from "./FaixaPrazo.tsx";
 import { NaAgenda } from "../agenda/NaAgenda.tsx";
 import { NaManutencao } from "../manutencao/NaManutencao.tsx";
+import { NosComunicados } from "../comunicados/NosComunicados.tsx";
 
 const ABAS = [
   { id: "andamento", texto: "Andamento" },
@@ -145,6 +146,7 @@ export function Pedido() {
       ) : null}
       <NaAgenda key={`${p.id}-${p.previsao ?? ""}`} pedido={p} ativo={!fechado} avisar={(texto) => { setRecado({ tom: "ok", texto }); setFalha(null); }} />
       <NaManutencao pedido={p} ativo={!fechado} avisar={(texto) => { setRecado({ tom: "ok", texto }); setFalha(null); }} />
+      <NosComunicados pedidoId={p.id} ativo={!fechado} />
 
       <p className="flex flex-wrap items-center gap-2 text-sm">
         <span className="font-medium">Responsável:</span>

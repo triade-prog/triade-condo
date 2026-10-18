@@ -26,11 +26,11 @@
 <script type="application/json" id="dados">
 {
   "meta": {
-    "atualizado_em": "17/10/2026",
+    "atualizado_em": "18/10/2026",
     "total_ideias": 308,
-    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7) e Manutenção e prestadores (R6) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (724 pgTAP, 108 Deno, 94 Vitest, 154 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0140 (com a conferência de prazos e a da manutenção no pg_cron) e as Edge Functions api-plataforma (versão 10, com a agenda e a manutenção) e api-console; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
+    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7), Manutenção e prestadores (R6) e Comunicados e documentos (R1) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), comunicados (rascunho, programado e publicado, com versões, público calculado, copiar para o grupo e versão para o mural) e documentos do prédio com versões e validade, moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (787 pgTAP, 116 Deno, 108 Vitest, 172 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0140 (com a conferência de prazos e a da manutenção no pg_cron) e as Edge Functions api-plataforma (versão 10, com a agenda e a manutenção) e api-console; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F7",
-    "proximo_passo": "Manutenção (R6): juntar o PR ao main para as telas chegarem ao site (a 0140 e a api-plataforma versão 10 já estão no triade-condo-dev). Com a Carolina: conferir a Agenda e a Manutenção no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
+    "proximo_passo": "Com a Carolina: conferir Comunicados e documentos, a Agenda e a Manutenção no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
   "fases": [
     {
@@ -716,8 +716,20 @@
           "id": "R1",
           "texto": "Comunicados e documentos",
           "peca": "S5",
-          "refs": [],
-          "status": "pendente"
+          "refs": [
+            "CD-01",
+            "CD-02",
+            "CD-04",
+            "CD-05",
+            "CD-06",
+            "CD-07",
+            "CD-09",
+            "CD-11",
+            "MP-12"
+          ],
+          "status": "feito",
+          "evidencia": "Desenho aprovado em docs/telas/comunicados.html. Migration 0150_comunicados_documentos.sql (comunicados com versões, rascunho, programado, publicado, substituído e arquivado, público calculado, publicação programada pela rotina verificar_comunicados a cada 5 minutos, fotos no bucket comunicados, documentos com versões no bucket documentos, restritos, validade com aviso no sino, plano de comunicação, permissões Ver comunicados e documentos e Cuidar dos documentos); telas /comunicados, /comunicados/escrever, /comunicados/comunicado, /comunicados/documentos, /comunicados/documento, /mural, Comunicados no pedido e na manutenção, cartão no início, aviso no sino e aba Comunicados nas configurações",
+          "nota": "A 0150 foi aplicada pela Carolina no triade-condo-dev e conferida (tabelas, permissões, buckets privados comunicados e documentos, rotina verificar_comunicados a cada 5 minutos e RLS forçado); a api-plataforma versão 11, com as rotas dos comunicados e documentos, está publicada; PR 13 para juntar ao main. Sem WhatsApp, o comunicado sai copiado para o grupo ou impresso para o mural. CD-06 em parte (programar; campanhas esperam o WhatsApp) e MP-12 em parte (validade dos documentos). Ficam para depois, com o motivo no desenho: CD-08, CD-10, IA-05, IA-06 e IA-07."
         },
         {
           "id": "R2",
@@ -763,7 +775,7 @@
           ],
           "status": "feito",
           "evidencia": "Desenho aprovado em docs/telas/manutencao.html. Migration 0140_manutencao.sql (prestadores, etapas, manutenções, providências, vistoria, preventivas que abrem sozinhas, fotos no bucket manutencoes, avisos de retorno vencido, visita ligada na agenda, permissões Ver a manutenção e Cuidar da manutenção); telas /manutencao, /manutencao/manutencao, /manutencao/preventivas, /manutencao/prestadores, /manutencao/prestador, Manutenção ligada no pedido, cartão no início e aba Manutenção nas configurações",
-          "nota": "Migration 0140 aplicada pela Carolina no triade-condo-dev e conferida (8 tabelas, 2 permissões, bucket privado manutencoes, as 63 funções iguais às testadas e a verificar-manutencao no pg_cron de hora em hora). api-plataforma versão 10 publicada (pacote conferido igual ao testado) e inicializando sem erro. As telas chegam ao site quando o PR for juntado ao main. MP-09 em parte: a reserva fica registrada; a troca automática espera o WhatsApp. Ficam para depois, com o motivo no desenho: MP-06, MP-10, MP-11, MP-15, MP-16 e V-13."
+          "nota": "Migration 0140 aplicada pela Carolina no triade-condo-dev e conferida (8 tabelas, 2 permissões, bucket privado manutencoes, as 63 funções iguais às testadas e a verificar-manutencao no pg_cron de hora em hora). api-plataforma versão 10 publicada (pacote conferido igual ao testado) e inicializando sem erro. As telas chegam ao site quando o PR for juntado ao main. MP-09 em parte: a reserva fica registrada; a troca automática espera o WhatsApp. Ficam para depois, com o motivo no desenho: MP-06, MP-10, MP-11, MP-15, MP-16 e V-13. Juntado ao main (PR 12)."
         },
         {
           "id": "R7",
@@ -1115,6 +1127,24 @@
       ],
       "status": "feito",
       "evidencia": "pgTAP 015_manutencao_test.sql (67 testes); Deno api-plataforma/manutencao_test.ts (6 testes); Vitest manutencao.test.ts (8 testes); Playwright plataforma-manutencao.spec.ts (7 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T23",
+      "texto": "Comunicados e documentos: permissões, publicado que não se edita e corrige em versão nova guardando a anterior, público por condomínio, bloco, unidade ou contato com a conta de quem recebe e as unidades sem ninguém, convocação que chega ao proprietário, programar e a rotina que publica, arquivar com motivo, copiar e mural no histórico, ligação com pedido e manutenção sem contar como retorno, fotos até 4, documentos com versão em vigor e futura, restritos, abertura no histórico, validade avisada uma vez e plano de comunicação; telas no celular e no computador com axe e sem emoji",
+      "fase": "R1",
+      "refs": [
+        "CD-01",
+        "CD-02",
+        "CD-04",
+        "CD-05",
+        "CD-06",
+        "CD-07",
+        "CD-09",
+        "CD-11",
+        "MP-12"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 016_comunicados_test.sql (63 testes); Deno api-plataforma/comunicados_test.ts (8 testes); Vitest comunicados.test.ts (14 testes); Playwright plataforma-comunicados.spec.ts (9 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -1348,6 +1378,27 @@
     ]
   ],
   "historico": [
+    {
+      "data": "18/10/2026",
+      "inicio": "01:25",
+      "fim": "01:50",
+      "texto": "A Carolina aplicou a 0150 no triade-condo-dev pelo SQL Editor. Conferido no banco: as cinco tabelas novas com RLS forçado, as permissões, os buckets privados comunicados e documentos, as funções e a rotina verificar_comunicados a cada 5 minutos no pg_cron. A api-plataforma versão 11, com as rotas dos comunicados, do plano de comunicação e dos documentos, foi publicada e responde (403 sem o segredo de repasse, como deve). Aberto o PR 13 para juntar a peça R1 ao main.",
+      "ref": "R1, CD-01, CD-02, CD-04, CD-05, CD-06, CD-07, CD-09, CD-11, MP-12"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "21:40",
+      "fim": "01:20",
+      "texto": "Comunicados e documentos (peça R1) construída depois do aprovado da Carolina, até a madrugada de 18/10. Banco: migration 0150 com as permissões Ver comunicados e documentos e Cuidar dos documentos (Publicar passa a valer para os comunicados), comunicados com versões (rascunho, programado, publicado, substituído e arquivado; publicado não se edita, corrigir cria a versão seguinte com o que mudou), público por condomínio, blocos, unidades ou contatos com a conta de quem recebe refeita a cada vez e as unidades sem ninguém, assembleia e convocação chegando ao proprietário, publicação programada pela rotina verificar_comunicados a cada 5 minutos no pg_cron, fotos até 4 no bucket privado comunicados, ligação com pedido e manutenção, copiar e mural no histórico, documentos com versões (a em vigor é a liberada que já vale; a nova vale na data dela) no bucket privado documentos até 20 MB, restritos só para quem cuida, abertura e download no histórico, validade avisada no sino a 60 dias do fim e o plano de comunicação nas configurações. API com as rotas dos comunicados, do plano e dos documentos. Telas: Comunicados no menu, lista com atalhos, escrever, comunicado com versões e corrigir, versão para o mural, documentos e documento com nova versão, Comunicados no pedido e na manutenção, cartão no início, aviso no sino e aba Comunicados nas configurações. Testes: 787 pgTAP, 116 Deno, 108 Vitest e 172 ponta a ponta.",
+      "ref": "R1, T23, CD-01, CD-02, CD-04, CD-05, CD-06, CD-07, CD-09, CD-11, MP-12"
+    },
+    {
+      "data": "17/10/2026",
+      "inicio": "21:20",
+      "fim": "21:30",
+      "texto": "Manutenção (R6) juntada ao main pelo PR 12. Comunicados e documentos (peça R1) como próxima peça. Desenho para aprovação em docs/telas/comunicados.html, no visual da DC13: lista de comunicados (rascunho, programado, publicado, substituído e arquivado, com autor, data e versão), escrever com assunto, fotos, ligação a pedido ou manutenção, para quem com a contagem de contatos e as unidades sem ninguém, e publicar ou programar; comunicado publicado com corrigir em versão nova, copiar texto e versão para o mural enquanto o WhatsApp não chega; documentos com versão em vigor, versões anteriores, quem vê, validade e histórico de aberturas; onde aparece no pedido, na manutenção e no início; e o plano de comunicação nas Configurações. Onze decisões para aprovar e o que fica para depois, com o motivo.",
+      "ref": "R1, R6, D4, CD-01, CD-02, CD-04, CD-05, CD-06, CD-07, CD-09, CD-11, MP-12"
+    },
     {
       "data": "17/10/2026",
       "inicio": "21:05",

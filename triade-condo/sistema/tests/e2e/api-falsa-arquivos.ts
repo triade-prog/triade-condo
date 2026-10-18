@@ -28,12 +28,16 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
   return route.fulfill({ status, json: { erro: detalhes ? { codigo, detalhes } : { codigo } } });
 }
 
-function conferir(b: Buffer, tipo: string): string | null {
+/** Confere o conteúdo enviado, como a API faz (só o começo do arquivo). */
+export function conferir(b: Buffer, tipo: string): string | null {
   if (tipo === "application/pdf") return b.subarray(0, 5).toString("latin1") === "%PDF-" ? null : "O conteúdo não é um PDF de verdade.";
   if (tipo === "image/png") return b[0] === 0x89 && b.subarray(1, 4).toString() === "PNG" ? null : "O conteúdo não é uma foto PNG de verdade.";
   if (tipo === "image/jpeg") return b[0] === 0xff && b[1] === 0xd8 ? null : "O conteúdo não é uma foto JPG de verdade.";
   return "Só fotos (JPG, PNG, WEBP) e PDF.";
 }
+
+/** O que chegou ao "armazenamento" com este id (comunicados e documentos usam o mesmo). */
+export const conteudoEnviado = (id: string) => conteudos.get(id) ?? Buffer.alloc(0);
 
 /** Envio e leitura no "armazenamento". */
 export async function rotasArmazenamento(route: Route, caminho: string, metodo: string): Promise<unknown> {

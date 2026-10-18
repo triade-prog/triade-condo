@@ -16,11 +16,11 @@ export interface Armazenamento {
 }
 
 /**
- * Um bucket privado por parte do sistema: "pedidos" (passo 4b) e "manutencoes" (peça R6). O
- * caminho é sempre condomínio/registro/arquivo.
+ * Um bucket privado por parte do sistema: "pedidos" (passo 4b), "manutencoes" (peça R6),
+ * "comunicados" e "documentos" (peça R1). O caminho é sempre condomínio/registro/arquivo.
  */
 export function armazenamentoSupabase(url: string, chaveServico: string, buscar: typeof fetch = fetch,
-  bucket: "pedidos" | "manutencoes" = "pedidos"): Armazenamento {
+  bucket: "pedidos" | "manutencoes" | "comunicados" | "documentos" = "pedidos"): Armazenamento {
   const base = `${url.replace(/\/$/, "")}/storage/v1`;
   const auth = { apikey: chaveServico, authorization: `Bearer ${chaveServico}` };
   const objeto = (caminho: string) => {
@@ -72,10 +72,13 @@ const recusar = (motivo: string): ResultadoVerificacao => ({ ok: false, motivo }
 const comeca = (b: Uint8Array, assinatura: number[], desde = 0) => assinatura.every((x, i) => b[desde + i] === x);
 const ascii = (b: Uint8Array, desde: number, n: number) => String.fromCharCode(...b.subarray(desde, desde + n));
 
-/** Confere o arquivo e devolve os bytes que podem ser guardados (sem localização nas fotos). */
-export function verificarArquivo(bytes: Uint8Array, tipo: TipoArquivo): ResultadoVerificacao {
+/**
+ * Confere o arquivo e devolve os bytes que podem ser guardados (sem localização nas fotos). Os
+ * documentos do prédio aceitam até 20 MB; o resto, 10 MB.
+ */
+export function verificarArquivo(bytes: Uint8Array, tipo: TipoArquivo, limite = TAMANHO_MAXIMO_ARQUIVO): ResultadoVerificacao {
   if (bytes.length === 0) return recusar("O arquivo chegou vazio.");
-  if (bytes.length > TAMANHO_MAXIMO_ARQUIVO) return recusar("O arquivo passa de 10 MB.");
+  if (bytes.length > limite) return recusar(`O arquivo passa de ${Math.round(limite / (1024 * 1024))} MB.`);
   try {
     switch (tipo) {
       case "image/jpeg":

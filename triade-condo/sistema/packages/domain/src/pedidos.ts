@@ -225,6 +225,8 @@ export function descreverEventoPedido(acao: string, d: Record<string, unknown>):
       return comMotivo(`Tirou ${String(d.arquivoNome ?? "um arquivo")} do pedido`);
     case "pedido.manutencao_ligada":
       return "Manutenção ligada ao pedido";
+    case "pedido.comunicado_ligado":
+      return "Comunicado ligado ao pedido";
     case "pedido.manutencao_concluida":
       return "Manutenção ligada concluída: dê o retorno ao morador";
     default:

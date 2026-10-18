@@ -178,6 +178,18 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
 - **Rotas.** `/v1/condominio/manutencao` (lista e registro), `manutencao/opcoes`, `manutencao/:id` e as ações `proximo-retorno`, `previsao`, `situacao`, `concluir`, `cancelar`, `reabrir`, `providencias`, `providencias/:id/fazer`, `itens`, `itens/:id/responder`, `itens/:id/manutencao`, `visita`, `arquivos`; `manutencao/preventivas`, `manutencao/prestadores`, `etapas-manutencao` e `pedidos/:id/manutencao`.
 - **Telas.** Em `apps/plataforma/src/telas/manutencao`, com as rotas `/manutencao`, `/manutencao/manutencao?id=`, `/manutencao/preventivas`, `/manutencao/prestadores` e `/manutencao/prestador?id=`. Os testes ponta a ponta usam `tests/e2e/api-falsa-manutencao.ts`.
 
+## Comunicados e documentos (peça R1)
+
+- **Permissão (CF-03).** `comunicados.ver` e `documentos.ver` pela permissão Ver comunicados e documentos; `comunicados.publicar` pela permissão Publicar; `documentos.editar` e `documentos.restritos` pela permissão Cuidar dos documentos. O síndico tem todas.
+- **Comunicado (CD-01).** `comunicados` passa pelo guardião: `RASCUNHO`, `PROGRAMADO`, `PUBLICADO`, `SUBSTITUIDO` e `ARQUIVADO`. Cada versão é uma linha da mesma família (`familia_id`, `numero`, `anterior_id`); só uma fica em uso. Publicado não muda (`comunicados_regras`): `plataforma_corrigir_comunicado` cria a versão seguinte com `mudanca`. Arquivar pede motivo.
+- **Para quem (CD-02).** `publico` é `TODOS`, `BLOCOS`, `UNIDADES` ou `CONTATOS`. `destinatarios_comunicado` calcula quem recebe (vínculo confirmado e `recebe_comunicados`; em `ASSEMBLEIA`, também o proprietário). `publico_json` mostra a conta, as unidades sem ninguém e, a quem vê os moradores, os nomes. Na publicação ficam guardados `destinatarios` e `assinatura`.
+- **Programar (CD-06).** `verificar_comunicados` roda a cada 5 minutos no pg_cron: publica os programados em nome de quem programou e avisa os documentos perto de vencer.
+- **Ligações (CD-05).** `pedido_id` e `manutencao_id` opcionais; ligar grava `pedido.comunicado_ligado` ou `manutencao.comunicado_ligado` e não conta como retorno ao morador. Copiar e mural gravam `comunicado.copiado` e `comunicado.mural`.
+- **Arquivos (CD-09).** `arquivos_comunicado`, até 4 por família, com as regras de 0100, no bucket privado `comunicados` (`armazenamentoComunicados`).
+- **Documentos (CD-07, CD-04, MP-12).** `documentos` (tipo, restrito, `ao_morador`, `vale_ate`) e `versoes_documento`, uma por arquivo, no bucket privado `documentos` até 20 MB (`armazenamentoDocumentos`). O número da versão nasce quando o arquivo é liberado; a em vigor é a liberada de maior número com `vigente_desde` já passado (`versao_em_vigor`). Abrir e baixar gravam no histórico. A 60 dias do fim, `avisos_documento` avisa quem cuida dos documentos, uma vez por data.
+- **Plano de comunicação (CD-11).** Colunas `comunicados_*` em `configuracao_condominio`: assuntos em uso, plano, assinatura e horário sem envio.
+- **Rotas.** `/v1/condominio/comunicados` (lista e escrever), `comunicados/opcoes`, `comunicados/publico`, `comunicados/:id` e as ações `corrigir`, `arquivar`, `uso`, `arquivos`; `pedidos/:id/comunicados`, `manutencao/:id/comunicados`, `plano-comunicacao`; `documentos`, `documentos/:id`, `documentos/:id/arquivar` e `documentos/:id/versoes` (com `verificar` e `link`).
+- **Telas.** Em `apps/plataforma/src/telas/comunicados`, com as rotas `/comunicados`, `/comunicados/escrever`, `/comunicados/comunicado?id=`, `/comunicados/documentos`, `/comunicados/documento?id=` e `/mural?id=` (fora da moldura, para imprimir). Os testes ponta a ponta usam `tests/e2e/api-falsa-comunicados.ts`.
 ## Rodar
 
 Requisitos: Node 22, pnpm 10 e PostgreSQL 16 ou 17 com pgTAP (`postgresql-17-pgtap`).
