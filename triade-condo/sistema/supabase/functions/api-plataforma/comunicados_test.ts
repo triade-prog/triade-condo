@@ -95,7 +95,7 @@ Deno.test("CD-01, CD-02, CD-06: escrever leva o público, a ação e a versão a
   assertEquals(chamada(m, "plataforma_salvar_comunicado"), {
     p_pessoa: ANA, p_condominio: AURORA, p_id: null, p_versao: null, p_assunto: "OBRAS", p_titulo: "Falta de água na quinta",
     p_texto: "Das 9h às 13h.", p_publico: "BLOCOS", p_blocos: [BLOCO], p_unidades: [], p_contatos: [], p_pedido: PEDIDO,
-    p_manutencao: null, p_acao: "PUBLICAR", p_programado_para: null,
+    p_manutencao: null, p_acao: "PUBLICAR", p_programado_para: null, p_no_mural: null, p_por_email: null,
   });
   m.chamadas.length = 0;
   const sem = await m.pedir("/v1/condominio/comunicados", { corpo: { ...BASE, blocos: [], acao: "RASCUNHO" }, cookie });

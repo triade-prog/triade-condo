@@ -1,7 +1,9 @@
 "use client";
 // Documento aberto (design "Telas dos Comunicados", tela 5; CD-04, CD-07, MP-12): a versão em
 // vigor, as anteriores com o que mudou e quem abriu ou baixou. Nova versão pede o arquivo, o
-// que mudou e a data em que passa a valer; até lá, a anterior continua em vigor.
+// que mudou e a data em que passa a valer; até lá, a anterior continua em vigor. Enviar por
+// e-mail (design "Mural online e e-mail", tela 7; CD-14): a versão em vigor, por link de 7 dias
+// que pode ser cancelado.
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -13,7 +15,7 @@ import {
 import { Janela } from "../Janela.tsx";
 import { diaHora } from "../pedidos/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
-import type { DocumentoDetalhe, Recado, VersaoDocumento } from "../tipos.ts";
+import type { DocumentoDetalhe, EnvioDocumento, Recado, VersaoDocumento } from "../tipos.ts";
 import { abrirLink, conferirArquivo, enviarUm, nomeTipoDocumento, PartesComunicados } from "./comum.tsx";
 import { camposDocumento, documentoParaApi } from "./Documentos.tsx";
 
@@ -21,7 +23,8 @@ export function Documento() {
   const busca = useSearchParams();
   const id = busca.get("id");
   const carga = useCarregar<DocumentoDetalhe>(id ? `/v1/condominio/documentos/${id}` : null);
-  const [acao, setAcao] = useState<"versao" | "editar" | "arquivar" | null>(busca.get("novo") ? "versao" : null);
+  const [acao, setAcao] = useState<"versao" | "editar" | "arquivar" | "email" | null>(busca.get("novo") ? "versao" : null);
+  const [cancelar, setCancelar] = useState<EnvioDocumento | null>(null);
   const [recado, setRecado] = useState<Recado>(busca.get("novo") ? { tom: "ok", texto: "Documento guardado. Agora envie o arquivo da versão 1." } : null);
   const voltar = <Link href="/comunicados/documentos" className="text-sm font-medium text-violeta-600 hover:underline">Voltar aos documentos</Link>;
 
@@ -57,6 +60,7 @@ export function Documento() {
         <div className="flex flex-wrap items-center gap-2">
           {doc.emVigor ? <Botao variante="contorno" onClick={() => abrir({ id: doc.emVigor!.id } as VersaoDocumento, false)}>Abrir</Botao> : null}
           {doc.emVigor ? <Botao variante="contorno" onClick={() => abrir({ id: doc.emVigor!.id } as VersaoDocumento, true)}>Baixar</Botao> : null}
+          {d.pode.enviarEmail ? <Botao variante="contorno" onClick={() => setAcao("email")}>Enviar por e-mail</Botao> : null}
           {d.pode.enviar ? <Botao onClick={() => setAcao("versao")}>{temVersao ? "Nova versão" : "Enviar o arquivo"}</Botao> : null}
           {d.pode.editar ? <Botao variante="discreto" onClick={() => setAcao("editar")}>Editar</Botao> : null}
           {d.pode.editar ? <Botao variante="discreto" onClick={() => setAcao("arquivar")}>Arquivar</Botao> : null}
@@ -111,6 +115,28 @@ export function Documento() {
           <p className="text-xs text-tinta-suave">O arquivo fica guardado sem acesso público. Abrir e baixar usam link de 5 minutos, e cada abertura fica no histórico. Depois de baixada, a cópia não tem mais controle.</p>
         </section>
 
+        <div className="grid gap-4">
+        {d.envios?.length ? (
+          <section aria-labelledby="t-envios" className="grid gap-2">
+            <h2 id="t-envios" className="text-lg font-medium">Enviado por e-mail</h2>
+            <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
+              {d.envios.map((e) => (
+                <li key={e.id} className="flex flex-wrap items-start justify-between gap-2 px-4 py-2.5 text-sm">
+                  <span className="grid min-w-0 gap-0.5 [overflow-wrap:anywhere]">
+                    <span className="font-medium">{e.contato ?? e.para}</span>
+                    <span className="text-xs text-tinta-suave">
+                      {e.pedido ? "Pedido pelo mural · " : ""}{e.numero ? `versão ${e.numero} · ` : ""}{diaHora(e.criadoEm)}
+                      {e.cancelado ? " · link cancelado" : e.abertoEm ? ` · aberto ${diaHora(e.abertoEm)}` : e.estado === "NA_FILA" || e.estado === "ENVIANDO" ? " · saindo" : ""}
+                    </span>
+                  </span>
+                  {!e.cancelado && d.pode.editar && (!e.vence || e.vence > new Date().toISOString()) && e.estado !== "FALHOU" ? (
+                    <Botao variante="discreto" tamanho="p" aria-label={`Cancelar o link enviado a ${e.contato ?? e.para}`} onClick={() => setCancelar(e)}>Cancelar link</Botao>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         <section aria-labelledby="t-hist" className="grid gap-2">
           <h2 id="t-hist" className="text-lg font-medium">Histórico</h2>
           <ol className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
@@ -122,7 +148,23 @@ export function Documento() {
             ))}
           </ol>
         </section>
+        </div>
       </div>
+
+      <Dialogo aberto={acao === "email"} titulo={`Enviar por e-mail · ${doc.titulo}`} aoFechar={() => setAcao(null)}>
+        {acao === "email" ? (
+          <EnviarPorEmail d={d} aoFechar={() => setAcao(null)}
+            enviado={(n) => { setAcao(null); setRecado({ tom: "ok", texto: n === 1 ? "Documento enviado por e-mail. O link vale 7 dias." : `Documento enviado a ${n} pessoas. O link vale 7 dias.` }); carga.recarregar(); }} />
+        ) : null}
+      </Dialogo>
+      <Janela aberto={cancelar !== null} titulo="Cancelar o link" textoBotao="Cancelar o link" aoFechar={() => setCancelar(null)}
+        explicacao={`O link enviado a ${cancelar?.contato ?? cancelar?.para ?? ""} para de abrir na hora. Quem já baixou o arquivo continua com ele.`}
+        campos={[]} iniciais={{}}
+        aoSalvar={async () => {
+          const r = await chamarApi(`/v1/condominio/documentos/${doc.id}/envios/${cancelar?.id}/cancelar`, { corpo: {} });
+          if (r.ok) { setCancelar(null); setRecado({ tom: "ok", texto: "Link cancelado." }); carga.recarregar(); }
+          return r;
+        }} />
 
       <Dialogo aberto={acao === "versao"} titulo={temVersao ? `Nova versão de ${doc.titulo}` : `Arquivo de ${doc.titulo}`} aoFechar={() => setAcao(null)}>
         {acao === "versao" ? (
@@ -204,6 +246,61 @@ function NovaVersao({ documentoId, primeira, emVigor, hoje, aoFechar, enviado }:
       <div className="flex justify-end gap-2">
         <Botao variante="discreto" disabled={progresso !== null} onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" disabled={!arquivo || Boolean(problema) || progresso !== null}>{progresso !== null ? "Enviando…" : "Guardar versão"}</Botao>
+      </div>
+    </form>
+  );
+}
+
+function EnviarPorEmail({ d, aoFechar, enviado }: { d: DocumentoDetalhe; aoFechar: () => void; enviado: (n: number) => void }) {
+  const [contatos, setContatos] = useState<string[]>([]);
+  const [emails, setEmails] = useState("");
+  const [recado, setRecado] = useState("");
+  const [erro, setErro] = useState<ErroApi | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const comErro = camposComErro(erro);
+  const lista = emails.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
+
+  async function enviar(ev: FormEvent) {
+    ev.preventDefault();
+    setErro(null);
+    setEnviando(true);
+    const r = await chamarApi<{ enviados: number }>(`/v1/condominio/documentos/${d.documento.id}/email`, { corpo: { contatos, emails: lista, recado: recado.trim() || null } });
+    setEnviando(false);
+    if (!r.ok) return setErro(r.erro);
+    enviado(r.dados.enviados);
+  }
+
+  return (
+    <form onSubmit={enviar} noValidate className="grid gap-4">
+      {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
+      {d.contatosComEmail?.length ? (
+        <fieldset className="grid gap-1.5">
+          <legend className="mb-1 text-[13px] font-medium">Contatos com e-mail confirmado</legend>
+          <div className="grid max-h-52 gap-1 overflow-y-auto rounded-xl border border-linha p-2">
+            {d.contatosComEmail.map((c) => (
+              <label key={c.id} className="flex items-center gap-2 text-sm">
+                <input type="checkbox" className="h-4 w-4 accent-violeta-600" checked={contatos.includes(c.id)}
+                  onChange={() => setContatos((xs) => (xs.includes(c.id) ? xs.filter((x) => x !== c.id) : [...xs, c.id]))} />
+                <span>{c.nome}{c.unidades ? <span className="text-xs text-tinta-suave"> · {c.unidades}</span> : null}</span>
+              </label>
+            ))}
+          </div>
+          {comErro.includes("contatos") ? <span className="text-xs text-erro">Escolha de 1 a 20 destinatários.</span> : null}
+        </fieldset>
+      ) : null}
+      <CampoTexto id="de-emails" rotulo="Outros e-mails" opcional value={emails} onChange={(e) => setEmails(e.target.value)} placeholder="advogado@exemplo.com.br"
+        ajuda="Separe por vírgula. Para quem não é contato do prédio, como comprador, imobiliária ou advogado."
+        erro={comErro.includes("emails") ? "Confira os e-mails." : !d.contatosComEmail?.length && comErro.includes("contatos") ? "Escolha de 1 a 20 destinatários." : null} />
+      <label className="grid gap-1 text-sm">
+        <span className="text-[13px] font-medium">Recado <span className="font-normal text-tinta-suave">(opcional)</span></span>
+        <textarea className="campo min-h-20" maxLength={500} value={recado} onChange={(e) => setRecado(e.target.value)} />
+      </label>
+      <Aviso tom="info" titulo={d.documento.emVigor ? `Vai a versão ${d.documento.emVigor.numero}, em vigor desde ${mostrarDataCurta(d.documento.emVigor.vigenteDesde)}` : "Vai a versão em vigor"}>
+        Por link que vale 7 dias e pode ser cancelado. Depois de baixado, o arquivo não tem mais controle.
+      </Aviso>
+      <div className="flex justify-end gap-2">
+        <Botao variante="discreto" onClick={aoFechar}>Voltar</Botao>
+        <Botao type="submit" disabled={enviando || contatos.length + lista.length === 0}>{enviando ? "Enviando…" : "Enviar"}</Botao>
       </div>
     </form>
   );

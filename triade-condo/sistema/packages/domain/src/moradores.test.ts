@@ -90,7 +90,7 @@ describe("moradores e unidades (passo 3)", () => {
     expect(lerPlanilhaMoradores("unidade,nome,telefone\n101,Ana,61999990001\n").linhas).toHaveLength(1);
     expect(lerPlanilhaMoradores(MODELO_PLANILHA).linhas).toEqual([
       { bloco: "Torre A", andar: "1", unidade: "101", nome: "Maria Exemplo", telefone: "+5561999990000", relacao: "PROPRIETARIO",
-        mora: true, responsavel: true, parentesco: null, ocupaDesde: null },
+        mora: true, responsavel: true, parentesco: null, ocupaDesde: null, email: "maria@exemplo.com.br" },
       { bloco: "Torre A", andar: "1", unidade: "101", nome: "João Exemplo", telefone: "+5561999990001", relacao: "FAMILIAR",
         mora: true, responsavel: false, parentesco: "FILHO", ocupaDesde: "2025-03-01" }]);
     expect(lerPlanilhaMoradores("Quadra;Pavimento;Casa;Nome;Fone\nQ1;Térreo;3;Ana;61999990001\n").linhas[0])

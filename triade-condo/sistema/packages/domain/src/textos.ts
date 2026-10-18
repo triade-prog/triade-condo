@@ -95,6 +95,14 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   LIMITE_ARQUIVOS_COMUNICADO: "O comunicado já tem 4 arquivos. Tire um antes de enviar outro.",
   DOCUMENTO_ARQUIVADO: "Este documento está arquivado e não muda mais.",
   DOCUMENTO_GRANDE: "O arquivo passa de 20 MB.",
+  MURAL_SO_PARA_TODOS: "Só comunicado para todo o condomínio vai ao mural. Os de bloco ou unidade chegam por e-mail.",
+  MURAL_SEM_LINK: "O mural ainda não tem link. Ligue o mural primeiro.",
+  EMAIL_NAO_PENDENTE: "Este e-mail não está esperando confirmação.",
+  EMAIL_DESLIGADO: "O envio por e-mail está desligado. Ligue em Configurações › Comunicados.",
+  CONFIRMACAO_RECENTE: "Já mandamos o pedido de confirmação há pouco. Espere alguns minutos.",
+  DOCUMENTO_NAO_VAI_POR_EMAIL: "Só vai por e-mail documento marcado \"pode ir ao morador\", não restrito e com versão em vigor.",
+  PEDIDO_JA_DECIDIDO: "Este pedido já foi decidido. Atualize a página.",
+  LINK_VENCIDO: "Este link venceu ou foi cancelado. Peça um novo ao condomínio.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

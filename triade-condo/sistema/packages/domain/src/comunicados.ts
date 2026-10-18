@@ -1,5 +1,6 @@
 // Comunicados e documentos (peça R1; CD-01, CD-02, CD-04 a CD-07, CD-09, CD-11 e MP-12 em
-// parte). Os mesmos valores estão no banco (0150_comunicados_documentos.sql).
+// parte), com o mural online e o e-mail (CD-12 a CD-14). Os mesmos valores estão no banco
+// (0150_comunicados_documentos.sql e 0160_mural_email.sql).
 
 import { z } from "zod";
 import { mostrarDataCurta } from "./agenda.ts";
@@ -120,6 +121,10 @@ export const salvarComunicadoSchema = z
     manutencaoId: idOpcional,
     acao: z.enum(["RASCUNHO", "PROGRAMAR", "PUBLICAR"]),
     programadoPara: z.string().datetime({ offset: true }).nullable().optional().transform((v) => v ?? null),
+    /** Aparece no mural online (só para todo o condomínio). Sem escolha, segue os assuntos do mural. */
+    noMural: z.boolean().nullable().optional().transform((v) => v ?? null),
+    /** Vai por e-mail a quem tem e-mail confirmado (CD-13). */
+    porEmail: z.boolean().nullable().optional().transform((v) => v ?? null),
   })
   .superRefine((d, ctx) => {
     publicoCompleto(d, ctx);
@@ -138,7 +143,11 @@ export const corrigirComunicadoSchema = z.object({
   titulo: z.string().trim().min(3).max(120),
   texto: z.string().trim().min(3).max(4000),
   mudanca: motivo,
+  /** Reenviar por e-mail, começando pelo que mudou. Sem pedir, não reenvia. */
+  avisarEmail: z.boolean().default(false),
 });
+/** Tirar do mural ou pôr de volta (CD-12). */
+export const muralComunicadoSchema = z.object({ versao, noMural: z.boolean() });
 export const arquivarComunicadoSchema = z.object({ versao, motivo });
 /** Copiar o texto ou imprimir para o mural (o caminho até o morador sem WhatsApp). */
 export const usoComunicadoSchema = z.object({ uso: z.enum(["COPIADO", "MURAL"]) });
@@ -166,6 +175,41 @@ export const planoComunicacaoSchema = z.object({
   silencioInicio: hora,
   silencioFim: hora,
 });
+
+/** Mural online, e-mail e documentos pedidos pelo mural (CD-12 a CD-14), nas Configurações. */
+export const muralEmailSchema = z.object({
+  versao,
+  muralLigado: z.boolean(),
+  muralAssuntos: z.array(z.enum(chaves(ASSUNTOS_COMUNICADO))).max(5),
+  emailLigado: z.boolean(),
+  responderPara: z.union([z.string().trim().max(254).email(), z.literal(""), z.null()]).transform((v) => v || null),
+  documentosNoMural: z.boolean(),
+  documentosAutomatico: z.boolean(),
+});
+export const trocarLinkMuralSchema = z.object({ versao, motivo });
+
+/** Enviar o documento por e-mail, pela tela do documento (CD-14): até 20 destinatários. */
+export const enviarDocumentoSchema = z
+  .object({
+    contatos: ids(20),
+    emails: z.array(z.string().trim().max(254).email()).max(20).default([]),
+    recado: texto(500),
+  })
+  .refine((d) => d.contatos.length + d.emails.length >= 1 && d.contatos.length + d.emails.length <= 20, {
+    path: ["contatos"],
+    message: "Escolha de 1 a 20 destinatários",
+  });
+export const decidirPedidoDocumentoSchema = z
+  .object({ enviar: z.boolean(), motivo: texto(500) })
+  .superRefine((d, ctx) => {
+    if (!d.enviar && (!d.motivo || d.motivo.length < 3)) ctx.addIssue({ code: "custom", path: ["motivo"], message: "Diga o motivo" });
+  });
+
+/** Sem conta: pedir documento pelo mural e os links do e-mail. */
+export const pedirDocumentoSchema = z.object({ documentoId: id, email: z.string().trim().max(254).email() });
+export const codigoLinkSchema = z.object({ codigo: z.string().min(14).max(64).regex(/^[A-Za-z0-9_-]+$/) });
+/** O código do mural: 12 caracteres em três grupos, sem os que se confundem. */
+export const CODIGO_MURAL = /^[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}$/;
 
 /** Documento (CD-07, CD-04): restrito não vai ao morador. */
 export const documentoSchema = z
@@ -218,6 +262,22 @@ export function noHorarioSemEnvio(hora: string, inicio: string, fim: string): bo
   return inicio < fim ? hora >= inicio && hora < fim : hora >= inicio || hora < fim;
 }
 
+/** "1 contato", "38 contatos". */
+export function quantos(n: number, um: string, varios: string): string {
+  return `${n} ${n === 1 ? um : varios}`;
+}
+
+/** O que aconteceu com os e-mails de um comunicado (CD-13), numa linha. */
+export function descreverEnvioEmail(e: { enviados?: number; entregues?: number; devolvidos?: number; spam?: number; naFila?: number; falharam?: number }): string {
+  const partes: string[] = [];
+  if (e.entregues) partes.push(`${e.entregues} ${e.entregues === 1 ? "entregue" : "entregues"}`);
+  if (e.devolvidos) partes.push(`${e.devolvidos} ${e.devolvidos === 1 ? "voltou" : "voltaram"}`);
+  if (e.spam) partes.push(e.spam === 1 ? "1 marcou como spam" : `${e.spam} marcaram como spam`);
+  if (e.falharam) partes.push(`${e.falharam} não ${e.falharam === 1 ? "saiu" : "saíram"}`);
+  if (e.naFila) partes.push(`${e.naFila} na fila`);
+  return partes.join(" · ");
+}
+
 /** "61 contatos de 44 unidades", "1 contato de 1 unidade", "Ninguém recebe". */
 export function descreverAlcance(contatos: number, unidades: number): string {
   if (contatos === 0) return "Ninguém recebe";
@@ -265,6 +325,12 @@ export function descreverEventoComunicado(acao: string, d: Record<string, unknow
       return `Arquivo não liberado: ${String(d.arquivoNome)}`;
     case "comunicado.arquivo_tirado":
       return `Arquivo tirado: ${String(d.arquivoNome)}`;
+    case "comunicado.email_na_fila":
+      return `E-mail da versão ${String(d.numero)} para ${quantos(Number(d.quantos), "contato", "contatos")}`;
+    case "comunicado.mural_ligado":
+      return "Posto no mural online";
+    case "comunicado.mural_tirado":
+      return "Tirado do mural online";
     case "estado.mudou":
       if (d.para === "ARQUIVADO") return d.motivo ? `Arquivado: ${String(d.motivo)}` : "Arquivado";
       if (d.para === "RASCUNHO") return "Voltou a rascunho";
@@ -292,6 +358,18 @@ export function descreverEventoDocumento(acao: string, d: Record<string, unknown
       return `Versão ${String(d.numero)} baixada`;
     case "documento.arquivado":
       return `Arquivado: ${String(d.motivo)}`;
+    case "documento.enviado_por_email":
+      return `Enviado por e-mail a ${quantos(Number(d.quantos), "pessoa", "pessoas")}`;
+    case "documento.pedido":
+      return d.automatico ? "Pedido pelo mural e enviado na hora" : "Pedido pelo mural, esperando decisão";
+    case "documento.pedido_enviado":
+      return "Pedido pelo mural aprovado e enviado";
+    case "documento.pedido_recusado":
+      return `Pedido pelo mural recusado: ${String(d.motivo)}`;
+    case "documento.aberto_por_email":
+      return `Versão ${String(d.numero)} aberta pelo link do e-mail`;
+    case "documento.link_cancelado":
+      return "Link do e-mail cancelado";
     default:
       return "Alteração";
   }

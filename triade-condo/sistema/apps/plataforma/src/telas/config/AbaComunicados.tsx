@@ -1,6 +1,7 @@
 "use client";
 // Plano de comunicação (CD-11): os assuntos em uso e quem recebe cada um por padrão, o combinado
-// com os moradores, a assinatura padrão e o horário sem envio, que vale com o WhatsApp.
+// com os moradores, a assinatura padrão e o horário sem envio. Abaixo, o mural online e o e-mail
+// (CD-12 a CD-14).
 
 import { useState, type FormEvent } from "react";
 import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
@@ -8,12 +9,18 @@ import { AvisoErro, Botao, CampoAreaTexto, CampoTexto, camposComErro, Carregando
 import { useCarregar } from "../sessao.tsx";
 import type { PlanoComunicacao } from "../tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
+import { MuralEmail } from "./MuralEmail.tsx";
 
 export function AbaComunicados({ salvo }: PropsAba) {
   const carga = useCarregar<PlanoComunicacao>("/v1/condominio/plano-comunicacao");
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o plano de comunicação…" />;
   if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
-  return <Formulario key={carga.dados.versao} p={carga.dados} recarregar={carga.recarregar} salvo={salvo} />;
+  return (
+    <div className="grid gap-6">
+      <Formulario key={carga.dados.versao} p={carga.dados} recarregar={carga.recarregar} salvo={salvo} />
+      <MuralEmail key={`me-${carga.dados.versao}`} p={carga.dados} recarregar={carga.recarregar} salvo={salvo} />
+    </div>
+  );
 }
 
 function Formulario({ p, recarregar, salvo }: { p: PlanoComunicacao; recarregar: () => void; salvo: (t: string) => void }) {
@@ -64,7 +71,7 @@ function Formulario({ p, recarregar, salvo }: { p: PlanoComunicacao; recarregar:
           onChange={(e) => setV({ ...v, silencioInicio: e.target.value })} erro={comErro.includes("silencioInicio") ? "Diga o horário." : null} />
         <CampoTexto id="pc-fim" rotulo="Até" type="time" disabled={!p.podeEditar} value={v.silencioFim}
           onChange={(e) => setV({ ...v, silencioFim: e.target.value })} erro={comErro.includes("silencioFim") ? "Diga o horário." : null}
-          ajuda="Vale para o WhatsApp. Programar nesse horário mostra um aviso." />
+          ajuda="Vale para o e-mail e, depois, para o WhatsApp. Programar nesse horário mostra um aviso." />
       </div>
       {p.podeEditar ? <Botao type="submit" className="justify-self-start" disabled={enviando}>{enviando ? "Salvando…" : "Salvar"}</Botao> : null}
     </form>

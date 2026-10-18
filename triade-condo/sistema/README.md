@@ -190,6 +190,15 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
 - **Plano de comunicação (CD-11).** Colunas `comunicados_*` em `configuracao_condominio`: assuntos em uso, plano, assinatura e horário sem envio.
 - **Rotas.** `/v1/condominio/comunicados` (lista e escrever), `comunicados/opcoes`, `comunicados/publico`, `comunicados/:id` e as ações `corrigir`, `arquivar`, `uso`, `arquivos`; `pedidos/:id/comunicados`, `manutencao/:id/comunicados`, `plano-comunicacao`; `documentos`, `documentos/:id`, `documentos/:id/arquivar` e `documentos/:id/versoes` (com `verificar` e `link`).
 - **Telas.** Em `apps/plataforma/src/telas/comunicados`, com as rotas `/comunicados`, `/comunicados/escrever`, `/comunicados/comunicado?id=`, `/comunicados/documentos`, `/comunicados/documento?id=` e `/mural?id=` (fora da moldura, para imprimir). Os testes ponta a ponta usam `tests/e2e/api-falsa-comunicados.ts`.
+## Mural online e e-mail (R1b)
+
+- **Mural (CD-12).** `configuracao_condominio.mural_*` guarda se está ligado, o código público e os assuntos que aparecem por padrão. `comunicados.no_mural` só vale para todo o condomínio. A página `/m/<código>` chama `GET /v1/publico/mural/:codigo` (sem sessão, com limite por aparelho); trocar o link revoga o código antigo em `links_publicos`.
+- **Links sem conta.** `links_publicos` é global e guarda só o sha256 do código (mural, comunicado, confirmar e parar o e-mail, documento). `entrar_por_link` acha o link e entra só no condomínio dele; `entrar_como_sistema` é a única função nova que grava o contexto.
+- **E-mail (CD-13).** `contatos.email` com `email_situacao` (PENDENTE, CONFIRMADO, DEVOLVIDO, PAROU). `envios_email` é a fila: `email_pegar_lote` monta as mensagens com os códigos, `email_resultado` grava o que o Resend respondeu e `email_evento` o que o aviso dele contou. A API manda em lote (`_shared/email.ts`) logo depois de publicar e quando o banco chama `POST /v1/interno/fila-email` (rotina `enviar-emails`, pg_net, com `api_plataforma_url` e `repasse_segredo` no Vault). `POST /v1/email/eventos` e `POST /v1/email/parar/:codigo` não passam pelo repasse: o primeiro confere a assinatura do Resend, o segundo só aceita o código.
+- **Documentos (CD-14).** `pedidos_documento` guarda os pedidos pelo mural; o envio vai como link de 7 dias (`/d/<código>`), cancelável.
+- **Segredos da função.** `RESEND_API_KEY` (sem ela a fila só espera), `RESEND_WEBHOOK_SECRET` e, opcional, `EMAIL_REMETENTE`.
+- **Testes.** pgTAP `017_mural_email_test.sql`, Deno `api-plataforma/mural_email_test.ts`, Vitest `mural_email.test.ts` e Playwright `plataforma-mural-email.spec.ts`.
+
 ## Rodar
 
 Requisitos: Node 22, pnpm 10 e PostgreSQL 16 ou 17 com pgTAP (`postgresql-17-pgtap`).

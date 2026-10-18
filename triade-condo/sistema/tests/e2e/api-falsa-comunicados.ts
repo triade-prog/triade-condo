@@ -17,7 +17,12 @@ interface ComunicadoFalso {
   programadoPara: string | null; publicadoEm: string | null; publicadoPor: string | null; destinatarios: number | null; assinatura: string | null;
   mudanca: string | null; substituidoEm: string | null; arquivamento: { motivo: string; em: string; por: string } | null;
   autor: string; criadoEm: string; atualizadoEm: string; versao: number;
+  /** Mural online e e-mail (CD-12, CD-13). */
+  noMural?: boolean; porEmail?: boolean; emails?: number;
 }
+interface PedidoDocFalso { id: string; documentoId: string; email: string; contato?: { id: string; nome: string; unidades: string }; estado: string;
+  automatico: boolean; criadoEm: string; motivo?: string }
+interface EnvioDocFalso { id: string; documentoId: string; para: string; contato?: string; criadoEm: string; cancelado: boolean; pedido: boolean }
 interface ArquivoFalso { id: string; familiaId: string; nome: string; tipo: string; tamanho: number; situacao: string; motivoRecusa?: string; enviadoEm: string }
 interface VersaoFalsa {
   id: string; numero?: number; mudanca?: string; vigenteDesde: string; aprovadoEm?: string; nome: string; tipo: string; tamanho: number;
@@ -34,7 +39,15 @@ export interface EstadoComunicados {
   historico: Map<string, Historico>;
   documentos: DocumentoFalso[];
   plano: { assuntos: string[]; plano: string | null; assinatura: string | null; silencioInicio: string; silencioFim: string; versao: number };
+  mural: { ligado: boolean; codigo: string; assuntos: string[]; aberturas: number; emailLigado: boolean; responderPara: string | null;
+    documentosNoMural: boolean; documentosAutomatico: boolean; codigosAntigos: string[] };
+  pedidosDoc: PedidoDocFalso[];
+  enviosDoc: EnvioDocFalso[];
 }
+
+/** Os códigos do mural e dos links do e-mail que a API falsa reconhece. */
+export const MURAL_FALSO = "7KQ2-X9MP-4WD8";
+export const LINK_FALSO = "Zm9vYmFyYmF6cXV4LWNvZGlnby1kZS10ZXN0ZQ";
 
 /** O Residencial Ipê: a falta de água publicada, um rascunho parado, o regimento em vigor e o AVCB perto de vencer (restrito). */
 export function criarComunicados(pedidoId: string): EstadoComunicados {
@@ -53,7 +66,7 @@ export function criarComunicados(pedidoId: string): EstadoComunicados {
   return {
     comunicados: [
       c({ id: agua, titulo: "Falta de água na quinta", estado: "PUBLICADO", publicadoEm: iso(agora - 86400_000), publicadoPor: "Ana Souza", destinatarios: 3,
-        assinatura: "Ana, síndica do Residencial Ipê", pedidoId }),
+        assinatura: "Ana, síndica do Residencial Ipê", pedidoId, noMural: true, porEmail: true, emails: 1 }),
       c({ id: rascunho, titulo: "Assembleia geral ordinária: convocação", assunto: "ASSEMBLEIA", texto: "Convocamos todos para a assembleia.",
         atualizadoEm: iso(agora - 4 * 86400_000) }),
     ],
@@ -70,7 +83,61 @@ export function criarComunicados(pedidoId: string): EstadoComunicados {
     ],
     plano: { assuntos: ["AVISO", "OBRAS", "SEGURANCA", "ASSEMBLEIA", "LEMBRETE"], plano: null, assinatura: "Ana, síndica do Residencial Ipê",
       silencioInicio: "21:00", silencioFim: "08:00", versao: 1 },
+    mural: { ligado: true, codigo: MURAL_FALSO, assuntos: ["AVISO", "OBRAS", "ASSEMBLEIA", "LEMBRETE"], aberturas: 214, emailLigado: true,
+      responderPara: null, documentosNoMural: true, documentosAutomatico: true, codigosAntigos: [] },
+    pedidosDoc: [{ id: novoId(), documentoId: regimento, email: "imobiliaria@exemplo.com.br", estado: "ESPERANDO", automatico: false, criadoEm: iso(agora - 3600_000) }],
+    enviosDoc: [],
   };
+}
+
+/** Sem conta (CD-12 a CD-14): o mural, os links do e-mail e o pedido de documento. */
+export async function rotasPublicas(route: Route, est: EstadoComunicados, caminho: string, metodo: string, corpo: Record<string, unknown>): Promise<unknown> {
+  if (!caminho.startsWith("/v1/publico/")) return null;
+  const mu = est.mural;
+  const pub = (c: ComunicadoFalso) => ({ id: c.id, assunto: c.assunto, titulo: c.titulo, texto: c.texto, assinatura: c.assinatura ?? undefined,
+    publicadoEm: c.publicadoEm, numero: c.numero, mudanca: c.mudanca ?? undefined, arquivos: est.arquivos.filter((a) => a.familiaId === c.familiaId && a.situacao === "LIBERADO")
+      .map((a) => ({ id: a.id, nome: a.nome, tipo: a.tipo })) });
+  const doMural = () => est.comunicados.filter((c) => c.estado === "PUBLICADO" && c.noMural && c.publico === "TODOS");
+  const docs = () => est.documentos.filter((d) => d.aoMorador && !d.restrito && !d.arquivado && d.versoes.some((v) => v.situacao === "LIBERADO"));
+  const m = /^\/v1\/publico\/mural\/([^/]+)(\/documentos|\/comunicados\/([^/]+)\/arquivos\/([^/]+))?$/.exec(caminho);
+  if (m) {
+    const codigo = decodeURIComponent(m[1]!).toUpperCase();
+    if (mu.codigosAntigos.includes(codigo)) return route.fulfill({ json: { condominio: "Residencial Ipê", trocado: true } });
+    if (codigo !== mu.codigo) return erro(route, 404, "NOT_FOUND");
+    if (!mu.ligado) return route.fulfill({ json: { condominio: "Residencial Ipê", foraDoAr: true } });
+    if (m[2] === "/documentos") {
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(corpo.email ?? ""))) return erro(route, 400, "VALIDATION_ERROR", { campos: ["email"] });
+      const d = docs().find((x) => x.id === corpo.documentoId);
+      if (d) est.pedidosDoc.unshift({ id: novoId(), documentoId: d.id, email: String(corpo.email), estado: "ESPERANDO", automatico: false, criadoEm: new Date().toISOString() });
+      return route.fulfill({ json: { ok: true } });
+    }
+    if (m[3]) return route.fulfill({ json: { url: `/api/v1/armazenamento/${m[4]}`, nome: "foto", tipo: "image/jpeg" } });
+    mu.aberturas++;
+    const lista = doMural().sort((a, b) => String(b.publicadoEm).localeCompare(String(a.publicadoEm)));
+    return route.fulfill({ json: { condominio: "Residencial Ipê", comunicados: lista.map(pub),
+      documentos: mu.documentosNoMural && mu.emailLigado ? docs().map((d) => ({ id: d.id, titulo: d.titulo, tipo: d.tipo })) : [],
+      atualizadoEm: lista[0]?.publicadoEm } });
+  }
+  const c = /^\/v1\/publico\/c\/([^/]+)(?:\/arquivos\/([^/]+))?$/.exec(caminho);
+  if (c) {
+    if (c[1] !== LINK_FALSO) return erro(route, 400, "VALIDATION_ERROR", { motivo: "LINK_VENCIDO" });
+    if (c[2]) return route.fulfill({ json: { url: `/api/v1/armazenamento/${c[2]}`, nome: "foto", tipo: "image/jpeg" } });
+    const agua = est.comunicados.filter((x) => x.estado === "PUBLICADO")[0];
+    return route.fulfill({ json: agua ? { condominio: "Residencial Ipê", comunicado: pub(agua) } : { condominio: "Residencial Ipê", foraDeUso: true } });
+  }
+  const e = /^\/v1\/publico\/email\/(confirmar|parar|voltar)$/.exec(caminho);
+  if (e && metodo === "POST") {
+    if (corpo.codigo !== LINK_FALSO) return erro(route, 400, "VALIDATION_ERROR", { motivo: "LINK_VENCIDO" });
+    if (e[1] === "confirmar") return route.fulfill({ json: { nome: "Joana Lima", email: "joana@exemplo.com.br", condominio: "Residencial Ipê" } });
+    return route.fulfill({ json: { condominio: "Residencial Ipê", parou: e[1] === "parar" } });
+  }
+  const d = /^\/v1\/publico\/d\/([^/]+)$/.exec(caminho);
+  if (d) {
+    if (d[1] !== LINK_FALSO) return erro(route, 400, "VALIDATION_ERROR", { motivo: "LINK_VENCIDO" });
+    return route.fulfill({ json: { url: "/api/v1/armazenamento/regimento", nome: "regimento.pdf", tipo: "application/pdf", titulo: "Regimento interno", numero: 1,
+      condominio: "Residencial Ipê" } });
+  }
+  return erro(route, 404, "NOT_FOUND");
 }
 
 export function resumoComunicados(est: EstadoComunicados, pode: (a: string) => boolean) {
@@ -97,7 +164,7 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
 }, caminho: string, metodo: string, corpo: Record<string, unknown>, url: URL, pode: (a: string) => boolean): Promise<unknown> {
   const ligado = /^\/v1\/condominio\/(pedidos|manutencao)\/([^/]+)\/comunicados$/.exec(caminho);
   if (!caminho.startsWith("/v1/condominio/comunicados") && !caminho.startsWith("/v1/condominio/documentos")
-    && caminho !== "/v1/condominio/plano-comunicacao" && !ligado) return null;
+    && caminho !== "/v1/condominio/plano-comunicacao" && caminho !== "/v1/condominio/mural-email" && caminho !== "/v1/condominio/mural/trocar-link" && !ligado) return null;
   const agora = new Date().toISOString();
   const h = hojeFalso();
   const m = ctx.moradores;
@@ -105,6 +172,10 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
     const u = m.unidades.find((x) => x.id === id)!;
     const b = m.blocos.find((x) => x.id === u.blocoId);
     return b ? `${b.nome} · ${u.identificacao}` : u.identificacao;
+  };
+  const comEmail = (contatoId: string) => {
+    const x = m.contatos.find((y) => y.id === contatoId) as { emailSituacao?: string; emailComunicados?: boolean } | undefined;
+    return x?.emailSituacao === "CONFIRMADO" && x.emailComunicados !== false;
   };
   const destinatarios = (assunto: string, publico: string, blocos: string[], unidades: string[], contatos: string[]) =>
     m.vinculos.filter((v) => v.estado === "CONFIRMADO" && (v.recebeComunicados || (assunto === "ASSEMBLEIA" && v.relacao === "PROPRIETARIO"))
@@ -119,6 +190,7 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
       semNinguem: escopo.filter((u) => !destinatarios(assunto, "UNIDADES", [], [u.id], []).length).map((u) => ({ id: u.id, nome: nomeUnidade(u.id) })),
       ...(pode("moradores.ver") ? { quem: [...new Set(d.map((v) => v.contatoId))].map((id) => ({ contatoId: id, nome: m.contatos.find((x) => x.id === id)!.nome,
         unidades: d.filter((v) => v.contatoId === id).map((v) => nomeUnidade(v.unidadeId)) })) } : {}),
+      comEmail: new Set(d.filter((v) => comEmail(v.contatoId)).map((v) => v.contatoId)).size,
     };
   };
   const resumoPublico = (c: ComunicadoFalso) => c.publico === "TODOS" ? "Todo o condomínio"
@@ -142,6 +214,10 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
     c.estado = "PUBLICADO"; c.publicadoEm = agora; c.publicadoPor = ctx.eu.nome; c.assinatura = est.plano.assinatura;
     c.destinatarios = new Set(destinatarios(c.assunto, c.publico, c.blocos, c.unidades, c.contatos).map((v) => v.contatoId)).size;
     hist(c.familiaId, "comunicado.publicado", { numero: c.numero });
+    if (est.mural.emailLigado && c.porEmail !== false) {
+      c.emails = new Set(destinatarios(c.assunto, c.publico, c.blocos, c.unidades, c.contatos).filter((v) => comEmail(v.contatoId)).map((v) => v.contatoId)).size;
+      if (c.emails) hist(c.familiaId, "comunicado.email_na_fila", { numero: c.numero, quantos: c.emails });
+    }
   };
 
   if (ligado) {
@@ -151,8 +227,29 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
     return route.fulfill({ json: { podeVer: true, podeEscrever: pode("comunicados.publicar"), comunicados: lista.map(json) } });
   }
 
+  if (caminho === "/v1/condominio/mural-email") {
+    if (!pode("config.editar")) return erro(route, 403, "FORBIDDEN");
+    if (corpo.versao !== est.plano.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: est.plano.versao });
+    Object.assign(est.mural, { ligado: corpo.muralLigado, assuntos: corpo.muralAssuntos, emailLigado: corpo.emailLigado, responderPara: corpo.responderPara || null,
+      documentosNoMural: corpo.documentosNoMural, documentosAutomatico: corpo.documentosAutomatico });
+    est.plano.versao++;
+    return route.fulfill({ json: { versao: est.plano.versao, codigo: est.mural.codigo } });
+  }
+  if (caminho === "/v1/condominio/mural/trocar-link") {
+    if (!pode("config.editar")) return erro(route, 403, "FORBIDDEN");
+    if (String(corpo.motivo ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
+    est.mural.codigosAntigos.push(est.mural.codigo);
+    est.mural.codigo = "AB3C-DE4F-GH5J";
+    est.plano.versao++;
+    return route.fulfill({ json: { versao: est.plano.versao, codigo: est.mural.codigo } });
+  }
   if (caminho === "/v1/condominio/plano-comunicacao") {
-    if (metodo === "GET") return route.fulfill({ json: { ...est.plano, plano: est.plano.plano ?? undefined, podeEditar: pode("config.editar") } });
+    const mu = est.mural;
+    const ativos = new Set(m.vinculos.filter((v) => v.estado === "CONFIRMADO").map((v) => v.contatoId));
+    if (metodo === "GET") return route.fulfill({ json: { ...est.plano, plano: est.plano.plano ?? undefined, podeEditar: pode("config.editar"),
+      mural: { ligado: mu.ligado, codigo: mu.codigo, assuntos: mu.assuntos, aberturas: mu.aberturas },
+      email: { ligado: mu.emailLigado, responderPara: mu.responderPara ?? undefined, comEmail: [...ativos].filter(comEmail).length, contatos: ativos.size },
+      documentos: { noMural: mu.documentosNoMural, automatico: mu.documentosAutomatico } } });
     if (!pode("config.editar")) return erro(route, 403, "FORBIDDEN");
     if (!(corpo.assuntos as string[]).length) return erro(route, 400, "VALIDATION_ERROR", { campos: ["assuntos"] });
     Object.assign(est.plano, { assuntos: corpo.assuntos, plano: corpo.plano ?? null, assinatura: corpo.assinatura, silencioInicio: corpo.silencioInicio,
@@ -173,10 +270,24 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
         emVigor: v ? { id: v.id, numero: v.numero, vigenteDesde: v.vigenteDesde, aprovadoEm: v.aprovadoEm, nome: v.nome } : undefined,
         proxima: prox ? { id: prox.id, numero: prox.numero, vigenteDesde: prox.vigenteDesde } : undefined, atualizadoEm: d.criadoEm, versao: d.versao };
     };
+    if (caminho === "/v1/condominio/documentos/pedidos") {
+      return route.fulfill({ json: { itens: est.pedidosDoc.map((p) => ({ ...p, titulo: est.documentos.find((d) => d.id === p.documentoId)!.titulo })),
+        esperando: est.pedidosDoc.filter((p) => p.estado === "ESPERANDO").length, podeDecidir: pode("documentos.editar") } });
+    }
+    const dec = /^\/v1\/condominio\/documentos\/pedidos\/([^/]+)\/decidir$/.exec(caminho);
+    if (dec) {
+      const p = est.pedidosDoc.find((x) => x.id === dec[1]);
+      if (!p) return erro(route, 404, "NOT_FOUND");
+      if (!corpo.enviar && String(corpo.motivo ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
+      p.estado = corpo.enviar ? "ENVIADO" : "RECUSADO";
+      if (!corpo.enviar) p.motivo = String(corpo.motivo).trim();
+      else est.enviosDoc.unshift({ id: novoId(), documentoId: p.documentoId, para: p.email, criadoEm: agora, cancelado: false, pedido: true });
+      return route.fulfill({ json: { estado: p.estado } });
+    }
     if (caminho === "/v1/condominio/documentos" && metodo === "GET") {
       const f = url.searchParams.get("filtro") ?? "VIGOR";
       const itens = visiveis.filter((d) => (f === "ARQUIVADOS" ? !!d.arquivado : !d.arquivado) && (f !== "VENCENDO" || (!!d.valeAte && d.valeAte <= somar(h, 60))));
-      return route.fulfill({ json: { itens: itens.map(docJson), total: itens.length,
+      return route.fulfill({ json: { itens: itens.map(docJson), total: itens.length, pedidosEsperando: est.pedidosDoc.filter((p) => p.estado === "ESPERANDO").length,
         vencendo: visiveis.filter((d) => !d.arquivado && d.valeAte && d.valeAte <= somar(h, 60)).length,
         pode: { editar: pode("documentos.editar"), restritos: pode("documentos.restritos") } } });
     }
@@ -189,7 +300,7 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
       est.documentos.push(d);
       return route.fulfill({ status: 201, json: { id: d.id, versao: 1 } });
     }
-    const r = /^\/v1\/condominio\/documentos\/([^/]+)(\/arquivar|\/versoes(?:\/([^/]+)\/(verificar|link))?)?$/.exec(caminho);
+    const r = /^\/v1\/condominio\/documentos\/([^/]+)(\/arquivar|\/email|\/envios\/([^/]+)\/cancelar|\/versoes(?:\/([^/]+)\/(verificar|link))?)?$/.exec(caminho);
     const d = r ? visiveis.find((x) => x.id === r[1]) : undefined;
     if (!r || !d) return erro(route, 404, "NOT_FOUND");
     const dh = (acao: string, dados: Record<string, unknown>) => d.historico.unshift({ acao, em: agora, autor: ctx.eu.nome, dados });
@@ -197,7 +308,12 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
       return route.fulfill({ json: { documento: { ...docJson(d), criadoEm: d.criadoEm, criadoPor: "Ana Souza",
         arquivamento: d.arquivado ?? undefined }, versoes: [...d.versoes].reverse().map((v) => ({ ...v, emVigor: v.id === vigor(d)?.id })),
         historico: d.historico, pode: { editar: pode("documentos.editar") && !d.arquivado, enviar: pode("documentos.editar") && !d.arquivado,
-          restritos: pode("documentos.restritos") }, limites: { tamanho: 20971520 }, hoje: h } });
+          restritos: pode("documentos.restritos"),
+          enviarEmail: pode("documentos.editar") && d.aoMorador && !d.restrito && !d.arquivado && !!vigor(d) && est.mural.emailLigado },
+        limites: { tamanho: 20971520 }, hoje: h,
+        envios: est.enviosDoc.filter((e) => e.documentoId === d.id).map((e) => ({ ...e, estado: "ENVIADO", numero: vigor(d)?.numero })),
+        contatosComEmail: m.contatos.filter((x) => comEmail(x.id)).map((x) => ({ id: x.id, nome: x.nome, unidades: m.vinculos.filter((v) => v.contatoId === x.id)
+          .map((v) => nomeUnidade(v.unidadeId)).join(", ") })) } });
     }
     if (!pode("documentos.editar")) return erro(route, 403, "FORBIDDEN");
     if (!r[2] && metodo === "PUT") {
@@ -205,6 +321,23 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
         aoMorador: corpo.aoMorador === true, valeAte: corpo.valeAte ?? null, versao: d.versao + 1 });
       dh("documento.alterado", {});
       return route.fulfill({ json: { id: d.id, versao: d.versao } });
+    }
+    if (r[2] === "/email") {
+      const contatos = (corpo.contatos as string[]) ?? [];
+      const emails = (corpo.emails as string[]) ?? [];
+      if (!contatos.length && !emails.length) return erro(route, 400, "VALIDATION_ERROR", { campos: ["contatos"] });
+      for (const id of contatos) est.enviosDoc.unshift({ id: novoId(), documentoId: d.id, para: "contato", contato: m.contatos.find((x) => x.id === id)?.nome ?? undefined,
+        criadoEm: agora, cancelado: false, pedido: false });
+      for (const e of emails) est.enviosDoc.unshift({ id: novoId(), documentoId: d.id, para: e, criadoEm: agora, cancelado: false, pedido: false });
+      dh("documento.enviado_por_email", { quantos: contatos.length + emails.length });
+      return route.fulfill({ status: 201, json: { enviados: contatos.length + emails.length } });
+    }
+    if (r[2]?.startsWith("/envios/")) {
+      const e = est.enviosDoc.find((x) => x.id === r[3]);
+      if (!e) return erro(route, 404, "NOT_FOUND");
+      e.cancelado = true;
+      dh("documento.link_cancelado", {});
+      return route.fulfill({ json: { ok: true } });
     }
     if (r[2] === "/arquivar") {
       if (String(corpo.motivo ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
@@ -223,9 +356,9 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
       d.versoes.push(v);
       return route.fulfill({ status: 201, json: { versaoId: v.id, envio: { url: `/api/v1/armazenamento/${v.id}`, metodo: "PUT", tipo: v.tipo } } });
     }
-    const v = d.versoes.find((x) => x.id === r[3]);
+    const v = d.versoes.find((x) => x.id === r[4]);
     if (!v) return erro(route, 404, "NOT_FOUND");
-    if (r[4] === "verificar") {
+    if (r[5] === "verificar") {
       const motivo = conferir(conteudoEnviado(v.id), v.tipo);
       if (motivo) { v.situacao = "NAO_LIBERADO"; v.motivoRecusa = motivo; return route.fulfill({ json: { situacao: v.situacao, motivo } }); }
       v.situacao = "LIBERADO"; v.numero = Math.max(0, ...d.versoes.map((x) => x.numero ?? 0)) + 1;
@@ -247,6 +380,7 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
       ...(pode("moradores.ver") ? { contatos: m.contatos.map((x) => ({ id: x.id, nome: x.nome, unidades: m.vinculos.filter((v) => v.contatoId === x.id).map((v) => nomeUnidade(v.unidadeId)) })) } : {}),
       ...(pode("pedidos.ver") ? { pedidos: ctx.pedidos.filter((p) => p.estado !== "ENCERRADO" && p.estado !== "CANCELADO").map((p) => ({ id: p.id, protocolo: p.protocolo, assunto: p.assunto })) } : {}),
       pode: { publicar: pode("comunicados.publicar"), verMoradores: pode("moradores.ver") }, agora,
+      canais: { muralLigado: est.mural.ligado, muralAssuntos: est.mural.assuntos, emailLigado: est.mural.emailLigado },
     } });
   }
   if (caminho === "/v1/condominio/comunicados/publico") {
@@ -273,7 +407,9 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
     if (campos.length) return erro(route, 400, "VALIDATION_ERROR", { campos });
     const dados = { assunto: String(corpo.assunto), titulo: String(corpo.titulo).trim(), texto: String(corpo.texto).trim(), publico: String(corpo.publico),
       blocos: (corpo.blocos as string[]) ?? [], unidades: (corpo.unidades as string[]) ?? [], contatos: (corpo.contatos as string[]) ?? [],
-      pedidoId: (corpo.pedidoId as string) ?? null, manutencaoId: (corpo.manutencaoId as string) ?? null, atualizadoEm: agora };
+      pedidoId: (corpo.pedidoId as string) ?? null, manutencaoId: (corpo.manutencaoId as string) ?? null, atualizadoEm: agora,
+      noMural: corpo.publico === "TODOS" && (typeof corpo.noMural === "boolean" ? corpo.noMural : est.mural.assuntos.includes(String(corpo.assunto))),
+      porEmail: corpo.porEmail !== false };
     if (!c) {
       const id = novoId();
       c = { id, familiaId: id, numero: 1, ...dados, estado: "RASCUNHO", programadoPara: null, publicadoEm: null, publicadoPor: null, destinatarios: null,
@@ -294,7 +430,7 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
   };
   if (caminho === "/v1/condominio/comunicados" && metodo === "POST") return salvar(null);
 
-  const r = /^\/v1\/condominio\/comunicados\/([^/]+)(?:\/(corrigir|arquivar|uso|arquivos)(?:\/([^/]+)\/(verificar|link|tirar))?)?$/.exec(caminho);
+  const r = /^\/v1\/condominio\/comunicados\/([^/]+)(?:\/(corrigir|arquivar|uso|arquivos|mural)(?:\/([^/]+)\/(verificar|link|tirar))?)?$/.exec(caminho);
   const c = r ? est.comunicados.find((x) => x.id === r[1]) : undefined;
   if (!r || !c) return erro(route, 404, "NOT_FOUND");
   if (!r[2] && metodo === "PUT") return salvar(c);
@@ -311,9 +447,20 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
       historico: est.historico.get(c.familiaId) ?? [],
       pode: { editar: pode("comunicados.publicar") && ["RASCUNHO", "PROGRAMADO"].includes(c.estado), corrigir: pode("comunicados.publicar") && c.estado === "PUBLICADO",
         arquivar: pode("comunicados.publicar") && ["RASCUNHO", "PROGRAMADO", "PUBLICADO"].includes(c.estado),
-        enviar: pode("comunicados.publicar") && ["RASCUNHO", "PROGRAMADO"].includes(c.estado), copiar: c.estado === "PUBLICADO" },
+        enviar: pode("comunicados.publicar") && ["RASCUNHO", "PROGRAMADO"].includes(c.estado), copiar: c.estado === "PUBLICADO",
+        mural: pode("comunicados.publicar") && c.publico === "TODOS" && ["RASCUNHO", "PROGRAMADO", "PUBLICADO"].includes(c.estado),
+        avisarEmail: est.mural.emailLigado && c.porEmail !== false && c.estado === "PUBLICADO" },
       condominio: "Residencial Ipê", limites: { arquivos: 4, tamanho: 10485760 },
+      canais: { noMural: !!c.noMural, porEmail: c.porEmail !== false, muralLigado: est.mural.ligado, emailLigado: est.mural.emailLigado },
+      email: { total: c.emails ?? 0, naFila: 0, enviados: c.emails ?? 0, entregues: c.emails ?? 0, devolvidos: 0, spam: 0, falharam: 0, cancelados: 0, abertos: 0 },
+      problemas: [],
     } });
+  }
+  if (r[2] === "mural") {
+    if (!pode("comunicados.publicar")) return erro(route, 403, "FORBIDDEN");
+    c.noMural = corpo.noMural === true; c.versao++;
+    hist(c.familiaId, c.noMural ? "comunicado.mural_ligado" : "comunicado.mural_tirado");
+    return route.fulfill({ json: { versao: c.versao } });
   }
   if (r[2] === "uso") {
     if (c.estado !== "PUBLICADO") return erro(route, 422, "VALIDATION_ERROR", { motivo: "COMUNICADO_NAO_PUBLICADO" });
@@ -326,8 +473,13 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
     c.estado = "SUBSTITUIDO"; c.substituidoEm = agora; c.versao++;
     const nova: ComunicadoFalso = { ...c, id: novoId(), numero: c.numero + 1, titulo: String(corpo.titulo).trim(), texto: String(corpo.texto).trim(),
       estado: "PUBLICADO", mudanca: String(corpo.mudanca).trim(), substituidoEm: null, publicadoEm: agora, publicadoPor: ctx.eu.nome, versao: 1, criadoEm: agora, atualizadoEm: agora };
+    nova.emails = 0;
     est.comunicados.push(nova);
     hist(c.familiaId, "comunicado.corrigido", { numero: nova.numero, mudanca: nova.mudanca });
+    if (corpo.avisarEmail === true) {
+      nova.emails = new Set(destinatarios(nova.assunto, nova.publico, nova.blocos, nova.unidades, nova.contatos).filter((v) => comEmail(v.contatoId)).map((v) => v.contatoId)).size;
+      hist(c.familiaId, "comunicado.email_na_fila", { numero: nova.numero, quantos: nova.emails });
+    }
     return route.fulfill({ status: 201, json: { id: nova.id, versao: 1 } });
   }
   if (r[2] === "arquivar") {

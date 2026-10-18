@@ -28,9 +28,9 @@
   "meta": {
     "atualizado_em": "18/10/2026",
     "total_ideias": 311,
-    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7), Manutenção e prestadores (R6) e Comunicados e documentos (R1) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), comunicados (rascunho, programado e publicado, com versões, público calculado, copiar para o grupo e versão para o mural) e documentos do prédio com versões e validade, moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (787 pgTAP, 116 Deno, 108 Vitest, 172 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0140 (com a conferência de prazos e a da manutenção no pg_cron) e as Edge Functions api-plataforma (versão 10, com a agenda e a manutenção) e api-console; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
+    "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7), Manutenção e prestadores (R6) e Comunicados e documentos (R1), com o mural online e o e-mail (R1b), construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), comunicados (rascunho, programado e publicado, com versões, público calculado, copiar para o grupo e versão para o mural, mural online por link e QR e envio por e-mail) e documentos do prédio com versões, validade e envio por e-mail, moradores e unidades, configurações e pessoas e acesso; nenhuma tela usa emoji. Tudo testado localmente (870 pgTAP, 130 Deno, 116 Vitest, 186 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0150 (com as rotinas de prazos, manutenção e comunicados no pg_cron) e as Edge Functions api-plataforma (versão 11, com os comunicados e documentos) e api-console; a 0160 (mural e e-mail) espera ser aplicada; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "F7",
-    "proximo_passo": "A Carolina aprova as telas e as decisões do mural online e do e-mail (docs/telas/mural-email.html; CD-12 a CD-14); depois, banco, API e telas. Com a Carolina: conferir Comunicados e documentos, a Agenda e a Manutenção no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
+    "proximo_passo": "Mural online e e-mail (R1b): a Carolina aplica a 0160 no triade-condo-dev e grava os segredos do e-mail; depois, publicar a api-plataforma e juntar o PR ao main. Com a Carolina: conferir Comunicados e documentos, a Agenda e a Manutenção no condominio.trihub.com.br, testar no Águas Claras (E8), liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
   "fases": [
     {
@@ -740,8 +740,9 @@
             "CD-13",
             "CD-14"
           ],
-          "status": "andamento",
-          "nota": "Desenho para aprovação em docs/telas/mural-email.html: sete telas (mural do morador, configurações, escrever, comunicado publicado, o e-mail, e-mail no contato, documento por e-mail) e catorze decisões. Antes de ligar o e-mail num condomínio de verdade, trocar o plano gratuito do Resend."
+          "status": "feito",
+          "evidencia": "Desenho aprovado em docs/telas/mural-email.html. Migration 0160_mural_email.sql (mural com link de 12 caracteres, trocar link com motivo, aberturas sem saber quem; e-mail do contato confirmado pela própria pessoa; fila de e-mails com lote, resultado e avisos do provedor; link pessoal de 90 dias; parar de receber; pedidos de documento com resposta neutra; envio de documento por link de 7 dias que pode ser cancelado; rotina enviar-emails a cada 2 minutos pelo pg_net); api-plataforma com as rotas sem conta (/v1/publico), o envio pelo Resend e o aviso assinado do provedor; telas /m/[código], /c/[código], /e/confirmar, /e/parar, /d/[código], /mural/cartaz, Configurações › Comunicados com mural e e-mail, como vai chegar, como chegou, e-mail no contato e pedidos por e-mail",
+          "nota": "Falta aplicar a 0160 no triade-condo-dev, gravar os segredos (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault), cadastrar o aviso do Resend e publicar a api-plataforma. O e-mail começa desligado em cada condomínio; antes de ligar num prédio de verdade, trocar o plano gratuito do Resend (100 e-mails por dia). Ficam para depois: mural pessoal permanente, pedir documento pelo WhatsApp, saber quem leu e carta formal."
         },
         {
           "id": "R2",
@@ -1157,6 +1158,18 @@
       ],
       "status": "feito",
       "evidencia": "pgTAP 016_comunicados_test.sql (63 testes); Deno api-plataforma/comunicados_test.ts (8 testes); Vitest comunicados.test.ts (14 testes); Playwright plataforma-comunicados.spec.ts (9 cenários × 2 aparelhos)"
+    },
+    {
+      "id": "T24",
+      "texto": "Mural online e e-mail: mural sem conta só com o que é de todos e sem dados de moradores, link trocado que para na hora, e-mail confirmado só pela própria pessoa, fila que respeita o horário sem envio, devolução e spam que desligam o e-mail e avisam no sino, link pessoal que vence quando a pessoa sai, parar de receber em um clique, documento por link de 7 dias que se cancela, pedido pelo mural com resposta neutra e limites por aparelho, aviso do provedor só assinado e histórico sem e-mail",
+      "fase": "R1",
+      "refs": [
+        "CD-12",
+        "CD-13",
+        "CD-14"
+      ],
+      "status": "feito",
+      "evidencia": "pgTAP 017_mural_email_test.sql (83 testes); Deno api-plataforma/mural_email_test.ts (14 testes); Vitest mural_email.test.ts (8 testes); Playwright plataforma-mural-email.spec.ts (7 cenários × 2 aparelhos)"
     }
   ],
   "publicacao": [
@@ -1390,6 +1403,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "18/10/2026",
+      "inicio": "03:15",
+      "fim": "06:10",
+      "texto": "Mural online e e-mail (R1b; CD-12 a CD-14) construídos depois do aprovado da Carolina. Banco: migration 0160 com o mural (link de 12 caracteres sem os que se confundem, só os publicados para todo o condomínio e marcados no mural, trocar link com motivo, aberturas contadas sem saber quem), o e-mail do contato confirmado pela própria pessoa (esperando, confirmado, voltou, parou), a fila de e-mails (lote, resultado, nova tentativa por 24 horas, devolução e spam que desligam o e-mail e avisam no sino, horário sem envio), o link pessoal de 90 dias que vence quando a pessoa sai da unidade, o parar de receber em um clique, os pedidos de documento pelo mural com resposta neutra e o documento por link de 7 dias que pode ser cancelado. Os links sem conta guardam só o hash do código. API: rotas sem conta em /v1/publico com limite por aparelho, envio em lote pelo Resend com parar de receber no cabeçalho, aviso do provedor só com assinatura válida e a fila chamada pelo banco a cada 2 minutos. Telas: mural e links do e-mail sem login, cartaz com QR, mural e e-mail nas Configurações, como vai chegar ao escrever, como chegou no publicado, e-mail no contato e na planilha, pedidos por e-mail e envio do documento. Testes: 870 pgTAP, 130 Deno, 116 Vitest e 186 ponta a ponta.",
+      "ref": "R1b, T24, CD-12, CD-13, CD-14"
+    },
     {
       "data": "18/10/2026",
       "inicio": "02:15",

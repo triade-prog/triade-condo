@@ -3,7 +3,8 @@
 // Passo 2: painel, configurações, pessoas autorizadas e quem atende. Passo 3: blocos,
 // unidades e contatos. Passo 4: pedidos no painel. Passo 4b: fotos e documentos dos pedidos.
 // Passos 6 e 7: avisos, regras de aviso, prazo do pedido e indicadores. Peça R7: agenda.
-// Peça R6: manutenção, prestadores, preventivas e vistorias. Peça R1: comunicados e documentos.
+// Peça R6: manutenção, prestadores, preventivas e vistorias. Peça R1: comunicados e documentos,
+// com o mural online e o e-mail (CD-12 a CD-14), as primeiras rotas sem conta (/v1/publico).
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
@@ -101,8 +102,20 @@ import {
   TAMANHO_MAXIMO_DOCUMENTO,
   usoComunicadoSchema,
   versaoDocumentoSchema,
+  codigoLinkSchema,
+  decidirPedidoDocumentoSchema,
+  emailContatoSchema,
+  enviarDocumentoSchema,
+  muralComunicadoSchema,
+  muralEmailSchema,
+  pedirDocumentoSchema,
+  trocarLinkMuralSchema,
 } from "@triade/domain";
 import { verificarArquivo, type Armazenamento } from "../_shared/arquivos.ts";
+import { sha256Hex } from "../_shared/cripto.ts";
+import { avisoAssinado, lerEventoResend, montarEmail, type Correio, type MensagemFila } from "../_shared/email.ts";
+import { ipDaChamada } from "../_shared/repasse.ts";
+import { registrar } from "../_shared/registro.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
@@ -127,6 +140,25 @@ export interface DepsPlataforma extends DepsSessao {
   /** Armazenamento privado das fotos dos comunicados e dos documentos do prédio (peça R1). */
   armazenamentoComunicados?: Armazenamento;
   armazenamentoDocumentos?: Armazenamento;
+  /** E-mail dos comunicados e documentos (CD-13, CD-14). Sem correio, a fila espera. */
+  correio?: Correio;
+  remetente?: string;
+  /** Endereço desta função, para o "parar de receber" em um clique. */
+  urlFuncao?: string;
+  /** Segredo que assina os avisos do provedor de e-mail. */
+  segredoWebhook?: string;
+  /** Trabalho que continua depois da resposta (a fila de e-mails). */
+  aoFundo?: (p: Promise<unknown>) => void;
+}
+
+const REMETENTE = "nao-responda@t3condo.trihub.com.br";
+const CODIGO = /^[A-Za-z0-9_-]{14,64}$/;
+
+/** Código de link sem conta: fora do formato, responde como não encontrado. */
+function codigoDaRota(c: Context, nome = "codigo"): string {
+  const v = c.req.param(nome);
+  if (!v || !CODIGO.test(v)) throw new ErroDominio("NOT_FOUND");
+  return v;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -139,7 +171,7 @@ function idDaRota(c: Context, nome: string): string {
 }
 
 export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataforma) {
-  const app = criarApp<VarsPlataforma>("api-plataforma", segredo);
+  const app = criarApp<VarsPlataforma>("api-plataforma", segredo, [/^\/v1\/email\/eventos$/, /^\/v1\/email\/parar\/[A-Za-z0-9_-]{14,64}$/]);
   const sessao = criarSessao(
     { sistema: "plataforma", cookie: COOKIES_PLATAFORMA.sessao, autenticadorObrigatorio: false, funcaoAcesso: "acesso_plataforma", urlApp: deps.urlApp },
     deps,
@@ -390,7 +422,9 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   // Planilha (F3.3): a tela lê o arquivo e mostra a prévia; aqui chegam as linhas já lidas.
   app.post("/v1/condominio/importacoes", async (c) => {
     const d = await lerCorpo(c, importacaoSchema);
-    return c.json(await rpc("plataforma_importar_moradores", { ...quem(c), p_linhas: d.linhas, p_agrupamento: d.agrupamento ?? null }), 201);
+    const r = await rpc<{ emails?: number }>("plataforma_importar_moradores", { ...quem(c), p_linhas: d.linhas, p_agrupamento: d.agrupamento ?? null });
+    if (r.emails) esvaziarFila();
+    return c.json(r, 201);
   });
 
   // Pedidos no painel (passo 4; AT-01 a AT-17, AT-31, AT-32). Toda ação leva a versão lida
@@ -834,7 +868,10 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return await rpc("plataforma_salvar_comunicado", {
       ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_assunto: d.assunto, p_titulo: d.titulo, p_texto: d.texto,
       p_publico: d.publico, p_blocos: d.blocos, p_unidades: d.unidades, p_contatos: d.contatos, p_pedido: d.pedidoId,
-      p_manutencao: d.manutencaoId, p_acao: d.acao, p_programado_para: d.programadoPara,
+      p_manutencao: d.manutencaoId, p_acao: d.acao, p_programado_para: d.programadoPara, p_no_mural: d.noMural,
+      p_por_email: d.porEmail,
+    }).finally(() => {
+      if (d.acao === "PUBLICAR") esvaziarFila();
     });
   }
   app.post("/v1/condominio/comunicados", async (c) => c.json(await salvarComunicado(c, null), 201));
@@ -843,9 +880,16 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
 
   app.post("/v1/condominio/comunicados/:id/corrigir", async (c) => {
     const d = await lerCorpo(c, corrigirComunicadoSchema);
-    return c.json(await rpc("plataforma_corrigir_comunicado", {
+    const r = await rpc("plataforma_corrigir_comunicado", {
       ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_titulo: d.titulo, p_texto: d.texto, p_mudanca: d.mudanca,
-    }), 201);
+      p_avisar_email: d.avisarEmail,
+    });
+    if (d.avisarEmail) esvaziarFila();
+    return c.json(r, 201);
+  });
+  app.put("/v1/condominio/comunicados/:id/mural", async (c) => {
+    const d = await lerCorpo(c, muralComunicadoSchema);
+    return c.json(await rpc("plataforma_mural_comunicado", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_no_mural: d.noMural }));
   });
   app.post("/v1/condominio/comunicados/:id/arquivar", async (c) => {
     const d = await lerCorpo(c, arquivarComunicadoSchema);
@@ -919,6 +963,14 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       p_restrito: d.restrito, p_ao_morador: d.aoMorador, p_vale_ate: d.valeAte,
     });
   }
+  // Pedidos de documento pelo mural (CD-14), antes das rotas de um documento.
+  app.get("/v1/condominio/documentos/pedidos", async (c) => c.json(await rpc("plataforma_pedidos_documento", quem(c))));
+  app.post("/v1/condominio/documentos/pedidos/:id/decidir", async (c) => {
+    const d = await lerCorpo(c, decidirPedidoDocumentoSchema);
+    const r = await rpc("plataforma_decidir_pedido_documento", { ...quem(c), p_id: idDaRota(c, "id"), p_enviar: d.enviar, p_motivo: d.motivo });
+    if (d.enviar) esvaziarFila();
+    return c.json(r);
+  });
   app.post("/v1/condominio/documentos", async (c) => c.json(await salvarDocumento(c, null), 201));
   app.get("/v1/condominio/documentos/:id", async (c) => c.json(await rpc("plataforma_documento", { ...quem(c), p_id: idDaRota(c, "id") })));
   app.put("/v1/condominio/documentos/:id", async (c) => c.json(await salvarDocumento(c, idDaRota(c, "id"))));
@@ -960,6 +1012,172 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     });
     return c.json(await linkArquivo(guarda(deps.armazenamentoDocumentos), a, baixar));
   });
+  app.post("/v1/condominio/documentos/:id/email", async (c) => {
+    const d = await lerCorpo(c, enviarDocumentoSchema);
+    const r = await rpc("plataforma_enviar_documento", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_contatos: d.contatos, p_emails: d.emails, p_recado: d.recado,
+    });
+    esvaziarFila();
+    return c.json(r, 201);
+  });
+  app.post("/v1/condominio/documentos/:id/envios/:envio/cancelar", async (c) =>
+    c.json(await rpc("plataforma_cancelar_envio_documento", { ...quem(c), p_id: idDaRota(c, "id"), p_envio: idDaRota(c, "envio") })));
+
+  // Mural online e e-mail nas Configurações (CD-12, CD-13).
+  app.put("/v1/condominio/mural-email", async (c) => {
+    const d = await lerCorpo(c, muralEmailSchema);
+    const r = await rpc("plataforma_definir_mural_email", {
+      ...quem(c), p_versao: d.versao, p_mural_ligado: d.muralLigado, p_mural_assuntos: d.muralAssuntos, p_email_ligado: d.emailLigado,
+      p_responder_para: d.responderPara, p_documentos_no_mural: d.documentosNoMural, p_documentos_automatico: d.documentosAutomatico,
+    });
+    if (d.emailLigado) esvaziarFila();
+    return c.json(r);
+  });
+  app.post("/v1/condominio/mural/trocar-link", async (c) => {
+    const d = await lerCorpo(c, trocarLinkMuralSchema);
+    return c.json(await rpc("plataforma_trocar_link_mural", { ...quem(c), p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  // E-mail do contato: a gestão grava; só a própria pessoa confirma (CD-13).
+  app.put("/v1/condominio/contatos/:id/email", async (c) => {
+    const d = await lerCorpo(c, emailContatoSchema);
+    const r = await rpc<{ confirmacaoNaFila?: boolean }>("plataforma_email_contato", {
+      ...quem(c), p_contato: idDaRota(c, "id"), p_versao: d.versao, p_email: d.email, p_recebe: d.recebe,
+    });
+    if (r.confirmacaoNaFila) esvaziarFila();
+    return c.json(r);
+  });
+  app.post("/v1/condominio/contatos/:id/email/reenviar", async (c) => {
+    const r = await rpc("plataforma_reenviar_confirmacao", { ...quem(c), p_contato: idDaRota(c, "id") });
+    esvaziarFila();
+    return c.json(r);
+  });
+
+  // ---------------------------------------------------------------------------------------
+  // Sem conta (CD-12 a CD-14): o mural e os links do e-mail. Nenhuma sessão; o código do link
+  // é a chave e o banco entra só no condomínio dele. Cada aparelho tem limite de uso.
+  const aparelho = (c: Context) => sha256Hex(`aparelho|${ipDaChamada(c.req.raw.headers) ?? "sem-ip"}`);
+  async function dentroDoLimite(tipo: string, chave: string) {
+    if (!(await rpc<boolean>("limite_contar", { p_tipo: tipo, p_chave: chave }))) throw new ErroDominio("RATE_LIMITED");
+  }
+  const linkPublico = async (a: Armazenamento, x: { caminho: string; nome: string; tipo: string }, baixar = false) => ({
+    url: await a.linkLeitura(x.caminho, VALIDADE_LINK_ARQUIVO_S, baixar ? x.nome : undefined),
+    nome: x.nome,
+    tipo: x.tipo,
+  });
+
+  app.get("/v1/publico/mural/:codigo", async (c) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("mural", await aparelho(c));
+    return c.json(await rpc("publico_mural", { p_codigo: codigo }));
+  });
+  app.get("/v1/publico/mural/:codigo/comunicados/:id/arquivos/:arquivo", async (c) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("mural", await aparelho(c));
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("publico_mural_arquivo", {
+      p_codigo: codigo, p_comunicado: idDaRota(c, "id"), p_arquivo: idDaRota(c, "arquivo"),
+    });
+    return c.json(await linkPublico(guarda(deps.armazenamentoComunicados), a));
+  });
+  app.post("/v1/publico/mural/:codigo/documentos", async (c) => {
+    const codigo = codigoDaRota(c);
+    const d = await lerCorpo(c, pedirDocumentoSchema);
+    await dentroDoLimite("pedido_aparelho", await aparelho(c));
+    await dentroDoLimite("pedido_documento", await sha256Hex(`pedido|${d.email.toLowerCase()}`));
+    const r = await rpc("publico_pedir_documento", { p_codigo: codigo, p_documento: d.documentoId, p_email: d.email });
+    esvaziarFila();
+    return c.json(r);
+  });
+
+  app.get("/v1/publico/c/:codigo", async (c) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("link", await aparelho(c));
+    return c.json(await rpc("publico_comunicado", { p_codigo: codigo }));
+  });
+  app.get("/v1/publico/c/:codigo/arquivos/:arquivo", async (c) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("link", await aparelho(c));
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("publico_comunicado_arquivo", {
+      p_codigo: codigo, p_arquivo: idDaRota(c, "arquivo"),
+    });
+    return c.json(await linkPublico(guarda(deps.armazenamentoComunicados), a));
+  });
+  app.get("/v1/publico/d/:codigo", async (c) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("link", await aparelho(c));
+    const a = await rpc<{ caminho: string; nome: string; tipo: string; titulo: string; numero: number; condominio: string }>(
+      "publico_documento", { p_codigo: codigo },
+    );
+    return c.json({ ...(await linkPublico(guarda(deps.armazenamentoDocumentos), a, true)), titulo: a.titulo, numero: a.numero, condominio: a.condominio });
+  });
+  for (const [rota, funcao] of [["confirmar", "publico_confirmar_email"], ["parar", "publico_parar_email"], ["voltar", "publico_voltar_email"]]) {
+    app.post(`/v1/publico/email/${rota}`, async (c) => {
+      const d = await lerCorpo(c, codigoLinkSchema);
+      await dentroDoLimite("link", await aparelho(c));
+      return c.json(await rpc(funcao!, { p_codigo: d.codigo }));
+    });
+  }
+
+  // "Parar de receber" em um clique, chamado pelo próprio programa de e-mail (sem repasse).
+  app.post("/v1/email/parar/:codigo", async (c) => {
+    await rpc("publico_parar_email", { p_codigo: codigoDaRota(c) });
+    return c.json({ ok: true });
+  });
+
+  // Avisos do provedor: entregue, devolvido e spam (CD-13). Só vale o aviso assinado.
+  app.post("/v1/email/eventos", async (c) => {
+    const corpo = await c.req.text();
+    if (!deps.segredoWebhook || !(await avisoAssinado(deps.segredoWebhook, c.req.raw.headers, corpo))) {
+      throw new ErroDominio("FORBIDDEN");
+    }
+    let json: unknown;
+    try {
+      json = JSON.parse(corpo);
+    } catch {
+      throw new ErroDominio("VALIDATION_ERROR");
+    }
+    const ev = lerEventoResend(json);
+    if (ev) {
+      await rpc("email_evento", { p_condominio: ev.condominio, p_envio: ev.envio, p_provedor_id: ev.provedorId, p_tipo: ev.tipo, p_detalhe: ev.detalhe });
+      if (ev.tipo === "ADIADO") esvaziarFila();
+    }
+    return c.json({ ok: true });
+  });
+
+  // O banco chama (pg_cron + pg_net, com o segredo de repasse) quando há e-mail esperando.
+  app.post("/v1/interno/fila-email", async (c) => c.json({ enviados: await processarFila() }));
+
+  /** Pega lotes da fila, manda pelo provedor e devolve o resultado de cada envio. */
+  async function processarFila(lotes = 5): Promise<number> {
+    if (!deps.correio) return 0;
+    const enderecos = {
+      urlApp: deps.urlApp,
+      urlFuncao: deps.urlFuncao ?? "",
+      remetente: deps.remetente ?? REMETENTE,
+    };
+    let total = 0;
+    for (let i = 0; i < lotes; i++) {
+      const msgs = await rpc<MensagemFila[]>("email_pegar_lote", { p_max: 100 });
+      if (!msgs.length) break;
+      const resultados = await deps.correio.enviarLote(msgs.map((m) => montarEmail(m, enderecos)));
+      for (const [j, m] of msgs.entries()) {
+        const r = resultados[j] ?? { ok: false as const, erro: "Sem resultado", tentarDeNovo: true };
+        await rpc("email_resultado", {
+          p_condominio: m.condominio, p_envio: m.envio, p_provedor_id: r.ok ? r.id : null, p_erro: r.ok ? null : r.erro,
+          p_tentar_de_novo: r.ok ? false : r.tentarDeNovo,
+        });
+        if (r.ok) total++;
+      }
+      if (msgs.length < 100) break;
+    }
+    return total;
+  }
+  /** Depois de pôr e-mail na fila, manda sem fazer a pessoa esperar. */
+  function esvaziarFila() {
+    if (!deps.correio) return;
+    const p = processarFila().catch((erro) => registrar("erro", { funcao: "api-plataforma", rota: "fila-email", erro }));
+    (deps.aoFundo ?? (() => {}))(p);
+  }
 
   return app;
 }

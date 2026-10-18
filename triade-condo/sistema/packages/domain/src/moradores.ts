@@ -245,6 +245,8 @@ export const linhaImportacaoSchema = z.object({
   responsavel: z.boolean().nullable().default(null),
   parentesco: z.enum(chaves(PARENTESCOS)).nullable().default(null),
   ocupaDesde: data.nullable().default(null),
+  /** E-mail opcional (CD-13): entra esperando a própria pessoa confirmar. */
+  email: z.string().trim().max(254).email().nullish(),
 }).superRefine((l, ctx) => {
   if (l.parentesco && l.relacao !== "FAMILIAR") ctx.addIssue({ code: "custom", message: "Parentesco só para familiar", path: ["parentesco"] });
 });
@@ -260,8 +262,24 @@ export const removerDadosSchema = z.object({ versao });
 
 export const buscaMoradoresSchema = z.object({
   busca: z.string().trim().max(60).optional(),
-  estado: z.enum(["PENDENTE", "CONFIRMADO"]).optional(),
+  estado: z.enum(["PENDENTE", "CONFIRMADO", "SEM_EMAIL"]).optional(),
   pagina: z.coerce.number().int().min(1).max(1000).default(1),
+});
+
+/** Situação do e-mail do contato (CD-13). */
+export const SITUACOES_EMAIL = {
+  PENDENTE: "Esperando confirmação",
+  CONFIRMADO: "E-mail confirmado",
+  DEVOLVIDO: "E-mail voltou",
+  PAROU: "Parou de receber",
+} as const;
+export type SituacaoEmail = keyof typeof SITUACOES_EMAIL;
+
+/** Gravar, trocar ou tirar o e-mail do contato (vazio tira) e a preferência (CD-13). */
+export const emailContatoSchema = z.object({
+  versao,
+  email: z.union([z.string().trim().max(254).email(), z.literal(""), z.null()]).transform((v) => v || null),
+  recebe: z.boolean(),
 });
 
 export interface UnidadeNova {
@@ -331,6 +349,7 @@ const COLUNAS: Record<string, keyof LinhaImportacao> = {
   responsavelpelaunidade: "responsavel", eresponsavel: "responsavel", principal: "responsavel",
   parentesco: "parentesco", grauparentesco: "parentesco", grau: "parentesco",
   ocupadesde: "ocupaDesde", desde: "ocupaDesde", entrada: "ocupaDesde", dataentrada: "ocupaDesde", datadeentrada: "ocupaDesde",
+  email: "email", correio: "email", correioeletronico: "email",
 };
 
 const PARENTESCOS_TEXTO: [RegExp, Parentesco][] = [
@@ -448,6 +467,7 @@ export function lerPlanilhaMoradores(texto: string): LeituraPlanilha {
       responsavel: simNao(simples(valor("responsavel"))),
       parentesco,
       ocupaDesde: valor("ocupaDesde") ? dataDaPlanilha(valor("ocupaDesde")) : null,
+      email: valor("email") || undefined,
     });
     if (r.success) {
       linhas.push(r.data);
@@ -468,12 +488,13 @@ export const TEXTOS_CAMPO_PLANILHA: Record<string, string> = {
   relacao: "Relação não reconhecida: use proprietário, inquilino, morador, familiar ou outro",
   mora: "Mora na unidade: use sim ou não",
   responsavel: "Responsável pela unidade: use sim ou não",
+  email: "E-mail incompleto: confira o @ e o domínio",
   parentesco: "Parentesco não reconhecido (cônjuge, filho, pai ou mãe, irmão, outro parente) ou em quem não é familiar",
   ocupaDesde: "Ocupa desde: use a data no formato 01/03/2025",
 };
 
 /** Modelo de planilha para baixar (separador ";", como o Excel em português salva). */
 export const MODELO_PLANILHA =
-  "Torre;Andar;Unidade;Nome;Telefone;Relação;Mora na unidade;Responsável pela unidade;Parentesco;Ocupa desde\r\n" +
-  "Torre A;1;101;Maria Exemplo;(61) 99999-0000;Proprietário;sim;sim;;\r\n" +
-  "Torre A;1;101;João Exemplo;(61) 99999-0001;Familiar;sim;não;Filho;01/03/2025\r\n";
+  "Torre;Andar;Unidade;Nome;Telefone;Relação;Mora na unidade;Responsável pela unidade;Parentesco;Ocupa desde;E-mail\r\n" +
+  "Torre A;1;101;Maria Exemplo;(61) 99999-0000;Proprietário;sim;sim;;;maria@exemplo.com.br\r\n" +
+  "Torre A;1;101;João Exemplo;(61) 99999-0001;Familiar;sim;não;Filho;01/03/2025;\r\n";

@@ -1,7 +1,8 @@
 "use client";
 // Documentos (design "Telas dos Comunicados", tela 4; CD-04, CD-07, MP-12): o arquivo do prédio
 // por tipo, com a versão em vigor, quem vê e a validade, que aparece 60 dias antes do fim. O
-// documento restrito só aparece a quem cuida dos documentos.
+// documento restrito só aparece a quem cuida dos documentos. Os pedidos de documento pelo mural
+// ficam na parte "Pedidos por e-mail" (CD-14).
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -13,13 +14,14 @@ import { Escolha, hojeEmBrasilia } from "../moradores/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { DocumentoResumo, ListaDocumentos } from "../tipos.ts";
 import { nomeTipoDocumento, PartesComunicados } from "./comum.tsx";
+import { PedidosDocumento } from "./PedidosDocumento.tsx";
 
 export const camposDocumento = (restritos: boolean): Campo[] => [
   { id: "tipo", rotulo: "Tipo", tipo: "selecao", opcoes: Object.entries(TIPOS_DOCUMENTO).map(([valor, texto]) => ({ valor, texto })), erro: "Escolha o tipo." },
   { id: "titulo", rotulo: "Nome", tipo: "texto", obrigatorio: true, max: 120, erro: "De 3 a 120 caracteres, sem repetir outro documento." },
   { id: "descricao", rotulo: "Descrição", tipo: "area", max: 500, ajuda: "Opcional.", erro: "De 2 a 500 caracteres." },
   { id: "valeAte", rotulo: "Vale até", tipo: "data", ajuda: "Para laudo, certificado, seguro e contrato. Avisa 60 dias antes.", erro: "Data fora do esperado." },
-  { id: "aoMorador", rotulo: "Pode ir ao morador", tipo: "caixa", ajuda: "Consulta pelo WhatsApp quando o canal chegar. Já ligado para convenção, regimento, atas e orçamento." },
+  { id: "aoMorador", rotulo: "Pode ir ao morador", tipo: "caixa", ajuda: "Pode ser pedido pelo mural e enviado por e-mail; depois, pelo WhatsApp. Já ligado para convenção, regimento, atas e orçamento." },
   ...(restritos ? [{ id: "restrito", rotulo: "Só quem cuida dos documentos vê", tipo: "caixa", ajuda: "Para contratos e laudos sensíveis. Documento restrito não vai ao morador." } as Campo] : []),
 ];
 
@@ -50,9 +52,11 @@ export function LinhaDocumento({ d, hoje }: { d: DocumentoResumo; hoje: string }
 export function Documentos() {
   const router = useRouter();
   const busca = useSearchParams();
-  const filtro = busca.get("filtro") && (busca.get("filtro")! in FILTROS_DOCUMENTO || busca.get("filtro") === "VENCENDO") ? busca.get("filtro")! : "VIGOR";
+  const filtro = busca.get("filtro") && (busca.get("filtro")! in FILTROS_DOCUMENTO || busca.get("filtro") === "VENCENDO" || busca.get("filtro") === "PEDIDOS")
+    ? busca.get("filtro")! : "VIGOR";
+  const pedidos = filtro === "PEDIDOS";
   const q = new URLSearchParams();
-  if (filtro !== "VIGOR") q.set("filtro", filtro);
+  if (filtro !== "VIGOR" && !pedidos) q.set("filtro", filtro);
   if (busca.get("busca")) q.set("busca", busca.get("busca")!);
   const lista = useCarregar<ListaDocumentos>(`/v1/condominio/documentos${q.size ? `?${q}` : ""}`);
   const [texto, setTexto] = useState(busca.get("busca") ?? "");
@@ -79,21 +83,23 @@ export function Documentos() {
       </div>
       <div className="grid gap-3">
         <Escolha rotulo="Tipo" atual={filtro === "VENCENDO" ? "VIGOR" : filtro} aoMudar={(x) => ir(x)}
-          opcoes={Object.entries(FILTROS_DOCUMENTO).map(([valor, t]) => ({ valor, texto: t }))} />
-        <form role="search" onSubmit={(e) => { e.preventDefault(); ir(filtro); }} className="grid max-w-md gap-1">
+          opcoes={[...Object.entries(FILTROS_DOCUMENTO).map(([valor, t]) => ({ valor, texto: t })),
+            ...(dados?.pedidosEsperando !== undefined ? [{ valor: "PEDIDOS", texto: `Pedidos por e-mail${dados.pedidosEsperando ? ` · ${dados.pedidosEsperando}` : ""}` }] : [])]} />
+        {pedidos ? null : <form role="search" onSubmit={(e) => { e.preventDefault(); ir(filtro); }} className="grid max-w-md gap-1">
           <label htmlFor="doc-busca" className="text-[13px] font-medium">Buscar</label>
           <input id="doc-busca" className="campo" placeholder="Nome ou descrição" maxLength={60} value={texto} onChange={(e) => setTexto(e.target.value)} />
-        </form>
-        <div role="group" aria-label="O que pede atenção" className="flex flex-wrap gap-2">
+        </form>}
+        {pedidos ? null : <div role="group" aria-label="O que pede atenção" className="flex flex-wrap gap-2">
           <Chip ativo={filtro === "VENCENDO"} icone="relogio" acento={Boolean(dados?.vencendo) && filtro !== "VENCENDO"} onClick={() => ir(filtro === "VENCENDO" ? "VIGOR" : "VENCENDO")}>
             Vencem em até 60 dias{dados ? ` · ${dados.vencendo}` : ""}
           </Chip>
-        </div>
+        </div>}
       </div>
 
-      {lista.estado === "carregando" ? <Carregando rotulo="Carregando os documentos…" /> : null}
-      {lista.estado === "erro" ? <ErroCarregar texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
-      {dados ? (
+      {pedidos ? <PedidosDocumento aoMudar={lista.recarregar} /> : null}
+      {!pedidos && lista.estado === "carregando" ? <Carregando rotulo="Carregando os documentos…" /> : null}
+      {!pedidos && lista.estado === "erro" ? <ErroCarregar texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
+      {dados && !pedidos ? (
         dados.itens.length === 0 ? (
           <Vazio titulo={filtro === "VIGOR" && !busca.get("busca") ? "Nenhum documento guardado" : "Nenhum documento com estes filtros"}
             acao={dados.pode.editar && filtro === "VIGOR" ? <Botao onClick={() => setNovo(true)}>+ Novo documento</Botao> : undefined}>
