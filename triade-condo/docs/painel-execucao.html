@@ -30,7 +30,7 @@
     "total_ideias": 311,
     "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7), Manutenção e prestadores (R6) e Comunicados e documentos (R1), com o mural online e o e-mail (R1b), Links e QR (R13), a Memória do prédio (R10) e Implantação e suporte (R4) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), comunicados (rascunho, programado e publicado, com versões, público calculado, copiar para o grupo e versão para o mural, mural online por link e QR e envio por e-mail) e documentos do prédio com versões, validade e envio por e-mail, etiquetas QR por local que abrem o WhatsApp do condomínio e o link do prestador na manutenção, com a chegada pela etiqueta, a memória do prédio (prontuário, linha do tempo, manual do prédio com aba no mural, dossiê de passagem de bastão e exportação de todo o histórico), moradores e unidades, configurações, pessoas e acesso e Ajuda e suporte (chamados com imagem colada e aprovação do acesso excepcional da TRÍADE); o Console tem carteira, ficha com a implantação em 8 etapas e a entrega, troca de síndico, suporte de acesso sem ver senha, chamados e acesso excepcional; nenhuma tela usa emoji. Tudo testado localmente (1150 pgTAP, 157 Deno, 141 Vitest, 228 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0191 (com as rotinas de prazos, manutenção, comunicados e fila de e-mails no pg_cron) e as Edge Functions api-plataforma (versão 15, com o mural, o e-mail, Links e QR, a Memória do prédio e Ajuda e suporte) e api-console (versão 5, com implantação, troca de síndico, suporte de acesso, chamados e acesso excepcional); o envio de e-mails espera os segredos no Vault e na função; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "R",
-    "proximo_passo": "Com a Carolina: conferir no Console uma implantação de ponta a ponta (com o pedido de teste feito pela síndica), um chamado e um acesso excepcional aprovado na Plataforma. Conferir a Memória do prédio (R10) no condominio.trihub.com.br, com o prontuário, o dossiê e uma exportação de verdade. Testar Links e QR num celular de verdade (etiqueta e câmera do prestador) e no Águas Claras (E8). Mural online e e-mail (R1b): gravar os segredos do e-mail (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault, que também fazem a exportação andar sozinha) e cadastrar o aviso do Resend. Liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
+    "proximo_passo": "Com a Carolina: aprovar o desenho do WhatsApp do condomínio (passo 5, piloto pelo Wafly) em docs/telas/whatsapp.html e criar a conta e a instância do Wafly com um número exclusivo do Águas Claras. conferir no Console uma implantação de ponta a ponta (com o pedido de teste feito pela síndica), um chamado e um acesso excepcional aprovado na Plataforma. Conferir a Memória do prédio (R10) no condominio.trihub.com.br, com o prontuário, o dossiê e uma exportação de verdade. Testar Links e QR num celular de verdade (etiqueta e câmera do prestador) e no Águas Claras (E8). Mural online e e-mail (R1b): gravar os segredos do e-mail (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault, que também fazem a exportação andar sozinha) e cadastrar o aviso do Resend. Liberar o GitHub Actions (F0.9) e escolher o provedor do WhatsApp (E1)."
   },
   "fases": [
     {
@@ -77,7 +77,7 @@
           "peca": "B4",
           "refs": [],
           "status": "andamento",
-          "nota": "Telas aprovadas pela Carolina antes do código em todos os passos e peças construídos: passos 1 a 4 (16/10/2026), 3b, 6 e 7 (17/10/2026), Agenda, Manutenção, Comunicados e documentos e Mural online e e-mail e Links e QR (docs/telas). Continua valendo para cada peça seguinte; nenhuma tela usa emoji."
+          "nota": "Telas aprovadas pela Carolina antes do código em todos os passos e peças construídos: passos 1 a 4 (16/10/2026), 3b, 6 e 7 (17/10/2026), Agenda, Manutenção, Comunicados e documentos e Mural online e e-mail, Links e QR, Memória do prédio e Implantação e suporte (docs/telas); o WhatsApp do condomínio (passo 5) está desenhado em docs/telas/whatsapp.html, esperando aprovação. Continua valendo para cada peça seguinte; nenhuma tela usa emoji."
         }
       ]
     },
@@ -544,7 +544,7 @@
     {
       "id": "F5",
       "nome": "WhatsApp do morador",
-      "objetivo": "O morador abre e consulta pedidos pelo WhatsApp do condomínio, e o pedido cai na mesma fila do painel. Depende do provedor oficial (E1).",
+      "objetivo": "O morador abre e consulta pedidos pelo WhatsApp do condomínio, e o pedido cai na mesma fila do painel. Começa como piloto pelo Wafly (DC14), atrás de um conector trocável; produção depende do provedor oficial (E1).",
       "itens": [
         {
           "id": "F5.1",
@@ -1348,7 +1348,7 @@
       "precisa_em": "F5",
       "refs": [],
       "status": "andamento",
-      "nota": "Em análise"
+      "nota": "Piloto pelo Wafly (DC14, 18/10/2026), que não é a API oficial: só no condomínio de teste. O provedor oficial para produção continua em análise."
     },
     {
       "id": "E2",
@@ -1438,7 +1438,7 @@
     ],
     [
       "DC4",
-      "Só a API oficial do WhatsApp; provedor em análise"
+      "Só a API oficial do WhatsApp em produção (exceção: o piloto da DC14); provedor em análise"
     ],
     [
       "DC5",
@@ -1475,9 +1475,20 @@
     [
       "DC13",
       "Identidade TRÍADE (Carolina, 17/10/2026), substitui a DC11: sistema de design em docs/identidade/sistema.html; violeta nas ações dos dois sistemas; botão em degradê com brilho, selos com faixa, paleta Brilho; sempre claro; Manrope, Playfair e Plex Mono servidas pelo próprio sistema"
+    ],
+    [
+      "DC14",
+      "Piloto do WhatsApp pelo Wafly (Carolina, 18/10/2026): conexão não oficial (WhatsApp Web, QR ou código), só no condomínio de teste com o termo do piloto aceito, atrás de um conector trocável; produção continua só com a API oficial (DC4)"
     ]
   ],
   "historico": [
+    {
+      "data": "18/10/2026",
+      "inicio": "18:10",
+      "fim": "18:24",
+      "texto": "WhatsApp do condomínio (passo 5) desenhado para aprovação: piloto pelo Wafly (DC14), que não é a API oficial, só no condomínio de teste e atrás de um conector trocável. 7 telas (conectar o número no Console; abrir pedido, consultar, pedir revisão, fora do horário e parar de receber no celular do morador; a conversa no pedido; WhatsApp na Plataforma com A identificar e falhas de envio; Configurações › WhatsApp; aviso no WhatsApp da síndica) e 20 decisões. A DC4 passa a valer para produção.",
+      "ref": "F5, F6.3, W-01, W-04, W-05, W-08, W-09, W-10, W-11, W-12, W-13, W-14, W-15, W-16, W-21, AT-28"
+    },
     {
       "data": "18/10/2026",
       "inicio": "18:00",

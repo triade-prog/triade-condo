@@ -23,12 +23,12 @@ O `arquivo/` **não é base de construção**: o que for útil de lá entra prim
 
 ## Decisões fechadas
 
-As mesmas decisões estão no painel de execução (DC1 a DC13). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
+As mesmas decisões estão no painel de execução (DC1 a DC14). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
 
 - **DC1 · Dois sistemas.** Plataforma do síndico (painel web do síndico, WhatsApp do morador e acessos por link ou QR) e Console TRÍADE (sistema interno da equipe). A Base comum são as regras que os dois seguem por baixo; não é um terceiro sistema.
 - **DC2 · O cliente é o condomínio.** É a unidade que contrata e a unidade de separação dos dados: toda informação pertence a um condomínio e nunca aparece em outro (PT-01). Uma pessoa pode ter vínculo com mais de um condomínio (MU-04), o que atende o síndico profissional.
 - **DC3 · Cada condomínio tem o seu número de WhatsApp** (W-01). O número compartilhado da TRÍADE (W-02) sai do caminho principal.
-- **DC4 · Só a API oficial do WhatsApp** (W-04). Nada de conexão por QR Code ou WhatsApp Web. O provedor oficial ainda está em análise (ver "Em aberto").
+- **DC4 · Só a API oficial do WhatsApp em produção** (W-04). Nada de conexão por QR Code ou WhatsApp Web com cliente de verdade. O provedor oficial ainda está em análise (ver "Em aberto"). A exceção é o piloto da DC14.
 - **DC5 · Tecnologia igual à do T-shirt Club** (`triade-prog/T-shirtclub.br`, pasta `sistema/`): TypeScript em tudo; Next.js 16 + React 19 + Tailwind 4 nas telas; Supabase (PostgreSQL 17, região São Paulo `sa-east-1`) com Edge Functions (Deno + Hono) como servidor; monorepo pnpm com `apps/` e `packages/` (`domain`, `ui`, `servidor`); testes com Vitest, pgTAP, Playwright com axe; publicação na Vercel. Atende PT-05, PT-06 e PT-16.
 - **DC6 · Do T-shirt Club vêm só as peças genéricas**, revisadas e adaptadas a vários condomínios: fila de mensagens com estados, auditoria só de inserção, gatilho guardião de transições, relógio da aplicação (`app_now()`), proteção do servidor (CSP com nonce, repasse `/api`), configuração de testes e CI. Loja, reserva, estoque e pagamento não vêm.
 - **DC7 · Ordem de construção por dependência**, sem cortar ideias (não existe MVP): passo 0 Fundação → 1 Cadastrar condomínio (Console) → 2 Configurações → 3 Moradores e unidades → 4 Pedidos no painel → 5 WhatsApp do morador → 6 Prazos e avisos → 7 Início. As outras peças entram depois, cada uma quando fizer sentido.
@@ -49,6 +49,7 @@ As mesmas decisões estão no painel de execução (DC1 a DC13). Mudar qualquer 
   - Sempre claro: o tema escuro sai do código.
   - Manrope, Playfair Display itálico (só destaque) e IBM Plex Mono, servidas pelo próprio sistema; a CSP continua aceitando só fontes do próprio endereço.
   - Logo oficial: o violeta (letras violeta, torre laranja e triângulos violeta) é a assinatura do produto nas duas aplicações; o laranja fica para divulgação. Versão atual enviada pela Carolina em 18/10/2026, em `docs/identidade` (`logo-violeta.png`, `logo-laranja.png`, as versões grandes e o `simbolo.png`, que é o ícone da aba).
+- **DC14 · Piloto do WhatsApp pelo Wafly (Carolina, 18/10/2026).** O passo 5 começa pelo Wafly, que não é a API oficial: liga o número pelo protocolo do WhatsApp Web (QR ou código de emparelhamento), sem assinatura nos avisos que manda. Vale só para o condomínio de teste, com o termo do piloto aceito pelo síndico, atrás de um conector trocável: o resto do sistema não sabe qual provedor está ligado, e trocar pelo oficial é escrever outro conector. Risco aceito: o WhatsApp pode restringir ou bloquear o número sem aviso. Desenho em `docs/telas/whatsapp.html`.
 
 ## Como as ideias viram código
 
@@ -70,7 +71,7 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 
 | O quê | Quem | Trava |
 |---|---|---|
-| Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta) | Carolina (em análise) | Passo 5 |
+| Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta). O piloto usa o Wafly (DC14) | Carolina (em análise) | Produção do passo 5 |
 | Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio | TRÍADE | Passo 5 |
 | E-mail próprio no Supabase Auth (E9): configurar o Resend como SMTP e pôr os modelos de convite e de recuperação em português, com `{{ .RedirectTo }}?token_hash={{ .TokenHash }}`. Sem SMTP próprio o Supabase não deixa editar os modelos; os links do modelo padrão já funcionam | Carolina | E-mails em nome da TRÍADE e sem o limite baixo do Supabase |
 | Aprovação do tom das mensagens (o logo oficial já está no código desde 18/10/2026) | TRÍADE | Textos do WhatsApp (passo 5) |
@@ -225,7 +226,7 @@ Implantação e suporte (peça R4; PI-04, PI-05, CT-01, PI-09, PI-11, PI-17, PI-
 5. Com a Carolina: conferir Comunicados e documentos e a Manutenção no `condominio.trihub.com.br` (os PRs 12 e 13 foram juntados ao `main`).
 6. Com a Carolina: conferir a Agenda no `condominio.trihub.com.br` e testar com pedidos de verdade no Águas Claras (E8), incluindo um envio de foto (4b) e os avisos de prazo (6 e 7). A produção da Vercel sai do `main`, que já tem tudo até Comunicados e documentos.
 7. Com a Carolina, liberar o CI (F0.9).
-8. O passo 5 (WhatsApp) espera o provedor (E1); o aviso no WhatsApp do síndico (W-11) e os lembretes da agenda (AG-06) usam as regras que já existem quando o canal chegar.
+8. Passo 5 (WhatsApp), piloto pelo Wafly (DC14): o desenho está em `docs/telas/whatsapp.html` (7 telas e 20 decisões) esperando a aprovação da Carolina. Para o piloto, a Carolina cria a conta e a instância no Wafly com um número exclusivo do Águas Claras; o Client-Token, a instância e o token nunca vão para o repositório nem para o chat.
 
 ## Como trabalhar
 
