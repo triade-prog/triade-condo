@@ -3,7 +3,7 @@
 // Passo 2: painel, configurações, pessoas autorizadas e quem atende. Passo 3: blocos,
 // unidades e contatos. Passo 4: pedidos no painel. Passo 4b: fotos e documentos dos pedidos.
 // Passos 6 e 7: avisos, regras de aviso, prazo do pedido e indicadores. Peça R7: agenda.
-// Peça R6: manutenção, prestadores, preventivas e vistorias.
+// Peça R6: manutenção, prestadores, preventivas e vistorias. Peça R1: comunicados e documentos.
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
@@ -88,6 +88,19 @@ import {
   retornoManutencaoSchema,
   situacaoManutencaoSchema,
   virarManutencaoSchema,
+  arquivarComunicadoSchema,
+  arquivarDocumentoSchema,
+  buscaComunicadosSchema,
+  buscaDocumentosSchema,
+  corrigirComunicadoSchema,
+  documentoSchema,
+  enviarArquivoComunicadoSchema,
+  planoComunicacaoSchema,
+  publicoComunicadoSchema,
+  salvarComunicadoSchema,
+  TAMANHO_MAXIMO_DOCUMENTO,
+  usoComunicadoSchema,
+  versaoDocumentoSchema,
 } from "@triade/domain";
 import { verificarArquivo, type Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -111,6 +124,9 @@ export interface DepsPlataforma extends DepsSessao {
   armazenamento: Armazenamento;
   /** Armazenamento privado das fotos e documentos da manutenção (peça R6). */
   armazenamentoManutencao?: Armazenamento;
+  /** Armazenamento privado das fotos dos comunicados e dos documentos do prédio (peça R1). */
+  armazenamentoComunicados?: Armazenamento;
+  armazenamentoDocumentos?: Armazenamento;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -777,6 +793,172 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/manutencao/:id/arquivos/:arquivo/tirar", async (c) => {
     const d = await lerCorpo(c, tirarArquivoSchema);
     return c.json(await rpc("plataforma_tirar_arquivo_manutencao", { ...arquivoManutencao(c), p_motivo: d.motivo }));
+  });
+
+  // Comunicados e documentos (peça R1; CD-01, CD-02, CD-04 a CD-07, CD-09, CD-11, MP-12). O banco
+  // decide quem vê e quem publica, calcula quem recebe e guarda as versões; aqui só se valida a entrada.
+  const invalido = (r: { error: { issues: { path: PropertyKey[] }[] } }) =>
+    new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
+  const guarda = (a: Armazenamento | undefined) => {
+    if (!a) throw new ErroDominio("INTERNAL_ERROR");
+    return a;
+  };
+  const linkArquivo = async (a: Armazenamento, x: { caminho: string; nome: string; tipo: string }, baixar: boolean) => ({
+    url: await a.linkLeitura(x.caminho, VALIDADE_LINK_ARQUIVO_S, baixar ? x.nome : undefined),
+    tipo: x.tipo,
+    expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString(),
+  });
+
+  app.get("/v1/condominio/comunicados/opcoes", async (c) => c.json(await rpc("plataforma_comunicado_opcoes", quem(c))));
+
+  app.post("/v1/condominio/comunicados/publico", async (c) => {
+    const d = await lerCorpo(c, publicoComunicadoSchema);
+    return c.json(await rpc("plataforma_publico_comunicado", {
+      ...quem(c), p_assunto: d.assunto, p_publico: d.publico, p_blocos: d.blocos, p_unidades: d.unidades, p_contatos: d.contatos,
+    }));
+  });
+
+  app.get("/v1/condominio/comunicados", async (c) => {
+    const r = buscaComunicadosSchema.safeParse(c.req.query());
+    if (!r.success) throw invalido(r);
+    const q = r.data;
+    return c.json(await rpc("plataforma_comunicados", {
+      ...quem(c), p_filtro: q.filtro ?? null, p_assunto: q.assunto ?? null, p_atencao: q.atencao ?? null, p_busca: q.busca ?? null,
+      p_pagina: q.pagina,
+    }));
+  });
+
+  async function salvarComunicado(c: Context<VarsPlataforma>, id: string | null) {
+    const d = await lerCorpo(c, salvarComunicadoSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("plataforma_salvar_comunicado", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_assunto: d.assunto, p_titulo: d.titulo, p_texto: d.texto,
+      p_publico: d.publico, p_blocos: d.blocos, p_unidades: d.unidades, p_contatos: d.contatos, p_pedido: d.pedidoId,
+      p_manutencao: d.manutencaoId, p_acao: d.acao, p_programado_para: d.programadoPara,
+    });
+  }
+  app.post("/v1/condominio/comunicados", async (c) => c.json(await salvarComunicado(c, null), 201));
+  app.get("/v1/condominio/comunicados/:id", async (c) => c.json(await rpc("plataforma_comunicado", { ...quem(c), p_id: idDaRota(c, "id") })));
+  app.put("/v1/condominio/comunicados/:id", async (c) => c.json(await salvarComunicado(c, idDaRota(c, "id"))));
+
+  app.post("/v1/condominio/comunicados/:id/corrigir", async (c) => {
+    const d = await lerCorpo(c, corrigirComunicadoSchema);
+    return c.json(await rpc("plataforma_corrigir_comunicado", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_titulo: d.titulo, p_texto: d.texto, p_mudanca: d.mudanca,
+    }), 201);
+  });
+  app.post("/v1/condominio/comunicados/:id/arquivar", async (c) => {
+    const d = await lerCorpo(c, arquivarComunicadoSchema);
+    return c.json(await rpc("plataforma_arquivar_comunicado", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+  });
+  app.post("/v1/condominio/comunicados/:id/uso", async (c) => {
+    const d = await lerCorpo(c, usoComunicadoSchema);
+    return c.json(await rpc("plataforma_uso_comunicado", { ...quem(c), p_id: idDaRota(c, "id"), p_uso: d.uso }));
+  });
+
+  app.get("/v1/condominio/pedidos/:id/comunicados", async (c) =>
+    c.json(await rpc("plataforma_comunicados_ligados", { ...quem(c), p_pedido: idDaRota(c, "id"), p_manutencao: null })));
+  app.get("/v1/condominio/manutencao/:id/comunicados", async (c) =>
+    c.json(await rpc("plataforma_comunicados_ligados", { ...quem(c), p_pedido: null, p_manutencao: idDaRota(c, "id") })));
+
+  // Fotos e PDF do comunicado: as regras dos pedidos, até 4, no bucket "comunicados".
+  const arquivoComunicado = (c: Context<VarsPlataforma>) => ({ ...quem(c), p_id: idDaRota(c, "id"), p_arquivo: idDaRota(c, "arquivo") });
+  app.post("/v1/condominio/comunicados/:id/arquivos", async (c) => {
+    const d = await lerCorpo(c, enviarArquivoComunicadoSchema);
+    const r = await rpc<{ arquivoId: string; caminho: string; tipo: string }>("plataforma_iniciar_arquivo_comunicado", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_nome: d.nome, p_tipo: d.tipo, p_tamanho: d.tamanho,
+    });
+    const url = await guarda(deps.armazenamentoComunicados).linkEnvio(r.caminho);
+    return c.json({ arquivoId: r.arquivoId, envio: { url, metodo: "PUT", tipo: r.tipo } }, 201);
+  });
+  app.post("/v1/condominio/comunicados/:id/arquivos/:arquivo/verificar", async (c) => {
+    const ids = arquivoComunicado(c);
+    const g = guarda(deps.armazenamentoComunicados);
+    const a = await rpc<{ caminho: string; tipo: string }>("plataforma_arquivo_comunicado_a_verificar", ids);
+    const bytes = await g.ler(a.caminho);
+    const r = bytes ? verificarArquivo(bytes, a.tipo as TipoArquivo) : { ok: false as const, motivo: "O arquivo não chegou. Envie de novo." };
+    if (r.ok) {
+      await g.gravar(a.caminho, r.bytes, a.tipo);
+      return c.json(await rpc("plataforma_verificar_arquivo_comunicado", { ...ids, p_liberado: true, p_tamanho: r.bytes.length, p_motivo: null }));
+    }
+    if (bytes) await g.apagar(a.caminho);
+    const fim = await rpc<{ situacao: string }>("plataforma_verificar_arquivo_comunicado", { ...ids, p_liberado: false, p_tamanho: null, p_motivo: r.motivo });
+    return c.json({ ...fim, motivo: r.motivo });
+  });
+  app.get("/v1/condominio/comunicados/:id/arquivos/:arquivo/link", async (c) => {
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("plataforma_abrir_arquivo_comunicado", arquivoComunicado(c));
+    return c.json(await linkArquivo(guarda(deps.armazenamentoComunicados), a, c.req.query("baixar") === "1"));
+  });
+  app.post("/v1/condominio/comunicados/:id/arquivos/:arquivo/tirar", async (c) => {
+    const d = await lerCorpo(c, tirarArquivoSchema);
+    return c.json(await rpc("plataforma_tirar_arquivo_comunicado", { ...arquivoComunicado(c), p_motivo: d.motivo }));
+  });
+
+  // Plano de comunicação (CD-11), nas Configurações.
+  app.get("/v1/condominio/plano-comunicacao", async (c) => c.json(await rpc("plataforma_plano_comunicacao", quem(c))));
+  app.put("/v1/condominio/plano-comunicacao", async (c) => {
+    const d = await lerCorpo(c, planoComunicacaoSchema);
+    const versao = await rpc<number>("plataforma_definir_plano_comunicacao", {
+      ...quem(c), p_versao: d.versao, p_assuntos: d.assuntos, p_plano: d.plano, p_assinatura: d.assinatura,
+      p_silencio_inicio: d.silencioInicio, p_silencio_fim: d.silencioFim,
+    });
+    return c.json({ versao });
+  });
+
+  // Documentos (CD-07, CD-04, MP-12): cada arquivo é uma versão, no bucket "documentos", até 20 MB.
+  app.get("/v1/condominio/documentos", async (c) => {
+    const r = buscaDocumentosSchema.safeParse(c.req.query());
+    if (!r.success) throw invalido(r);
+    return c.json(await rpc("plataforma_documentos", { ...quem(c), p_filtro: r.data.filtro ?? null, p_busca: r.data.busca ?? null }));
+  });
+  async function salvarDocumento(c: Context<VarsPlataforma>, id: string | null) {
+    const d = await lerCorpo(c, documentoSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("plataforma_salvar_documento", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_tipo: d.tipo, p_titulo: d.titulo, p_descricao: d.descricao,
+      p_restrito: d.restrito, p_ao_morador: d.aoMorador, p_vale_ate: d.valeAte,
+    });
+  }
+  app.post("/v1/condominio/documentos", async (c) => c.json(await salvarDocumento(c, null), 201));
+  app.get("/v1/condominio/documentos/:id", async (c) => c.json(await rpc("plataforma_documento", { ...quem(c), p_id: idDaRota(c, "id") })));
+  app.put("/v1/condominio/documentos/:id", async (c) => c.json(await salvarDocumento(c, idDaRota(c, "id"))));
+  app.post("/v1/condominio/documentos/:id/arquivar", async (c) => {
+    const d = await lerCorpo(c, arquivarDocumentoSchema);
+    return c.json(await rpc("plataforma_arquivar_documento", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  const versaoDocumento = (c: Context<VarsPlataforma>) => ({ ...quem(c), p_id: idDaRota(c, "id"), p_versao: idDaRota(c, "versao") });
+  app.post("/v1/condominio/documentos/:id/versoes", async (c) => {
+    const d = await lerCorpo(c, versaoDocumentoSchema);
+    const r = await rpc<{ versaoId: string; caminho: string; tipo: string }>("plataforma_iniciar_versao_documento", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_nome: d.nome, p_tipo: d.tipo, p_tamanho: d.tamanho, p_mudanca: d.mudanca,
+      p_vigente_desde: d.vigenteDesde, p_aprovado_em: d.aprovadoEm,
+    });
+    const url = await guarda(deps.armazenamentoDocumentos).linkEnvio(r.caminho);
+    return c.json({ versaoId: r.versaoId, envio: { url, metodo: "PUT", tipo: r.tipo } }, 201);
+  });
+  app.post("/v1/condominio/documentos/:id/versoes/:versao/verificar", async (c) => {
+    const ids = versaoDocumento(c);
+    const g = guarda(deps.armazenamentoDocumentos);
+    const a = await rpc<{ caminho: string; tipo: string }>("plataforma_versao_documento_a_verificar", ids);
+    const bytes = await g.ler(a.caminho);
+    const r = bytes
+      ? verificarArquivo(bytes, a.tipo as TipoArquivo, TAMANHO_MAXIMO_DOCUMENTO)
+      : { ok: false as const, motivo: "O arquivo não chegou. Envie de novo." };
+    if (r.ok) {
+      await g.gravar(a.caminho, r.bytes, a.tipo);
+      return c.json(await rpc("plataforma_verificar_versao_documento", { ...ids, p_liberado: true, p_tamanho: r.bytes.length, p_motivo: null }));
+    }
+    if (bytes) await g.apagar(a.caminho);
+    const fim = await rpc<{ situacao: string }>("plataforma_verificar_versao_documento", { ...ids, p_liberado: false, p_tamanho: null, p_motivo: r.motivo });
+    return c.json({ ...fim, motivo: r.motivo });
+  });
+  app.get("/v1/condominio/documentos/:id/versoes/:versao/link", async (c) => {
+    const baixar = c.req.query("baixar") === "1";
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("plataforma_abrir_versao_documento", {
+      ...versaoDocumento(c), p_baixar: baixar,
+    });
+    return c.json(await linkArquivo(guarda(deps.armazenamentoDocumentos), a, baixar));
   });
 
   return app;

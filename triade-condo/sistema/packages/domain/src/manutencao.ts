@@ -327,6 +327,8 @@ export function descreverEventoManutencao(acao: string, d: Record<string, unknow
       return "Item com problema virou manutenção";
     case "manutencao.visita_marcada":
       return `Visita marcada para ${mostrarDataCurta(String(d.data))}${d.hora ? `, ${String(d.hora)}` : ""}`;
+    case "manutencao.comunicado_ligado":
+      return "Comunicado ligado à manutenção";
     case "manutencao.retorno_venceu":
       return "Retorno venceu: responsável avisado";
     case "manutencao.arquivo_enviado":

@@ -13,3 +13,4 @@ export * from "./arquivos.ts";
 export * from "./prazos.ts";
 export * from "./agenda.ts";
 export * from "./manutencao.ts";
+export * from "./comunicados.ts";
