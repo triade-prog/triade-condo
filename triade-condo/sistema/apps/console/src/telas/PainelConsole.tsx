@@ -7,17 +7,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { FUNCOES_CONSOLE } from "@triade/domain";
-import { Botao, Carregando, chamarApi, ErroCarregar, Icone, Iniciais, type NomeIcone } from "@triade/ui";
+import { Botao, Carregando, chamarApi, ErroCarregar, Icone, Iniciais, Logo, type NomeIcone } from "@triade/ui";
 import { ContextoSessao, useCarregar, type SessaoConsole } from "./sessao.tsx";
 
 function Identidade() {
   return (
-    <span className="inline-flex items-center gap-2.5">
-      <svg aria-hidden="true" viewBox="0 0 32 32" className="h-7 w-7 text-violeta-500">
-        <path d="M16 3 29 27H3Z" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" />
-      </svg>
+    <span className="inline-flex flex-col items-start gap-0.5">
+      <Logo />
       <span className="leading-tight">
-        <span className="block font-semibold tracking-tight">TRÍADE</span>
         <span className="flex items-center gap-1.5 text-xs text-tinta-suave">
           Console TRÍADE<span className="sr-only"> · </span>
           <span className="rounded-full bg-laranja-500 px-2 py-px text-[10px] font-semibold tracking-wider text-violeta-900 uppercase">Admin</span>

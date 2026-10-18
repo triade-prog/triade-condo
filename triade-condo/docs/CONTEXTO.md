@@ -40,7 +40,7 @@ As mesmas decisões estão no painel de execução (DC1 a DC13). Mudar qualquer 
   - Verde-petróleo nas ações da Plataforma do síndico e violeta no Console TRÍADE.
   - A Plataforma usa barra superior com busca e menu branco flutuante. O Console usa lateral contínua com grupos e a identificação "Console TRÍADE · Admin".
   - Os valores estão no `design-frontend.html`, na seção "Base adotada". Não tratar como provisórios.
-  - A marca Lattice não faz parte da identidade da TRÍADE. O logo oficial continua pendente.
+  - A marca Lattice não faz parte da identidade da TRÍADE. O logo oficial chegou com a DC13.
 - **DC12 · Domínio do sistema: `t3condo.trihub.com.br`** (Carolina, 17/10/2026). Vale para todo o sistema. Começa pelos e-mails, que saem pelo Resend como `nao-responda@t3condo.trihub.com.br`; os endereços da Plataforma e do Console vêm depois, com os subdomínios e o DNS.
 - **DC13 · Identidade TRÍADE (Carolina, 17/10/2026).** Substitui a DC11.
   - Referência: `docs/identidade/sistema.html` (sistema de design), com as telas-modelo em `docs/identidade/telas-modelo.html` e a ordem de entrada no código em `docs/identidade/plano-aplicacao.html`.
@@ -48,6 +48,7 @@ As mesmas decisões estão no painel de execução (DC1 a DC13). Mudar qualquer 
   - Botão principal em degradê com brilho (versão C), selos com faixa lateral e filtros no trilho (versão D com o brilho do C), paleta Brilho (neutros lavanda; jade, âmbar, rubi e petróleo).
   - Sempre claro: o tema escuro sai do código.
   - Manrope, Playfair Display itálico (só destaque) e IBM Plex Mono, servidas pelo próprio sistema; a CSP continua aceitando só fontes do próprio endereço.
+  - Logo oficial: o violeta (letras violeta, torre laranja e triângulos violeta) é a assinatura do produto nas duas aplicações; o laranja fica para divulgação. Versão atual enviada pela Carolina em 18/10/2026, em `docs/identidade` (`logo-violeta.png`, `logo-laranja.png`, as versões grandes e o `simbolo.png`, que é o ícone da aba).
 
 ## Como as ideias viram código
 
@@ -72,7 +73,7 @@ A forma de cada ideia no `MAPA.md` diz o que ela vira:
 | Provedor oficial do WhatsApp (Cloud API direta ou parceiro da Meta) | Carolina (em análise) | Passo 5 |
 | Conta Meta Business da TRÍADE verificada e o primeiro número de condomínio | TRÍADE | Passo 5 |
 | E-mail próprio no Supabase Auth (E9): configurar o Resend como SMTP e pôr os modelos de convite e de recuperação em português, com `{{ .RedirectTo }}?token_hash={{ .TokenHash }}`. Sem SMTP próprio o Supabase não deixa editar os modelos; os links do modelo padrão já funcionam | Carolina | E-mails em nome da TRÍADE e sem o limite baixo do Supabase |
-| Logo oficial (a identidade já está definida, DC13) e aprovação do tom das mensagens | TRÍADE | Nada no código; o símbolo triangular atual é provisório |
+| Aprovação do tom das mensagens (o logo oficial já está no código desde 18/10/2026) | TRÍADE | Textos do WhatsApp (passo 5) |
 | Dados da empresa para termos e privacidade (EM-01, EM-06) | TRÍADE | Publicação |
 | Domínio próprio | TRÍADE | Publicação |
 | Condomínio de teste com síndico disposto (NG-09) | TRÍADE | Teste dos passos 4 a 7 |
