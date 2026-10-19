@@ -53,6 +53,71 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     ],
   };
   const suporte = criarSuporteConsole();
+  // Modelos de mensagem (F5.4, W-20): globais, com versão e situação.
+  const MODELOS_V1: [string, string, string, string, string[], string, string | null][] = [
+    ["noticia_pedido", "Notícia do pedido", "MORADOR", "Retorno escrito no pedido, com a conversa fechada", ["protocolo", "condomínio", "texto do retorno", "quem escreveu"],
+     "Notícia do seu pedido {{1}} no {{2}}:\n\n{{3}}\n\n{{4}}, do condomínio\n\nPara responder, é só mandar mensagem aqui.", "Para não receber mais avisos, responda PARAR."],
+    ["pedido_concluido", "Pedido concluído", "MORADOR", "Conclusão de pedido que nasceu no WhatsApp", ["protocolo", "condomínio", "o que foi feito", "quem concluiu", "revisar até"],
+     "O pedido {{1}} no {{2}} foi concluído.\nO que foi feito: {{3}}\n\n{{4}}, do condomínio\n\nSe não resolveu, responda REVISAR e conte o que continua acontecendo, até {{5}}.",
+     "Para não receber mais avisos, responda PARAR."],
+    ["revisao_respondida", "Revisão respondida", "MORADOR", "Pedido mantido concluído, com a conversa fechada", ["protocolo", "condomínio", "resposta", "quem respondeu"],
+     "Resposta ao seu pedido de revisão do {{1}} no {{2}}:\n\n{{3}}\n\n{{4}}, do condomínio\n\nPara responder, é só mandar mensagem aqui.", "Para não receber mais avisos, responda PARAR."],
+    ["aviso_pedido_novo", "Pedido novo", "EQUIPE", "Aviso que a pessoa ligou", ["condomínio", "protocolo", "assunto e unidade", "link do painel"],
+     "Pedido novo no {{1}}.\n{{2}} · {{3}}\n\nAbrir no painel: {{4}}\nEste aviso vai porque você ligou em Configurações › WhatsApp.", null],
+    ["aviso_retorno_vencido", "Retorno vencido", "EQUIPE", "Aviso que a pessoa ligou", ["condomínio", "protocolo", "assunto e unidade", "quando venceu", "responsável", "link do painel"],
+     "Retorno vencido no {{1}}.\n{{2}} · {{3}}\nVenceu {{4}} · responsável: {{5}}\n\nAbrir no painel: {{6}}\nEste aviso vai porque você ligou em Configurações › WhatsApp.", null],
+    ["aviso_revisao", "Pedido de revisão", "EQUIPE", "Aviso que a pessoa ligou", ["condomínio", "protocolo", "assunto e unidade", "link do painel"],
+     "Pedido de revisão no {{1}}.\n{{2}} · {{3}}\n\nAbrir no painel: {{4}}\nEste aviso vai porque você ligou em Configurações › WhatsApp.", null],
+  ];
+  type ModeloFalso = { chave: string; numero: number; titulo: string; para: string; uso: string; variaveis: string[]; corpo: string; rodape?: string;
+                       situacao: string; motivo?: string; criadoEm: string; versao: number };
+  const modelos: ModeloFalso[] = MODELOS_V1.map(([chave, titulo, para, uso, variaveis, corpo, rodape]) => ({
+    chave, titulo, para, uso, variaveis, corpo, ...(rodape ? { rodape } : {}), numero: 1, situacao: "APROVADO_PILOTO", criadoEm: "2026-10-19T03:00:00Z", versao: 1,
+  }));
+  const eventosModelo: { chave: string; numero: number; situacao: string; motivo?: string; em: string; por?: string }[] =
+    modelos.map((m) => ({ chave: m.chave, numero: 1, situacao: "APROVADO_PILOTO", motivo: "Aprovado com o desenho dos textos em 19/10/2026", em: "2026-10-19T03:00:00Z" }));
+  const PROXIMAS: Record<string, string[]> = { RASCUNHO: ["APROVADO_PILOTO", "ENVIADO"], APROVADO_PILOTO: ["ENVIADO", "DESATIVADO"], ENVIADO: ["APROVADO", "RECUSADO"],
+    APROVADO: ["PAUSADO", "DESATIVADO"], PAUSADO: ["APROVADO", "DESATIVADO"], RECUSADO: [], DESATIVADO: [] };
+  const emUso = (chave: string) => modelos.filter((m) => m.chave === chave && ["APROVADO", "APROVADO_PILOTO"].includes(m.situacao)).at(-1)?.numero;
+  function rotaModelos(route: Route, resto: string, metodo: string, corpo: Record<string, unknown>) {
+    if (resto === "") {
+      const chaves = [...new Set(modelos.map((m) => m.chave))];
+      return route.fulfill({ json: { modelos: chaves.map((ch) => ({ ...modelos.filter((m) => m.chave === ch).at(-1), emUsoPiloto: emUso(ch) })), pode: { editar: admin } } });
+    }
+    const m = /^\/([a-z_]+)(?:\/versoes(?:\/(\d+))?(\/situacao)?)?$/.exec(resto);
+    const versoes = m ? modelos.filter((x) => x.chave === m[1]) : [];
+    if (!m || !versoes.length) return erro(route, 404, "NOT_FOUND");
+    const ultima = versoes.at(-1)!;
+    if (metodo === "GET") {
+      return route.fulfill({ json: { versoes: [...versoes].reverse(), eventos: eventosModelo.filter((e) => e.chave === m[1]).reverse(), emUsoPiloto: emUso(m[1]!),
+        pode: { editar: admin } } });
+    }
+    if (!admin) return erro(route, 403, "FORBIDDEN");
+    const n = ultima.variaveis.length;
+    const valido = (c: string) => c.length >= 20 && !/^\s*\{\{/.test(c) && !/\}\}\s*$/.test(c)
+      && new Set([...c.matchAll(/\{\{(\d+)\}\}/g)].map((x) => Number(x[1]))).size === n;
+    if (!m[3]) {
+      const c = String(corpo.corpo ?? "").trim();
+      if (!valido(c)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["corpo"] });
+      if (!m[2]) {
+        if (versoes.some((v) => ["RASCUNHO", "ENVIADO"].includes(v.situacao))) return erro(route, 400, "VALIDATION_ERROR", { motivo: "MODELO_PENDENTE" });
+        modelos.push({ ...ultima, numero: ultima.numero + 1, corpo: c, situacao: "RASCUNHO", motivo: undefined, versao: 1, criadoEm: new Date().toISOString() });
+        eventosModelo.push({ chave: ultima.chave, numero: ultima.numero + 1, situacao: "RASCUNHO", em: new Date().toISOString(), por: "Carolina" });
+        return route.fulfill({ status: 201, json: { numero: ultima.numero + 1, versao: 1 } });
+      }
+      const v = versoes.find((x) => x.numero === Number(m[2]));
+      if (!v || v.situacao !== "RASCUNHO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "MODELO_FECHADO" });
+      Object.assign(v, { corpo: c, versao: v.versao + 1 });
+      return route.fulfill({ json: { numero: v.numero, versao: v.versao } });
+    }
+    const v = versoes.find((x) => x.numero === Number(m[2]))!;
+    const s = String(corpo.situacao);
+    if (["RECUSADO", "PAUSADO"].includes(s) && String(corpo.motivo ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
+    if (!PROXIMAS[v.situacao]!.includes(s)) return erro(route, 400, "VALIDATION_ERROR", { motivo: "SITUACAO_MODELO" });
+    Object.assign(v, { situacao: s, versao: v.versao + 1, ...(corpo.motivo ? { motivo: corpo.motivo } : {}) });
+    eventosModelo.push({ chave: v.chave, numero: v.numero, situacao: s, ...(corpo.motivo ? { motivo: String(corpo.motivo) } : {}), em: new Date().toISOString(), por: "Carolina" });
+    return route.fulfill({ json: { situacao: s, versao: v.versao } });
+  }
   // Aba WhatsApp da ficha (passo 5; W-01): credenciais, conectar pelo QR ou código, conferir e desconectar.
   const QR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==";
   function rotaWhatsapp(route: Route, c: (typeof estado.clientes)[number], resto: string, corpo: Record<string, unknown>) {
@@ -224,6 +289,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
       if (resto === "/equipe") return route.fulfill({ status: 201, json: { vinculoId: crypto.randomUUID() } });
       if (resto.startsWith("/whatsapp")) return rotaWhatsapp(route, c, resto, corpo);
     }
+    if (caminho.startsWith("/v1/whatsapp/modelos")) return rotaModelos(route, caminho.slice("/v1/whatsapp/modelos".length), metodo, corpo);
     if (caminho === "/v1/whatsapp") {
       return route.fulfill({ json: { numeros: estado.clientes.map((x) => ({ condominioId: x.condominio.id, nome: x.condominio.nome,
         numero: x.condominio.numeroWhatsapp ?? undefined, situacao: x.whatsapp.conexao.situacao, oficial: false,
@@ -251,5 +317,5 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     if (r4 !== null) return r4;
     return erro(route, 404, "NOT_FOUND");
   });
-  return Object.assign(estado, { suporte });
+  return Object.assign(estado, { suporte, modelos });
 }

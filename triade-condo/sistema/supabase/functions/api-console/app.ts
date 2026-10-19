@@ -34,7 +34,11 @@ import {
   verificarSuporteAcessoSchema,
   versaoSchema,
   credenciaisWhatsappSchema,
+  CHAVES_MODELO,
+  corpoModeloSchema,
+  decidirModeloSchema,
   desconectarWhatsappSchema,
+  editarModeloSchema,
 } from "@triade/domain";
 import type { Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -141,7 +145,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   sessao.rotas(app);
 
   for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/contagens", "/v1/implantacoes",
-                      "/v1/suporte-acesso", "/v1/chamados", "/v1/whatsapp"]) app.use(rota, sessao.exigirSessao);
+                      "/v1/suporte-acesso", "/v1/chamados", "/v1/whatsapp", "/v1/whatsapp/*"]) app.use(rota, sessao.exigirSessao);
   const pessoa = (c: Context<VarsSessao>) => c.get("sessao").pessoaId;
 
   // Quem está no Console: nome, funções e o que pode fazer fora de um cliente.
@@ -524,6 +528,41 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   }
 
   app.get("/v1/whatsapp", async (c) => c.json({ numeros: await rpc("console_whatsapp_lista", { p_pessoa: pessoa(c) }) }));
+
+  // Modelos de mensagem (F5.4, W-20): iguais para todos os clientes; só a administração escreve
+  // e decide. No piloto, a administração aprova; no oficial, registra a resposta da Meta.
+  const chaveModelo = (c: Context) => {
+    const ch = c.req.param("chave") ?? "";
+    if (!(CHAVES_MODELO as readonly string[]).includes(ch)) throw new ErroDominio("NOT_FOUND");
+    return ch;
+  };
+  const numeroModelo = (c: Context) => {
+    const n = Number(c.req.param("numero"));
+    if (!Number.isInteger(n) || n < 1 || n > 1000) throw new ErroDominio("NOT_FOUND");
+    return n;
+  };
+  app.get("/v1/whatsapp/modelos", async (c) => c.json(await rpc("console_modelos_whatsapp", { p_pessoa: pessoa(c) })));
+  app.get("/v1/whatsapp/modelos/:chave", async (c) =>
+    c.json(await rpc("console_modelo_whatsapp", { p_pessoa: pessoa(c), p_chave: chaveModelo(c) })));
+  app.post("/v1/whatsapp/modelos/:chave/versoes", async (c) => {
+    const ch = chaveModelo(c);
+    const d = await lerCorpo(c, corpoModeloSchema);
+    return c.json(await rpc("console_salvar_modelo_whatsapp", { p_pessoa: pessoa(c), p_chave: ch, p_numero: null, p_versao: null, p_corpo: d.corpo }), 201);
+  });
+  app.put("/v1/whatsapp/modelos/:chave/versoes/:numero", async (c) => {
+    const ch = chaveModelo(c);
+    const n = numeroModelo(c);
+    const d = await lerCorpo(c, editarModeloSchema);
+    return c.json(await rpc("console_salvar_modelo_whatsapp", { p_pessoa: pessoa(c), p_chave: ch, p_numero: n, p_versao: d.versao, p_corpo: d.corpo }));
+  });
+  app.post("/v1/whatsapp/modelos/:chave/versoes/:numero/situacao", async (c) => {
+    const ch = chaveModelo(c);
+    const n = numeroModelo(c);
+    const d = await lerCorpo(c, decidirModeloSchema);
+    return c.json(await rpc("console_decidir_modelo_whatsapp", {
+      p_pessoa: pessoa(c), p_chave: ch, p_numero: n, p_versao: d.versao, p_situacao: d.situacao, p_motivo: d.motivo,
+    }));
+  });
 
   app.get("/v1/clientes/:id/whatsapp", async (c) => c.json(await rpc("console_whatsapp", cliente(c))));
 

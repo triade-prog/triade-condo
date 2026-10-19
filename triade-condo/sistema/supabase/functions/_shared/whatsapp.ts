@@ -248,3 +248,24 @@ export function conectorWafly(clientToken: string, buscar: typeof fetch = fetch,
   };
 }
 
+/**
+ * O link do painel no aviso à equipe: no modelo, entra no lugar de {{painel}}; no texto livre,
+ * vai numa linha no fim (W-11).
+ */
+export function textoComLinkDoPainel(texto: string, link: string | null): string {
+  if (!link) return texto.replaceAll("{{painel}}", "").trimEnd();
+  return texto.includes("{{painel}}") ? texto.replaceAll("{{painel}}", link) : `${texto}\nAbrir no painel: ${link}`;
+}
+
+/**
+ * Por que o arquivo não entrou, dito ao morador com o que ele pode fazer (W-05, D3). O banco
+ * acrescenta "Não consegui usar o arquivo: ".
+ */
+export function motivoMidiaParaMorador(motivo: string): string {
+  if (/vazio/i.test(motivo)) return "o arquivo chegou vazio. Mande de novo.";
+  const mb = /passa de (\d+) MB/i.exec(motivo);
+  if (mb) return `o arquivo passa de ${mb[1]} MB. Mande um menor ou tire outra foto.`;
+  if (/PDF/.test(motivo) && /ativo|script|embutido/i.test(motivo)) return "o PDF tem conteúdo que não abrimos por segurança. Mande uma foto do documento.";
+  if (/não aceito|Só fotos/i.test(motivo)) return "este tipo de arquivo não é aceito. Mande foto, PDF, áudio ou vídeo.";
+  return "não consegui abrir o arquivo. Mande de novo ou tire outra foto.";
+}

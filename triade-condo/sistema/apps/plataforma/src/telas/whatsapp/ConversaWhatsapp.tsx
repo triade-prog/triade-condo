@@ -7,8 +7,10 @@
 // resposta ao morador.
 
 import { useState, type FormEvent } from "react";
-import { ESTADOS_ENVIO_WHATSAPP, formatarDataHora, MIDIAS_WHATSAPP, type EstadoEnvioWhatsapp, type MidiaWhatsapp } from "@triade/domain";
-import { Aviso, AvisoErro, Botao, CampoAreaTexto, camposComErro, chamarApi, Dialogo, Selo, textoDoErro, type ErroApi, type Tom } from "@triade/ui";
+import {
+  ESTADOS_ENVIO_WHATSAPP, formatarDataHora, LIMITE_FORA_DA_JANELA, MIDIAS_WHATSAPP, TEXTOS_MOTIVO, type EstadoEnvioWhatsapp, type MidiaWhatsapp,
+} from "@triade/domain";
+import { Aviso, AvisoErro, Botao, CampoAreaTexto, camposComErro, chamarApi, Dialogo, Icone, Selo, textoDoErro, type ErroApi, type Tom } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
 
 interface MensagemConversa {
@@ -18,7 +20,8 @@ interface MensagemConversa {
   texto?: string;
   em: string;
   autor?: string;
-  finalidade?: "RESPOSTA" | "RETORNO";
+  finalidade?: "RESPOSTA" | "RETORNO" | "CONCLUSAO";
+  modelo?: boolean;
   estado?: EstadoEnvioWhatsapp;
   motivo?: string;
   resolvida?: boolean;
@@ -35,9 +38,19 @@ interface Revisao {
   resposta?: string;
 }
 
+/** A conversa no WhatsApp (W-20): aberta por 24 horas desde a última mensagem do morador. */
+interface Janela {
+  aberta: boolean;
+  ate?: string;
+  limite: number;
+  parou: boolean;
+  modelo?: { titulo: string; previa: string };
+}
+
 interface ConversaDoPedido {
   mensagens: MensagemConversa[];
   revisoes: Revisao[];
+  janela?: Janela;
   pode: { responder: boolean; decidirRevisao: boolean };
 }
 
@@ -54,22 +67,27 @@ export function ConversaWhatsapp({ pedidoId, versao, aoResponder, aoReabrir }: {
   const [enviando, setEnviando] = useState(false);
   const [manter, setManter] = useState<Revisao | null>(null);
   const [resposta, setResposta] = useState("");
+  const [semEnvio, setSemEnvio] = useState<string | null>(null);
 
   if (carga.estado !== "pronto") return null;
   const d = carga.dados;
   if (!d.mensagens.length && !d.pode.responder) return null;
   const pendentes = d.revisoes.filter((r) => !r.decisao);
+  const j = d.janela;
+  const limite = j && !j.aberta ? LIMITE_FORA_DA_JANELA : 2000;
+  const longo = texto.trim().length > limite;
 
   async function responder(ev: FormEvent) {
     ev.preventDefault();
     setErro(null);
     setEnviando(true);
-    const r = await chamarApi(`/v1/condominio/pedidos/${pedidoId}/whatsapp`, { corpo: { versao, texto } });
+    const r = await chamarApi<{ aviso?: string }>(`/v1/condominio/pedidos/${pedidoId}/whatsapp`, { corpo: { versao, texto } });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
     setTexto("");
+    setSemEnvio(r.dados.aviso ? (TEXTOS_MOTIVO[r.dados.aviso] ?? null) : null);
     carga.recarregar();
-    aoResponder("Retorno registrado e enviado pelo WhatsApp.");
+    aoResponder(r.dados.aviso ? "Retorno registrado. A mensagem não vai pelo WhatsApp: avise por outro meio." : "Retorno registrado e enviado pelo WhatsApp.");
   }
 
   async function manterConcluido() {
@@ -113,10 +131,15 @@ export function ConversaWhatsapp({ pedidoId, versao, aoResponder, aoReabrir }: {
               {m.midia ? (
                 m.midia.situacao === "LIBERADA" && m.midia.arquivoId
                   ? <Botao variante="contorno" tamanho="p" className="justify-self-start" onClick={() => void abrirArquivo(m.midia!.arquivoId!)}>Abrir {MIDIAS_WHATSAPP[m.midia.tipo]?.toLowerCase() ?? "arquivo"}</Botao>
-                  : <span className="text-xs text-tinta-suave">{MIDIAS_WHATSAPP[m.midia.tipo] ?? "Arquivo"} {m.midia.situacao === "BAIXAR" ? "sendo conferido" : `não liberado: ${m.midia.motivo ?? ""}`}</span>
+                  : <span className="text-xs text-tinta-suave">
+                      Arquivo {m.midia.situacao === "BAIXAR" ? "sendo conferido" : "não liberado"} ({(MIDIAS_WHATSAPP[m.midia.tipo] ?? "arquivo").toLowerCase()})
+                      {m.midia.situacao !== "BAIXAR" && m.midia.motivo ? `: ${m.midia.motivo}` : ""}
+                    </span>
               ) : null}
               <span className="flex flex-wrap items-center gap-2 text-xs text-tinta-suave">
-                {m.lado === "MORADOR" ? (m.autor ?? "Morador") : m.finalidade === "RETORNO" ? `Retorno de ${m.autor ?? ""}` : m.autor ? `Resposta de ${m.autor}` : "Mensagem automática"}
+                {m.lado === "MORADOR" ? (m.autor ?? "Morador") : m.finalidade === "RETORNO" ? `Retorno de ${m.autor ?? ""}`
+                  : m.finalidade === "CONCLUSAO" ? "Conclusão do pedido" : m.autor ? `Resposta de ${m.autor}` : "Mensagem automática da Nina"}
+                {m.modelo ? " · pelo modelo aprovado" : ""}
                 {" · "}{formatarDataHora(m.em)}
                 {m.estado ? <Selo tom={TOM_ESTADO[m.estado]}>{ESTADOS_ENVIO_WHATSAPP[m.estado]}</Selo> : null}
                 {m.estado === "FALHOU" || m.estado === "DESCONHECIDO" ? <span>{m.motivo}{m.resolvida ? " · resolvida" : ""}</span> : null}
@@ -125,12 +148,39 @@ export function ConversaWhatsapp({ pedidoId, versao, aoResponder, aoReabrir }: {
           ))}
         </ol>
       ) : <p className="text-sm text-tinta-suave">Nenhuma mensagem pelo WhatsApp ainda.</p>}
+      {semEnvio ? <Aviso tom="atencao" titulo="Não deu para enviar">{semEnvio}</Aviso> : null}
+      {d.pode.responder && j ? (
+        j.aberta ? (
+          <p className="flex items-start gap-2 rounded-xl border border-ok-borda bg-ok-fundo px-3 py-2 text-sm">
+            <Icone nome="whats" className="mt-0.5 h-5 w-5 shrink-0" />
+            <span><b className="font-semibold">Conversa aberta no WhatsApp até {formatarDataHora(j.ate ?? "")}</b><br />
+              A resposta vai como você escrever. Isto não é prazo de atendimento: o prazo é o próximo retorno do pedido.</span>
+          </p>
+        ) : (
+          <p className="flex items-start gap-2 rounded-xl border border-atencao-borda bg-atencao-fundo px-3 py-2 text-sm">
+            <Icone nome="relogio" className="mt-0.5 h-5 w-5 shrink-0" />
+            <span><b className="font-semibold">A conversa no WhatsApp fechou (a última mensagem do morador foi há mais de 24 horas)</b><br />
+              {j.parou ? "O morador pediu para parar de receber avisos: com a conversa fechada, a mensagem não vai pelo WhatsApp. O retorno fica registrado; avise por outro meio."
+                : j.modelo ? `O WhatsApp só deixa o condomínio puxar conversa com um modelo aprovado. Sua resposta vai dentro do modelo ${j.modelo.titulo}, até ${LIMITE_FORA_DA_JANELA} caracteres.`
+                : "Ainda não há modelo aprovado para esta mensagem: o retorno fica registrado, mas a mensagem não sai pelo WhatsApp. Avise por outro meio."}</span>
+          </p>
+        )
+      ) : null}
       {d.pode.responder ? (
         <form onSubmit={responder} noValidate className="grid gap-2">
-          <CampoAreaTexto id="zap-resposta" rotulo="Responder pelo WhatsApp" maxLength={2000} value={texto} onChange={(e) => setTexto(e.target.value)}
-            erro={camposComErro(erro).includes("texto") ? "Escreva a resposta (3 a 2000 caracteres)." : null} />
+          <CampoAreaTexto id="zap-resposta" rotulo="Responder pelo WhatsApp" maxLength={limite} value={texto} onChange={(e) => setTexto(e.target.value)}
+            ajuda={`${texto.trim().length} de ${limite} caracteres`}
+            erro={camposComErro(erro).includes("texto") ? `Escreva a resposta (3 a ${limite} caracteres).` : longo ? `Com a conversa fechada, até ${LIMITE_FORA_DA_JANELA} caracteres.` : null} />
+          {j && !j.aberta && j.modelo && !j.parou ? (
+            <>
+              <p className="text-xs text-tinta-suave">Como chega ao morador</p>
+              <p className="whitespace-pre-line rounded-xl border border-dashed border-violeta-300 bg-superficie p-3 text-sm">
+                {j.modelo.previa.replace("{{texto}}", texto.trim().replace(/\s+/g, " ") || "…")}
+              </p>
+            </>
+          ) : null}
           <p className="text-xs text-tinta-suave">Conta como retorno ao morador na hora do registro. Se o envio falhar, o retorno continua registrado e a falha aparece com responsável.</p>
-          <div className="flex justify-end"><Botao type="submit" disabled={enviando}>{enviando ? "Enviando…" : "Enviar e registrar retorno"}</Botao></div>
+          <div className="flex justify-end"><Botao type="submit" disabled={enviando || longo}>{enviando ? "Enviando…" : "Enviar e registrar retorno"}</Botao></div>
         </form>
       ) : null}
       {manter ? (

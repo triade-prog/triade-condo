@@ -40,6 +40,10 @@ async function montar(aparelho = "+5561998124400") {
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2 }),
     console_whatsapp: () => ({ conexao: { situacao: "DESCONECTADO" } }),
     console_whatsapp_lista: () => [],
+    console_modelos_whatsapp: () => ({ modelos: [{ chave: "noticia_pedido", numero: 1, situacao: "APROVADO_PILOTO" }], pode: { editar: true } }),
+    console_modelo_whatsapp: (a) => ({ versoes: [{ chave: a.p_chave, numero: 1 }], eventos: [] }),
+    console_salvar_modelo_whatsapp: (a) => ({ numero: a.p_numero ?? 2, versao: 1 }),
+    console_decidir_modelo_whatsapp: (a) => ({ situacao: a.p_situacao, versao: 2 }),
     console_whatsapp_credenciais: (a) => {
       guardado = String(a.p_credenciais);
       return { segredo: SEGREDO_GANCHO, versao: 2 };
@@ -69,7 +73,7 @@ async function entrar(m: Awaited<ReturnType<typeof montar>>): Promise<string> {
 
 Deno.test("as rotas do WhatsApp no Console pedem a sessão completa", async () => {
   const m = await montar();
-  for (const rota of ["/v1/whatsapp", `/v1/clientes/${IPE}/whatsapp`]) assertEquals((await erro(await m.pedir(rota))).codigo, "UNAUTHORIZED", rota);
+  for (const rota of ["/v1/whatsapp", "/v1/whatsapp/modelos", `/v1/clientes/${IPE}/whatsapp`]) assertEquals((await erro(await m.pedir(rota))).codigo, "UNAUTHORIZED", rota);
 });
 
 Deno.test("PT-08: o token vai cifrado ao banco, nunca volta, e o segredo do aviso só vai ao provedor", async () => {
@@ -114,6 +118,26 @@ Deno.test("W-01: desconectar na mão pede motivo", async () => {
   assertEquals((await r.json()).situacao, "DESCONECTADO");
   assertEquals(m.chamadas.findLast((c) => c.funcao === "console_whatsapp_situacao")!.args.p_motivo, "Fim do piloto");
   assertEquals(m.desconectados.length, 1);
+});
+
+Deno.test("W-20: modelos de mensagem: lista, versão nova, edição do rascunho e decisão", async () => {
+  const m = await montar();
+  const cookie = await entrar(m);
+  assertEquals((await (await m.pedir("/v1/whatsapp/modelos", { cookie })).json()).modelos.length, 1);
+  assertEquals((await erro(await m.pedir("/v1/whatsapp/modelos/nao_existe", { cookie }))).codigo, "NOT_FOUND");
+  assertEquals((await erro(await m.pedir("/v1/whatsapp/modelos/noticia_pedido/versoes", { corpo: { corpo: "curto" }, cookie }))).codigo,
+    "VALIDATION_ERROR");
+  const nova = await m.pedir("/v1/whatsapp/modelos/noticia_pedido/versoes", { corpo: { corpo: "Notícia do seu pedido {{1}} no {{2}}: {{3}} · {{4}}." }, cookie });
+  assertEquals(nova.status, 201);
+  assertEquals(m.chamadas.findLast((c) => c.funcao === "console_salvar_modelo_whatsapp")!.args.p_numero, null);
+  await m.pedir("/v1/whatsapp/modelos/noticia_pedido/versoes/2", {
+    metodo: "PUT", corpo: { versao: 1, corpo: "Notícia do seu pedido {{1}} no {{2}}: {{3}} · {{4}} aqui." }, cookie,
+  });
+  assertEquals(m.chamadas.findLast((c) => c.funcao === "console_salvar_modelo_whatsapp")!.args.p_numero, 2);
+  assertEquals((await erro(await m.pedir("/v1/whatsapp/modelos/noticia_pedido/versoes/2/situacao", { corpo: { versao: 1, situacao: "RECUSADO" }, cookie })))
+    .codigo, "VALIDATION_ERROR");
+  const ok = await m.pedir("/v1/whatsapp/modelos/noticia_pedido/versoes/2/situacao", { corpo: { versao: 1, situacao: "APROVADO_PILOTO" }, cookie });
+  assertEquals((await ok.json()).situacao, "APROVADO_PILOTO");
 });
 
 // Garante que cifrar e o teste usam o mesmo formato do banco (bytea em hex).

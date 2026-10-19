@@ -22,11 +22,8 @@ const TOM: Record<SituacaoConexao, Tom> = { SEM_CREDENCIAIS: "neutro", DESCONECT
 export function NumerosWhatsapp() {
   const carga = useCarregar<{ numeros: Numero[] }>("/v1/whatsapp");
   return (
-    <div className="grid gap-5">
-      <div>
-        <h1 className="text-[28px] font-normal tracking-tight">WhatsApp</h1>
-        <p className="text-tinta-suave">Os números dos clientes atribuídos a você. Desconectado vem primeiro: as mensagens dos moradores não chegam.</p>
-      </div>
+    <div className="grid gap-5 pt-4">
+      <p className="text-tinta-suave">Os números dos clientes atribuídos a você. Desconectado vem primeiro: as mensagens dos moradores não chegam.</p>
       {carga.estado === "carregando" ? <Carregando /> : null}
       {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" && carga.dados.numeros.length === 0 ? <Vazio titulo="Nenhum número ainda">Cadastre o número na ficha do cliente e conecte na aba WhatsApp.</Vazio> : null}

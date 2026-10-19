@@ -137,7 +137,7 @@ Deno.test("W-05: mídia que não é o que diz não é guardada e o motivo volta 
   });
   await Promise.all(m.fundo);
   assertEquals(m.pedidos.objetos.size, 0);
-  assertEquals(chamada(m, "whatsapp_midia_resultado")!.p_motivo, "O conteúdo não é um áudio OGG de verdade.");
+  assertEquals(chamada(m, "whatsapp_midia_resultado")!.p_motivo, "não consegui abrir o arquivo. Mande de novo ou tire outra foto.");
 });
 
 Deno.test("W-13: entrega e leitura voltam ao banco, uma por id", async () => {

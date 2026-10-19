@@ -146,7 +146,9 @@ import {
   type MidiaWhatsapp,
 } from "@triade/domain";
 import { verificarArquivo, verificarMidia, type Armazenamento } from "../_shared/arquivos.ts";
-import { decifrarCredenciais, TIPOS_AVISO_WHATSAPP, type ConectorWhatsapp, type TipoAvisoWhatsapp } from "../_shared/whatsapp.ts";
+import {
+  decifrarCredenciais, motivoMidiaParaMorador, textoComLinkDoPainel, TIPOS_AVISO_WHATSAPP, type ConectorWhatsapp, type TipoAvisoWhatsapp,
+} from "../_shared/whatsapp.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
 import { avisoAssinado, lerEventoResend, montarEmail, type Correio, type MensagemFila } from "../_shared/email.ts";
 import { ipDaChamada } from "../_shared/repasse.ts";
@@ -1643,10 +1645,11 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   async function baixarMidia(m: MidiaPendente) {
     if (!deps.whatsapp) return;
     const bytes = await deps.whatsapp.conector.baixar(m.url, TAMANHO_MAXIMO_MIDIA);
-    const r = bytes ? verificarMidia(bytes, m.tipo) : { ok: false as const, motivo: "O arquivo não chegou ou passa de 16 MB. Mande de novo." };
+    const r = bytes ? verificarMidia(bytes, m.tipo) : { ok: false as const, motivo: "O arquivo passa de 16 MB." };
     if (r.ok) await deps.armazenamento.gravar(m.caminho, r.bytes, m.tipo);
     await rpc("whatsapp_midia_resultado", {
-      p_condominio: m.condominio, p_mensagem: m.mensagem, p_tamanho: r.ok ? r.bytes.length : null, p_motivo: r.ok ? null : r.motivo,
+      p_condominio: m.condominio, p_mensagem: m.mensagem, p_tamanho: r.ok ? r.bytes.length : null,
+      p_motivo: r.ok ? null : motivoMidiaParaMorador(r.motivo),
     });
   }
 
@@ -1661,7 +1664,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       for (const l of lotes) {
         const cred = await decifrarCredenciais(chave, l.credenciais);
         for (const e of l.envios) {
-          const texto = e.pedido ? `${e.texto}\nAbrir no painel: ${deps.urlApp}/pedidos/pedido?id=${e.pedido}` : e.texto;
+          const texto = textoComLinkDoPainel(e.texto, e.pedido ? `${deps.urlApp}/pedidos/pedido?id=${e.pedido}` : null);
           const r = await conector.enviarTexto({ instancia: l.instancia || cred.instancia, token: cred.token }, e.para, texto);
           await rpc("whatsapp_resultado", {
             p_condominio: l.condominio, p_envio: e.envio, p_provedor_id: r.ok ? r.id : null,

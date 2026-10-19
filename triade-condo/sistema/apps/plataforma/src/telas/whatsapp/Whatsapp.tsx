@@ -20,6 +20,8 @@ interface MensagemAIdentificar {
   texto?: string;
   enviadaEm: string;
   triagem: "A_IDENTIFICAR" | "RECADO";
+  /** Chegou com mais de 24 horas (número desconectado): ninguém respondeu sozinho (W-17, W-20). */
+  atrasada?: boolean;
   contato?: { id: string; nome: string; unidades?: string };
   vinculoPendente: boolean;
   midia?: { tipo: string; situacao: string; motivo?: string };
@@ -186,6 +188,7 @@ function AIdentificar({ d, recarregar }: { d: DadosWhatsapp; recarregar: () => v
             <li key={m.telefone} className="grid gap-2 rounded-2xl border border-linha bg-superficie p-4 shadow-s1">
               <span className="flex flex-wrap items-center gap-2 text-sm">
                 <strong className="font-semibold">{m.contato ? `${m.contato.nome}${m.contato.unidades ? ` · ${m.contato.unidades}` : ""}` : mostrarTelefone(m.telefone)}</strong>
+                {m.atrasada ? <Selo tom="atencao">Chegou com o número desconectado</Selo> : null}
                 {m.triagem === "RECADO" ? <Selo tom="info">Recado</Selo> : m.vinculoPendente ? <Selo tom="atencao">Vínculo a confirmar</Selo> : <Selo tom="neutro">Número novo</Selo>}
                 <span className="text-xs text-tinta-suave">{formatarDataHora(m.enviadaEm)}{total > 1 ? ` · ${total} mensagens` : ""}</span>
               </span>
