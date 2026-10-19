@@ -34,6 +34,8 @@ export interface OpcoesPlataforma {
   comAcessoPedido?: boolean;
   /** A síndica e a secretária já atendem os pedidos (passo 4). */
   comAtendimento?: boolean;
+  /** A Agenda com o vencimento de um contrato e de dois documentos e uma assembleia convocada (AG-09). */
+  comDatasDeFora?: boolean;
 }
 
 function erro(route: Route, status: number, codigo: string, detalhes?: Record<string, unknown>) {
@@ -214,7 +216,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (prazos !== null) return prazos;
 
     const naAgenda = await rotasAgenda(route, agenda, { pessoas: estado.pessoas, pedidos: estado.pedidos, moradores: estado.moradores,
-      feriados: c.feriados, eu }, caminho, metodo, corpo, url, pode);
+      feriados: c.feriados, eu, datasDeFora: opcoes.comDatasDeFora ?? false }, caminho, metodo, corpo, url, pode);
     if (naAgenda !== null) return naAgenda;
     const nosComunicados = await rotasComunicados(route, comunicados, { moradores: estado.moradores, pedidos: estado.pedidos, eu }, caminho, metodo, corpo, url, pode);
     if (nosComunicados !== null) return nosComunicados;

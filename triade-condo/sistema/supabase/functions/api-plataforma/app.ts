@@ -24,6 +24,7 @@ import {
   alterarContatoSchema,
   alterarPessoaSchema,
   alterarUnidadeSchema,
+  marcarUnidadeSchema,
   alterarVinculoUnidadeSchema,
   blocoSchema,
   buscaMoradoresSchema,
@@ -435,6 +436,16 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json({
       versao: await rpc<number>("plataforma_alterar_unidade", {
         ...quem(c), p_id: id, p_versao: d.versao, p_identificacao: d.identificacao, p_bloco: d.blocoId, p_andar: d.andar, p_ativa: d.ativa ?? null,
+      }),
+    });
+  });
+
+  // Unidade à venda e para alugar (MU-11).
+  app.post("/v1/condominio/unidades/:id/situacao", async (c) => {
+    const d = await lerCorpo(c, marcarUnidadeSchema);
+    return c.json({
+      versao: await rpc<number>("plataforma_marcar_unidade", {
+        ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_a_venda: d.aVenda, p_para_alugar: d.paraAlugar,
       }),
     });
   });

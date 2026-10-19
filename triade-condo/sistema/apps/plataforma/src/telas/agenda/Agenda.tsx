@@ -1,19 +1,20 @@
 "use client";
 // Agenda do condomínio (peça R7, design "Telas da Agenda", telas 1 e 2; AG-01 a AG-05, AG-09):
-// em lista, por semana ou no mês, com filtro por tipo e as datas de outras telas (feriados, preventivas e reservas confirmadas).
-// A vista e a data ficam no endereço; o filtro de tipo e os feriados ficam guardados para a
-// pessoa neste aparelho.
+// em lista, por semana ou no mês, com filtro por tipo e as datas de outras telas (feriados,
+// preventivas, reservas confirmadas, vencimentos de contratos e documentos e assembleias
+// convocadas; design "Agenda, indicadores e unidades", tela 1). A vista e a data ficam no
+// endereço; o filtro de tipo e as fontes ligadas ficam guardados para a pessoa neste aparelho.
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import {
-  diaDaSemana, gradeDoMes, inicioDaSemana, inicioDoMes, mesVizinho, mostrarDataCurta, nomeDoMesAno, somarDias, TIPOS_COMPROMISSO,
+  diaDaSemana, FONTES_AGENDA, type FonteAgenda, gradeDoMes, inicioDaSemana, inicioDoMes, mesVizinho, mostrarDataCurta, nomeDoMesAno, somarDias, TIPOS_COMPROMISSO,
 } from "@triade/domain";
 import { Aviso, Botao, Carregando, CampoSelecao, Chip, ErroCarregar, Icone, Vazio } from "@triade/ui";
 import { Escolha } from "../moradores/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { Agenda as DadosAgenda, CompromissoAgenda, DataDeOutraTela, OpcoesAgenda, Recado } from "../tipos.ts";
-import { LinhaCompromisso, LinhaDataDeFora } from "./comum.tsx";
+import { LinhaCompromisso, LinhaDataDeFora, tituloCurto } from "./comum.tsx";
 import { FormCompromisso } from "./FormCompromisso.tsx";
 
 type Vista = "LISTA" | "SEMANA" | "MES";
@@ -35,14 +36,19 @@ function periodo(vista: Vista, data: string): { de: string; ate: string } {
   return { de: data, ate: somarDias(data, DIAS_LISTA - 1) };
 }
 
-type Filtro = { tipo: string; feriados: boolean };
+const FONTES = Object.keys(FONTES_AGENDA) as FonteAgenda[];
+
+/** O que aparece: o tipo de compromisso, os compromissos e as fontes desligadas (decisão 4). */
+type Filtro = { tipo: string; compromissos: boolean; ocultas: FonteAgenda[] };
 
 function interpretar(texto: string): Filtro {
   try {
-    const v = JSON.parse(texto || "null") as { tipo?: string; feriados?: boolean } | null;
-    return { tipo: v?.tipo && v.tipo in TIPOS_COMPROMISSO ? v.tipo : "", feriados: v?.feriados !== false };
+    const v = JSON.parse(texto || "null") as { tipo?: string; feriados?: boolean; compromissos?: boolean; ocultas?: unknown } | null;
+    // O filtro antigo desligava todas as datas de outras telas de uma vez.
+    const ocultas = Array.isArray(v?.ocultas) ? FONTES.filter((f) => (v.ocultas as unknown[]).includes(f)) : v?.feriados === false ? FONTES : [];
+    return { tipo: v?.tipo && v.tipo in TIPOS_COMPROMISSO ? v.tipo : "", compromissos: v?.compromissos !== false, ocultas };
   } catch {
-    return { tipo: "", feriados: true };
+    return { tipo: "", compromissos: true, ocultas: [] };
   }
 }
 
@@ -97,8 +103,11 @@ export function Agenda() {
 
   const dados = carga.estado === "pronto" ? carga.dados : null;
   const hoje = dados?.hoje ?? hojeAqui();
-  const visiveis = useMemo(() => (dados ? dados.compromissos.filter((c) => !filtro.tipo || c.tipo === filtro.tipo) : []), [dados, filtro.tipo]);
-  const datas = dados && filtro.feriados ? dados.datas : [];
+  const visiveis = useMemo(() => (dados && filtro.compromissos ? dados.compromissos.filter((c) => !filtro.tipo || c.tipo === filtro.tipo) : []),
+    [dados, filtro.tipo, filtro.compromissos]);
+  const datas = dados ? dados.datas.filter((d) => !filtro.ocultas.includes(d.fonte)) : [];
+  const alternar = (f: FonteAgenda) =>
+    mudarFiltro({ ocultas: filtro.ocultas.includes(f) ? filtro.ocultas.filter((x) => x !== f) : [...filtro.ocultas, f] });
   const dias = porDia(visiveis, datas);
   const podeEditar = (dados?.pode.editar ?? false) && opcoes.estado === "pronto" && opcoes.dados.pode.editar;
 
@@ -122,7 +131,10 @@ export function Agenda() {
         <Escolha rotulo="Como ver a agenda" atual={vista} aoMudar={(x) => ir({ vista: x })} opcoes={VISTAS} />
         <CampoSelecao id="ag-filtro-tipo" rotulo="Tipo" className="min-w-48" value={filtro.tipo} onChange={(e) => mudarFiltro({ tipo: e.target.value })}
           opcoes={[{ valor: "", texto: "Todos" }, ...Object.entries(TIPOS_COMPROMISSO).map(([valor, texto]) => ({ valor, texto }))]} />
-        <Chip icone="calendario" ativo={filtro.feriados} onClick={() => mudarFiltro({ feriados: !filtro.feriados })}>Feriados e datas de outras telas</Chip>
+      </div>
+      <div role="group" aria-label="O que mostrar na agenda" className="flex flex-wrap gap-2">
+        <Chip ativo={filtro.compromissos} onClick={() => mudarFiltro({ compromissos: !filtro.compromissos })}>Compromissos</Chip>
+        {FONTES.map((f) => <Chip key={f} ativo={!filtro.ocultas.includes(f)} onClick={() => alternar(f)}>{FONTES_AGENDA[f]}</Chip>)}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -136,7 +148,7 @@ export function Agenda() {
 
       {carga.estado === "carregando" ? <Carregando rotulo="Carregando a agenda…" /> : null}
       {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
-      {dados && vista === "LISTA" ? <VistaLista dias={dias} hoje={hoje} temFiltro={Boolean(filtro.tipo)} /> : null}
+      {dados && vista === "LISTA" ? <VistaLista dias={dias} hoje={hoje} temFiltro={Boolean(filtro.tipo) || !filtro.compromissos || filtro.ocultas.length > 0} /> : null}
       {dados && vista === "SEMANA" ? <VistaSemana de={de} dias={dias} hoje={hoje} abrirDia={(d) => ir({ vista: "LISTA", data: d })} /> : null}
       {dados && vista === "MES" ? <VistaMes data={data} dias={dias} hoje={hoje} abrirDia={(d) => ir({ vista: "LISTA", data: d })} /> : null}
 
@@ -168,7 +180,7 @@ function VistaLista({ dias, hoje, temFiltro }: { dias: Dias; hoje: string; temFi
               {d === hoje ? <span className="ag-hoje block w-fit">Hoje</span> : null}
             </div>
             <ul className="grid gap-2">
-              {dia.datas.map((x) => <LinhaDataDeFora key={`f-${x.fonte}-${x.id ?? x.titulo}`} d={x} />)}
+              {dia.datas.map((x) => <LinhaDataDeFora key={`f-${x.fonte}-${x.id ?? x.titulo}`} d={x} hoje={hoje} />)}
               {dia.compromissos.map((c) => <LinhaCompromisso key={c.id} c={c} />)}
             </ul>
           </section>
@@ -189,7 +201,7 @@ function VistaSemana({ de, dias, hoje, abrirDia }: { de: string; dias: Dias; hoj
     <ol className="grid gap-2 md:grid-cols-7">
       {Array.from({ length: 7 }, (_, i) => somarDias(de, i)).map((d) => {
         const dia = dias.get(d);
-        const itens = [...(dia?.datas ?? []).map((x) => ({ chave: `f-${x.fonte}-${x.id ?? x.titulo}`, hora: x.horaInicio ?? "", titulo: x.titulo, tipo: x.fonte, fonte: true })),
+        const itens = [...(dia?.datas ?? []).map((x) => ({ chave: `f-${x.fonte}-${x.id ?? x.titulo}`, hora: x.horaInicio ?? "", titulo: tituloCurto(x), tipo: x.fonte, fonte: true })),
           ...(dia?.compromissos ?? []).map((c) => ({ chave: c.id, hora: c.horaInicio ?? "", titulo: c.titulo, tipo: c.tipo as string, fonte: false }))];
         return (
           <li key={d} className="grid content-start gap-1.5 rounded-2xl border border-linha bg-superficie p-2.5">
@@ -221,7 +233,7 @@ function VistaMes({ data, dias, hoje, abrirDia }: { data: string; dias: Dias; ho
       <div className="grade">
         {gradeDoMes(data).map(({ data: d, doMes }) => {
           const dia = dias.get(d);
-          const itens = [...(dia?.datas ?? []).map((x) => ({ chave: `f-${x.fonte}-${x.id ?? x.titulo}`, texto: x.titulo, tipo: x.fonte as string, fonte: true })),
+          const itens = [...(dia?.datas ?? []).map((x) => ({ chave: `f-${x.fonte}-${x.id ?? x.titulo}`, texto: `${x.horaInicio ? `${Number(x.horaInicio.slice(0, 2))}h ` : ""}${tituloCurto(x)}`, tipo: x.fonte as string, fonte: true })),
             ...(dia?.compromissos ?? []).map((c) => ({ chave: c.id, texto: `${c.horaInicio ? `${Number(c.horaInicio.slice(0, 2))}h ` : ""}${c.titulo}`, tipo: c.tipo as string, fonte: false }))];
           return (
             <button key={d} type="button" className="c" data-fora={doMes ? undefined : ""} aria-current={d === hoje ? "date" : undefined}

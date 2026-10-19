@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { descreverRepeticao, mostrarDataCurta, SITUACOES_COMPROMISSO, TIPOS_COMPROMISSO } from "@triade/domain";
+import { descreverRepeticao, mostrarDataCurta, SITUACOES_COMPROMISSO, textoVencimento, TIPOS_COMPROMISSO } from "@triade/domain";
 import { Icone, Selo, type Tom } from "@triade/ui";
 import type { CompromissoAgenda, ConflitoCompromisso, DataDeOutraTela, SituacaoCompromisso } from "../tipos.ts";
 
@@ -69,40 +69,70 @@ export function LinhaCompromisso({ c, acao }: { c: CompromissoAgenda; acao?: Rea
   );
 }
 
-/** Data de outra tela (AG-09): tracejada, com a tela de onde vem (feriado, preventiva ou reserva confirmada). */
-export function LinhaDataDeFora({ d }: { d: DataDeOutraTela }) {
-  if (d.fonte === "RESERVA") {
-    return (
-      <li className="ag-ev" data-tipo={d.fonte} data-fonte="">
-        <span className="hora">{d.horaInicio}{d.horaFim ? <small>{d.horaFim}</small> : null}</span>
-        <span className="barra" aria-hidden="true" />
-        <span className="grid min-w-0 gap-0.5">
-          <span className="flex flex-wrap items-center gap-2 font-medium">{d.titulo}<Selo tom="ok">Confirmada</Selo></span>
-          <span className="text-[13px] text-tinta-suave">
-            <span className="tp" data-tipo="RESERVA">Reserva</span>{d.quem ? ` · ${d.quem}` : ""} · vem de{" "}
-            <Link href="/vida" className="font-medium text-violeta-600 hover:underline">Vida em condomínio</Link>
-          </span>
-        </span>
-        <span />
-      </li>
-    );
-  }
-  const preventiva = d.fonte === "PREVENTIVA";
+/** Uma data de outra tela: tracejada, sem edição, com a tela de onde vem. */
+function LinhaDeFora({ d, hora, fim, titulo, selo, detalhe }: {
+  d: DataDeOutraTela; hora: string; fim?: string | null; titulo: ReactNode; selo?: ReactNode; detalhe: ReactNode;
+}) {
   return (
     <li className="ag-ev" data-tipo={d.fonte} data-fonte="">
-      <span className="hora">Dia todo</span>
+      <span className="hora">{hora}{fim ? <small>{fim}</small> : null}</span>
       <span className="barra" aria-hidden="true" />
       <span className="grid min-w-0 gap-0.5">
-        <span className="font-medium">{preventiva ? `Preventiva: ${d.titulo}` : d.titulo}</span>
-        <span className="text-[13px] text-tinta-suave">
-          {preventiva
-            ? <>Vem de <Link href="/manutencao/preventivas" className="font-medium text-violeta-600 hover:underline">Manutenção › Preventivas</Link></>
-            : "Feriado · vem de Configurações › Feriados · os prazos não correm"}
-        </span>
+        <span className="flex flex-wrap items-center gap-2 font-medium">{titulo}{selo}</span>
+        <span className="text-[13px] text-tinta-suave">{detalhe}</span>
       </span>
       <span />
     </li>
   );
+}
+
+const vemDe = (href: string, tela: string) => <Link href={href} className="font-medium text-violeta-600 hover:underline">{tela}</Link>;
+
+/**
+ * Data de outra tela (AG-09): feriado, preventiva, reserva confirmada, vencimento de contrato e
+ * de documento e assembleia convocada. Cada uma leva à tela de origem.
+ */
+export function LinhaDataDeFora({ d, hoje }: { d: DataDeOutraTela; hoje: string }) {
+  switch (d.fonte) {
+    case "RESERVA":
+      return (
+        <LinhaDeFora d={d} hora={d.horaInicio ?? "Dia todo"} fim={d.horaFim} titulo={d.titulo} selo={<Selo tom="ok">Confirmada</Selo>}
+          detalhe={<><span className="tp" data-tipo="RESERVA">Reserva</span>{d.quem ? ` · ${d.quem}` : ""} · vem de {vemDe("/vida", "Vida em condomínio")}</>} />
+      );
+    case "CONTRATO":
+      return (
+        <LinhaDeFora d={d} hora="Dia todo" titulo={<Link href={`/manutencao/prestador?id=${d.id}`} className="hover:text-violeta-600 hover:underline">Vence o contrato de {d.titulo}</Link>}
+          selo={<Selo tom="atencao">{textoVencimento(hoje, d.data)}</Selo>}
+          detalhe={<><span className="tp" data-tipo="CONTRATO">Contrato</span> · vem de {vemDe("/manutencao/prestadores", "Manutenção › Prestadores")} · renovar ou trocar antes</>} />
+      );
+    case "DOCUMENTO":
+      return (
+        <LinhaDeFora d={d} hora="Dia todo" titulo={<Link href={`/comunicados/documento?id=${d.id}`} className="hover:text-violeta-600 hover:underline">Vence {d.titulo}</Link>}
+          selo={<><Selo tom="erro">{textoVencimento(hoje, d.data)}</Selo>{d.restrito ? <Selo tom="neutro">Restrito</Selo> : null}</>}
+          detalhe={<><span className="tp" data-tipo="DOCUMENTO">Documento</span> · vem de {vemDe("/comunicados/documentos", "Comunicados e documentos")}</>} />
+      );
+    case "ASSEMBLEIA":
+      return (
+        <LinhaDeFora d={d} hora={d.horaInicio ?? "Dia todo"} fim={d.segundaChamada ? `2ª ${d.segundaChamada}` : null}
+          titulo={<Link href={`/vida/assembleia?id=${d.id}`} className="hover:text-violeta-600 hover:underline">{d.titulo}</Link>}
+          selo={<Selo tom="andamento">{d.estado === "EM_ANDAMENTO" ? "Em andamento" : "Convocada"}</Selo>}
+          detalhe={<><span className="tp" data-tipo="ASSEMBLEIA">Assembleia</span>{d.local ? ` · ${d.local}` : ""} · vem de {vemDe("/vida?aba=assembleias", "Vida em condomínio")}</>} />
+      );
+    case "PREVENTIVA":
+      return (
+        <LinhaDeFora d={d} hora="Dia todo" titulo={`Preventiva: ${d.titulo}`}
+          detalhe={<>Vem de {vemDe("/manutencao/preventivas", "Manutenção › Preventivas")}</>} />
+      );
+    default:
+      return <LinhaDeFora d={d} hora="Dia todo" titulo={d.titulo} detalhe="Feriado · vem de Configurações › Feriados · os prazos não correm" />;
+  }
+}
+
+/** O texto curto de uma data de outra tela, na semana e no mês. */
+export function tituloCurto(d: DataDeOutraTela): string {
+  if (d.fonte === "CONTRATO") return `Vence o contrato de ${d.titulo}`;
+  if (d.fonte === "DOCUMENTO") return `Vence ${d.titulo}`;
+  return d.titulo;
 }
 
 /** "Bruna Souza já está em "Vistoria da bomba", das 14:30 às 15:30." */

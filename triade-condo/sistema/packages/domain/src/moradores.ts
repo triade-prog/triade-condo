@@ -145,6 +145,9 @@ export const alterarUnidadeSchema = z.object({
   ativa: z.boolean().optional(),
 });
 
+/** Unidade à venda e para alugar (MU-11): as duas marcas vêm sempre. */
+export const marcarUnidadeSchema = z.object({ versao, aVenda: z.boolean(), paraAlugar: z.boolean() });
+
 /** Data sem hora, conferida no calendário. */
 const data = z.string().refine((t) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);

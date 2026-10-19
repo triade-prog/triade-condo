@@ -60,6 +60,18 @@ export function mostrarHoras(h: number | null | undefined): string {
   return `${Math.floor(h / 24)} dias`;
 }
 
+/** Tempo de solução em horas corridas (TR-01): "45 min", "5 h", "1 dia", "2 dias e 4 h". */
+export function mostrarDuracao(h: number | null | undefined): string {
+  if (h === null || h === undefined) return "Sem dados";
+  if (h < 1) return `${Math.max(1, Math.round(h * 60))} min`;
+  const total = Math.round(h);
+  if (total < 24) return `${total} h`;
+  const dias = Math.floor(total / 24);
+  const resto = total % 24;
+  const d = dias === 1 ? "1 dia" : `${dias} dias`;
+  return resto ? `${d} e ${resto} h` : d;
+}
+
 const NOMES_MES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
 /** "2026-09" → "setembro". */

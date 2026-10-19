@@ -1,8 +1,8 @@
 "use client";
 // Unidades (F3.1, MU-08), do jeito que o prédio se organiza: por torre, bloco, quadra ou
 // prédio (ou sem divisão), com ou sem andar. Ordem natural (2 antes de 10; térreo antes do
-// 1º andar), o responsável de cada unidade, a ocupação (MU-10, MU-11) e se há contato a
-// confirmar. Os contadores de ocupação filtram a lista. Divisão e unidade não se apagam: são
+// 1º andar), o responsável de cada unidade, a ocupação (MU-10, MU-11), as marcas à venda e
+// para alugar (MU-11) e se há contato a confirmar. Os contadores de ocupação filtram a lista. Divisão e unidade não se apagam: são
 // desativadas, e só quando não têm nada ativo dentro.
 
 import Link from "next/link";
@@ -15,7 +15,7 @@ import { Janela } from "../Janela.tsx";
 import type { Bloco, Estrutura, Recado, UnidadeResumo, Unidades } from "../tipos.ts";
 import { Caixa, Escolha, nomeRelacao, nomesDivisao } from "./comum.tsx";
 
-type Filtro = "todos" | "sem-bloco" | "sem-contato" | "sem-proprietario" | "com-morador" | "alugadas" | "nao-mora" | "sem-responsavel" | string;
+type Filtro = "todos" | "sem-bloco" | "sem-contato" | "sem-proprietario" | "com-morador" | "alugadas" | "nao-mora" | "sem-responsavel" | "a-venda" | "para-alugar" | string;
 
 function plural(n: number, um: string, varios: string): string {
   return `${n} ${n === 1 ? um : varios}`;
@@ -86,6 +86,8 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
               : filtro === "alugadas" ? u.ativa && u.ocupacao === "ALUGADA"
                 : filtro === "nao-mora" ? u.ativa && u.proprietarioNaoMora
                   : filtro === "sem-responsavel" ? u.semResponsavel
+                    : filtro === "a-venda" ? u.ativa && u.aVenda
+                      : filtro === "para-alugar" ? u.ativa && u.paraAlugar
                     : u.blocoId === filtro);
   const andares = dados.estrutura.usaAndar ? andaresDe(doFiltro) : [];
   const lista = andar ? doFiltro.filter((u) => u.andar === andar) : doFiltro;
@@ -103,11 +105,13 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
     { valor: "alugadas", texto: plural(o.alugadas, "alugada", "alugadas"), n: o.alugadas },
     { valor: "nao-mora", texto: `${o.proprietarioNaoMora} proprietário não mora`, n: o.proprietarioNaoMora },
     { valor: "sem-responsavel", texto: `${o.semResponsavel} sem responsável`, n: o.semResponsavel },
+    { valor: "a-venda", texto: `${o.aVenda} à venda`, n: o.aVenda },
+    { valor: "para-alugar", texto: `${o.paraAlugar} para alugar`, n: o.paraAlugar },
   ].filter((c) => c.n > 0 || c.valor === filtro);
   const resolvido = filtro === "sem-contato" ? "Todas as unidades têm contato confirmado"
     : filtro === "sem-proprietario" ? "Toda unidade com inquilino tem o proprietário no cadastro"
       : filtro === "sem-responsavel" ? "Toda unidade com gente cadastrada tem um responsável"
-        : ["com-morador", "alugadas", "nao-mora"].includes(filtro) ? "Nenhuma unidade nesta situação" : null;
+        : ["com-morador", "alugadas", "nao-mora", "a-venda", "para-alugar"].includes(filtro) ? "Nenhuma unidade nesta situação" : null;
 
   return (
     <div className="grid gap-4">
@@ -161,6 +165,12 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
                   <td className="px-4 py-3">
                     {u.ocupacao === "SEM_CADASTRO" ? <span className="text-tinta-suave">{OCUPACOES.SEM_CADASTRO}</span> : OCUPACOES[u.ocupacao]}
                     {u.proprietarioNaoMora && u.proprietario ? <span className="block text-xs text-tinta-suave">{u.proprietario}, proprietário, não mora</span> : null}
+                    {u.aVenda || u.paraAlugar ? (
+                      <span className="mt-1 flex flex-wrap gap-1">
+                        {u.aVenda ? <Selo tom="info">À venda</Selo> : null}
+                        {u.paraAlugar ? <Selo tom="info">Para alugar</Selo> : null}
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3"><Contatos u={u} /></td>
                 </tr>

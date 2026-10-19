@@ -40,6 +40,17 @@ export const REPETICOES = {
 } as const;
 export type Repeticao = keyof typeof REPETICOES;
 
+/** De onde vêm as datas de outras telas (AG-09), na ordem dos filtros da Agenda. */
+export const FONTES_AGENDA = {
+  FERIADO: "Feriados",
+  PREVENTIVA: "Preventivas",
+  RESERVA: "Reservas",
+  CONTRATO: "Contratos",
+  DOCUMENTO: "Documentos",
+  ASSEMBLEIA: "Assembleias",
+} as const;
+export type FonteAgenda = keyof typeof FONTES_AGENDA;
+
 /** Alcance de uma mudança num compromisso que se repete. */
 export const ESCOPOS = { ESTA: "Só esta data", PROXIMAS: "Esta e as próximas" } as const;
 export type Escopo = keyof typeof ESCOPOS;
@@ -155,6 +166,15 @@ export function somarDias(dataIso: string, dias: number): string {
 
 export function diasEntre(de: string, ate: string): number {
   return Math.round((utc(ate).getTime() - utc(de).getTime()) / 86400000);
+}
+
+/** "Vence em 22 dias", "Vence amanhã", "Vence hoje", "Venceu há 3 dias" (AG-09). */
+export function textoVencimento(hoje: string, data: string): string {
+  const n = diasEntre(hoje, data);
+  if (n === 0) return "Vence hoje";
+  if (n === 1) return "Vence amanhã";
+  if (n > 1) return `Vence em ${n} dias`;
+  return n === -1 ? "Venceu ontem" : `Venceu há ${-n} dias`;
 }
 
 /** O primeiro dia do mês de uma data. */

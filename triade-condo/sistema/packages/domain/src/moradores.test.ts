@@ -9,6 +9,7 @@ import {
   lerPlanilhaMoradores,
   marcasDaRelacao,
   marcasSchema,
+  marcarUnidadeSchema,
   MODELO_PLANILHA,
   mudancaSchema,
   nomeDaUnidade,
@@ -140,5 +141,14 @@ describe("moradores e unidades (passo 3)", () => {
       .toBe("Mudança registrada em 01/10/2026: 2 saíram, 1 entraram");
     expect(descreverEvento({ acao: "vinculo_unidade.alterado", entidade: "contato_unidade", dados: { campos: ["responsavel", "ocupa_desde"] } }))
       .toBe("Vínculo alterado: responsável, ocupa desde");
+  });
+
+  it("MU-11: à venda e para alugar vêm sempre, e a mudança vai ao histórico", () => {
+    expect(marcarUnidadeSchema.safeParse({ versao: 2, aVenda: true, paraAlugar: false }).success).toBe(true);
+    expect(marcarUnidadeSchema.safeParse({ versao: 2, aVenda: true }).success).toBe(false);
+    expect(descreverEvento({ acao: "unidade.situacao_mudou", entidade: "unidade", dados: { aVenda: true, paraAlugar: true } }))
+      .toBe("Unidade marcada à venda e para alugar");
+    expect(descreverEvento({ acao: "unidade.situacao_mudou", entidade: "unidade", dados: { aVenda: false, paraAlugar: false } }))
+      .toBe("Unidade sem marca de venda ou aluguel");
   });
 });

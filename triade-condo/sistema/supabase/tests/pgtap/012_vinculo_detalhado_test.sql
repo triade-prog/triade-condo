@@ -89,7 +89,7 @@ select is((select jsonb_object_agg(x ->> 'identificacao', x ->> 'ocupacao') from
   '{"101": "PROPRIETARIO_MORA", "102": "ALUGADA", "103": "ALUGADA", "104": "VAZIA", "105": "CEDIDA"}'::jsonb,
   'MU-10: a ocupação de cada unidade');
 select is((select plataforma_unidades(sindica, ipe) -> 'ocupacao' from ids, c),
-  '{"alugadas": 2, "comMorador": 4, "semResponsavel": 1, "proprietarioNaoMora": 3}'::jsonb, 'MU-11: os contadores do topo');
+  '{"aVenda": 0, "alugadas": 2, "comMorador": 4, "semResponsavel": 1, "proprietarioNaoMora": 3, "paraAlugar": 0}'::jsonb, 'MU-11: os contadores do topo');
 select is((select (x ->> 'proprietarioNaoMora', x ->> 'proprietario', x ->> 'principal', x ->> 'principalRelacao')::text
              from jsonb_array_elements((select plataforma_unidades(sindica, ipe) -> 'unidades' from ids, c)) x where x ->> 'identificacao' = '102'),
   '(true,"Roberto Dias","Joana Lima",INQUILINO)', 'a lista diz o responsável e o proprietário que não mora');

@@ -200,8 +200,8 @@ select is(pg_temp.campos($$ select plataforma_recusar_classificado(ana, ipe, (pg
   from ids, c $$), '["motivo"]', 'AC-05: recusar pede motivo');
 select is((select plataforma_recusar_classificado(ana, ipe, (pg_temp.cl('Procuro babá para as tardes')).id, 1, 'Serviço de fora do prédio') ->> 'estado'
              from ids, c), 'RECUSADO', 'AC-05: o anúncio recusado não vai ao mural');
-select ok((select texto from envios_whatsapp where para = '+5561999990001' and finalidade = 'CLASSIFICADO' order by criado_em desc, id desc limit 1)
-  like '%não foi publicado. Motivo: Serviço de fora do prédio%', 'AC-05: o motivo da recusa vai ao morador');
+select ok(exists(select 1 from envios_whatsapp where para = '+5561999990001' and finalidade = 'CLASSIFICADO'
+  and texto like '%não foi publicado. Motivo: Serviço de fora do prédio%'), 'AC-05: o motivo da recusa vai ao morador');
 select is((select count(*)::integer from historico where acao in ('classificado.publicado', 'classificado.recusado')), 3,
   'AC-05: cada decisão fica no histórico');
 

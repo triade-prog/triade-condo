@@ -39,8 +39,8 @@ function Conteudo({ dados }: { dados: Agenda }) {
   const hoje = dados.hoje;
   const ativos = dados.compromissos.filter((c) => c.estado !== "CANCELADO");
   const deHoje = ativos.filter((c) => c.data === hoje);
-  // As reservas confirmadas de hoje (peça R12), entre os compromissos pela hora.
-  const reservas = dados.datas.filter((d) => d.data === hoje && d.fonte === "RESERVA");
+  // As reservas confirmadas e as assembleias de hoje (peça R12, AG-09), entre os compromissos pela hora.
+  const reservas = dados.datas.filter((d) => d.data === hoje && (d.fonte === "RESERVA" || d.fonte === "ASSEMBLEIA"));
   const amanha = somarDias(hoje, 1);
   const nAmanha = ativos.filter((c) => c.data === amanha).length;
   const proximo = ativos.find((c) => c.data > amanha);
@@ -54,7 +54,7 @@ function Conteudo({ dados }: { dados: Agenda }) {
       {deHoje.length + reservas.length ? (
         <ul className="grid gap-2">
           {[...deHoje.map((c) => ({ hora: c.horaInicio ?? "", item: <LinhaCompromisso key={c.id} c={c} /> })),
-            ...reservas.map((d) => ({ hora: d.horaInicio ?? "", item: <LinhaDataDeFora key={d.id} d={d} /> }))]
+            ...reservas.map((d) => ({ hora: d.horaInicio ?? "", item: <LinhaDataDeFora key={d.id} d={d} hoje={hoje} /> }))]
             .sort((a, b) => a.hora.localeCompare(b.hora)).map((x) => x.item)}
         </ul>
       ) : <p className="text-sm text-tinta-suave">Nada marcado para hoje.</p>}

@@ -101,15 +101,24 @@ vencido: (id: string) => boolean): Promise<void | null> {
   if (caminho === "/v1/condominio/indicadores") {
     if (!pode("pedidos.ver")) return erro(route, 403, "FORBIDDEN");
     const periodo = url.searchParams.get("periodo") ?? "ESTE_MES";
+    // TR-01: as pendências são de agora; o tempo de solução segue o período.
+    const pendencias = [
+      { responsavelId: "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e", nome: "Ana Souza", abertos: 2, retornoVencido: 1, maisAntigoDias: 12 },
+      { responsavelId: null, nome: null, abertos: 1, retornoVencido: 1, maisAntigoDias: 1 },
+    ];
+    const solucao = periodo === "ESTE_MES"
+      ? [{ categoriaId: novoId(), nome: "Manutenção", concluidos: 3, medianaHoras: 52, maisDemoradoHoras: 144 },
+        { categoriaId: novoId(), nome: "Limpeza", concluidos: 0, medianaHoras: null, maisDemoradoHoras: null }]
+      : [{ categoriaId: novoId(), nome: "Limpeza", concluidos: 9, medianaHoras: 5, maisDemoradoHoras: 26 }];
     if (periodo === "ESTE_MES") {
-      return route.fulfill({ json: { periodo, porcentagemAnterior: 86, atual: {
+      return route.fulfill({ json: { periodo, porcentagemAnterior: 86, pendencias, solucao, atual: {
         de: "2026-10-01", ate: "2026-10-16", retornos: { total: 0, noPrazo: 0, porcentagem: null }, primeiroRetornoHoras: null,
         registrados: 3, concluidos: 0, reabertos: 0,
         porCategoria: [{ categoriaId: novoId(), nome: "Manutenção", retornos: null, noPrazo: null, porcentagem: null, concluidos: 0 }],
       } } });
     }
     const { mes: _m, porcentagemAnterior, ...numeros } = MES_FECHADO;
-    return route.fulfill({ json: { periodo, porcentagemAnterior, atual: { ...numeros, porCategoria: [
+    return route.fulfill({ json: { periodo, porcentagemAnterior, pendencias, solucao, atual: { ...numeros, porCategoria: [
       { categoriaId: novoId(), nome: "Limpeza", retornos: 10, noPrazo: 8, porcentagem: 80, concluidos: 9 },
       { categoriaId: novoId(), nome: "Manutenção", retornos: 30, noPrazo: 27, porcentagem: 90, concluidos: 29 },
       { categoriaId: novoId(), nome: "Segurança", retornos: null, noPrazo: null, porcentagem: null, concluidos: 0 },

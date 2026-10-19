@@ -33,6 +33,7 @@ function montar(handlers: Record<string, (a: Record<string, unknown>) => unknown
     plataforma_registrar_mudanca: () => ({ saem: 1, entram: 1 }),
     plataforma_confirmar_contatos: (a) => (a.p_itens as unknown[]).length,
     plataforma_importar_moradores: (a) => ({ linhas: (a.p_linhas as unknown[]).length }),
+    plataforma_marcar_unidade: (a) => Number(a.p_versao) + 1,
     ...handlers,
   });
   const app = criarApiPlataforma("segredo-de-repasse-de-teste", {
@@ -213,4 +214,14 @@ Deno.test("as listas do domínio (relações e motivos) são as mesmas do banco"
   for (const s of [...Object.keys(LIGACOES), ...Object.keys(PARENTESCOS), ...Object.keys(OCUPACOES)]) {
     assert(vinculo.includes(`'${s}'`), s);
   }
+});
+
+Deno.test("MU-11: as marcas de venda e aluguel vão juntas ao banco", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  const r = await m.pedir(`/v1/condominio/unidades/${ITEM}/situacao`, { corpo: { versao: 3, aVenda: true, paraAlugar: false }, cookie });
+  assertEquals(await r.json(), { versao: 4 });
+  assertEquals(chamada(m, "plataforma_marcar_unidade"), { p_pessoa: ANA, p_condominio: AURORA, p_id: ITEM, p_versao: 3, p_a_venda: true, p_para_alugar: false });
+  const ruim = await m.pedir(`/v1/condominio/unidades/${ITEM}/situacao`, { corpo: { versao: 3, aVenda: true }, cookie });
+  assertEquals(await erro(ruim), { codigo: "VALIDATION_ERROR", detalhes: { campos: ["paraAlugar"] } });
 });

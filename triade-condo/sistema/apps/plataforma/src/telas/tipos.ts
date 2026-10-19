@@ -82,6 +82,9 @@ export interface UnidadeResumo {
   proprietario: string | null;
   proprietarioNaoMora: boolean;
   semResponsavel: boolean;
+  /** MU-11: marcada à venda e para alugar. */
+  aVenda: boolean;
+  paraAlugar: boolean;
 }
 
 export interface Unidades {
@@ -90,7 +93,7 @@ export interface Unidades {
   unidades: UnidadeResumo[];
   resumo: { unidades: number; semContato: number; aConfirmar: number; semProprietario: number };
   /** Contadores do topo da lista (passo 3b, MU-11). */
-  ocupacao: { comMorador: number; alugadas: number; proprietarioNaoMora: number; semResponsavel: number };
+  ocupacao: { comMorador: number; alugadas: number; proprietarioNaoMora: number; semResponsavel: number; aVenda: number; paraAlugar: number };
   podeEditar: boolean;
   podeConfirmar: boolean;
 }
@@ -141,7 +144,11 @@ export interface ContatoAnterior {
 }
 
 export interface UnidadeDetalhe {
-  unidade: { id: string; identificacao: string; blocoId: string | null; andar: string | null; bloco: string | null; ativa: boolean; versao: number };
+  unidade: {
+    id: string; identificacao: string; blocoId: string | null; andar: string | null; bloco: string | null; ativa: boolean; versao: number;
+    /** MU-11: desde quando está à venda e para alugar; nulo quando não está. */
+    aVendaDesde: string | null; paraAlugarDesde: string | null;
+  };
   contatos: ContatoDaUnidade[];
   anteriores: ContatoAnterior[];
   ocupacao: { situacao: Ocupacao; moram: number; proprietarioNaoMora: boolean };
@@ -293,6 +300,10 @@ export interface Indicadores {
     porCategoria: { categoriaId: string; nome: string; retornos: number | null; noPrazo: number | null; porcentagem: number | null; concluidos: number }[];
   };
   porcentagemAnterior: number | null;
+  /** Pendências de agora por responsável (TR-01); sem responsável vem com id e nome nulos, no fim. */
+  pendencias: { responsavelId: string | null; nome: string | null; abertos: number; retornoVencido: number; maisAntigoDias: number }[];
+  /** Tempo de solução por categoria no período (TR-01), em horas corridas; sem pedido concluído, sem número. */
+  solucao: { categoriaId: string; nome: string; concluidos: number; medianaHoras: number | null; maisDemoradoHoras: number | null }[];
 }
 
 export type MesFechado = NumerosAtendimento & { mes: string; porcentagemAnterior?: number | null };
@@ -426,9 +437,15 @@ export interface CompromissoAgenda {
 export interface DataDeOutraTela {
   data: string;
   titulo: string;
-  fonte: "FERIADO" | "PREVENTIVA" | "RESERVA";
-  /** Na preventiva e na reserva, o id dela. */
+  fonte: "FERIADO" | "PREVENTIVA" | "RESERVA" | "CONTRATO" | "DOCUMENTO" | "ASSEMBLEIA";
+  /** Na preventiva, na reserva, no contrato (o prestador), no documento e na assembleia, o id dela. */
   id?: string;
+  /** No documento (AG-09): se é restrito. */
+  restrito?: boolean;
+  /** Na assembleia (AG-09, AC-02): a 2ª chamada, o local e a situação. */
+  segundaChamada?: string;
+  local?: string;
+  estado?: "CONVOCADA" | "EM_ANDAMENTO";
   /** Na reserva confirmada (peça R12, AG-09): o horário e quem pediu. */
   horaInicio?: string;
   horaFim?: string;
