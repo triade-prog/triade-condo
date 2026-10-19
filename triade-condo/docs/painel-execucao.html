@@ -30,7 +30,7 @@
     "total_ideias": 311,
     "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7), Manutenção e prestadores (R6) e Comunicados e documentos (R1), com o mural online e o e-mail (R1b), Links e QR (R13), a Memória do prédio (R10), Implantação e suporte (R4) e o WhatsApp do condomínio (passo 5, piloto pelo Wafly) construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), comunicados (rascunho, programado e publicado, com versões, público calculado, copiar para o grupo e versão para o mural, mural online por link e QR e envio por e-mail) e documentos do prédio com versões, validade e envio por e-mail, etiquetas QR por local que abrem o WhatsApp do condomínio e o link do prestador na manutenção, com a chegada pela etiqueta, a memória do prédio (prontuário, linha do tempo, manual do prédio com aba no mural, dossiê de passagem de bastão e exportação de todo o histórico), moradores e unidades, configurações, pessoas e acesso e Ajuda e suporte (chamados com imagem colada e aprovação do acesso excepcional da TRÍADE); o Console tem carteira, ficha com a implantação em 8 etapas e a entrega, troca de síndico, suporte de acesso sem ver senha, chamados e acesso excepcional; o WhatsApp do condomínio (piloto) tem a aba WhatsApp na ficha do Console (credenciais, QR ou código, conferir o aparelho, desconectar com motivo), o menu WhatsApp na Plataforma (A identificar e falhas de envio), a conversa no pedido e Configurações › WhatsApp; nenhuma tela usa emoji. Tudo testado localmente (1261 pgTAP, 178 Deno, 146 Vitest, 240 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0191 (com as rotinas de prazos, manutenção, comunicados e fila de e-mails no pg_cron) e as Edge Functions api-plataforma (versão 15, com o mural, o e-mail, Links e QR, a Memória do prédio e Ajuda e suporte) e api-console (versão 5, com implantação, troca de síndico, suporte de acesso, chamados e acesso excepcional); o envio de e-mails espera os segredos no Vault e na função; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "R",
-    "proximo_passo": "Com a Carolina: aplicar a migration 0200 no triade-condo-dev, gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE (32 bytes em base64, a mesma) nas funções api-plataforma e api-console e criar a instância do Wafly com um número exclusivo do Águas Claras; eu confiro a 0200 e publico as duas APIs; a síndica aceita o termo do piloto e a TRÍADE conecta pelo Console; testar com mensagem de verdade e confirmar o formato da mídia. Conferir no Console uma implantação de ponta a ponta (com o pedido de teste feito pela síndica), um chamado e um acesso excepcional aprovado na Plataforma. Conferir a Memória do prédio (R10) no condominio.trihub.com.br, com o prontuário, o dossiê e uma exportação de verdade. Testar Links e QR num celular de verdade (etiqueta e câmera do prestador) e no Águas Claras (E8). Mural online e e-mail (R1b): gravar os segredos do e-mail (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault, que também fazem a exportação andar sozinha) e cadastrar o aviso do Resend. Liberar o GitHub Actions (F0.9) e escolher o provedor oficial do WhatsApp (E1)."
+    "proximo_passo": "Com a Carolina: publicar a api-plataforma com o WhatsApp (a 0200 está aplicada e a api-console versão 6 publicada), gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE (32 bytes em base64, a mesma) nas funções api-plataforma e api-console e criar a instância do Wafly com um número exclusivo do Águas Claras, e api_plataforma_url e repasse_segredo no Vault; a síndica aceita o termo do piloto e a TRÍADE conecta pelo Console; testar com mensagem de verdade e confirmar o formato da mídia. Conferir no Console uma implantação de ponta a ponta (com o pedido de teste feito pela síndica), um chamado e um acesso excepcional aprovado na Plataforma. Conferir a Memória do prédio (R10) no condominio.trihub.com.br, com o prontuário, o dossiê e uma exportação de verdade. Testar Links e QR num celular de verdade (etiqueta e câmera do prestador) e no Águas Claras (E8). Mural online e e-mail (R1b): gravar os segredos do e-mail (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault, que também fazem a exportação andar sozinha) e cadastrar o aviso do Resend. Liberar o GitHub Actions (F0.9) e escolher o provedor oficial do WhatsApp (E1)."
   },
   "fases": [
     {
@@ -555,7 +555,7 @@
             "W-01"
           ],
           "status": "andamento",
-          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 esperando a Carolina aplicar no triade-condo-dev e os segredos WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções. O conector é trocável (o resto do sistema não sabe qual provedor está ligado) e o número é um por condomínio, conferido com o aparelho conectado; falta o conector oficial (E1) para produção."
+          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 aplicada pela Carolina no triade-condo-dev em 18/10/2026 e conferida; api-console versão 6 publicada; falta publicar a api-plataforma e gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções e api_plataforma_url e repasse_segredo no Vault. O conector é trocável (o resto do sistema não sabe qual provedor está ligado) e o número é um por condomínio, conferido com o aparelho conectado; falta o conector oficial (E1) para produção."
         },
         {
           "id": "F5.2",
@@ -565,7 +565,7 @@
             "W-15"
           ],
           "status": "feito",
-          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 esperando a Carolina aplicar no triade-condo-dev e os segredos WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções. O Wafly não assina os avisos: cada condomínio tem um endereço com segredo próprio (só o embaralhado fica no banco), e o condomínio vem da instância, nunca do texto. Risco aceito no piloto.",
+          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 aplicada pela Carolina no triade-condo-dev em 18/10/2026 e conferida; api-console versão 6 publicada; falta publicar a api-plataforma e gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções e api_plataforma_url e repasse_segredo no Vault. O Wafly não assina os avisos: cada condomínio tem um endereço com segredo próprio (só o embaralhado fica no banco), e o condomínio vem da instância, nunca do texto. Risco aceito no piloto.",
           "evidencia": "pgTAP 021_whatsapp_test.sql (111 testes); Deno _shared/whatsapp_test.ts (7), api-plataforma/whatsapp_test.ts (8) e api-console/whatsapp_test.ts (6); Vitest whatsapp.test.ts (5); Playwright plataforma-whatsapp.spec.ts e console-whatsapp.spec.ts (6 cenários × 2 aparelhos)"
         },
         {
@@ -578,7 +578,7 @@
             "PT-04"
           ],
           "status": "feito",
-          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 esperando a Carolina aplicar no triade-condo-dev e os segredos WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções. A mensagem é gravada junto com a alteração e a rotina enviar-whatsapp manda a cada minuto; só falha passageira repete, até 5 vezes; tempo esgotado vira resultado desconhecido e não repete.",
+          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 aplicada pela Carolina no triade-condo-dev em 18/10/2026 e conferida; api-console versão 6 publicada; falta publicar a api-plataforma e gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções e api_plataforma_url e repasse_segredo no Vault. A mensagem é gravada junto com a alteração e a rotina enviar-whatsapp manda a cada minuto; só falha passageira repete, até 5 vezes; tempo esgotado vira resultado desconhecido e não repete.",
           "evidencia": "pgTAP 021_whatsapp_test.sql (111 testes); Deno _shared/whatsapp_test.ts (7), api-plataforma/whatsapp_test.ts (8) e api-console/whatsapp_test.ts (6); Vitest whatsapp.test.ts (5); Playwright plataforma-whatsapp.spec.ts e console-whatsapp.spec.ts (6 cenários × 2 aparelhos)"
         },
         {
@@ -599,7 +599,7 @@
             "W-08"
           ],
           "status": "feito",
-          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 esperando a Carolina aplicar no triade-condo-dev e os segredos WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções. Texto, foto e documento com as conferências dos pedidos; áudio e vídeo até 16 MB, sem transcrição. Confirmação com protocolo, sem prometer prazo, com o 193 e o aviso contra golpes.",
+          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 aplicada pela Carolina no triade-condo-dev em 18/10/2026 e conferida; api-console versão 6 publicada; falta publicar a api-plataforma e gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções e api_plataforma_url e repasse_segredo no Vault. Texto, foto e documento com as conferências dos pedidos; áudio e vídeo até 16 MB, sem transcrição. Confirmação com protocolo, sem prometer prazo, com o 193 e o aviso contra golpes.",
           "evidencia": "pgTAP 021_whatsapp_test.sql (111 testes); Deno _shared/whatsapp_test.ts (7), api-plataforma/whatsapp_test.ts (8) e api-console/whatsapp_test.ts (6); Vitest whatsapp.test.ts (5); Playwright plataforma-whatsapp.spec.ts e console-whatsapp.spec.ts (6 cenários × 2 aparelhos)"
         },
         {
@@ -612,7 +612,7 @@
             "AT-28"
           ],
           "status": "feito",
-          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 esperando a Carolina aplicar no triade-condo-dev e os segredos WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções. O morador vê só os pedidos que ele abriu, com os status combinados; REVISAR vira pedido de revisão para quem cuida e nunca reabre sozinho.",
+          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 aplicada pela Carolina no triade-condo-dev em 18/10/2026 e conferida; api-console versão 6 publicada; falta publicar a api-plataforma e gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções e api_plataforma_url e repasse_segredo no Vault. O morador vê só os pedidos que ele abriu, com os status combinados; REVISAR vira pedido de revisão para quem cuida e nunca reabre sozinho.",
           "evidencia": "pgTAP 021_whatsapp_test.sql (111 testes); Deno _shared/whatsapp_test.ts (7), api-plataforma/whatsapp_test.ts (8) e api-console/whatsapp_test.ts (6); Vitest whatsapp.test.ts (5); Playwright plataforma-whatsapp.spec.ts e console-whatsapp.spec.ts (6 cenários × 2 aparelhos)"
         },
         {
@@ -623,7 +623,7 @@
             "W-12"
           ],
           "status": "feito",
-          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 esperando a Carolina aplicar no triade-condo-dev e os segredos WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções. Uma resposta por período fora do horário, com o texto do condomínio; a tela recusa promessa de prazo.",
+          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 aplicada pela Carolina no triade-condo-dev em 18/10/2026 e conferida; api-console versão 6 publicada; falta publicar a api-plataforma e gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções e api_plataforma_url e repasse_segredo no Vault. Uma resposta por período fora do horário, com o texto do condomínio; a tela recusa promessa de prazo.",
           "evidencia": "pgTAP 021_whatsapp_test.sql (111 testes); Deno _shared/whatsapp_test.ts (7), api-plataforma/whatsapp_test.ts (8) e api-console/whatsapp_test.ts (6); Vitest whatsapp.test.ts (5); Playwright plataforma-whatsapp.spec.ts e console-whatsapp.spec.ts (6 cenários × 2 aparelhos)"
         },
         {
@@ -634,7 +634,7 @@
             "W-16"
           ],
           "status": "feito",
-          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 esperando a Carolina aplicar no triade-condo-dev e os segredos WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções. PARAR desliga os avisos que o condomínio inicia e VOLTAR religa; respostas continuam. Fica no contato e no histórico.",
+          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 aplicada pela Carolina no triade-condo-dev em 18/10/2026 e conferida; api-console versão 6 publicada; falta publicar a api-plataforma e gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções e api_plataforma_url e repasse_segredo no Vault. PARAR desliga os avisos que o condomínio inicia e VOLTAR religa; respostas continuam. Fica no contato e no histórico.",
           "evidencia": "pgTAP 021_whatsapp_test.sql (111 testes); Deno _shared/whatsapp_test.ts (7), api-plataforma/whatsapp_test.ts (8) e api-console/whatsapp_test.ts (6); Vitest whatsapp.test.ts (5); Playwright plataforma-whatsapp.spec.ts e console-whatsapp.spec.ts (6 cenários × 2 aparelhos)"
         }
       ]
@@ -675,7 +675,7 @@
             "W-11"
           ],
           "status": "feito",
-          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 esperando a Carolina aplicar no triade-condo-dev e os segredos WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções. Cada pessoa liga os próprios avisos (novo pedido, retorno vencido, pedido de revisão), só no horário de funcionamento e sem nome nem telefone do morador. O aviso de número desconectado ficou só no sino, porque número caído não envia.",
+          "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 aplicada pela Carolina no triade-condo-dev em 18/10/2026 e conferida; api-console versão 6 publicada; falta publicar a api-plataforma e gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções e api_plataforma_url e repasse_segredo no Vault. Cada pessoa liga os próprios avisos (novo pedido, retorno vencido, pedido de revisão), só no horário de funcionamento e sem nome nem telefone do morador. O aviso de número desconectado ficou só no sino, porque número caído não envia.",
           "evidencia": "pgTAP 021_whatsapp_test.sql (111 testes); Deno _shared/whatsapp_test.ts (7), api-plataforma/whatsapp_test.ts (8) e api-console/whatsapp_test.ts (6); Vitest whatsapp.test.ts (5); Playwright plataforma-whatsapp.spec.ts e console-whatsapp.spec.ts (6 cenários × 2 aparelhos)"
         },
         {
@@ -1524,6 +1524,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "18/10/2026",
+      "inicio": "22:25",
+      "fim": "22:50",
+      "texto": "A Carolina aplicou a 0200 no triade-condo-dev. Conferido no banco: as 8 tabelas do WhatsApp com RLS forçado e políticas, as funções da conversa, da fila e das telas, as ações do Console, as colunas novas da configuração e do contato, o canal WHATSAPP nos pedidos, o bucket pedidos com áudio e vídeo até 16 MB e a rotina enviar-whatsapp a cada minuto. O Vault ainda não tem api_plataforma_url nem repasse_segredo: a rotina roda e não chama nada. A api-console versão 6, com a aba WhatsApp, foi publicada e responde. A api-plataforma ainda não foi publicada.",
+      "ref": "F5, W-01, W-15"
+    },
     {
       "data": "18/10/2026",
       "inicio": "18:24",
