@@ -27,6 +27,8 @@ export function criarWhatsapp(pedido: { id: string; protocolo: string }, categor
         triagem: "A_IDENTIFICAR", vinculoPendente: false },
       { id: novoId(), telefone: "+5561966665555", tipo: "TEXTO", texto: "O interfone do 203 não toca", enviadaEm: "2026-10-17T22:02:00Z",
         triagem: "A_IDENTIFICAR", vinculoPendente: true },
+      { id: novoId(), telefone: "+5561955554444", tipo: "TEXTO", texto: "Mandei ontem: o portão travou", enviadaEm: "2026-10-16T09:00:00Z",
+        triagem: "A_IDENTIFICAR", vinculoPendente: false, atrasada: true },
     ],
     falhas: [
       { id: novoId(), finalidade: "RETORNO", estado: "FALHOU", motivo: "Número sem WhatsApp", tentativas: 1, criadoEm: "2026-10-18T12:30:00Z",
@@ -45,6 +47,8 @@ export function criarWhatsapp(pedido: { id: string; protocolo: string }, categor
     config: { foraHorario: "Recebemos sua mensagem fora do horário de atendimento. Ela fica registrada e o condomínio confere no próximo horário. Em emergência, ligue 193.",
               categoriaId, prioridadeId, anexarMinutos: 30, versao: 1 },
     meusAvisos: undefined as { telefone: string; tipos: string[]; ligado: boolean; versao: number } | undefined,
+    janela: { aberta: true, ate: "2026-10-19T18:41:00Z", limite: 2000, parou: false } as
+      { aberta: boolean; ate?: string; limite: number; parou: boolean; modelo?: { titulo: string; previa: string } },
     enviados: [] as string[],
   };
 }
@@ -63,15 +67,17 @@ export async function rotasWhatsapp(route: Route, w: EstadoWhatsapp, caminho: st
   if (pc) {
     const id = pc[1]!;
     if (metodo === "GET") {
-      return route.fulfill({ json: { mensagens: w.conversas[id] ?? [], revisoes: w.revisoes[id] ?? [],
+      return route.fulfill({ json: { mensagens: w.conversas[id] ?? [], revisoes: w.revisoes[id] ?? [], janela: w.janela,
         pode: { responder: pode("pedidos.responder") && !!w.conversas[id], decidirRevisao: pode("pedidos.responder") } } });
     }
     if (String(corpo.texto ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["texto"] });
     if (corpo.versao !== pedidoVersao(id)) return erro(route, 409, "VERSION_CONFLICT", {});
+    if (!w.janela.aberta && String(corpo.texto).trim().length > 800) return erro(route, 400, "VALIDATION_ERROR", { motivo: "LONGO_FORA_DA_JANELA" });
+    const aviso = !w.janela.aberta ? (w.janela.parou ? "PAROU" : w.janela.modelo ? undefined : "SEM_MODELO") : undefined;
     (w.conversas[id] ??= []).push({ id: novoId(), lado: "CONDOMINIO", tipo: "TEXTO", texto: String(corpo.texto).trim(), em: agora(),
       finalidade: "RETORNO", autor: eu.nome, estado: "NA_FILA" });
     w.enviados.push(String(corpo.texto).trim());
-    return route.fulfill({ status: 201, json: { versao: (pedidoVersao(id) ?? 1) + 1, envio: novoId() } });
+    return route.fulfill({ status: 201, json: { versao: (pedidoVersao(id) ?? 1) + 1, envio: novoId(), ...(aviso ? { aviso } : {}) } });
   }
   if (!caminho.startsWith("/v1/condominio/whatsapp")) return null;
 

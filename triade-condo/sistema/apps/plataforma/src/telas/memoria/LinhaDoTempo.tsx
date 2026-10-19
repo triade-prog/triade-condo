@@ -23,6 +23,7 @@ const ICONE: Record<EventoMemoria["fonte"], { icone: NomeIcone; tom: string }> =
   PRONTUARIO: { icone: "alerta", tom: "bg-atencao-fundo text-atencao" },
   COMUNICADO: { icone: "megafone", tom: "bg-superficie-2 text-tinta" },
   PESSOA: { icone: "pessoa", tom: "bg-violeta-50 text-violeta-700" },
+  ASSEMBLEIA: { icone: "convivio", tom: "bg-superficie-2 text-tinta" },
 };
 
 function ligacaoTexto(l: EventoMemoria["ligacao"]): string | null {
@@ -36,6 +37,7 @@ function linkDo(e: EventoMemoria): string | null {
   if (e.fonte === "MANUTENCAO") return `/manutencao/manutencao?id=${e.manutencaoId}`;
   if (e.fonte === "DOCUMENTO") return `/comunicados/documento?id=${e.documentoId}`;
   if (e.fonte === "COMUNICADO") return `/comunicados/comunicado?id=${e.id}`;
+  if (e.fonte === "ASSEMBLEIA") return `/vida/assembleia?id=${e.id}`;
   return null;
 }
 

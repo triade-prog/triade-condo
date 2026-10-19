@@ -25,7 +25,8 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
     if (await page.getByRole("button", { name: "Menu" }).isVisible()) await page.getByRole("button", { name: "Menu" }).click();
     await page.getByRole("link", { name: /^WhatsApp/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "WhatsApp" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "A identificar (2)" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "A identificar (3)" })).toBeVisible();
+    await expect(page.getByText("Chegou com o número desconectado")).toBeVisible();
     await expect(page.getByText("Vínculo a confirmar")).toBeVisible();
     await conferir(page);
 
@@ -48,8 +49,8 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
     await conferir(page);
     await lig.getByRole("button", { name: "Confirmar" }).click();
     await expect(page.getByText("Número ligado ao contato. As próximas mensagens já são reconhecidas.")).toBeVisible();
-    await expect(page.getByText("Nada a identificar")).toBeVisible();
-    expect(estado.whatsapp.aIdentificar).toHaveLength(0);
+    expect(estado.whatsapp.aIdentificar).toHaveLength(1);
+    await expect(page.getByText("Mandei ontem: o portão travou")).toBeVisible();
   });
 
   test("W-16: a falha de envio aparece com responsável e é reenviada com motivo", async ({ page }) => {
@@ -130,5 +131,42 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
     await page.getByRole("button", { name: "Salvar meus avisos" }).click();
     await expect(page.getByText("Seus avisos no WhatsApp foram salvos.")).toBeVisible();
     expect(estado.whatsapp.meusAvisos?.telefone).toBe("+5561991002233");
+  });
+
+  test("W-20: conversa fechada: a resposta vai pelo modelo, até 800 caracteres, e sem modelo avisa", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
+    const pedido = estado.pedidos[0]!;
+    estado.whatsapp.janela = { aberta: false, limite: 800, parou: false, modelo: { titulo: "Notícia do pedido",
+      previa: `Notícia do seu pedido ${pedido.protocolo} no Residencial Ipê:\n\n{{texto}}\n\nAna, do condomínio\n\nPara responder, é só mandar mensagem aqui.\n\nPara não receber mais avisos, responda PARAR.` } };
+    await page.goto(`${PLATAFORMA}/pedidos/pedido?id=${pedido.id}`);
+    const conversa = page.getByRole("region", { name: "Conversa do WhatsApp" });
+    await expect(conversa.getByText(/A conversa no WhatsApp fechou/)).toBeVisible();
+    await expect(conversa.getByText(/dentro do modelo Notícia do pedido, até 800 caracteres/)).toBeVisible();
+    await conversa.getByLabel("Responder pelo WhatsApp").fill("O eletricista vem amanhã.");
+    await expect(conversa.getByText(/no Residencial Ipê:\s+O eletricista vem amanhã\./)).toBeVisible();
+    await conferir(page);
+    await conversa.getByLabel("Responder pelo WhatsApp").fill("a".repeat(801));
+    await expect(conversa.getByText("800 de 800 caracteres")).toBeVisible();
+    await conversa.getByLabel("Responder pelo WhatsApp").fill("O eletricista vem amanhã de manhã.");
+    await conversa.getByRole("button", { name: "Enviar e registrar retorno" }).click();
+    await expect(page.getByText("Retorno registrado e enviado pelo WhatsApp.")).toBeVisible();
+
+    estado.whatsapp.janela = { aberta: false, limite: 800, parou: false };
+    await page.reload();
+    await expect(conversa.getByText(/Ainda não há modelo aprovado para esta mensagem/)).toBeVisible();
+    await conversa.getByLabel("Responder pelo WhatsApp").fill("O reator chega amanhã.");
+    await conversa.getByRole("button", { name: "Enviar e registrar retorno" }).click();
+    await expect(page.getByText("Retorno registrado. A mensagem não vai pelo WhatsApp: avise por outro meio.")).toBeVisible();
+    await expect(conversa.getByRole("heading", { name: "Não deu para enviar" }).or(conversa.getByText("Não deu para enviar"))).toBeVisible();
+    await conferir(page);
+  });
+
+  test("W-20: conversa aberta: diz até quando e que não é prazo de atendimento", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
+    await page.goto(`${PLATAFORMA}/pedidos/pedido?id=${estado.pedidos[0]!.id}`);
+    const conversa = page.getByRole("region", { name: "Conversa do WhatsApp" });
+    await expect(conversa.getByText(/Conversa aberta no WhatsApp até/)).toBeVisible();
+    await expect(conversa.getByText(/Isto não é prazo de atendimento/)).toBeVisible();
+    await expect(conversa.getByText(/de 2000 caracteres/)).toBeVisible();
   });
 });

@@ -18,3 +18,4 @@ export * from "./links.ts";
 export * from "./memoria.ts";
 export * from "./suporte.ts";
 export * from "./whatsapp.ts";
+export * from "./vida.ts";

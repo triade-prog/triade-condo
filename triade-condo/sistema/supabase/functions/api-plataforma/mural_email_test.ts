@@ -238,6 +238,20 @@ Deno.test("CD-13, CD-14: o e-mail de confirmação e o do documento", () => {
   const corrigido = montarEmail({ ...MSG, comunicado: { ...MSG.comunicado!, correcao: "Mudou o horário" } }, end);
   assertEquals(corrigido.assunto, "[Residencial Aurora] Corrigido: Falta de água na quinta");
   assertStringIncludes(corrigido.html, "O que mudou:");
+  const enq = montarEmail({ ...MSG, tipo: "ENQUETE", codigos: { responder: MURAL, parar: CODIGO }, comunicado: undefined,
+    enquete: { pergunta: "Qual cor para a fachada?", prazo: "31/10, às 23:59", dono: "da Torre A · 302", lembrete: true, secreta: true } }, end);
+  assertEquals(enq.assunto, "[Residencial Aurora] Lembrete: Enquete: Qual cor para a fachada?");
+  assertStringIncludes(enq.html, `https://plataforma.exemplo/v/${MURAL}`);
+  assertStringIncludes(enq.texto, "ainda falta a resposta da Torre A · 302");
+  assertStringIncludes(enq.texto, "o condomínio vê só quem respondeu, não o que respondeu");
+  assertStringIncludes(enq.cabecalhos?.["List-Unsubscribe"] ?? "", `/v1/email/parar/${CODIGO}`);
+  const ass = montarEmail({ ...MSG, tipo: "ASSEMBLEIA", codigos: { votar: MURAL, parar: CODIGO }, comunicado: undefined,
+    assembleia: { titulo: "AGO de março", nome: "assembleia geral ordinária", chamada: "sábado, 20/03, às 19:00", dono: "da Torre A · 302", lembrete: false } }, end);
+  assertEquals(ass.assunto, "[Residencial Aurora] AGO de março");
+  assertStringIncludes(ass.html, `https://plataforma.exemplo/a/${MURAL}`);
+  assertStringIncludes(ass.texto, "O Residencial Aurora convoca a assembleia geral ordinária, com 1ª chamada em sábado, 20/03, às 19:00.");
+  assertStringIncludes(ass.texto, "Pelo link, que é só da Torre A · 302, dá para indicar procurador");
+  assertStringIncludes(ass.cabecalhos?.["List-Unsubscribe"] ?? "", `/v1/email/parar/${CODIGO}`);
 });
 
 Deno.test("CD-13: o Resend recebe o lote e devolve um id por e-mail; 429 tenta de novo", async () => {

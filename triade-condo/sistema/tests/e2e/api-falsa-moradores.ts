@@ -4,7 +4,11 @@
 import type { Route } from "@playwright/test";
 
 interface Bloco { id: string; nome: string; ordem: number; ativo: boolean; versao: number }
-interface Unidade { id: string; blocoId: string | null; andar: string | null; identificacao: string; ativa: boolean; versao: number }
+interface Unidade {
+  id: string; blocoId: string | null; andar: string | null; identificacao: string; ativa: boolean; versao: number;
+  /** MU-11: desde quando está à venda e para alugar. */
+  aVendaDesde?: string | null; paraAlugarDesde?: string | null;
+}
 interface Contato {
   id: string; nome: string | null; telefone: string | null; versao: number;
   /** E-mail do contato (CD-13). */
@@ -151,7 +155,7 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     return route.fulfill({ json: {
       estrutura: m.estrutura,
       blocos: m.blocos,
-      unidades: lista.map((x) => ({ ...x,
+      unidades: lista.map(({ aVendaDesde, paraAlugarDesde, ...x }) => ({ ...x, aVenda: Boolean(aVendaDesde), paraAlugar: Boolean(paraAlugarDesde),
         confirmados: ativos(x.id).filter((v) => v.estado === "CONFIRMADO").length,
         pendentes: ativos(x.id).filter((v) => v.estado === "PENDENTE").length,
         temProprietario: ativos(x.id).some((v) => v.proprietario),
@@ -168,17 +172,19 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
         alugadas: as.filter((x) => ocupacao(ativos(x.id)) === "ALUGADA").length,
         proprietarioNaoMora: as.filter((x) => naoMora(ativos(x.id))).length,
         semResponsavel: as.filter((x) => semResponsavel(ativos(x.id))).length,
+        aVenda: as.filter((x) => x.aVendaDesde).length,
+        paraAlugar: as.filter((x) => x.paraAlugarDesde).length,
       }))(m.unidades.filter((x) => x.ativa)),
       podeEditar: edita, podeConfirmar: confirma,
     } });
   }
-  const un = /^\/v1\/condominio\/unidades\/([^/]+)(?:\/(contatos|mudanca))?$/.exec(caminho);
+  const un = /^\/v1\/condominio\/unidades\/([^/]+)(?:\/(contatos|mudanca|situacao))?$/.exec(caminho);
   if (un) {
     const x = unidade(un[1]!);
     if (!x) return erro(route, 404, "NOT_FOUND");
     if (!un[2] && metodo === "GET") {
       return route.fulfill({ json: {
-        unidade: { ...x, bloco: m.blocos.find((b) => b.id === x.blocoId)?.nome ?? null },
+        unidade: { ...x, bloco: m.blocos.find((b) => b.id === x.blocoId)?.nome ?? null, aVendaDesde: x.aVendaDesde ?? null, paraAlugarDesde: x.paraAlugarDesde ?? null },
         contatos: ativos(x.id).sort((a, b) => Number(a.estado === "PENDENTE") - Number(b.estado === "PENDENTE") || Number(b.principal) - Number(a.principal)).map((v) => {
           const c = contato(v.contatoId);
           return { vinculoId: v.id, contatoId: c.id, nome: c.nome, telefone: c.telefone, contatoVersao: c.versao, relacao: v.relacao, principal: v.principal,
@@ -203,6 +209,15 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
       if (x.ativa && corpo.ativa === false && ativos(x.id).length) return erro(route, 400, "VALIDATION_ERROR", { motivo: "UNIDADE_COM_CONTATOS" });
       Object.assign(x, { identificacao: String(corpo.identificacao).trim(), blocoId: corpo.blocoId ?? null, andar: corpo.andar ?? null, ativa: corpo.ativa ?? x.ativa,
         versao: x.versao + 1 });
+      return route.fulfill({ json: { versao: x.versao } });
+    }
+    if (un[2] === "situacao" && metodo === "POST") {
+      if (!edita) return erro(route, 403, "FORBIDDEN");
+      const c = conflito(x, corpo.versao); if (c) return c;
+      const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+      x.aVendaDesde = corpo.aVenda ? x.aVendaDesde ?? hoje : null;
+      x.paraAlugarDesde = corpo.paraAlugar ? x.paraAlugarDesde ?? hoje : null;
+      x.versao += 1;
       return route.fulfill({ json: { versao: x.versao } });
     }
     if (un[2] === "contatos") {

@@ -13,6 +13,7 @@ import {
   periodoAgendaSchema,
   reagendarCompromissoSchema,
   somarDias,
+  textoVencimento,
 } from "./agenda.ts";
 
 const U = "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9";
@@ -75,5 +76,13 @@ describe("agenda (peça R7)", () => {
     expect(descreverEventoCompromisso("compromisso.reagendado", { de: "2026-10-13", para: "2026-10-20" })).toBe("Reagendado de 13/10/2026 para 20/10/2026");
     expect(descreverEventoCompromisso("estado.mudou", { de: "PLANEJADO", para: "CONFIRMADO" })).toBe("Confirmado");
     expect(descreverEventoCompromisso("estado.mudou", { para: "CANCELADO" })).toBe("Cancelado");
+  });
+
+  it("AG-09: quanto falta para vencer o contrato ou o documento", () => {
+    expect(textoVencimento("2026-11-10", "2026-12-02")).toBe("Vence em 22 dias");
+    expect(textoVencimento("2026-11-10", "2026-11-11")).toBe("Vence amanhã");
+    expect(textoVencimento("2026-11-10", "2026-11-10")).toBe("Vence hoje");
+    expect(textoVencimento("2026-11-10", "2026-11-09")).toBe("Venceu ontem");
+    expect(textoVencimento("2026-11-10", "2026-11-07")).toBe("Venceu há 3 dias");
   });
 });

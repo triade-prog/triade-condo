@@ -133,6 +133,10 @@ export function descreverEvento(e: EventoHistorico): string {
       return d.quantidade === 1 ? "1 unidade incluída" : `${String(d.quantidade)} unidades incluídas`;
     case "unidade.alterada":
       return "Unidade alterada";
+    case "unidade.situacao_mudou": {
+      const marcas = [d.aVenda ? "à venda" : null, d.paraAlugar ? "para alugar" : null].filter(Boolean);
+      return marcas.length ? `Unidade marcada ${marcas.join(" e ")}` : "Unidade sem marca de venda ou aluguel";
+    }
     case "contato.criado":
       return "Contato cadastrado";
     case "contato.alterado":

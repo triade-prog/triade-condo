@@ -63,8 +63,21 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
 const sobrepoe = (a: CompromissoFalso, i: string | null, f: string | null) =>
   !a.horaInicio || !i || (a.horaInicio < (f ?? i) && i < (a.horaFim ?? a.horaInicio)) || (!a.horaFim && !f && a.horaInicio === i);
 
+/** Datas de outras telas (AG-09), cada uma só para quem vê a tela de origem, como o banco manda. */
+function datasDeFora(hoje: string, pode: (a: string) => boolean) {
+  return [
+    ...(pode("manutencao.ver") ? [{ data: somar(hoje, 2), titulo: "Elevadores Atlas", fonte: "CONTRATO", id: "6b1c2d3e-4f5a-4b6c-8d7e-000000000001" }] : []),
+    ...(pode("documentos.ver") ? [{ data: somar(hoje, 3), titulo: "AVCB", fonte: "DOCUMENTO", id: "6b1c2d3e-4f5a-4b6c-8d7e-000000000002", restrito: false }] : []),
+    ...(pode("documentos.restritos")
+      ? [{ data: somar(hoje, 3), titulo: "Apólice do seguro", fonte: "DOCUMENTO", id: "6b1c2d3e-4f5a-4b6c-8d7e-000000000003", restrito: true }] : []),
+    ...(pode("assembleias.ver") ? [{ data: somar(hoje, 4), titulo: "Assembleia geral ordinária", fonte: "ASSEMBLEIA", id: "6b1c2d3e-4f5a-4b6c-8d7e-000000000004",
+      horaInicio: "19:00", segundaChamada: "19:30", local: "Salão de festas", estado: "CONVOCADA" }] : []),
+  ];
+}
+
 export async function rotasAgenda(route: Route, ag: EstadoAgenda, ctx: {
   pessoas: Pessoa[]; pedidos: PedidoFalso[]; moradores: Moradores; feriados: { data: string; descricao: string }[]; eu: { vinculo: string; nome: string };
+  datasDeFora?: boolean;
 }, caminho: string, metodo: string, corpo: Record<string, unknown>, url: URL, pode: (a: string) => boolean) {
   const pa = /^\/v1\/condominio\/pedidos\/([^/]+)\/agenda$/.exec(caminho);
   if (!caminho.startsWith("/v1/condominio/agenda") && !pa) return null;
@@ -144,7 +157,10 @@ export async function rotasAgenda(route: Route, ag: EstadoAgenda, ctx: {
       .sort((a, b) => a.data.localeCompare(b.data) || (a.horaInicio ?? "").localeCompare(b.horaInicio ?? ""));
     return route.fulfill({ json: {
       compromissos: lista.map(json), hoje, pode: { editar: pode("agenda.editar") },
-      datas: pode("config.ver") ? ctx.feriados.filter((f) => f.data >= de && f.data <= ate).map((f) => ({ data: f.data, titulo: f.descricao, fonte: "FERIADO" })) : [],
+      datas: [
+        ...(pode("config.ver") ? ctx.feriados.filter((f) => f.data >= de && f.data <= ate).map((f) => ({ data: f.data, titulo: f.descricao, fonte: "FERIADO" })) : []),
+        ...(ctx.datasDeFora ? datasDeFora(hoje, pode).filter((d) => d.data >= de && d.data <= ate) : []),
+      ],
     } });
   }
   if (caminho === "/v1/condominio/agenda" && metodo === "POST") {

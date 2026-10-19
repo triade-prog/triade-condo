@@ -137,7 +137,7 @@ Deno.test("W-05: mídia que não é o que diz não é guardada e o motivo volta 
   });
   await Promise.all(m.fundo);
   assertEquals(m.pedidos.objetos.size, 0);
-  assertEquals(chamada(m, "whatsapp_midia_resultado")!.p_motivo, "O conteúdo não é um áudio OGG de verdade.");
+  assertEquals(chamada(m, "whatsapp_midia_resultado")!.p_motivo, "não consegui abrir o arquivo. Mande de novo ou tire outra foto.");
 });
 
 Deno.test("W-13: entrega e leitura voltam ao banco, uma por id", async () => {
@@ -165,6 +165,29 @@ Deno.test("W-14: falha permanente volta com o tipo da falha", async () => {
   await m2.pedir("/v1/interno/fila-whatsapp", { corpo: {} });
   assertEquals(chamada(m2, "whatsapp_resultado"), { p_condominio: IPE, p_envio: ENVIO, p_provedor_id: null, p_erro: "Número sem WhatsApp", p_falha: "PERMANENTE" });
   assertEquals(m.zap.enviados.length, 0);
+});
+
+Deno.test("AC-03: o convite da enquete sai com o link pessoal no lugar de [link]", async () => {
+  const chave = await chaveCredenciais(CHAVE);
+  const bytea = await cifrarCredenciais(chave, { instancia: "ipe-inst", token: "t-123456789" });
+  const credenciais = btoa(String.fromCharCode(...bytea.slice(2).match(/../g)!.map((h) => parseInt(h, 16))));
+  const m2 = await montar({
+    lote: [{ condominio: IPE, instancia: "ipe-inst", credenciais, envios: [{ envio: ENVIO, para: "+5561900000000", texto: "Responda pelo link:\n[link]", link: "K7QM-3XPA-9TRE" }] }],
+  });
+  await m2.pedir("/v1/interno/fila-whatsapp", { corpo: {} });
+  assertEquals(m2.zap.enviados[0]!.texto, "Responda pelo link:\nhttps://plataforma.exemplo/v/K7QM-3XPA-9TRE");
+});
+
+Deno.test("AC-02: a convocação da assembleia sai com o link pessoal na rota da assembleia", async () => {
+  const chave = await chaveCredenciais(CHAVE);
+  const bytea = await cifrarCredenciais(chave, { instancia: "ipe-inst", token: "t-123456789" });
+  const credenciais = btoa(String.fromCharCode(...bytea.slice(2).match(/../g)!.map((h) => parseInt(h, 16))));
+  const m2 = await montar({
+    lote: [{ condominio: IPE, instancia: "ipe-inst", credenciais,
+      envios: [{ envio: ENVIO, para: "+5561900000000", texto: "Vote pelo link:\n[link]", link: "K7QM-3XPA-9TRE", rota: "a" }] }],
+  });
+  await m2.pedir("/v1/interno/fila-whatsapp", { corpo: {} });
+  assertEquals(m2.zap.enviados[0]!.texto, "Vote pelo link:\nhttps://plataforma.exemplo/a/K7QM-3XPA-9TRE");
 });
 
 Deno.test("as telas do WhatsApp pedem a sessão e validam a entrada", async () => {

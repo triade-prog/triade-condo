@@ -140,7 +140,7 @@ select is((select count(*) from mensagens_whatsapp where telefone = '+5561988771
 
 -- Morador reconhecido abre pedido (W-05, W-08).
 select pg_temp.msg('5561999990001', E'A luz da garagem está piscando\nno subsolo 1, faz dois dias');
-select ok(pg_temp.ultima('+5561999990001') ~ '^Olá, Marta\.' and pg_temp.ultima('+5561999990001') ~ '1 · Registrar como pedido novo',
+select ok(pg_temp.ultima('+5561999990001') ~ '^Olá, Marta\. Sou a Nina, assistente virtual do ' and pg_temp.ultima('+5561999990001') ~ '1 · Registrar um pedido novo',
   'W-08: o morador reconhecido recebe as opções');
 select is((select count(*) from pedidos where canal = 'WHATSAPP'), 0::bigint, 'W-05: nada vira pedido sem a escolha do morador');
 select is((select etapa from conversas_whatsapp where telefone = '+5561999990001'), 'MENU', 'a conversa espera a escolha');
@@ -153,7 +153,7 @@ select is((select descricao from pm), E'A luz da garagem está piscando\nno subs
 select ok((select criado_por is null from pm), 'W-05: o pedido aberto pelo morador não tem pessoa da gestão como autora');
 select is((select autor_tipo::text from historico where acao = 'pedido.registrado' and entidade_id = (select id::text from pm)), 'SISTEMA',
   'W-05: o registro fica no histórico, pelo sistema');
-select ok(pg_temp.ultima('+5561999990001') ~ ('Pedido ' || (select protocolo from pm) || ' registrado \(Torre A · 101\)')
+select ok(pg_temp.ultima('+5561999990001') ~ ('Registrei o pedido ' || (select protocolo from pm) || ' \(Torre A · 101\)')
           and pg_temp.ultima('+5561999990001') ~ 'ligue 193' and pg_temp.ultima('+5561999990001') ~ 'nunca pedem senha',
   'W-08: a confirmação traz o protocolo, o 193 e o aviso contra golpes');
 select ok(pg_temp.ultima('+5561999990001') !~* '(imediat|já estamos|equipe TRÍADE)', 'W-08: sem prometer atendimento imediato');
@@ -170,11 +170,11 @@ select is((select pedido_id from mensagens_whatsapp where id = (select (r ->> 'm
 select whatsapp_midia_resultado(ipe, (r ->> 'mensagem')::uuid, 2048, null) from c, mi;
 select ok((select pelo_whatsapp and enviado_por is null and situacao = 'LIBERADO' from arquivos_pedido where pedido_id = (select id from pm)),
   'W-05: a foto conferida vira arquivo do pedido');
-select is(pg_temp.ultima('+5561999990001'), 'Foto anexada ao pedido ' || (select protocolo from pm) || '.', 'W-05: o morador fica sabendo');
+select is(pg_temp.ultima('+5561999990001'), 'Anexei a foto ao pedido ' || (select protocolo from pm) || '.', 'W-05: o morador fica sabendo');
 create temp table mi2 as select pg_temp.msg('+5561999990001', null, null, 'ipe-inst',
   '{"tipo": "DOCUMENTO", "midia": {"url": "https://provedor.invalid/x.pdf", "tipo": "application/pdf"}}') as r;
 select whatsapp_midia_resultado(ipe, (r ->> 'mensagem')::uuid, null, 'O PDF tem conteúdo ativo.') from c, mi2;
-select is(pg_temp.ultima('+5561999990001'), 'Não deu para usar o arquivo: O PDF tem conteúdo ativo.', 'W-05: arquivo recusado diz o motivo');
+select is(pg_temp.ultima('+5561999990001'), 'Não consegui usar o arquivo: O PDF tem conteúdo ativo.', 'W-05: arquivo recusado diz o motivo');
 
 -- T8: a mensagem que chega no número do Jatobá nunca cai no Ipê (PT-01).
 select pg_temp.msg('+5561999990001', 'Oi', (select segredo from gj), 'jat-inst');
@@ -193,7 +193,7 @@ select ok(pg_temp.ultima('+5561999990001') ~ ('^' || (select protocolo from pm) 
 -- Duas unidades: pergunta qual (W-05).
 select pg_temp.msg('+5561977771212', 'O portão da garagem não abre');
 select pg_temp.msg('+5561977771212', '1');
-select ok(pg_temp.ultima('+5561977771212') ~ E'mais de uma unidade.*\n1 · Torre A · 102\n2 · Torre A · 201', 'W-05: com duas unidades, pergunta qual');
+select ok(pg_temp.ultima('+5561977771212') ~ E'O pedido é de qual unidade\\?\n1 · Torre A · 102\n2 · Torre A · 201', 'W-05: com duas unidades, pergunta qual');
 select pg_temp.msg('+5561977771212', '2');
 select is((select unidade_id from pedidos where canal = 'WHATSAPP' and contato_id = (select c_rui from ct)), (select u201 from u),
   'W-05: o pedido fica na unidade escolhida');
@@ -231,7 +231,7 @@ select ok(position((select whatsapp_fora_horario from configuracao_condominio, c
 select ok(pg_temp.ultima('+5561977771212') !~* 'imediat', 'W-12: sem prometer prazo');
 select pg_temp.msg('+5561977771212', '3');
 select pg_temp.msg('+5561977771212', 'Outra coisa');
-select is((select count(*) from envios_whatsapp, configuracao_condominio cfg where para = '+5561977771212' and texto = cfg.whatsapp_fora_horario
+select is((select count(*) from envios_whatsapp, configuracao_condominio cfg where para = '+5561977771212' and texto like cfg.whatsapp_fora_horario || '%'
                                                                                and cfg.condominio_id = envios_whatsapp.condominio_id), 1::bigint,
   'W-12: uma vez por período');
 update horarios set intervalos = (select jsonb_agg(jsonb_build_object('dia', d, 'inicio', '00:00', 'fim', '24:00')) from generate_series(0, 6) d)
@@ -254,7 +254,8 @@ select ok(pg_temp.ultima('+5561999990001') ~ 'já está com um pedido de revisã
 select is(pg_temp.campos($$ select plataforma_manter_revisao_whatsapp(ana, ipe, id, '') from ids, c, revisoes_whatsapp $$),
   '["resposta"]', 'AT-15: manter concluído pede a resposta ao morador');
 select plataforma_manter_revisao_whatsapp(ana, ipe, id, 'Trocamos o reator também; se voltar, avise.') from ids, c, revisoes_whatsapp;
-select is(pg_temp.ultima('+5561999990001'), 'Trocamos o reator também; se voltar, avise.', 'AT-15: a resposta vai ao morador');
+select ok(pg_temp.ultima('+5561999990001') ~ E'^Sobre o pedido [0-9-]+:\nTrocamos o reator também; se voltar, avise\\.\n\n.+, do condomínio$',
+  'AT-15: a resposta vai ao morador, com o pedido e quem respondeu');
 select pg_temp.msg('+5561999990001', 'REVISAR voltou a piscar');
 select plataforma_reabrir_pedido(ana, ipe, id, versao, 'Voltou a piscar.', v_ana) from ids, c, vs, pedidos where id = (select id from pm);
 select is((select decisao from revisoes_whatsapp where decidida_por is not null and texto = 'voltou a piscar'), 'REABERTO',

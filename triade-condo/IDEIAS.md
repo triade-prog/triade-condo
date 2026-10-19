@@ -62,6 +62,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | W-19 | Respostas em vários idiomas para moradores estrangeiros (Fixflo: 40+ idiomas) | [INT] |
 | W-20 | Respeitar a janela de 24h e os modelos aprovados nas mensagens iniciadas pelo condomínio; a janela técnica não é prazo de atendimento | [A] |
 | W-21 | **Aviso fixo contra golpes**: no painel e nas boas-vindas do WhatsApp, lembrar que o condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem, e dizer como conferir um contato suspeito (SeuCondomínio) | [BR] |
+| W-22 | **Nina, a assistente virtual**: as mensagens automáticas do WhatsApp são assinadas pela Nina, assistente virtual do condomínio, com o mesmo nome em todos os condomínios. Ela sempre se apresenta como assistente virtual e nunca se passa por pessoa; só assina o que é automático (retorno, conclusão e resposta à revisão continuam assinados por quem atende); não promete entender mais do que entende; e o nome e a foto do WhatsApp continuam sendo do condomínio (Organize Meu Condomínio: assistente "Manu") | [BR] |
 
 ---
 
@@ -485,7 +486,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | Seção | Ideias |
 |---|---|
 | 1. Visão e pessoas | 17 |
-| 2. Canal WhatsApp | 21 |
+| 2. Canal WhatsApp | 22 |
 | 3. Atendimento | 33 |
 | 4. Inteligência artificial | 21 |
 | 5. Comunicados e documentos | 14 |
@@ -506,7 +507,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 20. Princípios técnicos | 18 |
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
-| **Total** | **311** |
+| **Total** | **312** |
 
 ---
 
@@ -633,3 +634,13 @@ Pedidas pela Carolina depois de Comunicados e documentos (R1) ir ao ar: um mural
 - O e-mail é canal complementar (W-18) e não substitui o WhatsApp do passo 5. Usa o Resend que já manda os e-mails do sistema (DC12).
 
 **Ficam para decidir no desenho:** se o mural do prédio mostra também os comunicados de cada bloco (um link por bloco) ou só os gerais; se documentos de contatos confirmados saem sem aprovação; para quem vão as respostas dos e-mails; e o plano do Resend, porque o gratuito manda até 100 e-mails por dia e um comunicado num prédio de 200 unidades já passa disso. O desenho com as propostas está em `docs/telas/mural-email.html`.
+
+---
+
+## Ideia da Carolina sobre a assistente virtual (19/10/2026)
+
+Pedida pela Carolina ao revisar os textos do WhatsApp: uma atendente virtual com nome, para a conversa ficar mais humana, como nas referências estudadas (o Organize Meu Condomínio tem a assistente "Manu").
+
+**1 ideia nova:** W-22 (Nina, a assistente virtual).
+
+**Como conversa com o que já está decidido:** ela não muda a regra de que uma pessoa do condomínio decide (AT-15, W-10), por isso só assina o que é automático; não é IA (as funções de IA ficam para a R14, dentro da política da Meta, IA-16); e o aviso contra golpes (W-21) continua em toda confirmação.

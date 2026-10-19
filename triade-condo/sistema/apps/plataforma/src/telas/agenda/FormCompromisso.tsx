@@ -147,7 +147,7 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, compromisso, inicio }
             ajuda={v.onde === "AREA_COMUM" ? "Ex.: salão de festas, cobertura, garagem." : undefined}
             erro={msg("local", "Diga onde, de 2 a 120 caracteres.")} onChange={(e) => mudar({ local: e.target.value })} />
         ) : null}
-        {v.onde === "AREA_COMUM" || v.onde === "OUTRO" ? <ListaLocais id="ag-locais" /> : null}
+        {v.onde === "AREA_COMUM" || v.onde === "OUTRO" ? <ListaLocais id="ag-locais" extras={opcoes.areas} /> : null}
       </fieldset>
 
       <fieldset className="grid gap-2">

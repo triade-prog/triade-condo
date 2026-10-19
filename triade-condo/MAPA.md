@@ -9,18 +9,18 @@ Versão visual e interativa (com busca e filtro por forma): [`mapa.html`](mapa.h
 
 | Parte | Peças | Ideias |
 |---|---|---|
-| Plataforma do síndico | 16 | 202 |
+| Plataforma do síndico | 16 | 203 |
 | Console TRÍADE | 9 | 38 |
 | Base comum | 6 | 37 |
 | Fora do software | 4 | 34 |
-| **Total** | **35** | **311** |
+| **Total** | **35** | **312** |
 
 ## Mapa mental
 
 ```mermaid
 mindmap
-  root((TRÍADE Condo · 311 ideias))
-    Plataforma do síndico · 202
+  root((TRÍADE Condo · 312 ideias))
+    Plataforma do síndico · 203
       Painel web do síndico
         Início · 4
         Pedidos · 25
@@ -37,7 +37,7 @@ mindmap
         Memória do prédio · 7
         Configurações · 19
       WhatsApp do condomínio
-        WhatsApp do morador · 24
+        WhatsApp do morador · 25
       Participação sem conta
         Links e QR · 7
     Console TRÍADE · 38
@@ -86,7 +86,7 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Indicadores e relatórios | TR-01 a 05, 07 a 10; IA-14 |
 | Memória do prédio | MP-12, 14; CT-02 a 04; IA-09, 17 |
 | Configurações | V-04 a 06, 09; AT-05, 10, 25, 29; CF-01 a 08, 10, 12; NG-21 |
-| WhatsApp do morador | V-07; W-05 a 10, 12, 16, 19, 21; AT-16, 19, 21, 22, 28; CD-03; IA-01, 02, 18, 20; MU-05; FC-04; DR-14 |
+| WhatsApp do morador | V-07; W-05 a 10, 12, 16, 19, 21, 22; AT-16, 19, 21, 22, 28; CD-03; IA-01, 02, 18, 20; MU-05; FC-04; DR-14 |
 | Links e QR | V-11, 12; AT-30; MP-08; OC-03; PA-06; CD-12 |
 
 **Console TRÍADE**
@@ -417,7 +417,7 @@ Ficha do condomínio, pessoas e permissões, horários, categorias, prazos e mod
 
 ### WhatsApp do condomínio
 
-#### WhatsApp do morador (24)
+#### WhatsApp do morador (25)
 
 Tudo o que o morador faz e recebe pelo WhatsApp, sem app e sem senha.
 
@@ -446,6 +446,7 @@ Tudo o que o morador faz e recebe pelo WhatsApp, sem app e sem senha.
 | W-08 | Confirmação imediata de recebimento, com número de protocolo e "o que acontece agora" (Fixflo) | Aviso |
 | W-12 | Mensagem automática fora do horário, configurável por condomínio, sem prometer prazo | Aviso |
 | W-21 | Aviso fixo contra golpes: o condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem | Aviso |
+| W-22 | Nina, a assistente virtual que assina as mensagens automáticas, sem se passar por pessoa | Regra |
 | FC-04 | 2ª via de boleto pelo WhatsApp | Integração |
 
 ### Participação sem conta

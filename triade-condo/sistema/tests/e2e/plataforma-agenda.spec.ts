@@ -144,7 +144,7 @@ test.describe("Plataforma do síndico · agenda", () => {
     await expect(page.getByText("Finados")).toBeVisible();
     await expect(page.getByText(/vem de Configurações › Feriados/).first()).toBeVisible();
     await conferir(page);
-    await page.getByRole("button", { name: "Feriados e datas de outras telas" }).click();
+    await page.getByRole("group", { name: "O que mostrar na agenda" }).getByRole("button", { name: "Feriados" }).click();
     await expect(page.getByText("Finados")).toHaveCount(0);
   });
 

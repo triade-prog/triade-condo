@@ -1,5 +1,5 @@
 "use client";
-// Configurações do condomínio (CF-06, CF-08, CF-10, AT-10, AT-14, AT-15), em abas. Quem só vê (pessoa
+// Configurações do condomínio (CF-06, CF-08, CF-10, AT-10, AT-14, AT-15; áreas comuns, AC-07), em abas. Quem só vê (pessoa
 // autorizada sem a permissão Configurar) não encontra botão de mudar (CF-03).
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -17,10 +17,12 @@ import { AbaManutencao } from "./AbaManutencao.tsx";
 import { AbaComunicados } from "./AbaComunicados.tsx";
 import { AbaLinksQr } from "./AbaLinksQr.tsx";
 import { AbaWhatsapp } from "./AbaWhatsapp.tsx";
+import { AbaAreasComuns } from "./AbaAreasComuns.tsx";
 
 const ABAS = [
   { id: "horarios", texto: "Horários" },
   { id: "feriados", texto: "Feriados" },
+  { id: "areas", texto: "Áreas comuns" },
   { id: "categorias", texto: "Categorias e prioridades" },
   { id: "etapas", texto: "Etapas e respostas" },
   { id: "prazos", texto: "Prazos e avisos" },
@@ -84,6 +86,7 @@ export function Configuracoes() {
         <div key={`${aba}-${assinatura(c)}`} className="pt-5">
           {aba === "horarios" ? <AbaHorarios {...props} /> : null}
           {aba === "feriados" ? <AbaFeriados {...props} /> : null}
+          {aba === "areas" ? <AbaAreasComuns {...props} /> : null}
           {aba === "categorias" ? <AbaCategorias {...props} /> : null}
           {aba === "etapas" ? <AbaEtapas {...props} /> : null}
           {aba === "prazos" ? <AbaPrazos {...props} /> : null}

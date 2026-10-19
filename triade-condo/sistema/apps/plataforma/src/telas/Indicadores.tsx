@@ -1,11 +1,13 @@
 "use client";
 // Indicadores do atendimento (passo 7; F7.2, TR-01, TR-03, TR-07). A métrica principal é a
 // porcentagem de retornos dados no prazo; ao lado, o tempo até o primeiro retorno, os
-// concluídos e os reabertos, e a mesma conta por categoria. Sem nenhum caso no período, a tela
-// diz "sem dados", nunca zero. Cada número explica a base de cálculo.
+// concluídos e os reabertos, e a mesma conta por categoria. Abaixo, as pendências de cada
+// responsável agora e o tempo de solução de cada categoria no período (design "Agenda,
+// indicadores e unidades", tela 2). Sem nenhum caso no período, a tela diz "sem dados", nunca
+// zero. Cada número explica a base de cálculo.
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { mostrarHoras, mostrarPorcentagem, PERIODOS_INDICADORES, type PeriodoIndicadores } from "@triade/domain";
+import { mostrarDuracao, mostrarHoras, mostrarPorcentagem, PERIODOS_INDICADORES, type PeriodoIndicadores } from "@triade/domain";
 import { Carregando, ErroCarregar, Vazio } from "@triade/ui";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
 import type { Indicadores as Dados } from "./tipos.ts";
@@ -26,6 +28,38 @@ function Cartao({ titulo, children }: { titulo: string; children: React.ReactNod
 }
 
 const nada = (v: number | null | undefined) => v === null || v === undefined;
+const dias = (n: number) => (n === 0 ? "hoje" : n === 1 ? "1 dia" : `${n} dias`);
+
+const TH = "px-4 py-2.5 font-semibold";
+const TD = "px-4 py-2.5";
+
+/** Uma tabela de indicador, com a base de cálculo embaixo. */
+function Tabela({ titulo, colunas, linhas, base, vazio }: { titulo: string; colunas: string[]; linhas: React.ReactNode[][]; base: string; vazio: string }) {
+  return (
+    <section aria-label={titulo} className="grid content-start gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
+      <h2 className="text-lg font-medium">{titulo}</h2>
+      {linhas.length ? (
+        // Rola de lado no celular; com tabIndex, também pelo teclado.
+        <div className="overflow-x-auto" tabIndex={0}>
+          <table className="w-full text-sm">
+            <caption className="sr-only">{titulo}</caption>
+            <thead className="text-left text-tinta-suave">
+              <tr>{colunas.map((c, i) => <th key={c} scope="col" className={`${TH} ${i ? "" : "pl-0"}`}>{c}</th>)}</tr>
+            </thead>
+            <tbody>
+              {linhas.map((l, i) => (
+                <tr key={i} className="border-t border-linha">
+                  {l.map((c, j) => j === 0 ? <th key={j} scope="row" className={`${TD} pl-0 text-left font-normal`}>{c}</th> : <td key={j} className={TD}>{c}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : <p className="text-sm text-tinta-suave">{vazio}</p>}
+      <p className="text-xs text-tinta-suave">{base}</p>
+    </section>
+  );
+}
 
 export function Indicadores() {
   const { pode } = usePlataforma();
@@ -78,6 +112,17 @@ export function Indicadores() {
           <p><strong className="text-2xl font-semibold">{a.concluidos}</strong> concluídos · <strong className="text-2xl font-semibold">{a.reabertos}</strong> reabertos</p>
           <p className="text-xs text-tinta-suave">{a.registrados} {a.registrados === 1 ? "pedido registrado" : "pedidos registrados"} no período.</p>
         </Cartao>
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Tabela titulo="Pendências por responsável" colunas={["Responsável", "Abertos", "Retorno vencido", "Mais antigo"]}
+          linhas={carga.dados.pendencias.map((p) => [p.nome ?? "Sem responsável", p.abertos, p.retornoVencido, dias(p.maisAntigoDias)])}
+          vazio="Nenhum pedido aberto ou em andamento agora."
+          base="Agora, não no período: pedidos abertos ou em andamento, pelo responsável de hoje. Retorno vencido conta o próximo retorno que já passou. Mais antigo é a idade do pedido aberto há mais tempo." />
+        <Tabela titulo="Tempo de solução por categoria" colunas={["Categoria", "Concluídos", "Tempo típico", "Mais demorado"]}
+          linhas={carga.dados.solucao.map((x) => [x.nome, x.concluidos, nada(x.medianaHoras) ? "Sem dados" : mostrarDuracao(x.medianaHoras),
+            nada(x.maisDemoradoHoras) ? "" : mostrarDuracao(x.maisDemoradoHoras)])}
+          vazio="Nenhuma categoria ativa."
+          base="Pedidos concluídos no período, da abertura até a conclusão, em horas corridas. Tempo típico é a mediana: metade dos pedidos levou menos que isso. O pedido reaberto conta da primeira abertura até a última conclusão. Sem pedido concluído, a linha diz sem dados, nunca zero." />
       </div>
       {a.porCategoria.length ? (
         <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">

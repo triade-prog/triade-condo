@@ -3,7 +3,8 @@
 // pessoas ativas, com as marcações (responsável, proprietário, mora aqui), a ligação, o
 // parentesco, desde quando ocupam, o telefone e os comunicados; confirmar ou recusar o que está a confirmar; a mudança;
 // quem saiu, com o período de ocupação e o motivo, e a remoção dos dados pessoais de quem saiu (PT-11).
-// Unidade com inquilino e sem proprietário no cadastro pede o proprietário (MU-01).
+// Unidade com inquilino e sem proprietário no cadastro pede o proprietário (MU-01). A situação
+// da unidade: à venda e para alugar, só na Plataforma (MU-11).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -13,7 +14,7 @@ import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Selo, textoDoErro, V
 import { Janela } from "../Janela.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { ContatoAnterior, ContatoDaUnidade, Recado, UnidadeDetalhe } from "../tipos.ts";
-import { nomeMotivo, SeloEstado } from "./comum.tsx";
+import { Caixa, nomeMotivo, SeloEstado } from "./comum.tsx";
 import { descreverVinculo, LinhaOcupacao } from "./Vinculo.tsx";
 import { EditarContato, EditarUnidade, Encerrar, IncluirContato, RegistrarMudanca } from "./JanelasUnidade.tsx";
 
@@ -63,6 +64,13 @@ export function Unidade() {
   const compartilham = d.contatos.filter((c) => c.telefoneCompartilhado);
   const edita = d.podeEditar && u.ativa;
 
+  async function marcar(m: { aVenda: boolean; paraAlugar: boolean }) {
+    const r = await chamarApi(`/v1/condominio/unidades/${u.id}/situacao`, { corpo: { versao: u.versao, ...m } });
+    if (!r.ok) return setFalha(textoDoErro(r.erro));
+    const marcas = [m.aVenda ? "à venda" : null, m.paraAlugar ? "para alugar" : null].filter(Boolean);
+    salvo({ tom: "ok", texto: marcas.length ? `${nome} marcada ${marcas.join(" e ")}.` : `${nome} sem marca de venda ou aluguel.` });
+  }
+
   async function confirmar(c: ContatoDaUnidade) {
     const r = await chamarApi("/v1/condominio/vinculos-unidade/confirmar", { corpo: { itens: [{ id: c.vinculoId, versao: c.versao }] } });
     if (!r.ok) return setFalha(textoDoErro(r.erro));
@@ -101,6 +109,28 @@ export function Unidade() {
             {edita ? <Botao variante="contorno" onClick={() => setJanela({ tipo: "incluir", relacao: "PROPRIETARIO" })}>Incluir proprietário</Botao> : null}
           </span>
         </Aviso>
+      ) : null}
+
+      {edita || u.aVendaDesde || u.paraAlugarDesde ? (
+        <section aria-labelledby="t-situacao" className="grid gap-2 rounded-2xl border border-linha bg-superficie p-4">
+          <h2 id="t-situacao" className="text-lg font-medium">Situação da unidade</h2>
+          {edita ? (
+            <div className="flex flex-wrap gap-x-6 gap-y-2">
+              <Caixa id="u-a-venda" rotulo="À venda" ajuda={u.aVendaDesde ? `desde ${mostrarDataSemHora(u.aVendaDesde)}` : undefined}
+                marcada={Boolean(u.aVendaDesde)} aoMudar={(v) => void marcar({ aVenda: v, paraAlugar: Boolean(u.paraAlugarDesde) })} />
+              <Caixa id="u-para-alugar" rotulo="Para alugar" ajuda={u.paraAlugarDesde ? `desde ${mostrarDataSemHora(u.paraAlugarDesde)}` : undefined}
+                marcada={Boolean(u.paraAlugarDesde)} aoMudar={(v) => void marcar({ aVenda: Boolean(u.aVendaDesde), paraAlugar: v })} />
+            </div>
+          ) : (
+            <p className="flex flex-wrap gap-2 text-sm">
+              {u.aVendaDesde ? <Selo tom="info">À venda desde {mostrarDataSemHora(u.aVendaDesde)}</Selo> : null}
+              {u.paraAlugarDesde ? <Selo tom="info">Para alugar desde {mostrarDataSemHora(u.paraAlugarDesde)}</Selo> : null}
+            </p>
+          )}
+          <p className="text-xs text-tinta-suave">
+            Para se preparar para a troca de morador: mudança, cadastro novo e vistoria. Cada mudança fica no histórico da unidade. A marca aparece só aqui, nunca no mural nem para os moradores.
+          </p>
+        </section>
       ) : null}
 
       {d.contatos.length === 0 ? (

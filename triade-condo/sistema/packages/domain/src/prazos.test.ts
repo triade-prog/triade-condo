@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { descreverEventoPedido } from "./pedidos.ts";
-import { marcarAvisosSchema, mostrarHoras, mostrarPorcentagem, nomeDoMes, nomeDoMesAnterior, regrasAvisoSchema } from "./prazos.ts";
+import { marcarAvisosSchema, mostrarDuracao, mostrarHoras, mostrarPorcentagem, nomeDoMes, nomeDoMesAnterior, regrasAvisoSchema } from "./prazos.ts";
 
 const V = "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9";
 const REGRAS = { versao: 1, sindicoHoras: 2, substitutoHoras: 8, semResponsavelHoras: 4, pendenciaDias: 3 };
@@ -46,5 +46,15 @@ describe("prazos e avisos (passos 6 e 7)", () => {
     expect(descreverEventoPedido("pedido.aviso", { tipo: "ESCALADO_SINDICO", para: "SINDICO" })).toBe("Aviso escalado ao síndico");
     expect(descreverEventoPedido("pedido.aviso", { tipo: "ESCALADO_SUBSTITUTO", para: "SUBSTITUTO" })).toBe("Aviso escalado ao substituto");
     expect(descreverEventoPedido("pedido.aviso", { tipo: "SEM_RESPONSAVEL", para: "SINDICO" })).toBe("Aviso ao síndico: pedido sem responsável");
+  });
+
+  it("TR-01: o tempo de solução em dias e horas", () => {
+    expect(mostrarDuracao(null)).toBe("Sem dados");
+    expect(mostrarDuracao(0.5)).toBe("30 min");
+    expect(mostrarDuracao(5)).toBe("5 h");
+    expect(mostrarDuracao(24)).toBe("1 dia");
+    expect(mostrarDuracao(26.2)).toBe("1 dia e 2 h");
+    expect(mostrarDuracao(52)).toBe("2 dias e 4 h");
+    expect(mostrarDuracao(144)).toBe("6 dias");
   });
 });

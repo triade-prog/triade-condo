@@ -5,7 +5,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { chamarApi, pedeLogin, textoDoErro, type ErroApi } from "@triade/ui";
-import type { MesFechado, ResumoComunicados, ResumoManutencao, ResumoPedidos, ResumoProntuario } from "./tipos.ts";
+import type { MesFechado, ResumoComunicados, ResumoManutencao, ResumoPedidos, ResumoProntuario, ResumoVida } from "./tipos.ts";
 import type { PedidoAcessoExcepcional } from "./suporte/CartaoAcessoExcepcional.tsx";
 
 export interface Painel {
@@ -32,6 +32,8 @@ export interface Painel {
   acessosExcepcionais?: { pedidos: PedidoAcessoExcepcional[]; valendo: number };
   /** WhatsApp do condomínio, para quem cuida dos pedidos (passo 5): conexão, a identificar e falhas. */
   whatsapp?: { situacao: string; aIdentificar: number; falhas: number };
+  /** Vida em condomínio, para quem vê as reservas (peça R12): o que espera aprovação. */
+  vida?: ResumoVida;
 }
 
 export interface CondominioDaPessoa {

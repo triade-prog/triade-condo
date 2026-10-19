@@ -2,7 +2,9 @@
 // banco, o envio separa falha passageira, permanente e tempo esgotado, as credenciais ficam
 // cifradas e a mídia do morador é conferida pelo conteúdo.
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
-import { chaveCredenciais, cifrarCredenciais, conectorWafly, decifrarCredenciais, lerRecebidaWafly } from "./whatsapp.ts";
+import {
+  chaveCredenciais, cifrarCredenciais, conectorWafly, decifrarCredenciais, lerRecebidaWafly, motivoMidiaParaMorador, textoComLinkDoPainel,
+} from "./whatsapp.ts";
 import { tirarLocalizacaoMp4, verificarMidia } from "./arquivos.ts";
 
 const CHAVE = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)));
@@ -105,4 +107,19 @@ Deno.test("W-05: áudio e vídeo pelo conteúdo; o vídeo sai sem localização"
   const r = verificarMidia(mp4, "video/mp4");
   assert(r.ok && !new TextDecoder().decode(r.bytes).includes("045.6789"));
   assert(!verificarMidia(new Uint8Array(16 * 1024 * 1024 + 1), "audio/ogg").ok);
+});
+
+Deno.test("W-11: o link do painel vai no lugar do modelo ou numa linha no fim", () => {
+  assertEquals(textoComLinkDoPainel("Pedido novo no Ipê.\nAbrir no painel: {{painel}}\nEste aviso vai porque você ligou.", "https://p/x"),
+    "Pedido novo no Ipê.\nAbrir no painel: https://p/x\nEste aviso vai porque você ligou.");
+  assertEquals(textoComLinkDoPainel("Ipê · pedido novo", "https://p/x"), "Ipê · pedido novo\nAbrir no painel: https://p/x");
+  assertEquals(textoComLinkDoPainel("Sem pedido", null), "Sem pedido");
+});
+
+Deno.test("W-05: o motivo do arquivo recusado é dito ao morador com o que fazer", () => {
+  assertEquals(motivoMidiaParaMorador("O arquivo passa de 16 MB."), "o arquivo passa de 16 MB. Mande um menor ou tire outra foto.");
+  assertEquals(motivoMidiaParaMorador("O arquivo chegou vazio."), "o arquivo chegou vazio. Mande de novo.");
+  assertEquals(motivoMidiaParaMorador("O PDF tem conteúdo ativo (script ou arquivo embutido) e não foi liberado."),
+    "o PDF tem conteúdo que não abrimos por segurança. Mande uma foto do documento.");
+  assertEquals(motivoMidiaParaMorador("O conteúdo não é uma foto JPG de verdade."), "não consegui abrir o arquivo. Mande de novo ou tire outra foto.");
 });

@@ -57,6 +57,7 @@ const ICONES = {
   sair: <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10" />,
   pin: <><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z" /><circle cx="12" cy="10" r="2.5" /></>,
   megafone: <path d="M3 10v4a1 1 0 0 0 1 1h3l8 5V4L7 9H4a1 1 0 0 0-1 1zM18.5 9a4 4 0 0 1 0 6" />,
+  convivio: <path d="M12 3a9 9 0 0 1 9 9H3a9 9 0 0 1 9-9zM12 12v7a2 2 0 0 0 4 0" />,
 } satisfies Record<string, ReactNode>;
 
 export type NomeIcone = keyof typeof ICONES;

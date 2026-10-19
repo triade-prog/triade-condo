@@ -59,6 +59,7 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
   const [menuAberto, setMenuAberto] = useState(false);
   const [trocando, setTrocando] = useState(false);
   const pode = (acao: string) => painel.acoes.includes(acao);
+  const aAprovarVida = (painel.vida?.reservasAAprovar ?? 0) + (painel.vida?.classificadosAAprovar ?? 0);
 
   async function sair() {
     await chamarApi("/v1/auth/sair", { corpo: {} });
@@ -140,6 +141,12 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
           {pode("comunicados.ver") || pode("documentos.ver") ? (
             <ItemMenu href={pode("comunicados.ver") ? "/comunicados" : "/comunicados/documentos"} icone="megafone" atual={caminho.startsWith("/comunicados")}>
               Comunicados e documentos
+            </ItemMenu>
+          ) : null}
+          {pode("reservas.ver") || pode("enquetes.ver") || pode("assembleias.ver") || pode("classificados.ver") ? (
+            <ItemMenu href="/vida" icone="convivio" atual={caminho.startsWith("/vida")}
+              contagem={aAprovarVida ? <span className="contagem">{aAprovarVida}<span className="sr-only"> a aprovar</span></span> : null}>
+              Vida em condomínio
             </ItemMenu>
           ) : null}
           {pode("documentos.ver") ? <ItemMenu href="/memoria" icone="documento" atual={caminho.startsWith("/memoria")}>Memória do prédio</ItemMenu> : null}

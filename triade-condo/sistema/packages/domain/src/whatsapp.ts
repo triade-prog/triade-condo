@@ -1,6 +1,6 @@
 // WhatsApp do condomínio (passo 5; W-01, W-05, W-08 a W-16, W-21, AT-28, F6.3). Começa como
 // piloto pelo Wafly (DC14), atrás de um conector trocável. Os mesmos valores estão no banco
-// (0200_whatsapp.sql).
+// (0200_whatsapp.sql e 0210_textos_janela.sql).
 
 import { z } from "zod";
 
@@ -37,6 +37,11 @@ export const FINALIDADES_ENVIO = {
   RESPOSTA: "Resposta automática",
   RETORNO: "Retorno",
   AVISO: "Aviso a quem atende",
+  CONCLUSAO: "Conclusão",
+  RESERVA: "Reserva",
+  ENQUETE: "Enquete",
+  ASSEMBLEIA: "Assembleia",
+  CLASSIFICADO: "Classificado",
 } as const;
 
 /** Avisos que cada pessoa liga no próprio WhatsApp (W-11, F6.3). */
@@ -110,3 +115,69 @@ export const meusAvisosWhatsappSchema = z.object({
 export function prometePrazo(texto: string): boolean {
   return /(imediat|em at[ée] [0-9]|garant|agora mesmo|j[áa] estamos)/i.test(texto);
 }
+
+// ---------------------------------------------------------------------------------------
+// Janela de 24h e modelos de mensagem (F5.4, W-20). Fora da conversa aberta, só modelo
+// aprovado; os modelos são da TRÍADE, iguais para todos os condomínios.
+
+/** Com a conversa fechada, o texto do retorno vai dentro do modelo: até 800 caracteres. */
+export const LIMITE_FORA_DA_JANELA = 800;
+
+export const CHAVES_MODELO = [
+  "noticia_pedido", "pedido_concluido", "revisao_respondida", "aviso_pedido_novo", "aviso_retorno_vencido", "aviso_revisao",
+  "reserva_decidida", "enquete_convite", "enquete_lembrete", "assembleia_convocacao", "assembleia_lembrete",
+  "anuncio_decidido",
+] as const;
+export type ChaveModelo = (typeof CHAVES_MODELO)[number];
+
+export const SITUACOES_MODELO = {
+  RASCUNHO: "Rascunho",
+  APROVADO_PILOTO: "Aprovado no piloto",
+  ENVIADO: "Enviado à Meta",
+  APROVADO: "Aprovado",
+  RECUSADO: "Recusado",
+  PAUSADO: "Pausado",
+  DESATIVADO: "Desativado",
+} as const;
+export type SituacaoModelo = keyof typeof SITUACOES_MODELO;
+
+/** Para onde cada situação pode ir (o banco confere igual). */
+export const PROXIMAS_SITUACOES_MODELO: Record<SituacaoModelo, SituacaoModelo[]> = {
+  RASCUNHO: ["APROVADO_PILOTO", "ENVIADO"],
+  APROVADO_PILOTO: ["ENVIADO", "DESATIVADO"],
+  ENVIADO: ["APROVADO", "RECUSADO"],
+  APROVADO: ["PAUSADO", "DESATIVADO"],
+  PAUSADO: ["APROVADO", "DESATIVADO"],
+  RECUSADO: [],
+  DESATIVADO: [],
+};
+
+/**
+ * O texto do modelo usa as variáveis {{1}} a {{n}}, todas, sem outras chaves, e não começa nem
+ * termina com uma variável (regra da Meta).
+ */
+export function modeloCorpoValido(corpo: string, n: number): boolean {
+  if (/^\s*\{\{/.test(corpo) || /\}\}\s*$/.test(corpo)) return false;
+  if (/[{}]/.test(corpo.replace(/\{\{[1-9][0-9]*\}\}/g, ""))) return false;
+  const usadas = new Set([...corpo.matchAll(/\{\{([1-9][0-9]*)\}\}/g)].map((m) => Number(m[1])));
+  return usadas.size === n && [...usadas].every((v) => v >= 1 && v <= n);
+}
+
+/** O modelo preenchido, como chega: cada variável em parágrafo único, o rodapé no fim. */
+export function renderizarModelo(corpo: string, rodape: string | null | undefined, parametros: string[]): string {
+  let v = corpo;
+  for (let i = parametros.length; i >= 1; i--) v = v.replaceAll(`{{${i}}}`, (parametros[i - 1] ?? "").trim().replace(/\s+/g, " "));
+  return rodape ? `${v}\n\n${rodape}` : v;
+}
+
+export const corpoModeloSchema = z.object({ corpo: z.string().trim().min(20).max(1024) });
+export const editarModeloSchema = corpoModeloSchema.extend({ versao });
+export const decidirModeloSchema = z
+  .object({
+    versao,
+    situacao: z.enum(chaves(SITUACOES_MODELO)),
+    motivo: z.string().max(300).nullable().optional().transform((v) => (v && v.trim() ? v.trim() : null)),
+  })
+  .refine((d) => !["RECUSADO", "PAUSADO"].includes(d.situacao) || (d.motivo && d.motivo.length >= 3), {
+    message: "Diga o motivo", path: ["motivo"],
+  });

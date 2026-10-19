@@ -1,7 +1,11 @@
 // O que a API da Plataforma devolve nas configurações (plataforma_configuracoes), nas
 // pessoas (plataforma_pessoas), nos moradores e unidades (passo 3) e nos pedidos (passo 4).
 
-import type { Intervalo, Ligacao, Ocupacao, Parentesco } from "@triade/domain";
+import type {
+  CanalEnquete, ConfirmacaoArea, EscopoEnquete, EstadoReserva, Intervalo, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite, SituacaoEnquete,
+  EstadoAssembleia, EstadoItem, EstadoProcuracao, FormaAssembleia, PesoAssembleia, Quorum, SituacaoItem, TipoAssembleia, TipoItem,
+  EstadoAnuncio, TipoAnuncio,
+} from "@triade/domain";
 
 export interface Configuracoes {
   fuso: string;
@@ -78,6 +82,9 @@ export interface UnidadeResumo {
   proprietario: string | null;
   proprietarioNaoMora: boolean;
   semResponsavel: boolean;
+  /** MU-11: marcada à venda e para alugar. */
+  aVenda: boolean;
+  paraAlugar: boolean;
 }
 
 export interface Unidades {
@@ -86,7 +93,7 @@ export interface Unidades {
   unidades: UnidadeResumo[];
   resumo: { unidades: number; semContato: number; aConfirmar: number; semProprietario: number };
   /** Contadores do topo da lista (passo 3b, MU-11). */
-  ocupacao: { comMorador: number; alugadas: number; proprietarioNaoMora: number; semResponsavel: number };
+  ocupacao: { comMorador: number; alugadas: number; proprietarioNaoMora: number; semResponsavel: number; aVenda: number; paraAlugar: number };
   podeEditar: boolean;
   podeConfirmar: boolean;
 }
@@ -137,7 +144,11 @@ export interface ContatoAnterior {
 }
 
 export interface UnidadeDetalhe {
-  unidade: { id: string; identificacao: string; blocoId: string | null; andar: string | null; bloco: string | null; ativa: boolean; versao: number };
+  unidade: {
+    id: string; identificacao: string; blocoId: string | null; andar: string | null; bloco: string | null; ativa: boolean; versao: number;
+    /** MU-11: desde quando está à venda e para alugar; nulo quando não está. */
+    aVendaDesde: string | null; paraAlugarDesde: string | null;
+  };
   contatos: ContatoDaUnidade[];
   anteriores: ContatoAnterior[];
   ocupacao: { situacao: Ocupacao; moram: number; proprietarioNaoMora: boolean };
@@ -225,7 +236,8 @@ export interface AvisoDoPainel {
     | "DOCUMENTO_VENCENDO" | "DOCUMENTO_PEDIDO" | "EMAIL_DEVOLVIDO" | "EMAIL_SPAM" | "PRESTADOR_IMPEDIMENTO" | "PRESTADOR_TERMINOU"
     | "PRONTUARIO_VENCE" | "PRONTUARIO_VENCEU" | "EXPORTACAO_PRONTA" | "EXPORTACAO_FALHOU"
     | "ENTREGA" | "CHAMADO_RESPOSTA" | "ACESSO_PEDIDO"
-    | "WHATSAPP_PEDIDO_NOVO" | "WHATSAPP_REVISAO" | "WHATSAPP_A_IDENTIFICAR" | "WHATSAPP_FALHA_ENVIO" | "WHATSAPP_DESCONECTADO";
+    | "WHATSAPP_PEDIDO_NOVO" | "WHATSAPP_REVISAO" | "WHATSAPP_A_IDENTIFICAR" | "WHATSAPP_FALHA_ENVIO" | "WHATSAPP_DESCONECTADO"
+    | "RESERVA_A_APROVAR" | "RESERVA_CANCELADA";
   pedidoId?: string;
   protocolo?: string;
   assunto?: string | null;
@@ -249,6 +261,8 @@ export interface AvisoDoPainel {
   acessoId?: string;
   responsavel?: string | null;
   referencia?: string;
+  /** Nos avisos das reservas (peça R12). */
+  reservaId?: string;
   criadoEm: string;
   vistoEm: string | null;
 }
@@ -286,6 +300,10 @@ export interface Indicadores {
     porCategoria: { categoriaId: string; nome: string; retornos: number | null; noPrazo: number | null; porcentagem: number | null; concluidos: number }[];
   };
   porcentagemAnterior: number | null;
+  /** Pendências de agora por responsável (TR-01); sem responsável vem com id e nome nulos, no fim. */
+  pendencias: { responsavelId: string | null; nome: string | null; abertos: number; retornoVencido: number; maisAntigoDias: number }[];
+  /** Tempo de solução por categoria no período (TR-01), em horas corridas; sem pedido concluído, sem número. */
+  solucao: { categoriaId: string; nome: string; concluidos: number; medianaHoras: number | null; maisDemoradoHoras: number | null }[];
 }
 
 export type MesFechado = NumerosAtendimento & { mes: string; porcentagemAnterior?: number | null };
@@ -419,9 +437,19 @@ export interface CompromissoAgenda {
 export interface DataDeOutraTela {
   data: string;
   titulo: string;
-  fonte: "FERIADO" | "PREVENTIVA";
-  /** Na preventiva, o id dela. */
+  fonte: "FERIADO" | "PREVENTIVA" | "RESERVA" | "CONTRATO" | "DOCUMENTO" | "ASSEMBLEIA";
+  /** Na preventiva, na reserva, no contrato (o prestador), no documento e na assembleia, o id dela. */
   id?: string;
+  /** No documento (AG-09): se é restrito. */
+  restrito?: boolean;
+  /** Na assembleia (AG-09, AC-02): a 2ª chamada, o local e a situação. */
+  segundaChamada?: string;
+  local?: string;
+  estado?: "CONVOCADA" | "EM_ANDAMENTO";
+  /** Na reserva confirmada (peça R12, AG-09): o horário e quem pediu. */
+  horaInicio?: string;
+  horaFim?: string;
+  quem?: string;
 }
 
 export interface Agenda {
@@ -435,6 +463,8 @@ export interface OpcoesAgenda {
   pessoas: { vinculoId: string; nome: string; eu: boolean }[];
   unidades: { id: string; nome: string }[];
   pedidos: { id: string; protocolo: string; assunto: string; unidadeId: string | null; responsavelId: string | null }[];
+  /** As áreas comuns ativas (peça R12), sugeridas no campo Qual área. */
+  areas?: string[];
   pode: { editar: boolean };
   hoje: string;
 }
@@ -447,6 +477,8 @@ export interface ConflitoCompromisso {
   horaFim?: string;
   motivo: "LUGAR" | "PESSOA";
   pessoas?: string[];
+  /** A reserva confirmada da área (peça R12): o id é da reserva, não de um compromisso. */
+  reserva?: boolean;
 }
 
 export interface CompromissoDetalhe {
@@ -879,6 +911,10 @@ export interface MuralPublico {
   documentos?: { id: string; titulo: string; tipo: TipoDocumento }[];
   /** As seções do manual do prédio marcadas "no mural" (peça R10, MP-14). */
   manual?: { id: string; titulo: string; resumo?: string; texto: string; atualizadoEm: string }[];
+  /** As enquetes abertas marcadas para o mural; responde-se pelo link pessoal (AC-03). */
+  enquetes?: { id: string; pergunta: string; opcoes: string[]; abertaAte: string; por: EscopoEnquete; secreta: boolean }[];
+  /** Os anúncios dos moradores no mural, por 30 dias (AC-05). Primeiro nome e bloco; WhatsApp só com o SIM. */
+  classificados?: AnuncioPublico[];
   atualizadoEm?: string;
 }
 
@@ -966,6 +1002,8 @@ export interface EtiquetaPublica {
   recado?: string;
   recadoEm?: string;
   whatsapp?: string;
+  /** Etiqueta de área comum que aceita reserva (peça R12, W-22): leva ao RESERVAR. */
+  reserva?: { area: string; capacidade?: number; horario: string; livres?: string[]; texto: string };
 }
 
 export interface PrestadorPublico {
@@ -1026,7 +1064,7 @@ export interface Prontuario {
 }
 
 export interface EventoMemoria {
-  fonte: "ANOTADO" | "MANUTENCAO" | "DOCUMENTO" | "PRONTUARIO" | "COMUNICADO" | "PESSOA";
+  fonte: "ANOTADO" | "MANUTENCAO" | "DOCUMENTO" | "PRONTUARIO" | "COMUNICADO" | "PESSOA" | "ASSEMBLEIA";
   categoria: string;
   id: string;
   data: string;
@@ -1122,4 +1160,360 @@ export interface Exportacoes {
   podePedir: boolean;
   motivo?: "MONTANDO" | "UMA_POR_DIA";
   montando: boolean;
+}
+
+// ---------------------------------------------------------------------------------------
+// Vida em condomínio (peça R12): áreas comuns e reservas.
+
+export interface AreaComumTela {
+  id: string;
+  modelo?: string;
+  criadaPeloSindico: boolean;
+  nome: string;
+  ativa: boolean;
+  reserva: ConfirmacaoArea;
+  antecedenciaMin: number;
+  antecedenciaMax: number;
+  horaInicio: string;
+  horaFim: string;
+  modo: ModoArea;
+  blocoMinutos?: number;
+  capacidade?: number;
+  limiteQuantidade?: number;
+  limitePeriodo?: PeriodoLimite;
+  toleranciaDias?: number;
+  cancelarSemAvisoDias: number;
+  valorCentavos?: number;
+  regras?: { id: string; titulo: string };
+  podeProprietarioMorador: boolean;
+  podeInquilino: boolean;
+  podeProprietarioAusente: boolean;
+  versao: number;
+}
+
+export interface AreasComuns {
+  areas: AreaComumTela[];
+  documentos: { id: string; titulo: string }[];
+  pode: { editar: boolean };
+}
+
+export interface OcupacaoArea {
+  motivo: "RESERVA" | "AGENDA";
+  id: string;
+  titulo: string;
+}
+
+export interface ReservaTela {
+  id: string;
+  protocolo: string;
+  area: { id: string; nome: string; reserva: ConfirmacaoArea };
+  unidade: { id: string; nome: string };
+  contato?: { id: string; nome: string };
+  data: string;
+  horaInicio: string;
+  horaFim: string;
+  estado: EstadoReserva;
+  origem: "WHATSAPP" | "PAINEL";
+  tolerancia: boolean;
+  observacao?: string;
+  criadoEm: string;
+  registradoPor?: string;
+  decisao?: { em: string; por?: string; motivo?: string; peloMorador?: boolean };
+  versao: number;
+  outrosPedidos?: number;
+  ocupacao?: OcupacaoArea;
+  limite?: { n: number; quantidade: number; periodo: PeriodoLimite };
+}
+
+export interface ListaReservas {
+  reservas: ReservaTela[];
+  aAprovar: number;
+  areas: { id: string; nome: string; ativa: boolean; reserva: ConfirmacaoArea; modo: ModoArea }[];
+  hoje: string;
+  pode: { editar: boolean };
+}
+
+export interface SemanaArea {
+  area: AreaComumTela;
+  dias: {
+    data: string;
+    reservas: { id: string; protocolo: string; estado: EstadoReserva; unidade: string; horaInicio: string }[];
+    bloqueios: { id: string; titulo: string; horaInicio: string | null; horaFim: string | null }[];
+  }[];
+  hoje: string;
+}
+
+export interface ReservaDetalhe {
+  reserva: ReservaTela;
+  historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
+  mensagens: { id: string; estado: string; em: string; motivo: string | null }[];
+  pode: { editar: boolean };
+}
+
+export interface OpcoesReserva {
+  areas: AreaComumTela[];
+  unidades: { id: string; nome: string; contatos: { id: string; nome: string }[] }[];
+  hoje: string;
+}
+
+export interface ConferenciaReserva {
+  blocos?: string[];
+  conferencia: { erro?: "FORA_DO_PRAZO" | "HORARIO" | "OCUPADA" | "LIMITE"; ocupacao?: OcupacaoArea; inicio?: string; fim?: string; tolerancia?: boolean };
+  noPeriodo?: number;
+  proxima?: string;
+}
+
+export interface ResumoVida {
+  reservasAAprovar: number;
+  proximasAAprovar: { data: string; area: string; pedidos: number }[];
+  /** As enquetes abertas, com quantos responderam (AC-03). Só para quem vê as enquetes. */
+  enquetesAbertas?: { id: string; pergunta: string; abertaAte: string; responderam: number; total: number }[];
+  /** A próxima assembleia convocada ou em andamento (AC-02). Só para quem vê as assembleias. */
+  assembleia?: { id: string; titulo: string; estado: EstadoAssembleia; primeiraChamada: string; procuracoesPendentes: number };
+  /** Os anúncios esperando aprovação (AC-05). Só para quem vê os classificados. */
+  classificadosAAprovar?: number;
+}
+
+// Enquetes (AC-03).
+export interface ResultadoEnquete {
+  opcoes: { texto: string; votos: number }[];
+  responderam: number;
+  total: number;
+}
+
+export interface EnqueteTela {
+  id: string;
+  pergunta: string;
+  opcoes: string[];
+  por: EscopoEnquete;
+  secreta: boolean;
+  abertaAte: string;
+  canais: CanalEnquete[];
+  lembreteEm?: string;
+  lembreteEnviadoEm?: string;
+  situacao: SituacaoEnquete;
+  encerradaEm?: string;
+  encerradaPor?: string;
+  comunicado?: { id: string; estado: string };
+  criadoEm: string;
+  criadoPor?: string;
+  versao: number;
+  resultado: ResultadoEnquete;
+}
+
+export interface ListaEnquetes {
+  enquetes: EnqueteTela[];
+  canais: { whatsapp: boolean; email: boolean; mural: boolean };
+  unidades: number;
+  pode: { editar: boolean };
+}
+
+export interface ConviteEnquete {
+  id: string;
+  nome: string;
+  respondeuEm?: string;
+  /** A escolha, só na enquete aberta (não secreta). */
+  opcao?: number;
+  semContato?: boolean;
+}
+
+export interface EnqueteDetalhe {
+  enquete: EnqueteTela;
+  convites: ConviteEnquete[];
+  historico: { acao: string; em: string; autor?: string; dados: Record<string, unknown> }[];
+  pode: { editar: boolean };
+}
+
+/** O que o link pessoal mostra (AC-03). */
+export interface EnquetePublica {
+  condominio: string;
+  pergunta: string;
+  opcoes: string[];
+  por: EscopoEnquete;
+  secreta: boolean;
+  abertaAte: string;
+  aberta: boolean;
+  para: string;
+  respondeuEm?: string;
+  escolha?: number;
+  resultado?: ResultadoEnquete;
+}
+
+// Assembleias (AC-02).
+export interface ResultadoItem {
+  opcoes: { texto: string; votos: number; peso: number; porcentagem: number }[];
+  votaram: number;
+  presentes: number;
+  pesoPresentes: number;
+  pesoTotal: number;
+  porcentagemPresentes: number;
+  situacao: SituacaoItem;
+  vencedor?: string;
+  alcancavel: boolean;
+  validos: number;
+}
+
+export interface ItemAssembleia {
+  id: string;
+  ordem: number;
+  titulo: string;
+  descricao?: string;
+  tipo: TipoItem;
+  opcoes: string[];
+  quorum: Quorum;
+  estado: EstadoItem;
+  abertoEm?: string;
+  encerradoEm?: string;
+  resultado: ResultadoItem;
+}
+
+export interface PresencaAssembleia {
+  unidades: number;
+  presentes: number;
+  online: number;
+  salao: number;
+  porProcuracao: number;
+  procuracoesPendentes: number;
+  semDireito: number;
+  porcentagem: number;
+}
+
+export interface AssembleiaTela {
+  id: string;
+  titulo: string;
+  tipo: TipoAssembleia;
+  forma: FormaAssembleia;
+  primeiraChamada: string;
+  segundaChamada: string;
+  local?: string;
+  linkVideo?: string;
+  estado: EstadoAssembleia;
+  peso: PesoAssembleia;
+  antecedencia: number;
+  enviarAte: string;
+  convocadaEm?: string;
+  convocadaPor?: string;
+  comunicadoId?: string;
+  iniciadaEm?: string;
+  encerradaEm?: string;
+  canceladaEm?: string;
+  motivoCancelamento?: string;
+  ataTexto?: string;
+  ataDocumento?: { id: string; titulo: string };
+  itens: ItemAssembleia[];
+  presenca?: PresencaAssembleia;
+  criadoEm: string;
+  versao: number;
+}
+
+export interface AssembleiaResumo {
+  id: string;
+  titulo: string;
+  tipo: TipoAssembleia;
+  forma: FormaAssembleia;
+  estado: EstadoAssembleia;
+  primeiraChamada: string;
+  itens: number;
+  presentes: number;
+  unidades: number;
+  procuracoesPendentes: number;
+}
+
+export interface ListaAssembleias {
+  assembleias: AssembleiaResumo[];
+  regras: { antecedencia: number; peso: PesoAssembleia; versao: number };
+  semFracao: number;
+  unidades: number;
+  pode: { editar: boolean; configurar: boolean; fracoes: boolean };
+}
+
+export interface UnidadeAssembleia {
+  id: string;
+  unidade: string;
+  peso: number;
+  semDireito: boolean;
+  motivoSemDireito?: string;
+  procuracao?: { estado: EstadoProcuracao; nome: string; em: string; motivo?: string; unidade?: string };
+  presenteEm?: string;
+  presencaForma?: "ONLINE" | "SALAO";
+  proprietarios?: string;
+  semContato: boolean;
+  votos?: Record<string, number>;
+}
+
+export interface AssembleiaDetalhe {
+  assembleia: AssembleiaTela;
+  unidades: UnidadeAssembleia[];
+  documentos: { id: string; titulo: string }[];
+  historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
+  pode: { editar: boolean };
+}
+
+export interface Fracoes {
+  unidades: { id: string; nome: string; fracao?: number; versao: number }[];
+  soma: number;
+  pode: { editar: boolean };
+}
+
+export interface AssembleiaPublica {
+  condominio: string;
+  titulo: string;
+  tipo: TipoAssembleia;
+  forma: FormaAssembleia;
+  estado: EstadoAssembleia;
+  primeiraChamada: string;
+  segundaChamada: string;
+  local?: string;
+  linkVideo?: string;
+  peso?: PesoAssembleia;
+  motivoCancelamento?: string;
+  unidade: string;
+  proprietarios?: string;
+  semDireito: boolean;
+  procuracao?: { estado: EstadoProcuracao; nome: string; motivo?: string; unidade?: string };
+  representa?: string[];
+  outrasUnidades?: { id: string; nome: string }[];
+  presenteEm?: string;
+  itens: { id: string; ordem: number; titulo: string; descricao?: string; opcoes: string[]; estado: EstadoItem; quorum: Quorum; meuVoto?: number; resultado?: ResultadoItem }[];
+}
+
+// Classificados entre moradores (AC-05).
+export interface AnuncioTela {
+  id: string;
+  tipo: TipoAnuncio;
+  texto: string;
+  estado: EstadoAnuncio;
+  titulo?: string;
+  valorCentavos?: number;
+  noMuralAte?: string;
+  tituloSugerido: string;
+  valorSugerido?: number;
+  mostrarTelefone: boolean;
+  foto: boolean;
+  unidade: { id: string; nome: string };
+  contato?: { id: string; nome: string };
+  criadoEm: string;
+  decisao?: { em: string; por?: string };
+  retirada?: { em: string; por?: string };
+  motivo?: string;
+  versao: number;
+}
+
+export interface ListaAnuncios {
+  classificados: AnuncioTela[];
+  aAprovar: number;
+  pode: { editar: boolean };
+}
+
+export interface AnuncioPublico {
+  id: string;
+  tipo: TipoAnuncio;
+  titulo: string;
+  texto: string;
+  valorCentavos?: number;
+  ate: string;
+  foto: boolean;
+  quem?: string;
+  bloco?: string;
+  whatsapp?: string;
 }
