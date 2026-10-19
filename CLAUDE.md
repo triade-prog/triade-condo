@@ -8,3 +8,4 @@
 - `triade-condo/MAPA.md` mostra em qual sistema (Plataforma do síndico ou Console TRÍADE), peça e forma cada ideia entra; use-o para organizar o código.
 - Escreva documentação e textos em português do Brasil.
 - A cada entrega, no mesmo commit do código, atualize `triade-condo/docs/painel-execucao.html` (status com evidência, `meta` e uma linha no topo do histórico, com horário de Brasília). Cada entrega cita em `refs` os códigos das ideias que atende.
+- Entrega que atende só parte de uma ideia não cita a ideia como atendida sem um item "pendente" no painel com o que falta, citando a mesma ideia. O status da ideia sai só das entregas e dos testes; publicação e dependências externas não o mudam.

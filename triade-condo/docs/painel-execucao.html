@@ -21,7 +21,10 @@
   "refs" leva os códigos das ideias do IDEIAS.md que o item atende (ex.: "AT-06").
   As ideias não têm status próprio: o status de cada uma é calculado a partir de todos os itens
   (entregas, testes, publicação) que a citam. "peca" é o código da peça no mapa (ex.: "S2" = Pedidos).
-  Se o total de ideias do IDEIAS.md mudar, atualize "meta.total_ideias".
+  Se o total de ideias do IDEIAS.md mudar, atualize "meta.total_ideias" e a lista "meta.codigos_ideias"
+  (e "meta.fora_do_software", com as ideias da parte "Fora do software" do MAPA.md).
+  Entrega que atende só parte de uma ideia não a cita como atendida sem um item "pendente" com o resto,
+  que também cita a ideia. Publicação e dependências externas não mudam o status da ideia.
 -->
 <script type="application/json" id="dados">
 {
@@ -30,7 +33,357 @@
     "total_ideias": 312,
     "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7), Manutenção e prestadores (R6) e Comunicados e documentos (R1), com o mural online e o e-mail (R1b), Links e QR (R13), a Memória do prédio (R10), Implantação e suporte (R4) e o WhatsApp do condomínio (passo 5, piloto pelo Wafly), com a Nina, a janela de 24h e os modelos de mensagem, construídos; da Vida em condomínio (R12), as reservas das áreas comuns, as enquetes, as assembleias, com o link pessoal de cada unidade, e os classificados entre moradores já estão construídos. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), comunicados (rascunho, programado e publicado, com versões, público calculado, copiar para o grupo e versão para o mural, mural online por link e QR e envio por e-mail) e documentos do prédio com versões, validade e envio por e-mail, etiquetas QR por local que abrem o WhatsApp do condomínio e o link do prestador na manutenção, com a chegada pela etiqueta, a memória do prédio (prontuário, linha do tempo, manual do prédio com aba no mural, dossiê de passagem de bastão e exportação de todo o histórico), Vida em condomínio (áreas comuns prontas para ativar, reservas pelo painel e pelo WhatsApp com RESERVAR, aprovação ou confirmação na hora, limite com tolerância, recusa e cancelamento com motivo, a semana da área e a reserva na Agenda; enquetes com o link pessoal de cada unidade, sem conta, resultado enquanto corre, lembrete a quem falta e resultado como comunicado; assembleias com pauta e quórum por item, edital, procuração, presença online e no salão, voto pela fração ideal, apuração item a item e ata), moradores e unidades, configurações, pessoas e acesso e Ajuda e suporte (chamados com imagem colada e aprovação do acesso excepcional da TRÍADE); o Console tem carteira, ficha com a implantação em 8 etapas e a entrega, troca de síndico, suporte de acesso sem ver senha, chamados e acesso excepcional; o WhatsApp do condomínio (piloto) tem a aba WhatsApp na ficha do Console (credenciais, QR ou código, conferir o aparelho, desconectar com motivo), o menu WhatsApp na Plataforma (A identificar e falhas de envio), a conversa no pedido e Configurações › WhatsApp; nenhuma tela usa emoji. Tudo testado localmente (1515 pgTAP, 193 Deno, 166 Vitest, 264 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0210 (com as rotinas de prazos, manutenção, comunicados e filas de e-mail e de WhatsApp no pg_cron) e as Edge Functions api-plataforma (versão 16, com o mural, o e-mail, Links e QR, a Memória do prédio, Ajuda e suporte e o WhatsApp) e api-console (versão 7, com implantação, troca de síndico, suporte de acesso, chamados, acesso excepcional e o WhatsApp); o envio de e-mails e de WhatsApp espera os segredos no Vault e nas funções; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "R",
-    "proximo_passo": "Vida em condomínio (R12) está construída: reservas, enquetes, assembleias e classificados (migrations 0220 a 0250, ainda não aplicadas no triade-condo-dev). Com a Carolina: aplicar a 0220, a 0230, a 0240 e a 0250 e publicar a api-plataforma quando ela autorizar. Com a Carolina: o WhatsApp já está publicado (0200 e 0210 aplicadas, api-plataforma versão 16 e api-console versão 7); falta gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE (32 bytes em base64, a mesma) nas funções api-plataforma e api-console e criar a instância do Wafly com um número exclusivo do Águas Claras, e api_plataforma_url e repasse_segredo no Vault; a síndica aceita o termo do piloto e a TRÍADE conecta pelo Console; testar com mensagem de verdade e confirmar o formato da mídia. Conferir no Console uma implantação de ponta a ponta (com o pedido de teste feito pela síndica), um chamado e um acesso excepcional aprovado na Plataforma. Conferir a Memória do prédio (R10) no condominio.trihub.com.br, com o prontuário, o dossiê e uma exportação de verdade. Testar Links e QR num celular de verdade (etiqueta e câmera do prestador) e no Águas Claras (E8). Mural online e e-mail (R1b): gravar os segredos do e-mail (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault, que também fazem a exportação andar sozinha) e cadastrar o aviso do Resend. Liberar o GitHub Actions (F0.9) e escolher o provedor oficial do WhatsApp (E1)."
+    "proximo_passo": "Vida em condomínio (R12) está construída: reservas, enquetes, assembleias e classificados (migrations 0220 a 0250, ainda não aplicadas no triade-condo-dev). Com a Carolina: aplicar a 0220, a 0230, a 0240 e a 0250 e publicar a api-plataforma quando ela autorizar. Com a Carolina: o WhatsApp já está publicado (0200 e 0210 aplicadas, api-plataforma versão 16 e api-console versão 7); falta gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE (32 bytes em base64, a mesma) nas funções api-plataforma e api-console e criar a instância do Wafly com um número exclusivo do Águas Claras, e api_plataforma_url e repasse_segredo no Vault; a síndica aceita o termo do piloto e a TRÍADE conecta pelo Console; testar com mensagem de verdade e confirmar o formato da mídia. Conferir no Console uma implantação de ponta a ponta (com o pedido de teste feito pela síndica), um chamado e um acesso excepcional aprovado na Plataforma. Conferir a Memória do prédio (R10) no condominio.trihub.com.br, com o prontuário, o dossiê e uma exportação de verdade. Testar Links e QR num celular de verdade (etiqueta e câmera do prestador) e no Águas Claras (E8). Mural online e e-mail (R1b): gravar os segredos do e-mail (RESEND_API_KEY e RESEND_WEBHOOK_SECRET na função; api_plataforma_url e repasse_segredo no Vault, que também fazem a exportação andar sozinha) e cadastrar o aviso do Resend. Liberar o GitHub Actions (F0.9) e escolher o provedor oficial do WhatsApp (E1).",
+    "codigos_ideias": [
+      "V-01",
+      "V-02",
+      "V-03",
+      "V-04",
+      "V-05",
+      "V-06",
+      "V-07",
+      "V-08",
+      "V-09",
+      "V-10",
+      "V-11",
+      "V-12",
+      "V-13",
+      "V-14",
+      "V-15",
+      "V-16",
+      "V-17",
+      "W-01",
+      "W-02",
+      "W-03",
+      "W-04",
+      "W-05",
+      "W-06",
+      "W-07",
+      "W-08",
+      "W-09",
+      "W-10",
+      "W-11",
+      "W-12",
+      "W-13",
+      "W-14",
+      "W-15",
+      "W-16",
+      "W-17",
+      "W-18",
+      "W-19",
+      "W-20",
+      "W-21",
+      "W-22",
+      "AT-01",
+      "AT-02",
+      "AT-03",
+      "AT-04",
+      "AT-05",
+      "AT-06",
+      "AT-07",
+      "AT-08",
+      "AT-09",
+      "AT-10",
+      "AT-11",
+      "AT-12",
+      "AT-13",
+      "AT-14",
+      "AT-15",
+      "AT-16",
+      "AT-17",
+      "AT-18",
+      "AT-19",
+      "AT-20",
+      "AT-21",
+      "AT-22",
+      "AT-23",
+      "AT-24",
+      "AT-25",
+      "AT-26",
+      "AT-27",
+      "AT-28",
+      "AT-29",
+      "AT-30",
+      "AT-31",
+      "AT-32",
+      "AT-33",
+      "IA-01",
+      "IA-02",
+      "IA-03",
+      "IA-04",
+      "IA-05",
+      "IA-06",
+      "IA-07",
+      "IA-08",
+      "IA-09",
+      "IA-10",
+      "IA-11",
+      "IA-12",
+      "IA-13",
+      "IA-14",
+      "IA-15",
+      "IA-16",
+      "IA-17",
+      "IA-18",
+      "IA-19",
+      "IA-20",
+      "IA-21",
+      "CD-01",
+      "CD-02",
+      "CD-03",
+      "CD-04",
+      "CD-05",
+      "CD-06",
+      "CD-07",
+      "CD-08",
+      "CD-09",
+      "CD-10",
+      "CD-11",
+      "CD-12",
+      "CD-13",
+      "CD-14",
+      "CF-01",
+      "CF-02",
+      "CF-03",
+      "CF-04",
+      "CF-05",
+      "CF-06",
+      "CF-07",
+      "CF-08",
+      "CF-09",
+      "CF-10",
+      "CF-11",
+      "CF-12",
+      "MU-01",
+      "MU-02",
+      "MU-03",
+      "MU-04",
+      "MU-05",
+      "MU-06",
+      "MU-07",
+      "MU-08",
+      "MU-09",
+      "MU-10",
+      "MU-11",
+      "MP-01",
+      "MP-02",
+      "MP-03",
+      "MP-04",
+      "MP-05",
+      "MP-06",
+      "MP-07",
+      "MP-08",
+      "MP-09",
+      "MP-10",
+      "MP-11",
+      "MP-12",
+      "MP-13",
+      "MP-14",
+      "MP-15",
+      "MP-16",
+      "AG-01",
+      "AG-02",
+      "AG-03",
+      "AG-04",
+      "AG-05",
+      "AG-06",
+      "AG-07",
+      "AG-08",
+      "AG-09",
+      "OC-01",
+      "OC-02",
+      "OC-03",
+      "OC-04",
+      "OC-05",
+      "OC-06",
+      "OC-07",
+      "OC-08",
+      "OC-09",
+      "OC-10",
+      "FC-01",
+      "FC-02",
+      "FC-03",
+      "FC-04",
+      "FC-05",
+      "FC-06",
+      "FC-07",
+      "FC-08",
+      "FC-09",
+      "FC-10",
+      "FC-11",
+      "PA-01",
+      "PA-02",
+      "PA-03",
+      "PA-04",
+      "PA-05",
+      "PA-06",
+      "PA-07",
+      "PA-08",
+      "PA-09",
+      "PA-10",
+      "PA-11",
+      "AC-01",
+      "AC-02",
+      "AC-03",
+      "AC-04",
+      "AC-05",
+      "AC-06",
+      "AC-07",
+      "TR-01",
+      "TR-02",
+      "TR-03",
+      "TR-04",
+      "TR-05",
+      "TR-06",
+      "TR-07",
+      "TR-08",
+      "TR-09",
+      "TR-10",
+      "TR-11",
+      "CT-01",
+      "CT-02",
+      "CT-03",
+      "CT-04",
+      "PI-01",
+      "PI-02",
+      "PI-03",
+      "PI-04",
+      "PI-05",
+      "PI-06",
+      "PI-07",
+      "PI-08",
+      "PI-09",
+      "PI-10",
+      "PI-11",
+      "PI-12",
+      "PI-13",
+      "PI-14",
+      "PI-15",
+      "PI-16",
+      "PI-17",
+      "PI-18",
+      "PI-19",
+      "PI-20",
+      "SH-01",
+      "SH-02",
+      "SH-03",
+      "SH-04",
+      "SH-05",
+      "SH-06",
+      "SH-07",
+      "SH-08",
+      "SH-09",
+      "SH-10",
+      "SH-11",
+      "NG-01",
+      "NG-02",
+      "NG-03",
+      "NG-04",
+      "NG-05",
+      "NG-06",
+      "NG-07",
+      "NG-08",
+      "NG-09",
+      "NG-10",
+      "NG-11",
+      "NG-12",
+      "NG-13",
+      "NG-14",
+      "NG-15",
+      "NG-16",
+      "NG-17",
+      "NG-18",
+      "NG-19",
+      "NG-20",
+      "NG-21",
+      "EM-01",
+      "EM-02",
+      "EM-03",
+      "EM-04",
+      "EM-05",
+      "EM-06",
+      "EM-07",
+      "EM-08",
+      "PT-01",
+      "PT-02",
+      "PT-03",
+      "PT-04",
+      "PT-05",
+      "PT-06",
+      "PT-07",
+      "PT-08",
+      "PT-09",
+      "PT-10",
+      "PT-11",
+      "PT-12",
+      "PT-13",
+      "PT-14",
+      "PT-15",
+      "PT-16",
+      "PT-17",
+      "PT-18",
+      "FI-01",
+      "FI-02",
+      "FI-03",
+      "DR-01",
+      "DR-02",
+      "DR-03",
+      "DR-04",
+      "DR-05",
+      "DR-06",
+      "DR-07",
+      "DR-08",
+      "DR-09",
+      "DR-10",
+      "DR-11",
+      "DR-12",
+      "DR-13",
+      "DR-14",
+      "DR-15",
+      "DR-16",
+      "DR-17",
+      "DR-18",
+      "DR-19",
+      "DR-20",
+      "DR-21",
+      "DR-22"
+    ],
+    "fora_do_software": [
+      "SH-07",
+      "SH-08",
+      "SH-11",
+      "NG-02",
+      "NG-03",
+      "NG-04",
+      "NG-05",
+      "NG-07",
+      "NG-08",
+      "NG-09",
+      "NG-10",
+      "NG-11",
+      "NG-12",
+      "NG-14",
+      "NG-16",
+      "NG-17",
+      "NG-18",
+      "NG-19",
+      "NG-20",
+      "V-02",
+      "V-03",
+      "V-16",
+      "EM-01",
+      "EM-02",
+      "EM-03",
+      "EM-04",
+      "EM-05",
+      "EM-06",
+      "EM-07",
+      "EM-08",
+      "V-15",
+      "FI-01",
+      "FI-02",
+      "FI-03"
+    ]
   },
   "fases": [
     {
@@ -95,7 +448,8 @@
           "texto": "Monorepo pnpm em triade-condo/sistema/: apps/plataforma, apps/console, packages/domain, packages/ui, packages/servidor e supabase/",
           "peca": "B4",
           "refs": [
-            "PT-05"
+            "PT-05",
+            "PT-17"
           ],
           "status": "feito",
           "evidencia": "pnpm build dos dois apps e pnpm typecheck; triade-condo/sistema/README.md"
@@ -192,6 +546,16 @@
           ],
           "status": "feito",
           "evidencia": "Vitest dinheiro.test.ts; tipos centavos e moeda no banco (006)"
+        },
+        {
+          "id": "F0.11",
+          "texto": "Inventário por tipo de dado no sistema, com finalidade, retenção e exclusão aplicadas",
+          "peca": "B2",
+          "refs": [
+            "PT-11"
+          ],
+          "status": "pendente",
+          "nota": "Aberto pela auditoria das ideias de 19/10/2026: a entrega citada atende só parte da ideia; este item guarda o que falta. Já existem o cadastro mínimo, a remoção de dados do contato e os links que expiram; o documento do inventário continua no checklist de publicação (P7)."
         }
       ]
     },
@@ -441,6 +805,16 @@
           "status": "feito",
           "nota": "Telas aprovadas pela Carolina em 17/10/2026 e construídas: ficha da unidade com a linha de ocupação e cada pessoa com as marcações, a ligação, o parentesco e desde quando ocupa; incluir e editar pessoa com as três marcações (aviso ao trocar o responsável); encerrar com o ocupou até em qualquer motivo; mudança com as marcações de quem entra e as datas preenchidas sozinhas; lista de unidades com a coluna Ocupação e os contadores que filtram; planilha com colunas novas e opcionais. Migration 0110 aplicada pela Carolina no triade-condo-dev e conferida (vínculos convertidos e registrados no histórico). api-plataforma versão 7 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br (aceita também o formato antigo, então o site atual não quebra). Juntado ao main; as telas estão no site.",
           "evidencia": "pgTAP 012_vinculo_detalhado_test.sql; Deno api-plataforma/moradores_test.ts; Vitest moradores.test.ts; Playwright plataforma-passo3b.spec.ts e plataforma-passo3.spec.ts"
+        },
+        {
+          "id": "F3.7",
+          "texto": "Lista de unidades: etiquetas à venda e à locação, busca por placa e menu de garagens",
+          "peca": "S4",
+          "refs": [
+            "MU-11"
+          ],
+          "status": "pendente",
+          "nota": "Aberto pela auditoria das ideias de 19/10/2026: a entrega citada atende só parte da ideia; este item guarda o que falta. A busca por placa e o menu de garagens dependem dos veículos (MU-06)."
         }
       ]
     },
@@ -454,7 +828,8 @@
           "texto": "Registrar pedido: protocolo, unidade, contato, local, categoria, descrição e anexos",
           "peca": "S2",
           "refs": [
-            "AT-01"
+            "AT-01",
+            "V-01"
           ],
           "status": "feito",
           "nota": "Banco e API prontos: protocolo por condomínio e por ano (2026-0001), unidade ou local, contato só se confirmado na unidade, como chegou, categoria, prioridade, assunto e relato. Anexos ficam para o F4.8. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
@@ -489,7 +864,8 @@
           "peca": "S2",
           "refs": [
             "AT-06",
-            "AT-07"
+            "AT-07",
+            "V-01"
           ],
           "status": "feito",
           "nota": "Banco e API prontos: próximo retorno pelo prazo (AT-10), recalculado a cada retorno ao morador, sem mexer na previsão; nota interna não conta; previsão só quando conhecida; mudar qualquer um pede motivo. Telas construídas conforme o desenho aprovado. A 0090 está no triade-condo-dev e a api-plataforma foi publicada de novo.",
@@ -602,7 +978,8 @@
           "peca": "S15",
           "refs": [
             "W-05",
-            "W-08"
+            "W-08",
+            "V-07"
           ],
           "status": "feito",
           "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 aplicada pela Carolina no triade-condo-dev em 18/10/2026 e conferida; api-console versão 6 publicada; api-plataforma versão 16 publicada em 19/10/2026; falta gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções e api_plataforma_url e repasse_segredo no Vault. Texto, foto e documento com as conferências dos pedidos; áudio e vídeo até 16 MB, sem transcrição. Confirmação com protocolo, sem prometer prazo, com o 193 e o aviso contra golpes.",
@@ -642,6 +1019,26 @@
           "status": "feito",
           "nota": "Piloto pelo Wafly (DC14), no desenho docs/telas/whatsapp.html aprovado pela Carolina em 18/10/2026 e construído. Migration 0200 aplicada pela Carolina no triade-condo-dev em 18/10/2026 e conferida; api-console versão 6 publicada; api-plataforma versão 16 publicada em 19/10/2026; falta gravar WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE nas duas funções e api_plataforma_url e repasse_segredo no Vault. PARAR desliga os avisos que o condomínio inicia e VOLTAR religa; respostas continuam. Fica no contato e no histórico.",
           "evidencia": "pgTAP 021_whatsapp_test.sql (111 testes); Deno _shared/whatsapp_test.ts (7), api-plataforma/whatsapp_test.ts (8) e api-console/whatsapp_test.ts (6); Vitest whatsapp.test.ts (5); Playwright plataforma-whatsapp.spec.ts e console-whatsapp.spec.ts (6 cenários × 2 aparelhos)"
+        },
+        {
+          "id": "F5.9",
+          "texto": "Troca automática para o prestador reserva quando o principal não responde, com aviso e registro no histórico",
+          "peca": "S6",
+          "refs": [
+            "MP-09"
+          ],
+          "status": "pendente",
+          "nota": "Aberto pela auditoria das ideias de 19/10/2026: a entrega citada atende só parte da ideia; este item guarda o que falta. Entra depois do WhatsApp em produção."
+        },
+        {
+          "id": "F5.10",
+          "texto": "Queda do WhatsApp: registro do incidente, canal alternativo e conciliação das mensagens",
+          "peca": "S15",
+          "refs": [
+            "W-17"
+          ],
+          "status": "pendente",
+          "nota": "Aberto pela auditoria das ideias de 19/10/2026: a entrega citada atende só parte da ideia; este item guarda o que falta. Já existem o aviso de número desconectado e as mensagens atrasadas em A identificar; o roteiro continua no checklist de publicação (P9)."
         }
       ]
     },
@@ -666,8 +1063,7 @@
           "texto": "Escalonamento: responsável, síndico, substituto ou conselho",
           "peca": "S2",
           "refs": [
-            "AT-09",
-            "V-14"
+            "AT-09"
           ],
           "status": "feito",
           "nota": "Escalonamento: síndico depois de 2 h e substituto (pessoa autorizada) depois de 8 h de atendimento, mudáveis em Configurações › Prazos e avisos; também avisos de pedido sem responsável e de pendência parada. Sem repetir aviso. O conselho entra quando existir (V-14). Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Juntado ao main; as telas estão no site.",
@@ -725,6 +1121,16 @@
           "status": "feito",
           "nota": "Tela Indicadores: retornos no prazo como métrica principal, primeiro retorno, concluídos e reabertos, por categoria, com período (este mês, mês passado, 3 meses) e comparação; sem caso, \"sem dados\", nunca zero. Telas aprovadas pela Carolina em 17/10/2026 e construídas. Migration 0120 aplicada pela Carolina no triade-condo-dev e conferida (tabela de avisos, funções e a conferência agendada no pg_cron a cada 5 minutos, já rodando). api-plataforma versão 8 publicada no triade-condo-dev e respondendo pelo condominio.trihub.com.br. Juntado ao main; as telas estão no site.",
           "evidencia": "pgTAP 013_prazos_avisos_test.sql; Deno api-plataforma/prazos_test.ts; Vitest prazos.test.ts; Playwright plataforma-passo6e7.spec.ts"
+        },
+        {
+          "id": "F7.3",
+          "texto": "Indicadores que faltam: pendências por responsável, tempo de solução por categoria, reincidência e decisões aguardando o síndico",
+          "peca": "S12",
+          "refs": [
+            "TR-01"
+          ],
+          "status": "pendente",
+          "nota": "Aberto pela auditoria das ideias de 19/10/2026: a entrega citada atende só parte da ideia; este item guarda o que falta. Reincidência depende de AT-18 e decisões aguardando o síndico, de AT-23."
         }
       ]
     },
@@ -759,7 +1165,8 @@
           "refs": [
             "CD-12",
             "CD-13",
-            "CD-14"
+            "CD-14",
+            "V-07"
           ],
           "status": "feito",
           "evidencia": "Desenho aprovado em docs/telas/mural-email.html. Migration 0160_mural_email.sql (mural com link de 12 caracteres, trocar link com motivo, aberturas sem saber quem; e-mail do contato confirmado pela própria pessoa; fila de e-mails com lote, resultado e avisos do provedor; link pessoal de 90 dias; parar de receber; pedidos de documento com resposta neutra; envio de documento por link de 7 dias que pode ser cancelado; rotina enviar-emails a cada 2 minutos pelo pg_net); api-plataforma com as rotas sem conta (/v1/publico), o envio pelo Resend e o aviso assinado do provedor; telas /m/[código], /c/[código], /e/confirmar, /e/parar, /d/[código], /mural/cartaz, Configurações › Comunicados com mural e e-mail, como vai chegar, como chegou, e-mail no contato e pedidos por e-mail",
@@ -773,11 +1180,33 @@
           "status": "pendente"
         },
         {
+          "id": "R2.1",
+          "texto": "Ficha do cliente com recursos contratados e liberados",
+          "peca": "C3",
+          "refs": [
+            "PI-02"
+          ],
+          "status": "pendente",
+          "nota": "Aberto pela auditoria das ideias de 19/10/2026: a entrega citada atende só parte da ideia; este item guarda o que falta. Entra com Planos e liberação (R2)."
+        },
+        {
           "id": "R3",
           "texto": "Pagamentos dos clientes (quando houver cliente pagando)",
           "peca": "C4",
           "refs": [],
           "status": "pendente"
+        },
+        {
+          "id": "R3.1",
+          "texto": "Pagamentos dos clientes no Console",
+          "peca": "C4",
+          "refs": [
+            "V-10",
+            "PI-07",
+            "PI-08"
+          ],
+          "status": "pendente",
+          "nota": "Aberto pela auditoria das ideias de 19/10/2026: a entrega citada atende só parte da ideia; este item guarda o que falta. Entra com Pagamentos dos clientes (R3)."
         },
         {
           "id": "R4",
@@ -803,6 +1232,16 @@
           "peca": "S3",
           "refs": [],
           "status": "pendente"
+        },
+        {
+          "id": "R5.1",
+          "texto": "Conselho e subsíndico como nível de escalonamento e de aprovação",
+          "peca": "S3",
+          "refs": [
+            "V-14"
+          ],
+          "status": "pendente",
+          "nota": "Aberto pela auditoria das ideias de 19/10/2026: a entrega citada atende só parte da ideia; este item guarda o que falta. Entra com Decisões e aprovações (R5). A F6.2 deixou de citar a V-14, que ela nunca atendeu."
         },
         {
           "id": "R6",
@@ -840,6 +1279,16 @@
           "status": "feito",
           "evidencia": "Desenho aprovado em docs/telas/agenda.html. Migration 0130_agenda.sql (compromissos, repetição, conflitos, situações, reagendar e cancelar com motivo, agenda do pedido, permissões Ver a agenda e Cuidar da agenda); telas /agenda (lista, semana, mês, filtro por tipo, feriados), /agenda/compromisso, Na agenda no pedido e Hoje na agenda no início",
           "nota": "Migration 0130 no triade-condo-dev (tabelas e as nove funções da agenda conferidas) e api-plataforma versão 9 publicada com as rotas da agenda. PR 11 juntado ao main."
+        },
+        {
+          "id": "R7.1",
+          "texto": "Agenda com os vencimentos de contratos de prestadores e de documentos e com as assembleias",
+          "peca": "S7",
+          "refs": [
+            "AG-09"
+          ],
+          "status": "pendente",
+          "nota": "Aberto pela auditoria das ideias de 19/10/2026: a entrega citada atende só parte da ideia; este item guarda o que falta. As reservas já aparecem na Agenda (R12)."
         },
         {
           "id": "R8",
@@ -916,6 +1365,26 @@
           "peca": "B6",
           "refs": [],
           "status": "pendente"
+        },
+        {
+          "id": "R14.1",
+          "texto": "Transcrição de áudio do morador, mostrada ao lado do áudio e sem prometer o que ainda não existe",
+          "peca": "B6",
+          "refs": [
+            "W-06"
+          ],
+          "status": "pendente",
+          "nota": "Aberto pela auditoria das ideias de 19/10/2026: a entrega citada atende só parte da ideia; este item guarda o que falta. Entra com o Motor de IA (R14) e a política da Meta (IA-16)."
+        },
+        {
+          "id": "R14.2",
+          "texto": "Revisão do texto do chamado pela IA antes do envio, só como sugestão",
+          "peca": "B6",
+          "refs": [
+            "PI-20"
+          ],
+          "status": "pendente",
+          "nota": "Aberto pela auditoria das ideias de 19/10/2026: a entrega citada atende só parte da ideia; este item guarda o que falta. Entra com o Motor de IA (R14)."
         },
         {
           "id": "R15",
@@ -1616,8 +2085,15 @@
   "historico": [
     {
       "data": "19/10/2026",
-      "inicio": "06:20",
+      "inicio": "06:42",
       "fim": "06:50",
+      "texto": "Painel corrigido pela auditoria das ideias (partes 1 e 2 do plano aprovado pela Carolina). Dados: 11 itens pendentes novos com o que falta nas ideias contadas como atendidas pela metade (AG-09, TR-01, MU-11, MP-09, V-14, W-06, PI-02, PI-20, V-10, PT-11 e W-17); a F6.2 deixou de citar a V-14; V-01, V-07 e PT-17, prontas, passaram a ser citadas. Regra: o status da ideia sai só das entregas e dos testes, e a publicação aparece como \"pronta, falta publicar\"; a tabela mostra as 278 ideias de software, com as não iniciadas, e as 34 fora do software ficam à parte. Resultado: 124 de 278 atendidas, os 118 que a auditoria encontrou no código mais as 6 da Vida em condomínio entregues hoje (AC-01, AC-02, AC-03, AC-05, AC-06 e AC-07).",
+      "ref": "V-01, V-07, V-10, V-14, W-06, W-17, AG-09, TR-01, MU-11, MP-09, PI-02, PI-20, PT-11, PT-17"
+    },
+    {
+      "data": "19/10/2026",
+      "inicio": "06:20",
+      "fim": "06:42",
       "texto": "Vida em condomínio (R12), parte 4: classificados construídos, no desenho aprovado pela Carolina, e a peça fica completa. Migration 0250: ANUNCIAR no WhatsApp com a Nina (tipo, texto e foto, SIM ou NÃO para o telefone), aprovação com título e valor sugeridos, recusa com motivo e tirar do mural, decisão ao morador pelo modelo anuncio_decidido, 30 dias na aba Classificados do mural com o primeiro nome e o bloco e o aviso de que o condomínio não vende nem garante nada. Aba Classificados, cartão no Início e contagem no menu. Testes: 1.571 no banco, 195 na API, 169 de unidade e 270 de tela, todos passando. As migrations 0220 a 0250 esperam a Carolina para ir ao triade-condo-dev.",
       "ref": "R12, AC-05, CD-12, W-20, W-22"
     },
@@ -2507,11 +2983,12 @@ html,body{overflow-x:clip}
 
 <section id="ideias" aria-labelledby="h-ach">
   <h2 id="h-ach">Ideias atendidas</h2>
-  <p class="sub">As ideias do <a href="../IDEIAS.md">IDEIAS.md</a> que já têm entrega, teste ou item de publicação planejado: <span id="nIdeias"></span>. O status de cada ideia sai dos itens que a citam.</p>
+  <p class="sub">As ideias de software do <a href="../IDEIAS.md">IDEIAS.md</a>: <span id="nIdeias"></span>. O status de cada ideia sai das entregas e dos testes que a citam; o que falta publicar aparece ao lado, sem mudar o status.</p>
   <div class="tbl"><table>
     <thead><tr><th>Ideia</th><th>Onde entra</th><th>Itens</th><th>Status</th></tr></thead>
     <tbody id="tIdeias"></tbody>
   </table></div>
+  <p class="sub" id="nFora"></p>
 </section>
 
 <section id="testes" aria-labelledby="h-test">
@@ -2586,6 +3063,9 @@ html,body{overflow-x:clip}
   const confere=(i,campo)=>{if(i[campo]!==undefined&&!STATUS[i[campo]]){avisos.push(`${i.id}: status "${i[campo]}" não existe (use ${CHAVES.join(', ')})`);i[campo]='pendente';}};
   todos.forEach(i=>{if(i.status===undefined)i.status='pendente';confere(i,'status');vistos.has(i.id)?repetidos.add(i.id):vistos.add(i.id);});
   repetidos.forEach(x=>avisos.push(`${x}: id repetido`));
+  // Toda ideia citada precisa existir na lista de códigos do IDEIAS.md (meta.codigos_ideias).
+  const codigos=D.meta.codigos_ideias||[], fora=new Set(D.meta.fora_do_software||[]), conhecidas=new Set(codigos);
+  [...new Set(todos.flatMap(i=>i.refs||[]))].filter(r=>!conhecidas.has(r)).forEach(r=>avisos.push(`${r}: citada em refs, mas não está em meta.codigos_ideias`));
   if(D.meta.fase_atual&&!D.fases.some(f=>f.id===D.meta.fase_atual))avisos.push(`meta.fase_atual "${D.meta.fase_atual}" não é uma fase`);
   if(avisos.length){$('avisos').hidden=false;$('avisos').append(el('strong',{text:'Dados do painel com erro. '}),avisos.join(' · '));console.warn('Painel:',avisos);}
 
@@ -2601,27 +3081,31 @@ html,body{overflow-x:clip}
     i.status==='feito'&&i.evidencia?el('span',{class:'evid',text:'Evidência: '+i.evidencia}):null
   ];
 
-  // Ideias citadas: o status de cada uma sai dos itens que a citam em "refs".
-  const ordemIdeia=r=>{const [p,n]=r.split('-');return [p,Number(n)];};
-  const citadas=[...new Set(todos.flatMap(i=>i.refs||[]))].sort((a,b)=>{const [pa,na]=ordemIdeia(a),[pb,nb]=ordemIdeia(b);return pa===pb?na-nb:pa<pb?-1:1;});
-  const ideiasCitadas=citadas.map(id=>{
-    const itens=todos.filter(i=>(i.refs||[]).includes(id)), c=conta(itens);
-    const status=c.bloqueado?'bloqueado':c.feito===itens.length?'feito':c.pendente<itens.length?'andamento':'pendente';
-    return {id,itens,c,status};
+  // Ideias de software: todas as do IDEIAS.md, menos as que ficam fora do software (MAPA.md). O
+  // status sai só das entregas e dos testes que citam a ideia em "refs"; publicação e dependências
+  // externas não mudam o status, viram a marca "falta publicar". Ideia sem entrega nem teste que a
+  // cite aparece como não iniciada.
+  const doCodigo=[...entregas,...D.testes], paraPublicar=[...pub,...D.externos];
+  const ideias=codigos.filter(id=>!fora.has(id)).map(id=>{
+    const itens=doCodigo.filter(i=>(i.refs||[]).includes(id)), c=conta(itens);
+    const falta=paraPublicar.filter(i=>(i.refs||[]).includes(id)&&i.status!=='feito');
+    const status=!itens.length?'pendente':c.bloqueado?'bloqueado':c.feito===itens.length?'feito':c.pendente<itens.length?'andamento':'pendente';
+    return {id,itens,c,status,falta};
   });
+  const atendidas=conta(ideias).feito;
 
   // Situação
   $('mAtual').textContent=D.meta.atualizado_em;
   $('mVersao').textContent=D.meta.total_ideias;
   $('sAgora').textContent=D.meta.situacao;
   $('sProximo').textContent=D.meta.proximo_passo;
-  $('nIdeias').textContent=`${ideiasCitadas.length} de ${D.meta.total_ideias}`;
+  $('nIdeias').textContent=`${atendidas} de ${ideias.length} atendidas, ${ideias.filter(a=>a.itens.length).length} com alguma entrega ou teste`;
   const ce=conta(entregas);
   $('sBarLabel').textContent=`Entregas das ${D.fases.length} fases`;
   $('sBar').replaceWith(barra(ce,entregas.length));
   $('sBarTxt').textContent=`${ce.feito} de ${entregas.length} entregas feitas (${pct(ce.feito,entregas.length)}%) · ${ce.andamento} em andamento · ${ce.bloqueado} bloqueadas`;
   legenda($('legenda1'));legenda($('legenda2'));
-  [[entregas,'Entregas feitas',entregas.length],[D.testes,'Testes passando',D.testes.length],[ideiasCitadas,'Ideias atendidas',D.meta.total_ideias],[pub,'Itens de publicação prontos',pub.length]]
+  [[entregas,'Entregas feitas',entregas.length],[D.testes,'Testes passando',D.testes.length],[ideias,'Ideias de software atendidas',ideias.length],[pub,'Itens de publicação prontos',pub.length]]
     .forEach(([lista,rotulo,total])=>$('sNums').append(el('div',{class:'num'},el('b',{},String(conta(lista).feito),el('small',{text:` de ${total}`})),el('span',{text:rotulo}))));
 
   // Fases: a atual vem de meta.fase_atual; sem ela, destaca a próxima (primeira não concluída).
@@ -2669,14 +3153,18 @@ html,body{overflow-x:clip}
   window.addEventListener('hashchange',()=>abrir(location.hash));abrir(location.hash);
 
   // Ideias
-  ideiasCitadas.forEach(a=>{
-    const fases=[...new Set(a.itens.map(i=>i.fase).filter(Boolean))];
+  ideias.forEach(a=>{
+    const fases=[...new Set([...a.itens,...a.falta].map(i=>i.fase).filter(Boolean))];
+    const status=a.itens.length?st(a.status):el('span',{class:'st pendente'},el('span',{class:'ic','aria-hidden':'true',text:STATUS.pendente.icone}),'Não iniciada');
+    const publicar=a.status==='feito'&&a.falta.length?el('span',{class:'suave',text:` · pronta, falta publicar (${a.falta.map(i=>i.id).join(', ')})`}):null;
     $('tIdeias').append(el('tr',{id:'ideia-'+a.id},
       el('td',{},el('span',{class:'mono',text:a.id})),
       el('td',{},...fases.flatMap((f,k)=>[k?', ':'',linkFase(f)])),
       el('td',{class:'mono',text:`${a.c.feito}/${a.itens.length}`}),
-      el('td',{},st(a.status))));
+      el('td',{},status,publicar)));
   });
+  $('nFora').append(`As ${fora.size} ideias fora do software (serviços fora do sistema, negócio e preço, empresa e marca, material antigo) não entram na conta: `,
+    ...[...fora].flatMap((id,k)=>[k?', ':'',el('span',{class:'mono',id:'ideia-'+id,text:id})]),'.');
 
   // Testes, publicação e dependências externas usam o mesmo rodapé de detalhes.
   D.testes.forEach(t=>$('tTestes').append(el('tr',{},el('td',{class:'id',text:t.id}),el('td',{},t.texto,...detalhes(t)),el('td',{},linkFase(t.fase)),el('td',{},st(t.status)))));
