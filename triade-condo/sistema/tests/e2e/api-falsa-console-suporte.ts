@@ -30,6 +30,8 @@ const novoId = () => `9a0b1c2d-3e4f-4a5b-8c6d-${String(++n).padStart(12, "0")}`;
 
 export function criarSuporteConsole() {
   return {
+    /** Números de WhatsApp desconectados, para a contagem do menu (passo 5). */
+    whatsappDesconectados: 0,
     entregue: false,
     etapas: ETAPAS.map(([chave, titulo, descricao], i): Etapa => ({
       numero: i + 1, chave, titulo, descricao, versao: 1,
@@ -76,7 +78,7 @@ export async function rotasSuporteConsole(route: Route, est: EstadoSuporteConsol
 
   if (caminho === "/v1/contagens") {
     return route.fulfill({ json: { carteira: 1, implantacoes: est.entregue ? 0 : 1, chamados: est.chamado.situacao === "RESOLVIDO" ? 0 : 1,
-      suporteAcesso: ["ABERTO", "DUVIDOSO"].includes(est.suporte.situacao) ? 1 : 0 } });
+      suporteAcesso: ["ABERTO", "DUVIDOSO"].includes(est.suporte.situacao) ? 1 : 0, whatsapp: est.whatsappDesconectados } });
   }
   if (caminho === "/v1/implantacoes") {
     return route.fulfill({ json: { implantacoes: est.entregue ? [] : [{

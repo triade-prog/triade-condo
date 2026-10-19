@@ -3,7 +3,7 @@
 // primeiros bytes, não pelo nome), o tamanho, a localização tirada das fotos e o PDF sem
 // conteúdo ativo.
 
-import { TAMANHO_MAXIMO_ARQUIVO, type TipoArquivo } from "@triade/domain";
+import { TAMANHO_MAXIMO_ARQUIVO, TAMANHO_MAXIMO_MIDIA, type MidiaWhatsapp, type TipoArquivo } from "@triade/domain";
 
 export interface Armazenamento {
   /** Link para o navegador enviar o arquivo uma vez, direto para o armazenamento (PUT). */
@@ -97,6 +97,45 @@ export function verificarArquivo(bytes: Uint8Array, tipo: TipoArquivo, limite = 
   } catch {
     return recusar("O arquivo está corrompido ou num formato que não dá para conferir.");
   }
+}
+
+/**
+ * Mídia do morador pelo WhatsApp (passo 5; W-05): fotos e PDF pelas regras de sempre; áudio e
+ * vídeo pelo conteúdo, até 16 MB, com a localização tirada do vídeo MP4.
+ */
+export function verificarMidia(bytes: Uint8Array, tipo: MidiaWhatsapp): ResultadoVerificacao {
+  if (tipo === "image/jpeg" || tipo === "image/png" || tipo === "image/webp" || tipo === "application/pdf") {
+    return verificarArquivo(bytes, tipo, TAMANHO_MAXIMO_MIDIA);
+  }
+  if (bytes.length === 0) return recusar("O arquivo chegou vazio.");
+  if (bytes.length > TAMANHO_MAXIMO_MIDIA) return recusar("O arquivo passa de 16 MB.");
+  switch (tipo) {
+    case "audio/ogg":
+      return ascii(bytes, 0, 4) === "OggS" ? { ok: true, bytes } : recusar("O conteúdo não é um áudio OGG de verdade.");
+    case "audio/mpeg":
+      return ascii(bytes, 0, 3) === "ID3" || (bytes[0] === 0xff && (bytes[1]! & 0xe0) === 0xe0)
+        ? { ok: true, bytes } : recusar("O conteúdo não é um áudio MP3 de verdade.");
+    case "audio/mp4":
+    case "video/mp4":
+      return ascii(bytes, 4, 4) === "ftyp" ? { ok: true, bytes: tirarLocalizacaoMp4(bytes) } : recusar("O conteúdo não é um MP4 de verdade.");
+    default:
+      return recusar("Tipo de arquivo não aceito.");
+  }
+}
+
+/** MP4: os blocos de localização (©xyz e loci) viram blocos vazios ("free"), sem mudar o tamanho. */
+export function tirarLocalizacaoMp4(b: Uint8Array): Uint8Array {
+  const saida = b.slice();
+  for (let i = 4; i + 4 <= saida.length; i++) {
+    const tipo = (saida[i] === 0xa9 && ascii(saida, i + 1, 3) === "xyz") || ascii(saida, i, 4) === "loci";
+    if (!tipo) continue;
+    const tamanho = ((saida[i - 4]! << 24) >>> 0) + (saida[i - 3]! << 16) + (saida[i - 2]! << 8) + saida[i - 1]!;
+    if (tamanho < 8 || i - 4 + tamanho > saida.length) continue;
+    saida.set([0x66, 0x72, 0x65, 0x65], i);
+    saida.fill(0, i + 4, i - 4 + tamanho);
+    i += tamanho - 5;
+  }
+  return saida;
 }
 
 function juntar(partes: Uint8Array[]): Uint8Array {

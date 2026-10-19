@@ -12,6 +12,7 @@ import { criarComunicados, resumoComunicados, rotasComunicados, rotasPublicas } 
 import { criarLinks, rotasLinks, rotasLinksPublicas } from "./api-falsa-links";
 import { criarMemoria, manualDoMural, resumoProntuario, rotasMemoria } from "./api-falsa-memoria";
 import { criarSuporte, resumoAcessos, rotasSuporte } from "./api-falsa-suporte";
+import { criarWhatsapp, resumoWhatsapp, rotasWhatsapp } from "./api-falsa-whatsapp";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -95,6 +96,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const links = criarLinks();
   const memoria = criarMemoria();
   const suporte = criarSuporte();
+  const whatsapp = criarWhatsapp(estado.pedidos[0]!, cats[0]!.id, pris[1]!.id);
   if (!opcoes.comAcessoPedido) suporte.acessos = [];
   if (opcoes.comAtendimento) {
     for (const p of estado.pessoas) { p.responsavel = true; p.disponivel = true; }
@@ -177,6 +179,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         ...(acoes().includes("comunicados.ver") || acoes().includes("documentos.ver") ? { comunicados: resumoComunicados(comunicados, pode) } : {}),
         ...(acoes().includes("documentos.ver") ? { memoria: { prontuario: resumoProntuario(memoria) } } : {}),
         ...(acoes().includes("acesso_excepcional.aprovar") ? { acessosExcepcionais: resumoAcessos(suporte) } : {}),
+        ...(acoes().includes("pedidos.responder") || acoes().includes("pedidos.atualizar") ? { whatsapp: resumoWhatsapp(whatsapp) } : {}),
         avisosNaoVistos: naoVistos(estado.avisos, eu.vinculo),
       } });
     }
@@ -204,6 +207,10 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (naManutencao !== null) return naManutencao;
     const moradores = await rotasMoradores(route, estado.moradores, caminho, metodo, corpo, pode);
     if (moradores !== null) return moradores;
+    const noWhatsapp = await rotasWhatsapp(route, whatsapp, caminho, metodo, corpo, pode, eu,
+      { categorias: c.categorias, prioridades: c.prioridades, sindica: quem === "SINDICA" },
+      (id) => estado.pedidos.find((p) => p.id === id)?.versao ?? null);
+    if (noWhatsapp !== null) return noWhatsapp;
     const pedidos = await rotasPedidos(route, estado.pedidos, c, estado.pessoas, estado.moradores, eu, caminho, metodo, corpo, url, pode);
     if (pedidos !== null) return pedidos;
 
@@ -311,5 +318,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     }
     return erro(route, 404, "NOT_FOUND");
   });
-  return Object.assign(estado, { links, memoria, suporte });
+  return Object.assign(estado, { links, memoria, suporte, whatsapp });
 }

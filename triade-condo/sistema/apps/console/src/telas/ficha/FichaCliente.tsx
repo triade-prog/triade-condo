@@ -1,10 +1,10 @@
 "use client";
 // Ficha do condomínio no Console: cabeçalho com estágio e as abas Ficha, Implantação, Síndico,
-// Equipe, Notas internas e Histórico (design "Telas do passo 1", aprovado em 16/10/2026; a aba
-// Implantação, com a entrega no lugar do antigo "Concluir implantação", é da peça R4).
+// WhatsApp, Equipe, Notas internas e Histórico (design "Telas do passo 1", aprovado em 16/10/2026; a aba
+// Implantação, com a entrega no lugar do antigo "Concluir implantação", é da peça R4; a aba WhatsApp, do passo 5).
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useRef, useState, type KeyboardEvent } from "react";
 import { Aviso, Carregando, classeBotao, ErroCarregar } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
@@ -15,12 +15,14 @@ import { AbaImplantacao } from "./AbaImplantacao.tsx";
 import { AbaSindico } from "./AbaSindico.tsx";
 import { AbaEquipe } from "./AbaEquipe.tsx";
 import { AbaNotas } from "./AbaNotas.tsx";
+import { AbaWhatsapp } from "./AbaWhatsapp.tsx";
 import type { Ficha, PropsAba, Recado } from "./tipos.ts";
 
 const ABAS = [
   { id: "ficha", texto: "Ficha" },
   { id: "implantacao", texto: "Implantação" },
   { id: "sindico", texto: "Síndico" },
+  { id: "whatsapp", texto: "WhatsApp" },
   { id: "equipe", texto: "Equipe" },
   { id: "notas", texto: "Notas internas" },
   { id: "historico", texto: "Histórico" },
@@ -30,7 +32,8 @@ type Aba = (typeof ABAS)[number]["id"];
 export function FichaCliente() {
   const { id } = useParams<{ id: string }>();
   const ficha = useCarregar<Ficha>(`/v1/clientes/${id}`);
-  const [aba, setAba] = useState<Aba>("ficha");
+  const busca = useSearchParams();
+  const [aba, setAba] = useState<Aba>(ABAS.find((a) => a.id === busca.get("aba"))?.id ?? "ficha");
   const [recado, setRecado] = useState<Recado>(null);
   const botoes = useRef<Record<string, HTMLButtonElement | null>>({});
 
@@ -105,6 +108,7 @@ export function FichaCliente() {
         {aba === "sindico" ? <AbaSindico {...props} /> : null}
         {aba === "equipe" ? <AbaEquipe {...props} /> : null}
         {aba === "notas" ? <AbaNotas {...props} /> : null}
+        {aba === "whatsapp" ? (props.pode("console.whatsapp.ver") ? <AbaWhatsapp {...props} /> : <p className="text-sm text-tinta-suave">Sua função não vê o WhatsApp deste cliente.</p>) : null}
         {aba === "historico" ? <ListaHistorico caminho={`/v1/clientes/${f.condominio.id}/historico`} /> : null}
       </div>
     </div>

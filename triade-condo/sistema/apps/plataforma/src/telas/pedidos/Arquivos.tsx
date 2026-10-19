@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import {
-  ARQUIVOS_POR_ENVIO, conferirAntesDeEnviar, mostrarTamanho, PARTES_ARQUIVO, type ParteArquivo,
+  ARQUIVOS_POR_ENVIO, conferirAntesDeEnviar, MIDIAS_WHATSAPP, mostrarTamanho, PARTES_ARQUIVO, type MidiaWhatsapp, type ParteArquivo,
 } from "@triade/domain";
 import { Botao, CampoTexto, chamarApi, Dialogo, ErroCarregar, Carregando, Selo, textoDoErro, Vazio, type Resposta } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
@@ -22,7 +22,8 @@ export interface ArquivoPedido {
   situacao: "ENVIANDO" | "LIBERADO" | "NAO_LIBERADO";
   motivoRecusa?: string;
   enviadoEm: string;
-  enviadoPor: string;
+  /** Sem pessoa: veio do morador pelo WhatsApp (passo 5). */
+  enviadoPor?: string;
   podeTirar: boolean;
 }
 
@@ -214,7 +215,10 @@ function Miniatura({ pedidoId, a }: { pedidoId: string; a: ArquivoPedido }) {
     return () => { vivo = false; };
   }, [pedidoId, a.id, a.tipo, a.situacao]);
   const base = "grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-md text-[10px] font-bold";
-  if (!ehFoto(a.tipo)) return <span aria-hidden="true" className={`${base} bg-erro-fundo text-erro`}>PDF</span>;
+  if (!ehFoto(a.tipo)) {
+    const rotulo = a.tipo === "application/pdf" ? "PDF" : a.tipo.startsWith("audio/") ? "ÁUDIO" : "VÍDEO";
+    return <span aria-hidden="true" className={`${base} bg-erro-fundo text-erro`}>{rotulo}</span>;
+  }
   return (
     <span aria-hidden="true" className={`${base} bg-superficie-2`}>
       {/* eslint-disable-next-line @next/next/no-img-element -- link assinado de 5 min do armazenamento privado: não passa pelo otimizador nem por cache */}
@@ -276,7 +280,7 @@ export function AbaArquivos({ pedidoId, protocolo, carga, avisar }: {
                         {a.situacao === "ENVIANDO" ? <Selo tom="info">Verificando</Selo> : null}
                         {a.situacao === "NAO_LIBERADO" ? <Selo tom="atencao">Não liberado</Selo> : null}
                         {a.situacao === "NAO_LIBERADO" ? <span className="text-atencao">{a.motivoRecusa}</span>
-                          : <span>{ehFoto(a.tipo) ? "Foto" : "PDF"} · {mostrarTamanho(a.tamanho)} · {a.enviadoPor} · {diaHora(a.enviadoEm)}</span>}
+                          : <span>{MIDIAS_WHATSAPP[a.tipo as MidiaWhatsapp] ?? "Arquivo"} · {mostrarTamanho(a.tamanho)} · {a.enviadoPor ?? "Morador, pelo WhatsApp"} · {diaHora(a.enviadoEm)}</span>}
                       </span>
                     </span>
                     {a.podeTirar ? <Botao variante="discreto" aria-label={`Tirar ${a.nome} do pedido`} onClick={() => setTirar(a)}>Tirar</Botao> : null}
@@ -342,7 +346,7 @@ function Visualizador({ pedidoId, fotos, indice, aoMudar, aoTirar }: {
             {/* eslint-disable-next-line @next/next/no-img-element -- link assinado de 5 min do armazenamento privado: não passa pelo otimizador nem por cache */}
             {url?.id === a.id ? <img src={url.url} alt={a.descricao ?? a.nome} className="max-h-[60vh] w-full object-contain" /> : <span className="text-sm text-tinta-suave">Carregando a foto…</span>}
           </div>
-          <p className="text-sm">{a.descricao ? `${a.descricao} · ` : ""}<span className="text-tinta-suave">{PARTES_ARQUIVO[a.parte]} · {a.enviadoPor} · {diaHora(a.enviadoEm)} · {mostrarTamanho(a.tamanho)}</span></p>
+          <p className="text-sm">{a.descricao ? `${a.descricao} · ` : ""}<span className="text-tinta-suave">{PARTES_ARQUIVO[a.parte]} · {a.enviadoPor ?? "Morador, pelo WhatsApp"} · {diaHora(a.enviadoEm)} · {mostrarTamanho(a.tamanho)}</span></p>
           <div className="flex flex-wrap justify-between gap-2">
             <Botao variante="contorno" disabled={indice === 0} onClick={() => aoMudar(indice! - 1)}>Anterior</Botao>
             {a.podeTirar ? <Botao variante="contorno" onClick={() => aoTirar(a)}>Tirar do pedido</Botao> : null}

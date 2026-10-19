@@ -8,6 +8,8 @@
 // Peça R13: etiquetas por local e o link do prestador (AT-30, MP-08, V-11). Peça R10: memória do
 // prédio (MP-12, MP-14, CT-02 a CT-04), com a exportação montada aqui em segundo plano. Peça R4:
 // Ajuda e suporte (PI-17, PI-20) e a aprovação do acesso excepcional da TRÍADE (PI-11).
+// Passo 5: WhatsApp do condomínio (W-05, W-09 a W-16), com o aviso do provedor protegido pelo
+// segredo do condomínio no caminho e a fila de envio.
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
@@ -134,8 +136,17 @@ import {
   ordemManualSchema,
   retirarSchema,
   secaoManualSchema,
+  configWhatsappSchema,
+  manterRevisaoSchema,
+  meusAvisosWhatsappSchema,
+  motivoFalhaSchema,
+  responderWhatsappSchema,
+  TAMANHO_MAXIMO_MIDIA,
+  triarWhatsappSchema,
+  type MidiaWhatsapp,
 } from "@triade/domain";
-import { verificarArquivo, type Armazenamento } from "../_shared/arquivos.ts";
+import { verificarArquivo, verificarMidia, type Armazenamento } from "../_shared/arquivos.ts";
+import { decifrarCredenciais, TIPOS_AVISO_WHATSAPP, type ConectorWhatsapp, type TipoAvisoWhatsapp } from "../_shared/whatsapp.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
 import { avisoAssinado, lerEventoResend, montarEmail, type Correio, type MensagemFila } from "../_shared/email.ts";
 import { ipDaChamada } from "../_shared/repasse.ts";
@@ -178,6 +189,8 @@ export interface DepsPlataforma extends DepsSessao {
   segredoWebhook?: string;
   /** Trabalho que continua depois da resposta (a fila de e-mails). */
   aoFundo?: (p: Promise<unknown>) => void;
+  /** WhatsApp do condomínio (passo 5): o conector e a chave que decifra as credenciais. Sem ele, a fila espera. */
+  whatsapp?: { conector: ConectorWhatsapp; chave: CryptoKey };
 }
 
 const REMETENTE = "nao-responda@t3condo.trihub.com.br";
@@ -200,7 +213,11 @@ function idDaRota(c: Context, nome: string): string {
 }
 
 export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataforma) {
-  const app = criarApp<VarsPlataforma>("api-plataforma", segredo, [/^\/v1\/email\/eventos$/, /^\/v1\/email\/parar\/[A-Za-z0-9_-]{14,64}$/]);
+  const app = criarApp<VarsPlataforma>("api-plataforma", segredo, [
+    /^\/v1\/email\/eventos$/, /^\/v1\/email\/parar\/[A-Za-z0-9_-]{14,64}$/,
+    // Avisos do provedor do WhatsApp: protegidos pelo segredo do condomínio no caminho (W-15).
+    /^\/v1\/whatsapp\/[A-Za-z0-9_-]{32,64}\/(recebida|entrega|conectado|desconectado)$/,
+  ]);
   const sessao = criarSessao(
     { sistema: "plataforma", cookie: COOKIES_PLATAFORMA.sessao, autenticadorObrigatorio: false, funcaoAcesso: "acesso_plataforma", urlApp: deps.urlApp },
     deps,
@@ -1564,6 +1581,167 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
 
   app.post("/v1/condominio/acessos-excepcionais/:id/encerrar", async (c) =>
     c.json(await rpc("plataforma_encerrar_acesso_excepcional", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  // WhatsApp do condomínio (passo 5; W-05, W-09 a W-16). O aviso do provedor vem com o segredo
+  // do condomínio no caminho; quem é o condomínio o banco decide pelo segredo, nunca pelo texto.
+  app.post("/v1/whatsapp/:segredo/:tipo", async (c) => {
+    const tipo = c.req.param("tipo") as TipoAvisoWhatsapp;
+    const segredoGancho = c.req.param("segredo");
+    if (!deps.whatsapp || !TIPOS_AVISO_WHATSAPP.includes(tipo)) throw new ErroDominio("NOT_FOUND");
+    const corpo = await c.req.text();
+    if (corpo.length > 262_144) throw new ErroDominio("VALIDATION_ERROR");
+    let json: unknown;
+    try {
+      json = JSON.parse(corpo);
+    } catch {
+      throw new ErroDominio("VALIDATION_ERROR");
+    }
+    const ev = deps.whatsapp.conector.lerAviso(tipo, json);
+    if (!ev) return c.json({ ok: true });
+    if (ev.tipo === "RECEBIDA") {
+      const r = await rpc<{ repetida: boolean; midias: MidiaPendente[] }>("whatsapp_receber", {
+        p_segredo: segredoGancho, p_instancia: ev.instancia, p_msg: ev.mensagem,
+      });
+      if (!r.repetida) noFundo(async () => {
+        for (const m of r.midias) await baixarMidia(m);
+        await processarFilaWhatsapp();
+      });
+    } else if (ev.tipo === "ENTREGUE" || ev.tipo === "LIDA") {
+      for (const id of ev.ids.slice(0, 50)) {
+        await rpc("whatsapp_evento", { p_segredo: segredoGancho, p_instancia: ev.instancia, p_tipo: ev.tipo, p_provedor_id: id, p_aparelho: null });
+      }
+    } else if (ev.tipo === "CONECTADO" || ev.tipo === "DESCONECTADO") {
+      await rpc("whatsapp_evento", { p_segredo: segredoGancho, p_instancia: ev.instancia, p_tipo: ev.tipo, p_provedor_id: null, p_aparelho: ev.aparelho });
+    }
+    return c.json({ ok: true });
+  });
+
+  // O banco chama (pg_cron + pg_net, com o segredo de repasse) quando há envio ou mídia esperando.
+  app.post("/v1/interno/fila-whatsapp", async (c) => {
+    let baixadas = 0;
+    for (const m of await rpc<MidiaPendente[]>("whatsapp_midias_pendentes", {})) {
+      await baixarMidia(m);
+      baixadas++;
+    }
+    return c.json({ enviados: await processarFilaWhatsapp(), baixadas });
+  });
+
+  interface MidiaPendente { condominio: string; mensagem: string; url: string; tipo: MidiaWhatsapp; caminho: string }
+  interface LoteWhatsapp {
+    condominio: string;
+    instancia: string;
+    credenciais: string;
+    envios: { envio: string; para: string; texto: string; pedido?: string }[];
+  }
+
+  function noFundo(trabalho: () => Promise<unknown>) {
+    const p = trabalho().catch((erro) => registrar("erro", { funcao: "api-plataforma", rota: "whatsapp", erro }));
+    (deps.aoFundo ?? (() => {}))(p);
+  }
+
+  /** Baixa a mídia do provedor, confere (W-05) e guarda no armazenamento dos pedidos. */
+  async function baixarMidia(m: MidiaPendente) {
+    if (!deps.whatsapp) return;
+    const bytes = await deps.whatsapp.conector.baixar(m.url, TAMANHO_MAXIMO_MIDIA);
+    const r = bytes ? verificarMidia(bytes, m.tipo) : { ok: false as const, motivo: "O arquivo não chegou ou passa de 16 MB. Mande de novo." };
+    if (r.ok) await deps.armazenamento.gravar(m.caminho, r.bytes, m.tipo);
+    await rpc("whatsapp_midia_resultado", {
+      p_condominio: m.condominio, p_mensagem: m.mensagem, p_tamanho: r.ok ? r.bytes.length : null, p_motivo: r.ok ? null : r.motivo,
+    });
+  }
+
+  /** Pega os lotes da fila, manda pelo conector, um por vez, e devolve o resultado de cada envio. */
+  async function processarFilaWhatsapp(rodadas = 3): Promise<number> {
+    if (!deps.whatsapp) return 0;
+    const { conector, chave } = deps.whatsapp;
+    let total = 0;
+    for (let i = 0; i < rodadas; i++) {
+      const lotes = await rpc<LoteWhatsapp[]>("whatsapp_pegar_lote", { p_max: 20 });
+      if (!lotes.length) break;
+      for (const l of lotes) {
+        const cred = await decifrarCredenciais(chave, l.credenciais);
+        for (const e of l.envios) {
+          const texto = e.pedido ? `${e.texto}\nAbrir no painel: ${deps.urlApp}/pedidos/pedido?id=${e.pedido}` : e.texto;
+          const r = await conector.enviarTexto({ instancia: l.instancia || cred.instancia, token: cred.token }, e.para, texto);
+          await rpc("whatsapp_resultado", {
+            p_condominio: l.condominio, p_envio: e.envio, p_provedor_id: r.ok ? r.id : null,
+            p_erro: r.ok ? null : r.erro, p_falha: r.ok ? null : r.falha,
+          });
+          if (r.ok) total++;
+        }
+      }
+    }
+    return total;
+  }
+
+  app.get("/v1/condominio/whatsapp", async (c) => c.json(await rpc("plataforma_whatsapp", quem(c))));
+
+  app.post("/v1/condominio/whatsapp/mensagens/:id/triar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, triarWhatsappSchema);
+    return c.json(await rpc("plataforma_triar_whatsapp", {
+      ...quem(c), p_mensagem: id, p_acao: d.acao, p_motivo: d.motivo, p_pedido: d.pedidoId, p_contato: d.contatoId,
+    }));
+  });
+
+  app.get("/v1/condominio/whatsapp/mensagens/:id/midia", async (c) => {
+    const a = await rpc<{ caminho: string; tipo: string; nome: string }>("plataforma_midia_whatsapp", { ...quem(c), p_mensagem: idDaRota(c, "id") });
+    const url = await deps.armazenamento.linkLeitura(a.caminho, VALIDADE_LINK_ARQUIVO_S);
+    return c.json({ url, tipo: a.tipo, expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString() });
+  });
+
+  app.post("/v1/condominio/whatsapp/envios/:id/reenviar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, motivoFalhaSchema);
+    const r = await rpc("plataforma_reenviar_whatsapp", { ...quem(c), p_envio: id, p_motivo: d.motivo });
+    noFundo(processarFilaWhatsapp);
+    return c.json(r, 201);
+  });
+
+  app.post("/v1/condominio/whatsapp/envios/:id/resolver", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, motivoFalhaSchema);
+    await rpc("plataforma_resolver_falha_whatsapp", { ...quem(c), p_envio: id, p_motivo: d.motivo });
+    return c.json({ ok: true });
+  });
+
+  app.get("/v1/condominio/pedidos/:id/whatsapp", async (c) =>
+    c.json(await rpc("plataforma_pedido_whatsapp", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  app.post("/v1/condominio/pedidos/:id/whatsapp", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, responderWhatsappSchema);
+    const r = await rpc("plataforma_responder_whatsapp", { ...quem(c), p_id: id, p_versao: d.versao, p_texto: d.texto });
+    noFundo(processarFilaWhatsapp);
+    return c.json(r, 201);
+  });
+
+  app.post("/v1/condominio/whatsapp/revisoes/:id/manter", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, manterRevisaoSchema);
+    const r = await rpc("plataforma_manter_revisao_whatsapp", { ...quem(c), p_revisao: id, p_resposta: d.resposta });
+    noFundo(processarFilaWhatsapp);
+    return c.json(r);
+  });
+
+  app.get("/v1/condominio/whatsapp/config", async (c) => c.json(await rpc("plataforma_config_whatsapp", quem(c))));
+
+  app.put("/v1/condominio/whatsapp/config", async (c) => {
+    const d = await lerCorpo(c, configWhatsappSchema);
+    return c.json({ versao: await rpc("plataforma_definir_whatsapp", {
+      ...quem(c), p_versao: d.versao, p_fora_horario: d.foraHorario, p_categoria: d.categoriaId, p_prioridade: d.prioridadeId,
+      p_anexar: d.anexarMinutos,
+    }) });
+  });
+
+  app.post("/v1/condominio/whatsapp/termo", async (c) => c.json(await rpc("plataforma_aceitar_termo_whatsapp", quem(c))));
+
+  app.put("/v1/condominio/whatsapp/meus-avisos", async (c) => {
+    const d = await lerCorpo(c, meusAvisosWhatsappSchema);
+    return c.json({ versao: await rpc("plataforma_meus_avisos_whatsapp", {
+      ...quem(c), p_versao: d.versao, p_telefone: d.telefone, p_tipos: d.tipos, p_ligado: d.ligado,
+    }) });
+  });
 
   return app;
 }

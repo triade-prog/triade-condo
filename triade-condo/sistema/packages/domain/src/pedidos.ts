@@ -45,6 +45,10 @@ export const CANAIS_PEDIDO = {
   OUTRO: "Outro",
 } as const;
 
+/** Os canais como aparecem no pedido: o WhatsApp do condomínio (passo 5) só chega pelo próprio
+ * número, nunca escolhido na mão. */
+export const CANAIS_PEDIDO_EXIBICAO = { ...CANAIS_PEDIDO, WHATSAPP: "WhatsApp do condomínio" } as const;
+
 /** Como o retorno foi dado ao morador (AT-06). */
 export const MEIOS_RETORNO = {
   TELEFONE: "Por telefone",
@@ -53,6 +57,9 @@ export const MEIOS_RETORNO = {
   EMAIL: "Por e-mail",
   OUTRO: "Outro meio",
 } as const;
+
+/** O retorno pelo WhatsApp do condomínio (passo 5) sai pela conversa do pedido. */
+export const MEIOS_RETORNO_EXIBICAO = { ...MEIOS_RETORNO, WHATSAPP: "Pelo WhatsApp" } as const;
 
 /** Pendências e impedimentos (AT-11, AT-12). */
 export const TIPOS_PENDENCIA = {
@@ -190,7 +197,7 @@ export function descreverEventoPedido(acao: string, d: Record<string, unknown>):
   const comMotivo = (texto: string) => (d.motivo ? `${texto}. Motivo: ${String(d.motivo)}` : texto);
   switch (acao) {
     case "pedido.registrado":
-      return `Pedido registrado · ${nomeDe(CANAIS_PEDIDO, d.canal)}${d.privado ? " · privado" : ""}`;
+      return `Pedido registrado · ${nomeDe(CANAIS_PEDIDO_EXIBICAO, d.canal)}${d.privado ? " · privado" : ""}`;
     case "estado.mudou": {
       if (!d.de) return `Situação: ${nomeDe(ESTADOS_PEDIDO, d.para)}`;
       const evento = EVENTOS_ESTADO[String(d.evento)];
@@ -206,7 +213,7 @@ export function descreverEventoPedido(acao: string, d: Record<string, unknown>):
     case "pedido.aceito":
       return "Responsável aceitou o pedido";
     case "pedido.retorno_registrado":
-      return `Retorno ao morador ${nomeDe(MEIOS_RETORNO, d.meio).toLowerCase()} · próximo retorno ${quando(d.para)}`;
+      return `Retorno ao morador ${nomeDe(MEIOS_RETORNO_EXIBICAO, d.meio).toLowerCase()} · próximo retorno ${quando(d.para)}`;
     case "pedido.nota":
       return "Nota interna";
     case "pedido.retorno_mudou":
@@ -229,6 +236,16 @@ export function descreverEventoPedido(acao: string, d: Record<string, unknown>):
       return "Comunicado ligado ao pedido";
     case "pedido.manutencao_concluida":
       return "Manutenção ligada concluída: dê o retorno ao morador";
+    case "pedido.revisao_pedida":
+      return "O morador pediu revisão pelo WhatsApp";
+    case "pedido.revisao_mantida":
+      return "Pedido de revisão respondido: o pedido segue concluído";
+    case "pedido.whatsapp_juntado":
+      return "Mensagens do WhatsApp juntadas ao pedido";
+    case "pedido.whatsapp_reenviado":
+      return comMotivo("Mensagem do WhatsApp reenviada");
+    case "pedido.whatsapp_falha_resolvida":
+      return "Falha de envio no WhatsApp dada por resolvida";
     default:
       return descreverAvisoPedido(acao, d) ?? acao;
   }

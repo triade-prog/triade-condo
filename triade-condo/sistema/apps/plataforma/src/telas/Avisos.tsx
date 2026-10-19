@@ -5,7 +5,8 @@
 // chegam aqui o retorno vencido da manutenção (R6), o documento perto de vencer (R1), o pedido de
 // documento pelo mural e o e-mail que voltou ou foi marcado como spam (CD-13, CD-14). Da peça R4:
 // o recado da entrega da implantação, a resposta da TRÍADE num chamado e o pedido de acesso
-// excepcional (PI-04, PI-20, PI-11).
+// excepcional (PI-04, PI-20, PI-11). Do passo 5: pedido novo e pedido de revisão do morador pelo
+// WhatsApp, mensagem a identificar, envio que falhou e número desconectado.
 
 import Link from "next/link";
 import { useState } from "react";
@@ -53,6 +54,16 @@ function detalhe(a: AvisoDoPainel): string {
       return "A TRÍADE respondeu o seu chamado.";
     case "ACESSO_PEDIDO":
       return `${a.nome ?? "A TRÍADE"} pediu para ver dados do condomínio. Aprove ou recuse no Início.`;
+    case "WHATSAPP_PEDIDO_NOVO":
+      return "Pedido novo, aberto pelo morador no WhatsApp.";
+    case "WHATSAPP_REVISAO":
+      return "O morador pediu revisão pelo WhatsApp. O pedido não reabre sozinho: decida no pedido.";
+    case "WHATSAPP_A_IDENTIFICAR":
+      return "Mensagem de um número sem vínculo confirmado. Veja em WhatsApp, A identificar.";
+    case "WHATSAPP_FALHA_ENVIO":
+      return "Uma mensagem do WhatsApp não saiu. Reenvie ou avise por outro meio.";
+    case "WHATSAPP_DESCONECTADO":
+      return "O WhatsApp do condomínio desconectou: as mensagens não chegam. A TRÍADE foi avisada; atenda por telefone e registre no painel.";
   }
 }
 
@@ -164,6 +175,25 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                       {rotulo}
                     </Link>
                     {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label="Marcar como visto o aviso da TRÍADE">Marcar como visto</Botao>}
+                  </span>
+                </li>
+              );
+            }
+            if (a.tipo.startsWith("WHATSAPP_")) {
+              const destino = a.pedidoId ? `/pedidos/pedido?id=${a.pedidoId}` : "/whatsapp";
+              return (
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Selo tom={a.tipo === "WHATSAPP_PEDIDO_NOVO" ? "info" : "atencao"}>WhatsApp</Selo>
+                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                  </span>
+                  {a.protocolo ? <span><strong className="font-semibold">{a.protocolo}</strong> {a.assunto ?? "Pedido privado"}</span> : null}
+                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="flex flex-wrap gap-2">
+                    <Link href={destino} className="font-medium text-violeta-600 hover:underline" onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
+                      {a.pedidoId ? `Ver pedido ${a.protocolo ?? ""}`.trim() : "Abrir o WhatsApp"}
+                    </Link>
+                    {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label="Marcar como visto o aviso do WhatsApp">Marcar como visto</Botao>}
                   </span>
                 </li>
               );

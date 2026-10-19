@@ -40,6 +40,7 @@ interface Contagens {
   implantacoes: number;
   chamados: number;
   suporteAcesso: number;
+  whatsapp?: number;
 }
 
 export function PainelConsole({ children }: { children: ReactNode }) {
@@ -115,6 +116,7 @@ export function PainelConsole({ children }: { children: ReactNode }) {
               {suporte ? (
                 <ItemMenu href="/suporte-acesso" icone="cadeado" atual={caminho.startsWith("/suporte-acesso")} numero={n?.suporteAcesso}>Suporte de acesso</ItemMenu>
               ) : null}
+              {chamados ? <ItemMenu href="/whatsapp" icone="whats" atual={caminho.startsWith("/whatsapp")} numero={n?.whatsapp}>WhatsApp</ItemMenu> : null}
             </>
           ) : null}
           {cuidaDaEquipe || veHistoricoEquipe ? (

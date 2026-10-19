@@ -37,7 +37,7 @@ test.describe("Memória do prédio", () => {
     await j.getByRole("button", { name: "Ligar documento" }).click();
     await j.getByRole("button", { name: "Ligar" }).click();
     await expect(j.getByText("Escolha um documento guardado em Documentos.")).toBeVisible();
-    await j.getByLabel("Documento").selectOption({ label: "Laudo SPDA 2026 · vale até " + new Date(Date.now() + 290 * 86400_000).toISOString().slice(0, 10).split("-").reverse().join("/") });
+    await j.getByLabel("Documento").selectOption({ label: "Laudo SPDA 2026 · vale até " + new Date(Date.now() - 3 * 3600_000 + 290 * 86400_000).toISOString().slice(0, 10).split("-").reverse().join("/") });
     await conferir(page);
     await j.getByRole("button", { name: "Ligar" }).click();
     await expect(page.getByText("Para-raios (SPDA): documento ligado.")).toBeVisible();
