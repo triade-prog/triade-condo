@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Textos e janela de 24h</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Playfair+Display:ital,wght@1,400&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Textos do WhatsApp, avisos e erros na tela e janela de 24h (D3, F5.4), para aprovação. Estilos e ícones copiados por script
+   das páginas de Implantação e suporte e de Links e QR; dados fictícios. */
+
+
+:root{
+  --v50:#F8F3FF;--v100:#F1E9FC;--v200:#DDC8F8;--v300:#C3A0EF;--v400:#A16DE5;--v500:#7B3BDC;--v600:#5808CC;--v700:#4706A6;--v800:#350580;--v900:#180567;--v950:#10033F;
+  --l50:#FFF7EB;--l100:#FFEBCF;--l200:#FFD39E;--l300:#FFB96A;--l400:#FFA338;--l500:#FF8D01;--l600:#CF6300;--l700:#A54C00;--l800:#7C3900;--l900:#552600;
+  --n0:#FFFFFF;--n50:#F7F4FC;--n100:#F1EFF5;--n200:#E4DCF1;--n300:#CFC6DB;--n400:#9184AA;--n500:#83758F;--n600:#5E5475;--n700:#4A4258;--n900:#1E1531;
+  --ok:#0B7558;--ok-f:#EDFAF5;--ok-b:#BCE8D7;--at:#95560A;--at-f:#FFF6E6;--at-b:#F6DCAE;--er:#BC1450;--er-f:#FFF0F4;--er-b:#F8CBDA;--in:#0D6E8C;--in-f:#EBF8FC;--in-b:#B9E3EF;
+  /* Faixas com brilho: do tom forte ao claro, na lateral de selos e avisos. */
+  --fx-and:linear-gradient(180deg,#8B3DF0,#5808CC);--fx-ok:linear-gradient(180deg,#3DBE91,#0B7558);--fx-at:linear-gradient(180deg,#F2A33A,#95560A);--fx-er:linear-gradient(180deg,#F0598A,#BC1450);--fx-in:linear-gradient(180deg,#38B2CF,#0D6E8C);--fx-ab:linear-gradient(180deg,#C3B8D6,#7C7090);
+  --fundo:var(--n50);--superficie:#fff;--texto:var(--n900);--texto-suave:var(--n600);--linha:var(--n200);--marca:var(--v600);--acento:var(--l500);
+  --grad-violeta:radial-gradient(120% 140% at 100% 0%,#9E37F5 0%,#7018DC 28%,transparent 62%),linear-gradient(135deg,#180567 0%,#3A07A0 40%,#5808CC 100%);
+  --grad-trilha:linear-gradient(165deg,#FFE0A8 0%,#FFB45C 38%,#FF8D01 72%,#F2700A 100%);
+  --s1:0 1px 2px #211a320d,0 4px 12px #3a1a7a0a;--s2:0 2px 4px #211a320d,0 12px 28px #3a1a7a14;--s3:0 4px 8px #211a3212,0 24px 48px #3a1a7a1f;
+  --destaque:"Playfair Display",Georgia,serif;color-scheme:light}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--fundo);color:var(--texto);font:15px/1.6 Manrope,system-ui,sans-serif}
+a{color:var(--marca)}
+:focus-visible{outline:3px solid var(--v400);outline-offset:3px}
+h1,h2,h3,h4{margin:0;letter-spacing:-.02em;line-height:1.2}
+em.d{font-family:var(--destaque);font-style:italic;font-weight:400;letter-spacing:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500}
+.pular{position:absolute;left:16px;top:-60px;background:#fff;padding:10px 14px;border-radius:8px;z-index:10}
+.pular:focus{top:12px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px 96px}
+.topo{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0;flex-wrap:wrap}
+.topo img{width:156px}
+.topo nav{display:flex;flex-wrap:wrap;gap:6px}
+.pilula{font-size:13px;font-weight:500;padding:5px 12px;border-radius:999px;background:var(--n100);color:var(--n700);text-decoration:none}
+.pilula:hover{background:var(--v100);color:var(--v700)}
+.pilula[aria-current]{background:var(--v100);color:var(--v700)}
+
+/* Cabeçalho de cada parte: a moldura com alças, como nas referências, em violeta. */
+.parte{margin-top:72px;scroll-margin-top:16px}
+.moldura{position:relative;border:1.5px solid var(--v400);padding:22px 24px;margin-bottom:28px;background:linear-gradient(180deg,#fff,#fdfbff)}
+.moldura::before,.moldura::after,.moldura .a3,.moldura .a4{content:"";position:absolute;width:9px;height:9px;background:var(--v600)}
+.moldura::before{left:-5px;top:-5px}.moldura::after{right:-5px;top:-5px}
+.moldura .a3{left:-5px;bottom:-5px}.moldura .a4{right:-5px;bottom:-5px}
+.moldura h2{font-size:clamp(28px,3.6vw,40px);font-weight:400}
+.moldura p{margin:8px 0 0;color:var(--texto-suave);max-width:680px}
+h3.sub{font-size:20px;font-weight:500;margin:36px 0 12px}
+.nota{font-size:14px;color:var(--texto-suave);max-width:760px;margin:0 0 16px}
+.painel{background:var(--superficie);border:1px solid var(--linha);border-radius:16px;padding:20px}
+.estudo{background:#FBFAFD;border:1px solid var(--linha);border-radius:16px;padding:24px;overflow-x:auto}
+.grade2{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr))}
+.grade3{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.rot{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:500;color:var(--texto-suave)}
+
+/* Abertura */
+.abertura{position:relative;overflow:hidden;border-radius:22px;background:var(--grad-violeta);color:#fff;padding:48px 40px;min-height:300px}
+.abertura .t{position:relative;z-index:1;max-width:620px}
+.abertura h1{font-size:clamp(34px,5vw,58px);font-weight:300;letter-spacing:-.03em;margin:12px 0}
+.abertura h1 em.d{color:#FFD39E}
+.abertura p{color:#EDE0FF;margin:0}
+.abertura .numeros{display:flex;gap:28px;flex-wrap:wrap;margin-top:22px;color:#E7D3FF;font-size:15px}
+.abertura .numeros b{display:block;font-size:30px;font-weight:300;color:#fff}
+.arte{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.arte .orb{position:absolute;border-radius:50%;border:1px solid #ffffff2e}
+.arte .arco{position:absolute;border-radius:200px 200px 0 0;transform:rotate(26deg);border:1px solid #e9d4ff40;background:linear-gradient(170deg,#c27bff33 0%,#7a2be026 55%,#5808cc00 100%)}
+.arte .tri{position:absolute;border-radius:200px;transform:rotate(26deg);background:var(--grad-trilha);box-shadow:inset 0 2px 0 #ffffff55,0 18px 40px #d9570a33}
+@media (max-width:760px){.abertura{padding:30px 22px}.abertura .arte{opacity:.4}}
+
+/* Sumário: cartões com aba de pasta, como na referência. */
+.sumario{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))}
+.pasta{text-decoration:none;color:var(--texto);display:grid;gap:8px}
+.pasta .capa{position:relative;height:150px;border-radius:4px 14px 14px 14px;background:#FBFAFD;border:1px solid var(--linha);display:grid;place-items:center;margin-top:12px}
+.pasta .capa::before{content:"";position:absolute;left:-1px;top:-13px;width:46%;height:14px;border:1px solid var(--linha);border-bottom:0;border-radius:10px 10px 0 0;background:#FBFAFD}
+.pasta .pronto{position:absolute;left:10px;top:10px;font-size:12px;font-weight:500;padding:2px 9px;border-radius:999px;background:var(--n100);color:var(--n700)}
+.pasta b{display:flex;justify-content:space-between;align-items:center;font-weight:500;text-decoration:underline;text-underline-offset:3px}
+.pasta small{font-size:13px;color:var(--texto-suave)}
+.pasta:hover .capa{border-color:var(--v300);box-shadow:var(--s1)}
+
+/* Neutros e significado: cartão com borda em degradê, como o botão secundário. */
+.cores-b{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));margin-bottom:18px}
+.cor{border:1.5px solid transparent;border-radius:18px;padding:12px;display:grid;gap:10px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,var(--b1,#A16DE5),var(--b2,#FFB96A)) border-box}
+.cor .tinta{height:64px;border-radius:12px;position:relative;box-shadow:inset 0 1px 0 #ffffff59,inset 0 0 0 1px #1e15310f}
+.cor .tinta span{font-style:normal;position:absolute;right:8px;top:8px;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#ffffffd9;color:var(--n900)}
+.cor b{display:block;font-weight:500;font-size:14px;line-height:1.3}
+.cor code{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--texto-suave)}
+.cor .par{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.cor .amostra{position:relative;overflow:hidden;display:inline-flex;align-items:center;font-size:12.5px;font-weight:500;padding:3px 10px 3px 12px;border-radius:7px;border:1px solid var(--tb);color:var(--t);background:linear-gradient(180deg,#fff -40%,var(--tf))}
+.cor .amostra::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx)}
+
+/* Ícones */
+.ic{width:20px;height:20px;flex-shrink:0}
+svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+/* Cores */
+.escala{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));margin-bottom:18px}
+.am{border:1.5px solid transparent;border-radius:18px;padding:10px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box}
+.am i{display:block;height:72px;position:relative;border-radius:12px;box-shadow:inset 0 1px 0 #ffffff59,inset 0 0 0 1px #1e15310f}
+.am i span{position:absolute;right:8px;top:8px;font-style:normal;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#ffffffd9;color:var(--n900)}
+.am div{padding:8px 2px 0;font-size:13px}
+.am b{display:block;font-weight:500}
+.am code{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--texto-suave)}
+.tokens{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.tok{display:flex;gap:12px;align-items:center;border:1.5px solid transparent;border-radius:18px;padding:10px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box}
+.tok i{width:52px;height:52px;border-radius:12px;flex-shrink:0;box-shadow:inset 0 1px 0 #ffffff59,inset 0 0 0 1px #1e15311a}
+.tok b{display:block;font-weight:500;font-size:14px}
+.tok small{font-size:13px;color:var(--texto-suave)}
+
+/* Tipografia */
+.especime{display:grid;gap:24px;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:center}
+.especime .grande{font-size:clamp(80px,13vw,170px);font-weight:300;letter-spacing:-.05em;line-height:.9}
+.especime .grande em.d{color:var(--v600)}
+.pesos{display:grid;gap:8px;font-size:22px}
+.pesos span:nth-child(1){font-weight:300}.pesos span:nth-child(2){font-weight:400}.pesos span:nth-child(3){font-weight:500}.pesos span:nth-child(4){font-weight:600}
+.tipos{display:grid;gap:0}
+.tipo{display:grid;grid-template-columns:150px minmax(0,1fr) 220px;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--linha)}
+.tipo .n{font-size:13px;color:var(--texto-suave)}
+.tipo .m{font-size:12px;color:var(--texto-suave);font-family:"IBM Plex Mono",monospace}
+@media (max-width:760px){.tipo{grid-template-columns:1fr}.especime{grid-template-columns:1fr}}
+
+/* Espaçamento e cantos */
+.espacos{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:0;border:1px solid var(--linha);border-radius:14px;overflow:hidden;background:#fff}
+.esp{padding:12px;border-right:1px solid var(--linha);border-bottom:1px solid var(--linha);min-height:120px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px}
+.esp .tag{align-self:flex-start;font-size:11px;font-family:"IBM Plex Mono",monospace;background:var(--n100);border-radius:6px;padding:1px 6px;margin-bottom:auto}
+.esp i{display:block;background:var(--v500);border-radius:2px}
+.esp b{font-weight:500;font-size:13px}
+.cantos{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.canto{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:12px;display:grid;gap:8px}
+.canto i{display:block;height:80px;background:var(--v100);border:1.5px solid var(--v400)}
+.canto b{font-weight:500;font-size:13px}
+
+/* Sombras */
+.sombras{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:16px}
+.sombra{background:#FBFAFD;border:1px solid var(--linha);border-radius:14px;padding:28px;display:grid;place-items:center;gap:14px}
+.sombra i{width:110px;height:110px;border-radius:18px;background:#fff;display:block}
+.sombra b{font-weight:500}
+.sombra small{font-size:12px;color:var(--texto-suave);text-align:center}
+
+/* Ícones */
+.icones{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.icone{border:1.5px dashed var(--v300);border-radius:12px;padding:16px;display:flex;align-items:center;justify-content:space-around;color:var(--v900);background:#fff}
+.icone + .legenda{font-size:12px}
+.icone-grupo{display:grid;gap:6px}
+.icone-grupo span{font-size:13px;color:var(--texto-suave);text-align:center}
+
+/* Componentes */
+/* Botão aprovado em 17/10/2026: versão C, degradê com brilho. */
+.botao{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:14px;font:500 14px Manrope,sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap}
+.botao .ic{width:18px;height:18px}
+.bt-m{min-height:36px;padding:0 14px;font-size:13px;border-radius:11px}
+.bt-p{min-height:30px;padding:0 10px;font-size:13px;border-radius:10px}
+.so-ic{padding:0;width:44px}.bt-m.so-ic{width:36px}.bt-p.so-ic{width:30px}
+.primario{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff;box-shadow:inset 0 1px 0 #ffffff47,0 10px 22px -10px #5808ccb3}
+.primario.hover{background:linear-gradient(135deg,#7B2BE8 0%,#4706A6 60%,#2E0585 100%)}
+.primario.pressionado{background:linear-gradient(135deg,#4706A6,#2E0585);box-shadow:inset 0 2px 6px #0004}
+.secundario{border:1.5px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box;color:var(--v700)}
+.secundario.hover{background:linear-gradient(var(--v50),var(--v50)) padding-box,linear-gradient(135deg,#7B3BDC,#FF8D01) border-box}
+.secundario.pressionado{background:linear-gradient(var(--v100),var(--v100)) padding-box,linear-gradient(135deg,#7B3BDC,#FF8D01) border-box}
+.contorno{background:linear-gradient(180deg,#fff,#F8F3FF);color:var(--v600);border-color:var(--v200);box-shadow:var(--s1)}
+.contorno.hover{border-color:var(--v300)}
+.contorno.pressionado{background:var(--v100);box-shadow:none}
+.fantasma{background:transparent;color:var(--v600)}
+.fantasma.hover{background:linear-gradient(90deg,var(--v100),#f8f3ff00)}
+.fantasma.pressionado{background:var(--v100)}
+.perigo{background:linear-gradient(180deg,#FFF6F8,#FFE9EF);color:var(--er);border-color:var(--er-b)}
+.perigo.hover{background:#FFE3EA}
+.perigo.pressionado{background:var(--er-b)}
+.claro{background:linear-gradient(180deg,#fff,#F1E9FC);color:var(--v900);box-shadow:0 8px 18px -8px #0008}.claro.hover{background:#fff}.claro.pressionado{background:var(--v100);box-shadow:none}
+.celula-escura{background:var(--grad-violeta);border-radius:16px;padding:6px}
+.foco{outline:3px solid var(--v300);outline-offset:2px}
+/* Anel de foco duplo (branco e violeta 500): passa 3 : 1 em qualquer fundo. */
+.botao.foco{outline:0;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--v500)}
+.primario.foco{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--v500),0 10px 22px -10px #5808ccb3}
+.celula-escura .botao.foco{box-shadow:0 0 0 2px var(--v800),0 0 0 4px #FFD39E}
+.desab{background:var(--n100)!important;color:#8A8296!important;border-color:transparent!important;box-shadow:none!important;cursor:not-allowed}
+.matriz{border-collapse:separate;border-spacing:10px 8px;margin:-8px -10px}
+.matriz th{font-size:12px;font-weight:500;color:var(--v600);text-align:left;white-space:nowrap}
+.matriz td{vertical-align:middle}
+.faca{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));margin-top:16px}
+.faca .q{border:1.5px solid var(--ok-b);border-radius:14px;padding:20px;background:#fff;display:grid;gap:10px;justify-items:center;min-height:150px;align-content:center}
+.faca .q.nao{border-color:var(--er-b)}
+.faca .r{display:inline-flex;gap:6px;align-items:center;font-size:13px;font-weight:500;padding:2px 10px;border-radius:999px;background:var(--ok-f);color:var(--ok);margin-bottom:6px}
+.faca .r.nao{background:var(--er-f);color:var(--er)}
+.faca p{font-size:13px;color:var(--texto-suave);margin:8px 0 0}
+
+.campo{display:grid;gap:6px;min-width:0}
+.campo label{font-size:13px;font-weight:500}
+.campo label .ob{color:var(--er)}
+.entrada{display:flex;align-items:center;gap:8px;min-height:44px;border:1px solid var(--n400);border-radius:12px;padding:0 12px;background:#FDFCFF;color:var(--texto);font-size:15px}
+.entrada .ic{width:18px;height:18px;color:var(--n500)}
+.entrada .ph{color:#8A8296}
+.entrada.hover{border-color:var(--n500)}
+.entrada.ativo{border-color:var(--v600);box-shadow:0 0 0 4px #5808cc1f;background:#fff}
+.entrada.erro{border-color:var(--er);box-shadow:0 0 0 4px #bc14501a}
+.entrada.alerta{border-color:var(--at)}
+.entrada.certo{border-color:var(--ok)}
+.entrada.desab{border-color:transparent}
+.dica{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--texto-suave)}
+.dica .ic{width:14px;height:14px}
+.dica.erro{color:var(--er)}.dica.alerta{color:var(--at)}.dica.certo{color:var(--ok)}
+
+/* Selos e chips aprovados em 17/10/2026: faixa lateral (D) com o brilho do botão C. */
+.chip{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 13px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid var(--n200);background:#fff;color:var(--n700);white-space:nowrap}
+.chip .ic{width:16px;height:16px}
+.chip.sel{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff;border-color:transparent;box-shadow:inset 0 1px 0 #ffffff47,0 8px 16px -8px #5808ccb3}
+.chip.ac{border:1.5px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box;color:var(--l800)}
+.chip.ac>.ic:first-child{color:var(--l600)}
+.chip.inc{border-style:dashed;border-color:var(--v300);color:var(--v600)}
+.chip .av{width:24px;height:24px;font-size:10px;margin-left:-7px;border:0}
+.trilho{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;background:var(--n100);border-radius:14px;box-shadow:inset 0 1px 2px #211a320f}
+.trilho .chip{border-color:transparent;background:transparent;min-height:32px}
+.trilho .chip.sel{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff}
+.selo{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;padding:4px 12px 4px 13px;border-radius:7px;border:1px solid var(--tb);color:var(--t);background:linear-gradient(180deg,#fff -40%,var(--tf) 100%);box-shadow:inset 0 1px 0 #fff;white-space:nowrap}
+.selo::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx)}
+.selo .f{display:none}
+.s-novo{--t:#5B5368;--tf:#F4F2F7;--tb:#E3DEEB;--fx:var(--fx-ab)}
+.s-and{--t:var(--v600);--tf:var(--v50);--tb:#E6D9FB;--fx:var(--fx-and)}
+.s-at{--t:var(--at);--tf:var(--at-f);--tb:var(--at-b);--fx:var(--fx-at)}
+.s-ve{--t:var(--er);--tf:var(--er-f);--tb:var(--er-b);--fx:var(--fx-er)}
+.s-ok{--t:var(--ok);--tf:var(--ok-f);--tb:var(--ok-b);--fx:var(--fx-ok)}
+
+.cx{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--n500);background:#fff;display:inline-grid;place-items:center;color:#fff}
+.cx.on{background:var(--v600);border-color:var(--v600)}
+.cx.on.hover{background:var(--v700)}
+.cx.hover{border-color:var(--n700)}
+.cx.foco{outline:3px solid var(--v300);outline-offset:2px}
+.cx.des{border-color:var(--n300);background:var(--n100)}
+.cx.des.on{background:var(--n300);border-color:var(--n300)}
+.cx .ic{width:14px;height:14px;stroke-width:2.4}
+.rb{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--n500);background:#fff;display:inline-grid;place-items:center}
+.rb.on{border-color:var(--v600)}.rb.on::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--v600)}
+.chave{width:42px;height:24px;border-radius:999px;background:var(--n300);position:relative;display:inline-block}
+.chave::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003}
+.chave.on{background:var(--v600)}.chave.on::after{left:21px}
+
+.av{width:34px;height:34px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:600;flex-shrink:0;border:2px solid #fff}
+.av1{background:var(--v100);color:var(--v700)}.av2{background:var(--l100);color:var(--l800)}.av3{background:var(--ok-f);color:var(--ok)}.av4{background:var(--in-f);color:var(--in)}.av5{background:var(--er-f);color:var(--er)}
+.pilha{display:inline-flex}.pilha .av{margin-left:-8px}.pilha .av:first-child{margin-left:0}
+.pilha .mais{background:var(--n100);color:var(--n700)}
+
+/* Tabela */
+.tabela{width:100%;border-collapse:collapse;font-size:14px;background:#fff}
+.tabela th{font-size:12px;font-weight:500;color:var(--texto-suave);text-align:left;padding:10px 12px;border-bottom:1px solid var(--linha);background:#FCFAFF}
+.tabela td{padding:12px;border-bottom:1px solid #F0ECF5;vertical-align:middle}
+.tabela tr.sel td{background:var(--v50)}
+.tabela .pessoa{display:flex;align-items:center;gap:8px}
+.tabela .pessoa .av{width:28px;height:28px;font-size:10px}
+.tabela .ass{font-weight:500}
+.tabela .prot{font-size:12px;color:var(--texto-suave)}
+.tab-wrap{position:relative;border:1px solid var(--linha);border-radius:16px;overflow:auto;background:#fff}
+.paginacao{display:flex;gap:6px;align-items:center;justify-content:space-between;padding:10px 12px;font-size:13px;color:var(--texto-suave);flex-wrap:wrap}
+.pag{display:flex;gap:4px}
+.pag span{min-width:32px;height:32px;display:grid;place-items:center;border-radius:9px;color:var(--n700)}
+.pag .at{background:var(--v600);color:#fff}
+
+/* Calendário */
+.cal{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:16px;box-shadow:var(--s2);max-width:320px}
+.cal .cab{display:flex;justify-content:space-between;align-items:center;font-weight:500;margin-bottom:8px}
+.cal .cab .ic{width:18px;height:18px;color:var(--n600)}
+.dias{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:13px}
+.dias .h{font-size:12px;color:var(--texto-suave);padding:4px 0}
+.dias span{height:36px;display:grid;place-items:center;border-radius:50%}
+.dias .fora{color:#B5ADC2}
+.dias .hoje{box-shadow:inset 0 0 0 1.5px var(--v600)}
+.dias .es{background:var(--v600);color:#fff}
+.dias .fer{color:var(--l700);text-decoration:underline dotted;text-underline-offset:3px}
+.cal .pe{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+
+/* Lateral com vida, em claro. */
+.lat{width:260px;background:#fff;border:1px solid var(--linha);border-radius:18px;padding:12px;display:grid;gap:2px;box-shadow:var(--s1)}
+.it{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:12px;font-size:15px;color:var(--texto);text-decoration:none;position:relative}
+.it .ic{color:var(--n600)}
+.it .seta{margin-left:auto;width:16px;height:16px;color:var(--n500)}
+.it:hover{background:var(--n50)}
+.it.at{background:linear-gradient(180deg,#7B3BDC,#5808CC);color:#fff;font-weight:500;box-shadow:0 6px 14px #5808cc33}
+.it.at .ic{color:#fff}
+.it .cont{margin-left:auto;font-size:12px;font-weight:600;background:var(--l500);color:var(--v900);border-radius:999px;padding:0 8px}
+.lat hr{border:0;border-top:1px solid var(--linha);margin:6px 8px}
+.lat .trocar{margin-top:6px;justify-content:center;border:1px solid var(--n300);background:#fff;color:var(--texto)}
+.lat .sub-itens{display:grid;gap:2px;margin:0 0 4px 30px;padding-left:12px;border-left:1px solid var(--linha)}
+.lat .sub-itens a{font-size:14px;color:var(--n700);text-decoration:none;min-height:36px;display:flex;align-items:center;padding:0 10px;border-radius:9px}
+.lat .sub-itens a:hover{background:var(--n50)}
+
+/* Cartões com vida */
+.cartao{background:#fff;border:1px solid var(--linha);border-radius:18px;padding:22px;box-shadow:var(--s1)}
+.cartao h4{font-size:19px;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+.cartao h4 a{font-size:14px;font-weight:500;text-decoration:underline;text-underline-offset:3px;color:var(--texto)}
+.dia-t{font-size:15px;font-weight:500;color:var(--n600);margin:16px 0 8px}
+.vazio-l{border-left:3px solid var(--n200);padding:2px 0 2px 12px;color:var(--n600)}
+.evento{display:flex;align-items:center;gap:12px;padding:8px 0}
+.evento .barra{width:3px;align-self:stretch;border-radius:3px;background:var(--v300)}
+.evento .barra.v{background:var(--er)}.evento .barra.h{background:var(--l400)}
+.evento .txt{flex:1;min-width:0}
+.evento .txt b{display:flex;align-items:center;gap:8px;font-weight:500}
+.evento .txt small{display:block;color:var(--n600);font-size:14px}
+.btn-prep{border:1.5px solid transparent;border-radius:10px;min-height:36px;padding:0 12px;display:inline-flex;gap:6px;align-items:center;font-weight:500;font-size:14px;color:var(--v900);background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#5808CC,#FF8D01) border-box}
+.btn-prep .ic{width:18px;height:18px;color:var(--v600)}
+.tarefa{display:flex;gap:14px;align-items:center;padding:10px 0}
+.quad{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;flex-shrink:0}
+.quad .ic{width:22px;height:22px}
+.q-v{background:var(--v100);color:var(--v600)}.q-l{background:var(--l100);color:var(--l800)}.q-ok{background:var(--ok-f);color:var(--ok)}.q-er{background:var(--er-f);color:var(--er)}.q-at{background:var(--at-f);color:var(--at)}
+.tarefa b{display:flex;align-items:center;gap:8px;font-weight:500;flex-wrap:wrap}
+.tarefa small{display:block;color:var(--n600);font-size:14px}
+.tarefa .pilha .av{width:26px;height:26px;font-size:10px}
+
+/* Avisos (snackbar) */
+.aviso{display:flex;align-items:center;gap:12px;padding:12px 14px 12px 12px;border-radius:14px;border:1px solid var(--linha);background:#fff;box-shadow:var(--s2);max-width:480px;position:relative;overflow:hidden}
+.aviso::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx-in)}
+.aviso .quad{width:36px;height:36px;border-radius:10px}
+.aviso .quad .ic{width:18px;height:18px}
+.aviso .t{flex:1;min-width:0}
+.aviso .t b{display:block;font-weight:500;font-size:14px}
+.aviso .t small{font-size:13px;color:var(--n600)}
+.aviso.ok::before{background:var(--fx-ok)}.aviso.at::before{background:var(--fx-at)}.aviso.er::before{background:var(--fx-er)}
+.aviso.marca{background:var(--grad-violeta);color:#fff;border-color:transparent}.aviso.marca::before{background:var(--l500)}
+.aviso.marca small{color:#E7D3FF}.aviso.marca .quad{background:#ffffff1f;color:#FFD39E}
+/* Abas, segmentado, dica, emblema */
+.abas{display:flex;gap:22px;border-bottom:1px solid var(--linha)}
+.abas span{padding:10px 0;font-weight:500;color:var(--n600);border-bottom:2px solid transparent;margin-bottom:-1px}
+.abas .at{color:var(--v600);border-color:var(--v600)}
+.seg{display:inline-flex;background:var(--n100);border-radius:12px;padding:4px;gap:2px}
+.seg span{padding:6px 14px;border-radius:9px;font-size:14px;font-weight:500;color:var(--n700)}
+.seg .at{background:#fff;color:var(--v700);box-shadow:var(--s1)}
+.dicatip{position:relative;display:inline-block;background:var(--v900);color:#fff;font-size:13px;padding:6px 10px;border-radius:8px}
+.dicatip::after{content:"";position:absolute;left:50%;bottom:-5px;width:10px;height:10px;background:var(--v900);transform:translateX(-50%) rotate(45deg)}
+.emb{position:relative;display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--n100);color:var(--n700)}
+.emb b{position:absolute;right:-6px;top:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--l500);color:var(--v900);font-size:11px;display:grid;place-items:center;border:2px solid #fff}
+.linha{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.progresso{height:8px;border-radius:999px;background:var(--n100);overflow:hidden;width:220px}
+.progresso i{display:block;height:100%;width:62%;border-radius:999px;background:linear-gradient(90deg,#7B3BDC,#5808CC)}
+.esqueleto{display:grid;gap:8px;width:220px}
+.esqueleto i{display:block;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--n100),#F7F4FB,var(--n100))}
+
+/* Grade */
+.colunas{display:grid;gap:8px;padding:16px;background:#fff;border:1px solid var(--linha);border-radius:14px}
+.colunas div{height:90px;background:#FBF5FF;border:1px dashed var(--v300);border-radius:6px}
+.c12{grid-template-columns:repeat(12,1fr)}.c8{grid-template-columns:repeat(8,1fr)}.c4{grid-template-columns:repeat(4,1fr)}
+.legenda{font-size:13px;color:var(--texto-suave);margin:8px 0 18px}
+
+.aprovar{counter-reset:d;display:grid;gap:10px;padding:0;list-style:none}
+.aprovar li{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:14px 16px 14px 52px;position:relative}
+.aprovar li::before{counter-increment:d;content:counter(d);position:absolute;left:14px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--v100);color:var(--v600);font-weight:600;display:grid;place-items:center;font-size:13px}
+.aprovar b{display:block;font-weight:500}
+.aprovar span{color:var(--texto-suave);font-size:14px}
+
+/* Mais componentes (das referências): barra superior, trilha, links, menus, janelas,
+   gaveta, balão, área de texto, envio de arquivo, paginação, progresso, persona, vazio. */
+.appbar{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--linha);border-radius:16px;padding:10px 14px;flex-wrap:wrap}
+.appbar img{width:110px}
+.appbar .busca{flex:1;min-width:200px}
+.appbar .abas{border:0;gap:18px}
+.appbar .abas span{padding:8px 0}
+.trilha-nav{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--n600);flex-wrap:wrap}
+.trilha-nav a{color:var(--n600);text-decoration:none;display:inline-flex;gap:6px;align-items:center}
+.trilha-nav a:hover{color:var(--v600)}
+.trilha-nav .ic{width:16px;height:16px}
+.trilha-nav b{font-weight:500;color:var(--texto)}
+.lk{color:var(--v600);font-weight:500;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#5808cc55}
+.lk.h{text-decoration-color:var(--v600)}.lk.f{outline:3px solid var(--v300);outline-offset:2px;border-radius:4px}.lk.d{color:#8A8296;text-decoration:none}
+.menu-sus{background:#fff;border:1px solid var(--linha);border-radius:14px;box-shadow:var(--s2);padding:6px;min-width:230px;display:grid;gap:2px}
+.menu-sus span{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:9px;font-size:14px}
+.menu-sus span .ic{width:18px;height:18px;color:var(--n600)}
+.menu-sus span.h{background:var(--v50);color:var(--v700)}.menu-sus span.h .ic{color:var(--v600)}
+.menu-sus span.p{color:var(--er)}.menu-sus span.p .ic{color:var(--er)}
+.menu-sus span kbd{margin-left:auto;font:12px Manrope,sans-serif;color:var(--n500)}
+.menu-sus hr{border:0;border-top:1px solid var(--linha);margin:4px 6px}
+.menu-sus .sel .ic:last-child{margin-left:auto;color:var(--v600)}
+.janela{background:#fff;border-radius:20px;box-shadow:var(--s3);width:min(100%,420px);overflow:hidden;border:1px solid var(--linha)}
+.janela .cab{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 6px}
+.janela .cab b{font-size:18px;font-weight:500}
+.janela .cab .ic{color:var(--n600)}
+.janela .corpo{padding:6px 20px 16px;display:grid;gap:12px;font-size:14px;color:var(--n700)}
+.janela .pe{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--linha);background:#FCFBFE}
+.fundo-janela{background:#18056740;border-radius:18px;padding:28px;display:grid;place-items:center;backdrop-filter:blur(2px)}
+.gaveta{background:#fff;border-radius:20px 0 0 20px;box-shadow:var(--s3);width:300px;border:1px solid var(--linha);display:grid;grid-template-rows:auto 1fr auto;min-height:330px;margin-left:auto}
+.gaveta .cab{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--linha)}
+.gaveta .cab b{font-weight:500}
+.gaveta .lst{padding:8px;display:grid;gap:2px;align-content:start}
+.gaveta .lst span{display:flex;gap:10px;align-items:center;min-height:42px;padding:0 10px;border-radius:9px;font-size:14px}
+.gaveta .lst .ic{width:18px;height:18px;color:var(--n600)}
+.gaveta .pe{padding:12px 18px;border-top:1px solid var(--linha);display:flex;justify-content:flex-end}
+.balao{position:relative;background:#fff;border:1px solid var(--linha);border-radius:14px;box-shadow:var(--s2);padding:14px;width:240px;display:grid;gap:10px;font-size:14px}
+.balao::after{content:"";position:absolute;left:28px;bottom:-7px;width:12px;height:12px;background:#fff;border-right:1px solid var(--linha);border-bottom:1px solid var(--linha);transform:rotate(45deg)}
+.balao b{font-weight:500}
+.area{min-height:110px;border:1px solid var(--n400);border-radius:12px;padding:10px 12px;background:#FDFCFF;font-size:15px;color:var(--texto)}
+.contador{display:flex;justify-content:space-between;font-size:12px;color:var(--texto-suave)}
+.envio{border:1.5px dashed var(--v300);border-radius:16px;background:var(--v50);padding:22px;display:grid;justify-items:center;gap:8px;text-align:center;font-size:14px;color:var(--n700)}
+.envio .quad{width:48px;height:48px}
+.arquivo{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--linha);border-radius:12px;padding:10px 12px;font-size:14px}
+.arquivo .quad{width:40px;height:40px;border-radius:10px}
+.arquivo .t{flex:1;min-width:0;display:grid;gap:4px}
+.arquivo .t small{color:var(--n600);font-size:12px}
+.arquivo .progresso{width:100%;height:6px}
+.pag-var{display:grid;gap:14px}
+.pag2{display:flex;gap:4px;align-items:center;font-size:14px;color:var(--n700);flex-wrap:wrap}
+.pag2 span{min-width:34px;height:34px;display:grid;place-items:center;border-radius:10px;padding:0 6px}
+.pag2 .at{background:var(--v600);color:#fff}
+.pag2 .tx{color:var(--n600)}.pag2 .ds{color:#B5ADC2}
+.pag2 .ic{width:16px;height:16px}
+.linhas-pag{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--n600);flex-wrap:wrap}
+.linhas-pag .entrada{min-height:34px;padding:0 10px;gap:14px;border-radius:10px}
+.circ{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:500;color:var(--v700);background:conic-gradient(var(--v600) var(--p),var(--v100) 0);position:relative}
+.circ::before{content:"";position:absolute;inset:5px;border-radius:50%;background:#fff}
+.circ span{position:relative}
+.persona{display:flex;gap:10px;align-items:center}
+.persona b{display:block;font-weight:500;font-size:14px}
+.persona small{display:block;font-size:13px;color:var(--n600)}
+.vazio{position:relative;overflow:hidden;background:#fff;border:1px solid var(--linha);border-radius:18px;padding:32px 20px;display:grid;justify-items:center;text-align:center;gap:8px}
+.vazio .orb{position:absolute;border-radius:50%;border:1px solid #5808cc1f}
+.vazio .quad{width:56px;height:56px;border-radius:16px;position:relative}
+.vazio h4{font-size:20px;font-weight:300;position:relative}
+.vazio p{margin:0;font-size:14px;color:var(--n600);max-width:320px;position:relative}
+.vazio .botao{position:relative}
+.dicas{display:flex;gap:28px;flex-wrap:wrap;align-items:center;padding:12px 0}
+.dicatip.cima::after{bottom:auto;top:-5px}
+.dicatip.esq::after{left:-5px;top:50%;bottom:auto;transform:translateY(-50%) rotate(45deg)}
+.dicatip.dir::after{left:auto;right:-5px;top:50%;bottom:auto;transform:translateY(-50%) rotate(45deg)}
+.dicatip.claro{background:#fff;color:var(--texto);border:1px solid var(--linha);box-shadow:var(--s1)}
+.dicatip.claro::after{background:#fff}
+.emb-ponto{position:relative;display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--n100);color:var(--n700)}
+.emb-ponto i{position:absolute;right:8px;top:8px;width:9px;height:9px;border-radius:50%;background:var(--l500);border:2px solid #fff}
+@media (max-width:760px){.lat{width:100%}.gaveta{width:100%;border-radius:20px}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* ===== Telas-modelo: moldura de aplicação que se adapta à própria largura ===== */
+.tm{margin-top:20px;display:grid;gap:20px}
+.duas{display:grid;gap:28px;grid-template-columns:minmax(0,1fr)}
+.duas .cel{width:min(100%,390px)}
+.legenda-t{font-size:13px;color:var(--texto-suave);margin:8px 2px 0}
+.app{container-type:inline-size;background:var(--fundo);border:1px solid var(--linha);border-radius:24px;overflow:hidden;box-shadow:var(--s3);min-width:0}
+.app-top{display:flex;align-items:center;gap:12px;background:#fff;border-bottom:1px solid var(--linha);padding:10px 16px}
+.app-top .marca{display:flex;align-items:center;gap:10px;min-width:0}
+.app-top .marca img{width:96px}
+.app-top .marca small{font-size:12px;color:var(--texto-suave);border-left:1px solid var(--linha);padding-left:10px;white-space:nowrap}
+.app-top .busca{flex:1;max-width:440px;min-height:40px;margin-left:8px}
+.app-top .dir{margin-left:auto;display:flex;align-items:center;gap:10px}
+.cond{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--linha);background:#fff;font-size:14px;font-weight:500;white-space:nowrap}
+.cond .ic{width:16px;height:16px;color:var(--n600)}
+.app .emb{width:40px;height:40px}
+.quem{display:flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap}
+.quem small{display:block;font-size:12px;color:var(--texto-suave);line-height:1.2}
+.quem b{display:block;font-weight:500;line-height:1.2}
+.menu-cel{display:none}
+.admin{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--l500);color:var(--v900)}
+.app-corpo{display:grid;grid-template-columns:236px minmax(0,1fr);gap:20px;padding:20px}
+.app .lat{width:auto;align-self:start;position:sticky;top:0}
+.app-main{display:grid;gap:18px;min-width:0;align-content:start}
+.cab-tela{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.cab-tela h2{font-size:28px;font-weight:400}
+.cab-tela p{margin:4px 0 0;color:var(--texto-suave);font-size:14px}
+.hero{position:relative;overflow:hidden;border-radius:20px;background:var(--grad-violeta);color:#fff;padding:26px 28px}
+.hero .t{position:relative;z-index:1}
+.hero small{color:#E7D3FF;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.hero h2{font-size:clamp(26px,4cqi,36px);font-weight:300;margin:6px 0 14px}
+.hero h2 em.d{color:#FFD39E}
+.hero .numeros{display:flex;gap:10px;flex-wrap:wrap}
+.hero .num{background:#ffffff1a;border:1px solid #ffffff33;border-radius:14px;padding:10px 14px;min-width:132px}
+.hero .num b{display:block;font-size:26px;font-weight:300;line-height:1.1}
+.hero .num span{font-size:13px;color:#EDE0FF}
+.agora .tarefa{border-top:1px solid #F0ECF5}
+.agora .tarefa:first-of-type{border-top:0}
+.agora .tarefa>div{flex:1;min-width:0}
+.agora .tarefa .botao{flex-shrink:0}
+.mes{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.mes .circ{width:84px;height:84px;font-size:18px}
+.mes .circ::before{inset:7px}
+.mes .dados{display:grid;gap:6px;font-size:14px;color:var(--n700)}
+.mes .dados b{font-weight:600;color:var(--texto)}
+.filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.filtros .entrada{min-height:40px;flex:1;min-width:220px;max-width:360px}
+.tab-wrap{overflow-x:auto;background:#fff;border:1px solid var(--linha);border-radius:18px;overflow:hidden;box-shadow:var(--s1)}
+.tab-wrap .tabela{background:transparent}
+.venc{color:var(--er);font-weight:500;display:inline-flex;gap:6px;align-items:center}
+.venc .ic{width:16px;height:16px}
+.fila-cel{display:none;gap:10px}
+.cart-p{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:14px;display:grid;gap:8px;box-shadow:var(--s1)}
+.cart-p .l1{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.cart-p .ass{font-weight:500}
+.cart-p small{color:var(--texto-suave);font-size:13px}
+.compr{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.compr .cartao{padding:18px}
+.compr .rot{display:block;margin-bottom:6px}
+.compr .val{font-size:22px;font-weight:400}
+.compr .val.er{color:var(--er)}
+.compr small{display:block;color:var(--texto-suave);font-size:13px;margin-top:2px}
+.acoes{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.linha-tempo{display:grid;gap:0}
+.linha-tempo .it{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:12px 0;border-top:1px solid #F0ECF5}
+.linha-tempo .it:first-child{border-top:0}
+.linha-tempo .quad{width:36px;height:36px;border-radius:10px}
+.linha-tempo .quad .ic{width:18px;height:18px}
+.linha-tempo b{font-weight:500;display:block}
+.linha-tempo small{color:var(--texto-suave);font-size:13px}
+.linha-tempo p{margin:4px 0 0;font-size:14px}
+.entrar{display:grid;grid-template-columns:1.05fr 1fr;min-height:560px;background:#fff}
+.entrar .lado{position:relative;overflow:hidden;background:var(--grad-violeta);color:#fff;padding:36px;display:flex;flex-direction:column;justify-content:space-between}
+.entrar .lado .t{position:relative;z-index:1}
+.entrar .lado h2{font-size:clamp(30px,5cqi,44px);font-weight:300;letter-spacing:-.03em;margin:0 0 10px}
+.entrar .lado h2 em.d{color:#FFD39E}
+.entrar .lado p{color:#EDE0FF;margin:0;max-width:340px}
+.entrar .lado img{width:120px;position:relative;z-index:1;filter:brightness(0) invert(1)}
+.entrar .form{padding:40px clamp(20px,6cqi,64px);display:grid;align-content:center;gap:16px}
+.entrar .form h3{font-size:24px;font-weight:400}
+.entrar .form .botao{width:100%}
+.entrar .form .nota{margin:0;font-size:13px}
+.entrar .passos{display:flex;gap:8px;font-size:13px;color:var(--texto-suave);align-items:center}
+.entrar .passos b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--v600);color:#fff;font-size:12px;font-weight:600}
+.entrar .passos i{font-style:normal;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--n100);font-size:12px}
+@container (max-width:760px){
+  .app-corpo{grid-template-columns:1fr;padding:14px;gap:14px}
+  .app .lat,.app-top .busca,.app-top .cond,.quem .txt,.app-top .marca small,.so-pc{display:none}
+  .menu-cel{display:inline-grid}
+  .tab-wrap{display:none}
+  .fila-cel{display:grid}
+  .cab-tela h2{font-size:24px}
+  .hero{padding:20px}
+  .hero .num{min-width:0;flex:1}
+  .entrar{grid-template-columns:1fr;min-height:0}
+  .entrar .lado{min-height:220px;padding:24px}
+  .entrar .form{padding:24px 20px 32px}
+}
+
+
+
+/* ===== Agenda ===== */
+.dia{display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px;padding:14px 0;border-top:1px solid var(--linha)}
+.dia:first-child{border-top:0}
+.dia .data{line-height:1.2}
+.dia .data b{display:block;font-size:26px;font-weight:300}
+.dia .data span{font-size:13px;color:var(--texto-suave)}
+.dia .data .hoje{display:inline-block;margin-top:4px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--v600);border-radius:999px;padding:1px 8px}
+.eventos{display:grid;gap:8px}
+.ev{display:grid;grid-template-columns:62px 4px minmax(0,1fr) auto;gap:12px;align-items:center;background:#fff;border:1px solid var(--linha);border-radius:14px;padding:10px 14px}
+.ev .hora{font-size:14px;font-weight:500}
+.ev .hora small{display:block;font-size:12px;font-weight:400;color:var(--texto-suave)}
+.ev .bar{align-self:stretch;border-radius:4px;background:var(--fx,var(--v400))}
+.ev .t b{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-weight:500}
+.ev .t small{display:block;font-size:13px;color:var(--texto-suave)}
+.ev .t .liga{display:inline-flex;gap:4px;align-items:center;font-size:12.5px;color:var(--v600);font-weight:500}
+.ev .t .liga .ic{width:14px;height:14px}
+.ev.fonte{background:transparent;border-style:dashed}
+.ev.cancelado .t b{text-decoration:line-through;color:var(--texto-suave)}
+.t-reuniao{--fx:var(--fx-and)}.t-visita{--fx:var(--fx-at)}.t-atividade{--fx:var(--fx-ok)}.t-lembrete{--fx:var(--fx-in)}.t-feriado{--fx:var(--fx-ab)}
+.tp{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--texto-suave)}
+.tp i{width:8px;height:8px;border-radius:3px;background:var(--fx);display:inline-block}
+.cal{border:1px solid var(--linha);border-radius:18px;overflow:hidden;background:#fff}
+.cal .sem{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:var(--v50);font-size:12px;font-weight:500;color:var(--texto-suave)}
+.cal .sem span{padding:8px 10px}
+.cal .grade{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal .c{min-height:104px;border-top:1px solid var(--linha);border-left:1px solid var(--linha);padding:6px;display:grid;align-content:start;gap:4px;min-width:0}
+.cal .c:nth-child(7n+1){border-left:0}
+.cal .c .n{font-size:13px;font-weight:500;width:26px;height:26px;display:grid;place-items:center;border-radius:50%}
+.cal .c.fora .n{color:#B5ADC2}
+.cal .c.hoje .n{background:var(--v600);color:#fff}
+.cal .c .p{display:flex;gap:5px;align-items:center;font-size:11.5px;line-height:1.25;padding:2px 6px;border-radius:6px;background:var(--v50);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal .c .p i{flex-shrink:0;width:3px;align-self:stretch;border-radius:2px;background:var(--fx)}
+.cal .c .p.f{background:transparent;border:1px dashed var(--n300)}
+.cal .c .mais{font-size:11.5px;color:var(--v600);font-weight:500;padding-left:6px}
+.form-g{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.form-g .larga{grid-column:1/-1}
+.opcao-r{display:flex;gap:10px;align-items:center;font-size:14px}
+.janela-l{width:min(100%,560px)}
+.hist{display:grid;gap:0}
+.hist .it{display:grid;grid-template-columns:32px 1fr;gap:10px;padding:10px 0;border-top:1px solid #F0ECF5;font-size:14px}
+.hist .it:first-child{border-top:0}
+.hist .quad{width:32px;height:32px;border-radius:9px}
+.hist .quad .ic{width:16px;height:16px}
+.hist small{display:block;color:var(--texto-suave);font-size:12.5px}
+.decisoes{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.decisao{position:relative;overflow:hidden;background:#fff;border:1px solid var(--linha);border-radius:16px;padding:16px 18px 16px 22px}
+.decisao::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--fx-at)}
+.decisao b{display:block;font-weight:500;margin-bottom:4px}
+.decisao p{margin:0;font-size:14px;color:var(--texto-suave)}
+.decisao .refs{margin-top:8px;font:500 11px "IBM Plex Mono",monospace;color:var(--v600)}
+@container (max-width:760px){
+  .dia{grid-template-columns:1fr;gap:8px}
+  .dia .data{display:flex;gap:8px;align-items:baseline}
+  .dia .data b{font-size:20px}
+  .ev{grid-template-columns:52px 4px minmax(0,1fr)}
+  .ev > .acao{grid-column:3}
+  .cal .c{min-height:64px;padding:4px}
+  .cal .c .p span{display:none}
+  .cal .c .p{padding:0;height:6px;background:var(--fx)}
+  .cal .c .p i{display:none}
+  .cal .sem span{padding:6px 4px;text-align:center}
+}
+
+
+/* ===== Manutenção ===== */
+.s-in{--t:var(--in);--tf:var(--in-f);--tb:var(--in-b);--fx:var(--fx-in)}
+.s-ab{--t:#5B5368;--tf:#F4F2F7;--tb:#E3DEEB;--fx:var(--fx-ab)}
+.kv{display:grid;gap:10px 18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));font-size:14px}
+.kv div{display:grid;gap:2px}
+.kv span{font-size:12px;color:var(--texto-suave)}
+.kv b{font-weight:500}
+.dupla{display:grid;gap:18px;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);align-items:start}
+.pilha-c{display:grid;gap:18px}
+.tarefas{display:grid;gap:0}
+.tf{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;padding:12px 0;border-top:1px solid #F0ECF5;align-items:start}
+.tf:first-child{border-top:0}
+.tf .marc{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--n500);display:grid;place-items:center;margin-top:2px}
+.tf .marc.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.tf .marc .ic{width:14px;height:14px;stroke-width:2.4}
+.tf b{font-weight:500;display:block}
+.tf small{display:block;font-size:13px;color:var(--texto-suave)}
+.tf .res{margin-top:4px;font-size:13px;background:var(--ok-f);border-radius:8px;padding:6px 10px;color:var(--n700)}
+.verif{display:grid;gap:0}
+.vi{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 0;border-top:1px solid #F0ECF5;font-size:14px;align-items:center}
+.vi:first-child{border-top:0}
+.vi small{display:block;color:var(--texto-suave);font-size:12.5px}
+.opc3{display:inline-flex;gap:4px}
+.opc3 span{font-size:12px;font-weight:500;padding:3px 9px;border-radius:7px;border:1px solid var(--n200);color:var(--n600);background:#fff}
+.opc3 .ok{background:var(--ok-f);border-color:var(--ok-b);color:var(--ok)}
+.opc3 .er{background:var(--er-f);border-color:var(--er-b);color:var(--er)}
+.opc3 .na{background:var(--n100);color:var(--n700)}
+.liga-c{display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--linha);border-radius:12px;background:#fff;font-size:14px}
+.liga-c .quad{width:36px;height:36px;border-radius:10px}
+.liga-c .quad .ic{width:18px;height:18px}
+.liga-c .t{flex:1;min-width:0}
+.liga-c small{display:block;color:var(--texto-suave);font-size:12.5px}
+.prev{display:grid;grid-template-columns:minmax(0,1.4fr) 120px 130px 150px auto;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid #F0ECF5;font-size:14px}
+.prev:first-child{border-top:0}
+.prev b{font-weight:500;display:block}
+.prev small{display:block;color:var(--texto-suave);font-size:12.5px}
+.prev .cab{font-size:12px;color:var(--texto-suave);font-weight:500}
+.lista-c{background:#fff;border:1px solid var(--linha);border-radius:18px;box-shadow:var(--s1);overflow:hidden}
+.grupo-t{padding:10px 14px;background:#FCFAFF;border-bottom:1px solid var(--linha);font-size:13px;font-weight:500;color:var(--n700);display:flex;justify-content:space-between;gap:8px}
+.prest{display:grid;grid-template-columns:44px minmax(0,1.4fr) minmax(0,1fr) 140px auto;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid #F0ECF5;font-size:14px}
+.prest:first-child{border-top:0}
+.prest .quad{width:44px;height:44px}
+.prest b{font-weight:500;display:block}
+.prest small{display:block;color:var(--texto-suave);font-size:12.5px}
+.prest.arq{opacity:.7}
+.prest>div{min-width:0}
+.prest small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{display:inline-flex;align-items:center;font-size:12px;font-weight:500;padding:1px 8px;border-radius:999px;background:var(--n100);color:var(--n700)}
+.tag.v{background:var(--v100);color:var(--v700)}
+.tag.l{background:var(--l100);color:var(--l800)}
+.sugest{display:grid;gap:0;border:1.5px dashed var(--v300);border-radius:14px;background:var(--v50);padding:4px 14px}
+.sugest .vi{border-color:#E6D9FB}
+.cartoes-m{display:grid;gap:10px}
+.cm{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:14px;display:grid;gap:8px;box-shadow:var(--s1)}
+.cm .l1{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.cm b{font-weight:500}
+.cm small{color:var(--texto-suave);font-size:13px}
+.cm .rodape{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--n700)}
+.depois{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.depois .decisao::before{background:var(--fx-ab)}
+@container (max-width:760px){
+  .dupla{grid-template-columns:1fr}
+  .prev{grid-template-columns:minmax(0,1fr) auto}
+  .prev .so-pc,.prest .so-pc{display:none}
+  .prest{grid-template-columns:40px minmax(0,1fr) auto}
+  .prest .quad{width:40px;height:40px}
+}
+
+/* ===== Mural online, e-mail e QR ===== */
+.opcao-r .chave{flex:none}
+.lado{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.lado .cel{width:min(100%,390px)}
+.pub-top{display:flex;align-items:center;gap:12px;background:var(--grad-violeta);color:#fff;padding:16px 18px}
+.pub-top .quad{background:#ffffff1f;color:#FFD39E;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+.pub-top b{display:block;font-weight:500;font-size:16px}
+.pub-top small{color:#E7D3FF;font-size:12.5px}
+.pub-corpo{display:grid;gap:12px;padding:14px}
+.pub-c{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:14px 16px;box-shadow:var(--s1)}
+.pub-c h4{margin:6px 0 4px;font-size:15.5px;font-weight:500}
+.pub-c p{margin:0;font-size:14px;color:var(--n700)}
+.pub-c .meta{font-size:12.5px;color:var(--texto-suave)}
+.pub-pe{padding:4px 18px 18px;font-size:12.5px;color:var(--texto-suave);display:grid;gap:6px}
+.pub-pe img{width:84px;opacity:.8}
+.foto-f{height:120px;border-radius:12px;margin-top:10px;background:linear-gradient(135deg,#DDC8F8,#F1E9FC 60%,#FFEBCF);display:grid;place-items:center;color:var(--v700);font-size:12.5px}
+.correio{background:#fff;border:1px solid var(--linha);border-radius:20px;box-shadow:var(--s3);overflow:hidden;max-width:640px}
+.correio .cab-m{padding:14px 18px;border-bottom:1px solid var(--linha);display:grid;gap:3px;font-size:13.5px}
+.correio .cab-m span{color:var(--texto-suave)}
+.correio .corpo-m{padding:22px 26px;display:grid;gap:14px;font-size:14.5px}
+.correio .faixa{height:6px;background:var(--grad-trilha)}
+.correio .rod{padding:14px 26px 20px;border-top:1px solid var(--linha);font-size:12.5px;color:var(--texto-suave);display:grid;gap:6px}
+.qr{width:150px;height:150px;padding:10px;background:#fff;border:1px solid var(--linha);border-radius:14px;flex:none}
+.qr svg{width:100%;height:100%;display:block}
+.link-c{font-family:"IBM Plex Mono",monospace;font-size:13px;background:var(--v50);border:1px solid var(--v200);border-radius:10px;padding:8px 12px;color:var(--v800);word-break:break-all}
+.cartaz{width:min(100%,300px);background:#fff;border:1px solid var(--linha);border-radius:12px;box-shadow:var(--s2);padding:22px;text-align:center;display:grid;gap:10px;justify-items:center}
+.cartaz b{font-size:18px;font-weight:500}
+.cartaz small{font-size:12.5px;color:var(--texto-suave)}
+</style>
+<style>
+.etapas{display:grid;gap:0}
+.et{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;padding:12px 0;border-top:1px solid #F0ECF5;align-items:center;font-size:14px}
+.et:first-child{border-top:0}
+.et .n{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:600;font-size:13px;background:var(--n100);color:var(--texto-suave)}
+.et .n.ok{background:var(--ok-fundo,#E9F8F1);color:#0A7A4B}
+.et .n.and{background:var(--v100);color:var(--v700)}
+.et b{font-weight:500;display:block}
+.et small{display:block;color:var(--texto-suave);font-size:12.5px}
+.interno{display:flex;gap:6px;align-items:center;border:1px dashed var(--v300,#C9A9F5);background:var(--v50);color:var(--v700);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:500}
+.passos{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.passos span{font-size:12.5px;padding:5px 10px;border-radius:999px;background:var(--n100);color:var(--texto-suave)}
+.passos span.at{background:var(--v600);color:#fff}
+.passos span.ok{background:#E9F8F1;color:#0A7A4B}
+.ck{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;font-size:13.5px;padding:6px 0}
+.ck .q{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--linha);display:grid;place-items:center}
+.ck .q.on{background:var(--v600);border-color:var(--v600);color:#fff}
+.ck .q.on svg{width:13px;height:13px}
+.msg{border:1px solid var(--linha);border-radius:12px;padding:10px 12px;font-size:13.5px;display:grid;gap:4px}
+.msg.eq{background:var(--v50)}
+.msg small{color:var(--texto-suave);font-size:12px}
+.print{height:90px;border-radius:10px;border:1px solid var(--linha);background:repeating-linear-gradient(45deg,#F4F1F8,#F4F1F8 8px,#ECE7F3 8px,#ECE7F3 16px);display:grid;place-items:center;font-size:12px;color:var(--texto-suave)}
+/* ===== Links e QR ===== */
+.etiqueta{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:14px 12px;text-align:center;display:grid;gap:6px;justify-items:center;box-shadow:var(--s1)}
+.etiqueta .faixa-e{height:5px;width:100%;border-radius:999px;background:var(--grad-trilha)}
+.etiqueta img{width:72px}
+.etiqueta b{font-size:15px;font-weight:500;line-height:1.25}
+.etiqueta .perg{font-size:12px;color:var(--v700);font-weight:600;letter-spacing:.02em}
+.etiqueta small{font-size:11px;color:var(--texto-suave);line-height:1.35}
+.etiqueta .cod{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--v800);background:var(--v50);border-radius:6px;padding:1px 6px}
+.folha{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;background:#fff;border:1px solid var(--linha);border-radius:10px;padding:16px;box-shadow:var(--s2);width:min(100%,470px)}
+.etiqueta-g{width:min(100%,300px);padding:22px 18px;gap:10px}
+.etiqueta-g b{font-size:19px}
+.etiqueta-g img{width:96px}
+.mira{height:230px;border-radius:16px;background:#1E1531;position:relative;display:grid;place-items:center;overflow:hidden}
+.mira::before{content:"";width:140px;height:140px;border:3px solid #FFD39E;border-radius:16px;box-shadow:0 0 0 999px #1e153199}
+.mira span{position:absolute;bottom:12px;left:0;right:0;text-align:center;color:#E7D3FF;font-size:12.5px}
+.zap{background:#EFE7DC;border-radius:16px;padding:14px;display:grid;gap:10px;min-height:230px;align-content:space-between}
+.zap .cab-z{background:#fff;border-radius:12px;padding:10px 12px;font-size:13.5px;display:flex;gap:10px;align-items:center;align-self:start}
+.zap .msg{justify-self:end;max-width:88%;background:#D9FDD3;border-radius:12px 12px 2px 12px;padding:9px 12px;font-size:14px;box-shadow:0 1px 1px #0001}
+.zap .escrever{background:#fff;border-radius:999px;padding:9px 14px;font-size:13.5px;color:var(--texto-suave)}
+.passo-ok{display:flex;gap:10px;align-items:flex-start;background:var(--ok-f);border:1px solid var(--ok-b);border-radius:12px;padding:10px 12px;font-size:13.5px}
+.abas{overflow-x:auto;white-space:nowrap}
+.passo-ok .ic{color:var(--ok);flex:none;margin-top:1px}
+
+/* ===== WhatsApp do morador ===== */
+.zap{align-content:start}
+.zap .msg,.zap .rec{white-space:pre-line;line-height:1.4}
+.zap .rec{justify-self:start;max-width:88%;background:#fff;border-radius:12px 12px 12px 2px;padding:9px 12px;font-size:14px;box-shadow:0 1px 1px #0001}
+.zap .h{display:block;text-align:right;font-size:11px;color:#4A5A63;margin-top:2px}
+.zap .dia{justify-self:center;background:#fff;border-radius:8px;padding:3px 10px;font-size:12px;color:#54656F}
+.zap .ft{width:170px;height:96px;border-radius:8px;background:linear-gradient(135deg,#DDC8F8,#F1E9FC 60%,#FFEBCF);display:grid;place-items:center;color:var(--v700);font-size:12px;margin-bottom:4px}
+.pilo{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--at);background:var(--at-f);border:1px solid var(--at-b);border-radius:999px;padding:3px 10px}
+.msgs{display:grid;gap:10px}
+.msgs .m{display:grid;gap:4px;max-width:520px;border:1px solid var(--linha);border-radius:14px;padding:10px 12px;background:#fff;font-size:14px}
+.msgs .m.sai{justify-self:end;background:var(--v50);border-color:var(--v200)}
+.msgs .m small{font-size:12px;color:var(--texto-suave);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.qrbox{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+
+/* ===== Textos e janela ===== */
+.comp{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.comp{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.comp .lado-t{border:1px solid var(--linha);border-radius:14px;padding:12px 14px;background:#fff;font-size:14px;white-space:pre-line;line-height:1.45}
+.comp .lado-t.novo{border-color:var(--v300,#C9A9F5);background:var(--v50)}
+.comp .lado-t small{display:block;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--texto-suave);margin-bottom:6px;white-space:normal}
+.comp .lado-t.novo small{color:var(--v700)}
+.cat{display:grid;gap:22px}
+.cat .item{display:grid;gap:8px}
+.cat .item h3{font-size:16px;font-weight:600;margin:0}
+.cat .item p.q{margin:0;color:var(--texto-suave);font-size:13.5px}
+.cat .item p.mud{margin:0;font-size:13px;color:var(--v700)}
+.tom{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:760px){.tom{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tom .r{border:1px solid var(--linha);border-radius:14px;padding:14px;background:#fff;display:grid;gap:8px}
+.tom .r b{font-weight:600}
+.tom .r .sim,.tom .r .nao{font-size:13.5px;border-radius:10px;padding:8px 10px;white-space:pre-line}
+.tom .r .sim{background:var(--ok-f,#E9F8F1);border:1px solid var(--ok-b,#BFE8D3)}
+.tom .r .nao{background:#FFF1F0;border:1px solid #F5C7C2;text-decoration:line-through;text-decoration-color:#C0392B88}
+.var{font-family:"IBM Plex Mono",monospace;font-size:12px;background:var(--v100);color:var(--v800);border-radius:5px;padding:0 4px}
+.janela{display:flex;gap:10px;align-items:flex-start;border-radius:12px;padding:10px 12px;font-size:13.5px;border:1px solid var(--linha);background:#fff}
+.janela.ab{background:var(--ok-f,#E9F8F1);border-color:var(--ok-b,#BFE8D3)}
+.janela.fe{background:var(--at-f,#FFF6E8);border-color:var(--at-b,#F4D7A6)}
+.janela .ic{flex:none;margin-top:2px}
+.modelo-prev{border:1px dashed var(--v300,#C9A9F5);border-radius:12px;padding:10px 12px;background:#fff;font-size:13.5px;white-space:pre-line}
+.tabela td.cod{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--v700);white-space:nowrap}
+.rolar{overflow-x:auto;border:1px solid var(--linha);border-radius:14px}
+.rolar .tabela{min-width:640px}
+</style>
+</head>
+<body>
+<a class="pular" href="#conteudo">Ir para o conteúdo</a>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+  <symbol id="i-casa" viewBox="0 0 24 24"><path d="m3 10.5 9-7 9 7V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-pedido" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-predio" viewBox="0 0 24 24"><path d="M4 21V7l8-4v18M12 10h8v11M2 21h20M7 9h2M7 13h2M7 17h2M15 13h2M15 17h2"/></symbol>
+  <symbol id="i-pessoas" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5a3 3 0 0 1 0 6M21 20v-1a6 6 0 0 0-3-5"/></symbol>
+  <symbol id="i-pessoa" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-pessoa-mais" viewBox="0 0 24 24"><circle cx="10" cy="8" r="4"/><path d="M2 21a8 8 0 0 1 13-6M19 14v6M16 17h6"/></symbol>
+  <symbol id="i-grafico" viewBox="0 0 24 24"><path d="M4 20V11m6 9V4m6 16v-7m5 7H3"/></symbol>
+  <symbol id="i-ajuste" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+  <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="i-sino" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6.5 2.5 8 2.5 8h-17S6 15.5 6 9"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-seta" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+  <symbol id="i-baixo" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-esq" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+  <symbol id="i-dir" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-fechar" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-pontos" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></symbol>
+  <symbol id="i-balao" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l2-3A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 10h8M8 14h5"/></symbol>
+  <symbol id="i-retorno" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></symbol>
+  <symbol id="i-calendario" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-ferramenta" viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5.3 5.3L3.5 17.5 6.5 20.5l5.7-5.7a4 4 0 0 0 5.3-5.3l-2.5 2.5-2.5-.5-.5-2.5z"/></symbol>
+  <symbol id="i-chave" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3 4.5 6v6c0 4.5 3.2 7.8 7.5 9 4.3-1.2 7.5-4.5 7.5-9V6z"/></symbol>
+  <symbol id="i-clipe" viewBox="0 0 24 24"><path d="m20 11.5-7.8 7.8a5 5 0 0 1-7-7l8.2-8.2a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/></symbol>
+  <symbol id="i-documento" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-whats" viewBox="0 0 24 24"><path d="M4 20l1.3-3.8A8.5 8.5 0 1 1 8 19z"/><path d="M9 9.5c.5 2 2.5 4 4.5 4.5l1.3-1.2 2 1-.4 1.6c-3.5.5-7.6-3.6-7.1-7.1L11 8l1 2z"/></symbol>
+  <symbol id="i-trocar" viewBox="0 0 24 24"><path d="M7 4v16M3.5 7.5 7 4l3.5 3.5M17 20V4M13.5 16.5 17 20l3.5-3.5"/></symbol>
+  <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-preparar" viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-mudanca" viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></symbol>
+  <symbol id="i-engrenagem" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></symbol>
+  <symbol id="i-copiar" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-lista" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".9"/><circle cx="4.5" cy="12" r=".9"/><circle cx="4.5" cy="18" r=".9"/></symbol>
+  <symbol id="i-compartilhar" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></symbol>
+  <symbol id="i-estrela" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.8-4.4 4.3 1 6.1L12 17l-5.4 2.8 1-6.1-4.4-4.3 6.1-.8z"/></symbol>
+  <symbol id="i-filtro" viewBox="0 0 24 24"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/></symbol>
+  <symbol id="i-editar" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+  <symbol id="i-baixar" viewBox="0 0 24 24"><path d="M12 4v11m-4.5-4.5L12 15l4.5-4.5M4 19h16"/></symbol>
+  <symbol id="i-enviar" viewBox="0 0 24 24"><path d="M12 15V4m-4.5 4.5L12 4l4.5 4.5M4 19h16"/></symbol>
+  <symbol id="i-olho" viewBox="0 0 24 24"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-cadeado" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-telefone" viewBox="0 0 24 24"><path d="M5 3.5h3.5l1.8 4.5-2.3 1.5a11 11 0 0 0 6.5 6.5l1.5-2.3 4.5 1.8V19a2 2 0 0 1-2 2A16.5 16.5 0 0 1 3 5.5a2 2 0 0 1 2-2"/></symbol>
+  <symbol id="i-email" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H8l1.5-2h5L16 6h1.5A2.5 2.5 0 0 1 20 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-imprimir" viewBox="0 0 24 24"><path d="M7 9V3.5h10V9M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></symbol>
+  <symbol id="i-sair" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+
+  <symbol id="i-maleta" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18"/></symbol>
+  <symbol id="i-repetir" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5"/></symbol>
+  <symbol id="i-lupa-check" viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M9 3.5h6v3H9zM8.5 12l2 2 4-4M8.5 17h7"/></symbol>
+  <symbol id="i-arquivar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9M10 13h4"/></symbol>
+    <symbol id="i-megafone" viewBox="0 0 24 24"><path d="M3 10v4a1 1 0 0 0 1 1h3l8 5V4L7 9H4a1 1 0 0 0-1 1zM18.5 9a4 4 0 0 1 0 6"/></symbol>
+  <symbol id="i-pasta" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  </defs>
+</svg>
+<div class="wrap">
+<div class="topo"><img src="../identidade/logo-violeta.png" alt="TRÍADE Condo"><nav aria-label="Telas"><a class="pilula" href="../identidade/sistema.html">Sistema de design</a><a class="pilula" href="whatsapp.html">WhatsApp do condomínio</a><a class="pilula" href="#t1">Tom</a><a class="pilula" href="#t2">Conversa</a><a class="pilula" href="#t3">Mensagens</a><a class="pilula" href="#t4">Avisos à equipe</a><a class="pilula" href="#t5">Janela de 24h</a><a class="pilula" href="#t6">Modelos</a><a class="pilula" href="#t7">Erros na tela</a><a class="pilula" href="#decisoes">Decisões</a></nav></div>
+<main id="conteudo">
+<header class="abertura" style="min-height:0"><div class="arte" aria-hidden="true" style="opacity:.6"><span class="orb" style="width:340px;height:340px;right:-90px;top:-120px"></span><span class="orb" style="width:520px;height:520px;right:-200px;top:-210px"></span><span class="tri" style="width:34px;height:230px;right:40px;top:40px"></span></div><div class="t"><span class="rot" style="color:#E7D3FF">D3 e F5.4 · W-08, W-12, W-20, AT-13 · para aprovação</span><h1><em class="d">Textos</em> e janela de 24h</h1><p>Como o condomínio fala no WhatsApp com o morador e com quem atende, os avisos e erros que ainda faltam nas telas, e a regra do WhatsApp para o condomínio puxar conversa: dentro de 24 horas, texto livre; depois, só com modelo aprovado.</p><div class="numeros"><span><b>7</b>partes</span><span><b>17</b>mensagens ao morador</span><span><b>6</b>modelos</span><span><b>15</b>decisões</span></div></div></header>
+<section class="parte" id="t1" aria-labelledby="h-t1"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-t1">1 · Como o condomínio fala</h2><p>Oito regras que valem para todo texto: mensagens do WhatsApp ao morador e à equipe, avisos no sino e erros nas telas. Cada regra com um exemplo certo (verde) e um que não usamos (riscado).</p><p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">D3</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-08</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-21</span> <span class="mono" style="font-size:11px;color:var(--v600)">AT-22</span></p></div><div class="tom"><div class="r"><b>Quem fala é o condomínio</b><small style="color:var(--texto-suave)">Na primeira pessoa do plural. A TRÍADE só aparece no aviso contra golpes.</small><div class="sim">Recebemos sua mensagem.</div><div class="nao">O sistema registrou sua solicitação.</div></div><div class="r"><b>Diz o condomínio logo de cara</b><small style="color:var(--texto-suave)">A pessoa pode morar num prédio e trabalhar em outro que também usa o sistema.</small><div class="sim">Olá, Marta. Aqui é o WhatsApp do Residencial Ipê.</div><div class="nao">Olá! Recebemos sua mensagem.</div></div><div class="r"><b>O que houve, o que acontece agora, o que a pessoa pode fazer</b><small style="color:var(--texto-suave)">Nessa ordem, em frases curtas. Uma ideia por parágrafo.</small><div class="sim">Pedido 2026-0142 registrado (apto 302).
+O condomínio confere os pedidos em dias úteis, das 8h às 18h, e dá notícia por aqui.</div><div class="nao">Seu pedido foi registrado com sucesso e em breve nossa equipe entrará em contato!</div></div><div class="r"><b>Nunca promete prazo nem trabalho que não começou</b><small style="color:var(--texto-suave)">Data só aparece quando alguém registrou o próximo retorno no pedido. A janela de 24h do WhatsApp nunca vira prazo.</small><div class="sim">Próxima notícia até 21/10.</div><div class="nao">Já estamos cuidando disso e respondemos em até 24 horas.</div></div><div class="r"><b>Sem emoji, sem caixa alta, sem exclamação em notícia ruim</b><small style="color:var(--texto-suave)">Caixa alta só nos comandos: REVISAR, PARAR e VOLTAR. Opções sempre com número: 1, 2, 3.</small><div class="sim">Não conseguimos usar o arquivo: a foto passou de 10 MB.</div><div class="nao">ERRO!!! Arquivo inválido.</div></div><div class="r"><b>Nada de outra pessoa</b><small style="color:var(--texto-suave)">Nunca nome nem telefone de outro morador. Pedido privado aparece como "pedido privado", até no aviso da equipe.</small><div class="sim">2026-0150 · pedido privado (apto 101)</div><div class="nao">2026-0150 · Barulho do Sr. Paulo do 102</div></div><div class="r"><b>Erro diz o que fazer, sem culpar</b><small style="color:var(--texto-suave)">Sem termo técnico, sem código. Se nada foi gravado, diz isso.</small><div class="sim">O WhatsApp não respondeu agora. Nada foi alterado; tente de novo em instantes.</div><div class="nao">Falha 503 no provedor (UPSTREAM_UNAVAILABLE).</div></div><div class="r"><b>Segurança em toda confirmação</b><small style="color:var(--texto-suave)">Aviso contra golpes nas boas-vindas e em cada pedido registrado; 193 em toda confirmação e fora do horário.</small><div class="sim">O condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem.</div><div class="nao">Para agilizar, mande seu CPF e a foto do documento.</div></div></div></section>
+<section class="parte" id="t2" aria-labelledby="h-t2"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-t2">2 · A conversa do morador, revisada</h2><p>As mesmas conversas do passo 5, com os textos propostos. O que muda: o nome do condomínio na primeira mensagem, o horário de atendimento de verdade na confirmação, o protocolo no começo de cada retorno e a conclusão que chega ao morador.</p><p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">W-08</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-09</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-10</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-12</span> <span class="mono" style="font-size:11px;color:var(--v600)">AT-13</span> <span class="mono" style="font-size:11px;color:var(--v600)">AT-28</span></p></div><div class="lado"><div class="cel"><p class="legenda-t" style="margin:0 2px 8px">Celular do morador · abrir pedido</p><div class="app"><div class="pub-corpo" style="padding:0"><div class="zap"><div class="cab-z"><span class="quad q-v" style="width:34px;height:34px;border-radius:50%;display:grid;place-items:center"><svg class="ic" aria-hidden="true"><use href="#i-predio"/></svg></span><div><b style="font-weight:500">Residencial Ipê</b><small style="display:block;font-size:12.5px;color:var(--texto-suave)">WhatsApp do condomínio</small></div></div><div class="msg">Boa tarde, a luz da garagem no subsolo 1 está piscando faz dois dias<span class=h>15:41</span></div><div class="rec">Olá, Marta. Aqui é o WhatsApp do Residencial Ipê.
+Responda com o número:
+1 · Registrar um pedido novo
+2 · Ver meus pedidos
+3 · É só um recado<span class=h>15:41</span></div><div class="msg">1<span class=h>15:42</span></div><div class="rec">Pedido 2026-0142 registrado (apto 302).
+
+O que você mandar nos próximos 30 minutos, como foto, áudio ou documento, entra neste pedido.
+
+O que acontece agora: o condomínio confere os pedidos em dias úteis, das 8h às 18h, e dá notícia por aqui. Em emergência, ligue 193.
+
+O condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem.<span class=h>15:42</span></div><div class="escrever">Mensagem</div></div></div></div></div><div class="cel"><p class="legenda-t" style="margin:0 2px 8px">Celular do morador · retorno e conclusão</p><div class="app"><div class="pub-corpo" style="padding:0"><div class="zap"><div class="cab-z"><span class="quad q-v" style="width:34px;height:34px;border-radius:50%;display:grid;place-items:center"><svg class="ic" aria-hidden="true"><use href="#i-predio"/></svg></span><div><b style="font-weight:500">Residencial Ipê</b><small style="display:block;font-size:12.5px;color:var(--texto-suave)">WhatsApp do condomínio</small></div></div><div class="dia">20/10</div><div class="rec">Sobre o pedido 2026-0142:
+Marta, o eletricista vem amanhã de manhã para trocar o reator. Depois disso damos notícia por aqui.
+
+Ana, do condomínio<span class=h>10:05</span></div><div class="dia">21/10</div><div class="rec">Pedido 2026-0142 concluído.
+O que foi feito: o reator da luminária do subsolo 1 foi trocado.
+
+Se não resolveu, responda REVISAR e conte o que continua acontecendo, até 20/11.<span class=h>14:30</span></div><div class="msg">REVISAR continua piscando à noite<span class=h>19:02</span></div><div class="rec">Recebido. Quem cuida do pedido 2026-0142 vai avaliar e dar notícia por aqui. O pedido não reabre sozinho: uma pessoa do condomínio decide.<span class=h>19:02</span></div><div class="escrever">Mensagem</div></div></div></div></div><div class="cel"><p class="legenda-t" style="margin:0 2px 8px">Celular do morador · consultar</p><div class="app"><div class="pub-corpo" style="padding:0"><div class="zap"><div class="cab-z"><span class="quad q-v" style="width:34px;height:34px;border-radius:50%;display:grid;place-items:center"><svg class="ic" aria-hidden="true"><use href="#i-predio"/></svg></span><div><b style="font-weight:500">Residencial Ipê</b><small style="display:block;font-size:12.5px;color:var(--texto-suave)">WhatsApp do condomínio</small></div></div><div class="msg">2<span class=h>09:12</span></div><div class="rec">Seus pedidos:
+
+2026-0142 · Luz da garagem piscando
+Em andamento · próxima notícia até 21/10
+
+2026-0131 · Vazamento no teto do banheiro
+Concluído em 10/10
+
+Para ver um, mande o número (ex.: 0142).<span class=h>09:12</span></div><div class="msg">0131<span class=h>09:13</span></div><div class="rec">2026-0131 · Vazamento no teto do banheiro
+Concluído em 10/10.
+O que foi feito: a vedação do ralo do 402 foi refeita.
+
+Se não resolveu, responda REVISAR e conte o que continua acontecendo, até 09/11.<span class=h>09:13</span></div><div class="escrever">Mensagem</div></div></div></div></div></div><p class="legenda-t">O retorno chega com o protocolo na primeira linha e quem escreveu no fim. A conclusão vai ao morador quando o pedido nasceu no WhatsApp, com o que foi feito (a explicação que já é obrigatória ao concluir) e até quando dá para pedir revisão.</p></section>
+<section class="parte" id="t3" aria-labelledby="h-t3"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-t3">3 · Todas as mensagens ao morador</h2><p>Cada mensagem que o sistema manda sozinho, como está hoje no piloto e como fica. A maior parte não muda; o que muda está dito embaixo de cada uma.</p><p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">W-05</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-08</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-09</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-10</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-12</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-16</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-21</span> <span class="mono" style="font-size:11px;color:var(--v600)">AT-13</span></p></div><div class="cat"><div class="item"><h3>Primeira mensagem de quem tem vínculo confirmado</h3><p class="q">Boas-vindas com as opções.</p><div class="comp"><div class="lado-t"><small>Hoje</small>Olá, Marta. Recebemos sua mensagem.
+Responda com o número:
+1 · Registrar como pedido novo
+2 · Ver meus pedidos
+3 · Era só um recado</div><div class="lado-t novo"><small>Proposta</small>Olá, Marta. Aqui é o WhatsApp do Residencial Ipê.
+Responda com o número:
+1 · Registrar um pedido novo
+2 · Ver meus pedidos
+3 · É só um recado</div></div><p class="mud">Muda: diz qual condomínio; as opções ficam no presente.</p></div><div class="item"><h3>Número fora do cadastro ou com vínculo a confirmar</h3><p class="q">Resposta neutra; a mensagem vai para A identificar.</p><div class="comp"><div class="lado-t"><small>Hoje</small>Olá! Recebemos sua mensagem. Este número ainda não está no cadastro do condomínio, e o condomínio vai conferir. Por segurança, não mande documentos nem dados pessoais por aqui.
+
+O condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem.</div><div class="lado-t novo"><small>Proposta</small>Olá. Aqui é o WhatsApp do Residencial Ipê. Recebemos sua mensagem, mas este número ainda não está no cadastro do condomínio. Quem cuida do condomínio vai conferir.
+
+Por segurança, não mande documentos nem dados pessoais por aqui.
+
+O condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem.</div></div><p class="mud">Muda: diz qual condomínio; sem exclamação; a segurança em parágrafo próprio.</p></div><div class="item"><h3>Mais de uma unidade</h3><p class="q">Antes de registrar.</p><div class="comp"><div class="lado-t"><small>Hoje</small>Você está ligado a mais de uma unidade. O pedido é de qual?
+1 · Apto 101
+2 · Sala 12</div><div class="lado-t novo"><small>Proposta</small>O pedido é de qual unidade?
+1 · Apto 101
+2 · Sala 12</div></div><p class="mud">Muda: mais curto. Se a resposta não for um número da lista: "Responda só com o número da unidade, de 1 a 2."</p></div><div class="item"><h3>Escolheu 1 sem ter contado o que houve</h3><p class="q">Pede a descrição.</p><div class="comp"><div class="lado-t"><small>Hoje</small>Conte o que aconteceu, numa mensagem só. Se tiver foto, pode mandar junto.</div><div class="lado-t novo"><small>Proposta</small>Conte o que aconteceu numa mensagem só. Se tiver foto, pode mandar junto.</div></div><p class="mud">Igual (só a vírgula).</p></div><div class="item"><h3>Pedido registrado</h3><p class="q">Confirmação com protocolo, sem prometer prazo.</p><div class="comp"><div class="lado-t"><small>Hoje</small>Pedido 2026-0142 registrado (apto 302).
+
+O que você mandar nos próximos 30 minutos, como foto, áudio ou documento, entra neste pedido.
+
+O que acontece agora: o condomínio confere os pedidos no horário de atendimento e dá notícia por aqui. Em emergência, ligue 193.
+
+O condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem.</div><div class="lado-t novo"><small>Proposta</small>Pedido 2026-0142 registrado (apto 302).
+
+O que você mandar nos próximos 30 minutos, como foto, áudio ou documento, entra neste pedido.
+
+O que acontece agora: o condomínio confere os pedidos em dias úteis, das 8h às 18h, e dá notícia por aqui. Em emergência, ligue 193.
+
+O condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem.</div></div><p class="mud">Muda: o horário vem de Configurações › Horários. Sem horário cadastrado, fica "no horário de atendimento".</p></div><div class="item"><h3>Arquivo anexado / não usado</h3><p class="q">Depois da conferência da foto, do áudio ou do documento.</p><div class="comp"><div class="lado-t"><small>Hoje</small>Foto anexada ao pedido 2026-0142.
+Não deu para usar o arquivo: [motivo técnico]</div><div class="lado-t novo"><small>Proposta</small>Foto anexada ao pedido 2026-0142.
+Não conseguimos usar o arquivo: a foto passou de 10 MB. Mande uma menor ou tire outra.</div></div><p class="mud">Muda: o motivo vira frase para o morador (tamanho, tipo que não abrimos, arquivo danificado, PDF com conteúdo ativo).</p></div><div class="item"><h3>Recado</h3><p class="q">Opção 3.</p><div class="comp"><div class="lado-t"><small>Hoje</small>Recado recebido. Quem cuida do condomínio vai ler.</div><div class="lado-t novo"><small>Proposta</small>Recado recebido. Quem cuida do condomínio vai ler.</div></div><p class="mud">Igual.</p></div><div class="item"><h3>Lista de pedidos</h3><p class="q">Opção 2; até 5, os ativos e os concluídos nos últimos 30 dias.</p><div class="comp"><div class="lado-t"><small>Hoje</small>Seus pedidos:
+
+2026-0142 · Luz da garagem
+Em andamento · próxima notícia até 21/10
+
+Para ver um, mande o número (ex.: 0142).</div><div class="lado-t novo"><small>Proposta</small>Seus pedidos:
+
+2026-0142 · Luz da garagem
+Em andamento · próxima notícia até 21/10
+
+Para ver um, mande o número (ex.: 0142).</div></div><p class="mud">Igual. Situações: Recebido, Em andamento, Aguardando, Concluído em dd/mm, Cancelado.</p></div><div class="item"><h3>Sem pedidos</h3><p class="q"></p><div class="comp"><div class="lado-t"><small>Hoje</small>Você não tem pedidos abertos nem concluídos nos últimos 30 dias. Para registrar um, conte o que aconteceu.</div><div class="lado-t novo"><small>Proposta</small>Você não tem pedidos abertos nem concluídos nos últimos 30 dias. Para registrar um, conte o que aconteceu.</div></div><p class="mud">Igual.</p></div><div class="item"><h3>Número de pedido que não é dele</h3><p class="q"></p><div class="comp"><div class="lado-t"><small>Hoje</small>Não achei esse pedido entre os seus. Mande 2 para ver a lista.</div><div class="lado-t novo"><small>Proposta</small>Não encontramos esse pedido entre os seus. Mande 2 para ver a lista.</div></div><p class="mud">Muda: quem fala é o condomínio, no plural.</p></div><div class="item"><h3>REVISAR sem pedido concluído</h3><p class="q"></p><div class="comp"><div class="lado-t"><small>Hoje</small>Não há pedido seu concluído nos últimos 30 dias para revisar. Para registrar um novo, conte o que aconteceu.</div><div class="lado-t novo"><small>Proposta</small>Não há pedido seu concluído nos últimos 30 dias para revisar. Para registrar um novo, conte o que aconteceu.</div></div><p class="mud">Igual.</p></div><div class="item"><h3>REVISAR sem o motivo</h3><p class="q"></p><div class="comp"><div class="lado-t"><small>Hoje</small>Conte o que continua acontecendo no pedido 2026-0131: mande REVISAR e o motivo, numa mensagem só.</div><div class="lado-t novo"><small>Proposta</small>Conte o que continua acontecendo no pedido 2026-0131: mande REVISAR e o motivo numa mensagem só.</div></div><p class="mud">Igual.</p></div><div class="item"><h3>Revisão recebida</h3><p class="q"></p><div class="comp"><div class="lado-t"><small>Hoje</small>Recebido. Quem cuida do pedido 2026-0131 vai avaliar e dar notícia por aqui. O pedido não reabre sozinho: uma pessoa do condomínio decide.</div><div class="lado-t novo"><small>Proposta</small>Recebido. Quem cuida do pedido 2026-0131 vai avaliar e dar notícia por aqui. O pedido não reabre sozinho: uma pessoa do condomínio decide.</div></div><p class="mud">Igual.</p></div><div class="item"><h3>Fora do horário</h3><p class="q">Uma vez por período; o texto é do condomínio (Configurações › WhatsApp).</p><div class="comp"><div class="lado-t"><small>Hoje</small>Recebemos sua mensagem fora do horário de atendimento. Ela fica registrada e o condomínio confere no próximo horário. Em emergência, ligue 193.</div><div class="lado-t novo"><small>Proposta</small>Recebemos sua mensagem fora do horário de atendimento. Ela fica registrada e o condomínio confere no próximo horário, segunda, a partir das 8h. Em emergência, ligue 193.</div></div><p class="mud">Muda: o padrão diz quando é o próximo horário. O síndico continua podendo trocar o texto, sem prometer prazo.</p></div><div class="item"><h3>PARAR e VOLTAR</h3><p class="q"></p><div class="comp"><div class="lado-t"><small>Hoje</small>Pronto: você não recebe mais avisos do condomínio por aqui. Suas mensagens e as respostas aos seus pedidos continuam. Para voltar, mande VOLTAR.</div><div class="lado-t novo"><small>Proposta</small>Pronto: você não recebe mais avisos do condomínio por aqui. Você continua podendo mandar mensagens, e respondemos enquanto a conversa estiver aberta. Para voltar, mande VOLTAR.</div></div><p class="mud">Muda: alinha com a janela de 24h. Depois do PARAR, notícia de pedido só vai se o morador falou com o condomínio nas últimas 24 horas.</p></div><div class="item"><h3>Retorno de quem atende</h3><p class="q">Texto livre escrito no pedido.</p><div class="comp"><div class="lado-t"><small>Hoje</small>Marta, o eletricista vem amanhã de manhã.</div><div class="lado-t novo"><small>Proposta</small>Sobre o pedido 2026-0142:
+Marta, o eletricista vem amanhã de manhã.
+
+Ana, do condomínio</div></div><p class="mud">Muda: protocolo no começo e quem escreveu no fim, para o morador saber de que pedido se trata.</p></div><div class="item"><h3>Pedido concluído</h3><p class="q">Novo: só para pedido que nasceu no WhatsApp.</p><div class="comp"><div class="lado-t"><small>Hoje</small>Não existe.</div><div class="lado-t novo"><small>Proposta</small>Pedido 2026-0142 concluído.
+O que foi feito: o reator da luminária foi trocado.
+
+Se não resolveu, responda REVISAR e conte o que continua acontecendo, até 20/11.</div></div><p class="mud">Novo (AT-13): usa a explicação ao morador que a conclusão já exige.</p></div></div></section>
+<section class="parte" id="t4" aria-labelledby="h-t4"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-t4">4 · Avisos no WhatsApp de quem atende</h2><p>Os três avisos que cada pessoa liga no próprio celular. O formato fica: condomínio e tipo, o pedido, um detalhe quando ajuda e o link do painel. Fora da janela de 24h, vão pelos modelos aprovados da parte 6.</p><p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">W-11</span> <span class="mono" style="font-size:11px;color:var(--v600)">F6.3</span></p></div><div class="lado"><div class="cel"><p class="legenda-t" style="margin:0 2px 8px">Celular da síndica · avisos que ela ligou</p><div class="app"><div class="pub-corpo" style="padding:0"><div class="zap"><div class="cab-z"><span class="quad q-v" style="width:34px;height:34px;border-radius:50%;display:grid;place-items:center"><svg class="ic" aria-hidden="true"><use href="#i-predio"/></svg></span><div><b style="font-weight:500">Residencial Ipê</b><small style="display:block;font-size:12.5px;color:var(--texto-suave)">WhatsApp do condomínio</small></div></div><div class="rec">Residencial Ipê · pedido novo
+2026-0142 · Luz da garagem piscando (apto 302)
+Abrir no painel: condominio.trihub.com.br/pedidos/pedido?id=…<span class=h>15:42</span></div><div class="rec">Residencial Ipê · retorno vencido
+2026-0137 · Portão da garagem (apto 101)
+Venceu às 14:00 · responsável: Bruna
+Abrir no painel: condominio.trihub.com.br/pedidos/pedido?id=…<span class=h>14:05</span></div><div class="rec">Residencial Ipê · pedido de revisão
+2026-0131 · pedido privado (apto 402)
+Abrir no painel: condominio.trihub.com.br/pedidos/pedido?id=…<span class=h>19:02</span></div><div class="escrever">Mensagem</div></div></div></div></div><div style="display:grid;gap:12px;max-width:520px"><div class="item"><h3>Retorno vencido</h3><p class="q">Diz desde quando.</p><div class="comp"><div class="lado-t"><small>Hoje</small>Residencial Ipê · retorno vencido
+2026-0137 · Portão da garagem (apto 101) · responsável Bruna</div><div class="lado-t novo"><small>Proposta</small>Residencial Ipê · retorno vencido
+2026-0137 · Portão da garagem (apto 101)
+Venceu às 14:00 · responsável: Bruna</div></div><p class="mud">Muda: a hora em que venceu, em linha própria.</p></div><div class="aviso" style="max-width:none"><span class="quad q-v"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg></span><div class="t"><b>Sem nome nem telefone do morador</b><small>O aviso diz o pedido, o assunto (ou "pedido privado") e a unidade. Decidir é no painel. Só chega no horário de funcionamento e só a quem ligou aquele tipo.</small></div></div></div></div></section>
+<section class="parte" id="t5" aria-labelledby="h-t5"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-t5">5 · A janela de 24h no pedido</h2><p>O WhatsApp deixa a empresa escrever livremente por 24 horas depois da última mensagem da pessoa. Depois disso, só com modelo aprovado. A tela diz em que situação a conversa está antes de enviar e mostra como a mensagem vai chegar. A janela é regra do WhatsApp, não prazo de atendimento.</p><p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">W-20</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-13</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-14</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-16</span> <span class="mono" style="font-size:11px;color:var(--v600)">AT-06</span></p></div><div class="lado"><div style="min-width:0;flex:1 1 420px"><p class="legenda-t" style="margin:0 2px 8px">Computador · conversa aberta</p><div class="app"><div class="app-top"><span class="emb menu-cel"><svg class="ic" aria-hidden="true"><use href="#i-menu"/></svg></span><span class="marca"><img src="../identidade/logo-violeta.png" alt="TRÍADE Condo"><small>Plataforma do síndico</small></span><span class="entrada busca"><svg class="ic" aria-hidden="true"><use href="#i-busca"/></svg><span class="ph">Buscar pedido, unidade ou pessoa</span></span><span class="dir"><span class="quem"><span class="av av1">AL</span><span class="txt"><b>Ana</b><small>Síndica</small></span></span></span></div><div class="app-corpo" style="display:block"><div class="app-main"><div class="cartao"><h4>Conversa do WhatsApp</h4><div class="msgs"><div class="m">A luz da garagem no subsolo 1 está piscando faz dois dias<small>Marta · 18/10, 15:41</small></div></div><div class="janela ab" style="margin-top:12px"><svg class="ic" aria-hidden="true"><use href="#i-whats"/></svg><div><b style="font-weight:600">Conversa aberta no WhatsApp até amanhã, 15:41</b><br>A resposta vai como você escrever. Isto não é prazo de atendimento: o prazo é o próximo retorno do pedido.</div></div><div class="campo larga" style="margin-top:12px"><label>Responder pelo WhatsApp</label><div class="area">Marta, o eletricista vem amanhã de manhã para trocar o reator.</div></div><div class="acoes" style="margin-top:10px"><span class="botao primario bt-m"><svg class="ic" aria-hidden="true"><use href="#i-enviar"/></svg>Enviar e registrar retorno</span></div></div></div></div></div></div><div style="min-width:0;flex:1 1 420px"><p class="legenda-t" style="margin:0 2px 8px">Computador · conversa fechada</p><div class="app"><div class="app-top"><span class="emb menu-cel"><svg class="ic" aria-hidden="true"><use href="#i-menu"/></svg></span><span class="marca"><img src="../identidade/logo-violeta.png" alt="TRÍADE Condo"><small>Plataforma do síndico</small></span><span class="entrada busca"><svg class="ic" aria-hidden="true"><use href="#i-busca"/></svg><span class="ph">Buscar pedido, unidade ou pessoa</span></span><span class="dir"><span class="quem"><span class="av av1">AL</span><span class="txt"><b>Ana</b><small>Síndica</small></span></span></span></div><div class="app-corpo" style="display:block"><div class="app-main"><div class="cartao"><h4>Conversa do WhatsApp</h4><div class="msgs"><div class="m">A luz da garagem no subsolo 1 está piscando faz dois dias<small>Marta · 18/10, 15:41</small></div></div><div class="janela fe" style="margin-top:12px"><svg class="ic" aria-hidden="true"><use href="#i-relogio"/></svg><div><b style="font-weight:600">A conversa no WhatsApp fechou (a última mensagem da Marta foi há mais de 24 horas)</b><br>O WhatsApp só deixa o condomínio puxar conversa com um modelo aprovado. Sua resposta vai dentro do modelo Notícia do pedido, até 800 caracteres.</div></div><div class="campo larga" style="margin-top:12px"><label>Responder pelo WhatsApp</label><div class="area">O eletricista vem amanhã de manhã para trocar o reator.</div><small style="font-size:12px;color:var(--texto-suave)">58 de 800 caracteres</small></div><p style="font-size:12.5px;color:var(--texto-suave);margin:10px 0 4px">Como chega ao morador</p><div class="modelo-prev">Residencial Ipê: notícia do seu pedido 2026-0142.
+
+O eletricista vem amanhã de manhã para trocar o reator.
+
+Para responder, é só mandar mensagem aqui.
+Para não receber mais avisos, responda PARAR.</div><div class="acoes" style="margin-top:10px"><span class="botao primario bt-m"><svg class="ic" aria-hidden="true"><use href="#i-enviar"/></svg>Enviar e registrar retorno</span></div></div></div></div></div></div></div><div class="lado" style="margin-top:22px"><div style="flex:1 1 420px;min-width:0;display:grid;gap:10px"><div class="aviso at" style="max-width:none"><span class="quad q-at"><svg class="ic" aria-hidden="true"><use href="#i-alerta"/></svg></span><div class="t"><b>Fora da conversa aberta e sem modelo aprovado</b><small>O retorno fica registrado, mas a mensagem não sai pelo WhatsApp. Ela aparece em WhatsApp › Falhas de envio com o motivo "Sem modelo aprovado para este envio", e você avisa por telefone.</small></div></div><div class="aviso at" style="max-width:none"><span class="quad q-at"><svg class="ic" aria-hidden="true"><use href="#i-alerta"/></svg></span><div class="t"><b>A Marta pediu para parar de receber avisos</b><small>Com a conversa fechada, a notícia não vai pelo WhatsApp. O retorno fica registrado; avise por outro meio. Se ela mandar mensagem, a conversa abre de novo por 24 horas.</small></div></div></div></div></section>
+<section class="parte" id="t6" aria-labelledby="h-t6"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-t6">6 · Modelos de mensagem no Console</h2><p>Uma aba nova em WhatsApp, só para administração. Seis modelos, todos da categoria Utilidade (avisos sobre algo que a pessoa pediu ou ligou; nada de propaganda). Cada um diz para quem é, quando é usado e em que situação está.</p><p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">W-20</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-04</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-11</span> <span class="mono" style="font-size:11px;color:var(--v600)">AT-13</span></p></div><div style="min-width:0"><p class="legenda-t" style="margin:0 2px 8px">Computador · Console › WhatsApp › Modelos de mensagem</p><div class="app"><div class="app-top"><span class="emb menu-cel"><svg class="ic" aria-hidden="true"><use href="#i-menu"/></svg></span><span class="marca"><img src="../identidade/logo-violeta.png" alt="TRÍADE Condo"><small>Console TRÍADE</small></span><span class="dir"><span class="quem"><span class="av av1">CS</span><span class="txt"><b>Carolina</b><small>Administração</small></span></span></span></div><div class="app-corpo"><nav class="lat" aria-label="Menu do Console"><a class="it" href="#"><svg class="ic" aria-hidden="true"><use href="#i-predio"/></svg>Carteira</a><a class="it" href="#"><svg class="ic" aria-hidden="true"><use href="#i-maleta"/></svg>Implantações</a><a class="it at" href="#"><svg class="ic" aria-hidden="true"><use href="#i-whats"/></svg>WhatsApp</a><a class="it" href="#"><svg class="ic" aria-hidden="true"><use href="#i-balao"/></svg>Chamados</a><a class="it" href="#"><svg class="ic" aria-hidden="true"><use href="#i-chave"/></svg>Suporte de acesso</a></nav><div class="app-main"><div class="cab-tela"><div><h2>Modelos de mensagem</h2><p>Os textos que o condomínio usa para puxar conversa no WhatsApp. Iguais para todos os clientes; o nome do condomínio entra como variável.</p></div></div><div class="abas" role="region" tabindex="0" aria-label="Partes do WhatsApp"><span>Números</span><span class="at">Modelos de mensagem</span></div><div class="rolar" role="region" tabindex="0" aria-label="Modelos de mensagem" style="margin-top:12px"><table class="tabela"><thead><tr><th scope="col">Modelo</th><th scope="col">Para quem</th><th scope="col">Quando é usado</th><th scope="col">Situação</th></tr></thead><tbody><tr><td><b style="font-weight:500">Notícia do pedido</b><br><span class="mono" style="font-size:11.5px;color:var(--texto-suave)">noticia_pedido</span></td><td>Morador</td><td>Retorno escrito no pedido, com a conversa fechada</td><td><span class="selo s-ok"><span class="f"></span>Aprovado no piloto</span></td></tr><tr><td><b style="font-weight:500">Pedido concluído</b><br><span class="mono" style="font-size:11.5px;color:var(--texto-suave)">pedido_concluido</span></td><td>Morador</td><td>Conclusão de pedido que nasceu no WhatsApp</td><td><span class="selo s-ok"><span class="f"></span>Aprovado no piloto</span></td></tr><tr><td><b style="font-weight:500">Revisão respondida</b><br><span class="mono" style="font-size:11.5px;color:var(--texto-suave)">revisao_respondida</span></td><td>Morador</td><td>Pedido mantido concluído, com a conversa fechada</td><td><span class="selo s-novo"><span class="f"></span>Rascunho</span></td></tr><tr><td><b style="font-weight:500">Pedido novo</b><br><span class="mono" style="font-size:11.5px;color:var(--texto-suave)">aviso_pedido_novo</span></td><td>Equipe</td><td>Aviso que a pessoa ligou</td><td><span class="selo s-ok"><span class="f"></span>Aprovado no piloto</span></td></tr><tr><td><b style="font-weight:500">Retorno vencido</b><br><span class="mono" style="font-size:11.5px;color:var(--texto-suave)">aviso_retorno_vencido</span></td><td>Equipe</td><td>Aviso que a pessoa ligou</td><td><span class="selo s-and"><span class="f"></span>Enviado à Meta</span></td></tr><tr><td><b style="font-weight:500">Pedido de revisão</b><br><span class="mono" style="font-size:11.5px;color:var(--texto-suave)">aviso_revisao</span></td><td>Equipe</td><td>Aviso que a pessoa ligou</td><td><span class="selo s-ve"><span class="f"></span>Recusado</span></td></tr></tbody></table></div></div></div></div></div><div style="min-width:0;margin-top:22px"><p class="legenda-t" style="margin:0 2px 8px">Computador · Console · modelo aberto</p><div class="app"><div class="app-corpo" style="display:block"><div class="app-main"><div class="cab-tela"><div><h2>Notícia do pedido</h2><p><span class="selo s-ok"><span class="f"></span>Aprovado no piloto</span> &nbsp;versão 1 · categoria Utilidade · português (Brasil) · <span class="mono">noticia_pedido</span></p></div></div><div class="dupla"><div class="cartao"><h4>Texto</h4><div class="modelo-prev"><span class="var">{{1}} condomínio</span>: notícia do seu pedido <span class="var">{{2}} protocolo</span>.
+
+<span class="var">{{3}} texto do retorno</span>
+
+Para responder, é só mandar mensagem aqui.
+
+<span style="color:var(--texto-suave)">Para não receber mais avisos, responda PARAR.</span></div><p class="dica" style="margin-top:8px"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg>Variável não leva quebra de linha: o texto do retorno vai em parágrafo único, até 800 caracteres. Modelo aprovado não se edita: mudar cria a versão 2, que só passa a valer depois de aprovada.</p><div class="acoes" style="margin-top:10px"><span class="botao contorno bt-m"><svg class="ic" aria-hidden="true"><use href="#i-editar"/></svg>Criar versão nova</span></div></div><div class="cartao"><h4>Exemplo e aprovação</h4><div class="modelo-prev">Residencial Ipê: notícia do seu pedido 2026-0142.
+
+O eletricista vem amanhã de manhã para trocar o reator.
+
+Para responder, é só mandar mensagem aqui.</div><div class="hist" style="margin-top:12px"><div class="it"><span class="quad q-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span><div>Aprovado no piloto por Carolina<small>19/10/2026 · vale no Wafly; vai à Meta com o conector oficial</small></div></div><div class="it"><span class="quad q-l"><svg class="ic" aria-hidden="true"><use href="#i-editar"/></svg></span><div>Versão 1 escrita por Carolina<small>19/10/2026</small></div></div></div><div class="acoes" style="margin-top:10px"><span class="botao contorno bt-m">Registrar resposta da Meta</span></div></div></div></div></div></div></div><p class="legenda-t">Situações: rascunho, aprovado no piloto, enviado à Meta, aprovado, recusado (com o motivo da Meta), pausado ou desativado pela Meta. No piloto não há Meta: a administração aprova o texto e ele passa a valer no Wafly. Com o conector oficial, a situação vem da Meta e "Registrar resposta da Meta" some.</p></section>
+<section class="parte" id="t7" aria-labelledby="h-t7"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-t7">7 · Avisos e erros na tela</h2><p>Os textos das telas foram aprovados junto com cada passo. O que falta são os motivos de recusa que o banco devolve e a tela ainda não traduz: a pessoa vê "Esta mudança não é permitida agora" sem saber o que fazer.</p><p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">D3</span> <span class="mono" style="font-size:11px;color:var(--v600)">PT-11</span></p></div><p class="legenda-t" style="margin:0 2px 8px">Hoje o banco recusa por 19 motivos que a tela não conhece (dois deles novos deste passo) e mostra só um texto geral. Proposta para cada um:</p><div class="rolar" role="region" tabindex="0" aria-label="Motivos sem texto na tela"><table class="tabela"><thead><tr><th scope="col">Motivo</th><th scope="col">Onde aparece</th><th scope="col">Texto na tela</th></tr></thead><tbody><tr><td class="cod">PROMESSA_DE_PRAZO</td><td>Configurações › WhatsApp</td><td>Tire a promessa de prazo ou de atendimento imediato da mensagem de fora do horário.</td></tr><tr><td class="cod">SEM_CREDENCIAIS</td><td>Console · WhatsApp</td><td>Guarde as credenciais da instância antes de conectar.</td></tr><tr><td class="cod">TERMO_PENDENTE</td><td>Console · WhatsApp</td><td>O síndico ainda não aceitou o termo do piloto (Configurações › WhatsApp na Plataforma).</td></tr><tr><td class="cod">SEM_NUMERO</td><td>Console · WhatsApp</td><td>Cadastre o número do condomínio na aba Ficha antes de conectar.</td></tr><tr><td class="cod">PROVEDOR</td><td>Console · WhatsApp</td><td>O WhatsApp não respondeu agora. Nada foi alterado; tente de novo em instantes.</td></tr><tr><td class="cod">SEM_CONTATO</td><td>Pedido</td><td>Este pedido não tem contato com WhatsApp. Dê o retorno por outro meio e registre no pedido.</td></tr><tr><td class="cod">SEM_WHATSAPP</td><td>Pedido</td><td>O WhatsApp do condomínio não está ligado. Dê o retorno por outro meio e registre no pedido.</td></tr><tr><td class="cod">SEM_MODELO</td><td>Pedido (novo)</td><td>A conversa no WhatsApp fechou e ainda não há modelo aprovado para esta mensagem. O retorno fica registrado; avise por outro meio.</td></tr><tr><td class="cod">LONGO_FORA_DA_JANELA</td><td>Pedido (novo)</td><td>Com a conversa fechada, o WhatsApp aceita até 800 caracteres. Encurte a mensagem.</td></tr><tr><td class="cod">ITEM_COM_MANUTENCAO</td><td>Manutenção</td><td>Este item já abriu uma manutenção. Acompanhe por ela.</td></tr><tr><td class="cod">ITEM_SEM_PROBLEMA</td><td>Manutenção</td><td>Só item marcado com problema vira manutenção.</td></tr><tr><td class="cod">LIMITE_ETAPAS</td><td>Configurações › Etapas</td><td>O limite é de 60 etapas. Desative uma que não usa antes de criar outra.</td></tr><tr><td class="cod">LIMITE_PROVIDENCIAS</td><td>Manutenção</td><td>Esta manutenção já tem 50 providências. Conclua esta e abra outra, se for o caso.</td></tr><tr><td class="cod">MANUTENCAO_ABERTA</td><td>Manutenção</td><td>Só manutenção concluída ou cancelada pode ser reaberta.</td></tr><tr><td class="cod">NAO_E_VISTORIA</td><td>Manutenção</td><td>A lista do que olhar é só da vistoria.</td></tr><tr><td class="cod">NOME_EM_USO</td><td>Prestadores</td><td>Já existe um prestador ativo com este nome.</td></tr><tr><td class="cod">PRESTADOR_ARQUIVADO</td><td>Prestadores</td><td>Este prestador está arquivado. Volte-o ao cadastro para mudar alguma coisa.</td></tr><tr><td class="cod">PREVENTIVA_ABERTA</td><td>Manutenção</td><td>A manutenção desta data já está aberta. Conclua ou cancele antes de mudar a data.</td></tr><tr><td class="cod">PROVIDENCIA_FEITA</td><td>Manutenção</td><td>Esta providência já foi feita.</td></tr></tbody></table></div><p class="legenda-t" style="margin:22px 2px 8px">Três textos gerais que ficam mais úteis:</p><div class="rolar" role="region" tabindex="0" aria-label="Textos gerais"><table class="tabela"><thead><tr><th scope="col">Código</th><th scope="col">Hoje</th><th scope="col">Proposta</th></tr></thead><tbody><tr><td class="cod">INVALID_TRANSITION</td><td>Esta mudança não é permitida agora.</td><td>Esta mudança não vale na situação atual. Atualize a página para ver como está agora.</td></tr><tr><td class="cod">UPSTREAM_UNAVAILABLE</td><td>O serviço está fora do ar agora. Tente de novo em instantes.</td><td>Um serviço de fora não respondeu agora. Nada foi alterado; tente de novo em instantes.</td></tr><tr><td class="cod">NOT_FOUND</td><td>Não encontramos o que você procurou.</td><td>Não encontramos isto. Pode ter sido removido ou o link estar incompleto.</td></tr></tbody></table></div><div class="aviso er" style="max-width:520px;margin-top:22px"><span class="quad q-er"><svg class="ic" aria-hidden="true"><use href="#i-alerta"/></svg></span><div class="t"><b>Não deu para enviar</b><small>A conversa no WhatsApp fechou e ainda não há modelo aprovado para esta mensagem. O retorno fica registrado; avise por outro meio.</small></div></div><p class="legenda-t">Um teste automático lê todas as migrations e falha se algum motivo de recusa do banco ficar sem texto na tela. Assim isso não volta a acontecer.</p></section>
+<section class="parte" id="decisoes" aria-labelledby="h-dec"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-dec">Decisões para aprovar</h2><p>Junto com os textos. Depois de aprovadas, cada regra vira teste automático com o código da ideia no nome.</p></div><div class="decisoes"><div class="decisao"><b>1 · Tom único</b><p>As oito regras da parte 1 valem para todo texto novo. Quem revisa um texto confere contra elas.</p><div class="refs">D3 · W-08</div></div><div class="decisao"><b>2 · Nome do condomínio e horário de verdade</b><p>A primeira mensagem diz qual condomínio. A confirmação e o fora do horário usam Configurações › Horários; sem horário cadastrado, o texto genérico.</p><div class="refs">W-08 · W-12</div></div><div class="decisao"><b>3 · Retorno identificado</b><p>Todo retorno pelo WhatsApp começa com "Sobre o pedido NNNN-NNNN:" e termina com o primeiro nome de quem escreveu e "do condomínio".</p><div class="refs">W-13 · AT-06</div></div><div class="decisao"><b>4 · Conclusão vai ao morador</b><p>Pedido que nasceu no WhatsApp avisa o morador quando é concluído, com a explicação ao morador e até quando pode pedir revisão. Pedido aberto por telefone ou no painel não manda nada sozinho.</p><div class="refs">AT-13 · W-10</div></div><div class="decisao"><b>5 · Janela por número e telefone</b><p>A conversa fica aberta por 24 horas desde a última mensagem que a pessoa mandou ao número do condomínio, pela hora do WhatsApp. Vale também para quem atende: o aviso no celular dela só vai como texto livre se ela escreveu ao número nas últimas 24 horas.</p><div class="refs">W-20</div></div><div class="decisao"><b>6 · Dentro da janela, texto livre; fora, modelo</b><p>Respostas automáticas, retornos, conclusões e avisos seguem a mesma regra. A tela mostra antes de enviar se a conversa está aberta e, se não estiver, como a mensagem vai chegar.</p><div class="refs">W-20 · W-13</div></div><div class="decisao"><b>7 · Vale no piloto também</b><p>O Wafly não exige modelo, mas o sistema aplica a mesma regra: menos risco de bloqueio do número e o fluxo já testado quando o conector oficial chegar.</p><div class="refs">W-20 · W-04 · DC14</div></div><div class="decisao"><b>8 · A janela não é prazo</b><p>A tela diz "conversa aberta no WhatsApp até ...", nunca "responda até". O prazo continua sendo o próximo retorno do pedido.</p><div class="refs">W-20 · AT-06</div></div><div class="decisao"><b>9 · Sem modelo aprovado, não sai</b><p>O envio vira falha com o motivo "Sem modelo aprovado para este envio" e responsável; o retorno continua registrado. Nada é mandado como texto livre fora da janela.</p><div class="refs">W-14 · W-20</div></div><div class="decisao"><b>10 · Resposta automática atrasada é cancelada</b><p>Se uma resposta automática só puder sair depois de fechada a janela (número desconectado por mais de um dia), ela é cancelada e a mensagem do morador vai para A identificar, com o selo "Chegou com o número desconectado".</p><div class="refs">W-17 · W-15</div></div><div class="decisao"><b>11 · Até 800 caracteres fora da janela</b><p>O modelo tem limite de tamanho e a variável não leva quebra de linha. A tela conta os caracteres e não deixa enviar acima disso; dentro da janela continua até 2000.</p><div class="refs">W-20</div></div><div class="decisao"><b>12 · PARAR vale para o que o condomínio inicia</b><p>Depois do PARAR, nada sai por modelo para aquela pessoa. Dentro da janela, a conversa segue normalmente. Todo modelo ao morador termina com "Para não receber mais avisos, responda PARAR."</p><div class="refs">W-16 · W-20</div></div><div class="decisao"><b>13 · Modelos da TRÍADE, iguais para todos</b><p>Seis modelos da categoria Utilidade, cadastrados e aprovados pela administração no Console. O condomínio não cria modelo próprio por enquanto; o nome dele entra como variável.</p><div class="refs">W-20 · W-04</div></div><div class="decisao"><b>14 · Modelo aprovado não se edita</b><p>Mudar cria versão nova, que só vale depois de aprovada; a anterior segue em uso. No piloto, a administração aprova; com o conector oficial, quem aprova é a Meta e a situação vem dela.</p><div class="refs">W-20</div></div><div class="decisao"><b>15 · Todo motivo de recusa tem texto</b><p>Os 19 motivos da parte 7 ganham texto, e um teste automático impede que um motivo novo do banco fique sem texto na tela.</p><div class="refs">D3</div></div><div class="decisao"><b>Ficam para depois</b><p>Botões de resposta rápida e listas interativas (precisam do conector oficial), modelos em outros idiomas (W-19), a pergunta de satisfação (AT-16), modelos próprios por condomínio e a aprovação automática pela Meta, que vem com o conector oficial (E1).</p><div class="refs">W-19 · AT-16 · E1</div></div></div></section>
+</main>
+</div>
+</body>
+</html>
