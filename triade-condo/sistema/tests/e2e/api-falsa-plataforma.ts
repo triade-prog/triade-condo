@@ -13,6 +13,7 @@ import { criarLinks, rotasLinks, rotasLinksPublicas } from "./api-falsa-links";
 import { criarMemoria, manualDoMural, resumoProntuario, rotasMemoria } from "./api-falsa-memoria";
 import { criarSuporte, resumoAcessos, rotasSuporte } from "./api-falsa-suporte";
 import { criarWhatsapp, resumoWhatsapp, rotasWhatsapp } from "./api-falsa-whatsapp";
+import { criarVida, resumoVida, rotasVida } from "./api-falsa-vida";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -94,6 +95,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const manutencao = criarManutencao(V_ANA, V_BRUNA, estado.pedidos[0]!, pris[2]!.id);
   const comunicados = criarComunicados(estado.pedidos[0]!.id);
   const links = criarLinks();
+  const vida = criarVida();
   const memoria = criarMemoria();
   const suporte = criarSuporte();
   const whatsapp = criarWhatsapp(estado.pedidos[0]!, cats[0]!.id, pris[1]!.id);
@@ -108,7 +110,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     ? ["agenda.editar", "agenda.ver", "atendimento.responsaveis", "comunicados.publicar", "comunicados.ver", "config.editar", "config.ver",
       "documentos.editar", "documentos.restritos", "documentos.ver", "manutencao.editar", "manutencao.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pedidos.atualizar", "pedidos.concluir",
       "memoria.dossie", "memoria.exportar", "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver",
-      "suporte.chamados", "acesso_excepcional.aprovar"]
+      "suporte.chamados", "acesso_excepcional.aprovar", "reservas.editar", "reservas.ver"]
     : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"]
       : ["agenda.ver", "comunicados.ver", "config.ver", "documentos.ver", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"];
   const pendencias = () => {
@@ -180,6 +182,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         ...(acoes().includes("documentos.ver") ? { memoria: { prontuario: resumoProntuario(memoria) } } : {}),
         ...(acoes().includes("acesso_excepcional.aprovar") ? { acessosExcepcionais: resumoAcessos(suporte) } : {}),
         ...(acoes().includes("pedidos.responder") || acoes().includes("pedidos.atualizar") ? { whatsapp: resumoWhatsapp(whatsapp) } : {}),
+        ...(acoes().includes("reservas.ver") ? { vida: resumoVida(vida) } : {}),
         avisosNaoVistos: naoVistos(estado.avisos, eu.vinculo),
       } });
     }
@@ -200,6 +203,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (noSuporte !== null) return noSuporte;
     const naMemoria = await rotasMemoria(route, memoria, caminho, metodo, corpo, url, pode, eu);
     if (naMemoria !== null) return naMemoria;
+    const naVida = await rotasVida(route, vida, caminho, metodo, corpo, url, pode, eu);
+    if (naVida !== null) return naVida;
     const nosLinks = await rotasLinks(route, links, manutencao, caminho, metodo, corpo, pode, eu);
     if (nosLinks !== null) return nosLinks;
     const naManutencao = await rotasManutencao(route, manutencao, { pessoas: estado.pessoas, pedidos: estado.pedidos, prioridades: c.prioridades, eu },
@@ -318,5 +323,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     }
     return erro(route, 404, "NOT_FOUND");
   });
-  return Object.assign(estado, { links, memoria, suporte, whatsapp });
+  return Object.assign(estado, { links, memoria, suporte, vida, whatsapp });
 }

@@ -69,8 +69,24 @@ export function LinhaCompromisso({ c, acao }: { c: CompromissoAgenda; acao?: Rea
   );
 }
 
-/** Data de outra tela (AG-09): tracejada, com a tela de onde vem (feriado ou preventiva). */
+/** Data de outra tela (AG-09): tracejada, com a tela de onde vem (feriado, preventiva ou reserva confirmada). */
 export function LinhaDataDeFora({ d }: { d: DataDeOutraTela }) {
+  if (d.fonte === "RESERVA") {
+    return (
+      <li className="ag-ev" data-tipo={d.fonte} data-fonte="">
+        <span className="hora">{d.horaInicio}{d.horaFim ? <small>{d.horaFim}</small> : null}</span>
+        <span className="barra" aria-hidden="true" />
+        <span className="grid min-w-0 gap-0.5">
+          <span className="flex flex-wrap items-center gap-2 font-medium">{d.titulo}<Selo tom="ok">Confirmada</Selo></span>
+          <span className="text-[13px] text-tinta-suave">
+            <span className="tp" data-tipo="RESERVA">Reserva</span>{d.quem ? ` · ${d.quem}` : ""} · vem de{" "}
+            <Link href="/vida" className="font-medium text-violeta-600 hover:underline">Vida em condomínio</Link>
+          </span>
+        </span>
+        <span />
+      </li>
+    );
+  }
   const preventiva = d.fonte === "PREVENTIVA";
   return (
     <li className="ag-ev" data-tipo={d.fonte} data-fonte="">
@@ -93,6 +109,7 @@ export function LinhaDataDeFora({ d }: { d: DataDeOutraTela }) {
 export function textoConflito(x: ConflitoCompromisso): string {
   const quando = x.horaInicio ? (x.horaFim ? `das ${x.horaInicio} às ${x.horaFim}` : `às ${x.horaInicio}`) : "o dia todo";
   const dia = mostrarDataCurta(x.data);
+  if (x.reserva) return `A área está reservada: ${x.titulo}, em ${dia}, ${quando}.`;
   if (x.motivo === "LUGAR") return `O mesmo lugar já tem "${x.titulo}" em ${dia}, ${quando}.`;
   const quem = x.pessoas?.length ? x.pessoas.join(", ") : "Uma pessoa";
   return `${quem} já ${x.pessoas && x.pessoas.length > 1 ? "estão" : "está"} em "${x.titulo}" em ${dia}, ${quando}.`;
@@ -102,7 +119,7 @@ export function ListaConflitos({ conflitos }: { conflitos: ConflitoCompromisso[]
   return (
     <ul className="grid gap-1">
       {conflitos.slice(0, 6).map((x, i) => (
-        <li key={`${x.id}-${i}`}><Link href={`/agenda/compromisso?id=${x.id}`} className="hover:underline">{textoConflito(x)}</Link></li>
+        <li key={`${x.id}-${i}`}><Link href={x.reserva ? "/vida" : `/agenda/compromisso?id=${x.id}`} className="hover:underline">{textoConflito(x)}</Link></li>
       ))}
       {conflitos.length > 6 ? <li>E mais {conflitos.length - 6}.</li> : null}
     </ul>

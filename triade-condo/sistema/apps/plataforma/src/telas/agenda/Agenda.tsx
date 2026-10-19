@@ -1,6 +1,6 @@
 "use client";
 // Agenda do condomínio (peça R7, design "Telas da Agenda", telas 1 e 2; AG-01 a AG-05, AG-09):
-// em lista, por semana ou no mês, com filtro por tipo e as datas de outras telas (feriados).
+// em lista, por semana ou no mês, com filtro por tipo e as datas de outras telas (feriados, preventivas e reservas confirmadas).
 // A vista e a data ficam no endereço; o filtro de tipo e os feriados ficam guardados para a
 // pessoa neste aparelho.
 
@@ -168,7 +168,7 @@ function VistaLista({ dias, hoje, temFiltro }: { dias: Dias; hoje: string; temFi
               {d === hoje ? <span className="ag-hoje block w-fit">Hoje</span> : null}
             </div>
             <ul className="grid gap-2">
-              {dia.datas.map((x) => <LinhaDataDeFora key={`f-${x.fonte}-${x.titulo}`} d={x} />)}
+              {dia.datas.map((x) => <LinhaDataDeFora key={`f-${x.fonte}-${x.id ?? x.titulo}`} d={x} />)}
               {dia.compromissos.map((c) => <LinhaCompromisso key={c.id} c={c} />)}
             </ul>
           </section>
@@ -189,7 +189,7 @@ function VistaSemana({ de, dias, hoje, abrirDia }: { de: string; dias: Dias; hoj
     <ol className="grid gap-2 md:grid-cols-7">
       {Array.from({ length: 7 }, (_, i) => somarDias(de, i)).map((d) => {
         const dia = dias.get(d);
-        const itens = [...(dia?.datas ?? []).map((x) => ({ chave: `f-${x.fonte}-${x.titulo}`, hora: "", titulo: x.titulo, tipo: x.fonte, fonte: true })),
+        const itens = [...(dia?.datas ?? []).map((x) => ({ chave: `f-${x.fonte}-${x.id ?? x.titulo}`, hora: x.horaInicio ?? "", titulo: x.titulo, tipo: x.fonte, fonte: true })),
           ...(dia?.compromissos ?? []).map((c) => ({ chave: c.id, hora: c.horaInicio ?? "", titulo: c.titulo, tipo: c.tipo as string, fonte: false }))];
         return (
           <li key={d} className="grid content-start gap-1.5 rounded-2xl border border-linha bg-superficie p-2.5">
@@ -221,7 +221,7 @@ function VistaMes({ data, dias, hoje, abrirDia }: { data: string; dias: Dias; ho
       <div className="grade">
         {gradeDoMes(data).map(({ data: d, doMes }) => {
           const dia = dias.get(d);
-          const itens = [...(dia?.datas ?? []).map((x) => ({ chave: `f-${x.fonte}-${x.titulo}`, texto: x.titulo, tipo: x.fonte as string, fonte: true })),
+          const itens = [...(dia?.datas ?? []).map((x) => ({ chave: `f-${x.fonte}-${x.id ?? x.titulo}`, texto: x.titulo, tipo: x.fonte as string, fonte: true })),
             ...(dia?.compromissos ?? []).map((c) => ({ chave: c.id, texto: `${c.horaInicio ? `${Number(c.horaInicio.slice(0, 2))}h ` : ""}${c.titulo}`, tipo: c.tipo as string, fonte: false }))];
           return (
             <button key={d} type="button" className="c" data-fora={doMes ? undefined : ""} aria-current={d === hoje ? "date" : undefined}

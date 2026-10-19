@@ -170,6 +170,14 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PRESTADOR_ARQUIVADO: "Este prestador está arquivado. Volte-o ao cadastro para mudar alguma coisa.",
   PREVENTIVA_ABERTA: "A manutenção desta data já está aberta. Conclua ou cancele antes de mudar a data.",
   PROVIDENCIA_FEITA: "Esta providência já foi feita.",
+  // Vida em condomínio (peça R12).
+  RESERVA_OCUPADA: "A área já está ocupada nesse horário, por outra reserva ou por um compromisso da Agenda.",
+  RESERVA_LIMITE: "A unidade já chegou ao limite de reservas desta área no período.",
+  RESERVA_FORA_DO_PRAZO: "Esta data fica fora da antecedência da área.",
+  RESERVA_HORARIO: "Escolha um dos horários da área.",
+  RESERVA_DECIDIDA: "Esta reserva já foi decidida. Atualize a página.",
+  AREA_SEM_RESERVA: "Esta área não aceita reserva agora.",
+  AREA_COM_RESERVAS: "Há reservas marcadas nesta área. Cancele antes de desativar ou deixar sem reserva.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

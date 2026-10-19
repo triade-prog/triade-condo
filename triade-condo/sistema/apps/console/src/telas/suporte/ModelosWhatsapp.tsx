@@ -55,6 +55,7 @@ const EXEMPLOS: Record<ChaveModelo, string[]> = {
   aviso_pedido_novo: ["Residencial Ipê", "2026-0142", "Luz da garagem piscando (apto 302)", "condominio.trihub.com.br/pedidos/…"],
   aviso_retorno_vencido: ["Residencial Ipê", "2026-0137", "Portão da garagem (apto 101)", "às 14:00", "Bruna", "condominio.trihub.com.br/pedidos/…"],
   aviso_revisao: ["Residencial Ipê", "2026-0131", "pedido privado (apto 402)", "condominio.trihub.com.br/pedidos/…"],
+  reserva_decidida: ["2026-R014", "Residencial Ipê", "aprovada. Salão de festas, sábado, 25/10, das 10h às 23h, para a Torre A · 302.", "Ana"],
 };
 
 /** O texto com as variáveis destacadas e o nome de cada uma. */

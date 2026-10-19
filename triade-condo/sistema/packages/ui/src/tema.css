@@ -290,6 +290,7 @@ body {
   [data-tipo="LEMBRETE"] { --fx: var(--fx-info); }
   [data-tipo="FERIADO"] { --fx: var(--fx-neutro); }
   [data-tipo="PREVENTIVA"] { --fx: var(--fx-ok); }
+  [data-tipo="RESERVA"] { --fx: var(--fx-andamento); }
   .tp { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--color-tinta-suave); }
   .tp::before { content: ""; width: 8px; height: 8px; border-radius: 3px; background: var(--fx); }
   .ag-dia { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-top: 1px solid var(--color-linha); }

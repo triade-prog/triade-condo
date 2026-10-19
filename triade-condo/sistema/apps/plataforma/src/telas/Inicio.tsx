@@ -13,6 +13,7 @@ import { CartaoManutencao } from "./manutencao/CartaoManutencao.tsx";
 import { CartaoComunicados } from "./comunicados/CartaoComunicados.tsx";
 import { CartaoMemoria } from "./memoria/CartaoMemoria.tsx";
 import { CartaoAcessoExcepcional } from "./suporte/CartaoAcessoExcepcional.tsx";
+import { CartaoVida } from "./vida/CartaoVida.tsx";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
 import type { Configuracoes, MesFechado } from "./tipos.ts";
 
@@ -208,6 +209,7 @@ export function Inicio() {
         ) : null}
         {pode("agenda.ver") ? <HojeNaAgenda /> : null}
         {painel.manutencao ? <CartaoManutencao resumo={painel.manutencao} /> : null}
+        {painel.vida?.reservasAAprovar ? <CartaoVida resumo={painel.vida} /> : null}
         {painel.comunicados ? <CartaoComunicados resumo={painel.comunicados} verComunicados={pode("comunicados.ver")} /> : null}
         {painel.memoria ? <CartaoMemoria resumo={painel.memoria.prontuario} /> : null}
         {painel.mesFechado ? <MesFechadoCartao mes={painel.mesFechado} /> : null}

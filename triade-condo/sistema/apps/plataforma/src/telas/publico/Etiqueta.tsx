@@ -1,7 +1,8 @@
 "use client";
 // Etiqueta por local (design "Links e QR", tela 3; AT-30): quem aponta a câmera vê o local, o
 // recado do condomínio e o botão que abre o WhatsApp do condomínio com o local já escrito. Nada
-// de nomes, unidades nem pedidos; a página não guarda nada no aparelho.
+// de nomes, unidades nem pedidos; a página não guarda nada no aparelho. Na etiqueta de área comum
+// que aceita reserva, o botão Reservar pelo WhatsApp já leva RESERVAR e a área (peça R12, W-22).
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -42,6 +43,19 @@ export function Etiqueta() {
         <h2 className="text-xl font-medium">{e.local}</h2>
         <p className="text-[15px]">Viu algo quebrado, vazando ou fora do lugar aqui? Avise o condomínio pelo WhatsApp. O local já vai escrito.</p>
       </Cartao>
+      {e.reserva && e.whatsapp ? (
+        <Cartao className="border-violeta-200 bg-violeta-50">
+          <h2 className="text-lg font-medium">Reservar: {e.reserva.area}</h2>
+          <p className="text-[15px]">
+            {e.reserva.capacidade ? `Até ${e.reserva.capacidade} pessoas, ${e.reserva.horario}` : e.reserva.horario.replace(/^./, (x) => x.toUpperCase())}.
+            {e.reserva.livres?.length ? ` Livre em ${e.reserva.livres.map((d) => `${d.slice(8, 10)}/${d.slice(5, 7)}`).join(" e ")}.` : ""}
+          </p>
+          <a href={linkWhatsapp(e.whatsapp, e.reserva.texto)} rel="noopener noreferrer" className={classeBotao("contorno", "justify-self-stretch sm:justify-self-start")}>
+            <Icone nome="calendario" />Reservar pelo WhatsApp
+          </a>
+          <p className="text-[13px] text-tinta-suave">O botão abre o WhatsApp do condomínio já com a área escolhida.</p>
+        </Cartao>
+      ) : null}
       {e.recado ? (
         <Cartao className="border-violeta-200 bg-violeta-50">
           <p className="text-[13px] text-tinta-suave">Recado do condomínio{e.recadoEm ? ` · ${diaHora(e.recadoEm)}` : ""}</p>

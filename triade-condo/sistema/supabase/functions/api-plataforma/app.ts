@@ -9,11 +9,13 @@
 // prédio (MP-12, MP-14, CT-02 a CT-04), com a exportação montada aqui em segundo plano. Peça R4:
 // Ajuda e suporte (PI-17, PI-20) e a aprovação do acesso excepcional da TRÍADE (PI-11).
 // Passo 5: WhatsApp do condomínio (W-05, W-09 a W-16), com o aviso do provedor protegido pelo
-// segredo do condomínio no caminho e a fila de envio.
+// segredo do condomínio no caminho e a fila de envio. Peça R12: Vida em condomínio (áreas comuns
+// e reservas; AC-01, AC-06, AC-07).
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
 import type { Context, MiddlewareHandler } from "hono";
+import type { z } from "zod";
 import {
   abrirChamadoSchema,
   decidirAcessoExcepcionalSchema,
@@ -144,6 +146,13 @@ import {
   TAMANHO_MAXIMO_MIDIA,
   triarWhatsappSchema,
   type MidiaWhatsapp,
+  aprovarReservaSchema,
+  areaSchema,
+  conferirReservaSchema,
+  filtroReservasSchema,
+  motivoReservaSchema,
+  registrarReservaSchema,
+  semanaAreaSchema,
 } from "@triade/domain";
 import { verificarArquivo, verificarMidia, type Armazenamento } from "../_shared/arquivos.ts";
 import {
@@ -681,6 +690,67 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
 
   app.get("/v1/condominio/pedidos/:id/agenda", async (c) =>
     c.json(await rpc("plataforma_agenda_do_pedido", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  // Vida em condomínio (peça R12; AC-01, AC-06, AC-07). O banco confere quem pode, a
+  // antecedência, a data ocupada e o limite com a tolerância; aqui só se valida a entrada.
+  const consulta = <T extends z.ZodTypeAny>(c: Context<VarsPlataforma>, schema: T): z.infer<T> => {
+    const r = schema.safeParse(c.req.query());
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
+    return r.data;
+  };
+
+  app.get("/v1/condominio/areas-comuns", async (c) => c.json(await rpc("plataforma_areas_comuns", quem(c))));
+
+  app.post("/v1/condominio/areas-comuns", async (c) => {
+    const { versao: _v, ...d } = await lerCorpo(c, areaSchema);
+    return c.json(await rpc("plataforma_salvar_area", { ...quem(c), p_id: null, p_versao: null, p_dados: d }), 201);
+  });
+
+  app.put("/v1/condominio/areas-comuns/:id", async (c) => {
+    const id = idDaRota(c, "id");
+    const { versao, ...d } = await lerCorpo(c, areaSchema);
+    if (!versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return c.json(await rpc("plataforma_salvar_area", { ...quem(c), p_id: id, p_versao: versao, p_dados: d }));
+  });
+
+  app.get("/v1/condominio/reservas", async (c) => {
+    const q = consulta(c, filtroReservasSchema);
+    return c.json(await rpc("plataforma_reservas", { ...quem(c), p_filtro: q.filtro, p_area: q.areaId }));
+  });
+
+  app.get("/v1/condominio/reservas/opcoes", async (c) => c.json(await rpc("plataforma_reserva_opcoes", quem(c))));
+
+  app.get("/v1/condominio/reservas/conferir", async (c) => {
+    const q = consulta(c, conferirReservaSchema);
+    return c.json(await rpc("plataforma_conferir_reserva", { ...quem(c), p_area: q.areaId, p_unidade: q.unidadeId, p_data: q.data }));
+  });
+
+  app.get("/v1/condominio/areas-comuns/:id/semana", async (c) => {
+    const q = consulta(c, semanaAreaSchema);
+    return c.json(await rpc("plataforma_semana_area", { ...quem(c), p_area: idDaRota(c, "id"), p_de: q.de }));
+  });
+
+  app.get("/v1/condominio/reservas/:id", async (c) => c.json(await rpc("plataforma_reserva", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  app.post("/v1/condominio/reservas", async (c) => {
+    const d = await lerCorpo(c, registrarReservaSchema);
+    return c.json(await rpc("plataforma_registrar_reserva", {
+      ...quem(c), p_area: d.areaId, p_unidade: d.unidadeId, p_contato: d.contatoId, p_data: d.data, p_inicio: d.horaInicio,
+      p_observacao: d.observacao,
+    }), 201);
+  });
+
+  app.post("/v1/condominio/reservas/:id/aprovar", async (c) => {
+    const d = await lerCorpo(c, aprovarReservaSchema);
+    return c.json(await rpc("plataforma_aprovar_reserva", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_recado: d.recado }));
+  });
+
+  for (const acao of ["recusar", "cancelar"] as const) {
+    app.post(`/v1/condominio/reservas/:id/${acao}`, async (c) => {
+      const d = await lerCorpo(c, motivoReservaSchema);
+      return c.json(await rpc(`plataforma_${acao}_reserva`, { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+    });
+  }
 
   // Manutenção e prestadores (peça R6; MP-01 a MP-05, MP-07, MP-09, MP-13). O banco decide quem
   // vê e quem mexe, confere quem executa, as situações e as preventivas; aqui só se valida a entrada.

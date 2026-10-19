@@ -1,7 +1,7 @@
 // O que a API da Plataforma devolve nas configurações (plataforma_configuracoes), nas
 // pessoas (plataforma_pessoas), nos moradores e unidades (passo 3) e nos pedidos (passo 4).
 
-import type { Intervalo, Ligacao, Ocupacao, Parentesco } from "@triade/domain";
+import type { ConfirmacaoArea, EstadoReserva, Intervalo, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite } from "@triade/domain";
 
 export interface Configuracoes {
   fuso: string;
@@ -225,7 +225,8 @@ export interface AvisoDoPainel {
     | "DOCUMENTO_VENCENDO" | "DOCUMENTO_PEDIDO" | "EMAIL_DEVOLVIDO" | "EMAIL_SPAM" | "PRESTADOR_IMPEDIMENTO" | "PRESTADOR_TERMINOU"
     | "PRONTUARIO_VENCE" | "PRONTUARIO_VENCEU" | "EXPORTACAO_PRONTA" | "EXPORTACAO_FALHOU"
     | "ENTREGA" | "CHAMADO_RESPOSTA" | "ACESSO_PEDIDO"
-    | "WHATSAPP_PEDIDO_NOVO" | "WHATSAPP_REVISAO" | "WHATSAPP_A_IDENTIFICAR" | "WHATSAPP_FALHA_ENVIO" | "WHATSAPP_DESCONECTADO";
+    | "WHATSAPP_PEDIDO_NOVO" | "WHATSAPP_REVISAO" | "WHATSAPP_A_IDENTIFICAR" | "WHATSAPP_FALHA_ENVIO" | "WHATSAPP_DESCONECTADO"
+    | "RESERVA_A_APROVAR" | "RESERVA_CANCELADA";
   pedidoId?: string;
   protocolo?: string;
   assunto?: string | null;
@@ -249,6 +250,8 @@ export interface AvisoDoPainel {
   acessoId?: string;
   responsavel?: string | null;
   referencia?: string;
+  /** Nos avisos das reservas (peça R12). */
+  reservaId?: string;
   criadoEm: string;
   vistoEm: string | null;
 }
@@ -419,9 +422,13 @@ export interface CompromissoAgenda {
 export interface DataDeOutraTela {
   data: string;
   titulo: string;
-  fonte: "FERIADO" | "PREVENTIVA";
-  /** Na preventiva, o id dela. */
+  fonte: "FERIADO" | "PREVENTIVA" | "RESERVA";
+  /** Na preventiva e na reserva, o id dela. */
   id?: string;
+  /** Na reserva confirmada (peça R12, AG-09): o horário e quem pediu. */
+  horaInicio?: string;
+  horaFim?: string;
+  quem?: string;
 }
 
 export interface Agenda {
@@ -435,6 +442,8 @@ export interface OpcoesAgenda {
   pessoas: { vinculoId: string; nome: string; eu: boolean }[];
   unidades: { id: string; nome: string }[];
   pedidos: { id: string; protocolo: string; assunto: string; unidadeId: string | null; responsavelId: string | null }[];
+  /** As áreas comuns ativas (peça R12), sugeridas no campo Qual área. */
+  areas?: string[];
   pode: { editar: boolean };
   hoje: string;
 }
@@ -447,6 +456,8 @@ export interface ConflitoCompromisso {
   horaFim?: string;
   motivo: "LUGAR" | "PESSOA";
   pessoas?: string[];
+  /** A reserva confirmada da área (peça R12): o id é da reserva, não de um compromisso. */
+  reserva?: boolean;
 }
 
 export interface CompromissoDetalhe {
@@ -966,6 +977,8 @@ export interface EtiquetaPublica {
   recado?: string;
   recadoEm?: string;
   whatsapp?: string;
+  /** Etiqueta de área comum que aceita reserva (peça R12, W-22): leva ao RESERVAR. */
+  reserva?: { area: string; capacidade?: number; horario: string; livres?: string[]; texto: string };
 }
 
 export interface PrestadorPublico {
@@ -1122,4 +1135,110 @@ export interface Exportacoes {
   podePedir: boolean;
   motivo?: "MONTANDO" | "UMA_POR_DIA";
   montando: boolean;
+}
+
+// ---------------------------------------------------------------------------------------
+// Vida em condomínio (peça R12): áreas comuns e reservas.
+
+export interface AreaComumTela {
+  id: string;
+  modelo?: string;
+  criadaPeloSindico: boolean;
+  nome: string;
+  ativa: boolean;
+  reserva: ConfirmacaoArea;
+  antecedenciaMin: number;
+  antecedenciaMax: number;
+  horaInicio: string;
+  horaFim: string;
+  modo: ModoArea;
+  blocoMinutos?: number;
+  capacidade?: number;
+  limiteQuantidade?: number;
+  limitePeriodo?: PeriodoLimite;
+  toleranciaDias?: number;
+  cancelarSemAvisoDias: number;
+  valorCentavos?: number;
+  regras?: { id: string; titulo: string };
+  podeProprietarioMorador: boolean;
+  podeInquilino: boolean;
+  podeProprietarioAusente: boolean;
+  versao: number;
+}
+
+export interface AreasComuns {
+  areas: AreaComumTela[];
+  documentos: { id: string; titulo: string }[];
+  pode: { editar: boolean };
+}
+
+export interface OcupacaoArea {
+  motivo: "RESERVA" | "AGENDA";
+  id: string;
+  titulo: string;
+}
+
+export interface ReservaTela {
+  id: string;
+  protocolo: string;
+  area: { id: string; nome: string; reserva: ConfirmacaoArea };
+  unidade: { id: string; nome: string };
+  contato?: { id: string; nome: string };
+  data: string;
+  horaInicio: string;
+  horaFim: string;
+  estado: EstadoReserva;
+  origem: "WHATSAPP" | "PAINEL";
+  tolerancia: boolean;
+  observacao?: string;
+  criadoEm: string;
+  registradoPor?: string;
+  decisao?: { em: string; por?: string; motivo?: string; peloMorador?: boolean };
+  versao: number;
+  outrosPedidos?: number;
+  ocupacao?: OcupacaoArea;
+  limite?: { n: number; quantidade: number; periodo: PeriodoLimite };
+}
+
+export interface ListaReservas {
+  reservas: ReservaTela[];
+  aAprovar: number;
+  areas: { id: string; nome: string; ativa: boolean; reserva: ConfirmacaoArea; modo: ModoArea }[];
+  hoje: string;
+  pode: { editar: boolean };
+}
+
+export interface SemanaArea {
+  area: AreaComumTela;
+  dias: {
+    data: string;
+    reservas: { id: string; protocolo: string; estado: EstadoReserva; unidade: string; horaInicio: string }[];
+    bloqueios: { id: string; titulo: string; horaInicio: string | null; horaFim: string | null }[];
+  }[];
+  hoje: string;
+}
+
+export interface ReservaDetalhe {
+  reserva: ReservaTela;
+  historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
+  mensagens: { id: string; estado: string; em: string; motivo: string | null }[];
+  pode: { editar: boolean };
+}
+
+export interface OpcoesReserva {
+  areas: AreaComumTela[];
+  unidades: { id: string; nome: string; contatos: { id: string; nome: string }[] }[];
+  hoje: string;
+}
+
+export interface ConferenciaReserva {
+  blocos?: string[];
+  conferencia: { erro?: "FORA_DO_PRAZO" | "HORARIO" | "OCUPADA" | "LIMITE"; ocupacao?: OcupacaoArea; inicio?: string; fim?: string; tolerancia?: boolean };
+  noPeriodo?: number;
+  proxima?: string;
+}
+
+export interface ResumoVida {
+  reservasAAprovar: number;
+  proximasAAprovar: { data: string; area: string; pedidos: number }[];
 }

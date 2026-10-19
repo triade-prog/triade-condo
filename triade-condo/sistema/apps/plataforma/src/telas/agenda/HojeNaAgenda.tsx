@@ -7,7 +7,7 @@ import { diaDaSemana, somarDias } from "@triade/domain";
 import { Carregando, classeBotao, ErroCarregar } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
 import type { Agenda } from "../tipos.ts";
-import { LinhaCompromisso } from "./comum.tsx";
+import { LinhaCompromisso, LinhaDataDeFora } from "./comum.tsx";
 
 function hojeAqui(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
@@ -39,6 +39,8 @@ function Conteudo({ dados }: { dados: Agenda }) {
   const hoje = dados.hoje;
   const ativos = dados.compromissos.filter((c) => c.estado !== "CANCELADO");
   const deHoje = ativos.filter((c) => c.data === hoje);
+  // As reservas confirmadas de hoje (peça R12), entre os compromissos pela hora.
+  const reservas = dados.datas.filter((d) => d.data === hoje && d.fonte === "RESERVA");
   const amanha = somarDias(hoje, 1);
   const nAmanha = ativos.filter((c) => c.data === amanha).length;
   const proximo = ativos.find((c) => c.data > amanha);
@@ -49,8 +51,12 @@ function Conteudo({ dados }: { dados: Agenda }) {
   }
   return (
     <>
-      {deHoje.length ? (
-        <ul className="grid gap-2">{deHoje.map((c) => <LinhaCompromisso key={c.id} c={c} />)}</ul>
+      {deHoje.length + reservas.length ? (
+        <ul className="grid gap-2">
+          {[...deHoje.map((c) => ({ hora: c.horaInicio ?? "", item: <LinhaCompromisso key={c.id} c={c} /> })),
+            ...reservas.map((d) => ({ hora: d.horaInicio ?? "", item: <LinhaDataDeFora key={d.id} d={d} /> }))]
+            .sort((a, b) => a.hora.localeCompare(b.hora)).map((x) => x.item)}
+        </ul>
       ) : <p className="text-sm text-tinta-suave">Nada marcado para hoje.</p>}
       <p className="text-sm text-tinta-suave">{linha.join(" ")}</p>
     </>
