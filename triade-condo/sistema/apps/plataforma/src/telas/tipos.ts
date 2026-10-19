@@ -224,7 +224,8 @@ export interface AvisoDoPainel {
   tipo: "RETORNO_VENCIDO" | "ESCALADO_SINDICO" | "ESCALADO_SUBSTITUTO" | "SEM_RESPONSAVEL" | "PENDENCIA_PARADA" | "MANUTENCAO_RETORNO_VENCIDO"
     | "DOCUMENTO_VENCENDO" | "DOCUMENTO_PEDIDO" | "EMAIL_DEVOLVIDO" | "EMAIL_SPAM" | "PRESTADOR_IMPEDIMENTO" | "PRESTADOR_TERMINOU"
     | "PRONTUARIO_VENCE" | "PRONTUARIO_VENCEU" | "EXPORTACAO_PRONTA" | "EXPORTACAO_FALHOU"
-    | "ENTREGA" | "CHAMADO_RESPOSTA" | "ACESSO_PEDIDO";
+    | "ENTREGA" | "CHAMADO_RESPOSTA" | "ACESSO_PEDIDO"
+    | "WHATSAPP_PEDIDO_NOVO" | "WHATSAPP_REVISAO" | "WHATSAPP_A_IDENTIFICAR" | "WHATSAPP_FALHA_ENVIO" | "WHATSAPP_DESCONECTADO";
   pedidoId?: string;
   protocolo?: string;
   assunto?: string | null;
@@ -370,7 +371,7 @@ export interface PedidoDetalhe {
     retornoVencido: boolean;
     previsao: string | null;
     abertoEm: string;
-    registradoPor: string;
+    registradoPor: string | null;
     encerradoEm: string | null;
     cancelamento: { em: string; motivo: string; por: string } | null;
   };

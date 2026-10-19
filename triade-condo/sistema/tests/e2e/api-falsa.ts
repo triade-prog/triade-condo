@@ -13,7 +13,7 @@ const TODAS = [
   "console.carteira.ver", "console.ficha.ver", "console.ficha.editar", "console.contrato.editar", "console.estagio.mudar",
   "console.sindicos.convidar", "console.notas.ver", "console.notas.escrever", "console.historico.ver", "console.equipe.atribuir",
   "console.implantacao.ver", "console.implantacao.editar", "console.troca.fazer", "console.suporte.acesso", "console.casos_duvidosos",
-  "console.chamados.ver", "console.chamados.responder", "console.acesso_excepcional.pedir",
+  "console.chamados.ver", "console.chamados.responder", "console.acesso_excepcional.pedir", "console.whatsapp.ver", "console.whatsapp.conectar",
 ];
 const IMPLANTACAO = TODAS.filter((a) => !["console.contrato.editar", "console.equipe.atribuir", "console.suporte.acesso", "console.casos_duvidosos",
   "console.acesso_excepcional.pedir"].includes(a));
@@ -45,10 +45,53 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
         sindicos: [] as { vinculoId: string; pessoaId: string; nome: string; desde: string; versao?: number }[],
         equipe: [{ vinculoId: "4f1a7d42-9b5e-4a6f-9c2d-5e6f7a8b9c0d", pessoaId: CAROLINA, nome: "Carolina", funcao: "ADMINISTRACAO", desde: "2026-10-16T13:00:00Z", versao: 1 }],
         notas: [] as { id: string; texto: string; criadoEm: string; autor: { id: string; nome: string } }[],
+        whatsapp: {
+          conexao: { situacao: "SEM_CREDENCIAIS", provedor: "WAFLY", oficial: false, termoAceitoEm: "2026-10-18T16:40:00Z", termoAceitoPor: "Ana Souza" } as Record<string, unknown>,
+          historico: [] as { acao: string; em: string; autor: string | null; dados: Record<string, string> }[],
+        },
       },
     ],
   };
   const suporte = criarSuporteConsole();
+  // Aba WhatsApp da ficha (passo 5; W-01): credenciais, conectar pelo QR ou código, conferir e desconectar.
+  const QR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==";
+  function rotaWhatsapp(route: Route, c: (typeof estado.clientes)[number], resto: string, corpo: Record<string, unknown>) {
+    const w = c.whatsapp;
+    const marcar = (acao: string, dados: Record<string, string> = {}) => w.historico.unshift({ acao, em: new Date().toISOString(), autor: "Carolina", dados });
+    const contar = () => { suporte.whatsappDesconectados = estado.clientes.filter((x) => x.whatsapp.conexao.situacao === "DESCONECTADO").length; };
+    if (resto === "/whatsapp") {
+      return route.fulfill({ json: { numeroFicha: c.condominio.numeroWhatsapp ?? null, conexao: w.conexao, historico: w.historico, pode: { conectar: true } } });
+    }
+    if (resto === "/whatsapp/credenciais") {
+      if (!/^[A-Za-z0-9_-]{3,100}$/.test(String(corpo.instancia ?? ""))) return erro(route, 400, "VALIDATION_ERROR", { campos: ["instancia"] });
+      if (String(corpo.token ?? "").length < 8) return erro(route, 400, "VALIDATION_ERROR", { campos: ["token"] });
+      const versao = Number(w.conexao.versao ?? 0) + 1;
+      Object.assign(w.conexao, { situacao: "DESCONECTADO", desconectadoEm: new Date().toISOString(), versao });
+      marcar("whatsapp.credenciais");
+      contar();
+      return route.fulfill({ json: { versao, avisos: true } });
+    }
+    if (resto === "/whatsapp/conectar") {
+      w.conexao.situacao = "CONECTANDO";
+      contar();
+      return route.fulfill({ json: corpo.modo === "CODIGO" ? { codigo: "ABCD-1234" } : { qr: QR } });
+    }
+    if (resto === "/whatsapp/verificar") {
+      Object.assign(w.conexao, { situacao: "CONECTADO", aparelho: c.condominio.numeroWhatsapp, conectadoEm: new Date().toISOString() });
+      marcar("whatsapp.conectado");
+      contar();
+      return route.fulfill({ json: { situacao: "CONECTADO" } });
+    }
+    if (resto === "/whatsapp/desconectar") {
+      const motivo = String(corpo.motivo ?? "").trim();
+      if (motivo.length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
+      Object.assign(w.conexao, { situacao: "DESCONECTADO", aparelho: undefined, desconectadoEm: new Date().toISOString() });
+      marcar("whatsapp.desconectado", { motivo });
+      contar();
+      return route.fulfill({ json: { situacao: "DESCONECTADO" } });
+    }
+    return erro(route, 404, "NOT_FOUND");
+  }
   const situacoes = (c: (typeof estado.clientes)[number]) => [
     ...(c.sindicos.length ? [] : ["SEM_SINDICO"]),
     ...(c.condominio.cenario ? [] : ["SEM_CENARIO"]),
@@ -119,6 +162,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
           contatos: [], cenario: corpo.cenario, versao: 1, criadoEm: "2026-10-16T15:00:00Z" },
         cliente: { estagio: "IMPLANTACAO", referenciaContrato: null, versao: 1 },
         sindicos: [], equipe: [{ ...estado.clientes[0]!.equipe[0]! }], notas: [],
+        whatsapp: { conexao: { situacao: "SEM_CREDENCIAIS" }, historico: [] },
       });
       return route.fulfill({ status: 201, json: { id: NOVO } });
     }
@@ -178,6 +222,12 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
         });
       }
       if (resto === "/equipe") return route.fulfill({ status: 201, json: { vinculoId: crypto.randomUUID() } });
+      if (resto.startsWith("/whatsapp")) return rotaWhatsapp(route, c, resto, corpo);
+    }
+    if (caminho === "/v1/whatsapp") {
+      return route.fulfill({ json: { numeros: estado.clientes.map((x) => ({ condominioId: x.condominio.id, nome: x.condominio.nome,
+        numero: x.condominio.numeroWhatsapp ?? undefined, situacao: x.whatsapp.conexao.situacao, oficial: false,
+        desde: x.whatsapp.conexao.conectadoEm ?? x.whatsapp.conexao.desconectadoEm, termo: !!x.whatsapp.conexao.termoAceitoEm })) } });
     }
     if (caminho === "/v1/equipe" && metodo === "GET") {
       if (!admin) return erro(route, 403, "FORBIDDEN");

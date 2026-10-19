@@ -60,7 +60,7 @@ test.describe("Plataforma do síndico · passo 4b", () => {
     await expect(page.getByRole("status").filter({ hasText: "1 arquivo enviado e liberado. fatura.pdf: O conteúdo não é um PDF de verdade." })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Fotos e documentos (3)" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Andamento" })).toBeVisible();
-    await expect(page.getByText("Não liberado")).toBeVisible();
+    await expect(page.getByText("Não liberado", { exact: true })).toBeVisible();
     await expect(page.getByText("Orçamento do encanador")).toBeVisible();
     await conferir(page);
 

@@ -30,6 +30,8 @@ export interface Painel {
   memoria?: { prontuario: ResumoProntuario };
   /** Pedidos de acesso excepcional da TRÍADE esperando o síndico e os que valem (peça R4, PI-11). */
   acessosExcepcionais?: { pedidos: PedidoAcessoExcepcional[]; valendo: number };
+  /** WhatsApp do condomínio, para quem cuida dos pedidos (passo 5): conexão, a identificar e falhas. */
+  whatsapp?: { situacao: string; aIdentificar: number; falhas: number };
 }
 
 export interface CondominioDaPessoa {

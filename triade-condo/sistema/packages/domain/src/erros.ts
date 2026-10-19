@@ -63,6 +63,8 @@ export class ErroDominio extends Error {
  */
 export const ERROS_BANCO: Record<string, CodigoErro> = {
   TC401: "FORBIDDEN",
+  // Aviso do provedor com segredo ou instância que não confere (W-15).
+  TC403: "FORBIDDEN",
   TC404: "NOT_FOUND",
   TC409: "VERSION_CONFLICT",
   TC422: "VALIDATION_ERROR",

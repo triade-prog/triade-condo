@@ -1,5 +1,6 @@
 // API do Console TRÍADE. Só a equipe ativa, sempre com o autenticador (F0.6, PT-08).
 // Passo 1: carteira, ficha, cenário, convite do síndico, notas internas, histórico e equipe.
+// Passo 5: a conexão do WhatsApp de cada cliente (piloto pelo Wafly, DC14).
 // Quem pode o quê é decidido no banco (funções internas e clientes atribuídos, PI-10); aqui
 // só se valida a entrada e se fala com o Auth para os convites.
 
@@ -32,6 +33,8 @@ import {
   VALIDADE_LINK_ARQUIVO_S,
   verificarSuporteAcessoSchema,
   versaoSchema,
+  credenciaisWhatsappSchema,
+  desconectarWhatsappSchema,
 } from "@triade/domain";
 import type { Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -39,6 +42,7 @@ import { registrar } from "../_shared/registro.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
+import { cifrarCredenciais, decifrarCredenciais, type ConectorWhatsapp, type CredenciaisWhatsapp } from "../_shared/whatsapp.ts";
 
 export interface DepsConsole extends DepsSessao {
   admin: AdminAuth;
@@ -48,6 +52,11 @@ export interface DepsConsole extends DepsSessao {
   urlPlataforma: string;
   /** Imagens dos chamados de suporte (bucket "suporte"), só leitura no Console. */
   armazenamentoSuporte?: Armazenamento;
+  /**
+   * WhatsApp do condomínio (passo 5): o conector, a chave que cifra as credenciais e o endereço
+   * da api-plataforma, onde chegam os avisos do provedor.
+   */
+  whatsapp?: { conector: ConectorWhatsapp; chave: CryptoKey; urlAvisos: string };
 }
 
 /** Área do acesso excepcional na rota (PI-11). */
@@ -132,7 +141,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   sessao.rotas(app);
 
   for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/contagens", "/v1/implantacoes",
-                      "/v1/suporte-acesso", "/v1/chamados"]) app.use(rota, sessao.exigirSessao);
+                      "/v1/suporte-acesso", "/v1/chamados", "/v1/whatsapp"]) app.use(rota, sessao.exigirSessao);
   const pessoa = (c: Context<VarsSessao>) => c.get("sessao").pessoaId;
 
   // Quem está no Console: nome, funções e o que pode fazer fora de um cliente.
@@ -489,6 +498,89 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const a = await rpc<{ caminho: string; nome: string; tipo: string }>("console_abrir_arquivo_chamado", { ...chamado(c), p_arquivo: idDaRota(c, "arquivo") });
     const url = await deps.armazenamentoSuporte.linkLeitura(a.caminho, VALIDADE_LINK_ARQUIVO_S);
     return c.json({ url, tipo: a.tipo, expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString() });
+  });
+
+  // WhatsApp do condomínio (passo 5; W-01, DC14): credenciais cifradas que nunca voltam para a
+  // tela, conexão pelo QR ou por código e conferência do aparelho. Quem pode é o banco que diz.
+  const whatsapp = () => {
+    if (!deps.whatsapp) throw new ErroDominio("UPSTREAM_UNAVAILABLE");
+    return deps.whatsapp;
+  };
+  const cliente = (c: Context<VarsSessao>) => ({ p_pessoa: pessoa(c), p_condominio: idDaRota(c, "id") });
+  interface AcessoWhatsapp { instancia: string; credenciais: string; numero: string | null; situacao: string }
+  async function credenciais(c: Context<VarsSessao>, para: "CONSULTAR" | "CONECTAR" | "DESCONECTAR"): Promise<CredenciaisWhatsapp & { numero: string | null }> {
+    const a = await rpc<AcessoWhatsapp>("console_whatsapp_acesso", { ...cliente(c), p_para: para });
+    const cred = await decifrarCredenciais(whatsapp().chave, a.credenciais);
+    return { instancia: a.instancia || cred.instancia, token: cred.token, numero: a.numero };
+  }
+  /** Falha do provedor vira "indisponível", sem o endereço (que tem o token) no registro. */
+  async function noProvedor<T>(oQue: string, f: () => Promise<T>): Promise<T> {
+    try {
+      return await f();
+    } catch (erro) {
+      registrar("aviso", { funcao: "api-console", rota: `whatsapp/${oQue}`, erro: erro instanceof Error ? erro.message : "falha" });
+      throw new ErroDominio("UPSTREAM_UNAVAILABLE", { motivo: "PROVEDOR" });
+    }
+  }
+
+  app.get("/v1/whatsapp", async (c) => c.json({ numeros: await rpc("console_whatsapp_lista", { p_pessoa: pessoa(c) }) }));
+
+  app.get("/v1/clientes/:id/whatsapp", async (c) => c.json(await rpc("console_whatsapp", cliente(c))));
+
+  app.put("/v1/clientes/:id/whatsapp/credenciais", async (c) => {
+    const d = await lerCorpo(c, credenciaisWhatsappSchema);
+    const w = whatsapp();
+    const r = await rpc<{ segredo: string; versao: number }>("console_whatsapp_credenciais", {
+      ...cliente(c), p_versao: d.versao, p_instancia: d.instancia,
+      p_credenciais: await cifrarCredenciais(w.chave, { instancia: d.instancia, token: d.token }),
+    });
+    // O segredo vai só para o provedor, no endereço dos avisos; nunca volta para a tela.
+    let avisos = true;
+    try {
+      await w.conector.ligarAvisos({ instancia: d.instancia, token: d.token }, `${w.urlAvisos}/v1/whatsapp/${r.segredo}`);
+    } catch (erro) {
+      registrar("aviso", { funcao: "api-console", rota: "whatsapp/avisos", erro: erro instanceof Error ? erro.message : "falha" });
+      avisos = false;
+    }
+    return c.json({ versao: r.versao, avisos });
+  });
+
+  app.post("/v1/clientes/:id/whatsapp/conectar", async (c) => {
+    const modo = (await c.req.json().catch(() => ({})) as { modo?: string }).modo === "CODIGO" ? "CODIGO" : "QR";
+    const cred = await credenciais(c, "CONECTAR");
+    const w = whatsapp();
+    if (modo === "CODIGO") {
+      const codigo = await noProvedor("codigo", () => w.conector.codigoPareamento(cred, cred.numero ?? ""));
+      await rpc("console_whatsapp_situacao", { ...cliente(c), p_situacao: "CONECTANDO", p_aparelho: null, p_motivo: null });
+      return c.json({ codigo });
+    }
+    const qr = await noProvedor("qr", () => w.conector.qrCode(cred));
+    if (qr.conectado) return c.json({ conectado: true });
+    await rpc("console_whatsapp_situacao", { ...cliente(c), p_situacao: "CONECTANDO", p_aparelho: null, p_motivo: null });
+    return c.json({ qr: qr.imagem });
+  });
+
+  // Confere no provedor: conectado só vale com o aparelho do número da ficha; outro aparelho é
+  // desconectado na hora.
+  app.post("/v1/clientes/:id/whatsapp/verificar", async (c) => {
+    const cred = await credenciais(c, "CONSULTAR");
+    const w = whatsapp();
+    const s = await noProvedor("situacao", () => w.conector.situacao(cred));
+    if (!s.conectado) {
+      return c.json(await rpc("console_whatsapp_situacao", { ...cliente(c), p_situacao: "DESCONECTADO", p_aparelho: null, p_motivo: null }));
+    }
+    const r = await rpc<{ aparelhoDiferente?: boolean }>("console_whatsapp_situacao", {
+      ...cliente(c), p_situacao: "CONECTADO", p_aparelho: s.aparelho, p_motivo: null,
+    });
+    if (r.aparelhoDiferente) await noProvedor("desconectar", () => w.conector.desconectar(cred));
+    return c.json(r);
+  });
+
+  app.post("/v1/clientes/:id/whatsapp/desconectar", async (c) => {
+    const d = await lerCorpo(c, desconectarWhatsappSchema);
+    const cred = await credenciais(c, "DESCONECTAR");
+    await noProvedor("desconectar", () => whatsapp().conector.desconectar(cred));
+    return c.json(await rpc("console_whatsapp_situacao", { ...cliente(c), p_situacao: "DESCONECTADO", p_aparelho: null, p_motivo: d.motivo }));
   });
 
   return app;

@@ -23,7 +23,8 @@ export interface EstadoMemoria {
 
 let n = 0;
 const novoId = () => `7e8f9a0b-1c2d-4e3f-8a4b-${String(++n).padStart(12, "0")}`;
-const dia = (d: number) => new Date(Date.now() + d * 86400_000).toISOString().slice(0, 10);
+// Data no fuso de Brasília (UTC-3), como a tela conta os dias; em UTC, das 21h à meia-noite a conta erraria por um.
+const dia = (d: number) => new Date(Date.now() - 3 * 3600_000 + d * 86400_000).toISOString().slice(0, 10);
 const agora = () => new Date().toISOString();
 const SUGERIDOS: [string, string, string][] = [
   ["CONVENCAO", "CONSTITUICAO", "Convenção"], ["REGIMENTO", "CONSTITUICAO", "Regimento interno"], ["ATA_AGO", "CONSTITUICAO", "Ata da última assembleia ordinária"],

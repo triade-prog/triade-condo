@@ -123,6 +123,13 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
               Pedidos
             </ItemMenu>
           ) : null}
+          {painel.whatsapp && painel.whatsapp.situacao !== "SEM_CREDENCIAIS" ? (
+            <ItemMenu href="/whatsapp" icone="whats" atual={caminho.startsWith("/whatsapp")}
+              contagem={painel.whatsapp.aIdentificar + painel.whatsapp.falhas
+                ? <span className="contagem">{painel.whatsapp.aIdentificar + painel.whatsapp.falhas}<span className="sr-only"> para ver</span></span> : null}>
+              WhatsApp
+            </ItemMenu>
+          ) : null}
           {pode("agenda.ver") ? <ItemMenu href="/agenda" icone="calendario" atual={caminho.startsWith("/agenda")}>Agenda</ItemMenu> : null}
           {pode("manutencao.ver") ? (
             <ItemMenu href="/manutencao" icone="ferramenta" atual={caminho.startsWith("/manutencao")}

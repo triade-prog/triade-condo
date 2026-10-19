@@ -16,6 +16,7 @@ import { AbaRegras } from "./AbaRegras.tsx";
 import { AbaManutencao } from "./AbaManutencao.tsx";
 import { AbaComunicados } from "./AbaComunicados.tsx";
 import { AbaLinksQr } from "./AbaLinksQr.tsx";
+import { AbaWhatsapp } from "./AbaWhatsapp.tsx";
 
 const ABAS = [
   { id: "horarios", texto: "Horários" },
@@ -27,6 +28,7 @@ const ABAS = [
   { id: "manutencao", texto: "Manutenção" },
   { id: "comunicados", texto: "Comunicados" },
   { id: "links", texto: "Links e QR" },
+  { id: "whatsapp", texto: "WhatsApp" },
 ] as const;
 type IdAba = (typeof ABAS)[number]["id"];
 
@@ -89,6 +91,7 @@ export function Configuracoes() {
           {aba === "manutencao" ? <AbaManutencao {...props} /> : null}
           {aba === "comunicados" ? <AbaComunicados {...props} /> : null}
           {aba === "links" ? <AbaLinksQr {...props} /> : null}
+          {aba === "whatsapp" ? <AbaWhatsapp aoSalvar={props.salvo} /> : null}
         </div>
       </Abas>
     </div>

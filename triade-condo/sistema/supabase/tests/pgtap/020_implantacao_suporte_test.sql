@@ -331,7 +331,7 @@ select is((select interno from historico where acao = 'sindico.trocado'), false,
 select is((select jsonb_array_length(console_trocas(adm, ipe)) from ids, c), 1, 'CT-01: a ficha lista as trocas');
 
 -- Menu do Console e sino.
-select is((select console_contagens(sup) from ids), '{"carteira": 1, "chamados": 1, "implantacoes": 0, "suporteAcesso": 0}'::jsonb,
+select is((select console_contagens(sup) from ids), '{"carteira": 1, "chamados": 1, "whatsapp": 0, "implantacoes": 0, "suporteAcesso": 0}'::jsonb,
   'os números do menu contam só os atribuídos');
 select ok((select plataforma_marcar_avisos(gil, ipe, null) from ids, c) >= 1, 'o sino marca os avisos da TRÍADE como vistos');
 

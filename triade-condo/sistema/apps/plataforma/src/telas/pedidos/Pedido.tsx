@@ -5,12 +5,12 @@
 // e, em abas, o andamento, o histórico completo (AT-17), o relato, as conclusões e as fotos e
 // documentos (passo 4b, PT-07). Com o retorno vencido, a faixa do aviso (passo 6, AT-09).
 // A visita marcada na agenda, separada dos dois compromissos (peça R7, AG-08, MP-04), e a
-// manutenção ligada (peça R6, MP-04).
+// manutenção ligada (peça R6, MP-04). A conversa do WhatsApp do condomínio (passo 5).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { CANAIS_PEDIDO, descreverEventoPedido, mostrarDataSemHora, mostrarTelefone, REVISOES_CONCLUSAO, TIPOS_PENDENCIA, tempoAberto } from "@triade/domain";
+import { CANAIS_PEDIDO_EXIBICAO, descreverEventoPedido, mostrarDataSemHora, mostrarTelefone, REVISOES_CONCLUSAO, TIPOS_PENDENCIA, tempoAberto } from "@triade/domain";
 import { Abas, Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, IconeMarca, Selo, textoDoErro, Vazio } from "@triade/ui";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { OpcoesPedidos, PedidoDetalhe, PendenciaPedido, Recado } from "../tipos.ts";
@@ -22,6 +22,7 @@ import { FaixaPrazo } from "./FaixaPrazo.tsx";
 import { NaAgenda } from "../agenda/NaAgenda.tsx";
 import { NaManutencao } from "../manutencao/NaManutencao.tsx";
 import { NosComunicados } from "../comunicados/NosComunicados.tsx";
+import { ConversaWhatsapp } from "../whatsapp/ConversaWhatsapp.tsx";
 
 const ABAS = [
   { id: "andamento", texto: "Andamento" },
@@ -101,9 +102,9 @@ export function Pedido() {
           <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-tinta-suave">
             <SeloEstadoPedido estado={p.estado} />
             {p.privado ? <Selo tom="neutro">Privado</Selo> : null}
-            <span>{[ativo ? p.etapa.nome : null, p.categoria.nome, p.prioridade.nome, onde, quem, `por ${nomeDe(CANAIS_PEDIDO, p.canal).toLowerCase()}`].filter(Boolean).join(" · ")}</span>
+            <span>{[ativo ? p.etapa.nome : null, p.categoria.nome, p.prioridade.nome, onde, quem, `por ${nomeDe(CANAIS_PEDIDO_EXIBICAO, p.canal).toLowerCase()}`].filter(Boolean).join(" · ")}</span>
           </p>
-          <p className="mt-1 text-xs text-tinta-suave">Registrado por {p.registradoPor} em {diaHora(p.abertoEm)} · aberto há {tempoAberto(p.abertoEm, p.encerradoEm ?? p.cancelamento?.em ?? d.agora)}</p>
+          <p className="mt-1 text-xs text-tinta-suave">{p.registradoPor ? `Registrado por ${p.registradoPor}` : "Aberto pelo morador no WhatsApp"} em {diaHora(p.abertoEm)} · aberto há {tempoAberto(p.abertoEm, p.encerradoEm ?? p.cancelamento?.em ?? d.agora)}</p>
         </div>
         {d.pode.aceitar ? <Botao onClick={() => void aceitar()}>Aceitar o pedido</Botao> : null}
       </div>
@@ -147,6 +148,8 @@ export function Pedido() {
       <NaAgenda key={`${p.id}-${p.previsao ?? ""}`} pedido={p} ativo={!fechado} avisar={(texto) => { setRecado({ tom: "ok", texto }); setFalha(null); }} />
       <NaManutencao pedido={p} ativo={!fechado} avisar={(texto) => { setRecado({ tom: "ok", texto }); setFalha(null); }} />
       <NosComunicados pedidoId={p.id} ativo={!fechado} />
+      <ConversaWhatsapp key={`${p.id}-${p.estado}`} pedidoId={p.id} versao={p.versao} aoResponder={(texto) => salvo(texto)}
+        aoReabrir={d.pode.concluir && p.estado === "ENCERRADO" && d.regras.reabertura ? () => setAcao("reabrir") : undefined} />
 
       <p className="flex flex-wrap items-center gap-2 text-sm">
         <span className="font-medium">Responsável:</span>
@@ -215,7 +218,7 @@ export function Pedido() {
                 {d.andamentos.map((a) => (
                   <li key={a.id} className="grid gap-0.5 px-4 py-3 text-sm">
                     <span className="flex flex-wrap items-center gap-2 text-xs text-tinta-suave">
-                      {a.tipo === "RETORNO" ? <Selo tom="ok">Retorno {nomeDe({ TELEFONE: "por telefone", PRESENCIAL: "pessoalmente", MENSAGEM: "por mensagem", EMAIL: "por e-mail", OUTRO: "por outro meio" }, a.meio)}</Selo>
+                      {a.tipo === "RETORNO" ? <Selo tom="ok">Retorno {nomeDe({ TELEFONE: "por telefone", PRESENCIAL: "pessoalmente", MENSAGEM: "por mensagem", EMAIL: "por e-mail", OUTRO: "por outro meio", WHATSAPP: "pelo WhatsApp" }, a.meio)}</Selo>
                         : <Selo tom="neutro">Nota interna</Selo>}
                       {a.autor} · {diaHora(a.em)}
                     </span>
