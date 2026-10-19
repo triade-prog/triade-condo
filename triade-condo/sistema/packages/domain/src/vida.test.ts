@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  avisoQuorum, descreverEventoAssembleia, fracoesSchema, porcento, salvarAssembleiaSchema,
   areaSchema,
   criarEnqueteSchema,
   descreverEventoEnquete,
@@ -99,5 +100,34 @@ describe("enquetes (AC-03)", () => {
     expect(descreverEventoEnquete("enquete.criada", { convites: 12 })).toBe("Enviada para 12 convites");
     expect(descreverEventoEnquete("enquete.encerrada", { pelo: "PRAZO" })).toBe("Fechou no prazo");
     expect(descreverEventoEnquete("enquete.link_gerado", { para: "Torre A · 201" })).toBe("Link copiado para Torre A · 201");
+  });
+});
+
+describe("assembleias (AC-02)", () => {
+  const base = { titulo: "AGO de março", tipo: "ORDINARIA", forma: "HIBRIDA", primeiraChamada: "2027-03-20T19:00:00-03:00",
+    segundaChamada: "2027-03-20T19:30:00-03:00", itens: [{ titulo: "Contas de 2026", tipo: "APROVACAO", quorum: "MAIORIA_PRESENTES" }] };
+  it("pede a pauta, as chamadas com fuso e os valores conhecidos", () => {
+    expect(salvarAssembleiaSchema.parse(base).versao).toBeNull();
+    expect(salvarAssembleiaSchema.safeParse({ ...base, itens: [] }).success).toBe(false);
+    expect(salvarAssembleiaSchema.safeParse({ ...base, primeiraChamada: "2027-03-20" }).success).toBe(false);
+    expect(salvarAssembleiaSchema.safeParse({ ...base, itens: [{ ...base.itens[0], quorum: "TUDO" }] }).success).toBe(false);
+  });
+  it("aceita fração vazia, mas não fora de 0 a 100", () => {
+    const u = "8f9a0b1c-2d3e-4f4a-9b5c-000000000001";
+    expect(fracoesSchema.safeParse({ fracoes: [{ unidadeId: u, fracao: null, versao: 1 }] }).success).toBe(true);
+    expect(fracoesSchema.safeParse({ fracoes: [{ unidadeId: u, fracao: 0, versao: 1 }] }).success).toBe(false);
+    expect(fracoesSchema.safeParse({ fracoes: [{ unidadeId: u, fracao: 100.5, versao: 1 }] }).success).toBe(false);
+  });
+  it("avisa quando o quórum não é alcançável e escreve a porcentagem", () => {
+    expect(avisoQuorum("MAIORIA_PRESENTES", false)).toBeNull();
+    expect(avisoQuorum("DOIS_TERCOS_TODAS", true)).toBeNull();
+    expect(avisoQuorum("DOIS_TERCOS_TODAS", false)).toBe("Os presentes não alcançam dois terços de todas as frações: mesmo com todos a favor, o item não passa.");
+    expect([porcento(62.5), porcento(100), porcento(33.333)]).toEqual(["62,5%", "100%", "33,3%"]);
+  });
+  it("descreve o histórico", () => {
+    expect(descreverEventoAssembleia("assembleia.convocada", { unidades: 48 })).toBe("Convocada: edital publicado e 48 unidades convidadas");
+    expect(descreverEventoAssembleia("assembleia.item_encerrado", { item: 2, situacao: "ESCOLHIDA", vencedor: "Rui" })).toBe("Item 2 votado: escolhida Rui");
+    expect(descreverEventoAssembleia("assembleia.procuracao_recusada", { unidade: "Torre A · 201", motivo: "Sem firma" }))
+      .toBe("Procuração de Torre A · 201 recusada: Sem firma");
   });
 });

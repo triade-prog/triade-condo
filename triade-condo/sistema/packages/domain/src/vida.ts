@@ -32,7 +32,7 @@ export const FILTROS_RESERVA = { A_APROVAR: "A aprovar", PROXIMAS: "Próximas", 
 export type FiltroReserva = keyof typeof FILTROS_RESERVA;
 
 /** As abas da Vida em condomínio, com a ação que deixa ver cada uma (decisão 1). */
-export const ABAS_VIDA = { reservas: "Reservas", enquetes: "Enquetes" } as const;
+export const ABAS_VIDA = { reservas: "Reservas", enquetes: "Enquetes", assembleias: "Assembleias" } as const;
 export type AbaVida = keyof typeof ABAS_VIDA;
 
 /** Quem responde a enquete (AC-03): uma resposta por unidade ou por pessoa com vínculo confirmado. */
@@ -45,6 +45,54 @@ export type CanalEnquete = keyof typeof CANAIS_ENQUETE;
 
 export const SITUACOES_ENQUETE = { ABERTA: "Aberta", ENCERRADA: "Encerrada" } as const;
 export type SituacaoEnquete = keyof typeof SITUACOES_ENQUETE;
+
+/** Assembleias (AC-02; 0240_vida_assembleias.sql). */
+export const TIPOS_ASSEMBLEIA = { ORDINARIA: "Ordinária", EXTRAORDINARIA: "Extraordinária" } as const;
+export type TipoAssembleia = keyof typeof TIPOS_ASSEMBLEIA;
+
+export const FORMAS_ASSEMBLEIA = { PRESENCIAL: "Presencial", ONLINE: "Online", HIBRIDA: "Híbrida" } as const;
+export type FormaAssembleia = keyof typeof FORMAS_ASSEMBLEIA;
+
+export const ESTADOS_ASSEMBLEIA = {
+  RASCUNHO: "Rascunho",
+  CONVOCADA: "Convocada",
+  EM_ANDAMENTO: "Em andamento",
+  ENCERRADA: "Encerrada",
+  CANCELADA: "Cancelada",
+} as const;
+export type EstadoAssembleia = keyof typeof ESTADOS_ASSEMBLEIA;
+
+/** Como o voto pesa (decisão 9). */
+export const PESOS_ASSEMBLEIA = { FRACAO: "Pela fração ideal", UNIDADE: "Um voto por unidade" } as const;
+export type PesoAssembleia = keyof typeof PESOS_ASSEMBLEIA;
+
+export const TIPOS_ITEM = { APROVACAO: "Aprovar ou não (Sim, Não, Abstenção)", ESCOLHA: "Escolher entre opções" } as const;
+export type TipoItem = keyof typeof TIPOS_ITEM;
+
+/** Os quóruns comuns; a convenção de cada prédio é que manda (decisão 9). */
+export const QUORUNS = {
+  MAIORIA_PRESENTES: "Maioria dos presentes",
+  MAIORIA_TODAS: "Maioria de todas as frações",
+  DOIS_TERCOS_TODAS: "Dois terços de todas as frações",
+  UNANIMIDADE: "Unanimidade",
+} as const;
+export type Quorum = keyof typeof QUORUNS;
+
+export const ESTADOS_ITEM = { AGUARDANDO: "Aguardando", ABERTO: "Em votação", ENCERRADO: "Votado" } as const;
+export type EstadoItem = keyof typeof ESTADOS_ITEM;
+
+export const SITUACOES_ITEM = {
+  APROVADO: "Aprovado",
+  REPROVADO: "Não aprovado",
+  ESCOLHIDA: "Escolhida",
+  EMPATE: "Empate",
+  SEM_QUORUM: "Sem quórum",
+  SEM_VOTOS: "Sem votos",
+} as const;
+export type SituacaoItem = keyof typeof SITUACOES_ITEM;
+
+export const ESTADOS_PROCURACAO = { PENDENTE: "A conferir", ACEITA: "Aceita", RECUSADA: "Recusada" } as const;
+export type EstadoProcuracao = keyof typeof ESTADOS_PROCURACAO;
 
 const chaves = <T extends Record<string, unknown>>(o: T) => Object.keys(o) as [keyof T & string, ...(keyof T & string)[]];
 const data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -132,6 +180,44 @@ export type NovaEnquete = z.infer<typeof criarEnqueteSchema>;
 export const versaoEnqueteSchema = z.object({ versao });
 export const linkEnqueteSchema = z.object({ conviteId: uuid });
 export const responderEnqueteSchema = z.object({ opcao: z.number().int().min(1).max(6) });
+
+const itemPautaSchema = z.object({
+  titulo: z.string().trim().max(200),
+  descricao: z.string().trim().max(1000).optional(),
+  tipo: z.enum(chaves(TIPOS_ITEM)),
+  opcoes: z.array(z.string().trim().max(80)).max(10).optional(),
+  quorum: z.enum(chaves(QUORUNS)),
+});
+
+/** O rascunho da assembleia e a pauta (AC-02). O banco confere datas, pauta e opções. */
+export const salvarAssembleiaSchema = z.object({
+  versao: opcional(versao),
+  titulo: z.string().trim().min(5).max(120),
+  tipo: z.enum(chaves(TIPOS_ASSEMBLEIA)),
+  forma: z.enum(chaves(FORMAS_ASSEMBLEIA)),
+  primeiraChamada: z.string().datetime({ offset: true }),
+  segundaChamada: z.string().datetime({ offset: true }),
+  local: z.string().trim().max(200).optional(),
+  linkVideo: z.string().trim().max(300).optional(),
+  itens: z.array(itemPautaSchema).min(1).max(30),
+});
+export type DadosAssembleia = z.infer<typeof salvarAssembleiaSchema>;
+
+export const versaoAssembleiaSchema = z.object({ versao });
+export const cancelarAssembleiaSchema = z.object({ versao, motivo: z.string().trim().min(3).max(500) });
+export const itemAssembleiaSchema = z.object({ itemId: uuid });
+export const presencaAssembleiaSchema = z.object({ conviteId: uuid, presente: z.boolean() });
+export const direitoVotoSchema = z.object({ conviteId: uuid, semDireito: z.boolean(), motivo: z.string().trim().max(300).optional() });
+export const procuracaoSchema = z.object({ conviteId: uuid, aceitar: z.boolean(), motivo: z.string().trim().max(300).optional() });
+export const registrarVotoSchema = z.object({ conviteId: uuid, itemId: uuid, opcao: z.number().int().min(1).max(11) });
+export const ataAssembleiaSchema = z.object({ versao, texto: z.string().max(20000).optional(), documentoId: opcional(uuid) });
+export const linkAssembleiaSchema = z.object({ conviteId: uuid });
+export const regrasAssembleiaSchema = z.object({ versao, antecedencia: z.number().int().min(1).max(60), peso: z.enum(chaves(PESOS_ASSEMBLEIA)) });
+export const fracoesSchema = z.object({
+  fracoes: z.array(z.object({ unidadeId: uuid, fracao: z.number().gt(0).max(100).nullable(), versao })).max(2000),
+});
+export const votarAssembleiaSchema = z.object({ itemId: uuid, opcao: z.number().int().min(1).max(11) });
+export const procuracaoPublicaSchema = z.object({ nome: z.string().trim().min(3).max(120).nullable(), unidadeId: opcional(uuid) });
 
 // ---------------------------------------------------------------------------------------
 // Textos das telas.
@@ -234,4 +320,44 @@ export function textoRespostas(responderam: number, total: number): string {
 /** A porcentagem de cada opção, arredondada, sobre quem respondeu. */
 export function porcentagem(votos: number, total: number): number {
   return total > 0 ? Math.round((100 * votos) / total) : 0;
+}
+
+/** Os eventos da assembleia no histórico. */
+export function descreverEventoAssembleia(acao: string, d: Record<string, unknown>): string {
+  const u = String(d.unidade ?? "uma unidade");
+  switch (acao) {
+    case "assembleia.criada": return "Rascunho criado";
+    case "assembleia.convocada": return `Convocada: edital publicado e ${Number(d.unidades ?? 0)} unidades convidadas`;
+    case "assembleia.lembrete": return "Lembrete enviado na véspera";
+    case "assembleia.cancelada": return `Cancelada: ${String(d.motivo ?? "")}`;
+    case "assembleia.iniciada": return "Assembleia começou";
+    case "assembleia.item_aberto": return `Item ${Number(d.item)} em votação`;
+    case "assembleia.item_encerrado": {
+      const s = SITUACOES_ITEM[d.situacao as SituacaoItem] ?? "votado";
+      return `Item ${Number(d.item)} votado: ${d.vencedor ? `${s.toLowerCase()} ${String(d.vencedor)}` : s.toLowerCase()}`;
+    }
+    case "assembleia.presenca": return `Presença no salão: ${u}`;
+    case "assembleia.presenca_retirada": return `Presença retirada: ${u}`;
+    case "assembleia.sem_direito": return `Sem direito a voto: ${u} (${String(d.motivo ?? "")})`;
+    case "assembleia.direito_devolvido": return `Direito a voto devolvido: ${u}`;
+    case "assembleia.procuracao_indicada": return `Procuração indicada por ${u}: ${String(d.procurador ?? "")}`;
+    case "assembleia.procuracao_retirada": return `Procuração retirada por ${u}`;
+    case "assembleia.procuracao_aceita": return `Procuração de ${u} aceita`;
+    case "assembleia.procuracao_recusada": return `Procuração de ${u} recusada: ${String(d.motivo ?? "")}`;
+    case "assembleia.link_gerado": return `Link copiado para ${u}`;
+    case "assembleia.encerrada": return "Assembleia encerrada";
+    case "assembleia.ata_ligada": return `Ata ligada: ${String(d.documento ?? "")}`;
+    default: return "Alteração";
+  }
+}
+
+/** "62,5%" (uma casa, vírgula). */
+export function porcento(n: number): string {
+  return `${(Math.round(n * 10) / 10).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+}
+
+/** O quórum de todas as frações não dá com quem está presente: avisa antes de votar. */
+export function avisoQuorum(quorum: Quorum, alcancavel: boolean): string | null {
+  if (alcancavel || quorum === "MAIORIA_PRESENTES") return null;
+  return `Os presentes não alcançam ${QUORUNS[quorum].toLowerCase()}: mesmo com todos a favor, o item não passa.`;
 }

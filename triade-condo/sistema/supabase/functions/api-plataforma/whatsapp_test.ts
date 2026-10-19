@@ -178,6 +178,18 @@ Deno.test("AC-03: o convite da enquete sai com o link pessoal no lugar de [link]
   assertEquals(m2.zap.enviados[0]!.texto, "Responda pelo link:\nhttps://plataforma.exemplo/v/K7QM-3XPA-9TRE");
 });
 
+Deno.test("AC-02: a convocação da assembleia sai com o link pessoal na rota da assembleia", async () => {
+  const chave = await chaveCredenciais(CHAVE);
+  const bytea = await cifrarCredenciais(chave, { instancia: "ipe-inst", token: "t-123456789" });
+  const credenciais = btoa(String.fromCharCode(...bytea.slice(2).match(/../g)!.map((h) => parseInt(h, 16))));
+  const m2 = await montar({
+    lote: [{ condominio: IPE, instancia: "ipe-inst", credenciais,
+      envios: [{ envio: ENVIO, para: "+5561900000000", texto: "Vote pelo link:\n[link]", link: "K7QM-3XPA-9TRE", rota: "a" }] }],
+  });
+  await m2.pedir("/v1/interno/fila-whatsapp", { corpo: {} });
+  assertEquals(m2.zap.enviados[0]!.texto, "Vote pelo link:\nhttps://plataforma.exemplo/a/K7QM-3XPA-9TRE");
+});
+
 Deno.test("as telas do WhatsApp pedem a sessão e validam a entrada", async () => {
   const m = await montar();
   assertEquals((await erro(await m.pedir("/v1/condominio/whatsapp"))).codigo, "UNAUTHORIZED");

@@ -10,7 +10,7 @@
 // Ajuda e suporte (PI-17, PI-20) e a aprovação do acesso excepcional da TRÍADE (PI-11).
 // Passo 5: WhatsApp do condomínio (W-05, W-09 a W-16), com o aviso do provedor protegido pelo
 // segredo do condomínio no caminho e a fila de envio. Peça R12: Vida em condomínio (áreas comuns
-// e reservas; AC-01, AC-06, AC-07), com as enquetes e o link pessoal de cada unidade (AC-03).
+// e reservas; AC-01, AC-06, AC-07), com as enquetes e o link pessoal de cada unidade (AC-03), e as assembleias com o link pessoal de cada unidade (AC-02).
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
@@ -151,6 +151,20 @@ import {
   conferirReservaSchema,
   filtroReservasSchema,
   criarEnqueteSchema,
+  ataAssembleiaSchema,
+  cancelarAssembleiaSchema,
+  direitoVotoSchema,
+  fracoesSchema,
+  itemAssembleiaSchema,
+  linkAssembleiaSchema,
+  presencaAssembleiaSchema,
+  procuracaoPublicaSchema,
+  procuracaoSchema,
+  registrarVotoSchema,
+  regrasAssembleiaSchema,
+  salvarAssembleiaSchema,
+  versaoAssembleiaSchema,
+  votarAssembleiaSchema,
   linkEnqueteSchema,
   responderEnqueteSchema,
   versaoEnqueteSchema,
@@ -778,6 +792,93 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/enquetes/:id/link", async (c) => {
     const d = await lerCorpo(c, linkEnqueteSchema);
     return c.json(await rpc("plataforma_link_enquete", { ...quem(c), p_id: idDaRota(c, "id"), p_convite: d.conviteId }));
+  });
+
+  // Assembleias (AC-02): o banco confere antecedência, frações, quórum e o resultado; aqui só se
+  // valida a entrada.
+  app.get("/v1/condominio/assembleias", async (c) => c.json(await rpc("plataforma_assembleias", quem(c))));
+
+  app.put("/v1/condominio/assembleias/regras", async (c) => {
+    const d = await lerCorpo(c, regrasAssembleiaSchema);
+    return c.json(await rpc("plataforma_regras_assembleia", { ...quem(c), p_versao: d.versao, p_antecedencia: d.antecedencia, p_peso: d.peso }));
+  });
+
+  app.get("/v1/condominio/fracoes", async (c) => c.json(await rpc("plataforma_fracoes", quem(c))));
+  app.put("/v1/condominio/fracoes", async (c) => {
+    const d = await lerCorpo(c, fracoesSchema);
+    return c.json(await rpc("plataforma_salvar_fracoes", { ...quem(c), p_fracoes: d.fracoes }));
+  });
+
+  app.post("/v1/condominio/assembleias", async (c) => {
+    const { versao: _v, ...d } = await lerCorpo(c, salvarAssembleiaSchema);
+    return c.json(await rpc("plataforma_salvar_assembleia", { ...quem(c), p_id: null, p_versao: null, p_dados: d }), 201);
+  });
+
+  app.get("/v1/condominio/assembleias/:id", async (c) => c.json(await rpc("plataforma_assembleia", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  app.put("/v1/condominio/assembleias/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, salvarAssembleiaSchema);
+    if (versao === null) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return c.json(await rpc("plataforma_salvar_assembleia", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+
+  for (const acao of ["convocar", "iniciar", "encerrar"] as const) {
+    app.post(`/v1/condominio/assembleias/:id/${acao}`, async (c) => {
+      const d = await lerCorpo(c, versaoAssembleiaSchema);
+      const r = await rpc(`plataforma_${acao}_assembleia`, { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao });
+      if (acao === "convocar") esvaziarFila();
+      return c.json(r);
+    });
+  }
+
+  app.post("/v1/condominio/assembleias/:id/cancelar", async (c) => {
+    const d = await lerCorpo(c, cancelarAssembleiaSchema);
+    return c.json(await rpc("plataforma_cancelar_assembleia", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  for (const acao of ["abrir", "encerrar"] as const) {
+    app.post(`/v1/condominio/assembleias/:id/itens/${acao}`, async (c) => {
+      const d = await lerCorpo(c, itemAssembleiaSchema);
+      return c.json(await rpc(`plataforma_${acao}_item`, { ...quem(c), p_id: idDaRota(c, "id"), p_item: d.itemId }));
+    });
+  }
+
+  app.post("/v1/condominio/assembleias/:id/presenca", async (c) => {
+    const d = await lerCorpo(c, presencaAssembleiaSchema);
+    return c.json(await rpc("plataforma_presenca_assembleia", { ...quem(c), p_id: idDaRota(c, "id"), p_convite: d.conviteId, p_presente: d.presente }));
+  });
+
+  app.post("/v1/condominio/assembleias/:id/direito", async (c) => {
+    const d = await lerCorpo(c, direitoVotoSchema);
+    return c.json(await rpc("plataforma_direito_voto", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_convite: d.conviteId, p_sem_direito: d.semDireito, p_motivo: d.motivo ?? null,
+    }));
+  });
+
+  app.post("/v1/condominio/assembleias/:id/procuracao", async (c) => {
+    const d = await lerCorpo(c, procuracaoSchema);
+    return c.json(await rpc("plataforma_procuracao", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_convite: d.conviteId, p_aceitar: d.aceitar, p_motivo: d.motivo ?? null,
+    }));
+  });
+
+  app.post("/v1/condominio/assembleias/:id/voto", async (c) => {
+    const d = await lerCorpo(c, registrarVotoSchema);
+    return c.json(await rpc("plataforma_registrar_voto", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_convite: d.conviteId, p_item: d.itemId, p_opcao: d.opcao,
+    }));
+  });
+
+  app.put("/v1/condominio/assembleias/:id/ata", async (c) => {
+    const d = await lerCorpo(c, ataAssembleiaSchema);
+    return c.json(await rpc("plataforma_ata_assembleia", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_texto: d.texto ?? null, p_documento: d.documentoId,
+    }));
+  });
+
+  app.post("/v1/condominio/assembleias/:id/link", async (c) => {
+    const d = await lerCorpo(c, linkAssembleiaSchema);
+    return c.json(await rpc("plataforma_link_assembleia", { ...quem(c), p_id: idDaRota(c, "id"), p_convite: d.conviteId }));
   });
 
   // Manutenção e prestadores (peça R6; MP-01 a MP-05, MP-07, MP-09, MP-13). O banco decide quem
@@ -1429,6 +1530,25 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json(await rpc("publico_responder_enquete", { p_codigo: codigo, p_opcao: d.opcao }));
   });
 
+  // O link pessoal da assembleia (AC-02): abrir durante a assembleia registra a presença online.
+  app.get("/v1/publico/a/:codigo", async (c) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("link", await aparelho(c));
+    return c.json(await rpc("publico_assembleia", { p_codigo: codigo }));
+  });
+  app.post("/v1/publico/a/:codigo/voto", async (c) => {
+    const codigo = codigoDaRota(c);
+    const d = await lerCorpo(c, votarAssembleiaSchema);
+    await dentroDoLimite("link", await aparelho(c));
+    return c.json(await rpc("publico_votar_assembleia", { p_codigo: codigo, p_item: d.itemId, p_opcao: d.opcao }));
+  });
+  app.post("/v1/publico/a/:codigo/procuracao", async (c) => {
+    const codigo = codigoDaRota(c);
+    const d = await lerCorpo(c, procuracaoPublicaSchema);
+    await dentroDoLimite("link", await aparelho(c));
+    return c.json(await rpc("publico_procuracao_assembleia", { p_codigo: codigo, p_nome: d.nome, p_unidade_procurador: d.unidadeId }));
+  });
+
   // Link do prestador (V-11, MP-08): o serviço, a chegada, o "não consegui fazer", o "terminei" e as fotos.
   const prestador = async (c: Context) => {
     const codigo = codigoDaRota(c);
@@ -1744,7 +1864,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     condominio: string;
     instancia: string;
     credenciais: string;
-    envios: { envio: string; para: string; texto: string; pedido?: string; link?: string }[];
+    envios: { envio: string; para: string; texto: string; pedido?: string; link?: string; rota?: "v" | "a" }[];
   }
 
   function noFundo(trabalho: () => Promise<unknown>) {
@@ -1775,8 +1895,9 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       for (const l of lotes) {
         const cred = await decifrarCredenciais(chave, l.credenciais);
         for (const e of l.envios) {
-          // O link pessoal da enquete entra só aqui: o banco guarda o texto com [link] (peça R12).
-          const comLink = e.link ? e.texto.replaceAll("[link]", `${deps.urlApp.replace(/\/$/, "")}/v/${e.link}`) : e.texto;
+          // O link pessoal da enquete (/v) ou da assembleia (/a) entra só aqui: o banco guarda o
+          // texto com [link] (peça R12).
+          const comLink = e.link ? e.texto.replaceAll("[link]", `${deps.urlApp.replace(/\/$/, "")}/${e.rota ?? "v"}/${e.link}`) : e.texto;
           const texto = textoComLinkDoPainel(comLink, e.pedido ? `${deps.urlApp}/pedidos/pedido?id=${e.pedido}` : null);
           const r = await conector.enviarTexto({ instancia: l.instancia || cred.instancia, token: cred.token }, e.para, texto);
           await rpc("whatsapp_resultado", {

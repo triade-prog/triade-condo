@@ -1,4 +1,4 @@
-// E-mail dos comunicados, documentos e convites de enquete (CD-13, CD-14, AC-03). O banco monta a fila e diz o que vai em
+// E-mail dos comunicados, documentos e convites de enquete e de assembleia (CD-13, CD-14, AC-02, AC-03). O banco monta a fila e diz o que vai em
 // cada e-mail; aqui o e-mail ganha forma (HTML e texto), sai pelo Resend e os avisos do provedor
 // (entregue, devolvido, spam) são conferidos pela assinatura antes de voltar ao banco.
 
@@ -8,13 +8,13 @@ import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
 export interface MensagemFila {
   envio: string;
   condominio: string;
-  tipo: "COMUNICADO" | "CONFIRMACAO" | "DOCUMENTO" | "ENQUETE";
+  tipo: "COMUNICADO" | "CONFIRMACAO" | "DOCUMENTO" | "ENQUETE" | "ASSEMBLEIA";
   para: string;
   condominioNome: string;
   responderPara?: string;
   nome?: string;
   unidades?: string;
-  codigos: { ver?: string; parar?: string; confirmar?: string; abrir?: string; responder?: string };
+  codigos: { ver?: string; parar?: string; confirmar?: string; abrir?: string; responder?: string; votar?: string };
   comunicado?: {
     assunto: string;
     titulo: string;
@@ -26,6 +26,8 @@ export interface MensagemFila {
   documento?: { titulo: string; numero: number; vigenteDesde: string; recado?: string };
   /** Convite (ou lembrete) de enquete: o link é só da unidade ou da pessoa (peça R12). */
   enquete?: { pergunta: string; prazo: string; dono: string; lembrete: boolean; secreta: boolean };
+  /** Convocação (ou lembrete) de assembleia, com o link pessoal da unidade (peça R12). */
+  assembleia?: { titulo: string; nome: string; chamada: string; dono: string; lembrete: boolean };
 }
 
 export interface EmailPronto {
@@ -139,6 +141,28 @@ export function montarEmail(m: MensagemFila, e: EnderecosEmail): EmailPronto {
         `<p style="margin:0 0 8px"><span style="display:inline-block;background:#F1EFF5;border-radius:6px;padding:2px 8px;font-size:12px;color:#4A4258">Enquete</span></p><h1 style="font-size:22px;font-weight:600;margin:4px 0 14px">${esc(q.pergunta)}</h1><p style="margin:0 0 14px">${esc(linha)}</p>${botao("Responder a enquete", url)}<p style="margin:0 0 14px">${esc(nota)} ${esc(sigilo)}</p>`,
         [`<a href="${esc(parar)}" style="color:#5808CC">Parar de receber por e-mail</a> · ${esc(AVISO_GOLPE)}`]),
       texto: `Enquete: ${q.pergunta}\n\n${linha}\n\nResponder: ${url}\n\n${nota} ${sigilo}\n\nParar de receber por e-mail: ${parar}\n${AVISO_GOLPE}`,
+      cabecalhos: {
+        "List-Unsubscribe": `<${e.urlFuncao.replace(/\/$/, "")}/v1/email/parar/${m.codigos.parar ?? ""}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
+    };
+  }
+
+  if (m.tipo === "ASSEMBLEIA" && m.assembleia) {
+    const a = m.assembleia;
+    const url = `${app}/a/${encodeURIComponent(m.codigos.votar ?? "")}`;
+    const parar = `${app}/e/parar?c=${encodeURIComponent(m.codigos.parar ?? "")}`;
+    const linha = a.lembrete
+      ? `Lembrete: a ${a.nome} é em ${a.chamada}.`
+      : `O ${m.condominioNome} convoca a ${a.nome}, com 1ª chamada em ${a.chamada}. O edital está no mural.`;
+    const nota = `Pelo link, que é só ${a.dono}, dá para indicar procurador, registrar presença e votar online. Não repasse.`;
+    return {
+      ...base,
+      assunto: `[${m.condominioNome}] ${a.lembrete ? "Lembrete: " : ""}${a.titulo}`,
+      html: pagina(m.condominioNome,
+        `<p style="margin:0 0 8px"><span style="display:inline-block;background:#F1EFF5;border-radius:6px;padding:2px 8px;font-size:12px;color:#4A4258">Assembleia</span></p><h1 style="font-size:22px;font-weight:600;margin:4px 0 14px">${esc(a.titulo)}</h1><p style="margin:0 0 14px">${esc(linha)}</p>${botao("Abrir o link da assembleia", url)}<p style="margin:0 0 14px">${esc(nota)}</p>`,
+        [`<a href="${esc(parar)}" style="color:#5808CC">Parar de receber por e-mail</a> · ${esc(AVISO_GOLPE)}`]),
+      texto: `${a.titulo}\n\n${linha}\n\nAbrir o link da assembleia: ${url}\n\n${nota}\n\nParar de receber por e-mail: ${parar}\n${AVISO_GOLPE}`,
       cabecalhos: {
         "List-Unsubscribe": `<${e.urlFuncao.replace(/\/$/, "")}/v1/email/parar/${m.codigos.parar ?? ""}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",

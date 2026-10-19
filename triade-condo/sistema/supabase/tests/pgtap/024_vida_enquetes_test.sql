@@ -227,6 +227,7 @@ select is(pg_temp.motivo($$ select plataforma_encerrar_enquete(ana, ipe, junina,
 create temp table q3 as select (pg_temp.criar('{"pergunta": "Mudamos a coleta para as 19h?", "opcoes": ["Sim", "Não"], "por": "UNIDADE",
   "secreta": false, "abertaAte": "2027-03-08T23:00:00-03:00", "canais": ["WHATSAPP"]}') ->> 'id')::uuid as coleta;
 select ajustar_relogio(timestamptz '2027-03-08 23:30:00-03' - now());
+select limpar_contexto(); -- como a api-plataforma, sem condomínio na sessão
 select is(pg_temp.whats(), 0, 'AC-03: com a enquete fechada, o convite parado na fila não sai');
 select is((select string_agg(distinct estado || ': ' || motivo, ', ') from envios_whatsapp w, convites_enquete ce, q3
             where ce.id = w.convite_enquete_id and ce.enquete_id = coleta), 'CANCELADA: A enquete fechou', 'AC-03: e fica cancelado com o motivo');

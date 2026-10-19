@@ -209,7 +209,7 @@ select ok((select bool_or(x ->> 'texto' ~ '^Notícia' and (x ->> 'modelo')::bool
   'W-20: a conversa mostra o texto que saiu, marcado como modelo');
 
 -- Modelos no Console (W-20).
-select is((select jsonb_array_length(console_modelos_whatsapp(sup) -> 'modelos') from ids), 9, 'W-20: nove modelos (seis do atendimento, o da reserva e os dois da enquete, peça R12)');
+select is((select jsonb_array_length(console_modelos_whatsapp(sup) -> 'modelos') from ids), 11, 'W-20: onze modelos (seis do atendimento, o da reserva e os dois da enquete e os dois da assembleia, peça R12)');
 select is((select console_modelos_whatsapp(sup) -> 'pode' ->> 'editar' from ids), 'false', 'W-20: suporte só vê');
 select throws_ok($$ select console_salvar_modelo_whatsapp(impl, 'noticia_pedido', null, null, 'x') from ids $$, 'TC401', null,
   'W-20: só a administração escreve modelo');

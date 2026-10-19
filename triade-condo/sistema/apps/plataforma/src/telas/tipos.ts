@@ -3,6 +3,7 @@
 
 import type {
   CanalEnquete, ConfirmacaoArea, EscopoEnquete, EstadoReserva, Intervalo, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite, SituacaoEnquete,
+  EstadoAssembleia, EstadoItem, EstadoProcuracao, FormaAssembleia, PesoAssembleia, Quorum, SituacaoItem, TipoAssembleia, TipoItem,
 } from "@triade/domain";
 
 export interface Configuracoes {
@@ -1043,7 +1044,7 @@ export interface Prontuario {
 }
 
 export interface EventoMemoria {
-  fonte: "ANOTADO" | "MANUTENCAO" | "DOCUMENTO" | "PRONTUARIO" | "COMUNICADO" | "PESSOA";
+  fonte: "ANOTADO" | "MANUTENCAO" | "DOCUMENTO" | "PRONTUARIO" | "COMUNICADO" | "PESSOA" | "ASSEMBLEIA";
   categoria: string;
   id: string;
   data: string;
@@ -1247,6 +1248,8 @@ export interface ResumoVida {
   proximasAAprovar: { data: string; area: string; pedidos: number }[];
   /** As enquetes abertas, com quantos responderam (AC-03). Só para quem vê as enquetes. */
   enquetesAbertas?: { id: string; pergunta: string; abertaAte: string; responderam: number; total: number }[];
+  /** A próxima assembleia convocada ou em andamento (AC-02). Só para quem vê as assembleias. */
+  assembleia?: { id: string; titulo: string; estado: EstadoAssembleia; primeiraChamada: string; procuracoesPendentes: number };
 }
 
 // Enquetes (AC-03).
@@ -1312,4 +1315,142 @@ export interface EnquetePublica {
   respondeuEm?: string;
   escolha?: number;
   resultado?: ResultadoEnquete;
+}
+
+// Assembleias (AC-02).
+export interface ResultadoItem {
+  opcoes: { texto: string; votos: number; peso: number; porcentagem: number }[];
+  votaram: number;
+  presentes: number;
+  pesoPresentes: number;
+  pesoTotal: number;
+  porcentagemPresentes: number;
+  situacao: SituacaoItem;
+  vencedor?: string;
+  alcancavel: boolean;
+  validos: number;
+}
+
+export interface ItemAssembleia {
+  id: string;
+  ordem: number;
+  titulo: string;
+  descricao?: string;
+  tipo: TipoItem;
+  opcoes: string[];
+  quorum: Quorum;
+  estado: EstadoItem;
+  abertoEm?: string;
+  encerradoEm?: string;
+  resultado: ResultadoItem;
+}
+
+export interface PresencaAssembleia {
+  unidades: number;
+  presentes: number;
+  online: number;
+  salao: number;
+  porProcuracao: number;
+  procuracoesPendentes: number;
+  semDireito: number;
+  porcentagem: number;
+}
+
+export interface AssembleiaTela {
+  id: string;
+  titulo: string;
+  tipo: TipoAssembleia;
+  forma: FormaAssembleia;
+  primeiraChamada: string;
+  segundaChamada: string;
+  local?: string;
+  linkVideo?: string;
+  estado: EstadoAssembleia;
+  peso: PesoAssembleia;
+  antecedencia: number;
+  enviarAte: string;
+  convocadaEm?: string;
+  convocadaPor?: string;
+  comunicadoId?: string;
+  iniciadaEm?: string;
+  encerradaEm?: string;
+  canceladaEm?: string;
+  motivoCancelamento?: string;
+  ataTexto?: string;
+  ataDocumento?: { id: string; titulo: string };
+  itens: ItemAssembleia[];
+  presenca?: PresencaAssembleia;
+  criadoEm: string;
+  versao: number;
+}
+
+export interface AssembleiaResumo {
+  id: string;
+  titulo: string;
+  tipo: TipoAssembleia;
+  forma: FormaAssembleia;
+  estado: EstadoAssembleia;
+  primeiraChamada: string;
+  itens: number;
+  presentes: number;
+  unidades: number;
+  procuracoesPendentes: number;
+}
+
+export interface ListaAssembleias {
+  assembleias: AssembleiaResumo[];
+  regras: { antecedencia: number; peso: PesoAssembleia; versao: number };
+  semFracao: number;
+  unidades: number;
+  pode: { editar: boolean; configurar: boolean; fracoes: boolean };
+}
+
+export interface UnidadeAssembleia {
+  id: string;
+  unidade: string;
+  peso: number;
+  semDireito: boolean;
+  motivoSemDireito?: string;
+  procuracao?: { estado: EstadoProcuracao; nome: string; em: string; motivo?: string; unidade?: string };
+  presenteEm?: string;
+  presencaForma?: "ONLINE" | "SALAO";
+  proprietarios?: string;
+  semContato: boolean;
+  votos?: Record<string, number>;
+}
+
+export interface AssembleiaDetalhe {
+  assembleia: AssembleiaTela;
+  unidades: UnidadeAssembleia[];
+  documentos: { id: string; titulo: string }[];
+  historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
+  pode: { editar: boolean };
+}
+
+export interface Fracoes {
+  unidades: { id: string; nome: string; fracao?: number; versao: number }[];
+  soma: number;
+  pode: { editar: boolean };
+}
+
+export interface AssembleiaPublica {
+  condominio: string;
+  titulo: string;
+  tipo: TipoAssembleia;
+  forma: FormaAssembleia;
+  estado: EstadoAssembleia;
+  primeiraChamada: string;
+  segundaChamada: string;
+  local?: string;
+  linkVideo?: string;
+  peso?: PesoAssembleia;
+  motivoCancelamento?: string;
+  unidade: string;
+  proprietarios?: string;
+  semDireito: boolean;
+  procuracao?: { estado: EstadoProcuracao; nome: string; motivo?: string; unidade?: string };
+  representa?: string[];
+  outrasUnidades?: { id: string; nome: string }[];
+  presenteEm?: string;
+  itens: { id: string; ordem: number; titulo: string; descricao?: string; opcoes: string[]; estado: EstadoItem; quorum: Quorum; meuVoto?: number; resultado?: ResultadoItem }[];
 }

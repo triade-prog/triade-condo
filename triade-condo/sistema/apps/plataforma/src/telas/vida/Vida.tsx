@@ -1,7 +1,7 @@
 "use client";
 // Vida em condomínio (peça R12, design "Vida em condomínio", tela 2; AC-01, AC-06): menu novo
-// com abas, cada uma para quem pode vê-la. Reservas e Enquetes (AC-03); assembleias e classificados
-// entram como abas novas.
+// com abas, cada uma para quem pode vê-la. Reservas, Enquetes (AC-03) e Assembleias (AC-02);
+// classificados entram como aba nova.
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -13,9 +13,10 @@ import { AbaReservas } from "./Reservas.tsx";
 import { NovaReserva } from "./NovaReserva.tsx";
 import { AbaEnquetes } from "./Enquetes.tsx";
 import { NovaEnquete } from "./NovaEnquete.tsx";
+import { AbaAssembleias, FormAssembleia } from "./Assembleias.tsx";
 
 type IdAba = keyof typeof ABAS_VIDA;
-const VER: Record<IdAba, string> = { reservas: "reservas.ver", enquetes: "enquetes.ver" };
+const VER: Record<IdAba, string> = { reservas: "reservas.ver", enquetes: "enquetes.ver", assembleias: "assembleias.ver" };
 
 export function Vida() {
   const { painel, pode, atualizar } = usePlataforma();
@@ -39,20 +40,23 @@ export function Vida() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-[28px] font-normal tracking-tight">Vida em condomínio</h1>
-          <p className="mt-1 text-tinta-suave">Reservas e enquetes do {painel.condominio.nome}.</p>
+          <p className="mt-1 text-tinta-suave">Reservas, enquetes e assembleias do {painel.condominio.nome}.</p>
         </div>
         {aba === "reservas" && pode("reservas.editar") ? <Botao onClick={() => setNova(true)}><Icone nome="mais" />Nova reserva</Botao> : null}
         {aba === "enquetes" && pode("enquetes.editar") ? <Botao onClick={() => setNova(true)}><Icone nome="mais" />Nova enquete</Botao> : null}
+        {aba === "assembleias" && pode("assembleias.editar") ? <Botao onClick={() => setNova(true)}><Icone nome="mais" />Nova assembleia</Botao> : null}
       </div>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
       <Abas abas={abas} atual={aba} aoMudar={mudarAba} rotulo="Partes da Vida em condomínio">
         <div className="pt-5">
           {aba === "reservas" ? <AbaReservas key={geracao} aoMudar={mudou} /> : null}
           {aba === "enquetes" ? <AbaEnquetes key={geracao} aoMudar={mudou} /> : null}
+          {aba === "assembleias" ? <AbaAssembleias key={geracao} aoMudar={mudou} /> : null}
         </div>
       </Abas>
       {nova && aba === "reservas" ? <NovaReserva aoFechar={() => setNova(false)} aoSalvar={(t) => { setNova(false); mudou(t); }} /> : null}
       {nova && aba === "enquetes" ? <NovaEnquete aoFechar={() => setNova(false)} aoSalvar={(t) => { setNova(false); mudou(t); }} /> : null}
+      {nova && aba === "assembleias" ? <FormAssembleia aoFechar={() => setNova(false)} aoSalvar={(id) => router.push(`/vida/assembleia?id=${id}`)} /> : null}
     </div>
   );
 }

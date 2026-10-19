@@ -209,7 +209,7 @@ export function Inicio() {
         ) : null}
         {pode("agenda.ver") ? <HojeNaAgenda /> : null}
         {painel.manutencao ? <CartaoManutencao resumo={painel.manutencao} /> : null}
-        {painel.vida?.reservasAAprovar || painel.vida?.enquetesAbertas?.length ? <CartaoVida resumo={painel.vida} /> : null}
+        {painel.vida?.reservasAAprovar || painel.vida?.enquetesAbertas?.length || painel.vida?.assembleia ? <CartaoVida resumo={painel.vida} /> : null}
         {painel.comunicados ? <CartaoComunicados resumo={painel.comunicados} verComunicados={pode("comunicados.ver")} /> : null}
         {painel.memoria ? <CartaoMemoria resumo={painel.memoria.prontuario} /> : null}
         {painel.mesFechado ? <MesFechadoCartao mes={painel.mesFechado} /> : null}
