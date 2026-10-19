@@ -39,6 +39,7 @@ export const FINALIDADES_ENVIO = {
   AVISO: "Aviso a quem atende",
   CONCLUSAO: "Conclusão",
   RESERVA: "Reserva",
+  ENQUETE: "Enquete",
 } as const;
 
 /** Avisos que cada pessoa liga no próprio WhatsApp (W-11, F6.3). */
@@ -122,7 +123,7 @@ export const LIMITE_FORA_DA_JANELA = 800;
 
 export const CHAVES_MODELO = [
   "noticia_pedido", "pedido_concluido", "revisao_respondida", "aviso_pedido_novo", "aviso_retorno_vencido", "aviso_revisao",
-  "reserva_decidida",
+  "reserva_decidida", "enquete_convite", "enquete_lembrete",
 ] as const;
 export type ChaveModelo = (typeof CHAVES_MODELO)[number];
 

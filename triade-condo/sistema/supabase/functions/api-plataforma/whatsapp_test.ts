@@ -167,6 +167,17 @@ Deno.test("W-14: falha permanente volta com o tipo da falha", async () => {
   assertEquals(m.zap.enviados.length, 0);
 });
 
+Deno.test("AC-03: o convite da enquete sai com o link pessoal no lugar de [link]", async () => {
+  const chave = await chaveCredenciais(CHAVE);
+  const bytea = await cifrarCredenciais(chave, { instancia: "ipe-inst", token: "t-123456789" });
+  const credenciais = btoa(String.fromCharCode(...bytea.slice(2).match(/../g)!.map((h) => parseInt(h, 16))));
+  const m2 = await montar({
+    lote: [{ condominio: IPE, instancia: "ipe-inst", credenciais, envios: [{ envio: ENVIO, para: "+5561900000000", texto: "Responda pelo link:\n[link]", link: "K7QM-3XPA-9TRE" }] }],
+  });
+  await m2.pedir("/v1/interno/fila-whatsapp", { corpo: {} });
+  assertEquals(m2.zap.enviados[0]!.texto, "Responda pelo link:\nhttps://plataforma.exemplo/v/K7QM-3XPA-9TRE");
+});
+
 Deno.test("as telas do WhatsApp pedem a sessão e validam a entrada", async () => {
   const m = await montar();
   assertEquals((await erro(await m.pedir("/v1/condominio/whatsapp"))).codigo, "UNAUTHORIZED");

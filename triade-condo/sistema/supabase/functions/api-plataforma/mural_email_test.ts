@@ -238,6 +238,13 @@ Deno.test("CD-13, CD-14: o e-mail de confirmação e o do documento", () => {
   const corrigido = montarEmail({ ...MSG, comunicado: { ...MSG.comunicado!, correcao: "Mudou o horário" } }, end);
   assertEquals(corrigido.assunto, "[Residencial Aurora] Corrigido: Falta de água na quinta");
   assertStringIncludes(corrigido.html, "O que mudou:");
+  const enq = montarEmail({ ...MSG, tipo: "ENQUETE", codigos: { responder: MURAL, parar: CODIGO }, comunicado: undefined,
+    enquete: { pergunta: "Qual cor para a fachada?", prazo: "31/10, às 23:59", dono: "da Torre A · 302", lembrete: true, secreta: true } }, end);
+  assertEquals(enq.assunto, "[Residencial Aurora] Lembrete: Enquete: Qual cor para a fachada?");
+  assertStringIncludes(enq.html, `https://plataforma.exemplo/v/${MURAL}`);
+  assertStringIncludes(enq.texto, "ainda falta a resposta da Torre A · 302");
+  assertStringIncludes(enq.texto, "o condomínio vê só quem respondeu, não o que respondeu");
+  assertStringIncludes(enq.cabecalhos?.["List-Unsubscribe"] ?? "", `/v1/email/parar/${CODIGO}`);
 });
 
 Deno.test("CD-13: o Resend recebe o lote e devolve um id por e-mail; 429 tenta de novo", async () => {

@@ -2,13 +2,15 @@
 // Mural online do prédio (design "Mural online e e-mail", tela 1; CD-12, CD-14): os comunicados
 // para todo o condomínio, do mais novo ao mais antigo, sem conta nem senha, e o pedido de
 // documento por e-mail, com resposta sempre neutra. Nada de nomes, telefones ou unidades. As
-// seções do manual do prédio marcadas "no mural" ficam numa aba ao lado (peça R10, MP-14).
+// seções do manual do prédio marcadas "no mural" ficam numa aba ao lado (peça R10, MP-14). As
+// enquetes abertas aparecem no topo; responde-se pelo link pessoal (peça R12, AC-03).
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
 import { Aviso, Botao, CampoTexto, Carregando, chamarApi, Chip, textoDoErro } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
+import { prazoCurto } from "../vida/Enquetes.tsx";
 import type { MuralPublico } from "../tipos.ts";
 import { Cartao, ComunicadoLido, TelaPublica } from "./comum.tsx";
 
@@ -88,6 +90,22 @@ export function Mural() {
   return (
     <TelaPublica titulo={titulo} subtitulo={subtitulo}>
       {abas}
+      {m.enquetes?.length ? (
+        <ul className="grid gap-3" aria-label="Enquetes abertas">
+          {m.enquetes.map((e) => (
+            <li key={e.id}>
+              <Cartao className="border-violeta-200">
+                <span className="justify-self-start rounded-md bg-violeta-50 px-2 py-0.5 text-xs text-violeta-700">Enquete · aberta até {prazoCurto(e.abertaAte)}</span>
+                <h2 className="text-base font-medium">{e.pergunta}</h2>
+                <p className="text-sm text-tinta-suave">Opções: {e.opcoes.join(" · ")}.</p>
+                <p className="text-sm">
+                  Responda pelo link pessoal que chegou pelo WhatsApp ou pelo e-mail, {e.por === "UNIDADE" ? "um por unidade" : "um por pessoa"}. Não recebeu? Peça ao condomínio.
+                </p>
+              </Cartao>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {m.comunicados?.length ? (
         <ul className="grid gap-3" aria-label="Comunicados">
           {m.comunicados.map((c) => (

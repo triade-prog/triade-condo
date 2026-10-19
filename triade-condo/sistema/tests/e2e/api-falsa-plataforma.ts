@@ -14,6 +14,7 @@ import { criarMemoria, manualDoMural, resumoProntuario, rotasMemoria } from "./a
 import { criarSuporte, resumoAcessos, rotasSuporte } from "./api-falsa-suporte";
 import { criarWhatsapp, resumoWhatsapp, rotasWhatsapp } from "./api-falsa-whatsapp";
 import { criarVida, resumoVida, rotasVida } from "./api-falsa-vida";
+import { criarEnquetes, resumoEnquetes, rotasEnquetePublica, rotasEnquetes } from "./api-falsa-enquetes";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -96,6 +97,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const comunicados = criarComunicados(estado.pedidos[0]!.id);
   const links = criarLinks();
   const vida = criarVida();
+  const enquetes = criarEnquetes();
   const memoria = criarMemoria();
   const suporte = criarSuporte();
   const whatsapp = criarWhatsapp(estado.pedidos[0]!, cats[0]!.id, pris[1]!.id);
@@ -110,7 +112,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     ? ["agenda.editar", "agenda.ver", "atendimento.responsaveis", "comunicados.publicar", "comunicados.ver", "config.editar", "config.ver",
       "documentos.editar", "documentos.restritos", "documentos.ver", "manutencao.editar", "manutencao.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pedidos.atualizar", "pedidos.concluir",
       "memoria.dossie", "memoria.exportar", "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver",
-      "suporte.chamados", "acesso_excepcional.aprovar", "reservas.editar", "reservas.ver"]
+      "suporte.chamados", "acesso_excepcional.aprovar", "reservas.editar", "reservas.ver",
+      "enquetes.editar", "enquetes.ver"]
     : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"]
       : ["agenda.ver", "comunicados.ver", "config.ver", "documentos.ver", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"];
   const pendencias = () => {
@@ -147,6 +150,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       return route.fulfill({ json: { mensagem: "Se este e-mail tiver acesso à TRÍADE Condo, enviamos um link para criar uma senha nova." } });
     }
     // Sem conta (CD-12 a CD-14): o mural e os links do e-mail não pedem login.
+    const linkDaEnquete = await rotasEnquetePublica(route, enquetes, caminho, metodo, corpo);
+    if (linkDaEnquete !== null) return linkDaEnquete;
     const etiquetaOuPrestador = await rotasLinksPublicas(route, links, manutencao, caminho, metodo, corpo);
     if (etiquetaOuPrestador !== null) return etiquetaOuPrestador;
     const publicas = await rotasPublicas(route, comunicados, caminho, metodo, corpo, () => manualDoMural(memoria));
@@ -182,7 +187,10 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         ...(acoes().includes("documentos.ver") ? { memoria: { prontuario: resumoProntuario(memoria) } } : {}),
         ...(acoes().includes("acesso_excepcional.aprovar") ? { acessosExcepcionais: resumoAcessos(suporte) } : {}),
         ...(acoes().includes("pedidos.responder") || acoes().includes("pedidos.atualizar") ? { whatsapp: resumoWhatsapp(whatsapp) } : {}),
-        ...(acoes().includes("reservas.ver") ? { vida: resumoVida(vida) } : {}),
+        ...(acoes().includes("reservas.ver") || acoes().includes("enquetes.ver") ? { vida: {
+          ...(acoes().includes("reservas.ver") ? resumoVida(vida) : { reservasAAprovar: 0, proximasAAprovar: [] }),
+          ...(acoes().includes("enquetes.ver") ? { enquetesAbertas: resumoEnquetes(enquetes) } : {}),
+        } } : {}),
         avisosNaoVistos: naoVistos(estado.avisos, eu.vinculo),
       } });
     }
@@ -203,6 +211,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (noSuporte !== null) return noSuporte;
     const naMemoria = await rotasMemoria(route, memoria, caminho, metodo, corpo, url, pode, eu);
     if (naMemoria !== null) return naMemoria;
+    const nasEnquetes = await rotasEnquetes(route, enquetes, caminho, metodo, corpo, pode, eu);
+    if (nasEnquetes !== null) return nasEnquetes;
     const naVida = await rotasVida(route, vida, caminho, metodo, corpo, url, pode, eu);
     if (naVida !== null) return naVida;
     const nosLinks = await rotasLinks(route, links, manutencao, caminho, metodo, corpo, pode, eu);

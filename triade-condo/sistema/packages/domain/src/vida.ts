@@ -32,7 +32,19 @@ export const FILTROS_RESERVA = { A_APROVAR: "A aprovar", PROXIMAS: "Próximas", 
 export type FiltroReserva = keyof typeof FILTROS_RESERVA;
 
 /** As abas da Vida em condomínio, com a ação que deixa ver cada uma (decisão 1). */
-export const ABAS_VIDA = { reservas: "Reservas" } as const;
+export const ABAS_VIDA = { reservas: "Reservas", enquetes: "Enquetes" } as const;
+export type AbaVida = keyof typeof ABAS_VIDA;
+
+/** Quem responde a enquete (AC-03): uma resposta por unidade ou por pessoa com vínculo confirmado. */
+export const ESCOPOS_ENQUETE = { UNIDADE: "Uma por unidade", PESSOA: "Uma por pessoa" } as const;
+export type EscopoEnquete = keyof typeof ESCOPOS_ENQUETE;
+
+/** Por onde a enquete chega (AC-03). */
+export const CANAIS_ENQUETE = { WHATSAPP: "WhatsApp", MURAL: "Mural", EMAIL: "E-mail" } as const;
+export type CanalEnquete = keyof typeof CANAIS_ENQUETE;
+
+export const SITUACOES_ENQUETE = { ABERTA: "Aberta", ENCERRADA: "Encerrada" } as const;
+export type SituacaoEnquete = keyof typeof SITUACOES_ENQUETE;
 
 const chaves = <T extends Record<string, unknown>>(o: T) => Object.keys(o) as [keyof T & string, ...(keyof T & string)[]];
 const data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -98,6 +110,28 @@ export const filtroReservasSchema = z.object({
 });
 export const semanaAreaSchema = z.object({ de: data });
 export const conferirReservaSchema = z.object({ areaId: uuid, unidadeId: opcional(uuid), data });
+
+/** Criar a enquete (AC-03). O prazo vai de 1 hora a 90 dias; o banco confere com o relógio dele. */
+export const criarEnqueteSchema = z
+  .object({
+    pergunta: z.string().trim().min(5).max(200),
+    opcoes: z.array(z.string().trim().max(80)).max(6).transform((o) => o.filter((x) => x !== "")),
+    por: z.enum(chaves(ESCOPOS_ENQUETE)),
+    secreta: z.boolean(),
+    abertaAte: z.string().datetime({ offset: true }),
+    canais: z.array(z.enum(chaves(CANAIS_ENQUETE))).min(1).max(3).transform((c) => [...new Set(c)]),
+  })
+  .superRefine((e, ctx) => {
+    if (e.opcoes.length < 2) ctx.addIssue({ code: "custom", path: ["opcoes"], message: "Pelo menos duas opções" });
+    if (new Set(e.opcoes.map((o) => o.toLowerCase())).size !== e.opcoes.length) {
+      ctx.addIssue({ code: "custom", path: ["opcoes"], message: "As opções são diferentes entre si" });
+    }
+  });
+export type NovaEnquete = z.infer<typeof criarEnqueteSchema>;
+
+export const versaoEnqueteSchema = z.object({ versao });
+export const linkEnqueteSchema = z.object({ conviteId: uuid });
+export const responderEnqueteSchema = z.object({ opcao: z.number().int().min(1).max(6) });
 
 // ---------------------------------------------------------------------------------------
 // Textos das telas.
@@ -174,4 +208,30 @@ export function descreverEventoReserva(acao: string, d: Record<string, unknown>)
     default:
       return "Alteração";
   }
+}
+
+/** Os eventos da enquete no histórico. */
+export function descreverEventoEnquete(acao: string, d: Record<string, unknown>): string {
+  switch (acao) {
+    case "enquete.criada": {
+      const n = Number(d.convites ?? 0);
+      return `Enviada para ${n} ${n === 1 ? "convite" : "convites"}`;
+    }
+    case "enquete.lembrete": return "Lembrete enviado a quem faltava";
+    case "enquete.link_gerado": return `Link copiado para ${String(d.para ?? "um convite")}`;
+    case "enquete.encerrada": return d.pelo === "PRAZO" ? "Fechou no prazo" : "Encerrada antes do prazo";
+    case "enquete.resultado_publicado": return "Resultado levado a Comunicados";
+    default: return "Alteração";
+  }
+}
+
+/** "3 de 12 responderam" ou "ninguém respondeu ainda". */
+export function textoRespostas(responderam: number, total: number): string {
+  if (responderam === 0) return total ? `Ninguém respondeu ainda, de ${total}` : "Ninguém para responder";
+  return `${responderam} de ${total} ${responderam === 1 ? "respondeu" : "responderam"}`;
+}
+
+/** A porcentagem de cada opção, arredondada, sobre quem respondeu. */
+export function porcentagem(votos: number, total: number): number {
+  return total > 0 ? Math.round((100 * votos) / total) : 0;
 }

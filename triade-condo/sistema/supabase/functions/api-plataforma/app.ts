@@ -10,7 +10,7 @@
 // Ajuda e suporte (PI-17, PI-20) e a aprovação do acesso excepcional da TRÍADE (PI-11).
 // Passo 5: WhatsApp do condomínio (W-05, W-09 a W-16), com o aviso do provedor protegido pelo
 // segredo do condomínio no caminho e a fila de envio. Peça R12: Vida em condomínio (áreas comuns
-// e reservas; AC-01, AC-06, AC-07).
+// e reservas; AC-01, AC-06, AC-07), com as enquetes e o link pessoal de cada unidade (AC-03).
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
@@ -150,6 +150,10 @@ import {
   areaSchema,
   conferirReservaSchema,
   filtroReservasSchema,
+  criarEnqueteSchema,
+  linkEnqueteSchema,
+  responderEnqueteSchema,
+  versaoEnqueteSchema,
   motivoReservaSchema,
   registrarReservaSchema,
   semanaAreaSchema,
@@ -751,6 +755,30 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       return c.json(await rpc(`plataforma_${acao}_reserva`, { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
     });
   }
+
+  // Enquetes (AC-03): o banco faz os convites, os envios e o resultado; aqui só se valida a entrada.
+  app.get("/v1/condominio/enquetes", async (c) => c.json(await rpc("plataforma_enquetes", quem(c))));
+
+  app.post("/v1/condominio/enquetes", async (c) => {
+    const d = await lerCorpo(c, criarEnqueteSchema);
+    const r = await rpc("plataforma_criar_enquete", { ...quem(c), p_dados: d });
+    esvaziarFila();
+    return c.json(r, 201);
+  });
+
+  app.get("/v1/condominio/enquetes/:id", async (c) => c.json(await rpc("plataforma_enquete", { ...quem(c), p_id: idDaRota(c, "id") })));
+
+  for (const acao of ["encerrar", "publicar"] as const) {
+    app.post(`/v1/condominio/enquetes/:id/${acao}`, async (c) => {
+      const d = await lerCorpo(c, versaoEnqueteSchema);
+      return c.json(await rpc(`plataforma_${acao}_enquete`, { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao }));
+    });
+  }
+
+  app.post("/v1/condominio/enquetes/:id/link", async (c) => {
+    const d = await lerCorpo(c, linkEnqueteSchema);
+    return c.json(await rpc("plataforma_link_enquete", { ...quem(c), p_id: idDaRota(c, "id"), p_convite: d.conviteId }));
+  });
 
   // Manutenção e prestadores (peça R6; MP-01 a MP-05, MP-07, MP-09, MP-13). O banco decide quem
   // vê e quem mexe, confere quem executa, as situações e as preventivas; aqui só se valida a entrada.
@@ -1388,6 +1416,19 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json(await rpc("publico_etiqueta", { p_codigo: codigo }));
   });
 
+  // O link pessoal da enquete (AC-03): sem conta; o código é só da unidade ou da pessoa.
+  app.get("/v1/publico/v/:codigo", async (c) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("link", await aparelho(c));
+    return c.json(await rpc("publico_enquete", { p_codigo: codigo }));
+  });
+  app.post("/v1/publico/v/:codigo", async (c) => {
+    const codigo = codigoDaRota(c);
+    const d = await lerCorpo(c, responderEnqueteSchema);
+    await dentroDoLimite("link", await aparelho(c));
+    return c.json(await rpc("publico_responder_enquete", { p_codigo: codigo, p_opcao: d.opcao }));
+  });
+
   // Link do prestador (V-11, MP-08): o serviço, a chegada, o "não consegui fazer", o "terminei" e as fotos.
   const prestador = async (c: Context) => {
     const codigo = codigoDaRota(c);
@@ -1703,7 +1744,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     condominio: string;
     instancia: string;
     credenciais: string;
-    envios: { envio: string; para: string; texto: string; pedido?: string }[];
+    envios: { envio: string; para: string; texto: string; pedido?: string; link?: string }[];
   }
 
   function noFundo(trabalho: () => Promise<unknown>) {
@@ -1734,7 +1775,9 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       for (const l of lotes) {
         const cred = await decifrarCredenciais(chave, l.credenciais);
         for (const e of l.envios) {
-          const texto = textoComLinkDoPainel(e.texto, e.pedido ? `${deps.urlApp}/pedidos/pedido?id=${e.pedido}` : null);
+          // O link pessoal da enquete entra só aqui: o banco guarda o texto com [link] (peça R12).
+          const comLink = e.link ? e.texto.replaceAll("[link]", `${deps.urlApp.replace(/\/$/, "")}/v/${e.link}`) : e.texto;
+          const texto = textoComLinkDoPainel(comLink, e.pedido ? `${deps.urlApp}/pedidos/pedido?id=${e.pedido}` : null);
           const r = await conector.enviarTexto({ instancia: l.instancia || cred.instancia, token: cred.token }, e.para, texto);
           await rpc("whatsapp_resultado", {
             p_condominio: l.condominio, p_envio: e.envio, p_provedor_id: r.ok ? r.id : null,

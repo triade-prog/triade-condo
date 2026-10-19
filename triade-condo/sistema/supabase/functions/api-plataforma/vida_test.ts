@@ -1,4 +1,4 @@
-// Vida em condomínio (peça R12): áreas comuns e reservas na Plataforma do síndico. As rotas
+// Vida em condomínio (peça R12): áreas comuns, reservas e enquetes na Plataforma do síndico. As rotas
 // validam a entrada, mandam ao banco a pessoa e o condomínio da sessão e deixam as regras para o banco.
 import { assertEquals } from "@std/assert";
 import { criarApiPlataforma } from "./app.ts";
@@ -9,6 +9,8 @@ const AURORA = "3e0f6c3b-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
 const AREA = "4f1a7d4c-9b5e-4a6f-9c2d-5e6f7a8b9c0d";
 const UNIDADE = "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9";
 const RESERVA = "6f7a8b9c-0d1e-4f2a-b3c4-d5e6f7a8b9c0";
+const ENQUETE = "7a8b9c0d-1e2f-4a3b-8c4d-e5f6a7b8c9d0";
+const CONVITE = "8b9c0d1e-2f3a-4b4c-9d5e-f6a7b8c9d0e1";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-sindica" };
 
 function montar() {
@@ -23,7 +25,7 @@ function montar() {
       return null;
     },
     condominio_da_sessao: (a) => sessoes.get(String(a.p_sessao)) ?? null,
-    ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2 }),
+    ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2, link: 10 }),
     plataforma_areas_comuns: () => ({ areas: [], documentos: [], pode: { editar: true } }),
     plataforma_salvar_area: (a) => ({ id: a.p_id ?? AREA, versao: a.p_versao ? Number(a.p_versao) + 1 : 1 }),
     plataforma_reservas: () => ({ reservas: [], aAprovar: 0, areas: [], hoje: "2026-10-19", pode: { editar: true } }),
@@ -35,6 +37,14 @@ function montar() {
     plataforma_aprovar_reserva: (a) => ({ versao: Number(a.p_versao) + 1, recusadas: 1 }),
     plataforma_recusar_reserva: (a) => ({ versao: Number(a.p_versao) + 1 }),
     plataforma_cancelar_reserva: (a) => ({ versao: Number(a.p_versao) + 1 }),
+    plataforma_enquetes: () => ({ enquetes: [], canais: { whatsapp: true, email: false, mural: true }, unidades: 12, pode: { editar: true } }),
+    plataforma_criar_enquete: () => ({ id: ENQUETE, versao: 1, convites: 12, envios: 14 }),
+    plataforma_enquete: (a) => ({ enquete: { id: a.p_id }, convites: [], historico: [] }),
+    plataforma_encerrar_enquete: (a) => ({ versao: Number(a.p_versao) + 1 }),
+    plataforma_publicar_enquete: () => ({ comunicadoId: RESERVA, versao: 3 }),
+    plataforma_link_enquete: () => ({ codigo: "K7QM-3XPA-9TRE" }),
+    publico_enquete: () => ({ pergunta: "Qual cor para a fachada?", aberta: true }),
+    publico_responder_enquete: (a) => ({ escolha: a.p_opcao }),
   });
   const app = criarApiPlataforma("segredo-de-repasse-de-teste", {
     banco: db.banco, auth: falso.auth, admin: adminFalso().admin, urlApp: "https://plataforma.exemplo", armazenamento: armazenamentoFalso().armazenamento,
@@ -101,4 +111,47 @@ Deno.test("AC-01: registrar pelo painel, aprovar com recado, recusar e cancelar 
   assertEquals((await erro(await m.pedir(`${base}/recusar`, { corpo: { versao: 1, motivo: " " }, cookie }))).detalhes?.campos, ["motivo"]);
   await m.pedir(`${base}/cancelar`, { corpo: { versao: 2, motivo: "Obra no salão" }, cookie });
   assertEquals(chamada(m, "plataforma_cancelar_reserva"), { p_pessoa: ANA, p_condominio: AURORA, p_id: RESERVA, p_versao: 2, p_motivo: "Obra no salão" });
+});
+
+const ENQ = { pergunta: " Qual cor para a fachada? ", opcoes: ["Cinza", " Areia ", ""], por: "UNIDADE", secreta: true,
+  abertaAte: "2026-10-31T23:59:00-03:00", canais: ["WHATSAPP", "MURAL", "WHATSAPP"] };
+
+Deno.test("AC-03: criar a enquete; o banco recebe os campos limpos", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  const r = await m.pedir("/v1/condominio/enquetes", { corpo: ENQ, cookie });
+  assertEquals(r.status, 201);
+  assertEquals(await r.json(), { id: ENQUETE, versao: 1, convites: 12, envios: 14 });
+  assertEquals(chamada(m, "plataforma_criar_enquete")?.p_dados, {
+    pergunta: "Qual cor para a fachada?", opcoes: ["Cinza", "Areia"], por: "UNIDADE", secreta: true,
+    abertaAte: "2026-10-31T23:59:00-03:00", canais: ["WHATSAPP", "MURAL"],
+  });
+  const ruim = await m.pedir("/v1/condominio/enquetes", { corpo: { ...ENQ, opcoes: ["Sim", "sim"], abertaAte: "amanhã", canais: [] }, cookie });
+  assertEquals((await erro(ruim)).detalhes?.campos, ["abertaAte", "canais", "opcoes"]);
+});
+
+Deno.test("AC-03: a lista, uma enquete, encerrar, publicar o resultado e copiar um link", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  assertEquals((await m.pedir("/v1/condominio/enquetes", { cookie })).status, 200);
+  assertEquals(chamada(m, "plataforma_enquetes"), { p_pessoa: ANA, p_condominio: AURORA });
+  assertEquals(await (await m.pedir(`/v1/condominio/enquetes/${ENQUETE}`, { cookie })).json(), { enquete: { id: ENQUETE }, convites: [], historico: [] });
+  const base = `/v1/condominio/enquetes/${ENQUETE}`;
+  assertEquals(await (await m.pedir(`${base}/encerrar`, { corpo: { versao: 2 }, cookie })).json(), { versao: 3 });
+  assertEquals(chamada(m, "plataforma_encerrar_enquete"), { p_pessoa: ANA, p_condominio: AURORA, p_id: ENQUETE, p_versao: 2 });
+  assertEquals((await erro(await m.pedir(`${base}/publicar`, { corpo: {}, cookie }))).detalhes?.campos, ["versao"]);
+  assertEquals(await (await m.pedir(`${base}/publicar`, { corpo: { versao: 3 }, cookie })).json(), { comunicadoId: RESERVA, versao: 3 });
+  assertEquals(await (await m.pedir(`${base}/link`, { corpo: { conviteId: CONVITE }, cookie })).json(), { codigo: "K7QM-3XPA-9TRE" });
+  assertEquals(chamada(m, "plataforma_link_enquete")?.p_convite, CONVITE);
+});
+
+Deno.test("AC-03: o link pessoal abre e responde sem conta; código fora do formato não chega ao banco", async () => {
+  const m = montar();
+  assertEquals(await (await m.pedir("/v1/publico/v/K7QM-3XPA-9TRE")).json(), { pergunta: "Qual cor para a fachada?", aberta: true });
+  assertEquals(chamada(m, "publico_enquete"), { p_codigo: "K7QM-3XPA-9TRE" });
+  assertEquals(await (await m.pedir("/v1/publico/v/K7QM-3XPA-9TRE", { corpo: { opcao: 2 } })).json(), { escolha: 2 });
+  assertEquals((await erro(await m.pedir("/v1/publico/v/K7QM-3XPA-9TRE", { corpo: { opcao: 9 } }))).detalhes?.campos, ["opcao"]);
+  m.chamadas.length = 0;
+  assertEquals((await m.pedir("/v1/publico/v/curto")).status, 404);
+  assertEquals(chamada(m, "publico_enquete"), undefined);
 });

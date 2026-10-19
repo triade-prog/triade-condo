@@ -1,4 +1,4 @@
-// E-mail dos comunicados e documentos (CD-13, CD-14). O banco monta a fila e diz o que vai em
+// E-mail dos comunicados, documentos e convites de enquete (CD-13, CD-14, AC-03). O banco monta a fila e diz o que vai em
 // cada e-mail; aqui o e-mail ganha forma (HTML e texto), sai pelo Resend e os avisos do provedor
 // (entregue, devolvido, spam) são conferidos pela assinatura antes de voltar ao banco.
 
@@ -8,13 +8,13 @@ import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
 export interface MensagemFila {
   envio: string;
   condominio: string;
-  tipo: "COMUNICADO" | "CONFIRMACAO" | "DOCUMENTO";
+  tipo: "COMUNICADO" | "CONFIRMACAO" | "DOCUMENTO" | "ENQUETE";
   para: string;
   condominioNome: string;
   responderPara?: string;
   nome?: string;
   unidades?: string;
-  codigos: { ver?: string; parar?: string; confirmar?: string; abrir?: string };
+  codigos: { ver?: string; parar?: string; confirmar?: string; abrir?: string; responder?: string };
   comunicado?: {
     assunto: string;
     titulo: string;
@@ -24,6 +24,8 @@ export interface MensagemFila {
     imagens?: string[];
   };
   documento?: { titulo: string; numero: number; vigenteDesde: string; recado?: string };
+  /** Convite (ou lembrete) de enquete: o link é só da unidade ou da pessoa (peça R12). */
+  enquete?: { pergunta: string; prazo: string; dono: string; lembrete: boolean; secreta: boolean };
 }
 
 export interface EmailPronto {
@@ -118,6 +120,29 @@ export function montarEmail(m: MensagemFila, e: EnderecosEmail): EmailPronto {
         `<h1 style="font-size:22px;font-weight:600;margin:4px 0 14px">${esc(d.titulo)}</h1><p style="margin:0 0 14px">${esc(linha)}</p>${d.recado ? `<p style="margin:0 0 14px;padding:12px 14px;background:#F8F3FF;border-radius:10px">${esc(d.recado)}</p>` : ""}${botao("Abrir o documento", url)}<p style="margin:0 0 14px">O link vale 7 dias e pode ser cancelado pelo condomínio. Depois de baixado, guarde o arquivo com cuidado.</p>`,
         [esc(AVISO_GOLPE)]),
       texto: `${d.titulo}\n\n${linha}\n${d.recado ? `\n${d.recado}\n` : ""}\nAbrir o documento: ${url}\n\nO link vale 7 dias e pode ser cancelado pelo condomínio.\n\n${AVISO_GOLPE}`,
+    };
+  }
+
+  if (m.tipo === "ENQUETE" && m.enquete) {
+    const q = m.enquete;
+    const url = `${app}/v/${encodeURIComponent(m.codigos.responder ?? "")}`;
+    const parar = `${app}/e/parar?c=${encodeURIComponent(m.codigos.parar ?? "")}`;
+    const linha = q.lembrete
+      ? `A enquete fecha em ${q.prazo} e ainda falta a resposta ${q.dono}.`
+      : `O condomínio quer saber a opinião ${q.dono}. Responda até ${q.prazo}.`;
+    const sigilo = q.secreta ? "A resposta é secreta: o condomínio vê só quem respondeu, não o que respondeu." : "A resposta não é secreta: o condomínio vê o que cada um respondeu.";
+    const nota = `O link é só ${q.dono}: não repasse. Dá para trocar a resposta até o prazo.`;
+    return {
+      ...base,
+      assunto: `[${m.condominioNome}] ${q.lembrete ? "Lembrete: " : ""}Enquete: ${q.pergunta}`,
+      html: pagina(m.condominioNome,
+        `<p style="margin:0 0 8px"><span style="display:inline-block;background:#F1EFF5;border-radius:6px;padding:2px 8px;font-size:12px;color:#4A4258">Enquete</span></p><h1 style="font-size:22px;font-weight:600;margin:4px 0 14px">${esc(q.pergunta)}</h1><p style="margin:0 0 14px">${esc(linha)}</p>${botao("Responder a enquete", url)}<p style="margin:0 0 14px">${esc(nota)} ${esc(sigilo)}</p>`,
+        [`<a href="${esc(parar)}" style="color:#5808CC">Parar de receber por e-mail</a> · ${esc(AVISO_GOLPE)}`]),
+      texto: `Enquete: ${q.pergunta}\n\n${linha}\n\nResponder: ${url}\n\n${nota} ${sigilo}\n\nParar de receber por e-mail: ${parar}\n${AVISO_GOLPE}`,
+      cabecalhos: {
+        "List-Unsubscribe": `<${e.urlFuncao.replace(/\/$/, "")}/v1/email/parar/${m.codigos.parar ?? ""}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
     };
   }
 

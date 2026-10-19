@@ -176,6 +176,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   RESERVA_FORA_DO_PRAZO: "Esta data fica fora da antecedência da área.",
   RESERVA_HORARIO: "Escolha um dos horários da área.",
   RESERVA_DECIDIDA: "Esta reserva já foi decidida. Atualize a página.",
+  ENQUETE_FECHADA: "A enquete já fechou.",
+  ENQUETE_ABERTA: "Encerre a enquete antes de publicar o resultado.",
   AREA_SEM_RESERVA: "Esta área não aceita reserva agora.",
   AREA_COM_RESERVAS: "Há reservas marcadas nesta área. Cancele antes de desativar ou deixar sem reserva.",
 };

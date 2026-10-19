@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   areaSchema,
+  criarEnqueteSchema,
+  descreverEventoEnquete,
+  porcentagem,
+  textoRespostas,
   descreverArea,
   descreverEventoReserva,
   duracaoBloco,
@@ -68,5 +72,32 @@ describe("vida em condomínio (peça R12)", () => {
     expect(descreverEventoReserva("estado.mudou", { para: "CONFIRMADA" })).toBe("Confirmada na hora");
     expect(descreverEventoReserva("estado.mudou", { de: "A_APROVAR", para: "CONFIRMADA" })).toBe("Aprovada");
     expect(descreverEventoReserva("estado.mudou", { para: "CANCELADA", evento: "CANCELADA_PELO_MORADOR" })).toBe("Cancelada pelo morador");
+  });
+});
+
+describe("enquetes (AC-03)", () => {
+  const base = { pergunta: "Qual cor para a fachada?", opcoes: ["Cinza", "Areia"], por: "UNIDADE", secreta: true,
+    abertaAte: "2026-10-31T23:59:00-03:00", canais: ["WHATSAPP"] };
+  it("limpa as opções vazias e pede pelo menos duas, diferentes", () => {
+    expect(criarEnqueteSchema.parse({ ...base, opcoes: [" Cinza ", "", "Areia"] }).opcoes).toEqual(["Cinza", "Areia"]);
+    expect(criarEnqueteSchema.safeParse({ ...base, opcoes: ["Cinza", ""] }).success).toBe(false);
+    expect(criarEnqueteSchema.safeParse({ ...base, opcoes: ["Cinza", "cinza"] }).success).toBe(false);
+    expect(criarEnqueteSchema.safeParse({ ...base, opcoes: ["1", "2", "3", "4", "5", "6", "7"] }).success).toBe(false);
+  });
+  it("pede o prazo com fuso e ao menos um canal", () => {
+    expect(criarEnqueteSchema.safeParse({ ...base, abertaAte: "2026-10-31" }).success).toBe(false);
+    expect(criarEnqueteSchema.safeParse({ ...base, canais: [] }).success).toBe(false);
+    expect(criarEnqueteSchema.parse({ ...base, canais: ["MURAL", "MURAL"] }).canais).toEqual(["MURAL"]);
+  });
+  it("conta as respostas e a porcentagem", () => {
+    expect(textoRespostas(0, 12)).toBe("Ninguém respondeu ainda, de 12");
+    expect(textoRespostas(1, 12)).toBe("1 de 12 respondeu");
+    expect(textoRespostas(7, 12)).toBe("7 de 12 responderam");
+    expect([porcentagem(1, 3), porcentagem(0, 0)]).toEqual([33, 0]);
+  });
+  it("descreve o histórico", () => {
+    expect(descreverEventoEnquete("enquete.criada", { convites: 12 })).toBe("Enviada para 12 convites");
+    expect(descreverEventoEnquete("enquete.encerrada", { pelo: "PRAZO" })).toBe("Fechou no prazo");
+    expect(descreverEventoEnquete("enquete.link_gerado", { para: "Torre A · 201" })).toBe("Link copiado para Torre A · 201");
   });
 });

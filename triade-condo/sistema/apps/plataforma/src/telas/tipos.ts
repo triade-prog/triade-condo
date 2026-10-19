@@ -1,7 +1,9 @@
 // O que a API da Plataforma devolve nas configurações (plataforma_configuracoes), nas
 // pessoas (plataforma_pessoas), nos moradores e unidades (passo 3) e nos pedidos (passo 4).
 
-import type { ConfirmacaoArea, EstadoReserva, Intervalo, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite } from "@triade/domain";
+import type {
+  CanalEnquete, ConfirmacaoArea, EscopoEnquete, EstadoReserva, Intervalo, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite, SituacaoEnquete,
+} from "@triade/domain";
 
 export interface Configuracoes {
   fuso: string;
@@ -890,6 +892,8 @@ export interface MuralPublico {
   documentos?: { id: string; titulo: string; tipo: TipoDocumento }[];
   /** As seções do manual do prédio marcadas "no mural" (peça R10, MP-14). */
   manual?: { id: string; titulo: string; resumo?: string; texto: string; atualizadoEm: string }[];
+  /** As enquetes abertas marcadas para o mural; responde-se pelo link pessoal (AC-03). */
+  enquetes?: { id: string; pergunta: string; opcoes: string[]; abertaAte: string; por: EscopoEnquete; secreta: boolean }[];
   atualizadoEm?: string;
 }
 
@@ -1241,4 +1245,71 @@ export interface ConferenciaReserva {
 export interface ResumoVida {
   reservasAAprovar: number;
   proximasAAprovar: { data: string; area: string; pedidos: number }[];
+  /** As enquetes abertas, com quantos responderam (AC-03). Só para quem vê as enquetes. */
+  enquetesAbertas?: { id: string; pergunta: string; abertaAte: string; responderam: number; total: number }[];
+}
+
+// Enquetes (AC-03).
+export interface ResultadoEnquete {
+  opcoes: { texto: string; votos: number }[];
+  responderam: number;
+  total: number;
+}
+
+export interface EnqueteTela {
+  id: string;
+  pergunta: string;
+  opcoes: string[];
+  por: EscopoEnquete;
+  secreta: boolean;
+  abertaAte: string;
+  canais: CanalEnquete[];
+  lembreteEm?: string;
+  lembreteEnviadoEm?: string;
+  situacao: SituacaoEnquete;
+  encerradaEm?: string;
+  encerradaPor?: string;
+  comunicado?: { id: string; estado: string };
+  criadoEm: string;
+  criadoPor?: string;
+  versao: number;
+  resultado: ResultadoEnquete;
+}
+
+export interface ListaEnquetes {
+  enquetes: EnqueteTela[];
+  canais: { whatsapp: boolean; email: boolean; mural: boolean };
+  unidades: number;
+  pode: { editar: boolean };
+}
+
+export interface ConviteEnquete {
+  id: string;
+  nome: string;
+  respondeuEm?: string;
+  /** A escolha, só na enquete aberta (não secreta). */
+  opcao?: number;
+  semContato?: boolean;
+}
+
+export interface EnqueteDetalhe {
+  enquete: EnqueteTela;
+  convites: ConviteEnquete[];
+  historico: { acao: string; em: string; autor?: string; dados: Record<string, unknown> }[];
+  pode: { editar: boolean };
+}
+
+/** O que o link pessoal mostra (AC-03). */
+export interface EnquetePublica {
+  condominio: string;
+  pergunta: string;
+  opcoes: string[];
+  por: EscopoEnquete;
+  secreta: boolean;
+  abertaAte: string;
+  aberta: boolean;
+  para: string;
+  respondeuEm?: string;
+  escolha?: number;
+  resultado?: ResultadoEnquete;
 }

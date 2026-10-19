@@ -142,7 +142,7 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
               Comunicados e documentos
             </ItemMenu>
           ) : null}
-          {pode("reservas.ver") ? (
+          {pode("reservas.ver") || pode("enquetes.ver") ? (
             <ItemMenu href="/vida" icone="convivio" atual={caminho.startsWith("/vida")}
               contagem={painel.vida?.reservasAAprovar ? <span className="contagem">{painel.vida.reservasAAprovar}<span className="sr-only"> a aprovar</span></span> : null}>
               Vida em condomínio
