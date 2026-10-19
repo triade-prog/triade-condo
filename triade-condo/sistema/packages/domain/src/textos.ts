@@ -191,6 +191,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   JA_VOTOU: "A unidade já votou nesta assembleia.",
   SEM_DIREITO_A_VOTO: "Esta unidade não vota por este link: está sem direito a voto ou o voto está com o procurador.",
   PROCURACAO_DECIDIDA: "A procuração já foi decidida pelo síndico.",
+  ANUNCIO_DECIDIDO: "Este anúncio já foi decidido.",
+  ANUNCIO_FORA_DO_MURAL: "Este anúncio não está no mural.",
   AREA_SEM_RESERVA: "Esta área não aceita reserva agora.",
   AREA_COM_RESERVAS: "Há reservas marcadas nesta área. Cancele antes de desativar ou deixar sem reserva.",
 };

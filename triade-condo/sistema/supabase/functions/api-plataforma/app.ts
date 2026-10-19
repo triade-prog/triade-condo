@@ -162,6 +162,9 @@ import {
   procuracaoSchema,
   registrarVotoSchema,
   regrasAssembleiaSchema,
+  publicarAnuncioSchema,
+  recusarAnuncioSchema,
+  tirarAnuncioSchema,
   salvarAssembleiaSchema,
   versaoAssembleiaSchema,
   votarAssembleiaSchema,
@@ -801,6 +804,35 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.put("/v1/condominio/assembleias/regras", async (c) => {
     const d = await lerCorpo(c, regrasAssembleiaSchema);
     return c.json(await rpc("plataforma_regras_assembleia", { ...quem(c), p_versao: d.versao, p_antecedencia: d.antecedencia, p_peso: d.peso }));
+  });
+
+  // Classificados entre moradores (AC-05): a aba, a foto e as decisões.
+  app.get("/v1/condominio/classificados", async (c) => c.json(await rpc("plataforma_classificados", quem(c))));
+  app.get("/v1/condominio/classificados/:id/foto", async (c) => {
+    const a = await rpc<{ caminho: string; tipo: string; nome: string }>("plataforma_foto_classificado", { ...quem(c), p_id: idDaRota(c, "id") });
+    const url = await deps.armazenamento.linkLeitura(a.caminho, VALIDADE_LINK_ARQUIVO_S);
+    return c.json({ url, tipo: a.tipo, expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString() });
+  });
+  app.post("/v1/condominio/classificados/:id/publicar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, publicarAnuncioSchema);
+    const r = await rpc("plataforma_publicar_classificado", { ...quem(c), p_id: id, p_versao: d.versao, p_titulo: d.titulo, p_valor_centavos: d.valorCentavos });
+    noFundo(processarFilaWhatsapp);
+    return c.json(r);
+  });
+  app.post("/v1/condominio/classificados/:id/recusar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, recusarAnuncioSchema);
+    const r = await rpc("plataforma_recusar_classificado", { ...quem(c), p_id: id, p_versao: d.versao, p_motivo: d.motivo });
+    noFundo(processarFilaWhatsapp);
+    return c.json(r);
+  });
+  app.post("/v1/condominio/classificados/:id/tirar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, tirarAnuncioSchema);
+    const r = await rpc("plataforma_tirar_classificado", { ...quem(c), p_id: id, p_versao: d.versao, p_motivo: d.motivo });
+    noFundo(processarFilaWhatsapp);
+    return c.json(r);
   });
 
   app.get("/v1/condominio/fracoes", async (c) => c.json(await rpc("plataforma_fracoes", quem(c))));
@@ -1470,6 +1502,14 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       p_codigo: codigo, p_comunicado: idDaRota(c, "id"), p_arquivo: idDaRota(c, "arquivo"),
     });
     return c.json(await linkPublico(guarda(deps.armazenamentoComunicados), a));
+  });
+  app.get("/v1/publico/mural/:codigo/classificados/:id/foto", async (c) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("mural", await aparelho(c));
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("publico_mural_classificado_foto", {
+      p_codigo: codigo, p_id: idDaRota(c, "id"),
+    });
+    return c.json(await linkPublico(guarda(deps.armazenamento), a));
   });
   app.post("/v1/publico/mural/:codigo/documentos", async (c) => {
     const codigo = codigoDaRota(c);

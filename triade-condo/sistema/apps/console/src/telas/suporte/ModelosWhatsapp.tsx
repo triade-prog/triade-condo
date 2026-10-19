@@ -60,6 +60,7 @@ const EXEMPLOS: Record<ChaveModelo, string[]> = {
   enquete_lembrete: ["Residencial Ipê", "Qual cor para a fachada?", "31/10, às 23:59", "da Torre A · 302", "(link pessoal da unidade)"],
   assembleia_convocacao: ["Residencial Ipê", "assembleia geral ordinária", "sábado, 08/11, às 19:00", "da Torre A · 302", "(link pessoal da unidade)"],
   assembleia_lembrete: ["Residencial Ipê", "assembleia geral ordinária", "sábado, 08/11, às 19:00", "da Torre A · 302", "(link pessoal da unidade)"],
+  anuncio_decidido: ["Residencial Ipê", "está no mural até 18/11, com o título \"Vendo bicicleta aro 29\". Quem se interessar fala com você por aqui.", "Ana"],
 };
 
 /** O texto com as variáveis destacadas e o nome de cada uma. */

@@ -25,6 +25,8 @@ export const PERMISSOES = {
   ENQUETES: "Cuidar das enquetes",
   VER_ASSEMBLEIAS: "Ver as assembleias",
   ASSEMBLEIAS: "Cuidar das assembleias",
+  VER_CLASSIFICADOS: "Ver os classificados",
+  CLASSIFICADOS: "Cuidar dos classificados",
 } as const;
 export type Permissao = keyof typeof PERMISSOES;
 

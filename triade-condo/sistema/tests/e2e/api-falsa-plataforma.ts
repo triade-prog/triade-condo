@@ -16,6 +16,7 @@ import { criarWhatsapp, resumoWhatsapp, rotasWhatsapp } from "./api-falsa-whatsa
 import { criarVida, resumoVida, rotasVida } from "./api-falsa-vida";
 import { criarEnquetes, resumoEnquetes, rotasEnquetePublica, rotasEnquetes } from "./api-falsa-enquetes";
 import { criarAssembleias, resumoAssembleia, rotasAssembleiaPublica, rotasAssembleias } from "./api-falsa-assembleias";
+import { classificadosAAprovar, classificadosDoMural, criarClassificados, rotasClassificadoPublico, rotasClassificados } from "./api-falsa-classificados";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -100,6 +101,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const vida = criarVida();
   const enquetes = criarEnquetes();
   const assembleias = criarAssembleias();
+  const classificados = criarClassificados();
   const memoria = criarMemoria();
   const suporte = criarSuporte();
   const whatsapp = criarWhatsapp(estado.pedidos[0]!, cats[0]!.id, pris[1]!.id);
@@ -115,7 +117,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       "documentos.editar", "documentos.restritos", "documentos.ver", "manutencao.editar", "manutencao.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pedidos.atualizar", "pedidos.concluir",
       "memoria.dossie", "memoria.exportar", "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver",
       "suporte.chamados", "acesso_excepcional.aprovar", "reservas.editar", "reservas.ver",
-      "enquetes.editar", "enquetes.ver", "assembleias.editar", "assembleias.ver"]
+      "enquetes.editar", "enquetes.ver", "assembleias.editar", "assembleias.ver", "classificados.editar", "classificados.ver"]
     : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"]
       : ["agenda.ver", "comunicados.ver", "config.ver", "documentos.ver", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"];
   const pendencias = () => {
@@ -158,7 +160,10 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (linkDaAssembleia !== null) return linkDaAssembleia;
     const etiquetaOuPrestador = await rotasLinksPublicas(route, links, manutencao, caminho, metodo, corpo);
     if (etiquetaOuPrestador !== null) return etiquetaOuPrestador;
-    const publicas = await rotasPublicas(route, comunicados, caminho, metodo, corpo, () => manualDoMural(memoria));
+    const fotoDoAnuncio = await rotasClassificadoPublico(route, caminho);
+    if (fotoDoAnuncio !== null) return fotoDoAnuncio;
+    const publicas = await rotasPublicas(route, comunicados, caminho, metodo, corpo, () => manualDoMural(memoria),
+      () => ({ classificados: classificadosDoMural(classificados) }));
     if (publicas !== null) return publicas;
     if (!estado.logado) return erro(route, 401, "UNAUTHORIZED");
 
@@ -191,10 +196,11 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         ...(acoes().includes("documentos.ver") ? { memoria: { prontuario: resumoProntuario(memoria) } } : {}),
         ...(acoes().includes("acesso_excepcional.aprovar") ? { acessosExcepcionais: resumoAcessos(suporte) } : {}),
         ...(acoes().includes("pedidos.responder") || acoes().includes("pedidos.atualizar") ? { whatsapp: resumoWhatsapp(whatsapp) } : {}),
-        ...(acoes().includes("reservas.ver") || acoes().includes("enquetes.ver") || acoes().includes("assembleias.ver") ? { vida: {
+        ...(acoes().includes("reservas.ver") || acoes().includes("enquetes.ver") || acoes().includes("assembleias.ver") || acoes().includes("classificados.ver") ? { vida: {
           ...(acoes().includes("reservas.ver") ? resumoVida(vida) : { reservasAAprovar: 0, proximasAAprovar: [] }),
           ...(acoes().includes("enquetes.ver") ? { enquetesAbertas: resumoEnquetes(enquetes) } : {}),
           ...(acoes().includes("assembleias.ver") && resumoAssembleia(assembleias) ? { assembleia: resumoAssembleia(assembleias) } : {}),
+          ...(acoes().includes("classificados.ver") && classificadosAAprovar(classificados) ? { classificadosAAprovar: classificadosAAprovar(classificados) } : {}),
         } } : {}),
         avisosNaoVistos: naoVistos(estado.avisos, eu.vinculo),
       } });
@@ -220,6 +226,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (nasEnquetes !== null) return nasEnquetes;
     const nasAssembleias = await rotasAssembleias(route, assembleias, caminho, metodo, corpo, pode, eu);
     if (nasAssembleias !== null) return nasAssembleias;
+    const nosClassificados = await rotasClassificados(route, classificados, caminho, metodo, corpo, pode);
+    if (nosClassificados !== null) return nosClassificados;
     const naVida = await rotasVida(route, vida, caminho, metodo, corpo, url, pode, eu);
     if (naVida !== null) return naVida;
     const nosLinks = await rotasLinks(route, links, manutencao, caminho, metodo, corpo, pode, eu);

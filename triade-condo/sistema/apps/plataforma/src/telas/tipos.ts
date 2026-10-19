@@ -4,6 +4,7 @@
 import type {
   CanalEnquete, ConfirmacaoArea, EscopoEnquete, EstadoReserva, Intervalo, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite, SituacaoEnquete,
   EstadoAssembleia, EstadoItem, EstadoProcuracao, FormaAssembleia, PesoAssembleia, Quorum, SituacaoItem, TipoAssembleia, TipoItem,
+  EstadoAnuncio, TipoAnuncio,
 } from "@triade/domain";
 
 export interface Configuracoes {
@@ -895,6 +896,8 @@ export interface MuralPublico {
   manual?: { id: string; titulo: string; resumo?: string; texto: string; atualizadoEm: string }[];
   /** As enquetes abertas marcadas para o mural; responde-se pelo link pessoal (AC-03). */
   enquetes?: { id: string; pergunta: string; opcoes: string[]; abertaAte: string; por: EscopoEnquete; secreta: boolean }[];
+  /** Os anúncios dos moradores no mural, por 30 dias (AC-05). Primeiro nome e bloco; WhatsApp só com o SIM. */
+  classificados?: AnuncioPublico[];
   atualizadoEm?: string;
 }
 
@@ -1250,6 +1253,8 @@ export interface ResumoVida {
   enquetesAbertas?: { id: string; pergunta: string; abertaAte: string; responderam: number; total: number }[];
   /** A próxima assembleia convocada ou em andamento (AC-02). Só para quem vê as assembleias. */
   assembleia?: { id: string; titulo: string; estado: EstadoAssembleia; primeiraChamada: string; procuracoesPendentes: number };
+  /** Os anúncios esperando aprovação (AC-05). Só para quem vê os classificados. */
+  classificadosAAprovar?: number;
 }
 
 // Enquetes (AC-03).
@@ -1453,4 +1458,45 @@ export interface AssembleiaPublica {
   outrasUnidades?: { id: string; nome: string }[];
   presenteEm?: string;
   itens: { id: string; ordem: number; titulo: string; descricao?: string; opcoes: string[]; estado: EstadoItem; quorum: Quorum; meuVoto?: number; resultado?: ResultadoItem }[];
+}
+
+// Classificados entre moradores (AC-05).
+export interface AnuncioTela {
+  id: string;
+  tipo: TipoAnuncio;
+  texto: string;
+  estado: EstadoAnuncio;
+  titulo?: string;
+  valorCentavos?: number;
+  noMuralAte?: string;
+  tituloSugerido: string;
+  valorSugerido?: number;
+  mostrarTelefone: boolean;
+  foto: boolean;
+  unidade: { id: string; nome: string };
+  contato?: { id: string; nome: string };
+  criadoEm: string;
+  decisao?: { em: string; por?: string };
+  retirada?: { em: string; por?: string };
+  motivo?: string;
+  versao: number;
+}
+
+export interface ListaAnuncios {
+  classificados: AnuncioTela[];
+  aAprovar: number;
+  pode: { editar: boolean };
+}
+
+export interface AnuncioPublico {
+  id: string;
+  tipo: TipoAnuncio;
+  titulo: string;
+  texto: string;
+  valorCentavos?: number;
+  ate: string;
+  foto: boolean;
+  quem?: string;
+  bloco?: string;
+  whatsapp?: string;
 }

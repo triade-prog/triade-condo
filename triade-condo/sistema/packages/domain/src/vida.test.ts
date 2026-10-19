@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  centavosDoTexto, filtroDoAnuncio, publicarAnuncioSchema, recusarAnuncioSchema, tirarAnuncioSchema,
   avisoQuorum, descreverEventoAssembleia, fracoesSchema, porcento, salvarAssembleiaSchema,
   areaSchema,
   criarEnqueteSchema,
@@ -129,5 +130,22 @@ describe("assembleias (AC-02)", () => {
     expect(descreverEventoAssembleia("assembleia.item_encerrado", { item: 2, situacao: "ESCOLHIDA", vencedor: "Rui" })).toBe("Item 2 votado: escolhida Rui");
     expect(descreverEventoAssembleia("assembleia.procuracao_recusada", { unidade: "Torre A · 201", motivo: "Sem firma" }))
       .toBe("Procuração de Torre A · 201 recusada: Sem firma");
+  });
+});
+
+describe("classificados (AC-05)", () => {
+  it("separa os anúncios pelos filtros da aba", () => {
+    expect(["A_APROVAR", "NO_MURAL", "RECUSADO", "RETIRADO", "VENCIDO"].map((e) => filtroDoAnuncio(e as never)))
+      .toEqual(["A_APROVAR", "NO_MURAL", "ENCERRADOS", "ENCERRADOS", "ENCERRADOS"]);
+  });
+  it("lê o valor escrito em reais", () => {
+    expect([centavosDoTexto("R$ 900"), centavosDoTexto("1.150,50"), centavosDoTexto(" "), centavosDoTexto("9,999"), centavosDoTexto("abc")])
+      .toEqual([90000, 115050, null, undefined, undefined]);
+  });
+  it("publicar pede título; recusar pede motivo; tirar não", () => {
+    expect(publicarAnuncioSchema.safeParse({ versao: 1, titulo: "ab" }).success).toBe(false);
+    expect(publicarAnuncioSchema.parse({ versao: 1, titulo: " Vendo bicicleta " })).toEqual({ versao: 1, titulo: "Vendo bicicleta", valorCentavos: null });
+    expect(recusarAnuncioSchema.safeParse({ versao: 1, motivo: "" }).success).toBe(false);
+    expect(tirarAnuncioSchema.parse({ versao: 2, motivo: "  " })).toEqual({ versao: 2, motivo: null });
   });
 });

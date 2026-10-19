@@ -1,4 +1,4 @@
-// Vida em condomínio (peça R12): áreas comuns, reservas, enquetes e assembleias na Plataforma do síndico. As rotas
+// Vida em condomínio (peça R12): áreas comuns, reservas, enquetes, assembleias e classificados na Plataforma do síndico. As rotas
 // validam a entrada, mandam ao banco a pessoa e o condomínio da sessão e deixam as regras para o banco.
 import { assertEquals } from "@std/assert";
 import { criarApiPlataforma } from "./app.ts";
@@ -13,6 +13,7 @@ const ENQUETE = "7a8b9c0d-1e2f-4a3b-8c4d-e5f6a7b8c9d0";
 const CONVITE = "8b9c0d1e-2f3a-4b4c-9d5e-f6a7b8c9d0e1";
 const ASSEMBLEIA = "9c0d1e2f-3a4b-4c5d-8e6f-a7b8c9d0e1f2";
 const ITEM = "0d1e2f3a-4b5c-4d6e-9f7a-b8c9d0e1f2a3";
+const ANUNCIO = "1e2f3a4b-5c6d-4e7f-8a9b-c0d1e2f3a4b5";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-sindica" };
 
 function montar() {
@@ -27,7 +28,7 @@ function montar() {
       return null;
     },
     condominio_da_sessao: (a) => sessoes.get(String(a.p_sessao)) ?? null,
-    ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2, link: 10 }),
+    ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2, link: 10, mural: 5 }),
     plataforma_areas_comuns: () => ({ areas: [], documentos: [], pode: { editar: true } }),
     plataforma_salvar_area: (a) => ({ id: a.p_id ?? AREA, versao: a.p_versao ? Number(a.p_versao) + 1 : 1 }),
     plataforma_reservas: () => ({ reservas: [], aAprovar: 0, areas: [], hoje: "2026-10-19", pode: { editar: true } }),
@@ -68,6 +69,12 @@ function montar() {
     publico_assembleia: () => ({ titulo: "AGO de março", estado: "CONVOCADA" }),
     publico_votar_assembleia: (a) => ({ itens: [{ id: a.p_item, meuVoto: a.p_opcao }] }),
     publico_procuracao_assembleia: (a) => ({ procuracao: { estado: "PENDENTE", nome: a.p_nome } }),
+    plataforma_classificados: () => ({ classificados: [], aAprovar: 0, pode: { editar: true } }),
+    plataforma_foto_classificado: () => ({ caminho: `whatsapp/${AURORA}/${ANUNCIO}`, tipo: "image/jpeg", nome: "foto" }),
+    plataforma_publicar_classificado: (a) => ({ id: a.p_id, estado: "NO_MURAL", versao: Number(a.p_versao) + 1 }),
+    plataforma_recusar_classificado: (a) => ({ id: a.p_id, estado: "RECUSADO", versao: Number(a.p_versao) + 1 }),
+    plataforma_tirar_classificado: (a) => ({ id: a.p_id, estado: "RETIRADO", versao: Number(a.p_versao) + 1 }),
+    publico_mural_classificado_foto: () => ({ caminho: `whatsapp/${AURORA}/${ANUNCIO}`, tipo: "image/jpeg", nome: "foto" }),
   });
   const app = criarApiPlataforma("segredo-de-repasse-de-teste", {
     banco: db.banco, auth: falso.auth, admin: adminFalso().admin, urlApp: "https://plataforma.exemplo", armazenamento: armazenamentoFalso().armazenamento,
@@ -252,4 +259,36 @@ Deno.test("AC-02: o link pessoal da assembleia abre, vota e indica procurador se
   m.chamadas.length = 0;
   assertEquals((await m.pedir("/v1/publico/a/curto")).status, 404);
   assertEquals(chamada(m, "publico_assembleia"), undefined);
+});
+
+Deno.test("AC-05: a aba Classificados publica, recusa e tira do mural; a foto abre por link que expira", async () => {
+  const m = montar();
+  assertEquals((await erro(await m.pedir("/v1/condominio/classificados"))).codigo, "UNAUTHORIZED");
+  const cookie = await entrar(m);
+  assertEquals((await m.pedir("/v1/condominio/classificados", { cookie })).status, 200);
+  const base = `/v1/condominio/classificados/${ANUNCIO}`;
+  const sem = await m.pedir(`${base}/publicar`, { corpo: { versao: 1, titulo: "ab" }, cookie });
+  assertEquals((await erro(sem)).detalhes?.campos, ["titulo"]);
+  assertEquals(await (await m.pedir(`${base}/publicar`, { corpo: { versao: 1, titulo: " Vendo bicicleta ", valorCentavos: 90000 }, cookie })).json(),
+    { id: ANUNCIO, estado: "NO_MURAL", versao: 2 });
+  assertEquals(chamada(m, "plataforma_publicar_classificado"), {
+    p_pessoa: ANA, p_condominio: AURORA, p_id: ANUNCIO, p_versao: 1, p_titulo: "Vendo bicicleta", p_valor_centavos: 90000,
+  });
+  assertEquals((await erro(await m.pedir(`${base}/recusar`, { corpo: { versao: 1, motivo: "" }, cookie }))).detalhes?.campos, ["motivo"]);
+  await m.pedir(`${base}/recusar`, { corpo: { versao: 1, motivo: "Serviço de fora do prédio" }, cookie });
+  assertEquals(chamada(m, "plataforma_recusar_classificado")?.p_motivo, "Serviço de fora do prédio");
+  await m.pedir(`${base}/tirar`, { corpo: { versao: 2 }, cookie });
+  assertEquals(chamada(m, "plataforma_tirar_classificado")?.p_motivo, null);
+  const f = await (await m.pedir(`${base}/foto`, { cookie })).json();
+  assertEquals([f.tipo, String(f.url).includes(`whatsapp/${AURORA}/${ANUNCIO}`)], ["image/jpeg", true]);
+});
+
+Deno.test("CD-12: a foto do anúncio abre pelo mural sem conta", async () => {
+  const m = montar();
+  const f = await (await m.pedir(`/v1/publico/mural/K7QM-3XPA-9TRE/classificados/${ANUNCIO}/foto`)).json();
+  assertEquals([f.tipo, String(f.url).includes(`whatsapp/${AURORA}/${ANUNCIO}`)], ["image/jpeg", true]);
+  assertEquals(chamada(m, "publico_mural_classificado_foto"), { p_codigo: "K7QM-3XPA-9TRE", p_id: ANUNCIO });
+  m.chamadas.length = 0;
+  assertEquals((await m.pedir(`/v1/publico/mural/K7QM-3XPA-9TRE/classificados/nao-e-id/foto`)).status, 404);
+  assertEquals(chamada(m, "publico_mural_classificado_foto"), undefined);
 });

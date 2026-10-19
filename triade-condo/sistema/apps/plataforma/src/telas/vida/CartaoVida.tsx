@@ -1,7 +1,7 @@
 "use client";
 // O cartão Vida em condomínio no início (design "Vida em condomínio", tela 10; AC-01): só aparece
 // quando há algo a fazer ou acompanhar: reservas esperando aprovação, enquetes abertas (AC-03) e a
-// próxima assembleia (AC-02).
+// próxima assembleia (AC-02) e anúncios a aprovar (AC-05).
 
 import Link from "next/link";
 import { classeBotao, Icone } from "@triade/ui";
@@ -30,6 +30,16 @@ export function CartaoVida({ resumo: r }: { resumo: ResumoVida }) {
           </span>
           <Link href="/vida" className={classeBotao("contorno", "", "m")} aria-label="Ver as reservas a aprovar">Ver</Link>
         </li> : null}
+        {r.classificadosAAprovar ? (
+          <li className="flex items-center gap-3 py-2.5">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-atencao-fundo text-atencao"><Icone nome="megafone" /></span>
+            <span className="grid min-w-0 flex-1 gap-0.5 text-sm">
+              <span className="font-medium">{r.classificadosAAprovar === 1 ? "1 anúncio a aprovar" : `${r.classificadosAAprovar} anúncios a aprovar`}</span>
+              <span className="text-tinta-suave">Classificados entre moradores, para o mural</span>
+            </span>
+            <Link href="/vida?aba=classificados" className={classeBotao("contorno", "", "m")} aria-label="Ver os anúncios a aprovar">Ver</Link>
+          </li>
+        ) : null}
         {(r.enquetesAbertas ?? []).map((e) => (
           <li key={e.id} className="flex items-center gap-3 py-2.5">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-andamento-fundo text-andamento"><Icone nome="grafico" /></span>

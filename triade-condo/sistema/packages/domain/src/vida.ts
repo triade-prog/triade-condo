@@ -32,7 +32,7 @@ export const FILTROS_RESERVA = { A_APROVAR: "A aprovar", PROXIMAS: "Próximas", 
 export type FiltroReserva = keyof typeof FILTROS_RESERVA;
 
 /** As abas da Vida em condomínio, com a ação que deixa ver cada uma (decisão 1). */
-export const ABAS_VIDA = { reservas: "Reservas", enquetes: "Enquetes", assembleias: "Assembleias" } as const;
+export const ABAS_VIDA = { reservas: "Reservas", enquetes: "Enquetes", assembleias: "Assembleias", classificados: "Classificados" } as const;
 export type AbaVida = keyof typeof ABAS_VIDA;
 
 /** Quem responde a enquete (AC-03): uma resposta por unidade ou por pessoa com vínculo confirmado. */
@@ -90,6 +90,25 @@ export const SITUACOES_ITEM = {
   SEM_VOTOS: "Sem votos",
 } as const;
 export type SituacaoItem = keyof typeof SITUACOES_ITEM;
+
+// Classificados entre moradores (AC-05): o tipo escolhido no WhatsApp e o estado do anúncio.
+export const TIPOS_ANUNCIO = { VENDO: "Vendo", DOO: "Doação", PROCURO: "Procuro", SERVICO: "Serviço de morador" } as const;
+export type TipoAnuncio = keyof typeof TIPOS_ANUNCIO;
+
+export const ESTADOS_ANUNCIO = {
+  A_APROVAR: "A aprovar",
+  NO_MURAL: "No mural",
+  RECUSADO: "Recusado",
+  RETIRADO: "Tirado do mural",
+  VENCIDO: "Venceu",
+} as const;
+export type EstadoAnuncio = keyof typeof ESTADOS_ANUNCIO;
+
+export const FILTROS_ANUNCIO = { A_APROVAR: "A aprovar", NO_MURAL: "No mural", ENCERRADOS: "Encerrados" } as const;
+export type FiltroAnuncio = keyof typeof FILTROS_ANUNCIO;
+
+/** O aviso do mural (decisão 14). */
+export const AVISO_CLASSIFICADOS = "Anúncios de moradores, aprovados pelo condomínio. O condomínio não vende nem garante nada daqui.";
 
 export const ESTADOS_PROCURACAO = { PENDENTE: "A conferir", ACEITA: "Aceita", RECUSADA: "Recusada" } as const;
 export type EstadoProcuracao = keyof typeof ESTADOS_PROCURACAO;
@@ -217,6 +236,14 @@ export const fracoesSchema = z.object({
   fracoes: z.array(z.object({ unidadeId: uuid, fracao: z.number().gt(0).max(100).nullable(), versao })).max(2000),
 });
 export const votarAssembleiaSchema = z.object({ itemId: uuid, opcao: z.number().int().min(1).max(11) });
+export const publicarAnuncioSchema = z.object({
+  versao,
+  titulo: z.string().trim().min(3).max(80),
+  valorCentavos: opcional(z.number().int().min(1).max(100000000)),
+});
+export const recusarAnuncioSchema = z.object({ versao, motivo: z.string().trim().min(3).max(500) });
+export const tirarAnuncioSchema = z.object({ versao, motivo: texto(500) });
+
 export const procuracaoPublicaSchema = z.object({ nome: z.string().trim().min(3).max(120).nullable(), unidadeId: opcional(uuid) });
 
 // ---------------------------------------------------------------------------------------
@@ -360,4 +387,18 @@ export function porcento(n: number): string {
 export function avisoQuorum(quorum: Quorum, alcancavel: boolean): string | null {
   if (alcancavel || quorum === "MAIORIA_PRESENTES") return null;
   return `Os presentes não alcançam ${QUORUNS[quorum].toLowerCase()}: mesmo com todos a favor, o item não passa.`;
+}
+
+/** Em qual filtro da aba o anúncio aparece. */
+export function filtroDoAnuncio(estado: EstadoAnuncio): FiltroAnuncio {
+  return estado === "A_APROVAR" ? "A_APROVAR" : estado === "NO_MURAL" ? "NO_MURAL" : "ENCERRADOS";
+}
+
+/** "R$ 900" vira 90000; vazio, nada; inválido, undefined. */
+export function centavosDoTexto(v: string): number | null | undefined {
+  const t = v.replace(/R\$|\s/g, "");
+  if (!t) return null;
+  if (!/^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+(,\d{1,2})?$/.test(t)) return undefined;
+  const n = Math.round(Number(t.replace(/\./g, "").replace(",", ".")) * 100);
+  return n >= 1 && n <= 100000000 ? n : undefined;
 }

@@ -142,7 +142,7 @@ Deno.test("CF-05: revogar a padrão leva o substituto ao banco", async () => {
 
 Deno.test("as listas do domínio (permissões, fusos, situações, pendências) são as mesmas do banco", async () => {
   const migration = (await Promise.all(["0070_configuracoes_condominio.sql", "0080_moradores_unidades.sql", "0130_agenda.sql", "0140_manutencao.sql",
-    "0150_comunicados_documentos.sql", "0160_mural_email.sql", "0220_vida_reservas.sql", "0230_vida_enquetes.sql", "0240_vida_assembleias.sql"]
+    "0150_comunicados_documentos.sql", "0160_mural_email.sql", "0220_vida_reservas.sql", "0230_vida_enquetes.sql", "0240_vida_assembleias.sql", "0250_vida_classificados.sql"]
     .map((f) => Deno.readTextFile(new URL(`../../migrations/${f}`, import.meta.url))))).join("\n");
   for (const p of Object.keys(PERMISSOES)) assert(migration.includes(`('${p}', '`), p);
   for (const f of Object.keys(FUSOS)) assert(migration.includes(`'${f}'`), f);
