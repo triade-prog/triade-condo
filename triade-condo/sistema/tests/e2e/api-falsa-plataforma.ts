@@ -17,7 +17,7 @@ import { criarVida, resumoVida, rotasVida } from "./api-falsa-vida";
 import { criarEnquetes, resumoEnquetes, rotasEnquetePublica, rotasEnquetes } from "./api-falsa-enquetes";
 import { criarAssembleias, resumoAssembleia, rotasAssembleiaPublica, rotasAssembleias } from "./api-falsa-assembleias";
 import { classificadosAAprovar, classificadosDoMural, criarClassificados, rotasClassificadoPublico, rotasClassificados } from "./api-falsa-classificados";
-import { avisarNoRegistro, criarAvisoRegistro, rotasAvisoRegistro, type ContextoAviso } from "./api-falsa-aviso-registro";
+import { avisarNoRegistro, avisosDoPedido, criarAvisoRegistro, rotasAvisoRegistro, type ContextoAviso } from "./api-falsa-aviso-registro";
 import { avisosDecisoes, criarDecisoes, detalheDecisoes, marcarAvisosDecisoes, resumoDecisoes, rotasDecisoes, semearDecisoes } from "./api-falsa-decisoes";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -231,7 +231,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         podeEditar: pode("config.editar"), avisoNovo: { ...avisoRegistro.regra, podeMudar: quem === "SINDICA" } } });
     }
     const ctxAviso: ContextoAviso = { eu, pessoas: estado.pessoas, responsavelPadrao: estado.responsavelPadrao, moradores: estado.moradores, manutencao,
-      prioridades: c.prioridades, conectado: whatsapp.conexao.situacao === "CONECTADO", podePublicar: pode("comunicados.publicar"), condominio: "Residencial Ipê" };
+      prioridades: c.prioridades, conectado: whatsapp.conexao.situacao === "CONECTADO", podePublicar: pode("comunicados.publicar"),
+      podeManutencao: pode("manutencao.editar"), links, condominio: "Residencial Ipê" };
     const noAviso = await rotasAvisoRegistro(route, avisoRegistro, ctxAviso, caminho, metodo, corpo, pode, quem === "SINDICA");
     if (noAviso !== null) return noAviso;
     const prazos = await rotasPrazos(route, estado, eu, caminho, metodo, corpo, url, pode,
@@ -272,7 +273,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (nasDecisoes !== null) return nasDecisoes;
     const pedidos = await rotasPedidos(route, estado.pedidos, c, estado.pessoas, estado.moradores, eu, caminho, metodo, corpo, url, pode, {
       registrar: (p, d) => avisarNoRegistro(avisoRegistro, ctxAviso, p, d, AGORA),
-      doPedido: (id) => avisoRegistro.porPedido.get(id),
+      doPedido: (id) => avisosDoPedido(avisoRegistro, ctxAviso, id),
     }, (p) => detalheDecisoes(decisoes, naDecisao, p));
     if (pedidos !== null) return pedidos;
 

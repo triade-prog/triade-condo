@@ -13,7 +13,7 @@ import { Caixa, Escolha, nomeRelacao } from "../moradores/comum.tsx";
 import { opcoesCanal } from "./comum.tsx";
 import { EscolherArquivos, enviarArquivos, type ItemEnvio } from "./Arquivos.tsx";
 import { ListaLocais } from "../Locais.tsx";
-import { acompanharRascunhos, BlocoQuemAvisar, contarAvisos, ESCOLHA_INICIAL, paraEnviar, usePrevia, type EscolhaAvisos } from "./QuemAvisar.tsx";
+import { acompanharRascunhos, BlocoQuemAvisar, contarAvisos, ESCOLHA_INICIAL, faltasNoLink, paraEnviar, usePrevia, type EscolhaAvisos } from "./QuemAvisar.tsx";
 import { ConfirmacaoRegistro, type Registrado } from "./AvisosDoRegistro.tsx";
 
 interface ContatoConfirmado { contatoId: string; nome: string; relacao: string; principal: boolean }
@@ -54,6 +54,7 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro }: {
   const [enviando, setEnviando] = useState(false);
   const [escolha, setEscolha] = useState<EscolhaAvisos>(ESCOLHA_INICIAL);
   const [feito, setFeito] = useState<Registrado | null>(null);
+  const [faltas, setFaltas] = useState<string[]>([]);
   const mudar = (m: Partial<typeof v>) => setV((x) => ({ ...x, ...m }));
   const previa = usePrevia({
     unidadeId: onde === "UNIDADE" ? v.unidadeId || null : null, contatoId: onde === "UNIDADE" ? v.contatoId || null : null,
@@ -77,6 +78,13 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro }: {
   async function salvar(ev: FormEvent) {
     ev.preventDefault();
     setErro(null);
+    // Quando e como entrar faltando: aponta o campo antes de ir ao banco (nada grava pela metade).
+    const falta = faltasNoLink(previa, escolhaVista);
+    setFaltas(falta);
+    if (falta.length) {
+      document.getElementById(falta[0] === "textoPrestador" ? "qa-o-que-fazer" : falta[0] === "quando" ? "qa-quando" : "qa-como-entrar")?.focus();
+      return;
+    }
     setEnviando(true);
     const r = await chamarApi<{ id: string; protocolo: string; avisos?: AvisoDoRegistro[] }>("/v1/condominio/pedidos", { corpo: {
       unidadeId: onde === "UNIDADE" ? v.unidadeId || null : null,
@@ -141,7 +149,8 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro }: {
           ...disponiveis.map((r) => ({ valor: r.vinculoId, texto: `${r.eu ? "Eu" : r.nome}${r.vinculoId === opcoes.responsavelPadrao ? " (padrão da fila)" : ""}` }))]} />
       <Caixa id="p-privado" rotulo="Pedido privado" ajuda="Só o síndico, quem registrou e o responsável veem." marcada={v.privado} aoMudar={(x) => mudar({ privado: x })} />
       <EscolherArquivos rotulo="Fotos e documentos (opcional)" itens={arquivos} aoMudar={setArquivos} enviando={enviando} />
-      <BlocoQuemAvisar previa={previa} escolha={escolhaVista} mudar={setEscolha} opcoes={opcoes} />
+      <BlocoQuemAvisar previa={previa} escolha={escolhaVista} mudar={setEscolha} opcoes={opcoes}
+        faltas={[...faltas, ...comErro.filter((c) => c === "quando" || c === "comoEntrar")]} />
       <div className="flex justify-end gap-2">
         <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" disabled={enviando}>{enviando ? "Registrando…" : avisos.n ? `Registrar e avisar ${avisos.n}` : "Registrar pedido"}</Botao>

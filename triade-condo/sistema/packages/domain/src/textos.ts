@@ -174,6 +174,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   DADO_DE_MORADOR: "Tire da mensagem o nome, o telefone ou o e-mail de morador. Ele não vai para o prestador nem para os outros moradores.",
   PEDIDO_PRIVADO: "Pedido privado não vai para o prestador nem para os outros moradores.",
   PRESTADOR_SEM_MEIO: "Este prestador não tem celular nem e-mail no cadastro. Complete o cadastro para avisar por aqui.",
+  SEM_PERMISSAO_MANUTENCAO: "O link do serviço fica com quem cuida da manutenção. Desmarque o link para avisar o prestador só com a mensagem.",
   SEM_PERMISSAO_COMUNICADOS: "Avisar os moradores afetados é publicar um comunicado. Peça ao síndico a permissão de comunicados.",
   // Vida em condomínio (peça R12).
   RESERVA_OCUPADA: "A área já está ocupada nesse horário, por outra reserva ou por um compromisso da Agenda.",

@@ -177,6 +177,10 @@ export function descreverEventoLinkPrestador(acao: string, d: Record<string, unk
       return "Não passou para a reserva: a reserva está arquivada";
     case "manutencao.reserva_sem_resposta":
       return "A reserva também não respondeu no prazo";
+    case "manutencao.link_no_registro":
+      return `Link mandado no registro do pedido ${d.canal === "WHATSAPP" ? "pelo WhatsApp do condomínio" : "por e-mail"}; responder em ${String(d.horas)} h, contadas da saída da mensagem`;
+    case "manutencao.prestador_sem_resposta":
+      return "O prestador não respondeu no prazo e não há reserva para passar";
     default:
       return null;
   }

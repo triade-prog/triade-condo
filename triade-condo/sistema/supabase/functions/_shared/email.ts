@@ -29,8 +29,12 @@ export interface MensagemFila {
   enquete?: { pergunta: string; prazo: string; dono: string; lembrete: boolean; secreta: boolean };
   /** Convocação (ou lembrete) de assembleia, com o link pessoal da unidade (peça R12). */
   assembleia?: { titulo: string; nome: string; chamada: string; dono: string; lembrete: boolean };
-  /** Pedido registrado (F6.4): o protocolo a quem pediu, ou o texto que quem registrou mandou ao prestador. */
-  pedido?: { protocolo: string; prioridade?: string; assunto?: string; unidade?: string; canal?: string; atendimento?: string; texto?: string };
+  /** Pedido registrado (F6.4): o protocolo a quem pediu, ou o texto que quem registrou mandou ao prestador. Com o link do
+   * serviço (F6.7), o código da página do prestador, até quando responder e o título da manutenção. */
+  pedido?: {
+    protocolo: string; prioridade?: string; assunto?: string; unidade?: string; canal?: string; atendimento?: string; texto?: string;
+    link?: string; responderAte?: string; titulo?: string;
+  };
 }
 
 export interface EmailPronto {
@@ -194,6 +198,23 @@ export function montarEmail(m: MensagemFila, e: EnderecosEmail): EmailPronto {
         "List-Unsubscribe": `<${e.urlFuncao.replace(/\/$/, "")}/v1/email/parar/${m.codigos.parar ?? ""}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
       },
+    };
+  }
+
+  if (m.tipo === "PRESTADOR" && m.pedido?.link) {
+    // F6.7: o link do serviço, com o prazo para confirmar; o texto do pedido vai junto.
+    const p = m.pedido;
+    const servico = `${app}/p/${encodeURIComponent(p.link!)}`;
+    const golpe = "O condomínio nunca pede pagamento por e-mail.";
+    const prazo = p.responderAte ? `Confirme até ${p.responderAte}.` : "Confirme pelo link.";
+    const aviso = "Sem resposta até o prazo, o condomínio pode passar o serviço para outro prestador. O link é só para este serviço e não precisa de conta.";
+    return {
+      ...base,
+      assunto: `[${m.condominioNome}] Serviço${p.titulo ? `: ${p.titulo}` : ""}${p.responderAte ? ` · confirme até ${p.responderAte}` : ""}`,
+      html: pagina(m.condominioNome,
+        `<h1 style="font-size:20px;font-weight:600;margin:4px 0 14px">Pedido ${esc(p.protocolo)}${p.prioridade ? ` · ${esc(p.prioridade)}` : ""}</h1>${paragrafos(p.texto ?? "")}<p style="margin:0 0 14px"><b>${esc(prazo)}</b></p>${botao("Ver o serviço e confirmar", servico)}<p style="margin:0 0 14px">${esc(aviso)}</p>`,
+        [esc(golpe)]),
+      texto: `Pedido ${p.protocolo}${p.prioridade ? ` · ${p.prioridade}` : ""}\n\n${p.texto ?? ""}\n\n${prazo}\nVer o serviço e confirmar: ${servico}\n\n${aviso}\n\n${golpe}`,
     };
   }
 

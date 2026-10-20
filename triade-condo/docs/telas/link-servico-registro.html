@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Link do serviço no registro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Playfair+Display:ital,wght@1,400&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Link do serviço para o prestador avisado no registro (F6.7; MP-09, V-11), aprovado pela Carolina em 20/10/2026. Estilos e ícones copiados por script da
+   página do aviso de pedido registrado; dados fictícios. */
+
+
+:root{
+  --v50:#F8F3FF;--v100:#F1E9FC;--v200:#DDC8F8;--v300:#C3A0EF;--v400:#A16DE5;--v500:#7B3BDC;--v600:#5808CC;--v700:#4706A6;--v800:#350580;--v900:#180567;--v950:#10033F;
+  --l50:#FFF7EB;--l100:#FFEBCF;--l200:#FFD39E;--l300:#FFB96A;--l400:#FFA338;--l500:#FF8D01;--l600:#CF6300;--l700:#A54C00;--l800:#7C3900;--l900:#552600;
+  --n0:#FFFFFF;--n50:#F7F4FC;--n100:#F1EFF5;--n200:#E4DCF1;--n300:#CFC6DB;--n400:#9184AA;--n500:#83758F;--n600:#5E5475;--n700:#4A4258;--n900:#1E1531;
+  --ok:#0B7558;--ok-f:#EDFAF5;--ok-b:#BCE8D7;--at:#95560A;--at-f:#FFF6E6;--at-b:#F6DCAE;--er:#BC1450;--er-f:#FFF0F4;--er-b:#F8CBDA;--in:#0D6E8C;--in-f:#EBF8FC;--in-b:#B9E3EF;
+  /* Faixas com brilho: do tom forte ao claro, na lateral de selos e avisos. */
+  --fx-and:linear-gradient(180deg,#8B3DF0,#5808CC);--fx-ok:linear-gradient(180deg,#3DBE91,#0B7558);--fx-at:linear-gradient(180deg,#F2A33A,#95560A);--fx-er:linear-gradient(180deg,#F0598A,#BC1450);--fx-in:linear-gradient(180deg,#38B2CF,#0D6E8C);--fx-ab:linear-gradient(180deg,#C3B8D6,#7C7090);
+  --fundo:var(--n50);--superficie:#fff;--texto:var(--n900);--texto-suave:var(--n600);--linha:var(--n200);--marca:var(--v600);--acento:var(--l500);
+  --grad-violeta:radial-gradient(120% 140% at 100% 0%,#9E37F5 0%,#7018DC 28%,transparent 62%),linear-gradient(135deg,#180567 0%,#3A07A0 40%,#5808CC 100%);
+  --grad-trilha:linear-gradient(165deg,#FFE0A8 0%,#FFB45C 38%,#FF8D01 72%,#F2700A 100%);
+  --s1:0 1px 2px #211a320d,0 4px 12px #3a1a7a0a;--s2:0 2px 4px #211a320d,0 12px 28px #3a1a7a14;--s3:0 4px 8px #211a3212,0 24px 48px #3a1a7a1f;
+  --destaque:"Playfair Display",Georgia,serif;color-scheme:light}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--fundo);color:var(--texto);font:15px/1.6 Manrope,system-ui,sans-serif}
+a{color:var(--marca)}
+:focus-visible{outline:3px solid var(--v400);outline-offset:3px}
+h1,h2,h3,h4{margin:0;letter-spacing:-.02em;line-height:1.2}
+em.d{font-family:var(--destaque);font-style:italic;font-weight:400;letter-spacing:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500}
+.pular{position:absolute;left:16px;top:-60px;background:#fff;padding:10px 14px;border-radius:8px;z-index:10}
+.pular:focus{top:12px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px 96px}
+.topo{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0;flex-wrap:wrap}
+.topo img{width:156px}
+.topo nav{display:flex;flex-wrap:wrap;gap:6px}
+.pilula{font-size:13px;font-weight:500;padding:5px 12px;border-radius:999px;background:var(--n100);color:var(--n700);text-decoration:none}
+.pilula:hover{background:var(--v100);color:var(--v700)}
+.pilula[aria-current]{background:var(--v100);color:var(--v700)}
+
+/* Cabeçalho de cada parte: a moldura com alças, como nas referências, em violeta. */
+.parte{margin-top:72px;scroll-margin-top:16px}
+.moldura{position:relative;border:1.5px solid var(--v400);padding:22px 24px;margin-bottom:28px;background:linear-gradient(180deg,#fff,#fdfbff)}
+.moldura::before,.moldura::after,.moldura .a3,.moldura .a4{content:"";position:absolute;width:9px;height:9px;background:var(--v600)}
+.moldura::before{left:-5px;top:-5px}.moldura::after{right:-5px;top:-5px}
+.moldura .a3{left:-5px;bottom:-5px}.moldura .a4{right:-5px;bottom:-5px}
+.moldura h2{font-size:clamp(28px,3.6vw,40px);font-weight:400}
+.moldura p{margin:8px 0 0;color:var(--texto-suave);max-width:680px}
+h3.sub{font-size:20px;font-weight:500;margin:36px 0 12px}
+.nota{font-size:14px;color:var(--texto-suave);max-width:760px;margin:0 0 16px}
+.painel{background:var(--superficie);border:1px solid var(--linha);border-radius:16px;padding:20px}
+.estudo{background:#FBFAFD;border:1px solid var(--linha);border-radius:16px;padding:24px;overflow-x:auto}
+.grade2{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr))}
+.grade3{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.rot{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:500;color:var(--texto-suave)}
+
+/* Abertura */
+.abertura{position:relative;overflow:hidden;border-radius:22px;background:var(--grad-violeta);color:#fff;padding:48px 40px;min-height:300px}
+.abertura .t{position:relative;z-index:1;max-width:620px}
+.abertura h1{font-size:clamp(34px,5vw,58px);font-weight:300;letter-spacing:-.03em;margin:12px 0}
+.abertura h1 em.d{color:#FFD39E}
+.abertura p{color:#EDE0FF;margin:0}
+.abertura .numeros{display:flex;gap:28px;flex-wrap:wrap;margin-top:22px;color:#E7D3FF;font-size:15px}
+.abertura .numeros b{display:block;font-size:30px;font-weight:300;color:#fff}
+.arte{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.arte .orb{position:absolute;border-radius:50%;border:1px solid #ffffff2e}
+.arte .arco{position:absolute;border-radius:200px 200px 0 0;transform:rotate(26deg);border:1px solid #e9d4ff40;background:linear-gradient(170deg,#c27bff33 0%,#7a2be026 55%,#5808cc00 100%)}
+.arte .tri{position:absolute;border-radius:200px;transform:rotate(26deg);background:var(--grad-trilha);box-shadow:inset 0 2px 0 #ffffff55,0 18px 40px #d9570a33}
+@media (max-width:760px){.abertura{padding:30px 22px}.abertura .arte{opacity:.4}}
+
+/* Sumário: cartões com aba de pasta, como na referência. */
+.sumario{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr))}
+.pasta{text-decoration:none;color:var(--texto);display:grid;gap:8px}
+.pasta .capa{position:relative;height:150px;border-radius:4px 14px 14px 14px;background:#FBFAFD;border:1px solid var(--linha);display:grid;place-items:center;margin-top:12px}
+.pasta .capa::before{content:"";position:absolute;left:-1px;top:-13px;width:46%;height:14px;border:1px solid var(--linha);border-bottom:0;border-radius:10px 10px 0 0;background:#FBFAFD}
+.pasta .pronto{position:absolute;left:10px;top:10px;font-size:12px;font-weight:500;padding:2px 9px;border-radius:999px;background:var(--n100);color:var(--n700)}
+.pasta b{display:flex;justify-content:space-between;align-items:center;font-weight:500;text-decoration:underline;text-underline-offset:3px}
+.pasta small{font-size:13px;color:var(--texto-suave)}
+.pasta:hover .capa{border-color:var(--v300);box-shadow:var(--s1)}
+
+/* Neutros e significado: cartão com borda em degradê, como o botão secundário. */
+.cores-b{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));margin-bottom:18px}
+.cor{border:1.5px solid transparent;border-radius:18px;padding:12px;display:grid;gap:10px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,var(--b1,#A16DE5),var(--b2,#FFB96A)) border-box}
+.cor .tinta{height:64px;border-radius:12px;position:relative;box-shadow:inset 0 1px 0 #ffffff59,inset 0 0 0 1px #1e15310f}
+.cor .tinta span{font-style:normal;position:absolute;right:8px;top:8px;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#ffffffd9;color:var(--n900)}
+.cor b{display:block;font-weight:500;font-size:14px;line-height:1.3}
+.cor code{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--texto-suave)}
+.cor .par{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.cor .amostra{position:relative;overflow:hidden;display:inline-flex;align-items:center;font-size:12.5px;font-weight:500;padding:3px 10px 3px 12px;border-radius:7px;border:1px solid var(--tb);color:var(--t);background:linear-gradient(180deg,#fff -40%,var(--tf))}
+.cor .amostra::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx)}
+
+/* Ícones */
+.ic{width:20px;height:20px;flex-shrink:0}
+svg.ic{fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+/* Cores */
+.escala{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));margin-bottom:18px}
+.am{border:1.5px solid transparent;border-radius:18px;padding:10px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box}
+.am i{display:block;height:72px;position:relative;border-radius:12px;box-shadow:inset 0 1px 0 #ffffff59,inset 0 0 0 1px #1e15310f}
+.am i span{position:absolute;right:8px;top:8px;font-style:normal;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;background:#ffffffd9;color:var(--n900)}
+.am div{padding:8px 2px 0;font-size:13px}
+.am b{display:block;font-weight:500}
+.am code{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--texto-suave)}
+.tokens{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.tok{display:flex;gap:12px;align-items:center;border:1.5px solid transparent;border-radius:18px;padding:10px;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box}
+.tok i{width:52px;height:52px;border-radius:12px;flex-shrink:0;box-shadow:inset 0 1px 0 #ffffff59,inset 0 0 0 1px #1e15311a}
+.tok b{display:block;font-weight:500;font-size:14px}
+.tok small{font-size:13px;color:var(--texto-suave)}
+
+/* Tipografia */
+.especime{display:grid;gap:24px;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:center}
+.especime .grande{font-size:clamp(80px,13vw,170px);font-weight:300;letter-spacing:-.05em;line-height:.9}
+.especime .grande em.d{color:var(--v600)}
+.pesos{display:grid;gap:8px;font-size:22px}
+.pesos span:nth-child(1){font-weight:300}.pesos span:nth-child(2){font-weight:400}.pesos span:nth-child(3){font-weight:500}.pesos span:nth-child(4){font-weight:600}
+.tipos{display:grid;gap:0}
+.tipo{display:grid;grid-template-columns:150px minmax(0,1fr) 220px;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--linha)}
+.tipo .n{font-size:13px;color:var(--texto-suave)}
+.tipo .m{font-size:12px;color:var(--texto-suave);font-family:"IBM Plex Mono",monospace}
+@media (max-width:760px){.tipo{grid-template-columns:1fr}.especime{grid-template-columns:1fr}}
+
+/* Espaçamento e cantos */
+.espacos{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:0;border:1px solid var(--linha);border-radius:14px;overflow:hidden;background:#fff}
+.esp{padding:12px;border-right:1px solid var(--linha);border-bottom:1px solid var(--linha);min-height:120px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px}
+.esp .tag{align-self:flex-start;font-size:11px;font-family:"IBM Plex Mono",monospace;background:var(--n100);border-radius:6px;padding:1px 6px;margin-bottom:auto}
+.esp i{display:block;background:var(--v500);border-radius:2px}
+.esp b{font-weight:500;font-size:13px}
+.cantos{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.canto{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:12px;display:grid;gap:8px}
+.canto i{display:block;height:80px;background:var(--v100);border:1.5px solid var(--v400)}
+.canto b{font-weight:500;font-size:13px}
+
+/* Sombras */
+.sombras{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:16px}
+.sombra{background:#FBFAFD;border:1px solid var(--linha);border-radius:14px;padding:28px;display:grid;place-items:center;gap:14px}
+.sombra i{width:110px;height:110px;border-radius:18px;background:#fff;display:block}
+.sombra b{font-weight:500}
+.sombra small{font-size:12px;color:var(--texto-suave);text-align:center}
+
+/* Ícones */
+.icones{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.icone{border:1.5px dashed var(--v300);border-radius:12px;padding:16px;display:flex;align-items:center;justify-content:space-around;color:var(--v900);background:#fff}
+.icone + .legenda{font-size:12px}
+.icone-grupo{display:grid;gap:6px}
+.icone-grupo span{font-size:13px;color:var(--texto-suave);text-align:center}
+
+/* Componentes */
+/* Botão aprovado em 17/10/2026: versão C, degradê com brilho. */
+.botao{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:14px;font:500 14px Manrope,sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap}
+.botao .ic{width:18px;height:18px}
+.bt-m{min-height:36px;padding:0 14px;font-size:13px;border-radius:11px}
+.bt-p{min-height:30px;padding:0 10px;font-size:13px;border-radius:10px}
+.so-ic{padding:0;width:44px}.bt-m.so-ic{width:36px}.bt-p.so-ic{width:30px}
+.primario{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff;box-shadow:inset 0 1px 0 #ffffff47,0 10px 22px -10px #5808ccb3}
+.primario.hover{background:linear-gradient(135deg,#7B2BE8 0%,#4706A6 60%,#2E0585 100%)}
+.primario.pressionado{background:linear-gradient(135deg,#4706A6,#2E0585);box-shadow:inset 0 2px 6px #0004}
+.secundario{border:1.5px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box;color:var(--v700)}
+.secundario.hover{background:linear-gradient(var(--v50),var(--v50)) padding-box,linear-gradient(135deg,#7B3BDC,#FF8D01) border-box}
+.secundario.pressionado{background:linear-gradient(var(--v100),var(--v100)) padding-box,linear-gradient(135deg,#7B3BDC,#FF8D01) border-box}
+.contorno{background:linear-gradient(180deg,#fff,#F8F3FF);color:var(--v600);border-color:var(--v200);box-shadow:var(--s1)}
+.contorno.hover{border-color:var(--v300)}
+.contorno.pressionado{background:var(--v100);box-shadow:none}
+.fantasma{background:transparent;color:var(--v600)}
+.fantasma.hover{background:linear-gradient(90deg,var(--v100),#f8f3ff00)}
+.fantasma.pressionado{background:var(--v100)}
+.perigo{background:linear-gradient(180deg,#FFF6F8,#FFE9EF);color:var(--er);border-color:var(--er-b)}
+.perigo.hover{background:#FFE3EA}
+.perigo.pressionado{background:var(--er-b)}
+.claro{background:linear-gradient(180deg,#fff,#F1E9FC);color:var(--v900);box-shadow:0 8px 18px -8px #0008}.claro.hover{background:#fff}.claro.pressionado{background:var(--v100);box-shadow:none}
+.celula-escura{background:var(--grad-violeta);border-radius:16px;padding:6px}
+.foco{outline:3px solid var(--v300);outline-offset:2px}
+/* Anel de foco duplo (branco e violeta 500): passa 3 : 1 em qualquer fundo. */
+.botao.foco{outline:0;box-shadow:0 0 0 2px #fff,0 0 0 4px var(--v500)}
+.primario.foco{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--v500),0 10px 22px -10px #5808ccb3}
+.celula-escura .botao.foco{box-shadow:0 0 0 2px var(--v800),0 0 0 4px #FFD39E}
+.desab{background:var(--n100)!important;color:#8A8296!important;border-color:transparent!important;box-shadow:none!important;cursor:not-allowed}
+.matriz{border-collapse:separate;border-spacing:10px 8px;margin:-8px -10px}
+.matriz th{font-size:12px;font-weight:500;color:var(--v600);text-align:left;white-space:nowrap}
+.matriz td{vertical-align:middle}
+.faca{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));margin-top:16px}
+.faca .q{border:1.5px solid var(--ok-b);border-radius:14px;padding:20px;background:#fff;display:grid;gap:10px;justify-items:center;min-height:150px;align-content:center}
+.faca .q.nao{border-color:var(--er-b)}
+.faca .r{display:inline-flex;gap:6px;align-items:center;font-size:13px;font-weight:500;padding:2px 10px;border-radius:999px;background:var(--ok-f);color:var(--ok);margin-bottom:6px}
+.faca .r.nao{background:var(--er-f);color:var(--er)}
+.faca p{font-size:13px;color:var(--texto-suave);margin:8px 0 0}
+
+.campo{display:grid;gap:6px;min-width:0}
+.campo label{font-size:13px;font-weight:500}
+.campo label .ob{color:var(--er)}
+.entrada{display:flex;align-items:center;gap:8px;min-height:44px;border:1px solid var(--n400);border-radius:12px;padding:0 12px;background:#FDFCFF;color:var(--texto);font-size:15px}
+.entrada .ic{width:18px;height:18px;color:var(--n500)}
+.entrada .ph{color:#8A8296}
+.entrada.hover{border-color:var(--n500)}
+.entrada.ativo{border-color:var(--v600);box-shadow:0 0 0 4px #5808cc1f;background:#fff}
+.entrada.erro{border-color:var(--er);box-shadow:0 0 0 4px #bc14501a}
+.entrada.alerta{border-color:var(--at)}
+.entrada.certo{border-color:var(--ok)}
+.entrada.desab{border-color:transparent}
+.dica{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--texto-suave)}
+.dica .ic{width:14px;height:14px}
+.dica.erro{color:var(--er)}.dica.alerta{color:var(--at)}.dica.certo{color:var(--ok)}
+
+/* Selos e chips aprovados em 17/10/2026: faixa lateral (D) com o brilho do botão C. */
+.chip{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 13px;border-radius:10px;font-size:13px;font-weight:500;border:1px solid var(--n200);background:#fff;color:var(--n700);white-space:nowrap}
+.chip .ic{width:16px;height:16px}
+.chip.sel{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff;border-color:transparent;box-shadow:inset 0 1px 0 #ffffff47,0 8px 16px -8px #5808ccb3}
+.chip.ac{border:1.5px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box;color:var(--l800)}
+.chip.ac>.ic:first-child{color:var(--l600)}
+.chip.inc{border-style:dashed;border-color:var(--v300);color:var(--v600)}
+.chip .av{width:24px;height:24px;font-size:10px;margin-left:-7px;border:0}
+.trilho{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;background:var(--n100);border-radius:14px;box-shadow:inset 0 1px 2px #211a320f}
+.trilho .chip{border-color:transparent;background:transparent;min-height:32px}
+.trilho .chip.sel{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff}
+.selo{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;padding:4px 12px 4px 13px;border-radius:7px;border:1px solid var(--tb);color:var(--t);background:linear-gradient(180deg,#fff -40%,var(--tf) 100%);box-shadow:inset 0 1px 0 #fff;white-space:nowrap}
+.selo::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx)}
+.selo .f{display:none}
+.s-novo{--t:#5B5368;--tf:#F4F2F7;--tb:#E3DEEB;--fx:var(--fx-ab)}
+.s-and{--t:var(--v600);--tf:var(--v50);--tb:#E6D9FB;--fx:var(--fx-and)}
+.s-at{--t:var(--at);--tf:var(--at-f);--tb:var(--at-b);--fx:var(--fx-at)}
+.s-ve{--t:var(--er);--tf:var(--er-f);--tb:var(--er-b);--fx:var(--fx-er)}
+.s-ok{--t:var(--ok);--tf:var(--ok-f);--tb:var(--ok-b);--fx:var(--fx-ok)}
+
+.cx{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--n500);background:#fff;display:inline-grid;place-items:center;color:#fff}
+.cx.on{background:var(--v600);border-color:var(--v600)}
+.cx.on.hover{background:var(--v700)}
+.cx.hover{border-color:var(--n700)}
+.cx.foco{outline:3px solid var(--v300);outline-offset:2px}
+.cx.des{border-color:var(--n300);background:var(--n100)}
+.cx.des.on{background:var(--n300);border-color:var(--n300)}
+.cx .ic{width:14px;height:14px;stroke-width:2.4}
+.rb{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--n500);background:#fff;display:inline-grid;place-items:center}
+.rb.on{border-color:var(--v600)}.rb.on::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--v600)}
+.chave{width:42px;height:24px;border-radius:999px;background:var(--n300);position:relative;display:inline-block}
+.chave::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003}
+.chave.on{background:var(--v600)}.chave.on::after{left:21px}
+
+.av{width:34px;height:34px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:600;flex-shrink:0;border:2px solid #fff}
+.av1{background:var(--v100);color:var(--v700)}.av2{background:var(--l100);color:var(--l800)}.av3{background:var(--ok-f);color:var(--ok)}.av4{background:var(--in-f);color:var(--in)}.av5{background:var(--er-f);color:var(--er)}
+.pilha{display:inline-flex}.pilha .av{margin-left:-8px}.pilha .av:first-child{margin-left:0}
+.pilha .mais{background:var(--n100);color:var(--n700)}
+
+/* Tabela */
+.tabela{width:100%;border-collapse:collapse;font-size:14px;background:#fff}
+.tabela th{font-size:12px;font-weight:500;color:var(--texto-suave);text-align:left;padding:10px 12px;border-bottom:1px solid var(--linha);background:#FCFAFF}
+.tabela td{padding:12px;border-bottom:1px solid #F0ECF5;vertical-align:middle}
+.tabela tr.sel td{background:var(--v50)}
+.tabela .pessoa{display:flex;align-items:center;gap:8px}
+.tabela .pessoa .av{width:28px;height:28px;font-size:10px}
+.tabela .ass{font-weight:500}
+.tabela .prot{font-size:12px;color:var(--texto-suave)}
+.tab-wrap{position:relative;border:1px solid var(--linha);border-radius:16px;overflow:auto;background:#fff}
+.paginacao{display:flex;gap:6px;align-items:center;justify-content:space-between;padding:10px 12px;font-size:13px;color:var(--texto-suave);flex-wrap:wrap}
+.pag{display:flex;gap:4px}
+.pag span{min-width:32px;height:32px;display:grid;place-items:center;border-radius:9px;color:var(--n700)}
+.pag .at{background:var(--v600);color:#fff}
+
+/* Calendário */
+.cal{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:16px;box-shadow:var(--s2);max-width:320px}
+.cal .cab{display:flex;justify-content:space-between;align-items:center;font-weight:500;margin-bottom:8px}
+.cal .cab .ic{width:18px;height:18px;color:var(--n600)}
+.dias{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:13px}
+.dias .h{font-size:12px;color:var(--texto-suave);padding:4px 0}
+.dias span{height:36px;display:grid;place-items:center;border-radius:50%}
+.dias .fora{color:#B5ADC2}
+.dias .hoje{box-shadow:inset 0 0 0 1.5px var(--v600)}
+.dias .es{background:var(--v600);color:#fff}
+.dias .fer{color:var(--l700);text-decoration:underline dotted;text-underline-offset:3px}
+.cal .pe{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+
+/* Lateral com vida, em claro. */
+.lat{width:260px;background:#fff;border:1px solid var(--linha);border-radius:18px;padding:12px;display:grid;gap:2px;box-shadow:var(--s1)}
+.it{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:12px;font-size:15px;color:var(--texto);text-decoration:none;position:relative}
+.it .ic{color:var(--n600)}
+.it .seta{margin-left:auto;width:16px;height:16px;color:var(--n500)}
+.it:hover{background:var(--n50)}
+.it.at{background:linear-gradient(180deg,#7B3BDC,#5808CC);color:#fff;font-weight:500;box-shadow:0 6px 14px #5808cc33}
+.it.at .ic{color:#fff}
+.it .cont{margin-left:auto;font-size:12px;font-weight:600;background:var(--l500);color:var(--v900);border-radius:999px;padding:0 8px}
+.lat hr{border:0;border-top:1px solid var(--linha);margin:6px 8px}
+.lat .trocar{margin-top:6px;justify-content:center;border:1px solid var(--n300);background:#fff;color:var(--texto)}
+.lat .sub-itens{display:grid;gap:2px;margin:0 0 4px 30px;padding-left:12px;border-left:1px solid var(--linha)}
+.lat .sub-itens a{font-size:14px;color:var(--n700);text-decoration:none;min-height:36px;display:flex;align-items:center;padding:0 10px;border-radius:9px}
+.lat .sub-itens a:hover{background:var(--n50)}
+
+/* Cartões com vida */
+.cartao{background:#fff;border:1px solid var(--linha);border-radius:18px;padding:22px;box-shadow:var(--s1)}
+.cartao h4{font-size:19px;font-weight:500;display:flex;justify-content:space-between;align-items:center}
+.cartao h4 a{font-size:14px;font-weight:500;text-decoration:underline;text-underline-offset:3px;color:var(--texto)}
+.dia-t{font-size:15px;font-weight:500;color:var(--n600);margin:16px 0 8px}
+.vazio-l{border-left:3px solid var(--n200);padding:2px 0 2px 12px;color:var(--n600)}
+.evento{display:flex;align-items:center;gap:12px;padding:8px 0}
+.evento .barra{width:3px;align-self:stretch;border-radius:3px;background:var(--v300)}
+.evento .barra.v{background:var(--er)}.evento .barra.h{background:var(--l400)}
+.evento .txt{flex:1;min-width:0}
+.evento .txt b{display:flex;align-items:center;gap:8px;font-weight:500}
+.evento .txt small{display:block;color:var(--n600);font-size:14px}
+.btn-prep{border:1.5px solid transparent;border-radius:10px;min-height:36px;padding:0 12px;display:inline-flex;gap:6px;align-items:center;font-weight:500;font-size:14px;color:var(--v900);background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#5808CC,#FF8D01) border-box}
+.btn-prep .ic{width:18px;height:18px;color:var(--v600)}
+.tarefa{display:flex;gap:14px;align-items:center;padding:10px 0}
+.quad{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;flex-shrink:0}
+.quad .ic{width:22px;height:22px}
+.q-v{background:var(--v100);color:var(--v600)}.q-l{background:var(--l100);color:var(--l800)}.q-ok{background:var(--ok-f);color:var(--ok)}.q-er{background:var(--er-f);color:var(--er)}.q-at{background:var(--at-f);color:var(--at)}
+.tarefa b{display:flex;align-items:center;gap:8px;font-weight:500;flex-wrap:wrap}
+.tarefa small{display:block;color:var(--n600);font-size:14px}
+.tarefa .pilha .av{width:26px;height:26px;font-size:10px}
+
+/* Avisos (snackbar) */
+.aviso{display:flex;align-items:center;gap:12px;padding:12px 14px 12px 12px;border-radius:14px;border:1px solid var(--linha);background:#fff;box-shadow:var(--s2);max-width:480px;position:relative;overflow:hidden}
+.aviso::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx-in)}
+.aviso .quad{width:36px;height:36px;border-radius:10px}
+.aviso .quad .ic{width:18px;height:18px}
+.aviso .t{flex:1;min-width:0}
+.aviso .t b{display:block;font-weight:500;font-size:14px}
+.aviso .t small{font-size:13px;color:var(--n600)}
+.aviso.ok::before{background:var(--fx-ok)}.aviso.at::before{background:var(--fx-at)}.aviso.er::before{background:var(--fx-er)}
+.aviso.marca{background:var(--grad-violeta);color:#fff;border-color:transparent}.aviso.marca::before{background:var(--l500)}
+.aviso.marca small{color:#E7D3FF}.aviso.marca .quad{background:#ffffff1f;color:#FFD39E}
+/* Abas, segmentado, dica, emblema */
+.abas{display:flex;gap:22px;border-bottom:1px solid var(--linha)}
+.abas span{padding:10px 0;font-weight:500;color:var(--n600);border-bottom:2px solid transparent;margin-bottom:-1px}
+.abas .at{color:var(--v600);border-color:var(--v600)}
+.seg{display:inline-flex;background:var(--n100);border-radius:12px;padding:4px;gap:2px}
+.seg span{padding:6px 14px;border-radius:9px;font-size:14px;font-weight:500;color:var(--n700)}
+.seg .at{background:#fff;color:var(--v700);box-shadow:var(--s1)}
+.dicatip{position:relative;display:inline-block;background:var(--v900);color:#fff;font-size:13px;padding:6px 10px;border-radius:8px}
+.dicatip::after{content:"";position:absolute;left:50%;bottom:-5px;width:10px;height:10px;background:var(--v900);transform:translateX(-50%) rotate(45deg)}
+.emb{position:relative;display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--n100);color:var(--n700)}
+.emb b{position:absolute;right:-6px;top:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--l500);color:var(--v900);font-size:11px;display:grid;place-items:center;border:2px solid #fff}
+.linha{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.progresso{height:8px;border-radius:999px;background:var(--n100);overflow:hidden;width:220px}
+.progresso i{display:block;height:100%;width:62%;border-radius:999px;background:linear-gradient(90deg,#7B3BDC,#5808CC)}
+.esqueleto{display:grid;gap:8px;width:220px}
+.esqueleto i{display:block;height:12px;border-radius:6px;background:linear-gradient(90deg,var(--n100),#F7F4FB,var(--n100))}
+
+/* Grade */
+.colunas{display:grid;gap:8px;padding:16px;background:#fff;border:1px solid var(--linha);border-radius:14px}
+.colunas div{height:90px;background:#FBF5FF;border:1px dashed var(--v300);border-radius:6px}
+.c12{grid-template-columns:repeat(12,1fr)}.c8{grid-template-columns:repeat(8,1fr)}.c4{grid-template-columns:repeat(4,1fr)}
+.legenda{font-size:13px;color:var(--texto-suave);margin:8px 0 18px}
+
+.aprovar{counter-reset:d;display:grid;gap:10px;padding:0;list-style:none}
+.aprovar li{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:14px 16px 14px 52px;position:relative}
+.aprovar li::before{counter-increment:d;content:counter(d);position:absolute;left:14px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--v100);color:var(--v600);font-weight:600;display:grid;place-items:center;font-size:13px}
+.aprovar b{display:block;font-weight:500}
+.aprovar span{color:var(--texto-suave);font-size:14px}
+
+/* Mais componentes (das referências): barra superior, trilha, links, menus, janelas,
+   gaveta, balão, área de texto, envio de arquivo, paginação, progresso, persona, vazio. */
+.appbar{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid var(--linha);border-radius:16px;padding:10px 14px;flex-wrap:wrap}
+.appbar img{width:110px}
+.appbar .busca{flex:1;min-width:200px}
+.appbar .abas{border:0;gap:18px}
+.appbar .abas span{padding:8px 0}
+.trilha-nav{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--n600);flex-wrap:wrap}
+.trilha-nav a{color:var(--n600);text-decoration:none;display:inline-flex;gap:6px;align-items:center}
+.trilha-nav a:hover{color:var(--v600)}
+.trilha-nav .ic{width:16px;height:16px}
+.trilha-nav b{font-weight:500;color:var(--texto)}
+.lk{color:var(--v600);font-weight:500;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#5808cc55}
+.lk.h{text-decoration-color:var(--v600)}.lk.f{outline:3px solid var(--v300);outline-offset:2px;border-radius:4px}.lk.d{color:#8A8296;text-decoration:none}
+.menu-sus{background:#fff;border:1px solid var(--linha);border-radius:14px;box-shadow:var(--s2);padding:6px;min-width:230px;display:grid;gap:2px}
+.menu-sus span{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:9px;font-size:14px}
+.menu-sus span .ic{width:18px;height:18px;color:var(--n600)}
+.menu-sus span.h{background:var(--v50);color:var(--v700)}.menu-sus span.h .ic{color:var(--v600)}
+.menu-sus span.p{color:var(--er)}.menu-sus span.p .ic{color:var(--er)}
+.menu-sus span kbd{margin-left:auto;font:12px Manrope,sans-serif;color:var(--n500)}
+.menu-sus hr{border:0;border-top:1px solid var(--linha);margin:4px 6px}
+.menu-sus .sel .ic:last-child{margin-left:auto;color:var(--v600)}
+.janela{background:#fff;border-radius:20px;box-shadow:var(--s3);width:min(100%,420px);overflow:hidden;border:1px solid var(--linha)}
+.janela .cab{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 6px}
+.janela .cab b{font-size:18px;font-weight:500}
+.janela .cab .ic{color:var(--n600)}
+.janela .corpo{padding:6px 20px 16px;display:grid;gap:12px;font-size:14px;color:var(--n700)}
+.janela .pe{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--linha);background:#FCFBFE}
+.fundo-janela{background:#18056740;border-radius:18px;padding:28px;display:grid;place-items:center;backdrop-filter:blur(2px)}
+.gaveta{background:#fff;border-radius:20px 0 0 20px;box-shadow:var(--s3);width:300px;border:1px solid var(--linha);display:grid;grid-template-rows:auto 1fr auto;min-height:330px;margin-left:auto}
+.gaveta .cab{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--linha)}
+.gaveta .cab b{font-weight:500}
+.gaveta .lst{padding:8px;display:grid;gap:2px;align-content:start}
+.gaveta .lst span{display:flex;gap:10px;align-items:center;min-height:42px;padding:0 10px;border-radius:9px;font-size:14px}
+.gaveta .lst .ic{width:18px;height:18px;color:var(--n600)}
+.gaveta .pe{padding:12px 18px;border-top:1px solid var(--linha);display:flex;justify-content:flex-end}
+.balao{position:relative;background:#fff;border:1px solid var(--linha);border-radius:14px;box-shadow:var(--s2);padding:14px;width:240px;display:grid;gap:10px;font-size:14px}
+.balao::after{content:"";position:absolute;left:28px;bottom:-7px;width:12px;height:12px;background:#fff;border-right:1px solid var(--linha);border-bottom:1px solid var(--linha);transform:rotate(45deg)}
+.balao b{font-weight:500}
+.area{min-height:110px;border:1px solid var(--n400);border-radius:12px;padding:10px 12px;background:#FDFCFF;font-size:15px;color:var(--texto)}
+.contador{display:flex;justify-content:space-between;font-size:12px;color:var(--texto-suave)}
+.envio{border:1.5px dashed var(--v300);border-radius:16px;background:var(--v50);padding:22px;display:grid;justify-items:center;gap:8px;text-align:center;font-size:14px;color:var(--n700)}
+.envio .quad{width:48px;height:48px}
+.arquivo{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid var(--linha);border-radius:12px;padding:10px 12px;font-size:14px}
+.arquivo .quad{width:40px;height:40px;border-radius:10px}
+.arquivo .t{flex:1;min-width:0;display:grid;gap:4px}
+.arquivo .t small{color:var(--n600);font-size:12px}
+.arquivo .progresso{width:100%;height:6px}
+.pag-var{display:grid;gap:14px}
+.pag2{display:flex;gap:4px;align-items:center;font-size:14px;color:var(--n700);flex-wrap:wrap}
+.pag2 span{min-width:34px;height:34px;display:grid;place-items:center;border-radius:10px;padding:0 6px}
+.pag2 .at{background:var(--v600);color:#fff}
+.pag2 .tx{color:var(--n600)}.pag2 .ds{color:#B5ADC2}
+.pag2 .ic{width:16px;height:16px}
+.linhas-pag{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--n600);flex-wrap:wrap}
+.linhas-pag .entrada{min-height:34px;padding:0 10px;gap:14px;border-radius:10px}
+.circ{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:500;color:var(--v700);background:conic-gradient(var(--v600) var(--p),var(--v100) 0);position:relative}
+.circ::before{content:"";position:absolute;inset:5px;border-radius:50%;background:#fff}
+.circ span{position:relative}
+.persona{display:flex;gap:10px;align-items:center}
+.persona b{display:block;font-weight:500;font-size:14px}
+.persona small{display:block;font-size:13px;color:var(--n600)}
+.vazio{position:relative;overflow:hidden;background:#fff;border:1px solid var(--linha);border-radius:18px;padding:32px 20px;display:grid;justify-items:center;text-align:center;gap:8px}
+.vazio .orb{position:absolute;border-radius:50%;border:1px solid #5808cc1f}
+.vazio .quad{width:56px;height:56px;border-radius:16px;position:relative}
+.vazio h4{font-size:20px;font-weight:300;position:relative}
+.vazio p{margin:0;font-size:14px;color:var(--n600);max-width:320px;position:relative}
+.vazio .botao{position:relative}
+.dicas{display:flex;gap:28px;flex-wrap:wrap;align-items:center;padding:12px 0}
+.dicatip.cima::after{bottom:auto;top:-5px}
+.dicatip.esq::after{left:-5px;top:50%;bottom:auto;transform:translateY(-50%) rotate(45deg)}
+.dicatip.dir::after{left:auto;right:-5px;top:50%;bottom:auto;transform:translateY(-50%) rotate(45deg)}
+.dicatip.claro{background:#fff;color:var(--texto);border:1px solid var(--linha);box-shadow:var(--s1)}
+.dicatip.claro::after{background:#fff}
+.emb-ponto{position:relative;display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--n100);color:var(--n700)}
+.emb-ponto i{position:absolute;right:8px;top:8px;width:9px;height:9px;border-radius:50%;background:var(--l500);border:2px solid #fff}
+@media (max-width:760px){.lat{width:100%}.gaveta{width:100%;border-radius:20px}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* ===== Telas-modelo: moldura de aplicação que se adapta à própria largura ===== */
+.tm{margin-top:20px;display:grid;gap:20px}
+.duas{display:grid;gap:28px;grid-template-columns:minmax(0,1fr)}
+.duas .cel{width:min(100%,390px)}
+.legenda-t{font-size:13px;color:var(--texto-suave);margin:8px 2px 0}
+.app{container-type:inline-size;background:var(--fundo);border:1px solid var(--linha);border-radius:24px;overflow:hidden;box-shadow:var(--s3);min-width:0}
+.app-top{display:flex;align-items:center;gap:12px;background:#fff;border-bottom:1px solid var(--linha);padding:10px 16px}
+.app-top .marca{display:flex;align-items:center;gap:10px;min-width:0}
+.app-top .marca img{width:96px}
+.app-top .marca small{font-size:12px;color:var(--texto-suave);border-left:1px solid var(--linha);padding-left:10px;white-space:nowrap}
+.app-top .busca{flex:1;max-width:440px;min-height:40px;margin-left:8px}
+.app-top .dir{margin-left:auto;display:flex;align-items:center;gap:10px}
+.cond{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--linha);background:#fff;font-size:14px;font-weight:500;white-space:nowrap}
+.cond .ic{width:16px;height:16px;color:var(--n600)}
+.app .emb{width:40px;height:40px}
+.quem{display:flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap}
+.quem small{display:block;font-size:12px;color:var(--texto-suave);line-height:1.2}
+.quem b{display:block;font-weight:500;line-height:1.2}
+.menu-cel{display:none}
+.admin{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--l500);color:var(--v900)}
+.app-corpo{display:grid;grid-template-columns:236px minmax(0,1fr);gap:20px;padding:20px}
+.app .lat{width:auto;align-self:start;position:sticky;top:0}
+.app-main{display:grid;gap:18px;min-width:0;align-content:start}
+.cab-tela{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.cab-tela h2{font-size:28px;font-weight:400}
+.cab-tela p{margin:4px 0 0;color:var(--texto-suave);font-size:14px}
+.hero{position:relative;overflow:hidden;border-radius:20px;background:var(--grad-violeta);color:#fff;padding:26px 28px}
+.hero .t{position:relative;z-index:1}
+.hero small{color:#E7D3FF;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.hero h2{font-size:clamp(26px,4cqi,36px);font-weight:300;margin:6px 0 14px}
+.hero h2 em.d{color:#FFD39E}
+.hero .numeros{display:flex;gap:10px;flex-wrap:wrap}
+.hero .num{background:#ffffff1a;border:1px solid #ffffff33;border-radius:14px;padding:10px 14px;min-width:132px}
+.hero .num b{display:block;font-size:26px;font-weight:300;line-height:1.1}
+.hero .num span{font-size:13px;color:#EDE0FF}
+.agora .tarefa{border-top:1px solid #F0ECF5}
+.agora .tarefa:first-of-type{border-top:0}
+.agora .tarefa>div{flex:1;min-width:0}
+.agora .tarefa .botao{flex-shrink:0}
+.mes{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.mes .circ{width:84px;height:84px;font-size:18px}
+.mes .circ::before{inset:7px}
+.mes .dados{display:grid;gap:6px;font-size:14px;color:var(--n700)}
+.mes .dados b{font-weight:600;color:var(--texto)}
+.filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.filtros .entrada{min-height:40px;flex:1;min-width:220px;max-width:360px}
+.tab-wrap{overflow-x:auto;background:#fff;border:1px solid var(--linha);border-radius:18px;overflow:hidden;box-shadow:var(--s1)}
+.tab-wrap .tabela{background:transparent}
+.venc{color:var(--er);font-weight:500;display:inline-flex;gap:6px;align-items:center}
+.venc .ic{width:16px;height:16px}
+.fila-cel{display:none;gap:10px}
+.cart-p{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:14px;display:grid;gap:8px;box-shadow:var(--s1)}
+.cart-p .l1{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.cart-p .ass{font-weight:500}
+.cart-p small{color:var(--texto-suave);font-size:13px}
+.compr{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.compr .cartao{padding:18px}
+.compr .rot{display:block;margin-bottom:6px}
+.compr .val{font-size:22px;font-weight:400}
+.compr .val.er{color:var(--er)}
+.compr small{display:block;color:var(--texto-suave);font-size:13px;margin-top:2px}
+.acoes{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.linha-tempo{display:grid;gap:0}
+.linha-tempo .it{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:12px 0;border-top:1px solid #F0ECF5}
+.linha-tempo .it:first-child{border-top:0}
+.linha-tempo .quad{width:36px;height:36px;border-radius:10px}
+.linha-tempo .quad .ic{width:18px;height:18px}
+.linha-tempo b{font-weight:500;display:block}
+.linha-tempo small{color:var(--texto-suave);font-size:13px}
+.linha-tempo p{margin:4px 0 0;font-size:14px}
+.entrar{display:grid;grid-template-columns:1.05fr 1fr;min-height:560px;background:#fff}
+.entrar .lado{position:relative;overflow:hidden;background:var(--grad-violeta);color:#fff;padding:36px;display:flex;flex-direction:column;justify-content:space-between}
+.entrar .lado .t{position:relative;z-index:1}
+.entrar .lado h2{font-size:clamp(30px,5cqi,44px);font-weight:300;letter-spacing:-.03em;margin:0 0 10px}
+.entrar .lado h2 em.d{color:#FFD39E}
+.entrar .lado p{color:#EDE0FF;margin:0;max-width:340px}
+.entrar .lado img{width:120px;position:relative;z-index:1;filter:brightness(0) invert(1)}
+.entrar .form{padding:40px clamp(20px,6cqi,64px);display:grid;align-content:center;gap:16px}
+.entrar .form h3{font-size:24px;font-weight:400}
+.entrar .form .botao{width:100%}
+.entrar .form .nota{margin:0;font-size:13px}
+.entrar .passos{display:flex;gap:8px;font-size:13px;color:var(--texto-suave);align-items:center}
+.entrar .passos b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--v600);color:#fff;font-size:12px;font-weight:600}
+.entrar .passos i{font-style:normal;display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--n100);font-size:12px}
+@container (max-width:760px){
+  .app-corpo{grid-template-columns:1fr;padding:14px;gap:14px}
+  .app .lat,.app-top .busca,.app-top .cond,.quem .txt,.app-top .marca small,.so-pc{display:none}
+  .menu-cel{display:inline-grid}
+  .tab-wrap{display:none}
+  .fila-cel{display:grid}
+  .cab-tela h2{font-size:24px}
+  .hero{padding:20px}
+  .hero .num{min-width:0;flex:1}
+  .entrar{grid-template-columns:1fr;min-height:0}
+  .entrar .lado{min-height:220px;padding:24px}
+  .entrar .form{padding:24px 20px 32px}
+}
+
+
+
+/* ===== Agenda ===== */
+.dia{display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px;padding:14px 0;border-top:1px solid var(--linha)}
+.dia:first-child{border-top:0}
+.dia .data{line-height:1.2}
+.dia .data b{display:block;font-size:26px;font-weight:300}
+.dia .data span{font-size:13px;color:var(--texto-suave)}
+.dia .data .hoje{display:inline-block;margin-top:4px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--v600);border-radius:999px;padding:1px 8px}
+.eventos{display:grid;gap:8px}
+.ev{display:grid;grid-template-columns:62px 4px minmax(0,1fr) auto;gap:12px;align-items:center;background:#fff;border:1px solid var(--linha);border-radius:14px;padding:10px 14px}
+.ev .hora{font-size:14px;font-weight:500}
+.ev .hora small{display:block;font-size:12px;font-weight:400;color:var(--texto-suave)}
+.ev .bar{align-self:stretch;border-radius:4px;background:var(--fx,var(--v400))}
+.ev .t b{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-weight:500}
+.ev .t small{display:block;font-size:13px;color:var(--texto-suave)}
+.ev .t .liga{display:inline-flex;gap:4px;align-items:center;font-size:12.5px;color:var(--v600);font-weight:500}
+.ev .t .liga .ic{width:14px;height:14px}
+.ev.fonte{background:transparent;border-style:dashed}
+.ev.cancelado .t b{text-decoration:line-through;color:var(--texto-suave)}
+.t-reuniao{--fx:var(--fx-and)}.t-visita{--fx:var(--fx-at)}.t-atividade{--fx:var(--fx-ok)}.t-lembrete{--fx:var(--fx-in)}.t-feriado{--fx:var(--fx-ab)}
+.tp{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--texto-suave)}
+.tp i{width:8px;height:8px;border-radius:3px;background:var(--fx);display:inline-block}
+.cal{border:1px solid var(--linha);border-radius:18px;overflow:hidden;background:#fff}
+.cal .sem{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));background:var(--v50);font-size:12px;font-weight:500;color:var(--texto-suave)}
+.cal .sem span{padding:8px 10px}
+.cal .grade{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal .c{min-height:104px;border-top:1px solid var(--linha);border-left:1px solid var(--linha);padding:6px;display:grid;align-content:start;gap:4px;min-width:0}
+.cal .c:nth-child(7n+1){border-left:0}
+.cal .c .n{font-size:13px;font-weight:500;width:26px;height:26px;display:grid;place-items:center;border-radius:50%}
+.cal .c.fora .n{color:#B5ADC2}
+.cal .c.hoje .n{background:var(--v600);color:#fff}
+.cal .c .p{display:flex;gap:5px;align-items:center;font-size:11.5px;line-height:1.25;padding:2px 6px;border-radius:6px;background:var(--v50);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal .c .p i{flex-shrink:0;width:3px;align-self:stretch;border-radius:2px;background:var(--fx)}
+.cal .c .p.f{background:transparent;border:1px dashed var(--n300)}
+.cal .c .mais{font-size:11.5px;color:var(--v600);font-weight:500;padding-left:6px}
+.form-g{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.form-g .larga{grid-column:1/-1}
+.opcao-r{display:flex;gap:10px;align-items:center;font-size:14px}
+.janela-l{width:min(100%,560px)}
+.hist{display:grid;gap:0}
+.hist .it{display:grid;grid-template-columns:32px 1fr;gap:10px;padding:10px 0;border-top:1px solid #F0ECF5;font-size:14px}
+.hist .it:first-child{border-top:0}
+.hist .quad{width:32px;height:32px;border-radius:9px}
+.hist .quad .ic{width:16px;height:16px}
+.hist small{display:block;color:var(--texto-suave);font-size:12.5px}
+.decisoes{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.decisao{position:relative;overflow:hidden;background:#fff;border:1px solid var(--linha);border-radius:16px;padding:16px 18px 16px 22px}
+.decisao::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--fx-at)}
+.decisao b{display:block;font-weight:500;margin-bottom:4px}
+.decisao p{margin:0;font-size:14px;color:var(--texto-suave)}
+.decisao .refs{margin-top:8px;font:500 11px "IBM Plex Mono",monospace;color:var(--v600)}
+@container (max-width:760px){
+  .dia{grid-template-columns:1fr;gap:8px}
+  .dia .data{display:flex;gap:8px;align-items:baseline}
+  .dia .data b{font-size:20px}
+  .ev{grid-template-columns:52px 4px minmax(0,1fr)}
+  .ev > .acao{grid-column:3}
+  .cal .c{min-height:64px;padding:4px}
+  .cal .c .p span{display:none}
+  .cal .c .p{padding:0;height:6px;background:var(--fx)}
+  .cal .c .p i{display:none}
+  .cal .sem span{padding:6px 4px;text-align:center}
+}
+
+
+/* ===== Manutenção ===== */
+.s-in{--t:var(--in);--tf:var(--in-f);--tb:var(--in-b);--fx:var(--fx-in)}
+.s-ab{--t:#5B5368;--tf:#F4F2F7;--tb:#E3DEEB;--fx:var(--fx-ab)}
+.kv{display:grid;gap:10px 18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));font-size:14px}
+.kv div{display:grid;gap:2px}
+.kv span{font-size:12px;color:var(--texto-suave)}
+.kv b{font-weight:500}
+.dupla{display:grid;gap:18px;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);align-items:start}
+.pilha-c{display:grid;gap:18px}
+.tarefas{display:grid;gap:0}
+.tf{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;padding:12px 0;border-top:1px solid #F0ECF5;align-items:start}
+.tf:first-child{border-top:0}
+.tf .marc{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--n500);display:grid;place-items:center;margin-top:2px}
+.tf .marc.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.tf .marc .ic{width:14px;height:14px;stroke-width:2.4}
+.tf b{font-weight:500;display:block}
+.tf small{display:block;font-size:13px;color:var(--texto-suave)}
+.tf .res{margin-top:4px;font-size:13px;background:var(--ok-f);border-radius:8px;padding:6px 10px;color:var(--n700)}
+.verif{display:grid;gap:0}
+.vi{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 0;border-top:1px solid #F0ECF5;font-size:14px;align-items:center}
+.vi:first-child{border-top:0}
+.vi small{display:block;color:var(--texto-suave);font-size:12.5px}
+.opc3{display:inline-flex;gap:4px}
+.opc3 span{font-size:12px;font-weight:500;padding:3px 9px;border-radius:7px;border:1px solid var(--n200);color:var(--n600);background:#fff}
+.opc3 .ok{background:var(--ok-f);border-color:var(--ok-b);color:var(--ok)}
+.opc3 .er{background:var(--er-f);border-color:var(--er-b);color:var(--er)}
+.opc3 .na{background:var(--n100);color:var(--n700)}
+.liga-c{display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--linha);border-radius:12px;background:#fff;font-size:14px}
+.liga-c .quad{width:36px;height:36px;border-radius:10px}
+.liga-c .quad .ic{width:18px;height:18px}
+.liga-c .t{flex:1;min-width:0}
+.liga-c small{display:block;color:var(--texto-suave);font-size:12.5px}
+.prev{display:grid;grid-template-columns:minmax(0,1.4fr) 120px 130px 150px auto;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid #F0ECF5;font-size:14px}
+.prev:first-child{border-top:0}
+.prev b{font-weight:500;display:block}
+.prev small{display:block;color:var(--texto-suave);font-size:12.5px}
+.prev .cab{font-size:12px;color:var(--texto-suave);font-weight:500}
+.lista-c{background:#fff;border:1px solid var(--linha);border-radius:18px;box-shadow:var(--s1);overflow:hidden}
+.grupo-t{padding:10px 14px;background:#FCFAFF;border-bottom:1px solid var(--linha);font-size:13px;font-weight:500;color:var(--n700);display:flex;justify-content:space-between;gap:8px}
+.prest{display:grid;grid-template-columns:44px minmax(0,1.4fr) minmax(0,1fr) 140px auto;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid #F0ECF5;font-size:14px}
+.prest:first-child{border-top:0}
+.prest .quad{width:44px;height:44px}
+.prest b{font-weight:500;display:block}
+.prest small{display:block;color:var(--texto-suave);font-size:12.5px}
+.prest.arq{opacity:.7}
+.prest>div{min-width:0}
+.prest small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{display:inline-flex;align-items:center;font-size:12px;font-weight:500;padding:1px 8px;border-radius:999px;background:var(--n100);color:var(--n700)}
+.tag.v{background:var(--v100);color:var(--v700)}
+.tag.l{background:var(--l100);color:var(--l800)}
+.sugest{display:grid;gap:0;border:1.5px dashed var(--v300);border-radius:14px;background:var(--v50);padding:4px 14px}
+.sugest .vi{border-color:#E6D9FB}
+.cartoes-m{display:grid;gap:10px}
+.cm{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:14px;display:grid;gap:8px;box-shadow:var(--s1)}
+.cm .l1{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.cm b{font-weight:500}
+.cm small{color:var(--texto-suave);font-size:13px}
+.cm .rodape{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--n700)}
+.depois{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.depois .decisao::before{background:var(--fx-ab)}
+@container (max-width:760px){
+  .dupla{grid-template-columns:1fr}
+  .prev{grid-template-columns:minmax(0,1fr) auto}
+  .prev .so-pc,.prest .so-pc{display:none}
+  .prest{grid-template-columns:40px minmax(0,1fr) auto}
+  .prest .quad{width:40px;height:40px}
+}
+
+/* ===== Mural online, e-mail e QR ===== */
+.opcao-r .chave{flex:none}
+.lado{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+.lado .cel{width:min(100%,390px)}
+.pub-top{display:flex;align-items:center;gap:12px;background:var(--grad-violeta);color:#fff;padding:16px 18px}
+.pub-top .quad{background:#ffffff1f;color:#FFD39E;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+.pub-top b{display:block;font-weight:500;font-size:16px}
+.pub-top small{color:#E7D3FF;font-size:12.5px}
+.pub-corpo{display:grid;gap:12px;padding:14px}
+.pub-c{background:#fff;border:1px solid var(--linha);border-radius:16px;padding:14px 16px;box-shadow:var(--s1)}
+.pub-c h4{margin:6px 0 4px;font-size:15.5px;font-weight:500}
+.pub-c p{margin:0;font-size:14px;color:var(--n700)}
+.pub-c .meta{font-size:12.5px;color:var(--texto-suave)}
+.pub-pe{padding:4px 18px 18px;font-size:12.5px;color:var(--texto-suave);display:grid;gap:6px}
+.pub-pe img{width:84px;opacity:.8}
+.foto-f{height:120px;border-radius:12px;margin-top:10px;background:linear-gradient(135deg,#DDC8F8,#F1E9FC 60%,#FFEBCF);display:grid;place-items:center;color:var(--v700);font-size:12.5px}
+.correio{background:#fff;border:1px solid var(--linha);border-radius:20px;box-shadow:var(--s3);overflow:hidden;max-width:640px}
+.correio .cab-m{padding:14px 18px;border-bottom:1px solid var(--linha);display:grid;gap:3px;font-size:13.5px}
+.correio .cab-m span{color:var(--texto-suave)}
+.correio .corpo-m{padding:22px 26px;display:grid;gap:14px;font-size:14.5px}
+.correio .faixa{height:6px;background:var(--grad-trilha)}
+.correio .rod{padding:14px 26px 20px;border-top:1px solid var(--linha);font-size:12.5px;color:var(--texto-suave);display:grid;gap:6px}
+.qr{width:150px;height:150px;padding:10px;background:#fff;border:1px solid var(--linha);border-radius:14px;flex:none}
+.qr svg{width:100%;height:100%;display:block}
+.link-c{font-family:"IBM Plex Mono",monospace;font-size:13px;background:var(--v50);border:1px solid var(--v200);border-radius:10px;padding:8px 12px;color:var(--v800);word-break:break-all}
+.cartaz{width:min(100%,300px);background:#fff;border:1px solid var(--linha);border-radius:12px;box-shadow:var(--s2);padding:22px;text-align:center;display:grid;gap:10px;justify-items:center}
+.cartaz b{font-size:18px;font-weight:500}
+.cartaz small{font-size:12.5px;color:var(--texto-suave)}
+</style>
+<style>
+.etapas{display:grid;gap:0}
+.et{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;padding:12px 0;border-top:1px solid #F0ECF5;align-items:center;font-size:14px}
+.et:first-child{border-top:0}
+.et .n{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:600;font-size:13px;background:var(--n100);color:var(--texto-suave)}
+.et .n.ok{background:var(--ok-fundo,#E9F8F1);color:#0A7A4B}
+.et .n.and{background:var(--v100);color:var(--v700)}
+.et b{font-weight:500;display:block}
+.et small{display:block;color:var(--texto-suave);font-size:12.5px}
+.interno{display:flex;gap:6px;align-items:center;border:1px dashed var(--v300,#C9A9F5);background:var(--v50);color:var(--v700);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:500}
+.passos{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.passos span{font-size:12.5px;padding:5px 10px;border-radius:999px;background:var(--n100);color:var(--texto-suave)}
+.passos span.at{background:var(--v600);color:#fff}
+.passos span.ok{background:#E9F8F1;color:#0A7A4B}
+.ck{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;font-size:13.5px;padding:6px 0}
+.ck .q{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--linha);display:grid;place-items:center}
+.ck .q.on{background:var(--v600);border-color:var(--v600);color:#fff}
+.ck .q.on svg{width:13px;height:13px}
+.msg{border:1px solid var(--linha);border-radius:12px;padding:10px 12px;font-size:13.5px;display:grid;gap:4px}
+.msg.eq{background:var(--v50)}
+.msg small{color:var(--texto-suave);font-size:12px}
+.print{height:90px;border-radius:10px;border:1px solid var(--linha);background:repeating-linear-gradient(45deg,#F4F1F8,#F4F1F8 8px,#ECE7F3 8px,#ECE7F3 16px);display:grid;place-items:center;font-size:12px;color:var(--texto-suave)}
+/* ===== Links e QR ===== */
+.etiqueta{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:14px 12px;text-align:center;display:grid;gap:6px;justify-items:center;box-shadow:var(--s1)}
+.etiqueta .faixa-e{height:5px;width:100%;border-radius:999px;background:var(--grad-trilha)}
+.etiqueta img{width:72px}
+.etiqueta b{font-size:15px;font-weight:500;line-height:1.25}
+.etiqueta .perg{font-size:12px;color:var(--v700);font-weight:600;letter-spacing:.02em}
+.etiqueta small{font-size:11px;color:var(--texto-suave);line-height:1.35}
+.etiqueta .cod{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--v800);background:var(--v50);border-radius:6px;padding:1px 6px}
+.folha{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;background:#fff;border:1px solid var(--linha);border-radius:10px;padding:16px;box-shadow:var(--s2);width:min(100%,470px)}
+.etiqueta-g{width:min(100%,300px);padding:22px 18px;gap:10px}
+.etiqueta-g b{font-size:19px}
+.etiqueta-g img{width:96px}
+.mira{height:230px;border-radius:16px;background:#1E1531;position:relative;display:grid;place-items:center;overflow:hidden}
+.mira::before{content:"";width:140px;height:140px;border:3px solid #FFD39E;border-radius:16px;box-shadow:0 0 0 999px #1e153199}
+.mira span{position:absolute;bottom:12px;left:0;right:0;text-align:center;color:#E7D3FF;font-size:12.5px}
+.zap{background:#EFE7DC;border-radius:16px;padding:14px;display:grid;gap:10px;min-height:230px;align-content:space-between}
+.zap .cab-z{background:#fff;border-radius:12px;padding:10px 12px;font-size:13.5px;display:flex;gap:10px;align-items:center;align-self:start}
+.zap .msg{justify-self:end;max-width:88%;background:#D9FDD3;border-radius:12px 12px 2px 12px;padding:9px 12px;font-size:14px;box-shadow:0 1px 1px #0001}
+.zap .escrever{background:#fff;border-radius:999px;padding:9px 14px;font-size:13.5px;color:var(--texto-suave)}
+.passo-ok{display:flex;gap:10px;align-items:flex-start;background:var(--ok-f);border:1px solid var(--ok-b);border-radius:12px;padding:10px 12px;font-size:13.5px}
+.abas{overflow-x:auto;white-space:nowrap}
+.passo-ok .ic{color:var(--ok);flex:none;margin-top:1px}
+
+/* ===== WhatsApp do morador ===== */
+.zap{align-content:start}
+.zap .msg,.zap .rec{white-space:pre-line;line-height:1.4}
+.zap .rec{justify-self:start;max-width:88%;background:#fff;border-radius:12px 12px 12px 2px;padding:9px 12px;font-size:14px;box-shadow:0 1px 1px #0001}
+.zap .h{display:block;text-align:right;font-size:11px;color:#4A5A63;margin-top:2px}
+.zap .dia{justify-self:center;background:#fff;border-radius:8px;padding:3px 10px;font-size:12px;color:#54656F}
+.zap .ft{width:170px;height:96px;border-radius:8px;background:linear-gradient(135deg,#DDC8F8,#F1E9FC 60%,#FFEBCF);display:grid;place-items:center;color:var(--v700);font-size:12px;margin-bottom:4px}
+.pilo{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--at);background:var(--at-f);border:1px solid var(--at-b);border-radius:999px;padding:3px 10px}
+.msgs{display:grid;gap:10px}
+.msgs .m{display:grid;gap:4px;max-width:520px;border:1px solid var(--linha);border-radius:14px;padding:10px 12px;background:#fff;font-size:14px}
+.msgs .m.sai{justify-self:end;background:var(--v50);border-color:var(--v200)}
+.msgs .m small{font-size:12px;color:var(--texto-suave);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.qrbox{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+
+/* ===== Textos e janela ===== */
+.comp{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.comp{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.comp .lado-t{border:1px solid var(--linha);border-radius:14px;padding:12px 14px;background:#fff;font-size:14px;white-space:pre-line;line-height:1.45}
+.comp .lado-t.novo{border-color:var(--v300,#C9A9F5);background:var(--v50)}
+.comp .lado-t small{display:block;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--texto-suave);margin-bottom:6px;white-space:normal}
+.comp .lado-t.novo small{color:var(--v700)}
+.cat{display:grid;gap:22px}
+.cat .item{display:grid;gap:8px}
+.cat .item h3{font-size:16px;font-weight:600;margin:0}
+.cat .item p.q{margin:0;color:var(--texto-suave);font-size:13.5px}
+.cat .item p.mud{margin:0;font-size:13px;color:var(--v700)}
+.tom{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:760px){.tom{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tom .r{border:1px solid var(--linha);border-radius:14px;padding:14px;background:#fff;display:grid;gap:8px}
+.tom .r b{font-weight:600}
+.tom .r .sim,.tom .r .nao{font-size:13.5px;border-radius:10px;padding:8px 10px;white-space:pre-line}
+.tom .r .sim{background:var(--ok-f,#E9F8F1);border:1px solid var(--ok-b,#BFE8D3)}
+.tom .r .nao{background:#FFF1F0;border:1px solid #F5C7C2;text-decoration:line-through;text-decoration-color:#C0392B88}
+.var{font-family:"IBM Plex Mono",monospace;font-size:12px;background:var(--v100);color:var(--v800);border-radius:5px;padding:0 4px}
+.janela{display:flex;gap:10px;align-items:flex-start;border-radius:12px;padding:10px 12px;font-size:13.5px;border:1px solid var(--linha);background:#fff}
+.janela.ab{background:var(--ok-f,#E9F8F1);border-color:var(--ok-b,#BFE8D3)}
+.janela.fe{background:var(--at-f,#FFF6E8);border-color:var(--at-b,#F4D7A6)}
+.janela .ic{flex:none;margin-top:2px}
+.modelo-prev{border:1px dashed var(--v300,#C9A9F5);border-radius:12px;padding:10px 12px;background:#fff;font-size:13.5px;white-space:pre-line}
+.tabela td.cod{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--v700);white-space:nowrap}
+.rolar{overflow-x:auto;border:1px solid var(--linha);border-radius:14px}
+.rolar .tabela{min-width:640px}
+</style>
+
+<style>
+/* ===== Vida em condomínio ===== */
+.t-reserva{--fx:var(--fx-ok)}.t-assembleia{--fx:var(--fx-and)}.t-enquete{--fx:var(--fx-in)}
+.area-l{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid #F0ECF5}
+.area-l:first-child{border-top:0}
+.area-l .quad{width:40px;height:40px;border-radius:11px}
+.area-l b{font-weight:500;display:block}
+.area-l small{display:block;color:var(--texto-suave);font-size:12.5px}
+.chave-l{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--texto-suave)}
+.chave-l i{width:36px;height:20px;border-radius:999px;background:var(--n200);position:relative;display:inline-block}
+.chave-l i::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:var(--s1)}
+.chave-l.on i{background:var(--v600)}.chave-l.on i::after{left:18px}
+.res{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 14px;align-items:center;padding:14px 0;border-top:1px solid #F0ECF5}
+.res:first-child{border-top:0}
+.res b{font-weight:500;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.res small{display:block;color:var(--texto-suave);font-size:13px}
+.res .lim{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;color:var(--at);font-weight:500}
+.res .lim .ic{width:14px;height:14px}
+.semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;font-size:12px}
+.semana .d{border:1px solid var(--linha);border-radius:10px;padding:6px;min-height:92px;background:#fff;display:grid;align-content:start;gap:4px}
+.semana .d>span{color:var(--texto-suave)}
+.semana .d i{font-style:normal;border-radius:6px;padding:2px 5px;font-size:11.5px}
+.semana .d i.ok{background:var(--ok-f);color:var(--ok)}.semana .d i.at{background:var(--at-f);color:var(--at)}.semana .d i.bl{background:var(--n100);color:var(--n600)}
+.barras{display:grid;gap:10px}
+.barras .b{display:grid;gap:4px;font-size:14px}
+.barras .b .l{display:flex;justify-content:space-between;gap:10px}
+.barras .b .t{height:10px;border-radius:999px;background:var(--n100);overflow:hidden}
+.barras .b .t i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#7B3BDC,#5808CC)}
+.item-p{border:1px solid var(--linha);border-radius:14px;padding:12px 14px;background:#fff;display:grid;gap:6px}
+.item-p b{font-weight:500}
+.item-p small{color:var(--texto-suave);font-size:12.5px}
+.voto{display:grid;gap:8px}
+.voto .op{display:flex;gap:10px;align-items:center;border:1px solid var(--linha);border-radius:12px;padding:10px 12px;font-size:14.5px;background:#fff}
+.voto .op.on{border-color:var(--v600);background:var(--v50)}
+.anuncio{display:grid;grid-template-columns:72px minmax(0,1fr);gap:12px;align-items:start}
+.anuncio .ft{width:72px;height:72px;border-radius:12px;background:linear-gradient(135deg,#DDC8F8,#F1E9FC 60%,#FFEBCF);display:grid;place-items:center;color:var(--v700);font-size:11px}
+.depois-l{display:grid;gap:10px}
+.depois-l div{border:1px dashed var(--n300);border-radius:14px;padding:12px 14px;background:#fff;font-size:14px}
+.depois-l b{font-weight:500}
+.depois-l small{display:block;color:var(--texto-suave);font-size:13px;margin-top:2px}
+.duas2{display:grid;gap:28px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:980px){.duas2{grid-template-columns:minmax(0,1fr) 390px}}
+@container (max-width:760px){.res{grid-template-columns:minmax(0,1fr)}.semana{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.semana .d i{display:block;overflow-wrap:anywhere}
+.fones{display:grid;gap:24px;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));align-items:start}
+</style>
+<style>
+.t-contrato{--fx:var(--fx-at)}.t-documento{--fx:var(--fx-er)}
+.dia-ag{font-size:13px;font-weight:500;color:var(--texto-suave);margin:14px 2px 8px}
+.eventos{display:grid;gap:8px}
+.kpis{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));margin-top:14px}
+.base{font-size:12.5px;color:var(--texto-suave);margin:8px 0 0}
+.contadores{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.contadores span{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:8px 12px;font-size:13px;color:var(--texto-suave)}
+.contadores b{display:block;font-size:20px;font-weight:400;color:var(--texto)}
+.marcas{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:14px}
+.marcas label{display:inline-flex;gap:8px;align-items:center}
+</style>
+<style>
+.busca-u{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.busca-u .entrada{flex:1;min-width:220px}
+.achado{font-size:12.5px;color:var(--v700);display:block}
+.menu-u{display:grid;gap:2px;background:#fff;border:1px solid var(--linha);border-radius:14px;box-shadow:var(--s3);padding:6px;width:240px;font-size:14px}
+.menu-u span{padding:9px 12px;border-radius:9px;display:flex;gap:8px;align-items:center}
+.menu-u span.sel{background:var(--v50);color:var(--v700)}
+.menu-u .ic{width:16px;height:16px;color:var(--n500)}
+.faixa{display:flex;gap:12px;align-items:flex-start;border-radius:14px;padding:12px 14px;border:1px solid var(--er-b);background:var(--er-f);font-size:14px;margin-top:14px}
+.faixa b{font-weight:500}
+.faixa.at{border-color:var(--at-b);background:var(--at-f)}
+.linha-dec{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:flex-end}
+.fundo-janela{width:100%}
+.fundo-janela .janela{display:block;width:min(100%,560px);padding:0;border-radius:20px;font-size:14px;box-shadow:var(--s3)}
+.fundo-janela .janela .corpo{display:grid}
+.prazo-r{border:1px dashed var(--v300);border-radius:14px;padding:12px 14px;background:var(--v50);display:grid;gap:8px;font-size:14px}
+/* ===== Aviso de pedido registrado ===== */
+/* A janela de diálogo: a regra .janela das mensagens de texto (Textos e janela) vem depois e a desmancharia. */
+.janela.dlg{display:block;padding:0;gap:0;border-radius:20px;font-size:15px;background:#fff;box-shadow:var(--s3)}
+.janela.dlg .liga-c .ck{grid-template-columns:18px}
+.janela.dlg .tabela{font-size:13.5px}
+@media(max-width:600px){.fundo-janela{padding:12px}.janela.dlg .liga-c{flex-wrap:wrap}.janela.dlg .liga-c>.quad{display:none}.janela.dlg .liga-c .t{flex:1 1 70%}}
+</style>
+</head>
+<body>
+<a class="pular" href="#conteudo">Ir para o conteúdo</a>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+  <symbol id="i-casa" viewBox="0 0 24 24"><path d="m3 10.5 9-7 9 7V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-pedido" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></symbol>
+  <symbol id="i-predio" viewBox="0 0 24 24"><path d="M4 21V7l8-4v18M12 10h8v11M2 21h20M7 9h2M7 13h2M7 17h2M15 13h2M15 17h2"/></symbol>
+  <symbol id="i-pessoas" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5a3 3 0 0 1 0 6M21 20v-1a6 6 0 0 0-3-5"/></symbol>
+  <symbol id="i-pessoa" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-pessoa-mais" viewBox="0 0 24 24"><circle cx="10" cy="8" r="4"/><path d="M2 21a8 8 0 0 1 13-6M19 14v6M16 17h6"/></symbol>
+  <symbol id="i-grafico" viewBox="0 0 24 24"><path d="M4 20V11m6 9V4m6 16v-7m5 7H3"/></symbol>
+  <symbol id="i-ajuste" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+  <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="i-sino" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6.5 2.5 8 2.5 8h-17S6 15.5 6 9"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-seta" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+  <symbol id="i-baixo" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-esq" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+  <symbol id="i-dir" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-fechar" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-pontos" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></symbol>
+  <symbol id="i-balao" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l2-3A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 10h8M8 14h5"/></symbol>
+  <symbol id="i-retorno" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></symbol>
+  <symbol id="i-calendario" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-ferramenta" viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0-5.3 5.3L3.5 17.5 6.5 20.5l5.7-5.7a4 4 0 0 0 5.3-5.3l-2.5 2.5-2.5-.5-.5-2.5z"/></symbol>
+  <symbol id="i-chave" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M14 9l2 2"/></symbol>
+  <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3 4.5 6v6c0 4.5 3.2 7.8 7.5 9 4.3-1.2 7.5-4.5 7.5-9V6z"/></symbol>
+  <symbol id="i-clipe" viewBox="0 0 24 24"><path d="m20 11.5-7.8 7.8a5 5 0 0 1-7-7l8.2-8.2a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/></symbol>
+  <symbol id="i-documento" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-whats" viewBox="0 0 24 24"><path d="M4 20l1.3-3.8A8.5 8.5 0 1 1 8 19z"/><path d="M9 9.5c.5 2 2.5 4 4.5 4.5l1.3-1.2 2 1-.4 1.6c-3.5.5-7.6-3.6-7.1-7.1L11 8l1 2z"/></symbol>
+  <symbol id="i-trocar" viewBox="0 0 24 24"><path d="M7 4v16M3.5 7.5 7 4l3.5 3.5M17 20V4M13.5 16.5 17 20l3.5-3.5"/></symbol>
+  <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-preparar" viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-mudanca" viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></symbol>
+  <symbol id="i-engrenagem" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></symbol>
+  <symbol id="i-copiar" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-lista" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".9"/><circle cx="4.5" cy="12" r=".9"/><circle cx="4.5" cy="18" r=".9"/></symbol>
+  <symbol id="i-compartilhar" viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/></symbol>
+  <symbol id="i-estrela" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.8-4.4 4.3 1 6.1L12 17l-5.4 2.8 1-6.1-4.4-4.3 6.1-.8z"/></symbol>
+  <symbol id="i-filtro" viewBox="0 0 24 24"><path d="M3 5h18l-7 8.5V19l-4 2v-7.5z"/></symbol>
+  <symbol id="i-editar" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></symbol>
+  <symbol id="i-baixar" viewBox="0 0 24 24"><path d="M12 4v11m-4.5-4.5L12 15l4.5-4.5M4 19h16"/></symbol>
+  <symbol id="i-enviar" viewBox="0 0 24 24"><path d="M12 15V4m-4.5 4.5L12 4l4.5 4.5M4 19h16"/></symbol>
+  <symbol id="i-olho" viewBox="0 0 24 24"><path d="M2.5 12S6 5 12 5s9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-cadeado" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-telefone" viewBox="0 0 24 24"><path d="M5 3.5h3.5l1.8 4.5-2.3 1.5a11 11 0 0 0 6.5 6.5l1.5-2.3 4.5 1.8V19a2 2 0 0 1-2 2A16.5 16.5 0 0 1 3 5.5a2 2 0 0 1 2-2"/></symbol>
+  <symbol id="i-email" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H8l1.5-2h5L16 6h1.5A2.5 2.5 0 0 1 20 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-imprimir" viewBox="0 0 24 24"><path d="M7 9V3.5h10V9M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></symbol>
+  <symbol id="i-sair" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+
+  <symbol id="i-maleta" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3 12.5h18"/></symbol>
+  <symbol id="i-repetir" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.7 5.6L4 15.5M4 20v-4.5h4.5"/></symbol>
+  <symbol id="i-lupa-check" viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M9 3.5h6v3H9zM8.5 12l2 2 4-4M8.5 17h7"/></symbol>
+  <symbol id="i-arquivar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9M10 13h4"/></symbol>
+    <symbol id="i-megafone" viewBox="0 0 24 24"><path d="M3 10v4a1 1 0 0 0 1 1h3l8 5V4L7 9H4a1 1 0 0 0-1 1zM18.5 9a4 4 0 0 1 0 6"/></symbol>
+  <symbol id="i-pasta" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-convivio" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 1 9 9H3a9 9 0 0 1 9-9zM12 12v7a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-urna" viewBox="0 0 24 24"><path d="M4 12h16v8H4zM8 12V4h8v8M10 8l1.5 1.5L14 6.5M2 20h20"/></symbol>
+  <symbol id="i-anuncio" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></symbol>
+  </defs>
+</svg>
+<div class="wrap">
+<div class="topo"><img src="../identidade/logo-violeta.png" alt="TRÍADE Condo"><nav aria-label="Telas"><a class="pilula" href="../identidade/sistema.html">Sistema de design</a><a class="pilula" href="#t1">Quem avisar</a><a class="pilula" href="#t2">As mensagens</a><a class="pilula" href="#t3">O link aberto</a><a class="pilula" href="#t4">Depois de registrar</a><a class="pilula" href="#t5">No pedido e na manutenção</a><a class="pilula" href="#t6">Outros casos</a><a class="pilula" href="#depois">Para depois</a><a class="pilula" href="#decisoes">Decisões</a></nav></div>
+<main id="conteudo">
+
+<header class="abertura" style="min-height:0"><div class="arte" aria-hidden="true" style="opacity:.6"><span class="orb" style="width:340px;height:340px;right:-90px;top:-120px"></span><span class="orb" style="width:520px;height:520px;right:-200px;top:-210px"></span><span class="tri" style="width:34px;height:230px;right:40px;top:40px"></span></div><div class="t">
+  <span class="rot" style="color:#E7D3FF">F6.7 · MP-09 · V-11 · aprovado em 20/10/2026</span>
+  <h1><em class="d">O prestador</em> já sai com o serviço</h1>
+  <p>Hoje o prestador avisado no registro recebe só o texto do pedido, e o link com confirmar, recusar e o prazo para passar à reserva só sai depois, pela manutenção. Com esta entrega, o aviso do registro já leva o link: nasce uma manutenção corretiva ligada ao pedido, e o prestador confirma ou recusa na hora.</p>
+  <div class="numeros"><span><b>6</b>telas</span><span><b>12</b>decisões</span><span><b>2</b>ideias</span><span><b>2</b>ficam para depois</span></div>
+</div></header>
+
+<!-- 1 -->
+<section class="parte" id="t1" aria-labelledby="h-t1">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span>
+    <h2 id="h-t1">1 · Quem avisar: o prestador com o link do serviço</h2>
+    <p>Ao escolher o prestador no bloco Quem avisar, aparece "Mandar o link do serviço", já marcado. A mensagem que hoje vai ao prestador vira o "O que fazer" do link. Faltam só quando e como entrar; validade, prazo para responder e a reserva já vêm preenchidos e podem mudar ali.</p>
+    <p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">V-11</span> <span class="mono" style="font-size:11px;color:var(--v600)">MP-09</span> <span class="mono" style="font-size:11px;color:var(--v600)">AT-26</span></p>
+  </div>
+  <div class="lado">
+    <div class="fundo-janela" style="flex:1;min-width:min(100%,600px)">
+      <div class="janela dlg janela-l">
+        <div class="cab"><b>Registrar pedido</b><svg class="ic" aria-hidden="true"><use href="#i-fechar"/></svg></div>
+        <div class="corpo">
+          <div class="campo"><label>Local</label><span class="entrada"><span>Elevador social da Torre B</span></span></div>
+          <div class="campo"><label>Assunto</label><span class="entrada"><span>Elevador parado entre o 3º e o 4º andar</span></span></div>
+          <div class="campo"><label>Prioridade</label><span class="trilho"><span class="chip">Baixa</span><span class="chip">Normal</span><span class="chip">Alta</span><span class="chip sel">Urgente</span></span></div>
+          <div class="campo"><label>Responsável</label><span class="entrada"><span>João Pereira · zelador (você)</span></span></div>
+
+          <div style="border-top:1px solid var(--linha);padding-top:14px;display:grid;gap:8px">
+            <b style="font-weight:500;font-size:15px;color:var(--texto)">Quem avisar</b>
+            <div class="liga-c">
+              <span class="ck" style="padding:0"><span class="q on"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span></span>
+              <span class="quad q-v"><svg class="ic" aria-hidden="true"><use href="#i-escudo"/></svg></span>
+              <div class="t"><b style="font-weight:500">Ana Lima, síndica</b><small>Pedido urgente · no sino e no WhatsApp dela</small></div>
+              <span class="tag">pela regra</span>
+            </div>
+            <div class="liga-c">
+              <span class="ck" style="padding:0"><span class="q on"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span></span>
+              <span class="quad q-l"><svg class="ic" aria-hidden="true"><use href="#i-ferramenta"/></svg></span>
+              <div class="t"><b style="font-weight:500">Elevadores Planalto, prestador</b><small>WhatsApp do condomínio para +55 61 9••••-2200 · <a href="#t2">ver mensagem</a></small></div>
+              <span class="botao fantasma bt-m">Trocar</span>
+            </div>
+
+            <div class="painel" style="padding:14px;display:grid;gap:12px;margin-left:24px">
+              <div class="opcao-r"><span class="ck" style="padding:0"><span class="q on"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span></span><b style="font-weight:500">Mandar o link do serviço</b><span class="tag">novo</span></div>
+              <span class="dica" style="margin-top:-6px">Com o link, o prestador confirma ou recusa, avisa a chegada e o impedimento. Nasce a manutenção corretiva ligada a este pedido, com você como responsável.</span>
+              <div class="campo"><label>O que fazer</label><span class="entrada" style="height:auto;align-items:flex-start;padding:10px 12px"><span>Elevador parado entre o 3º e o 4º andar. Ninguém preso; elevador desligado no quadro às 10h20. Avaliar e religar com segurança.</span></span><span class="dica">É a mensagem ao prestador, já escrita e editável. Nome, telefone e e-mail de morador são recusados.</span></div>
+              <div class="grade2" style="gap:12px">
+                <div class="campo"><label>Quando</label><span class="entrada"><span>Hoje, assim que possível</span></span></div>
+                <div class="campo"><label>Como entrar</label><span class="entrada"><span>Portaria da Torre B; procurar o zelador</span></span></div>
+              </div>
+              <div class="grade2" style="gap:12px">
+                <div class="campo"><label>O link vale até</label><span class="entrada"><svg class="ic" aria-hidden="true"><use href="#i-calendario"/></svg><span>27/10/2026</span></span><span class="dica">Padrão: 7 dias. Até 60.</span></div>
+                <div class="campo"><label>Prazo para responder</label><span class="trilho"><span class="chip sel">4 horas</span><span class="chip">8 horas</span><span class="chip">24 horas</span><span class="chip">48 horas</span></span><span class="dica">Urgente vem com 4 horas; os outros, com 24.</span></div>
+              </div>
+              <div class="liga-c">
+                <span class="chave-l on"><i></i></span>
+                <div class="t"><b style="font-weight:500">Se não responder, passar para Atlas Manutenção</b><small>A reserva do cadastro. Sem resposta em 4 horas, ou se recusar, o serviço passa sozinho, com o mesmo texto.</small></div>
+              </div>
+            </div>
+
+            <div class="liga-c" style="border-style:dashed">
+              <span class="quad q-l"><svg class="ic" aria-hidden="true"><use href="#i-megafone"/></svg></span>
+              <div class="t"><b style="font-weight:500">Moradores afetados</b><small>Comunicado ligado ao pedido, para um bloco, algumas unidades ou todos.</small></div>
+              <span class="botao contorno bt-m">+ Avisar</span>
+            </div>
+          </div>
+        </div>
+        <div class="pe"><span class="botao contorno">Cancelar</span><span class="botao primario">Registrar e avisar 2</span></div>
+      </div>
+    </div>
+    <div style="display:grid;gap:12px;width:min(100%,360px)">
+      <p class="rot" style="margin:0">Como a parte do link se comporta</p>
+      <div class="msg"><b style="font-weight:500">Desmarcado</b>O prestador recebe só o texto, como hoje (F6.4). Nenhuma manutenção nasce. O link pode ser mandado depois, pela manutenção.</div>
+      <div class="msg"><b style="font-weight:500">Sem permissão de manutenção</b>A opção não aparece. Quem registra ainda pode avisar o prestador só com o texto.</div>
+      <div class="msg"><b style="font-weight:500">Sem reserva no cadastro</b>A chave da troca não aparece; a linha diz "sem reserva no cadastro: sem resposta, você é avisado no sino".</div>
+      <div class="msg"><b style="font-weight:500">Responsável</b>A manutenção fica com o responsável do pedido. Sem responsável no pedido, fica com quem registra.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="parte" id="t2" aria-labelledby="h-t2">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span>
+    <h2 id="h-t2">2 · As mensagens ao prestador</h2>
+    <p>No WhatsApp, o link sai pelo modelo que já existe para o link do prestador, aprovado para o piloto e usado hoje na troca para a reserva. O texto do pedido vai dentro do link, não na mensagem. No e-mail, vai o texto, o prazo e o link.</p>
+    <p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">V-11</span> <span class="mono" style="font-size:11px;color:var(--v600)">W-20</span> <span class="mono" style="font-size:11px;color:var(--v600)">PT-11</span></p>
+  </div>
+  <div class="lado">
+    <div class="cel">
+      <p class="legenda-t" style="margin:0 2px 8px">Celular do prestador · WhatsApp do condomínio</p>
+      <div class="app"><div class="pub-corpo" style="padding:0"><div class="zap">
+        <div class="cab-z"><span class="quad q-v" style="width:34px;height:34px;border-radius:50%;display:grid;place-items:center"><svg class="ic" aria-hidden="true"><use href="#i-predio"/></svg></span><div><b style="font-weight:500">Residencial Ipê</b><small style="display:block;font-size:12.5px;color:var(--texto-suave)">WhatsApp do condomínio</small></div></div>
+        <span class="dia">Hoje</span>
+        <div class="rec">O Residencial Ipê tem um serviço para Elevadores Planalto: Elevador parado entre o 3º e o 4º andar, no Elevador social da Torre B.
+
+Veja o que fazer e confirme até hoje, 14:25: condominio.trihub.com.br/p/7KQ2-M9XA
+
+O link é só para este serviço e não precisa de conta.
+
+Mensagem automática do condomínio.<span class="h">10:25</span></div>
+        <div class="escrever">Mensagem</div>
+      </div></div></div>
+    </div>
+    <div class="cel">
+      <p class="legenda-t" style="margin:0 2px 8px">E-mail do prestador · sem WhatsApp</p>
+      <div class="painel" style="display:grid;gap:10px">
+        <span class="rot">De: Residencial Ipê · Para: contato@atlasmanutencao.com.br</span>
+        <h4 style="font-size:17px;font-weight:500;margin:0">Serviço no Residencial Ipê: confirme até hoje, 14:25</h4>
+        <p style="margin:0;font-size:14px;color:var(--n700)">Pedido 2026-0153 (urgente) · Elevador social da Torre B.</p>
+        <p style="margin:0;font-size:14px;color:var(--n700)">Elevador parado entre o 3º e o 4º andar. Ninguém preso; elevador desligado no quadro às 10h20. Avaliar e religar com segurança.</p>
+        <span class="botao primario" style="justify-self:start">Ver o serviço e confirmar</span>
+        <p style="margin:0;font-size:13px;color:var(--texto-suave)">Sem resposta até o prazo, o condomínio pode passar o serviço para outro prestador. O link é só para este serviço e não precisa de conta. O condomínio nunca pede pagamento por mensagem.</p>
+      </div>
+    </div>
+    <div style="display:grid;gap:12px;width:min(100%,320px)">
+      <p class="rot" style="margin:0">Por que o modelo do link</p>
+      <div class="msg"><b style="font-weight:500">Um modelo a menos para a Meta</b>O modelo do link já existe e já fala em confirmar até o prazo. O aviso só com texto continua para quando o link é desmarcado.</div>
+      <div class="msg"><b style="font-weight:500">Cabe nas regras da Meta</b>O texto do pedido fica no link. Na mensagem só vão o serviço, o local, o prazo e o link, sem quebra de linha nas variáveis.</div>
+      <div class="msg"><b style="font-weight:500">O código nasce no envio</b>Como na troca para a reserva: o código do link só existe quando a mensagem sai, e não aparece em nenhuma tela.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="parte" id="t3" aria-labelledby="h-t3">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span>
+    <h2 id="h-t3">3 · O link aberto pelo prestador</h2>
+    <p>É a mesma página do link do prestador que já existe (Links e QR e a reserva), sem mudança: o que fazer, local, quando, como entrar, confirmar ou recusar, e depois chegada, impedimento e término. A única diferença é o número do pedido, para o prestador citar se ligar.</p>
+    <p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">V-11</span> <span class="mono" style="font-size:11px;color:var(--v600)">MP-09</span></p>
+  </div>
+  <div class="lado">
+    <div class="cel">
+      <p class="legenda-t" style="margin:0 2px 8px">Celular · link aberto</p>
+      <div class="app"><div class="pub-corpo" style="display:grid;gap:10px">
+        <span class="rot">Residencial Ipê · serviço para Elevadores Planalto</span>
+        <span class="selo s-in" style="justify-self:start"><span class="f"></span>Corretiva · pedido 2026-0153</span>
+        <h4 style="font-size:18px;font-weight:500;margin:0">Elevador parado entre o 3º e o 4º andar</h4>
+        <p style="margin:0;font-size:14px;color:var(--n700)">Elevador parado entre o 3º e o 4º andar. Ninguém preso; elevador desligado no quadro às 10h20. Avaliar e religar com segurança.</p>
+        <div class="kv"><div><span>Local</span><b>Elevador social da Torre B</b></div><div><span>Quando</span><b>Hoje, assim que possível</b></div><div><span>Como entrar</span><b>Portaria da Torre B; procurar o zelador</b></div></div>
+        <div class="aviso at" style="max-width:none"><span class="quad"><svg class="ic" aria-hidden="true"><use href="#i-relogio"/></svg></span><div class="t"><b>Confirme até hoje, 14:25</b><small>Sem resposta, o condomínio passa o serviço para outro prestador.</small></div></div>
+        <span class="botao primario">Confirmo que vou fazer</span>
+        <span class="botao contorno">Não posso atender</span>
+        <span class="dica">Link só para este serviço. Não precisa de conta.</span>
+      </div></div>
+    </div>
+    <div style="display:grid;gap:12px;width:min(100%,360px)">
+      <p class="rot" style="margin:0">O que não aparece para o prestador</p>
+      <div class="msg"><b style="font-weight:500">Nada de quem pediu</b>Nem nome, nem telefone, nem unidade de quem pediu. O pedido aparece só pelo número.</div>
+      <div class="msg"><b style="font-weight:500">Sem fotos do pedido</b>Foto de pedido pode mostrar o morador ou a casa dele. Quem quiser manda arquivos depois, pela manutenção, escolhendo um a um.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="parte" id="t4" aria-labelledby="h-t4">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span>
+    <h2 id="h-t4">4 · Depois de registrar</h2>
+    <p>A confirmação ganha a manutenção que nasceu e a situação do link. O resto continua como no F6.4.</p>
+    <p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">V-11</span> <span class="mono" style="font-size:11px;color:var(--v600)">AT-26</span></p>
+  </div>
+  <div class="lado">
+    <div class="fundo-janela" style="flex:1;min-width:min(100%,560px)">
+      <div class="janela dlg janela-l">
+        <div class="cab"><b>Pedido 2026-0153 registrado</b><svg class="ic" aria-hidden="true"><use href="#i-fechar"/></svg></div>
+        <div class="corpo">
+          <div class="passo-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg><span>Elevador parado entre o 3º e o 4º andar · urgente · responsável João Pereira</span></div>
+          <table class="tabela">
+            <thead><tr><th>Quem</th><th>Por onde</th><th>Situação</th></tr></thead>
+            <tbody>
+              <tr><td>Ana Lima, síndica</td><td>Sino e WhatsApp</td><td><span class="selo s-ok"><span class="f"></span>No sino</span></td></tr>
+              <tr><td>Elevadores Planalto</td><td>WhatsApp · link do serviço</td><td><span class="selo s-in"><span class="f"></span>Esperando resposta até 14:25</span></td></tr>
+            </tbody>
+          </table>
+          <div class="liga-c">
+            <span class="quad q-l"><svg class="ic" aria-hidden="true"><use href="#i-ferramenta"/></svg></span>
+            <div class="t"><b style="font-weight:500">Manutenção corretiva criada</b><small>Elevador parado entre o 3º e o 4º andar · ligada a este pedido · se não responder, passa para Atlas Manutenção</small></div>
+            <span class="botao fantasma bt-m">Abrir</span>
+          </div>
+        </div>
+        <div class="pe"><span class="botao contorno">Registrar outro</span><span class="botao primario">Abrir o pedido</span></div>
+      </div>
+    </div>
+    <div style="display:grid;gap:12px;width:min(100%,360px)">
+      <p class="rot" style="margin:0">Situações do link</p>
+      <div class="aviso" style="max-width:none"><span class="quad"><svg class="ic" aria-hidden="true"><use href="#i-relogio"/></svg></span><div class="t"><b>Na fila</b><small>A mensagem ainda não saiu (por exemplo, número caído). O prazo para responder só começa a contar quando ela sai.</small></div></div>
+      <div class="aviso ok" style="max-width:none"><span class="quad"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span><div class="t"><b>Confirmou</b><small>O prestador confirmou; a troca para a reserva não acontece mais.</small></div></div>
+      <div class="aviso at" style="max-width:none"><span class="quad"><svg class="ic" aria-hidden="true"><use href="#i-repetir"/></svg></span><div class="t"><b>Passou para a reserva</b><small>Recusou ou não respondeu: o link da Atlas Manutenção saiu, com aviso no sino do responsável.</small></div></div>
+      <div class="aviso er" style="max-width:none"><span class="quad"><svg class="ic" aria-hidden="true"><use href="#i-alerta"/></svg></span><div class="t"><b>Falhou</b><small>Vai para Falhas de envio, como as outras mensagens. A manutenção fica criada; o link pode ser mandado de novo por ela.</small></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="parte" id="t5" aria-labelledby="h-t5">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span>
+    <h2 id="h-t5">5 · No pedido e na manutenção</h2>
+    <p>O cartão Avisos do registro mostra a resposta do prestador e leva à manutenção. A manutenção mostra o pedido de onde veio e o cartão Link do prestador de sempre, onde se copia, cancela ou desliga a troca.</p>
+    <p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">MP-09</span> <span class="mono" style="font-size:11px;color:var(--v600)">V-11</span> <span class="mono" style="font-size:11px;color:var(--v600)">AT-17</span></p>
+  </div>
+  <div class="grade2">
+    <div>
+      <p class="legenda-t" style="margin:0 2px 8px">Pedido 2026-0153</p>
+      <section class="cartao">
+        <h4 style="margin:0;font-size:17px">Avisos do registro</h4>
+        <div class="kv" style="margin-top:12px">
+          <div><span>Síndica</span><b>Ana Lima · sino e WhatsApp, lido 10:31</b></div>
+          <div><span>Prestador</span><b>Elevadores Planalto · link pelo WhatsApp · confirmou às 10:48</b></div>
+          <div><span>Manutenção</span><b><a href="#">Elevador parado entre o 3º e o 4º andar</a> · em andamento</b></div>
+        </div>
+      </section>
+      <section class="cartao" style="margin-top:14px">
+        <h4 style="margin:0;font-size:17px">Histórico</h4>
+        <div class="hist">
+          <div class="it"><span class="quad q-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span><div>Elevadores Planalto confirmou pelo link<small>10:48 · na manutenção ligada</small></div></div>
+          <div class="it"><span class="quad q-l"><svg class="ic" aria-hidden="true"><use href="#i-whats"/></svg></span><div>Link do serviço mandado a Elevadores Planalto pelo WhatsApp do condomínio<small>10:25 · responder até 14:25 · texto editado por João Pereira</small></div></div>
+          <div class="it"><span class="quad q-l"><svg class="ic" aria-hidden="true"><use href="#i-ferramenta"/></svg></span><div>Manutenção corretiva criada no registro<small>10:25 · por João Pereira · ligada a este pedido</small></div></div>
+          <div class="it"><span class="quad q-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span><div>Pedido registrado por observação<small>10:25 · por João Pereira · responsável João Pereira</small></div></div>
+        </div>
+      </section>
+    </div>
+    <div>
+      <p class="legenda-t" style="margin:0 2px 8px">Manutenção ligada</p>
+      <section class="cartao">
+        <div class="cab-tela" style="margin:0"><div><h2 style="font-size:20px">Elevador parado entre o 3º e o 4º andar</h2><p>Corretiva · Elevador social da Torre B · responsável João Pereira · do <a href="#">pedido 2026-0153</a></p></div></div>
+      </section>
+      <section class="cartao" style="margin-top:14px">
+        <h4 style="margin:0;font-size:17px">Link do prestador</h4>
+        <div class="kv" style="margin-top:12px">
+          <div><span>Situação</span><b><span class="selo s-ok"><span class="f"></span>Confirmou</span></b></div>
+          <div><span>Para</span><b>Elevadores Planalto</b></div>
+          <div><span>Mandado</span><b>No registro do pedido, pelo WhatsApp do condomínio</b></div>
+          <div><span>Vale até</span><b>27/10/2026</b></div>
+        </div>
+        <div class="acoes" style="margin-top:12px"><span class="botao contorno bt-m">Copiar link novo</span><span class="botao fantasma bt-m">Cancelar link</span></div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="parte" id="t6" aria-labelledby="h-t6">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span>
+    <h2 id="h-t6">6 · Outros casos e o celular</h2>
+    <p>O que muda (ou não) quando falta alguma coisa, e o resumo no celular.</p>
+    <p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">V-11</span> <span class="mono" style="font-size:11px;color:var(--v600)">PT-10</span></p>
+  </div>
+  <div class="lado">
+    <div class="cel">
+      <p class="legenda-t" style="margin:0 2px 8px">Celular · lista Quem avisar</p>
+      <div class="janela dlg" style="width:100%">
+        <div class="cab"><b>Quem avisar</b><svg class="ic" aria-hidden="true"><use href="#i-esq"/></svg></div>
+        <div class="corpo">
+          <div class="liga-c"><span class="ck" style="padding:0"><span class="q on"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span></span><div class="t"><b style="font-weight:500">Ana Lima, síndica</b><small>Pela regra · pedido urgente</small></div></div>
+          <div class="liga-c"><span class="ck" style="padding:0"><span class="q on"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg></span></span><div class="t"><b style="font-weight:500">Elevadores Planalto</b><small>Link do serviço · responder em 4 horas · reserva Atlas</small></div><svg class="ic" aria-hidden="true"><use href="#i-dir"/></svg></div>
+          <div class="liga-c" style="border-style:dashed"><div class="t"><b style="font-weight:500">Moradores afetados</b></div><span class="botao contorno bt-m">+ Avisar</span></div>
+        </div>
+        <div class="pe" style="display:grid"><span class="botao primario">Pronto</span></div>
+      </div>
+    </div>
+    <div style="display:grid;gap:12px;flex:1;min-width:min(100%,360px)">
+      <p class="rot" style="margin:0">Casos</p>
+      <div class="msg"><b style="font-weight:500">Pedido privado</b>Como no F6.4: não oferece prestador, então não há link.</div>
+      <div class="msg"><b style="font-weight:500">Prestador sem celular nem e-mail</b>Como no F6.4: não pode ser escolhido por aqui. O link continua podendo ser copiado na tela da manutenção.</div>
+      <div class="msg"><b style="font-weight:500">Número do condomínio desconectado</b>Com e-mail no cadastro, o link vai por e-mail. Sem e-mail, a mensagem fica na fila e entra na conferência da queda; o prazo só começa quando ela sair.</div>
+      <div class="msg"><b style="font-weight:500">Erro em quando ou como entrar</b>O registro não grava e a tela aponta o campo, como qualquer outro erro do registro. Nada sai pela metade.</div>
+      <div class="msg"><b style="font-weight:500">Pedido cancelado depois</b>A manutenção ligada não é cancelada sozinha. O pedido mostra o aviso "a manutenção ligada continua aberta", para quem decide cancelá-la também.</div>
+    </div>
+  </div>
+</section>
+
+<section class="parte" id="depois" aria-labelledby="h-dep">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span>
+    <h2 id="h-dep">Ficam para depois</h2>
+    <p>Não impedem a F6.7 de atender MP-09 e V-11; ficam como itens pendentes no painel, cada um com a ideia que cita.</p>
+  </div>
+  <div class="decisoes">
+    <div class="decisao"><b>1 · O link pelo número oficial</b><p>No piloto pelo Wafly, o modelo do link já vale. No número oficial, ele entra na lista de modelos que vão para a Meta, com o protocolo e o aviso ao prestador (F6.5).</p><div class="refs">W-20</div></div>
+    <div class="decisao"><b>2 · Comunicado pelo WhatsApp</b><p>Continua na F6.6, com desenho próprio.</p><div class="refs">CD-02 · W-20</div></div>
+  </div>
+</section>
+
+<section class="parte" id="decisoes" aria-labelledby="h-dec">
+  <div class="moldura"><span class="a3"></span><span class="a4"></span>
+    <h2 id="h-dec">Decisões para aprovar</h2>
+    <p>As seis primeiras são as do plano, que você aprovou em 20/10/2026. Depois de aprovadas, cada regra vira teste automático com o código da ideia no nome.</p>
+  </div>
+  <h3 class="sub">Do plano</h3>
+  <div class="decisoes">
+    <div class="decisao"><b>1 · Link opcional, já marcado</b><p>Ao escolher o prestador, "Mandar o link do serviço" vem marcado. Desmarcado, o prestador recebe só o texto, como no F6.4.</p><div class="refs">V-11 · AT-26</div></div>
+    <div class="decisao"><b>2 · A manutenção nasce no registro</b><p>Corretiva, com o assunto como título, o local e a prioridade do pedido e o responsável do pedido (sem ele, quem registra), ligada ao pedido. Sem a permissão de editar manutenção, a opção não aparece.</p><div class="refs">V-11 · MP-05</div></div>
+    <div class="decisao"><b>3 · Só quando e como entrar</b><p>"O que fazer" é a mensagem ao prestador. Validade de 7 dias e reserva do cadastro já vêm preenchidas; tudo pode mudar ali.</p><div class="refs">V-11 · MP-09</div></div>
+    <div class="decisao"><b>4 · Sem fotos do pedido</b><p>O link do registro não leva arquivos. Arquivos vão depois, pela manutenção, escolhidos um a um.</p><div class="refs">V-11 · PT-11</div></div>
+    <div class="decisao"><b>5 · O modelo do link</b><p>No WhatsApp, o link sai pelo modelo do link do prestador, que passa a valer também para o registro. O texto do pedido fica dentro do link. No e-mail, vão o texto, o prazo e o link.</p><div class="refs">V-11 · W-20</div></div>
+    <div class="decisao"><b>6 · Prestador sem meio, como hoje</b><p>Sem celular nem e-mail, o prestador não pode ser escolhido no registro. O link continua podendo ser copiado na manutenção.</p><div class="refs">V-11</div></div>
+  </div>
+  <h3 class="sub">Novas, deste desenho</h3>
+  <div class="decisoes">
+    <div class="decisao"><b>7 · Prazo pela prioridade</b><p>O prazo para responder vem com 4 horas no pedido urgente (o nível mais alto em uso) e 24 horas nos outros. Quem registra muda entre 4, 8, 24 e 48.</p><div class="refs">MP-09</div></div>
+    <div class="decisao"><b>8 · O prazo conta da saída</b><p>O prazo para responder começa quando a mensagem sai, não no registro. Enquanto ela está na fila (número caído, por exemplo), a troca para a reserva não acontece.</p><div class="refs">MP-09 · W-17</div></div>
+    <div class="decisao"><b>9 · Tudo junto com o registro</b><p>Pedido, manutenção, link e mensagem gravam juntos. Se algo é recusado, nada grava e a tela aponta o campo. Falha de envio depois não desfaz nada.</p><div class="refs">V-11 · PT-04</div></div>
+    <div class="decisao"><b>10 · Mesma página, mesmas regras</b><p>O link é o mesmo da manutenção: um por manutenção, código que nasce no envio e não aparece em tela, uma troca para a reserva por link, chegada, impedimento e término. A página só ganha o número do pedido.</p><div class="refs">V-11 · MP-09</div></div>
+    <div class="decisao"><b>11 · Cancelar o pedido não cancela a manutenção</b><p>A manutenção ligada continua; o pedido avisa que ela segue aberta, para quem decide. Nada some sozinho.</p><div class="refs">MP-05 · PT-03</div></div>
+    <div class="decisao"><b>12 · Tudo no histórico, dos dois lados</b><p>O pedido e a manutenção registram a criação, o envio do link (por onde, prazo, se o texto foi editado) e a resposta do prestador. Nada se apaga.</p><div class="refs">AT-17 · PT-03</div></div>
+  </div>
+</section>
+</main>
+</div>
+</body>
+</html>

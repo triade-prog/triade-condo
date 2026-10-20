@@ -4,18 +4,32 @@
 // unidade, contato, prioridade, responsável e se é privado. Quem pediu recebe o protocolo; o
 // responsável sempre fica sabendo; o síndico pela regra ou se marcarem. Prestador e moradores
 // afetados só se quem registra escolher e vir a mensagem. Nada sai antes de Registrar, e nome,
-// telefone e e-mail de quem pediu nunca vão para fora (o banco confere o texto).
+// telefone e e-mail de quem pediu nunca vão para fora (o banco confere o texto). Com o prestador,
+// "Mandar o link do serviço" vem marcado (F6.7; MP-09, V-11; desenho "Link do serviço no
+// registro", telas 1 e 6): nasce a manutenção ligada ao pedido e o prestador recebe o link, com o
+// prazo para responder (contado da saída da mensagem) e a troca para a reserva do cadastro.
 
 import { useEffect, useState } from "react";
 import { Aviso, Botao, CampoAreaTexto, CampoTexto, chamarApi, Selo } from "@triade/ui";
 import type { OpcoesPedidos, PessoaAvisada, QuemAvisar as Previa } from "../tipos.ts";
 import { Escolha } from "../moradores/comum.tsx";
 
+/** O link do serviço no registro (F6.7). O prazo segue a prioridade até alguém escolher outro. */
+export interface EscolhaLink {
+  marcado: boolean;
+  quando: string;
+  comoEntrar: string;
+  valeAte: string;
+  responderHoras: 4 | 8 | 24 | 48;
+  horasEscolhidas: boolean;
+  reserva: boolean;
+}
+
 /** O que quem registra escolheu. Os textos acompanham o rascunho até alguém mexer neles. */
 export interface EscolhaAvisos {
   quemPediu: boolean | null;
   sindico: boolean;
-  prestador: { id: string; texto: string; editado: boolean } | null;
+  prestador: { id: string; texto: string; editado: boolean; link: EscolhaLink } | null;
   moradores: { publico: "TODOS" | "BLOCOS" | "UNIDADES"; blocos: string[]; unidades: string[]; titulo: string; texto: string; editado: boolean } | null;
 }
 
@@ -67,18 +81,41 @@ export function contarAvisos(p: Previa | null, e: EscolhaAvisos): { n: number; n
   for (const x of p.responsavel.pessoas) if (!x.voceMesmo) nomes.push(x.nome);
   if (sindicoVai(p, e)) for (const x of p.sindico.pessoas) if (!x.voceMesmo) nomes.push(x.nome);
   const prestador = p.prestador.disponivel && e.prestador ? p.prestadores.find((x) => x.id === e.prestador!.id) : null;
-  if (prestador) nomes.push(prestador.nome);
+  if (prestador) nomes.push(linkVai(p, e) ? `${prestador.nome} (link do serviço)` : prestador.nome);
   if (p.moradores.disponivel && e.moradores) nomes.push("moradores afetados");
   return { n: nomes.length, nomes };
+}
+
+/** O link vai? Marcado, oferecido a quem registra e com meio para o prestador. */
+export function linkVai(p: Previa | null, e: EscolhaAvisos): boolean {
+  if (!p || !e.prestador?.link.marcado || !p.prestador.disponivel || !p.prestador.link.disponivel) return false;
+  return Boolean(p.prestadores.find((x) => x.id === e.prestador!.id)?.meioLink);
+}
+
+/** Os campos do link que ainda faltam, para apontar antes de mandar ao banco. */
+export function faltasNoLink(p: Previa | null, e: EscolhaAvisos): ("quando" | "comoEntrar" | "textoPrestador")[] {
+  if (!linkVai(p, e)) return [];
+  const l = e.prestador!.link;
+  return [
+    ...(e.prestador!.texto.trim().length < 10 ? ["textoPrestador" as const] : []),
+    ...(l.quando.trim().length < 2 ? ["quando" as const] : []),
+    ...(l.comoEntrar.trim().length < 2 ? ["comoEntrar" as const] : []),
+  ];
 }
 
 /** O que vai para a API: só o que quem registra mudou; o resto segue as regras. */
 export function paraEnviar(p: Previa | null, e: EscolhaAvisos) {
   if (!p) return null;
+  const link = linkVai(p, e) ? e.prestador!.link : null;
+  const reserva = p.prestador.escolhido?.id === e.prestador?.id && Boolean(p.prestador.escolhido?.reserva);
   return {
     ...(e.quemPediu !== null && p.quemPediu.meio ? { quemPediu: e.quemPediu } : {}),
     ...(e.sindico && !p.sindico.pelaRegra ? { sindico: true } : {}),
-    prestador: p.prestador.disponivel && e.prestador ? { id: e.prestador.id, texto: e.prestador.texto } : null,
+    prestador: p.prestador.disponivel && e.prestador
+      ? { id: e.prestador.id, texto: e.prestador.texto,
+          ...(link ? { link: { quando: link.quando, comoEntrar: link.comoEntrar, valeAte: link.valeAte, responderHoras: link.responderHoras,
+                               reserva: reserva && link.reserva } } : {}) }
+      : null,
     moradores: p.moradores.disponivel && e.moradores
       ? { publico: e.moradores.publico, blocos: e.moradores.publico === "BLOCOS" ? e.moradores.blocos : [],
           unidades: e.moradores.publico === "UNIDADES" ? e.moradores.unidades : [], titulo: e.moradores.titulo, texto: e.moradores.texto }
@@ -91,6 +128,9 @@ export function acompanharRascunhos(p: Previa | null, e: EscolhaAvisos): Escolha
   if (!p) return e;
   let x = e;
   if (x.prestador && !x.prestador.editado && x.prestador.texto !== p.prestador.rascunho) x = { ...x, prestador: { ...x.prestador, texto: p.prestador.rascunho } };
+  if (x.prestador && !x.prestador.link.horasEscolhidas && x.prestador.link.responderHoras !== p.prestador.link.responderHoras) {
+    x = { ...x, prestador: { ...x.prestador, link: { ...x.prestador.link, responderHoras: p.prestador.link.responderHoras } } };
+  }
   if (x.moradores && !x.moradores.editado && (x.moradores.titulo !== p.moradores.rascunho.titulo || x.moradores.texto !== p.moradores.rascunho.texto)) {
     x = { ...x, moradores: { ...x.moradores, titulo: p.moradores.rascunho.titulo, texto: p.moradores.rascunho.texto } };
   }
@@ -117,11 +157,13 @@ const CAIXA = "h-4 w-4 accent-violeta-600";
 const meioPessoa = (x: PessoaAvisada) => (x.whatsapp ? "no sino e no WhatsApp da pessoa, que ligou o aviso de pedido novo" : "no sino");
 const maiuscula = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
-export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes }: {
+export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }: {
   previa: Previa | null;
   escolha: EscolhaAvisos;
   mudar: (e: EscolhaAvisos) => void;
   opcoes: OpcoesPedidos;
+  /** Campos do link que faltaram ao tentar registrar. */
+  faltas?: string[];
 }) {
   const [aberto, setAberto] = useState(false);
   const [escolhendo, setEscolhendo] = useState(false);
@@ -137,6 +179,7 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes }: {
   const moradores = p.moradores.disponivel ? escolha.moradores : null;
   const qp = p.quemPediu;
   const sindicoMarcado = sindicoVai(p, escolha);
+  const comLink = linkVai(p, escolha);
   const lista = p.prestadores.filter((x) => `${x.nome} ${x.servico}`.toLowerCase().includes(busca.trim().toLowerCase()));
   const unidadesDoPublico = !moradores ? 0
     : moradores.publico === "TODOS" ? p.totalUnidades
@@ -147,7 +190,10 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes }: {
       : "Moradores das unidades escolhidas";
 
   function escolherPrestador(id: string) {
-    mudar({ ...escolha, prestador: { id, texto: p.prestador.rascunho, editado: false } });
+    const x = p.prestadores.find((y) => y.id === id);
+    mudar({ ...escolha, prestador: { id, texto: p.prestador.rascunho, editado: false, link: {
+      marcado: p.prestador.link.disponivel && Boolean(x?.meioLink), quando: "", comoEntrar: "", valeAte: p.prestador.link.valeAte,
+      responderHoras: p.prestador.link.responderHoras, horasEscolhidas: false, reserva: true } } });
     setEscolhendo(false);
     setEditandoPrestador(true);
   }
@@ -203,21 +249,31 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes }: {
           <Linha marca={<input type="checkbox" className={CAIXA} checked disabled aria-label={`${prestador.nome}, prestador`} />}
             titulo={`${prestador.nome}, prestador`}
             texto={<>
-              {prestador.meio === "WHATSAPP" ? `WhatsApp do condomínio para ${prestador.para ?? ""}` : `E-mail para ${prestador.para ?? ""}`} ·{" "}
+              {comLink
+                ? `${prestador.meioLink === "WHATSAPP" ? "WhatsApp do condomínio" : "E-mail"}${p.prestador.escolhido?.paraLink ? ` para ${p.prestador.escolhido.paraLink}` : ""} · link do serviço`
+                : prestador.meio === "WHATSAPP" ? `WhatsApp do condomínio para ${prestador.para ?? ""}` : `E-mail para ${prestador.para ?? ""}`} ·{" "}
               <button type="button" className="text-violeta-600 hover:underline" aria-expanded={editandoPrestador} onClick={() => setEditandoPrestador(!editandoPrestador)}>
                 {editandoPrestador ? "fechar mensagem" : "ver e editar mensagem"}
               </button>
             </>}
-            extra={editandoPrestador ? (
-              <span className="mt-2 grid gap-1.5">
-                <span className="block text-xs text-tinta-suave">{p.prestador.cabecalho}</span>
-                <CampoAreaTexto id="qa-texto-prestador" rotulo="Mensagem ao prestador" rows={6} maxLength={1500} value={escolha.prestador!.texto}
-                  onChange={(ev) => mudar({ ...escolha, prestador: { ...escolha.prestador!, texto: ev.target.value, editado: true } })}
-                  erro={p.prestador.textoComDadoDeMorador ? "Tire o nome, o telefone ou o e-mail de morador: não vão para o prestador." : null}
-                  ajuda="Sem nome, telefone nem unidade de quem pediu." />
-                <span className="block text-xs text-tinta-suave">{p.prestador.rodape}</span>
-              </span>
-            ) : null}
+            extra={<>
+              {editandoPrestador && !comLink ? (
+                <span className="mt-2 grid gap-1.5">
+                  <span className="block text-xs text-tinta-suave">{p.prestador.cabecalho}</span>
+                  <CampoAreaTexto id="qa-texto-prestador" rotulo="Mensagem ao prestador" rows={6} maxLength={1500} value={escolha.prestador!.texto}
+                    onChange={(ev) => mudar({ ...escolha, prestador: { ...escolha.prestador!, texto: ev.target.value, editado: true } })}
+                    erro={p.prestador.textoComDadoDeMorador ? "Tire o nome, o telefone ou o e-mail de morador: não vão para o prestador." : null}
+                    ajuda="Sem nome, telefone nem unidade de quem pediu." />
+                  <span className="block text-xs text-tinta-suave">{p.prestador.rodape}</span>
+                </span>
+              ) : null}
+              {editandoPrestador && comLink && p.prestador.escolhido?.id === prestador.id ? (
+                <span className="mt-2 block rounded-xl bg-superficie-2 p-3 text-xs whitespace-pre-line">
+                  {p.prestador.link.mensagem.replace("[prestador]", prestador.nome).replace("[prazo]", `o prazo (${escolha.prestador!.link.responderHoras} horas depois de a mensagem sair)`).replace("[link]", "o link do serviço")}
+                </span>
+              ) : null}
+              <BlocoLink p={p} escolha={escolha} mudar={mudar} faltas={faltas} />
+            </>}
             acao={<span className="flex gap-1">
               <Botao variante="discreto" tamanho="p" onClick={() => setEscolhendo(true)}>Trocar</Botao>
               <Botao variante="discreto" tamanho="p" onClick={() => mudar({ ...escolha, prestador: null })}>Tirar</Botao>
@@ -327,6 +383,72 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes }: {
       {p.prestador.textoComDadoDeMorador || p.moradores.textoComDadoDeMorador
         ? <div className="px-3 pb-3"><Aviso tom="atencao">Há dado de morador num texto editado. Tire antes de registrar, ou o registro é recusado.</Aviso></div> : null}
     </section>
+  );
+}
+
+const HORAS = [4, 8, 24, 48] as const;
+
+/** "Mandar o link do serviço" e os campos do link (desenho, tela 1). */
+function BlocoLink({ p, escolha, mudar, faltas }: { p: Previa; escolha: EscolhaAvisos; mudar: (e: EscolhaAvisos) => void; faltas: string[] }) {
+  const e = escolha.prestador;
+  if (!e) return null;
+  const x = p.prestadores.find((y) => y.id === e.id);
+  const l = e.link;
+  const reserva = p.prestador.escolhido?.id === e.id ? p.prestador.escolhido.reserva : undefined;
+  const mudarLink = (m: Partial<EscolhaLink>) => mudar({ ...escolha, prestador: { ...e, link: { ...l, ...m } } });
+  if (!p.prestador.link.disponivel) {
+    return p.prestador.link.motivo === "SEM_PERMISSAO"
+      ? <span className="mt-2 block text-xs text-tinta-suave">O link do serviço fica com quem cuida da manutenção; daqui, o prestador recebe só a mensagem.</span>
+      : null;
+  }
+  if (!x?.meioLink) return <span className="mt-2 block text-xs text-tinta-suave">Este prestador não recebe o link por aqui: só a mensagem.</span>;
+  return (
+    <span className="mt-2 grid gap-2 rounded-xl border border-linha p-3">
+      <label className="flex items-center gap-2 text-sm font-medium">
+        <input id="qa-link" type="checkbox" className={CAIXA} checked={l.marcado} onChange={(ev) => mudarLink({ marcado: ev.target.checked })}
+          aria-describedby="qa-link-ajuda" />
+        Mandar o link do serviço
+      </label>
+      <span id="qa-link-ajuda" className="text-xs text-tinta-suave">
+        {l.marcado
+          ? "Com o link, o prestador confirma ou recusa, avisa a chegada e o impedimento. Nasce a manutenção corretiva ligada a este pedido."
+          : "Sem o link, o prestador recebe só a mensagem e nenhuma manutenção nasce. O link pode ir depois, pela manutenção."}
+      </span>
+      {l.marcado ? (
+        <>
+          <CampoAreaTexto id="qa-o-que-fazer" rotulo="O que fazer" rows={5} maxLength={1500} value={e.texto}
+            onChange={(ev) => mudar({ ...escolha, prestador: { ...e, texto: ev.target.value, editado: true } })}
+            erro={p.prestador.textoComDadoDeMorador ? "Tire o nome, o telefone ou o e-mail de morador: não vão para o prestador."
+              : faltas.includes("textoPrestador") ? "Diga o que fazer, de 10 a 1500 caracteres." : null}
+            ajuda="É a mensagem ao prestador, já escrita e editável. Sem nome, telefone nem unidade de quem pediu." />
+          <span className="grid gap-2 sm:grid-cols-2">
+            <CampoTexto id="qa-quando" rotulo="Quando" maxLength={120} value={l.quando} onChange={(ev) => mudarLink({ quando: ev.target.value })}
+              placeholder="Ex.: hoje, assim que possível" erro={faltas.includes("quando") ? "Diga quando, de 2 a 120 caracteres." : null} />
+            <CampoTexto id="qa-como-entrar" rotulo="Como entrar" maxLength={500} value={l.comoEntrar} onChange={(ev) => mudarLink({ comoEntrar: ev.target.value })}
+              placeholder="Ex.: portaria; procurar o zelador" erro={faltas.includes("comoEntrar") ? "Diga como entrar, de 2 a 500 caracteres." : null} />
+          </span>
+          <span className="grid gap-2 sm:grid-cols-2">
+            <CampoTexto id="qa-vale-ate" rotulo="O link vale até" type="date" value={l.valeAte} onChange={(ev) => mudarLink({ valeAte: ev.target.value })}
+              ajuda="Padrão: 7 dias. Até 60." />
+            <Escolha rotulo="Prazo para responder" atual={String(l.responderHoras)}
+              aoMudar={(v) => mudarLink({ responderHoras: Number(v) as EscolhaLink["responderHoras"], horasEscolhidas: true })}
+              opcoes={HORAS.map((h) => ({ valor: String(h), texto: `${h} horas` }))} />
+          </span>
+          <span className="text-xs text-tinta-suave">Urgente vem com 4 horas; os outros, com 24. O prazo começa quando a mensagem sai.</span>
+          {reserva ? (
+            <label className="flex items-start gap-2 text-sm">
+              <input id="qa-reserva" type="checkbox" className={`${CAIXA} mt-0.5`} checked={l.reserva} onChange={(ev) => mudarLink({ reserva: ev.target.checked })} />
+              <span>
+                <span className="block font-medium">Se não responder, passar para {reserva.nome}</span>
+                <span className="block text-xs text-tinta-suave">A reserva do cadastro. Sem resposta em {l.responderHoras} horas, ou se recusar, o serviço passa sozinho, com o mesmo texto.</span>
+              </span>
+            </label>
+          ) : (
+            <span className="text-xs text-tinta-suave">Sem reserva no cadastro: sem resposta no prazo, quem cuida da manutenção é avisado no sino.</span>
+          )}
+        </>
+      ) : null}
+    </span>
   );
 }
 
