@@ -207,6 +207,12 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   QUEDA_COM_PARADAS: "Decida antes o que ficou parado na fila.",
   NUMERO_DESCONECTADO: "O número ainda está desconectado. A queda passa para a conferência sozinha quando ele reconectar.",
   JA_DECIDIDA: "Alguma das mensagens já foi decidida. Atualize a lista.",
+  PEDIDO_CANCELADO: "Pedido cancelado não se liga a outro.",
+  NAO_E_REINCIDENCIA: "Só é reincidência quando o pedido antigo foi concluído antes de o novo abrir. Ligue como duplicado.",
+  JA_LIGADO: "Um destes pedidos já está ligado a outro. Desfaça a ligação antes.",
+  LIGACAO_DESFEITA: "Esta ligação já foi desfeita. Atualize a página.",
+  DECISAO_FECHADA: "Esta decisão já foi respondida ou retirada. Atualize a página.",
+  PENDENCIA_DE_DECISAO: "Esta pendência se resolve quando o síndico responde à decisão.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

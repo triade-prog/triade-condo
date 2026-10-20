@@ -4,7 +4,8 @@
 // concluídos e os reabertos, e a mesma conta por categoria. Abaixo, as pendências de cada
 // responsável agora e o tempo de solução de cada categoria no período (design "Agenda,
 // indicadores e unidades", tela 2). Sem nenhum caso no período, a tela diz "sem dados", nunca
-// zero. Cada número explica a base de cálculo.
+// zero. Cada número explica a base de cálculo. Da F7.4 (TR-01): a reincidência no período, com
+// onde o problema volta (AT-18), e as decisões aguardando o síndico (AT-23).
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { mostrarDuracao, mostrarHoras, mostrarPorcentagem, PERIODOS_INDICADORES, type PeriodoIndicadores } from "@triade/domain";
@@ -57,6 +58,69 @@ function Tabela({ titulo, colunas, linhas, base, vazio }: { titulo: string; colu
         </div>
       ) : <p className="text-sm text-tinta-suave">{vazio}</p>}
       <p className="text-xs text-tinta-suave">{base}</p>
+    </section>
+  );
+}
+
+/** Reincidência no período (AT-18): reincidentes sobre os abertos, e onde volta. */
+function Reincidencia({ r }: { r: NonNullable<Dados["reincidencia"]> }) {
+  return (
+    <section aria-labelledby="t-reincidencia" className="grid content-start gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
+      <h2 id="t-reincidencia" className="text-lg font-medium">Reincidência</h2>
+      <p>
+        {nada(r.porcentagem) ? <strong className="text-2xl font-semibold">Sem dados</strong> : (
+          <><strong className="text-2xl font-semibold">{r.reincidencias}</strong> de {r.pedidos} {r.pedidos === 1 ? "pedido" : "pedidos"} · <strong className="text-2xl font-semibold">{mostrarPorcentagem(r.porcentagem)}</strong></>
+        )}
+      </p>
+      {r.ondeVolta.length ? (
+        <div className="overflow-x-auto" tabIndex={0}>
+          <table className="w-full text-sm">
+            <caption className="sr-only">Onde o problema volta</caption>
+            <thead className="text-left text-tinta-suave">
+              <tr>
+                <th scope="col" className={`${TH} pl-0`}>Onde volta</th><th scope="col" className={TH}>Categoria</th>
+                <th scope="col" className={TH}>Vezes</th><th scope="col" className={TH}>Última</th>
+              </tr>
+            </thead>
+            <tbody>
+              {r.ondeVolta.map((o, i) => (
+                <tr key={i} className="border-t border-linha">
+                  <th scope="row" className={`${TD} pl-0 text-left font-normal`}>{o.onde ?? "Sem local"}</th>
+                  <td className={TD}>{o.categoria}</td><td className={TD}>{o.vezes}</td><td className={`${TD} font-mono`}>{o.ultima}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+      <p className="text-xs text-tinta-suave">
+        Pedidos abertos no período e ligados como reincidência de um pedido concluído, sobre todos os pedidos abertos no período, no fuso do condomínio. Duplicado não conta. Sem pedido no período, &quot;sem dados&quot;; com pedidos e nenhuma reincidência, 0%. Reincidência é sinal para investigar, não causa confirmada.
+      </p>
+    </section>
+  );
+}
+
+/** Decisões aguardando o síndico (AT-23): aguardando é de agora; decididas e tempo típico, do período. */
+function DecisoesAguardando({ x }: { x: NonNullable<Dados["decisoes"]> }) {
+  const numero = (n: React.ReactNode, texto: string) => (
+    <li className="grid gap-0.5"><strong className="text-2xl font-semibold">{n}</strong><span className="text-xs text-tinta-suave">{texto}</span></li>
+  );
+  return (
+    <section aria-labelledby="t-decisoes" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
+      <h2 id="t-decisoes" className="text-lg font-medium">Decisões aguardando o síndico</h2>
+      <ul className="grid grid-cols-3 gap-3">
+        {numero(x.aguardando, "aguardando agora")}
+        {numero(x.vencidas, "com prazo vencido")}
+        {numero(nada(x.maisAntigaDias) ? "—" : dias(x.maisAntigaDias!), "a mais antiga")}
+      </ul>
+      <ul className="grid grid-cols-3 gap-3 border-t border-linha pt-3">
+        {numero(x.decididas, x.decididas === 1 ? "decidida no período" : "decididas no período")}
+        {numero(`${x.aprovadas} · ${x.devolvidas}`, "aprovadas · devolvidas")}
+        {numero(x.decididas ? mostrarDuracao(x.medianaHoras) : "Sem dados", "tempo típico")}
+      </ul>
+      <p className="text-xs text-tinta-suave">
+        Aguardando é de agora, não do período: pedidos de decisão sem resposta, com o prazo no fuso do condomínio. Decididas e tempo típico (mediana, do pedido até a resposta) usam o período escolhido; devolvida conta como decidida. Sem nenhuma decisão no período, &quot;sem dados&quot;.
+      </p>
     </section>
   );
 }
@@ -123,6 +187,10 @@ export function Indicadores() {
             nada(x.maisDemoradoHoras) ? "" : mostrarDuracao(x.maisDemoradoHoras)])}
           vazio="Nenhuma categoria ativa."
           base="Pedidos concluídos no período, da abertura até a conclusão, em horas corridas. Tempo típico é a mediana: metade dos pedidos levou menos que isso. O pedido reaberto conta da primeira abertura até a última conclusão. Sem pedido concluído, a linha diz sem dados, nunca zero." />
+      </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {carga.dados.reincidencia ? <Reincidencia r={carga.dados.reincidencia} /> : null}
+        {carga.dados.decisoes ? <DecisoesAguardando x={carga.dados.decisoes} /> : null}
       </div>
       {a.porCategoria.length ? (
         <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">

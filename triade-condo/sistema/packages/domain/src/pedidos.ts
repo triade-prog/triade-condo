@@ -5,6 +5,7 @@ import { z } from "zod";
 import { PARTES_ARQUIVO } from "./arquivos.ts";
 import { mostrarDataSemHora } from "./plataforma.ts";
 import { descreverAvisoPedido } from "./prazos.ts";
+import { descreverEventoDecisao } from "./decisoes.ts";
 
 /** Situação do pedido (guardião). A etapa configurada fica dentro de cada situação (AT-05). */
 export const ESTADOS_PEDIDO = {
@@ -247,6 +248,6 @@ export function descreverEventoPedido(acao: string, d: Record<string, unknown>):
     case "pedido.whatsapp_falha_resolvida":
       return "Falha de envio no WhatsApp dada por resolvida";
     default:
-      return descreverAvisoPedido(acao, d) ?? acao;
+      return descreverEventoDecisao(acao, d) ?? descreverAvisoPedido(acao, d) ?? acao;
   }
 }

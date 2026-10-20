@@ -18,7 +18,7 @@ describe("classeBotao", () => {
 describe("ícones", () => {
   it("os ícones do sistema de design estão todos lá, sem nome repetido", () => {
     // 52 do sistema de design, o megafone dos comunicados (peça R1) e o convívio da Vida em condomínio (R12).
-    expect(NOMES_ICONES.length).toBe(54);
+    expect(NOMES_ICONES.length).toBe(55);
     expect(new Set(NOMES_ICONES).size).toBe(NOMES_ICONES.length);
     for (const n of ["casa", "pedido", "retorno", "alerta", "check", "fechar", "whats", "megafone"]) expect(NOMES_ICONES).toContain(n);
   });

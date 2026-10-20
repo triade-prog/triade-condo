@@ -17,6 +17,7 @@ import { criarVida, resumoVida, rotasVida } from "./api-falsa-vida";
 import { criarEnquetes, resumoEnquetes, rotasEnquetePublica, rotasEnquetes } from "./api-falsa-enquetes";
 import { criarAssembleias, resumoAssembleia, rotasAssembleiaPublica, rotasAssembleias } from "./api-falsa-assembleias";
 import { classificadosAAprovar, classificadosDoMural, criarClassificados, rotasClassificadoPublico, rotasClassificados } from "./api-falsa-classificados";
+import { avisosDecisoes, criarDecisoes, detalheDecisoes, marcarAvisosDecisoes, resumoDecisoes, rotasDecisoes, semearDecisoes } from "./api-falsa-decisoes";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -36,6 +37,8 @@ export interface OpcoesPlataforma {
   comAtendimento?: boolean;
   /** A Agenda com o vencimento de um contrato e de dois documentos e uma assembleia convocada (AG-09). */
   comDatasDeFora?: boolean;
+  /** Pedidos parecidos com o 2026-0002 (um concluído, outro aberto) e uma decisão vencida esperando a Ana (F7.4). */
+  comDecisoes?: boolean;
 }
 
 function erro(route: Route, status: number, codigo: string, detalhes?: Record<string, unknown>) {
@@ -107,6 +110,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const memoria = criarMemoria();
   const suporte = criarSuporte();
   const whatsapp = criarWhatsapp(estado.pedidos[0]!, cats[0]!.id, pris[1]!.id);
+  const decisoes = criarDecisoes();
+  if (opcoes.comDecisoes) semearDecisoes(decisoes, estado.pedidos, V_ANA, estado.config.etapas.find((e) => e.nome === "Concluído")!.id);
   if (!opcoes.comAcessoPedido) suporte.acessos = [];
   if (opcoes.comAtendimento) {
     for (const p of estado.pessoas) { p.responsavel = true; p.disponivel = true; }
@@ -119,7 +124,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       "documentos.editar", "documentos.restritos", "documentos.ver", "manutencao.editar", "manutencao.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pedidos.atualizar", "pedidos.concluir",
       "memoria.dossie", "memoria.exportar", "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver",
       "suporte.chamados", "acesso_excepcional.aprovar", "reservas.editar", "reservas.ver",
-      "enquetes.editar", "enquetes.ver", "assembleias.editar", "assembleias.ver", "classificados.editar", "classificados.ver"]
+      "enquetes.editar", "enquetes.ver", "assembleias.editar", "assembleias.ver", "classificados.editar", "classificados.ver", "decisoes.aprovar"]
     : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"]
       : ["agenda.ver", "comunicados.ver", "config.ver", "documentos.ver", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"];
   const pendencias = () => {
@@ -181,6 +186,12 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     }
     if (caminho.startsWith("/v1/condominio") && !estado.condominioAtual) return erro(route, 403, "CONDOMINIO_REQUIRED");
     const pode = (a: string) => acoes().includes(a);
+    const nomeUnidade = (id: string | null) => {
+      const u = estado.moradores.unidades.find((x) => x.id === id);
+      return u ? [estado.moradores.blocos.find((b) => b.id === u.blocoId)?.nome, u.identificacao].filter(Boolean).join(" · ") : null;
+    };
+    const naDecisao = { pedidos: estado.pedidos, pessoas: estado.pessoas, etapas: c.etapas, unidade: nomeUnidade, eu, pode,
+      categoria: (id: string) => c.categorias.find((x) => x.id === id)!.nome };
 
     if (caminho === "/v1/condominio/painel") {
       const nome = estado.condominioAtual === JATOBA ? "Edifício Jatobá" : "Residencial Ipê";
@@ -205,15 +216,18 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
           ...(acoes().includes("assembleias.ver") && resumoAssembleia(assembleias) ? { assembleia: resumoAssembleia(assembleias) } : {}),
           ...(acoes().includes("classificados.ver") && classificadosAAprovar(classificados) ? { classificadosAAprovar: classificadosAAprovar(classificados) } : {}),
         } } : {}),
-        avisosNaoVistos: naoVistos(estado.avisos, eu.vinculo),
+        ...(acoes().includes("decisoes.aprovar") ? { decisoes: resumoDecisoes(decisoes, eu.vinculo) } : {}),
+        avisosNaoVistos: naoVistos(estado.avisos, eu.vinculo) + avisosDecisoes(decisoes, naDecisao).filter((a) => !a.vistoEm).length,
       } });
     }
     if (caminho === "/v1/condominio/configuracoes") {
       const substitutosPossiveis = estado.pessoas.filter((p) => p.funcao === "AUTORIZADO").map((p) => ({ vinculoId: p.vinculoId, nome: p.nome, cargo: p.cargo }));
-      return route.fulfill({ json: { ...c, avisos: { ...estado.regras, substitutosPossiveis }, pendencias: pendencias(), podeEditar: pode("config.editar") } });
+      return route.fulfill({ json: { ...c, avisos: { ...estado.regras, substitutosPossiveis }, parecidosDias: decisoes.dias, pendencias: pendencias(),
+        podeEditar: pode("config.editar") } });
     }
     const prazos = await rotasPrazos(route, estado, eu, caminho, metodo, corpo, url, pode,
-      (id) => vencido(estado.pedidos.find((p) => p.id === id)!, estado.config));
+      (id) => vencido(estado.pedidos.find((p) => p.id === id)!, estado.config),
+      { avisos: () => avisosDecisoes(decisoes, naDecisao), marcar: (ids) => marcarAvisosDecisoes(decisoes, eu.vinculo, ids) });
     if (prazos !== null) return prazos;
 
     const naAgenda = await rotasAgenda(route, agenda, { pessoas: estado.pessoas, pedidos: estado.pedidos, moradores: estado.moradores,
@@ -244,7 +258,11 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       { categorias: c.categorias, prioridades: c.prioridades, sindica: quem === "SINDICA" },
       (id) => estado.pedidos.find((p) => p.id === id)?.versao ?? null);
     if (noWhatsapp !== null) return noWhatsapp;
-    const pedidos = await rotasPedidos(route, estado.pedidos, c, estado.pessoas, estado.moradores, eu, caminho, metodo, corpo, url, pode);
+    // Antes dos pedidos: as rotas da F7.4 dividem o prefixo /pedidos/:id.
+    const nasDecisoes = await rotasDecisoes(route, decisoes, naDecisao, c, caminho, metodo, corpo, url);
+    if (nasDecisoes !== null) return nasDecisoes;
+    const pedidos = await rotasPedidos(route, estado.pedidos, c, estado.pessoas, estado.moradores, eu, caminho, metodo, corpo, url, pode,
+      (p) => detalheDecisoes(decisoes, naDecisao, p));
     if (pedidos !== null) return pedidos;
 
     // Daqui em diante, mudar configuração.
@@ -351,5 +369,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     }
     return erro(route, 404, "NOT_FOUND");
   });
-  return Object.assign(estado, { links, memoria, suporte, vida, whatsapp });
+  return Object.assign(estado, { links, memoria, suporte, vida, whatsapp, decisoes });
 }

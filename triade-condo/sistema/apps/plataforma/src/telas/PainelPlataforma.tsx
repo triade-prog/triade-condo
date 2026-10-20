@@ -124,6 +124,12 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
               Pedidos
             </ItemMenu>
           ) : null}
+          {pode("decisoes.aprovar") || pode("pedidos.atualizar") ? (
+            <ItemMenu href="/decisoes" icone="decisao" atual={caminho.startsWith("/decisoes")}
+              contagem={painel.decisoes?.aguardando ? <span className="contagem">{painel.decisoes.aguardando}<span className="sr-only"> aguardando você</span></span> : null}>
+              Decisões
+            </ItemMenu>
+          ) : null}
           {painel.whatsapp && painel.whatsapp.situacao !== "SEM_CREDENCIAIS" ? (
             <ItemMenu href="/whatsapp" icone="whats" atual={caminho.startsWith("/whatsapp")}
               contagem={painel.whatsapp.aIdentificar + painel.whatsapp.falhas

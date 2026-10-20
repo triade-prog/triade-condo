@@ -99,9 +99,12 @@ export function vencidoMaisAntigo(lista: PedidoFalso[], c: Config) {
   return lista.filter((p) => vencido(p, c)).sort((a, b) => a.proximoRetorno!.localeCompare(b.proximoRetorno!))[0];
 }
 
+/** O que outra parte junta ao detalhe do pedido (F7.4: relacionados e decisões). */
+type DetalheExtra = (p: PedidoFalso) => { pode: Record<string, boolean> } & Record<string, unknown>;
+
 /** Atende as rotas do passo 4; devolve null quando a rota não é daqui. */
 export async function rotasPedidos(route: Route, ped: PedidoFalso[], c: Config, pessoas: Pessoa[], m: EstadoMoradores, eu: { vinculo: string; nome: string },
-  caminho: string, metodo: string, corpo: Record<string, unknown>, url: URL, pode: (a: string) => boolean) {
+  caminho: string, metodo: string, corpo: Record<string, unknown>, url: URL, pode: (a: string) => boolean, detalheExtra?: DetalheExtra) {
   if (caminho === "/v1/condominio/regras-pedidos") {
     if (!pode("config.editar")) return erro(route, 403, "FORBIDDEN");
     c.regrasPedidos = { revisao: corpo.revisao === true, reabertura: corpo.reabertura === true };
@@ -205,6 +208,7 @@ export async function rotasPedidos(route: Route, ped: PedidoFalso[], c: Config, 
     const e = c.etapas.find((x) => x.id === p.etapaId)!;
     const pr = c.prioridades.find((x) => x.id === p.prioridadeId)!;
     const contato = m.contatos.find((x) => x.id === p.contatoId);
+    const { pode: podeExtra, ...extra } = detalheExtra?.(p) ?? { pode: {} };
     return route.fulfill({ json: {
       pedido: {
         id: p.id, protocolo: p.protocolo, assunto: p.assunto, descricao: p.descricao, canal: p.canal, privado: p.privado, estado: p.estado, local: p.local, versao: p.versao,
@@ -222,8 +226,8 @@ export async function rotasPedidos(route: Route, ped: PedidoFalso[], c: Config, 
       conclusoes: [...p.conclusoes].reverse(),
       historico: p.historico,
       pode: { responder: podeAqui("pedidos.responder"), atualizar: podeAqui("pedidos.atualizar"), concluir: pode("pedidos.concluir"), revisar: pode("pedidos.revisar"),
-        aceitar: responsavel && !p.aceitoEm && !["ENCERRADO", "CANCELADO"].includes(p.estado), repassar: pode("pedidos.atualizar") || responsavel },
-      regras: c.regrasPedidos, agora: AGORA,
+        aceitar: responsavel && !p.aceitoEm && !["ENCERRADO", "CANCELADO"].includes(p.estado), repassar: pode("pedidos.atualizar") || responsavel, ...podeExtra },
+      regras: c.regrasPedidos, agora: AGORA, ...extra,
     } });
   }
 

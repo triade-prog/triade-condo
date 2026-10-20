@@ -154,6 +154,8 @@ export function descreverEvento(e: EventoHistorico): string {
       return `Mudança registrada em ${mostrarDataSemHora(String(d.data))}: ${String(d.saem)} saíram, ${String(d.entram)} entraram`;
     case "regras_aviso.alteradas":
       return `Regras de aviso: síndico depois de ${String(d.sindico_horas)} h, ${d.com_substituto ? `substituto depois de ${String(d.substituto_horas)} h` : "sem substituto"}`;
+    case "parecidos.alterados":
+      return `Pedidos parecidos: procurar nos últimos ${String(d.depois)} dias (antes ${String(d.antes)})`;
     case "moradores.importados":
       return `Planilha importada: ${String(d.vinculos)} contatos a confirmar`;
     default:

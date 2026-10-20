@@ -9,6 +9,7 @@ export * from "./eventos.ts";
 export * from "./plataforma.ts";
 export * from "./moradores.ts";
 export * from "./pedidos.ts";
+export * from "./decisoes.ts";
 export * from "./arquivos.ts";
 export * from "./prazos.ts";
 export * from "./agenda.ts";

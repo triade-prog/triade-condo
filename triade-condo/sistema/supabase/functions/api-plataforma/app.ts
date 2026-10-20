@@ -11,6 +11,7 @@
 // Passo 5: WhatsApp do condomínio (W-05, W-09 a W-16), com o aviso do provedor protegido pelo
 // segredo do condomínio no caminho e a fila de envio. Peça R12: Vida em condomínio (áreas comuns
 // e reservas; AC-01, AC-06, AC-07), com as enquetes e o link pessoal de cada unidade (AC-03), e as assembleias com o link pessoal de cada unidade (AC-02).
+// F7.4: pedidos relacionados (AT-18) e decisões pedidas ao síndico (AT-23), com os dois indicadores.
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
@@ -69,6 +70,14 @@ import {
   resolverPendenciaSchema,
   retornoSchema,
   revisarPedidoSchema,
+  descartarParecidoSchema,
+  desfazerLigacaoSchema,
+  filtroDecisoesSchema,
+  ligarPedidosSchema,
+  parecidosSchema,
+  pedirDecisaoSchema,
+  responderDecisaoSchema,
+  retirarDecisaoSchema,
   enviarArquivoSchema,
   tirarArquivoSchema,
   VALIDADE_LINK_ARQUIVO_S,
@@ -620,6 +629,14 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       args: (d: ReturnType<typeof reabrirPedidoSchema.parse>) => ({ p_motivo: d.motivo, p_responsavel: d.responsavelId }) },
     { rota: "/cancelar", metodo: "post", schema: cancelarPedidoSchema, funcao: "plataforma_cancelar_pedido",
       args: (d: ReturnType<typeof cancelarPedidoSchema.parse>) => ({ p_motivo: d.motivo }) },
+    { rota: "/ligacoes", metodo: "post", schema: ligarPedidosSchema, funcao: "plataforma_ligar_pedidos",
+      args: (d: ReturnType<typeof ligarPedidosSchema.parse>) => ({
+        p_outro: d.outroId, p_tipo: d.tipo, p_motivo: d.motivo, p_encerrar: d.encerrar, p_texto: d.texto, p_versao_outro: d.versaoOutro,
+      }) },
+    { rota: "/decisoes", metodo: "post", schema: pedirDecisaoSchema, funcao: "plataforma_pedir_decisao",
+      args: (d: ReturnType<typeof pedirDecisaoSchema.parse>) => ({
+        p_pergunta: d.pergunta, p_porque: d.porque, p_prazo: d.prazo, p_decisor: d.decisorId, p_alternativas: d.alternativas,
+      }) },
   ];
   for (const a of acoes) {
     app[a.metodo as "put" | "post"](`/v1/condominio/pedidos/:id${a.rota}`, async (c) => {
@@ -635,6 +652,49 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const pendencia = idDaRota(c, "pendencia");
     const d = await lerCorpo(c, resolverPendenciaSchema);
     return c.json(await rpc("plataforma_resolver_pendencia", { ...quem(c), p_id: id, p_versao: d.versao, p_pendencia: pendencia, p_resolucao: d.resolucao }));
+  });
+
+  // Pedidos relacionados (F7.4; AT-18): o sistema só sugere os parecidos; quem atende liga o mais
+  // novo ao mais antigo, desfaz com motivo ou descarta a sugestão.
+  app.post("/v1/condominio/pedidos/:id/ligacoes/:ligacao/desfazer", async (c) => {
+    const id = idDaRota(c, "id");
+    const ligacao = idDaRota(c, "ligacao");
+    const d = await lerCorpo(c, desfazerLigacaoSchema);
+    return c.json(await rpc("plataforma_desfazer_ligacao", { ...quem(c), p_id: id, p_versao: d.versao, p_ligacao: ligacao, p_motivo: d.motivo }));
+  });
+
+  app.post("/v1/condominio/pedidos/:id/parecidos/descartar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, descartarParecidoSchema);
+    await rpc("plataforma_descartar_parecido", { ...quem(c), p_id: id, p_outro: d.outroId });
+    return c.json({ ok: true });
+  });
+
+  app.put("/v1/condominio/regras-parecidos", async (c) => {
+    const d = await lerCorpo(c, parecidosSchema);
+    return c.json({ versao: await rpc<number>("plataforma_definir_parecidos", { ...quem(c), p_versao: d.versao, p_dias: d.dias }) });
+  });
+
+  // Decisões pedidas ao síndico (F7.4; AT-23). Pedir fica nas ações do pedido; responder e
+  // retirar levam a versão da decisão. Quem pode responder é decidido no banco.
+  app.get("/v1/condominio/decisoes", async (c) => {
+    const r = filtroDecisoesSchema.safeParse(c.req.query());
+    if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["filtro"] });
+    return c.json(await rpc("plataforma_decisoes", { ...quem(c), p_filtro: r.data.filtro }));
+  });
+
+  app.post("/v1/condominio/decisoes/:id/responder", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, responderDecisaoSchema);
+    return c.json(await rpc("plataforma_responder_decisao", {
+      ...quem(c), p_decisao: id, p_versao: d.versao, p_aprovar: d.aprovar, p_alternativa: d.alternativa, p_justificativa: d.justificativa,
+    }));
+  });
+
+  app.post("/v1/condominio/decisoes/:id/retirar", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, retirarDecisaoSchema);
+    return c.json(await rpc("plataforma_retirar_decisao", { ...quem(c), p_decisao: id, p_versao: d.versao, p_motivo: d.motivo }));
   });
 
   // Fotos e documentos (passo 4b; PT-07). O banco decide quem envia, vê e tira; aqui ficam o
