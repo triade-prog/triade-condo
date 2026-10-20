@@ -294,7 +294,8 @@ export function SituacaoDaConexao({ numero, conexao }: { numero: string | null; 
         </p>
       ) : null}
       <Aviso tom="atencao" titulo="Conexão de piloto, não oficial">
-        O número está ligado pelo WhatsApp Web, como um aparelho conectado. O WhatsApp pode restringir ou bloquear o número sem aviso.
+        {conexao.situacao === "CONECTADO" ? "O número está ligado" : "No piloto, o número fica ligado"} pelo WhatsApp Web, como um aparelho conectado.
+        O WhatsApp pode restringir ou bloquear o número sem aviso.
         {conexao.termoAceitoEm ? ` Termo do piloto aceito por ${conexao.termoAceitoPor ?? "o síndico"} em ${formatarDataHora(conexao.termoAceitoEm)}.` : ""}
       </Aviso>
     </div>
@@ -316,7 +317,8 @@ export function Whatsapp() {
         <h1 className="text-[28px] font-normal tracking-tight">WhatsApp</h1>
         <p className="text-tinta-suave">Mensagens que precisam de alguém e envios que não deram certo.</p>
       </div>
-      {d.conexao.situacao === "DESCONECTADO" ? <SituacaoDaConexao numero={d.numero} conexao={d.conexao} /> : null}
+      {/* Desconectado, a situação sobe para o topo; na aba Conexão ela já aparece, sem repetir. */}
+      {d.conexao.situacao === "DESCONECTADO" && aba !== "conexao" ? <SituacaoDaConexao numero={d.numero} conexao={d.conexao} /> : null}
       <Abas abas={abas} atual={aba} aoMudar={setAba} rotulo="Partes do WhatsApp">
         <div className="pt-4">
           {aba === "identificar" ? <AIdentificar d={d} recarregar={carga.recarregar} /> : null}

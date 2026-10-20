@@ -74,6 +74,19 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
     await conferir(page);
   });
 
+  test("W-15: desconectado, a aba Conexão mostra a situação uma vez só e não diz que o número está ligado", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
+    estado.whatsapp.conexao.situacao = "DESCONECTADO";
+    await page.goto(`${PLATAFORMA}/whatsapp`);
+    await expect(page.getByText("Conexão de piloto, não oficial")).toHaveCount(1);
+    await page.getByRole("tab", { name: "Conexão" }).click();
+    await expect(page.getByText("Conexão de piloto, não oficial")).toHaveCount(1);
+    await expect(page.getByText(/No piloto, o número fica ligado pelo WhatsApp Web/)).toBeVisible();
+    await expect(page.getByText(/O número está ligado/)).toHaveCount(0);
+    await expect(page.getByText(/chega num próximo passo/)).toHaveCount(0);
+    await conferir(page);
+  });
+
   test("W-13 e W-10: responder no pedido registra retorno; a revisão pedida não reabre sozinha", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     const pedido = estado.pedidos[0]!;
