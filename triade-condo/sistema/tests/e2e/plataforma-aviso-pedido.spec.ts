@@ -110,6 +110,8 @@ test.describe("Plataforma · aviso de pedido registrado", () => {
     await expect(qa.getByText("Bombas e pressurização · reserva: Bombas Litoral · WhatsApp")).toBeVisible();
     await conferir(page);
     await qa.getByRole("button", { name: "Escolher HidroPress Bombas" }).click();
+    // Só a mensagem, como antes do link do serviço (F6.7 tem o próprio teste).
+    await qa.getByLabel("Mandar o link do serviço").uncheck();
     await expect(qa.getByText("WhatsApp do condomínio para +55 13 9••••-4455")).toBeVisible();
     await expect(qa.getByText("Residencial Ipê · pedido [nº do protocolo] (alta)")).toBeVisible();
     const mensagem = qa.getByLabel("Mensagem ao prestador");

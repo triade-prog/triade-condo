@@ -110,13 +110,48 @@ export type MeioAvisoRegistro = keyof typeof MEIOS_AVISO_REGISTRO;
 /** Público do comunicado aos moradores afetados: o mesmo dos comunicados, sem contatos escolhidos. */
 export const PUBLICOS_MORADORES_AFETADOS = { TODOS: "Todos", BLOCOS: "Blocos", UNIDADES: "Unidades" } as const;
 
+/** O link do serviço mandado já no registro (F6.7; V-11): quando, como entrar, validade, prazo e reserva. */
+export const linkNoRegistroSchema = z
+  .object({
+    quando: z.string().trim().min(2).max(120),
+    comoEntrar: z.string().trim().min(2).max(500),
+    valeAte: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    responderHoras: z.union([z.literal(4), z.literal(8), z.literal(24), z.literal(48)]),
+    reserva: z.boolean(),
+  });
+export type LinkNoRegistro = z.infer<typeof linkNoRegistroSchema>;
+
+/** Como está o link mandado no registro (cartão Avisos do registro). */
+export const SITUACOES_LINK_REGISTRO = {
+  ESPERANDO_ENVIO: "Esperando a mensagem sair",
+  ESPERANDO: "Esperando resposta",
+  SEM_RESPOSTA: "Sem resposta no prazo",
+  CONFIRMOU: "Confirmou",
+  RECUSOU: "Não pode atender",
+  CHEGOU: "Chegou",
+  PASSOU_RESERVA: "Passou para a reserva",
+  CANCELADO: "Link cancelado",
+  VENCIDO: "Link vencido",
+  CONCLUIDA: "Manutenção concluída",
+  MANUTENCAO_CANCELADA: "Manutenção cancelada",
+} as const;
+export type SituacaoLinkRegistro = keyof typeof SITUACOES_LINK_REGISTRO;
+
 /** O que quem registra escolheu no bloco Quem avisar. O resto segue as regras do condomínio:
  * o responsável sempre, o síndico pela regra, o protocolo marcado pela configuração. */
 export const avisarRegistroSchema = z
   .object({
     quemPediu: z.boolean().optional(),
     sindico: z.boolean().optional(),
-    prestador: z.object({ id: z.string().uuid(), texto: z.string().trim().min(3).max(1500) }).nullable().optional(),
+    prestador: z
+      .object({
+        id: z.string().uuid(),
+        texto: z.string().trim().min(3).max(1500),
+        // F6.7: o link do serviço, com a manutenção que nasce no registro.
+        link: linkNoRegistroSchema.nullable().optional(),
+      })
+      .nullable()
+      .optional(),
     moradores: z
       .object({
         publico: z.enum(chaves(PUBLICOS_MORADORES_AFETADOS)),
@@ -292,7 +327,9 @@ function descreverAvisoRegistro(d: Record<string, unknown>): string {
     case "SINDICO":
       return `Aviso de pedido novo para ${quem ? `${quem} (síndico)` : "o síndico"} · ${meiosAvisoRegistro(d.meios)}${fim}`;
     case "PRESTADOR":
-      return `Aviso ao prestador${quem ? ` ${quem}` : ""} ${porOnde(d.meios)}${fim}`;
+      return d.link
+        ? `Link do serviço mandado ao prestador${quem ? ` ${quem}` : ""} ${porOnde(d.meios)} · responder em ${String(d.horas)} h${fim}`
+        : `Aviso ao prestador${quem ? ` ${quem}` : ""} ${porOnde(d.meios)}${fim}`;
     case "MORADORES":
       return `Comunicado publicado para os moradores afetados${fim}`;
     default:

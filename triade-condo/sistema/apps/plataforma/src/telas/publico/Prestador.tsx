@@ -3,7 +3,8 @@
 // sem conta. O prestador registra a chegada lendo a etiqueta do local, conta se não conseguiu
 // fazer e conta o que fez, com fotos. Nada muda sozinho na manutenção: o responsável confere.
 // Antes de chegar, confirma que vai fazer ou diz que não pode (MP-09): com reserva no cadastro,
-// sem resposta no prazo ou com a recusa, o serviço passa para a reserva e este link para.
+// sem resposta no prazo ou com a recusa, o serviço passa para a reserva e este link para. Mandado
+// no registro do pedido (F6.7), mostra o número do pedido para o prestador citar se ligar.
 
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
@@ -69,7 +70,11 @@ export function Prestador() {
     <>
       {recado ? <Aviso tom="ok">{recado}</Aviso> : null}
       <Cartao>
-        {p.tipo ? <span className="justify-self-start rounded-full bg-neutro-fundo px-2.5 py-0.5 text-xs font-medium text-tinta-suave">{TIPOS_MANUTENCAO[p.tipo]}</span> : null}
+        {p.tipo ? (
+          <span className="justify-self-start rounded-full bg-neutro-fundo px-2.5 py-0.5 text-xs font-medium text-tinta-suave">
+            {TIPOS_MANUTENCAO[p.tipo]}{p.pedido ? <> · pedido <span className="font-mono">{p.pedido}</span></> : null}
+          </span>
+        ) : null}
         <h2 className="text-xl font-medium">{p.titulo}</h2>
         <p className="text-[15px] whitespace-pre-line">{p.oQueFazer}</p>
         <dl className="grid gap-2 text-[15px]">

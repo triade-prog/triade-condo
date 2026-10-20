@@ -13,11 +13,13 @@ interface EtiquetaFalsa {
   id: string; numero: number; local: string; onde: string | null; codigo: string; recado: string | null; recadoAte: string | null; recadoEm: string | null;
   ativa: boolean; motivoDesativacao: string | null; aberturas: number; versao: number; historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
 }
-interface LinkFalso {
+export interface LinkFalso {
   id: string; manutencaoId: string; para: string; oQueFazer: string; quando: string | null; comoEntrar: string | null; expiraEm: string; abertoEm: string | null;
   criadoEm: string; codigo: string; revogado: string | null;
   responderHoras?: number; responderAte?: string; reservaId?: string; respondidoEm?: string; resposta?: "CONFIRMOU" | "RECUSOU" | "CHEGOU";
   trocaDesligadaEm?: string; trocaResultado?: "TROCOU" | "NAO_TROCOU"; trocadoEm?: string; trocaDe?: string;
+  /** Mandado no registro do pedido (F6.7): o prazo e a reserva esperam a mensagem sair. */
+  prazoNoEnvio?: number; reservaNoEnvio?: string; noRegistro?: { pedidoId: string; protocolo: string; meio: "WHATSAPP" | "EMAIL" };
 }
 interface RegistroFalso {
   id: string; linkId: string; manutencaoId: string; tipo: "CHEGOU" | "IMPEDIMENTO" | "TERMINOU"; confirmado?: boolean; etiqueta?: { rotulo: string; local: string };
@@ -122,7 +124,7 @@ export async function rotasLinksPublicas(route: Route, est: EstadoLinks, man: Es
     l.abertoEm ??= agora();
     return route.fulfill({ json: {
       condominio: "Residencial Ipê", para: l.para, tipo: m.tipo, titulo: m.titulo, local: m.local, oQueFazer: l.oQueFazer, quando: l.quando ?? undefined,
-      comoEntrar: l.comoEntrar ?? undefined, expiraEm: l.expiraEm, arquivos: [],
+      comoEntrar: l.comoEntrar ?? undefined, expiraEm: l.expiraEm, arquivos: [], pedido: l.noRegistro?.protocolo,
       responderAte: l.respondidoEm ? undefined : l.responderAte, resposta: l.resposta,
       registros: est.registros.filter((r) => r.linkId === l.id).map((r) => ({ tipo: r.tipo, confirmado: r.confirmado, em: r.em, etiqueta: r.etiqueta?.rotulo })),
     } });
@@ -244,7 +246,10 @@ export async function rotasLinks(route: Route, est: EstadoLinks, man: EstadoManu
         motivoCancelamento: ultimo.revogado ?? undefined, responderAte: ultimo.responderAte, responderHoras: ultimo.responderHoras,
         respondidoEm: ultimo.respondidoEm, resposta: ultimo.resposta, trocaDesligadaEm: ultimo.trocaDesligadaEm, trocaResultado: ultimo.trocaResultado,
         trocadoEm: ultimo.trocadoEm, trocaDe: ultimo.trocaDe ? { nome: ultimo.trocaDe } : undefined,
-        reserva: ultimo.reservaId ? { id: ultimo.reservaId, nome: man.prestadores.find((p) => p.id === ultimo.reservaId)!.nome } : undefined } : undefined,
+        reserva: ultimo.reservaId ? { id: ultimo.reservaId, nome: man.prestadores.find((p) => p.id === ultimo.reservaId)!.nome } : undefined,
+        prazoNoEnvio: ultimo.responderAte ? undefined : ultimo.prazoNoEnvio,
+        reservaNoEnvio: !ultimo.responderAte && ultimo.reservaNoEnvio ? { id: ultimo.reservaNoEnvio, nome: man.prestadores.find((p) => p.id === ultimo.reservaNoEnvio)!.nome } : undefined,
+        noRegistro: ultimo.noRegistro } : undefined,
       reservaDoCadastro: ((r) => (r ? { id: r.id, nome: r.nome } : undefined))(man.prestadores.find((p) => p.id === prestador?.reservaId && !p.arquivado)),
       registros: est.registros.filter((r) => r.manutencaoId === m.id).map((r) => ({ ...r, fotos: r.fotos.length })),
       fotos: est.registros.filter((r) => r.manutencaoId === m.id).flatMap((r) => r.fotos.map((f) => ({ id: f, nome: est.fotos.find((x) => x.id === f)?.nome ?? "foto", registroId: r.id, enviadoEm: r.em }))),
