@@ -44,11 +44,14 @@ export function Escrever() {
     );
   }
   return <Formulario key={detalhe?.comunicado.id ?? "novo"} o={opcoes.dados} detalhe={detalhe}
-    pedidoInicial={busca.get("pedido")} manutencaoInicial={busca.get("manutencao")} voltar={voltar} recarregar={atual.recarregar} />;
+    pedidoInicial={busca.get("pedido")} manutencaoInicial={busca.get("manutencao")} voltar={voltar} recarregar={atual.recarregar}
+    escrito={detalhe ? null : { titulo: busca.get("titulo") ?? "", texto: busca.get("texto") ?? "" }} />;
 }
 
-function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, recarregar }: {
+function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, recarregar, escrito }: {
   o: OpcoesComunicado;
+  /** Título e texto já escritos por quem chamou (ex.: a queda do WhatsApp, W-17). Nada se publica sem a pessoa. */
+  escrito?: { titulo: string; texto: string } | null;
   detalhe: ComunicadoDetalhe | null;
   pedidoInicial: string | null;
   manutencaoInicial: string | null;
@@ -61,8 +64,8 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
   const manutencaoLigada = manutencaoInicial && o.manutencoes?.some((m) => m.id === manutencaoInicial) ? manutencaoInicial : "";
   const [v, setV] = useState({
     assunto: (c?.assunto ?? (manutencaoLigada && o.assuntos.includes("OBRAS") ? "OBRAS" : o.assuntos[0] ?? "AVISO")) as AssuntoComunicado,
-    titulo: c?.titulo ?? "",
-    texto: c?.texto ?? "",
+    titulo: c?.titulo ?? escrito?.titulo.slice(0, 120) ?? "",
+    texto: c?.texto ?? escrito?.texto.slice(0, 4000) ?? "",
     publico: (c?.publico ?? "TODOS") as PublicoComunicado,
     blocos: c?.blocos ?? [],
     unidades: c?.unidades ?? [],

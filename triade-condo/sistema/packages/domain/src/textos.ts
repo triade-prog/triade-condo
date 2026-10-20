@@ -195,6 +195,18 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   ANUNCIO_FORA_DO_MURAL: "Este anúncio não está no mural.",
   AREA_SEM_RESERVA: "Esta área não aceita reserva agora.",
   AREA_COM_RESERVAS: "Há reservas marcadas nesta área. Cancele antes de desativar ou deixar sem reserva.",
+  VEICULO_RETIRADO: "Este veículo já foi retirado e não muda mais.",
+  VAGA_COM_VEICULO: "Tire o veículo da vaga antes.",
+  UNIDADE_COM_VEICULO: "Retire os veículos da unidade antes de desativá-la.",
+  JA_RESPONDIDO: "Você já respondeu a este serviço.",
+  SEM_TROCA: "Este link não tem troca automática esperando.",
+  QUEDA_ABERTA: "Já existe uma queda do WhatsApp aberta.",
+  QUEDA_ENCERRADA: "Esta queda já foi encerrada.",
+  QUEDA_NAO_FORA: "O número já não está fora do ar.",
+  QUEDA_NAO_CONFERINDO: "Espere o número voltar para decidir e encerrar.",
+  QUEDA_COM_PARADAS: "Decida antes o que ficou parado na fila.",
+  NUMERO_DESCONECTADO: "O número ainda está desconectado. A queda passa para a conferência sozinha quando ele reconectar.",
+  JA_DECIDIDA: "Alguma das mensagens já foi decidida. Atualize a lista.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

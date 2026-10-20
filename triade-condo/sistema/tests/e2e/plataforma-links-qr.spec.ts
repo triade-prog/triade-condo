@@ -118,7 +118,7 @@ test.describe("Links e QR", () => {
     expect(await pronto.getByRole("link", { name: "Mandar pelo WhatsApp" }).getAttribute("href")).toMatch(/^https:\/\/wa\.me\/5513998124455\?text=/);
     await conferir(page);
     await pronto.getByRole("button", { name: "Fechar" }).click();
-    await expect(cartao.getByText("Valendo")).toBeVisible();
+    await expect(cartao.getByText("Esperando resposta")).toBeVisible();
 
     await page.goto(`${PLATAFORMA}/p/${PRESTADOR_FALSO}`);
     await expect(page.getByRole("heading", { name: "Bomba de recalque com ruído" })).toBeVisible();

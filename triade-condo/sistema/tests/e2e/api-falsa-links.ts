@@ -1,6 +1,7 @@
 // Parte de Links e QR da API falsa da Plataforma (peça R13; AT-30, MP-08, V-11). As regras de
 // verdade estão testadas no banco (pgTAP 018) e na API (Deno); aqui só o bastante para a tela:
-// etiquetas, a página sem conta da etiqueta e o link do prestador.
+// etiquetas, a página sem conta da etiqueta e o link do prestador. Com a troca para o prestador
+// reserva (F5.9, MP-09; pgTAP 028): o prazo para confirmar, confirmar ou recusar pelo link e a troca.
 import type { Route } from "@playwright/test";
 import { conferir, conteudoEnviado } from "./api-falsa-arquivos";
 import type { EstadoManutencao } from "./api-falsa-manutencao";
@@ -15,6 +16,8 @@ interface EtiquetaFalsa {
 interface LinkFalso {
   id: string; manutencaoId: string; para: string; oQueFazer: string; quando: string | null; comoEntrar: string | null; expiraEm: string; abertoEm: string | null;
   criadoEm: string; codigo: string; revogado: string | null;
+  responderHoras?: number; responderAte?: string; reservaId?: string; respondidoEm?: string; resposta?: "CONFIRMOU" | "RECUSOU" | "CHEGOU";
+  trocaDesligadaEm?: string; trocaResultado?: "TROCOU" | "NAO_TROCOU"; trocadoEm?: string; trocaDe?: string;
 }
 interface RegistroFalso {
   id: string; linkId: string; manutencaoId: string; tipo: "CHEGOU" | "IMPEDIMENTO" | "TERMINOU"; confirmado?: boolean; etiqueta?: { rotulo: string; local: string };
@@ -22,6 +25,8 @@ interface RegistroFalso {
 }
 export interface EstadoLinks {
   numero: string | null;
+  /** Enquanto o WhatsApp está fora do ar (W-17): o canal alternativo da queda. */
+  canalAlternativo?: string;
   etiquetas: EtiquetaFalsa[];
   links: LinkFalso[];
   registros: RegistroFalso[];
@@ -68,6 +73,22 @@ function etiquetaJson(e: EtiquetaFalsa) {
   };
 }
 
+export const RESERVA_FALSO = "UmVzZXJ2YS1jb2RpZ28tZmFsc28tMDAwMDAwMDE";
+
+/** A troca para a reserva (MP-09): o link para, a manutenção passa para a reserva e ela recebe um link novo. */
+export function trocarParaReserva(est: EstadoLinks, man: EstadoManutencao, l: LinkFalso, motivo: "SEM_RESPOSTA" | "RECUSOU") {
+  const m = man.manutencoes.find((x) => x.id === l.manutencaoId)!;
+  const r = man.prestadores.find((p) => p.id === l.reservaId);
+  if (!r || l.trocadoEm || l.trocaDesligadaEm) return;
+  Object.assign(l, { revogado: motivo === "RECUSOU" ? "Passou para a reserva: o prestador não pode atender" : "Passou para a reserva: sem resposta no prazo",
+    trocadoEm: agora(), trocaResultado: "TROCOU" });
+  m.prestadorId = r.id;
+  const ate = new Date(Date.now() + (l.responderHoras ?? 24) * 3600_000).toISOString();
+  est.links.push({ id: novoId(), manutencaoId: m.id, para: r.nome, oQueFazer: l.oQueFazer, quando: l.quando, comoEntrar: l.comoEntrar, expiraEm: l.expiraEm,
+    abertoEm: null, criadoEm: agora(), codigo: RESERVA_FALSO, revogado: null, responderHoras: l.responderHoras, responderAte: ate, trocaDe: l.para });
+  m.historico.unshift({ acao: "manutencao.reserva_assumiu", em: agora(), autor: null, dados: { motivo, horas: l.responderHoras, canal: "WHATSAPP" } });
+}
+
 const situacaoLink = (l: LinkFalso, m: EstadoManutencao) => {
   const estado = m.manutencoes.find((x) => x.id === l.manutencaoId)?.estado;
   if (l.revogado) return "CANCELADO";
@@ -87,7 +108,7 @@ export async function rotasLinksPublicas(route: Route, est: EstadoLinks, man: Es
     e.aberturas++;
     const j = etiquetaJson(e);
     return route.fulfill({ json: { condominio: "Residencial Ipê", local: e.local, rotulo: j.rotulo, recado: j.recado, recadoEm: j.recado ? e.recadoEm : undefined,
-      whatsapp: est.numero?.replace("+", "") } });
+      whatsapp: est.numero?.replace("+", ""), canalAlternativo: est.canalAlternativo } });
   }
   const p = /^\/v1\/publico\/p\/([^/]+)(\/[^]*)?$/.exec(caminho);
   if (!p) return null;
@@ -97,16 +118,29 @@ export async function rotasLinksPublicas(route: Route, est: EstadoLinks, man: Es
   const sit = situacaoLink(l, man);
   const resto = p[2] ?? "";
   if (resto === "" && metodo === "GET") {
-    if (sit !== "VALE") return route.fulfill({ json: { condominio: "Residencial Ipê", encerrado: true, motivo: sit } });
+    if (sit !== "VALE") return route.fulfill({ json: { condominio: "Residencial Ipê", encerrado: true, motivo: l.trocaResultado === "TROCOU" ? "REPASSADO" : sit } });
     l.abertoEm ??= agora();
     return route.fulfill({ json: {
       condominio: "Residencial Ipê", para: l.para, tipo: m.tipo, titulo: m.titulo, local: m.local, oQueFazer: l.oQueFazer, quando: l.quando ?? undefined,
       comoEntrar: l.comoEntrar ?? undefined, expiraEm: l.expiraEm, arquivos: [],
+      responderAte: l.respondidoEm ? undefined : l.responderAte, resposta: l.resposta,
       registros: est.registros.filter((r) => r.linkId === l.id).map((r) => ({ tipo: r.tipo, confirmado: r.confirmado, em: r.em, etiqueta: r.etiqueta?.rotulo })),
     } });
   }
   if (sit !== "VALE") return erro(route, 400, "VALIDATION_ERROR", { motivo: "LINK_ENCERRADO" });
+  if (resto === "/confirmar" || resto === "/recusar") {
+    if (l.respondidoEm) {
+      return resto === "/confirmar" ? route.fulfill({ json: { ok: true, resposta: l.resposta } }) : erro(route, 400, "VALIDATION_ERROR", { motivo: "JA_RESPONDIDO" });
+    }
+    const texto = String(corpo.texto ?? "").trim();
+    if (resto === "/recusar" && texto && texto.length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["texto"] });
+    Object.assign(l, { respondidoEm: agora(), resposta: resto === "/confirmar" ? "CONFIRMOU" : "RECUSOU" });
+    m.historico.unshift({ acao: resto === "/confirmar" ? "manutencao.prestador_confirmou" : "manutencao.prestador_recusou", em: agora(), autor: null, dados: {} });
+    if (resto === "/recusar" && l.reservaId) trocarParaReserva(est, man, l, "RECUSOU");
+    return route.fulfill({ json: { ok: true, resposta: l.resposta } });
+  }
   if (resto === "/chegada") {
+    if (!l.respondidoEm) Object.assign(l, { respondidoEm: agora(), resposta: "CHEGOU" });
     const e = est.etiquetas.find((x) => x.ativa && x.codigo === corpo.etiqueta);
     const confirmado = !!e && e.local === m.local;
     est.registros.unshift({ id: novoId(), linkId: l.id, manutencaoId: m.id, tipo: "CHEGOU", confirmado, etiqueta: e ? { rotulo: rotulo(e.numero), local: e.local } : undefined,
@@ -194,7 +228,7 @@ export async function rotasLinks(route: Route, est: EstadoLinks, man: EstadoManu
     return route.fulfill({ status: 201, json: { id: nova.id, versao: 1 } });
   }
 
-  const lp = /^\/v1\/condominio\/manutencao\/([^/]+)\/(link-prestador|fotos-prestador)(?:\/([^/]+)\/(envio|cancelar|link))?$/.exec(caminho);
+  const lp = /^\/v1\/condominio\/manutencao\/([^/]+)\/(link-prestador|fotos-prestador)(?:\/([^/]+)\/(envio|cancelar|link|nao-trocar))?$/.exec(caminho);
   if (!lp) return null;
   const m = man.manutencoes.find((x) => x.id === lp[1]);
   if (!m || !pode("manutencao.ver")) return erro(route, 404, "NOT_FOUND");
@@ -207,13 +241,18 @@ export async function rotasLinks(route: Route, est: EstadoLinks, man: EstadoManu
     return route.fulfill({ json: {
       link: ultimo ? { id: ultimo.id, para: ultimo.para, oQueFazer: ultimo.oQueFazer, quando: ultimo.quando ?? undefined, expiraEm: ultimo.expiraEm,
         abertoEm: ultimo.abertoEm ?? undefined, criadoEm: ultimo.criadoEm, criadoPor: "Ana Souza", situacao: situacaoLink(ultimo, man),
-        motivoCancelamento: ultimo.revogado ?? undefined } : undefined,
+        motivoCancelamento: ultimo.revogado ?? undefined, responderAte: ultimo.responderAte, responderHoras: ultimo.responderHoras,
+        respondidoEm: ultimo.respondidoEm, resposta: ultimo.resposta, trocaDesligadaEm: ultimo.trocaDesligadaEm, trocaResultado: ultimo.trocaResultado,
+        trocadoEm: ultimo.trocadoEm, trocaDe: ultimo.trocaDe ? { nome: ultimo.trocaDe } : undefined,
+        reserva: ultimo.reservaId ? { id: ultimo.reservaId, nome: man.prestadores.find((p) => p.id === ultimo.reservaId)!.nome } : undefined } : undefined,
+      reservaDoCadastro: ((r) => (r ? { id: r.id, nome: r.nome } : undefined))(man.prestadores.find((p) => p.id === prestador?.reservaId && !p.arquivado)),
       registros: est.registros.filter((r) => r.manutencaoId === m.id).map((r) => ({ ...r, fotos: r.fotos.length })),
       fotos: est.registros.filter((r) => r.manutencaoId === m.id).flatMap((r) => r.fotos.map((f) => ({ id: f, nome: est.fotos.find((x) => x.id === f)?.nome ?? "foto", registroId: r.id, enviadoEm: r.em }))),
       para: prestador ? { nome: prestador.nome, telefone: prestador.telefone ?? undefined, email: prestador.email ?? undefined } : m.executorTexto ? { nome: m.executorTexto } : undefined,
       local: m.local, sugestao: { oQueFazer: `${m.titulo}. Local: ${m.local}.` },
       etiqueta: etq ? { rotulo: rotulo(etq.numero), local: etq.local } : undefined, arquivos: [],
-      pode: { mandar: pode("manutencao.editar") && aberta && (!!prestador || !!m.executorTexto), cancelar: pode("manutencao.editar") && !!ultimo && !ultimo.revogado },
+      pode: { mandar: pode("manutencao.editar") && aberta && (!!prestador || !!m.executorTexto), cancelar: pode("manutencao.editar") && !!ultimo && !ultimo.revogado,
+        naoTrocar: pode("manutencao.editar") && !!ultimo?.reservaId && !ultimo.trocadoEm && !ultimo.trocaDesligadaEm && !ultimo.revogado && !ultimo.respondidoEm },
       semExecutor: !prestador && !m.executorTexto ? true : undefined,
     } });
   }
@@ -225,14 +264,26 @@ export async function rotasLinks(route: Route, est: EstadoLinks, man: EstadoManu
     const l: LinkFalso = { id: novoId(), manutencaoId: m.id, para: prestador?.nome ?? m.executorTexto ?? "", oQueFazer: String(corpo.oQueFazer).trim(),
       quando: (corpo.quando as string) || null, comoEntrar: (corpo.comoEntrar as string) || null, expiraEm: `${String(corpo.valeAte)}T23:59:59-03:00`,
       abertoEm: null, criadoEm: agora(), codigo: PRESTADOR_FALSO, revogado: null };
+    if (corpo.responderHoras !== null && corpo.responderHoras !== undefined) {
+      if (![4, 8, 24, 48].includes(Number(corpo.responderHoras)) || !prestador?.reservaId) return erro(route, 400, "VALIDATION_ERROR", { campos: ["responderHoras"] });
+      Object.assign(l, { responderHoras: Number(corpo.responderHoras), reservaId: prestador.reservaId,
+        responderAte: new Date(Date.now() + Number(corpo.responderHoras) * 3600_000).toISOString() });
+    }
     est.links.push(l);
     m.versao++;
     m.historico.unshift({ acao: "manutencao.link_prestador", em: agora(), autor: eu.nome, dados: { para: l.para, ate: corpo.valeAte } });
+    if (l.reservaId) m.historico.unshift({ acao: "manutencao.reserva_programada", em: agora(), autor: eu.nome, dados: { horas: l.responderHoras } });
     return route.fulfill({ status: 201, json: { id: l.id, codigo: l.codigo, versao: m.versao, expiraEm: l.expiraEm } });
   }
   const l = est.links.find((x) => x.id === lp[3]);
   if (!l) return erro(route, 404, "NOT_FOUND");
   if (lp[4] === "envio") return route.fulfill({ json: { ok: true } });
+  if (lp[4] === "nao-trocar") {
+    if (!l.reservaId || l.trocadoEm || l.trocaDesligadaEm) return erro(route, 400, "VALIDATION_ERROR", { motivo: "SEM_TROCA" });
+    l.trocaDesligadaEm = agora();
+    m.historico.unshift({ acao: "manutencao.reserva_desligada", em: agora(), autor: eu.nome, dados: {} });
+    return route.fulfill({ json: { ok: true } });
+  }
   if (String(corpo.motivo ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
   l.revogado = String(corpo.motivo).trim();
   return route.fulfill({ json: { ok: true } });

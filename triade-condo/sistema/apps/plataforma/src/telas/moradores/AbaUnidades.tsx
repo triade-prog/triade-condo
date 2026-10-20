@@ -2,17 +2,18 @@
 // Unidades (F3.1, MU-08), do jeito que o prédio se organiza: por torre, bloco, quadra ou
 // prédio (ou sem divisão), com ou sem andar. Ordem natural (2 antes de 10; térreo antes do
 // 1º andar), o responsável de cada unidade, a ocupação (MU-10, MU-11), as marcas à venda e
-// para alugar (MU-11) e se há contato a confirmar. Os contadores de ocupação filtram a lista. Divisão e unidade não se apagam: são
+// para alugar (MU-11) e se há contato a confirmar. A busca acha a unidade pela identificação, pelo nome ou
+// telefone de quem está nela e pela placa (MU-11, MU-06); cada linha tem o menu com os atalhos da unidade. Os contadores de ocupação filtram a lista. Divisão e unidade não se apagam: são
 // desativadas, e só quando não têm nada ativo dentro.
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AGRUPAMENTOS, chaveAndar, chaveUnidade, gerarUnidades, mostrarAndar, nomeDaUnidade, OCUPACOES, type UnidadeNova } from "@triade/domain";
 import {
-  AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, Dialogo, Selo, textoDoErro, Vazio, type ErroApi,
+  AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, Dialogo, Icone, Selo, textoDoErro, Vazio, type ErroApi,
 } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
-import type { Bloco, Estrutura, Recado, UnidadeResumo, Unidades } from "../tipos.ts";
+import type { AchadoUnidade, Bloco, Estrutura, Recado, UnidadeResumo, Unidades } from "../tipos.ts";
 import { Caixa, Escolha, nomeRelacao, nomesDivisao } from "./comum.tsx";
 
 type Filtro = "todos" | "sem-bloco" | "sem-contato" | "sem-proprietario" | "com-morador" | "alugadas" | "nao-mora" | "sem-responsavel" | "a-venda" | "para-alugar" | string;
@@ -31,6 +32,62 @@ function Contatos({ u }: { u: UnidadeResumo }) {
       {u.semProprietario ? <Selo tom="atencao">Falta o proprietário</Selo> : null}
     </span>
   );
+}
+
+/** Atalhos da unidade, abertos logo abaixo do nome: no celular ficam à vista, sem rolar a tabela. Fecha com Esc ou clicando fora. */
+function MenuUnidade({ u, nome, edita, children }: { u: UnidadeResumo; nome: string; edita: boolean; children: ReactNode }) {
+  const [aberto, setAberto] = useState(false);
+  const caixa = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: MouseEvent) => { if (!caixa.current?.contains(e.target as Node)) setAberto(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setAberto(false); };
+    document.addEventListener("mousedown", fora);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", fora); document.removeEventListener("keydown", esc); };
+  }, [aberto]);
+  const base = `/moradores/unidade?id=${u.id}`;
+  const itens = [
+    { href: base, texto: "Abrir a unidade" },
+    { href: `${base}#garagens`, texto: "Garagens e veículos" },
+    ...(edita && u.ativa ? [{ href: `${base}&abrir=incluir`, texto: "Incluir pessoa" }, { href: `${base}&abrir=mudanca`, texto: "Registrar mudança" }] : []),
+  ];
+  return (
+    <div ref={caixa}>
+      <span className="inline-flex items-center gap-3 whitespace-nowrap">
+        {children}
+        <button type="button" aria-expanded={aberto} aria-controls={`menu-${u.id}`} aria-label={`Atalhos de ${nome}`} onClick={() => setAberto((a) => !a)}
+          className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-md align-middle text-tinta-suave hover:bg-superficie-2 focus-visible:outline-2 focus-visible:outline-violeta-600">
+          <Icone nome="pontos" className="h-5 w-5" />
+        </button>
+      </span>
+      {aberto ? (
+        <ul id={`menu-${u.id}`} className="mt-2 grid min-w-48 rounded-xl border border-linha bg-superficie py-1 shadow-s1">
+          {itens.map((i) => (
+            <li key={i.texto}><Link href={i.href} className="block px-3 py-2 text-sm hover:bg-superficie-2" onClick={() => setAberto(false)}>{i.texto}</Link></li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+/** Busca na API (MU-11): o que achou em cada unidade, ou null enquanto a busca é curta. */
+function useBuscaUnidades(texto: string): { achados: Map<string, AchadoUnidade> | null; buscando: boolean; falha: string | null } {
+  const [r, setR] = useState<{ q: string; achados: Map<string, AchadoUnidade> | null; falha: string | null }>({ q: "", achados: null, falha: null });
+  const q = texto.trim();
+  useEffect(() => {
+    if (q.length < 2) return;
+    let vale = true;
+    const t = setTimeout(async () => {
+      const resp = await chamarApi<AchadoUnidade[]>(`/v1/condominio/busca-unidades?busca=${encodeURIComponent(q)}`);
+      if (!vale) return;
+      setR(resp.ok ? { q, achados: new Map(resp.dados.map((a) => [a.unidadeId, a])), falha: null } : { q, achados: null, falha: textoDoErro(resp.erro) });
+    }, 250);
+    return () => { vale = false; clearTimeout(t); };
+  }, [q]);
+  if (q.length < 2) return { achados: null, buscando: false, falha: null };
+  return { achados: r.q === q ? r.achados : null, buscando: r.q !== q, falha: r.q === q ? r.falha : null };
 }
 
 /** Andares que existem nas unidades, em ordem (térreo antes do 1º). */
@@ -58,6 +115,8 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
   const temSemBloco = dados.unidades.some((u) => !u.blocoId);
   const [filtro, setFiltro] = useState<Filtro>(filtroInicial);
   const [andar, setAndar] = useState("");
+  const [texto, setTexto] = useState("");
+  const busca = useBuscaUnidades(texto);
   const [janela, setJanela] = useState<{ tipo: "renomear" | "desativar" | "reativar"; bloco: Bloco } | null>(null);
   const bloco = ativos.find((b) => b.id === filtro) ?? null;
   useEffect(() => aoMudarBloco(bloco?.id ?? null), [bloco, aoMudarBloco]);
@@ -90,7 +149,9 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
                       : filtro === "para-alugar" ? u.ativa && u.paraAlugar
                     : u.blocoId === filtro);
   const andares = dados.estrutura.usaAndar ? andaresDe(doFiltro) : [];
-  const lista = andar ? doFiltro.filter((u) => u.andar === andar) : doFiltro;
+  const doAndar = andar ? doFiltro.filter((u) => u.andar === andar) : doFiltro;
+  const lista = busca.achados ? doAndar.filter((u) => busca.achados!.has(u.id)) : doAndar;
+  const buscou = busca.achados !== null;
   const nomeBloco = (id: string | null) => dados.blocos.find((b) => b.id === id)?.nome ?? null;
   const opcoes = [
     { valor: "todos", texto: "Todas" },
@@ -123,6 +184,16 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
       {contadores.length ? (
         <Escolha rotulo="Ocupação" opcoes={contadores} atual={filtro} aoMudar={(f) => { setFiltro(f === filtro ? "todos" : f); setAndar(""); }} />
       ) : null}
+      <form role="search" className="grid max-w-xl gap-1" onSubmit={(e) => e.preventDefault()}>
+        <span className="flex gap-2">
+          <CampoTexto id="u-busca" rotulo="Buscar unidade" className="flex-1" type="search" maxLength={60} value={texto} onChange={(e) => setTexto(e.target.value)}
+            ajuda="Busca por unidade, nome, telefone ou placa. A placa acha com ou sem hífen, em maiúsculas ou minúsculas." />
+          {texto ? <span className="self-start pt-6"><Botao variante="discreto" onClick={() => setTexto("")}>Limpar</Botao></span> : null}
+        </span>
+        <span className="text-sm text-tinta-suave" aria-live="polite">
+          {busca.buscando ? "Buscando…" : busca.falha ? busca.falha : buscou ? plural(lista.length, "unidade encontrada", "unidades encontradas") : ""}
+        </span>
+      </form>
       {andares.length ? (
         <CampoSelecao id="u-filtro-andar" rotulo="Andar" className="max-w-56" value={andar} onChange={(e) => setAndar(e.target.value)}
           opcoes={[{ valor: "", texto: "Todos os andares" }, ...andares.map((a) => ({ valor: a, texto: mostrarAndar(a) }))]} />
@@ -134,7 +205,9 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
           <Botao variante="discreto" onClick={() => setJanela({ tipo: "desativar", bloco })}>Desativar</Botao>
         </p>
       ) : null}
-      {lista.length === 0 ? (
+      {lista.length === 0 && buscou ? (
+        <Vazio titulo="Nenhuma unidade encontrada">Confira o que foi escrito ou busque por outra coisa: unidade, nome, telefone ou placa.</Vazio>
+      ) : lista.length === 0 ? (
         <Vazio titulo={resolvido ?? "Nenhuma unidade aqui"}>
           {resolvido ? "Nada a fazer por enquanto." : "Inclua unidades pelo botão + Unidades."}
         </Vazio>
@@ -151,12 +224,19 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
               </tr>
             </thead>
             <tbody>
-              {lista.map((u) => (
+              {lista.map((u) => {
+                const achado = busca.achados?.get(u.id);
+                return (
                 <tr key={u.id} className="border-t border-linha align-top">
                   <td className="px-4 py-3">
-                    <Link href={`/moradores/unidade?id=${u.id}`} className="font-medium text-violeta-600 hover:underline">
-                      {nomeDaUnidade(filtro === u.blocoId ? null : nomeBloco(u.blocoId), andar ? null : u.andar, u.identificacao)}
-                    </Link>
+                    <MenuUnidade u={u} edita={dados.podeEditar} nome={nomeDaUnidade(nomeBloco(u.blocoId), u.andar, u.identificacao)}>
+                      <Link href={`/moradores/unidade?id=${u.id}`} className="font-medium text-violeta-600 hover:underline">
+                        {nomeDaUnidade(filtro === u.blocoId ? null : nomeBloco(u.blocoId), andar ? null : u.andar, u.identificacao)}
+                      </Link>
+                    </MenuUnidade>
+                    {achado && achado.tipo !== "UNIDADE" ? (
+                      <span className="block text-xs text-tinta-suave">{achado.tipo === "TELEFONE" ? `telefone de ${achado.texto}` : achado.texto}</span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3">
                     {u.principal ? <>{u.principal}{u.principalRelacao ? <span className="block text-xs text-tinta-suave">{nomeRelacao(u.principalRelacao)}</span> : null}</>
@@ -174,7 +254,8 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
                   </td>
                   <td className="px-4 py-3"><Contatos u={u} /></td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

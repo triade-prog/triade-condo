@@ -50,7 +50,7 @@ describe("link do prestador (V-11, MP-08)", () => {
     expect(linkPrestadorSchema.safeParse({ versao: 1, oQueFazer: "Trocar", valeAte: "2026-10-31" }).success).toBe(false);
     expect(linkPrestadorSchema.safeParse({ versao: 1, oQueFazer: "Trocar o rolamento da bomba 2" }).success).toBe(false);
     expect(linkPrestadorSchema.parse({ versao: 1, oQueFazer: "Trocar o rolamento da bomba 2", valeAte: "2026-10-31", quando: "" }))
-      .toEqual({ versao: 1, oQueFazer: "Trocar o rolamento da bomba 2", valeAte: "2026-10-31", quando: null, comoEntrar: null, arquivos: [] });
+      .toEqual({ versao: 1, oQueFazer: "Trocar o rolamento da bomba 2", valeAte: "2026-10-31", quando: null, comoEntrar: null, arquivos: [], responderHoras: null });
   });
 
   it("a mensagem leva o serviço, o quando e o link", () => {

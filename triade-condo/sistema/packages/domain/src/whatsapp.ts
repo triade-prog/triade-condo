@@ -42,6 +42,7 @@ export const FINALIDADES_ENVIO = {
   ENQUETE: "Enquete",
   ASSEMBLEIA: "Assembleia",
   CLASSIFICADO: "Classificado",
+  PRESTADOR: "Link do prestador",
 } as const;
 
 /** Avisos que cada pessoa liga no próprio WhatsApp (W-11, F6.3). */
@@ -126,7 +127,7 @@ export const LIMITE_FORA_DA_JANELA = 800;
 export const CHAVES_MODELO = [
   "noticia_pedido", "pedido_concluido", "revisao_respondida", "aviso_pedido_novo", "aviso_retorno_vencido", "aviso_revisao",
   "reserva_decidida", "enquete_convite", "enquete_lembrete", "assembleia_convocacao", "assembleia_lembrete",
-  "anuncio_decidido",
+  "anuncio_decidido", "link_prestador",
 ] as const;
 export type ChaveModelo = (typeof CHAVES_MODELO)[number];
 
@@ -181,3 +182,65 @@ export const decidirModeloSchema = z
   .refine((d) => !["RECUSADO", "PAUSADO"].includes(d.situacao) || (d.motivo && d.motivo.length >= 3), {
     message: "Diga o motivo", path: ["motivo"],
   });
+
+// ---------------------------------------------------------------------------------------
+// Queda do WhatsApp (F5.10; W-17). Os mesmos valores estão no banco (0270_garagens_reserva_quedas.sql).
+
+export const ESTADOS_QUEDA = {
+  FORA_DO_AR: "Número fora do ar",
+  CONFERINDO: "Conferindo o que ficou parado",
+  ENCERRADA: "Encerrada",
+} as const;
+export type EstadoQueda = keyof typeof ESTADOS_QUEDA;
+
+export const ORIGENS_QUEDA = { PROVEDOR: "O número desconectou", MANUAL: "Aberta por quem cuida" } as const;
+
+/** O que fazer com cada mensagem que ficou parada na queda. */
+export const DECISOES_QUEDA = {
+  MANDAR: "Mandar agora",
+  OUTRO_CANAL: "Resolvido por outro canal",
+  NAO_MANDAR: "Não mandar",
+} as const;
+export type DecisaoQueda = keyof typeof DECISOES_QUEDA;
+
+const opcionalQueda = (min: number, max: number) =>
+  z.string().max(max).nullable().optional().transform((v) => (v && v.trim() ? v.trim() : null)).pipe(z.string().min(min).nullable());
+
+export const abrirQuedaSchema = z.object({ oQueAconteceu: opcionalQueda(3, 1000) });
+export const editarQuedaSchema = z.object({ versao, canalAlternativo: opcionalQueda(5, 300), oQueAconteceu: opcionalQueda(3, 1000) });
+export const conciliarQuedaSchema = z
+  .object({
+    envios: z.array(id).min(1).max(200).transform((l) => [...new Set(l)]),
+    decisao: z.enum(chaves(DECISOES_QUEDA)),
+    motivo: opcionalQueda(3, 300),
+  })
+  .superRefine((d, ctx) => {
+    if (d.decisao === "OUTRO_CANAL" && !d.motivo) ctx.addIssue({ code: "custom", path: ["motivo"], message: "Diga por onde foi resolvido" });
+  });
+export const encerrarQuedaSchema = z.object({ versao, resumo: z.string().trim().min(10).max(2000) });
+export const responsavelQuedasSchema = z.object({ versao, pessoaId: id.nullable() });
+
+/** Histórico do WhatsApp: os eventos da queda. Nulo quando o evento é de outra parte. */
+export function descreverEventoQueda(acao: string, d: Record<string, unknown>): string | null {
+  switch (acao) {
+    case "whatsapp.queda_aberta":
+      return d.origem === "MANUAL" ? "Queda do WhatsApp aberta à mão" : "Queda do WhatsApp: o número desconectou";
+    case "whatsapp.queda_caiu_de_novo":
+      return "O número caiu de novo durante a conferência";
+    case "whatsapp.queda_voltou":
+      return "O número voltou; começa a conferência";
+    case "whatsapp.queda_editada":
+      return d.canalAlternativo ? "Canal alternativo da queda definido" : "Queda do WhatsApp editada";
+    case "whatsapp.queda_conciliada": {
+      const n = Number(d.mensagens);
+      const decisao = DECISOES_QUEDA[d.decisao as DecisaoQueda] ?? "Decidido";
+      return `${decisao}: ${n === 1 ? "1 mensagem" : `${n} mensagens`}`;
+    }
+    case "whatsapp.queda_encerrada":
+      return `Queda do WhatsApp encerrada, ${Number(d.minutos)} min fora do ar`;
+    case "whatsapp.quedas_responsavel":
+      return d.pessoa ? "Escolhida a pessoa que cuida das quedas" : "As quedas voltaram a ficar com o síndico";
+    default:
+      return null;
+  }
+}

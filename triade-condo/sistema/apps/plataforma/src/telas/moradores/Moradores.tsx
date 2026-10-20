@@ -3,7 +3,7 @@
 // unidades do jeito que o prédio se organiza (torre, bloco, quadra ou prédio, com ou sem
 // andar), a lista de moradores e proprietários e o que espera confirmação do síndico (MU-02).
 // Cada botão só aparece para quem pode (CF-03): a pessoa com Cadastrar moradores inclui, mas
-// só o síndico confirma.
+// só o síndico confirma. A aba Garagens mostra todas as vagas (MU-06).
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -13,10 +13,11 @@ import { assinatura, useCarregar, usePlataforma } from "../sessao.tsx";
 import type { Recado, Unidades } from "../tipos.ts";
 import { AbaUnidades, IncluirUnidades, JanelaBloco, JanelaEstrutura } from "./AbaUnidades.tsx";
 import { nomesDivisao } from "./comum.tsx";
+import { AbaGaragens } from "./Garagens.tsx";
 import { CadastrarMorador } from "./JanelasUnidade.tsx";
 import { ListaContatos } from "./ListaContatos.tsx";
 
-type IdAba = "unidades" | "moradores" | "confirmar";
+type IdAba = "unidades" | "moradores" | "garagens" | "confirmar";
 
 /** Filtros que o Início abre pelo endereço. */
 const FILTROS_DO_ENDERECO = ["sem-contato", "sem-proprietario"] as const;
@@ -26,7 +27,7 @@ export function Moradores() {
   const carga = useCarregar<Unidades>("/v1/condominio/unidades");
   const busca = useSearchParams();
   const router = useRouter();
-  const [aba, setAba] = useState<IdAba>((["moradores", "confirmar"] as const).find((a) => a === busca.get("aba")) ?? "unidades");
+  const [aba, setAba] = useState<IdAba>((["moradores", "garagens", "confirmar"] as const).find((a) => a === busca.get("aba")) ?? "unidades");
   const [recado, setRecado] = useState<Recado>(null);
   const [janela, setJanela] = useState<"bloco" | "unidades" | "estrutura" | "morador" | null>(null);
   const [blocoAtual, setBlocoAtual] = useState<string | null>(null);
@@ -47,6 +48,7 @@ export function Moradores() {
   const abas = [
     { id: "unidades" as const, texto: "Unidades" },
     { id: "moradores" as const, texto: "Moradores" },
+    { id: "garagens" as const, texto: "Garagens" },
     { id: "confirmar" as const, texto: `A confirmar (${dados.resumo.aConfirmar})` },
   ];
 
@@ -73,6 +75,8 @@ export function Moradores() {
           {aba === "unidades" ? (
             <AbaUnidades dados={dados} filtroInicial={FILTROS_DO_ENDERECO.find((f) => f === busca.get("filtro")) ?? "todos"} aoMudarBloco={setBlocoAtual}
               aoIncluir={() => setJanela("unidades")} aoOrganizar={() => setJanela("estrutura")} salvo={salvo} recarregar={carga.recarregar} />
+          ) : aba === "garagens" ? (
+            <AbaGaragens salvo={(r) => { setRecado(r); atualizar(); }} />
           ) : (
             <ListaContatos estado={aba === "confirmar" ? "PENDENTE" : undefined} salvo={salvo} buscaInicial={aba === "moradores" ? busca.get("busca") ?? "" : ""} />
           )}

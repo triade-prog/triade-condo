@@ -4,7 +4,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
-import { chamarApi, Icone, Marca, Selo, type NomeIcone } from "@triade/ui";
+import { Aviso, chamarApi, Icone, Marca, Selo, type NomeIcone } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import type { ComunicadoPublico } from "../tipos.ts";
 
@@ -76,5 +76,15 @@ export function ComunicadoLido({ c, linkArquivo }: { c: ComunicadoPublico; linkA
       ))}
       {falha ? <p className="text-sm text-erro" role="alert">{falha}</p> : null}
     </Cartao>
+  );
+}
+
+/** Enquanto o WhatsApp do condomínio está fora do ar (W-17): por onde falar. */
+export function FaixaQueda({ canal }: { canal?: string }) {
+  if (!canal) return null;
+  return (
+    <Aviso tom="atencao" titulo="O WhatsApp do condomínio está fora do ar">
+      <span className="whitespace-pre-line">Enquanto isso: {canal}</span>
+    </Aviso>
   );
 }

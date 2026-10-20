@@ -501,3 +501,80 @@ export const MODELO_PLANILHA =
   "Torre;Andar;Unidade;Nome;Telefone;Relação;Mora na unidade;Responsável pela unidade;Parentesco;Ocupa desde;E-mail\r\n" +
   "Torre A;1;101;Maria Exemplo;(61) 99999-0000;Proprietário;sim;sim;;;maria@exemplo.com.br\r\n" +
   "Torre A;1;101;João Exemplo;(61) 99999-0001;Familiar;sim;não;Filho;01/03/2025;\r\n";
+
+// ---------------------------------------------------------------------------------------
+// Garagens e veículos (F3.8; MU-06, MU-11). Os mesmos valores estão no banco
+// (0270_garagens_reserva_quedas.sql).
+
+/** Placa Mercosul (ABC1D23) ou antiga (ABC1234), sem hífen. */
+export const RE_PLACA = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/;
+
+/** A placa no formato do cadastro: maiúsculas, sem hífen nem espaço. Fora dos dois formatos, null. */
+export function normalizarPlaca(p: string | null | undefined): string | null {
+  const x = (p ?? "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  return RE_PLACA.test(x) ? x : null;
+}
+
+/** A antiga aparece com hífen ("ABC-1234"); a Mercosul fica como é ("ABC1D23"). */
+export function mostrarPlaca(p: string): string {
+  return /^[A-Z]{3}[0-9]{4}$/.test(p) ? `${p.slice(0, 3)}-${p.slice(3)}` : p;
+}
+
+export const TIPOS_VEICULO = { CARRO: "Carro", MOTO: "Moto", OUTRO: "Outro" } as const;
+export type TipoVeiculo = keyof typeof TIPOS_VEICULO;
+
+const opcional = (max: number, min = 1) =>
+  z.string().max(max).nullable().optional().transform((v) => (v && v.trim() ? v.trim() : null)).pipe(z.string().min(min).nullable());
+
+export const vagaSchema = z.object({
+  versao: versao.nullable().optional().transform((v) => v ?? null),
+  identificacao,
+  onde: opcional(60, 2),
+  coberta: z.boolean().nullable().optional().transform((v) => v ?? null),
+  unidadeId: id.nullable().optional().transform((v) => v ?? null),
+  ativa: z.boolean().nullable().optional().transform((v) => v ?? null),
+});
+
+export const veiculoSchema = z.object({
+  versao: versao.nullable().optional().transform((v) => v ?? null),
+  unidadeId: id.nullable().optional().transform((v) => v ?? null),
+  placa: z.string().max(10).transform((p, ctx) => {
+    const n = normalizarPlaca(p);
+    if (!n) ctx.addIssue({ code: "custom", message: "Placa Mercosul (ABC1D23) ou antiga (ABC-1234)" });
+    return n ?? "";
+  }),
+  tipo: z.enum(chaves(TIPOS_VEICULO)),
+  modelo: opcional(60, 2),
+  contatoId: id.nullable().optional().transform((v) => v ?? null),
+  vagaId: id.nullable().optional().transform((v) => v ?? null),
+});
+
+export const retirarVeiculoSchema = z.object({ versao });
+
+/** Busca da lista de unidades: unidade, nome, telefone ou placa em uso. */
+export const buscaUnidadesSchema = z.object({ busca: z.string().trim().min(2).max(60) });
+
+/** O que a busca achou em cada unidade (MU-11). */
+export const ACHADOS_BUSCA = { UNIDADE: "Unidade", PLACA: "Placa", NOME: "Nome", TELEFONE: "Telefone" } as const;
+
+/** Histórico da unidade e da vaga: veículos e vagas. Nulo quando o evento é de outra parte. */
+export function descreverEventoGaragem(acao: string, d: Record<string, unknown>): string | null {
+  switch (acao) {
+    case "vaga.criada":
+      return d.unidade ? "Vaga criada para uma unidade" : "Vaga criada do condomínio";
+    case "vaga.alterada":
+      return d.unidade !== d.unidadeAntes ? "Vaga passou a outra unidade" : "Vaga alterada";
+    case "vaga.fora_de_uso":
+      return "Vaga fora de uso";
+    case "vaga.reativada":
+      return "Vaga de volta ao uso";
+    case "unidade.veiculo_incluido":
+      return d.vaga ? "Veículo incluído, com vaga" : "Veículo incluído, sem vaga";
+    case "unidade.veiculo_alterado":
+      return "Veículo alterado";
+    case "unidade.veiculo_retirado":
+      return d.motivo === "SAIU" ? "Veículo retirado: a pessoa saiu da unidade" : "Veículo retirado";
+    default:
+      return null;
+  }
+}

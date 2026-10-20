@@ -47,11 +47,20 @@ export const linkPrestadorSchema = z.object({
   comoEntrar: texto(500),
   valeAte: data,
   arquivos: z.array(id).max(10).default([]),
+  /** Prazo para o prestador responder antes de passar à reserva (MP-09). Sem reserva, nulo. */
+  responderHoras: z.union([z.literal(4), z.literal(8), z.literal(24), z.literal(48)]).nullable().optional().transform((v) => v ?? null),
 });
+/** Prazos para o prestador responder (MP-09): horas corridas desde o envio; o padrão é 24. */
+export const PRAZOS_RESPOSTA_PRESTADOR = [4, 8, 24, 48] as const;
+export const PRAZO_RESPOSTA_PADRAO = 24;
 export const CANAIS_LINK = { COPIADO: "Copiado", WHATSAPP: "WhatsApp", EMAIL: "E-mail" } as const;
 export const envioLinkSchema = z.object({ canal: z.enum(chaves(CANAIS_LINK)) });
 export const cancelarLinkSchema = z.object({ motivo });
 
+/** Sem conta: o que o prestador manda pelo link. Recusar pode dizer por quê. */
+export const recusarPrestadorSchema = z.object({
+  texto: texto(500).pipe(z.string().min(3).nullable()),
+});
 /** Sem conta: o que o prestador manda pelo link. */
 export const chegadaSchema = z.object({ etiqueta: z.string().max(200).nullable().optional().transform((v) => v ?? null) });
 export const fotoPrestadorSchema = z.object({
@@ -151,6 +160,23 @@ export function descreverEventoLinkPrestador(acao: string, d: Record<string, unk
       return `Terminou: ${String(d.texto)}`;
     case "manutencao.foto_prestador_tirada":
       return `Foto do prestador tirada: ${String(d.arquivoNome)}`;
+    case "manutencao.prestador_confirmou":
+      return "O prestador confirmou que vai fazer";
+    case "manutencao.prestador_recusou":
+      return "O prestador disse que não pode atender";
+    case "manutencao.reserva_programada":
+      return `Se não responder em ${String(d.horas)} h, passa para a reserva`;
+    case "manutencao.reserva_desligada":
+      return "Troca automática para a reserva desligada";
+    case "manutencao.reserva_assumiu": {
+      const porque = d.motivo === "RECUSOU" ? "o prestador não pode atender" : `sem resposta em ${String(d.horas)} h`;
+      const link = d.canal === "WHATSAPP" ? "link mandado pelo WhatsApp" : "link a mandar";
+      return `Passou para a reserva: ${porque}; ${link}`;
+    }
+    case "manutencao.reserva_nao_assumiu":
+      return "Não passou para a reserva: a reserva está arquivada";
+    case "manutencao.reserva_sem_resposta":
+      return "A reserva também não respondeu no prazo";
     default:
       return null;
   }
