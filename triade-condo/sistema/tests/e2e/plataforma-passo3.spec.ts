@@ -74,7 +74,7 @@ test.describe("Plataforma do síndico · passo 3", () => {
     await expect(page.getByRole("status").filter({ hasText: "6 unidades incluídas." })).toBeVisible();
 
     await page.getByRole("group", { name: "Mostrar unidades" }).getByRole("button", { name: "Torre C" }).click();
-    await page.getByLabel("Andar").selectOption({ label: "2º andar" });
+    await page.getByLabel("Andar", { exact: true }).selectOption({ label: "2º andar" });
     expect(await page.getByRole("table").locator("tbody tr td:first-child").allInnerTexts()).toEqual(["201", "202"]);
 
     await page.getByRole("button", { name: "+ Unidades" }).click();

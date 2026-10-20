@@ -7,7 +7,8 @@
 // o recado da entrega da implantação, a resposta da TRÍADE num chamado e o pedido de acesso
 // excepcional (PI-04, PI-20, PI-11). Do passo 5: pedido novo e pedido de revisão do morador pelo
 // WhatsApp, mensagem a identificar, envio que falhou e número desconectado. Da peça R12: reserva
-// esperando aprovação e reserva cancelada pelo morador perto da data.
+// esperando aprovação e reserva cancelada pelo morador perto da data. Da F5.9 (MP-09): o prestador
+// confirmou ou não pode, e a troca para a reserva. Da F5.10 (W-17): a queda do WhatsApp e a volta do número.
 
 import Link from "next/link";
 import { useState } from "react";
@@ -69,6 +70,22 @@ function detalhe(a: AvisoDoPainel): string {
       return "Pedido de reserva esperando aprovação.";
     case "RESERVA_CANCELADA":
       return "O morador cancelou a reserva perto da data.";
+    case "PRESTADOR_CONFIRMOU":
+      return `${a.nome ?? "O prestador"} confirmou que vai fazer o serviço.`;
+    case "PRESTADOR_RECUSOU":
+      return `${a.nome ?? "O prestador"} disse que não pode atender.`;
+    case "WHATSAPP_QUEDA":
+      return "O WhatsApp do condomínio caiu e você cuida da queda. Escreva o canal alternativo para os moradores.";
+    case "WHATSAPP_QUEDA_VOLTOU":
+      return "O número do WhatsApp voltou. Confira o que ficou parado e encerre a queda.";
+    case "TROCA_TROCOU":
+      return `O serviço passou para ${a.nome ?? "a reserva"}, a reserva do cadastro, e o link já foi pelo WhatsApp do condomínio.`;
+    case "TROCA_MANDAR_LINK":
+      return `${a.nome ?? "O prestador"} não respondeu e o serviço passou para a reserva. Mande o link a ela pela manutenção.`;
+    case "TROCA_NAO_TROCOU":
+      return `${a.nome ?? "O prestador"} não respondeu e a reserva saiu do cadastro: escolha quem executa.`;
+    case "TROCA_RESERVA_SEM_RESPOSTA":
+      return `${a.nome ?? "A reserva"} também não respondeu. Não há nova troca: combine com outro prestador.`;
   }
 }
 
@@ -222,11 +239,13 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                 </li>
               );
             }
-            if (a.tipo === "MANUTENCAO_RETORNO_VENCIDO" || a.tipo === "PRESTADOR_IMPEDIMENTO" || a.tipo === "PRESTADOR_TERMINOU") {
+            if (a.tipo === "MANUTENCAO_RETORNO_VENCIDO" || a.tipo.startsWith("PRESTADOR_") || a.tipo.startsWith("TROCA_")) {
               return (
                 <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
-                    <Selo tom="atencao">{a.tipo === "MANUTENCAO_RETORNO_VENCIDO" ? "Manutenção" : "Prestador"}</Selo>
+                    <Selo tom={a.tipo === "PRESTADOR_CONFIRMOU" || a.tipo === "TROCA_TROCOU" ? "info" : "atencao"}>
+                      {a.tipo === "MANUTENCAO_RETORNO_VENCIDO" ? "Manutenção" : a.tipo.startsWith("TROCA_") ? "Troca de prestador" : "Prestador"}
+                    </Selo>
                     {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
                   </span>
                   <span className="font-semibold">{a.titulo}</span>

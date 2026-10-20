@@ -3,6 +3,7 @@
 // "A identificar" junta as mensagens de números sem vínculo confirmado e os recados; "Falhas de
 // envio" mostra o que não saiu, com motivo e responsável; "Conexão" diz se o número está no ar.
 // Nada vira pedido sozinho: quem cuida liga o número a um contato, junta a um pedido ou arquiva.
+// "Quedas" (F5.10, W-17): a queda aberta, o canal alternativo e a conferência do que ficou parado.
 
 import Link from "next/link";
 import { useState } from "react";
@@ -12,6 +13,8 @@ import {
   type ErroApi, type Tom,
 } from "@triade/ui";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
+import type { QuedaWhatsapp } from "../tipos.ts";
+import { AbaQuedas, FaixaQueda } from "./Quedas.tsx";
 
 interface MensagemAIdentificar {
   id: string;
@@ -56,7 +59,10 @@ interface DadosWhatsapp {
   conexao: Conexao;
   aIdentificar: MensagemAIdentificar[];
   falhas: Falha[];
-  pode: { triar: boolean; ligar: boolean; reenviar: boolean };
+  pode: { triar: boolean; ligar: boolean; reenviar: boolean; queda?: boolean };
+  queda?: QuedaWhatsapp;
+  quedas?: QuedaWhatsapp[];
+  responsavelQuedas?: string;
 }
 
 export const TOM_CONEXAO: Record<SituacaoConexao, Tom> = { SEM_CREDENCIAIS: "neutro", DESCONECTADO: "erro", CONECTANDO: "atencao", CONECTADO: "ok" };
@@ -64,6 +70,7 @@ export const TOM_CONEXAO: Record<SituacaoConexao, Tom> = { SEM_CREDENCIAIS: "neu
 const ABAS = [
   { id: "identificar", texto: "A identificar" },
   { id: "falhas", texto: "Falhas de envio" },
+  { id: "quedas", texto: "Quedas" },
   { id: "conexao", texto: "Conexão" },
 ] as const;
 type IdAba = (typeof ABAS)[number]["id"];
@@ -303,25 +310,31 @@ export function SituacaoDaConexao({ numero, conexao }: { numero: string | null; 
 
 export function Whatsapp() {
   const carga = useCarregar<DadosWhatsapp>("/v1/condominio/whatsapp");
-  const [aba, setAba] = useState<IdAba>("identificar");
+  const [aba, setAba] = useState<IdAba | null>(null);
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o WhatsApp…" />;
   if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const d = carga.dados;
   const telefones = porTelefone(d.aIdentificar).length;
   const abas = ABAS.map((a) => (a.id === "identificar" && telefones ? { ...a, texto: `${a.texto} (${telefones})` }
-    : a.id === "falhas" && d.falhas.length ? { ...a, texto: `${a.texto} (${d.falhas.length})` } : a));
+    : a.id === "falhas" && d.falhas.length ? { ...a, texto: `${a.texto} (${d.falhas.length})` }
+      : a.id === "quedas" && d.queda ? { ...a, texto: `${a.texto} (1)` } : a));
+  const atual: IdAba = aba ?? (d.queda ? "quedas" : "identificar");
   return (
     <div className="grid gap-5">
       <div>
         <h1 className="text-[28px] font-normal tracking-tight">WhatsApp</h1>
         <p className="text-tinta-suave">Mensagens que precisam de alguém e envios que não deram certo.</p>
       </div>
-      {d.conexao.situacao === "DESCONECTADO" ? <SituacaoDaConexao numero={d.numero} conexao={d.conexao} /> : null}
-      <Abas abas={abas} atual={aba} aoMudar={setAba} rotulo="Partes do WhatsApp">
+      {d.queda ? <FaixaQueda q={d.queda} /> : d.conexao.situacao === "DESCONECTADO" ? <SituacaoDaConexao numero={d.numero} conexao={d.conexao} /> : null}
+      <Abas abas={abas} atual={atual} aoMudar={setAba} rotulo="Partes do WhatsApp">
         <div className="pt-4">
-          {aba === "identificar" ? <AIdentificar d={d} recarregar={carga.recarregar} /> : null}
-          {aba === "falhas" ? <Falhas d={d} recarregar={carga.recarregar} /> : null}
-          {aba === "conexao" ? <SituacaoDaConexao numero={d.numero} conexao={d.conexao} /> : null}
+          {atual === "identificar" ? <AIdentificar d={d} recarregar={carga.recarregar} /> : null}
+          {atual === "falhas" ? <Falhas d={d} recarregar={carga.recarregar} /> : null}
+          {atual === "quedas" ? (
+            <AbaQuedas queda={d.queda} quedas={d.quedas ?? []} responsavel={d.responsavelQuedas} pode={d.pode.queda === true}
+              recarregar={() => { setAba("quedas"); carga.recarregar(); }} />
+          ) : null}
+          {atual === "conexao" ? <SituacaoDaConexao numero={d.numero} conexao={d.conexao} /> : null}
         </div>
       </Abas>
     </div>

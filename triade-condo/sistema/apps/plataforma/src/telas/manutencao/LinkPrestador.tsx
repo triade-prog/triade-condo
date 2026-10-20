@@ -2,11 +2,13 @@
 // Link do prestador na manutenção (design "Links e QR", tela 5; V-11, MP-08): mandar o serviço a
 // quem executa, sem conta, e ver o que ele mandou (chegada, não consegui fazer, terminei e fotos).
 // Nada muda sozinho: quem é responsável confere e conclui. O código do link aparece só ao mandar;
-// depois, mandar de novo gera um link novo e o anterior para.
+// depois, mandar de novo gera um link novo e o anterior para. Com reserva no cadastro (MP-09), quem manda diz
+// em quanto tempo o prestador precisa confirmar; sem resposta, ou se ele não puder, o serviço passa sozinho
+// para a reserva, uma vez só, com aviso e registro no histórico. "Não trocar sozinho" desliga a troca.
 
 import { useState, type FormEvent } from "react";
-import { IMPEDIMENTOS_PRESTADOR, LINK_PRESTADOR_DIAS, linkWhatsapp, mensagemPrestador } from "@triade/domain";
-import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoTexto, Carregando, camposComErro, chamarApi, classeBotao, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
+import { IMPEDIMENTOS_PRESTADOR, LINK_PRESTADOR_DIAS, linkWhatsapp, mensagemPrestador, PRAZO_RESPOSTA_PADRAO, PRAZOS_RESPOSTA_PRESTADOR } from "@triade/domain";
+import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, classeBotao, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { LinkPrestadorInfo, RegistroPrestador } from "../tipos.ts";
@@ -31,12 +33,33 @@ function textoRegistro(r: RegistroPrestador): string {
   return `Terminou: ${r.texto}${r.ficouPendente ? ` Ficou para depois: ${r.pendenteTexto}` : " Nada ficou para depois."}`;
 }
 
+const RESPOSTA: Record<NonNullable<NonNullable<LinkPrestadorInfo["link"]>["resposta"]>, string> = {
+  CONFIRMOU: "Confirmou que vai fazer",
+  RECUSOU: "Disse que não pode atender",
+  CHEGOU: "Registrou a chegada",
+};
+
+/** O que vale agora na troca para a reserva deste link (MP-09). */
+function linhasReserva(l: NonNullable<LinkPrestadorInfo["link"]>): string[] {
+  const linhas: string[] = [];
+  if (l.trocaDe) linhas.push(`Passou de ${l.trocaDe.nome} para ${l.para}, a reserva. Sem nova troca depois desta.`);
+  if (l.respondidoEm && l.resposta) linhas.push(`${RESPOSTA[l.resposta]} em ${diaHora(l.respondidoEm)}.`);
+  else if (l.situacao === "VALE" && l.responderAte) {
+    linhas.push(`Responder até ${diaHora(l.responderAte)}.`);
+    if (l.reserva && !l.trocaDesligadaEm && !l.trocadoEm) linhas.push(`Se não responder, passa para ${l.reserva.nome}.`);
+  }
+  if (l.trocaDesligadaEm) linhas.push(`Troca automática desligada em ${diaHora(l.trocaDesligadaEm)}: o serviço fica com ${l.para}.`);
+  if (l.trocaResultado === "NAO_TROCOU") linhas.push("Não passou para a reserva: o link parou antes ou a reserva saiu do cadastro.");
+  return linhas;
+}
+
 export function LinkPrestador({ manutencaoId, titulo, versao, recarregarManutencao }: {
   manutencaoId: string; titulo: string; versao: number; recarregarManutencao: () => void;
 }) {
   const carga = useCarregar<LinkPrestadorInfo>(`/v1/condominio/manutencao/${manutencaoId}/link-prestador`);
   const [mandar, setMandar] = useState(false);
   const [cancelar, setCancelar] = useState(false);
+  const [naoTrocar, setNaoTrocar] = useState(false);
   const [falha, setFalha] = useState<string | null>(null);
   if (carga.estado === "carregando") return <Carregando linhas={2} />;
   if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
@@ -62,13 +85,16 @@ export function LinkPrestador({ manutencaoId, titulo, versao, recarregarManutenc
         <div className="grid gap-1 text-sm">
           <span className="flex flex-wrap items-center gap-2">
             <span className="font-medium">{l.para}</span>
-            <Selo tom={l.situacao === "VALE" ? "andamento" : "neutro"}>{SITUACAO[l.situacao]}</Selo>
+            <Selo tom={l.situacao === "VALE" ? (l.responderAte && !l.respondidoEm ? "atencao" : "andamento") : "neutro"}>
+              {l.situacao === "VALE" && l.responderAte && !l.respondidoEm ? "Esperando resposta" : SITUACAO[l.situacao]}
+            </Selo>
           </span>
           <span className="text-xs text-tinta-suave">
             Mandado em {diaHora(l.criadoEm)}{l.criadoPor ? ` por ${l.criadoPor}` : ""} · vale até {diaHora(l.expiraEm)}
             {l.abertoEm ? ` · aberto em ${diaHora(l.abertoEm)}` : " · ainda não foi aberto"}
           </span>
           {l.motivoCancelamento ? <span className="text-xs text-tinta-suave">Motivo: {l.motivoCancelamento}</span> : null}
+          {linhasReserva(l).map((t) => <span key={t} className="text-xs text-tinta-suave">{t}</span>)}
         </div>
       ) : d.semExecutor
         ? <p className="text-sm text-tinta-suave">Escolha antes quem executa (um prestador do cadastro ou um nome) para mandar o serviço por link.</p>
@@ -94,6 +120,7 @@ export function LinkPrestador({ manutencaoId, titulo, versao, recarregarManutenc
 
       <span className="flex flex-wrap gap-2">
         {d.pode.mandar ? <Botao variante={l ? "contorno" : "primario"} tamanho="m" onClick={() => setMandar(true)}><Icone nome="enviar" />{l?.situacao === "VALE" ? "Mandar de novo" : "Mandar link"}</Botao> : null}
+        {d.pode.naoTrocar ? <Botao variante="contorno" tamanho="m" onClick={() => setNaoTrocar(true)}>Não trocar sozinho</Botao> : null}
         {d.pode.cancelar ? <Botao variante="discreto" tamanho="m" onClick={() => setCancelar(true)}><Icone nome="fechar" />Cancelar link</Botao> : null}
       </span>
       {l?.situacao === "VALE" ? <p className="text-xs text-tinta-suave">Mandar de novo gera um link novo; o anterior para na hora.</p> : null}
@@ -101,6 +128,10 @@ export function LinkPrestador({ manutencaoId, titulo, versao, recarregarManutenc
       {mandar ? (
         <MandarLink manutencaoId={manutencaoId} titulo={titulo} versao={versao} info={d}
           aoFechar={() => setMandar(false)} aoMandar={() => { carga.recarregar(); recarregarManutencao(); }} />
+      ) : null}
+      {naoTrocar && l ? (
+        <NaoTrocar manutencaoId={manutencaoId} link={l} aoFechar={() => setNaoTrocar(false)}
+          aoConfirmar={() => { setNaoTrocar(false); carga.recarregar(); recarregarManutencao(); }} />
       ) : null}
       {cancelar && l ? (
         <CancelarLink manutencaoId={manutencaoId} linkId={l.id} aoFechar={() => setCancelar(false)}
@@ -116,6 +147,9 @@ function MandarLink({ manutencaoId, titulo, versao, info, aoFechar, aoMandar }: 
   const { painel } = usePlataforma();
   const [v, setV] = useState({ oQueFazer: info.sugestao.oQueFazer, quando: "", comoEntrar: "", valeAte: diasDepois(LINK_PRESTADOR_DIAS.padrao) });
   const [arquivos, setArquivos] = useState<string[]>([]);
+  const reserva = info.reservaDoCadastro;
+  const [passar, setPassar] = useState(true);
+  const [horas, setHoras] = useState<number>(PRAZO_RESPOSTA_PADRAO);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [pronto, setPronto] = useState<{ id: string; link: string } | null>(null);
@@ -127,7 +161,7 @@ function MandarLink({ manutencaoId, titulo, versao, info, aoFechar, aoMandar }: 
     ev.preventDefault();
     setErro(null);
     setEnviando(true);
-    const r = await chamarApi<{ id: string; codigo: string }>(base, { corpo: { ...v, versao, arquivos } });
+    const r = await chamarApi<{ id: string; codigo: string }>(base, { corpo: { ...v, versao, arquivos, responderHoras: reserva && passar ? horas : null } });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
     setPronto({ id: r.dados.id, link: `${window.location.origin}/p/${r.dados.codigo}` });
@@ -182,6 +216,23 @@ function MandarLink({ manutencaoId, titulo, versao, info, aoFechar, aoMandar }: 
         </div>
         <CampoAreaTexto id="lp-entrar" rotulo="Como entrar" opcional rows={2} maxLength={500} value={v.comoEntrar} onChange={(e) => setV({ ...v, comoEntrar: e.target.value })}
           placeholder="Procurar o zelador na portaria do bloco A." erro={comErro.includes("comoEntrar") ? "De 2 a 500 caracteres." : null} />
+        {reserva ? (
+          <fieldset className="grid gap-2 rounded-xl border border-linha p-3">
+            <legend className="px-1 text-sm font-medium">Se não responder, passar para a reserva</legend>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-1 h-4 w-4 accent-violeta-600" checked={passar} onChange={(e) => setPassar(e.target.checked)} />
+              <span>
+                Se {info.para?.nome ?? "o prestador"} não confirmar em {horas} horas, o serviço passa para <span className="font-medium">{reserva.nome}</span>, a reserva do cadastro, com o mesmo texto.
+              </span>
+            </label>
+            {passar ? (
+              <CampoSelecao id="lp-prazo" rotulo="Prazo para confirmar" className="max-w-56" value={String(horas)} onChange={(e) => setHoras(Number(e.target.value))}
+                opcoes={PRAZOS_RESPOSTA_PRESTADOR.map((h) => ({ valor: String(h), texto: `${h} horas` }))}
+                erro={comErro.includes("responderHoras") ? "Escolha 4, 8, 24 ou 48 horas." : null} />
+            ) : null}
+            <p className="text-xs text-tinta-suave">Só abrir o link não conta como resposta. Vencendo fora do horário de funcionamento, a troca espera o próximo horário.</p>
+          </fieldset>
+        ) : null}
         {info.arquivos.length ? (
           <fieldset className="grid gap-1">
             <legend className="mb-1 text-sm font-medium">Enviar junto <span className="font-normal text-tinta-suave">(só os que você marcar)</span></legend>
@@ -203,6 +254,33 @@ function MandarLink({ manutencaoId, titulo, versao, info, aoFechar, aoMandar }: 
           <Botao type="submit" disabled={enviando}>{enviando ? "Gerando…" : "Gerar link"}</Botao>
         </div>
       </form>
+    </Dialogo>
+  );
+}
+
+function NaoTrocar({ manutencaoId, link, aoFechar, aoConfirmar }: {
+  manutencaoId: string; link: NonNullable<LinkPrestadorInfo["link"]>; aoFechar: () => void; aoConfirmar: () => void;
+}) {
+  const [erro, setErro] = useState<ErroApi | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  async function enviar() {
+    setErro(null);
+    setEnviando(true);
+    const r = await chamarApi(`/v1/condominio/manutencao/${manutencaoId}/link-prestador/${link.id}/nao-trocar`, { corpo: {} });
+    setEnviando(false);
+    if (!r.ok) return setErro(r.erro);
+    aoConfirmar();
+  }
+  return (
+    <Dialogo aberto titulo="Não trocar sozinho" aoFechar={aoFechar}>
+      <div className="grid gap-3">
+        <p className="text-sm">O serviço fica com {link.para} mesmo sem resposta{link.reserva ? `, e não passa para ${link.reserva.nome}` : ""}. Fica registrado no histórico.</p>
+        {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
+        <div className="flex flex-wrap justify-end gap-2">
+          <Botao variante="contorno" onClick={aoFechar}>Voltar</Botao>
+          <Botao onClick={() => void enviar()} disabled={enviando}>{enviando ? "Desligando…" : "Não trocar sozinho"}</Botao>
+        </div>
+      </div>
     </Dialogo>
   );
 }

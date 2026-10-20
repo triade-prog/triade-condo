@@ -4,7 +4,7 @@
 import type {
   CanalEnquete, ConfirmacaoArea, EscopoEnquete, EstadoReserva, Intervalo, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite, SituacaoEnquete,
   EstadoAssembleia, EstadoItem, EstadoProcuracao, FormaAssembleia, PesoAssembleia, Quorum, SituacaoItem, TipoAssembleia, TipoItem,
-  EstadoAnuncio, TipoAnuncio,
+  EstadoAnuncio, TipoAnuncio, TipoVeiculo, DecisaoQueda, EstadoQueda,
 } from "@triade/domain";
 
 export interface Configuracoes {
@@ -156,6 +156,50 @@ export interface UnidadeDetalhe {
   podeEditar: boolean;
   podeConfirmar: boolean;
   emailLigado?: boolean;
+  /** Garagens e veículos (MU-06): as vagas da unidade e os veículos em uso. */
+  vagas?: Vaga[];
+  veiculos?: Veiculo[];
+}
+
+/** Vaga de garagem (MU-06): da unidade ou do condomínio. */
+export interface Vaga {
+  id: string;
+  identificacao: string;
+  onde?: string;
+  coberta?: boolean;
+  unidadeId?: string;
+  unidade?: string;
+  ativa: boolean;
+  versao: number;
+  veiculos: { id: string; placa: string; tipo: TipoVeiculo; modelo?: string }[];
+}
+
+/** Veículo em uso na unidade (MU-06). A placa vem pronta para mostrar. */
+export interface Veiculo {
+  id: string;
+  placa: string;
+  tipo: TipoVeiculo;
+  modelo?: string;
+  unidadeId: string;
+  contatoId?: string;
+  contato?: string;
+  vagaId?: string;
+  vaga?: string;
+  versao: number;
+}
+
+export interface Garagens {
+  vagas: Vaga[];
+  resumo: { vagas: number; deUnidades: number; doCondominio: number; veiculos: number; semVaga: number };
+  unidades: { id: string; nome: string }[];
+  podeEditar: boolean;
+}
+
+/** O que a busca da lista de unidades achou em cada unidade (MU-11). */
+export interface AchadoUnidade {
+  unidadeId: string;
+  tipo: "UNIDADE" | "PLACA" | "NOME" | "TELEFONE";
+  texto: string;
 }
 
 export interface MoradorDaLista {
@@ -237,7 +281,9 @@ export interface AvisoDoPainel {
     | "PRONTUARIO_VENCE" | "PRONTUARIO_VENCEU" | "EXPORTACAO_PRONTA" | "EXPORTACAO_FALHOU"
     | "ENTREGA" | "CHAMADO_RESPOSTA" | "ACESSO_PEDIDO"
     | "WHATSAPP_PEDIDO_NOVO" | "WHATSAPP_REVISAO" | "WHATSAPP_A_IDENTIFICAR" | "WHATSAPP_FALHA_ENVIO" | "WHATSAPP_DESCONECTADO"
-    | "RESERVA_A_APROVAR" | "RESERVA_CANCELADA";
+    | "RESERVA_A_APROVAR" | "RESERVA_CANCELADA"
+    | "PRESTADOR_CONFIRMOU" | "PRESTADOR_RECUSOU" | "WHATSAPP_QUEDA" | "WHATSAPP_QUEDA_VOLTOU"
+    | "TROCA_TROCOU" | "TROCA_MANDAR_LINK" | "TROCA_NAO_TROCOU" | "TROCA_RESERVA_SEM_RESPOSTA";
   pedidoId?: string;
   protocolo?: string;
   assunto?: string | null;
@@ -907,6 +953,8 @@ export interface MuralPublico {
   condominio: string;
   trocado?: boolean;
   foraDoAr?: boolean;
+  /** Enquanto o WhatsApp do condomínio está fora do ar (W-17). */
+  canalAlternativo?: string;
   comunicados?: ComunicadoPublico[];
   documentos?: { id: string; titulo: string; tipo: TipoDocumento }[];
   /** As seções do manual do prédio marcadas "no mural" (peça R10, MP-14). */
@@ -982,7 +1030,13 @@ export interface LinkPrestadorInfo {
   link?: {
     id: string; para: string; oQueFazer: string; quando?: string; comoEntrar?: string; expiraEm: string; abertoEm?: string;
     criadoEm: string; criadoPor?: string; situacao: "VALE" | "CANCELADO" | "CONCLUIDA" | "MANUTENCAO_CANCELADA" | "VENCIDO"; motivoCancelamento?: string;
+    /** Troca automática para a reserva (MP-09). */
+    responderAte?: string; responderHoras?: number; respondidoEm?: string; resposta?: "CONFIRMOU" | "RECUSOU" | "CHEGOU";
+    reserva?: { id: string; nome: string }; trocaDesligadaEm?: string; trocaResultado?: "TROCOU" | "NAO_TROCOU"; trocadoEm?: string;
+    trocaDe?: { nome: string };
   };
+  /** A reserva do cadastro de quem executa, para oferecer o prazo ao mandar o link (MP-09). */
+  reservaDoCadastro?: { id: string; nome: string };
   registros: RegistroPrestador[];
   fotos: { id: string; nome: string; registroId: string; enviadoEm: string }[];
   para?: { nome: string; telefone?: string; email?: string };
@@ -990,7 +1044,7 @@ export interface LinkPrestadorInfo {
   sugestao: { oQueFazer: string };
   etiqueta?: { rotulo: string; local: string };
   arquivos: { id: string; nome: string; tipo: string }[];
-  pode: { mandar: boolean; cancelar: boolean };
+  pode: { mandar: boolean; cancelar: boolean; naoTrocar?: boolean };
   semExecutor?: boolean;
 }
 
@@ -1002,6 +1056,8 @@ export interface EtiquetaPublica {
   recado?: string;
   recadoEm?: string;
   whatsapp?: string;
+  /** Enquanto o WhatsApp do condomínio está fora do ar (W-17). */
+  canalAlternativo?: string;
   /** Etiqueta de área comum que aceita reserva (peça R12, W-22): leva ao RESERVAR. */
   reserva?: { area: string; capacidade?: number; horario: string; livres?: string[]; texto: string };
 }
@@ -1009,7 +1065,10 @@ export interface EtiquetaPublica {
 export interface PrestadorPublico {
   condominio: string;
   encerrado?: boolean;
-  motivo?: "CANCELADO" | "CONCLUIDA" | "MANUTENCAO_CANCELADA" | "VENCIDO";
+  motivo?: "CANCELADO" | "CONCLUIDA" | "MANUTENCAO_CANCELADA" | "VENCIDO" | "REPASSADO";
+  /** Até quando confirmar, antes de passar para a reserva (MP-09); e a resposta já dada. */
+  responderAte?: string;
+  resposta?: "CONFIRMOU" | "RECUSOU" | "CHEGOU";
   para?: string;
   tipo?: "CORRETIVA" | "PREVENTIVA" | "VISTORIA";
   titulo?: string;
@@ -1019,7 +1078,50 @@ export interface PrestadorPublico {
   comoEntrar?: string;
   expiraEm?: string;
   arquivos?: { id: string; nome: string; tipo: string }[];
-  registros?: { tipo: "CHEGOU" | "IMPEDIMENTO" | "TERMINOU"; confirmado?: boolean; em: string; etiqueta?: string }[];
+  registros?: { tipo: "CHEGOU" | "IMPEDIMENTO" | "TERMINOU" | "CONFIRMOU" | "RECUSOU"; confirmado?: boolean; em: string; etiqueta?: string }[];
+}
+
+// ---------------------------------------------------------------------------------------
+// Queda do WhatsApp (F5.10; W-17).
+
+export interface EnvioDaQueda {
+  id: string;
+  finalidade: string;
+  estado: string;
+  criadoEm: string;
+  texto: string;
+  automatica: boolean;
+  por?: string;
+  para?: string;
+  unidades?: string;
+  pedido?: { id: string; protocolo: string };
+  parada: boolean;
+  conciliacao?: DecisaoQueda;
+  conciliacaoMotivo?: string;
+  conciliadaPor?: string;
+}
+
+export interface QuedaWhatsapp {
+  id: string;
+  estado: EstadoQueda;
+  origem: "PROVEDOR" | "MANUAL";
+  inicio: string;
+  voltouEm?: string;
+  encerradaEm?: string;
+  responsavel?: string;
+  souResponsavel?: boolean;
+  canalAlternativo?: string;
+  oQueAconteceu?: string;
+  resumo?: string;
+  abertaPor?: string;
+  encerradaPor?: string;
+  versao: number;
+  paradas: number;
+  faltam: number;
+  atrasadas: number;
+  outroCanal: number;
+  envios?: EnvioDaQueda[];
+  historico?: { acao: string; em: string; autor?: string; dados: Record<string, unknown> }[];
 }
 
 // ---------------------------------------------------------------------------------------

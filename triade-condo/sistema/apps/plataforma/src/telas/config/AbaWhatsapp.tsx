@@ -3,7 +3,8 @@
 // piloto (só o síndico aceita, antes de a TRÍADE conectar), a mensagem de fora do horário sem
 // prometer prazo, o aviso fixo contra golpes, a categoria e a prioridade do pedido que chega pelo
 // WhatsApp e quanto tempo as mensagens seguintes entram nele. Cada pessoa liga os próprios avisos
-// no WhatsApp dela. A conexão (QR, credenciais) fica só no Console.
+// no WhatsApp dela. A conexão (QR, credenciais) fica só no Console. Quem cuida das quedas do número
+// (W-17): sem escolha, o síndico.
 
 import { useState, type FormEvent } from "react";
 import { AVISOS_NO_WHATSAPP, MINUTOS_ANEXAR, prometePrazo, type AvisoNoWhatsapp } from "@triade/domain";
@@ -19,6 +20,8 @@ interface ConfigWhatsapp {
   categorias: { id: string; nome: string }[];
   prioridades: { id: string; nome: string }[];
   meusAvisos?: { telefone: string; tipos: AvisoNoWhatsapp[]; ligado: boolean; versao: number };
+  quedas?: { pessoaId?: string; quemCuida?: string };
+  pessoasQuedas?: { id: string; nome: string; sindico: boolean }[];
   pode: { editar: boolean; aceitarTermo: boolean };
 }
 
@@ -96,6 +99,36 @@ function Mensagens({ d, aoSalvar }: { d: ConfigWhatsapp; aoSalvar: (texto: strin
   );
 }
 
+function QuemCuidaDasQuedas({ d, aoSalvar }: { d: ConfigWhatsapp; aoSalvar: (texto: string) => void }) {
+  const [pessoa, setPessoa] = useState(d.quedas?.pessoaId ?? "");
+  const [erro, setErro] = useState<ErroApi | null>(null);
+  const pessoas = d.pessoasQuedas ?? [];
+
+  async function salvar(ev: FormEvent) {
+    ev.preventDefault();
+    setErro(null);
+    const r = await chamarApi("/v1/condominio/whatsapp/config/quedas", { metodo: "PUT", corpo: { versao: d.config.versao, pessoaId: pessoa || null } });
+    if (!r.ok) return setErro(r.erro);
+    aoSalvar(pessoa ? `${pessoas.find((x) => x.id === pessoa)?.nome ?? "A pessoa escolhida"} cuida das quedas do WhatsApp.` : "O síndico cuida das quedas do WhatsApp.");
+  }
+
+  return (
+    <form onSubmit={salvar} noValidate className="grid gap-4 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+      <h2 className="text-lg font-medium">Quando o WhatsApp cair</h2>
+      <p className="text-sm text-tinta-suave">
+        Quem cuida é avisado no sino quando o número desconecta, escreve por onde os moradores falam enquanto isso e, quando o número volta, decide o que ficou parado na fila.
+        {d.quedas?.quemCuida ? ` Hoje: ${d.quedas.quemCuida}.` : ""}
+      </p>
+      {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
+      <CampoSelecao id="zap-quedas" rotulo="Quem cuida das quedas" className="max-w-sm" value={pessoa} disabled={!d.pode.editar}
+        onChange={(e) => setPessoa(e.target.value)} ajuda="Só quem pode responder pedidos."
+        erro={camposComErro(erro).includes("pessoaId") ? "Escolha alguém que pode responder pedidos." : null}
+        opcoes={[{ valor: "", texto: "O síndico (padrão)" }, ...pessoas.map((x) => ({ valor: x.id, texto: x.sindico ? `${x.nome}, síndico` : x.nome }))]} />
+      {d.pode.editar ? <div className="flex justify-end"><Botao type="submit">Salvar quem cuida</Botao></div> : null}
+    </form>
+  );
+}
+
 function MeusAvisos({ d, aoSalvar }: { d: ConfigWhatsapp; aoSalvar: (texto: string) => void }) {
   const [telefone, setTelefone] = useState(d.meusAvisos?.telefone ?? "+55");
   const [tipos, setTipos] = useState<AvisoNoWhatsapp[]>(d.meusAvisos?.tipos ?? ["PEDIDO_NOVO", "RETORNO_VENCIDO", "REVISAO"]);
@@ -153,6 +186,7 @@ export function AbaWhatsapp({ aoSalvar }: { aoSalvar: (texto: string) => void })
       <SituacaoDaConexao numero={d.numero} conexao={d.conexao} />
       {d.pode.aceitarTermo ? <Termo aoAceitar={() => { salvo("Termo do piloto aceito. A TRÍADE pode conectar o número."); aoSalvar("Termo do piloto aceito."); atualizar(); }} /> : null}
       <Mensagens key={`m-${d.config.versao}`} d={d} aoSalvar={salvo} />
+      {d.quedas ? <QuemCuidaDasQuedas key={`q-${d.config.versao}`} d={d} aoSalvar={salvo} /> : null}
       <MeusAvisos key={`a-${d.meusAvisos?.versao ?? 0}`} d={d} aoSalvar={salvo} />
     </div>
   );

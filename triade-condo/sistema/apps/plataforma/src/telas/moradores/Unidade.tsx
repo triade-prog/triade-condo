@@ -4,17 +4,19 @@
 // parentesco, desde quando ocupam, o telefone e os comunicados; confirmar ou recusar o que está a confirmar; a mudança;
 // quem saiu, com o período de ocupação e o motivo, e a remoção dos dados pessoais de quem saiu (PT-11).
 // Unidade com inquilino e sem proprietário no cadastro pede o proprietário (MU-01). A situação
-// da unidade: à venda e para alugar, só na Plataforma (MU-11).
+// da unidade: à venda e para alugar, só na Plataforma (MU-11). Garagens e veículos (MU-06),
+// e os atalhos do menu da lista de unidades pelo endereço (?abrir=incluir|mudanca, #garagens).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatarData, mostrarDataSemHora, mostrarTelefone, nomeDaUnidade, SITUACOES_EMAIL } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Selo, textoDoErro, Vazio } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { ContatoAnterior, ContatoDaUnidade, Recado, UnidadeDetalhe } from "../tipos.ts";
 import { Caixa, nomeMotivo, SeloEstado } from "./comum.tsx";
+import { GaragensDaUnidade } from "./Garagens.tsx";
 import { descreverVinculo, LinhaOcupacao } from "./Vinculo.tsx";
 import { EditarContato, EditarUnidade, Encerrar, IncluirContato, RegistrarMudanca } from "./JanelasUnidade.tsx";
 
@@ -42,11 +44,16 @@ function periodo(a: ContatoAnterior): string {
 }
 
 export function Unidade() {
-  const id = useSearchParams().get("id");
+  const endereco = useSearchParams();
+  const id = endereco.get("id");
+  const abrir = endereco.get("abrir");
   const { atualizar } = usePlataforma();
   const carga = useCarregar<UnidadeDetalhe>(id ? `/v1/condominio/unidades/${id}` : null);
   const [recado, setRecado] = useState<Recado>(null);
-  const [janela, setJanela] = useState<JanelaAberta | null>(null);
+  const [janela, setJanela] = useState<JanelaAberta | null>(abrir === "incluir" ? { tipo: "incluir" } : abrir === "mudanca" ? { tipo: "mudanca" } : null);
+  useEffect(() => {
+    if (carga.estado === "pronto" && window.location.hash === "#garagens") document.getElementById("garagens")?.scrollIntoView();
+  }, [carga.estado]);
   const [falha, setFalha] = useState<string | null>(null);
   const fechar = () => setJanela(null);
   const voltar = <Link href="/moradores" className="text-sm font-medium text-violeta-600 hover:underline">Voltar às unidades</Link>;
@@ -185,6 +192,9 @@ export function Unidade() {
           Se o número mudou de dono, encerre o vínculo antigo. O telefone sozinho não prova quem é.
         </Aviso>
       ) : null}
+
+      <GaragensDaUnidade unidadeId={u.id} nomeUnidade={nome} vagas={d.vagas ?? []} veiculos={d.veiculos ?? []} contatos={d.contatos}
+        edita={edita} salvo={salvo} recarregar={carga.recarregar} />
 
       {d.anteriores.length ? (
         <section aria-labelledby="t-anteriores" className="grid gap-2">

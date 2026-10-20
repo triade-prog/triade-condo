@@ -10,7 +10,7 @@ import { linkWhatsapp, mensagemEtiqueta } from "@triade/domain";
 import { Aviso, Carregando, chamarApi, classeBotao, Icone, textoDoErro } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import type { EtiquetaPublica } from "../tipos.ts";
-import { Cartao, TelaPublica } from "./comum.tsx";
+import { Cartao, FaixaQueda, TelaPublica } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: EtiquetaPublica };
 const RODAPE = "Sem conta e sem senha. Esta página não mostra nomes nem unidades e não guarda nada no seu celular.";
@@ -62,6 +62,7 @@ export function Etiqueta() {
           <p className="text-[15px]">{e.recado}</p>
         </Cartao>
       ) : null}
+      <FaixaQueda canal={e.canalAlternativo} />
       {e.whatsapp ? (
         <a href={linkWhatsapp(e.whatsapp, mensagemEtiqueta(e.local, e.rotulo))} rel="noopener noreferrer" className={classeBotao("primario", "justify-self-stretch sm:justify-self-start")}>
           <Icone nome="whats" />Avisar pelo WhatsApp do condomínio

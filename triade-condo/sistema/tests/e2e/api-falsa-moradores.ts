@@ -1,6 +1,8 @@
 // Parte de moradores e unidades da API falsa da Plataforma (passos 3 e 3b). As regras de
 // verdade estão testadas no banco (pgTAP 009 e 012) e na API (Deno); aqui só o bastante para a
 // tela. O vínculo guarda as marcações; a relação de antes é calculada delas, como no banco.
+// Garagens e veículos (F3.8; MU-06, MU-11): vagas, veículos e a busca da lista de unidades, com a
+// placa achada com ou sem hífen (pgTAP 028).
 import type { Route } from "@playwright/test";
 
 interface Bloco { id: string; nome: string; ordem: number; ativo: boolean; versao: number }
@@ -14,6 +16,15 @@ interface Contato {
   /** E-mail do contato (CD-13). */
   email?: string; emailSituacao?: "PENDENTE" | "CONFIRMADO" | "DEVOLVIDO" | "PAROU"; emailComunicados?: boolean;
 }
+interface Vaga { id: string; identificacao: string; onde: string | null; coberta: boolean | null; unidadeId: string | null; ativa: boolean; versao: number }
+interface Veiculo {
+  id: string; placa: string; tipo: "CARRO" | "MOTO" | "OUTRO"; modelo: string | null; unidadeId: string; contatoId: string | null; vagaId: string | null;
+  retirado: boolean; versao: number;
+}
+const placaLimpa = (p: unknown) => String(p ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+const placaValida = (p: string) => /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(p);
+const mostrarPlaca = (p: string) => (/^[A-Z]{3}[0-9]{4}$/.test(p) ? `${p.slice(0, 3)}-${p.slice(3)}` : p);
+
 interface Marcas { proprietario: boolean; principal: boolean; mora: boolean; ligacao: string | null; parentesco: string | null; ocupaDesde: string | null }
 interface Vinculo extends Marcas {
   id: string; contatoId: string; unidadeId: string; relacao: string; recebeComunicados: boolean;
@@ -89,6 +100,12 @@ export function criarMoradores() {
     vinculos: [v(marina, A101, "PROPRIETARIO", "CONFIRMADO", true), v(pedro, A101, "FAMILIAR", "CONFIRMADO"), v(joana, A102, "INQUILINO", "CONFIRMADO", true, "PAINEL", "2025-03-01"),
       v(paulo, A102, "FAMILIAR", "PENDENTE", false, "PLANILHA")],
     importacoes: [] as unknown[],
+    vagas: [
+      { id: novoId(), identificacao: "G-23", onde: "Subsolo 1", coberta: true, unidadeId: A101, ativa: true, versao: 1 },
+      { id: novoId(), identificacao: "G-24", onde: "Subsolo 1", coberta: true, unidadeId: A101, ativa: true, versao: 1 },
+      { id: novoId(), identificacao: "V-01", onde: "Térreo", coberta: false, unidadeId: null, ativa: true, versao: 1 },
+    ] as Vaga[],
+    veiculos: [] as Veiculo[],
   };
 }
 
@@ -126,7 +143,7 @@ const semResponsavel = (ativos: Vinculo[]) => ativos.length > 0 && !ativos.some(
 
 /** Atende as rotas do passo 3; devolve null quando a rota não é daqui. */
 export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: string, metodo: string, corpo: Record<string, unknown>, pode: (a: string) => boolean) {
-  if (!/^\/v1\/condominio\/(unidades|blocos|moradores|contatos|vinculos-unidade|importacoes|estrutura)/.test(caminho)) return null;
+  if (!/^\/v1\/condominio\/(unidades|blocos|moradores|contatos|vinculos-unidade|importacoes|estrutura|busca-unidades|garagens|vagas|veiculos)/.test(caminho)) return null;
   if (!pode("moradores.ver")) return erro(route, 403, "FORBIDDEN");
   const edita = pode("moradores.editar");
   const confirma = pode("moradores.confirmar");
@@ -140,6 +157,13 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
   const mesma = (x: Unidade, blocoId: unknown, andar: unknown, ident: string) =>
     x.ativa && x.blocoId === (blocoId ?? null) && (x.andar ?? "").toLowerCase() === String(andar ?? "").toLowerCase() && x.identificacao.toLowerCase() === ident.toLowerCase();
   const compartilhado = (c: Contato) => m.contatos.some((o) => o.id !== c.id && o.telefone === c.telefone && m.vinculos.some((v) => v.contatoId === o.id && v.estado !== "ENCERRADO"));
+  const nomeDaVaga = (id: string | null) => m.vagas.find((g) => g.id === id)?.identificacao;
+  const vagaJson = (g: Vaga) => ({ ...g, onde: g.onde ?? undefined, coberta: g.coberta ?? undefined, unidadeId: g.unidadeId ?? undefined,
+    unidade: g.unidadeId ? nomeUnidade(unidade(g.unidadeId)!) : undefined,
+    veiculos: m.veiculos.filter((v) => v.vagaId === g.id && !v.retirado).map((v) => ({ id: v.id, placa: mostrarPlaca(v.placa), tipo: v.tipo, modelo: v.modelo ?? undefined })) });
+  const veiculoJson = (v: Veiculo) => ({ id: v.id, placa: mostrarPlaca(v.placa), tipo: v.tipo, modelo: v.modelo ?? undefined, unidadeId: v.unidadeId,
+    contatoId: v.contatoId ?? undefined, contato: v.contatoId ? contato(v.contatoId).nome ?? undefined : undefined,
+    vagaId: v.vagaId ?? undefined, vaga: nomeDaVaga(v.vagaId), versao: v.versao });
   const ligar = (contatoId: string, unidadeId: string, marcas: Marcas, recebe: boolean, origem: "PAINEL" | "PLANILHA" = "PAINEL") => {
     if (marcas.principal) for (const v of ativos(unidadeId)) v.principal = false;
     const v: Vinculo = { id: novoId(), contatoId, unidadeId, relacao: relacaoDe(marcas), ...marcas, recebeComunicados: recebe,
@@ -148,6 +172,84 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     return v;
   };
 
+  if (caminho === "/v1/condominio/busca-unidades") {
+    const q = (new URL(route.request().url()).searchParams.get("busca") ?? "").trim();
+    if (q.length < 2 || q.length > 60) return erro(route, 400, "VALIDATION_ERROR", { campos: ["busca"] });
+    const placa = placaLimpa(q);
+    const digitos = q.replace(/\D/g, "");
+    const achados = new Map<string, { unidadeId: string; tipo: string; texto: string }>();
+    const achar = (unidadeId: string, tipo: string, texto: string) => { if (!achados.has(unidadeId)) achados.set(unidadeId, { unidadeId, tipo, texto }); };
+    for (const x of m.unidades.filter((u) => u.ativa && nomeUnidade(u).toLowerCase().includes(q.toLowerCase()))) achar(x.id, "UNIDADE", nomeUnidade(x));
+    if (placa.length >= 3) {
+      for (const v of m.veiculos.filter((v) => !v.retirado && v.placa.includes(placa))) {
+        achar(v.unidadeId, "PLACA", `placa ${mostrarPlaca(v.placa)}${v.modelo ? ` · ${v.modelo}` : ""} · ${nomeDaVaga(v.vagaId) ? `vaga ${nomeDaVaga(v.vagaId)}` : "sem vaga"}`);
+      }
+    }
+    for (const v of m.vinculos.filter((v) => v.estado !== "ENCERRADO")) {
+      const c = contato(v.contatoId);
+      if (c.nome?.toLowerCase().includes(q.toLowerCase())) achar(v.unidadeId, "NOME", c.nome);
+      else if (digitos.length >= 4 && c.telefone?.replace(/\D/g, "").includes(digitos)) achar(v.unidadeId, "TELEFONE", c.nome ?? "");
+    }
+    return route.fulfill({ json: [...achados.values()] });
+  }
+  if (caminho === "/v1/condominio/garagens") {
+    const ativas = m.vagas.filter((g) => g.ativa);
+    const emUso = m.veiculos.filter((v) => !v.retirado);
+    return route.fulfill({ json: {
+      vagas: [...m.vagas].sort((a, b) => Number(b.ativa) - Number(a.ativa) || chave(a.identificacao).localeCompare(chave(b.identificacao))).map(vagaJson),
+      resumo: { vagas: ativas.length, deUnidades: ativas.filter((g) => g.unidadeId).length, doCondominio: ativas.filter((g) => !g.unidadeId).length,
+        veiculos: emUso.length, semVaga: emUso.filter((v) => !v.vagaId).length },
+      unidades: m.unidades.filter((x) => x.ativa).map((x) => ({ id: x.id, nome: nomeUnidade(x) })),
+      podeEditar: edita,
+    } });
+  }
+  const vg = /^\/v1\/condominio\/vagas(?:\/([^/]+))?$/.exec(caminho);
+  if (vg) {
+    const g = vg[1] ? m.vagas.find((x) => x.id === vg[1]) : undefined;
+    if (vg[1] && !g) return erro(route, 404, "NOT_FOUND");
+    if (g) { const c = conflito(g, corpo.versao); if (c) return c; }
+    const ident = String(corpo.identificacao ?? "").trim();
+    if (!ident || ident.length > 20 || m.vagas.some((x) => x.ativa && x.id !== g?.id && x.identificacao.toLowerCase() === ident.toLowerCase())) {
+      return erro(route, 400, "VALIDATION_ERROR", { campos: ["identificacao"] });
+    }
+    if (g && corpo.ativa === false && m.veiculos.some((v) => v.vagaId === g.id && !v.retirado)) return erro(route, 400, "VALIDATION_ERROR", { motivo: "VAGA_COM_VEICULO" });
+    const dados = { identificacao: ident, onde: String(corpo.onde ?? "").trim() || null, coberta: (corpo.coberta as boolean | null) ?? null,
+      unidadeId: (corpo.unidadeId as string | null) ?? null };
+    if (g) {
+      Object.assign(g, dados, { ativa: (corpo.ativa as boolean | null) ?? g.ativa, versao: g.versao + 1 });
+      return route.fulfill({ json: { id: g.id, versao: g.versao } });
+    }
+    const nova: Vaga = { id: novoId(), ...dados, ativa: true, versao: 1 };
+    m.vagas.push(nova);
+    return route.fulfill({ status: 201, json: { id: nova.id, versao: 1 } });
+  }
+  const vc = /^\/v1\/condominio\/veiculos(?:\/([^/]+))?(\/retirar)?$/.exec(caminho);
+  if (vc) {
+    const v = vc[1] ? m.veiculos.find((x) => x.id === vc[1]) : undefined;
+    if (vc[1] && !v) return erro(route, 404, "NOT_FOUND");
+    if (v) { const c = conflito(v, corpo.versao); if (c) return c; }
+    if (v?.retirado) return erro(route, 400, "VALIDATION_ERROR", { motivo: "VEICULO_RETIRADO" });
+    if (vc[2] && v) {
+      Object.assign(v, { retirado: true, vagaId: null, versao: v.versao + 1 });
+      return route.fulfill({ json: { versao: v.versao } });
+    }
+    const placa = placaLimpa(corpo.placa);
+    const unidadeId = String(corpo.unidadeId ?? v?.unidadeId ?? "");
+    if (!placaValida(placa) || m.veiculos.some((x) => !x.retirado && x.id !== v?.id && x.placa === placa && x.unidadeId !== unidadeId)) {
+      return erro(route, 400, "VALIDATION_ERROR", { campos: ["placa"] });
+    }
+    const vagaId = (corpo.vagaId as string | null) ?? null;
+    if (vagaId && m.vagas.find((g) => g.id === vagaId)?.unidadeId !== unidadeId) return erro(route, 400, "VALIDATION_ERROR", { campos: ["vagaId"] });
+    const dados = { placa, tipo: corpo.tipo as Veiculo["tipo"], modelo: String(corpo.modelo ?? "").trim() || null, unidadeId,
+      contatoId: (corpo.contatoId as string | null) ?? null, vagaId };
+    if (v) {
+      Object.assign(v, dados, { versao: v.versao + 1 });
+      return route.fulfill({ json: { id: v.id, versao: v.versao } });
+    }
+    const novo: Veiculo = { id: novoId(), ...dados, retirado: false, versao: 1 };
+    m.veiculos.push(novo);
+    return route.fulfill({ status: 201, json: { id: novo.id, versao: 1 } });
+  }
   if (caminho === "/v1/condominio/unidades" && metodo === "GET") {
     const ordemBloco = (id: string | null) => (id ? m.blocos.find((b) => b.id === id)!.ordem : 0);
     const lista = [...m.unidades].sort((a, b) => Number(b.ativa) - Number(a.ativa) || ordemBloco(a.blocoId) - ordemBloco(b.blocoId)
@@ -202,6 +304,8 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
         ocupacao: { situacao: ocupacao(ativos(x.id)), moram: ativos(x.id).filter((v) => v.mora).length, proprietarioNaoMora: naoMora(ativos(x.id)) },
         faltaProprietario: faltaDono(m, x.id),
         podeEditar: edita, podeConfirmar: confirma,
+        vagas: m.vagas.filter((g) => g.unidadeId === x.id && g.ativa).map(vagaJson),
+        veiculos: m.veiculos.filter((v) => v.unidadeId === x.id && !v.retirado).map(veiculoJson),
       } });
     }
     if (!un[2] && metodo === "PUT") {

@@ -2,7 +2,7 @@
 -- (F5.9; MP-09) e queda do WhatsApp (F5.10; W-17). Desenho em docs/telas/garagens-reserva-quedas.html.
 -- O relógio fica numa quarta-feira, 03/03/2027, ao meio-dia.
 begin;
-select plan(128);
+select plan(129);
 
 select ajustar_relogio(timestamptz '2027-03-03 12:00:00-03' - now());
 
@@ -213,7 +213,7 @@ select is((select texto from ev),
   'MP-09: o texto diz o serviço e até quando confirmar');
 select is((select count(*)::integer from avisos_reserva a, ids where a.pessoa_id = bruna and a.tipo = 'TROCOU'), 1,
   'MP-09: o responsável pela manutenção é avisado da troca');
-select ok((select bool_or(x ->> 'tipo' = 'RESERVA_TROCOU' and x ->> 'titulo' = 'Bomba de recalque com ruído')
+select ok((select bool_or(x ->> 'tipo' = 'TROCA_TROCOU' and x ->> 'titulo' = 'Bomba de recalque com ruído')
              from ids, c, jsonb_array_elements(plataforma_avisos(bruna, ipe) -> 'itens') x), 'MP-09: o aviso aparece no sino');
 select plataforma_marcar_avisos(bruna, ipe, null) from ids, c;
 select is((select count(*)::integer from avisos_reserva where visto_em is null), 0, 'MP-09: e é marcado como visto');
@@ -363,6 +363,9 @@ select is((plataforma_encerrar_queda(ana, ipe, (pg_temp.q()).id, (pg_temp.q()).v
 select is((select jsonb_array_length(pg_temp.wa((select ana from ids)) -> 'quedas')), 1, 'W-17: a queda encerrada fica na lista');
 select ok(not (pg_temp.wa((select ana from ids)) ? 'queda'), 'W-17: e sai da tela principal');
 select throws_ok($$ update quedas_whatsapp set resumo = 'Outro resumo qualquer' $$, 'TC422', null, 'W-17: queda encerrada não muda');
+select ok((select bool_and(h ->> 'acao' like 'whatsapp.queda%') and count(*) >= 4 and bool_or(h ->> 'acao' = 'whatsapp.queda_encerrada')
+             from ids, c, jsonb_array_elements(plataforma_queda(ana, ipe, (pg_temp.q()).id) -> 'historico') h),
+  'W-17: a queda mostra o próprio histórico');
 select throws_ok($$ select plataforma_queda(davi, jatoba, (pg_temp.q()).id) from ids, c $$, 'TC404', null, 'W-17: um condomínio não vê a queda do outro');
 
 -- Abrir à mão, com quem cuida escolhido nas configurações.

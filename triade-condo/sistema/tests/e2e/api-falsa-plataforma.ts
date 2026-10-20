@@ -160,6 +160,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (linkDaEnquete !== null) return linkDaEnquete;
     const linkDaAssembleia = await rotasAssembleiaPublica(route, assembleias, caminho, metodo, corpo);
     if (linkDaAssembleia !== null) return linkDaAssembleia;
+    links.canalAlternativo = whatsapp.queda?.canalAlternativo;
     const etiquetaOuPrestador = await rotasLinksPublicas(route, links, manutencao, caminho, metodo, corpo);
     if (etiquetaOuPrestador !== null) return etiquetaOuPrestador;
     const fotoDoAnuncio = await rotasClassificadoPublico(route, caminho);

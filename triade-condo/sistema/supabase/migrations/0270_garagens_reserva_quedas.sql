@@ -1051,6 +1051,16 @@ as $$
    where e.queda_id = q.id
 $$;
 
+-- Histórico da queda, do mais novo ao mais antigo.
+create function historico_da_queda(q quedas_whatsapp) returns jsonb
+language sql stable
+set search_path = public
+as $$
+  select coalesce(jsonb_agg(jsonb_build_object('acao', h.acao, 'em', h.ocorrido_em, 'autor', nome_pessoa(h.autor_id), 'dados', h.dados)
+                            order by h.ocorrido_em desc, h.id desc), '[]'::jsonb)
+    from historico h where h.entidade = 'queda_whatsapp' and h.entidade_id = q.id::text
+$$;
+
 -- Abrir à mão, quando as mensagens param de chegar (decisão 13).
 create function plataforma_abrir_queda(p_pessoa uuid, p_condominio uuid, p_o_que_aconteceu text) returns jsonb
 language plpgsql
@@ -1191,7 +1201,7 @@ begin
   v := whatsapp_r5b(p_pessoa, p_condominio);
   select * into q from quedas_whatsapp where estado <> 'ENCERRADA';
   return v || jsonb_strip_nulls(jsonb_build_object(
-    'queda', case when q.id is not null then queda_json(q, p_pessoa) || jsonb_build_object('envios', envios_da_queda(q, p_pessoa)) end,
+    'queda', case when q.id is not null then queda_json(q, p_pessoa) || jsonb_build_object('envios', envios_da_queda(q, p_pessoa), 'historico', historico_da_queda(q)) end,
     'quedas', coalesce((select jsonb_agg(queda_json(x, p_pessoa) order by x.inicio desc)
                           from (select * from quedas_whatsapp where estado = 'ENCERRADA' order by inicio desc limit 10) x), '[]'::jsonb),
     'responsavelQuedas', nome_pessoa(quem_cuida_das_quedas())))
@@ -1208,7 +1218,7 @@ declare q quedas_whatsapp;
 begin
   perform exigir_whatsapp(p_pessoa, p_condominio);
   q := exigir_queda(p_id);
-  return queda_json(q, p_pessoa) || jsonb_build_object('envios', envios_da_queda(q, p_pessoa));
+  return queda_json(q, p_pessoa) || jsonb_build_object('envios', envios_da_queda(q, p_pessoa), 'historico', historico_da_queda(q));
 end $$;
 
 -- Configurações › WhatsApp (0200) com quem cuida das quedas e quem pode.
@@ -1322,7 +1332,7 @@ begin
         from (select item from jsonb_array_elements(v -> 'itens') item
               union all
               select jsonb_strip_nulls(jsonb_build_object(
-                       'id', a.id, 'tipo', 'RESERVA_' || a.tipo, 'manutencaoId', m.id, 'titulo', m.titulo,
+                       'id', a.id, 'tipo', 'TROCA_' || a.tipo, 'manutencaoId', m.id, 'titulo', m.titulo,
                        'nome', l.para, 'criadoEm', a.criado_em, 'vistoEm', a.visto_em))
                 from avisos_reserva a join links_prestador l on l.id = a.link_id join manutencoes m on m.id = l.manutencao_id
                where a.pessoa_id = p_pessoa and a.criado_em >= app_now() - interval '30 days') x), '[]'::jsonb),

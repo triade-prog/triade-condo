@@ -2,6 +2,8 @@
 // Link do prestador (design "Links e QR", tela 6; V-11, MP-08): o serviço que o condomínio mandou,
 // sem conta. O prestador registra a chegada lendo a etiqueta do local, conta se não conseguiu
 // fazer e conta o que fez, com fotos. Nada muda sozinho na manutenção: o responsável confere.
+// Antes de chegar, confirma que vai fazer ou diz que não pode (MP-09): com reserva no cadastro,
+// sem resposta no prazo ou com a recusa, o serviço passa para a reserva e este link para.
 
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
@@ -13,13 +15,14 @@ import type { PrestadorPublico } from "../tipos.ts";
 import { Cartao, TelaPublica } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: PrestadorPublico };
-type Modo = "servico" | "chegada" | "impedimento" | "terminei";
+type Modo = "servico" | "chegada" | "impedimento" | "terminei" | "recusar";
 const RODAPE = "Link só para este serviço. Não precisa de conta.";
 const ENCERRADO: Record<NonNullable<PrestadorPublico["motivo"]>, string> = {
   CANCELADO: "O condomínio cancelou este link. Se o serviço continua, peça um link novo.",
   CONCLUIDA: "Esta manutenção já foi concluída pelo condomínio. Obrigado.",
   MANUTENCAO_CANCELADA: "O condomínio cancelou esta manutenção.",
   VENCIDO: "Este link venceu. Se o serviço continua, peça um link novo ao condomínio.",
+  REPASSADO: "O condomínio passou o serviço para outro prestador. Se quiser conversar, fale com o condomínio.",
 };
 
 export function Prestador() {
@@ -28,6 +31,7 @@ export function Prestador() {
   const [carga, setCarga] = useState<Carga>({ estado: "carregando" });
   const [modo, setModo] = useState<Modo>("servico");
   const [recado, setRecado] = useState<string | null>(null);
+  const [falha, setFalha] = useState<string | null>(null);
 
   const carregar = useCallback(() => {
     void chamarApi<PrestadorPublico>(base).then((r) => {
@@ -51,9 +55,16 @@ export function Prestador() {
 
   if (modo === "chegada") return tela(<>{voltar}<Chegada base={base} aoRegistrar={pronto} /></>);
   if (modo === "impedimento") return tela(<>{voltar}<Impedimento base={base} aoEnviar={() => pronto("Enviado. O condomínio foi avisado e vai combinar o próximo passo com você.")} /></>);
+  if (modo === "recusar") return tela(<>{voltar}<Recusar base={base} aoEnviar={() => pronto("Resposta enviada. O condomínio foi avisado.")} /></>);
   if (modo === "terminei") return tela(<>{voltar}<Terminei base={base} aoEnviar={() => pronto("Enviado. O condomínio confere o que foi feito e conclui a manutenção.")} /></>);
 
   const chegada = p.registros?.find((r) => r.tipo === "CHEGOU");
+  async function confirmar() {
+    setFalha(null);
+    const r = await chamarApi(`${base}/confirmar`, { corpo: {} });
+    if (!r.ok) return setFalha(textoDoErro(r.erro));
+    pronto("Obrigado. O condomínio sabe que você vai fazer o serviço.");
+  }
   return tela(
     <>
       {recado ? <Aviso tom="ok">{recado}</Aviso> : null}
@@ -74,12 +85,52 @@ export function Prestador() {
           {chegada.confirmado ? `Confirmada pela etiqueta ${chegada.etiqueta ?? "do local"}.` : "Informada por você."}
         </Aviso>
       ) : null}
+      {!p.resposta && !chegada ? (
+        <div className="grid gap-2">
+          {p.responderAte ? (
+            <p className="text-[15px]">Confirme até <span className="font-medium">{diaHora(p.responderAte)}</span>. Sem resposta, o condomínio passa o serviço para outro prestador.</p>
+          ) : null}
+          <Botao onClick={() => void confirmar()}><Icone nome="check" />Confirmo que vou fazer</Botao>
+          <Botao variante="contorno" onClick={() => { setRecado(null); setFalha(null); setModo("recusar"); }}><Icone nome="fechar" />Não posso atender</Botao>
+          {falha ? <p className="text-sm text-erro" role="alert">{falha}</p> : null}
+        </div>
+      ) : p.resposta === "CONFIRMOU" && !chegada && !recado ? (
+        <Aviso tom="ok">Você confirmou que vai fazer este serviço.</Aviso>
+      ) : p.resposta === "RECUSOU" ? (
+        <Aviso tom="info">Você disse que não pode atender. O condomínio foi avisado.</Aviso>
+      ) : null}
       <div className="grid gap-2">
-        <Botao onClick={() => { setRecado(null); setModo("chegada"); }}><Icone nome="pin" />Cheguei</Botao>
+        <Botao variante={!p.resposta && !chegada ? "contorno" : "primario"} onClick={() => { setRecado(null); setModo("chegada"); }}><Icone nome="pin" />Cheguei</Botao>
         <Botao variante="contorno" onClick={() => { setRecado(null); setModo("impedimento"); }}><Icone nome="alerta" />Não consegui fazer</Botao>
         <Botao variante="contorno" onClick={() => { setRecado(null); setModo("terminei"); }}><Icone nome="check" />Terminei</Botao>
       </div>
     </>,
+  );
+}
+
+/** "Não posso atender" (MP-09): o motivo é opcional. */
+function Recusar({ base, aoEnviar }: { base: string; aoEnviar: () => void }) {
+  const [texto, setTexto] = useState("");
+  const [erro, setErro] = useState<ErroApi | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  async function enviar(ev: FormEvent) {
+    ev.preventDefault();
+    setErro(null);
+    setEnviando(true);
+    const r = await chamarApi(`${base}/recusar`, { corpo: { texto: texto.trim() || null } });
+    setEnviando(false);
+    if (!r.ok) return setErro(r.erro);
+    aoEnviar();
+  }
+  return (
+    <form onSubmit={enviar} noValidate className="grid gap-3">
+      <h2 className="text-xl font-medium">Não posso atender</h2>
+      <p className="text-[15px]">O condomínio é avisado na hora e pode passar o serviço para outro prestador.</p>
+      {erro && !camposComErro(erro).length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
+      <CampoAreaTexto id="pr-motivo" rotulo="Por quê" opcional rows={3} maxLength={500} value={texto} onChange={(e) => setTexto(e.target.value)}
+        erro={camposComErro(erro).includes("texto") ? "De 3 a 500 caracteres." : null} />
+      <Botao type="submit" disabled={enviando}>{enviando ? "Enviando…" : "Enviar resposta"}</Botao>
+    </form>
   );
 }
 

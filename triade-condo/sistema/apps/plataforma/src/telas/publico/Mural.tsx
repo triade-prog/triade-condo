@@ -14,7 +14,7 @@ import { Aviso, Botao, CampoTexto, Carregando, chamarApi, Chip, textoDoErro } fr
 import { diaHora } from "../pedidos/comum.tsx";
 import { prazoCurto } from "../vida/Enquetes.tsx";
 import type { AnuncioPublico, MuralPublico } from "../tipos.ts";
-import { Cartao, ComunicadoLido, TelaPublica } from "./comum.tsx";
+import { Cartao, ComunicadoLido, FaixaQueda, TelaPublica } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: MuralPublico };
 
@@ -68,6 +68,7 @@ export function Mural() {
     return (
       <TelaPublica titulo={titulo} subtitulo="Classificados entre moradores">
         {abas}
+        <FaixaQueda canal={m.canalAlternativo} />
         <ul className="grid gap-3" aria-label="Classificados entre moradores">
           {m.classificados.map((a) => <li key={a.id}><Anuncio a={a} codigo={codigo} /></li>)}
         </ul>
@@ -113,6 +114,7 @@ export function Mural() {
   return (
     <TelaPublica titulo={titulo} subtitulo={subtitulo}>
       {abas}
+      <FaixaQueda canal={m.canalAlternativo} />
       {m.enquetes?.length ? (
         <ul className="grid gap-3" aria-label="Enquetes abertas">
           {m.enquetes.map((e) => (
