@@ -1,7 +1,7 @@
 // Aviso de pedido registrado (F6.4, AT-26) na Plataforma do síndico: o registro leva o que quem
 // registra escolheu avisar, a prévia de Quem avisar vai ao banco com o que já foi preenchido, a
 // regra do síndico tem rota própria e os e-mails do protocolo e do prestador ganham forma aqui.
-// As regras de quem é avisado e o que pode sair ficam no banco (029_aviso_pedido_registrado_test.sql).
+// As regras de quem é avisado e o que pode sair ficam no banco (030_aviso_pedido_registrado_test.sql).
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { AVISO_NOVO_SINDICO, DESTINOS_AVISO_REGISTRO, MEIOS_AVISO_REGISTRO } from "@triade/domain";
 import { criarApiPlataforma } from "./app.ts";
@@ -112,7 +112,7 @@ Deno.test("AT-26: a regra do síndico e o protocolo, com a versão lida (AT-24)"
 });
 
 Deno.test("as listas do aviso de pedido registrado são as mesmas do banco", async () => {
-  const sql = await Deno.readTextFile(new URL("../../migrations/0280_aviso_pedido_registrado.sql", import.meta.url));
+  const sql = await Deno.readTextFile(new URL("../../migrations/0281_aviso_pedido_registrado.sql", import.meta.url));
   const lista = (re: RegExp) => [...sql.match(re)![1]!.matchAll(/'([A-Z_]+)'/g)].map((x) => x[1]);
   assertEquals(lista(/aviso_novo_sindico +text not null default '[A-Z_]+'\s+check \(aviso_novo_sindico in \(([^)]*)\)/), Object.keys(AVISO_NOVO_SINDICO));
   assertEquals(lista(/destino +text not null check \(destino in \(([^)]*)\)/), Object.keys(DESTINOS_AVISO_REGISTRO));

@@ -1,4 +1,4 @@
--- 0280 · Aviso de pedido registrado (F6.4; AT-26). Desenho em docs/telas/aviso-pedido-registrado.html,
+-- 0281 · Aviso de pedido registrado (F6.4; AT-26). Desenho em docs/telas/aviso-pedido-registrado.html,
 -- aprovado pela Carolina em 20/10/2026.
 --
 -- Regras desta parte (as decisões do desenho):
