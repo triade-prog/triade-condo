@@ -2,7 +2,8 @@
 // Início do síndico (V-08, CF-12): o resumo de moradores e unidades (passo 3), o que falta
 // configurar, sem obrigar nada, e o que já veio pronto pelo cenário. O dia do condomínio
 // (passo 7, F7.1): o que pede atenção agora e o mês fechado, separado do agora. Hoje na
-// agenda (peça R7) e o cartão da manutenção (peça R6).
+// agenda (peça R7) e o cartão da manutenção (peça R6). Para quem pode aprovar, as decisões que
+// esperam a resposta (F7.4, AT-23).
 
 import Link from "next/link";
 import { CENARIOS, mostrarHoras, mostrarPorcentagem, nomeDoMes, nomeDoMesAnterior, PENDENCIAS_CONFIG } from "@triade/domain";
@@ -67,11 +68,13 @@ const HOJE = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", w
 const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 
 /** Agora (F7.1, AT-08, TR-11): o que pede atenção agora, cada linha levando à fila filtrada. */
-function Agora({ resumo, registrar, paradaDias }: {
+function Agora({ resumo, decisoes, registrar, paradaDias }: {
   resumo: NonNullable<ReturnType<typeof usePlataforma>["painel"]["pedidos"]>;
+  decisoes: ReturnType<typeof usePlataforma>["painel"]["decisoes"];
   registrar: boolean;
   paradaDias: number | null;
 }) {
+  const maisAntigaDias = decisoes?.maisAntigaDias ?? null;
   const linhas = [
     ...(resumo.retornoVencido ? [{ selo: "Vencido", tom: "erro" as const, texto: plural(resumo.retornoVencido, "retorno vencido", "retornos vencidos"),
       href: "/pedidos?atencao=RETORNO_VENCIDO", botao: "Ver quais", primario: true,
@@ -81,6 +84,11 @@ function Agora({ resumo, registrar, paradaDias }: {
     ...(resumo.vencemHoje ? [{ selo: "Hoje", tom: "atencao" as const, texto: plural(resumo.vencemHoje, "retorno vence hoje", "retornos vencem hoje"),
       href: "/pedidos?situacao=ATIVOS", botao: "Ver quais", primario: false,
       ajuda: resumo.proximoHoje ? `O próximo às ${HORA.format(new Date(resumo.proximoHoje))}.` : null }] : []),
+    ...(decisoes?.aguardando ? [{ selo: "Para você", tom: "atencao" as const,
+      texto: plural(decisoes.aguardando, "decisão aguardando você", "decisões aguardando você"), href: "/decisoes?filtro=AGUARDANDO", botao: "Decidir", primario: true,
+      ajuda: [decisoes.vencidas ? `${decisoes.vencidas} com o prazo vencido` : null,
+        maisAntigaDias === null ? null : `a mais antiga foi pedida ${maisAntigaDias === 0 ? "hoje" : maisAntigaDias === 1 ? "há 1 dia" : `há ${maisAntigaDias} dias`}`]
+        .filter(Boolean).join("; ").replace(/^./, (x) => x.toUpperCase()) + "." }] : []),
     ...(resumo.meusParaAceitar ? [{ selo: null, tom: "info" as const, texto: plural(resumo.meusParaAceitar, "pedido para você aceitar", "pedidos para você aceitar"),
       href: "/pedidos?responsavel=EU&atencao=AGUARDANDO_ACEITE", botao: "Ver e aceitar", ajuda: null as string | null, primario: false }] : []),
     ...(resumo.semResponsavel ? [{ selo: null, tom: "info" as const, texto: plural(resumo.semResponsavel, "sem responsável", "sem responsável"),
@@ -204,7 +212,7 @@ export function Inicio() {
           <CartaoAcessoExcepcional pedidos={painel.acessosExcepcionais.pedidos} valendo={painel.acessosExcepcionais.valendo} />
         ) : null}
         {painel.pedidos ? (
-          <Agora resumo={painel.pedidos} registrar={pode("pedidos.atualizar")}
+          <Agora resumo={painel.pedidos} decisoes={painel.decisoes} registrar={pode("pedidos.atualizar")}
             paradaDias={config.estado === "pronto" ? config.dados.avisos.pendenciaDias : null} />
         ) : null}
         {pode("agenda.ver") ? <HojeNaAgenda /> : null}

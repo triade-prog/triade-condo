@@ -9,6 +9,7 @@
 // WhatsApp, mensagem a identificar, envio que falhou e número desconectado. Da peça R12: reserva
 // esperando aprovação e reserva cancelada pelo morador perto da data. Da F5.9 (MP-09): o prestador
 // confirmou ou não pode, e a troca para a reserva. Da F5.10 (W-17): a queda do WhatsApp e a volta do número.
+// Da F7.4 (AT-23): decisão pedida a você, decisão com o prazo vencido e a resposta da que você pediu.
 
 import Link from "next/link";
 import { useState } from "react";
@@ -86,6 +87,12 @@ function detalhe(a: AvisoDoPainel): string {
       return `${a.nome ?? "O prestador"} não respondeu e a reserva saiu do cadastro: escolha quem executa.`;
     case "TROCA_RESERVA_SEM_RESPOSTA":
       return `${a.nome ?? "A reserva"} também não respondeu. Não há nova troca: combine com outro prestador.`;
+    case "DECISAO_PEDIDA":
+      return `Pediram a sua decisão${a.prazo ? ` até ${mostrarDataCurta(a.prazo)}` : ""}.`;
+    case "DECISAO_VENCIDA":
+      return `O prazo para decidir venceu${a.prazo ? ` em ${mostrarDataCurta(a.prazo)}` : ""}.`;
+    case "DECISAO_RESPONDIDA":
+      return a.estado === "APROVADA" ? "A decisão que você pediu foi aprovada." : a.estado === "DEVOLVIDA" ? "A decisão que você pediu foi devolvida sem decidir." : "A decisão que você pediu foi respondida.";
   }
 }
 
@@ -216,6 +223,26 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                       {a.pedidoId ? `Ver pedido ${a.protocolo ?? ""}`.trim() : "Abrir o WhatsApp"}
                     </Link>
                     {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label="Marcar como visto o aviso do WhatsApp">Marcar como visto</Botao>}
+                  </span>
+                </li>
+              );
+            }
+            if (a.tipo.startsWith("DECISAO_")) {
+              const aguardando = a.estado === "AGUARDANDO" && a.tipo !== "DECISAO_RESPONDIDA";
+              return (
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Selo tom={a.tipo === "DECISAO_VENCIDA" ? "erro" : a.tipo === "DECISAO_RESPONDIDA" ? "ok" : "atencao"}>Decisão</Selo>
+                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                  </span>
+                  <span><strong className="font-semibold">{a.protocolo}</strong> {a.titulo}</span>
+                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="flex flex-wrap gap-2">
+                    <Link href={aguardando ? "/decisoes?filtro=AGUARDANDO" : `/pedidos/pedido?id=${a.pedidoId}`} className="font-medium text-violeta-600 hover:underline"
+                      onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
+                      {aguardando ? "Decidir" : `Ver pedido ${a.protocolo ?? ""}`.trim()}
+                    </Link>
+                    {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso da decisão do pedido ${a.protocolo}`}>Marcar como visto</Botao>}
                   </span>
                 </li>
               );

@@ -5,6 +5,7 @@ import type {
   CanalEnquete, ConfirmacaoArea, EscopoEnquete, EstadoReserva, Intervalo, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite, SituacaoEnquete,
   EstadoAssembleia, EstadoItem, EstadoProcuracao, FormaAssembleia, PesoAssembleia, Quorum, SituacaoItem, TipoAssembleia, TipoItem,
   EstadoAnuncio, TipoAnuncio, TipoVeiculo, DecisaoQueda, EstadoQueda, AvisoNovoSindico, DestinoAvisoRegistro, MeioAvisoRegistro,
+  EstadoDecisao, FiltroDecisao, TipoLigacao,
 } from "@triade/domain";
 
 export interface Configuracoes {
@@ -23,6 +24,8 @@ export interface Configuracoes {
   avisos: RegrasAviso;
   /** Quem fica sabendo de pedido novo (F6.4, AT-26). Só o síndico muda. */
   avisoNovo: { sindico: AvisoNovoSindico; protocolo: boolean; podeMudar: boolean };
+  /** Janela dos pedidos parecidos, em dias (F7.4, AT-18). */
+  parecidosDias?: number;
   pendencias: string[];
   podeEditar: boolean;
 }
@@ -285,7 +288,8 @@ export interface AvisoDoPainel {
     | "WHATSAPP_PEDIDO_NOVO" | "WHATSAPP_REVISAO" | "WHATSAPP_A_IDENTIFICAR" | "WHATSAPP_FALHA_ENVIO" | "WHATSAPP_DESCONECTADO"
     | "RESERVA_A_APROVAR" | "RESERVA_CANCELADA"
     | "PRESTADOR_CONFIRMOU" | "PRESTADOR_RECUSOU" | "WHATSAPP_QUEDA" | "WHATSAPP_QUEDA_VOLTOU"
-    | "TROCA_TROCOU" | "TROCA_MANDAR_LINK" | "TROCA_NAO_TROCOU" | "TROCA_RESERVA_SEM_RESPOSTA";
+    | "TROCA_TROCOU" | "TROCA_MANDAR_LINK" | "TROCA_NAO_TROCOU" | "TROCA_RESERVA_SEM_RESPOSTA"
+    | "DECISAO_PEDIDA" | "DECISAO_VENCIDA" | "DECISAO_RESPONDIDA";
   pedidoId?: string;
   protocolo?: string;
   assunto?: string | null;
@@ -311,6 +315,10 @@ export interface AvisoDoPainel {
   referencia?: string;
   /** Nos avisos das reservas (peça R12). */
   reservaId?: string;
+  /** Nos avisos das decisões (F7.4, AT-23): o título é a pergunta; prazo e situação de agora. */
+  decisaoId?: string;
+  prazo?: string;
+  estado?: EstadoDecisao;
   criadoEm: string;
   vistoEm: string | null;
 }
@@ -352,6 +360,23 @@ export interface Indicadores {
   pendencias: { responsavelId: string | null; nome: string | null; abertos: number; retornoVencido: number; maisAntigoDias: number }[];
   /** Tempo de solução por categoria no período (TR-01), em horas corridas; sem pedido concluído, sem número. */
   solucao: { categoriaId: string; nome: string; concluidos: number; medianaHoras: number | null; maisDemoradoHoras: number | null }[];
+  /** Reincidência no período (F7.4, TR-01, AT-18); sem pedido no período, porcentagem nula. */
+  reincidencia?: {
+    pedidos: number;
+    reincidencias: number;
+    porcentagem: number | null;
+    ondeVolta: { onde: string | null; categoria: string; vezes: number; ultima: string }[];
+  };
+  /** Decisões aguardando o síndico (F7.4, AT-23): aguardando é de agora; o resto, do período. */
+  decisoes?: {
+    aguardando: number;
+    vencidas: number;
+    maisAntigaDias: number | null;
+    decididas: number;
+    aprovadas: number;
+    devolvidas: number;
+    medianaHoras: number | null;
+  };
 }
 
 export type MesFechado = NumerosAtendimento & { mes: string; porcentagemAnterior?: number | null };
@@ -449,9 +474,85 @@ export interface PedidoDetalhe {
   andamentos: { id: string; tipo: "RETORNO" | "NOTA"; meio: string | null; texto: string; em: string; autor: string }[];
   conclusoes: ConclusaoPedido[];
   historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
-  pode: { responder: boolean; atualizar: boolean; concluir: boolean; revisar: boolean; aceitar: boolean; repassar: boolean };
+  /** Pedidos relacionados (F7.4, AT-18): os ligados e os parecidos sugeridos na janela de dias. Opcionais até a
+   * API nova estar publicada. */
+  relacionados?: { ligados: LigacaoPedido[]; parecidos: PedidoParecido[]; dias: number };
+  /** Decisões pedidas ao síndico neste pedido (F7.4, AT-23), da mais nova para a mais antiga. */
+  decisoes?: DecisaoPedido[];
+  /** Quem pode decidir: o síndico e quem tem a permissão Aprovar. */
+  decisores?: { vinculoId: string; nome: string; sindico: boolean; eu: boolean }[];
+  pode: {
+    responder: boolean; atualizar: boolean; concluir: boolean; revisar: boolean; aceitar: boolean; repassar: boolean; ligar?: boolean; pedirDecisao?: boolean;
+  };
   regras: { revisao: boolean; reabertura: boolean };
   agora: string;
+}
+
+/** Um pedido parecido, sugerido para ligar (AT-18). */
+export interface PedidoParecido {
+  id: string;
+  protocolo: string;
+  assunto: string;
+  estado: EstadoPedido;
+  versao: number;
+  categoria: string;
+  onde: string | null;
+  abertoEm: string;
+  encerradoEm: string | null;
+  /** O antigo foi concluído antes de o novo abrir. */
+  podeReincidencia: boolean;
+}
+
+/** Uma ligação, vista deste pedido: NOVO é o ligado ao outro; ANTIGO é o outro lado. */
+export interface LigacaoPedido {
+  id: string;
+  tipo: TipoLigacao;
+  papel: "NOVO" | "ANTIGO";
+  pedido: { id: string; protocolo: string; assunto: string; estado: EstadoPedido; abertoEm: string; encerradoEm?: string };
+  motivo: string;
+  em: string;
+  por?: string;
+}
+
+export interface AlternativaDecisao {
+  numero: number;
+  descricao: string;
+  detalhe?: string;
+  /** Custo estimado em centavos. */
+  custo?: number;
+  moeda?: string;
+}
+
+/** Decisão pedida ao síndico (AT-23). Campos vazios não vêm. */
+export interface DecisaoPedido {
+  id: string;
+  versao: number;
+  estado: EstadoDecisao;
+  pendenciaId: string;
+  pergunta: string;
+  porque?: string;
+  prazo: string;
+  vencida: boolean;
+  decisor: { vinculoId: string; nome: string; eu: boolean };
+  pedidaEm: string;
+  pedidaPor?: string;
+  respondidaEm?: string;
+  respondidaPor?: string;
+  alternativaAprovada?: number;
+  justificativa?: string;
+  retiradaMotivo?: string;
+  alternativas: AlternativaDecisao[];
+  pedido: { id: string; protocolo: string; assunto: string; estado: EstadoPedido };
+  pode: { responder: boolean; retirar: boolean };
+}
+
+export interface ListaDecisoes {
+  decisoes: DecisaoPedido[];
+  aguardandoEu: number;
+  filtro: FiltroDecisao;
+  /** Hoje no fuso do condomínio, para o prazo. */
+  hoje: string;
+  pode: { aprovar: boolean };
 }
 
 // Aviso de pedido registrado (F6.4, AT-26).

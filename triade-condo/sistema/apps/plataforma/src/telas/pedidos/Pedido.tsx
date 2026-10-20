@@ -6,7 +6,9 @@
 // documentos (passo 4b, PT-07). Com o retorno vencido, a faixa do aviso (passo 6, AT-09).
 // A visita marcada na agenda, separada dos dois compromissos (peça R7, AG-08, MP-04), e a
 // manutenção ligada (peça R6, MP-04). A conversa do WhatsApp do condomínio (passo 5). Quem
-// foi avisado no registro e o prestador escolhido (F6.4, AT-26).
+// foi avisado no registro e o prestador escolhido (F6.4, AT-26). Da F7.4: os pedidos
+// relacionados (AT-18) e a decisão pedida ao síndico, com a pendência que se resolve sozinha
+// quando ele responde (AT-23).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -24,6 +26,8 @@ import { NaAgenda } from "../agenda/NaAgenda.tsx";
 import { NaManutencao } from "../manutencao/NaManutencao.tsx";
 import { NosComunicados } from "../comunicados/NosComunicados.tsx";
 import { ConversaWhatsapp } from "../whatsapp/ConversaWhatsapp.tsx";
+import { DecisoesNoPedido, PedirDecisao, pendenciaDaDecisao } from "../decisoes/NoPedido.tsx";
+import { PedidosRelacionados } from "./Relacionados.tsx";
 import { CartaoAvisosRegistro } from "./AvisosDoRegistro.tsx";
 
 const ABAS = [
@@ -57,6 +61,7 @@ export function Pedido() {
   const [acao, setAcao] = useState<AcaoPedido | null>(null);
   const [resolver, setResolver] = useState<PendenciaPedido | null>(null);
   const [aba, setAba] = useState<IdAba>("andamento");
+  const [pedirDecisao, setPedirDecisao] = useState(false);
   const voltar = <Link href="/pedidos" className="text-sm font-medium text-violeta-600 hover:underline">Voltar aos pedidos</Link>;
 
   if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Pedido</h1><Vazio titulo="Pedido não encontrado" /></div>;
@@ -73,7 +78,7 @@ export function Pedido() {
   const p = d.pedido;
   const ativo = p.estado === "ABERTO" || p.estado === "EM_ANDAMENTO";
   const fechado = p.estado === "ENCERRADO" || p.estado === "CANCELADO";
-  const fechar = () => { setAcao(null); setResolver(null); };
+  const fechar = () => { setAcao(null); setResolver(null); setPedirDecisao(false); };
   const salvo = (texto: string, tom: "ok" | "atencao" = "ok") => {
     fechar(); setRecado({ tom, texto }); setFalha(null); carga.recarregar(); arquivos.recarregar(); atualizar();
   };
@@ -126,6 +131,7 @@ export function Pedido() {
           </span>
         </Aviso>
       ) : null}
+      <DecisoesNoPedido d={d} salvo={(t) => salvo(t)} recarregar={carga.recarregar} />
 
       {!fechado ? (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -171,19 +177,24 @@ export function Pedido() {
         <section aria-labelledby="t-pendencias" className="grid gap-2">
           <h2 id="t-pendencias" className="text-lg font-medium">Pendências abertas</h2>
           <ul className="grid gap-2">
-            {abertas.map((x) => (
-              <li key={x.id} data-tom="atencao" className="aviso flex-wrap items-center justify-between">
-                <span className="quadro"><Icone nome="ferramenta" /></span>
-                <span className="texto">
-                  <span className="block font-semibold">{nomeDe(TIPOS_PENDENCIA, x.tipo)}</span>
-                  <span className="block">{x.motivo}</span>
-                  <span className="block text-xs text-tinta-suave">cuida: {x.responsavel.nome}{x.responsavel.ativo ? "" : " (sem acesso)"} · aberta por {x.abertaPor} em {diaHora(x.abertaEm)}</span>
-                </span>
-                {ativo && (d.pode.atualizar || x.responsavel.vinculoId === opcoes.dados.meuVinculo) ? (
-                  <Botao variante="contorno" onClick={() => setResolver(x)}>Resolver</Botao>
-                ) : null}
-              </li>
-            ))}
+            {abertas.map((x) => {
+              const daDecisao = pendenciaDaDecisao(d, x.id);
+              return (
+                <li key={x.id} data-tom="atencao" className="aviso flex-wrap items-center justify-between">
+                  <span className="quadro"><Icone nome={daDecisao ? "decisao" : "ferramenta"} /></span>
+                  <span className="texto">
+                    <span className="block font-semibold">{nomeDe(TIPOS_PENDENCIA, x.tipo)}</span>
+                    <span className="block">{x.motivo}</span>
+                    <span className="block text-xs text-tinta-suave">
+                      cuida: {x.responsavel.nome}{x.responsavel.ativo ? "" : " (sem acesso)"} · aberta por {x.abertaPor} em {diaHora(x.abertaEm)}{daDecisao ? ` · ${daDecisao}` : ""}
+                    </span>
+                  </span>
+                  {ativo && !daDecisao && (d.pode.atualizar || x.responsavel.vinculoId === opcoes.dados.meuVinculo) ? (
+                    <Botao variante="contorno" onClick={() => setResolver(x)}>Resolver</Botao>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}
@@ -206,6 +217,7 @@ export function Pedido() {
           : anotar ? <Botao variante="contorno" onClick={() => setAcao("retorno")}>Nota interna</Botao> : null}
         {d.pode.atualizar && ativo ? <Botao variante="secundario" onClick={() => setAcao("etapa")}>Mudar etapa</Botao> : null}
         {d.pode.atualizar && ativo ? <Botao variante="contorno" onClick={() => setAcao("pendencia")}>+ Pendência</Botao> : null}
+        {d.pode.pedirDecisao && ativo ? <Botao variante="contorno" onClick={() => setPedirDecisao(true)}>Pedir decisão</Botao> : null}
         {d.pode.concluir && ativo ? <Botao variante="contorno" onClick={() => setAcao("concluir")}>Concluir</Botao> : null}
         {d.pode.atualizar && ativo ? <Botao variante="discreto" onClick={() => setAcao("editar")}>Editar</Botao> : null}
         {d.pode.concluir && ativo ? <Botao variante="discreto" className="text-erro" onClick={() => setAcao("cancelar")}>Cancelar pedido</Botao> : null}
@@ -213,6 +225,8 @@ export function Pedido() {
       </div>
       {d.pode.concluir && p.estado === "ENCERRADO" && !d.regras.reabertura
         ? <p className="text-sm text-tinta-suave">Este condomínio não reabre pedidos. Se o problema voltou, registre um pedido novo.</p> : null}
+
+      <PedidosRelacionados d={d} podeConcluir={d.pode.concluir} salvo={(t) => salvo(t)} recarregar={carga.recarregar} />
 
       <Abas abas={abas} atual={aba} aoMudar={setAba} rotulo="Partes do pedido">
         <div className="pt-4">
@@ -276,6 +290,7 @@ export function Pedido() {
       </Abas>
 
       <JanelasPedido acao={acao} resolver={resolver} d={d} opcoes={opcoes.dados} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
+      <PedirDecisao aberto={pedirDecisao} d={d} aoFechar={() => setPedirDecisao(false)} salvo={(t) => salvo(t)} recarregar={carga.recarregar} />
     </div>
   );
 }

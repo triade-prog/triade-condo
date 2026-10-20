@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 const ICONES = {
   casa: <path d="m3 10.5 9-7 9 7V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
   pedido: <><rect x="4" y="3" width="16" height="18" rx="3" /><path d="M8 8h8M8 12h8M8 16h5" /></>,
+  decisao: <><rect x="5" y="3.5" width="14" height="17" rx="2.5" /><path d="M9 3.5h6v3H9zM8.5 12l2 2 4-4M8.5 17h7" /></>,
   predio: <path d="M4 21V7l8-4v18M12 10h8v11M2 21h20M7 9h2M7 13h2M7 17h2M15 13h2M15 17h2" />,
   pessoas: <><circle cx="9" cy="8" r="3" /><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5a3 3 0 0 1 0 6M21 20v-1a6 6 0 0 0-3-5" /></>,
   pessoa: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>,

@@ -34,6 +34,8 @@ export interface Painel {
   whatsapp?: { situacao: string; aIdentificar: number; falhas: number };
   /** Vida em condomínio, para quem vê as reservas (peça R12): o que espera aprovação. */
   vida?: ResumoVida;
+  /** Decisões esperando a resposta da pessoa, para quem pode aprovar (F7.4, AT-23). */
+  decisoes?: { aguardando: number; vencidas: number; maisAntigaDias: number | null };
 }
 
 export interface CondominioDaPessoa {

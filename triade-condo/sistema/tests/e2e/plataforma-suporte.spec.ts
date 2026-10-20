@@ -64,12 +64,12 @@ test.describe("Plataforma · Ajuda e suporte", () => {
     await expect(j.getByRole("button", { name: "Recusar" })).toBeDisabled();
     await j.getByRole("button", { name: "Voltar" }).click();
     await cartao.getByRole("button", { name: "Aprovar o pedido de Diego" }).click();
-    expect(estado.suporte.acessos[0]!.situacao).toBe("APROVADO");
+    await expect.poll(() => estado.suporte.acessos[0]!.situacao).toBe("APROVADO");
     const valendo = page.getByRole("region", { name: "Acesso da TRÍADE valendo" });
     await expect(valendo).toContainText("Diego vê Pedidos até");
     await conferir(page);
     await valendo.getByRole("button", { name: "Encerrar agora" }).click();
     await expect(valendo).toBeHidden();
-    expect(estado.suporte.acessos[0]!.situacao).toBe("ENCERRADO");
+    await expect.poll(() => estado.suporte.acessos[0]!.situacao).toBe("ENCERRADO");
   });
 });

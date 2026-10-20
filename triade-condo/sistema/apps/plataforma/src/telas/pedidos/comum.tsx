@@ -28,6 +28,16 @@ const DIA_HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo
 const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 const DIA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
 
+/** 17/10, no horário de Brasília. */
+export function dia(iso: string): string {
+  return DIA.format(new Date(iso));
+}
+
+/** O dia de um instante no horário de Brasília, como "2026-10-17". */
+export function diaDe(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
+}
+
 /** 17/10 09:00, no horário de Brasília. */
 export function diaHora(iso: string): string {
   return DIA_HORA.format(new Date(iso)).replace(",", "");

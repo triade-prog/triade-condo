@@ -49,17 +49,19 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
 export async function rotasPrazos(route: Route, estado: {
   avisos: AvisoFalso[]; regras: RegrasAvisoFalsas; config: { versao: number }; pedidos: PedidoFalso[]; pessoas: Pessoa[];
 }, eu: { vinculo: string; nome: string }, caminho: string, metodo: string, corpo: Record<string, unknown>, url: URL, pode: (a: string) => boolean,
-vencido: (id: string) => boolean): Promise<void | null> {
+vencido: (id: string) => boolean, outros?: { avisos: () => ({ id: string; criadoEm: string; vistoEm: string | null } & Record<string, unknown>)[];
+  marcar: (ids: string[] | null) => number }): Promise<void | null> {
   const nomeDe = (v: string | null) => estado.pessoas.find((p) => p.vinculoId === v)?.nome ?? null;
   if (caminho === "/v1/condominio/avisos" && metodo === "GET") {
-    const itens = estado.avisos.filter((a) => a.para === eu.vinculo)
-      .sort((a, b) => Number(!!a.vistoEm) - Number(!!b.vistoEm) || b.criadoEm.localeCompare(a.criadoEm))
+    const extras = outros?.avisos() ?? [];
+    const itens = [...estado.avisos.filter((a) => a.para === eu.vinculo)
       .map((a) => {
         const p = estado.pedidos.find((x) => x.id === a.pedidoId)!;
         return { id: a.id, tipo: a.tipo, pedidoId: p.id, protocolo: p.protocolo, assunto: p.privado && !pode("pedidos.revisar") ? null : p.assunto,
           responsavel: nomeDe(p.responsavelId), referencia: a.referencia, criadoEm: a.criadoEm, vistoEm: a.vistoEm };
-      });
-    return route.fulfill({ json: { itens, naoVistos: naoVistos(estado.avisos, eu.vinculo) } });
+      }), ...extras]
+      .sort((a, b) => Number(!!a.vistoEm) - Number(!!b.vistoEm) || b.criadoEm.localeCompare(a.criadoEm));
+    return route.fulfill({ json: { itens, naoVistos: naoVistos(estado.avisos, eu.vinculo) + extras.filter((a) => !a.vistoEm).length } });
   }
   if (caminho === "/v1/condominio/avisos/vistos" && metodo === "POST") {
     const ids = Array.isArray(corpo.ids) ? corpo.ids.map(String) : null;
@@ -67,7 +69,7 @@ vencido: (id: string) => boolean): Promise<void | null> {
     for (const a of estado.avisos) {
       if (a.para === eu.vinculo && !a.vistoEm && (!ids || ids.includes(a.id))) { a.vistoEm = AGORA; marcados++; }
     }
-    return route.fulfill({ json: { marcados } });
+    return route.fulfill({ json: { marcados: marcados + (outros?.marcar(ids) ?? 0) } });
   }
   if (caminho === "/v1/condominio/regras-aviso" && metodo === "PUT") {
     if (!pode("config.editar")) return erro(route, 403, "FORBIDDEN");
@@ -110,15 +112,23 @@ vencido: (id: string) => boolean): Promise<void | null> {
       ? [{ categoriaId: novoId(), nome: "Manutenção", concluidos: 3, medianaHoras: 52, maisDemoradoHoras: 144 },
         { categoriaId: novoId(), nome: "Limpeza", concluidos: 0, medianaHoras: null, maisDemoradoHoras: null }]
       : [{ categoriaId: novoId(), nome: "Limpeza", concluidos: 9, medianaHoras: 5, maisDemoradoHoras: 26 }];
+    // F7.4: a reincidência segue o período; das decisões, aguardando é de agora.
+    const reincidencia = periodo === "ESTE_MES"
+      ? { pedidos: 3, reincidencias: 1, porcentagem: 33, ondeVolta: [{ onde: "Portão da garagem", categoria: "Portaria e acesso", vezes: 1, ultima: "2026-0002" }] }
+      : { pedidos: 45, reincidencias: 3, porcentagem: 7, ondeVolta: [
+        { onde: "Garagem G2, vaga 31", categoria: "Hidráulica", vezes: 2, ultima: "2026-0142" },
+        { onde: "Portão da garagem", categoria: "Elétrica", vezes: 1, ultima: "2026-0131" }] };
+    const decisoes = { aguardando: 1, vencidas: 1, maisAntigaDias: 2,
+      ...(periodo === "ESTE_MES" ? { decididas: 0, aprovadas: 0, devolvidas: 0, medianaHoras: null } : { decididas: 7, aprovadas: 5, devolvidas: 2, medianaHoras: 27 }) };
     if (periodo === "ESTE_MES") {
-      return route.fulfill({ json: { periodo, porcentagemAnterior: 86, pendencias, solucao, atual: {
+      return route.fulfill({ json: { periodo, porcentagemAnterior: 86, pendencias, solucao, reincidencia, decisoes, atual: {
         de: "2026-10-01", ate: "2026-10-16", retornos: { total: 0, noPrazo: 0, porcentagem: null }, primeiroRetornoHoras: null,
         registrados: 3, concluidos: 0, reabertos: 0,
         porCategoria: [{ categoriaId: novoId(), nome: "Manutenção", retornos: null, noPrazo: null, porcentagem: null, concluidos: 0 }],
       } } });
     }
     const { mes: _m, porcentagemAnterior, ...numeros } = MES_FECHADO;
-    return route.fulfill({ json: { periodo, porcentagemAnterior, pendencias, solucao, atual: { ...numeros, porCategoria: [
+    return route.fulfill({ json: { periodo, porcentagemAnterior, pendencias, solucao, reincidencia, decisoes, atual: { ...numeros, porCategoria: [
       { categoriaId: novoId(), nome: "Limpeza", retornos: 10, noPrazo: 8, porcentagem: 80, concluidos: 9 },
       { categoriaId: novoId(), nome: "Manutenção", retornos: 30, noPrazo: 27, porcentagem: 90, concluidos: 29 },
       { categoriaId: novoId(), nome: "Segurança", retornos: null, noPrazo: null, porcentagem: null, concluidos: 0 },
