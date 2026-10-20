@@ -18,7 +18,7 @@ interface Modelo {
   chave: ChaveModelo;
   numero: number;
   titulo: string;
-  para: "MORADOR" | "EQUIPE";
+  para: "MORADOR" | "EQUIPE" | "PRESTADOR";
   uso: string;
   variaveis: string[];
   corpo: string;
@@ -48,6 +48,8 @@ export const TOM_MODELO: Record<SituacaoModelo, Tom> = {
 };
 
 /** Exemplo de cada modelo, para ver como chega. */
+const PARA_MODELO: Record<Modelo["para"], string> = { MORADOR: "Morador", EQUIPE: "Equipe", PRESTADOR: "Prestador" };
+
 const EXEMPLOS: Record<ChaveModelo, string[]> = {
   noticia_pedido: ["2026-0142", "Residencial Ipê", "O eletricista vem amanhã de manhã para trocar o reator.", "Ana"],
   pedido_concluido: ["2026-0142", "Residencial Ipê", "o reator da luminária do subsolo 1 foi trocado.", "Ana", "20/11"],
@@ -61,6 +63,7 @@ const EXEMPLOS: Record<ChaveModelo, string[]> = {
   assembleia_convocacao: ["Residencial Ipê", "assembleia geral ordinária", "sábado, 08/11, às 19:00", "da Torre A · 302", "(link pessoal da unidade)"],
   assembleia_lembrete: ["Residencial Ipê", "assembleia geral ordinária", "sábado, 08/11, às 19:00", "da Torre A · 302", "(link pessoal da unidade)"],
   anuncio_decidido: ["Residencial Ipê", "está no mural até 18/11, com o título \"Vendo bicicleta aro 29\". Quem se interessar fala com você por aqui.", "Ana"],
+  link_prestador: ["Residencial Ipê", "AquaFix", "Bomba de recalque com ruído (Casa de bombas)", "21/10, 14:00", "https://condominio.trihub.com.br/p/…"],
 };
 
 /** O texto com as variáveis destacadas e o nome de cada uma. */
@@ -238,7 +241,7 @@ export function ModelosWhatsapp() {
               className="grid w-full gap-1 rounded-2xl border border-linha bg-superficie p-4 text-left shadow-s1 hover:border-violeta-300 sm:grid-cols-[1fr_auto] sm:items-center">
               <span>
                 <span className="font-semibold">{m.titulo}</span>
-                <span className="block text-sm text-tinta-suave">{m.para === "MORADOR" ? "Morador" : "Equipe"} · {m.uso} · versão {m.numero}</span>
+                <span className="block text-sm text-tinta-suave">{PARA_MODELO[m.para]} · {m.uso} · versão {m.numero}</span>
               </span>
               <Selo tom={TOM_MODELO[m.situacao]}>{SITUACOES_MODELO[m.situacao]}</Selo>
             </button>

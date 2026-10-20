@@ -128,6 +128,16 @@ import {
   etiquetaSchema,
   fotoPrestadorSchema,
   impedimentoSchema,
+  recusarPrestadorSchema,
+  buscaUnidadesSchema,
+  retirarVeiculoSchema,
+  vagaSchema,
+  veiculoSchema,
+  abrirQuedaSchema,
+  conciliarQuedaSchema,
+  editarQuedaSchema,
+  encerrarQuedaSchema,
+  responsavelQuedasSchema,
   linkPrestadorSchema,
   motivoEtiquetaSchema,
   termineiSchema,
@@ -465,6 +475,39 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const unidade = idDaRota(c, "id");
     const d = await lerCorpo(c, mudancaSchema);
     return c.json(await rpc("plataforma_registrar_mudanca", { ...quem(c), p_unidade: unidade, p_data: d.data, p_saem: d.saem, p_entram: d.entram }));
+  });
+
+  // Busca da lista de unidades e garagens (F3.8; MU-06, MU-11). A placa fica só no banco e na tela.
+  app.get("/v1/condominio/busca-unidades", async (c) => {
+    const q = buscaUnidadesSchema.safeParse({ busca: c.req.query("busca") ?? "" });
+    if (!q.success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["busca"] });
+    return c.json(await rpc("plataforma_buscar_unidades", { ...quem(c), p_busca: q.data.busca }));
+  });
+  app.get("/v1/condominio/garagens", async (c) => c.json(await rpc("plataforma_garagens", quem(c))));
+  const salvarVaga = async (c: Context<VarsPlataforma>, id: string | null) => {
+    const d = await lerCorpo(c, vagaSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc<{ id: string; versao: number }>("plataforma_salvar_vaga", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_identificacao: d.identificacao, p_onde: d.onde, p_coberta: d.coberta,
+      p_unidade: d.unidadeId, p_ativa: d.ativa,
+    });
+  };
+  app.post("/v1/condominio/vagas", async (c) => c.json(await salvarVaga(c, null), 201));
+  app.put("/v1/condominio/vagas/:id", async (c) => c.json(await salvarVaga(c, idDaRota(c, "id"))));
+  const salvarVeiculo = async (c: Context<VarsPlataforma>, id: string | null) => {
+    const d = await lerCorpo(c, veiculoSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    if (!id && !d.unidadeId) throw new ErroDominio("VALIDATION_ERROR", { campos: ["unidadeId"] });
+    return await rpc<{ id: string; versao: number }>("plataforma_salvar_veiculo", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_unidade: id ? null : d.unidadeId, p_placa: d.placa, p_tipo: d.tipo,
+      p_modelo: d.modelo, p_contato: d.contatoId, p_vaga: d.vagaId,
+    });
+  };
+  app.post("/v1/condominio/veiculos", async (c) => c.json(await salvarVeiculo(c, null), 201));
+  app.put("/v1/condominio/veiculos/:id", async (c) => c.json(await salvarVeiculo(c, idDaRota(c, "id"))));
+  app.post("/v1/condominio/veiculos/:id/retirar", async (c) => {
+    const d = await lerCorpo(c, retirarVeiculoSchema);
+    return c.json(await rpc("plataforma_retirar_veiculo", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao }));
   });
 
   app.get("/v1/condominio/moradores", async (c) => {
@@ -1146,9 +1189,12 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const d = await lerCorpo(c, linkPrestadorSchema);
     return c.json(await rpc("plataforma_criar_link_prestador", {
       ...quem(c), p_manutencao: idDaRota(c, "id"), p_versao: d.versao, p_o_que_fazer: d.oQueFazer, p_quando: d.quando,
-      p_como_entrar: d.comoEntrar, p_vale_ate: d.valeAte, p_arquivos: d.arquivos,
+      p_como_entrar: d.comoEntrar, p_vale_ate: d.valeAte, p_arquivos: d.arquivos, p_responder_horas: d.responderHoras,
     }), 201);
   });
+  // "Não trocar sozinho": desliga a troca automática para a reserva deste link (MP-09).
+  app.post("/v1/condominio/manutencao/:id/link-prestador/:link/nao-trocar", async (c) =>
+    c.json(await rpc("plataforma_desligar_troca", { ...quem(c), p_manutencao: idDaRota(c, "id"), p_link: idDaRota(c, "link") })));
   app.post("/v1/condominio/manutencao/:id/link-prestador/:link/envio", async (c) => {
     const d = await lerCorpo(c, envioLinkSchema);
     return c.json(await rpc("plataforma_envio_link_prestador", {
@@ -1614,6 +1660,16 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     });
     return c.json(await linkPublico(armazenamentoManutencao(), a));
   });
+  // Confirmar ou dizer que não pode atender (MP-09): recusar passa o serviço para a reserva.
+  app.post("/v1/publico/p/:codigo/confirmar", async (c) =>
+    c.json(await rpc("publico_prestador_confirmar", { p_codigo: await prestador(c) })));
+  app.post("/v1/publico/p/:codigo/recusar", async (c) => {
+    const codigo = await prestador(c);
+    const d = await lerCorpo(c, recusarPrestadorSchema);
+    const r = await rpc("publico_prestador_recusar", { p_codigo: codigo, p_texto: d.texto });
+    noFundo(processarFilaWhatsapp);
+    return c.json(r);
+  });
   app.post("/v1/publico/p/:codigo/chegada", async (c) => {
     const codigo = await prestador(c);
     const d = await lerCorpo(c, chegadaSchema);
@@ -1946,8 +2002,8 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       for (const l of lotes) {
         const cred = await decifrarCredenciais(chave, l.credenciais);
         for (const e of l.envios) {
-          // O link pessoal da enquete (/v) ou da assembleia (/a) entra só aqui: o banco guarda o
-          // texto com [link] (peça R12).
+          // O link pessoal da enquete (/v), da assembleia (/a) ou do prestador reserva (/p) entra só
+          // aqui: o banco guarda o texto com [link] (peça R12, MP-09).
           const comLink = e.link ? e.texto.replaceAll("[link]", `${deps.urlApp.replace(/\/$/, "")}/${e.rota ?? "v"}/${e.link}`) : e.texto;
           const texto = textoComLinkDoPainel(comLink, e.pedido ? `${deps.urlApp}/pedidos/pedido?id=${e.pedido}` : null);
           const r = await conector.enviarTexto({ instancia: l.instancia || cred.instancia, token: cred.token }, e.para, texto);
@@ -2010,6 +2066,37 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const r = await rpc("plataforma_manter_revisao_whatsapp", { ...quem(c), p_revisao: id, p_resposta: d.resposta });
     noFundo(processarFilaWhatsapp);
     return c.json(r);
+  });
+
+  // Queda do WhatsApp (F5.10; W-17): abrir à mão, canal alternativo, conferir o que ficou parado e encerrar.
+  app.post("/v1/condominio/whatsapp/quedas", async (c) => {
+    const d = await lerCorpo(c, abrirQuedaSchema);
+    return c.json(await rpc("plataforma_abrir_queda", { ...quem(c), p_o_que_aconteceu: d.oQueAconteceu }), 201);
+  });
+  app.get("/v1/condominio/whatsapp/quedas/:id", async (c) => c.json(await rpc("plataforma_queda", { ...quem(c), p_id: idDaRota(c, "id") })));
+  app.put("/v1/condominio/whatsapp/quedas/:id", async (c) => {
+    const d = await lerCorpo(c, editarQuedaSchema);
+    return c.json(await rpc("plataforma_editar_queda", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_canal: d.canalAlternativo, p_o_que_aconteceu: d.oQueAconteceu,
+    }));
+  });
+  app.post("/v1/condominio/whatsapp/quedas/:id/voltou", async (c) =>
+    c.json(await rpc("plataforma_queda_voltou", { ...quem(c), p_id: idDaRota(c, "id") })));
+  app.post("/v1/condominio/whatsapp/quedas/:id/conciliar", async (c) => {
+    const d = await lerCorpo(c, conciliarQuedaSchema);
+    const r = await rpc("plataforma_conciliar_queda", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_envios: d.envios, p_decisao: d.decisao, p_motivo: d.motivo,
+    });
+    if (d.decisao === "MANDAR") noFundo(processarFilaWhatsapp);
+    return c.json(r);
+  });
+  app.post("/v1/condominio/whatsapp/quedas/:id/encerrar", async (c) => {
+    const d = await lerCorpo(c, encerrarQuedaSchema);
+    return c.json(await rpc("plataforma_encerrar_queda", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_resumo: d.resumo }));
+  });
+  app.put("/v1/condominio/whatsapp/config/quedas", async (c) => {
+    const d = await lerCorpo(c, responsavelQuedasSchema);
+    return c.json(await rpc("plataforma_quedas_responsavel", { ...quem(c), p_versao: d.versao, p_responsavel: d.pessoaId }));
   });
 
   app.get("/v1/condominio/whatsapp/config", async (c) => c.json(await rpc("plataforma_config_whatsapp", quem(c))));

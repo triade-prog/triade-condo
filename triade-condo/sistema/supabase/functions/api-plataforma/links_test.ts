@@ -108,7 +108,7 @@ Deno.test("V-11: mandar o link ao prestador valida o que vai e devolve o código
   assertEquals((await r.json()).codigo, CODIGO);
   assertEquals(chamada(m, "plataforma_criar_link_prestador"), {
     p_pessoa: ANA, p_condominio: AURORA, p_manutencao: MANUTENCAO, p_versao: 4, p_o_que_fazer: "Trocar o rolamento da bomba 2",
-    p_quando: "Hoje, 14h", p_como_entrar: null, p_vale_ate: "2026-10-31", p_arquivos: [],
+    p_quando: "Hoje, 14h", p_como_entrar: null, p_vale_ate: "2026-10-31", p_arquivos: [], p_responder_horas: null,
   });
   assertEquals((await erro(await m.pedir(`${url}/${LINK}/envio`, { cookie, corpo: { canal: "SMS" } }))).detalhes?.campos, ["canal"]);
   assertEquals((await m.pedir(`${url}/${LINK}/envio`, { cookie, corpo: { canal: "WHATSAPP" } })).status, 200);
