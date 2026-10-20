@@ -123,7 +123,8 @@ select is((select r -> 'vencidoMaisAntigoEscalado' from ini), 'false'::jsonb, 'e
 select is((select r -> 'vencemHoje' from ini) is not null and (select r -> 'pendenciasParadas' from ini) = '0', true,
   'o início mostra o que vence hoje e as pendências paradas');
 select is((select (plataforma_painel(ana, ipe) ->> 'avisosNaoVistos')::int from ids, c), 2, 'a síndica tem dois avisos sem ver');
-select is((select (plataforma_painel(bruna, ipe) ->> 'avisosNaoVistos')::int from ids, c), 1, 'a Bruna tem um');
+select is((select (plataforma_painel(bruna, ipe) ->> 'avisosNaoVistos')::int from ids, c), 2,
+  'a Bruna tem dois: o retorno vencido e o pedido novo que a síndica registrou para ela (F6.4, AT-26)');
 select ok((select plataforma_painel(ana, ipe) ? 'mesFechado' from ids, c), 'o início mostra o mês fechado');
 select ok(not (select plataforma_painel(davi, jatoba) ? 'avisosNaoVistos' and (plataforma_painel(davi, jatoba) ->> 'avisosNaoVistos')::int > 0 from ids, c),
   'PT-01: o Jatobá não tem avisos do Ipê');

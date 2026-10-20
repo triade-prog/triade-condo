@@ -187,11 +187,10 @@ export function Pedidos() {
       ) : null}
 
       <RegistrarPedido aberto={registrando} opcoes={o} aoFechar={() => setRegistrando(false)}
+        aoRegistrar={() => { fila.recarregar(); atualizar(); }}
         registrado={(protocolo, id) => {
           setRegistrando(false);
           setRecado({ tom: "ok", texto: `Pedido ${protocolo} registrado.` });
-          fila.recarregar();
-          atualizar();
           router.push(`/pedidos/pedido?id=${id}&novo=1`);
         }} />
     </div>

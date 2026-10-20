@@ -16,7 +16,7 @@ interface Pendencia { id: string; tipo: string; motivo: string; responsavelId: s
 interface PedidoFalso {
   id: string; protocolo: string; assunto: string; estado: string; local: string | null; versao: number; unidadeId: string | null; categoriaId: string;
   etapaId: string; abertoEm: string; encerradoEm: string | null; proximoRetorno: string | null; privado: boolean; pendencias: Pendencia[];
-  conclusoes: Record<string, unknown>[];
+  conclusoes: object[];
   historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
 }
 interface Pessoa { vinculoId: string; nome: string; funcao: string }

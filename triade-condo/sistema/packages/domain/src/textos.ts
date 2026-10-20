@@ -170,6 +170,11 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PRESTADOR_ARQUIVADO: "Este prestador está arquivado. Volte-o ao cadastro para mudar alguma coisa.",
   PREVENTIVA_ABERTA: "A manutenção desta data já está aberta. Conclua ou cancele antes de mudar a data.",
   PROVIDENCIA_FEITA: "Esta providência já foi feita.",
+  // Aviso de pedido registrado (F6.4).
+  DADO_DE_MORADOR: "Tire da mensagem o nome, o telefone ou o e-mail de morador. Ele não vai para o prestador nem para os outros moradores.",
+  PEDIDO_PRIVADO: "Pedido privado não vai para o prestador nem para os outros moradores.",
+  PRESTADOR_SEM_MEIO: "Este prestador não tem celular nem e-mail no cadastro. Complete o cadastro para avisar por aqui.",
+  SEM_PERMISSAO_COMUNICADOS: "Avisar os moradores afetados é publicar um comunicado. Peça ao síndico a permissão de comunicados.",
   // Vida em condomínio (peça R12).
   RESERVA_OCUPADA: "A área já está ocupada nesse horário, por outra reserva ou por um compromisso da Agenda.",
   RESERVA_LIMITE: "A unidade já chegou ao limite de reservas desta área no período.",

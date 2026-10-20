@@ -4,7 +4,8 @@
 import type {
   CanalEnquete, ConfirmacaoArea, EscopoEnquete, EstadoReserva, Intervalo, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite, SituacaoEnquete,
   EstadoAssembleia, EstadoItem, EstadoProcuracao, FormaAssembleia, PesoAssembleia, Quorum, SituacaoItem, TipoAssembleia, TipoItem,
-  EstadoAnuncio, TipoAnuncio, TipoVeiculo, DecisaoQueda, EstadoQueda, EstadoDecisao, FiltroDecisao, TipoLigacao,
+  EstadoAnuncio, TipoAnuncio, TipoVeiculo, DecisaoQueda, EstadoQueda, AvisoNovoSindico, DestinoAvisoRegistro, MeioAvisoRegistro,
+  EstadoDecisao, FiltroDecisao, TipoLigacao,
 } from "@triade/domain";
 
 export interface Configuracoes {
@@ -21,6 +22,8 @@ export interface Configuracoes {
   regrasPedidos: { revisao: boolean; reabertura: boolean };
   /** Quando o aviso sobe e os outros avisos (passo 6; F6.2, AT-09). */
   avisos: RegrasAviso;
+  /** Quem fica sabendo de pedido novo (F6.4, AT-26). Só o síndico muda. */
+  avisoNovo: { sindico: AvisoNovoSindico; protocolo: boolean; podeMudar: boolean };
   /** Janela dos pedidos parecidos, em dias (F7.4, AT-18). */
   parecidosDias?: number;
   pendencias: string[];
@@ -462,7 +465,11 @@ export interface PedidoDetalhe {
     registradoPor: string | null;
     encerradoEm: string | null;
     cancelamento: { em: string; motivo: string; por: string } | null;
+    /** O prestador avisado no registro (F6.4). */
+    prestador?: { id: string; nome: string };
   };
+  /** Quem foi avisado no registro e em que pé está cada envio (F6.4, AT-26). */
+  avisosRegistro: AvisoDoRegistro[];
   pendencias: PendenciaPedido[];
   andamentos: { id: string; tipo: "RETORNO" | "NOTA"; meio: string | null; texto: string; em: string; autor: string }[];
   conclusoes: ConclusaoPedido[];
@@ -546,6 +553,52 @@ export interface ListaDecisoes {
   /** Hoje no fuso do condomínio, para o prazo. */
   hoje: string;
   pode: { aprovar: boolean };
+}
+
+// Aviso de pedido registrado (F6.4, AT-26).
+
+/** Uma linha do que saiu no registro: na confirmação e no cartão do pedido. */
+export interface AvisoDoRegistro {
+  destino: DestinoAvisoRegistro;
+  meio: MeioAvisoRegistro;
+  nome?: string;
+  /** NO_SINO, NA_CONVERSA ou o estado do envio (W-13), do e-mail ou do comunicado. */
+  situacao?: string;
+  enviarApos?: string;
+  parado?: boolean;
+  motivo?: string;
+  entregueEm?: string;
+  lidoEm?: string;
+  vistoEm?: string;
+  comunicadoId?: string;
+  destinatarios?: number;
+  noMural?: boolean;
+  emails?: number;
+  pelaRegra?: boolean;
+  editado?: boolean;
+  em: string;
+}
+
+export interface PessoaAvisada { id: string; nome: string; voceMesmo: boolean; whatsapp: boolean }
+
+/** O bloco Quem avisar, antes de registrar (plataforma_quem_avisar). */
+export interface QuemAvisar {
+  quemPediu: { contatoId?: string; nome?: string; meio?: "WHATSAPP" | "EMAIL"; marcado: boolean; motivo?: "SEM_CONTATO" | "SEM_MEIO"; mensagem?: string };
+  responsavel: { semResponsavel: boolean; pessoas: PessoaAvisada[] };
+  sindico: { pelaRegra: boolean; regra: AvisoNovoSindico; pessoas: PessoaAvisada[] };
+  prestador: {
+    disponivel: boolean; motivo?: "PRIVADO"; rascunho: string; cabecalho: string; rodape: string; textoComDadoDeMorador?: boolean;
+    escolhido?: { id: string; nome: string; meio?: "WHATSAPP" | "EMAIL" };
+  };
+  moradores: {
+    disponivel: boolean; motivo?: "PRIVADO" | "SEM_PERMISSAO"; rascunho: { titulo: string; texto: string }; publico: "TODOS" | "BLOCOS";
+    blocos?: string[]; textoComDadoDeMorador?: boolean;
+  };
+  prestadores: { id: string; nome: string; servico: string; acordo: string; contratoAte?: string; reserva?: string; meio?: "WHATSAPP" | "EMAIL"; para?: string; temCelular: boolean; temEmail: boolean }[];
+  blocos: { id: string; nome: string; unidades: number }[];
+  totalUnidades: number;
+  condominio: string;
+  regra: { sindico: AvisoNovoSindico; protocolo: boolean };
 }
 
 // Agenda do condomínio (peça R7).

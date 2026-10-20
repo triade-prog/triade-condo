@@ -102,9 +102,16 @@ export function vencidoMaisAntigo(lista: PedidoFalso[], c: Config) {
 /** O que outra parte junta ao detalhe do pedido (F7.4: relacionados e decisões). */
 type DetalheExtra = (p: PedidoFalso) => { pode: Record<string, boolean> } & Record<string, unknown>;
 
+/** Os avisos do registro (F6.4): o que sai ao registrar e o que o pedido mostra depois. */
+export interface AvisosDoRegistroFalsos {
+  registrar: (p: PedidoFalso, corpo: Record<string, unknown>) => { recusa: string } | { avisos: unknown[] };
+  doPedido: (id: string) => { avisos: unknown[]; prestador?: { id: string; nome: string } } | undefined;
+}
+
 /** Atende as rotas do passo 4; devolve null quando a rota não é daqui. */
 export async function rotasPedidos(route: Route, ped: PedidoFalso[], c: Config, pessoas: Pessoa[], m: EstadoMoradores, eu: { vinculo: string; nome: string },
-  caminho: string, metodo: string, corpo: Record<string, unknown>, url: URL, pode: (a: string) => boolean, detalheExtra?: DetalheExtra) {
+  caminho: string, metodo: string, corpo: Record<string, unknown>, url: URL, pode: (a: string) => boolean, avisos?: AvisosDoRegistroFalsos,
+  detalheExtra?: DetalheExtra) {
   if (caminho === "/v1/condominio/regras-pedidos") {
     if (!pode("config.editar")) return erro(route, 403, "FORBIDDEN");
     c.regrasPedidos = { revisao: corpo.revisao === true, reabertura: corpo.reabertura === true };
@@ -183,8 +190,10 @@ export async function rotasPedidos(route: Route, ped: PedidoFalso[], c: Config, 
       proximoRetorno: depois(24), previsao: null, abertoEm: AGORA, registradoPor: eu.nome, encerradoEm: null, cancelamento: null,
       pendencias: [], andamentos: [], conclusoes: [], historico: [{ acao: "pedido.registrado", em: AGORA, autor: eu.nome, dados: { protocolo, canal: corpo.canal } }],
     };
+    const saiu = avisos?.registrar(p, corpo);
+    if (saiu && "recusa" in saiu) return erro(route, 400, "VALIDATION_ERROR", { motivo: saiu.recusa });
     ped.push(p);
-    return route.fulfill({ status: 201, json: { id: p.id, protocolo, versao: 1 } });
+    return route.fulfill({ status: 201, json: { id: p.id, protocolo, versao: 1, ...(saiu ? { avisos: saiu.avisos } : {}) } });
   }
 
   const ra = /^\/v1\/condominio\/pedidos\/([^/]+)\/arquivos(.*)$/.exec(caminho);
@@ -208,6 +217,7 @@ export async function rotasPedidos(route: Route, ped: PedidoFalso[], c: Config, 
     const e = c.etapas.find((x) => x.id === p.etapaId)!;
     const pr = c.prioridades.find((x) => x.id === p.prioridadeId)!;
     const contato = m.contatos.find((x) => x.id === p.contatoId);
+    const doRegistro = avisos?.doPedido(p.id);
     const { pode: podeExtra, ...extra } = detalheExtra?.(p) ?? { pode: {} };
     return route.fulfill({ json: {
       pedido: {
@@ -219,8 +229,9 @@ export async function rotasPedidos(route: Route, ped: PedidoFalso[], c: Config, 
         etapa: { id: e.id, nome: e.nome, situacao: e.situacao, pausaPrazo: e.pausaPrazo },
         responsavel: p.responsavelId ? { vinculoId: p.responsavelId, nome: nomeVinculo(p.responsavelId), eu: responsavel, desde: p.desde, aceitoEm: p.aceitoEm } : null,
         proximoRetorno: p.proximoRetorno, retornoVencido: vencido(p, c), previsao: p.previsao, abertoEm: p.abertoEm, registradoPor: p.registradoPor,
-        encerradoEm: p.encerradoEm, cancelamento: p.cancelamento,
+        encerradoEm: p.encerradoEm, cancelamento: p.cancelamento, prestador: doRegistro?.prestador,
       },
+      avisosRegistro: doRegistro?.avisos ?? [],
       pendencias: p.pendencias.map((x) => ({ ...x, responsavel: { vinculoId: x.responsavelId, nome: nomeVinculo(x.responsavelId), ativo: true } })),
       andamentos: [...p.andamentos].reverse(),
       conclusoes: [...p.conclusoes].reverse(),

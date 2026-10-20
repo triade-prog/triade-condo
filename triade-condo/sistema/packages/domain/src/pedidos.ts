@@ -87,6 +87,57 @@ const opcional = (s: z.ZodString) => s.nullable().optional().transform((v) => (v
 const motivo = z.string().trim().min(3).max(500);
 const data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
+/** Quem fica sabendo do pedido no registro (F6.4, AT-26). */
+export const DESTINOS_AVISO_REGISTRO = {
+  QUEM_PEDIU: "Quem pediu",
+  RESPONSAVEL: "Responsável",
+  SINDICO: "Síndico",
+  PRESTADOR: "Prestador",
+  MORADORES: "Moradores",
+} as const;
+export type DestinoAvisoRegistro = keyof typeof DESTINOS_AVISO_REGISTRO;
+
+/** Por onde o aviso do registro saiu. */
+export const MEIOS_AVISO_REGISTRO = {
+  SINO: "Sino",
+  WHATSAPP: "WhatsApp",
+  EMAIL: "E-mail",
+  COMUNICADO: "Comunicado",
+  CONVERSA: "Conversa do WhatsApp",
+} as const;
+export type MeioAvisoRegistro = keyof typeof MEIOS_AVISO_REGISTRO;
+
+/** Público do comunicado aos moradores afetados: o mesmo dos comunicados, sem contatos escolhidos. */
+export const PUBLICOS_MORADORES_AFETADOS = { TODOS: "Todos", BLOCOS: "Blocos", UNIDADES: "Unidades" } as const;
+
+/** O que quem registra escolheu no bloco Quem avisar. O resto segue as regras do condomínio:
+ * o responsável sempre, o síndico pela regra, o protocolo marcado pela configuração. */
+export const avisarRegistroSchema = z
+  .object({
+    quemPediu: z.boolean().optional(),
+    sindico: z.boolean().optional(),
+    prestador: z.object({ id: z.string().uuid(), texto: z.string().trim().min(3).max(1500) }).nullable().optional(),
+    moradores: z
+      .object({
+        publico: z.enum(chaves(PUBLICOS_MORADORES_AFETADOS)),
+        blocos: z.array(z.string().uuid()).max(100).default([]),
+        unidades: z.array(z.string().uuid()).max(1000).default([]),
+        titulo: z.string().trim().min(3).max(120),
+        texto: z.string().trim().min(3).max(4000),
+      })
+      .nullable()
+      .optional(),
+  })
+  .superRefine((d, ctx) => {
+    if (d.moradores?.publico === "BLOCOS" && d.moradores.blocos.length === 0) {
+      ctx.addIssue({ code: "custom", path: ["moradores"], message: "Escolha os blocos" });
+    }
+    if (d.moradores?.publico === "UNIDADES" && d.moradores.unidades.length === 0) {
+      ctx.addIssue({ code: "custom", path: ["moradores"], message: "Escolha as unidades" });
+    }
+  });
+export type AvisarRegistro = z.infer<typeof avisarRegistroSchema>;
+
 export const registrarPedidoSchema = z
   .object({
     unidadeId: id.nullable().optional().transform((v) => v ?? null),
@@ -99,6 +150,7 @@ export const registrarPedidoSchema = z
     canal: z.enum(chaves(CANAIS_PEDIDO)),
     privado: z.boolean().default(false),
     responsavelId: id.nullable().optional().transform((v) => v ?? null),
+    avisar: avisarRegistroSchema.nullable().optional().transform((v) => v ?? null),
   })
   .superRefine((d, ctx) => {
     if (!d.unidadeId && !d.local) {
@@ -107,6 +159,23 @@ export const registrarPedidoSchema = z
     }
     if (d.contatoId && !d.unidadeId) ctx.addIssue({ code: "custom", path: ["unidadeId"], message: "Escolha a unidade de quem pediu" });
   });
+
+/** A prévia do bloco Quem avisar: o que já foi preenchido no registro e os textos editados,
+ * para conferir se levam dado de morador. */
+export const quemAvisarSchema = z.object({
+  unidadeId: id.nullable().optional(),
+  contatoId: id.nullable().optional(),
+  prioridadeId: id.nullable().optional(),
+  responsavelId: id.nullable().optional(),
+  prestadorId: id.nullable().optional(),
+  privado: z.boolean().optional(),
+  canal: z.enum(chaves(CANAIS_PEDIDO)).optional(),
+  local: z.string().max(120).nullable().optional(),
+  assunto: z.string().max(120).nullable().optional(),
+  descricao: z.string().max(4000).nullable().optional(),
+  textoPrestador: z.string().max(1500).optional(),
+  textoMoradores: z.string().max(4200).optional(),
+});
 
 export const buscaPedidosSchema = z.object({
   situacao: z.enum(chaves(FILTROS_SITUACAO)).optional(),
@@ -194,6 +263,43 @@ const FORMATO_DATA_HORA = new Intl.DateTimeFormat("pt-BR", {
 const quando = (v: unknown) => (typeof v === "string" ? FORMATO_DATA_HORA.format(new Date(v)).replace(",", "") : "sem prazo");
 
 /** Evento do histórico de um pedido (AT-17), como frase curta. */
+const MEIOS_NA_FRASE: Record<string, string> = {
+  SINO: "sino", WHATSAPP: "WhatsApp", EMAIL: "e-mail", COMUNICADO: "comunicado", CONVERSA: "conversa do WhatsApp",
+};
+
+/** "sino e WhatsApp", "e-mail": os meios de um aviso do registro, no meio da frase. */
+export function meiosAvisoRegistro(meios: unknown): string {
+  const lista = (Array.isArray(meios) ? meios : []).map((m) => MEIOS_NA_FRASE[String(m)] ?? String(m));
+  return lista.length > 1 ? `${lista.slice(0, -1).join(", ")} e ${lista[lista.length - 1]}` : (lista[0] ?? "");
+}
+
+/** "pelo WhatsApp do condomínio", "por e-mail". */
+function porOnde(meios: unknown): string {
+  const m = Array.isArray(meios) ? meios[0] : null;
+  return m === "WHATSAPP" ? "pelo WhatsApp do condomínio" : m === "CONVERSA" ? "na conversa do WhatsApp" : `por ${meiosAvisoRegistro(meios)}`;
+}
+
+/** Uma linha do histórico para cada aviso do registro (F6.4, decisão 14). O nome vem lido na hora. */
+function descreverAvisoRegistro(d: Record<string, unknown>): string {
+  const quem = d.quem ? String(d.quem) : null;
+  const extras = [d.pelaRegra ? "pela regra do condomínio" : null, d.editado ? "texto editado" : null].filter(Boolean);
+  const fim = extras.length ? ` · ${extras.join(" · ")}` : "";
+  switch (d.destino) {
+    case "QUEM_PEDIU":
+      return `Protocolo mandado a ${quem ?? "quem pediu"} ${porOnde(d.meios)}`;
+    case "RESPONSAVEL":
+      return `Aviso de pedido novo para ${quem ?? "o responsável"} · ${meiosAvisoRegistro(d.meios)}${fim}`;
+    case "SINDICO":
+      return `Aviso de pedido novo para ${quem ? `${quem} (síndico)` : "o síndico"} · ${meiosAvisoRegistro(d.meios)}${fim}`;
+    case "PRESTADOR":
+      return `Aviso ao prestador${quem ? ` ${quem}` : ""} ${porOnde(d.meios)}${fim}`;
+    case "MORADORES":
+      return `Comunicado publicado para os moradores afetados${fim}`;
+    default:
+      return "Aviso do registro";
+  }
+}
+
 export function descreverEventoPedido(acao: string, d: Record<string, unknown>): string {
   const comMotivo = (texto: string) => (d.motivo ? `${texto}. Motivo: ${String(d.motivo)}` : texto);
   switch (acao) {
@@ -235,6 +341,8 @@ export function descreverEventoPedido(acao: string, d: Record<string, unknown>):
       return "Manutenção ligada ao pedido";
     case "pedido.comunicado_ligado":
       return "Comunicado ligado ao pedido";
+    case "pedido.avisado":
+      return descreverAvisoRegistro(d);
     case "pedido.manutencao_concluida":
       return "Manutenção ligada concluída: dê o retorno ao morador";
     case "pedido.revisao_pedida":

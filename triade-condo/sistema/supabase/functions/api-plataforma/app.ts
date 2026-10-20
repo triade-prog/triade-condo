@@ -66,6 +66,7 @@ import {
   previsaoSchema,
   reabrirPedidoSchema,
   registrarPedidoSchema,
+  quemAvisarSchema,
   regrasPedidosSchema,
   resolverPendenciaSchema,
   retornoSchema,
@@ -85,6 +86,7 @@ import {
   marcarAvisosSchema,
   periodoIndicadoresSchema,
   regrasAvisoSchema,
+  avisoNovoSchema,
   alterarCompromissoSchema,
   cancelarCompromissoSchema,
   marcarCompromissoSchema,
@@ -592,12 +594,22 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     }));
   });
 
+  // Registrar já avisa os envolvidos, na mesma gravação (F6.4, AT-26, PT-04): o que vem em
+  // avisar é só o que quem registra mudou; o resto segue as regras do condomínio.
   app.post("/v1/condominio/pedidos", async (c) => {
     const d = await lerCorpo(c, registrarPedidoSchema);
     return c.json(await rpc("plataforma_registrar_pedido", {
       ...quem(c), p_unidade: d.unidadeId, p_contato: d.contatoId, p_local: d.local, p_categoria: d.categoriaId, p_prioridade: d.prioridadeId,
       p_assunto: d.assunto, p_descricao: d.descricao, p_canal: d.canal, p_privado: d.privado, p_responsavel: d.responsavelId,
+      p_avisar: d.avisar,
     }), 201);
+  });
+
+  // O bloco Quem avisar antes de registrar: as linhas pelas regras, os rascunhos editáveis e a
+  // conferência dos textos (dado de morador não sai, PT-11).
+  app.post("/v1/condominio/pedidos/quem-avisar", async (c) => {
+    const d = await lerCorpo(c, quemAvisarSchema);
+    return c.json(await rpc("plataforma_quem_avisar", { ...quem(c), p_dados: d }));
   });
 
   app.get("/v1/condominio/pedidos/:id", async (c) => c.json(await rpc("plataforma_pedido", { ...quem(c), p_id: idDaRota(c, "id") })));
@@ -757,6 +769,13 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
         ...quem(c), p_versao: d.versao, p_sindico_horas: d.sindicoHoras, p_substituto_horas: d.substitutoHoras,
         p_substituto: d.substitutoId, p_sem_responsavel_horas: d.semResponsavelHoras, p_pendencia_dias: d.pendenciaDias,
       }),
+    });
+  });
+
+  app.put("/v1/condominio/regras-aviso-novo", async (c) => {
+    const d = await lerCorpo(c, avisoNovoSchema);
+    return c.json({
+      versao: await rpc<number>("plataforma_definir_aviso_novo", { ...quem(c), p_versao: d.versao, p_sindico: d.sindico, p_protocolo: d.protocolo }),
     });
   });
 

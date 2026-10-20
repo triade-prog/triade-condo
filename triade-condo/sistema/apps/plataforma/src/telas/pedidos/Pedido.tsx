@@ -5,9 +5,10 @@
 // e, em abas, o andamento, o histórico completo (AT-17), o relato, as conclusões e as fotos e
 // documentos (passo 4b, PT-07). Com o retorno vencido, a faixa do aviso (passo 6, AT-09).
 // A visita marcada na agenda, separada dos dois compromissos (peça R7, AG-08, MP-04), e a
-// manutenção ligada (peça R6, MP-04). A conversa do WhatsApp do condomínio (passo 5). Da F7.4:
-// os pedidos relacionados (AT-18) e a decisão pedida ao síndico, com a pendência que se resolve
-// sozinha quando ele responde (AT-23).
+// manutenção ligada (peça R6, MP-04). A conversa do WhatsApp do condomínio (passo 5). Quem
+// foi avisado no registro e o prestador escolhido (F6.4, AT-26). Da F7.4: os pedidos
+// relacionados (AT-18) e a decisão pedida ao síndico, com a pendência que se resolve sozinha
+// quando ele responde (AT-23).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -27,6 +28,7 @@ import { NosComunicados } from "../comunicados/NosComunicados.tsx";
 import { ConversaWhatsapp } from "../whatsapp/ConversaWhatsapp.tsx";
 import { DecisoesNoPedido, PedirDecisao, pendenciaDaDecisao } from "../decisoes/NoPedido.tsx";
 import { PedidosRelacionados } from "./Relacionados.tsx";
+import { CartaoAvisosRegistro } from "./AvisosDoRegistro.tsx";
 
 const ABAS = [
   { id: "andamento", texto: "Andamento" },
@@ -107,7 +109,8 @@ export function Pedido() {
           <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-tinta-suave">
             <SeloEstadoPedido estado={p.estado} />
             {p.privado ? <Selo tom="neutro">Privado</Selo> : null}
-            <span>{[ativo ? p.etapa.nome : null, p.categoria.nome, p.prioridade.nome, onde, quem, `por ${nomeDe(CANAIS_PEDIDO_EXIBICAO, p.canal).toLowerCase()}`].filter(Boolean).join(" · ")}</span>
+            <span>{[ativo ? p.etapa.nome : null, p.categoria.nome, p.prioridade.nome, onde, quem, `por ${nomeDe(CANAIS_PEDIDO_EXIBICAO, p.canal).toLowerCase()}`,
+              p.prestador ? `prestador ${p.prestador.nome}` : null].filter(Boolean).join(" · ")}</span>
           </p>
           <p className="mt-1 text-xs text-tinta-suave">{p.registradoPor ? `Registrado por ${p.registradoPor}` : "Aberto pelo morador no WhatsApp"} em {diaHora(p.abertoEm)} · aberto há {tempoAberto(p.abertoEm, p.encerradoEm ?? p.cancelamento?.em ?? d.agora)}</p>
         </div>
@@ -153,6 +156,7 @@ export function Pedido() {
       ) : null}
       <NaAgenda key={`${p.id}-${p.previsao ?? ""}`} pedido={p} ativo={!fechado} avisar={(texto) => { setRecado({ tom: "ok", texto }); setFalha(null); }} />
       <NaManutencao pedido={p} ativo={!fechado} avisar={(texto) => { setRecado({ tom: "ok", texto }); setFalha(null); }} />
+      <CartaoAvisosRegistro avisos={d.avisosRegistro ?? []} />
       <NosComunicados pedidoId={p.id} ativo={!fechado} />
       <ConversaWhatsapp key={`${p.id}-${p.estado}`} pedidoId={p.id} versao={p.versao} aoResponder={(texto) => salvo(texto)}
         aoReabrir={d.pode.concluir && p.estado === "ENCERRADO" && d.regras.reabertura ? () => setAcao("reabrir") : undefined} />
