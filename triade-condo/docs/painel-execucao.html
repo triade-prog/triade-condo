@@ -29,7 +29,7 @@
 <script type="application/json" id="dados">
 {
   "meta": {
-    "atualizado_em": "19/10/2026",
+    "atualizado_em": "20/10/2026",
     "total_ideias": 312,
     "situacao": "Passos 0 a 4, o 3b (vínculo detalhado), os 6 e 7 (prazos, avisos e início do dia, sem WhatsApp) a Agenda (R7), Manutenção e prestadores (R6) e Comunicados e documentos (R1), com o mural online e o e-mail (R1b), Links e QR (R13), a Memória do prédio (R10), Implantação e suporte (R4) e o WhatsApp do condomínio (passo 5, piloto pelo Wafly), com a Nina, a janela de 24h e os modelos de mensagem, construídos; da Vida em condomínio (R12), as reservas das áreas comuns, as enquetes, as assembleias, com o link pessoal de cada unidade, e os classificados entre moradores já estão construídos; a Agenda já reúne os vencimentos de contratos e documentos e as assembleias, os Indicadores mostram as pendências por responsável e o tempo de solução por categoria e a lista de unidades marca as que estão à venda ou para alugar, busca por placa, nome e telefone e tem o menu de garagens; a manutenção passa o serviço para o prestador reserva quando o principal não responde, e o WhatsApp tem a aba Quedas, com o canal alternativo nas etiquetas e no mural e a conciliação do que ficou parado. A Plataforma do síndico tem login, escolha do condomínio, início, pedidos no painel com fotos e documentos privados (fila com filtros, registro com protocolo, responsável que aceita, próximo retorno e previsão separados, pendências, conclusão, revisão, reabertura e cancelamento, histórico e pedido privado), agenda do condomínio (lista, semana e mês, conflitos, repetição, reagendar e cancelar com motivo, visita ligada ao pedido), manutenção (corretivas, vistorias e preventivas que abrem sozinhas, providências, prestadores com contrato ou por chamado), comunicados (rascunho, programado e publicado, com versões, público calculado, copiar para o grupo e versão para o mural, mural online por link e QR e envio por e-mail) e documentos do prédio com versões, validade e envio por e-mail, etiquetas QR por local que abrem o WhatsApp do condomínio e o link do prestador na manutenção, com a chegada pela etiqueta, a memória do prédio (prontuário, linha do tempo, manual do prédio com aba no mural, dossiê de passagem de bastão e exportação de todo o histórico), Vida em condomínio (áreas comuns prontas para ativar, reservas pelo painel e pelo WhatsApp com RESERVAR, aprovação ou confirmação na hora, limite com tolerância, recusa e cancelamento com motivo, a semana da área e a reserva na Agenda; enquetes com o link pessoal de cada unidade, sem conta, resultado enquanto corre, lembrete a quem falta e resultado como comunicado; assembleias com pauta e quórum por item, edital, procuração, presença online e no salão, voto pela fração ideal, apuração item a item e ata), moradores e unidades, configurações, pessoas e acesso e Ajuda e suporte (chamados com imagem colada e aprovação do acesso excepcional da TRÍADE); o Console tem carteira, ficha com a implantação em 8 etapas e a entrega, troca de síndico, suporte de acesso sem ver senha, chamados e acesso excepcional; o WhatsApp do condomínio (piloto) tem a aba WhatsApp na ficha do Console (credenciais, QR ou código, conferir o aparelho, desconectar com motivo), o menu WhatsApp na Plataforma (A identificar e falhas de envio), a conversa no pedido e Configurações › WhatsApp; nenhuma tela usa emoji. Tudo testado localmente (1730 pgTAP, 201 Deno, 187 Vitest, 292 ponta a ponta). As duas aplicações já usam a identidade TRÍADE (DC13, partes A, B e C do plano): paleta Brilho, botão em degradê, selos com faixa, Manrope servida pelo próprio sistema e sempre claro, mesmo com o aparelho no modo escuro. O triade-condo-dev tem as migrations até a 0210 (com as rotinas de prazos, manutenção, comunicados e filas de e-mail e de WhatsApp no pg_cron) e as Edge Functions api-plataforma (versão 16, com o mural, o e-mail, Links e QR, a Memória do prédio, Ajuda e suporte e o WhatsApp) e api-console (versão 7, com implantação, troca de síndico, suporte de acesso, chamados, acesso excepcional e o WhatsApp); o envio de e-mails e de WhatsApp espera os segredos no Vault e nas funções; a Plataforma (condominio.trihub.com.br) e o Console (t3condo.trihub.com.br) estão na Vercel, falando com elas, e os e-mails saem pelo Resend.",
     "fase_atual": "R",
@@ -1173,10 +1173,12 @@
           "texto": "Indicadores que faltam: reincidência e decisões aguardando o síndico",
           "peca": "S12",
           "refs": [
-            "TR-01"
+            "TR-01",
+            "AT-18",
+            "AT-23"
           ],
-          "status": "pendente",
-          "nota": "Reincidência depende de ligar um pedido a outro do mesmo problema (AT-18); decisões aguardando o síndico, da peça Decisões e aprovações (AT-23)."
+          "status": "andamento",
+          "nota": "Reincidência depende de ligar um pedido a outro do mesmo problema (AT-18); decisões aguardando o síndico, do núcleo da solicitação de decisão (AT-23), escolhido pela Carolina em 20/10/2026 no lugar da peça Decisões e aprovações completa. Desenho aprovado pela Carolina em 20/10/2026 em docs/telas/reincidencia-decisoes.html (6 telas e 10 decisões); conselho e subsíndico (V-14), aprovação de despesas pelo conselho (FC-10) e orientação jurídica (IA-08) ficam na R5. Em construção."
         }
       ]
     },
@@ -2154,6 +2156,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "20/10/2026",
+      "inicio": "15:31",
+      "fim": "15:44",
+      "texto": "Plano de execução da F7.4 e desenho para aprovação em docs/telas/reincidencia-decisoes.html, aprovados pela Carolina: pedidos relacionados no pedido, com os parecidos sugeridos pela mesma categoria e o mesmo local ou unidade nos últimos 90 dias e a pessoa confirmando se é reincidência ou duplicado (AT-18); pedido de decisão ao síndico pelo pedido, com alternativas, custo estimado, prazo e resposta com justificativa, sem contratar nem pagar nada (AT-23, núcleo escolhido pela Carolina); a tela Decisões, a linha no Início e os dois indicadores que faltavam na TR-01; 10 decisões e 3 itens para depois (V-14, FC-10 e IA-08, na R5).",
+      "ref": "TR-01, AT-18, AT-23"
+    },
     {
       "data": "19/10/2026",
       "inicio": "22:43",
