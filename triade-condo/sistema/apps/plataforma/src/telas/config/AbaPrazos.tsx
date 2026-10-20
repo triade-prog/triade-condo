@@ -2,7 +2,7 @@
 // Prazos de retorno (AT-10): uma regra geral e exceções por categoria, por prioridade ou
 // pelas duas. Vale a mais específica, e a prioridade vem antes da categoria. Conta em horas
 // de atendimento e para fora do horário, nos feriados e nas etapas que pausam. Em cima, as
-// regras de aviso (passo 6).
+// regras de aviso (passo 6) e quem fica sabendo de pedido novo (F6.4).
 
 import { useState } from "react";
 import { AvisoErro, Aviso, Botao, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
@@ -10,6 +10,7 @@ import { Janela, type Valores } from "../Janela.tsx";
 import type { Configuracoes } from "../tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
 import { RegrasAviso } from "./RegrasAviso.tsx";
+import { AvisoPedidoNovo } from "./AvisoPedidoNovo.tsx";
 
 type Prazo = Configuracoes["prazos"][number];
 
@@ -20,6 +21,7 @@ function horas(n: number): string {
 export function AbaPrazos(props: PropsAba) {
   return (
     <div className="grid gap-6">
+      <AvisoPedidoNovo {...props} />
       <RegrasAviso {...props} />
       <section aria-labelledby="t-prazos" className="grid gap-3">
         <h2 id="t-prazos" className="text-lg font-medium">Prazos de retorno</h2>

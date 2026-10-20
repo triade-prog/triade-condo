@@ -160,7 +160,7 @@ function MeusAvisos({ d, aoSalvar }: { d: ConfigWhatsapp; aoSalvar: (texto: stri
           <label key={k} className="flex items-center gap-3 text-sm">
             <input type="checkbox" className="h-5 w-5 accent-violeta-600" checked={tipos.includes(k)}
               onChange={(e) => setTipos(e.target.checked ? [...tipos, k] : tipos.filter((x) => x !== k))} />
-            {t}
+            <span>{t}{k === "PEDIDO_NOVO" ? <span className="block text-xs text-tinta-suave">De todos os canais, não só do WhatsApp.</span> : null}</span>
           </label>
         ))}
       </fieldset>

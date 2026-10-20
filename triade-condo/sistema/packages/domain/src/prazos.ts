@@ -42,6 +42,22 @@ export const regrasAvisoSchema = z
     }
   });
 
+/** Quando o síndico fica sabendo de pedido novo (F6.4, AT-26). "Urgente" é a prioridade de
+ * nível mais alto em uso no condomínio. */
+export const AVISO_NOVO_SINDICO = {
+  NUNCA: "Nunca",
+  SEM_RESPONSAVEL_OU_URGENTE: "Sem responsável ou urgente",
+  TODOS: "Todos os pedidos",
+} as const;
+export type AvisoNovoSindico = keyof typeof AVISO_NOVO_SINDICO;
+
+/** Configurações › Prazos e avisos: o cartão Pedido novo. */
+export const avisoNovoSchema = z.object({
+  versao: z.number().int().min(1),
+  sindico: z.enum(chaves(AVISO_NOVO_SINDICO)),
+  protocolo: z.boolean(),
+});
+
 /** Marcar avisos como vistos: os escolhidos, ou todos quando não vem nenhum. */
 export const marcarAvisosSchema = z.object({ ids: z.array(z.string().uuid()).min(1).max(200).nullable().optional().transform((v) => v ?? null) });
 

@@ -3,32 +3,41 @@
 // ou área comum), quem pediu (só contato confirmado da unidade, MU-02), como chegou,
 // categoria, prioridade com o significado, assunto e o relato. O responsável vem com o padrão
 // da fila. O protocolo aparece depois de salvar. Fotos e documentos (opcional, passo 4b) entram
-// como parte do relato, enviados logo depois do registro.
+// como parte do relato, enviados logo depois do registro. No fim, Quem avisar (F6.4, AT-26):
+// os avisos saem junto com o registro e a confirmação mostra o que saiu.
 
 import { useEffect, useState, type FormEvent } from "react";
 import { AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, chamarApi, camposComErro, Dialogo, textoDoErro, type ErroApi } from "@triade/ui";
-import type { OpcoesPedidos } from "../tipos.ts";
+import type { AvisoDoRegistro, OpcoesPedidos } from "../tipos.ts";
 import { Caixa, Escolha, nomeRelacao } from "../moradores/comum.tsx";
 import { opcoesCanal } from "./comum.tsx";
 import { EscolherArquivos, enviarArquivos, type ItemEnvio } from "./Arquivos.tsx";
 import { ListaLocais } from "../Locais.tsx";
+import { acompanharRascunhos, BlocoQuemAvisar, contarAvisos, ESCOLHA_INICIAL, paraEnviar, usePrevia, type EscolhaAvisos } from "./QuemAvisar.tsx";
+import { ConfirmacaoRegistro, type Registrado } from "./AvisosDoRegistro.tsx";
 
 interface ContatoConfirmado { contatoId: string; nome: string; relacao: string; principal: boolean }
 
-export function RegistrarPedido({ aberto, opcoes, aoFechar, registrado }: {
+export function RegistrarPedido({ aberto, opcoes, aoFechar, registrado, aoRegistrar }: {
   aberto: boolean;
   opcoes: OpcoesPedidos;
   aoFechar: () => void;
+  /** Abrir o pedido registrado. */
   registrado: (protocolo: string, id: string) => void;
+  /** Avisa a fila que entrou um pedido, antes de a pessoa sair da confirmação. */
+  aoRegistrar?: () => void;
 }) {
+  const [chave, setChave] = useState(0);
   return (
     <Dialogo aberto={aberto} titulo="Registrar pedido" aoFechar={aoFechar}>
-      {aberto ? <Formulario opcoes={opcoes} aoFechar={aoFechar} registrado={registrado} /> : null}
+      {aberto ? <Formulario key={chave} opcoes={opcoes} aoFechar={aoFechar} registrado={registrado} aoRegistrar={aoRegistrar} outro={() => setChave((n) => n + 1)} /> : null}
     </Dialogo>
   );
 }
 
-function Formulario({ opcoes, aoFechar, registrado }: { opcoes: OpcoesPedidos; aoFechar: () => void; registrado: (protocolo: string, id: string) => void }) {
+function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro }: {
+  opcoes: OpcoesPedidos; aoFechar: () => void; registrado: (protocolo: string, id: string) => void; aoRegistrar?: () => void; outro: () => void;
+}) {
   const categorias = opcoes.categorias.filter((c) => c.ativa);
   const prioridades = opcoes.prioridades.filter((p) => p.ativa);
   const disponiveis = opcoes.responsaveis.filter((r) => r.disponivel);
@@ -43,7 +52,17 @@ function Formulario({ opcoes, aoFechar, registrado }: { opcoes: OpcoesPedidos; a
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [arquivos, setArquivos] = useState<ItemEnvio[]>([]);
   const [enviando, setEnviando] = useState(false);
+  const [escolha, setEscolha] = useState<EscolhaAvisos>(ESCOLHA_INICIAL);
+  const [feito, setFeito] = useState<Registrado | null>(null);
   const mudar = (m: Partial<typeof v>) => setV((x) => ({ ...x, ...m }));
+  const previa = usePrevia({
+    unidadeId: onde === "UNIDADE" ? v.unidadeId || null : null, contatoId: onde === "UNIDADE" ? v.contatoId || null : null,
+    prioridadeId: v.prioridadeId, responsavelId: v.responsavelId || null, privado: v.privado, canal: v.canal,
+    local: v.local.trim() || null, assunto: v.assunto, descricao: v.descricao,
+  }, escolha);
+  // Enquanto ninguém edita, os textos do prestador e do comunicado seguem o rascunho mais novo.
+  const escolhaVista = acompanharRascunhos(previa, escolha);
+  const avisos = contarAvisos(previa, escolhaVista);
 
   useEffect(() => {
     if (onde !== "UNIDADE" || !v.unidadeId) return;
@@ -59,18 +78,24 @@ function Formulario({ opcoes, aoFechar, registrado }: { opcoes: OpcoesPedidos; a
     ev.preventDefault();
     setErro(null);
     setEnviando(true);
-    const r = await chamarApi<{ id: string; protocolo: string }>("/v1/condominio/pedidos", { corpo: {
+    const r = await chamarApi<{ id: string; protocolo: string; avisos?: AvisoDoRegistro[] }>("/v1/condominio/pedidos", { corpo: {
       unidadeId: onde === "UNIDADE" ? v.unidadeId || null : null,
       contatoId: onde === "UNIDADE" ? v.contatoId || null : null,
       local: v.local.trim() || null,
       canal: v.canal, categoriaId: v.categoriaId, prioridadeId: v.prioridadeId,
       assunto: v.assunto, descricao: v.descricao, privado: v.privado, responsavelId: v.responsavelId || null,
+      avisar: paraEnviar(previa, escolhaVista),
     } });
     if (!r.ok) { setEnviando(false); return setErro(r.erro); }
     await enviarArquivos(r.dados.id, "RELATO", arquivos, (chave, p) => setArquivos((xs) => xs.map((x) => (x.chave === chave ? { ...x, progresso: p } : x))));
     setEnviando(false);
-    registrado(r.dados.protocolo, r.dados.id);
+    aoRegistrar?.();
+    const resp = opcoes.responsaveis.find((x) => x.vinculoId === v.responsavelId);
+    setFeito({ id: r.dados.id, protocolo: r.dados.protocolo, avisos: r.dados.avisos ?? [],
+      linha: [v.assunto.trim(), prioridades.find((x) => x.id === v.prioridadeId)?.nome.toLowerCase(), resp ? `responsável ${resp.eu ? "você" : resp.nome}` : null].filter(Boolean).join(" · ") });
   }
+
+  if (feito) return <ConfirmacaoRegistro feito={feito} outro={outro} abrir={() => registrado(feito.protocolo, feito.id)} />;
 
   const comErro = camposComErro(erro);
   const msg = (c: string, texto: string) => (comErro.includes(c) ? texto : null);
@@ -116,9 +141,10 @@ function Formulario({ opcoes, aoFechar, registrado }: { opcoes: OpcoesPedidos; a
           ...disponiveis.map((r) => ({ valor: r.vinculoId, texto: `${r.eu ? "Eu" : r.nome}${r.vinculoId === opcoes.responsavelPadrao ? " (padrão da fila)" : ""}` }))]} />
       <Caixa id="p-privado" rotulo="Pedido privado" ajuda="Só o síndico, quem registrou e o responsável veem." marcada={v.privado} aoMudar={(x) => mudar({ privado: x })} />
       <EscolherArquivos rotulo="Fotos e documentos (opcional)" itens={arquivos} aoMudar={setArquivos} enviando={enviando} />
+      <BlocoQuemAvisar previa={previa} escolha={escolhaVista} mudar={setEscolha} opcoes={opcoes} />
       <div className="flex justify-end gap-2">
         <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
-        <Botao type="submit" disabled={enviando}>{enviando ? "Registrando…" : "Registrar pedido"}</Botao>
+        <Botao type="submit" disabled={enviando}>{enviando ? "Registrando…" : avisos.n ? `Registrar e avisar ${avisos.n}` : "Registrar pedido"}</Botao>
       </div>
     </form>
   );

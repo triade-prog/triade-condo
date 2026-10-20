@@ -17,6 +17,7 @@ import { criarVida, resumoVida, rotasVida } from "./api-falsa-vida";
 import { criarEnquetes, resumoEnquetes, rotasEnquetePublica, rotasEnquetes } from "./api-falsa-enquetes";
 import { criarAssembleias, resumoAssembleia, rotasAssembleiaPublica, rotasAssembleias } from "./api-falsa-assembleias";
 import { classificadosAAprovar, classificadosDoMural, criarClassificados, rotasClassificadoPublico, rotasClassificados } from "./api-falsa-classificados";
+import { avisarNoRegistro, criarAvisoRegistro, rotasAvisoRegistro, type ContextoAviso } from "./api-falsa-aviso-registro";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -36,6 +37,8 @@ export interface OpcoesPlataforma {
   comAtendimento?: boolean;
   /** A Agenda com o vencimento de um contrato e de dois documentos e uma assembleia convocada (AG-09). */
   comDatasDeFora?: boolean;
+  /** A secretária também registra pedidos (F6.4): vê o síndico no bloco Quem avisar. */
+  secretariaRegistra?: boolean;
 }
 
 function erro(route: Route, status: number, codigo: string, detalhes?: Record<string, unknown>) {
@@ -107,6 +110,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const memoria = criarMemoria();
   const suporte = criarSuporte();
   const whatsapp = criarWhatsapp(estado.pedidos[0]!, cats[0]!.id, pris[1]!.id);
+  const avisoRegistro = criarAvisoRegistro(V_ANA);
   if (!opcoes.comAcessoPedido) suporte.acessos = [];
   if (opcoes.comAtendimento) {
     for (const p of estado.pessoas) { p.responsavel = true; p.disponivel = true; }
@@ -120,7 +124,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       "memoria.dossie", "memoria.exportar", "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver",
       "suporte.chamados", "acesso_excepcional.aprovar", "reservas.editar", "reservas.ver",
       "enquetes.editar", "enquetes.ver", "assembleias.editar", "assembleias.ver", "classificados.editar", "classificados.ver"]
-    : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"]
+    : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados",
+      ...(opcoes.secretariaRegistra ? ["pedidos.atualizar"] : [])]
       : ["agenda.ver", "comunicados.ver", "config.ver", "documentos.ver", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"];
   const pendencias = () => {
     const p: string[] = [];
@@ -210,8 +215,13 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     }
     if (caminho === "/v1/condominio/configuracoes") {
       const substitutosPossiveis = estado.pessoas.filter((p) => p.funcao === "AUTORIZADO").map((p) => ({ vinculoId: p.vinculoId, nome: p.nome, cargo: p.cargo }));
-      return route.fulfill({ json: { ...c, avisos: { ...estado.regras, substitutosPossiveis }, pendencias: pendencias(), podeEditar: pode("config.editar") } });
+      return route.fulfill({ json: { ...c, avisos: { ...estado.regras, substitutosPossiveis }, pendencias: pendencias(), podeEditar: pode("config.editar"),
+        avisoNovo: { ...avisoRegistro.regra, podeMudar: quem === "SINDICA" } } });
     }
+    const ctxAviso: ContextoAviso = { eu, pessoas: estado.pessoas, responsavelPadrao: estado.responsavelPadrao, moradores: estado.moradores, manutencao,
+      prioridades: c.prioridades, conectado: whatsapp.conexao.situacao === "CONECTADO", podePublicar: pode("comunicados.publicar"), condominio: "Residencial Ipê" };
+    const noAviso = await rotasAvisoRegistro(route, avisoRegistro, ctxAviso, caminho, metodo, corpo, pode, quem === "SINDICA");
+    if (noAviso !== null) return noAviso;
     const prazos = await rotasPrazos(route, estado, eu, caminho, metodo, corpo, url, pode,
       (id) => vencido(estado.pedidos.find((p) => p.id === id)!, estado.config));
     if (prazos !== null) return prazos;
@@ -244,7 +254,10 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       { categorias: c.categorias, prioridades: c.prioridades, sindica: quem === "SINDICA" },
       (id) => estado.pedidos.find((p) => p.id === id)?.versao ?? null);
     if (noWhatsapp !== null) return noWhatsapp;
-    const pedidos = await rotasPedidos(route, estado.pedidos, c, estado.pessoas, estado.moradores, eu, caminho, metodo, corpo, url, pode);
+    const pedidos = await rotasPedidos(route, estado.pedidos, c, estado.pessoas, estado.moradores, eu, caminho, metodo, corpo, url, pode, {
+      registrar: (p, d) => avisarNoRegistro(avisoRegistro, ctxAviso, p, d, AGORA),
+      doPedido: (id) => avisoRegistro.porPedido.get(id),
+    });
     if (pedidos !== null) return pedidos;
 
     // Daqui em diante, mudar configuração.
@@ -351,5 +364,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     }
     return erro(route, 404, "NOT_FOUND");
   });
-  return Object.assign(estado, { links, memoria, suporte, vida, whatsapp });
+  return Object.assign(estado, { links, memoria, suporte, vida, whatsapp, avisoRegistro });
 }

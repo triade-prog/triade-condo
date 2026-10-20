@@ -89,6 +89,8 @@ test.describe("Plataforma do síndico · passo 4b", () => {
     await expect(j.getByText("parede.png", { exact: true })).toBeVisible();
     await conferir(page);
     await j.getByRole("button", { name: "Registrar pedido" }).click();
+    await expect(j.getByText("Ninguém foi avisado: não havia contato para o protocolo e quem cuida do pedido é você.")).toBeVisible();
+    await j.getByRole("button", { name: "Abrir o pedido" }).click();
     await expect(page.getByRole("heading", { level: 1, name: /Infiltração na parede/ })).toBeVisible();
     await page.getByRole("tab", { name: "Fotos e documentos (1)" }).click();
     await expect(page.getByRole("heading", { name: "Relato" })).toBeVisible();

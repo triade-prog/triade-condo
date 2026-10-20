@@ -1,4 +1,5 @@
-// E-mail dos comunicados, documentos e convites de enquete e de assembleia (CD-13, CD-14, AC-02, AC-03). O banco monta a fila e diz o que vai em
+// E-mail dos comunicados, documentos, convites de enquete e de assembleia (CD-13, CD-14, AC-02, AC-03) e do pedido registrado
+// (protocolo a quem pediu e aviso ao prestador, AT-26). O banco monta a fila e diz o que vai em
 // cada e-mail; aqui o e-mail ganha forma (HTML e texto), sai pelo Resend e os avisos do provedor
 // (entregue, devolvido, spam) são conferidos pela assinatura antes de voltar ao banco.
 
@@ -8,7 +9,7 @@ import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
 export interface MensagemFila {
   envio: string;
   condominio: string;
-  tipo: "COMUNICADO" | "CONFIRMACAO" | "DOCUMENTO" | "ENQUETE" | "ASSEMBLEIA";
+  tipo: "COMUNICADO" | "CONFIRMACAO" | "DOCUMENTO" | "ENQUETE" | "ASSEMBLEIA" | "PROTOCOLO" | "PRESTADOR";
   para: string;
   condominioNome: string;
   responderPara?: string;
@@ -28,6 +29,8 @@ export interface MensagemFila {
   enquete?: { pergunta: string; prazo: string; dono: string; lembrete: boolean; secreta: boolean };
   /** Convocação (ou lembrete) de assembleia, com o link pessoal da unidade (peça R12). */
   assembleia?: { titulo: string; nome: string; chamada: string; dono: string; lembrete: boolean };
+  /** Pedido registrado (F6.4): o protocolo a quem pediu, ou o texto que quem registrou mandou ao prestador. */
+  pedido?: { protocolo: string; prioridade?: string; assunto?: string; unidade?: string; canal?: string; atendimento?: string; texto?: string };
 }
 
 export interface EmailPronto {
@@ -167,6 +170,44 @@ export function montarEmail(m: MensagemFila, e: EnderecosEmail): EmailPronto {
         "List-Unsubscribe": `<${e.urlFuncao.replace(/\/$/, "")}/v1/email/parar/${m.codigos.parar ?? ""}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
       },
+    };
+  }
+
+  if (m.tipo === "PROTOCOLO" && m.pedido) {
+    const p = m.pedido;
+    const parar = `${app}/e/parar?c=${encodeURIComponent(m.codigos.parar ?? "")}`;
+    const ola = m.nome ? `Olá, ${m.nome}.` : "Olá.";
+    const linhas = [
+      `Registramos seu pedido ${p.protocolo}${p.unidade ? ` (${p.unidade})` : ""}: ${p.assunto ?? ""}.`,
+      `Chegou ${p.canal ?? "ao condomínio"}.`,
+      `O que acontece agora: o condomínio confere os pedidos ${p.atendimento ?? ""} e dá notícia. Em emergência, ligue 193.`,
+      ...(m.responderPara ? ["Para falar sobre este pedido, responda este e-mail."] : []),
+    ];
+    return {
+      ...base,
+      assunto: `[${m.condominioNome}] Pedido ${p.protocolo} registrado`,
+      html: pagina(m.condominioNome,
+        `<p style="margin:0 0 14px">${esc(ola)}</p>${linhas.map((l) => `<p style="margin:0 0 14px">${esc(l)}</p>`).join("")}`,
+        [`<a href="${esc(parar)}" style="color:#5808CC">Parar de receber por e-mail</a> · ${esc(AVISO_GOLPE)}`]),
+      texto: `${ola}\n\n${linhas.join("\n\n")}\n\nParar de receber por e-mail: ${parar}\n${AVISO_GOLPE}`,
+      cabecalhos: {
+        "List-Unsubscribe": `<${e.urlFuncao.replace(/\/$/, "")}/v1/email/parar/${m.codigos.parar ?? ""}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
+    };
+  }
+
+  if (m.tipo === "PRESTADOR" && m.pedido) {
+    const p = m.pedido;
+    const golpe = "O condomínio nunca pede pagamento por e-mail.";
+    const responder = m.responderPara ? "Para combinar, responda este e-mail." : "";
+    return {
+      ...base,
+      assunto: `[${m.condominioNome}] Pedido ${p.protocolo}${p.prioridade ? ` (${p.prioridade})` : ""}`,
+      html: pagina(m.condominioNome,
+        `<h1 style="font-size:20px;font-weight:600;margin:4px 0 14px">Pedido ${esc(p.protocolo)}${p.prioridade ? ` · ${esc(p.prioridade)}` : ""}</h1>${paragrafos(p.texto ?? "")}${responder ? `<p style="margin:0 0 14px">${esc(responder)}</p>` : ""}`,
+        [esc(golpe)]),
+      texto: `Pedido ${p.protocolo}${p.prioridade ? ` · ${p.prioridade}` : ""}\n\n${p.texto ?? ""}\n\n${responder ? `${responder}\n\n` : ""}${golpe}`,
     };
   }
 
