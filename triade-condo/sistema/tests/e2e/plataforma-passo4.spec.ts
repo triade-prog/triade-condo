@@ -49,7 +49,10 @@ test.describe("Plataforma do síndico · passo 4", () => {
     await j.getByLabel("O que foi relatado").fill("O interfone da 101 não toca desde ontem.");
     await expect(j.getByLabel("Responsável", { exact: true })).toHaveValue(/.+/);
     await conferir(page);
-    await j.getByRole("button", { name: "Registrar pedido" }).click();
+    // Quem pediu recebe o protocolo (F6.4): o botão diz quantos ficam sabendo.
+    await j.getByRole("button", { name: "Registrar e avisar 1" }).click();
+    await expect(j.getByText("Pedido 2026-0004 registrado")).toBeVisible();
+    await j.getByRole("button", { name: "Abrir o pedido" }).click();
     await expect(page.getByRole("heading", { level: 1, name: /2026-0004 · Interfone mudo/ })).toBeVisible();
     await expect(page.getByRole("status").filter({ hasText: "Pedido registrado." })).toBeVisible();
     await expect(page.getByText("Sem previsão")).toBeVisible();
