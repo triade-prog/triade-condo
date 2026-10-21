@@ -92,6 +92,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   COMUNICADO_PUBLICADO: "Comunicado publicado não se edita. Use Corrigir: vira uma versão nova e a anterior fica guardada.",
   COMUNICADO_NAO_PUBLICADO: "Só o comunicado publicado vai para os moradores. Este é rascunho, programado ou já foi trocado.",
   COMUNICADO_FORA_DE_USO: "Este comunicado já foi substituído ou arquivado. Atualize a página.",
+  COMUNICADO_SEM_REENVIO: "Mensagem de comunicado não tem reenvio: a pessoa lê pelo mural, pelo e-mail ou pelo grupo do prédio.",
+  WHATSAPP_DESCONECTADO: "Conecte o WhatsApp do condomínio para usar os comunicados por lá.",
   LIMITE_ARQUIVOS_COMUNICADO: "O comunicado já tem 4 arquivos. Tire um antes de enviar outro.",
   DOCUMENTO_ARQUIVADO: "Este documento está arquivado e não muda mais.",
   DOCUMENTO_GRANDE: "O arquivo passa de 20 MB.",

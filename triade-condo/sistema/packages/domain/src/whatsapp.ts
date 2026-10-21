@@ -45,6 +45,7 @@ export const FINALIDADES_ENVIO = {
   PRESTADOR: "Link do prestador",
   PROTOCOLO: "Protocolo do pedido",
   AVISO_PRESTADOR: "Pedido para o prestador",
+  COMUNICADO: "Comunicado",
 } as const;
 
 /** Avisos que cada pessoa liga no próprio WhatsApp (W-11, F6.3). */
@@ -105,6 +106,9 @@ export const configWhatsappSchema = z.object({
   categoriaId: id,
   prioridadeId: id,
 });
+
+/** Ligar ou desligar os comunicados pelo WhatsApp do condomínio (F6.6, CD-02). */
+export const comunicadosWhatsappSchema = z.object({ versao, ligado: z.boolean() });
 
 export const meusAvisosWhatsappSchema = z.object({
   versao: versao.nullable().optional().transform((v) => v ?? null),

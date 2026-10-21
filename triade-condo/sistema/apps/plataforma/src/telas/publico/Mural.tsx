@@ -5,7 +5,8 @@
 // seções do manual do prédio marcadas "no mural" ficam numa aba ao lado (peça R10, MP-14). As
 // enquetes abertas aparecem no topo; responde-se pelo link pessoal (peça R12, AC-03). Os anúncios
 // dos moradores ficam na aba Classificados, com o aviso de que o condomínio não vende nem garante
-// nada (peça R12, AC-05).
+// nada (peça R12, AC-05). Com os comunicados pelo WhatsApp ligados, o botão "Receber pelo
+// WhatsApp" abre a conversa com COMUNICADOS (F6.6, W-20).
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
@@ -14,7 +15,7 @@ import { Aviso, Botao, CampoTexto, Carregando, chamarApi, Chip, textoDoErro } fr
 import { diaHora } from "../pedidos/comum.tsx";
 import { prazoCurto } from "../vida/Enquetes.tsx";
 import type { AnuncioPublico, MuralPublico } from "../tipos.ts";
-import { Cartao, ComunicadoLido, FaixaQueda, TelaPublica } from "./comum.tsx";
+import { Cartao, ComunicadoLido, FaixaQueda, ReceberPeloWhatsapp, TelaPublica } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: MuralPublico };
 
@@ -115,6 +116,7 @@ export function Mural() {
     <TelaPublica titulo={titulo} subtitulo={subtitulo}>
       {abas}
       <FaixaQueda canal={m.canalAlternativo} />
+      <ReceberPeloWhatsapp numero={m.comunicadosWhatsapp} />
       {m.enquetes?.length ? (
         <ul className="grid gap-3" aria-label="Enquetes abertas">
           {m.enquetes.map((e) => (

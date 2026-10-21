@@ -6,11 +6,15 @@
 // Unidade com inquilino e sem proprietário no cadastro pede o proprietário (MU-01). A situação
 // da unidade: à venda e para alugar, só na Plataforma (MU-11). Garagens e veículos (MU-06),
 // e os atalhos do menu da lista de unidades pelo endereço (?abrir=incluir|mudanca, #garagens).
+// Os comunicados pelo WhatsApp de cada contato (F6.6, CD-02): só a situação, sem botão; só o
+// morador muda, pelo WhatsApp.
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { formatarData, mostrarDataSemHora, mostrarTelefone, nomeDaUnidade, SITUACOES_EMAIL } from "@triade/domain";
+import {
+  formatarData, mostrarDataSemHora, mostrarTelefone, nomeDaUnidade, ORIGENS_ACEITE_WHATSAPP, SITUACOES_COMUNICADOS_WHATSAPP, SITUACOES_EMAIL,
+} from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Selo, textoDoErro, Vazio } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
@@ -26,12 +30,21 @@ type JanelaAberta =
   | { tipo: "editar" | "encerrar" | "recusar"; contato: ContatoDaUnidade }
   | { tipo: "remover"; anterior: ContatoAnterior };
 
-function detalhes(c: ContatoDaUnidade): string {
+/** "Comunicados no WhatsApp: aceitou em 20/10/2026, na conversa". */
+function comunicadosNoWhatsapp(c: ContatoDaUnidade): string | null {
+  if (!c.comunicadosWhatsapp) return null;
+  const em = c.comunicadosWhatsappEm && c.comunicadosWhatsapp !== "SEM_RESPOSTA" ? ` em ${formatarData(c.comunicadosWhatsappEm)}` : "";
+  const origem = c.comunicadosWhatsappOrigem && c.comunicadosWhatsapp === "ACEITOU" ? `, ${ORIGENS_ACEITE_WHATSAPP[c.comunicadosWhatsappOrigem]}` : "";
+  return `Comunicados no WhatsApp: ${SITUACOES_COMUNICADOS_WHATSAPP[c.comunicadosWhatsapp]}${em}${origem}`;
+}
+
+function detalhes(c: ContatoDaUnidade, whatsappLigado: boolean): string {
   return [
     ...descreverVinculo(c).resto,
     mostrarTelefone(c.telefone),
     c.recebeComunicados ? "recebe comunicados" : "não recebe comunicados",
     c.emailSituacao ? SITUACOES_EMAIL[c.emailSituacao].toLowerCase() : null,
+    whatsappLigado || (c.comunicadosWhatsapp && c.comunicadosWhatsapp !== "SEM_RESPOSTA") ? comunicadosNoWhatsapp(c) : null,
     c.origem === "PLANILHA" ? "veio da planilha" : null,
     c.outrasUnidades.length ? `também em ${c.outrasUnidades.join(", ")}` : null,
   ].filter(Boolean).join(" · ");
@@ -161,7 +174,7 @@ export function Unidade() {
                   <td className="min-w-52 px-4 py-3">
                     <span className="font-medium">{c.nome}</span>
                     {descreverVinculo(c).marcas ? <span className="block text-xs font-semibold">{descreverVinculo(c).marcas}</span> : null}
-                    <span className="block text-xs text-tinta-suave">{detalhes(c)}</span>
+                    <span className="block text-xs text-tinta-suave">{detalhes(c, d.comunicadosWhatsappLigado === true)}</span>
                   </td>
                   <td className="px-4 py-3"><SeloEstado estado={c.estado} /></td>
                   {d.podeEditar || d.podeConfirmar ? (

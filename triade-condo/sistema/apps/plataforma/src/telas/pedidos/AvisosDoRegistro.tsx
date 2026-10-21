@@ -24,7 +24,8 @@ export function situacaoAviso(a: AvisoDoRegistro): { texto: string; tom: Tom } {
   if (a.meio === "SINO") return a.vistoEm ? { texto: `Visto ${hora(a.vistoEm)}`, tom: "ok" } : { texto: "No sino", tom: "info" };
   if (a.meio === "COMUNICADO") {
     const n = a.emails ?? 0;
-    return a.situacao === "PUBLICADO" ? { texto: `Publicado · ${n} ${n === 1 ? "e-mail" : "e-mails"}`, tom: "ok" } : { texto: "Comunicado", tom: "neutro" };
+    const w = a.whatsapps ? ` · ${a.whatsapps} pelo WhatsApp` : "";
+    return a.situacao === "PUBLICADO" ? { texto: `Publicado · ${n} ${n === 1 ? "e-mail" : "e-mails"}${w}`, tom: "ok" } : { texto: "Comunicado", tom: "neutro" };
   }
   if (a.parado) return { texto: "Parado na queda do WhatsApp", tom: "atencao" };
   switch (a.situacao) {

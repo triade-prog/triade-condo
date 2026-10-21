@@ -125,6 +125,8 @@ export const salvarComunicadoSchema = z
     noMural: z.boolean().nullable().optional().transform((v) => v ?? null),
     /** Vai por e-mail a quem tem e-mail confirmado (CD-13). */
     porEmail: z.boolean().nullable().optional().transform((v) => v ?? null),
+    /** Vai pelo WhatsApp do condomínio a quem aceitou receber por lá (CD-02, W-20). */
+    porWhatsapp: z.boolean().nullable().optional().transform((v) => v ?? null),
   })
   .superRefine((d, ctx) => {
     publicoCompleto(d, ctx);
@@ -133,6 +135,28 @@ export const salvarComunicadoSchema = z
     }
   });
 export type SalvarComunicado = z.infer<typeof salvarComunicadoSchema>;
+
+/** Comunicados pelo WhatsApp saem aos poucos, por condomínio (F6.6, W-14). */
+export const COMUNICADOS_WHATSAPP_POR_MINUTO = 10;
+
+/** Quanto tempo a fila do WhatsApp leva para mandar n mensagens, em minutos inteiros. */
+export function minutosDoWhatsapp(n: number): number {
+  return Math.max(1, Math.ceil(n / COMUNICADOS_WHATSAPP_POR_MINUTO));
+}
+
+/**
+ * Por onde chega, com os canais que estiverem ligados no comunicado (CD-02): quem recebe por
+ * e-mail, pelo WhatsApp, pelos dois e por nenhum dos dois.
+ */
+export function contagemDosCanais(
+  p: { contatos: number; comEmail: number; comWhatsapp?: number; pelosDois?: number },
+  canais: { email: boolean; whatsapp: boolean },
+): { email: number; whatsapp: number; pelosDois: number; nenhum: number } {
+  const email = canais.email ? p.comEmail : 0;
+  const whatsapp = canais.whatsapp ? p.comWhatsapp ?? 0 : 0;
+  const pelosDois = canais.email && canais.whatsapp ? p.pelosDois ?? 0 : 0;
+  return { email, whatsapp, pelosDois, nenhum: Math.max(0, p.contatos - email - whatsapp + pelosDois) };
+}
 
 /** Quem recebe, antes de publicar (CD-02). */
 export const publicoComunicadoSchema = z.object({ assunto: z.enum(chaves(ASSUNTOS_COMUNICADO)), ...camposPublico });
@@ -145,6 +169,8 @@ export const corrigirComunicadoSchema = z.object({
   mudanca: motivo,
   /** Reenviar por e-mail, começando pelo que mudou. Sem pedir, não reenvia. */
   avisarEmail: z.boolean().default(false),
+  /** Avisar pelo WhatsApp quem recebeu a versão anterior, com "Corrigido:" no título (CD-01). */
+  avisarWhatsapp: z.boolean().default(false),
 });
 /** Tirar do mural ou pôr de volta (CD-12). */
 export const muralComunicadoSchema = z.object({ versao, noMural: z.boolean() });
@@ -278,6 +304,20 @@ export function descreverEnvioEmail(e: { enviados?: number; entregues?: number; 
   return partes.join(" · ");
 }
 
+/**
+ * O que houve com as mensagens do comunicado pelo WhatsApp (F6.6, CD-08): entregue e lida são o
+ * que o WhatsApp informa; enviada não quer dizer lida.
+ */
+export function descreverEnvioWhatsapp(w: { entregues?: number; lidas?: number; falharam?: number; canceladas?: number; naFila?: number }): string {
+  const partes: string[] = [];
+  if (w.entregues) partes.push(`${w.entregues} ${w.entregues === 1 ? "entregue" : "entregues"}`);
+  if (w.lidas) partes.push(`${w.lidas} ${w.lidas === 1 ? "lida" : "lidas"}`);
+  if (w.falharam) partes.push(`${w.falharam} ${w.falharam === 1 ? "falhou" : "falharam"}`);
+  if (w.canceladas) partes.push(`${w.canceladas} não ${w.canceladas === 1 ? "saiu" : "saíram"}`);
+  if (w.naFila) partes.push(`${w.naFila} na fila`);
+  return partes.join(" · ");
+}
+
 /** "61 contatos de 44 unidades", "1 contato de 1 unidade", "Ninguém recebe". */
 export function descreverAlcance(contatos: number, unidades: number): string {
   if (contatos === 0) return "Ninguém recebe";
@@ -327,6 +367,8 @@ export function descreverEventoComunicado(acao: string, d: Record<string, unknow
       return `Arquivo tirado: ${String(d.arquivoNome)}`;
     case "comunicado.email_na_fila":
       return `E-mail da versão ${String(d.numero)} para ${quantos(Number(d.quantos), "contato", "contatos")}`;
+    case "comunicado.whatsapp_na_fila":
+      return `WhatsApp da versão ${String(d.numero)}${d.corrigido ? ", com \"Corrigido:\"" : ""}: ${quantos(Number(d.quantos), "mensagem", "mensagens")} na fila`;
     case "comunicado.mural_ligado":
       return "Posto no mural online";
     case "comunicado.mural_tirado":

@@ -15,6 +15,8 @@ interface Contato {
   id: string; nome: string | null; telefone: string | null; versao: number;
   /** E-mail do contato (CD-13). */
   email?: string; emailSituacao?: "PENDENTE" | "CONFIRMADO" | "DEVOLVIDO" | "PAROU"; emailComunicados?: boolean;
+  /** Comunicados pelo WhatsApp (F6.6): a escolha do próprio morador. */
+  comunicadosWhatsapp?: "ACEITOU" | "RECUSOU" | "PAROU"; comunicadosWhatsappEm?: string; comunicadosWhatsappOrigem?: "PERGUNTA" | "COMANDO";
 }
 interface Vaga { id: string; identificacao: string; onde: string | null; coberta: boolean | null; unidadeId: string | null; ativa: boolean; versao: number }
 interface Veiculo {
@@ -85,8 +87,11 @@ export function criarMoradores() {
   const unidades = [u(A101, torreA.id, "101"), u(A102, torreA.id, "102"), u(novoId(), torreA.id, "1001"), u(novoId(), torreA.id, "201"), u(novoId(), null, "Loja 2")];
   const ct = (nome: string, telefone: string): Contato => ({ id: novoId(), nome, telefone, versao: 1 });
   const marina: Contato = { ...ct("Marina Souza", "+5561999990001"), email: "marina@exemplo.com.br", emailSituacao: "CONFIRMADO" };
-  const pedro = ct("Pedro Souza", "+5561999990002");
-  const joana = ct("Joana Lima", "+5561988887777");
+  Object.assign(marina, { comunicadosWhatsapp: "ACEITOU", comunicadosWhatsappEm: "2026-10-20T22:40:00Z", comunicadosWhatsappOrigem: "PERGUNTA" });
+  const pedro: Contato = { ...ct("Pedro Souza", "+5561999990002"), comunicadosWhatsapp: "ACEITOU", comunicadosWhatsappEm: "2026-10-20T23:15:00Z",
+    comunicadosWhatsappOrigem: "COMANDO" };
+  const joana: Contato = { ...ct("Joana Lima", "+5561988887777"), comunicadosWhatsapp: "RECUSOU", comunicadosWhatsappEm: "2026-10-20T21:00:00Z",
+    comunicadosWhatsappOrigem: "PERGUNTA" };
   const paulo = ct("Paulo Lima", "+5561988887777");
   const v = (contato: Contato, unidadeId: string, relacao: string, estado: "PENDENTE" | "CONFIRMADO", principal = false, origem: "PAINEL" | "PLANILHA" = "PAINEL",
     ocupaDesde: string | null = null): Vinculo =>
@@ -106,8 +111,13 @@ export function criarMoradores() {
       { id: novoId(), identificacao: "V-01", onde: "Térreo", coberta: false, unidadeId: null, ativa: true, versao: 1 },
     ] as Vaga[],
     veiculos: [] as Veiculo[],
+    /** Configurações › WhatsApp › Comunicados pelo WhatsApp (F6.6): começa desligado. */
+    zap: { ligado: false, conectado: true, numero: "5561981244000", versao: 1, mudadoEm: null as string | null, mudadoPor: null as string | null },
   };
 }
+
+/** Recebe comunicado pelo WhatsApp: só quem aceitou, com os comunicados por lá ligados. */
+export const recebeNoWhatsapp = (c: { comunicadosWhatsapp?: string }) => c.comunicadosWhatsapp === "ACEITOU";
 
 export type EstadoMoradores = ReturnType<typeof criarMoradores>;
 
@@ -293,7 +303,9 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
             proprietario: v.proprietario, mora: v.mora, ligacao: v.ligacao, parentesco: v.parentesco, ocupaDesde: v.ocupaDesde,
             recebeComunicados: v.recebeComunicados, estado: v.estado, origem: v.origem, desde: v.criadoEm, versao: v.versao, telefoneCompartilhado: compartilhado(c),
             outrasUnidades: m.vinculos.filter((o) => o.contatoId === c.id && o.unidadeId !== x.id && o.estado !== "ENCERRADO").map((o) => nomeUnidade(unidade(o.unidadeId)!)),
-            email: c.email, emailSituacao: c.emailSituacao, emailComunicados: c.emailComunicados ?? true };
+            email: c.email, emailSituacao: c.emailSituacao, emailComunicados: c.emailComunicados ?? true,
+            comunicadosWhatsapp: c.comunicadosWhatsapp ?? "SEM_RESPOSTA", comunicadosWhatsappEm: c.comunicadosWhatsappEm,
+            comunicadosWhatsappOrigem: c.comunicadosWhatsapp === "PAROU" ? undefined : c.comunicadosWhatsappOrigem };
         }),
         anteriores: m.vinculos.filter((v) => v.unidadeId === x.id && v.estado === "ENCERRADO").map((v) => {
           const c = contato(v.contatoId);
@@ -303,7 +315,7 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
         }),
         ocupacao: { situacao: ocupacao(ativos(x.id)), moram: ativos(x.id).filter((v) => v.mora).length, proprietarioNaoMora: naoMora(ativos(x.id)) },
         faltaProprietario: faltaDono(m, x.id),
-        podeEditar: edita, podeConfirmar: confirma,
+        podeEditar: edita, podeConfirmar: confirma, comunicadosWhatsappLigado: m.zap.ligado,
         vagas: m.vagas.filter((g) => g.unidadeId === x.id && g.ativa).map(vagaJson),
         veiculos: m.veiculos.filter((v) => v.unidadeId === x.id && !v.retirado).map(veiculoJson),
       } });
@@ -411,16 +423,19 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     const busca = (url.searchParams.get("busca") ?? "").toLowerCase();
     const estado = url.searchParams.get("estado");
     const itens = m.vinculos.filter((v) => v.estado !== "ENCERRADO" && (!estado || v.estado === estado
-      || (estado === "SEM_EMAIL" && contato(v.contatoId).emailSituacao !== "CONFIRMADO"))).map((v) => {
+      || (estado === "SEM_EMAIL" && contato(v.contatoId).emailSituacao !== "CONFIRMADO")
+      || (estado === "SEM_WHATSAPP" && !recebeNoWhatsapp(contato(v.contatoId))))).map((v) => {
       const c = contato(v.contatoId);
       const x = unidade(v.unidadeId)!;
       return { vinculoId: v.id, contatoId: c.id, nome: c.nome!, telefone: c.telefone!, unidadeId: x.id, unidade: x.identificacao,
         andar: x.andar, bloco: m.blocos.find((b) => b.id === x.blocoId)?.nome ?? null, relacao: v.relacao, principal: v.principal, estado: v.estado, origem: v.origem, versao: v.versao,
-        emailSituacao: c.emailSituacao };
+        emailSituacao: c.emailSituacao, comunicadosWhatsapp: c.comunicadosWhatsapp ?? "SEM_RESPOSTA" };
     }).filter((i) => !busca || i.nome.toLowerCase().includes(busca) || i.unidade.toLowerCase().startsWith(busca) || (i.bloco ?? "").toLowerCase().includes(busca)
       || (busca.replace(/\D/g, "").length >= 4 && i.telefone.includes(busca.replace(/\D/g, ""))));
     const semEmail = new Set(m.vinculos.filter((v) => v.estado !== "ENCERRADO" && contato(v.contatoId).emailSituacao !== "CONFIRMADO").map((v) => v.contatoId)).size;
-    return route.fulfill({ json: { itens, total: itens.length, pagina: 1, porPagina: 50, aConfirmar: resumoMoradores(m).aConfirmar, semEmail, podeEditar: edita, podeConfirmar: confirma } });
+    const semWhatsapp = new Set(m.vinculos.filter((v) => v.estado !== "ENCERRADO" && !recebeNoWhatsapp(contato(v.contatoId))).map((v) => v.contatoId)).size;
+    return route.fulfill({ json: { itens, total: itens.length, pagina: 1, porPagina: 50, aConfirmar: resumoMoradores(m).aConfirmar, semEmail, semWhatsapp,
+      comunicadosWhatsappLigado: m.zap.ligado, podeEditar: edita, podeConfirmar: confirma } });
   }
   // E-mail do contato (CD-13): vira "esperando confirmação"; só a própria pessoa confirma.
   const em = /^\/v1\/condominio\/contatos\/([^/]+)\/email(\/reenviar)?$/.exec(caminho);

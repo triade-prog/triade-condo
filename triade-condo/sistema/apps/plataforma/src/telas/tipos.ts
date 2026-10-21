@@ -11,7 +11,7 @@ import type {
 
 // As configurações moram com as telas delas (@triade/configuracoes), que o Console também usa.
 import type { AreaComumTela } from "@triade/configuracoes";
-export type { Configuracoes, RegrasAviso, PlanoComunicacao, Etiqueta, LinksQr, EtiquetaDetalhe, AreaComumTela, AreasComuns, Recado }
+export type { Configuracoes, RegrasAviso, PlanoComunicacao, Etiqueta, LinksQr, EtiquetaDetalhe, AreaComumTela, AreasComuns, Recado, ComunicadosWhatsapp }
   from "@triade/configuracoes";
 
 export interface PessoaDoCondominio {
@@ -110,7 +110,13 @@ export interface ContatoDaUnidade {
   emailSituacao?: "PENDENTE" | "CONFIRMADO" | "DEVOLVIDO" | "PAROU";
   emailComunicados?: boolean;
   emailParouMotivo?: "PEDIDO" | "SPAM";
+  /** Comunicado pelo WhatsApp do condomínio (CD-02, F6.6): a escolha vale para o telefone. */
+  comunicadosWhatsapp?: SituacaoComunicadosWhatsapp;
+  comunicadosWhatsappEm?: string;
+  comunicadosWhatsappOrigem?: "PERGUNTA" | "COMANDO";
 }
+
+export type SituacaoComunicadosWhatsapp = "ACEITOU" | "RECUSOU" | "PAROU" | "SEM_RESPOSTA";
 
 export interface ContatoAnterior {
   vinculoId: string;
@@ -143,6 +149,7 @@ export interface UnidadeDetalhe {
   podeEditar: boolean;
   podeConfirmar: boolean;
   emailLigado?: boolean;
+  comunicadosWhatsappLigado?: boolean;
   /** Garagens e veículos (MU-06): as vagas da unidade e os veículos em uso. */
   vagas?: Vaga[];
   veiculos?: Veiculo[];
@@ -204,6 +211,7 @@ export interface MoradorDaLista {
   origem: "PAINEL" | "PLANILHA";
   versao: number;
   emailSituacao?: "PENDENTE" | "CONFIRMADO" | "DEVOLVIDO" | "PAROU";
+  comunicadosWhatsapp?: SituacaoComunicadosWhatsapp;
 }
 
 export interface ListaMoradores {
@@ -214,6 +222,9 @@ export interface ListaMoradores {
   aConfirmar: number;
   /** Contatos sem e-mail confirmado (CD-13). */
   semEmail?: number;
+  /** Contatos que não recebem comunicado pelo WhatsApp (F6.6). */
+  semWhatsapp?: number;
+  comunicadosWhatsappLigado?: boolean;
   podeEditar: boolean;
   podeConfirmar: boolean;
 }
@@ -548,6 +559,8 @@ export interface AvisoDoRegistro {
   destinatarios?: number;
   noMural?: boolean;
   emails?: number;
+  /** Mensagens do comunicado pelo WhatsApp (F6.6). */
+  whatsapps?: number;
   pelaRegra?: boolean;
   editado?: boolean;
   em: string;
@@ -587,6 +600,8 @@ export interface QuemAvisar {
   moradores: {
     disponivel: boolean; motivo?: "PRIVADO" | "SEM_PERMISSAO"; rascunho: { titulo: string; texto: string }; publico: "TODOS" | "BLOCOS";
     blocos?: string[]; textoComDadoDeMorador?: boolean;
+    /** O comunicado sai também pelo WhatsApp de quem aceitou (F6.6). */
+    whatsapp?: boolean;
   };
   prestadores: { id: string; nome: string; servico: string; acordo: string; contratoAte?: string; reserva?: string; meio?: "WHATSAPP" | "EMAIL"; meioLink?: "WHATSAPP" | "EMAIL"; para?: string; temCelular: boolean; temEmail: boolean }[];
   blocos: { id: string; nome: string; unidades: number }[];
@@ -907,9 +922,12 @@ export interface PublicoCalculado {
   contatos: number;
   unidades: number;
   semNinguem: { id: string; nome: string }[];
-  quem?: { contatoId: string; nome: string; unidades: string[]; email?: boolean }[];
+  quem?: { contatoId: string; nome: string; unidades: string[]; email?: boolean; whatsapp?: boolean }[];
   /** Quantos recebem por e-mail (e-mail confirmado e sem ter parado). */
   comEmail?: number;
+  /** Quantos aceitaram receber pelo WhatsApp e quantos recebem pelos dois (F6.6). */
+  comWhatsapp?: number;
+  pelosDois?: number;
   blocos?: { id: string; nome: string }[];
   unidadesEscolhidas?: { id: string; nome: string }[];
   contatosEscolhidos?: { id: string; nome: string }[];
@@ -945,15 +963,20 @@ export interface ComunicadoDetalhe {
     publicadoEm?: string; publicadoPor?: string; substituidoEm?: string }[];
   arquivos: ArquivoComunicado[];
   historico: EventoHistorico[];
-  pode: { editar: boolean; corrigir: boolean; arquivar: boolean; enviar: boolean; copiar: boolean; mural?: boolean; avisarEmail?: boolean };
+  pode: { editar: boolean; corrigir: boolean; arquivar: boolean; enviar: boolean; copiar: boolean; mural?: boolean; avisarEmail?: boolean;
+    avisarWhatsapp?: boolean };
   condominio: string;
   limites: { arquivos: number; tamanho: number };
   /** Onde aparece (CD-12, CD-13). */
-  canais?: { noMural: boolean; porEmail: boolean; muralLigado: boolean; emailLigado: boolean };
+  canais?: { noMural: boolean; porEmail: boolean; muralLigado: boolean; emailLigado: boolean;
+    porWhatsapp?: boolean; whatsappLigado?: boolean; whatsappConectado?: boolean };
   email?: { total: number; naFila: number; enviados: number; entregues: number; devolvidos: number; spam: number; falharam: number;
     cancelados: number; abertos: number; enviarApos?: string };
-  problemas?: { envioId: string; contatoId: string; nome: string; unidades?: string; estado: "DEVOLVIDO" | "SPAM" | "FALHOU";
-    motivo?: string; situacaoEmail?: string }[];
+  /** Comunicado pelo WhatsApp (F6.6). */
+  whatsapp?: { total: number; naFila: number; enviadas: number; entregues: number; lidas: number; falharam: number;
+    canceladas: number; abertos: number; saiAte?: string; parados?: number };
+  problemas?: { envioId: string; contatoId: string; nome: string; unidades?: string; canal?: "EMAIL" | "WHATSAPP";
+    estado: "DEVOLVIDO" | "SPAM" | "FALHOU" | "DESCONHECIDO" | "CANCELADA"; motivo?: string; situacaoEmail?: string }[];
 }
 
 export interface OpcoesComunicado {
@@ -969,8 +992,10 @@ export interface OpcoesComunicado {
   manutencoes?: { id: string; titulo: string; local: string }[];
   pode: { publicar: boolean; verMoradores: boolean };
   agora: string;
-  canais?: { muralLigado: boolean; muralAssuntos: AssuntoComunicado[]; emailLigado: boolean };
+  canais?: { muralLigado: boolean; muralAssuntos: AssuntoComunicado[]; emailLigado: boolean;
+    whatsappLigado?: boolean; whatsappConectado?: boolean };
 }
+
 
 export interface ComunicadosLigados {
   podeVer: boolean;
@@ -1086,6 +1111,8 @@ export interface ComunicadoPublico {
 
 export interface MuralPublico {
   condominio: string;
+  /** O número do condomínio para o botão "Receber pelo WhatsApp" (F6.6), quando os comunicados por lá estão ligados. */
+  comunicadosWhatsapp?: string;
   trocado?: boolean;
   foraDoAr?: boolean;
   /** Enquanto o WhatsApp do condomínio está fora do ar (W-17). */

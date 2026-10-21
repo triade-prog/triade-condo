@@ -1,11 +1,12 @@
 // Parte de comunicados e documentos da API falsa da Plataforma (peça R1). As regras de verdade
 // estão testadas no banco (pgTAP 016) e na API (Deno); aqui só o bastante para a tela: lista com
 // atalhos, escrever com o público calculado, publicar, programar, corrigir em versão nova,
-// arquivar, copiar, plano de comunicação e documentos com versões.
+// arquivar, copiar, plano de comunicação e documentos com versões. O comunicado pelo WhatsApp do
+// condomínio (F6.6): o cartão de Configurações, a conta por canal e como chegou (pgTAP 033).
 import type { Route } from "@playwright/test";
 import { hojeFalso, somar } from "./api-falsa-agenda";
 import { conferir, conteudoEnviado } from "./api-falsa-arquivos";
-import type { EstadoMoradores } from "./api-falsa-moradores";
+import { recebeNoWhatsapp, type EstadoMoradores } from "./api-falsa-moradores";
 
 let n = 0;
 const novoId = () => `8f9a0b1c-2d3e-4f4a-9b5c-${String(++n).padStart(12, "0")}`;
@@ -19,6 +20,8 @@ interface ComunicadoFalso {
   autor: string; criadoEm: string; atualizadoEm: string; versao: number;
   /** Mural online e e-mail (CD-12, CD-13). */
   noMural?: boolean; porEmail?: boolean; emails?: number;
+  /** Comunicado pelo WhatsApp (F6.6): mensagens que saíram e as que não chegaram. */
+  porWhatsapp?: boolean; whatsapps?: number; whatsappFalhas?: { contatoId: string; motivo: string }[];
 }
 interface PedidoDocFalso { id: string; documentoId: string; email: string; contato?: { id: string; nome: string; unidades: string }; estado: string;
   automatico: boolean; criadoEm: string; motivo?: string }
@@ -66,7 +69,7 @@ export function criarComunicados(pedidoId: string): EstadoComunicados {
   return {
     comunicados: [
       c({ id: agua, titulo: "Falta de água na quinta", estado: "PUBLICADO", publicadoEm: iso(agora - 86400_000), publicadoPor: "Ana Souza", destinatarios: 3,
-        assinatura: "Ana, síndica do Residencial Ipê", pedidoId, noMural: true, porEmail: true, emails: 1 }),
+        assinatura: "Ana, síndica do Residencial Ipê", pedidoId, noMural: true, porEmail: true, emails: 1, porWhatsapp: true, whatsapps: 2 }),
       c({ id: rascunho, titulo: "Assembleia geral ordinária: convocação", assunto: "ASSEMBLEIA", texto: "Convocamos todos para a assembleia.",
         atualizadoEm: iso(agora - 4 * 86400_000) }),
     ],
@@ -92,9 +95,10 @@ export function criarComunicados(pedidoId: string): EstadoComunicados {
 
 /** Sem conta (CD-12 a CD-14): o mural, os links do e-mail e o pedido de documento. */
 export async function rotasPublicas(route: Route, est: EstadoComunicados, caminho: string, metodo: string, corpo: Record<string, unknown>,
-  manual: () => unknown[] = () => [], extra: () => Record<string, unknown> = () => ({})): Promise<unknown> {
+  manual: () => unknown[] = () => [], extra: () => Record<string, unknown> = () => ({}), zap?: EstadoMoradores["zap"]): Promise<unknown> {
   if (!caminho.startsWith("/v1/publico/")) return null;
   const mu = est.mural;
+  const botao = zap?.ligado ? { comunicadosWhatsapp: zap.numero } : {};
   const pub = (c: ComunicadoFalso) => ({ id: c.id, assunto: c.assunto, titulo: c.titulo, texto: c.texto, assinatura: c.assinatura ?? undefined,
     publicadoEm: c.publicadoEm, numero: c.numero, mudanca: c.mudanca ?? undefined, arquivos: est.arquivos.filter((a) => a.familiaId === c.familiaId && a.situacao === "LIBERADO")
       .map((a) => ({ id: a.id, nome: a.nome, tipo: a.tipo })) });
@@ -117,14 +121,14 @@ export async function rotasPublicas(route: Route, est: EstadoComunicados, caminh
     const lista = doMural().sort((a, b) => String(b.publicadoEm).localeCompare(String(a.publicadoEm)));
     return route.fulfill({ json: { condominio: "Residencial Ipê", comunicados: lista.map(pub),
       documentos: mu.documentosNoMural && mu.emailLigado ? docs().map((d) => ({ id: d.id, titulo: d.titulo, tipo: d.tipo })) : [],
-      manual: manual(), ...extra(), atualizadoEm: lista[0]?.publicadoEm } });
+      manual: manual(), ...extra(), ...botao, atualizadoEm: lista[0]?.publicadoEm } });
   }
   const c = /^\/v1\/publico\/c\/([^/]+)(?:\/arquivos\/([^/]+))?$/.exec(caminho);
   if (c) {
     if (c[1] !== LINK_FALSO) return erro(route, 400, "VALIDATION_ERROR", { motivo: "LINK_VENCIDO" });
     if (c[2]) return route.fulfill({ json: { url: `/api/v1/armazenamento/${c[2]}`, nome: "foto", tipo: "image/jpeg" } });
     const agua = est.comunicados.filter((x) => x.estado === "PUBLICADO")[0];
-    return route.fulfill({ json: agua ? { condominio: "Residencial Ipê", comunicado: pub(agua) } : { condominio: "Residencial Ipê", foraDeUso: true } });
+    return route.fulfill({ json: agua ? { condominio: "Residencial Ipê", comunicado: pub(agua), ...botao } : { condominio: "Residencial Ipê", foraDeUso: true } });
   }
   const e = /^\/v1\/publico\/email\/(confirmar|parar|voltar)$/.exec(caminho);
   if (e && metodo === "POST") {
@@ -165,7 +169,8 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
 }, caminho: string, metodo: string, corpo: Record<string, unknown>, url: URL, pode: (a: string) => boolean): Promise<unknown> {
   const ligado = /^\/v1\/condominio\/(pedidos|manutencao)\/([^/]+)\/comunicados$/.exec(caminho);
   if (!caminho.startsWith("/v1/condominio/comunicados") && !caminho.startsWith("/v1/condominio/documentos")
-    && caminho !== "/v1/condominio/plano-comunicacao" && caminho !== "/v1/condominio/mural-email" && caminho !== "/v1/condominio/mural/trocar-link" && !ligado) return null;
+    && caminho !== "/v1/condominio/plano-comunicacao" && caminho !== "/v1/condominio/mural-email" && caminho !== "/v1/condominio/mural/trocar-link"
+    && caminho !== "/v1/condominio/whatsapp/comunicados" && !ligado) return null;
   const agora = new Date().toISOString();
   const h = hojeFalso();
   const m = ctx.moradores;
@@ -182,16 +187,21 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
     m.vinculos.filter((v) => v.estado === "CONFIRMADO" && (v.recebeComunicados || (assunto === "ASSEMBLEIA" && v.relacao === "PROPRIETARIO"))
       && (publico === "TODOS" || (publico === "BLOCOS" && blocos.includes(m.unidades.find((u) => u.id === v.unidadeId)?.blocoId ?? ""))
         || (publico === "UNIDADES" && unidades.includes(v.unidadeId)) || (publico === "CONTATOS" && contatos.includes(v.contatoId))));
+  const zap = m.zap;
+  const comWhatsapp = (contatoId: string) => zap.ligado && recebeNoWhatsapp(m.contatos.find((y) => y.id === contatoId) ?? {});
   const calcular = (assunto: string, publico: string, blocos: string[], unidades: string[], contatos: string[]) => {
     const d = destinatarios(assunto, publico, blocos, unidades, contatos);
+    const ids = [...new Set(d.map((v) => v.contatoId))];
     const escopo = m.unidades.filter((u) => u.ativa && publico !== "CONTATOS"
       && (publico === "TODOS" || (publico === "BLOCOS" && blocos.includes(u.blocoId ?? "")) || (publico === "UNIDADES" && unidades.includes(u.id))));
     return {
       contatos: new Set(d.map((v) => v.contatoId)).size, unidades: new Set(d.map((v) => v.unidadeId)).size,
       semNinguem: escopo.filter((u) => !destinatarios(assunto, "UNIDADES", [], [u.id], []).length).map((u) => ({ id: u.id, nome: nomeUnidade(u.id) })),
       ...(pode("moradores.ver") ? { quem: [...new Set(d.map((v) => v.contatoId))].map((id) => ({ contatoId: id, nome: m.contatos.find((x) => x.id === id)!.nome,
-        unidades: d.filter((v) => v.contatoId === id).map((v) => nomeUnidade(v.unidadeId)) })) } : {}),
+        unidades: d.filter((v) => v.contatoId === id).map((v) => nomeUnidade(v.unidadeId)), email: comEmail(id), whatsapp: comWhatsapp(id) })) } : {}),
       comEmail: new Set(d.filter((v) => comEmail(v.contatoId)).map((v) => v.contatoId)).size,
+      comWhatsapp: ids.filter(comWhatsapp).length,
+      pelosDois: ids.filter((id) => comWhatsapp(id) && comEmail(id)).length,
     };
   };
   const resumoPublico = (c: ComunicadoFalso) => c.publico === "TODOS" ? "Todo o condomínio"
@@ -219,7 +229,33 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
       c.emails = new Set(destinatarios(c.assunto, c.publico, c.blocos, c.unidades, c.contatos).filter((v) => comEmail(v.contatoId)).map((v) => v.contatoId)).size;
       if (c.emails) hist(c.familiaId, "comunicado.email_na_fila", { numero: c.numero, quantos: c.emails });
     }
+    if (zap.ligado && c.porWhatsapp !== false) {
+      c.whatsapps = new Set(destinatarios(c.assunto, c.publico, c.blocos, c.unidades, c.contatos).filter((v) => comWhatsapp(v.contatoId)).map((v) => v.contatoId)).size;
+      if (c.whatsapps) hist(c.familiaId, "comunicado.whatsapp_na_fila", { numero: c.numero, quantos: c.whatsapps });
+    }
   };
+
+  if (caminho === "/v1/condominio/whatsapp/comunicados") {
+    if (metodo === "GET") {
+      const tel = new Map<string, string>();
+      for (const v of m.vinculos.filter((x) => x.estado !== "ENCERRADO")) {
+        const x = m.contatos.find((y) => y.id === v.contatoId)!;
+        if (x.telefone && (!tel.has(x.telefone) || x.comunicadosWhatsapp === "ACEITOU")) tel.set(x.telefone, x.comunicadosWhatsapp ?? "SEM_RESPOSTA");
+      }
+      const conta = (s: string) => [...tel.values()].filter((x) => x === s).length;
+      return route.fulfill({ json: { ligado: zap.ligado, mudadoEm: zap.mudadoEm ?? undefined, mudadoPor: zap.mudadoPor ?? undefined, versao: zap.versao,
+        conectado: zap.conectado, numero: zap.numero,
+        contagens: { aceitaram: conta("ACEITOU"), recusaram: conta("RECUSOU"), pararam: conta("PAROU"), semResposta: conta("SEM_RESPOSTA") },
+        convite: `Quer receber os comunicados do Residencial Ipê no WhatsApp? Toque no link e envie a mensagem que aparece: https://wa.me/${zap.numero}?text=COMUNICADOS`,
+        porMinuto: 10, silencio: { inicio: est.plano.silencioInicio, fim: est.plano.silencioFim }, pode: { editar: pode("config.editar") } } });
+    }
+    if (!pode("config.editar")) return erro(route, 403, "FORBIDDEN");
+    if (typeof corpo.ligado !== "boolean") return erro(route, 400, "VALIDATION_ERROR", { campos: ["ligado"] });
+    if (corpo.versao !== zap.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: zap.versao });
+    if (corpo.ligado && !zap.conectado) return erro(route, 422, "VALIDATION_ERROR", { motivo: "WHATSAPP_DESCONECTADO" });
+    Object.assign(zap, { ligado: corpo.ligado, versao: zap.versao + 1, mudadoEm: agora, mudadoPor: ctx.eu.nome });
+    return route.fulfill({ json: { versao: zap.versao } });
+  }
 
   if (ligado) {
     if (!pode("comunicados.ver")) return route.fulfill({ json: { podeVer: false, podeEscrever: false, comunicados: [] } });
@@ -381,7 +417,8 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
       ...(pode("moradores.ver") ? { contatos: m.contatos.map((x) => ({ id: x.id, nome: x.nome, unidades: m.vinculos.filter((v) => v.contatoId === x.id).map((v) => nomeUnidade(v.unidadeId)) })) } : {}),
       ...(pode("pedidos.ver") ? { pedidos: ctx.pedidos.filter((p) => p.estado !== "ENCERRADO" && p.estado !== "CANCELADO").map((p) => ({ id: p.id, protocolo: p.protocolo, assunto: p.assunto })) } : {}),
       pode: { publicar: pode("comunicados.publicar"), verMoradores: pode("moradores.ver") }, agora,
-      canais: { muralLigado: est.mural.ligado, muralAssuntos: est.mural.assuntos, emailLigado: est.mural.emailLigado },
+      canais: { muralLigado: est.mural.ligado, muralAssuntos: est.mural.assuntos, emailLigado: est.mural.emailLigado,
+        whatsappLigado: zap.ligado, whatsappConectado: zap.conectado },
     } });
   }
   if (caminho === "/v1/condominio/comunicados/publico") {
@@ -410,7 +447,7 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
       blocos: (corpo.blocos as string[]) ?? [], unidades: (corpo.unidades as string[]) ?? [], contatos: (corpo.contatos as string[]) ?? [],
       pedidoId: (corpo.pedidoId as string) ?? null, manutencaoId: (corpo.manutencaoId as string) ?? null, atualizadoEm: agora,
       noMural: corpo.publico === "TODOS" && (typeof corpo.noMural === "boolean" ? corpo.noMural : est.mural.assuntos.includes(String(corpo.assunto))),
-      porEmail: corpo.porEmail !== false };
+      porEmail: corpo.porEmail !== false, ...(typeof corpo.porWhatsapp === "boolean" ? { porWhatsapp: corpo.porWhatsapp } : {}) };
     if (!c) {
       const id = novoId();
       c = { id, familiaId: id, numero: 1, ...dados, estado: "RASCUNHO", programadoPara: null, publicadoEm: null, publicadoPor: null, destinatarios: null,
@@ -450,11 +487,21 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
         arquivar: pode("comunicados.publicar") && ["RASCUNHO", "PROGRAMADO", "PUBLICADO"].includes(c.estado),
         enviar: pode("comunicados.publicar") && ["RASCUNHO", "PROGRAMADO"].includes(c.estado), copiar: c.estado === "PUBLICADO",
         mural: pode("comunicados.publicar") && c.publico === "TODOS" && ["RASCUNHO", "PROGRAMADO", "PUBLICADO"].includes(c.estado),
-        avisarEmail: est.mural.emailLigado && c.porEmail !== false && c.estado === "PUBLICADO" },
+        avisarEmail: est.mural.emailLigado && c.porEmail !== false && c.estado === "PUBLICADO",
+        avisarWhatsapp: zap.ligado && c.porWhatsapp !== false && c.estado === "PUBLICADO" && est.comunicados.some((x) => x.familiaId === c.familiaId && !!x.whatsapps) },
       condominio: "Residencial Ipê", limites: { arquivos: 4, tamanho: 10485760 },
-      canais: { noMural: !!c.noMural, porEmail: c.porEmail !== false, muralLigado: est.mural.ligado, emailLigado: est.mural.emailLigado },
+      canais: { noMural: !!c.noMural, porEmail: c.porEmail !== false, muralLigado: est.mural.ligado, emailLigado: est.mural.emailLigado,
+        porWhatsapp: c.porWhatsapp !== false, whatsappLigado: zap.ligado, whatsappConectado: zap.conectado },
       email: { total: c.emails ?? 0, naFila: 0, enviados: c.emails ?? 0, entregues: c.emails ?? 0, devolvidos: 0, spam: 0, falharam: 0, cancelados: 0, abertos: 0 },
-      problemas: [],
+      ...(zap.ligado ? { whatsapp: (() => {
+        const total = c.whatsapps ?? 0;
+        const falharam = c.whatsappFalhas?.length ?? 0;
+        return { total, naFila: 0, enviadas: total - falharam, entregues: total - falharam, lidas: total - falharam > 0 ? 1 : 0, falharam, canceladas: 0,
+          abertos: total - falharam > 0 ? 1 : 0 };
+      })() } : {}),
+      problemas: zap.ligado && pode("moradores.ver") ? (c.whatsappFalhas ?? []).map((f, i) => ({ envioId: `w-${i}`, contatoId: f.contatoId,
+        nome: m.contatos.find((x) => x.id === f.contatoId)?.nome ?? "", unidades: m.vinculos.filter((v) => v.contatoId === f.contatoId).map((v) => nomeUnidade(v.unidadeId)).join(", "),
+        canal: "WHATSAPP", estado: "FALHOU", motivo: f.motivo })) : [],
     } });
   }
   if (r[2] === "mural") {
@@ -475,11 +522,17 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
     const nova: ComunicadoFalso = { ...c, id: novoId(), numero: c.numero + 1, titulo: String(corpo.titulo).trim(), texto: String(corpo.texto).trim(),
       estado: "PUBLICADO", mudanca: String(corpo.mudanca).trim(), substituidoEm: null, publicadoEm: agora, publicadoPor: ctx.eu.nome, versao: 1, criadoEm: agora, atualizadoEm: agora };
     nova.emails = 0;
+    nova.whatsapps = 0;
+    nova.whatsappFalhas = [];
     est.comunicados.push(nova);
     hist(c.familiaId, "comunicado.corrigido", { numero: nova.numero, mudanca: nova.mudanca });
     if (corpo.avisarEmail === true) {
       nova.emails = new Set(destinatarios(nova.assunto, nova.publico, nova.blocos, nova.unidades, nova.contatos).filter((v) => comEmail(v.contatoId)).map((v) => v.contatoId)).size;
       hist(c.familiaId, "comunicado.email_na_fila", { numero: nova.numero, quantos: nova.emails });
+    }
+    if (corpo.avisarWhatsapp === true && zap.ligado) {
+      nova.whatsapps = (c.whatsapps ?? 0) - (c.whatsappFalhas?.length ?? 0);
+      hist(c.familiaId, "comunicado.whatsapp_na_fila", { numero: nova.numero, quantos: nova.whatsapps, corrigido: true });
     }
     return route.fulfill({ status: 201, json: { id: nova.id, versao: 1 } });
   }
