@@ -117,5 +117,20 @@ export interface AreasComuns {
   pode: { editar: boolean };
 }
 
+/** Configurações › WhatsApp › Comunicados pelo WhatsApp (F6.6; contagens por telefone). */
+export interface ComunicadosWhatsapp {
+  ligado: boolean;
+  mudadoEm?: string;
+  mudadoPor?: string;
+  versao: number;
+  conectado: boolean;
+  numero?: string;
+  contagens: { aceitaram: number; recusaram: number; pararam: number; semResposta: number };
+  convite?: string;
+  porMinuto: number;
+  silencio: { inicio: string; fim: string };
+  pode: { editar: boolean };
+}
+
 /** Recado no topo depois de uma ação (salvo, convite enviado...). */
 export type Recado = { tom: "ok" | "info" | "atencao"; texto: string } | null;

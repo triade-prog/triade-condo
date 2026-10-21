@@ -5,7 +5,8 @@
 // WhatsApp e quanto tempo as mensagens seguintes entram nele. Cada pessoa liga os próprios avisos
 // no WhatsApp dela. A conexão (QR, credenciais) fica só no Console. Quem cuida das quedas do número
 // (W-17): sem escolha, o síndico. O tempo de anexar é ajuste da TRÍADE (CF-09, PI-04); o termo e
-// os avisos de cada pessoa são só do condomínio, e o Console mostra só a situação (CF-03).
+// os avisos de cada pessoa são só do condomínio, e o Console mostra só a situação (CF-03). Os
+// comunicados pelo WhatsApp (F6.6; CD-11, W-20) ligam aqui, só no app.
 
 import { useState, type FormEvent } from "react";
 import { AVISOS_NO_WHATSAPP, MINUTOS_ANEXAR, prometePrazo, type AvisoNoWhatsapp } from "@triade/domain";
@@ -13,6 +14,7 @@ import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camp
 import { useAmbiente, useCarregar, naBase } from "./contexto.tsx";
 import { AjusteTecnico, type Tecnica } from "./tecnica.tsx";
 import { SituacaoDaConexao, type Conexao } from "./conexao.tsx";
+import { CartaoComunicadosWhatsapp } from "./ComunicadosWhatsapp.tsx";
 
 interface ConfigWhatsapp {
   numero: string | null;
@@ -185,6 +187,7 @@ export function AbaWhatsapp({ aoSalvar, tecnica }: { aoSalvar: (texto: string) =
         ajuda="Depois de abrir o pedido pelo WhatsApp, o que o morador mandar neste tempo, como foto, áudio ou documento, entra no mesmo pedido."
         salvar={(v, motivo) => chamarApi(naBase("/whatsapp/anexar"), { metodo: "PUT", corpo: { versao: d.config.versao, minutos: Number(v), motivo } })}
         aoSalvar={(v) => salvo(`O que chegar pelo WhatsApp em ${v} minutos entra no mesmo pedido.`)} />
+      {onde === "app" ? <CartaoComunicadosWhatsapp aoSalvar={salvo} /> : null}
       {d.quedas ? <QuemCuidaDasQuedas key={`q-${d.config.versao}`} d={d} aoSalvar={salvo} /> : null}
       {onde === "app" ? <MeusAvisos key={`a-${d.meusAvisos?.versao ?? 0}`} d={d} aoSalvar={salvo} /> : (
         <p className="text-sm text-tinta-suave">

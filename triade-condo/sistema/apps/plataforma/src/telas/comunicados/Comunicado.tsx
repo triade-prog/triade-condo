@@ -4,12 +4,14 @@
 // seguinte e guarda a anterior. Sem WhatsApp, o comunicado sai copiado para o grupo do prédio ou
 // impresso para o mural, e os dois ficam no histórico. "Como chegou" (design "Mural online e
 // e-mail", tela 4; CD-12, CD-13): o mural online, os e-mails enviados, entregues e que voltaram,
-// e quantos abriram o link pessoal.
+// e quantos abriram o link pessoal. O WhatsApp do condomínio (design "Comunicado pelo WhatsApp",
+// tela 5; CD-08, W-13, W-14, CD-01): quantas saíram, chegaram, foram lidas e falharam, as que não
+// chegaram, sem reenvio, e a correção que pode avisar de novo.
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { descreverAlcance, descreverEnvioEmail, descreverEventoComunicado, mostrarTamanho, textoParaCopiar } from "@triade/domain";
+import { descreverAlcance, descreverEnvioEmail, descreverEnvioWhatsapp, descreverEventoComunicado, mostrarTamanho, textoParaCopiar } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { diaHora } from "../pedidos/comum.tsx";
@@ -74,6 +76,7 @@ function ComunicadoAberto() {
   }
   const canais = d.canais;
   const email = d.email;
+  const whatsapp = d.whatsapp;
 
   return (
     <div className="grid gap-5">
@@ -189,26 +192,45 @@ function ComunicadoAberto() {
               ) : null}
               <li className="rounded-xl border border-linha px-3 py-2"><span className="block font-medium">Copiar texto</span><span className="text-xs text-tinta-suave">Para colar no grupo do prédio, com título e assinatura.</span></li>
               <li className="rounded-xl border border-linha px-3 py-2"><span className="block font-medium">Versão para o mural</span><span className="text-xs text-tinta-suave">Folha A4 com o nome do condomínio, a data e a versão.</span></li>
-              <li className="rounded-xl border border-linha px-3 py-2"><span className="block font-medium">WhatsApp do condomínio</span><span className="text-xs text-tinta-suave">Chega com o passo 5. Enviado não quer dizer lido.</span></li>
+              {whatsapp && (whatsapp.total > 0 || canais?.whatsappLigado) ? (
+                <li className="rounded-xl border border-linha px-3 py-2">
+                  <span className="block font-medium">WhatsApp do condomínio{whatsapp.total ? ` · ${whatsapp.total === 1 ? "1 mensagem" : `${whatsapp.total} mensagens`}` : ""}</span>
+                  <span className="text-xs text-tinta-suave">
+                    {whatsapp.total === 0 ? (canais?.porWhatsapp ? "Sai ao publicar, para quem aceitou receber comunicados por lá." : "Este comunicado não vai pelo WhatsApp.")
+                      : descreverEnvioWhatsapp(whatsapp) || (whatsapp.enviadas ? `${whatsapp.enviadas === 1 ? "1 enviada" : `${whatsapp.enviadas} enviadas`}` : "Saindo agora.")}
+                    {whatsapp.naFila && whatsapp.saiAte ? ` Sai até ${diaHora(whatsapp.saiAte)}.` : ""}
+                    {whatsapp.parados ? ` ${whatsapp.parados === 1 ? "1 espera" : `${whatsapp.parados} esperam`} o número voltar, por até 24 horas.` : ""}
+                  </span>
+                  {whatsapp.abertos ? <span className="block text-xs text-tinta-suave">Link pessoal aberto por {whatsapp.abertos === 1 ? "1 pessoa" : `${whatsapp.abertos} pessoas`}.</span> : null}
+                </li>
+              ) : null}
             </ul>
+            {whatsapp?.total ? <p className="text-xs text-tinta-suave">Lida é o que o WhatsApp informa; quem desligou a confirmação de leitura aparece só como entregue.</p> : null}
             <p className="text-xs text-tinta-suave">Quem recebe agora: {descreverAlcance(d.publicoAgora.contatos, d.publicoAgora.unidades)}. A conta é refeita a cada envio.</p>
           </section>
 
           {d.problemas?.length ? (
             <section aria-labelledby="t-voltaram" className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
-              <h2 id="t-voltaram" className="text-lg font-medium">E-mails que não chegaram</h2>
+              <h2 id="t-voltaram" className="text-lg font-medium">{d.problemas.some((x) => x.canal === "WHATSAPP") ? "Mensagens que não chegaram" : "E-mails que não chegaram"}</h2>
               <ul className="grid gap-2 text-sm">
                 {d.problemas.map((x) => (
                   <li key={x.envioId} className="rounded-xl border border-linha px-3 py-2">
                     <span className="block font-medium">{x.nome}{x.unidades ? ` · ${x.unidades}` : ""}</span>
                     <span className="text-xs text-tinta-suave">
-                      {x.estado === "SPAM" ? "Marcou como spam. Não recebe mais por e-mail."
+                      <span className="font-medium">{x.canal === "WHATSAPP" ? "WhatsApp" : "E-mail"}: </span>
+                      {x.canal === "WHATSAPP"
+                        ? (x.estado === "DESCONHECIDO" ? "Pode ter saído; o WhatsApp não confirmou."
+                          : x.estado === "CANCELADA" ? "Não saiu: o número ficou desconectado por mais de 24 horas."
+                          : `Não chegou: ${x.motivo ?? "o WhatsApp recusou"}.`)
+                        : x.estado === "SPAM" ? "Marcou como spam. Não recebe mais por e-mail."
                         : x.estado === "DEVOLVIDO" ? `${x.motivo ?? "Endereço não existe"}. O e-mail foi desligado: corrija no cadastro.`
                         : `Não saiu: ${x.motivo ?? "o provedor recusou"}.`}
                     </span>
                   </li>
                 ))}
               </ul>
+              {d.problemas.some((x) => x.canal === "WHATSAPP")
+                ? <p className="text-xs text-tinta-suave">Falha de comunicado não toca o sino de ninguém e não tem reenvio: a pessoa lê pelo grupo, pelo mural ou pelo e-mail.</p> : null}
             </section>
           ) : null}
 
@@ -234,11 +256,14 @@ function ComunicadoAberto() {
           { id: "mudanca", rotulo: "O que mudou", tipo: "area", obrigatorio: true, max: 500, erro: "Diga o que mudou, de 3 a 500 caracteres." },
           ...(d.pode.avisarEmail ? [{ id: "avisarEmail", rotulo: `Avisar por e-mail quem recebeu a versão ${c.numero}`, tipo: "caixa" as const,
             ajuda: `O e-mail começa com o que mudou. Desligado, a versão ${c.numero + 1} só aparece no mural e no link pessoal.` }] : []),
+          ...(d.pode.avisarWhatsapp ? [{ id: "avisarWhatsapp", rotulo: `Avisar pelo WhatsApp quem recebeu a versão ${c.numero}`, tipo: "caixa" as const,
+            ajuda: `A mensagem começa com "Corrigido:". Desligado, a versão ${c.numero + 1} só aparece no mural e no link pessoal, que sempre abre a versão mais nova.` }] : []),
         ]}
-        iniciais={{ titulo: c.titulo, texto: c.texto, mudanca: "", avisarEmail: false }}
+        iniciais={{ titulo: c.titulo, texto: c.texto, mudanca: "", avisarEmail: false, avisarWhatsapp: false }}
         aoSalvar={async (v) => {
           const r = await chamarApi<{ id: string }>(`/v1/condominio/comunicados/${c.id}/corrigir`, {
-            corpo: { versao: c.versao, titulo: v.titulo, texto: v.texto, mudanca: v.mudanca, avisarEmail: v.avisarEmail === true } });
+            corpo: { versao: c.versao, titulo: v.titulo, texto: v.texto, mudanca: v.mudanca, avisarEmail: v.avisarEmail === true,
+              avisarWhatsapp: v.avisarWhatsapp === true } });
           if (r.ok) { setAcao(null); atualizar(); router.push(`/comunicados/comunicado?id=${r.dados.id}&feito=CORRIGIR`); }
           return r;
         }} />

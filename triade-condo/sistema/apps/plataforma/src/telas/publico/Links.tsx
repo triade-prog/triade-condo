@@ -1,22 +1,23 @@
 "use client";
 // Os links do e-mail (CD-13, CD-14), sem conta: o comunicado do link pessoal, confirmar o
 // e-mail, parar de receber (e voltar) e abrir o documento enviado. Confirmar, parar e abrir pedem
-// um toque: programa de e-mail que abre links sozinho não faz nada por engano.
+// um toque: programa de e-mail que abre links sozinho não faz nada por engano. O mesmo link chega
+// pelo WhatsApp (F6.6); quem ainda não recebe por lá vê o botão "Receber pelo WhatsApp".
 
 import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Aviso, Botao, Carregando, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
 import type { ComunicadoPublico } from "../tipos.ts";
-import { Cartao, ComunicadoLido, TelaPublica } from "./comum.tsx";
+import { Cartao, ComunicadoLido, ReceberPeloWhatsapp, TelaPublica } from "./comum.tsx";
 
 const vencido = (e: ErroApi) => textoDoErro(e);
 
 export function ComunicadoDoLink() {
   const { codigo } = useParams<{ codigo: string }>();
-  const [d, setD] = useState<{ condominio: string; comunicado?: ComunicadoPublico; foraDeUso?: boolean } | null>(null);
+  const [d, setD] = useState<{ condominio: string; comunicado?: ComunicadoPublico; foraDeUso?: boolean; comunicadosWhatsapp?: string } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   useEffect(() => {
-    void chamarApi<{ condominio: string; comunicado?: ComunicadoPublico; foraDeUso?: boolean }>(`/v1/publico/c/${encodeURIComponent(codigo)}`)
+    void chamarApi<{ condominio: string; comunicado?: ComunicadoPublico; foraDeUso?: boolean; comunicadosWhatsapp?: string }>(`/v1/publico/c/${encodeURIComponent(codigo)}`)
       .then((r) => (r.ok ? setD(r.dados) : setErro(r.status === 404 ? "Este link não existe. Confira o endereço." : vencido(r.erro))));
   }, [codigo]);
   const linkArquivo = useCallback((arquivo: string) => `/v1/publico/c/${encodeURIComponent(codigo)}/arquivos/${arquivo}`, [codigo]);
@@ -26,6 +27,7 @@ export function ComunicadoDoLink() {
     <TelaPublica titulo={`Comunicado do ${d.condominio}`}>
       {d.comunicado ? <ComunicadoLido c={d.comunicado} linkArquivo={linkArquivo} />
         : <Aviso tom="info" titulo="Este comunicado saiu de uso">O condomínio arquivou este comunicado.</Aviso>}
+      <ReceberPeloWhatsapp numero={d.comunicadosWhatsapp} />
     </TelaPublica>
   );
 }

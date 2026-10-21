@@ -5,11 +5,16 @@
 // como rascunho até publicar ou programar. O publicado não volta aqui: corrige-se em versão nova.
 // "Como vai chegar" (design "Mural online e e-mail", tela 3; CD-12, CD-13): se aparece no mural
 // online e se vai por e-mail, com quantos recebem por e-mail antes de publicar.
+// O WhatsApp do condomínio (design "Comunicado pelo WhatsApp", tela 1; CD-02, W-20): só para quem
+// aceitou, com a conta de quem recebe por cada canal, pelos dois e por nenhum.
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { ASSUNTOS_COMUNICADO, descreverAlcance, mostrarTamanho, noHorarioSemEnvio, PUBLICOS_COMUNICADO } from "@triade/domain";
+import {
+  ASSUNTOS_COMUNICADO, COMUNICADOS_WHATSAPP_POR_MINUTO, contagemDosCanais, descreverAlcance, minutosDoWhatsapp, mostrarTamanho, noHorarioSemEnvio,
+  PUBLICOS_COMUNICADO,
+} from "@triade/domain";
 import {
   Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Carregando, chamarApi, ErroCarregar, textoDoErro, Vazio, type ErroApi,
 } from "@triade/ui";
@@ -77,11 +82,13 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
     // Sem escolha, o mural segue os assuntos marcados nas Configurações.
     noMural: (detalhe?.canais?.noMural ?? null) as boolean | null,
     porEmail: detalhe?.canais?.porEmail ?? true,
+    porWhatsapp: detalhe?.canais?.porWhatsapp ?? true,
   });
   const [novos, setNovos] = useState<{ arquivo: File; problema: string | null }[]>([]);
   const [tirar, setTirar] = useState<ArquivoComunicado | null>(null);
   const [publico, setPublico] = useState<PublicoCalculado | null>(c ? detalhe!.publicoAgora : null);
   const [verQuem, setVerQuem] = useState(false);
+  const [verNenhum, setVerNenhum] = useState(false);
   const [filtroUnidade, setFiltroUnidade] = useState("");
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -115,6 +122,13 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
   const alternar = (lista: string[], x: string) => (lista.includes(x) ? lista.filter((y) => y !== x) : [...lista, x]);
   const canais = o.canais ?? { muralLigado: false, muralAssuntos: [], emailLigado: false };
   const noMural = v.publico === "TODOS" && (v.noMural ?? canais.muralAssuntos.includes(v.assunto));
+  const whatsappLigado = canais.whatsappLigado === true;
+  const conta = publico && !incompleto
+    ? contagemDosCanais({ contatos: publico.contatos, comEmail: publico.comEmail ?? 0, comWhatsapp: publico.comWhatsapp, pelosDois: publico.pelosDois },
+      { email: canais.emailLigado && v.porEmail, whatsapp: whatsappLigado && v.porWhatsapp })
+    : null;
+  const ninguemNoWhatsapp = whatsappLigado && publico !== null && !incompleto && !publico.comWhatsapp;
+  const nenhum = (publico?.quem ?? []).filter((p) => !(canais.emailLigado && v.porEmail && p.email) && !(whatsappLigado && v.porWhatsapp && p.whatsapp));
 
   async function salvar(acao: Acao, ev?: FormEvent) {
     ev?.preventDefault();
@@ -125,7 +139,7 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
       assunto: v.assunto, titulo: v.titulo, texto: v.texto, publico: v.publico, blocos: v.blocos, unidades: v.unidades, contatos: v.contatos,
       pedidoId: v.pedidoId || null, manutencaoId: v.manutencaoId || null,
       programadoPara: acao === "PROGRAMAR" ? deDataHoraLocal(v.programadoPara) : null,
-      noMural, porEmail: v.porEmail,
+      noMural, porEmail: v.porEmail, porWhatsapp: whatsappLigado ? v.porWhatsapp && !ninguemNoWhatsapp : undefined,
     };
     const validos = novos.filter((n) => !n.problema);
     // Com fotos novas, guarda primeiro como rascunho, envia as fotos e só então publica ou programa.
@@ -319,7 +333,7 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
             ) : null}
           </section>
 
-          {canais.muralLigado || canais.emailLigado ? (
+          {canais.muralLigado || canais.emailLigado || whatsappLigado ? (
             <section aria-labelledby="t-chegar" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
               <h2 id="t-chegar" className="text-lg font-medium">Como vai chegar</h2>
               {canais.muralLigado ? (
@@ -340,13 +354,56 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
                         {publico && !incompleto ? (publico.comEmail === 1 ? "1 contato com e-mail confirmado." : `${publico.comEmail ?? 0} contatos com e-mail confirmado.`) : "Para quem tem e-mail confirmado."}
                       </span></span>
                   </label>
-                  {v.porEmail && publico && !incompleto && publico.contatos - (publico.comEmail ?? 0) > 0 ? (
+                  {!whatsappLigado && v.porEmail && publico && !incompleto && publico.contatos - (publico.comEmail ?? 0) > 0 ? (
                     <Aviso tom="atencao" titulo={publico.contatos - (publico.comEmail ?? 0) === 1 ? "1 contato sem e-mail confirmado" : `${publico.contatos - (publico.comEmail ?? 0)} contatos sem e-mail confirmado`}>
                       Ficam com o grupo do prédio{canais.muralLigado ? " e o mural" : ""}.
                     </Aviso>
                   ) : null}
-                  <p className="text-xs text-tinta-suave">Entre {o.silencio.inicio} e {o.silencio.fim}, o e-mail espera até as {o.silencio.fim}.</p>
                 </>
+              ) : null}
+              {whatsappLigado ? (
+                <label className="flex items-start gap-3 text-sm">
+                  <input type="checkbox" role="switch" className="mt-0.5 h-5 w-5 shrink-0 accent-violeta-600" checked={v.porWhatsapp && !ninguemNoWhatsapp}
+                    disabled={ninguemNoWhatsapp} onChange={(e) => mudar({ porWhatsapp: e.target.checked })} />
+                  <span className="grid gap-0.5"><span className="font-medium">Vai pelo WhatsApp do condomínio</span>
+                    <span className="text-[13px] text-tinta-suave">
+                      {ninguemNoWhatsapp ? <>Ninguém do público aceitou receber comunicados pelo WhatsApp. <Link href="/configuracoes?aba=whatsapp" className="font-medium text-violeta-600 hover:underline">Como convidar</Link></>
+                        : <>{publico && !incompleto ? (publico.comWhatsapp === 1 ? "1 contato aceitou" : `${publico.comWhatsapp ?? 0} contatos aceitaram`) : "Para quem aceitou"} receber
+                          comunicados por lá. Vai o título e o link pessoal; o texto inteiro fica no link.</>}
+                    </span></span>
+                </label>
+              ) : null}
+              {whatsappLigado && v.porWhatsapp && canais.whatsappConectado === false ? (
+                <Aviso tom="atencao">O número está desconectado. As mensagens esperam a volta por até 24 horas; depois são canceladas e aparecem no comunicado.</Aviso>
+              ) : null}
+              {whatsappLigado && conta ? (
+                <>
+                  <ul className="flex flex-wrap gap-2 text-[13px]" aria-label="Por onde chega">
+                    {[[conta.whatsapp, "pelo WhatsApp"], [conta.email, "por e-mail"], [conta.pelosDois, "pelos dois"], [conta.nenhum, "por nenhum"]].map(([n, t]) => (
+                      <li key={t} className="rounded-full border border-linha px-3 py-1"><span className="font-medium">{n}</span> {t}</li>
+                    ))}
+                  </ul>
+                  {conta.nenhum > 0 ? (
+                    <Aviso tom="atencao" titulo={conta.nenhum === 1 ? "1 contato não recebe por nenhum dos dois" : `${conta.nenhum} contatos não recebem por nenhum dos dois`}>
+                      Não aceitaram o WhatsApp nem confirmaram o e-mail. Ficam com o grupo do prédio{noMural ? " e o mural" : ""}.
+                      {publico?.quem ? <> <button type="button" className="font-medium underline" onClick={() => setVerNenhum((x) => !x)}>{verNenhum ? "Esconder" : "Ver quem"}</button></> : null}
+                      {" · "}<Link href="/configuracoes?aba=whatsapp" className="font-medium underline">Como convidar</Link>
+                    </Aviso>
+                  ) : null}
+                  {verNenhum && nenhum.length ? (
+                    <ul className="max-h-48 overflow-y-auto rounded-xl border border-linha p-2 text-sm">
+                      {nenhum.map((p) => <li key={p.contatoId}>{p.nome} <span className="text-xs text-tinta-suave">· {p.unidades.join(", ")}</span></li>)}
+                    </ul>
+                  ) : null}
+                </>
+              ) : null}
+              {canais.emailLigado || whatsappLigado ? (
+                <p className="text-xs text-tinta-suave">
+                  {whatsappLigado
+                    ? <>Entre {o.silencio.inicio} e {o.silencio.fim} nada sai: o e-mail e o WhatsApp esperam até as {o.silencio.fim}.
+                      {conta && conta.whatsapp ? ` No WhatsApp, as mensagens saem aos poucos, ${COMUNICADOS_WHATSAPP_POR_MINUTO} por minuto: ${conta.whatsapp === 1 ? "esta sai" : `estas ${conta.whatsapp} saem`} em ${minutosDoWhatsapp(conta.whatsapp) === 1 ? "cerca de 1 minuto" : `uns ${minutosDoWhatsapp(conta.whatsapp)} minutos`}.` : ""}</>
+                    : <>Entre {o.silencio.inicio} e {o.silencio.fim}, o e-mail espera até as {o.silencio.fim}.</>}
+                </p>
               ) : null}
             </section>
           ) : null}
@@ -359,7 +416,7 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
               <CampoTexto id="cm-programado" rotulo="Dia e hora" type="datetime-local" value={v.programadoPara} onChange={(e) => mudar({ programadoPara: e.target.value })}
                 erro={msg("programadoPara", "Daqui a pelo menos 2 minutos e até um ano.")} ajuda="Até a hora marcada dá para mudar ou voltar a rascunho." />
             ) : null}
-            {silencio ? <Aviso tom="atencao">Essa hora cai no horário sem envio ({o.silencio.inicio} às {o.silencio.fim}). O e-mail espera até as {o.silencio.fim}; o WhatsApp, quando chegar, também.</Aviso> : null}
+            {silencio ? <Aviso tom="atencao">Essa hora cai no horário sem envio ({o.silencio.inicio} às {o.silencio.fim}). O e-mail e o WhatsApp esperam até as {o.silencio.fim}.</Aviso> : null}
           </section>
 
           <div className="flex flex-wrap gap-2">

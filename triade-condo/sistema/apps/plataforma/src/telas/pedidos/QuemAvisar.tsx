@@ -313,7 +313,7 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
           <Linha marca={<input type="checkbox" className={CAIXA} checked disabled aria-label="Moradores afetados" />}
             titulo={nomePublico}
             texto={<>
-              {unidadesDoPublico} {unidadesDoPublico === 1 ? "unidade" : "unidades"} · comunicado por e-mail{moradores.publico === "TODOS" ? " e no mural" : ""} ·{" "}
+              {unidadesDoPublico} {unidadesDoPublico === 1 ? "unidade" : "unidades"} · comunicado por e-mail{p.moradores.whatsapp ? `${moradores.publico === "TODOS" ? "," : " e"} pelo WhatsApp de quem aceitou` : ""}{moradores.publico === "TODOS" ? " e no mural" : ""} ·{" "}
               <button type="button" className="text-violeta-600 hover:underline" aria-expanded={editandoMoradores} onClick={() => setEditandoMoradores(!editandoMoradores)}>
                 {editandoMoradores ? "fechar comunicado" : "ver e editar comunicado"}
               </button>

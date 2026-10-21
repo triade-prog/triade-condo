@@ -42,6 +42,8 @@ export interface OpcoesPlataforma {
   secretariaRegistra?: boolean;
   /** Pedidos parecidos com o 2026-0002 (um concluído, outro aberto) e uma decisão vencida esperando a Ana (F7.4). */
   comDecisoes?: boolean;
+  /** Comunicados pelo WhatsApp ligados (F6.6): a Marina e o Pedro aceitaram, a Joana disse não; a mensagem ao Pedro falhou. */
+  comComunicadosWhatsapp?: boolean;
 }
 
 function erro(route: Route, status: number, codigo: string, detalhes?: Record<string, unknown>) {
@@ -105,6 +107,11 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const agenda = criarAgenda(V_ANA, V_BRUNA, estado.pedidos[0]!);
   const manutencao = criarManutencao(V_ANA, V_BRUNA, estado.pedidos[0]!, pris[2]!.id);
   const comunicados = criarComunicados(estado.pedidos[0]!.id);
+  if (opcoes.comComunicadosWhatsapp) {
+    estado.moradores.zap.ligado = true;
+    const pedro = estado.moradores.contatos.find((x) => x.nome === "Pedro Souza")!;
+    comunicados.comunicados[0]!.whatsappFalhas = [{ contatoId: pedro.id, motivo: "Número sem WhatsApp" }];
+  }
   const links = criarLinks();
   const vida = criarVida();
   const enquetes = criarEnquetes();
@@ -176,7 +183,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     const fotoDoAnuncio = await rotasClassificadoPublico(route, caminho);
     if (fotoDoAnuncio !== null) return fotoDoAnuncio;
     const publicas = await rotasPublicas(route, comunicados, caminho, metodo, corpo, () => manualDoMural(memoria),
-      () => ({ classificados: classificadosDoMural(classificados) }));
+      () => ({ classificados: classificadosDoMural(classificados) }), estado.moradores.zap);
     if (publicas !== null) return publicas;
     if (!estado.logado) return erro(route, 401, "UNAUTHORIZED");
 
@@ -190,6 +197,11 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       return route.fulfill({ json: { condominioAtual: estado.condominioAtual } });
     }
     if (caminho.startsWith("/v1/condominio") && !estado.condominioAtual) return erro(route, 403, "CONDOMINIO_REQUIRED");
+    // O nome do condomínio em uso, para os cartazes.
+    if (caminho === "/v1/condominio" && metodo === "GET") {
+      return route.fulfill({ json: { id: estado.condominioAtual, nome: estado.condominioAtual === JATOBA ? "Edifício Jatobá" : "Residencial Ipê",
+        funcoes: [quem === "SINDICA" ? "SINDICO" : "AUTORIZADO"] } });
+    }
     const pode = (a: string) => acoes().includes(a);
     const nomeUnidade = (id: string | null) => {
       const u = estado.moradores.unidades.find((x) => x.id === id);

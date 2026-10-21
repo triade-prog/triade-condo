@@ -4,7 +4,7 @@
 // só o bastante para a tela. Com o link do serviço no registro (F6.7; pgTAP 031): a manutenção
 // corretiva nasce com o pedido e o link espera a mensagem sair para o prazo começar.
 import type { Route } from "@playwright/test";
-import type { EstadoMoradores } from "./api-falsa-moradores";
+import { recebeNoWhatsapp, type EstadoMoradores } from "./api-falsa-moradores";
 import type { EstadoManutencao } from "./api-falsa-manutencao";
 import { PRESTADOR_FALSO, type EstadoLinks, type LinkFalso } from "./api-falsa-links";
 
@@ -174,6 +174,7 @@ export function previaQuemAvisar(est: EstadoAvisoRegistro, ctx: ContextoAviso, d
       publico: unidade?.blocoId ? "BLOCOS" : "TODOS",
       blocos: unidade ? [unidade.blocoId].filter(Boolean) : undefined,
       textoComDadoDeMorador: "textoMoradores" in d ? comDadoDeMorador(String(d.textoMoradores), m, l.contato?.id ?? null) : undefined,
+      whatsapp: m.zap.ligado,
     },
     prestadores: ctx.manutencao.prestadores.filter((r) => !r.arquivado).sort((a, b) => a.nome.localeCompare(b.nome)).map((r) => {
       const meio = meioPrestador(r, ctx.conectado);
@@ -257,6 +258,8 @@ export function avisarNoRegistro(est: EstadoAvisoRegistro, ctx: ContextoAviso, p
     const rascunho = rascunhoMoradores(d);
     avisos.push({ destino: "MORADORES", meio: "COMUNICADO", nome, situacao: "PUBLICADO", destinatarios: vinculos.length, noMural: a.moradores.publico === "TODOS",
       emails: vinculos.filter((v) => m.contatos.find((c) => c.id === v.contatoId)?.emailSituacao === "CONFIRMADO").length,
+      ...(m.zap.ligado ? { whatsapps: new Set(vinculos.filter((v) => recebeNoWhatsapp(m.contatos.find((c) => c.id === v.contatoId) ?? {}))
+        .map((v) => m.contatos.find((c) => c.id === v.contatoId)!.telefone)).size } : {}),
       editado: a.moradores.titulo !== rascunho.titulo || a.moradores.texto !== rascunho.texto || undefined, em: agora });
   }
   est.porPedido.set(pedido.id, { avisos, prestador });

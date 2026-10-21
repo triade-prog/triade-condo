@@ -4,7 +4,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
-import { Aviso, chamarApi, Icone, Marca, Selo, type NomeIcone } from "@triade/ui";
+import { Aviso, chamarApi, classeBotao, Icone, Marca, Selo, type NomeIcone } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import type { ComunicadoPublico } from "../tipos.ts";
 
@@ -86,5 +86,22 @@ export function FaixaQueda({ canal }: { canal?: string }) {
     <Aviso tom="atencao" titulo="O WhatsApp do condomínio está fora do ar">
       <span className="whitespace-pre-line">Enquanto isso: {canal}</span>
     </Aviso>
+  );
+}
+
+/**
+ * Receber os comunicados pelo WhatsApp (F6.6; W-20, CD-12): abre a conversa com o condomínio já
+ * com a palavra COMUNICADOS. Quem aceita é quem envia, do próprio celular, e está no cadastro.
+ */
+export function ReceberPeloWhatsapp({ numero }: { numero?: string }) {
+  if (!numero) return null;
+  return (
+    <Cartao className="border-violeta-200">
+      <h2 className="text-base font-medium">Receba os comunicados no WhatsApp</h2>
+      <p className="text-sm">Toque no botão: abre o WhatsApp do condomínio com a palavra COMUNICADOS. É só enviar. Vale para quem está no cadastro do condomínio.</p>
+      <a href={`https://wa.me/${numero}?text=COMUNICADOS`} target="_blank" rel="noopener noreferrer" className={classeBotao("contorno", "justify-self-start", "m")}>
+        <Icone nome="whats" />Receber pelo WhatsApp
+      </a>
+    </Cartao>
   );
 }

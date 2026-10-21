@@ -265,7 +265,7 @@ export const removerDadosSchema = z.object({ versao });
 
 export const buscaMoradoresSchema = z.object({
   busca: z.string().trim().max(60).optional(),
-  estado: z.enum(["PENDENTE", "CONFIRMADO", "SEM_EMAIL"]).optional(),
+  estado: z.enum(["PENDENTE", "CONFIRMADO", "SEM_EMAIL", "SEM_WHATSAPP"]).optional(),
   pagina: z.coerce.number().int().min(1).max(1000).default(1),
 });
 
@@ -277,6 +277,16 @@ export const SITUACOES_EMAIL = {
   PAROU: "Parou de receber",
 } as const;
 export type SituacaoEmail = keyof typeof SITUACOES_EMAIL;
+
+/** Comunicados pelo WhatsApp do condomínio (F6.6): só o próprio morador muda, pelo WhatsApp. */
+export const SITUACOES_COMUNICADOS_WHATSAPP = {
+  ACEITOU: "aceitou",
+  RECUSOU: "disse não",
+  PAROU: "parou",
+  SEM_RESPOSTA: "ainda não respondeu",
+} as const;
+export type SituacaoComunicadosWhatsapp = keyof typeof SITUACOES_COMUNICADOS_WHATSAPP;
+export const ORIGENS_ACEITE_WHATSAPP = { PERGUNTA: "na conversa", COMANDO: "pelo comando COMUNICADOS" } as const;
 
 /** Gravar, trocar ou tirar o e-mail do contato (vazio tira) e a preferência (CD-13). */
 export const emailContatoSchema = z.object({

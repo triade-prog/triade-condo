@@ -141,6 +141,7 @@ import {
   ordemManualSchema,
   retirarSchema,
   secaoManualSchema,
+  comunicadosWhatsappSchema,
   manterRevisaoSchema,
   meusAvisosWhatsappSchema,
   motivoFalhaSchema,
@@ -1284,9 +1285,12 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_assunto: d.assunto, p_titulo: d.titulo, p_texto: d.texto,
       p_publico: d.publico, p_blocos: d.blocos, p_unidades: d.unidades, p_contatos: d.contatos, p_pedido: d.pedidoId,
       p_manutencao: d.manutencaoId, p_acao: d.acao, p_programado_para: d.programadoPara, p_no_mural: d.noMural,
-      p_por_email: d.porEmail,
+      p_por_email: d.porEmail, p_por_whatsapp: d.porWhatsapp,
     }).finally(() => {
-      if (d.acao === "PUBLICAR") esvaziarFila();
+      if (d.acao === "PUBLICAR") {
+        esvaziarFila();
+        noFundo(processarFilaWhatsapp);
+      }
     });
   }
   app.post("/v1/condominio/comunicados", async (c) => c.json(await salvarComunicado(c, null), 201));
@@ -1297,9 +1301,10 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const d = await lerCorpo(c, corrigirComunicadoSchema);
     const r = await rpc("plataforma_corrigir_comunicado", {
       ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_titulo: d.titulo, p_texto: d.texto, p_mudanca: d.mudanca,
-      p_avisar_email: d.avisarEmail,
+      p_avisar_email: d.avisarEmail, p_avisar_whatsapp: d.avisarWhatsapp,
     });
     if (d.avisarEmail) esvaziarFila();
+    if (d.avisarWhatsapp) noFundo(processarFilaWhatsapp);
     return c.json(r, 201);
   });
   app.put("/v1/condominio/comunicados/:id/mural", async (c) => {
@@ -1886,7 +1891,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     condominio: string;
     instancia: string;
     credenciais: string;
-    envios: { envio: string; para: string; texto: string; pedido?: string; link?: string; rota?: "v" | "a" }[];
+    envios: { envio: string; para: string; texto: string; pedido?: string; link?: string; rota?: "v" | "a" | "p" | "c" }[];
   }
 
   function noFundo(trabalho: () => Promise<unknown>) {
@@ -1917,8 +1922,8 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       for (const l of lotes) {
         const cred = await decifrarCredenciais(chave, l.credenciais);
         for (const e of l.envios) {
-          // O link pessoal da enquete (/v), da assembleia (/a) ou do prestador reserva (/p) entra só
-          // aqui: o banco guarda o texto com [link] (peça R12, MP-09).
+          // O link pessoal da enquete (/v), da assembleia (/a), do prestador reserva (/p) ou do
+          // comunicado (/c) entra só aqui: o banco guarda o texto com [link] (peça R12, MP-09, F6.6).
           const comLink = e.link ? e.texto.replaceAll("[link]", `${deps.urlApp.replace(/\/$/, "")}/${e.rota ?? "v"}/${e.link}`) : e.texto;
           const texto = textoComLinkDoPainel(comLink, e.pedido ? `${deps.urlApp}/pedidos/pedido?id=${e.pedido}` : null);
           const r = await conector.enviarTexto({ instancia: l.instancia || cred.instancia, token: cred.token }, e.para, texto);
@@ -2011,6 +2016,13 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   });
 
   app.post("/v1/condominio/whatsapp/termo", async (c) => c.json(await rpc("plataforma_aceitar_termo_whatsapp", quem(c))));
+
+  // Comunicados pelo WhatsApp do condomínio (F6.6): ligar, desligar e o convite.
+  app.get("/v1/condominio/whatsapp/comunicados", async (c) => c.json(await rpc("plataforma_comunicados_whatsapp", quem(c))));
+  app.put("/v1/condominio/whatsapp/comunicados", async (c) => {
+    const d = await lerCorpo(c, comunicadosWhatsappSchema);
+    return c.json(await rpc("plataforma_definir_comunicados_whatsapp", { ...quem(c), p_versao: d.versao, p_ligado: d.ligado }));
+  });
 
   app.put("/v1/condominio/whatsapp/meus-avisos", async (c) => {
     const d = await lerCorpo(c, meusAvisosWhatsappSchema);

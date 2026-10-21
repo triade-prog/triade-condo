@@ -247,7 +247,8 @@ function Falhas({ d, recarregar }: { d: DadosWhatsapp; recarregar: () => void })
               <span className="line-clamp-2 whitespace-pre-line">{f.texto}</span>
               <span className="flex flex-wrap gap-2">
                 {f.pedido ? <Link href={`/pedidos/pedido?id=${f.pedido.id}`} className="inline-flex items-center font-medium text-violeta-600 hover:underline">Pedido {f.pedido.protocolo}</Link> : null}
-                {d.pode.reenviar ? <Botao variante="contorno" tamanho="m" onClick={() => setAberta({ f, acao: "reenviar" })}>Reenviar com motivo</Botao> : null}
+                {/* Comunicado não tem reenvio (F6.6): a pessoa lê pelo grupo, pelo mural ou pelo e-mail. */}
+                {d.pode.reenviar && f.finalidade !== "COMUNICADO" ? <Botao variante="contorno" tamanho="m" onClick={() => setAberta({ f, acao: "reenviar" })}>Reenviar com motivo</Botao> : null}
                 <Botao variante="discreto" tamanho="m" onClick={() => setAberta({ f, acao: "resolver" })}>Avisei por outro meio</Botao>
               </span>
             </li>
