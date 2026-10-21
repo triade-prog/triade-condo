@@ -129,6 +129,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PEDIDO_TESTE_OBRIGATORIO: "O pedido de teste com o síndico sempre se aplica.",
   JA_RESOLVIDA: "Esta pendência já foi resolvida.",
   ETAPAS_ABERTAS: "Ainda há etapas de 1 a 7 sem realizar ou sem o motivo de não se aplicar.",
+  CONFIGURACAO_SEM_CONFERIR: "Confira as 11 partes da aba Configuração antes de marcar esta etapa como realizada.",
+  CONFIGURACAO_OBRIGATORIA: "A configuração sempre se aplica: ela é o que o síndico recebe pronto.",
   SEM_PEDIDO_TESTE: "Falta o pedido de teste registrado e concluído pelo síndico.",
   USE_ENTREGA: "Este cliente tem roteiro de implantação. Conclua pela entrega, na aba Implantação.",
   MESMO_SINDICO: "O novo síndico precisa ser outra pessoa. O acesso do síndico nunca é passado adiante.",

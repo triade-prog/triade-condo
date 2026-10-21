@@ -30,7 +30,6 @@ function montar() {
     plataforma_ligar_pedidos: (a) => ({ versao: Number(a.p_versao) + 1, id: LIGACAO }),
     plataforma_desfazer_ligacao: (a) => ({ versao: Number(a.p_versao) + 1 }),
     plataforma_descartar_parecido: () => null,
-    plataforma_definir_parecidos: (a) => Number(a.p_versao) + 1,
     plataforma_pedir_decisao: (a) => ({ versao: Number(a.p_versao) + 1, id: DECISAO }),
     plataforma_decisoes: (a) => ({ decisoes: [], aguardandoEu: 0, filtro: a.p_filtro, pode: { aprovar: true } }),
     plataforma_responder_decisao: (a) => ({ versao: Number(a.p_versao) + 1 }),
@@ -91,10 +90,8 @@ Deno.test("AT-18: desfazer com motivo, descartar a sugestão e a janela dos pare
   assertEquals(await (await m.pedir(`/v1/condominio/pedidos/${PEDIDO}/parecidos/descartar`, { corpo: { outroId: ANTIGO }, cookie })).json(), { ok: true });
   assertEquals(chamada(m, "plataforma_descartar_parecido"), { p_pessoa: ANA, p_condominio: AURORA, p_id: PEDIDO, p_outro: ANTIGO });
 
-  const janela = await m.pedir("/v1/condominio/regras-parecidos", { metodo: "PUT", corpo: { versao: 2, dias: 45 }, cookie });
-  assertEquals((await erro(janela)).detalhes?.campos, ["dias"]);
-  assertEquals(await (await m.pedir("/v1/condominio/regras-parecidos", { metodo: "PUT", corpo: { versao: 2, dias: 60 }, cookie })).json(), { versao: 3 });
-  assertEquals(chamada(m, "plataforma_definir_parecidos"), { p_pessoa: ANA, p_condominio: AURORA, p_versao: 2, p_dias: 60 });
+  // A janela dos parecidos é ajuste técnico da TRÍADE (CF-09, PI-04): só muda pelo Console.
+  assertEquals((await m.pedir("/v1/condominio/regras-parecidos", { metodo: "PUT", corpo: { versao: 2, dias: 60 }, cookie })).status, 404);
 });
 
 Deno.test("AT-23: pedir decisão leva pergunta, prazo, quem decide e as alternativas em centavos", async () => {

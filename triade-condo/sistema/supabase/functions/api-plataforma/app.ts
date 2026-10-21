@@ -39,20 +39,10 @@ import {
   removerDadosSchema,
   atendimentoSchema,
   autorizarPessoaSchema,
-  categoriaSchema,
   COOKIES_PLATAFORMA,
   ErroDominio,
   escolherCondominioSchema,
-  etapaSchema,
-  feriadoSchema,
-  fusoSchema,
-  horariosSchema,
-  modeloRespostaSchema,
-  prazoSchema,
-  prioridadeSchema,
   revogarPessoaSchema,
-  TIPOS_HORARIO,
-  versaoSchema,
   aceitarPedidoSchema,
   alterarPedidoSchema,
   atribuirPedidoSchema,
@@ -75,7 +65,6 @@ import {
   desfazerLigacaoSchema,
   filtroDecisoesSchema,
   ligarPedidosSchema,
-  parecidosSchema,
   pedirDecisaoSchema,
   responderDecisaoSchema,
   retirarDecisaoSchema,
@@ -85,8 +74,6 @@ import {
   type TipoArquivo,
   marcarAvisosSchema,
   periodoIndicadoresSchema,
-  regrasAvisoSchema,
-  avisoNovoSchema,
   alterarCompromissoSchema,
   cancelarCompromissoSchema,
   marcarCompromissoSchema,
@@ -99,7 +86,6 @@ import {
   cancelarManutencaoSchema,
   concluirManutencaoSchema,
   enviarArquivoManutencaoSchema,
-  etapaManutencaoSchema,
   fazerProvidenciaSchema,
   itensVistoriaSchema,
   prestadorSchema,
@@ -119,7 +105,6 @@ import {
   corrigirComunicadoSchema,
   documentoSchema,
   enviarArquivoComunicadoSchema,
-  planoComunicacaoSchema,
   publicoComunicadoSchema,
   salvarComunicadoSchema,
   TAMANHO_MAXIMO_DOCUMENTO,
@@ -130,13 +115,11 @@ import {
   emailContatoSchema,
   enviarDocumentoSchema,
   muralComunicadoSchema,
-  muralEmailSchema,
   pedirDocumentoSchema,
   trocarLinkMuralSchema,
   cancelarLinkSchema,
   chegadaSchema,
   envioLinkSchema,
-  etiquetaSchema,
   fotoPrestadorSchema,
   impedimentoSchema,
   recusarPrestadorSchema,
@@ -148,9 +131,7 @@ import {
   conciliarQuedaSchema,
   editarQuedaSchema,
   encerrarQuedaSchema,
-  responsavelQuedasSchema,
   linkPrestadorSchema,
-  motivoEtiquetaSchema,
   termineiSchema,
   anotacaoSchema,
   buscaLinhaDoTempoSchema,
@@ -160,7 +141,6 @@ import {
   ordemManualSchema,
   retirarSchema,
   secaoManualSchema,
-  configWhatsappSchema,
   manterRevisaoSchema,
   meusAvisosWhatsappSchema,
   motivoFalhaSchema,
@@ -169,7 +149,6 @@ import {
   triarWhatsappSchema,
   type MidiaWhatsapp,
   aprovarReservaSchema,
-  areaSchema,
   conferirReservaSchema,
   filtroReservasSchema,
   criarEnqueteSchema,
@@ -209,6 +188,7 @@ import type { AdminAuth } from "../_shared/auth.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
+import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
 import { montarZip, planilhaCsv, type ItemZip } from "../_shared/zip.ts";
 
 export type VarsPlataforma = { Variables: VarsSessao["Variables"] & { condominioId: string } };
@@ -259,12 +239,6 @@ function codigoDaRota(c: Context, nome = "codigo"): string {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Id de rota: fora do formato, responde como não encontrado. */
-function idDaRota(c: Context, nome: string): string {
-  const id = c.req.param(nome);
-  if (!id || !UUID.test(id)) throw new ErroDominio("NOT_FOUND");
-  return id.toLowerCase();
-}
 
 export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataforma) {
   const app = criarApp<VarsPlataforma>("api-plataforma", segredo, [
@@ -318,67 +292,9 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   // Painel (V-08): o condomínio, o que a pessoa pode fazer e o que falta configurar.
   app.get("/v1/condominio/painel", async (c) => c.json(await rpc("plataforma_painel", quem(c))));
 
-  // Configurações (CF-06, CF-08, CF-10, AT-10), todas de uma vez.
-  app.get("/v1/condominio/configuracoes", async (c) => c.json(await rpc("plataforma_configuracoes", quem(c))));
-
-  app.put("/v1/condominio/fuso", async (c) => {
-    const d = await lerCorpo(c, fusoSchema);
-    return c.json({ versao: await rpc<number>("plataforma_definir_fuso", { ...quem(c), p_versao: d.versao, p_fuso: d.fuso }) });
-  });
-
-  app.put("/v1/condominio/horarios/:tipo", async (c) => {
-    const tipo = c.req.param("tipo").toUpperCase();
-    if (!(tipo in TIPOS_HORARIO)) throw new ErroDominio("NOT_FOUND");
-    const d = await lerCorpo(c, horariosSchema);
-    return c.json({
-      versao: await rpc<number>("plataforma_definir_horarios", { ...quem(c), p_tipo: tipo, p_versao: d.versao, p_intervalos: d.intervalos }),
-    });
-  });
-
-  app.post("/v1/condominio/feriados", async (c) => {
-    const d = await lerCorpo(c, feriadoSchema);
-    return c.json({ id: await rpc<string>("plataforma_incluir_feriado", { ...quem(c), p_data: d.data, p_descricao: d.descricao }) }, 201);
-  });
-
-  app.post("/v1/condominio/feriados/:id/remover", async (c) => {
-    await rpc("plataforma_remover_feriado", { ...quem(c), p_feriado: idDaRota(c, "id") });
-    return c.json({ ok: true });
-  });
-
-  // Categorias, prioridades, etapas e modelos (CF-08, CF-09): POST cria, PUT altera com a versão.
-  const itens = {
-    categorias: { schema: categoriaSchema, funcao: "plataforma_salvar_categoria",
-      args: (d: ReturnType<typeof categoriaSchema.parse>) => ({ p_nome: d.nome, p_ativa: d.ativa ?? null }) },
-    prioridades: { schema: prioridadeSchema, funcao: "plataforma_salvar_prioridade",
-      args: (d: ReturnType<typeof prioridadeSchema.parse>) => ({ p_nome: d.nome, p_significado: d.significado, p_ativa: d.ativa ?? null }) },
-    etapas: { schema: etapaSchema, funcao: "plataforma_salvar_etapa",
-      args: (d: ReturnType<typeof etapaSchema.parse>) => ({
-        p_nome: d.nome, p_situacao: d.situacao ?? null, p_categoria: d.categoriaId ?? null, p_pausa_prazo: d.pausaPrazo ?? null, p_ativa: d.ativa ?? null,
-      }) },
-    modelos: { schema: modeloRespostaSchema, funcao: "plataforma_salvar_modelo",
-      args: (d: ReturnType<typeof modeloRespostaSchema.parse>) => ({ p_titulo: d.titulo, p_texto: d.texto, p_categoria: d.categoriaId ?? null, p_ativo: d.ativo ?? null }) },
-    prazos: { schema: prazoSchema, funcao: "plataforma_salvar_prazo",
-      args: (d: ReturnType<typeof prazoSchema.parse>) => ({ p_categoria: d.categoriaId ?? null, p_prioridade: d.prioridadeId ?? null, p_horas: d.horas }) },
-  } as const;
-  for (const [rota, item] of Object.entries(itens)) {
-    // deno-lint-ignore no-explicit-any
-    const salvar = async (c: Context<VarsPlataforma>, id: string | null, d: any) =>
-      await rpc<{ id: string; versao: number }>(item.funcao, { ...quem(c), p_id: id, p_versao: id ? d.versao : null, ...item.args(d) });
-    app.post(`/v1/condominio/${rota}`, async (c) => c.json(await salvar(c, null, await lerCorpo(c, item.schema)), 201));
-    app.put(`/v1/condominio/${rota}/:id`, async (c) => {
-      const id = idDaRota(c, "id");
-      const d = await lerCorpo(c, item.schema);
-      if (!d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
-      return c.json(await salvar(c, id, d));
-    });
-  }
-
-  app.post("/v1/condominio/prazos/:id/remover", async (c) => {
-    const id = idDaRota(c, "id");
-    const d = await lerCorpo(c, versaoSchema);
-    await rpc("plataforma_remover_prazo", { ...quem(c), p_id: id, p_versao: d.versao });
-    return c.json({ ok: true });
-  });
+  // Configurações (CF-06, CF-08, CF-10, AT-10, PI-04): as mesmas rotas que o Console usa na
+  // implantação. Fuso, etapas e as janelas técnicas são da TRÍADE e só mudam pelo Console.
+  rotasConfiguracao(app, "/v1/condominio", quem, deps.banco, { aoLigarEmail: () => esvaziarFila() });
 
   // Pessoas autorizadas (V-09, CF-02, CF-03, CF-04).
   app.get("/v1/condominio/pessoas", async (c) => c.json(await rpc("plataforma_pessoas", quem(c))));
@@ -682,10 +598,6 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json({ ok: true });
   });
 
-  app.put("/v1/condominio/regras-parecidos", async (c) => {
-    const d = await lerCorpo(c, parecidosSchema);
-    return c.json({ versao: await rpc<number>("plataforma_definir_parecidos", { ...quem(c), p_versao: d.versao, p_dias: d.dias }) });
-  });
 
   // Decisões pedidas ao síndico (F7.4; AT-23). Pedir fica nas ações do pedido; responder e
   // retirar levam a versão da decisão. Quem pode responder é decidido no banco.
@@ -762,22 +674,6 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json({ marcados: await rpc<number>("plataforma_marcar_avisos", { ...quem(c), p_ids: d.ids }) });
   });
 
-  app.put("/v1/condominio/regras-aviso", async (c) => {
-    const d = await lerCorpo(c, regrasAvisoSchema);
-    return c.json({
-      versao: await rpc<number>("plataforma_definir_avisos", {
-        ...quem(c), p_versao: d.versao, p_sindico_horas: d.sindicoHoras, p_substituto_horas: d.substitutoHoras,
-        p_substituto: d.substitutoId, p_sem_responsavel_horas: d.semResponsavelHoras, p_pendencia_dias: d.pendenciaDias,
-      }),
-    });
-  });
-
-  app.put("/v1/condominio/regras-aviso-novo", async (c) => {
-    const d = await lerCorpo(c, avisoNovoSchema);
-    return c.json({
-      versao: await rpc<number>("plataforma_definir_aviso_novo", { ...quem(c), p_versao: d.versao, p_sindico: d.sindico, p_protocolo: d.protocolo }),
-    });
-  });
 
   app.get("/v1/condominio/pedidos/:id/prazo", async (c) =>
     c.json(await rpc("plataforma_pedido_prazo", { ...quem(c), p_id: idDaRota(c, "id") })));
@@ -853,19 +749,6 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return r.data;
   };
 
-  app.get("/v1/condominio/areas-comuns", async (c) => c.json(await rpc("plataforma_areas_comuns", quem(c))));
-
-  app.post("/v1/condominio/areas-comuns", async (c) => {
-    const { versao: _v, ...d } = await lerCorpo(c, areaSchema);
-    return c.json(await rpc("plataforma_salvar_area", { ...quem(c), p_id: null, p_versao: null, p_dados: d }), 201);
-  });
-
-  app.put("/v1/condominio/areas-comuns/:id", async (c) => {
-    const id = idDaRota(c, "id");
-    const { versao, ...d } = await lerCorpo(c, areaSchema);
-    if (!versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
-    return c.json(await rpc("plataforma_salvar_area", { ...quem(c), p_id: id, p_versao: versao, p_dados: d }));
-  });
 
   app.get("/v1/condominio/reservas", async (c) => {
     const q = consulta(c, filtroReservasSchema);
@@ -1108,17 +991,6 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json(await rpc("plataforma_arquivar_prestador", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_arquivar: d.arquivar }));
   });
 
-  // Etapas da manutenção, nas Configurações (MP-02).
-  app.get("/v1/condominio/etapas-manutencao", async (c) => c.json(await rpc("plataforma_etapas_manutencao", quem(c))));
-  const salvarEtapaManutencao = async (c: Context<VarsPlataforma>, id: string | null) => {
-    const d = await lerCorpo(c, etapaManutencaoSchema);
-    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
-    return await rpc("plataforma_salvar_etapa_manutencao", {
-      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_nome: d.nome, p_situacao: d.situacao ?? null, p_ativa: d.ativa ?? null,
-    });
-  };
-  app.post("/v1/condominio/etapas-manutencao", async (c) => c.json(await salvarEtapaManutencao(c, null), 201));
-  app.put("/v1/condominio/etapas-manutencao/:id", async (c) => c.json(await salvarEtapaManutencao(c, idDaRota(c, "id"))));
 
   app.get("/v1/condominio/manutencao/:id", async (c) => c.json(await rpc("plataforma_manutencao", { ...quem(c), p_id: idDaRota(c, "id") })));
 
@@ -1243,24 +1115,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
 
   // ---------------------------------------------------------------------------------------
   // Links e QR (peça R13; AT-30, V-11): etiquetas por local e o link do prestador na manutenção.
-  app.get("/v1/condominio/links-qr", async (c) => c.json(await rpc("plataforma_links_qr", quem(c))));
-  app.get("/v1/condominio/locais", async (c) => c.json(await rpc("plataforma_locais", quem(c))));
-  app.get("/v1/condominio/etiquetas/:id", async (c) => c.json(await rpc("plataforma_etiqueta", { ...quem(c), p_id: idDaRota(c, "id") })));
-  async function salvarEtiqueta(c: Context<VarsPlataforma>, id: string | null) {
-    const d = await lerCorpo(c, etiquetaSchema);
-    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
-    return await rpc("plataforma_salvar_etiqueta", {
-      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_local: d.local, p_onde: d.onde, p_recado: d.recado, p_recado_ate: d.recadoAte,
-    });
-  }
-  app.post("/v1/condominio/etiquetas", async (c) => c.json(await salvarEtiqueta(c, null), 201));
-  app.put("/v1/condominio/etiquetas/:id", async (c) => c.json(await salvarEtiqueta(c, idDaRota(c, "id"))));
-  for (const [rota, funcao] of [["trocar-codigo", "plataforma_trocar_codigo_etiqueta"], ["desativar", "plataforma_desativar_etiqueta"]] as const) {
-    app.post(`/v1/condominio/etiquetas/:id/${rota}`, async (c) => {
-      const d = await lerCorpo(c, motivoEtiquetaSchema);
-      return c.json(await rpc(funcao, { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
-    });
-  }
+  // As etiquetas ficam nas rotas das Configurações.
 
   app.get("/v1/condominio/manutencao/:id/link-prestador", async (c) =>
     c.json(await rpc("plataforma_link_prestador", { ...quem(c), p_manutencao: idDaRota(c, "id") })));
@@ -1498,16 +1353,6 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json(await rpc("plataforma_tirar_arquivo_comunicado", { ...arquivoComunicado(c), p_motivo: d.motivo }));
   });
 
-  // Plano de comunicação (CD-11), nas Configurações.
-  app.get("/v1/condominio/plano-comunicacao", async (c) => c.json(await rpc("plataforma_plano_comunicacao", quem(c))));
-  app.put("/v1/condominio/plano-comunicacao", async (c) => {
-    const d = await lerCorpo(c, planoComunicacaoSchema);
-    const versao = await rpc<number>("plataforma_definir_plano_comunicacao", {
-      ...quem(c), p_versao: d.versao, p_assuntos: d.assuntos, p_plano: d.plano, p_assinatura: d.assinatura,
-      p_silencio_inicio: d.silencioInicio, p_silencio_fim: d.silencioFim,
-    });
-    return c.json({ versao });
-  });
 
   // Documentos (CD-07, CD-04, MP-12): cada arquivo é uma versão, no bucket "documentos", até 20 MB.
   app.get("/v1/condominio/documentos", async (c) => {
@@ -1583,16 +1428,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/documentos/:id/envios/:envio/cancelar", async (c) =>
     c.json(await rpc("plataforma_cancelar_envio_documento", { ...quem(c), p_id: idDaRota(c, "id"), p_envio: idDaRota(c, "envio") })));
 
-  // Mural online e e-mail nas Configurações (CD-12, CD-13).
-  app.put("/v1/condominio/mural-email", async (c) => {
-    const d = await lerCorpo(c, muralEmailSchema);
-    const r = await rpc("plataforma_definir_mural_email", {
-      ...quem(c), p_versao: d.versao, p_mural_ligado: d.muralLigado, p_mural_assuntos: d.muralAssuntos, p_email_ligado: d.emailLigado,
-      p_responder_para: d.responderPara, p_documentos_no_mural: d.documentosNoMural, p_documentos_automatico: d.documentosAutomatico,
-    });
-    if (d.emailLigado) esvaziarFila();
-    return c.json(r);
-  });
+  // Trocar o link do mural é só do condomínio (CD-12, CF-03).
   app.post("/v1/condominio/mural/trocar-link", async (c) => {
     const d = await lerCorpo(c, trocarLinkMuralSchema);
     return c.json(await rpc("plataforma_trocar_link_mural", { ...quem(c), p_versao: d.versao, p_motivo: d.motivo }));
@@ -2172,20 +2008,6 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/whatsapp/quedas/:id/encerrar", async (c) => {
     const d = await lerCorpo(c, encerrarQuedaSchema);
     return c.json(await rpc("plataforma_encerrar_queda", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_resumo: d.resumo }));
-  });
-  app.put("/v1/condominio/whatsapp/config/quedas", async (c) => {
-    const d = await lerCorpo(c, responsavelQuedasSchema);
-    return c.json(await rpc("plataforma_quedas_responsavel", { ...quem(c), p_versao: d.versao, p_responsavel: d.pessoaId }));
-  });
-
-  app.get("/v1/condominio/whatsapp/config", async (c) => c.json(await rpc("plataforma_config_whatsapp", quem(c))));
-
-  app.put("/v1/condominio/whatsapp/config", async (c) => {
-    const d = await lerCorpo(c, configWhatsappSchema);
-    return c.json({ versao: await rpc("plataforma_definir_whatsapp", {
-      ...quem(c), p_versao: d.versao, p_fora_horario: d.foraHorario, p_categoria: d.categoriaId, p_prioridade: d.prioridadeId,
-      p_anexar: d.anexarMinutos,
-    }) });
   });
 
   app.post("/v1/condominio/whatsapp/termo", async (c) => c.json(await rpc("plataforma_aceitar_termo_whatsapp", quem(c))));

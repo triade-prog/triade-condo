@@ -104,7 +104,6 @@ export const configWhatsappSchema = z.object({
   foraHorario: z.string().trim().min(20).max(600),
   categoriaId: id,
   prioridadeId: id,
-  anexarMinutos: z.union([z.literal(15), z.literal(30), z.literal(60)]),
 });
 
 export const meusAvisosWhatsappSchema = z.object({

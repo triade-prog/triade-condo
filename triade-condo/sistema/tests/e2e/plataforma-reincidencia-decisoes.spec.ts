@@ -236,18 +236,18 @@ test.describe("Plataforma · reincidência e decisões", () => {
     await expect(page.getByRole("link", { name: /^Decisões/ })).toHaveCount(0);
   });
 
-  test("AT-18: a janela dos parecidos se escolhe nas Regras e salva ao escolher", async ({ page }) => {
-    const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true, comDecisoes: true });
+  test("AT-18 e CF-09: a janela dos parecidos aparece nas Regras; para mudar, o síndico pede à TRÍADE", async ({ page }) => {
+    await instalarApiPlataformaFalsa(page, { comAtendimento: true, comDecisoes: true });
     await page.goto(`${PLATAFORMA}/configuracoes?aba=regras`);
     const parecidos = page.getByRole("region", { name: "Pedidos parecidos" });
-    const janela = parecidos.getByRole("group", { name: "Janela dos parecidos" });
-    await expect(janela.getByRole("button", { name: "90 dias" })).toHaveAttribute("aria-pressed", "true");
+    await expect(parecidos).toContainText("90 dias");
+    await expect(parecidos).toContainText("Ajustado pela TRÍADE");
+    await expect(parecidos.getByRole("group", { name: "Janela dos parecidos" })).toHaveCount(0);
     await conferir(page);
-    await janela.getByRole("button", { name: "60 dias" }).click();
-    await expect(recado(page, "Pedidos parecidos: o sistema sugere os dos últimos 60 dias.")).toBeVisible();
-    await expect(janela.getByRole("button", { name: "60 dias" })).toHaveAttribute("aria-pressed", "true");
-    await page.goto(`${PLATAFORMA}/pedidos/pedido?id=${estado.pedidos[1]!.id}`);
-    await expect(page.getByRole("region", { name: "Pedidos relacionados" })).toContainText("Parecidos nos últimos 60 dias");
+    await parecidos.getByRole("link", { name: "Pedir mudança" }).click();
+    await expect(page.getByLabel("Título")).toHaveValue("Mudar: Pedidos parecidos");
+    await expect(page.getByLabel("O que aconteceu")).toHaveValue(/Hoje: 90 dias\./);
+    await expect(page.getByLabel("Onde no sistema")).toHaveValue("CONFIGURACOES");
   });
 
   test("TR-01: reincidência no período e decisões aguardando o síndico nos indicadores", async ({ page }) => {

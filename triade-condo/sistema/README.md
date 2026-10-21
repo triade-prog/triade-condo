@@ -13,6 +13,7 @@ packages/domain     regras puras em TypeScript: dinheiro, erros, textos, esquema
                     (roda no Node e no Deno)
 packages/ui         tema (DC13) e componentes React
 packages/servidor   cabeçalhos de segurança, CSP com nonce e o repasse /api
+packages/configuracoes  as abas das Configurações, usadas pelo app e pela aba Configuração do Console
 supabase/           migrations, Edge Functions (Deno + Hono) e testes pgTAP
 tests/e2e           Playwright com axe, no celular e no computador
 scripts/            banco de teste e Deno
@@ -108,8 +109,12 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
   - `vencimento_do_prazo` conta só as horas de atendimento, no fuso do condomínio, pulando os feriados.
 - **Feriado (CF-10).** O banco guarda só a data e a API devolve `aaaa-mm-dd`. A tela mostra a data como foi escrita, sem fuso.
 - **Rotas.**
-  - Todas ficam em `/v1/condominio/...` (painel, configuracoes, fuso, horarios, feriados, categorias, prioridades, etapas, modelos, prazos, pessoas, atendimento).
+  - Todas ficam em `/v1/condominio/...` (painel, configuracoes, horarios, feriados, categorias, prioridades, modelos, prazos, pessoas, atendimento).
   - Pessoa e condomínio vêm sempre da sessão.
+- **Configuração na implantação (PI-04, migration 0283).**
+  - A TRÍADE monta as Configurações pela aba Configuração da ficha no Console, com as mesmas rotas do app em `/v1/clientes/:id/condominio/...` (`supabase/functions/_shared/rotas_configuracao.ts`). Cada uma das 11 partes é marcada como conferida e volta a pedir conferência quando muda; a etapa 4 do roteiro só fica realizada com todas conferidas.
+  - Fuso, etapas dos pedidos e da manutenção, janela dos parecidos e tempo de anexar do WhatsApp são só da TRÍADE: mudam só pelo Console (`console_definir_fuso`, `console_salvar_etapa_pedido`, `console_salvar_etapa_manutencao`, `console_definir_parecidos`, `console_definir_anexar`). Com o cliente ativo, pedem motivo e avisam cada síndico no sino. No app ficam em leitura, com Pedir mudança, que abre um chamado.
+  - Termo do piloto, os próprios avisos, revisar e reabrir e trocar o link do mural são só do síndico.
 - **Telas.** Seguem o desenho aprovado em `../docs/design-frontend.html` ("Telas do passo 2").
   - Ficam em `apps/plataforma/src/telas`, e as rotas em `apps/plataforma/src/app`.
   - Abas, aviso de conflito e selos com forma em SVG ficam em `packages/ui`.

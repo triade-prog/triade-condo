@@ -10,13 +10,13 @@ import {
   Aviso, AvisoErro, Botao, CampoAreaTexto, CampoTexto, Carregando, camposComErro, chamarApi, classeBotao, Dialogo, ErroCarregar, Icone, Selo,
   textoDoErro, type ErroApi, type NomeIcone,
 } from "@triade/ui";
-import { diaHora } from "../pedidos/comum.tsx";
-import { QrCode } from "../comunicados/QrCode.tsx";
-import { useCarregar } from "../sessao.tsx";
-import type { Etiqueta, EtiquetaDetalhe, LinksQr } from "../tipos.ts";
+import { diaHora } from "./comum.tsx";
+import { QrCode } from "./QrCode.tsx";
+import { useAmbiente, useCarregar, naBase } from "./contexto.tsx";
+import type { Etiqueta, EtiquetaDetalhe, LinksQr } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
 import { enderecoEtiqueta } from "./ImprimirEtiquetas.tsx";
-import { esquecerLocais } from "../Locais.tsx";
+import { esquecerLocais } from "./Locais.tsx";
 
 /** Hoje mais n dias, como "AAAA-MM-DD", no relógio do aparelho. */
 function diasDepois(n: number): string {
@@ -28,7 +28,9 @@ const vezes = (n: number) => (n === 1 ? "1 vez" : `${n} vezes`);
 const numeroBonito = (n: string) => n.replace(/^\+55(\d{2})(\d{4,5})(\d{4})$/, "+55 $1 $2-$3");
 
 export function AbaLinksQr({ salvo }: PropsAba) {
-  const carga = useCarregar<LinksQr>("/v1/condominio/links-qr");
+  // As páginas do app (mural, manutenção, impressão) só abrem no app.
+  const noApp = useAmbiente().onde === "app";
+  const carga = useCarregar<LinksQr>(naBase("/links-qr"));
   const [nova, setNova] = useState(false);
   const [aberta, setAberta] = useState<string | null>(null);
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando os links…" />;
@@ -44,7 +46,7 @@ export function AbaLinksQr({ salvo }: PropsAba) {
         <ul className="divide-y divide-linha rounded-xl border border-linha">
           <Linha icone="megafone" titulo="Mural do prédio" sub={`Aberto ${vezes(l.mural.aberturas)} em 7 dias`}
             selo={l.mural.ligado ? <Selo tom="ok">Ligado</Selo> : <Selo tom="neutro">Desligado</Selo>}
-            acao={<Link href="/configuracoes?aba=comunicados" className="text-sm font-medium text-violeta-600 hover:underline">Mural e e-mail</Link>} />
+            acao={noApp ? <Link href="/configuracoes?aba=comunicados" className="text-sm font-medium text-violeta-600 hover:underline">Mural e e-mail</Link> : undefined} />
           <Linha icone="pin" titulo="Etiquetas por local"
             sub={`${emUso.length} em uso · abertas ${vezes(emUso.reduce((s, e) => s + e.aberturas7, 0))} em 7 dias`}
             selo={<Selo tom={emUso.length ? "ok" : "neutro"}>{emUso.length} em uso</Selo>} />
@@ -59,7 +61,7 @@ export function AbaLinksQr({ salvo }: PropsAba) {
           <ul className="grid gap-1 text-sm">
             {l.prestador.links.map((x) => (
               <li key={x.id}>
-                <Link href={`/manutencao/manutencao?id=${x.manutencaoId}`} className="text-violeta-600 hover:underline">{x.titulo}</Link>
+                {noApp ? <Link href={`/manutencao/manutencao?id=${x.manutencaoId}`} className="text-violeta-600 hover:underline">{x.titulo}</Link> : x.titulo}
                 <span className="text-tinta-suave"> · {x.para} · vale até {diaHora(x.expiraEm)}</span>
               </li>
             ))}
@@ -72,7 +74,7 @@ export function AbaLinksQr({ salvo }: PropsAba) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 id="lq-etiquetas" className="text-lg font-medium">Etiquetas por local</h3>
           <span className="flex flex-wrap gap-2">
-            {emUso.length ? <Link href="/etiquetas" target="_blank" className={classeBotao("contorno", "", "m")}><Icone nome="imprimir" />Imprimir etiquetas</Link> : null}
+            {emUso.length && noApp ? <Link href="/etiquetas" target="_blank" className={classeBotao("contorno", "", "m")}><Icone nome="imprimir" />Imprimir etiquetas</Link> : null}
             {l.podeEditar && l.numeroWhatsapp ? <Botao tamanho="m" onClick={() => setNova(true)}><Icone nome="mais" />Nova etiqueta</Botao> : null}
           </span>
         </div>
@@ -138,8 +140,8 @@ function FormEtiqueta({ etiqueta, aoFechar, aoSalvar }: { etiqueta?: Etiqueta; a
     setEnviando(true);
     const corpo = { ...v, recadoAte: v.recado.trim() ? v.recadoAte : null, ...(etiqueta ? { versao: etiqueta.versao } : {}) };
     const r = etiqueta
-      ? await chamarApi(`/v1/condominio/etiquetas/${etiqueta.id}`, { metodo: "PUT", corpo })
-      : await chamarApi("/v1/condominio/etiquetas", { corpo });
+      ? await chamarApi(naBase(`/etiquetas/${etiqueta.id}`), { metodo: "PUT", corpo })
+      : await chamarApi(naBase("/etiquetas"), { corpo });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
     aoSalvar(etiqueta ? "Etiqueta salva." : "Etiqueta criada. Imprima e cole no local.");
@@ -178,7 +180,8 @@ function FormEtiqueta({ etiqueta, aoFechar, aoSalvar }: { etiqueta?: Etiqueta; a
 
 /** A etiqueta aberta: QR, link, imprimir, alterar, trocar o código, desativar e o histórico. */
 function EtiquetaAberta({ id, aoFechar, aoMudar }: { id: string; aoFechar: () => void; aoMudar: (texto: string) => void }) {
-  const carga = useCarregar<EtiquetaDetalhe>(`/v1/condominio/etiquetas/${id}`);
+  const noApp = useAmbiente().onde === "app";
+  const carga = useCarregar<EtiquetaDetalhe>(naBase(`/etiquetas/${id}`));
   const [modo, setModo] = useState<"ver" | "editar" | "trocar" | "desativar">("ver");
   const [copiado, setCopiado] = useState(false);
   if (carga.estado !== "pronto") {
@@ -205,7 +208,7 @@ function EtiquetaAberta({ id, aoFechar, aoMudar }: { id: string; aoFechar: () =>
             <div className="grid min-w-0 flex-1 gap-2">
               <code className="rounded-lg border border-violeta-200 bg-violeta-50 px-3 py-2 text-[13px] break-all text-violeta-800">{link}</code>
               <span className="flex flex-wrap gap-2">
-                <Link href={`/etiquetas?ids=${e.id}&tamanho=1`} target="_blank" className={classeBotao("contorno", "", "m")}><Icone nome="imprimir" />Imprimir</Link>
+                {noApp ? <Link href={`/etiquetas?ids=${e.id}&tamanho=1`} target="_blank" className={classeBotao("contorno", "", "m")}><Icone nome="imprimir" />Imprimir</Link> : null}
                 <Botao variante="discreto" tamanho="m" onClick={() => { void navigator.clipboard?.writeText(link).catch(() => {}); setCopiado(true); }}>
                   <Icone nome="copiar" />{copiado ? "Link copiado" : "Copiar link"}
                 </Botao>
@@ -245,7 +248,7 @@ function MotivoEtiqueta({ e, acao, aoFechar, aoFeito }: { e: Etiqueta; acao: "tr
   async function enviar() {
     setErro(null);
     setEnviando(true);
-    const r = await chamarApi(`/v1/condominio/etiquetas/${e.id}/${acao === "trocar" ? "trocar-codigo" : "desativar"}`, { corpo: { versao: e.versao, motivo } });
+    const r = await chamarApi(naBase(`/etiquetas/${e.id}/${acao === "trocar" ? "trocar-codigo" : "desativar"}`), { corpo: { versao: e.versao, motivo } });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
     aoFeito(acao === "trocar" ? `Código da etiqueta ${e.rotulo} trocado. Imprima e cole a nova no mesmo lugar.` : `Etiqueta ${e.rotulo} desativada.`);

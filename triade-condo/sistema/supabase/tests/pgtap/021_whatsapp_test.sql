@@ -332,9 +332,9 @@ select is((select (plataforma_triar_whatsapp(ana, ipe, m.id, 'PEDIDO', null, pm.
 
 -- Configurações e avisos no WhatsApp de quem atende (W-11, W-12, F6.3).
 select is(pg_temp.motivo($$ select plataforma_definir_whatsapp(ana, ipe, (select versao from configuracao_condominio where condominio_id = ipe),
-  'Respondemos em até 2 horas, mesmo fora do horário de atendimento.', categoria_whatsapp(), prioridade_whatsapp(), 30) from ids, c $$),
+  'Respondemos em até 2 horas, mesmo fora do horário de atendimento.', categoria_whatsapp(), prioridade_whatsapp()) from ids, c $$),
   'PROMESSA_DE_PRAZO', 'W-12: a mensagem de fora do horário não promete prazo');
-select throws_ok($$ select plataforma_definir_whatsapp(gil, ipe, 1, 'Recebemos sua mensagem fora do horário.', null, null, 30) from ids, c $$,
+select throws_ok($$ select plataforma_definir_whatsapp(gil, ipe, 1, 'Recebemos sua mensagem fora do horário.', null, null) from ids, c $$,
   'TC401', null, 'só quem configura muda');
 select is(pg_temp.campos($$ select plataforma_meus_avisos_whatsapp(ana, ipe, null, '6199', array['PEDIDO_NOVO'], true) from ids, c $$),
   '["telefone"]', 'W-11: o celular de quem atende precisa ser válido');

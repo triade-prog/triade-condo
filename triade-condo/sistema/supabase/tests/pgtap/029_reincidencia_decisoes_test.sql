@@ -142,9 +142,9 @@ select is((select pg_temp.ligados(ana, p142) from ids, p2), array['REINCIDENCIA 
 -- "Não é" e a janela dos parecidos.
 select plataforma_descartar_parecido(bruna, ipe, pu_a, pu_b) from ids, c, p3;
 select is((select pg_temp.parecidos(ana, pu_a) from ids, p3), '{}'::text[], 'AT-18: "Não é" tira a sugestão do par');
-select is(pg_temp.campos($$ select plataforma_definir_parecidos(ana, ipe, pg_temp.vcfg(), 45) from ids, c $$), '["dias"]'::jsonb,
+select is(pg_temp.campos($$ select console_definir_parecidos(adm, ipe, pg_temp.vcfg(), 45, null) from ids, c $$), '["dias"]'::jsonb,
   'AT-18: a janela é de 30, 60, 90 ou 180 dias');
-select plataforma_definir_parecidos(ana, ipe, pg_temp.vcfg(), 30) from ids, c;
+select console_definir_parecidos(adm, ipe, pg_temp.vcfg(), 30, null) from ids, c;
 select is((select plataforma_configuracoes(ana, ipe) ->> 'parecidosDias' from ids, c), '30', 'AT-18: a janela muda nas Configurações');
 
 -- ---------------------------------------------------------------------------------------

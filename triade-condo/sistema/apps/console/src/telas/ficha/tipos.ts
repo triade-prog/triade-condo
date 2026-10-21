@@ -37,4 +37,6 @@ export interface PropsAba {
   pode: (acao: string) => boolean;
   recarregar: () => void;
   avisar: (r: Recado) => void;
+  /** Leva para outra aba da ficha (a etapa 4 abre a Configuração). */
+  irPara?: (aba: string) => void;
 }

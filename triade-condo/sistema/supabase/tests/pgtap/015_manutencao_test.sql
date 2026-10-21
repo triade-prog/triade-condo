@@ -123,7 +123,7 @@ select plataforma_situacao_manutencao(ana, ipe, bomba, pg_temp.vm(bomba), 'PENDE
 select is((select pendencia_tipo from manutencoes, m where id = bomba), 'PECA', 'MP-02: a pendência fica com o tipo');
 select is((select dados ->> 'para' from historico, m where entidade_id = bomba::text and acao = 'estado.mudou' order by id desc limit 1),
   'PENDENTE', 'MP-02: a mudança de situação vai para o histórico');
-select plataforma_salvar_etapa_manutencao(ana, ipe, null, null, 'Aguardando visita', 'EM_ANDAMENTO', null) from ids, c;
+select console_salvar_etapa_manutencao(adm, ipe, null, null, 'Aguardando visita', 'EM_ANDAMENTO', null, null) from ids, c;
 select is(pg_temp.campos($$ select plataforma_situacao_manutencao(ana, ipe, bomba, pg_temp.vm(bomba), 'PLANEJADA',
   (select id from etapas_manutencao where nome = 'Aguardando visita'), null, null) from ids, c, m $$), '["etapaId"]'::jsonb,
   'MP-02: a etapa combina com a situação');
@@ -131,8 +131,8 @@ select plataforma_situacao_manutencao(ana, ipe, bomba, pg_temp.vm(bomba), 'EM_AN
   (select id from etapas_manutencao where nome = 'Aguardando visita'), null, null) from ids, c, m;
 select is((select estado || '/' || (pendencia_tipo is null) from manutencoes, m where id = bomba), 'EM_ANDAMENTO/true',
   'MP-02: sair de pendente resolve a pendência');
-select throws_ok($$ select plataforma_salvar_etapa_manutencao(ana, ipe, (select id from etapas_manutencao where nome = 'Aguardando visita'), 1,
-  'Aguardando visita', 'PENDENTE', null) from ids, c $$, 'TC422', null, 'MP-02: a situação da etapa não muda');
+select throws_ok($$ select console_salvar_etapa_manutencao(adm, ipe, (select id from etapas_manutencao where nome = 'Aguardando visita'), 1,
+  'Aguardando visita', 'PENDENTE', null, null) from ids, c $$, 'TC422', null, 'MP-02: a situação da etapa não muda');
 
 -- Providências (MP-02).
 create temp table pv as select

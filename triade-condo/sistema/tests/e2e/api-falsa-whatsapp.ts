@@ -149,7 +149,7 @@ export async function rotasWhatsapp(route: Route, w: EstadoWhatsapp, caminho: st
     if (corpo.versao !== w.config.versao) return erro(route, 409, "VERSION_CONFLICT", {});
     if (PROMESSA.test(String(corpo.foraHorario))) return erro(route, 400, "VALIDATION_ERROR", { motivo: "PROMESSA_DE_PRAZO" });
     Object.assign(w.config, { foraHorario: corpo.foraHorario, categoriaId: corpo.categoriaId, prioridadeId: corpo.prioridadeId,
-      anexarMinutos: corpo.anexarMinutos, versao: w.config.versao + 1 });
+      versao: w.config.versao + 1 });
     return route.fulfill({ json: { versao: w.config.versao } });
   }
   if (caminho === "/v1/condominio/whatsapp/termo") {

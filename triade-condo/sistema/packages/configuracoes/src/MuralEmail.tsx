@@ -7,8 +7,9 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoTexto, camposComErro, chamarApi, classeBotao, Dialogo, Icone, textoDoErro, type ErroApi } from "@triade/ui";
-import { enderecoMural, QrCode } from "../comunicados/QrCode.tsx";
-import type { PlanoComunicacao } from "../tipos.ts";
+import { enderecoMural, QrCode } from "./QrCode.tsx";
+import type { PlanoComunicacao } from "./tipos.ts";
+import { naBase, useAmbiente } from "./contexto.tsx";
 
 function Chave({ id, rotulo, ajuda, marcado, aoMudar, desligado }: {
   id: string; rotulo: string; ajuda?: string; marcado: boolean; aoMudar: (v: boolean) => void; desligado?: boolean;
@@ -33,12 +34,14 @@ export function MuralEmail({ p, recarregar, salvo }: { p: PlanoComunicacao; reca
   const [copiado, setCopiado] = useState(false);
   const comErro = camposComErro(erro);
   const link = p.mural.codigo ? enderecoMural(p.mural.codigo) : null;
+  // Trocar o link e o cartaz são do condomínio, no app (CF-03).
+  const noApp = useAmbiente().onde === "app";
 
   async function salvar(ev: FormEvent) {
     ev.preventDefault();
     setErro(null);
     setEnviando(true);
-    const r = await chamarApi("/v1/condominio/mural-email", { metodo: "PUT", corpo: { ...v, versao: p.versao } });
+    const r = await chamarApi(naBase("/mural-email"), { metodo: "PUT", corpo: { ...v, versao: p.versao } });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
     recarregar();
@@ -67,8 +70,8 @@ export function MuralEmail({ p, recarregar, salvo }: { p: PlanoComunicacao; reca
               <code className="rounded-lg border border-violeta-200 bg-violeta-50 px-3 py-2 text-[13px] break-all text-violeta-800">{link}</code>
               <span className="flex flex-wrap gap-2">
                 <Botao variante="contorno" tamanho="m" onClick={() => void copiar()}><Icone nome="copiar" />{copiado ? "Link copiado" : "Copiar link"}</Botao>
-                <Link href="/mural/cartaz" target="_blank" className={classeBotao("contorno", "", "m")}><Icone nome="imprimir" />Cartaz com QR</Link>
-                {p.podeEditar ? <Botao variante="discreto" tamanho="m" onClick={() => setTrocar(true)}>Trocar link</Botao> : null}
+                {noApp ? <Link href="/mural/cartaz" target="_blank" className={classeBotao("contorno", "", "m")}><Icone nome="imprimir" />Cartaz com QR</Link> : null}
+                {p.podeEditar && noApp ? <Botao variante="discreto" tamanho="m" onClick={() => setTrocar(true)}>Trocar link</Botao> : null}
               </span>
               <span className="text-[13px] text-tinta-suave">
                 Aberto {p.mural.aberturas === 1 ? "1 vez" : `${p.mural.aberturas} vezes`} nos últimos 7 dias. Não sabemos quem abriu.
@@ -136,7 +139,7 @@ function TrocarLink({ aberto, versao, aoFechar, aoTrocar }: { aberto: boolean; v
   async function trocar() {
     setErro(null);
     setEnviando(true);
-    const r = await chamarApi("/v1/condominio/mural/trocar-link", { corpo: { versao, motivo } });
+    const r = await chamarApi(naBase("/mural/trocar-link"), { corpo: { versao, motivo } });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
     setMotivo("");

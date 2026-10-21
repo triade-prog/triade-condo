@@ -39,6 +39,12 @@ import {
   decidirModeloSchema,
   desconectarWhatsappSchema,
   editarModeloSchema,
+  ajusteAnexarSchema,
+  ajusteEtapaManutencaoSchema,
+  ajusteEtapaSchema,
+  ajusteFusoSchema,
+  ajusteParecidosSchema,
+  conferirParteSchema,
 } from "@triade/domain";
 import type { Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -46,6 +52,7 @@ import { registrar } from "../_shared/registro.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
+import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
 import { cifrarCredenciais, decifrarCredenciais, type ConectorWhatsapp, type CredenciaisWhatsapp } from "../_shared/whatsapp.ts";
 
 export interface DepsConsole extends DepsSessao {
@@ -96,14 +103,6 @@ interface LinhaHistorico {
   interno?: boolean;
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Id de rota: fora do formato, responde como não encontrado. */
-function idDaRota(c: Context, nome: string): string {
-  const id = c.req.param(nome);
-  if (!id || !UUID.test(id)) throw new ErroDominio("NOT_FOUND");
-  return id.toLowerCase();
-}
 
 function paginacao(c: Context): { p_antes: number | null; p_limite: number } {
   const antes = Number(c.req.query("antes"));
@@ -354,6 +353,55 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json({ versao: await rpc<number>("console_entregar_implantacao", { p_pessoa: pessoa(c), p_condominio: id, p_versao: d.versao, p_recado: d.recado }) });
   });
 
+  // Configuração na implantação (PI-04, CF-01, CF-09, CF-12): a aba Configuração da ficha. As
+  // partes do app passam pelas mesmas rotas e funções que a Plataforma usa; o banco só deixa
+  // mudar enquanto o cliente está em implantação. Fuso, etapas e janelas são ajustes técnicos,
+  // só daqui, com motivo depois da entrega. A fila de e-mail sai no próximo ciclo.
+  const cliente = (c: Context<VarsSessao>) => ({ p_pessoa: pessoa(c), p_condominio: idDaRota(c, "id") });
+  app.get("/v1/clientes/:id/configuracao", async (c) => c.json(await rpc("console_configuracao", cliente(c))));
+  app.post("/v1/clientes/:id/configuracao/conferir", async (c) => {
+    const d = await lerCorpo(c, conferirParteSchema);
+    return c.json(await rpc("console_conferir_parte", { ...cliente(c), p_parte: d.parte, p_nota: d.nota ?? null }));
+  });
+  rotasConfiguracao(app, "/v1/clientes/:id/condominio", cliente, deps.banco);
+
+  app.put("/v1/clientes/:id/condominio/fuso", async (c) => {
+    const d = await lerCorpo(c, ajusteFusoSchema);
+    return c.json({ versao: await rpc<number>("console_definir_fuso", { ...cliente(c), p_versao: d.versao, p_fuso: d.fuso, p_motivo: d.motivo ?? null }) });
+  });
+  app.put("/v1/clientes/:id/condominio/regras-parecidos", async (c) => {
+    const d = await lerCorpo(c, ajusteParecidosSchema);
+    return c.json({
+      versao: await rpc<number>("console_definir_parecidos", { ...cliente(c), p_versao: d.versao, p_dias: d.dias, p_motivo: d.motivo ?? null }),
+    });
+  });
+  app.put("/v1/clientes/:id/condominio/whatsapp/anexar", async (c) => {
+    const d = await lerCorpo(c, ajusteAnexarSchema);
+    return c.json({
+      versao: await rpc<number>("console_definir_anexar", { ...cliente(c), p_versao: d.versao, p_minutos: d.minutos, p_motivo: d.motivo ?? null }),
+    });
+  });
+  const salvarEtapaPedido = async (c: Context<VarsSessao>, etapa: string | null) => {
+    const d = await lerCorpo(c, ajusteEtapaSchema);
+    if (etapa && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc<{ id: string; versao: number }>("console_salvar_etapa_pedido", {
+      ...cliente(c), p_id: etapa, p_versao: etapa ? d.versao : null, p_nome: d.nome, p_situacao: d.situacao ?? null,
+      p_categoria: d.categoriaId ?? null, p_pausa_prazo: d.pausaPrazo ?? null, p_ativa: d.ativa ?? null, p_motivo: d.motivo ?? null,
+    });
+  };
+  app.post("/v1/clientes/:id/condominio/etapas", async (c) => c.json(await salvarEtapaPedido(c, null), 201));
+  app.put("/v1/clientes/:id/condominio/etapas/:etapa", async (c) => c.json(await salvarEtapaPedido(c, idDaRota(c, "etapa"))));
+  const salvarEtapaManutencao = async (c: Context<VarsSessao>, etapa: string | null) => {
+    const d = await lerCorpo(c, ajusteEtapaManutencaoSchema);
+    if (etapa && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc<{ id: string; versao: number }>("console_salvar_etapa_manutencao", {
+      ...cliente(c), p_id: etapa, p_versao: etapa ? d.versao : null, p_nome: d.nome, p_situacao: d.situacao ?? null,
+      p_ativa: d.ativa ?? null, p_motivo: d.motivo ?? null,
+    });
+  };
+  app.post("/v1/clientes/:id/condominio/etapas-manutencao", async (c) => c.json(await salvarEtapaManutencao(c, null), 201));
+  app.put("/v1/clientes/:id/condominio/etapas-manutencao/:etapa", async (c) => c.json(await salvarEtapaManutencao(c, idDaRota(c, "etapa"))));
+
   // Troca de síndico (CT-01). Confere a permissão antes do convite; a troca é uma só operação no banco.
   app.post("/v1/clientes/:id/troca-sindico", async (c) => {
     const id = idDaRota(c, "id");
@@ -510,7 +558,6 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     if (!deps.whatsapp) throw new ErroDominio("UPSTREAM_UNAVAILABLE");
     return deps.whatsapp;
   };
-  const cliente = (c: Context<VarsSessao>) => ({ p_pessoa: pessoa(c), p_condominio: idDaRota(c, "id") });
   interface AcessoWhatsapp { instancia: string; credenciais: string; numero: string | null; situacao: string }
   async function credenciais(c: Context<VarsSessao>, para: "CONSULTAR" | "CONECTAR" | "DESCONECTAR"): Promise<CredenciaisWhatsapp & { numero: string | null }> {
     const a = await rpc<AcessoWhatsapp>("console_whatsapp_acesso", { ...cliente(c), p_para: para });

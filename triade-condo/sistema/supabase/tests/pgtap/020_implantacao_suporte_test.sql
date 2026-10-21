@@ -3,7 +3,7 @@
 -- de acesso sem ninguém ver senha; acesso excepcional aprovado pelo síndico; chamados de
 -- suporte técnico com nota interna que o cliente nunca vê.
 begin;
-select plan(138);
+select plan(139);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -113,6 +113,8 @@ select is(pg_temp.motivo($$ select console_entregar_implantacao(impl, ipe, 1, 'P
   'PI-04: não entrega com etapa aberta');
 select is(pg_temp.motivo($$ select console_mudar_estagio(adm, ipe, 1, 'ATIVO', null) from ids, c $$), 'USE_ENTREGA',
   'PI-04: com roteiro em andamento, o cliente só fica ativo pela entrega');
+select lives_ok($$ select console_conferir_parte(impl, ipe, p, null) from ids, c, unnest(partes_da_configuracao()) p $$,
+  'PI-04: a implantação confere as 11 partes da configuração');
 select lives_ok($$
   select console_salvar_etapa(impl, ipe, 2, pg_temp.ve(2), 'REALIZADA', impl, null, 'Atas, regimento e quem responde hoje.', null, null, null),
          console_salvar_etapa(impl, ipe, 3, pg_temp.ve(3), 'NAO_SE_APLICA', null, null, null, 'Documentos já estavam guardados.', null, null),

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Carregando } from "@triade/ui";
-import { ImprimirEtiquetas } from "@/telas/config/ImprimirEtiquetas";
+import { ImprimirEtiquetas } from "@triade/configuracoes";
 
 export const metadata: Metadata = { title: "Etiquetas para imprimir" };
 

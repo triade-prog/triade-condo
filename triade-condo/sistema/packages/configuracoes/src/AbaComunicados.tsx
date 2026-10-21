@@ -6,13 +6,13 @@
 import { useState, type FormEvent } from "react";
 import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
 import { AvisoErro, Botao, CampoAreaTexto, CampoTexto, camposComErro, Carregando, chamarApi, ErroCarregar, textoDoErro, type ErroApi } from "@triade/ui";
-import { useCarregar } from "../sessao.tsx";
-import type { PlanoComunicacao } from "../tipos.ts";
+import { useCarregar, naBase } from "./contexto.tsx";
+import type { PlanoComunicacao } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
 import { MuralEmail } from "./MuralEmail.tsx";
 
 export function AbaComunicados({ salvo }: PropsAba) {
-  const carga = useCarregar<PlanoComunicacao>("/v1/condominio/plano-comunicacao");
+  const carga = useCarregar<PlanoComunicacao>(naBase("/plano-comunicacao"));
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o plano de comunicação…" />;
   if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   return (
@@ -33,7 +33,7 @@ function Formulario({ p, recarregar, salvo }: { p: PlanoComunicacao; recarregar:
     ev.preventDefault();
     setErro(null);
     setEnviando(true);
-    const r = await chamarApi("/v1/condominio/plano-comunicacao", { metodo: "PUT", corpo: { ...v, versao: p.versao, plano: v.plano || null } });
+    const r = await chamarApi(naBase("/plano-comunicacao"), { metodo: "PUT", corpo: { ...v, versao: p.versao, plano: v.plano || null } });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
     recarregar();

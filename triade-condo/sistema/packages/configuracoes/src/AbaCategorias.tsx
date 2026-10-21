@@ -4,9 +4,10 @@
 
 import { useState } from "react";
 import { AvisoErro, Botao, chamarApi, Selo, textoDoErro, type ErroApi } from "@triade/ui";
-import { Janela, type Campo, type Valores } from "../Janela.tsx";
-import type { Configuracoes } from "../tipos.ts";
+import { Janela, type Campo, type Valores } from "./Janela.tsx";
+import type { Configuracoes } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
+import { naBase } from "./contexto.tsx";
 
 type Categoria = Configuracoes["categorias"][number];
 type Prioridade = Configuracoes["prioridades"][number];
@@ -30,7 +31,7 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
   const fechar = () => setEdicao(null);
 
   async function alternar(c: Categoria) {
-    const r = await chamarApi(`/v1/condominio/categorias/${c.id}`, { metodo: "PUT", corpo: { versao: c.versao, nome: c.nome, ativa: !c.ativa } });
+    const r = await chamarApi(naBase(`/categorias/${c.id}`), { metodo: "PUT", corpo: { versao: c.versao, nome: c.nome, ativa: !c.ativa } });
     if (r.ok) salvo(c.ativa ? `Categoria ${c.nome} desativada. Os pedidos antigos continuam com ela.` : `Categoria ${c.nome} reativada.`);
     else setFalha(r.erro);
   }
@@ -42,8 +43,8 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
       ? { nome: v.nome, ...(edicao.item ? { versao: edicao.item.versao, ativa: edicao.item.ativa } : {}) }
       : { nome: v.nome, significado: v.significado, ...(edicao.item ? { versao: edicao.item.versao, ativa: v.ativa === true } : {}) };
     const r = edicao.item
-      ? await chamarApi(`/v1/condominio/${rota}/${edicao.item.id}`, { metodo: "PUT", corpo })
-      : await chamarApi(`/v1/condominio/${rota}`, { corpo });
+      ? await chamarApi(naBase(`/${rota}/${edicao.item.id}`), { metodo: "PUT", corpo })
+      : await chamarApi(naBase(`/${rota}`), { corpo });
     if (r.ok) { fechar(); salvo(edicao.tipo === "categoria" ? "Categoria salva." : "Prioridade salva."); }
     return r;
   }

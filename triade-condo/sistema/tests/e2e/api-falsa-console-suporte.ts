@@ -68,7 +68,8 @@ const equipe = [{ pessoaId: CAROLINA, nome: "Carolina" }, { pessoaId: DIEGO, nom
 const nomeDe = (id?: string | null) => equipe.find((p) => p.pessoaId === id)?.nome;
 
 export async function rotasSuporteConsole(route: Route, est: EstadoSuporteConsole, caminho: string, metodo: string, corpo: Record<string, unknown>,
-  cliente: { id: string; nome: string; sindicos: { vinculoId: string; nome: string; desde: string; versao?: number; pessoaId: string }[]; estagio: () => string; ativar: () => void } | undefined,
+  cliente: { id: string; nome: string; sindicos: { vinculoId: string; nome: string; desde: string; versao?: number; pessoaId: string }[]; estagio: () => string; ativar: () => void;
+    configuracao?: () => { conferidas: number; total: number; faltando: string[] } } | undefined,
   url: URL): Promise<unknown> {
   const faltando = () => [
     ...(est.etapas.some((e) => e.chave !== "ENTREGA" && e.situacao !== "REALIZADA" && e.situacao !== "NAO_SE_APLICA") ? ["ETAPAS_ABERTAS"] : []),
@@ -106,12 +107,16 @@ export async function rotasSuporteConsole(route: Route, est: EstadoSuporteConsol
       entrega: { faltando: faltando(), sindicos: cliente.sindicos.length, pendenciasClienteVencidas: est.pendencias.filter((p) => !p.resolvidaEm && p.vencida && p.comQuem === "CLIENTE").length,
         ...(est.pedidoTeste ? { pedidoTeste: { id: "p", protocolo: "2026-0001", encerradoEm: agora() } } : {}) },
       pode: { editar: !est.entregue, entregar: !est.entregue },
+      ...(cliente.configuracao && !est.entregue ? { configuracao: cliente.configuracao() } : {}),
     } });
   }
   const et = /^\/implantacao\/etapas\/(\d+)$/.exec(resto);
   if (et) {
     const e = est.etapas[Number(et[1]) - 1]!;
     if (corpo.situacao === "REALIZADA" && !String(corpo.feito ?? "").trim()) return erro(route, 400, "VALIDATION_ERROR", { campos: ["feito"] });
+    if (e.chave === "CONFIGURACAO" && corpo.situacao === "REALIZADA" && cliente.configuracao?.().faltando.length) {
+      return erro(route, 422, "VALIDATION_ERROR", { motivo: "CONFIGURACAO_SEM_CONFERIR" });
+    }
     if (e.chave === "APRESENTACAO" && corpo.situacao === "REALIZADA" && !corpo.modalidade) return erro(route, 400, "VALIDATION_ERROR", { campos: ["modalidade"] });
     Object.assign(e, { situacao: corpo.situacao, responsavelId: corpo.responsavelId ?? undefined, responsavel: nomeDe(corpo.responsavelId as string),
       feito: corpo.feito || undefined, motivo: corpo.motivo || undefined, modalidade: corpo.modalidade ?? undefined, versao: e.versao + 1 });

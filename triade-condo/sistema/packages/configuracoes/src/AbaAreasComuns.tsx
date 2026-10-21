@@ -10,9 +10,9 @@ import {
   AvisoErro, Botao, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio,
   type ErroApi,
 } from "@triade/ui";
-import { esquecerLocais } from "../Locais.tsx";
-import { useCarregar } from "../sessao.tsx";
-import type { AreaComumTela, AreasComuns } from "../tipos.ts";
+import { esquecerLocais } from "./Locais.tsx";
+import { useCarregar, naBase } from "./contexto.tsx";
+import type { AreaComumTela, AreasComuns } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
 
 const NOVA: Omit<AreaComumTela, "id" | "versao"> = {
@@ -21,7 +21,7 @@ const NOVA: Omit<AreaComumTela, "id" | "versao"> = {
 };
 
 export function AbaAreasComuns({ salvo }: PropsAba) {
-  const carga = useCarregar<AreasComuns>("/v1/condominio/areas-comuns");
+  const carga = useCarregar<AreasComuns>(naBase("/areas-comuns"));
   const [aberta, setAberta] = useState<AreaComumTela | "nova" | null>(null);
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando as áreas comuns…" />;
   if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
@@ -108,8 +108,8 @@ function FormArea({ area, documentos, pode, aoFechar, aoSalvar }: {
       podeProprietarioMorador: v.podeProprietarioMorador, podeInquilino: v.podeInquilino, podeProprietarioAusente: v.podeProprietarioAusente,
     };
     const r = area
-      ? await chamarApi(`/v1/condominio/areas-comuns/${area.id}`, { metodo: "PUT", corpo })
-      : await chamarApi("/v1/condominio/areas-comuns", { corpo });
+      ? await chamarApi(naBase(`/areas-comuns/${area.id}`), { metodo: "PUT", corpo })
+      : await chamarApi(naBase("/areas-comuns"), { corpo });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
     const nome = v.nome.trim();

@@ -10,13 +10,17 @@ import {
   formatarData,
   MODALIDADES_APRESENTACAO,
   mostrarDataSemHora,
+  PARTES_CONFIGURACAO,
   RECADO_ENTREGA,
   SITUACOES_ETAPA_IMPLANTACAO,
+  textoEtapaConfiguracao,
+  type ParteConfiguracao,
 } from "@triade/domain";
 import {
   Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar,
   FaixaInterna, IconeMarca, Selo, textoDoErro, Vazio, type ErroApi, type Tom,
 } from "@triade/ui";
+import type { AreasComuns, Configuracoes } from "@triade/configuracoes";
 import { useCarregar } from "../sessao.tsx";
 import type { PropsAba } from "./tipos.ts";
 
@@ -71,6 +75,8 @@ export interface Implantacao {
     pendenciasClienteVencidas: number;
   };
   pode?: { editar: boolean; entregar: boolean };
+  /** Andamento da aba Configuração na etapa 4 (PI-04). */
+  configuracao?: { conferidas: number; total: number; faltando: ParteConfiguracao[] };
 }
 
 const TOM_ETAPA: Record<string, Tom> = { PREPARADA: "neutro", PENDENTE: "atencao", REALIZADA: "ok", NAO_SE_APLICA: "neutro" };
@@ -96,7 +102,19 @@ function EditarEtapa({ condominio, etapa, equipe, aoFechar, aoSalvar }: {
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const apresentacao = etapa.chave === "APRESENTACAO";
-  const situacoes = Object.entries(SITUACOES_ETAPA_IMPLANTACAO).filter(([k]) => !(etapa.chave === "PEDIDO_TESTE" && k === "NAO_SE_APLICA"));
+  const configuracao = etapa.chave === "CONFIGURACAO";
+  // A configuração sempre se aplica, e "o que foi feito" vem com o resumo dela (decisão 4).
+  const situacoes = Object.entries(SITUACOES_ETAPA_IMPLANTACAO)
+    .filter(([k]) => !((etapa.chave === "PEDIDO_TESTE" || configuracao) && k === "NAO_SE_APLICA"));
+  const config = useCarregar<Configuracoes>(configuracao ? `/v1/clientes/${condominio}/condominio/configuracoes` : null);
+  const areas = useCarregar<AreasComuns>(configuracao ? `/v1/clientes/${condominio}/condominio/areas-comuns` : null);
+  const resumo = config.estado === "pronto" && areas.estado === "pronto"
+    ? textoEtapaConfiguracao({ nome: "", ...config.dados, areas: areas.dados.areas }) : null;
+  const [preenchido, setPreenchido] = useState(false);
+  if (resumo && !preenchido) {
+    setPreenchido(true);
+    if (!feito) setFeito(resumo);
+  }
 
   async function salvar(ev: FormEvent) {
     ev.preventDefault();
@@ -270,7 +288,7 @@ function Entregar({ condominio, nome, dados, aoFechar, aoEntregar }: {
   );
 }
 
-export function AbaImplantacao({ ficha, recarregar, avisar }: PropsAba) {
+export function AbaImplantacao({ ficha, recarregar, avisar, irPara }: PropsAba) {
   const carga = useCarregar<Implantacao>(`/v1/clientes/${ficha.condominio.id}/implantacao`);
   const [etapa, setEtapa] = useState<Etapa | null>(null);
   const [pendencia, setPendencia] = useState<Pendencia | "nova" | null>(null);
@@ -332,6 +350,15 @@ export function AbaImplantacao({ ficha, recarregar, avisar }: PropsAba) {
                   </button>
                 ) : <span className="font-medium"><span className="sr-only">Etapa {e.numero}: </span>{e.titulo}</span>}
                 <span className="block text-xs text-tinta-suave">{detalhe || e.descricao}</span>
+                {e.chave === "CONFIGURACAO" && e.situacao !== "REALIZADA" && d.configuracao ? (
+                  <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                    <Selo tom={d.configuracao.faltando.length ? "andamento" : "ok"}>{d.configuracao.conferidas} de {d.configuracao.total} conferidas</Selo>
+                    {d.configuracao.faltando.length ? (
+                      <span className="text-tinta-suave">Falta conferir: {d.configuracao.faltando.map((x) => PARTES_CONFIGURACAO[x].nome).join(", ")}.</span>
+                    ) : <span className="text-tinta-suave">Tudo conferido: pode marcar como realizada.</span>}
+                    {irPara ? <button type="button" className="font-medium text-violeta-600 hover:underline" onClick={() => irPara("configuracao")}>Abrir a configuração</button> : null}
+                  </span>
+                ) : null}
               </span>
               {e.chave === "ENTREGA" && e.situacao !== "REALIZADA" ? null : <Selo tom={TOM_ETAPA[e.situacao]}>{SITUACOES_ETAPA_IMPLANTACAO[e.situacao]}</Selo>}
             </li>

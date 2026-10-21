@@ -6,15 +6,15 @@
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Aviso, Botao, Carregando, ErroCarregar, Logo } from "@triade/ui";
-import { QrCode } from "../comunicados/QrCode.tsx";
-import { useCarregar } from "../sessao.tsx";
-import type { Etiqueta, LinksQr } from "../tipos.ts";
+import { QrCode } from "./QrCode.tsx";
+import { enderecoPlataforma, useCarregar, naBase } from "./contexto.tsx";
+import type { Etiqueta, LinksQr } from "./tipos.ts";
 
-export const enderecoEtiqueta = (codigo: string) => `${typeof window === "undefined" ? "" : window.location.origin}/l/${codigo}`;
+export const enderecoEtiqueta = (codigo: string) => enderecoPlataforma(`/l/${codigo}`);
 
 export function ImprimirEtiquetas() {
   const busca = useSearchParams();
-  const carga = useCarregar<LinksQr>("/v1/condominio/links-qr");
+  const carga = useCarregar<LinksQr>(naBase("/links-qr"));
   const [grande, setGrande] = useState(busca.get("tamanho") === "1");
   if (carga.estado === "carregando") return <main className="mx-auto max-w-3xl p-8"><Carregando rotulo="Preparando as etiquetas…" /></main>;
   if (carga.estado === "erro") return <main className="mx-auto max-w-3xl p-8"><ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></main>;

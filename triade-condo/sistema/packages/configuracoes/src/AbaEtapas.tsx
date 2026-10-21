@@ -1,20 +1,23 @@
 "use client";
 // Etapas e modelos de resposta (AT-05, CF-09, AT-25). Toda etapa pertence a aberto, em
 // andamento ou encerrado, e isso não muda depois; pode valer para todos os pedidos ou para
-// uma categoria, e pode pausar o prazo (ex.: aguardando o morador).
+// uma categoria, e pode pausar o prazo (ex.: aguardando o morador). As etapas são ajuste da
+// TRÍADE (CF-09, PI-04): no app ficam em leitura; os modelos de resposta, o síndico ajusta.
 
 import { useState } from "react";
 import { SITUACOES_ETAPA } from "@triade/domain";
 import { Botao, chamarApi, Selo } from "@triade/ui";
-import { Janela, type Campo, type Valores } from "../Janela.tsx";
-import type { Configuracoes } from "../tipos.ts";
+import { Janela, type Campo, type Valores } from "./Janela.tsx";
+import type { Configuracoes } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
+import { campoMotivo, FaixaTriade } from "./tecnica.tsx";
+import { naBase } from "./contexto.tsx";
 
 type Etapa = Configuracoes["etapas"][number];
 type Modelo = Configuracoes["modelos"][number];
 type Edicao = { tipo: "etapa"; item: Etapa | null } | { tipo: "modelo"; item: Modelo | null } | null;
 
-export function AbaEtapas({ config, pode, recarregar, salvo }: PropsAba) {
+export function AbaEtapas({ config, pode, recarregar, salvo, tecnica }: PropsAba) {
   const [edicao, setEdicao] = useState<Edicao>(null);
   const fechar = () => setEdicao(null);
   const nomeCategoria = (id: string | null) => config.categorias.find((c) => c.id === id)?.nome;
@@ -44,6 +47,7 @@ export function AbaEtapas({ config, pode, recarregar, salvo }: PropsAba) {
       { id: "pausaPrazo", rotulo: "Pausa o prazo enquanto o pedido estiver nesta etapa", tipo: "caixa", desligado: encerrado,
         ajuda: "Use quando a espera não depende do condomínio (ex.: aguardando o morador)." },
       ...(nova ? [] : [{ id: "ativa", rotulo: "Ativa", tipo: "caixa", ajuda: "Desativada não recebe pedidos novos." } as Campo]),
+      ...(tecnica.motivo ? [campoMotivo] : []),
     ];
   }
 
@@ -53,7 +57,8 @@ export function AbaEtapas({ config, pode, recarregar, salvo }: PropsAba) {
       return { titulo: m?.titulo ?? "", texto: m?.texto ?? "", categoriaId: m?.categoriaId ?? "", ativo: m?.ativo ?? true };
     }
     const e = edicao?.item;
-    return { nome: e?.nome ?? "", situacao: e?.situacao ?? "EM_ANDAMENTO", categoriaId: e?.categoriaId ?? "", pausaPrazo: e?.pausaPrazo ?? false, ativa: e?.ativa ?? true };
+    return { nome: e?.nome ?? "", situacao: e?.situacao ?? "EM_ANDAMENTO", categoriaId: e?.categoriaId ?? "", pausaPrazo: e?.pausaPrazo ?? false, ativa: e?.ativa ?? true,
+             motivo: "" };
   }
 
   async function salvar(v: Valores) {
@@ -65,14 +70,16 @@ export function AbaEtapas({ config, pode, recarregar, salvo }: PropsAba) {
       corpo = { titulo: v.titulo, texto: v.texto, categoriaId: v.categoriaId || null, ...(m ? { versao: m.versao, ativo: v.ativo === true } : {}) };
     } else if (edicao.item) {
       const e = edicao.item;
-      corpo = { versao: e.versao, nome: v.nome, pausaPrazo: e.situacao === "ENCERRADO" ? false : v.pausaPrazo === true, ativa: v.ativa === true };
+      corpo = { versao: e.versao, nome: v.nome, pausaPrazo: e.situacao === "ENCERRADO" ? false : v.pausaPrazo === true, ativa: v.ativa === true,
+                motivo: v.motivo || undefined };
     } else {
-      corpo = { nome: v.nome, situacao: v.situacao, categoriaId: v.categoriaId || null, pausaPrazo: v.situacao === "ENCERRADO" ? false : v.pausaPrazo === true };
+      corpo = { nome: v.nome, situacao: v.situacao, categoriaId: v.categoriaId || null, pausaPrazo: v.situacao === "ENCERRADO" ? false : v.pausaPrazo === true,
+                motivo: v.motivo || undefined };
     }
     const rota = edicao.tipo === "modelo" ? "modelos" : "etapas";
     const r = item
-      ? await chamarApi(`/v1/condominio/${rota}/${item.id}`, { metodo: "PUT", corpo })
-      : await chamarApi(`/v1/condominio/${rota}`, { corpo });
+      ? await chamarApi(naBase(`/${rota}/${item.id}`), { metodo: "PUT", corpo })
+      : await chamarApi(naBase(`/${rota}`), { corpo });
     if (r.ok) { fechar(); salvo(edicao.tipo === "modelo" ? "Modelo de resposta salvo." : "Etapa salva."); }
     return r;
   }
@@ -81,9 +88,13 @@ export function AbaEtapas({ config, pode, recarregar, salvo }: PropsAba) {
     <div className="grid gap-8 lg:grid-cols-2">
       <section aria-labelledby="t-etapas" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="t-etapas" className="text-lg font-medium">Etapas</h2>
-          {pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "etapa", item: null })}>+ Etapa</Botao> : null}
+          <h2 id="t-etapas" className="flex flex-wrap items-center gap-2 text-lg font-medium">Etapas <Selo tom="neutro">Só a TRÍADE</Selo></h2>
+          {tecnica.pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "etapa", item: null })}>+ Etapa</Botao> : null}
         </div>
+        {tecnica.pode ? null : (
+          <FaixaTriade porque="As etapas mexem no prazo e no histórico" parte="Etapas dos pedidos"
+            valor={`${config.etapas.filter((e) => e.ativa).length} etapas ativas`} />
+        )}
         {(Object.keys(SITUACOES_ETAPA) as (keyof typeof SITUACOES_ETAPA)[]).map((sit) => (
           <div key={sit} className="grid gap-1">
             <h3 className="text-xs font-semibold tracking-wide text-tinta-suave uppercase">{SITUACOES_ETAPA[sit]}</h3>
@@ -96,7 +107,7 @@ export function AbaEtapas({ config, pode, recarregar, salvo }: PropsAba) {
                     {e.categoriaId ? <Selo tom="info">{nomeCategoria(e.categoriaId) ?? "Categoria"}</Selo> : null}
                     {e.ativa ? null : <Selo tom="neutro">Desativada</Selo>}
                   </span>
-                  {pode ? <Botao variante="discreto" onClick={() => setEdicao({ tipo: "etapa", item: e })} aria-label={`Editar a etapa ${e.nome}`}>Editar</Botao> : null}
+                  {tecnica.pode ? <Botao variante="discreto" onClick={() => setEdicao({ tipo: "etapa", item: e })} aria-label={`Editar a etapa ${e.nome}`}>Editar</Botao> : null}
                 </li>
               ))}
             </ul>

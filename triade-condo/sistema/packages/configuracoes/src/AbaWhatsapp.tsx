@@ -4,13 +4,15 @@
 // prometer prazo, o aviso fixo contra golpes, a categoria e a prioridade do pedido que chega pelo
 // WhatsApp e quanto tempo as mensagens seguintes entram nele. Cada pessoa liga os próprios avisos
 // no WhatsApp dela. A conexão (QR, credenciais) fica só no Console. Quem cuida das quedas do número
-// (W-17): sem escolha, o síndico.
+// (W-17): sem escolha, o síndico. O tempo de anexar é ajuste da TRÍADE (CF-09, PI-04); o termo e
+// os avisos de cada pessoa são só do condomínio, e o Console mostra só a situação (CF-03).
 
 import { useState, type FormEvent } from "react";
 import { AVISOS_NO_WHATSAPP, MINUTOS_ANEXAR, prometePrazo, type AvisoNoWhatsapp } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Carregando, chamarApi, ErroCarregar, textoDoErro, type ErroApi } from "@triade/ui";
-import { useCarregar, usePlataforma } from "../sessao.tsx";
-import { SituacaoDaConexao, type Conexao } from "../whatsapp/Whatsapp.tsx";
+import { useAmbiente, useCarregar, naBase } from "./contexto.tsx";
+import { AjusteTecnico, type Tecnica } from "./tecnica.tsx";
+import { SituacaoDaConexao, type Conexao } from "./conexao.tsx";
 
 interface ConfigWhatsapp {
   numero: string | null;
@@ -22,14 +24,14 @@ interface ConfigWhatsapp {
   meusAvisos?: { telefone: string; tipos: AvisoNoWhatsapp[]; ligado: boolean; versao: number };
   quedas?: { pessoaId?: string; quemCuida?: string };
   pessoasQuedas?: { id: string; nome: string; sindico: boolean }[];
-  pode: { editar: boolean; aceitarTermo: boolean };
+  pode: { editar: boolean; tecnica?: boolean; aceitarTermo: boolean };
 }
 
 function Termo({ aoAceitar }: { aoAceitar: () => void }) {
   const [erro, setErro] = useState<ErroApi | null>(null);
   async function aceitar() {
     setErro(null);
-    const r = await chamarApi("/v1/condominio/whatsapp/termo", { corpo: {} });
+    const r = await chamarApi(naBase("/whatsapp/termo"), { corpo: {} });
     if (!r.ok) return setErro(r.erro);
     aoAceitar();
   }
@@ -52,15 +54,14 @@ function Mensagens({ d, aoSalvar }: { d: ConfigWhatsapp; aoSalvar: (texto: strin
   const [fora, setFora] = useState(d.config.foraHorario);
   const [categoria, setCategoria] = useState(d.config.categoriaId);
   const [prioridade, setPrioridade] = useState(d.config.prioridadeId);
-  const [anexar, setAnexar] = useState(d.config.anexarMinutos);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const promessa = prometePrazo(fora);
 
   async function salvar(ev: FormEvent) {
     ev.preventDefault();
     setErro(null);
-    const r = await chamarApi("/v1/condominio/whatsapp/config", {
-      metodo: "PUT", corpo: { versao: d.config.versao, foraHorario: fora, categoriaId: categoria, prioridadeId: prioridade, anexarMinutos: anexar },
+    const r = await chamarApi(naBase("/whatsapp/config"), {
+      metodo: "PUT", corpo: { versao: d.config.versao, foraHorario: fora, categoriaId: categoria, prioridadeId: prioridade },
     });
     if (!r.ok) return setErro(r.erro);
     aoSalvar("Configurações do WhatsApp salvas.");
@@ -85,14 +86,6 @@ function Mensagens({ d, aoSalvar }: { d: ConfigWhatsapp; aoSalvar: (texto: strin
         <CampoSelecao id="zap-prioridade" rotulo="Prioridade" value={prioridade} disabled={!d.pode.editar}
           onChange={(e) => setPrioridade(e.target.value)} opcoes={d.prioridades.map((p) => ({ valor: p.id, texto: p.nome }))} />
       </div>
-      <fieldset className="grid gap-2">
-        <legend className="mb-1 text-sm font-medium">Anexar ao mesmo pedido o que chegar por</legend>
-        <div className="trilho flex-wrap">
-          {MINUTOS_ANEXAR.map((m) => (
-            <button key={m} type="button" className="chip" aria-pressed={anexar === m} disabled={!d.pode.editar} onClick={() => setAnexar(m)}>{m} min</button>
-          ))}
-        </div>
-      </fieldset>
       <p className="text-xs text-tinta-suave">Quem atende reclassifica cada pedido. O responsável é o padrão da fila (Pessoas e acesso).</p>
       {d.pode.editar ? <div className="flex justify-end"><Botao type="submit" disabled={promessa}>Salvar</Botao></div> : null}
     </form>
@@ -107,7 +100,7 @@ function QuemCuidaDasQuedas({ d, aoSalvar }: { d: ConfigWhatsapp; aoSalvar: (tex
   async function salvar(ev: FormEvent) {
     ev.preventDefault();
     setErro(null);
-    const r = await chamarApi("/v1/condominio/whatsapp/config/quedas", { metodo: "PUT", corpo: { versao: d.config.versao, pessoaId: pessoa || null } });
+    const r = await chamarApi(naBase("/whatsapp/config/quedas"), { metodo: "PUT", corpo: { versao: d.config.versao, pessoaId: pessoa || null } });
     if (!r.ok) return setErro(r.erro);
     aoSalvar(pessoa ? `${pessoas.find((x) => x.id === pessoa)?.nome ?? "A pessoa escolhida"} cuida das quedas do WhatsApp.` : "O síndico cuida das quedas do WhatsApp.");
   }
@@ -138,7 +131,7 @@ function MeusAvisos({ d, aoSalvar }: { d: ConfigWhatsapp; aoSalvar: (texto: stri
   async function salvar(ev: FormEvent) {
     ev.preventDefault();
     setErro(null);
-    const r = await chamarApi("/v1/condominio/whatsapp/meus-avisos", {
+    const r = await chamarApi(naBase("/whatsapp/meus-avisos"), {
       metodo: "PUT", corpo: { versao: d.meusAvisos?.versao ?? null, telefone: telefone.replace(/[\s()-]/g, ""), tipos, ligado },
     });
     if (!r.ok) return setErro(r.erro);
@@ -172,9 +165,9 @@ function MeusAvisos({ d, aoSalvar }: { d: ConfigWhatsapp; aoSalvar: (texto: stri
   );
 }
 
-export function AbaWhatsapp({ aoSalvar }: { aoSalvar: (texto: string) => void }) {
-  const { atualizar } = usePlataforma();
-  const carga = useCarregar<ConfigWhatsapp>("/v1/condominio/whatsapp/config");
+export function AbaWhatsapp({ aoSalvar, tecnica }: { aoSalvar: (texto: string) => void; tecnica: Tecnica }) {
+  const { onde, aoMudar } = useAmbiente();
+  const carga = useCarregar<ConfigWhatsapp>(naBase("/whatsapp/config"));
   const [recado, setRecado] = useState<string | null>(null);
   if (carga.estado === "carregando") return <Carregando />;
   if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
@@ -184,10 +177,20 @@ export function AbaWhatsapp({ aoSalvar }: { aoSalvar: (texto: string) => void })
     <div className="grid gap-5">
       {recado ? <Aviso tom="ok" papel="status">{recado}</Aviso> : null}
       <SituacaoDaConexao numero={d.numero} conexao={d.conexao} />
-      {d.pode.aceitarTermo ? <Termo aoAceitar={() => { salvo("Termo do piloto aceito. A TRÍADE pode conectar o número."); aoSalvar("Termo do piloto aceito."); atualizar(); }} /> : null}
+      {d.pode.aceitarTermo ? <Termo aoAceitar={() => { salvo("Termo do piloto aceito. A TRÍADE pode conectar o número."); aoSalvar("Termo do piloto aceito."); aoMudar?.(); }} /> : null}
       <Mensagens key={`m-${d.config.versao}`} d={d} aoSalvar={salvo} />
+      <AjusteTecnico key={`x-${d.config.versao}`} id="anexar" titulo="Mensagens seguintes" parte="Anexar ao mesmo pedido o que chegar por"
+        atual={String(d.config.anexarMinutos)} tecnica={tecnica} recarregar={carga.recarregar}
+        opcoes={MINUTOS_ANEXAR.map((m) => ({ valor: String(m), texto: `${m} min` }))}
+        ajuda="Depois de abrir o pedido pelo WhatsApp, o que o morador mandar neste tempo, como foto, áudio ou documento, entra no mesmo pedido."
+        salvar={(v, motivo) => chamarApi(naBase("/whatsapp/anexar"), { metodo: "PUT", corpo: { versao: d.config.versao, minutos: Number(v), motivo } })}
+        aoSalvar={(v) => salvo(`O que chegar pelo WhatsApp em ${v} minutos entra no mesmo pedido.`)} />
       {d.quedas ? <QuemCuidaDasQuedas key={`q-${d.config.versao}`} d={d} aoSalvar={salvo} /> : null}
-      <MeusAvisos key={`a-${d.meusAvisos?.versao ?? 0}`} d={d} aoSalvar={salvo} />
+      {onde === "app" ? <MeusAvisos key={`a-${d.meusAvisos?.versao ?? 0}`} d={d} aoSalvar={salvo} /> : (
+        <p className="text-sm text-tinta-suave">
+          O termo do piloto {d.conexao.termoAceitoEm ? "já foi aceito" : "ainda não foi aceito"}. O aceite e os avisos no WhatsApp de cada pessoa são do condomínio, no app.
+        </p>
+      )}
     </div>
   );
 }
