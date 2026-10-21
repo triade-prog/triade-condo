@@ -39,7 +39,7 @@ test.describe("Plataforma · aviso de pedido registrado", () => {
     await instalarApiPlataformaFalsa(page, { quem: "SECRETARIA", comAtendimento: true, secretariaRegistra: true });
     const j = await abrirRegistro(page);
     await j.getByLabel("Unidade", { exact: true }).selectOption({ label: "Torre A · 101" });
-    await j.getByLabel("Quem pediu").selectOption({ label: "Marina Souza · proprietário (condômino)" });
+    await j.getByRole("combobox", { name: "Quem pediu" }).selectOption({ label: "Marina Souza · proprietário (condômino)" });
     await j.getByLabel("Assunto").fill("Interfone mudo");
     await j.getByLabel("O que foi relatado").fill("O interfone da 101 não toca desde ontem.");
     await j.getByLabel("Responsável", { exact: true }).selectOption({ label: "Eu" });

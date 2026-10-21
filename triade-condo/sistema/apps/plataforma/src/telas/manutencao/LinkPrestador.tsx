@@ -69,7 +69,7 @@ export function LinkPrestador({ manutencaoId, titulo, versao, recarregarManutenc
   const [naoTrocar, setNaoTrocar] = useState(false);
   const [falha, setFalha] = useState<string | null>(null);
   if (carga.estado === "carregando") return <Carregando linhas={2} />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const d = carga.dados;
   const l = d.link;
   const terminou = d.registros.find((r) => r.tipo === "TERMINOU");

@@ -48,7 +48,7 @@ export function ChamadoConsole() {
   const [pedindo, setPedindo] = useState(false);
 
   if (carga.estado === "carregando") return <Carregando rotulo="Abrindo o chamado…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const c = carga.dados;
 
   async function enviar(ev: FormEvent) {

@@ -22,8 +22,8 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
     const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(PLATAFORMA);
     await expect(page.getByRole("heading", { level: 1, name: "Residencial Ipê" })).toBeVisible();
-    if (await page.getByRole("button", { name: "Menu" }).isVisible()) await page.getByRole("button", { name: "Menu" }).click();
-    await page.getByRole("link", { name: /^WhatsApp/ }).click();
+    if (await page.getByRole("button", { name: "Mais", exact: true }).isVisible()) await page.getByRole("button", { name: "Mais", exact: true }).click();
+    await page.getByRole("navigation", { name: "Plataforma" }).getByRole("link", { name: /^WhatsApp/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "WhatsApp" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "A identificar (3)" })).toBeVisible();
     await expect(page.getByText("Chegou com o número desconectado")).toBeVisible();

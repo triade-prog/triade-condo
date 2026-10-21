@@ -24,7 +24,7 @@ export function AbaReservas({ aoMudar }: { aoMudar: (texto: string) => void }) {
   const carga = useCarregar<ListaReservas>(`/v1/condominio/reservas?filtro=${filtro}${areaId ? `&areaId=${areaId}` : ""}`);
 
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando as reservas…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const l = carga.dados;
   const areaDaSemana = areaId || l.areas[0]?.id || "";
   const fechar = (texto?: string) => { setAcao(null); if (texto) aoMudar(texto); };
@@ -120,7 +120,7 @@ function SemanaDaArea({ areaId, hoje, aoAbrir }: { areaId: string; hoje: string;
         </span>
       </div>
       {carga.estado === "carregando" ? <Carregando linhas={4} rotulo="Carregando a semana…" /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" ? (
         <>
           <ul className="grid gap-1.5">
@@ -221,7 +221,7 @@ function DetalheReserva({ id, aoFechar, aoAgir }: { id: string; aoFechar: () => 
   return (
     <Dialogo aberto titulo={titulo} aoFechar={aoFechar}>
       {carga.estado === "carregando" ? <Carregando rotulo="Carregando a reserva…" /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" ? <Detalhe d={carga.dados} aoFechar={aoFechar} aoAgir={aoAgir} /> : null}
     </Dialogo>
   );

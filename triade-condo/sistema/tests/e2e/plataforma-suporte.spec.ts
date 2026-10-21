@@ -21,7 +21,7 @@ test.describe("Plataforma · Ajuda e suporte", () => {
     await page.goto(PLATAFORMA);
     await expect(page.getByRole("heading", { level: 1, name: "Residencial Ipê" })).toBeVisible();
     // No celular o menu abre pelo botão.
-    if (await page.getByRole("button", { name: "Menu" }).isVisible()) await page.getByRole("button", { name: "Menu" }).click();
+    if (await page.getByRole("button", { name: "Mais", exact: true }).isVisible()) await page.getByRole("button", { name: "Mais", exact: true }).click();
     await expect(page.getByRole("link", { name: "Ajuda e suporte" })).toBeVisible();
     await page.goto(`${PLATAFORMA}/suporte`);
     await expect(page.getByRole("heading", { level: 1, name: "Ajuda e suporte" })).toBeVisible();

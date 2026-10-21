@@ -75,7 +75,7 @@ export function AbaLinhaDoTempo({ feito }: PropsAbaMemoria) {
         {carga.estado === "pronto" && carga.dados.podeAnotar ? <Botao tamanho="m" onClick={() => setAnotar(true)}>+ Anotar na memória</Botao> : null}
       </div>
       {carga.estado === "carregando" ? <Carregando rotulo="Carregando a linha do tempo…" /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" ? (
         <section aria-label="Linha do tempo" className="grid gap-2 rounded-2xl border border-linha bg-superficie p-4 shadow-s1">
           {[...carga.dados.eventos, ...antigos].length === 0 ? (
@@ -196,7 +196,7 @@ function AnotacaoAberta({ id, aoFechar, aoMudar }: { id: string; aoFechar: () =>
   const [motivo, setMotivo] = useState("");
   const [erro, setErro] = useState<ErroApi | null>(null);
   if (carga.estado !== "pronto") {
-    return <Dialogo aberto titulo="Anotação" aoFechar={aoFechar}>{carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : <Carregando />}</Dialogo>;
+    return <Dialogo aberto titulo="Anotação" aoFechar={aoFechar}>{carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : <Carregando />}</Dialogo>;
   }
   const { anotacao: a, versoes, podeEditar } = carga.dados;
   if (modo === "corrigir") return <FormAnotacao anotacao={a} aoFechar={() => setModo("ver")} aoSalvar={aoMudar} />;

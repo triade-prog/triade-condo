@@ -24,7 +24,7 @@ export function AbaManual({ feito }: PropsAbaMemoria) {
   const [editando, setEditando] = useState<SecaoManual | { titulo: string; resumo?: string } | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o manual…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const m = carga.dados;
   const escritos = new Set(m.secoes.map((s) => s.titulo.trim().toLowerCase()));
   const sugestoes = SECOES_SUGERIDAS.filter((s) => !escritos.has(s.titulo.toLowerCase()));

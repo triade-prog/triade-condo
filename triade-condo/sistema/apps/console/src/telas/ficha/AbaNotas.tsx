@@ -43,7 +43,7 @@ export function AbaNotas({ ficha, pode }: PropsAba) {
         </form>
       ) : null}
       {notas.estado === "carregando" ? <Carregando linhas={2} /> : null}
-      {notas.estado === "erro" ? <ErroCarregar texto={notas.texto} tentarDeNovo={notas.recarregar} /> : null}
+      {notas.estado === "erro" ? <ErroCarregar erro={notas.erro} texto={notas.texto} tentarDeNovo={notas.recarregar} /> : null}
       {notas.estado === "pronto" && notas.dados.notas.length === 0 ? <Vazio titulo="Nenhuma nota ainda">As notas da equipe sobre este cliente aparecem aqui.</Vazio> : null}
       {notas.estado === "pronto" && notas.dados.notas.length > 0 ? (
         <ul className="grid gap-2">

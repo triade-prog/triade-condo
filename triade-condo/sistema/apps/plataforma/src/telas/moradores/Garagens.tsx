@@ -238,7 +238,7 @@ export function AbaGaragens({ salvo }: { salvo: Salvo }) {
   const carga = useCarregar<Garagens>("/v1/condominio/garagens");
   const [janela, setJanela] = useState<{ tipo: "vaga"; vaga: Vaga | null } | { tipo: "uso"; vaga: Vaga } | null>(null);
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando as garagens…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const d = carga.dados;
   const fechar = () => setJanela(null);
   const pronto = (r: Recado) => { fechar(); salvo(r); carga.recarregar(); };

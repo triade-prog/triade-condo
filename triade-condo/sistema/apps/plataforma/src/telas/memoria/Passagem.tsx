@@ -37,7 +37,7 @@ export function AbaPassagem({ feito }: PropsAbaMemoria) {
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
       <div><Botao onClick={() => void gerar()} disabled={gerando}><Icone nome="documento" />{gerando ? "Gerando…" : "Gerar dossiê agora"}</Botao></div>
       {carga.estado === "carregando" ? <Carregando linhas={2} rotulo="Carregando os dossiês…" /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" && carga.dados.length ? (
         <section aria-labelledby="ps-gerados" className="grid gap-2">
           <h3 id="ps-gerados" className="font-medium">Dossiês gerados</h3>

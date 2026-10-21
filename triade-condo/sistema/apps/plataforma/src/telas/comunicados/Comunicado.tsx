@@ -17,7 +17,7 @@ import { Janela } from "../Janela.tsx";
 import { diaHora } from "../pedidos/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { ComunicadoDetalhe, Recado } from "../tipos.ts";
-import { abrirLink, nomeAssunto, PartesComunicados, SeloComunicado } from "./comum.tsx";
+import { abrirLink, nomeAssunto, SeloComunicado } from "./comum.tsx";
 
 const FEITO: Record<string, string> = {
   PUBLICAR: "Comunicado publicado.",
@@ -51,7 +51,7 @@ function ComunicadoAberto() {
   if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Comunicado</h1><Vazio titulo="Comunicado não encontrado" /></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o comunicado…" />;
   if (carga.estado === "erro") {
-    return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Comunicado</h1><ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+    return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Comunicado</h1><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
   }
 
   const d = carga.dados;
@@ -85,7 +85,6 @@ function ComunicadoAberto() {
 
   return (
     <div className="grid gap-5">
-      <PartesComunicados />
       {voltar}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="grid gap-2">

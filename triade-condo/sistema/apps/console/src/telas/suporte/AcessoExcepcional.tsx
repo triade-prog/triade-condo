@@ -89,7 +89,7 @@ function Area({ condominio, area }: { condominio: string; area: AreaExcepcional 
   const carga = useCarregar<{ validoAte: string; dados: { itens?: Item[]; comunicados?: { itens?: Item[] }; documentos?: { itens?: Item[] } } }>(
     `/v1/clientes/${condominio}/excepcional/${ROTA_AREA[area]}`);
   if (carga.estado === "carregando") return <Carregando />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const d = carga.dados.dados;
   const grupos: [string, Item[]][] = area === "COMUNICADOS"
     ? [["Comunicados", d.comunicados?.itens ?? []], ["Documentos", d.documentos?.itens ?? []]]
@@ -123,7 +123,7 @@ export function AcessoExcepcional() {
   const nome = ficha.estado === "pronto" ? ficha.dados.condominio.nome : "";
 
   if (carga.estado === "carregando") return <Carregando />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const valendo = carga.dados.itens.find((a) => a.meu && a.situacao === "APROVADO");
 
   return (

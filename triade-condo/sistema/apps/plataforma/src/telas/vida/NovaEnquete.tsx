@@ -20,7 +20,7 @@ export function NovaEnquete({ aoFechar, aoSalvar }: { aoFechar: () => void; aoSa
   return (
     <Dialogo aberto titulo="Nova enquete" aoFechar={aoFechar}>
       {carga.estado === "carregando" ? <Carregando rotulo="Abrindo…" /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" ? <Formulario canais={carga.dados.canais} aoFechar={aoFechar} aoSalvar={aoSalvar} /> : null}
     </Dialogo>
   );

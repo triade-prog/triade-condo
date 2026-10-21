@@ -68,7 +68,7 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
   );
 
   if (carga.estado === "carregando") return <div className="grid gap-4">{formulario}<Carregando rotulo="Carregando os moradores…" /></div>;
-  if (carga.estado === "erro") return <div className="grid gap-4">{formulario}<ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+  if (carga.estado === "erro") return <div className="grid gap-4">{formulario}<ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
 
   const d = carga.dados;
   const paginas = Math.max(1, Math.ceil(d.total / d.porPagina));

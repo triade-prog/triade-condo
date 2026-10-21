@@ -44,7 +44,7 @@ export function Manutencao() {
   if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Manutenção</h1><Vazio titulo="Manutenção não encontrada" /></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando a manutenção…" />;
   if (carga.estado === "erro") {
-    return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Manutenção</h1><ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+    return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Manutenção</h1><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
   }
 
   const d = carga.dados;

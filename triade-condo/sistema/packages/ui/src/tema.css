@@ -255,33 +255,94 @@ body {
   .campo[aria-invalid="true"] { border-color: var(--color-erro); box-shadow: 0 0 0 4px #bc14501a; }
   .campo:disabled { background: var(--color-superficie-2); border-color: transparent; color: #8a8296; }
 
-  /* Lateral clara dos dois sistemas: ícone em cada item, grupos separados por linha, item
-     escolhido com o degradê e contagem em laranja. */
-  .lateral { display: grid; align-content: start; gap: 2px; padding: 10px; border-radius: 18px; border: 1px solid var(--color-linha); background: #fff; box-shadow: var(--shadow-s1); }
-  .lateral a { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 12px; font-size: 15px; color: var(--color-tinta); text-decoration: none; }
-  .lateral a svg { width: 20px; height: 20px; color: var(--color-tinta-suave); }
+  /* Lateral clara dos dois sistemas (DC15, moldura-computador): ícone em cada item, grupos com
+     nome, item escolhido com o degradê e contagem em laranja. */
+  .lateral { display: grid; align-content: start; gap: 2px; padding: 12px; border-radius: 18px; border: 1px solid var(--color-linha); background: #fff; box-shadow: var(--shadow-s1); }
+  .lateral a { display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 12px; border-radius: 12px; font-size: 14px; font-weight: 500; color: var(--color-tinta); text-decoration: none; }
+  .lateral a svg { width: 18px; height: 18px; color: var(--color-tinta-suave); }
   .lateral a:hover { background: var(--color-violeta-50); }
   .lateral a[aria-current="page"] { background: var(--grad-acao); color: #fff; box-shadow: inset 0 1px 0 #ffffff47, 0 10px 22px -12px #5808ccb3; }
   .lateral a[aria-current="page"] svg { color: #fff; }
   .lateral hr { border: 0; border-top: 1px solid var(--color-linha); margin: 6px 8px; }
-  .lateral .grupo { padding: 8px 12px 2px; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--color-tinta-suave); }
+  .lateral .grupo { padding: 12px 12px 4px; font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--color-tinta-suave); }
   .contagem { margin-left: auto; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; display: inline-grid; place-items: center; background: var(--color-laranja-500); color: var(--color-violeta-900); font-size: 12px; font-weight: 600; }
 
   /* Emblema: botão quadrado com ícone e, quando há o que ver, a contagem em laranja. */
-  .emblema { position: relative; display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: var(--color-superficie-2); color: var(--color-tinta); border: 0; cursor: pointer; }
-  .emblema:hover { background: var(--color-violeta-100); }
+  .emblema { position: relative; display: inline-grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; background: #fff; color: var(--color-tinta); border: 1px solid var(--color-linha); cursor: pointer; text-decoration: none; }
+  .emblema:hover { background: var(--color-violeta-50); border-color: var(--color-violeta-300); }
   .emblema svg { width: 20px; height: 20px; }
   .emblema[data-contagem]::after { content: attr(data-contagem); position: absolute; right: -6px; top: -6px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; display: grid; place-items: center; border: 2px solid #fff; background: var(--color-laranja-500); color: var(--color-violeta-900); font-size: 11px; font-weight: 600; }
 
+  /* Barra de cima da Plataforma (DC15): marca, busca, condomínio, sino e a pessoa. */
+  .topo { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: #fff; border-bottom: 1px solid var(--color-linha); }
+  .topo .marca { flex-shrink: 0; margin-right: auto; }
+  .topo .marca img { height: 30px; width: auto; }
+  @media (max-width: 767px) { .topo .marca small { display: none; } }
+  .busca { position: relative; }
+  .busca svg { position: absolute; left: 12px; top: 50%; width: 18px; height: 18px; transform: translateY(-50%); color: var(--color-tinta-suave); pointer-events: none; }
+  .busca .campo { padding-left: 40px; }
+  .topo .busca { flex: 1 1 320px; max-width: 520px; margin-right: auto; }
+  .topo .busca .campo { min-height: 40px; font-size: 14px; }
+  .topo .condominio { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--color-linha); background: #fff; color: var(--color-tinta); font-size: 14px; font-weight: 500; white-space: nowrap; }
+  .topo .condominio svg { width: 18px; height: 18px; color: var(--color-tinta-suave); }
+  .topo button.condominio { cursor: pointer; }
+  .topo button.condominio:hover { border-color: var(--color-violeta-300); }
+  .topo .conta { position: relative; }
+  .topo .pessoa { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 4px; border: 0; border-radius: 12px; background: transparent; color: var(--color-tinta); text-align: left; cursor: pointer; }
+  .topo .pessoa:hover { background: var(--color-violeta-50); }
+  .topo .pessoa .nome { display: grid; line-height: 1.2; font-size: 14px; font-weight: 500; }
+  .topo .pessoa .nome small { font-size: 12px; font-weight: 400; color: var(--color-tinta-suave); }
+  @media (min-width: 768px) {
+    .topo { gap: 24px; padding: 14px 24px; }
+    .topo .marca { width: 220px; margin-right: 0; }
+    .topo .marca img { height: 34px; }
+  }
+
+  /* Menu da pessoa: abre sob a pessoa, com o condomínio, trocar e sair. */
+  .menu-pessoa { position: absolute; right: 0; top: calc(100% + 8px); z-index: 40; display: grid; gap: 4px; width: max-content; min-width: 240px; max-width: calc(100vw - 32px); padding: 12px; border-radius: 18px; border: 1px solid var(--color-linha); background: #fff; box-shadow: var(--shadow-s3); }
+  .menu-pessoa .quem { display: grid; gap: 2px; padding: 4px 8px 10px; border-bottom: 1px solid var(--color-linha); margin-bottom: 4px; }
+  .menu-pessoa .bt { justify-content: flex-start; }
+
+  /* Escolha numa lista curta (trocar condomínio): a linha inteira é o botão. */
+  .escolha { display: grid; gap: 2px; width: 100%; padding: 12px 16px; border-radius: 14px; border: 1px solid var(--color-linha); background: #fff; color: var(--color-tinta); text-align: left; cursor: pointer; }
+  .escolha:hover { border-color: var(--color-violeta-300); }
+  .escolha[aria-current="true"] { border-color: var(--color-violeta-600); background: var(--color-violeta-50); }
+
+  /* Barra de baixo do celular (DC15, moldura-celular): os lugares mais usados e "Mais". */
+  .barra-baixo { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid var(--color-linha); box-shadow: 0 -4px 16px #3a1a7a0f; }
+  .barra-baixo a, .barra-baixo button { position: relative; display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 48px; padding: 4px 2px; border: 0; border-radius: 12px; background: transparent; color: var(--color-tinta-suave); font: inherit; font-size: 11px; font-weight: 500; text-decoration: none; cursor: pointer; }
+  .barra-baixo svg { width: 22px; height: 22px; }
+  .barra-baixo [aria-current="page"], .barra-baixo [aria-expanded="true"] { color: var(--color-violeta-600); font-weight: 600; }
+  .barra-baixo .contagem { position: absolute; top: 0; left: calc(50% + 4px); margin: 0; min-width: 18px; height: 18px; padding: 0 5px; border: 2px solid #fff; font-size: 11px; }
+  @media (min-width: 768px) { .barra-baixo { display: none; } }
+
+  /* Estados da tela (DC15, estados): sem permissão, vazio e erro falam a mesma língua. Cartão,
+     ícone num quadrado de 44, título, uma frase, uma nota e as saídas. */
+  .estado { position: relative; overflow: hidden; display: grid; justify-items: start; gap: 8px; padding: 28px; border-radius: 18px; border: 1px solid var(--color-linha); background: #fff; box-shadow: var(--shadow-s1); }
+  .estado > .quadro { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 8px; border-radius: 12px; background: var(--color-violeta-50); color: var(--color-violeta-600); }
+  .estado > .quadro svg { width: 22px; height: 22px; }
+  .estado > .acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+  .estado[data-tom="ok"] > .quadro { background: var(--color-ok-fundo); color: var(--color-ok); }
+  .estado[data-tom="erro"] > .quadro { background: var(--color-erro-fundo); color: var(--color-erro); }
+  /* Arte leve da marca, só no vazio: os dois anéis, longe do texto. */
+  .estado[data-arte]::before, .estado[data-arte]::after { content: ""; position: absolute; border-radius: 50%; border: 1px solid #5808cc1f; pointer-events: none; }
+  .estado[data-arte]::before { width: 260px; height: 260px; top: -150px; right: -90px; }
+  .estado[data-arte]::after { width: 380px; height: 380px; top: -210px; right: -150px; }
+  .estado > * { position: relative; }
+
+  /* Escala de letra (DC15, guia de padrões): nove estilos com nome. */
+  .t-titulo-tela { font-size: 28px; font-weight: 400; letter-spacing: -.01em; line-height: 1.2; }
+  .t-titulo-ficha { font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1.2; }
+  .t-titulo-secao { font-size: 18px; font-weight: 600; line-height: 1.35; }
+  .t-titulo-cartao { font-size: 15px; font-weight: 600; }
+  .t-texto { font-size: 15px; font-weight: 400; }
+  .t-apoio { font-size: 13px; color: var(--color-tinta-suave); }
+  .t-rotulo { font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--color-tinta-suave); }
+  .t-codigo { font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
+  .t-destaque { font-family: var(--font-destaque); font-style: italic; font-weight: 400; }
+
   /* Iniciais da pessoa, no topo e nas listas. */
   .iniciais { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; background: var(--color-violeta-100); color: var(--color-violeta-700); font-size: 12px; font-weight: 600; }
-
-  /* Tela vazia com as órbitas da marca, bem leves. */
-  .vazio { position: relative; overflow: hidden; display: grid; justify-items: center; gap: 8px; text-align: center; padding: 32px 20px; border-radius: 18px; border: 1px solid var(--color-linha); background: #fff; }
-  .vazio::before, .vazio::after { content: ""; position: absolute; border-radius: 50%; border: 1px solid #5808cc1f; pointer-events: none; }
-  .vazio::before { width: 260px; height: 260px; top: -150px; right: -90px; }
-  .vazio::after { width: 380px; height: 380px; top: -210px; right: -150px; }
-  .vazio > * { position: relative; }
 
   /* Agenda (peça R7): a cor de cada tipo numa faixa, sempre com o nome do tipo ao lado. */
   [data-tipo="REUNIAO"] { --fx: var(--fx-andamento); }

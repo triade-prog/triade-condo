@@ -23,7 +23,7 @@ import { Escolha } from "../moradores/comum.tsx";
 import { deDataHoraLocal, paraDataHoraLocal } from "../pedidos/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { ArquivoComunicado, AssuntoComunicado, ComunicadoDetalhe, OpcoesComunicado, PublicoCalculado, PublicoComunicado } from "../tipos.ts";
-import { conferirArquivo, enviarUm, PartesComunicados } from "./comum.tsx";
+import { conferirArquivo, enviarUm } from "./comum.tsx";
 
 const LIMITE_FOTO = 10 * 1024 * 1024;
 type Acao = "RASCUNHO" | "PROGRAMAR" | "PUBLICAR";
@@ -38,7 +38,7 @@ export function Escrever() {
 
   if (opcoes.estado === "carregando" || (id && atual.estado === "carregando")) return <Carregando rotulo="Abrindo o comunicado…" />;
   const erro = opcoes.estado === "erro" ? opcoes : id && atual.estado === "erro" ? atual : null;
-  if (erro) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Escrever comunicado</h1><ErroCarregar texto={erro.texto} tentarDeNovo={erro.recarregar} /></div>;
+  if (erro) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Escrever comunicado</h1><ErroCarregar erro={erro.erro} texto={erro.texto} tentarDeNovo={erro.recarregar} /></div>;
   if (opcoes.estado !== "pronto") return null;
   const detalhe = id && atual.estado === "pronto" ? atual.dados : null;
   if (detalhe && !detalhe.pode.editar) {
@@ -183,7 +183,6 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
 
   return (
     <form onSubmit={(e) => void salvar(v.quando, e)} noValidate className="grid gap-5">
-      <PartesComunicados />
       {voltar}
       <div>
         <h1 className="text-[28px] font-normal tracking-tight">{c ? "Editar comunicado" : "Escrever comunicado"}</h1>

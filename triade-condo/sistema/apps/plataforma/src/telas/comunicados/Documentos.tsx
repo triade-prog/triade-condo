@@ -13,7 +13,7 @@ import { Janela, type Campo } from "../Janela.tsx";
 import { Escolha, hojeEmBrasilia } from "../moradores/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { DocumentoResumo, ListaDocumentos } from "../tipos.ts";
-import { nomeTipoDocumento, PartesComunicados } from "./comum.tsx";
+import { nomeTipoDocumento, PartesDocumentos } from "./comum.tsx";
 import { PedidosDocumento } from "./PedidosDocumento.tsx";
 
 export const camposDocumento = (restritos: boolean): Campo[] => [
@@ -73,7 +73,7 @@ export function Documentos() {
 
   return (
     <div className="grid gap-5">
-      <PartesComunicados />
+      <PartesDocumentos />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-[28px] font-normal tracking-tight">Documentos</h1>
@@ -98,7 +98,7 @@ export function Documentos() {
 
       {pedidos ? <PedidosDocumento aoMudar={lista.recarregar} /> : null}
       {!pedidos && lista.estado === "carregando" ? <Carregando rotulo="Carregando os documentos…" /> : null}
-      {!pedidos && lista.estado === "erro" ? <ErroCarregar texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
+      {!pedidos && lista.estado === "erro" ? <ErroCarregar erro={lista.erro} texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
       {dados && !pedidos ? (
         dados.itens.length === 0 ? (
           <Vazio titulo={filtro === "VIGOR" && !busca.get("busca") ? "Nenhum documento guardado" : "Nenhum documento com estes filtros"}

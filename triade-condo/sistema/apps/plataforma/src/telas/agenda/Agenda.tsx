@@ -147,7 +147,7 @@ export function Agenda() {
       </div>
 
       {carga.estado === "carregando" ? <Carregando rotulo="Carregando a agenda…" /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {dados && vista === "LISTA" ? <VistaLista dias={dias} hoje={hoje} temFiltro={Boolean(filtro.tipo) || !filtro.compromissos || filtro.ocultas.length > 0} /> : null}
       {dados && vista === "SEMANA" ? <VistaSemana de={de} dias={dias} hoje={hoje} abrirDia={(d) => ir({ vista: "LISTA", data: d })} /> : null}
       {dados && vista === "MES" ? <VistaMes data={data} dias={dias} hoje={hoje} abrirDia={(d) => ir({ vista: "LISTA", data: d })} /> : null}

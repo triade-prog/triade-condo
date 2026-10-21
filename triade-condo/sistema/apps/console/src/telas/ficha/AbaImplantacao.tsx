@@ -295,7 +295,7 @@ export function AbaImplantacao({ ficha, recarregar, avisar, irPara }: PropsAba) 
   const [entregando, setEntregando] = useState(false);
 
   if (carga.estado === "carregando") return <Carregando rotulo="Abrindo o roteiro…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const d = carga.dados;
   if (d.legado) {
     return <Vazio titulo="Cliente ativo antes do roteiro">Este cliente foi concluído antes do roteiro de implantação existir. Não há etapas a seguir.</Vazio>;

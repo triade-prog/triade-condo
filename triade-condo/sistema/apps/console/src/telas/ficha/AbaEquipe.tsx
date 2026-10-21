@@ -23,7 +23,7 @@ function FormAtribuir({ ficha, aoConcluir }: { ficha: PropsAba["ficha"]; aoConcl
   const [erro, setErro] = useState<ErroApi | null>(null);
 
   if (equipe.estado === "carregando") return <Carregando linhas={2} />;
-  if (equipe.estado === "erro") return <ErroCarregar texto={equipe.texto} tentarDeNovo={equipe.recarregar} />;
+  if (equipe.estado === "erro") return <ErroCarregar erro={equipe.erro} texto={equipe.texto} tentarDeNovo={equipe.recarregar} />;
   const ativas = equipe.dados.pessoas.filter((p) => p.ativa);
   const escolhida = ativas.find((p) => p.id === pessoaId);
 

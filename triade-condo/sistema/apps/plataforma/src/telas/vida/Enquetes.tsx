@@ -23,7 +23,7 @@ export function AbaEnquetes({ aoMudar }: { aoMudar: (texto: string) => void }) {
   const [acao, setAcao] = useState<Acao | null>(null);
 
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando as enquetes…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const l = carga.dados;
   const fechar = (texto?: string) => { setAcao(null); if (texto) aoMudar(texto); };
 
@@ -165,7 +165,7 @@ function DetalheEnquete({ id, aoFechar }: { id: string; aoFechar: () => void }) 
   return (
     <Dialogo aberto titulo={carga.estado === "pronto" ? carga.dados.enquete.pergunta : "Enquete"} aoFechar={aoFechar}>
       {carga.estado === "carregando" ? <Carregando rotulo="Carregando a enquete…" /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" ? <Detalhe d={carga.dados} aoFechar={aoFechar} /> : null}
     </Dialogo>
   );

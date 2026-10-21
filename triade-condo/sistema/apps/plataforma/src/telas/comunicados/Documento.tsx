@@ -16,7 +16,7 @@ import { Janela } from "../Janela.tsx";
 import { diaHora } from "../pedidos/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { DocumentoDetalhe, EnvioDocumento, Recado, VersaoDocumento } from "../tipos.ts";
-import { abrirLink, conferirArquivo, enviarUm, nomeTipoDocumento, PartesComunicados } from "./comum.tsx";
+import { abrirLink, conferirArquivo, enviarUm, nomeTipoDocumento, PartesDocumentos } from "./comum.tsx";
 import { camposDocumento, documentoParaApi } from "./Documentos.tsx";
 
 export function Documento() {
@@ -31,7 +31,7 @@ export function Documento() {
   if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Documento</h1><Vazio titulo="Documento não encontrado" /></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o documento…" />;
   if (carga.estado === "erro") {
-    return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Documento</h1><ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+    return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Documento</h1><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
   }
   const d = carga.dados;
   const doc = d.documento;
@@ -45,7 +45,7 @@ export function Documento() {
 
   return (
     <div className="grid gap-5">
-      <PartesComunicados />
+      <PartesDocumentos />
       {voltar}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="grid gap-2">

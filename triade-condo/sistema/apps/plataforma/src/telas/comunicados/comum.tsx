@@ -1,6 +1,6 @@
 "use client";
 // Peças comuns de Comunicados e documentos (peça R1, design "Telas dos Comunicados"): a
-// situação em selo, as duas partes (comunicados e documentos), o comunicado como linha da lista
+// situação em selo, as partes de documentos e memória, o comunicado como linha da lista
 // e o envio de um arquivo direto ao armazenamento privado, conferido antes de liberar.
 
 import Link from "next/link";
@@ -9,7 +9,6 @@ import { ASSUNTOS_COMUNICADO, mostrarTamanho, SITUACOES_COMUNICADO, TIPOS_ARQUIV
 import { chamarApi, Selo, textoDoErro, type ErroApi, type Tom } from "@triade/ui";
 import { subir } from "../pedidos/Arquivos.tsx";
 import { diaHora } from "../pedidos/comum.tsx";
-import { usePlataforma } from "../sessao.tsx";
 import type { ComunicadoResumo, SituacaoComunicado, TipoDocumento } from "../tipos.ts";
 
 const TOM_SITUACAO: Record<SituacaoComunicado, Tom> = {
@@ -23,18 +22,16 @@ export function SeloComunicado({ estado }: { estado: SituacaoComunicado }) {
 export const nomeAssunto = (a: string) => ASSUNTOS_COMUNICADO[a as keyof typeof ASSUNTOS_COMUNICADO] ?? a;
 export const nomeTipoDocumento = (t: TipoDocumento) => TIPOS_DOCUMENTO[t];
 
-/** As duas partes, juntas no topo de cada uma, só para quem vê cada uma. */
-export function PartesComunicados() {
+/** Documentos e memória do prédio, juntos no topo de cada um (DC15: o item "Documentos e memória"
+ * do menu). Quem vê os documentos vê os dois. */
+export function PartesDocumentos() {
   const caminho = usePathname();
-  const { pode } = usePlataforma();
   const partes = [
-    pode("comunicados.ver") ? { href: "/comunicados", texto: "Comunicados",
-      atual: caminho === "/comunicados" || caminho.startsWith("/comunicados/comunicado") || caminho.startsWith("/comunicados/escrever") } : null,
-    pode("documentos.ver") ? { href: "/comunicados/documentos", texto: "Documentos", atual: caminho.startsWith("/comunicados/documento") } : null,
-  ].filter((p) => p !== null);
-  if (partes.length < 2) return null;
+    { href: "/comunicados/documentos", texto: "Documentos", atual: caminho.startsWith("/comunicados/documento") },
+    { href: "/memoria", texto: "Memória do prédio", atual: caminho.startsWith("/memoria") },
+  ];
   return (
-    <nav aria-label="Partes de comunicados e documentos" className="trilho justify-self-start">
+    <nav aria-label="Partes de documentos e memória" className="trilho justify-self-start">
       {partes.map((p) => (
         <Link key={p.href} href={p.href} className="chip" aria-current={p.atual ? "page" : undefined} data-escolhido={p.atual ? "" : undefined}>
           {p.texto}

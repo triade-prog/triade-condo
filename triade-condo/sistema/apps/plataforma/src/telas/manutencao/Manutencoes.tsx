@@ -100,7 +100,7 @@ export function Manutencoes() {
       </div>
 
       {lista.estado === "carregando" ? <Carregando rotulo="Carregando as manutenções…" /> : null}
-      {lista.estado === "erro" ? <ErroCarregar texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
+      {lista.estado === "erro" ? <ErroCarregar erro={lista.erro} texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
       {dados ? (
         dados.itens.length === 0 ? (
           filtrando ? <Vazio titulo="Nenhuma manutenção com estes filtros" />

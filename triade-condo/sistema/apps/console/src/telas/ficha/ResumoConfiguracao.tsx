@@ -22,7 +22,7 @@ export function ResumoConfiguracao() {
   const areas = useCarregar<AreasComuns>(`/v1/clientes/${id}/condominio/areas-comuns`);
 
   for (const c of [ficha, config, areas]) {
-    if (c.estado === "erro") return <ErroCarregar texto={c.texto} tentarDeNovo={c.recarregar} />;
+    if (c.estado === "erro") return <ErroCarregar erro={c.erro} texto={c.texto} tentarDeNovo={c.recarregar} />;
   }
   if (ficha.estado !== "pronto" || config.estado !== "pronto" || areas.estado !== "pronto") return <Carregando rotulo="Montando o resumo…" />;
   const nome = ficha.dados.condominio.nome;

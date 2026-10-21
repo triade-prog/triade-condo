@@ -118,7 +118,7 @@ export function AbaWhatsapp({ ficha, avisar }: PropsAba) {
   const [aviso, setAviso] = useState<{ tom: Tom; texto: string } | null>(null);
 
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o WhatsApp…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const d = carga.dados;
   const cx = d.conexao;
 

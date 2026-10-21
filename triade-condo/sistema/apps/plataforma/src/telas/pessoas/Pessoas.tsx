@@ -34,7 +34,7 @@ export function Pessoas() {
     return (
       <div className="grid gap-3">
         <h1 className="text-[28px] font-normal tracking-tight">Pessoas e acesso</h1>
-        <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />
+        <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />
       </div>
     );
   }

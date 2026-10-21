@@ -40,7 +40,7 @@ export function AbaProntuario({ feito }: PropsAbaMemoria) {
   const [aberto, setAberto] = useState<string | null>(null);
   const [novo, setNovo] = useState(false);
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o prontuário…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const p = carga.dados;
   const r = p.resumo;
   const item = p.itens.find((i) => chaveDo(i) === aberto);

@@ -18,7 +18,7 @@ export function CartazComunicadosWhatsapp() {
   const carga = useCarregar<ComunicadosWhatsapp>(ENDERECO);
   const cond = useCarregar<{ nome: string }>("/v1/condominio");
   if (carga.estado === "carregando" || cond.estado === "carregando") return <main className="mx-auto max-w-3xl p-8"><Carregando rotulo="Preparando o cartaz…" /></main>;
-  if (carga.estado === "erro") return <main className="mx-auto max-w-3xl p-8"><ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></main>;
+  if (carga.estado === "erro") return <main className="mx-auto max-w-3xl p-8"><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></main>;
   const d = carga.dados;
   const link = d.numero ? linkComunicadosWhatsapp(d.numero) : null;
   const nome = cond.estado === "pronto" ? cond.dados.nome : "condomínio";

@@ -23,7 +23,7 @@ export function HojeNaAgenda() {
     <section aria-labelledby="t-hoje-agenda" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
       {cabeca}
       {carga.estado === "carregando" ? <Carregando linhas={2} rotulo="Carregando a agenda…" /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" ? <Conteudo dados={carga.dados} /> : null}
     </section>
   );

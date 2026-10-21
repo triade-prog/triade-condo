@@ -57,7 +57,7 @@ export function ArquivosManutencao({ manutencaoId, itens, avisar }: {
   const [tirar, setTirar] = useState<ArquivoManutencao | null>(null);
 
   if (carga.estado === "carregando") return <Carregando linhas={2} rotulo="Carregando os arquivos…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const { arquivos, pode } = carga.dados;
   const validos = escolhidos.filter((i) => !i.problema).length;
   const nomeItem = (id?: string) => itens.find((i) => i.id === id)?.texto;

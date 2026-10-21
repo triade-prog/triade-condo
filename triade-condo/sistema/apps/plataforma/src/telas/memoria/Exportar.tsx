@@ -66,7 +66,7 @@ export function AbaExportar({ feito }: PropsAbaMemoria) {
       <section aria-labelledby="ex-lista" className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4 shadow-s1">
         <h2 id="ex-lista" className="text-lg font-medium">Exportações</h2>
         {carga.estado === "carregando" ? <Carregando linhas={2} rotulo="Carregando as exportações…" /> : null}
-        {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+        {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
         {carga.estado === "pronto" && !carga.dados.exportacoes.length ? <p className="text-sm text-tinta-suave">Nenhuma exportação ainda.</p> : null}
         {carga.estado === "pronto" && carga.dados.exportacoes.length ? (
           <ul className="divide-y divide-linha rounded-xl border border-linha">

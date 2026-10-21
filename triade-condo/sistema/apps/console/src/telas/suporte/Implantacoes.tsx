@@ -29,7 +29,7 @@ export function Implantacoes() {
         <p className="text-tinta-suave">Os clientes atribuídos a você que ainda estão em implantação.</p>
       </div>
       {carga.estado === "carregando" ? <Carregando /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" && carga.dados.implantacoes.length === 0 ? (
         <Vazio titulo="Nenhuma implantação em andamento">Quando um cliente atribuído a você estiver em implantação, ele aparece aqui.</Vazio>
       ) : null}

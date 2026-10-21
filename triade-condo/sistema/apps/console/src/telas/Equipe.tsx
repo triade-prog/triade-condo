@@ -92,7 +92,7 @@ export function Equipe() {
       {recado ? <Aviso tom="ok">{recado}</Aviso> : null}
       {erro && !convidando && !revendo ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
       {equipe.estado === "carregando" ? <Carregando /> : null}
-      {equipe.estado === "erro" ? <ErroCarregar texto={equipe.texto} tentarDeNovo={equipe.recarregar} /> : null}
+      {equipe.estado === "erro" ? <ErroCarregar erro={equipe.erro} texto={equipe.texto} tentarDeNovo={equipe.recarregar} /> : null}
       {equipe.estado === "pronto" ? (
         <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
           <table className="w-full min-w-[640px] text-sm">

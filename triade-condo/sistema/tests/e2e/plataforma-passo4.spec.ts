@@ -43,8 +43,8 @@ test.describe("Plataforma do síndico · passo 4", () => {
     await page.getByRole("button", { name: "+ Registrar pedido" }).first().click();
     const j = page.getByRole("dialog", { name: "Registrar pedido" });
     await j.getByLabel("Unidade", { exact: true }).selectOption({ label: "Torre A · 101" });
-    await expect(j.getByLabel("Quem pediu")).toContainText("Marina Souza");
-    await j.getByLabel("Quem pediu").selectOption({ label: "Marina Souza · proprietário (condômino)" });
+    await expect(j.getByRole("combobox", { name: "Quem pediu" })).toContainText("Marina Souza");
+    await j.getByRole("combobox", { name: "Quem pediu" }).selectOption({ label: "Marina Souza · proprietário (condômino)" });
     await j.getByLabel("Assunto").fill("Interfone mudo");
     await j.getByLabel("O que foi relatado").fill("O interfone da 101 não toca desde ontem.");
     await expect(j.getByLabel("Responsável", { exact: true })).toHaveValue(/.+/);
@@ -137,7 +137,11 @@ test.describe("Plataforma do síndico · passo 4", () => {
   test("a busca no topo acha pedidos e moradores do condomínio", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(PLATAFORMA);
-    const busca = page.getByRole("searchbox", { name: "Buscar no condomínio" });
+    await expect(page.getByRole("heading", { level: 1, name: "Residencial Ipê" })).toBeVisible();
+    // No celular a busca abre pela lupa do topo.
+    const lupa = page.getByRole("button", { name: "Buscar no condomínio" });
+    if (await lupa.isVisible()) await lupa.click();
+    const busca = page.getByRole("searchbox", { name: "Buscar no condomínio" }).filter({ visible: true });
     await busca.fill("vazamento");
     await busca.press("Enter");
     await expect(page.getByRole("heading", { level: 1, name: "Buscar no condomínio" })).toBeVisible();

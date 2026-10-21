@@ -215,7 +215,7 @@ function EscolherPessoa({ prefixo, rotulo, textoCadastrada, de = "", pessoa, aoM
             <Botao variante="contorno" onClick={buscar}>Buscar</Botao>
           </div>
           {achados.estado === "carregando" && buscado ? <Carregando linhas={1} rotulo="Buscando…" /> : null}
-          {achados.estado === "erro" ? <ErroCarregar texto={achados.texto} tentarDeNovo={achados.recarregar} /> : null}
+          {achados.estado === "erro" ? <ErroCarregar erro={achados.erro} texto={achados.texto} tentarDeNovo={achados.recarregar} /> : null}
           {buscado && achados.estado === "pronto" ? (
             opcoes.length ? (
               <fieldset className="grid gap-1.5">
@@ -578,7 +578,7 @@ function FormUnidade({ unidade, aoFechar, salvo, recarregar }: { unidade: Unidad
   }
 
   if (blocos.estado === "carregando") return <Carregando linhas={2} />;
-  if (blocos.estado === "erro") return <ErroCarregar texto={blocos.texto} tentarDeNovo={blocos.recarregar} />;
+  if (blocos.estado === "erro") return <ErroCarregar erro={blocos.erro} texto={blocos.texto} tentarDeNovo={blocos.recarregar} />;
   const div = nomesDivisao(blocos.dados.estrutura);
   const opcoes = [{ valor: "", texto: div.sem }, ...blocos.dados.blocos.filter((b) => b.ativo || b.id === u.blocoId).map((b) => ({ valor: b.id, texto: b.nome }))];
   const mostraBloco = div.usa || !!u.blocoId;

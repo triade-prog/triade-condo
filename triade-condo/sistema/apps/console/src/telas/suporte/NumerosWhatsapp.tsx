@@ -25,7 +25,7 @@ export function NumerosWhatsapp() {
     <div className="grid gap-5 pt-4">
       <p className="text-tinta-suave">Os números dos clientes atribuídos a você. Desconectado vem primeiro: as mensagens dos moradores não chegam.</p>
       {carga.estado === "carregando" ? <Carregando /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" && carga.dados.numeros.length === 0 ? <Vazio titulo="Nenhum número ainda">Cadastre o número na ficha do cliente e conecte na aba WhatsApp.</Vazio> : null}
       {carga.estado === "pronto" && carga.dados.numeros.length > 0 ? (
         <ul className="grid gap-2.5">
