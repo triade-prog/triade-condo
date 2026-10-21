@@ -27,10 +27,14 @@ test.describe("Plataforma do síndico · manutenção", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Manutenção" })).toBeVisible();
     await expect(page.getByText("Bomba de recalque com ruído")).toBeVisible();
     await expect(page.getByText("Infiltração na garagem, vaga 14")).toBeVisible();
-    await expect(page.getByText(/venceu/).first()).toBeVisible();
+    await expect(page.getByText(/Retorno venceu/).filter({ visible: true })).toBeVisible();
+    await page.getByRole("button", { name: /^Filtros/ }).click();
+    await expect(page.getByRole("dialog", { name: "Filtrar manutenções" }).getByLabel("Prestador")).toBeVisible();
+    await conferir(page);
+    await page.getByRole("dialog", { name: "Filtrar manutenções" }).press("Escape");
     await expect(page.getByText("Pedido 2026-0001")).toBeVisible();
     await conferir(page);
-    await page.getByRole("button", { name: /Retorno vencido · 1/ }).click();
+    await page.getByRole("button", { name: "Retorno vencido 1" }).click();
     await expect(page).toHaveURL(/atencao=RETORNO_VENCIDO/);
     await expect(page.getByText("Bomba de recalque com ruído")).toHaveCount(0);
     await expect(page.getByText("Infiltração na garagem, vaga 14")).toBeVisible();
@@ -39,7 +43,7 @@ test.describe("Plataforma do síndico · manutenção", () => {
   test("MP-01, MP-04: registrar uma corretiva ligada ao pedido; o pedido mostra a manutenção", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/manutencao`);
-    await page.getByRole("button", { name: "+ Nova manutenção" }).click();
+    await page.getByRole("button", { name: "Nova manutenção" }).click();
     const j = page.getByRole("dialog", { name: "Nova manutenção" });
     await j.getByRole("button", { name: "Registrar manutenção" }).click();
     await expect(j.getByText("Diga o que precisa ser feito, de 3 a 120 caracteres.")).toBeVisible();
