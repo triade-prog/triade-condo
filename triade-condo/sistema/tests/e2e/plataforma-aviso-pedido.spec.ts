@@ -4,9 +4,10 @@
 // confirmação com quem soube e por onde; o cartão Avisos do registro no pedido; e a regra do
 // síndico em Configurações. No celular, o bloco abre num resumo. Cada tela passa no axe
 // (WCAG 2.2 AA) no celular e no computador e não usa emoji.
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { avisado, escolherPrioridade, irAoPasso } from "./registro";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -20,19 +21,9 @@ async function conferir(page: Page) {
 
 async function abrirRegistro(page: Page) {
   await page.goto(`${PLATAFORMA}/pedidos`);
-  await page.getByRole("button", { name: "+ Registrar pedido" }).first().click();
+  await page.getByRole("button", { name: "Registrar pedido" }).first().click();
   return page.getByRole("dialog", { name: "Registrar pedido" });
 }
-
-/** No celular, o bloco mostra só quantos ficam sabendo até a pessoa abrir. */
-async function abrirQuemAvisar(qa: Locator, celular: boolean, resumo: string, nomes: string) {
-  if (!celular) return;
-  await expect(qa.getByText(resumo, { exact: true })).toBeVisible();
-  await expect(qa.getByText(nomes, { exact: true })).toBeVisible();
-  await qa.getByRole("button", { name: "Ver e mudar" }).click();
-}
-
-const linha = (tabela: Locator, quem: string) => tabela.getByRole("row").filter({ hasText: quem });
 
 test.describe("Plataforma · aviso de pedido registrado", () => {
   test("AT-26, W-08: quem registra vê quem fica sabendo; o protocolo vai a quem pediu e o síndico entra pela regra no urgente", async ({ page, isMobile }) => {
@@ -40,11 +31,12 @@ test.describe("Plataforma · aviso de pedido registrado", () => {
     const j = await abrirRegistro(page);
     await j.getByLabel("Unidade", { exact: true }).selectOption({ label: "Torre A · 101" });
     await j.getByRole("combobox", { name: "Quem pediu" }).selectOption({ label: "Marina Souza · proprietário (condômino)" });
+    await irAoPasso(j, isMobile, 2);
     await j.getByLabel("Assunto").fill("Interfone mudo");
     await j.getByLabel("O que foi relatado").fill("O interfone da 101 não toca desde ontem.");
+    await irAoPasso(j, isMobile, 3);
     await j.getByLabel("Responsável", { exact: true }).selectOption({ label: "Eu" });
-    const qa = j.getByRole("region", { name: "Quem avisar" });
-    await abrirQuemAvisar(qa, isMobile, "Quem avisar: 1", "Marina Souza (protocolo)");
+    const qa = j.getByRole("region", { name: "Quem fica sabendo" });
 
     await expect(qa.getByLabel("Marina Souza, quem pediu")).toBeChecked();
     await expect(qa.getByText("Protocolo pelo WhatsApp do condomínio")).toBeVisible();
@@ -58,7 +50,7 @@ test.describe("Plataforma · aviso de pedido registrado", () => {
     await expect(qa.getByText("Moradores afetados")).toHaveCount(0);
     await expect(j.getByRole("button", { name: "Registrar e avisar 1" })).toBeVisible();
 
-    await j.getByLabel("Prioridade").selectOption({ label: "Urgente" });
+    await escolherPrioridade(j, "Urgente");
     await expect(sindico).toBeChecked();
     await expect(sindico).toBeDisabled();
     await expect(qa.getByText("Pedido urgente · no sino e no WhatsApp da pessoa, que ligou o aviso de pedido novo")).toBeVisible();
@@ -66,11 +58,11 @@ test.describe("Plataforma · aviso de pedido registrado", () => {
     await conferir(page);
     await j.getByRole("button", { name: "Registrar e avisar 2" }).click();
 
-    await expect(j.getByText("Pedido 2026-0004 registrado")).toBeVisible();
-    const tabela = j.getByRole("table", { name: "Quem foi avisado" });
-    await expect(linha(tabela, "Marina Souza, quem pediu")).toContainText("WhatsApp");
-    await expect(linha(tabela, "Marina Souza, quem pediu")).toContainText("Na fila");
-    const ana = linha(tabela, "Ana Souza, síndico");
+    await expect(j.getByText("Pedido registrado")).toBeVisible();
+    await expect(j.getByText("2026-0004", { exact: true })).toBeVisible();
+    await expect(avisado(j, "Marina Souza, quem pediu")).toContainText("WhatsApp");
+    await expect(avisado(j, "Marina Souza, quem pediu")).toContainText("Na fila");
+    const ana = avisado(j, "Ana Souza, síndico");
     await expect(ana).toHaveCount(2);
     await expect(ana.first()).toContainText("pela regra");
     await expect(ana.first()).toContainText("No sino");
@@ -91,18 +83,19 @@ test.describe("Plataforma · aviso de pedido registrado", () => {
     const j = await abrirRegistro(page);
     await j.getByRole("button", { name: "Em área comum" }).click();
     await j.getByLabel("Local").fill("Casa de bombas");
-    await j.getByLabel("Prioridade").selectOption({ label: "Alta" });
+    await irAoPasso(j, isMobile, 2);
     await j.getByLabel("Assunto").fill("Bomba vazando");
     await j.getByLabel("O que foi relatado").fill("Água no piso da casa de bombas.");
+    await irAoPasso(j, isMobile, 3);
+    await escolherPrioridade(j, "Alta");
     await j.getByLabel("Responsável", { exact: true }).selectOption({ label: "Bruna" });
-    const qa = j.getByRole("region", { name: "Quem avisar" });
-    await abrirQuemAvisar(qa, isMobile, "Quem avisar: 1", "Bruna");
+    const qa = j.getByRole("region", { name: "Quem fica sabendo" });
 
     await expect(qa.getByText("Registrado sem contato, ninguém para avisar")).toBeVisible();
     await expect(qa.getByLabel("Bruna, responsável")).toBeChecked();
     await expect(qa.getByText("Ninguém de fora é avisado sem você escolher e ver a mensagem.")).toBeVisible();
 
-    await qa.getByRole("button", { name: "+ Escolher" }).click();
+    await qa.getByRole("button", { name: "Escolher", exact: true }).click();
     await expect(qa.getByRole("button", { name: "Escolher Bombas Litoral" })).toBeDisabled();
     await expect(qa.getByText("Bombas · sem celular nem e-mail no cadastro")).toBeVisible();
     await qa.getByLabel("Escolher o prestador").fill("bomba");
@@ -122,7 +115,7 @@ test.describe("Plataforma · aviso de pedido registrado", () => {
     await mensagem.fill("Casa de bombas: bomba vazando, água no piso. Precisamos de visita hoje.");
     await expect(qa.getByText("Tire o nome, o telefone ou o e-mail de morador: não vão para o prestador.")).toHaveCount(0);
 
-    await qa.getByRole("button", { name: "+ Avisar" }).click();
+    await qa.getByRole("button", { name: "Avisar", exact: true }).click();
     await expect(qa.getByText("5 unidades · comunicado por e-mail e no mural")).toBeVisible();
     await expect(qa.getByLabel("Título do comunicado")).toHaveValue("Bomba vazando");
     await expect(qa.getByLabel("Comunicado", { exact: true }))
@@ -135,17 +128,16 @@ test.describe("Plataforma · aviso de pedido registrado", () => {
     await conferir(page);
     await j.getByRole("button", { name: "Registrar e avisar 3" }).click();
 
-    await expect(j.getByText("Pedido 2026-0004 registrado")).toBeVisible();
-    const tabela = j.getByRole("table", { name: "Quem foi avisado" });
-    await expect(linha(tabela, "Bruna, responsável")).toContainText("No sino");
-    await expect(linha(tabela, "HidroPress Bombas, prestador")).toContainText("WhatsApp");
-    await expect(linha(tabela, "Moradores · Torre A")).toContainText("E-mail");
-    await expect(linha(tabela, "Moradores · Torre A")).toContainText("Publicado · 1 e-mail");
+    await expect(j.getByText("2026-0004", { exact: true })).toBeVisible();
+    await expect(avisado(j, "Bruna, responsável")).toContainText("No sino");
+    await expect(avisado(j, "HidroPress Bombas, prestador")).toContainText("WhatsApp");
+    await expect(avisado(j, "Moradores · Torre A")).toContainText("E-mail");
+    await expect(avisado(j, "Moradores · Torre A")).toContainText("Publicado · 1 e-mail");
     await conferir(page);
 
     await j.getByRole("button", { name: "Abrir o pedido" }).click();
     await expect(page.getByRole("heading", { level: 1, name: /Bomba vazando/ })).toBeVisible();
-    await expect(page.getByText("prestador HidroPress Bombas")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Dados do pedido" })).toContainText(/Prestador\s*HidroPress Bombas/);
     const cartao = page.getByRole("region", { name: "Avisos do registro" });
     await expect(cartao.getByRole("listitem").filter({ hasText: "HidroPress Bombas" })).toContainText("WhatsApp · texto editado");
     await expect(cartao.getByRole("listitem").filter({ hasText: "Torre A" })).toContainText("Publicado · 1 e-mail");
@@ -156,14 +148,15 @@ test.describe("Plataforma · aviso de pedido registrado", () => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     const j = await abrirRegistro(page);
     await j.getByLabel("Unidade", { exact: true }).selectOption({ label: "Torre A · 102" });
+    await irAoPasso(j, isMobile, 2);
     await j.getByLabel("Assunto").fill("Barulho à noite");
     await j.getByLabel("O que foi relatado").fill("Vizinho de cima faz barulho depois das 22h.");
+    await irAoPasso(j, isMobile, 3);
     await j.getByLabel("Pedido privado").check();
-    const qa = j.getByRole("region", { name: "Quem avisar" });
+    const qa = j.getByRole("region", { name: "Quem fica sabendo" });
     await expect(qa.getByText("Pedido privado: prestador e moradores afetados não aparecem.")).toBeVisible();
-    if (isMobile) await qa.getByRole("button", { name: "Ver e mudar" }).click();
-    await expect(qa.getByRole("button", { name: "+ Escolher" })).toHaveCount(0);
-    await expect(qa.getByRole("button", { name: "+ Avisar" })).toHaveCount(0);
+    await expect(qa.getByRole("button", { name: "Escolher", exact: true })).toHaveCount(0);
+    await expect(qa.getByRole("button", { name: "Avisar", exact: true })).toHaveCount(0);
     await conferir(page);
   });
 

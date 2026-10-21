@@ -8,6 +8,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { PRESTADOR_FALSO } from "./api-falsa-links";
+import { avisado, escolherPrioridade, irAoPasso, maisAcoes } from "./registro";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -22,17 +23,18 @@ async function conferir(page: Page) {
 /** Um pedido urgente na casa de bombas, com a Bruna responsável e a HidroPress escolhida. */
 async function escolherPrestador(page: Page, isMobile: boolean) {
   await page.goto(`${PLATAFORMA}/pedidos`);
-  await page.getByRole("button", { name: "+ Registrar pedido" }).first().click();
+  await page.getByRole("button", { name: "Registrar pedido" }).first().click();
   const j = page.getByRole("dialog", { name: "Registrar pedido" });
   await j.getByRole("button", { name: "Em área comum" }).click();
   await j.getByLabel("Local").fill("Casa de bombas");
-  await j.getByLabel("Prioridade").selectOption({ label: "Urgente" });
+  await irAoPasso(j, isMobile, 2);
   await j.getByLabel("Assunto").fill("Bomba vazando");
   await j.getByLabel("O que foi relatado").fill("Água no piso da casa de bombas.");
+  await irAoPasso(j, isMobile, 3);
+  await escolherPrioridade(j, "Urgente");
   await j.getByLabel("Responsável", { exact: true }).selectOption({ label: "Bruna" });
-  const qa = j.getByRole("region", { name: "Quem avisar" });
-  if (isMobile) await qa.getByRole("button", { name: "Ver e mudar" }).click();
-  await qa.getByRole("button", { name: "+ Escolher" }).click();
+  const qa = j.getByRole("region", { name: "Quem fica sabendo" });
+  await qa.getByRole("button", { name: "Escolher", exact: true }).click();
   await qa.getByRole("button", { name: "Escolher HidroPress Bombas" }).click();
   return { j, qa };
 }
@@ -41,13 +43,13 @@ async function registrarComLink(j: Locator, qa: Locator) {
   await qa.getByLabel("Quando").fill("Hoje, assim que possível");
   await qa.getByLabel("Como entrar").fill("Portaria; procurar o zelador");
   await j.getByRole("button", { name: "Registrar e avisar 2" }).click();
-  await expect(j.getByText("Pedido 2026-0004 registrado")).toBeVisible();
+  await expect(j.getByText("2026-0004", { exact: true })).toBeVisible();
 }
-
-const linha = (tabela: Locator, quem: string) => tabela.getByRole("row").filter({ hasText: quem });
 
 test.describe("Plataforma · link do serviço no registro", () => {
   test("V-11, MP-09: o prestador já sai com o link, o prazo pela prioridade e a reserva do cadastro", async ({ page, isMobile }) => {
+    // Passa pelo axe sete vezes, em telas grandes: precisa de mais tempo que o padrão.
+    test.slow();
     await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     const { j, qa } = await escolherPrestador(page, isMobile);
 
@@ -68,10 +70,10 @@ test.describe("Plataforma · link do serviço no registro", () => {
     await marcar.check();
 
     // O prazo segue a prioridade até alguém escolher outro (decisão 7).
-    await j.getByLabel("Prioridade").selectOption({ label: "Alta" });
+    await escolherPrioridade(j, "Alta");
     await expect(prazo.getByRole("button", { name: "24 horas", exact: true })).toHaveAttribute("aria-pressed", "true");
     await prazo.getByRole("button", { name: "8 horas", exact: true }).click();
-    await j.getByLabel("Prioridade").selectOption({ label: "Urgente" });
+    await escolherPrioridade(j, "Urgente");
     await expect(prazo.getByRole("button", { name: "8 horas", exact: true })).toHaveAttribute("aria-pressed", "true");
     await prazo.getByRole("button", { name: "4 horas", exact: true }).click();
 
@@ -83,9 +85,8 @@ test.describe("Plataforma · link do serviço no registro", () => {
     await conferir(page);
     await registrarComLink(j, qa);
 
-    const tabela = j.getByRole("table", { name: "Quem foi avisado" });
-    await expect(linha(tabela, "HidroPress Bombas, prestador")).toContainText("WhatsApp · link do serviço");
-    await expect(linha(tabela, "HidroPress Bombas, prestador")).toContainText("Esperando a mensagem sair");
+    await expect(avisado(j, "HidroPress Bombas, prestador")).toContainText("WhatsApp · link do serviço");
+    await expect(avisado(j, "HidroPress Bombas, prestador")).toContainText("Esperando a mensagem sair");
     await expect(j.getByText("Manutenção corretiva criada")).toBeVisible();
     await expect(j.getByText("Bomba vazando · ligada a este pedido · se não responder, passa para Bombas Litoral")).toBeVisible();
     await expect(j.getByText("O prazo para responder só começa quando a mensagem sai.")).toBeVisible();
@@ -120,7 +121,7 @@ test.describe("Plataforma · link do serviço no registro", () => {
     const { j, qa } = await escolherPrestador(page, isMobile);
     await registrarComLink(j, qa);
     await j.getByRole("button", { name: "Abrir o pedido" }).click();
-    await page.getByRole("button", { name: "Cancelar pedido" }).click();
+    await maisAcoes(page, "Cancelar pedido");
     const c = page.getByRole("dialog", { name: /Cancelar/ });
     await c.getByLabel("Por que cancelar").fill("Vazamento era da torneira, já resolvido");
     await c.getByRole("button", { name: "Cancelar pedido" }).click();
@@ -131,15 +132,16 @@ test.describe("Plataforma · link do serviço no registro", () => {
   test("V-11: sem a permissão de editar manutenção, o prestador recebe só a mensagem", async ({ page, isMobile }) => {
     await instalarApiPlataformaFalsa(page, { quem: "SECRETARIA", comAtendimento: true, secretariaRegistra: true });
     await page.goto(`${PLATAFORMA}/pedidos`);
-    await page.getByRole("button", { name: "+ Registrar pedido" }).first().click();
+    await page.getByRole("button", { name: "Registrar pedido" }).first().click();
     const j = page.getByRole("dialog", { name: "Registrar pedido" });
     await j.getByRole("button", { name: "Em área comum" }).click();
     await j.getByLabel("Local").fill("Casa de bombas");
+    await irAoPasso(j, isMobile, 2);
     await j.getByLabel("Assunto").fill("Bomba vazando");
     await j.getByLabel("O que foi relatado").fill("Água no piso da casa de bombas.");
-    const qa = j.getByRole("region", { name: "Quem avisar" });
-    if (isMobile) await qa.getByRole("button", { name: "Ver e mudar" }).click();
-    await qa.getByRole("button", { name: "+ Escolher" }).click();
+    await irAoPasso(j, isMobile, 3);
+    const qa = j.getByRole("region", { name: "Quem fica sabendo" });
+    await qa.getByRole("button", { name: "Escolher", exact: true }).click();
     await qa.getByRole("button", { name: "Escolher HidroPress Bombas" }).click();
     await expect(qa.getByText("O link do serviço fica com quem cuida da manutenção; daqui, o prestador recebe só a mensagem.")).toBeVisible();
     await expect(qa.getByLabel("Mandar o link do serviço")).toHaveCount(0);

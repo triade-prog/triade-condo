@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, type DragEvent } from "react";
 import {
   ARQUIVOS_POR_ENVIO, conferirAntesDeEnviar, MIDIAS_WHATSAPP, mostrarTamanho, PARTES_ARQUIVO, type MidiaWhatsapp, type ParteArquivo,
 } from "@triade/domain";
-import { Botao, CampoTexto, chamarApi, Dialogo, ErroCarregar, Carregando, Selo, textoDoErro, Vazio, type Resposta } from "@triade/ui";
+import { Botao, CampoTexto, chamarApi, Dialogo, ErroCarregar, Carregando, Icone, Selo, textoDoErro, Vazio, type Resposta } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { diaHora } from "./comum.tsx";
 
@@ -97,11 +97,14 @@ export function resumoEnvio(r: ResultadoEnvio[]): { tom: "ok" | "atencao"; texto
  * Escolher arquivos: do computador, arrastando ou, no celular, tirando foto na hora. Cada um
  * tem descrição opcional; o que não pode ir diz o motivo e não impede os outros.
  */
-export function EscolherArquivos({ itens, aoMudar, rotulo, enviando }: {
+/** Anexar arquivos (DC15, guia de padrões): a área tracejada diz o que aceita; cada arquivo vira
+ * uma linha, com a descrição opcional e o andamento do envio. */
+export function EscolherArquivos({ itens, aoMudar, rotulo, enviando, opcional }: {
   itens: ItemEnvio[];
   aoMudar: (itens: ItemEnvio[]) => void;
   rotulo: string;
   enviando?: boolean;
+  opcional?: boolean;
 }) {
   const escolher = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
@@ -122,14 +125,17 @@ export function EscolherArquivos({ itens, aoMudar, rotulo, enviando }: {
 
   return (
     <fieldset className="grid gap-2">
-      <legend className="mb-1 text-sm font-medium">{rotulo}</legend>
-      <div onDragOver={(e) => e.preventDefault()} onDrop={soltar}
-        className="grid justify-items-center gap-2 rounded-lg border border-dashed border-contorno bg-superficie-2 p-3 text-center text-sm">
-        <div className="flex flex-wrap justify-center gap-2">
-          <Botao variante="contorno" disabled={enviando} onClick={() => escolher.current?.click()}>Escolher arquivos</Botao>
-          <Botao variante="contorno" disabled={enviando} onClick={() => camera.current?.click()}>Tirar foto</Botao>
-        </div>
-        <span className="text-xs text-tinta-suave">Ou arraste aqui. Fotos (JPG, PNG, WEBP) e PDF, até 10 MB cada e {ARQUIVOS_POR_ENVIO} de uma vez.</span>
+      <legend className="mb-1.5 text-[13px] font-medium">{rotulo}{opcional ? <span className="font-normal text-tinta-suave"> (opcional)</span> : null}</legend>
+      <div onDragOver={(e) => e.preventDefault()} onDrop={soltar} className="anexar">
+        <span className="quadro" aria-hidden="true"><Icone nome="enviar" /></span>
+        <span className="grid flex-1 gap-0.5">
+          <span className="font-semibold max-md:hidden">Arraste fotos e documentos para cá</span>
+          <span className="t-apoio">JPG, PNG, WEBP ou PDF · até 10 MB cada · {ARQUIVOS_POR_ENVIO} de uma vez</span>
+        </span>
+        <span className="acoes">
+          <Botao variante="contorno" tamanho="m" disabled={enviando} onClick={() => escolher.current?.click()}><Icone nome="clipe" />Escolher arquivos</Botao>
+          <Botao variante="contorno" tamanho="m" className="md:hidden" disabled={enviando} onClick={() => camera.current?.click()}><Icone nome="camera" />Tirar foto</Botao>
+        </span>
         <input ref={escolher} type="file" multiple accept={ACEITOS} className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => incluir(e.target.files)} />
         <input ref={camera} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true"
           onChange={(e) => incluir(e.target.files)} />
@@ -138,15 +144,18 @@ export function EscolherArquivos({ itens, aoMudar, rotulo, enviando }: {
       {itens.length ? (
         <ul className="grid gap-2" aria-label="Arquivos escolhidos">
           {itens.map((it) => (
-            <li key={it.chave} className={`grid gap-1.5 rounded-lg border px-3 py-2 text-sm ${it.problema ? "border-atencao-borda bg-atencao-fundo" : "border-linha bg-superficie"}`}>
-              <span className="flex items-center justify-between gap-2">
-                <span className="min-w-0 [overflow-wrap:anywhere]">
-                  <span className="font-medium">{it.arquivo.name}</span>
-                  {it.problema ? <span className="text-atencao"> {it.problema}</span>
-                    : <span className="text-xs text-tinta-suave"> · {mostrarTamanho(it.arquivo.size)}{enviando ? ` · ${it.progresso}%` : ""}</span>}
+            <li key={it.chave} className="arquivo" data-problema={it.problema ? "" : undefined}>
+              <span className="flex items-center gap-3">
+                <span className="ladrilho" data-tom={it.problema ? undefined : "ok"} aria-hidden="true">
+                  <Icone nome={it.arquivo.type.startsWith("image/") ? "camera" : "documento"} />
                 </span>
-                {!enviando ? <Botao variante="discreto" aria-label={`Tirar ${it.arquivo.name} da lista`}
-                  onClick={() => aoMudar(itens.filter((x) => x.chave !== it.chave))}>Tirar</Botao> : null}
+                <span className="grid min-w-0 flex-1 [overflow-wrap:anywhere]">
+                  <span className="font-medium">{it.arquivo.name}</span>
+                  {it.problema ? <span className="t-apoio text-atencao">{it.problema}</span>
+                    : <span className="t-apoio">{enviando ? `Enviando · ${it.progresso}%` : `Pronto · ${mostrarTamanho(it.arquivo.size)}`}</span>}
+                </span>
+                {!enviando ? <Botao variante="discreto" tamanho="m" soIcone aria-label={`Tirar ${it.arquivo.name} da lista`}
+                  onClick={() => aoMudar(itens.filter((x) => x.chave !== it.chave))}><Icone nome="fechar" /></Botao> : null}
               </span>
               {!it.problema ? (
                 <CampoTexto id={`desc-${it.chave}`} rotulo={`Descrição de ${it.arquivo.name}`} opcional maxLength={300} value={it.descricao} disabled={enviando}

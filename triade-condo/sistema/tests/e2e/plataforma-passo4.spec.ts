@@ -4,6 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { abrirMaisAcoes, historicoCompleto, irAoPasso } from "./registro";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -36,22 +37,24 @@ test.describe("Plataforma do síndico · passo 4", () => {
     await conferir(page);
   });
 
-  test("AT-01: registrar pedido de uma unidade, com quem pediu, e abrir com o protocolo", async ({ page }) => {
+  test("AT-01: registrar pedido de uma unidade, com quem pediu, e abrir com o protocolo", async ({ page, isMobile }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(`${PLATAFORMA}/pedidos`);
     await expect(page.getByRole("link", { name: /Portão não fecha/ })).toBeVisible();
-    await page.getByRole("button", { name: "+ Registrar pedido" }).first().click();
+    await page.getByRole("button", { name: "Registrar pedido" }).first().click();
     const j = page.getByRole("dialog", { name: "Registrar pedido" });
     await j.getByLabel("Unidade", { exact: true }).selectOption({ label: "Torre A · 101" });
     await expect(j.getByRole("combobox", { name: "Quem pediu" })).toContainText("Marina Souza");
     await j.getByRole("combobox", { name: "Quem pediu" }).selectOption({ label: "Marina Souza · proprietário (condômino)" });
+    await irAoPasso(j, isMobile, 2);
     await j.getByLabel("Assunto").fill("Interfone mudo");
     await j.getByLabel("O que foi relatado").fill("O interfone da 101 não toca desde ontem.");
+    await irAoPasso(j, isMobile, 3);
     await expect(j.getByLabel("Responsável", { exact: true })).toHaveValue(/.+/);
     await conferir(page);
     // Quem pediu recebe o protocolo (F6.4): o botão diz quantos ficam sabendo.
     await j.getByRole("button", { name: "Registrar e avisar 1" }).click();
-    await expect(j.getByText("Pedido 2026-0004 registrado")).toBeVisible();
+    await expect(j.getByText("2026-0004", { exact: true })).toBeVisible();
     await j.getByRole("button", { name: "Abrir o pedido" }).click();
     await expect(page.getByRole("heading", { level: 1, name: /2026-0004 · Interfone mudo/ })).toBeVisible();
     await expect(page.getByRole("status").filter({ hasText: "Pedido registrado." })).toBeVisible();
@@ -109,10 +112,9 @@ test.describe("Plataforma do síndico · passo 4", () => {
     await ra.getByRole("button", { name: "Reabrir pedido" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Pedido reaberto." })).toBeVisible();
 
-    await page.getByRole("tab", { name: "Histórico" }).click();
+    await historicoCompleto(page);
     await expect(page.getByText("Reaberto. Situação: Encerrado → Em andamento. Motivo: A mancha voltou")).toBeVisible();
     await expect(page.getByText(/Previsão de solução: sem previsão → 20\/10\/2026/)).toBeVisible();
-    await page.getByRole("tab", { name: "Conclusões" }).click();
     await expect(page.getByText(/Reaberto por Ana Souza/)).toBeVisible();
     await conferir(page);
   });
@@ -129,8 +131,9 @@ test.describe("Plataforma do síndico · passo 4", () => {
     await expect(page.getByText("Aceito", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Dar retorno ao morador" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Concluir" })).toHaveCount(0);
+    await abrirMaisAcoes(page);
     await expect(page.getByRole("button", { name: "Cancelar pedido" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "+ Registrar pedido" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Registrar pedido" })).toHaveCount(0);
     await conferir(page);
   });
 

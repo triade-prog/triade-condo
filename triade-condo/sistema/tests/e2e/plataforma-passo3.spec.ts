@@ -144,6 +144,8 @@ test.describe("Plataforma do síndico · passo 3", () => {
   });
 
   test("MU-01: inquilino com o proprietário do imóvel no cadastro; a unidade sem proprietário vira pendência", async ({ page }) => {
+    // Cadastra, muda e confere com o axe em várias telas: com a suíte inteira rodando, passa dos 30 s.
+    test.slow();
     await instalarApiPlataformaFalsa(page);
     await page.goto(PLATAFORMA);
     const cartao = page.getByRole("region", { name: "Moradores e unidades" });
