@@ -19,7 +19,7 @@ test.describe("Plataforma · Ajuda e suporte", () => {
   test("PI-17: a tela diz que é suporte do sistema, não reparo nem emergência", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(PLATAFORMA);
-    await expect(page.getByRole("heading", { level: 1, name: "Residencial Ipê" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Resumo do dia" })).toContainText("Residencial Ipê");
     // No celular o menu abre pelo botão.
     if (await page.getByRole("button", { name: "Mais", exact: true }).isVisible()) await page.getByRole("button", { name: "Mais", exact: true }).click();
     await expect(page.getByRole("link", { name: "Ajuda e suporte" })).toBeVisible();

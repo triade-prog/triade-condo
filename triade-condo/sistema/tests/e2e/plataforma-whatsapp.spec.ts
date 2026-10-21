@@ -21,7 +21,7 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
   test("W-15: o menu leva ao WhatsApp; arquivar pede motivo e ligar a um contato reconhece o número", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(PLATAFORMA);
-    await expect(page.getByRole("heading", { level: 1, name: "Residencial Ipê" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Resumo do dia" })).toContainText("Residencial Ipê");
     if (await page.getByRole("button", { name: "Mais", exact: true }).isVisible()) await page.getByRole("button", { name: "Mais", exact: true }).click();
     await page.getByRole("navigation", { name: "Plataforma" }).getByRole("link", { name: /^WhatsApp/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "WhatsApp" })).toBeVisible();

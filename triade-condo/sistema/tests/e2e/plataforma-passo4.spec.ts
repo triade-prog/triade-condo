@@ -140,7 +140,7 @@ test.describe("Plataforma do síndico · passo 4", () => {
   test("a busca no topo acha pedidos e moradores do condomínio", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(PLATAFORMA);
-    await expect(page.getByRole("heading", { level: 1, name: "Residencial Ipê" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Resumo do dia" })).toContainText("Residencial Ipê");
     // No celular a busca abre pela lupa do topo.
     const lupa = page.getByRole("button", { name: "Buscar no condomínio" });
     if (await lupa.isVisible()) await lupa.click();

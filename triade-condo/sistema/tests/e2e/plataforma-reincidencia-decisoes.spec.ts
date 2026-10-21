@@ -155,8 +155,8 @@ test.describe("Plataforma · reincidência e decisões", () => {
     await page.getByRole("button", { name: "Ver a decisão: Consertar ou trocar o motor do portão da garagem" }).click();
     const ver = page.getByRole("dialog", { name: "Decisão pedida" });
     await expect(ver).toContainText("Vence em 3 dias");
-    await expect(ver).toContainText("1 · Consertar o motor atualR$ 1.150,50");
-    await expect(ver).toContainText("2 · Trocar o motorR$ 2.400");
+    await expect(ver.getByRole("listitem").filter({ hasText: "Consertar o motor atual" })).toContainText("R$ 1.150,50");
+    await expect(ver.getByRole("listitem").filter({ hasText: "Trocar o motor" })).toContainText("R$ 2.400");
     await expect(ver).toContainText("Por que agora: O portão parou duas vezes este mês.");
     await conferir(page);
     await ver.getByRole("button", { name: "Retirar" }).click();
@@ -192,10 +192,12 @@ test.describe("Plataforma · reincidência e decisões", () => {
     await aviso.getByRole("link", { name: "Decidir" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "Decisões" })).toBeVisible();
-    await expect(page.getByRole("group", { name: "Quais decisões" }).getByRole("button", { name: "Aguardando · 1" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("group", { name: "Quais decisões" }).getByRole("button", { name: "Aguardando 1" })).toHaveAttribute("aria-pressed", "true");
     const cartao = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: "Qual encanador chamar para o vazamento" }) });
     await expect(cartao).toContainText("Venceu ontem");
-    await expect(cartao).toContainText("Pedido 2026-0001 · 2 alternativas, de R$ 350 a R$ 520 · pedida por Bruna em 14/10");
+    await expect(cartao).toContainText("Pedido 2026-0001 · Vazamento no banheiro · pedida por Bruna em 14/10");
+    await expect(cartao).toContainText("2 alternativas · de R$ 350 a R$ 520");
+    await expect(cartao.getByRole("listitem").filter({ hasText: "Encanador da administradora" })).toContainText("R$ 520");
     await conferir(page);
 
     await cartao.getByRole("button", { name: "Decidir: Qual encanador chamar para o vazamento" }).click();
@@ -212,7 +214,7 @@ test.describe("Plataforma · reincidência e decisões", () => {
     await expect(recado(page, "Alternativa 2 aprovada. Quem pediu foi avisado no sino.")).toBeVisible();
     await expect(page.getByText("Nenhuma decisão esperando você")).toBeVisible();
 
-    await page.getByRole("group", { name: "Quais decisões" }).getByRole("button", { name: "Decididas" }).click();
+    await page.getByRole("group", { name: "Quais decisões" }).getByRole("button", { name: "Respondidas" }).click();
     const decidida = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: "Qual encanador chamar para o vazamento" }) });
     await expect(decidida).toContainText("Aprovada a alternativa 2 (Encanador da administradora) por Ana Souza");
     await expect(decidida.getByRole("button", { name: /^Decidir/ })).toHaveCount(0);

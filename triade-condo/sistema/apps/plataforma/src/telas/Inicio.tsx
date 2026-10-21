@@ -1,21 +1,24 @@
 "use client";
-// Início do síndico (V-08, CF-12): o resumo de moradores e unidades (passo 3), o que falta
-// configurar, sem obrigar nada, e o que já veio pronto pelo cenário. O dia do condomínio
-// (passo 7, F7.1): o que pede atenção agora e o mês fechado, separado do agora. Hoje na
-// agenda (peça R7) e o cartão da manutenção (peça R6). Para quem pode aprovar, as decisões que
-// esperam a resposta (F7.4, AT-23).
+// Início do síndico no padrão novo (DC15, telas-modelo inicio-computador e inicio-celular; V-08,
+// CF-12): a faixa com a saudação e o Registrar pedido; o Agora, com o que pede atenção e o
+// botão de cada linha (passo 7, F7.1; e as decisões que esperam resposta, F7.4, AT-23); Hoje
+// na agenda (peça R7) e Vencimentos (documento, contrato e prontuário); e, em "Por área", a
+// manutenção (R6), a Vida em condomínio (R12), comunicação e moradores (passo 3), o mês
+// fechado, separado do agora, e o que falta configurar com o que já veio pronto. No celular,
+// os cartões "Por área" fecham numa linha curta e abrem com um toque.
 
 import Link from "next/link";
 import { CENARIOS, mostrarHoras, mostrarPorcentagem, nomeDoMes, nomeDoMesAnterior, PENDENCIAS_CONFIG } from "@triade/domain";
-import { Carregando, classeBotao, ErroCarregar, IconeMarca, Selo } from "@triade/ui";
-import { CabecaCartao } from "./CabecaCartao.tsx";
+import { Carregando, classeBotao, ErroCarregar, Icone, IconeMarca, Selo, type NomeIcone, type Tom } from "@triade/ui";
+import { CartaoInicio, LinhasInicio, resumoDasLinhas, type LinhaInicio } from "./CartaoInicio.tsx";
 import { diaHora } from "./pedidos/comum.tsx";
 import { HojeNaAgenda } from "./agenda/HojeNaAgenda.tsx";
-import { CartaoManutencao } from "./manutencao/CartaoManutencao.tsx";
-import { CartaoComunicados } from "./comunicados/CartaoComunicados.tsx";
-import { CartaoMemoria } from "./memoria/CartaoMemoria.tsx";
+import { linhaContrato, linhasManutencao, vazioManutencao } from "./manutencao/CartaoManutencao.tsx";
+import { linhaDocumento, linhasComunicados } from "./comunicados/CartaoComunicados.tsx";
+import { linhasProntuario } from "./memoria/CartaoMemoria.tsx";
 import { CartaoAcessoExcepcional } from "./suporte/CartaoAcessoExcepcional.tsx";
-import { CartaoVida } from "./vida/CartaoVida.tsx";
+import { linhasVida, temVida } from "./vida/CartaoVida.tsx";
+import { useCelular } from "./celular.ts";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
 import type { Configuracoes, MesFechado } from "./tipos.ts";
 
@@ -29,120 +32,86 @@ function plural(n: number, um: string, varios: string): string {
   return `${n} ${n === 1 ? um : varios}`;
 }
 
-/** Resumo de moradores (MU-02): cada número leva até onde se resolve. */
-function Moradores({ resumo }: { resumo: NonNullable<ReturnType<typeof usePlataforma>["painel"]["moradores"]> }) {
-  const linhas = [
-    { texto: plural(resumo.unidades, "unidade cadastrada", "unidades cadastradas"), href: "/moradores", botao: "Ver", ajuda: null, aviso: false },
-    ...(resumo.aConfirmar ? [{ texto: plural(resumo.aConfirmar, "contato a confirmar", "contatos a confirmar"), href: "/moradores?aba=confirmar", botao: "Conferir",
-      ajuda: "Só valem depois de confirmados.", aviso: true }] : []),
-    ...(resumo.semContato ? [{ texto: plural(resumo.semContato, "unidade sem contato confirmado", "unidades sem contato confirmado"),
-      href: "/moradores?filtro=sem-contato", botao: "Ver quais", ajuda: null, aviso: true }] : []),
-    ...(resumo.semProprietario ? [{ texto: plural(resumo.semProprietario, "unidade com inquilino e sem proprietário", "unidades com inquilino e sem proprietário"),
-      href: "/moradores?filtro=sem-proprietario", botao: "Ver quais", ajuda: "Para controle, o dono do imóvel fica no cadastro.", aviso: true }] : []),
+/** Moradores (MU-02): cada número leva até onde se resolve. Vão no cartão Comunicação e moradores. */
+function linhasMoradores(resumo: NonNullable<ReturnType<typeof usePlataforma>["painel"]["moradores"]>): LinhaInicio[] {
+  const unidades = plural(resumo.unidades, "unidade cadastrada", "unidades cadastradas");
+  return [
+    { icone: "predio", tom: "neutro", titulo: unidades, href: "/moradores", rotuloBotao: `Ver: ${unidades}` },
+    ...(resumo.aConfirmar ? [{ icone: "pessoa" as const, tom: "atencao" as const, titulo: plural(resumo.aConfirmar, "contato a confirmar", "contatos a confirmar"),
+      detalhe: "Só valem depois de confirmados.", href: "/moradores?aba=confirmar", botao: "Conferir" }] : []),
+    ...(resumo.semContato ? [{ icone: "pessoas" as const, tom: "atencao" as const, titulo: plural(resumo.semContato, "unidade sem contato confirmado", "unidades sem contato confirmado"),
+      href: "/moradores?filtro=sem-contato", botao: "Ver quais" }] : []),
+    ...(resumo.semProprietario ? [{ icone: "chave" as const, tom: "atencao" as const,
+      titulo: plural(resumo.semProprietario, "unidade com inquilino e sem proprietário", "unidades com inquilino e sem proprietário"),
+      detalhe: "Para controle, o dono do imóvel fica no cadastro.", href: "/moradores?filtro=sem-proprietario", botao: "Ver quais" }] : []),
   ];
-  return (
-    <section aria-labelledby="t-moradores" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <CabecaCartao id="t-moradores" titulo="Moradores e unidades" href="/moradores" />
-      {resumo.unidades === 0 ? (
-        <div className="grid justify-items-start gap-2 text-sm">
-          <p>Nenhuma unidade ainda. Cadastre as unidades ou importe a planilha da administradora.</p>
-          <Link href="/moradores" className={classeBotao("contorno")}>Cadastrar unidades</Link>
-        </div>
-      ) : (
-        <ul className="divide-y divide-linha">
-          {linhas.map((l) => (
-            <li key={l.href} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-              <span className="flex items-start gap-2">
-                {l.aviso ? <IconeMarca marca="atencao" className="mt-0.5 h-4 w-4 text-atencao" /> : null}
-                <span>{l.texto}{l.ajuda ? <span className="block text-xs text-tinta-suave">{l.ajuda}</span> : null}</span>
-              </span>
-              <Link href={l.href} className={classeBotao("discreto", "", "m")} aria-label={l.botao === "Ver" ? `Ver: ${l.texto}` : undefined}>{l.botao}</Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
 }
 
 const HOJE = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "numeric", month: "long" });
 const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 
 /** Agora (F7.1, AT-08, TR-11): o que pede atenção agora, cada linha levando à fila filtrada. */
-function Agora({ resumo, decisoes, registrar, paradaDias }: {
+function Agora({ resumo, decisoes, paradaDias }: {
   resumo: NonNullable<ReturnType<typeof usePlataforma>["painel"]["pedidos"]>;
   decisoes: ReturnType<typeof usePlataforma>["painel"]["decisoes"];
-  registrar: boolean;
   paradaDias: number | null;
 }) {
   const maisAntigaDias = decisoes?.maisAntigaDias ?? null;
-  const linhas = [
-    ...(resumo.retornoVencido ? [{ selo: "Vencido", tom: "erro" as const, texto: plural(resumo.retornoVencido, "retorno vencido", "retornos vencidos"),
-      href: "/pedidos?atencao=RETORNO_VENCIDO", botao: "Ver quais", primario: true,
+  type Linha = { selo: string | null; tom: Tom; icone: NomeIcone; tomIcone: Tom | "violeta"; texto: string; href: string; botao: string; iconeBotao?: NomeIcone; ajuda: string | null };
+  const linhas: Linha[] = [
+    ...(resumo.retornoVencido ? [{ selo: "Vencido", tom: "erro" as const, icone: "relogio" as const, tomIcone: "erro" as const,
+      texto: plural(resumo.retornoVencido, "retorno vencido", "retornos vencidos"), href: "/pedidos?atencao=RETORNO_VENCIDO", botao: "Ver quais",
       ajuda: resumo.vencidoMaisAntigo
         ? `O mais antigo venceu em ${diaHora(resumo.vencidoMaisAntigo)}${resumo.vencidoMaisAntigoEscalado ? ", já avisado ao síndico" : ""}. O morador está esperando notícia.`
         : null }] : []),
-    ...(resumo.vencemHoje ? [{ selo: "Hoje", tom: "atencao" as const, texto: plural(resumo.vencemHoje, "retorno vence hoje", "retornos vencem hoje"),
-      href: "/pedidos?situacao=ATIVOS", botao: "Ver quais", primario: false,
+    ...(resumo.vencemHoje ? [{ selo: "Hoje", tom: "atencao" as const, icone: "relogio" as const, tomIcone: "atencao" as const,
+      texto: plural(resumo.vencemHoje, "retorno vence hoje", "retornos vencem hoje"), href: "/pedidos?situacao=ATIVOS", botao: "Ver quais",
       ajuda: resumo.proximoHoje ? `O próximo às ${HORA.format(new Date(resumo.proximoHoje))}.` : null }] : []),
-    ...(decisoes?.aguardando ? [{ selo: "Para você", tom: "atencao" as const,
-      texto: plural(decisoes.aguardando, "decisão aguardando você", "decisões aguardando você"), href: "/decisoes?filtro=AGUARDANDO", botao: "Decidir", primario: true,
+    ...(decisoes?.aguardando ? [{ selo: "Para você", tom: "andamento" as const, icone: "decisao" as const, tomIcone: "violeta" as const,
+      texto: plural(decisoes.aguardando, "decisão aguardando você", "decisões aguardando você"), href: "/decisoes?filtro=AGUARDANDO", botao: "Decidir", iconeBotao: "check" as const,
       ajuda: [decisoes.vencidas ? `${decisoes.vencidas} com o prazo vencido` : null,
         maisAntigaDias === null ? null : `a mais antiga foi pedida ${maisAntigaDias === 0 ? "hoje" : maisAntigaDias === 1 ? "há 1 dia" : `há ${maisAntigaDias} dias`}`]
         .filter(Boolean).join("; ").replace(/^./, (x) => x.toUpperCase()) + "." }] : []),
-    ...(resumo.meusParaAceitar ? [{ selo: null, tom: "info" as const, texto: plural(resumo.meusParaAceitar, "pedido para você aceitar", "pedidos para você aceitar"),
-      href: "/pedidos?responsavel=EU&atencao=AGUARDANDO_ACEITE", botao: "Ver e aceitar", ajuda: null as string | null, primario: false }] : []),
-    ...(resumo.semResponsavel ? [{ selo: null, tom: "info" as const, texto: plural(resumo.semResponsavel, "sem responsável", "sem responsável"),
-      href: "/pedidos?atencao=SEM_RESPONSAVEL", botao: "Atribuir", ajuda: null, primario: false }] : []),
-    ...(resumo.pendenciasParadas ? [{ selo: null, tom: "info" as const,
+    ...(resumo.meusParaAceitar ? [{ selo: null, tom: "info" as const, icone: "pessoa" as const, tomIcone: "violeta" as const,
+      texto: plural(resumo.meusParaAceitar, "pedido para você aceitar", "pedidos para você aceitar"), href: "/pedidos?responsavel=EU&atencao=AGUARDANDO_ACEITE", botao: "Ver e aceitar", ajuda: null }] : []),
+    ...(resumo.semResponsavel ? [{ selo: "Atenção", tom: "atencao" as const, icone: "pessoa" as const, tomIcone: "atencao" as const,
+      texto: plural(resumo.semResponsavel, "sem responsável", "sem responsável"), href: "/pedidos?atencao=SEM_RESPONSAVEL", botao: "Atribuir", ajuda: null }] : []),
+    ...(resumo.pendenciasParadas ? [{ selo: null, tom: "info" as const, icone: "alerta" as const, tomIcone: "atencao" as const,
       texto: `${plural(resumo.pendenciasParadas, "pendência parada", "pendências paradas")}${paradaDias ? ` há mais de ${paradaDias} ${paradaDias === 1 ? "dia" : "dias"}` : ""}`,
-      href: "/pedidos?atencao=COM_PENDENCIA", botao: "Ver quais", ajuda: null, primario: false }] : []),
-    ...(resumo.emRevisao ? [{ selo: null, tom: "info" as const, texto: plural(resumo.emRevisao, "em revisão", "em revisão"), href: "/pedidos?situacao=EM_REVISAO",
-      botao: "Revisar", ajuda: null, primario: false }] : []),
+      href: "/pedidos?atencao=COM_PENDENCIA", botao: "Ver quais", ajuda: null }] : []),
+    ...(resumo.emRevisao ? [{ selo: null, tom: "info" as const, icone: "olho" as const, tomIcone: "neutro" as const,
+      texto: plural(resumo.emRevisao, "em revisão", "em revisão"), href: "/pedidos?situacao=EM_REVISAO", botao: "Revisar", ajuda: null }] : []),
   ];
   return (
-    <section aria-labelledby="t-agora" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <CabecaCartao id="t-agora" titulo="Agora" href="/pedidos" />
+    <CartaoInicio titulo="Agora" icone="sino" href="/pedidos">
       {linhas.length ? (
-        <ul className="divide-y divide-linha">
-          {linhas.map((l) => (
-            <li key={l.href + l.texto} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-              <span className="flex flex-wrap items-start gap-2">
-                {l.selo ? <Selo tom={l.tom}>{l.selo}</Selo>
-                  : <IconeMarca marca="atencao" className="mt-0.5 h-4 w-4 text-atencao" />}
-                <span>{l.texto}{l.ajuda ? <span className="block text-xs text-tinta-suave">{l.ajuda}</span> : null}</span>
-              </span>
-              <Link href={l.href} className={classeBotao(l.primario ? "secundario" : "discreto", "", "m")}>{l.botao}</Link>
-            </li>
-          ))}
-        </ul>
+        <LinhasInicio linhas={linhas.map((l) => ({ chave: l.href + l.texto, icone: l.icone, tom: l.tomIcone, titulo: l.texto, detalhe: l.ajuda ?? undefined,
+          selo: l.selo ? { texto: l.selo, tom: l.tom } : undefined, href: l.href, botao: l.botao, iconeBotao: l.iconeBotao }))} />
       ) : (
-        <p className="flex items-center gap-2 text-sm"><IconeMarca marca="ok" className="h-4 w-4 text-ok" />Nada pedindo atenção agora.</p>
+        <p className="flex items-center gap-2"><IconeMarca marca="ok" className="h-4 w-4 text-ok" />Nada pedindo atenção agora.</p>
       )}
-      <p className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <span className="text-tinta-suave">{plural(resumo.ativos, "pedido ativo", "pedidos ativos")}</span>
-        {registrar ? <Link href="/pedidos" className={classeBotao("contorno")}>Registrar pedido</Link> : null}
-      </p>
-    </section>
+      <p className="t-apoio border-t border-linha pt-3">{plural(resumo.ativos, "pedido ativo", "pedidos ativos")}</p>
+    </CartaoInicio>
   );
 }
 
 /** Mês fechado (F7.1, TR-01, TR-03): os números do mês anterior, fixos, separados do agora. */
 function MesFechadoCartao({ mes }: { mes: MesFechado }) {
   const r = mes.retornos;
+  const semRetorno = r.porcentagem === undefined || r.porcentagem === null;
   return (
-    <section aria-labelledby="t-mes" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <CabecaCartao id="t-mes" titulo={`Mês fechado · ${nomeDoMes(mes.mes)}`} href="/indicadores" rotulo="Ver indicadores" />
-      <ul className="divide-y divide-linha text-sm">
-        <li className="py-2.5">
-          <strong className="text-lg">{mostrarPorcentagem(r.porcentagem)}</strong> {r.porcentagem === undefined || r.porcentagem === null ? "de retornos no prazo: nenhum retorno no mês" : "dos retornos no prazo"}
-          {r.total ? <span className="block text-xs text-tinta-suave">{r.noPrazo} de {r.total}. {nomeDoMesAnterior(mes.mes).replace(/^./, (x) => x.toUpperCase())}: {mostrarPorcentagem(mes.porcentagemAnterior)}.</span> : null}
+    <CartaoInicio titulo={`Mês fechado · ${nomeDoMes(mes.mes)}`} icone="grafico" href="/indicadores" rotulo="Ver indicadores"
+      area={{ resumo: semRetorno ? "Nenhum retorno no mês" : `${mostrarPorcentagem(r.porcentagem)} dos retornos no prazo` }}>
+      <ul className="divide-y divide-linha">
+        <li className="grid gap-0.5 py-3">
+          <span><strong className="text-2xl font-semibold tracking-tight">{mostrarPorcentagem(r.porcentagem)}</strong> {semRetorno ? "de retornos no prazo: nenhum retorno no mês" : "dos retornos no prazo"}</span>
+          {r.total ? <span className="t-apoio">{r.noPrazo} de {r.total}. {nomeDoMesAnterior(mes.mes).replace(/^./, (x) => x.toUpperCase())}: {mostrarPorcentagem(mes.porcentagemAnterior)}.</span> : null}
         </li>
-        <li className="py-2.5"><strong>{mes.concluidos}</strong> {mes.concluidos === 1 ? "pedido concluído" : "pedidos concluídos"} · <strong>{mes.reabertos}</strong> {mes.reabertos === 1 ? "reaberto" : "reabertos"}</li>
-        <li className="py-2.5">Primeiro retorno em <strong>{mostrarHoras(mes.primeiroRetornoHoras)}</strong>{mes.primeiroRetornoHoras === undefined || mes.primeiroRetornoHoras === null ? "" : ", em média"}</li>
+        <li className="py-3"><strong className="text-2xl font-semibold tracking-tight">{mes.concluidos}</strong> {mes.concluidos === 1 ? "pedido concluído" : "pedidos concluídos"} · <strong>{mes.reabertos}</strong> {mes.reabertos === 1 ? "reaberto" : "reabertos"}</li>
+        <li className="py-3">Primeiro retorno em <strong className="text-2xl font-semibold tracking-tight">{mostrarHoras(mes.primeiroRetornoHoras)}</strong>{mes.primeiroRetornoHoras === undefined || mes.primeiroRetornoHoras === null ? "" : ", em média"}</li>
       </ul>
-      <p className="text-xs text-tinta-suave">Os números do mês fechado não mudam com o dia.</p>
-    </section>
+      <p className="t-apoio">Os números do mês fechado não mudam com o dia.</p>
+    </CartaoInicio>
   );
 }
 
@@ -150,6 +119,7 @@ function excecoes(n: number): string {
   return n === 0 ? "" : n === 1 ? ", com 1 exceção" : `, com ${n} exceções`;
 }
 
+/** O que já veio pronto pelo cenário (CF-12), em selos, dentro do cartão O que falta configurar. */
 function Pronto({ config }: { config: Configuracoes }) {
   const n = (l: { ativa?: boolean; ativo?: boolean }[]) => l.filter((x) => x.ativa ?? x.ativo).length;
   const geral = config.prazos.find((p) => !p.categoriaId && !p.prioridadeId);
@@ -159,92 +129,128 @@ function Pronto({ config }: { config: Configuracoes }) {
     geral ? `Prazo geral: ${geral.horas} h de atendimento${excecoes(config.prazos.length - 1)}` : "Sem prazo geral",
   ];
   return (
-    <section aria-labelledby="t-pronto" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-pronto" className="text-lg font-medium">Já veio pronto pelo cenário</h2>
-      <ul className="divide-y divide-linha">
-        {linhas.map((l) => (
-          <li key={l} className="flex items-center justify-between gap-3 py-2.5 text-sm">{l}<Selo tom="ok">Pronto</Selo></li>
-        ))}
+    <div role="group" aria-label="Já veio pronto pelo cenário" className="grid gap-2 border-t border-linha pt-3">
+      <p className="t-rotulo">Já veio pronto pelo cenário</p>
+      <ul className="flex flex-wrap gap-2">
+        {linhas.map((l) => <li key={l}><Selo tom="ok">{l} · pronto</Selo></li>)}
       </ul>
-      <p className="text-sm text-tinta-suave">Tudo pode ser ajustado em <Link href="/configuracoes" className="font-medium text-violeta-600 hover:underline">Configurações</Link>.</p>
-    </section>
+    </div>
   );
+}
+
+/** Vencimentos (MP-05, MP-12): o documento, o contrato e o prontuário, juntos num cartão só. */
+function Vencimentos({ linhas }: { linhas: LinhaInicio[] }) {
+  return (
+    <CartaoInicio titulo="Vencimentos" icone="relogio" href="/agenda"
+      area={{ resumo: linhas.length ? resumoDasLinhas(linhas) : "Nada vencendo", quantos: linhas.length }}>
+      {linhas.length ? <LinhasInicio linhas={linhas} /> : <p className="t-apoio">Nenhum documento, contrato ou item do prontuário vencendo nos próximos 60 dias.</p>}
+    </CartaoInicio>
+  );
+}
+
+const SAUDACAO = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "numeric", hourCycle: "h23" });
+function saudacao(): string {
+  const h = Number(SAUDACAO.format(new Date()));
+  return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
 }
 
 export function Inicio() {
   const { painel, pode } = usePlataforma();
   const config = useCarregar<Configuracoes>(pode("config.ver") ? "/v1/condominio/configuracoes" : null);
   const c = painel.condominio;
+  const primeiroNome = painel.pessoa.nome.split(" ")[0];
+  // No celular, Vencimentos desce para "Por área" e fecha numa linha curta, como as outras áreas.
+  const celular = useCelular();
+
+  const vencimentos = [
+    painel.comunicados ? linhaDocumento(painel.comunicados) : null,
+    painel.manutencao ? linhaContrato(painel.manutencao) : null,
+    ...(painel.memoria ? linhasProntuario(painel.memoria.prontuario) : []),
+  ].filter((x) => x !== null);
+  const temVencimentos = !!(painel.comunicados || painel.manutencao || painel.memoria);
+  const manutencao = painel.manutencao ? linhasManutencao(painel.manutencao) : [];
+  const vida = painel.vida && temVida(painel.vida) ? linhasVida(painel.vida) : [];
+  const comunicacao = [...(painel.comunicados ? linhasComunicados(painel.comunicados) : []), ...(painel.moradores ? linhasMoradores(painel.moradores) : [])];
+  const pedemAtencao = (l: LinhaInicio[]) => l.filter((x) => x.tom === "erro" || x.tom === "atencao").length;
 
   return (
-    <div className="grid gap-6">
-      <header className="relative overflow-hidden rounded-[20px] bg-[image:var(--grad-violeta)] px-6 py-6 text-white md:px-8">
-        <span aria-hidden="true" className="pointer-events-none absolute -top-32 -right-24 h-[340px] w-[340px] rounded-full border border-white/20" />
-        <span aria-hidden="true" className="pointer-events-none absolute -top-52 -right-48 h-[520px] w-[520px] rounded-full border border-white/15" />
-        <span aria-hidden="true" className="pointer-events-none absolute top-8 right-10 hidden h-56 w-8 rotate-[26deg] rounded-full bg-[image:var(--grad-trilha)] opacity-90 sm:block" />
-        <div className="relative">
-          <p className="text-xs font-medium tracking-[.08em] text-violeta-100 uppercase">{HOJE.format(new Date())}</p>
-          <h1 className="mt-1.5 text-[32px] leading-tight font-light tracking-tight">{c.nome}</h1>
-          <p className="mt-1 text-violeta-100">
-            {[c.cenario ? CENARIOS[c.cenario as keyof typeof CENARIOS] ?? c.cenario : null, c.cidade, c.uf].filter(Boolean).join(" · ")}
-          </p>
-          {painel.pedidos ? (
-            <ul className="mt-4 flex flex-wrap gap-2.5">
-              {[
-                [painel.pedidos.retornoVencido, painel.pedidos.retornoVencido === 1 ? "retorno vencido" : "retornos vencidos"],
-                [painel.pedidos.vencemHoje, painel.pedidos.vencemHoje === 1 ? "vence hoje" : "vencem hoje"],
-                [painel.pedidos.meusParaAceitar, "para você aceitar"],
-              ].map(([n, t]) => (
-                <li key={String(t)} className="min-w-32 flex-1 rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 sm:flex-none">
-                  <b className="block text-2xl leading-tight font-light">{n}</b>
-                  <span className="text-sm text-violeta-100">{t}</span>
-                </li>
-              ))}
-            </ul>
+    <div className="grid gap-5">
+      <section aria-label="Resumo do dia" className="relative overflow-hidden rounded-[24px] bg-[image:var(--grad-violeta)] px-8 py-8 text-white max-md:rounded-[20px] max-md:p-5">
+        <span aria-hidden="true" className="pointer-events-none absolute -top-32 -right-24 h-[340px] w-[340px] rounded-full border border-white/20 max-md:-top-28 max-md:-right-28 max-md:h-60 max-md:w-60" />
+        <span aria-hidden="true" className="pointer-events-none absolute -top-52 -right-48 h-[520px] w-[520px] rounded-full border border-white/15 max-md:-top-44 max-md:-right-44 max-md:h-[360px] max-md:w-[360px]" />
+        <span aria-hidden="true" className="pointer-events-none absolute top-5 right-16 h-44 w-6 rotate-[26deg] rounded-full bg-[image:var(--grad-trilha)] shadow-[var(--shadow-trilha)] max-md:top-3.5 max-md:right-6 max-md:h-24 max-md:w-4" />
+        <div className="relative flex flex-wrap items-end justify-between gap-6 md:pr-52">
+          <div className="grid gap-2">
+            <p className="text-xs font-medium tracking-[.12em] text-violeta-100 uppercase">{HOJE.format(new Date())}</p>
+            <h1 className="t-destaque text-4xl leading-tight max-md:text-[28px]">{saudacao()}, {primeiroNome}</h1>
+            <p className="flex items-center gap-1.5 text-sm text-violeta-100">
+              <Icone nome="pin" className="h-4 w-4" />
+              {[c.nome, c.cenario ? CENARIOS[c.cenario as keyof typeof CENARIOS] ?? c.cenario : null, c.cidade, c.uf].filter(Boolean).join(" · ")}
+            </p>
+          </div>
+          {pode("pedidos.atualizar") && painel.pedidos ? (
+            <Link href="/pedidos?registrar=1" className={classeBotao("claro", "max-md:w-full")}><Icone nome="mais" />Registrar pedido</Link>
           ) : null}
         </div>
-      </header>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {painel.acessosExcepcionais && (painel.acessosExcepcionais.pedidos.length || painel.acessosExcepcionais.valendo) ? (
-          <CartaoAcessoExcepcional pedidos={painel.acessosExcepcionais.pedidos} valendo={painel.acessosExcepcionais.valendo} />
-        ) : null}
-        {painel.pedidos ? (
-          <Agora resumo={painel.pedidos} decisoes={painel.decisoes} registrar={pode("pedidos.atualizar")}
-            paradaDias={config.estado === "pronto" ? config.dados.avisos.pendenciaDias : null} />
-        ) : null}
-        {pode("agenda.ver") ? <HojeNaAgenda /> : null}
-        {painel.manutencao ? <CartaoManutencao resumo={painel.manutencao} /> : null}
-        {painel.vida?.reservasAAprovar || painel.vida?.enquetesAbertas?.length || painel.vida?.assembleia || painel.vida?.classificadosAAprovar ? <CartaoVida resumo={painel.vida} /> : null}
-        {painel.comunicados ? <CartaoComunicados resumo={painel.comunicados} verComunicados={pode("comunicados.ver")} /> : null}
-        {painel.memoria ? <CartaoMemoria resumo={painel.memoria.prontuario} /> : null}
-        {painel.mesFechado ? <MesFechadoCartao mes={painel.mesFechado} /> : null}
-        {painel.moradores ? <Moradores resumo={painel.moradores} /> : null}
-        <section aria-labelledby="t-falta" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-          <h2 id="t-falta" className="text-lg font-medium">O que falta configurar</h2>
-          {painel.pendencias.length === 0 ? (
-            <p className="flex items-center gap-2 text-sm"><IconeMarca marca="ok" className="h-4 w-4 text-ok" />Nada pendente. O condomínio está pronto para receber pedidos.</p>
-          ) : (
-            <ul className="divide-y divide-linha">
-              {painel.pendencias.map((p) => {
+      </section>
+      {painel.acessosExcepcionais && (painel.acessosExcepcionais.pedidos.length || painel.acessosExcepcionais.valendo) ? (
+        <CartaoAcessoExcepcional pedidos={painel.acessosExcepcionais.pedidos} valendo={painel.acessosExcepcionais.valendo} />
+      ) : null}
+      {painel.pedidos ? <Agora resumo={painel.pedidos} decisoes={painel.decisoes} paradaDias={config.estado === "pronto" ? config.dados.avisos.pendenciaDias : null} /> : null}
+      {pode("agenda.ver") || (temVencimentos && !celular) ? (
+        <div className="grid items-start gap-5 lg:grid-cols-2">
+          {pode("agenda.ver") ? <HojeNaAgenda /> : null}
+          {temVencimentos && !celular ? <Vencimentos linhas={vencimentos} /> : null}
+        </div>
+      ) : null}
+      <section aria-labelledby="t-por-area" className="grid gap-5 max-md:gap-0 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:px-4 max-md:pt-4 max-md:pb-1 max-md:shadow-s1">
+        <h2 id="t-por-area" className="t-rotulo flex items-center gap-3 after:h-px after:flex-1 after:bg-linha max-md:pb-2 max-md:text-[15px] max-md:font-semibold max-md:tracking-normal max-md:text-tinta max-md:normal-case max-md:after:hidden">
+          <span className="ladrilho h-8 w-8 rounded-[10px] md:hidden" data-tom="violeta" aria-hidden="true"><Icone nome="lista" className="h-4 w-4" /></span>Por área
+        </h2>
+        <div className="grid items-start gap-5 max-md:gap-0 md:grid-cols-2 xl:grid-cols-3">
+          {painel.manutencao ? (
+            <CartaoInicio titulo="Manutenção" icone="ferramenta" href="/manutencao"
+              area={{ resumo: manutencao.length ? resumoDasLinhas(manutencao) : vazioManutencao(painel.manutencao), quantos: pedemAtencao(manutencao), tom: manutencao.some((l) => l.tom === "erro") ? "erro" : "atencao" }}>
+              {manutencao.length ? <LinhasInicio linhas={manutencao} /> : <p className="t-apoio">{vazioManutencao(painel.manutencao)}</p>}
+            </CartaoInicio>
+          ) : null}
+          {temVencimentos && celular ? <Vencimentos linhas={vencimentos} /> : null}
+          {vida.length ? (
+            <CartaoInicio titulo="Vida em condomínio" icone="convivio" href="/vida" area={{ resumo: resumoDasLinhas(vida), quantos: pedemAtencao(vida) }}>
+              <LinhasInicio linhas={vida} />
+            </CartaoInicio>
+          ) : null}
+          {painel.comunicados || painel.moradores ? (
+            <CartaoInicio titulo="Comunicação e moradores" icone="megafone" href={painel.comunicados ? (pode("comunicados.ver") ? "/comunicados" : "/comunicados/documentos") : "/moradores"}
+              area={{ resumo: resumoDasLinhas(comunicacao), quantos: pedemAtencao(comunicacao) }}>
+              {painel.moradores && painel.moradores.unidades === 0 ? (
+                <div className="grid justify-items-start gap-2">
+                  <p>Nenhuma unidade ainda. Cadastre as unidades ou importe a planilha da administradora.</p>
+                  <Link href="/moradores" className={classeBotao("contorno", "", "m")}>Cadastrar unidades</Link>
+                </div>
+              ) : null}
+              <LinhasInicio linhas={painel.moradores?.unidades === 0 ? comunicacao.filter((l) => l.icone !== "predio") : comunicacao} />
+            </CartaoInicio>
+          ) : null}
+          {painel.mesFechado ? <MesFechadoCartao mes={painel.mesFechado} /> : null}
+          <CartaoInicio titulo="O que falta configurar" icone="ajuste" href={pode("config.ver") ? "/configuracoes" : undefined} rotulo="Configurações"
+            area={{ resumo: painel.pendencias.length ? painel.pendencias.map((p) => PENDENCIAS_CONFIG[p as keyof typeof PENDENCIAS_CONFIG] ?? p).join(" · ") : "Nada pendente", quantos: painel.pendencias.length }}>
+            {painel.pendencias.length === 0 ? (
+              <p className="flex items-center gap-2"><IconeMarca marca="ok" className="h-4 w-4 text-ok" />Nada pendente. O condomínio está pronto para receber pedidos.</p>
+            ) : (
+              <LinhasInicio linhas={painel.pendencias.map((p) => {
                 const onde = ONDE[p];
-                return (
-                  <li key={p} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                    <span className="flex items-start gap-2">
-                      <IconeMarca marca="atencao" className="mt-0.5 h-4 w-4 text-atencao" />
-                      {PENDENCIAS_CONFIG[p as keyof typeof PENDENCIAS_CONFIG] ?? p}
-                    </span>
-                    {onde && pode(onde.acao) ? <Link href={onde.href} className={classeBotao("contorno")}>{onde.texto}</Link> : null}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <p className="text-xs text-tinta-suave">Nada aqui é obrigatório: o painel só avisa.</p>
-        </section>
-        {config.estado === "pronto" ? <Pronto config={config.dados} /> : null}
-        {config.estado === "carregando" && pode("config.ver") ? <Carregando linhas={3} rotulo="Carregando as configurações…" /> : null}
-        {config.estado === "erro" ? <ErroCarregar erro={config.erro} texto={config.texto} tentarDeNovo={config.recarregar} /> : null}
-      </div>
+                return { chave: p, icone: "alerta" as const, tom: "atencao" as const, titulo: PENDENCIAS_CONFIG[p as keyof typeof PENDENCIAS_CONFIG] ?? p,
+                  href: onde && pode(onde.acao) ? onde.href : undefined, botao: onde?.texto };
+              })} />
+            )}
+            {config.estado === "pronto" ? <Pronto config={config.dados} /> : null}
+            {config.estado === "carregando" && pode("config.ver") ? <Carregando linhas={2} rotulo="Carregando as configurações…" /> : null}
+            {config.estado === "erro" ? <ErroCarregar erro={config.erro} texto={config.texto} tentarDeNovo={config.recarregar} /> : null}
+            <p className="t-apoio">Nada aqui é obrigatório: o painel só avisa.</p>
+          </CartaoInicio>
+        </div>
+      </section>
     </div>
   );
 }

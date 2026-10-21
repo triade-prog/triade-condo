@@ -99,6 +99,7 @@ test.describe("Links e QR", () => {
   });
 
   test("V-11, MP-08: o síndico manda o link e o prestador registra a chegada e conta o que fez", async ({ page }) => {
+    test.slow();
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/manutencao`);
     await page.getByRole("link", { name: "Bomba de recalque com ruído" }).click();

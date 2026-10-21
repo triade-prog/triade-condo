@@ -1,25 +1,27 @@
 "use client";
-// Agenda do condomínio (peça R7, design "Telas da Agenda", telas 1 e 2; AG-01 a AG-05, AG-09):
-// em lista, por semana ou no mês, com filtro por tipo e as datas de outras telas (feriados,
+// Agenda do condomínio (peça R7; AG-01 a AG-05, AG-09; DC15, telas-modelo agenda-computador e
+// agenda-celular): em lista, por semana ou no mês, com as datas de outras telas (feriados,
 // preventivas, reservas confirmadas, vencimentos de contratos e documentos e assembleias
-// convocadas; design "Agenda, indicadores e unidades", tela 1). A vista e a data ficam no
-// endereço; o filtro de tipo e as fontes ligadas ficam guardados para a pessoa neste aparelho.
+// convocadas), cada origem com a sua cor. "Mostrar" liga e desliga cada origem; o tipo do
+// compromisso fica em Filtros. No celular, uma faixa com os dias da semana fica no alto, o
+// "Mostrar" vai para Filtros e o "Novo compromisso" flutua sobre a barra de baixo. A vista e a
+// data ficam no endereço; o filtro fica guardado para a pessoa neste aparelho.
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import {
   diaDaSemana, FONTES_AGENDA, type FonteAgenda, gradeDoMes, inicioDaSemana, inicioDoMes, mesVizinho, mostrarDataCurta, nomeDoMesAno, somarDias, TIPOS_COMPROMISSO,
 } from "@triade/domain";
-import { Aviso, Botao, Carregando, CampoSelecao, Chip, ErroCarregar, Icone, Vazio } from "@triade/ui";
-import { Escolha } from "../moradores/comum.tsx";
+import { Aviso, Botao, Carregando, CampoSelecao, Chip, Dialogo, ErroCarregar, Icone, type NomeIcone, Vazio } from "@triade/ui";
+import { useCelular } from "../celular.ts";
 import { useCarregar } from "../sessao.tsx";
 import type { Agenda as DadosAgenda, CompromissoAgenda, DataDeOutraTela, OpcoesAgenda, Recado } from "../tipos.ts";
 import { LinhaCompromisso, LinhaDataDeFora, tituloCurto } from "./comum.tsx";
 import { FormCompromisso } from "./FormCompromisso.tsx";
 
 type Vista = "LISTA" | "SEMANA" | "MES";
-const VISTAS: { valor: Vista; texto: string }[] = [
-  { valor: "LISTA", texto: "Lista" }, { valor: "SEMANA", texto: "Semana" }, { valor: "MES", texto: "Mês" },
+const VISTAS: { valor: Vista; texto: string; icone?: NomeIcone }[] = [
+  { valor: "LISTA", texto: "Lista", icone: "lista" }, { valor: "SEMANA", texto: "Semana" }, { valor: "MES", texto: "Mês", icone: "calendario" },
 ];
 const DIAS_LISTA = 31;
 const SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -37,6 +39,12 @@ function periodo(vista: Vista, data: string): { de: string; ate: string } {
 }
 
 const FONTES = Object.keys(FONTES_AGENDA) as FonteAgenda[];
+/** A ordem do "Mostrar": o que a gestão marca primeiro, os feriados por último. */
+const ORDEM_MOSTRAR: FonteAgenda[] = ["PREVENTIVA", "RESERVA", "CONTRATO", "DOCUMENTO", "ASSEMBLEIA", "FERIADO"];
+
+const PADRAO_OCULTAS: FonteAgenda[] = ["FERIADO"];
+/** Quantas origens a pessoa desligou além do que já vem desligado. */
+const desligadas = (ocultas: FonteAgenda[]) => ocultas.filter((f) => !PADRAO_OCULTAS.includes(f)).length;
 
 /** O que aparece: o tipo de compromisso, os compromissos e as fontes desligadas (decisão 4). */
 type Filtro = { tipo: string; compromissos: boolean; ocultas: FonteAgenda[] };
@@ -45,10 +53,11 @@ function interpretar(texto: string): Filtro {
   try {
     const v = JSON.parse(texto || "null") as { tipo?: string; feriados?: boolean; compromissos?: boolean; ocultas?: unknown } | null;
     // O filtro antigo desligava todas as datas de outras telas de uma vez.
-    const ocultas = Array.isArray(v?.ocultas) ? FONTES.filter((f) => (v.ocultas as unknown[]).includes(f)) : v?.feriados === false ? FONTES : [];
+    // Sem nada guardado, os feriados começam desligados (desenho aprovado da agenda, DC15).
+    const ocultas = Array.isArray(v?.ocultas) ? FONTES.filter((f) => (v.ocultas as unknown[]).includes(f)) : v?.feriados === false ? FONTES : v ? [] : [...PADRAO_OCULTAS];
     return { tipo: v?.tipo && v.tipo in TIPOS_COMPROMISSO ? v.tipo : "", compromissos: v?.compromissos !== false, ocultas };
   } catch {
-    return { tipo: "", compromissos: true, ocultas: [] };
+    return { tipo: "", compromissos: true, ocultas: [...PADRAO_OCULTAS] };
   }
 }
 
@@ -74,7 +83,22 @@ function porDia(compromissos: CompromissoAgenda[], datas: DataDeOutraTela[]) {
   return dias;
 }
 
-const DIA_MES = (d: string) => `${Number(d.slice(8))} de ${nomeDoMesAno(d).split(" de ")[0]}`;
+const MES = (d: string) => nomeDoMesAno(d).split(" de ")[0]!;
+const DIA_MES = (d: string) => `${Number(d.slice(8))} de ${MES(d)}`;
+const DD_MM = (d: string) => mostrarDataCurta(d).slice(0, 5);
+
+/** "21/10 a 20/11/2026"; o ano só no fim quando os dois dias são do mesmo ano. */
+function textoPeriodo(de: string, ate: string): string {
+  return `${de.slice(0, 4) === ate.slice(0, 4) ? DD_MM(de) : mostrarDataCurta(de)} a ${mostrarDataCurta(ate)}`;
+}
+
+function ChipFonte({ tipo, ativo, aoMudar, children }: { tipo: string; ativo: boolean; aoMudar: () => void; children: string }) {
+  return (
+    <button type="button" className="chip ag-fonte" data-tipo={tipo} aria-pressed={ativo} onClick={aoMudar}>
+      <span className="ponto" aria-hidden="true" />{children}
+    </button>
+  );
+}
 
 export function Agenda() {
   const router = useRouter();
@@ -111,51 +135,106 @@ export function Agenda() {
   const dias = porDia(visiveis, datas);
   const podeEditar = (dados?.pode.editar ?? false) && opcoes.estado === "pronto" && opcoes.dados.pode.editar;
 
+  const celular = useCelular();
+  const [filtrando, setFiltrando] = useState(false);
   const passo = vista === "MES" ? null : vista === "SEMANA" ? 7 : DIAS_LISTA;
   const anterior = passo ? somarDias(vista === "SEMANA" ? inicioDaSemana(data) : data, -passo) : mesVizinho(data, -1);
   const seguinte = passo ? somarDias(vista === "SEMANA" ? inicioDaSemana(data) : data, passo) : mesVizinho(data, 1);
-  const titulo = vista === "MES" ? nomeDoMesAno(inicioDoMes(data)) : `${mostrarDataCurta(de)} a ${mostrarDataCurta(ate)}`;
+  const titulo = vista === "MES" ? nomeDoMesAno(inicioDoMes(data)) : textoPeriodo(de, ate);
+  // No computador o "Mostrar" fica à vista; no celular entra em Filtros e conta como filtro em uso.
+  const emUso = (filtro.tipo ? 1 : 0) + (celular ? (filtro.compromissos ? 0 : 1) + desligadas(filtro.ocultas) : 0);
+
+  const mostrar = (
+    <div role="group" aria-label="O que mostrar na agenda" className="flex flex-wrap items-center gap-2">
+      <span className="t-apoio mr-1" aria-hidden="true">Mostrar</span>
+      <ChipFonte tipo="COMPROMISSO" ativo={filtro.compromissos} aoMudar={() => mudarFiltro({ compromissos: !filtro.compromissos })}>Compromissos</ChipFonte>
+      {ORDEM_MOSTRAR.map((f) => <ChipFonte key={f} tipo={f} ativo={!filtro.ocultas.includes(f)} aoMudar={() => alternar(f)}>{FONTES_AGENDA[f]}</ChipFonte>)}
+    </div>
+  );
+  const botaoFiltros = (
+    <Botao variante="contorno" tamanho="m" className={celular ? "w-11 px-0" : ""} onClick={() => setFiltrando(true)}>
+      <Icone nome="filtro" /><span className={celular ? "sr-only" : ""}>Filtros{emUso ? ` · ${emUso}` : ""}</span>
+    </Botao>
+  );
+  const novoCompromisso = <Botao onClick={() => setNovo(true)}><Icone nome="mais" />Novo compromisso</Botao>;
 
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-5 max-md:gap-4 max-md:pb-16">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-[28px] font-normal tracking-tight">Agenda</h1>
-          <p className="text-sm text-tinta-suave">Reuniões, visitas técnicas, atividades e lembretes do condomínio.</p>
+          <h1 className="t-titulo-tela">Agenda</h1>
+          <p className="t-apoio mt-1 max-md:hidden">Reuniões, visitas, preventivas, reservas e vencimentos do condomínio num lugar só.</p>
         </div>
-        {podeEditar ? <Botao onClick={() => setNovo(true)}>+ Novo compromisso</Botao> : null}
+        {podeEditar ? <div className="max-md:hidden">{novoCompromisso}</div> : null}
+        {celular ? botaoFiltros : null}
       </div>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
+      {celular && vista === "LISTA" ? <FaixaDaSemana data={data} hoje={hoje} dias={dias} ir={(d) => ir({ data: d === hoje ? null : d })} /> : null}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Escolha rotulo="Como ver a agenda" atual={vista} aoMudar={(x) => ir({ vista: x })} opcoes={VISTAS} />
-        <CampoSelecao id="ag-filtro-tipo" rotulo="Tipo" className="min-w-48" value={filtro.tipo} onChange={(e) => mudarFiltro({ tipo: e.target.value })}
-          opcoes={[{ valor: "", texto: "Todos" }, ...Object.entries(TIPOS_COMPROMISSO).map(([valor, texto]) => ({ valor, texto }))]} />
-      </div>
-      <div role="group" aria-label="O que mostrar na agenda" className="flex flex-wrap gap-2">
-        <Chip ativo={filtro.compromissos} onClick={() => mudarFiltro({ compromissos: !filtro.compromissos })}>Compromissos</Chip>
-        {FONTES.map((f) => <Chip key={f} ativo={!filtro.ocultas.includes(f)} onClick={() => alternar(f)}>{FONTES_AGENDA[f]}</Chip>)}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-medium first-letter:uppercase">{titulo}</h2>
-        <div className="flex items-center gap-1.5">
-          <Botao variante="contorno" tamanho="m" soIcone aria-label="Período anterior" onClick={() => ir({ data: anterior })}><Icone nome="esq" /></Botao>
-          <Botao variante="secundario" tamanho="m" onClick={() => ir({ data: null })}>Hoje</Botao>
-          <Botao variante="contorno" tamanho="m" soIcone aria-label="Período seguinte" onClick={() => ir({ data: seguinte })}><Icone nome="dir" /></Botao>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3 max-md:w-full">
+          <div role="group" aria-label="Como ver a agenda" className="trilho max-md:flex max-md:w-full">
+            {VISTAS.map((x) => (
+              <Chip key={x.valor} icone={x.icone} ativo={vista === x.valor} className="max-md:flex-1 max-md:justify-center" onClick={() => ir({ vista: x.valor })}>{x.texto}</Chip>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Botao variante="contorno" tamanho="m" soIcone aria-label="Período anterior" onClick={() => ir({ data: anterior })}><Icone nome="esq" /></Botao>
+            <Botao variante="contorno" tamanho="m" onClick={() => ir({ data: null })}>Hoje</Botao>
+            <Botao variante="contorno" tamanho="m" soIcone aria-label="Período seguinte" onClick={() => ir({ data: seguinte })}><Icone nome="dir" /></Botao>
+          </div>
+          <h2 className="text-[17px] font-semibold first-letter:uppercase">{titulo}</h2>
         </div>
+        {celular ? null : botaoFiltros}
       </div>
+      {celular ? null : mostrar}
 
       {carga.estado === "carregando" ? <Carregando rotulo="Carregando a agenda…" /> : null}
       {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
-      {dados && vista === "LISTA" ? <VistaLista dias={dias} hoje={hoje} temFiltro={Boolean(filtro.tipo) || !filtro.compromissos || filtro.ocultas.length > 0} /> : null}
+      {dados && vista === "LISTA" ? <VistaLista dias={dias} hoje={hoje} temFiltro={Boolean(filtro.tipo) || !filtro.compromissos || desligadas(filtro.ocultas) > 0} /> : null}
       {dados && vista === "SEMANA" ? <VistaSemana de={de} dias={dias} hoje={hoje} abrirDia={(d) => ir({ vista: "LISTA", data: d })} /> : null}
       {dados && vista === "MES" ? <VistaMes data={data} dias={dias} hoje={hoje} abrirDia={(d) => ir({ vista: "LISTA", data: d })} /> : null}
+
+      {podeEditar ? <div className="fixed right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] z-20 md:hidden">{novoCompromisso}</div> : null}
+
+      <Dialogo aberto={filtrando} titulo="Filtrar a agenda" aoFechar={() => setFiltrando(false)}>
+        <div className="grid gap-4">
+          {celular ? mostrar : null}
+          <CampoSelecao id="ag-filtro-tipo" rotulo="Tipo do compromisso" value={filtro.tipo} onChange={(e) => mudarFiltro({ tipo: e.target.value })}
+            opcoes={[{ valor: "", texto: "Todos" }, ...Object.entries(TIPOS_COMPROMISSO).map(([valor, texto]) => ({ valor, texto }))]} />
+          <div className="flex justify-end gap-2">
+            {emUso ? (
+              <Botao variante="discreto" onClick={() => mudarFiltro(celular ? { tipo: "", compromissos: true, ocultas: [...PADRAO_OCULTAS] } : { tipo: "" })}>Tirar filtros</Botao>
+            ) : null}
+            <Botao onClick={() => setFiltrando(false)}>Pronto</Botao>
+          </div>
+        </div>
+      </Dialogo>
 
       {opcoes.estado === "pronto" ? (
         <FormCompromisso aberto={novo} opcoes={opcoes.dados} aoFechar={() => setNovo(false)}
           salvo={(_, texto) => { setNovo(false); setRecado({ tom: "ok", texto }); carga.recarregar(); }} />
       ) : null}
+    </div>
+  );
+}
+
+/** Celular: os sete dias da semana; o toque leva a lista para aquele dia. */
+function FaixaDaSemana({ data, hoje, dias, ir }: { data: string; hoje: string; dias: Dias; ir: (d: string) => void }) {
+  const de = inicioDaSemana(data);
+  return (
+    <div role="group" aria-label="Dias da semana" className="ag-faixa rounded-[18px] border border-linha bg-superficie p-1.5 shadow-s1">
+      {Array.from({ length: 7 }, (_, i) => somarDias(de, i)).map((d, i) => {
+        const tem = (dias.get(d)?.compromissos.length ?? 0) + (dias.get(d)?.datas.length ?? 0) > 0;
+        return (
+          <button key={d} type="button" aria-pressed={d === data} aria-current={d === hoje ? "date" : undefined} onClick={() => ir(d)}>
+            <span aria-hidden="true">{SEMANA[i]!.charAt(0).toUpperCase()}</span>
+            <b>{Number(d.slice(8))}</b>
+            <span className="sr-only">{` de ${MES(d)}, ${diaDaSemana(d)}${d === hoje ? ", hoje" : ""}${tem ? ", com o que ver" : ""}`}</span>
+            {tem ? <i aria-hidden="true" /> : null}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -168,16 +247,19 @@ function VistaLista({ dias, hoje, temFiltro }: { dias: Dias; hoje: string; temFi
     return <Vazio titulo="Nada marcado neste período">{temFiltro ? "Nada deste tipo. Tire o filtro para ver tudo." : "Os compromissos marcados aparecem aqui, por dia."}</Vazio>;
   }
   return (
-    <div className="rounded-[18px] border border-linha bg-superficie px-4 shadow-s1">
-      {ordem.map((d, i) => {
+    <div className="ag-lista">
+      {ordem.map((d) => {
         const dia = dias.get(d)!;
-        const novoMes = i === 0 || d.slice(0, 7) !== ordem[i - 1]!.slice(0, 7);
+        const eHoje = d === hoje;
         return (
-          <section key={d} className="ag-dia" aria-label={`${diaDaSemana(d)}, ${DIA_MES(d)}${d === hoje ? ", hoje" : ""}`}>
+          <section key={d} className="ag-dia" aria-label={`${diaDaSemana(d)}, ${DIA_MES(d)}${eHoje ? ", hoje" : ""}`}>
             <div className="data">
-              <b>{Number(d.slice(8))}</b>
-              <span>{diaDaSemana(d)}{novoMes ? `, ${nomeDoMesAno(d).split(" de ")[0]}` : ""}</span>
-              {d === hoje ? <span className="ag-hoje block w-fit">Hoje</span> : null}
+              <span className="dia" data-hoje={eHoje ? "" : undefined} aria-hidden="true"><b>{Number(d.slice(8))}</b><span>{MES(d).slice(0, 3)}</span></span>
+              <span className="nome" data-hoje={eHoje ? "" : undefined}>
+                <span>{diaDaSemana(d).replace(/^./, (x) => x.toUpperCase())}</span>
+                {eHoje ? <span><span className="md:hidden"> · </span>hoje</span> : null}
+                <span className="md:hidden"> · {DD_MM(d)}</span>
+              </span>
             </div>
             <ul className="grid gap-2">
               {dia.datas.map((x) => <LinhaDataDeFora key={`f-${x.fonte}-${x.id ?? x.titulo}`} d={x} hoje={hoje} />)}

@@ -4,6 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { abrirArea } from "./inicio";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -41,8 +42,8 @@ test.describe("Vida em condomínio", () => {
   test("AC-01 e AC-06: aprovar recusa o outro pedido da mesma data; recusar pede motivo", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/`);
-    await expect(page.getByRole("heading", { name: "Vida em condomínio" })).toBeVisible();
-    await expect(page.getByText("2 reservas a aprovar")).toBeVisible();
+    const vida = await abrirArea(page, "Vida em condomínio");
+    await expect(vida.getByText("2 reservas a aprovar")).toBeVisible();
     await page.getByRole("link", { name: "Ver as reservas a aprovar" }).click();
 
     await expect(page.getByRole("button", { name: "A aprovar · 2" })).toBeVisible();

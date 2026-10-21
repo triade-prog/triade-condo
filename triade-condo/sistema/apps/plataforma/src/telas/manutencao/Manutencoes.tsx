@@ -1,13 +1,14 @@
 "use client";
-// Manutenções (design "Telas da Manutenção", tela 1; MP-01 a MP-04): o que está aberto, com a
-// situação em selo, o tipo, quem executa, o responsável e o próximo retorno, em vermelho quando
-// vence. Atalhos para o que pede atenção. Os filtros ficam no endereço.
+// Manutenções (MP-01 a MP-04; DC15, telas-modelo manutencao-computador e manutencao-celular): o
+// que está aberto, com a situação em selo, o tipo, quem executa, o responsável e o próximo
+// retorno, em vermelho quando vence. Situação em abas, "Pede atenção" em atalhos, a busca à vista
+// e o tipo e o prestador em Filtros. No celular, cartões e o "Nova manutenção" flutuando sobre a
+// barra de baixo. Os filtros ficam no endereço.
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ATALHOS_MANUTENCAO, FILTROS_MANUTENCAO, TIPOS_MANUTENCAO } from "@triade/domain";
-import { Aviso, Botao, Carregando, CampoSelecao, Chip, ErroCarregar, Vazio, type NomeIcone } from "@triade/ui";
-import { Escolha } from "../moradores/comum.tsx";
+import { Aviso, Botao, Carregando, CampoSelecao, Dialogo, ErroCarregar, Icone, Vazio, type NomeIcone, type Tom } from "@triade/ui";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { ListaManutencoes, OpcoesManutencao, Recado } from "../tipos.ts";
 import { LinhaManutencao, PartesManutencao } from "./comum.tsx";
@@ -16,6 +17,28 @@ import { MarcarVisita } from "./MarcarVisita.tsx";
 
 type Filtros = { situacao: string; tipo: string; prestador: string; atencao: string; busca: string; pagina: number };
 const ICONE_ATALHO: Record<string, NomeIcone> = { RETORNO_VENCIDO: "relogio", PREVENTIVAS_MES: "trocar", PENDENTES_PARADAS: "alerta" };
+const TOM_ATALHO: Record<string, Tom> = { RETORNO_VENCIDO: "erro", PREVENTIVAS_MES: "andamento", PENDENTES_PARADAS: "atencao" };
+
+/** O tipo e o prestador, numa janela. */
+function JanelaFiltros({ aberto, f, o, aoFechar, aplicar }: {
+  aberto: boolean; f: Filtros; o: OpcoesManutencao | null; aoFechar: () => void; aplicar: (m: Partial<Filtros>) => void;
+}) {
+  const [v, setV] = useState({ tipo: f.tipo, prestador: f.prestador });
+  return (
+    <Dialogo aberto={aberto} titulo="Filtrar manutenções" aoFechar={aoFechar}>
+      <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); aplicar(v); }}>
+        <CampoSelecao id="mn-f-tipo" rotulo="Tipo" value={v.tipo} onChange={(e) => setV({ ...v, tipo: e.target.value })}
+          opcoes={[{ valor: "", texto: "Preventiva, corretiva e vistoria" }, ...Object.entries(TIPOS_MANUTENCAO).map(([valor, t]) => ({ valor, texto: t }))]} />
+        <CampoSelecao id="mn-f-prestador" rotulo="Prestador" value={v.prestador} onChange={(e) => setV({ ...v, prestador: e.target.value })}
+          opcoes={[{ valor: "", texto: "Todos" }, ...(o?.prestadores ?? []).map((p) => ({ valor: p.id, texto: p.nome }))]} />
+        <div className="flex justify-end gap-2">
+          <Botao variante="discreto" onClick={() => aplicar({ tipo: "", prestador: "" })}>Tirar filtros</Botao>
+          <Botao type="submit">Mostrar manutenções</Botao>
+        </div>
+      </form>
+    </Dialogo>
+  );
+}
 
 function consulta(f: Filtros): string {
   const q = new URLSearchParams();
@@ -57,78 +80,99 @@ export function Manutencoes() {
   const dados = lista.estado === "pronto" ? lista.dados : null;
   const podeEditar = Boolean(o?.pode.editar);
   const filtrando = q !== "";
+  const [filtrandoAberto, setFiltrandoAberto] = useState(false);
+  const outros = [f.tipo, f.prestador].filter(Boolean).length;
+  const nova_ = <Botao onClick={() => setNova(true)}><Icone nome="mais" />Nova manutenção</Botao>;
+  const limpar = () => { setTexto(""); router.replace("/manutencao", { scroll: false }); };
 
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-5 max-md:pb-16">
       <PartesManutencao />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-[28px] font-normal tracking-tight">Manutenção</h1>
-          <p className="mt-1 text-tinta-suave">O que precisa de cuidado no prédio, quem cuida e quem executa.</p>
+          <h1 className="t-titulo-tela">Manutenção</h1>
+          <p className="t-apoio mt-1">O que precisa de cuidado no prédio, quem cuida e quem executa.</p>
         </div>
-        {podeEditar ? <Botao onClick={() => setNova(true)}>+ Nova manutenção</Botao> : null}
+        {podeEditar ? <div className="max-md:hidden">{nova_}</div> : null}
       </div>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
 
-      <div className="grid gap-3">
-        <Escolha rotulo="Situação" atual={f.situacao} aoMudar={(x) => ir({ situacao: x })}
-          opcoes={Object.entries(FILTROS_MANUTENCAO).map(([valor, t]) => ({ valor, texto: t }))} />
-        <div className="grid gap-3 sm:grid-cols-3">
-          <form role="search" onSubmit={(e) => { e.preventDefault(); ir({ busca: texto.trim() }); }} className="grid gap-1">
-            <label htmlFor="mn-busca" className="text-[13px] font-medium">Buscar</label>
-            <input id="mn-busca" className="campo" placeholder="Nome, local ou prestador" maxLength={60} value={texto} onChange={(e) => setTexto(e.target.value)} />
-          </form>
-          <CampoSelecao id="mn-f-tipo" rotulo="Tipo" value={f.tipo} onChange={(e) => ir({ tipo: e.target.value })}
-            opcoes={[{ valor: "", texto: "Preventiva, corretiva e vistoria" }, ...Object.entries(TIPOS_MANUTENCAO).map(([valor, t]) => ({ valor, texto: t }))]} />
-          <CampoSelecao id="mn-f-prestador" rotulo="Prestador" value={f.prestador} onChange={(e) => ir({ prestador: e.target.value })}
-            opcoes={[{ valor: "", texto: "Todos" }, ...(o?.prestadores ?? []).map((p) => ({ valor: p.id, texto: p.nome }))]} />
-        </div>
-        <div role="group" aria-label="O que pede atenção" className="flex flex-wrap gap-2">
+      <div className="flex items-center gap-3">
+        <form role="search" aria-label="Buscar manutenções" className="busca min-w-0 flex-1 md:max-w-[520px]" onSubmit={(e) => { e.preventDefault(); ir({ busca: texto.trim() }); }}>
+          <Icone nome="busca" />
+          <label htmlFor="mn-busca" className="sr-only">Buscar</label>
+          <input id="mn-busca" className="campo" type="search" placeholder="Buscar por nome, local ou prestador" maxLength={60} value={texto} onChange={(e) => setTexto(e.target.value)} />
+        </form>
+        <Botao variante="contorno" className="max-md:w-11 max-md:px-0" onClick={() => setFiltrandoAberto(true)}>
+          <Icone nome="filtro" /><span className="max-md:sr-only">Filtros{outros ? ` · ${outros}` : ""}</span>
+        </Botao>
+        {filtrando ? <Botao variante="discreto" className="max-md:hidden" onClick={limpar}>Limpar filtros</Botao> : null}
+      </div>
+
+      <section aria-labelledby="t-lista" className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
+        <h2 id="t-lista" className="sr-only">Manutenções encontradas</h2>
+        <nav aria-label="Situação" className="flex gap-1 overflow-x-auto border-b border-linha md:px-3">
+          {Object.entries(FILTROS_MANUTENCAO).map(([valor, nome]) => {
+            const atual = f.situacao === valor;
+            return (
+              <button key={valor} type="button" aria-pressed={atual} onClick={() => ir({ situacao: valor })}
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                {nome}
+                {atual && dados ? <span className="contagem ml-0 bg-violeta-600 text-superficie">{dados.total}</span> : null}
+              </button>
+            );
+          })}
+        </nav>
+        <div role="group" aria-label="O que pede atenção" className="flex items-center gap-2 overflow-x-auto py-3 md:border-b md:border-linha md:bg-fundo md:px-5">
+          <span className="t-apoio shrink-0 max-md:hidden">Pede atenção</span>
           {Object.entries(ATALHOS_MANUTENCAO).map(([codigo, nome]) => {
             const n = dados ? { RETORNO_VENCIDO: dados.atalhos.retornoVencido, PREVENTIVAS_MES: dados.atalhos.preventivasMes,
               PENDENTES_PARADAS: dados.atalhos.pendentesParadas }[codigo] : null;
             const rotulo = codigo === "PENDENTES_PARADAS" && dados ? `Pendentes há mais de ${dados.pendenciaDias} dias` : nome;
             return (
-              <Chip key={codigo} ativo={f.atencao === codigo} icone={ICONE_ATALHO[codigo]} acento={Boolean(n) && f.atencao !== codigo}
+              <button key={codigo} type="button" aria-pressed={f.atencao === codigo} data-tom={TOM_ATALHO[codigo]} className="chip-atencao"
                 onClick={() => ir({ atencao: f.atencao === codigo ? "" : codigo, situacao: "ABERTAS" })}>
-                {rotulo}{n !== null && n !== undefined ? ` · ${n}` : ""}
-              </Chip>
+                {n ? <Icone nome={ICONE_ATALHO[codigo]!} className="h-4 w-4" /> : null}
+                {rotulo}{n !== null && n !== undefined ? <> <b>{n}</b></> : null}
+              </button>
             );
           })}
-          {filtrando ? <Botao variante="discreto" onClick={() => { setTexto(""); router.replace("/manutencao", { scroll: false }); }}>Limpar filtros</Botao> : null}
         </div>
-      </div>
 
-      {lista.estado === "carregando" ? <Carregando rotulo="Carregando as manutenções…" /> : null}
-      {lista.estado === "erro" ? <ErroCarregar erro={lista.erro} texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
-      {dados ? (
-        dados.itens.length === 0 ? (
-          filtrando ? <Vazio titulo="Nenhuma manutenção com estes filtros" />
-            : <Vazio titulo="Nenhuma manutenção aberta" acao={podeEditar ? <Botao onClick={() => setNova(true)}>+ Nova manutenção</Botao> : undefined}>
-                Registre o que precisa de cuidado no prédio. As preventivas abrem sozinhas, perto da data.
-              </Vazio>
-        ) : (
-          <section aria-labelledby="t-lista" className="grid gap-2">
-            <h2 id="t-lista" className="sr-only">Manutenções encontradas</h2>
-            <div className="overflow-hidden rounded-2xl border border-linha bg-superficie shadow-s1">
-              <div aria-hidden="true" className="hidden border-b border-linha bg-violeta-50/60 px-4 py-2.5 text-[13px] font-medium text-tinta-suave md:grid md:grid-cols-[8.5rem_minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)_8.5rem] md:gap-4">
-                <span>Situação</span><span>Manutenção</span><span>Tipo</span><span>Quem executa</span><span>Responsável</span><span>Próximo retorno</span>
+        {lista.estado === "carregando" ? <div className="p-5"><Carregando rotulo="Carregando as manutenções…" /></div> : null}
+        {lista.estado === "erro" ? <div className="p-5"><ErroCarregar erro={lista.erro} texto={lista.texto} tentarDeNovo={lista.recarregar} /></div> : null}
+        {dados ? (
+          dados.itens.length === 0 ? (
+            <div className="md:p-5">
+              {filtrando ? <Vazio titulo="Nenhuma manutenção com estes filtros" icone="filtro" acao={<Botao variante="contorno" onClick={limpar}>Limpar filtros</Botao>} />
+                : <Vazio titulo="Nenhuma manutenção aberta" icone="ferramenta" acao={podeEditar ? nova_ : undefined}>
+                    Registre o que precisa de cuidado no prédio. As preventivas abrem sozinhas, perto da data.
+                  </Vazio>}
+            </div>
+          ) : (
+            <>
+              <div aria-hidden="true" className="hidden grid-cols-[36px_minmax(0,2.2fr)_minmax(0,1.3fr)_minmax(0,1.4fr)_minmax(0,1fr)_20px] gap-4 border-b border-linha bg-fundo px-5 py-2.5 md:grid">
+                <span /><span className="t-rotulo">Manutenção</span><span className="t-rotulo">Quem executa</span><span className="t-rotulo">Situação</span><span className="t-rotulo">Retorno</span><span />
               </div>
-              <ul>{dados.itens.map((m) => <LinhaManutencao key={m.id} m={m} />)}</ul>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-tinta-suave">
-              <span>{dados.total === 1 ? "1 manutenção" : `${dados.total} manutenções`}{f.situacao === "ABERTAS" ? " abertas" : ""}</span>
-              <span>As concluídas ficam no histórico do local e do prestador.</span>
-              {dados.total > 30 ? (
-                <span className="flex gap-2">
-                  <Botao variante="contorno" disabled={f.pagina <= 1} onClick={() => ir({ pagina: f.pagina - 1 })}>Anteriores</Botao>
-                  <Botao variante="contorno" disabled={f.pagina * 30 >= dados.total} onClick={() => ir({ pagina: f.pagina + 1 })}>Próximas</Botao>
-                </span>
-              ) : null}
-            </div>
-          </section>
-        )
-      ) : null}
+              <ul className="grid max-md:gap-3">{dados.itens.map((m) => <LinhaManutencao key={m.id} m={m} />)}</ul>
+              <div className="flex flex-wrap items-center justify-between gap-2 py-4 md:border-t md:border-linha md:px-5">
+                <span className="t-apoio">{dados.total === 1 ? "1 manutenção" : `${dados.total} manutenções`}{f.situacao === "ABERTAS" ? (dados.total === 1 ? " aberta" : " abertas") : ""}</span>
+                <span className="t-apoio">As concluídas ficam no histórico do local e do prestador.</span>
+                {dados.total > 30 ? (
+                  <span className="flex gap-2">
+                    <Botao variante="contorno" tamanho="m" disabled={f.pagina <= 1} onClick={() => ir({ pagina: f.pagina - 1 })}><Icone nome="esq" />Anteriores</Botao>
+                    <Botao variante="contorno" tamanho="m" disabled={f.pagina * 30 >= dados.total} onClick={() => ir({ pagina: f.pagina + 1 })}>Próximas<Icone nome="dir" /></Botao>
+                  </span>
+                ) : null}
+              </div>
+            </>
+          )
+        ) : null}
+      </section>
+
+      {podeEditar ? <div className="fixed right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] z-20 md:hidden">{nova_}</div> : null}
+      <JanelaFiltros key={`${filtrandoAberto}`} aberto={filtrandoAberto} f={f} o={o} aoFechar={() => setFiltrandoAberto(false)}
+        aplicar={(m) => { setFiltrandoAberto(false); ir(m); }} />
 
       {o ? (
         <FormManutencao aberto={nova} opcoes={o} aoFechar={() => setNova(false)}

@@ -4,6 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { abrirArea } from "./inicio";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -18,6 +19,7 @@ test.describe("Enquetes", () => {
   test("AC-03: o resultado enquanto corre, quem falta e o link copiado; encerrar e publicar", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/`);
+    await abrirArea(page, "Vida em condomínio");
     await expect(page.getByText("Enquete: Qual horário para a academia aos domingos?")).toBeVisible();
     await expect(page.getByText(/3 de 5 responderam · fecha/)).toBeVisible();
     await page.getByRole("link", { name: "Ver a enquete: Qual horário para a academia aos domingos?" }).click();

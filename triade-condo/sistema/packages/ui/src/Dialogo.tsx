@@ -7,8 +7,8 @@ import { Icone } from "./Icone.tsx";
 
 /** Janela larga (formulário com quem fica sabendo ao lado): 1040px no computador. Com `apoio`,
  * uma frase sob o título; com `fechar`, o emblema de fechar no canto. */
-export function Dialogo({ aberto, titulo, aoFechar, children, larga, apoio, fechar }: {
-  aberto: boolean; titulo: string; aoFechar: () => void; children: ReactNode; larga?: boolean; apoio?: ReactNode; fechar?: boolean;
+export function Dialogo({ aberto, titulo, aoFechar, children, larga, media, apoio, fechar }: {
+  aberto: boolean; titulo: string; aoFechar: () => void; children: ReactNode; larga?: boolean; media?: boolean; apoio?: ReactNode; fechar?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const idTitulo = `dialogo-${titulo.replace(/\W+/g, "-").toLowerCase()}`;
@@ -25,7 +25,7 @@ export function Dialogo({ aberto, titulo, aoFechar, children, larga, apoio, fech
       ref={ref}
       aria-labelledby={idTitulo}
       onClose={aoFechar}
-      className={`m-auto ${larga ? "w-[min(1040px,calc(100vw-32px))]" : "w-[min(460px,calc(100vw-32px))]"} rounded-[24px] border border-linha bg-superficie p-6 text-tinta shadow-s3 max-md:mb-0 max-md:w-full max-md:max-w-full max-md:rounded-b-none backdrop:bg-violeta-900/35 backdrop:backdrop-blur-[2px]`}
+      className={`m-auto ${larga ? "w-[min(1040px,calc(100vw-32px))]" : media ? "w-[min(640px,calc(100vw-32px))]" : "w-[min(460px,calc(100vw-32px))]"} rounded-[24px] border border-linha bg-superficie p-6 text-tinta shadow-s3 max-md:mb-0 max-md:w-full max-md:max-w-full max-md:rounded-b-none backdrop:bg-violeta-900/35 backdrop:backdrop-blur-[2px]`}
     >
       {aberto ? (
         <div className="grid gap-4">
