@@ -44,7 +44,7 @@ export function Carteira() {
       </div>
 
       {carga.estado === "carregando" ? <Carregando /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" && carga.dados.clientes.length === 0 ? (
         <Vazio titulo="Nenhum cliente atribuído a você ainda">
           {podeCadastrar

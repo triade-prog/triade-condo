@@ -152,7 +152,7 @@ export function Indicadores() {
   );
 
   if (carga.estado === "carregando") return <div className="grid gap-4">{cabecalho}{filtros}<Carregando rotulo="Calculando os indicadores…" /></div>;
-  if (carga.estado === "erro") return <div className="grid gap-4">{cabecalho}{filtros}<ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+  if (carga.estado === "erro") return <div className="grid gap-4">{cabecalho}{filtros}<ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
 
   const { atual: a, porcentagemAnterior } = carga.dados;
   const r = a.retornos;

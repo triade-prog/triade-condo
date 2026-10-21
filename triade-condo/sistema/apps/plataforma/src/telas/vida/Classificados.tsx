@@ -35,7 +35,7 @@ export function AbaClassificados({ aoMudar }: { aoMudar: (texto: string) => void
   const carga = useCarregar<ListaAnuncios>("/v1/condominio/classificados");
 
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando os anúncios…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const l = carga.dados;
   const lista = l.classificados.filter((a) => filtroDoAnuncio(a.estado) === filtro);
   const fechar = (texto?: string) => { setAcao(null); if (texto) aoMudar(texto); };

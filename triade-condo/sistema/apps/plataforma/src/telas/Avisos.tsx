@@ -114,7 +114,7 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
   }
 
   if (avisos.estado === "carregando") return <Carregando linhas={3} rotulo="Carregando os avisos…" />;
-  if (avisos.estado === "erro") return <ErroCarregar texto={avisos.texto} tentarDeNovo={avisos.recarregar} />;
+  if (avisos.estado === "erro") return <ErroCarregar erro={avisos.erro} texto={avisos.texto} tentarDeNovo={avisos.recarregar} />;
   const { itens, naoVistos } = avisos.dados;
   return (
     <div className="grid gap-3">

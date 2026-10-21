@@ -16,8 +16,8 @@ async function conferir(page: Page) {
 }
 
 async function abrirMenu(page: Page) {
-  await expect(page.getByRole("button", { name: "Sair" })).toBeVisible();
-  const menu = page.getByRole("button", { name: "Menu" });
+  await expect(page.getByRole("button", { name: /^Conta de / })).toBeVisible();
+  const menu = page.getByRole("button", { name: "Mais", exact: true });
   if (await menu.isVisible()) await menu.click();
   return page.getByRole("navigation", { name: "Plataforma" });
 }

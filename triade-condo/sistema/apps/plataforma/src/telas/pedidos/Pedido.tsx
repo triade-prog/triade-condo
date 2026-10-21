@@ -70,7 +70,7 @@ export function Pedido() {
     const e = carga.estado === "erro" ? carga : opcoes.estado === "erro" ? opcoes : null;
     return (
       <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Pedido</h1>
-        <ErroCarregar texto={e?.texto ?? ""} tentarDeNovo={() => { carga.recarregar(); opcoes.recarregar(); }} /></div>
+        <ErroCarregar erro={e?.erro} texto={e?.texto ?? ""} tentarDeNovo={() => { carga.recarregar(); opcoes.recarregar(); }} /></div>
     );
   }
 

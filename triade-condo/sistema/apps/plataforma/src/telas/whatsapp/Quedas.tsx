@@ -315,7 +315,7 @@ function VerQueda({ id, aoFechar }: { id: string; aoFechar: () => void }) {
   const carga = useCarregar<QuedaWhatsapp>(`${BASE}/${id}`);
   return (
     <Dialogo aberto titulo="Queda do WhatsApp" aoFechar={aoFechar}>
-      {carga.estado === "carregando" ? <Carregando /> : carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : (
+      {carga.estado === "carregando" ? <Carregando /> : carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : (
         <div className="grid gap-3 text-sm">
           <p>
             {diaHora(carga.dados.inicio)} a {carga.dados.voltouEm ? `${diaHora(carga.dados.voltouEm)} (${duracao(carga.dados.inicio, carga.dados.voltouEm)})` : "sem volta registrada"}

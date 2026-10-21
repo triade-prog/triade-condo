@@ -18,7 +18,7 @@ export function NovaReserva({ aoFechar, aoSalvar }: { aoFechar: () => void; aoSa
   return (
     <Dialogo aberto titulo="Nova reserva" aoFechar={aoFechar}>
       {opcoes.estado === "carregando" ? <Carregando rotulo="Carregando as áreas…" /> : null}
-      {opcoes.estado === "erro" ? <ErroCarregar texto={opcoes.texto} tentarDeNovo={opcoes.recarregar} /> : null}
+      {opcoes.estado === "erro" ? <ErroCarregar erro={opcoes.erro} texto={opcoes.texto} tentarDeNovo={opcoes.recarregar} /> : null}
       {opcoes.estado === "pronto" ? (
         opcoes.dados.areas.length
           ? <Form o={opcoes.dados} aoFechar={aoFechar} aoSalvar={aoSalvar} />

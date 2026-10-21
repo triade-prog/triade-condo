@@ -95,7 +95,7 @@ export function Prestadores() {
       </div>
 
       {lista.estado === "carregando" ? <Carregando rotulo="Carregando os prestadores…" /> : null}
-      {lista.estado === "erro" ? <ErroCarregar texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
+      {lista.estado === "erro" ? <ErroCarregar erro={lista.erro} texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
       {dados ? (
         grupos.length === 0 ? (
           <Vazio titulo={arquivados === "ARQUIVADOS" ? "Nenhum prestador arquivado" : termo ? "Nenhum prestador com essa busca" : "Nenhum prestador cadastrado"}>

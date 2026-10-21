@@ -22,9 +22,9 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
     await expect(cartao).toContainText("1 rascunho parado há mais de 3 dias");
     await expect(cartao).toContainText("AVCB vence em 42 dias");
 
-    const menu = page.getByRole("button", { name: "Menu" });
+    const menu = page.getByRole("button", { name: "Mais", exact: true });
     if (await menu.isVisible()) await menu.click();
-    await page.getByRole("navigation", { name: "Plataforma" }).getByRole("link", { name: "Comunicados e documentos" }).click();
+    await page.getByRole("navigation", { name: "Plataforma" }).getByRole("link", { name: "Comunicados", exact: true }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Comunicados" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Falta de água na quinta" })).toBeVisible();
     await expect(page.getByText("Pedido 2026-0001")).toBeVisible();

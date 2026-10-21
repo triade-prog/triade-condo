@@ -91,7 +91,7 @@ export function AbaConfiguracao({ ficha }: PropsAba) {
   const [recado, setRecado] = useState<string | null>(null);
 
   if (carga.estado === "carregando") return <Carregando rotulo="Abrindo a configuração…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const d = carga.dados;
   const conferidas = d.partes.filter((p) => p.conferida).length;
   const faltando = d.partes.filter((p) => !p.conferida).map((p) => PARTES_CONFIGURACAO[p.parte].nome);

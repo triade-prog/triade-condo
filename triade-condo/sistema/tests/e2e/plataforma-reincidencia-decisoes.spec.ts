@@ -15,8 +15,10 @@ async function conferir(page: Page) {
 }
 
 /** No celular o menu abre e fecha pelo botão Menu; no computador está sempre à vista. */
+/** No celular, abre a folha do menu ou fecha a que estiver aberta. */
 async function alternarMenu(page: Page) {
-  if (await page.getByRole("button", { name: "Menu" }).isVisible()) await page.getByRole("button", { name: "Menu" }).click();
+  if (await page.getByRole("dialog", { name: "Menu" }).isVisible()) await page.keyboard.press("Escape");
+  else if (await page.getByRole("button", { name: "Mais", exact: true }).isVisible()) await page.getByRole("button", { name: "Mais", exact: true }).click();
 }
 
 const recado = (page: Page, texto: string) => page.getByRole("status").filter({ hasText: texto });
@@ -231,7 +233,8 @@ test.describe("Plataforma · reincidência e decisões", () => {
     await expect(page.getByRole("region", { name: "Pedidos relacionados" })).toHaveCount(0);
     await conferir(page);
     await page.goto(`${PLATAFORMA}/decisoes`);
-    await expect(page.getByText("Sem acesso")).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Decisões" })).toBeVisible();
+    await expect(page.getByText("Você não tem a permissão Aprovar.")).toBeVisible();
     await alternarMenu(page);
     await expect(page.getByRole("link", { name: /^Decisões/ })).toHaveCount(0);
   });

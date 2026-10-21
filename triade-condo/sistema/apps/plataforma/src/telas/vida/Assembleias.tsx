@@ -34,7 +34,7 @@ export function AbaAssembleias({ aoMudar }: { aoMudar: (texto: string) => void }
   const [dialogo, setDialogo] = useState<Dialogos>(null);
 
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando as assembleias…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const l = carga.dados;
   const fechar = (texto?: string) => { setDialogo(null); if (texto) aoMudar(texto); };
 
@@ -134,7 +134,7 @@ function FracoesIdeais({ aoFechar }: { aoFechar: (texto?: string) => void }) {
   return (
     <Dialogo aberto titulo="Frações ideais" aoFechar={() => aoFechar()}>
       {carga.estado === "carregando" ? <Carregando rotulo="Carregando as unidades…" /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" ? <FormFracoes f={carga.dados} aoFechar={aoFechar} /> : null}
     </Dialogo>
   );

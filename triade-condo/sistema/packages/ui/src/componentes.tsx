@@ -142,29 +142,6 @@ export function Trilho({ rotulo, children }: { rotulo: string; children: ReactNo
   return <div role="group" aria-label={rotulo} className="trilho">{children}</div>;
 }
 
-export function Vazio({ titulo, children, acao }: { titulo: string; children?: ReactNode; acao?: ReactNode }) {
-  return (
-    <div className="vazio">
-      <p className="text-lg font-light">{titulo}</p>
-      {children ? <p className="max-w-sm text-sm text-tinta-suave">{children}</p> : null}
-      {acao}
-    </div>
-  );
-}
-
-export function ErroCarregar({ texto, tentarDeNovo }: { texto: string; tentarDeNovo?: () => void }) {
-  return (
-    <div role="alert" data-tom="erro" className="aviso">
-      <span className="quadro"><Icone nome="alerta" /></span>
-      <div className="texto grid justify-items-start gap-2">
-        <p className="font-semibold">Não foi possível carregar</p>
-        <p>{texto} Os dados não se perderam.</p>
-        {tentarDeNovo ? <Botao variante="secundario" tamanho="m" onClick={tentarDeNovo}>Tentar de novo</Botao> : null}
-      </div>
-    </div>
-  );
-}
-
 /** Carregando: mostra o formato do conteúdo. */
 export function Carregando({ linhas = 3, rotulo = "Carregando…" }: { linhas?: number; rotulo?: string }) {
   return (

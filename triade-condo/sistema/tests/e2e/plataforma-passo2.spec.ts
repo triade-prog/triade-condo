@@ -15,8 +15,8 @@ async function conferir(page: Page) {
 }
 
 async function menuPara(page: Page, nome: string) {
-  await expect(page.getByRole("button", { name: "Sair" })).toBeVisible();
-  const menu = page.getByRole("button", { name: "Menu" });
+  await expect(page.getByRole("button", { name: /^Conta de / })).toBeVisible();
+  const menu = page.getByRole("button", { name: "Mais", exact: true });
   if (await menu.isVisible()) await menu.click();
   await page.getByRole("navigation", { name: "Plataforma" }).getByRole("link", { name: nome }).click();
 }
@@ -39,7 +39,13 @@ test.describe("Plataforma do síndico · passo 2", () => {
     await conferir(page);
     await page.getByRole("button", { name: /Residencial Ipê/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Residencial Ipê" })).toBeVisible();
-    await page.getByRole("button", { name: "Trocar condomínio" }).click();
+    // No computador o condomínio fica no topo; no celular, no menu da conta.
+    const trocar = page.getByRole("button", { name: /^Trocar condomínio, agora / });
+    if (await trocar.isVisible()) await trocar.click();
+    else {
+      await page.getByRole("button", { name: /^Conta de / }).click();
+      await page.getByRole("button", { name: "Trocar condomínio", exact: true }).click();
+    }
     await page.getByRole("dialog", { name: "Trocar condomínio" }).getByRole("button", { name: /Edifício Jatobá/ }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Edifício Jatobá" })).toBeVisible();
   });
@@ -189,8 +195,8 @@ test.describe("Plataforma do síndico · passo 2", () => {
     await expect(page.getByText("o síndico precisa dar a você a permissão Configurar")).toBeVisible();
     await expect(page.getByRole("button", { name: "+ Categoria" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Renomear / })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Sair" })).toBeVisible();
-    const menu = page.getByRole("button", { name: "Menu" });
+    await expect(page.getByRole("button", { name: /^Conta de / })).toBeVisible();
+    const menu = page.getByRole("button", { name: "Mais", exact: true });
     if (await menu.isVisible()) await menu.click();
     await expect(page.getByRole("link", { name: "Configurações" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Pessoas e acesso" })).toHaveCount(0);

@@ -92,7 +92,7 @@ export function SuporteAcesso() {
         <Botao onClick={() => setNovo(true)}>Novo pedido</Botao>
       </div>
       {carga.estado === "carregando" ? <Carregando /> : null}
-      {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" && carga.dados.pedidos.length === 0 ? <Vazio titulo="Nenhum pedido de suporte de acesso">Os pedidos do último mês aparecem aqui.</Vazio> : null}
       {carga.estado === "pronto" && carga.dados.pedidos.length > 0 ? (
         <ul className="grid gap-2.5">

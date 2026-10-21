@@ -46,7 +46,7 @@ export function Decisoes() {
   );
 
   if (carga.estado === "carregando") return <div className="grid gap-4">{cabecalho}{filtros}<Carregando rotulo="Carregando as decisões…" /></div>;
-  if (carga.estado === "erro") return <div className="grid gap-4">{cabecalho}{filtros}<ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+  if (carga.estado === "erro") return <div className="grid gap-4">{cabecalho}{filtros}<ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
 
   const lista = carga.dados.decisoes;
   const hoje = carga.dados.hoje;

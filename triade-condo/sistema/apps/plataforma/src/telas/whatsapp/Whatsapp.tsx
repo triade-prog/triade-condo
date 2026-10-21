@@ -279,7 +279,7 @@ export function Whatsapp() {
   const carga = useCarregar<DadosWhatsapp>("/v1/condominio/whatsapp");
   const [aba, setAba] = useState<IdAba | null>(null);
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o WhatsApp…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const d = carga.dados;
   const telefones = porTelefone(d.aIdentificar).length;
   const abas = ABAS.map((a) => (a.id === "identificar" && telefones ? { ...a, texto: `${a.texto} (${telefones})` }

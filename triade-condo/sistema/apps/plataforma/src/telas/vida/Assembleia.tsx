@@ -28,7 +28,7 @@ export function Assembleia() {
 
   if (!id) return <Aviso tom="atencao">Assembleia não encontrada.</Aviso>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando a assembleia…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const mudou = (texto: string) => { setRecado({ tom: "ok", texto }); carga.recarregar(); atualizar(); };
   return <Tela d={carga.dados} recado={recado} aoMudar={mudou} />;
 }

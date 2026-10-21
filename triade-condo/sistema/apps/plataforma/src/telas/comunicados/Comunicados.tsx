@@ -11,7 +11,7 @@ import { Botao, Carregando, CampoSelecao, Chip, classeBotao, ErroCarregar, Vazio
 import { Escolha } from "../moradores/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { ListaComunicados } from "../tipos.ts";
-import { LinhaComunicado, PartesComunicados } from "./comum.tsx";
+import { LinhaComunicado } from "./comum.tsx";
 
 type Filtros = { filtro: string; assunto: string; atencao: string; busca: string; pagina: number };
 const ICONE_ATALHO: Record<string, NomeIcone> = { RASCUNHOS_PARADOS: "editar", PROGRAMADOS_HOJE: "relogio" };
@@ -51,7 +51,6 @@ export function Comunicados() {
 
   return (
     <div className="grid gap-5">
-      <PartesComunicados />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-[28px] font-normal tracking-tight">Comunicados</h1>
@@ -86,7 +85,7 @@ export function Comunicados() {
       </div>
 
       {lista.estado === "carregando" ? <Carregando rotulo="Carregando os comunicados…" /> : null}
-      {lista.estado === "erro" ? <ErroCarregar texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
+      {lista.estado === "erro" ? <ErroCarregar erro={lista.erro} texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
       {dados ? (
         dados.itens.length === 0 ? (
           filtrando ? <Vazio titulo="Nenhum comunicado com estes filtros" />

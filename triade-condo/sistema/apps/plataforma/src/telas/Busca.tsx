@@ -34,7 +34,7 @@ export function Busca() {
         <section aria-labelledby="t-b-pedidos" className="grid gap-2">
           <h2 id="t-b-pedidos" className="text-lg font-medium">Pedidos</h2>
           {pedidos.estado === "carregando" ? <Carregando linhas={2} rotulo="Buscando pedidos…" /> : null}
-          {pedidos.estado === "erro" ? <ErroCarregar texto={pedidos.texto} tentarDeNovo={pedidos.recarregar} /> : null}
+          {pedidos.estado === "erro" ? <ErroCarregar erro={pedidos.erro} texto={pedidos.texto} tentarDeNovo={pedidos.recarregar} /> : null}
           {pedidos.estado === "pronto" ? (
             pedidos.dados.itens.length === 0 ? <p className="text-sm text-tinta-suave">Nenhum pedido encontrado.</p> : (
               <>
@@ -64,7 +64,7 @@ export function Busca() {
         <section aria-labelledby="t-b-moradores" className="grid gap-2">
           <h2 id="t-b-moradores" className="text-lg font-medium">Moradores</h2>
           {moradores.estado === "carregando" ? <Carregando linhas={2} rotulo="Buscando moradores…" /> : null}
-          {moradores.estado === "erro" ? <ErroCarregar texto={moradores.texto} tentarDeNovo={moradores.recarregar} /> : null}
+          {moradores.estado === "erro" ? <ErroCarregar erro={moradores.erro} texto={moradores.texto} tentarDeNovo={moradores.recarregar} /> : null}
           {moradores.estado === "pronto" ? (
             moradores.dados.itens.length === 0 ? <p className="text-sm text-tinta-suave">Nenhum morador encontrado.</p> : (
               <>

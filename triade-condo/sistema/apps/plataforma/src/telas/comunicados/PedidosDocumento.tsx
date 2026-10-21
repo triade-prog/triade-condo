@@ -37,7 +37,7 @@ export function PedidosDocumento({ aoMudar }: { aoMudar: () => void }) {
   }
 
   if (lista.estado === "carregando") return <Carregando rotulo="Carregando os pedidos…" />;
-  if (lista.estado === "erro") return <ErroCarregar texto={lista.texto} tentarDeNovo={lista.recarregar} />;
+  if (lista.estado === "erro") return <ErroCarregar erro={lista.erro} texto={lista.texto} tentarDeNovo={lista.recarregar} />;
   const d = lista.dados;
   return (
     <section aria-labelledby="t-pedidos" className="grid gap-3">

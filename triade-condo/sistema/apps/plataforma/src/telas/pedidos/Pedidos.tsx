@@ -109,7 +109,7 @@ export function Pedidos() {
 
   if (opcoes.estado === "carregando") return <Carregando rotulo="Carregando os pedidos…" />;
   if (opcoes.estado === "erro") {
-    return <div className="grid gap-3"><h1 className="text-[28px] font-normal tracking-tight">Pedidos</h1><ErroCarregar texto={opcoes.texto} tentarDeNovo={opcoes.recarregar} /></div>;
+    return <div className="grid gap-3"><h1 className="text-[28px] font-normal tracking-tight">Pedidos</h1><ErroCarregar erro={opcoes.erro} texto={opcoes.texto} tentarDeNovo={opcoes.recarregar} /></div>;
   }
   const o = opcoes.dados;
   const r = fila.estado === "pronto" ? fila.dados.resumo : null;
@@ -154,7 +154,7 @@ export function Pedidos() {
       </div>
 
       {fila.estado === "carregando" ? <Carregando rotulo="Carregando a fila…" /> : null}
-      {fila.estado === "erro" ? <ErroCarregar texto={fila.texto} tentarDeNovo={fila.recarregar} /> : null}
+      {fila.estado === "erro" ? <ErroCarregar erro={fila.erro} texto={fila.texto} tentarDeNovo={fila.recarregar} /> : null}
       {fila.estado === "pronto" ? (
         fila.dados.itens.length === 0 ? (
           filtrando ? <Vazio titulo="Nenhum pedido com estes filtros" acao={<Botao variante="contorno" onClick={() => router.replace("/pedidos")}>Limpar filtros</Botao>} />

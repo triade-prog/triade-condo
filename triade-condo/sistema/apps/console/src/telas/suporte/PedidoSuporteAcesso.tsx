@@ -27,7 +27,7 @@ export function PedidoSuporteAcesso() {
   const [recado, setRecado] = useState<string | null>(null);
 
   if (carga.estado === "carregando") return <Carregando />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const p = carga.dados;
 
   async function verificar(campo: "tipo" | "dadosConferidos" | "canalConhecido", valor: string | boolean) {

@@ -1,15 +1,17 @@
 "use client";
-// Moldura da Plataforma do síndico (telas-modelo da identidade, aprovadas em 17/10/2026, DC13):
-// barra superior branca com a marca, a busca, o condomínio, o sino e a pessoa; lateral clara com
-// ícone em cada item, o escolhido em degradê violeta e a contagem de vencidos em laranja.
+// Moldura da Plataforma do síndico (DC15, docs/design/telas-modelo/moldura-*.html): barra de cima
+// com a marca, a busca, o condomínio, o sino e a pessoa; no computador, a lateral com o Início e
+// quatro grupos por tarefa (menu.ts); no celular, a barra de baixo com os atalhos e "Mais". A tela
+// que a pessoa não pode abrir mostra o estado "sem permissão" no lugar do conteúdo.
 // O condomínio vem da sessão no servidor; quem atende mais de um escolhe e troca aqui (MU-04).
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FUNCOES_PLATAFORMA } from "@triade/domain";
-import { Aviso, Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, Iniciais, Marca, textoDoErro, type ErroApi, type NomeIcone } from "@triade/ui";
+import { Aviso, Botao, Carregando, chamarApi, DestinosDosEstados, Dialogo, ErroCarregar, Icone, Iniciais, Marca, SemPermissao, textoDoErro, type ErroApi } from "@triade/ui";
 import { SinoAvisos } from "./Avisos.tsx";
+import { GRUPOS_MENU, itemDoCaminho, ITENS_MENU, type ItemDoMenu } from "./menu.ts";
 import { Contexto, useCarregar, type CondominioDaPessoa, type Painel } from "./sessao.tsx";
 
 interface Sessao {
@@ -32,10 +34,10 @@ function ListaCondominios({ condominios, atual, aoEscolher }: { condominios: Con
             type="button"
             onClick={() => aoEscolher(c.id)}
             aria-current={c.id === atual ? "true" : undefined}
-            className="grid w-full gap-0.5 rounded-[18px] border border-linha bg-superficie px-4 py-3 text-left hover:border-violeta-300 aria-[current=true]:border-violeta-600 aria-[current=true]:bg-violeta-50"
+            className="escolha"
           >
-            <span className="font-semibold">{c.nome}</span>
-            <span className="text-sm text-tinta-suave">{nomeFuncoes(c.funcoes)}</span>
+            <span className="t-titulo-cartao">{c.nome}</span>
+            <span className="t-apoio">{nomeFuncoes(c.funcoes)}</span>
           </button>
         </li>
       ))}
@@ -43,23 +45,106 @@ function ListaCondominios({ condominios, atual, aoEscolher }: { condominios: Con
   );
 }
 
-function ItemMenu({ href, icone, children, atual, contagem }: { href: string; icone: NomeIcone; children: ReactNode; atual: boolean; contagem?: ReactNode }) {
-  return (
-    <Link href={href} aria-current={atual ? "page" : undefined}>
-      <Icone nome={icone} />
-      {children}
-      {contagem}
+function Contagem({ item, painel }: { item: ItemDoMenu; painel: Painel }) {
+  const c = item.contagem?.(painel);
+  return c ? <span className="contagem">{c.n}<span className="sr-only"> {c.nome}</span></span> : null;
+}
+
+/** O menu inteiro: na lateral do computador e na folha "Mais" do celular. */
+function Menu({ itens, painel, escolhido, aoIr }: { itens: ItemDoMenu[]; painel: Painel; escolhido: ItemDoMenu | null; aoIr?: () => void }) {
+  const ligacao = (item: ItemDoMenu) => (
+    <Link key={item.href} href={item.href} aria-current={item === escolhido ? "page" : undefined} onClick={aoIr}>
+      <Icone nome={item.icone} />
+      <span className="flex-1">{item.texto}</span>
+      <Contagem item={item} painel={painel} />
     </Link>
   );
+  return (
+    <>
+      {itens.filter((i) => i.grupo === null).map(ligacao)}
+      {GRUPOS_MENU.map((g) => {
+        const doGrupo = itens.filter((i) => i.grupo === g);
+        if (!doGrupo.length) return null;
+        const id = `grupo-${g.normalize("NFD").replace(/[^a-zA-Z]+/g, "-").toLowerCase()}`;
+        return (
+          <div key={g} role="group" aria-labelledby={id} className="grid gap-0.5">
+            <span id={id} className="grupo">{g}</span>
+            {doGrupo.map(ligacao)}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/** A pessoa no topo: abre o menu com o condomínio, trocar e sair. */
+function Conta({ sessao, painel, aoTrocar, aoSair }: { sessao: Sessao; painel: Painel; aoTrocar: () => void; aoSair: () => void }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setAberto(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setAberto(false); };
+    document.addEventListener("mousedown", fora);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", fora); document.removeEventListener("keydown", esc); };
+  }, [aberto]);
+  return (
+    <div ref={ref} className="conta">
+      <button type="button" className="pessoa" aria-expanded={aberto} aria-controls="menu-pessoa" onClick={() => setAberto((v) => !v)}>
+        <Iniciais nome={painel.pessoa.nome} />
+        <span className="sr-only">{`Conta de ${painel.pessoa.nome}, ${nomeFuncoes(painel.funcoes)}`}</span>
+        <span className="nome max-lg:hidden" aria-hidden="true">{painel.pessoa.nome}<small>{nomeFuncoes(painel.funcoes)}</small></span>
+      </button>
+      {aberto ? (
+        <div id="menu-pessoa" className="menu-pessoa">
+          <div className="quem">
+            <span className="t-titulo-cartao">{painel.pessoa.nome}</span>
+            <span className="t-apoio">{nomeFuncoes(painel.funcoes)} · {painel.condominio.nome}</span>
+          </div>
+          {sessao.condominios.length > 1 ? (
+            <Botao variante="discreto" tamanho="m" onClick={() => { setAberto(false); aoTrocar(); }}><Icone nome="trocar" />Trocar condomínio</Botao>
+          ) : null}
+          <Botao variante="discreto" tamanho="m" onClick={aoSair}><Icone nome="sair" />Sair</Botao>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** A busca do topo: no computador, na barra; no celular, numa janela aberta pela lupa. */
+function FormBusca({ className = "", chave, aoBuscar }: { className?: string; chave: string; aoBuscar: (q: string) => void }) {
+  return (
+    <form role="search" action="/busca" className={`busca ${className}`}
+      onSubmit={(e) => { e.preventDefault(); aoBuscar(String(new FormData(e.currentTarget).get("q") ?? "").trim()); }}>
+      <Icone nome="busca" />
+      <input type="search" name="q" maxLength={60} aria-label="Buscar no condomínio" placeholder="Buscar pedido, unidade ou pessoa" key={chave}
+        className="campo placeholder:text-tinta-suave" />
+    </form>
+  );
+}
+
+function LigacaoDoApp({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
+  return <Link href={href} className={className}>{children}</Link>;
 }
 
 function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; painel: Painel; aoTrocar: (id: string) => void; children: ReactNode }) {
   const caminho = usePathname();
   const router = useRouter();
-  const [menuAberto, setMenuAberto] = useState(false);
+  const [mais, setMais] = useState(false);
+  const [buscando, setBuscando] = useState(false);
   const [trocando, setTrocando] = useState(false);
   const pode = (acao: string) => painel.acoes.includes(acao);
-  const aAprovarVida = (painel.vida?.reservasAAprovar ?? 0) + (painel.vida?.classificadosAAprovar ?? 0);
+  const itens = ITENS_MENU.filter((i) => i.ve(pode, painel));
+  const daTela = itemDoCaminho(caminho);
+  const escolhido = daTela && itens.includes(daTela) ? daTela : null;
+  const semAcesso = daTela && !escolhido && !daTela.semGuarda ? daTela : null;
+  const atalhos = itens.filter((i) => i.atalho);
+  const buscar = pode("pedidos.ver") || pode("moradores.ver");
+  const destinos = {
+    inicio: "/", suporte: pode("suporte.chamados") ? "/suporte" : undefined, Ligacao: LigacaoDoApp,
+    quemDaPermissao: "Quem dá essa permissão é o síndico, em Pessoas e acesso.",
+  };
 
   async function sair() {
     await chamarApi("/v1/auth/sair", { corpo: {} });
@@ -67,109 +152,65 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
   }
 
   return (
-    <>
+    <DestinosDosEstados value={destinos}>
       <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-superficie focus:px-3 focus:py-2">
         Ir para o conteúdo
       </a>
-      <header className="flex flex-wrap items-center gap-3 border-b border-linha bg-superficie px-4 py-2.5">
-        <button
-          type="button"
-          className="emblema md:hidden"
-          aria-label="Menu"
-          aria-expanded={menuAberto}
-          aria-controls="menu-plataforma"
-          onClick={() => setMenuAberto((v) => !v)}
-        >
-          <Icone nome="menu" />
-        </button>
-        <Marca sistema="Plataforma do síndico" />
-        {pode("pedidos.ver") || pode("moradores.ver") ? (
-          <form role="search" action="/busca" className="relative order-last w-full md:order-none md:ml-4 md:w-auto md:max-w-md md:flex-1"
-            onSubmit={(e) => { e.preventDefault(); const q = new FormData(e.currentTarget).get("q"); router.push(`/busca?q=${encodeURIComponent(String(q ?? "").trim())}`); }}>
-            <Icone nome="busca" className="pointer-events-none absolute top-1/2 left-3.5 h-[18px] w-[18px] -translate-y-1/2 text-tinta-suave" />
-            <input type="search" name="q" maxLength={60} aria-label="Buscar no condomínio" placeholder="Buscar pedido, unidade ou pessoa" key={caminho}
-              className="campo min-h-10 pl-10 text-sm placeholder:text-tinta-suave" />
-          </form>
+      <header className="topo">
+        <span className="marca"><Marca sistema="Plataforma do síndico" /></span>
+        {buscar ? <FormBusca className="max-md:hidden" chave={caminho} aoBuscar={(q) => router.push(`/busca?q=${encodeURIComponent(q)}`)} /> : null}
+        {buscar ? (
+          <button type="button" className="emblema md:hidden" aria-label="Buscar no condomínio" onClick={() => setBuscando(true)}><Icone nome="busca" /></button>
         ) : null}
-        <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-          <span className="inline-flex min-h-10 items-center gap-2 rounded-[18px] border border-linha bg-superficie px-3 font-medium">
-            <Icone nome="predio" className="h-4 w-4 text-tinta-suave" />
-            {painel.condominio.nome}
-            {sessao.condominios.length > 1 ? (
-              <Botao variante="discreto" tamanho="p" aria-label="Trocar condomínio" onClick={() => setTrocando(true)}>Trocar</Botao>
-            ) : null}
-          </span>
-          {painel.avisosNaoVistos !== undefined ? <SinoAvisos naoVistos={painel.avisosNaoVistos} /> : null}
-          <span className="flex items-center gap-2">
-            <Iniciais nome={painel.pessoa.nome} />
-            <span className="hidden leading-tight sm:block">
-              <span className="block font-medium">{painel.pessoa.nome}</span>
-              <span className="block text-xs text-tinta-suave">{nomeFuncoes(painel.funcoes)}</span>
-            </span>
-            <span className="sr-only sm:hidden">{painel.pessoa.nome} · {nomeFuncoes(painel.funcoes)}</span>
-          </span>
-          <Botao variante="discreto" tamanho="m" onClick={sair}>Sair</Botao>
-        </div>
+        {sessao.condominios.length > 1 ? (
+          <button type="button" className="condominio max-md:hidden" aria-label={`Trocar condomínio, agora ${painel.condominio.nome}`} onClick={() => setTrocando(true)}>
+            <Icone nome="predio" />{painel.condominio.nome}<Icone nome="baixo" />
+          </button>
+        ) : (
+          <span className="condominio max-md:hidden"><Icone nome="predio" />{painel.condominio.nome}</span>
+        )}
+        {painel.avisosNaoVistos !== undefined ? <SinoAvisos naoVistos={painel.avisosNaoVistos} /> : null}
+        <Conta sessao={sessao} painel={painel} aoTrocar={() => setTrocando(true)} aoSair={sair} />
       </header>
-      <div className="min-h-[calc(100dvh-63px)] md:grid md:grid-cols-[248px_1fr] md:gap-6 md:p-5">
-        <nav
-          id="menu-plataforma"
-          aria-label="Plataforma"
-          className={`${menuAberto ? "grid" : "hidden"} lateral m-3 md:sticky md:top-5 md:m-0 md:grid md:self-start`}
-        >
-          <ItemMenu href="/" icone="casa" atual={caminho === "/"}>Início</ItemMenu>
-          {pode("pedidos.ver") ? (
-            <ItemMenu href="/pedidos" icone="pedido" atual={caminho.startsWith("/pedidos")}
-              contagem={painel.pedidos?.retornoVencido ? <span className="contagem">{painel.pedidos.retornoVencido}<span className="sr-only"> com retorno vencido</span></span> : null}>
-              Pedidos
-            </ItemMenu>
-          ) : null}
-          {pode("decisoes.aprovar") || pode("pedidos.atualizar") ? (
-            <ItemMenu href="/decisoes" icone="decisao" atual={caminho.startsWith("/decisoes")}
-              contagem={painel.decisoes?.aguardando ? <span className="contagem">{painel.decisoes.aguardando}<span className="sr-only"> aguardando você</span></span> : null}>
-              Decisões
-            </ItemMenu>
-          ) : null}
-          {painel.whatsapp && painel.whatsapp.situacao !== "SEM_CREDENCIAIS" ? (
-            <ItemMenu href="/whatsapp" icone="whats" atual={caminho.startsWith("/whatsapp")}
-              contagem={painel.whatsapp.aIdentificar + painel.whatsapp.falhas
-                ? <span className="contagem">{painel.whatsapp.aIdentificar + painel.whatsapp.falhas}<span className="sr-only"> para ver</span></span> : null}>
-              WhatsApp
-            </ItemMenu>
-          ) : null}
-          {pode("agenda.ver") ? <ItemMenu href="/agenda" icone="calendario" atual={caminho.startsWith("/agenda")}>Agenda</ItemMenu> : null}
-          {pode("manutencao.ver") ? (
-            <ItemMenu href="/manutencao" icone="ferramenta" atual={caminho.startsWith("/manutencao")}
-              contagem={painel.manutencao?.retornoVencido ? <span className="contagem">{painel.manutencao.retornoVencido}<span className="sr-only"> com retorno vencido</span></span> : null}>
-              Manutenção
-            </ItemMenu>
-          ) : null}
-          {pode("comunicados.ver") || pode("documentos.ver") ? (
-            <ItemMenu href={pode("comunicados.ver") ? "/comunicados" : "/comunicados/documentos"} icone="megafone" atual={caminho.startsWith("/comunicados")}>
-              Comunicados e documentos
-            </ItemMenu>
-          ) : null}
-          {pode("reservas.ver") || pode("enquetes.ver") || pode("assembleias.ver") || pode("classificados.ver") ? (
-            <ItemMenu href="/vida" icone="convivio" atual={caminho.startsWith("/vida")}
-              contagem={aAprovarVida ? <span className="contagem">{aAprovarVida}<span className="sr-only"> a aprovar</span></span> : null}>
-              Vida em condomínio
-            </ItemMenu>
-          ) : null}
-          {pode("documentos.ver") ? <ItemMenu href="/memoria" icone="documento" atual={caminho.startsWith("/memoria")}>Memória do prédio</ItemMenu> : null}
-          {pode("moradores.ver") ? <ItemMenu href="/moradores" icone="predio" atual={caminho.startsWith("/moradores")}>Moradores e unidades</ItemMenu> : null}
-          {pode("pedidos.ver") ? <ItemMenu href="/indicadores" icone="grafico" atual={caminho.startsWith("/indicadores")}>Indicadores</ItemMenu> : null}
-          {pode("config.ver") || pode("pessoas.ver") || pode("suporte.chamados") ? <hr /> : null}
-          {pode("config.ver") ? <ItemMenu href="/configuracoes" icone="ajuste" atual={caminho.startsWith("/configuracoes")}>Configurações</ItemMenu> : null}
-          {pode("pessoas.ver") ? <ItemMenu href="/pessoas" icone="pessoas" atual={caminho.startsWith("/pessoas")}>Pessoas e acesso</ItemMenu> : null}
-          {pode("suporte.chamados") ? <ItemMenu href="/suporte" icone="balao" atual={caminho.startsWith("/suporte")}>Ajuda e suporte</ItemMenu> : null}
+      <div className="min-h-[calc(100dvh-63px)] pb-24 md:grid md:grid-cols-[248px_minmax(0,1fr)] md:gap-8 md:p-6 md:pb-6">
+        <nav id="menu-plataforma" aria-label="Plataforma" className="lateral max-md:hidden md:sticky md:top-6 md:self-start">
+          <Menu itens={itens} painel={painel} escolhido={escolhido} />
         </nav>
-        <main id="conteudo" className="min-w-0 px-4 py-6 md:px-2 md:py-2">{children}</main>
+        <main id="conteudo" className="min-w-0 px-4 py-6 md:p-0">
+          {semAcesso ? (
+            semAcesso.permissao
+              ? <SemPermissao tela={semAcesso.texto} permissao={semAcesso.permissao} />
+              : <SemPermissao tela={semAcesso.texto} texto="Esta parte é só do síndico." nota="Se precisar de algo daqui, fale com o síndico." />
+          ) : children}
+        </main>
       </div>
+      <nav aria-label="Atalhos" className="barra-baixo">
+        {atalhos.map((item) => (
+          <Link key={item.href} href={item.href} aria-current={item === escolhido ? "page" : undefined}>
+            <Icone nome={item.icone} />
+            {item.texto}
+            <Contagem item={item} painel={painel} />
+          </Link>
+        ))}
+        <button type="button" aria-expanded={mais} aria-controls="menu-mais" onClick={() => setMais(true)}>
+          <Icone nome="menu" />Mais
+        </button>
+      </nav>
+      <Dialogo aberto={mais} titulo="Menu" aoFechar={() => setMais(false)}>
+        <nav id="menu-mais" aria-label="Plataforma" className="lateral border-0 p-0 shadow-none">
+          <Menu itens={itens} painel={painel} escolhido={escolhido} aoIr={() => setMais(false)} />
+        </nav>
+        <div className="flex justify-end"><Botao variante="discreto" onClick={() => setMais(false)}>Fechar</Botao></div>
+      </Dialogo>
+      <Dialogo aberto={buscando} titulo="Buscar no condomínio" aoFechar={() => setBuscando(false)}>
+        <FormBusca chave={caminho} aoBuscar={(q) => { setBuscando(false); router.push(`/busca?q=${encodeURIComponent(q)}`); }} />
+        <div className="flex justify-end"><Botao variante="discreto" onClick={() => setBuscando(false)}>Fechar</Botao></div>
+      </Dialogo>
       <Dialogo aberto={trocando} titulo="Trocar condomínio" aoFechar={() => setTrocando(false)}>
         <ListaCondominios condominios={sessao.condominios} atual={painel.condominio.id} aoEscolher={(id) => { setTrocando(false); aoTrocar(id); }} />
         <div className="flex justify-end"><Botao variante="discreto" onClick={() => setTrocando(false)}>Cancelar</Botao></div>
       </Dialogo>
-    </>
+    </DestinosDosEstados>
   );
 }
 
@@ -179,7 +220,7 @@ function PainelDoCondominio({ sessao, aoTrocar, children }: { sessao: Sessao; ao
     return (
       <main id="conteudo" className="mx-auto max-w-3xl px-4 py-12">
         <h1 className="sr-only">Plataforma do síndico</h1>
-        {painel.estado === "erro" ? <ErroCarregar texto={painel.texto} tentarDeNovo={painel.recarregar} /> : <Carregando rotulo="Abrindo o painel…" />}
+        {painel.estado === "erro" ? <ErroCarregar erro={painel.erro} texto={painel.texto} tentarDeNovo={painel.recarregar} /> : <Carregando rotulo="Abrindo o painel…" />}
       </main>
     );
   }
@@ -220,7 +261,7 @@ export function PainelPlataforma({ children }: { children: ReactNode }) {
     return (
       <main id="conteudo" className="mx-auto max-w-3xl px-4 py-12">
         <h1 className="sr-only">Plataforma do síndico</h1>
-        {sessao.estado === "erro" ? <ErroCarregar texto={sessao.texto} tentarDeNovo={sessao.recarregar} /> : <Carregando rotulo="Abrindo o painel…" />}
+        {sessao.estado === "erro" ? <ErroCarregar erro={sessao.erro} texto={sessao.texto} tentarDeNovo={sessao.recarregar} /> : <Carregando rotulo="Abrindo o painel…" />}
       </main>
     );
   }
@@ -229,14 +270,14 @@ export function PainelPlataforma({ children }: { children: ReactNode }) {
   if (!s.condominioAtual) {
     return (
       <main id="conteudo" className="grid min-h-dvh place-items-center px-4 py-10">
-        <div className="grid w-full max-w-md gap-5 rounded-[20px] border border-linha bg-superficie p-6 shadow-s2">
+        <div className="grid w-full max-w-md gap-5 rounded-[24px] border border-linha bg-superficie p-6 shadow-s3">
           <Marca sistema="Plataforma do síndico" />
-          <h1 className="text-2xl font-light tracking-tight">Em qual condomínio?</h1>
+          <h1 className="t-titulo-tela">Em qual condomínio?</h1>
           {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
           {s.condominios.length ? (
             <>
               <ListaCondominios condominios={s.condominios} atual={null} aoEscolher={(id) => void escolher(id)} />
-              <p className="text-sm text-tinta-suave">Dá para trocar depois, no topo da tela.</p>
+              <p className="t-apoio">Dá para trocar depois, no menu da sua conta, no topo da tela.</p>
             </>
           ) : (
             <Aviso tom="atencao">Sua conta não tem acesso a nenhum condomínio agora. Fale com o síndico ou com a TRÍADE.</Aviso>

@@ -11,7 +11,7 @@ export function Cartaz() {
   const plano = useCarregar<PlanoComunicacao>("/v1/condominio/plano-comunicacao");
   const cond = useCarregar<{ nome: string }>("/v1/condominio");
   if (plano.estado === "carregando" || cond.estado === "carregando") return <main className="mx-auto max-w-3xl p-8"><Carregando rotulo="Preparando o cartaz…" /></main>;
-  if (plano.estado === "erro") return <main className="mx-auto max-w-3xl p-8"><ErroCarregar texto={plano.texto} tentarDeNovo={plano.recarregar} /></main>;
+  if (plano.estado === "erro") return <main className="mx-auto max-w-3xl p-8"><ErroCarregar erro={plano.erro} texto={plano.texto} tentarDeNovo={plano.recarregar} /></main>;
   const codigo = plano.dados.mural.codigo;
   const link = codigo ? enderecoMural(codigo) : null;
   return (

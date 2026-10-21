@@ -25,7 +25,7 @@ export function Prestador() {
 
   if (!id) return <div className="grid gap-3">{voltar}<Vazio titulo="Prestador não encontrado" /></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o prestador…" />;
-  if (carga.estado === "erro") return <div className="grid gap-3">{voltar}<ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+  if (carga.estado === "erro") return <div className="grid gap-3">{voltar}<ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
   const { prestador: p, manutencoes, reservaDe, pode } = carga.dados;
 
   async function arquivar(arquivar: boolean) {

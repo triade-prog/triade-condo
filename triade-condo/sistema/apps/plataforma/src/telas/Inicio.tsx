@@ -243,7 +243,7 @@ export function Inicio() {
         </section>
         {config.estado === "pronto" ? <Pronto config={config.dados} /> : null}
         {config.estado === "carregando" && pode("config.ver") ? <Carregando linhas={3} rotulo="Carregando as configurações…" /> : null}
-        {config.estado === "erro" ? <ErroCarregar texto={config.texto} tentarDeNovo={config.recarregar} /> : null}
+        {config.estado === "erro" ? <ErroCarregar erro={config.erro} texto={config.texto} tentarDeNovo={config.recarregar} /> : null}
       </div>
     </div>
   );

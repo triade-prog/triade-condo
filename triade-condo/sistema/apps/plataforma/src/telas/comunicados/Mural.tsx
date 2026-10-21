@@ -31,7 +31,7 @@ export function Mural() {
 
   if (!id) return <main className="mx-auto max-w-3xl p-8"><h1 className="text-2xl">Comunicado não encontrado</h1></main>;
   if (carga.estado === "carregando") return <main className="mx-auto max-w-3xl p-8"><Carregando rotulo="Preparando a folha…" /></main>;
-  if (carga.estado === "erro") return <main className="mx-auto max-w-3xl p-8"><h1 className="mb-4 text-2xl">Comunicado</h1><ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></main>;
+  if (carga.estado === "erro") return <main className="mx-auto max-w-3xl p-8"><h1 className="mb-4 text-2xl">Comunicado</h1><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></main>;
   const d = carga.dados;
   const c = d.comunicado;
 

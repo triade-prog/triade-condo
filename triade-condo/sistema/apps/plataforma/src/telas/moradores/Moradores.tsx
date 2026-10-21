@@ -37,7 +37,7 @@ export function Moradores() {
     return (
       <div className="grid gap-3">
         <h1 className="text-[28px] font-normal tracking-tight">Moradores e unidades</h1>
-        <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />
+        <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />
       </div>
     );
   }

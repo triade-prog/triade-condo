@@ -60,7 +60,7 @@ export function PainelConsole({ children }: { children: ReactNode }) {
     return (
       <main id="conteudo" className="mx-auto max-w-3xl px-4 py-12">
         <h1 className="sr-only">Console TRÍADE</h1>
-        {sessao.estado === "erro" ? <ErroCarregar texto={sessao.texto} tentarDeNovo={sessao.recarregar} /> : <Carregando rotulo="Abrindo o Console…" />}
+        {sessao.estado === "erro" ? <ErroCarregar erro={sessao.erro} texto={sessao.texto} tentarDeNovo={sessao.recarregar} /> : <Carregando rotulo="Abrindo o Console…" />}
       </main>
     );
   }

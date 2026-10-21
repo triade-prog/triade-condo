@@ -155,7 +155,7 @@ function VerChamado({ id, falhouImagem }: { id: string; falhouImagem: boolean })
   const [recado, setRecado] = useState<string | null>(falhouImagem ? "O chamado foi aberto, mas alguma imagem não passou na conferência." : null);
 
   if (carga.estado === "carregando") return <Carregando />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const c = carga.dados;
 
   async function responder(ev: FormEvent) {
@@ -262,7 +262,7 @@ export function AjudaSuporte() {
             <Botao onClick={() => setAbrindo(true)}>+ Abrir chamado</Botao>
           </div>
           {lista.estado === "carregando" ? <Carregando /> : null}
-          {lista.estado === "erro" ? <ErroCarregar texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
+          {lista.estado === "erro" ? <ErroCarregar erro={lista.erro} texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
           {lista.estado === "pronto" && lista.dados.itens.length === 0 ? <Vazio titulo="Nenhum chamado ainda">Quando algo no sistema não funcionar como esperado, abra um chamado.</Vazio> : null}
           {lista.estado === "pronto" && lista.dados.itens.length > 0 ? (
             <ul className="grid gap-2.5">

@@ -92,7 +92,7 @@ function JanelaModelo({ chave, aoFechar, aoMudar }: { chave: ChaveModelo; aoFech
   const [recado, setRecado] = useState<string | null>(null);
 
   if (carga.estado === "carregando") return <Dialogo aberto titulo="Modelo de mensagem" aoFechar={aoFechar}><Carregando /></Dialogo>;
-  if (carga.estado === "erro") return <Dialogo aberto titulo="Modelo de mensagem" aoFechar={aoFechar}><ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></Dialogo>;
+  if (carga.estado === "erro") return <Dialogo aberto titulo="Modelo de mensagem" aoFechar={aoFechar}><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></Dialogo>;
   const d = carga.dados;
   const atual = d.versoes[0]!;
   const valido = escrevendo ? modeloCorpoValido(escrevendo.corpo.trim(), atual.variaveis.length) && escrevendo.corpo.trim().length >= 20 : true;
@@ -227,7 +227,7 @@ export function ModelosWhatsapp() {
   const carga = useCarregar<{ modelos: Modelo[]; pode: { editar: boolean } }>("/v1/whatsapp/modelos");
   const [aberto, setAberto] = useState<ChaveModelo | null>(null);
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando os modelos…" />;
-  if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   return (
     <div className="grid gap-4 pt-4">
       <p className="text-tinta-suave">

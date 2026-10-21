@@ -29,7 +29,7 @@ export function DossieImpresso() {
   const carga = useCarregar<Dossie>(id ? `/v1/condominio/memoria/dossies/${id}` : null);
   if (!id) return <main className="mx-auto max-w-3xl p-8"><ErroCarregar texto="Falta dizer qual dossiê abrir." /></main>;
   if (carga.estado === "carregando") return <main className="mx-auto max-w-3xl p-8"><Carregando rotulo="Abrindo o dossiê…" /></main>;
-  if (carga.estado === "erro") return <main className="mx-auto max-w-3xl p-8"><ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /></main>;
+  if (carga.estado === "erro") return <main className="mx-auto max-w-3xl p-8"><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></main>;
   const { conteudo: c, geradoEm } = carga.dados;
   const p = c.pendencias;
   const li = "ml-5 list-disc text-sm";

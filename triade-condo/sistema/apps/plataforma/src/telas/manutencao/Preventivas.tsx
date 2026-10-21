@@ -23,7 +23,7 @@ export function Preventivas() {
 
   if (lista.estado === "carregando") return <div className="grid gap-5"><PartesManutencao /><Carregando rotulo="Carregando as preventivas…" /></div>;
   if (lista.estado === "erro") {
-    return <div className="grid gap-5"><PartesManutencao /><h1 className="text-[28px] font-normal tracking-tight">Preventivas</h1><ErroCarregar texto={lista.texto} tentarDeNovo={lista.recarregar} /></div>;
+    return <div className="grid gap-5"><PartesManutencao /><h1 className="text-[28px] font-normal tracking-tight">Preventivas</h1><ErroCarregar erro={lista.erro} texto={lista.texto} tentarDeNovo={lista.recarregar} /></div>;
   }
   const { itens, hoje, pode } = lista.dados;
   const o = opcoes.estado === "pronto" ? opcoes.dados : null;

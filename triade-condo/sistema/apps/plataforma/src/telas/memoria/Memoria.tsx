@@ -6,6 +6,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Abas, Aviso } from "@triade/ui";
+import { PartesDocumentos } from "../comunicados/comum.tsx";
 import { usePlataforma } from "../sessao.tsx";
 import type { Recado } from "../tipos.ts";
 import { AbaProntuario } from "./Prontuario.tsx";
@@ -47,6 +48,7 @@ export function Memoria() {
 
   return (
     <div className="grid gap-5">
+      <PartesDocumentos />
       <div>
         <h1 className="text-[28px] font-normal tracking-tight">Memória do prédio</h1>
         <p className="mt-1 text-tinta-suave">{atual.sub}</p>

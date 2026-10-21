@@ -57,7 +57,7 @@ export function FichaCliente() {
         <h1 className="text-[28px] font-normal tracking-tight">Ficha do condomínio</h1>
         {ficha.erro.codigo === "FORBIDDEN" || ficha.erro.codigo === "NOT_FOUND" ? (
           <Aviso tom="atencao" titulo="Cliente fora da sua carteira">Você só abre os clientes atribuídos a você. <Link href="/" className="font-semibold underline">Voltar à carteira</Link></Aviso>
-        ) : <ErroCarregar texto={ficha.texto} tentarDeNovo={ficha.recarregar} />}
+        ) : <ErroCarregar erro={ficha.erro} texto={ficha.texto} tentarDeNovo={ficha.recarregar} />}
       </div>
     );
   }
