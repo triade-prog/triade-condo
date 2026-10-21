@@ -3,6 +3,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { abrirArea } from "./inicio";
 
 const PLATAFORMA = "http://localhost:3000";
 const PDF = Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n");
@@ -18,9 +19,8 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
   test("CD-01, CD-06: a lista em uso com os atalhos; o início mostra o cartão", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/`);
-    const cartao = page.getByRole("region", { name: /^Comunicados e documentos/ });
-    await expect(cartao).toContainText("1 rascunho parado há mais de 3 dias");
-    await expect(cartao).toContainText("AVCB vence em 42 dias");
+    await expect(await abrirArea(page, "Comunicação e moradores")).toContainText("1 rascunho parado há mais de 3 dias");
+    await expect(await abrirArea(page, "Vencimentos")).toContainText("AVCB vence em 42 dias");
 
     const menu = page.getByRole("button", { name: "Mais", exact: true });
     if (await menu.isVisible()) await menu.click();

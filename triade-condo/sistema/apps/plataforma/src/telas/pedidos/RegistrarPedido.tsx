@@ -8,13 +8,14 @@
 // No computador o formulário é uma tela só, em três partes numeradas; no celular são três
 // passos com barra de progresso, e nada do que foi preenchido se perde ao voltar.
 
-import { useEffect, useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, chamarApi, camposComErro, Dialogo, Icone, Interruptor, textoDoErro, type ErroApi } from "@triade/ui";
 import type { AvisoDoRegistro, OpcoesPedidos } from "../tipos.ts";
 import { Escolha, nomeRelacao } from "../moradores/comum.tsx";
 import { ICONE_CANAL, iconeDaCategoria, opcoesCanal } from "./comum.tsx";
 import { EscolherArquivos, enviarArquivos, type ItemEnvio } from "./Arquivos.tsx";
 import { ListaLocais } from "../Locais.tsx";
+import { useCelular } from "../celular.ts";
 import { acompanharRascunhos, BlocoQuemAvisar, contarAvisos, ESCOLHA_INICIAL, faltasNoLink, juntar, paraEnviar, usePrevia, type EscolhaAvisos } from "./QuemAvisar.tsx";
 import { ConfirmacaoRegistro, type Registrado } from "./AvisosDoRegistro.tsx";
 
@@ -42,15 +43,6 @@ const PARTES = ["Quem pediu e onde", "O que aconteceu", "Como tratar"] as const;
 type Passo = 1 | 2 | 3;
 /** Em que passo cada campo fica, para voltar a ele quando o banco recusar. */
 const PASSO_DO_CAMPO: Record<string, Passo> = { unidadeId: 1, contatoId: 1, local: 1, canal: 1, assunto: 2, descricao: 2 };
-
-const CELULAR = "(max-width: 767px)";
-function useCelular(): boolean {
-  return useSyncExternalStore(
-    (avisar) => { const m = window.matchMedia(CELULAR); m.addEventListener("change", avisar); return () => m.removeEventListener("change", avisar); },
-    () => window.matchMedia(CELULAR).matches,
-    () => false,
-  );
-}
 
 /** Uma parte do formulário: com número no computador; no celular, só aparece no seu passo. */
 function Parte({ n, passo, children }: { n: Passo; passo: Passo; children: ReactNode }) {

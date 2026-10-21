@@ -4,7 +4,7 @@
 
 import { diaDaSemana, somarDias } from "@triade/domain";
 import { Carregando, ErroCarregar } from "@triade/ui";
-import { CabecaCartao } from "../CabecaCartao.tsx";
+import { CartaoInicio } from "../CartaoInicio.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { Agenda } from "../tipos.ts";
 import { LinhaCompromisso, LinhaDataDeFora } from "./comum.tsx";
@@ -18,14 +18,12 @@ const quantos = (n: number) => (n === 0 ? "nada marcado" : n === 1 ? "1 compromi
 export function HojeNaAgenda() {
   const de = hojeAqui();
   const carga = useCarregar<Agenda>(`/v1/condominio/agenda?de=${somarDias(de, -1)}&ate=${somarDias(de, 7)}`);
-  const cabeca = <CabecaCartao id="t-hoje-agenda" titulo="Hoje na agenda" href="/agenda" />;
   return (
-    <section aria-labelledby="t-hoje-agenda" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      {cabeca}
+    <CartaoInicio titulo="Hoje na agenda" icone="calendario" href="/agenda">
       {carga.estado === "carregando" ? <Carregando linhas={2} rotulo="Carregando a agenda…" /> : null}
       {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {carga.estado === "pronto" ? <Conteudo dados={carga.dados} /> : null}
-    </section>
+    </CartaoInicio>
   );
 }
 
@@ -51,8 +49,8 @@ function Conteudo({ dados }: { dados: Agenda }) {
             ...reservas.map((d) => ({ hora: d.horaInicio ?? "", item: <LinhaDataDeFora key={d.id} d={d} hoje={hoje} /> }))]
             .sort((a, b) => a.hora.localeCompare(b.hora)).map((x) => x.item)}
         </ul>
-      ) : <p className="text-sm text-tinta-suave">Nada marcado para hoje.</p>}
-      <p className="text-sm text-tinta-suave">{linha.join(" ")}</p>
+      ) : <p className="t-apoio">Nada marcado para hoje.</p>}
+      <p className="t-apoio">{linha.join(" ")}</p>
     </>
   );
 }

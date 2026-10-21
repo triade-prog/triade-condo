@@ -3,6 +3,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { abrirArea } from "./inicio";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -17,10 +18,10 @@ test.describe("Plataforma do síndico · manutenção", () => {
   test("MP-01: a lista do que está aberto, com o retorno vencido e os atalhos; o início mostra o cartão", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/`);
-    const cartao = page.getByRole("region", { name: /^Manutenção/ });
+    const cartao = await abrirArea(page, "Manutenção");
     await expect(cartao).toContainText("1 retorno vencido");
     await expect(cartao).toContainText("1 preventiva atrasada");
-    await expect(cartao).toContainText("1 contrato vence em 60 dias");
+    await expect(await abrirArea(page, "Vencimentos")).toContainText("1 contrato vence em 60 dias");
 
     await page.goto(`${PLATAFORMA}/manutencao`);
     await expect(page.getByRole("heading", { level: 1, name: "Manutenção" })).toBeVisible();

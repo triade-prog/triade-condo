@@ -4,6 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { abrirArea } from "./inicio";
 import { historicoCompleto } from "./registro";
 
 const PLATAFORMA = "http://localhost:3000";
@@ -23,7 +24,7 @@ test.describe("Plataforma do síndico · passos 6 e 7", () => {
     await expect(agora).toContainText("1 retorno vencido");
     await expect(agora).toContainText("O mais antigo venceu em 16/10 11:00, já avisado ao síndico.");
     await expect(agora).toContainText("1 sem responsável");
-    const mes = page.getByRole("region", { name: "Mês fechado · setembro" });
+    const mes = await abrirArea(page, "Mês fechado · setembro");
     await expect(mes).toContainText("86% dos retornos no prazo");
     await expect(mes).toContainText("37 de 43. Agosto: 79%.");
     await expect(mes).toContainText("41 pedidos concluídos · 2 reabertos");

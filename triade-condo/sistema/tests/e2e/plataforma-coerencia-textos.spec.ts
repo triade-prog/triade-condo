@@ -4,6 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { abrirArea } from "./inicio";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -16,13 +17,13 @@ test.describe("Plataforma · coerência das telas, textos", () => {
   test("V-08: todo cartão do Início leva à tela inteira pelo mesmo link, no canto de cima", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(PLATAFORMA);
-    const cartoes = ["Agora", "Hoje na agenda", "Manutenção", "Comunicados e documentos", "Memória do prédio", "Vida em condomínio", "Moradores e unidades"];
+    const cartoes = ["Agora", "Hoje na agenda", "Vencimentos", "Manutenção", "Vida em condomínio", "Comunicação e moradores"];
     for (const nome of cartoes) {
-      const c = page.getByRole("region", { name: nome, exact: true });
+      const c = await abrirArea(page, nome);
       await expect(c.getByRole("heading", { level: 2, name: nome, exact: true })).toBeVisible();
       await expect(c.getByRole("link", { name: `Ver tudo de ${nome}`, exact: true })).toHaveText("Ver tudo");
     }
-    const mes = page.getByRole("region", { name: "Mês fechado · setembro" });
+    const mes = await abrirArea(page, "Mês fechado · setembro");
     await expect(mes.getByRole("link", { name: "Ver indicadores" })).toBeVisible();
     for (const velho of ["Ver todas", "Ver todos", "Ver prontuário", "Ver agenda", "Ver unidades", "Abrir"]) {
       await expect(page.getByRole("main").getByRole("link", { name: velho, exact: true })).toHaveCount(0);

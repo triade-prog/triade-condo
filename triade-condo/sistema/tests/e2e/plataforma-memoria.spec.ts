@@ -4,6 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { abrirArea } from "./inicio";
 import { MURAL_FALSO } from "./api-falsa-comunicados";
 
 const PLATAFORMA = "http://localhost:3000";
@@ -24,7 +25,7 @@ test.describe("Memória do prédio", () => {
   test("MP-12: o prontuário mostra a situação de cada item e liga documento ou marca que não se aplica", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(PLATAFORMA);
-    await expect(page.getByRole("region", { name: "Memória do prédio" }).getByText("1 item do prontuário venceu")).toBeVisible();
+    await expect((await abrirArea(page, "Vencimentos")).getByText("1 item do prontuário venceu")).toBeVisible();
     await abrir(page);
     await expect(page.getByText("Venceu", { exact: true })).toBeVisible();
     await expect(page.getByText("Vence em 43 dias")).toBeVisible();

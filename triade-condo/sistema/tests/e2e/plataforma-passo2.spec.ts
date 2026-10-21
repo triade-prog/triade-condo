@@ -4,6 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa, V_ANA, V_BRUNA } from "./api-falsa-plataforma";
+import { abrirArea } from "./inicio";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -38,7 +39,7 @@ test.describe("Plataforma do síndico · passo 2", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Em qual condomínio?" })).toBeVisible();
     await conferir(page);
     await page.getByRole("button", { name: /Residencial Ipê/ }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Residencial Ipê" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Resumo do dia" })).toContainText("Residencial Ipê");
     // No computador o condomínio fica no topo; no celular, no menu da conta.
     const trocar = page.getByRole("button", { name: /^Trocar condomínio, agora / });
     if (await trocar.isVisible()) await trocar.click();
@@ -47,17 +48,17 @@ test.describe("Plataforma do síndico · passo 2", () => {
       await page.getByRole("button", { name: "Trocar condomínio", exact: true }).click();
     }
     await page.getByRole("dialog", { name: "Trocar condomínio" }).getByRole("button", { name: /Edifício Jatobá/ }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Edifício Jatobá" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Resumo do dia" })).toContainText("Edifício Jatobá");
   });
 
   test("V-08 e CF-12: o início diz o que falta configurar e o que já veio pronto", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(PLATAFORMA);
-    await expect(page.getByRole("heading", { level: 1, name: "Residencial Ipê" })).toBeVisible();
-    const falta = page.getByRole("region", { name: "O que falta configurar" });
+    await expect(page.getByRole("region", { name: "Resumo do dia" })).toContainText("Residencial Ipê");
+    const falta = await abrirArea(page, "O que falta configurar");
     await expect(falta).toContainText("Horário de atendimento não definido");
     await expect(falta).toContainText("Ninguém escolhido para atender os pedidos");
-    await expect(page.getByRole("region", { name: "Já veio pronto pelo cenário" })).toContainText("8 categorias · 4 prioridades");
+    await expect(falta.getByRole("group", { name: "Já veio pronto pelo cenário" })).toContainText("8 categorias · 4 prioridades");
     await conferir(page);
   });
 

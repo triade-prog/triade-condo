@@ -393,6 +393,10 @@ body {
   .ladrilho svg { width: 18px; height: 18px; }
   .ladrilho[data-tom="violeta"] { background: var(--color-violeta-100); color: var(--color-violeta-700); }
   .ladrilho[data-tom="ok"] { background: var(--color-ok-fundo); color: var(--color-ok); }
+  .ladrilho[data-tom="erro"] { background: var(--color-erro-fundo); color: var(--color-erro); }
+  .ladrilho[data-tom="atencao"] { background: var(--color-atencao-fundo); color: var(--color-atencao); }
+  .ladrilho[data-tom="info"] { background: var(--color-info-fundo); color: var(--color-info); }
+  .ladrilho[data-tom="andamento"] { background: var(--color-andamento-fundo); color: var(--color-andamento); }
 
   /* Iniciais da pessoa, no topo e nas listas. */
   .iniciais { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; background: var(--color-violeta-100); color: var(--color-violeta-700); font-size: 12px; font-weight: 600; }

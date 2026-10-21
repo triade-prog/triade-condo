@@ -136,7 +136,8 @@ export function Pedidos() {
   const opcoes = useCarregar<OpcoesPedidos>("/v1/condominio/pedidos/opcoes");
   const q = consulta(f);
   const fila = useCarregar<FilaPedidos>(`/v1/condominio/pedidos${q ? `?${q}` : ""}`);
-  const [registrando, setRegistrando] = useState(false);
+  // O "Registrar pedido" da faixa do Início chega com ?registrar=1 e já abre a janela.
+  const [registrando, setRegistrando] = useState(() => busca.get("registrar") === "1");
   const [recado, setRecado] = useState<Recado>(null);
   const [filtrandoAberto, setFiltrando] = useState(false);
 

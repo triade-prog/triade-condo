@@ -4,6 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { abrirArea } from "./inicio";
 import { A101, A102 } from "./api-falsa-moradores";
 
 const PLATAFORMA = "http://localhost:3000";
@@ -26,7 +27,7 @@ test.describe("Plataforma do síndico · passo 3", () => {
   test("MU-02: o início resume os moradores e leva ao que falta conferir", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(PLATAFORMA);
-    const cartao = page.getByRole("region", { name: "Moradores e unidades" });
+    const cartao = await abrirArea(page, "Comunicação e moradores");
     await expect(cartao).toContainText("5 unidades cadastradas");
     await expect(cartao).toContainText("1 contato a confirmar");
     await expect(cartao).toContainText("3 unidades sem contato confirmado");
@@ -148,7 +149,7 @@ test.describe("Plataforma do síndico · passo 3", () => {
     test.slow();
     await instalarApiPlataformaFalsa(page);
     await page.goto(PLATAFORMA);
-    const cartao = page.getByRole("region", { name: "Moradores e unidades" });
+    const cartao = await abrirArea(page, "Comunicação e moradores");
     const pendencia = cartao.getByRole("listitem").filter({ hasText: "1 unidade com inquilino e sem proprietário" });
     await expect(pendencia).toContainText("Para controle, o dono do imóvel fica no cadastro.");
     await pendencia.getByRole("link", { name: "Ver quais" }).click();
@@ -305,6 +306,6 @@ test.describe("Plataforma do síndico · passo 3", () => {
     const menu = await abrirMenu(page);
     await expect(menu.getByRole("link", { name: "Configurações" })).toBeVisible();
     await expect(menu.getByRole("link", { name: "Moradores e unidades" })).toHaveCount(0);
-    await expect(page.getByRole("region", { name: "Moradores e unidades" })).toHaveCount(0);
+    await expect(page.getByText("unidades cadastradas")).toHaveCount(0);
   });
 });
