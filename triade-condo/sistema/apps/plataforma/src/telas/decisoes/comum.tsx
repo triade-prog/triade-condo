@@ -1,11 +1,12 @@
 "use client";
-// Peças comuns das decisões pedidas ao síndico (F7.4; design "Reincidência e decisões", telas 2 e
-// 3; AT-23): o selo do prazo ou da resposta, as alternativas com o custo estimado e as janelas de
-// responder e de retirar. Aprovar não contrata nem paga nada: a resposta só fica registrada.
+// Peças comuns das decisões pedidas ao síndico (F7.4; AT-23; DC15, telas-modelo decisoes-* e
+// decidir): o selo do prazo ou da resposta, as alternativas numeradas com o custo estimado e as
+// janelas de decidir e de retirar. Aprovar não contrata nem paga nada: a resposta só fica
+// registrada.
 
 import { useState, type FormEvent } from "react";
 import { mostrarCusto, prazoDaDecisao } from "@triade/domain";
-import { AvisoErro, Botao, CampoAreaTexto, camposComErro, chamarApi, Dialogo, Selo, textoDoErro, type ErroApi } from "@triade/ui";
+import { AvisoErro, Botao, CampoAreaTexto, camposComErro, chamarApi, Dialogo, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { dia, diaHora } from "../pedidos/comum.tsx";
 import type { AlternativaDecisao, DecisaoPedido } from "../tipos.ts";
@@ -32,25 +33,20 @@ export function resumoResposta(d: DecisaoPedido): string | null {
   return `${o_que}${quem} em ${diaHora(d.respondidaEm)}${d.justificativa ? `: ${d.justificativa}` : ""}`;
 }
 
-function TextoAlternativa({ a }: { a: AlternativaDecisao }) {
-  return (
-    <span className="grid min-w-0 flex-1 gap-0.5">
-      <span className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <span className="font-medium">{a.numero} · {a.descricao}</span>
-        <span className="text-sm">{a.custo !== undefined && a.custo !== null ? mostrarCusto(a.custo) : "sem custo"}</span>
-      </span>
-      {a.detalhe ? <span className="text-xs text-tinta-suave">{a.detalhe}</span> : null}
-    </span>
-  );
-}
+const custo = (a: AlternativaDecisao) => (a.custo !== undefined && a.custo !== null ? mostrarCusto(a.custo) : "sem custo");
 
-/** As alternativas só para ler, com a aprovada marcada. */
+/** As alternativas só para ler: o número num círculo, o que é e o custo; a aprovada marcada. */
 export function ListaAlternativas({ alternativas, aprovada }: { alternativas: AlternativaDecisao[]; aprovada?: number }) {
   return (
     <ul className="grid gap-2">
       {alternativas.map((a) => (
-        <li key={a.numero} className={`flex gap-2 rounded-2xl border p-3 text-sm ${a.numero === aprovada ? "border-violeta-600 bg-violeta-50" : "border-linha"}`}>
-          <TextoAlternativa a={a} />
+        <li key={a.numero} className={`flex items-center gap-3 rounded-[14px] border px-3 py-2.5 text-sm ${a.numero === aprovada ? "border-violeta-600 bg-violeta-50" : "border-linha bg-violeta-50/40"}`}>
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-violeta-100 text-[13px] font-semibold text-violeta-700" aria-hidden="true">{a.numero}</span>
+          <span className="grid min-w-0 flex-1 gap-0.5">
+            <span><span className="sr-only">{a.numero} · </span>{a.descricao}</span>
+            {a.detalhe ? <span className="text-xs text-tinta-suave">{a.detalhe}</span> : null}
+          </span>
+          <span className="t-codigo shrink-0">{custo(a)}</span>
           {a.numero === aprovada ? <span className="sr-only">(aprovada)</span> : null}
         </li>
       ))}
@@ -58,7 +54,7 @@ export function ListaAlternativas({ alternativas, aprovada }: { alternativas: Al
   );
 }
 
-/** Responder (decisões 6 e 7): escolher uma alternativa ou devolver, sempre com justificativa. */
+/** Decidir (decisões 6 e 7): escolher uma alternativa ou devolver, sempre com justificativa. */
 function FormResponder({ d, aoFechar, salvo, recarregar }: { d: DecisaoPedido; aoFechar: () => void; salvo: (t: string) => void; recarregar: () => void }) {
   const [escolhida, setEscolhida] = useState<number | null>(null);
   const [justificativa, setJustificativa] = useState("");
@@ -81,38 +77,56 @@ function FormResponder({ d, aoFechar, salvo, recarregar }: { d: DecisaoPedido; a
   return (
     <form onSubmit={(ev) => void responder(true, ev)} noValidate className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={() => { aoFechar(); recarregar(); }} /> : null}
-      <p className="text-sm text-tinta-suave">
-        Pedida{d.pedidaPor ? ` por ${d.pedidaPor}` : ""} em {dia(d.pedidaEm)} · decidir até {diaDoPrazo(d.prazo)} · pedido {d.pedido.protocolo}
-      </p>
-      <p className="text-sm font-medium">{d.pergunta}</p>
-      {d.porque ? <p className="text-sm">{d.porque}</p> : null}
+      <p className="t-apoio md:hidden">{apoioDecidir(d)}</p>
+      <div className="grid gap-1 rounded-[14px] border border-linha bg-violeta-50/50 p-4">
+        <p className="text-sm font-semibold">{d.pergunta}</p>
+        {d.porque ? <p className="text-sm">{d.porque}</p> : null}
+      </div>
       <fieldset className="grid gap-2">
-        <legend className="mb-1 text-sm font-medium">Alternativas</legend>
-        {d.alternativas.map((a) => (
-          <label key={a.numero}
-            className={`flex cursor-pointer items-start gap-2 rounded-2xl border p-3 text-sm ${escolhida === a.numero ? "border-violeta-600 bg-violeta-50" : "border-linha"}`}>
-            <input type="radio" name={`alt-${d.id}`} value={a.numero} checked={escolhida === a.numero} onChange={() => setEscolhida(a.numero)}
-              className="mt-1 h-4 w-4 accent-violeta-600" />
-            <TextoAlternativa a={a} />
-          </label>
-        ))}
+        <legend className="mb-2 text-[13px] font-medium">Alternativas</legend>
+        {d.alternativas.map((a) => {
+          const marcada = escolhida === a.numero;
+          return (
+            <label key={a.numero}
+              className={`flex cursor-pointer items-start gap-3 rounded-[14px] p-4 text-sm ${marcada ? "border-2 border-violeta-600 bg-violeta-50 p-[15px]" : "border border-linha bg-superficie hover:border-violeta-300"}`}>
+              <input type="radio" name={`alt-${d.id}`} value={a.numero} checked={marcada} onChange={() => setEscolhida(a.numero)}
+                className="mt-0.5 h-5 w-5 shrink-0 accent-violeta-600" />
+              <span className="grid min-w-0 flex-1 gap-0.5">
+                <span className="flex flex-wrap items-baseline justify-between gap-x-3">
+                  <span className="font-medium">{a.numero} · {a.descricao}</span>
+                  <span className="t-codigo">{custo(a)}</span>
+                </span>
+                {a.detalhe ? <span className="text-xs text-tinta-suave">{a.detalhe}</span> : null}
+              </span>
+            </label>
+          );
+        })}
         {comErro.includes("alternativa") ? <p className="text-sm text-erro">Escolha a alternativa que você aprova.</p> : null}
       </fieldset>
       <CampoAreaTexto id={`just-${d.id}`} rotulo="Justificativa" required maxLength={1000} rows={3} value={justificativa}
         onChange={(e) => setJustificativa(e.target.value)} erro={comErro.includes("justificativa") ? "Explique a resposta (3 a 1000 caracteres)." : null} />
-      <p className="text-xs text-tinta-suave">Sua resposta fica no histórico do pedido, com seu nome, e quem pediu é avisado no sino. Aprovar não contrata nem paga nada.</p>
-      <div className="flex flex-wrap justify-end gap-2">
-        <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
-        <Botao variante="perigo" disabled={enviando} onClick={() => void responder(false)}>Devolver</Botao>
-        <Botao type="submit" disabled={enviando}>{escolhida ? `Aprovar a alternativa ${escolhida}` : "Aprovar"}</Botao>
+      <p className="flex items-start gap-2 text-xs text-tinta-suave">
+        <Icone nome="info" className="mt-px h-4 w-4 shrink-0" />
+        Sua resposta fica no histórico do pedido, com seu nome, e {d.pedidaPor ?? "quem pediu"} é avisado no sino. Aprovar não contrata nem paga nada.
+      </p>
+      <div className="-mx-6 flex flex-wrap items-center justify-between gap-2 border-t border-linha px-6 pt-4 max-md:flex-col-reverse max-md:items-stretch">
+        <Botao variante="discreto" disabled={enviando} onClick={() => void responder(false)}><Icone nome="esq" />Devolver sem decidir</Botao>
+        <span className="flex flex-wrap gap-2 max-md:flex-col-reverse">
+          <Botao variante="contorno" onClick={aoFechar}>Cancelar</Botao>
+          <Botao type="submit" disabled={enviando}><Icone nome="check" />{escolhida ? `Aprovar a alternativa ${escolhida}` : "Aprovar"}</Botao>
+        </span>
       </div>
     </form>
   );
 }
 
+const apoioDecidir = (d: DecisaoPedido) =>
+  `Pedida${d.pedidaPor ? ` por ${d.pedidaPor}` : ""} em ${dia(d.pedidaEm)} · decidir até ${diaDoPrazo(d.prazo)} · ${d.pedido.assunto}`;
+
 export function ResponderDecisao({ d, aoFechar, salvo, recarregar }: { d: DecisaoPedido | null; aoFechar: () => void; salvo: (t: string) => void; recarregar: () => void }) {
   return (
-    <Dialogo aberto={d !== null} titulo={d ? `Decidir · ${d.pedido.protocolo}` : "Decidir"} aoFechar={aoFechar}>
+    <Dialogo aberto={d !== null} titulo={d ? `Decidir · ${d.pedido.protocolo}` : "Decidir"} aoFechar={aoFechar} fechar
+      apoio={d ? apoioDecidir(d) : undefined} media>
       {d ? <FormResponder key={d.id} d={d} aoFechar={aoFechar} salvo={salvo} recarregar={recarregar} /> : null}
     </Dialogo>
   );

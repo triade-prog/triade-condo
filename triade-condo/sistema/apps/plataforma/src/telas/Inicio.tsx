@@ -178,7 +178,7 @@ export function Inicio() {
       <section aria-label="Resumo do dia" className="relative overflow-hidden rounded-[24px] bg-[image:var(--grad-violeta)] px-8 py-8 text-white max-md:rounded-[20px] max-md:p-5">
         <span aria-hidden="true" className="pointer-events-none absolute -top-32 -right-24 h-[340px] w-[340px] rounded-full border border-white/20 max-md:-top-28 max-md:-right-28 max-md:h-60 max-md:w-60" />
         <span aria-hidden="true" className="pointer-events-none absolute -top-52 -right-48 h-[520px] w-[520px] rounded-full border border-white/15 max-md:-top-44 max-md:-right-44 max-md:h-[360px] max-md:w-[360px]" />
-        <span aria-hidden="true" className="pointer-events-none absolute top-5 right-16 h-44 w-6 rotate-[26deg] rounded-full bg-[image:var(--grad-trilha)] shadow-[inset_0_2px_0_#ffffff54,0_16px_36px_-8px_#ff8d0180] max-md:top-3.5 max-md:right-6 max-md:h-24 max-md:w-4" />
+        <span aria-hidden="true" className="pointer-events-none absolute top-5 right-16 h-44 w-6 rotate-[26deg] rounded-full bg-[image:var(--grad-trilha)] shadow-[var(--shadow-trilha)] max-md:top-3.5 max-md:right-6 max-md:h-24 max-md:w-4" />
         <div className="relative flex flex-wrap items-end justify-between gap-6 md:pr-52">
           <div className="grid gap-2">
             <p className="text-xs font-medium tracking-[.12em] text-violeta-100 uppercase">{HOJE.format(new Date())}</p>

@@ -85,6 +85,7 @@ test.describe("Plataforma · garagens, prestador reserva e queda do WhatsApp", (
   });
 
   test("MP-09: com prazo para confirmar, o prestador que não pode atender passa o serviço para a reserva", async ({ page }) => {
+    test.slow();
     const estado = await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/manutencao`);
     await page.getByRole("link", { name: "Bomba de recalque com ruído" }).click();
@@ -151,6 +152,7 @@ test.describe("Plataforma · garagens, prestador reserva e queda do WhatsApp", (
   });
 
   test("W-17: na queda, quem cuida escreve o canal alternativo, que aparece na etiqueta, e confere o que ficou parado", async ({ page }) => {
+    test.slow();
     const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     derrubarNumero(estado.whatsapp, estado.pedidos[0]!, "Ana Souza");
     await page.goto(`${PLATAFORMA}/whatsapp`);

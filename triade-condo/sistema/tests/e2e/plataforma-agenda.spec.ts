@@ -2,7 +2,7 @@
 // tela passa no axe (WCAG 2.2 AA) no celular e no computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { abrirFiltros, alternarOrigem, fecharFiltros, filtrarTipo } from "./agenda";
+import { abrirFiltros, alternarOrigem, fecharFiltros, filtrarTipo, origemLigada } from "./agenda";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { hojeFalso, somar } from "./api-falsa-agenda";
 
@@ -139,12 +139,14 @@ test.describe("Plataforma do síndico · agenda", () => {
     await conferir(page);
   });
 
-  test("AG-09: os feriados das configurações entram tracejados, levam às configurações e saem com o filtro", async ({ page }) => {
+  test("AG-09: os feriados das configurações vêm desligados, entram tracejados pelo filtro e levam às configurações", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/configuracoes?aba=feriados`);
     await page.getByRole("button", { name: /Trazer feriados nacionais de 2026/ }).click();
     await expect(page.getByRole("status").filter({ hasText: "feriados nacionais de 2026 incluídos" })).toBeVisible();
     await page.goto(`${PLATAFORMA}/agenda?data=2026-11-01`);
+    await origemLigada(page, "Feriados", false);
+    await alternarOrigem(page, "Feriados");
     await expect(page.getByText("Finados")).toBeVisible();
     await expect(page.getByRole("link", { name: "Vem de Configurações › Feriados" }).first()).toHaveAttribute("href", /\/configuracoes\?aba=feriados/);
     await conferir(page);

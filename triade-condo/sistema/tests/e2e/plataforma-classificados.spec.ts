@@ -5,6 +5,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { abrirArea } from "./inicio";
 import { MURAL_FALSO } from "./api-falsa-comunicados";
 
 const PLATAFORMA = "http://localhost:3000";
@@ -20,6 +21,7 @@ test.describe("Classificados", () => {
   test("AC-05: publicar com título e valor, recusar com motivo e tirar do mural", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/`);
+    await abrirArea(page, "Vida em condomínio");
     await expect(page.getByText("1 anúncio a aprovar")).toBeVisible();
     await page.getByRole("link", { name: "Ver os anúncios a aprovar" }).click();
     await expect(page.getByRole("tab", { name: "Classificados", selected: true })).toBeVisible();

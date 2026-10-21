@@ -42,6 +42,10 @@ const FONTES = Object.keys(FONTES_AGENDA) as FonteAgenda[];
 /** A ordem do "Mostrar": o que a gestão marca primeiro, os feriados por último. */
 const ORDEM_MOSTRAR: FonteAgenda[] = ["PREVENTIVA", "RESERVA", "CONTRATO", "DOCUMENTO", "ASSEMBLEIA", "FERIADO"];
 
+const PADRAO_OCULTAS: FonteAgenda[] = ["FERIADO"];
+/** Quantas origens a pessoa desligou além do que já vem desligado. */
+const desligadas = (ocultas: FonteAgenda[]) => ocultas.filter((f) => !PADRAO_OCULTAS.includes(f)).length;
+
 /** O que aparece: o tipo de compromisso, os compromissos e as fontes desligadas (decisão 4). */
 type Filtro = { tipo: string; compromissos: boolean; ocultas: FonteAgenda[] };
 
@@ -49,10 +53,11 @@ function interpretar(texto: string): Filtro {
   try {
     const v = JSON.parse(texto || "null") as { tipo?: string; feriados?: boolean; compromissos?: boolean; ocultas?: unknown } | null;
     // O filtro antigo desligava todas as datas de outras telas de uma vez.
-    const ocultas = Array.isArray(v?.ocultas) ? FONTES.filter((f) => (v.ocultas as unknown[]).includes(f)) : v?.feriados === false ? FONTES : [];
+    // Sem nada guardado, os feriados começam desligados (desenho aprovado da agenda, DC15).
+    const ocultas = Array.isArray(v?.ocultas) ? FONTES.filter((f) => (v.ocultas as unknown[]).includes(f)) : v?.feriados === false ? FONTES : v ? [] : [...PADRAO_OCULTAS];
     return { tipo: v?.tipo && v.tipo in TIPOS_COMPROMISSO ? v.tipo : "", compromissos: v?.compromissos !== false, ocultas };
   } catch {
-    return { tipo: "", compromissos: true, ocultas: [] };
+    return { tipo: "", compromissos: true, ocultas: [...PADRAO_OCULTAS] };
   }
 }
 
@@ -137,7 +142,7 @@ export function Agenda() {
   const seguinte = passo ? somarDias(vista === "SEMANA" ? inicioDaSemana(data) : data, passo) : mesVizinho(data, 1);
   const titulo = vista === "MES" ? nomeDoMesAno(inicioDoMes(data)) : textoPeriodo(de, ate);
   // No computador o "Mostrar" fica à vista; no celular entra em Filtros e conta como filtro em uso.
-  const emUso = (filtro.tipo ? 1 : 0) + (celular ? (filtro.compromissos ? 0 : 1) + filtro.ocultas.length : 0);
+  const emUso = (filtro.tipo ? 1 : 0) + (celular ? (filtro.compromissos ? 0 : 1) + desligadas(filtro.ocultas) : 0);
 
   const mostrar = (
     <div role="group" aria-label="O que mostrar na agenda" className="flex flex-wrap items-center gap-2">
@@ -186,7 +191,7 @@ export function Agenda() {
 
       {carga.estado === "carregando" ? <Carregando rotulo="Carregando a agenda…" /> : null}
       {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
-      {dados && vista === "LISTA" ? <VistaLista dias={dias} hoje={hoje} temFiltro={Boolean(filtro.tipo) || !filtro.compromissos || filtro.ocultas.length > 0} /> : null}
+      {dados && vista === "LISTA" ? <VistaLista dias={dias} hoje={hoje} temFiltro={Boolean(filtro.tipo) || !filtro.compromissos || desligadas(filtro.ocultas) > 0} /> : null}
       {dados && vista === "SEMANA" ? <VistaSemana de={de} dias={dias} hoje={hoje} abrirDia={(d) => ir({ vista: "LISTA", data: d })} /> : null}
       {dados && vista === "MES" ? <VistaMes data={data} dias={dias} hoje={hoje} abrirDia={(d) => ir({ vista: "LISTA", data: d })} /> : null}
 
@@ -199,7 +204,7 @@ export function Agenda() {
             opcoes={[{ valor: "", texto: "Todos" }, ...Object.entries(TIPOS_COMPROMISSO).map(([valor, texto]) => ({ valor, texto }))]} />
           <div className="flex justify-end gap-2">
             {emUso ? (
-              <Botao variante="discreto" onClick={() => mudarFiltro(celular ? { tipo: "", compromissos: true, ocultas: [] } : { tipo: "" })}>Tirar filtros</Botao>
+              <Botao variante="discreto" onClick={() => mudarFiltro(celular ? { tipo: "", compromissos: true, ocultas: [...PADRAO_OCULTAS] } : { tipo: "" })}>Tirar filtros</Botao>
             ) : null}
             <Botao onClick={() => setFiltrando(false)}>Pronto</Botao>
           </div>
