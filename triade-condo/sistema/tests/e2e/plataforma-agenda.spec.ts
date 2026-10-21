@@ -174,7 +174,7 @@ test.describe("Plataforma do síndico · agenda", () => {
     await expect(cartao).toContainText("Reunião do conselho");
     await expect(cartao).toContainText("Amanhã: nada marcado.");
     await conferir(page);
-    await cartao.getByRole("link", { name: "Ver agenda" }).click();
+    await cartao.getByRole("link", { name: "Ver tudo de Hoje na agenda" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Agenda" })).toBeVisible();
   });
 });

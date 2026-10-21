@@ -10,7 +10,7 @@ import { Botao, chamarApi, Selo } from "@triade/ui";
 import { Janela, type Campo, type Valores } from "./Janela.tsx";
 import type { Configuracoes } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
-import { campoMotivo, FaixaTriade } from "./tecnica.tsx";
+import { campoMotivo, etapasAtivas, FaixaTriade } from "./tecnica.tsx";
 import { naBase } from "./contexto.tsx";
 
 type Etapa = Configuracoes["etapas"][number];
@@ -93,7 +93,7 @@ export function AbaEtapas({ config, pode, recarregar, salvo, tecnica }: PropsAba
         </div>
         {tecnica.pode ? null : (
           <FaixaTriade porque="As etapas mexem no prazo e no histórico" parte="Etapas dos pedidos"
-            valor={`${config.etapas.filter((e) => e.ativa).length} etapas ativas`} />
+            valor={etapasAtivas(config.etapas)} />
         )}
         {(Object.keys(SITUACOES_ETAPA) as (keyof typeof SITUACOES_ETAPA)[]).map((sit) => (
           <div key={sit} className="grid gap-1">
@@ -135,7 +135,7 @@ export function AbaEtapas({ config, pode, recarregar, salvo, tecnica }: PropsAba
             </li>
           ))}
         </ul>
-        <p className="text-sm text-tinta-suave">Os modelos aparecem na hora de responder um pedido, quando os pedidos chegarem (passo 4).</p>
+        <p className="text-sm text-tinta-suave">Os modelos aparecem na hora de dar retorno a um pedido.</p>
       </section>
       <Janela
         aberto={edicao !== null}

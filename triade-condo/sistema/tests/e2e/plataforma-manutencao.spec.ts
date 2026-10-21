@@ -172,6 +172,6 @@ test.describe("Plataforma do síndico · manutenção", () => {
     await conferir(page);
     await aba.getByRole("link", { name: "Pedir mudança" }).click();
     await expect(page.getByLabel("Título")).toHaveValue("Mudar: Etapas da manutenção");
-    await expect(page.getByLabel("O que aconteceu")).toHaveValue(/Hoje: 1 etapas ativas\./);
+    await expect(page.getByLabel("O que aconteceu")).toHaveValue(/Hoje: 1 etapa ativa\./);
   });
 });

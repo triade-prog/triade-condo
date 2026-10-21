@@ -56,7 +56,7 @@ export function mostrarTamanho(bytes: number): string {
 export function conferirAntesDeEnviar(arquivo: { name: string; type: string; size: number }): string | null {
   if (!(arquivo.type in TIPOS_ARQUIVO)) {
     return /^(video|audio)\//.test(arquivo.type)
-      ? "não foi aceito: só fotos e PDF. Vídeo e áudio chegam com o WhatsApp (passo 5)."
+      ? "não foi aceito: aqui só entram fotos e PDF. Vídeo e áudio entram quando o morador manda pelo WhatsApp."
       : "não foi aceito: só fotos (JPG, PNG, WEBP) e PDF.";
   }
   if (arquivo.size < 1) return "está vazio.";

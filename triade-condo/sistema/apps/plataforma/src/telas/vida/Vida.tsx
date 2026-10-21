@@ -6,7 +6,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ABAS_VIDA } from "@triade/domain";
-import { Abas, Aviso, Botao, Icone } from "@triade/ui";
+import { Abas, Aviso, Botao } from "@triade/ui";
 import { usePlataforma } from "../sessao.tsx";
 import type { Recado } from "../tipos.ts";
 import { AbaReservas } from "./Reservas.tsx";
@@ -43,9 +43,9 @@ export function Vida() {
           <h1 className="text-[28px] font-normal tracking-tight">Vida em condomínio</h1>
           <p className="mt-1 text-tinta-suave">Reservas, enquetes, assembleias e classificados do {painel.condominio.nome}.</p>
         </div>
-        {aba === "reservas" && pode("reservas.editar") ? <Botao onClick={() => setNova(true)}><Icone nome="mais" />Nova reserva</Botao> : null}
-        {aba === "enquetes" && pode("enquetes.editar") ? <Botao onClick={() => setNova(true)}><Icone nome="mais" />Nova enquete</Botao> : null}
-        {aba === "assembleias" && pode("assembleias.editar") ? <Botao onClick={() => setNova(true)}><Icone nome="mais" />Nova assembleia</Botao> : null}
+        {aba === "reservas" && pode("reservas.editar") ? <Botao onClick={() => setNova(true)}>+ Nova reserva</Botao> : null}
+        {aba === "enquetes" && pode("enquetes.editar") ? <Botao onClick={() => setNova(true)}>+ Nova enquete</Botao> : null}
+        {aba === "assembleias" && pode("assembleias.editar") ? <Botao onClick={() => setNova(true)}>+ Nova assembleia</Botao> : null}
       </div>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
       <Abas abas={abas} atual={aba} aoMudar={mudarAba} rotulo="Partes da Vida em condomínio">

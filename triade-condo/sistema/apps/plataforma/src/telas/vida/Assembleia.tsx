@@ -251,8 +251,8 @@ function Unidades({ d, podeAgir, aoCopiar, aoAgir, aoPresenca }: {
                 {u.procuracao?.estado === "PENDENTE" ? (
                   <Botao tamanho="p" variante="contorno" onClick={() => aoAgir("procuracao", u)} aria-label={`Conferir a procuração de ${u.unidade}`}>Conferir a procuração</Botao>
                 ) : null}
-                <Botao tamanho="p" variante="discreto" onClick={() => aoAgir("direito", u)} aria-label={`${u.semDireito ? "Devolver o direito a voto" : "Sem direito a voto"}: ${u.unidade}`}>
-                  {u.semDireito ? "Devolver o direito a voto" : "Sem direito a voto"}
+                <Botao tamanho="p" variante="discreto" onClick={() => aoAgir("direito", u)} aria-label={`${u.semDireito ? "Devolver o direito a voto" : "Marcar sem direito a voto"}: ${u.unidade}`}>
+                  {u.semDireito ? "Devolver o direito a voto" : "Marcar sem direito a voto"}
                 </Botao>
                 {a.estado === "EM_ANDAMENTO" ? (
                   u.presenteEm

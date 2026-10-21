@@ -2,9 +2,9 @@
 // Hoje na agenda, no início (design "Telas da Agenda", tela 6; AG-03, TR-11): o que está
 // marcado para hoje e uma linha sobre os próximos dias.
 
-import Link from "next/link";
 import { diaDaSemana, somarDias } from "@triade/domain";
-import { Carregando, classeBotao, ErroCarregar } from "@triade/ui";
+import { Carregando, ErroCarregar } from "@triade/ui";
+import { CabecaCartao } from "../CabecaCartao.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { Agenda } from "../tipos.ts";
 import { LinhaCompromisso, LinhaDataDeFora } from "./comum.tsx";
@@ -18,13 +18,7 @@ const quantos = (n: number) => (n === 0 ? "nada marcado" : n === 1 ? "1 compromi
 export function HojeNaAgenda() {
   const de = hojeAqui();
   const carga = useCarregar<Agenda>(`/v1/condominio/agenda?de=${somarDias(de, -1)}&ate=${somarDias(de, 7)}`);
-  const titulo = <h2 id="t-hoje-agenda" className="text-lg font-medium">Hoje na agenda</h2>;
-  const cabeca = (
-    <div className="flex items-center justify-between gap-2">
-      {titulo}
-      <Link href="/agenda" className={classeBotao("discreto", "", "m")}>Ver agenda</Link>
-    </div>
-  );
+  const cabeca = <CabecaCartao id="t-hoje-agenda" titulo="Hoje na agenda" href="/agenda" />;
   return (
     <section aria-labelledby="t-hoje-agenda" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
       {cabeca}

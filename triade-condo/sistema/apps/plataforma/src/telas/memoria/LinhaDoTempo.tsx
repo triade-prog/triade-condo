@@ -72,7 +72,7 @@ export function AbaLinhaDoTempo({ feito }: PropsAbaMemoria) {
             </button>
           ))}
         </Trilho>
-        {carga.estado === "pronto" && carga.dados.podeAnotar ? <Botao tamanho="m" onClick={() => setAnotar(true)}><Icone nome="mais" />Anotar na memória</Botao> : null}
+        {carga.estado === "pronto" && carga.dados.podeAnotar ? <Botao tamanho="m" onClick={() => setAnotar(true)}>+ Anotar na memória</Botao> : null}
       </div>
       {carga.estado === "carregando" ? <Carregando rotulo="Carregando a linha do tempo…" /> : null}
       {carga.estado === "erro" ? <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}

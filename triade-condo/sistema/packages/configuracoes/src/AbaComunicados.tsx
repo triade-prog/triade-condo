@@ -71,7 +71,7 @@ function Formulario({ p, recarregar, salvo }: { p: PlanoComunicacao; recarregar:
           onChange={(e) => setV({ ...v, silencioInicio: e.target.value })} erro={comErro.includes("silencioInicio") ? "Diga o horário." : null} />
         <CampoTexto id="pc-fim" rotulo="Até" type="time" disabled={!p.podeEditar} value={v.silencioFim}
           onChange={(e) => setV({ ...v, silencioFim: e.target.value })} erro={comErro.includes("silencioFim") ? "Diga o horário." : null}
-          ajuda="Vale para o e-mail e, depois, para o WhatsApp. Programar nesse horário mostra um aviso." />
+          ajuda="Vale para o e-mail e para o WhatsApp. Programar nesse horário mostra um aviso." />
       </div>
       {p.podeEditar ? <Botao type="submit" className="justify-self-start" disabled={enviando}>{enviando ? "Salvando…" : "Salvar"}</Botao> : null}
     </form>

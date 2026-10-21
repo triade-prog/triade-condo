@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Textos e defeitos pequenos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&family=Playfair+Display:ital,wght@1,400&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Coerência das telas, Entrega 1: folha de textos "hoje → proposto", para aprovação. Estilos copiados de
+   textos-janela.html; dados fictícios. */
+
+:root{
+  --v50:#F8F3FF;--v100:#F1E9FC;--v200:#DDC8F8;--v300:#C3A0EF;--v400:#A16DE5;--v500:#7B3BDC;--v600:#5808CC;--v700:#4706A6;--v800:#350580;--v900:#180567;--v950:#10033F;
+  --l50:#FFF7EB;--l100:#FFEBCF;--l200:#FFD39E;--l300:#FFB96A;--l400:#FFA338;--l500:#FF8D01;--l600:#CF6300;--l700:#A54C00;--l800:#7C3900;--l900:#552600;
+  --n0:#FFFFFF;--n50:#F7F4FC;--n100:#F1EFF5;--n200:#E4DCF1;--n300:#CFC6DB;--n400:#9184AA;--n500:#83758F;--n600:#5E5475;--n700:#4A4258;--n900:#1E1531;
+  --ok:#0B7558;--ok-f:#EDFAF5;--ok-b:#BCE8D7;--at:#95560A;--at-f:#FFF6E6;--at-b:#F6DCAE;--er:#BC1450;--er-f:#FFF0F4;--er-b:#F8CBDA;--in:#0D6E8C;--in-f:#EBF8FC;--in-b:#B9E3EF;
+  /* Faixas com brilho: do tom forte ao claro, na lateral de selos e avisos. */
+  --fx-and:linear-gradient(180deg,#8B3DF0,#5808CC);--fx-ok:linear-gradient(180deg,#3DBE91,#0B7558);--fx-at:linear-gradient(180deg,#F2A33A,#95560A);--fx-er:linear-gradient(180deg,#F0598A,#BC1450);--fx-in:linear-gradient(180deg,#38B2CF,#0D6E8C);--fx-ab:linear-gradient(180deg,#C3B8D6,#7C7090);
+  --fundo:var(--n50);--superficie:#fff;--texto:var(--n900);--texto-suave:var(--n600);--linha:var(--n200);--marca:var(--v600);--acento:var(--l500);
+  --grad-violeta:radial-gradient(120% 140% at 100% 0%,#9E37F5 0%,#7018DC 28%,transparent 62%),linear-gradient(135deg,#180567 0%,#3A07A0 40%,#5808CC 100%);
+  --grad-trilha:linear-gradient(165deg,#FFE0A8 0%,#FFB45C 38%,#FF8D01 72%,#F2700A 100%);
+  --s1:0 1px 2px #211a320d,0 4px 12px #3a1a7a0a;--s2:0 2px 4px #211a320d,0 12px 28px #3a1a7a14;--s3:0 4px 8px #211a3212,0 24px 48px #3a1a7a1f;
+  --destaque:"Playfair Display",Georgia,serif;color-scheme:light}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--fundo);color:var(--texto);font:15px/1.6 Manrope,system-ui,sans-serif}
+a{color:var(--marca)}
+:focus-visible{outline:3px solid var(--v400);outline-offset:3px}
+h1,h2,h3,h4{margin:0;letter-spacing:-.02em;line-height:1.2}
+em.d{font-family:var(--destaque);font-style:italic;font-weight:400;letter-spacing:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500}
+.pular{position:absolute;left:16px;top:-60px;background:#fff;padding:10px 14px;border-radius:8px;z-index:10}
+.pular:focus{top:12px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px 96px}
+.topo{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0;flex-wrap:wrap}
+.topo img{width:156px}
+.topo nav{display:flex;flex-wrap:wrap;gap:6px}
+.pilula{font-size:13px;font-weight:500;padding:5px 12px;border-radius:999px;background:var(--n100);color:var(--n700);text-decoration:none}
+.pilula:hover{background:var(--v100);color:var(--v700)}
+.pilula[aria-current]{background:var(--v100);color:var(--v700)}
+
+/* Cabeçalho de cada parte: a moldura com alças, como nas referências, em violeta. */
+.parte{margin-top:72px;scroll-margin-top:16px}
+.moldura{position:relative;border:1.5px solid var(--v400);padding:22px 24px;margin-bottom:28px;background:linear-gradient(180deg,#fff,#fdfbff)}
+.moldura::before,.moldura::after,.moldura .a3,.moldura .a4{content:"";position:absolute;width:9px;height:9px;background:var(--v600)}
+.moldura::before{left:-5px;top:-5px}.moldura::after{right:-5px;top:-5px}
+.moldura .a3{left:-5px;bottom:-5px}.moldura .a4{right:-5px;bottom:-5px}
+.moldura h2{font-size:clamp(28px,3.6vw,40px);font-weight:400}
+.moldura p{margin:8px 0 0;color:var(--texto-suave);max-width:680px}
+h3.sub{font-size:20px;font-weight:500;margin:36px 0 12px}
+.nota{font-size:14px;color:var(--texto-suave);max-width:760px;margin:0 0 16px}
+.painel{background:var(--superficie);border:1px solid var(--linha);border-radius:16px;padding:20px}
+.estudo{background:#FBFAFD;border:1px solid var(--linha);border-radius:16px;padding:24px;overflow-x:auto}
+.grade2{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr))}
+.grade3{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.rot{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:500;color:var(--texto-suave)}
+
+/* Abertura */
+.abertura{position:relative;overflow:hidden;border-radius:22px;background:var(--grad-violeta);color:#fff;padding:48px 40px;min-height:300px}
+.abertura .t{position:relative;z-index:1;max-width:620px}
+.abertura h1{font-size:clamp(34px,5vw,58px);font-weight:300;letter-spacing:-.03em;margin:12px 0}
+.abertura h1 em.d{color:#FFD39E}
+.abertura p{color:#EDE0FF;margin:0}
+.abertura .numeros{display:flex;gap:28px;flex-wrap:wrap;margin-top:22px;color:#E7D3FF;font-size:15px}
+.abertura .numeros b{display:block;font-size:30px;font-weight:300;color:#fff}
+.arte{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.arte .orb{position:absolute;border-radius:50%;border:1px solid #ffffff2e}
+.arte .arco{position:absolute;border-radius:200px 200px 0 0;transform:rotate(26deg);border:1px solid #e9d4ff40;background:linear-gradient(170deg,#c27bff33 0%,#7a2be026 55%,#5808cc00 100%)}
+.arte .tri{position:absolute;border-radius:200px;transform:rotate(26deg);background:var(--grad-trilha);box-shadow:inset 0 2px 0 #ffffff55,0 18px 40px #d9570a33}
+@media (max-width:760px){.abertura{padding:30px 22px}.abertura .arte{opacity:.4}}
+.botao{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:14px;font:500 14px Manrope,sans-serif;border:1px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap}
+.botao .ic{width:18px;height:18px}
+.bt-m{min-height:36px;padding:0 14px;font-size:13px;border-radius:11px}
+.bt-p{min-height:30px;padding:0 10px;font-size:13px;border-radius:10px}
+.so-ic{padding:0;width:44px}.bt-m.so-ic{width:36px}.bt-p.so-ic{width:30px}
+.primario{background:linear-gradient(135deg,#8B3DF0 0%,#5808CC 55%,#3A07A0 100%);color:#fff;box-shadow:inset 0 1px 0 #ffffff47,0 10px 22px -10px #5808ccb3}
+.secundario{border:1.5px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(135deg,#A16DE5,#FFB96A) border-box;color:var(--v700)}
+.contorno{background:linear-gradient(180deg,#fff,#F8F3FF);color:var(--v600);border-color:var(--v200);box-shadow:var(--s1)}
+.fantasma{background:transparent;color:var(--v600)}
+.selo{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;padding:4px 12px 4px 13px;border-radius:7px;border:1px solid var(--tb);color:var(--t);background:linear-gradient(180deg,#fff -40%,var(--tf) 100%);box-shadow:inset 0 1px 0 #fff;white-space:nowrap}
+.selo::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--fx)}
+.selo .f{display:none}
+.s-novo{--t:#5B5368;--tf:#F4F2F7;--tb:#E3DEEB;--fx:var(--fx-ab)}
+.s-and{--t:var(--v600);--tf:var(--v50);--tb:#E6D9FB;--fx:var(--fx-and)}
+.s-at{--t:var(--at);--tf:var(--at-f);--tb:var(--at-b);--fx:var(--fx-at)}
+.s-ve{--t:var(--er);--tf:var(--er-f);--tb:var(--er-b);--fx:var(--fx-er)}
+.s-ok{--t:var(--ok);--tf:var(--ok-f);--tb:var(--ok-b);--fx:var(--fx-ok)}
+.tabela{width:100%;border-collapse:collapse;font-size:14px;background:#fff}
+.tabela th{font-size:12px;font-weight:500;color:var(--texto-suave);text-align:left;padding:10px 12px;border-bottom:1px solid var(--linha);background:#FCFAFF}
+.tabela td{padding:12px;border-bottom:1px solid #F0ECF5;vertical-align:middle}
+.legenda-t{font-size:13px;color:var(--texto-suave);margin:8px 2px 0}
+.decisao{position:relative;overflow:hidden;background:#fff;border:1px solid var(--linha);border-radius:16px;padding:16px 18px 16px 22px}
+.decisao::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--fx-at)}
+.decisao b{display:block;font-weight:500;margin-bottom:4px}
+.decisao p{margin:0;font-size:14px;color:var(--texto-suave)}
+.decisao .refs{margin-top:8px;font:500 11px "IBM Plex Mono",monospace;color:var(--v600)}
+.s-in{--t:var(--in);--tf:var(--in-f);--tb:var(--in-b);--fx:var(--fx-in)}
+.s-ab{--t:#5B5368;--tf:#F4F2F7;--tb:#E3DEEB;--fx:var(--fx-ab)}
+.comp{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.comp{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.comp .lado-t{border:1px solid var(--linha);border-radius:14px;padding:12px 14px;background:#fff;font-size:14px;white-space:pre-line;line-height:1.45}
+.comp .lado-t.novo{border-color:var(--v300,#C9A9F5);background:var(--v50)}
+.comp .lado-t small{display:block;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--texto-suave);margin-bottom:6px;white-space:normal}
+.comp .lado-t.novo small{color:var(--v700)}
+.cat{display:grid;gap:22px}
+.cat .item{display:grid;gap:8px}
+.cat .item h3{font-size:16px;font-weight:600;margin:0}
+.cat .item p.q{margin:0;color:var(--texto-suave);font-size:13.5px}
+.cat .item p.mud{margin:0;font-size:13px;color:var(--v700)}
+.tabela td.cod{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--v700);white-space:nowrap}
+.rolar{overflow-x:auto;border:1px solid var(--linha);border-radius:14px}
+.rolar .tabela{min-width:640px}
+
+/* Próprios desta folha */
+.par{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.onde{font-size:12px;color:var(--texto-suave);font-family:"IBM Plex Mono",monospace;margin:0;overflow-wrap:anywhere}
+.risco{text-decoration:line-through;text-decoration-color:var(--er);text-decoration-thickness:1.5px}
+.marca-n{background:var(--v100);color:var(--v800);border-radius:4px;padding:0 3px}
+.linha-bt{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cartao-i{background:#fff;border:1px solid var(--linha);border-radius:18px;padding:16px 18px;display:grid;gap:10px;box-shadow:var(--s1)}
+.cartao-i .cab{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cartao-i h4{font-size:16px;font-weight:500}
+.cartao-i ul{list-style:none;margin:0;padding:0}
+.cartao-i li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #F0ECF5;font-size:14px}
+.cartao-i .pe{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--texto-suave)}
+.lnk{font:500 13px Manrope,sans-serif;color:var(--v600);padding:5px 10px;border-radius:10px;background:transparent;white-space:nowrap}
+.lnk.novo{background:var(--v50);box-shadow:inset 0 0 0 1.5px var(--v300)}
+.lnk.velho{box-shadow:inset 0 0 0 1.5px var(--er-b);background:var(--er-f);color:var(--er)}
+.grade-i{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr))}
+.numero{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--v600);color:#fff;font-size:12px;font-weight:600;margin-right:6px;vertical-align:1px}
+</style>
+</head>
+<body>
+<a class="pular" href="#conteudo">Ir para o conteúdo</a>
+<div class="wrap">
+<div class="topo"><img src="../identidade/logo-violeta.png" alt="TRÍADE Condo"><nav aria-label="Partes"><a class="pilula" href="#p1">WhatsApp</a><a class="pilula" href="#p2">Origem do pedido</a><a class="pilula" href="#p3">Português</a><a class="pilula" href="#p4">Telefones</a><a class="pilula" href="#p5">Botões de criar</a><a class="pilula" href="#p6">Início</a><a class="pilula" href="#p7">Testes</a><a class="pilula" href="#decisoes">Decisões</a></nav></div>
+<main id="conteudo">
+<header class="abertura" style="min-height:0"><div class="arte" aria-hidden="true" style="opacity:.6"><span class="orb" style="width:340px;height:340px;right:-90px;top:-120px"></span><span class="orb" style="width:520px;height:520px;right:-200px;top:-210px"></span><span class="tri" style="width:34px;height:230px;right:40px;top:40px"></span></div><div class="t"><span class="rot" style="color:#E7D3FF">Coerência das telas · Entrega 1 · aprovado em 21/10/2026</span><h1><em class="d">Textos</em> e defeitos pequenos</h1><p>Cada texto da Plataforma que hoje está velho, errado ou diferente do resto, como está e como fica. Nenhuma tela muda o que faz e nada mexe no banco. Conferido no código do <span class="mono">main</span> 3e1e0e6 em 21/10/2026.</p><div class="numeros"><span><b>7</b>partes</span><span><b>31</b>textos trocados</span><span><b>26</b>arquivos</span><span><b>3</b>decisões</span></div></div></header>
+
+<section class="parte" id="p1" aria-labelledby="h-p1"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-p1">1 · WhatsApp que "ainda vai chegar"</h2><p>O WhatsApp do condomínio já funciona, mas cinco textos ainda falam dele como coisa do futuro, com nomes de etapas da construção ("passo 4", "passo 5") que quem usa não conhece.</p></div>
+<div class="cat">
+<div class="item"><h3>Menu, embaixo da lista</h3><p class="q">Aparece em todas as telas, no computador e no celular.</p><div class="par"><div class="comp"><div class="lado-t"><small>Hoje</small>O WhatsApp do condomínio chega num próximo passo. Até lá, os avisos ficam aqui no painel.</div></div><div class="comp"><div class="lado-t novo"><small>Proposto</small>(a frase sai; o menu termina em Ajuda e suporte)</div></div></div><p class="onde">apps/plataforma/src/telas/PainelPlataforma.tsx:165</p></div>
+<div class="item"><h3>Mandar link ao prestador, link pronto</h3><p class="q">Abaixo do botão "Mandar pelo WhatsApp".</p><div class="par"><div class="comp"><div class="lado-t"><small>Hoje</small>Abre o seu WhatsApp com a mensagem pronta para o telefone do prestador. <span class="risco">Com o WhatsApp oficial (passo 5), sai pelo número do condomínio.</span></div></div><div class="comp"><div class="lado-t novo"><small>Proposto</small>Abre o seu WhatsApp com a mensagem pronta para o telefone do prestador.</div></div></div><p class="mud">A frase sem telefone ("O prestador não tem telefone no cadastro…") continua igual.</p><p class="onde">apps/plataforma/src/telas/manutencao/LinkPrestador.tsx:210</p></div>
+<div class="item"><h3>Configurações › Etapas e respostas, modelos de resposta</h3><div class="par"><div class="comp"><div class="lado-t"><small>Hoje</small>Os modelos aparecem na hora de responder um pedido, quando os pedidos chegarem (passo 4).</div></div><div class="comp"><div class="lado-t novo"><small>Proposto</small>Os modelos aparecem na hora de dar retorno a um pedido.</div></div></div><p class="mud">"Dar retorno" é o nome do botão na ficha do pedido.</p><p class="onde">packages/configuracoes/src/AbaEtapas.tsx:138 (vale também para o Console)</p></div>
+<div class="item"><h3>Configurações › Comunicados, horário sem envio</h3><div class="par"><div class="comp"><div class="lado-t"><small>Hoje</small>Vale para o e-mail e, depois, para o WhatsApp. Programar nesse horário mostra um aviso.</div></div><div class="comp"><div class="lado-t novo"><small>Proposto</small>Vale para o e-mail e para o WhatsApp. Programar nesse horário mostra um aviso.</div></div></div><p class="onde">packages/configuracoes/src/AbaComunicados.tsx:74 (vale também para o Console)</p></div>
+<div class="item"><h3>Fotos e documentos do pedido, arquivo recusado</h3><p class="q">Quando o síndico tenta enviar um vídeo ou um áudio pela tela. Achado novo desta conferência.</p><div class="par"><div class="comp"><div class="lado-t"><small>Hoje</small>video.mp4 não foi aceito: só fotos e PDF. Vídeo e áudio chegam com o WhatsApp (passo 5).</div></div><div class="comp"><div class="lado-t novo"><small>Proposto</small>video.mp4 não foi aceito: aqui só entram fotos e PDF. Vídeo e áudio entram quando o morador manda pelo WhatsApp.</div></div></div><p class="onde">packages/domain/src/arquivos.ts:59</p></div>
+</div></section>
+
+<section class="parte" id="p2" aria-labelledby="h-p2"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-p2">2 · Como o pedido chegou</h2><p>No alto da ficha do pedido, a linha de detalhes junta "por" com o nome do canal em minúsculas. Em três canais a frase sai errada. A frase inteira passa a vir de uma lista, como já é feito no retorno ao morador.</p><p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">AT-01</span></p></div>
+<p class="legenda-t" style="margin:0 2px 8px">Exemplo: <b style="font-weight:500">Aguardando prestador · Hidráulica · Alta · Torre A, 101 · Marta Lima · <span class="marca-n">por visto pela gestão</span></b></p>
+<div class="rolar" role="region" tabindex="0" aria-label="Como o pedido chegou, hoje e proposto"><table class="tabela"><thead><tr><th scope="col">Canal</th><th scope="col">Hoje</th><th scope="col">Proposto</th></tr></thead><tbody>
+<tr><td>Telefone</td><td>por telefone</td><td>por telefone</td></tr>
+<tr><td>Pessoalmente</td><td class="risco">por pessoalmente</td><td>pessoalmente</td></tr>
+<tr><td>Mensagem</td><td>por mensagem</td><td>por mensagem</td></tr>
+<tr><td>E-mail</td><td>por e-mail</td><td>por e-mail</td></tr>
+<tr><td>WhatsApp do condomínio</td><td>por whatsapp do condomínio</td><td>pelo WhatsApp do condomínio</td></tr>
+<tr><td>Visto pela gestão</td><td class="risco">por visto pela gestão</td><td>visto pela gestão</td></tr>
+<tr><td>Outro</td><td class="risco">por outro</td><td>por outro meio</td></tr>
+</tbody></table></div>
+<p class="onde" style="margin-top:8px">apps/plataforma/src/telas/pedidos/Pedido.tsx:112 · lista nova em packages/domain/src/pedidos.ts, ao lado de CANAIS_PEDIDO_EXIBICAO</p>
+</section>
+
+<section class="parte" id="p3" aria-labelledby="h-p3"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-p3">3 · Português e nomes de botão</h2><p>Plural, concordância e um botão que parece um selo.</p></div>
+<div class="cat">
+<div class="item"><h3>Etapas feitas pela TRÍADE (aba Etapas e aba Manutenção)</h3><p class="q">Na faixa "Só a TRÍADE muda", quando o condomínio tem uma etapa só.</p><div class="par"><div class="comp"><div class="lado-t"><small>Hoje</small>1 etapas ativas</div></div><div class="comp"><div class="lado-t novo"><small>Proposto</small>1 etapa ativa · 3 etapas ativas</div></div></div><p class="onde">packages/configuracoes/src/AbaEtapas.tsx:96 · AbaManutencao.tsx:42 (vale também para o Console)</p></div>
+<div class="item"><h3>Assembleia, lista de unidades</h3><p class="q">Hoje o botão e o selo têm o mesmo texto: não dá para saber se a unidade já está sem direito ou se o botão tira o direito.</p><div class="par"><div class="comp"><div class="lado-t"><small>Hoje</small><span class="linha-bt"><span class="botao bt-p fantasma">Copiar o link</span><span class="botao bt-p fantasma">Sem direito a voto</span></span></div></div><div class="comp"><div class="lado-t novo"><small>Proposto</small><span class="linha-bt"><span class="botao bt-p fantasma">Copiar o link</span><span class="botao bt-p fantasma">Marcar sem direito a voto</span></span></div></div></div><p class="mud">Quando a unidade já está marcada, o selo "Sem direito a voto" continua e o botão segue "Devolver o direito a voto".</p><p class="onde">apps/plataforma/src/telas/vida/Assembleia.tsx:254-255</p></div>
+<div class="item"><h3>Comunicado publicado, quem não recebeu pelo WhatsApp</h3><div class="par"><div class="comp"><div class="lado-t"><small>Hoje</small>WhatsApp: Não chegou: Número sem WhatsApp.</div></div><div class="comp"><div class="lado-t novo"><small>Proposto</small>WhatsApp: não chegou (número sem WhatsApp).</div></div></div><p class="mud">Sem motivo informado: "WhatsApp: não chegou (o WhatsApp recusou)." As outras frases da lista ("Pode ter saído…", "Não saiu: o número ficou desconectado…") passam a começar com minúscula depois dos dois pontos, do mesmo jeito.</p><p class="onde">apps/plataforma/src/telas/comunicados/Comunicado.tsx:221-224</p></div>
+<div class="item"><h3>WhatsApp › Quedas, sem queda aberta</h3><p class="q">Com o nome de quem responde pela queda, a frase não concorda ("Ana Souza é avisado").</p><div class="par"><div class="comp"><div class="lado-t"><small>Hoje</small>Quando o número do condomínio desconecta, a queda abre sozinha e Ana Souza é avisado no sino.</div></div><div class="comp"><div class="lado-t novo"><small>Proposto</small>Quando o número do condomínio desconecta, a queda abre sozinha e Ana Souza recebe o aviso no sino.</div></div></div><p class="mud">Sem responsável: "…e o síndico recebe o aviso no sino." A frase "assume como síndico" da Memória vem do banco e fica para a primeira entrega com migration (decisão 3).</p><p class="onde">apps/plataforma/src/telas/whatsapp/Quedas.tsx:351</p></div>
+</div></section>
+
+<section class="parte" id="p4" aria-labelledby="h-p4"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-p4">4 · Telefone dos prestadores</h2><p>Em todo o app o telefone aparece formatado, menos na lista e na ficha do prestador, que mostram o número cru.</p><p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">MP-05</span></p></div>
+<div class="par"><div class="comp"><div class="lado-t"><small>Hoje</small>Rafael · +5513998124455</div></div><div class="comp"><div class="lado-t novo"><small>Proposto</small>Rafael · +55 13 99812-4455</div></div></div>
+<p class="onde" style="margin-top:8px">apps/plataforma/src/telas/manutencao/Prestadores.tsx:114 · Prestador.tsx:74 (com o mostrarTelefone do @triade/domain, o mesmo das outras telas)</p>
+</section>
+
+<section class="parte" id="p5" aria-labelledby="h-p5"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-p5">5 · Botões de criar</h2><p>Mais de 30 botões de criar começam com "+ " escrito ("+ Registrar pedido", "+ Nova manutenção", "+ Feriado"). Oito usam um ícone de mais no lugar, e um não tem nada. Todos passam a usar o "+ " escrito (decisão 1).</p><p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">PT-10</span> <span class="mono" style="font-size:11px;color:var(--v600)">CF-12</span></p></div>
+<div class="rolar" role="region" tabindex="0" aria-label="Botões de criar que mudam"><table class="tabela"><thead><tr><th scope="col">Tela</th><th scope="col">Hoje</th><th scope="col">Proposto</th><th scope="col">Arquivo</th></tr></thead><tbody>
+<tr><td>Vida › Reservas</td><td>(ícone) Nova reserva</td><td>+ Nova reserva</td><td class="cod">telas/vida/Vida.tsx:46</td></tr>
+<tr><td>Vida › Enquetes</td><td>(ícone) Nova enquete</td><td>+ Nova enquete</td><td class="cod">telas/vida/Vida.tsx:47</td></tr>
+<tr><td>Vida › Assembleias</td><td>(ícone) Nova assembleia</td><td>+ Nova assembleia</td><td class="cod">telas/vida/Vida.tsx:48</td></tr>
+<tr><td>Memória › Manual</td><td>(ícone) Nova seção</td><td>+ Nova seção</td><td class="cod">telas/memoria/Manual.tsx:53</td></tr>
+<tr><td>Memória › Prontuário</td><td>(ícone) Novo item</td><td>+ Novo item</td><td class="cod">telas/memoria/Prontuario.tsx:60</td></tr>
+<tr><td>Memória › Linha do tempo</td><td>(ícone) Anotar na memória</td><td>+ Anotar na memória</td><td class="cod">telas/memoria/LinhaDoTempo.tsx:75</td></tr>
+<tr><td>Configurações › Áreas comuns</td><td>(ícone) Nova área</td><td>+ Nova área</td><td class="cod">configuracoes/AbaAreasComuns.tsx:42</td></tr>
+<tr><td>Configurações › Links e QR</td><td>(ícone) Nova etiqueta</td><td>+ Nova etiqueta</td><td class="cod">configuracoes/AbaLinksQr.tsx:78</td></tr>
+<tr><td>Ajuda e suporte</td><td>Abrir chamado</td><td>+ Abrir chamado</td><td class="cod">telas/suporte/AjudaSuporte.tsx:262</td></tr>
+</tbody></table></div>
+<p class="legenda-t">Ficam como estão os botões que salvam ou registram algo dentro de uma janela ("Registrar reserva", "Registrar voto", "Registrar mudança", "Registrar outro"): eles não abrem nada novo.</p>
+</section>
+
+<section class="parte" id="p6" aria-labelledby="h-p6"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-p6">6 · Cartões do Início</h2><p>Cada cartão leva à tela inteira com um nome diferente e num lugar diferente: "Ver agenda", "Ver todas", "Ver todos", "Ver prontuário", "Abrir", e em dois cartões o link fica no pé. Todos passam a ter "Ver tudo" no canto de cima (decisão 2). As ações de cada linha ("Decidir", "Atribuir", "Conferir", "Ver quais", "Ver") não mudam, porque dizem o que acontece.</p><p style="margin-top:6px"><span class="mono" style="font-size:11px;color:var(--v600)">V-08</span> <span class="mono" style="font-size:11px;color:var(--v600)">PT-10</span></p></div>
+<div class="rolar" role="region" tabindex="0" aria-label="Link de cada cartão do Início"><table class="tabela"><thead><tr><th scope="col">Cartão</th><th scope="col">Hoje</th><th scope="col">Proposto</th><th scope="col">Arquivo</th></tr></thead><tbody>
+<tr><td>Agora (pedidos)</td><td>"Ver todos", no pé, ao lado de "Registrar pedido"</td><td>"Ver tudo" no canto de cima; "Registrar pedido" fica no pé até a Entrega 2</td><td class="cod">telas/Inicio.tsx:125</td></tr>
+<tr><td>Hoje na agenda</td><td>"Ver agenda"</td><td>"Ver tudo"</td><td class="cod">agenda/HojeNaAgenda.tsx:25</td></tr>
+<tr><td>Manutenção</td><td>"Ver todas"</td><td>"Ver tudo"</td><td class="cod">manutencao/CartaoManutencao.tsx:31</td></tr>
+<tr><td>Comunicados</td><td>"Ver todos"</td><td>"Ver tudo"</td><td class="cod">comunicados/CartaoComunicados.tsx:34</td></tr>
+<tr><td>Memória</td><td>"Ver prontuário"</td><td>"Ver tudo"</td><td class="cod">memoria/CartaoMemoria.tsx:19</td></tr>
+<tr><td>Vida no condomínio</td><td>"Abrir"</td><td>"Ver tudo"</td><td class="cod">vida/CartaoVida.tsx:18</td></tr>
+<tr><td>Mês fechado</td><td>"Ver indicadores", no pé</td><td>"Ver indicadores" no canto de cima (leva a outra tela, com outros períodos)</td><td class="cod">telas/Inicio.tsx:147</td></tr>
+<tr><td>Moradores e unidades</td><td>sem link no cartão; a linha das unidades tem "Ver unidades"</td><td>"Ver tudo" no canto de cima; a linha fica "Ver"</td><td class="cod">telas/Inicio.tsx:34</td></tr>
+</tbody></table></div>
+<h3 class="sub">Como fica um cartão</h3>
+<div class="grade-i">
+<div><p class="legenda-t" style="margin:0 2px 8px">Hoje</p><div class="cartao-i"><div class="cab"><h4>Manutenção</h4><span class="lnk velho">Ver todas</span></div><ul><li>Bomba de recalque com ruído<span class="lnk">Ver</span></li><li>Vistoria do telhado<span class="lnk">Ver</span></li></ul></div></div>
+<div><p class="legenda-t" style="margin:0 2px 8px">Proposto</p><div class="cartao-i"><div class="cab"><h4>Manutenção</h4><span class="lnk novo">Ver tudo</span></div><ul><li>Bomba de recalque com ruído<span class="lnk">Ver</span></li><li>Vistoria do telhado<span class="lnk">Ver</span></li></ul></div></div>
+<div><p class="legenda-t" style="margin:0 2px 8px">Proposto · Agora</p><div class="cartao-i"><div class="cab"><h4>Agora</h4><span class="lnk novo">Ver tudo</span></div><ul><li>2 pedidos sem responsável<span class="lnk">Atribuir</span></li><li>1 decisão esperando você<span class="lnk">Decidir</span></li></ul><div class="pe"><span>7 pedidos ativos</span><span class="botao bt-m contorno">Registrar pedido</span></div></div></div>
+</div>
+<p class="legenda-t">Cada "Ver tudo" leva um nome para leitor de tela com o cartão ("Ver tudo de Manutenção"), porque vários na mesma página teriam o mesmo texto.</p>
+</section>
+
+<section class="parte" id="p7" aria-labelledby="h-p7"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-p7">7 · Testes e painel</h2><p>O que vem junto no mesmo PR.</p></div>
+<div class="grade3">
+<div class="decisao" style="--x:0"><b>Os testes que procuram os textos antigos mudam junto</b><p>Ponta a ponta e Vitest que hoje esperam "Sem direito a voto", "Ver todas", "Abrir" ou a frase do menu passam a esperar o texto novo.</p></div>
+<div class="decisao"><b>Teste novo contra texto de obra</b><p>Lê os textos que aparecem nas telas (não os comentários) e falha se algum disser "passo 4", "passo 5", "próximo passo" junto com WhatsApp, ou "chega depois".</p></div>
+<div class="decisao"><b>Teste novo da origem do pedido</b><p>Para cada canal, a linha da ficha mostra a frase da tabela da parte 2.</p></div>
+<div class="decisao"><b>Painel de execução</b><p>Um item "Coerência das telas · Entrega 1", dentro das peças que já existem, com a evidência dos testes. Não muda o status de nenhuma ideia.</p><p class="refs">AT-01 · W-05 · W-17 · CD-02 · AC-02 · MP-05 · CF-12 · V-08 · PT-10</p></div>
+</div>
+<p class="legenda-t">Lint, tipos, Vitest e ponta a ponta com axe no celular e no computador, rodados aqui (o CI do GitHub está parado), com a saída no PR. As abas de Configurações também aparecem no Console, que é testado junto. Sem banco e sem publicar funções: o merge publica na Vercel.</p>
+</section>
+
+<section class="parte" id="decisoes" aria-labelledby="h-dec"><div class="moldura"><span class="a3"></span><span class="a4"></span><h2 id="h-dec">Decisões</h2><p>Três escolhas desta folha. A Carolina aprovou a folha em 21/10/2026, com as três recomendações.</p></div>
+<div class="grade3">
+<div class="decisao"><b><span class="numero">1</span>Botões de criar: "+ " escrito</b><p>Recomendado: "+ " escrito em todos, como já está em mais de 30 botões, e o ícone sai dos 8 da tabela. A outra opção é o ícone em todos, que muda mais de 30 botões em vez de 9.</p></div>
+<div class="decisao"><b><span class="numero">2</span>Início: "Ver tudo" no canto de cima</b><p>Recomendado: o mesmo nome e o mesmo lugar em todo cartão, menos o Mês fechado, que leva a Indicadores. A outra opção é manter o nome de cada tela ("Ver agenda", "Ver manutenções") e só mudar o lugar.</p></div>
+<div class="decisao"><b><span class="numero">3</span>"assume como síndico" fica para depois</b><p>Recomendado: a frase da Memória vem de uma função do banco (migration 0180); trocar por "assume a sindicatura" entra na primeira migration do plano (Entrega 4), para esta entrega continuar sem banco.</p></div>
+</div>
+</section>
+</main>
+</div>
+</body>
+</html>

@@ -4,6 +4,7 @@
 
 import Link from "next/link";
 import { classeBotao, Icone } from "@triade/ui";
+import { CabecaCartao } from "../CabecaCartao.tsx";
 import type { ResumoProntuario } from "../tipos.ts";
 
 export function CartaoMemoria({ resumo: r }: { resumo: ResumoProntuario }) {
@@ -14,10 +15,7 @@ export function CartaoMemoria({ resumo: r }: { resumo: ResumoProntuario }) {
   ].filter((x) => x !== null);
   return (
     <section aria-labelledby="t-memoria" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-memoria" className="flex items-center justify-between text-lg font-medium">
-        Memória do prédio
-        <Link href="/memoria" className="text-sm font-medium underline underline-offset-4">Ver prontuário</Link>
-      </h2>
+      <CabecaCartao id="t-memoria" titulo="Memória do prédio" href="/memoria" />
       {linhas.length === 0 ? <p className="text-sm text-tinta-suave">{r.emDia} de {r.total} itens do prontuário em dia. Nada vencido nem faltando.</p> : (
         <ul className="divide-y divide-linha">
           {linhas.map((l) => (

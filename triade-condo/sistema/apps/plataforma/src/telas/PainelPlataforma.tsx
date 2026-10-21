@@ -162,7 +162,6 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
           {pode("config.ver") ? <ItemMenu href="/configuracoes" icone="ajuste" atual={caminho.startsWith("/configuracoes")}>Configurações</ItemMenu> : null}
           {pode("pessoas.ver") ? <ItemMenu href="/pessoas" icone="pessoas" atual={caminho.startsWith("/pessoas")}>Pessoas e acesso</ItemMenu> : null}
           {pode("suporte.chamados") ? <ItemMenu href="/suporte" icone="balao" atual={caminho.startsWith("/suporte")}>Ajuda e suporte</ItemMenu> : null}
-          <p className="mt-2 border-t border-linha px-3 pt-3 text-xs text-tinta-suave">O WhatsApp do condomínio chega num próximo passo. Até lá, os avisos ficam aqui no painel.</p>
         </nav>
         <main id="conteudo" className="min-w-0 px-4 py-6 md:px-2 md:py-2">{children}</main>
       </div>

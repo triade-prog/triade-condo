@@ -50,7 +50,7 @@ export function AbaManual({ feito }: PropsAbaMemoria) {
       <section aria-labelledby="mn-secoes" className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4 shadow-s1">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="mn-secoes" className="text-lg font-medium">Seções</h2>
-          {m.podeEditar ? <Botao tamanho="m" onClick={() => setEditando({ titulo: "" })}><Icone nome="mais" />Nova seção</Botao> : null}
+          {m.podeEditar ? <Botao tamanho="m" onClick={() => setEditando({ titulo: "" })}>+ Nova seção</Botao> : null}
         </div>
         {m.secoes.length === 0 ? <p className="text-sm text-tinta-suave">Nenhuma seção escrita ainda. Comece por uma das sugestões abaixo.</p> : (
           <ol className="divide-y divide-linha">

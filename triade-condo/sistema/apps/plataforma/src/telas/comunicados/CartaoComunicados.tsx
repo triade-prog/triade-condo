@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { descreverValidade } from "@triade/domain";
 import { classeBotao, Icone } from "@triade/ui";
+import { CabecaCartao } from "../CabecaCartao.tsx";
 import { hojeEmBrasilia } from "../moradores/comum.tsx";
 import { diaHora } from "../pedidos/comum.tsx";
 import type { ResumoComunicados } from "../tipos.ts";
@@ -29,10 +30,7 @@ export function CartaoComunicados({ resumo: r, verComunicados }: { resumo: Resum
 
   return (
     <section aria-labelledby="t-comunicados" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-comunicados" className="flex items-center justify-between text-lg font-medium">
-        Comunicados e documentos
-        <Link href={verComunicados ? "/comunicados" : "/comunicados/documentos"} className="text-sm font-medium underline underline-offset-4">Ver todos</Link>
-      </h2>
+      <CabecaCartao id="t-comunicados" titulo="Comunicados e documentos" href={verComunicados ? "/comunicados" : "/comunicados/documentos"} />
       {linhas.length === 0 ? <p className="text-sm text-tinta-suave">Nada programado para hoje, nenhum rascunho parado e nenhum documento perto de vencer.</p> : (
         <ul className="divide-y divide-linha">
           {linhas.map((l) => (

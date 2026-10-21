@@ -57,7 +57,7 @@ export function AbaProntuario({ feito }: PropsAbaMemoria) {
             {r.venceu ? ` ${r.venceu} ${r.venceu === 1 ? "venceu" : "venceram"}.` : ""}{r.falta ? ` ${r.falta} ${r.falta === 1 ? "falta" : "faltam"}.` : ""}
           </p>
         </div>
-        {p.podeEditar ? <Botao variante="contorno" tamanho="m" onClick={() => setNovo(true)}><Icone nome="mais" />Novo item</Botao> : null}
+        {p.podeEditar ? <Botao variante="contorno" tamanho="m" onClick={() => setNovo(true)}>+ Novo item</Botao> : null}
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-superficie-2" role="img" aria-label={`${r.emDia} de ${r.total} itens em dia`}>
         <span className="block h-full rounded-full bg-linear-to-r from-laranja-300 to-laranja-500" style={{ width: `${r.total ? Math.round((r.emDia / r.total) * 100) : 0}%` }} />

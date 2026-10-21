@@ -37,6 +37,12 @@ export function PedirMudanca({ parte, valor }: { parte: string; valor: string })
   return <Link href={`/suporte?${busca}`} className={classeBotao("contorno", "", "m")}>Pedir mudança</Link>;
 }
 
+/** "1 etapa ativa", "3 etapas ativas": o resumo das etapas na faixa da TRÍADE. */
+export function etapasAtivas(etapas: { ativa: boolean }[]): string {
+  const n = etapas.filter((e) => e.ativa).length;
+  return `${n} ${n === 1 ? "etapa ativa" : "etapas ativas"}`;
+}
+
 /** Faixa do app sobre uma parte que é da TRÍADE (tela 6). */
 export function FaixaTriade({ parte, valor, porque }: { parte: string; valor: string; porque: string }) {
   return (

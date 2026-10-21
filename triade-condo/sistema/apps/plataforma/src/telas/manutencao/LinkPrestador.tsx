@@ -207,7 +207,6 @@ function MandarLink({ manutencaoId, titulo, versao, info, aoFechar, aoMandar }: 
           </div>
           <p className="text-xs text-tinta-suave">
             {telefone ? "Abre o seu WhatsApp com a mensagem pronta para o telefone do prestador." : "O prestador não tem telefone no cadastro: o WhatsApp abre para você escolher o contato."}
-            {" "}Com o WhatsApp oficial (passo 5), sai pelo número do condomínio.
           </p>
           <Botao variante="discreto" className="justify-self-end" onClick={aoFechar}>Fechar</Botao>
         </div>

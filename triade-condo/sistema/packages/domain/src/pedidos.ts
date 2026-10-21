@@ -50,6 +50,17 @@ export const CANAIS_PEDIDO = {
  * número, nunca escolhido na mão. */
 export const CANAIS_PEDIDO_EXIBICAO = { ...CANAIS_PEDIDO, WHATSAPP: "WhatsApp do condomínio" } as const;
 
+/** Como o pedido chegou, na frase da ficha ("… · Marta Lima · por telefone"). */
+export const ORIGEM_PEDIDO_FRASE: Record<keyof typeof CANAIS_PEDIDO_EXIBICAO, string> = {
+  TELEFONE: "por telefone",
+  PRESENCIAL: "pessoalmente",
+  MENSAGEM: "por mensagem",
+  EMAIL: "por e-mail",
+  OBSERVACAO: "visto pela gestão",
+  OUTRO: "por outro meio",
+  WHATSAPP: "pelo WhatsApp do condomínio",
+};
+
 /** Como o retorno foi dado ao morador (AT-06). */
 export const MEIOS_RETORNO = {
   TELEFONE: "Por telefone",
