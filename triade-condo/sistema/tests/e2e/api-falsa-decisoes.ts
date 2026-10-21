@@ -162,19 +162,10 @@ export function marcarAvisosDecisoes(estado: EstadoDecisoes, eu: string, ids: st
 }
 
 /** Atende as rotas da F7.4; devolve null quando a rota não é daqui. */
-export async function rotasDecisoes(route: Route, estado: EstadoDecisoes, x: Contexto, config: { versao: number }, caminho: string, metodo: string,
+export async function rotasDecisoes(route: Route, estado: EstadoDecisoes, x: Contexto, caminho: string, metodo: string,
   corpo: Record<string, unknown>, url: URL): Promise<void | null> {
   const texto = (k: string) => String(corpo[k] ?? "").trim();
   const hist = (p: PedidoFalso, acao: string, dados: Record<string, unknown>) => p.historico.push({ acao, em: AGORA, autor: x.eu.nome, dados });
-
-  if (caminho === "/v1/condominio/regras-parecidos" && metodo === "PUT") {
-    if (!x.pode("config.editar")) return erro(route, 403, "FORBIDDEN");
-    if (corpo.versao !== config.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: config.versao });
-    if (![30, 60, 90, 180].includes(Number(corpo.dias))) return erro(route, 400, "VALIDATION_ERROR", { campos: ["dias"] });
-    estado.dias = Number(corpo.dias);
-    config.versao++;
-    return route.fulfill({ json: { versao: config.versao } });
-  }
 
   const lig = /^\/v1\/condominio\/pedidos\/([^/]+)\/(ligacoes|parecidos\/descartar|decisoes)(?:\/([^/]+)\/desfazer)?$/.exec(caminho);
   if (lig && metodo === "POST") {

@@ -91,8 +91,8 @@ export function descreverSemana(intervalos: Intervalo[]): string {
   }
   const frase = grupos
     .map((g) => {
-      const de = DIAS_SEMANA[g.de].toLowerCase();
-      const dias = g.de === g.ate ? de : `${de} a ${DIAS_SEMANA[g.ate].toLowerCase()}`;
+      const de = DIAS_SEMANA[g.de]!.toLowerCase();
+      const dias = g.de === g.ate ? de : `${de} a ${DIAS_SEMANA[g.ate]!.toLowerCase()}`;
       return `${dias}, ${g.texto}`;
     })
     .join("; ");

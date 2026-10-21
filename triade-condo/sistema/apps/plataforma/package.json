@@ -9,6 +9,7 @@
     "typecheck": "next typegen && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@triade/configuracoes": "workspace:*",
     "@triade/domain": "workspace:*",
     "@triade/servidor": "workspace:*",
     "@triade/ui": "workspace:*",

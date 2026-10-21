@@ -2,33 +2,17 @@
 // pessoas (plataforma_pessoas), nos moradores e unidades (passo 3) e nos pedidos (passo 4).
 
 import type {
-  CanalEnquete, ConfirmacaoArea, EscopoEnquete, EstadoReserva, Intervalo, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite, SituacaoEnquete,
+  CanalEnquete, ConfirmacaoArea, EscopoEnquete, EstadoReserva, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite, SituacaoEnquete,
   EstadoAssembleia, EstadoItem, EstadoProcuracao, FormaAssembleia, PesoAssembleia, Quorum, SituacaoItem, TipoAssembleia, TipoItem,
   EstadoAnuncio, TipoAnuncio, TipoVeiculo, DecisaoQueda, EstadoQueda, AvisoNovoSindico, DestinoAvisoRegistro, MeioAvisoRegistro,
   EstadoDecisao, FiltroDecisao, TipoLigacao,
 } from "@triade/domain";
 
-export interface Configuracoes {
-  fuso: string;
-  versao: number;
-  horarios: Record<"FUNCIONAMENTO" | "ATENDIMENTO", { intervalos: Intervalo[]; versao: number }>;
-  feriados: { id: string; data: string; descricao: string }[];
-  categorias: { id: string; nome: string; ativa: boolean; versao: number }[];
-  prioridades: { id: string; nome: string; significado: string; nivel: number; ativa: boolean; versao: number }[];
-  etapas: { id: string; nome: string; situacao: string; categoriaId: string | null; pausaPrazo: boolean; ordem: number; ativa: boolean; versao: number }[];
-  modelos: { id: string; titulo: string; texto: string; categoriaId: string | null; ativo: boolean; versao: number }[];
-  prazos: { id: string; categoriaId: string | null; prioridadeId: string | null; horas: number; versao: number }[];
-  /** Revisão da conclusão e reabertura dos pedidos (AT-14, AT-15). */
-  regrasPedidos: { revisao: boolean; reabertura: boolean };
-  /** Quando o aviso sobe e os outros avisos (passo 6; F6.2, AT-09). */
-  avisos: RegrasAviso;
-  /** Quem fica sabendo de pedido novo (F6.4, AT-26). Só o síndico muda. */
-  avisoNovo: { sindico: AvisoNovoSindico; protocolo: boolean; podeMudar: boolean };
-  /** Janela dos pedidos parecidos, em dias (F7.4, AT-18). */
-  parecidosDias?: number;
-  pendencias: string[];
-  podeEditar: boolean;
-}
+
+// As configurações moram com as telas delas (@triade/configuracoes), que o Console também usa.
+import type { AreaComumTela } from "@triade/configuracoes";
+export type { Configuracoes, RegrasAviso, PlanoComunicacao, Etiqueta, LinksQr, EtiquetaDetalhe, AreaComumTela, AreasComuns, Recado }
+  from "@triade/configuracoes";
 
 export interface PessoaDoCondominio {
   vinculoId: string;
@@ -51,8 +35,6 @@ export interface Pessoas {
   pendencias: string[];
 }
 
-/** Recado no topo depois de uma ação (salvo, convite enviado...). */
-export type Recado = { tom: "ok" | "info" | "atencao"; texto: string } | null;
 
 export interface Bloco {
   id: string;
@@ -269,14 +251,6 @@ export interface ResumoPedidos {
   pendenciasParadas: number;
 }
 
-export interface RegrasAviso {
-  sindicoHoras: number;
-  substitutoHoras: number;
-  substitutoId: string | null;
-  semResponsavelHoras: number;
-  pendenciaDias: number;
-  substitutosPossiveis: { vinculoId: string; nome: string; cargo: string | null }[];
-}
 
 /** Um aviso dentro do painel (passo 6, F6.1). Assunto vazio: pedido privado que a pessoa não vê. */
 export interface AvisoDoPainel {
@@ -284,7 +258,7 @@ export interface AvisoDoPainel {
   tipo: "RETORNO_VENCIDO" | "ESCALADO_SINDICO" | "ESCALADO_SUBSTITUTO" | "SEM_RESPONSAVEL" | "PENDENCIA_PARADA" | "MANUTENCAO_RETORNO_VENCIDO"
     | "DOCUMENTO_VENCENDO" | "DOCUMENTO_PEDIDO" | "EMAIL_DEVOLVIDO" | "EMAIL_SPAM" | "PRESTADOR_IMPEDIMENTO" | "PRESTADOR_TERMINOU"
     | "PRONTUARIO_VENCE" | "PRONTUARIO_VENCEU" | "EXPORTACAO_PRONTA" | "EXPORTACAO_FALHOU"
-    | "ENTREGA" | "CHAMADO_RESPOSTA" | "ACESSO_PEDIDO"
+    | "ENTREGA" | "CHAMADO_RESPOSTA" | "ACESSO_PEDIDO" | "CONFIGURACAO"
     | "WHATSAPP_PEDIDO_NOVO" | "WHATSAPP_REVISAO" | "WHATSAPP_A_IDENTIFICAR" | "WHATSAPP_FALHA_ENVIO" | "WHATSAPP_DESCONECTADO"
     | "RESERVA_A_APROVAR" | "RESERVA_CANCELADA"
     | "PRESTADOR_CONFIRMOU" | "PRESTADOR_RECUSOU" | "WHATSAPP_QUEDA" | "WHATSAPP_QUEDA_VOLTOU"
@@ -984,18 +958,6 @@ export interface ComunicadosLigados {
   comunicados: ComunicadoResumo[];
 }
 
-export interface PlanoComunicacao {
-  assuntos: AssuntoComunicado[];
-  plano?: string;
-  assinatura?: string;
-  silencioInicio: string;
-  silencioFim: string;
-  versao: number;
-  podeEditar: boolean;
-  mural: { ligado: boolean; codigo?: string; assuntos: AssuntoComunicado[]; aberturas: number };
-  email: { ligado: boolean; responderPara?: string; comEmail: number; contatos: number };
-  documentos: { noMural: boolean; automatico: boolean };
-}
 
 export type TipoDocumento = "CONVENCAO" | "REGIMENTO" | "ATA" | "CONTRATO" | "LAUDO" | "ORCAMENTO" | "OUTRO";
 
@@ -1131,39 +1093,8 @@ export interface ResumoComunicados {
 // ---------------------------------------------------------------------------------------
 // Links e QR (peça R13; AT-30, MP-08, V-11).
 
-export interface Etiqueta {
-  id: string;
-  numero: number;
-  rotulo: string;
-  local: string;
-  onde?: string;
-  codigo: string;
-  recado?: string;
-  recadoAte?: string;
-  ativa: boolean;
-  motivoDesativacao?: string;
-  desativadaEm?: string;
-  aberturas7: number;
-  aberturasHoje: number;
-  semUso?: boolean;
-  criadoEm: string;
-  versao: number;
-}
 
-export interface LinksQr {
-  numeroWhatsapp?: string;
-  mural: { ligado: boolean; aberturas: number };
-  etiquetas: Etiqueta[];
-  prestador: { validos: number; venceEm?: string; links?: { id: string; manutencaoId: string; titulo: string; para: string; expiraEm: string }[] };
-  documentos: { validos: number; venceEm?: string };
-  podeEditar: boolean;
-}
 
-export interface EtiquetaDetalhe {
-  etiqueta: Etiqueta;
-  historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
-  podeEditar: boolean;
-}
 
 export interface RegistroPrestador {
   id: string;
@@ -1420,37 +1351,7 @@ export interface Exportacoes {
 // ---------------------------------------------------------------------------------------
 // Vida em condomínio (peça R12): áreas comuns e reservas.
 
-export interface AreaComumTela {
-  id: string;
-  modelo?: string;
-  criadaPeloSindico: boolean;
-  nome: string;
-  ativa: boolean;
-  reserva: ConfirmacaoArea;
-  antecedenciaMin: number;
-  antecedenciaMax: number;
-  horaInicio: string;
-  horaFim: string;
-  modo: ModoArea;
-  blocoMinutos?: number;
-  capacidade?: number;
-  limiteQuantidade?: number;
-  limitePeriodo?: PeriodoLimite;
-  toleranciaDias?: number;
-  cancelarSemAvisoDias: number;
-  valorCentavos?: number;
-  regras?: { id: string; titulo: string };
-  podeProprietarioMorador: boolean;
-  podeInquilino: boolean;
-  podeProprietarioAusente: boolean;
-  versao: number;
-}
 
-export interface AreasComuns {
-  areas: AreaComumTela[];
-  documentos: { id: string; titulo: string }[];
-  pode: { editar: boolean };
-}
 
 export interface OcupacaoArea {
   motivo: "RESERVA" | "AGENDA";

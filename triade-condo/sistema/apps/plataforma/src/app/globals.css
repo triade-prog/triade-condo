@@ -1,3 +1,4 @@
 @import "tailwindcss";
 @import "@triade/ui/tema.css";
 @source "../../../../packages/ui/src";
+@source "../../../../packages/configuracoes/src";

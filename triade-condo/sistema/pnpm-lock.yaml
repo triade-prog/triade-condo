@@ -41,6 +41,9 @@ importers:
 
   apps/console:
     dependencies:
+      '@triade/configuracoes':
+        specifier: workspace:*
+        version: link:../../packages/configuracoes
       '@triade/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -78,6 +81,9 @@ importers:
 
   apps/plataforma:
     dependencies:
+      '@triade/configuracoes':
+        specifier: workspace:*
+        version: link:../../packages/configuracoes
       '@triade/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -118,6 +124,31 @@ importers:
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
+
+  packages/configuracoes:
+    dependencies:
+      '@triade/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@triade/ui':
+        specifier: workspace:*
+        version: link:../ui
+      qrcode-generator:
+        specifier: 1.4.4
+        version: 1.4.4
+      react-dom:
+        specifier: ^19.3.0
+        version: 19.3.1(react@19.3.1)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      next:
+        specifier: ^16.3.6
+        version: 16.4.2(@babel/core@7.29.7)(@playwright/test@1.64.1)(@types/node@26.6.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      react:
+        specifier: ^19.3.0
+        version: 19.3.1
 
   packages/domain:
     dependencies:

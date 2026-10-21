@@ -6,11 +6,12 @@
 
 import { useState } from "react";
 import { AvisoErro, Aviso, Botao, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
-import { Janela, type Valores } from "../Janela.tsx";
-import type { Configuracoes } from "../tipos.ts";
+import { Janela, type Valores } from "./Janela.tsx";
+import type { Configuracoes } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
 import { RegrasAviso } from "./RegrasAviso.tsx";
 import { AvisoPedidoNovo } from "./AvisoPedidoNovo.tsx";
+import { naBase } from "./contexto.tsx";
 
 type Prazo = Configuracoes["prazos"][number];
 
@@ -44,7 +45,7 @@ function TabelaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
   const semHorario = config.pendencias.includes("SEM_HORARIO_ATENDIMENTO");
 
   async function tirar(p: Prazo) {
-    const r = await chamarApi(`/v1/condominio/prazos/${p.id}/remover`, { corpo: { versao: p.versao } });
+    const r = await chamarApi(naBase(`/prazos/${p.id}/remover`), { corpo: { versao: p.versao } });
     if (!r.ok) return setFalha(r.erro);
     salvo(`Exceção retirada: ${valePara(p)}.`);
   }
@@ -106,7 +107,7 @@ function TabelaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
         aoSalvar={async (v) => {
           const n = horasValidas(v);
           if (n === null || !mudando) return { ok: false, status: 400, erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["horas"] } } };
-          const r = await chamarApi(`/v1/condominio/prazos/${mudando.id}`, { metodo: "PUT", corpo: { versao: mudando.versao, horas: n } });
+          const r = await chamarApi(naBase(`/prazos/${mudando.id}`), { metodo: "PUT", corpo: { versao: mudando.versao, horas: n } });
           if (r.ok) { setMudando(null); salvo("Prazo salvo."); }
           return r;
         }}
@@ -127,7 +128,7 @@ function TabelaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
           const n = horasValidas(v);
           if (n === null) return { ok: false, status: 400, erro: { codigo: "VALIDATION_ERROR", detalhes: { campos: ["horas"] } } };
           if (!v.categoriaId && !v.prioridadeId) return { ok: false, status: 400, erro: { codigo: "VALIDATION_ERROR", detalhes: { motivo: "PRAZO_REPETIDO" } } };
-          const r = await chamarApi("/v1/condominio/prazos", { corpo: { categoriaId: v.categoriaId || null, prioridadeId: v.prioridadeId || null, horas: n } });
+          const r = await chamarApi(naBase("/prazos"), { corpo: { categoriaId: v.categoriaId || null, prioridadeId: v.prioridadeId || null, horas: n } });
           if (r.ok) { setNova(false); salvo("Exceção de prazo criada."); }
           return r;
         }}

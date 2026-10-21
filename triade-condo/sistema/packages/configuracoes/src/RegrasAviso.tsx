@@ -7,6 +7,7 @@ import { useState } from "react";
 import { REGRAS_AVISO_PADRAO } from "@triade/domain";
 import { AvisoErro, Botao, CampoSelecao, CampoTexto, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
 import type { PropsAba } from "./Configuracoes.tsx";
+import { naBase } from "./contexto.tsx";
 
 const LIMITES = { sindicoHoras: 240, substitutoHoras: 240, semResponsavelHoras: 240, pendenciaDias: 60 } as const;
 type Campo = keyof typeof LIMITES;
@@ -31,7 +32,7 @@ export function RegrasAviso({ config, pode, recarregar, salvo }: PropsAba) {
     setErros(ruins);
     if (ruins.length) return;
     setEnviando(true);
-    const r = await chamarApi("/v1/condominio/regras-aviso", { metodo: "PUT", corpo: { versao: config.versao, ...n, substitutoId: substituto || null } });
+    const r = await chamarApi(naBase("/regras-aviso"), { metodo: "PUT", corpo: { versao: config.versao, ...n, substitutoId: substituto || null } });
     setEnviando(false);
     if (!r.ok) {
       const campos = r.erro.detalhes?.campos;

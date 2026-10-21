@@ -1,7 +1,8 @@
 "use client";
-// Ficha do condomínio no Console: cabeçalho com estágio e as abas Ficha, Implantação, Síndico,
+// Ficha do condomínio no Console: cabeçalho com estágio e as abas Ficha, Implantação, Configuração, Síndico,
 // WhatsApp, Equipe, Notas internas e Histórico (design "Telas do passo 1", aprovado em 16/10/2026; a aba
-// Implantação, com a entrega no lugar do antigo "Concluir implantação", é da peça R4; a aba WhatsApp, do passo 5).
+// Implantação, com a entrega no lugar do antigo "Concluir implantação", é da peça R4; a aba WhatsApp, do passo 5;
+// a aba Configuração, do desenho "Configuração na implantação", aprovado em 20/10/2026).
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
@@ -12,6 +13,7 @@ import { SeloEstagio } from "../rotulos.tsx";
 import { ListaHistorico } from "../ListaHistorico.tsx";
 import { AbaFicha } from "./AbaFicha.tsx";
 import { AbaImplantacao } from "./AbaImplantacao.tsx";
+import { AbaConfiguracao } from "./AbaConfiguracao.tsx";
 import { AbaSindico } from "./AbaSindico.tsx";
 import { AbaEquipe } from "./AbaEquipe.tsx";
 import { AbaNotas } from "./AbaNotas.tsx";
@@ -21,6 +23,7 @@ import type { Ficha, PropsAba, Recado } from "./tipos.ts";
 const ABAS = [
   { id: "ficha", texto: "Ficha" },
   { id: "implantacao", texto: "Implantação" },
+  { id: "configuracao", texto: "Configuração" },
   { id: "sindico", texto: "Síndico" },
   { id: "whatsapp", texto: "WhatsApp" },
   { id: "equipe", texto: "Equipe" },
@@ -65,6 +68,7 @@ export function FichaCliente() {
     pode: (acao) => f.permissoes.includes(acao),
     recarregar: ficha.recarregar,
     avisar: setRecado,
+    irPara: (destino) => { const a = ABAS.find((x) => x.id === destino); if (a) { setAba(a.id); setRecado(null); } },
   };
   // Remonta as abas a cada versão nova, para os formulários partirem do que está salvo.
   const chave = `${f.condominio.versao}-${f.cliente.versao}-${f.sindicos.length}-${f.equipe.length}`;
@@ -105,6 +109,7 @@ export function FichaCliente() {
       <div role="tabpanel" id={`painel-${aba}`} aria-labelledby={`aba-${aba}`} tabIndex={0} key={`${aba}-${chave}`}>
         {aba === "ficha" ? <AbaFicha {...props} /> : null}
         {aba === "implantacao" ? <AbaImplantacao {...props} /> : null}
+        {aba === "configuracao" ? <AbaConfiguracao {...props} /> : null}
         {aba === "sindico" ? <AbaSindico {...props} /> : null}
         {aba === "equipe" ? <AbaEquipe {...props} /> : null}
         {aba === "notas" ? <AbaNotas {...props} /> : null}

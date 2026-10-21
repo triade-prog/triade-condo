@@ -3,6 +3,7 @@
 // confere a tela: fluxo, textos, permissões que ela respeita e acessibilidade.
 import type { Page, Route } from "@playwright/test";
 import { criarSuporteConsole, rotasSuporteConsole } from "./api-falsa-console-suporte";
+import { andamentoConfiguracao, criarConfiguracaoConsole, rotasConfiguracaoConsole } from "./api-falsa-console-configuracao";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const NOVO = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -53,6 +54,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     ],
   };
   const suporte = criarSuporteConsole();
+  const configuracao = criarConfiguracaoConsole();
   // Modelos de mensagem (F5.4, W-20): globais, com versão e situação.
   const MODELOS_V1: [string, string, string, string, string[], string, string | null][] = [
     ["noticia_pedido", "Notícia do pedido", "MORADOR", "Retorno escrito no pedido, com a conversa fechada", ["protocolo", "condomínio", "texto do retorno", "quem escreveu"],
@@ -310,12 +312,17 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     if (caminho === "/v1/equipe/historico") {
       return route.fulfill({ json: { eventos: [{ id: 9, ocorridoEm: "2026-10-16T12:30:00Z", autor: { id: CAROLINA, nome: "Carolina" }, acao: "equipe.membro_cadastrado", entidade: "pessoa", dados: { funcoes: ["IMPLANTACAO"] } }] } });
     }
+    if (c && caminho.startsWith(`/v1/clientes/${c.condominio.id}/`)) {
+      const naConfiguracao = await rotasConfiguracaoConsole(route, configuracao, caminho.slice(`/v1/clientes/${c.condominio.id}`.length), metodo, corpo,
+        { estagio: () => c.cliente.estagio, equipe: admin ? "Carolina" : "Inês" });
+      if (naConfiguracao !== null) return naConfiguracao;
+    }
     const r4 = await rotasSuporteConsole(route, suporte, caminho, metodo, corpo, c ? {
       id: c.condominio.id, nome: c.condominio.nome, sindicos: c.sindicos, estagio: () => c.cliente.estagio,
-      ativar: () => { c.cliente.estagio = "ATIVO"; },
+      ativar: () => { c.cliente.estagio = "ATIVO"; }, configuracao: () => andamentoConfiguracao(configuracao),
     } : undefined, url);
     if (r4 !== null) return r4;
     return erro(route, 404, "NOT_FOUND");
   });
-  return Object.assign(estado, { suporte, modelos });
+  return Object.assign(estado, { suporte, modelos, configuracao });
 }

@@ -5,8 +5,9 @@
 import { useState } from "react";
 import { feriadosNacionais, mostrarDataSemHora } from "@triade/domain";
 import { Aviso, Botao, chamarApi, textoDoErro, Vazio } from "@triade/ui";
-import { Janela } from "../Janela.tsx";
+import { Janela } from "./Janela.tsx";
 import type { PropsAba } from "./Configuracoes.tsx";
+import { naBase } from "./contexto.tsx";
 
 /** Ano de hoje no horário de Brasília. */
 function anoAtual(): number {
@@ -25,7 +26,7 @@ export function AbaFeriados({ config, pode, salvo }: PropsAba) {
     setFalha(null);
     let n = 0;
     for (const f of feriadosNacionais(a).filter((x) => !existentes.has(x.data))) {
-      const r = await chamarApi("/v1/condominio/feriados", { corpo: f });
+      const r = await chamarApi(naBase("/feriados"), { corpo: f });
       if (!r.ok) { setTrazendo(false); return setFalha(textoDoErro(r.erro)); }
       n++;
     }
@@ -34,7 +35,7 @@ export function AbaFeriados({ config, pode, salvo }: PropsAba) {
   }
 
   async function tirar(id: string, descricao: string) {
-    const r = await chamarApi(`/v1/condominio/feriados/${id}/remover`, { corpo: {} });
+    const r = await chamarApi(naBase(`/feriados/${id}/remover`), { corpo: {} });
     if (!r.ok) return setFalha(textoDoErro(r.erro));
     salvo(`Feriado retirado: ${descricao}.`);
   }
@@ -93,7 +94,7 @@ export function AbaFeriados({ config, pode, salvo }: PropsAba) {
         iniciais={{ data: "", descricao: "" }}
         aoFechar={() => setNovo(false)}
         aoSalvar={async (v) => {
-          const r = await chamarApi("/v1/condominio/feriados", { corpo: { data: v.data, descricao: v.descricao } });
+          const r = await chamarApi(naBase("/feriados"), { corpo: { data: v.data, descricao: v.descricao } });
           if (r.ok) { setNovo(false); salvo(`Feriado incluído: ${mostrarDataSemHora(String(v.data))}.`); }
           return r;
         }}

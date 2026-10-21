@@ -161,17 +161,17 @@ test.describe("Plataforma do síndico · manutenção", () => {
     await expect(page.getByText("Arquivado", { exact: true })).toBeVisible();
   });
 
-  test("MP-02: as etapas da manutenção ficam nas configurações, dentro das situações fixas", async ({ page }) => {
+  test("MP-02 e CF-09: as etapas da manutenção aparecem nas configurações; quem muda é a TRÍADE", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/configuracoes?aba=manutencao`);
     const aba = page.getByRole("region", { name: "Etapas da manutenção" });
     await expect(aba).toContainText("Aguardando visita");
+    await expect(aba).toContainText("Ajustado pela TRÍADE");
+    await expect(aba.getByRole("button", { name: "+ Etapa" })).toHaveCount(0);
+    await expect(aba.getByRole("button", { name: /Editar a etapa/ })).toHaveCount(0);
     await conferir(page);
-    await aba.getByRole("button", { name: "+ Etapa" }).click();
-    const j = page.getByRole("dialog", { name: "Nova etapa da manutenção" });
-    await j.getByLabel("Nome da etapa").fill("Aguardando orçamento");
-    await j.getByLabel("Situação").selectOption("PENDENTE");
-    await j.getByRole("button", { name: "Salvar etapa" }).click();
-    await expect(aba).toContainText("Aguardando orçamento");
+    await aba.getByRole("link", { name: "Pedir mudança" }).click();
+    await expect(page.getByLabel("Título")).toHaveValue("Mudar: Etapas da manutenção");
+    await expect(page.getByLabel("O que aconteceu")).toHaveValue(/Hoje: 1 etapas ativas\./);
   });
 });

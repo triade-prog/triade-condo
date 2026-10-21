@@ -4,8 +4,10 @@
 
 import { useState, type FormEvent } from "react";
 import { DIAS_SEMANA, FUSOS, intervalosSobrepostos, TIPOS_HORARIO, type Intervalo, type TipoHorario } from "@triade/domain";
-import { AvisoErro, Botao, CampoSelecao, CampoTexto, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
+import { AvisoErro, Botao, CampoTexto, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
 import type { PropsAba } from "./Configuracoes.tsx";
+import { AjusteTecnico } from "./tecnica.tsx";
+import { naBase } from "./contexto.tsx";
 
 /** Segunda primeiro, domingo no fim. */
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0];
@@ -56,7 +58,7 @@ function Semana({ tipo, config, pode, recarregar, salvo }: PropsAba & { tipo: Ti
     setAviso(p);
     if (p) return;
     const intervalos: Intervalo[] = linhas.map(({ dia, inicio, fim }) => ({ dia, inicio, fim }));
-    const r = await chamarApi(`/v1/condominio/horarios/${tipo.toLowerCase()}`, { metodo: "PUT", corpo: { versao: h.versao, intervalos } });
+    const r = await chamarApi(naBase(`/horarios/${tipo.toLowerCase()}`), { metodo: "PUT", corpo: { versao: h.versao, intervalos } });
     if (!r.ok) return setErro(r.erro);
     salvo(`Horário de ${nome} salvo.`);
   }
@@ -116,24 +118,15 @@ function Semana({ tipo, config, pode, recarregar, salvo }: PropsAba & { tipo: Ti
   );
 }
 
-function Fuso({ config, pode, recarregar, salvo }: PropsAba) {
-  const [fuso, setFuso] = useState(config.fuso);
-  const [erro, setErro] = useState<ErroApi | null>(null);
-
-  async function salvar(ev: FormEvent) {
-    ev.preventDefault();
-    const r = await chamarApi("/v1/condominio/fuso", { metodo: "PUT", corpo: { versao: config.versao, fuso } });
-    if (!r.ok) return setErro(r.erro);
-    salvo("Fuso salvo.");
-  }
-
+function Fuso({ config, tecnica, recarregar, salvo }: PropsAba) {
   return (
-    <form onSubmit={salvar} className="grid max-w-sm gap-3 border-t border-linha pt-5">
-      {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar} /> : null}
-      <CampoSelecao id="fuso" rotulo="Fuso do condomínio" disabled={!pode} value={fuso} onChange={(e) => setFuso(e.target.value)}
-        opcoes={Object.entries(FUSOS).map(([valor, texto]) => ({ valor, texto }))} ajuda="Os horários e os prazos seguem este fuso." />
-      {pode ? <Botao type="submit" variante="contorno" className="justify-self-start" disabled={fuso === config.fuso}>Salvar fuso</Botao> : null}
-    </form>
+    <div className="border-t border-linha pt-5">
+      <AjusteTecnico id="fuso" titulo="Fuso do condomínio" parte="Fuso" atual={config.fuso} tecnica={tecnica} recarregar={recarregar}
+        opcoes={Object.entries(FUSOS).map(([valor, texto]) => ({ valor, texto }))}
+        ajuda="Os horários e os prazos seguem este fuso."
+        salvar={(fuso, motivo) => chamarApi(naBase("/fuso"), { metodo: "PUT", corpo: { versao: config.versao, fuso, motivo } })}
+        aoSalvar={() => salvo("Fuso salvo.")} />
+    </div>
   );
 }
 

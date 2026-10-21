@@ -111,17 +111,14 @@ test.describe("Plataforma do síndico · passo 2", () => {
     await expect(page.getByRole("listitem").filter({ hasText: "Crítica" })).toContainText("Para o prédio inteiro.");
   });
 
-  test("AT-05 e AT-25: etapa nova que pausa o prazo; modelo de resposta", async ({ page }) => {
+  test("AT-05, AT-25 e CF-09: etapas em leitura (são da TRÍADE); modelo de resposta", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/configuracoes?aba=etapas`);
     await expect(page.getByRole("listitem").filter({ hasText: "Aguardando o morador" })).toContainText("pausa o prazo");
-    await page.getByRole("button", { name: "+ Etapa" }).click();
-    const janela = page.getByRole("dialog", { name: "Nova etapa" });
-    await janela.getByLabel("Nome da etapa").fill("Orçamento");
-    await janela.getByLabel("Pausa o prazo enquanto o pedido estiver nesta etapa").check();
+    await expect(page.getByText("Ajustado pela TRÍADE")).toBeVisible();
+    await expect(page.getByRole("button", { name: "+ Etapa" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Pedir mudança" })).toHaveAttribute("href", /\/suporte\?mudar=Etapas\+dos\+pedidos/);
     await conferir(page);
-    await janela.getByRole("button", { name: "Salvar" }).click();
-    await expect(page.getByRole("listitem").filter({ hasText: "Orçamento" })).toContainText("pausa o prazo");
     await page.getByRole("button", { name: "+ Modelo" }).click();
     const modelo = page.getByRole("dialog", { name: "Novo modelo de resposta" });
     await modelo.getByLabel("Título").fill("Vazamento");

@@ -93,12 +93,15 @@ function CampoImagens({ imagens, mudar }: { imagens: File[]; mudar: (f: File[]) 
   );
 }
 
-function AbrirChamado({ aoVoltar }: { aoVoltar: () => void }) {
+/** Chamado já preenchido, como o "Pedir mudança" das Configurações (PI-04, decisão 11). */
+interface ChamadoInicial { tipo: string; area: string; titulo: string; texto: string }
+
+function AbrirChamado({ aoVoltar, inicial }: { aoVoltar: () => void; inicial?: ChamadoInicial }) {
   const router = useRouter();
-  const [tipo, setTipo] = useState("PROBLEMA");
-  const [area, setArea] = useState("PEDIDOS");
-  const [titulo, setTitulo] = useState("");
-  const [texto, setTexto] = useState("");
+  const [tipo, setTipo] = useState(inicial?.tipo ?? "PROBLEMA");
+  const [area, setArea] = useState(inicial?.area ?? "PEDIDOS");
+  const [titulo, setTitulo] = useState(inicial?.titulo ?? "");
+  const [texto, setTexto] = useState(inicial?.texto ?? "");
   const [imagens, setImagens] = useState<File[]>([]);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -233,7 +236,13 @@ export function AjudaSuporte() {
   const busca = useSearchParams();
   const router = useRouter();
   const id = busca.get("id");
-  const [abrindo, setAbrindo] = useState(false);
+  // ?mudar=<parte>&valor=<hoje>: pedido de mudança no que é ajustado pela TRÍADE.
+  const mudar = busca.get("mudar");
+  const inicial: ChamadoInicial | undefined = mudar ? {
+    tipo: "SUGESTAO", area: "CONFIGURACOES", titulo: `Mudar: ${mudar}`.slice(0, 120),
+    texto: `Parte ajustada pela TRÍADE: ${mudar}.\nHoje: ${busca.get("valor") ?? ""}.\n\nO que precisamos: `,
+  } : undefined;
+  const [abrindo, setAbrindo] = useState(!!inicial);
   const lista = useCarregar<{ itens: Chamado[]; todos: boolean }>(id ? null : "/v1/condominio/chamados");
 
   if (id) return <VerChamado key={id} id={id} falhouImagem={busca.get("imagens") === "falhou"} />;
@@ -246,7 +255,7 @@ export function AjudaSuporte() {
       <Aviso tom="info" titulo="Suporte técnico da plataforma">
         Responde sobre o sistema em dias úteis, das 9h às 18h. Não é reparo nem canal de emergência: vazamento, elevador parado ou segurança vão para o síndico ou para os serviços de emergência.
       </Aviso>
-      {abrindo ? <AbrirChamado aoVoltar={() => setAbrindo(false)} /> : (
+      {abrindo ? <AbrirChamado aoVoltar={() => setAbrindo(false)} inicial={inicial} /> : (
         <section aria-labelledby="t-chamados" className="grid gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 id="t-chamados" className="text-lg font-medium">{lista.estado === "pronto" && lista.dados.todos ? "Chamados do condomínio" : "Seus chamados"}</h2>

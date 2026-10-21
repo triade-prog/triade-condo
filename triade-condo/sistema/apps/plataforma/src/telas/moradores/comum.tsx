@@ -1,7 +1,6 @@
 "use client";
 // Peças comuns das telas de moradores e unidades (passo 3).
 
-import type { ReactNode } from "react";
 import { AGRUPAMENTOS, ESTADOS_CONTATO_UNIDADE, MOTIVOS_ENCERRAMENTO, RELACOES_UNIDADE } from "@triade/domain";
 import type { Estrutura } from "../tipos.ts";
 import { Selo } from "@triade/ui";
@@ -32,29 +31,4 @@ export function hojeEmBrasilia(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
 
-/** Botões de escolha (um ligado por vez), com aria-pressed. */
-export function Escolha<T extends string>({ opcoes, atual, aoMudar, rotulo }: {
-  opcoes: { valor: T; texto: ReactNode }[];
-  atual: T;
-  aoMudar: (v: T) => void;
-  rotulo: string;
-}) {
-  return (
-    <div role="group" aria-label={rotulo} className="trilho justify-self-start">
-      {opcoes.map((o) => (
-        <button key={o.valor} type="button" className="chip" aria-pressed={atual === o.valor} onClick={() => aoMudar(o.valor)}>
-          {o.texto}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-export function Caixa({ id, rotulo, ajuda, marcada, aoMudar }: { id: string; rotulo: string; ajuda?: string; marcada: boolean; aoMudar: (v: boolean) => void }) {
-  return (
-    <label htmlFor={id} className="flex items-start gap-2 text-sm">
-      <input id={id} type="checkbox" className="mt-1 h-4 w-4 accent-violeta-600" checked={marcada} onChange={(e) => aoMudar(e.target.checked)} />
-      <span>{rotulo}{ajuda ? <span className="block text-xs text-tinta-suave">{ajuda}</span> : null}</span>
-    </label>
-  );
-}
+export { Caixa, Escolha } from "@triade/configuracoes";

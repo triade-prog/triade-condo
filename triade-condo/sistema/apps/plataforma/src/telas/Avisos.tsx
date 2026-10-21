@@ -57,6 +57,8 @@ function detalhe(a: AvisoDoPainel): string {
       return "A TRÍADE respondeu o seu chamado.";
     case "ACESSO_PEDIDO":
       return `${a.nome ?? "A TRÍADE"} pediu para ver dados do condomínio. Aprove ou recuse no Início.`;
+    case "CONFIGURACAO":
+      return a.texto ?? "A TRÍADE fez um ajuste técnico nas Configurações.";
     case "WHATSAPP_PEDIDO_NOVO":
       return "Pedido novo, aberto pelo morador no WhatsApp.";
     case "WHATSAPP_REVISAO":
@@ -188,9 +190,11 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                 </li>
               );
             }
-            if (a.tipo === "ENTREGA" || a.tipo === "CHAMADO_RESPOSTA" || a.tipo === "ACESSO_PEDIDO") {
-              const destino = a.tipo === "CHAMADO_RESPOSTA" ? `/suporte?id=${a.chamadoId}` : a.tipo === "ACESSO_PEDIDO" ? "/" : "/suporte";
-              const rotulo = a.tipo === "CHAMADO_RESPOSTA" ? "Ver chamado" : a.tipo === "ACESSO_PEDIDO" ? "Aprovar ou recusar" : "Ajuda e suporte";
+            if (a.tipo === "ENTREGA" || a.tipo === "CHAMADO_RESPOSTA" || a.tipo === "ACESSO_PEDIDO" || a.tipo === "CONFIGURACAO") {
+              const destino = a.tipo === "CHAMADO_RESPOSTA" ? `/suporte?id=${a.chamadoId}` : a.tipo === "ACESSO_PEDIDO" ? "/"
+                : a.tipo === "CONFIGURACAO" ? "/configuracoes" : "/suporte";
+              const rotulo = a.tipo === "CHAMADO_RESPOSTA" ? "Ver chamado" : a.tipo === "ACESSO_PEDIDO" ? "Aprovar ou recusar"
+                : a.tipo === "CONFIGURACAO" ? "Ver as configurações" : "Ajuda e suporte";
               return (
                 <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">

@@ -118,10 +118,12 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
     await expect(page.getByText("Tire a promessa de prazo ou de atendimento imediato.")).toBeVisible();
     await expect(page.getByRole("button", { name: "Salvar", exact: true })).toBeDisabled();
     await page.getByLabel("Fora do horário").fill("Recebemos sua mensagem fora do horário. O condomínio confere no próximo horário de atendimento.");
-    await page.getByRole("button", { name: "60 min" }).click();
     await page.getByRole("button", { name: "Salvar", exact: true }).click();
     await expect(page.getByText("Configurações do WhatsApp salvas.")).toBeVisible();
-    expect(estado.whatsapp.config.anexarMinutos).toBe(60);
+    // O tempo de anexar é ajuste da TRÍADE (CF-09): no app fica em leitura.
+    const anexar = page.getByRole("region", { name: "Mensagens seguintes" });
+    await expect(anexar).toContainText("30 min");
+    await expect(anexar.getByRole("button", { name: "60 min" })).toHaveCount(0);
 
     await page.getByLabel("Meu celular").fill("+55 61 99");
     await page.getByRole("button", { name: "Salvar meus avisos" }).click();

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { AVISO_NOVO_SINDICO, type AvisoNovoSindico } from "@triade/domain";
 import { AvisoErro, Botao, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
 import type { PropsAba } from "./Configuracoes.tsx";
+import { naBase } from "./contexto.tsx";
 
 export function AvisoPedidoNovo({ config, recarregar, salvo }: PropsAba) {
   const a = config.avisoNovo;
@@ -18,7 +19,7 @@ export function AvisoPedidoNovo({ config, recarregar, salvo }: PropsAba) {
   async function salvar() {
     setFalha(null);
     setEnviando(true);
-    const r = await chamarApi("/v1/condominio/regras-aviso-novo", { metodo: "PUT", corpo: { versao: config.versao, sindico, protocolo } });
+    const r = await chamarApi(naBase("/regras-aviso-novo"), { metodo: "PUT", corpo: { versao: config.versao, sindico, protocolo } });
     setEnviando(false);
     if (!r.ok) return setFalha(r.erro);
     salvo("Regra de pedido novo salva.");

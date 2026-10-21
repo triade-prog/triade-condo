@@ -153,13 +153,9 @@ export async function rotasManutencao(route: Route, est: EstadoManutencao, ctx: 
       manutencoes: est.manutencoes.filter((m) => m.pedidoId === pm[1] && m.estado !== "CANCELADA").map(json) } });
   }
   if (caminho.startsWith("/v1/condominio/etapas-manutencao")) {
+    // Mudar as etapas é ajuste da TRÍADE: só pelo Console (0283).
     if (metodo === "GET") return route.fulfill({ json: { etapas: est.etapas, podeEditar: pode("config.editar") } });
-    if (!pode("config.editar")) return erro(route, 403, "FORBIDDEN");
-    const nome = String(corpo.nome ?? "").trim();
-    if (nome.length < 2) return erro(route, 400, "VALIDATION_ERROR", { campos: ["nome"] });
-    const e = { id: novoId(), nome, situacao: String(corpo.situacao), ordem: est.etapas.length + 1, ativa: true, versao: 1 };
-    est.etapas.push(e);
-    return route.fulfill({ status: 201, json: { id: e.id, versao: 1 } });
+    return erro(route, 404, "NOT_FOUND");
   }
   if (!pode("manutencao.ver")) return erro(route, 403, "FORBIDDEN");
 

@@ -228,7 +228,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (caminho === "/v1/condominio/configuracoes") {
       const substitutosPossiveis = estado.pessoas.filter((p) => p.funcao === "AUTORIZADO").map((p) => ({ vinculoId: p.vinculoId, nome: p.nome, cargo: p.cargo }));
       return route.fulfill({ json: { ...c, avisos: { ...estado.regras, substitutosPossiveis }, parecidosDias: decisoes.dias, pendencias: pendencias(),
-        podeEditar: pode("config.editar"), avisoNovo: { ...avisoRegistro.regra, podeMudar: quem === "SINDICA" } } });
+        podeEditar: pode("config.editar"), avisoNovo: { ...avisoRegistro.regra, podeMudar: quem === "SINDICA" },
+        tecnica: { pode: false, motivo: false } } });
     }
     const ctxAviso: ContextoAviso = { eu, pessoas: estado.pessoas, responsavelPadrao: estado.responsavelPadrao, moradores: estado.moradores, manutencao,
       prioridades: c.prioridades, conectado: whatsapp.conexao.situacao === "CONECTADO", podePublicar: pode("comunicados.publicar"), condominio: "Residencial Ipê" };
@@ -268,7 +269,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       (id) => estado.pedidos.find((p) => p.id === id)?.versao ?? null);
     if (noWhatsapp !== null) return noWhatsapp;
     // Antes dos pedidos: as rotas da F7.4 dividem o prefixo /pedidos/:id.
-    const nasDecisoes = await rotasDecisoes(route, decisoes, naDecisao, c, caminho, metodo, corpo, url);
+    const nasDecisoes = await rotasDecisoes(route, decisoes, naDecisao, caminho, metodo, corpo, url);
     if (nasDecisoes !== null) return nasDecisoes;
     const pedidos = await rotasPedidos(route, estado.pedidos, c, estado.pessoas, estado.moradores, eu, caminho, metodo, corpo, url, pode, {
       registrar: (p, d) => avisarNoRegistro(avisoRegistro, ctxAviso, p, d, AGORA),
@@ -276,15 +277,11 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     }, (p) => detalheDecisoes(decisoes, naDecisao, p));
     if (pedidos !== null) return pedidos;
 
-    // Daqui em diante, mudar configuração.
-    const editaConfig = /^\/v1\/condominio\/(fuso|horarios|feriados|categorias|prioridades|etapas|modelos|prazos)/.test(caminho);
+    // Daqui em diante, mudar configuração. Fuso e etapas são ajustes da TRÍADE: só pelo Console (0283).
+    if (/^\/v1\/condominio\/(fuso|etapas)(\/|$)/.test(caminho)) return erro(route, 404, "NOT_FOUND");
+    const editaConfig = /^\/v1\/condominio\/(horarios|feriados|categorias|prioridades|modelos|prazos)/.test(caminho);
     if (editaConfig && !pode("config.editar")) return erro(route, 403, "FORBIDDEN");
 
-    if (caminho === "/v1/condominio/fuso") {
-      const conflito = versaoErrada(route, c, corpo); if (conflito) return conflito;
-      c.fuso = String(corpo.fuso); c.versao++;
-      return route.fulfill({ json: { versao: c.versao } });
-    }
     const h = /^\/v1\/condominio\/horarios\/(atendimento|funcionamento)$/.exec(caminho);
     if (h) {
       const alvo = c.horarios[h[1]!.toUpperCase() as "ATENDIMENTO"];
@@ -302,7 +299,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     const fr = /^\/v1\/condominio\/feriados\/([^/]+)\/remover$/.exec(caminho);
     if (fr) { c.feriados = c.feriados.filter((f) => f.id !== fr[1]); return route.fulfill({ json: { ok: true } }); }
 
-    const item = /^\/v1\/condominio\/(categorias|prioridades|etapas|modelos|prazos)(?:\/([^/]+))?(\/remover)?$/.exec(caminho);
+    const item = /^\/v1\/condominio\/(categorias|prioridades|modelos|prazos)(?:\/([^/]+))?(\/remover)?$/.exec(caminho);
     if (item) {
       const [, tipo, id, remover] = item;
       const lista = c[tipo as "categorias"] as unknown as ({ id: string; versao: number } & Record<string, unknown>)[];
@@ -313,7 +310,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         c.prazos = c.prazos.filter((p) => p.id !== id);
         return route.fulfill({ json: { ok: true } });
       }
-      if ((tipo === "categorias" || tipo === "prioridades" || tipo === "etapas")
+      if ((tipo === "categorias" || tipo === "prioridades")
         && nomeRepetido(lista as never, String(corpo.nome), id)) return erro(route, 400, "VALIDATION_ERROR", { motivo: "NOME_REPETIDO" });
       if (tipo === "prazos" && !id && c.prazos.some((p) => p.categoriaId === (corpo.categoriaId ?? null) && p.prioridadeId === (corpo.prioridadeId ?? null))) {
         return erro(route, 400, "VALIDATION_ERROR", { motivo: "PRAZO_REPETIDO" });
@@ -325,7 +322,6 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       }
       const novo: Record<string, unknown> = { id: novoId(), versao: 1, ativa: true, ativo: true, ...dados };
       if (tipo === "prioridades") novo.nivel = Math.max(...c.prioridades.map((p) => p.nivel)) + 1;
-      if (tipo === "etapas") novo.ordem = 9;
       lista.push(novo as never);
       return route.fulfill({ status: 201, json: { id: novo.id, versao: 1 } });
     }
