@@ -11,9 +11,9 @@ Resumo para quem continuar o trabalho (pessoa ou nova sessão do Claude). Atuali
 | Onde cada ideia entra no sistema real (sistema, peça e forma) | `triade-condo/MAPA.md` e a versão visual `triade-condo/mapa.html` |
 | Transparência do dinheiro (pesquisa e regras de tom) | `triade-condo/transparencia-do-dinheiro.md` |
 | Painel de execução (fases, entregas, testes, publicação, dependências, decisões, histórico) | `triade-condo/docs/painel-execucao.html` |
-| Design do frontend (base visual adotada, princípios, componentes, textos, telas a desenhar) | `triade-condo/docs/design-frontend.html` |
-| Tema e navegação reutilizáveis dos documentos HTML | `triade-condo/docs/tema-triade.css` e `triade-condo/docs/navegacao-triade.js` |
-| Notas e prévias da base visual (valores extraídos da referência) | `triade-condo/docs/design/` |
+| Padrão das telas (novo frontend, DC15): guia de padrões e telas-modelo; comece pelo `LEIA-ME.md` | `triade-condo/docs/design/` |
+| Cores, fontes e logo (DC13) | `triade-condo/docs/identidade/sistema.html` e os PNGs em `triade-condo/docs/identidade/` |
+| Desenhos aprovados de cada peça (conteúdo das telas) | `triade-condo/docs/telas/` |
 | Instruções para toda sessão do Claude | `CLAUDE.md` (raiz do repositório) |
 | Planejamento, protótipos e pesquisas antigos (só consulta) | `arquivo/` |
 | Código do sistema (como rodar, como a base funciona, tabela nova passo a passo) | `triade-condo/sistema/` e o `README.md` dele |
@@ -23,7 +23,7 @@ O `arquivo/` **não é base de construção**: o que for útil de lá entra prim
 
 ## Decisões fechadas
 
-As mesmas decisões estão no painel de execução (DC1 a DC14). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
+As mesmas decisões estão no painel de execução (DC1 a DC15). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
 
 - **DC1 · Dois sistemas.** Plataforma do síndico (painel web do síndico, WhatsApp do morador e acessos por link ou QR) e Console TRÍADE (sistema interno da equipe). A Base comum são as regras que os dois seguem por baixo; não é um terceiro sistema.
 - **DC2 · O cliente é o condomínio.** É a unidade que contrata e a unidade de separação dos dados: toda informação pertence a um condomínio e nunca aparece em outro (PT-01). Uma pessoa pode ter vínculo com mais de um condomínio (MU-04), o que atende o síndico profissional.
@@ -39,17 +39,25 @@ As mesmas decisões estão no painel de execução (DC1 a DC14). Mudar qualquer 
   - Seguem a interface do produto Lattice nas referências fornecidas: fonte Inter, neutros frios, destaque lilás e cores de status em fundo suave com detalhe forte.
   - Verde-petróleo nas ações da Plataforma do síndico e violeta no Console TRÍADE.
   - A Plataforma usa barra superior com busca e menu branco flutuante. O Console usa lateral contínua com grupos e a identificação "Console TRÍADE · Admin".
-  - Os valores estão no `design-frontend.html`, na seção "Base adotada". Não tratar como provisórios.
+  - Os valores estavam no `design-frontend.html`, que saiu em 21/10/2026 (DC15) e está no histórico do git.
   - A marca Lattice não faz parte da identidade da TRÍADE. O logo oficial chegou com a DC13.
 - **DC12 · Domínio do sistema: `t3condo.trihub.com.br`** (Carolina, 17/10/2026). Vale para todo o sistema. Começa pelos e-mails, que saem pelo Resend como `nao-responda@t3condo.trihub.com.br`; os endereços da Plataforma e do Console vêm depois, com os subdomínios e o DNS.
 - **DC13 · Identidade TRÍADE (Carolina, 17/10/2026).** Substitui a DC11.
-  - Referência: `docs/identidade/sistema.html` (sistema de design), com as telas-modelo em `docs/identidade/telas-modelo.html` e a ordem de entrada no código em `docs/identidade/plano-aplicacao.html`.
+  - Referência: `docs/identidade/sistema.html` (sistema de design). As telas-modelo e o plano de aplicação da DC13 saíram em 21/10/2026: o plano já foi executado e as telas-modelo foram substituídas pelas da DC15.
   - Violeta da marca nas ações dos dois sistemas (sai o verde-petróleo da Plataforma); o Console se distingue pelo nome e pelo selo laranja "Admin". Laranja só como acento.
   - Botão principal em degradê com brilho (versão C), selos com faixa lateral e filtros no trilho (versão D com o brilho do C), paleta Brilho (neutros lavanda; jade, âmbar, rubi e petróleo).
   - Sempre claro: o tema escuro sai do código.
   - Manrope, Playfair Display itálico (só destaque) e IBM Plex Mono, servidas pelo próprio sistema; a CSP continua aceitando só fontes do próprio endereço.
   - Logo oficial: o violeta (letras violeta, torre laranja e triângulos violeta) é a assinatura do produto nas duas aplicações; o laranja fica para divulgação. Versão atual enviada pela Carolina em 18/10/2026, em `docs/identidade` (`logo-violeta.png`, `logo-laranja.png`, as versões grandes e o `simbolo.png`, que é o ícone da aba).
 - **DC14 · Piloto do WhatsApp pelo Wafly (Carolina, 18/10/2026).** O passo 5 começa pelo Wafly, que não é a API oficial: liga o número pelo protocolo do WhatsApp Web (QR ou código de emparelhamento), sem assinatura nos avisos que manda. Vale só para o condomínio de teste, com o termo do piloto aceito pelo síndico, atrás de um conector trocável: o resto do sistema não sabe qual provedor está ligado, e trocar pelo oficial é escrever outro conector. Risco aceito: o WhatsApp pode restringir ou bloquear o número sem aviso. Desenho em `docs/telas/whatsapp.html`.
+- **DC15 · Novo frontend: padrão das telas (Carolina, 21/10/2026).** Evolui a DC13 sem trocar fontes nem paleta.
+  - Referência: `docs/design/` (`LEIA-ME.md`, `guia-padroes.html` e `telas-modelo/`).
+  - Escalas com nome (letra, espaço, cantos e sombras), regra de cada lugar (cabeçalho, cartão, lista, ficha, janela e formulário) e qual botão usar onde.
+  - Ícones do conjunto oficial em todo lugar, sempre com palavra; um modelo único de anexar arquivos; a arte da marca (anéis, arco e traço) em três tamanhos.
+  - Menu em quatro grupos (Dia a dia, Comunicação, Prédio e pessoas, Gestão), busca no topo e barra de baixo no celular.
+  - Ficha sem abas, com o topo do item, o cartão do próximo retorno e o histórico em linha do tempo; lista com abas que contam e "Pede atenção".
+  - Uma cor por situação; prioridade só quando Alta ou Urgente.
+  - O material visual antigo saiu do repositório (ver `docs/design/LEIA-ME.md`). A construção vem em blocos, cada um com o seu PR (D4).
 
 ## Como as ideias viram código
 
