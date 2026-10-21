@@ -115,8 +115,8 @@ test.describe("Plataforma · comunicado pelo WhatsApp", () => {
   test("W-20, MU-01: a ficha mostra a escolha de cada contato e a lista filtra quem não recebe pelo WhatsApp", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { comComunicadosWhatsapp: true });
     await page.goto(`${PLATAFORMA}/moradores`);
-    await page.getByRole("tab", { name: "Moradores", exact: true }).click();
-    await page.getByRole("button", { name: /Sem WhatsApp para comunicados · 2/ }).click();
+    await page.getByRole("tab", { name: "Pessoas", exact: true }).click();
+    await page.getByRole("button", { name: /^Sem WhatsApp para comunicados\s*2$/ }).click();
     await expect(page.getByText("Joana Lima")).toBeVisible();
     await expect(page.getByText("Marina Souza")).toHaveCount(0);
     await expect(page.getByText(/WhatsApp: disse não/)).toBeVisible();

@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { LINK_FALSO, MURAL_FALSO } from "./api-falsa-comunicados";
+import { noMenu } from "./moradores-telas";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -123,12 +124,12 @@ test.describe("Mural online e e-mail", () => {
   test("CD-13: o e-mail do contato fica esperando a própria pessoa confirmar", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/moradores`);
-    await page.getByRole("tab", { name: "Moradores", exact: true }).click();
+    await page.getByRole("tab", { name: "Pessoas", exact: true }).click();
     await page.getByRole("button", { name: /Sem e-mail confirmado/ }).click();
     await expect(page.getByText("Joana Lima")).toBeVisible();
     await expect(page.getByText("Marina Souza")).toHaveCount(0);
     await page.getByRole("link", { name: "Torre A · 102" }).first().click();
-    await page.getByRole("button", { name: "Editar Joana Lima" }).click();
+    await noMenu(page, "Ações de Joana Lima", "Editar Joana Lima");
     await page.getByRole("textbox", { name: "E-mail (opcional)" }).fill("joana@");
     await page.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByText("Confira o e-mail")).toBeVisible();

@@ -1,18 +1,28 @@
 "use client";
-// Lista de moradores e a confirmar (MU-02, PT-17): busca por nome, unidade ou telefone, em
-// páginas. O que veio da planilha espera o síndico: confirmar vários de uma vez ou recusar
-// quem ele não reconhece. Contato a confirmar não acessa nada. O filtro "sem e-mail confirmado"
-// mostra quem ainda não recebe por e-mail (CD-13); "sem WhatsApp para comunicados", quem não
-// aceitou receber pelo WhatsApp do condomínio (F6.6).
+// Pessoas e a confirmar (MU-02, PT-17; DC15, telas-modelo moradores-pessoas e moradores-confirmar):
+// busca por nome, unidade ou telefone, em páginas. O que veio da planilha espera o síndico:
+// marcar e confirmar vários de uma vez, ou recusar pelo menu de cada pessoa quem ele não
+// reconhece. Contato a confirmar não acessa nada. O atalho "sem e-mail confirmado" mostra quem
+// ainda não recebe por e-mail (CD-13); "sem WhatsApp para comunicados", quem não aceitou receber
+// pelo WhatsApp do condomínio (F6.6). No celular, cada pessoa é um cartão.
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { mostrarTelefone, nomeDaUnidade, SITUACOES_COMUNICADOS_WHATSAPP, SITUACOES_EMAIL } from "@triade/domain";
-import { Aviso, Botao, Carregando, CampoTexto, chamarApi, Chip, ErroCarregar, textoDoErro, Vazio } from "@triade/ui";
+import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, Iniciais, textoDoErro, Vazio } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { ListaMoradores, MoradorDaLista, Recado } from "../tipos.ts";
-import { nomeRelacao, SeloEstado } from "./comum.tsx";
+import { MenuAcoes, nomeRelacao, SeloEstado } from "./comum.tsx";
+
+const COLUNAS = "md:grid-cols-[40px_minmax(0,1.6fr)_170px_minmax(0,1fr)_120px_20px]";
+const COLUNAS_CONFIRMAR = "md:grid-cols-[24px_40px_minmax(0,1.6fr)_170px_minmax(0,1fr)_40px]";
+
+function detalhe(i: MoradorDaLista, whatsappLigado: boolean): string {
+  return [nomeRelacao(i.relacao), i.principal ? "responsável" : null, i.origem === "PLANILHA" ? "veio da planilha" : null,
+    i.emailSituacao ? SITUACOES_EMAIL[i.emailSituacao].toLowerCase() : null,
+    whatsappLigado && i.comunicadosWhatsapp ? `WhatsApp: ${SITUACOES_COMUNICADOS_WHATSAPP[i.comunicadosWhatsapp]}` : null].filter(Boolean).join(" · ");
+}
 
 export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "PENDENTE"; salvo: (r: Recado) => void; buscaInicial?: string }) {
   const [texto, setTexto] = useState(buscaInicial);
@@ -27,6 +37,14 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
   const qs = new URLSearchParams({ pagina: String(pagina), ...(busca ? { busca } : {}), ...(filtro ? { estado: filtro } : {}) });
   const carga = useCarregar<ListaMoradores>(`/v1/condominio/moradores?${qs}`);
   const aConfirmar = estado === "PENDENTE";
+
+  // A busca vale um instante depois de parar de escrever, ou na hora com Enter.
+  useEffect(() => {
+    const q = texto.trim();
+    if (q === busca) return;
+    const t = setTimeout(() => { setBusca(q); setPagina(1); setMarcados([]); }, 350);
+    return () => clearTimeout(t);
+  }, [texto, busca]);
 
   function buscar(ev: FormEvent) {
     ev.preventDefault();
@@ -48,26 +66,15 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
   }
 
   const formulario = (
-    <form onSubmit={buscar} role="search" className="flex flex-wrap items-end gap-2">
-      <CampoTexto id="m-busca" rotulo="Buscar por nome, unidade ou telefone" className="min-w-0 flex-1 basis-64" value={texto} maxLength={60}
+    <form onSubmit={buscar} role="search" aria-label="Buscar pessoas" className="busca min-w-0 md:max-w-[520px]">
+      <Icone nome="busca" />
+      <label htmlFor="m-busca" className="sr-only">Buscar por nome, unidade ou telefone</label>
+      <input id="m-busca" className="campo" type="search" placeholder="Buscar por nome, unidade ou telefone" maxLength={60} value={texto}
         onChange={(e) => setTexto(e.target.value)} />
-      <Botao type="submit" variante="contorno">Buscar</Botao>
-      {estado ? null : (
-        <>
-          <Chip ativo={sem === "SEM_EMAIL"} icone="email" onClick={() => { setSem((x) => (x === "SEM_EMAIL" ? null : "SEM_EMAIL")); setPagina(1); }}>
-            Sem e-mail confirmado{carga.estado === "pronto" && carga.dados.semEmail !== undefined ? ` · ${carga.dados.semEmail}` : ""}
-          </Chip>
-          {sem === "SEM_WHATSAPP" || (carga.estado === "pronto" && carga.dados.comunicadosWhatsappLigado) ? (
-            <Chip ativo={sem === "SEM_WHATSAPP"} icone="whats" onClick={() => { setSem((x) => (x === "SEM_WHATSAPP" ? null : "SEM_WHATSAPP")); setPagina(1); }}>
-              Sem WhatsApp para comunicados{carga.estado === "pronto" && carga.dados.semWhatsapp !== undefined ? ` · ${carga.dados.semWhatsapp}` : ""}
-            </Chip>
-          ) : null}
-        </>
-      )}
     </form>
   );
 
-  if (carga.estado === "carregando") return <div className="grid gap-4">{formulario}<Carregando rotulo="Carregando os moradores…" /></div>;
+  if (carga.estado === "carregando") return <div className="grid gap-4">{formulario}<Carregando rotulo="Carregando as pessoas…" /></div>;
   if (carga.estado === "erro") return <div className="grid gap-4">{formulario}<ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
 
   const d = carga.dados;
@@ -76,89 +83,114 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
   const daPagina = d.itens.map((i) => i.vinculoId);
   const todosMarcados = daPagina.length > 0 && daPagina.every((id) => marcados.includes(id));
   const escolhidos = d.itens.filter((i) => marcados.includes(i.vinculoId));
+  const whatsapp = d.comunicadosWhatsappLigado === true;
+  const atalhos = aConfirmar ? [] : [
+    { valor: "SEM_EMAIL" as const, texto: "Sem e-mail confirmado", n: d.semEmail, icone: "email" as const },
+    ...(sem === "SEM_WHATSAPP" || whatsapp ? [{ valor: "SEM_WHATSAPP" as const, texto: "Sem WhatsApp para comunicados", n: d.semWhatsapp, icone: "whats" as const }] : []),
+  ];
+  const unidade = (i: MoradorDaLista) => nomeDaUnidade(i.bloco, i.andar, i.unidade);
 
   return (
     <div className="grid gap-4">
       {formulario}
-      {aConfirmar ? (
-        <Aviso tom="atencao">
-          Confira se cada pessoa é mesmo daquela unidade. Contato a confirmar não recebe nada e não acessa nada.
-          {d.podeConfirmar ? "" : " Só o síndico confirma."}
-        </Aviso>
-      ) : null}
       {falha ? <Aviso tom="erro">{falha}</Aviso> : null}
-      {d.itens.length === 0 ? (
-        <Vazio titulo={busca ? "Ninguém encontrado" : aConfirmar ? "Nenhum contato esperando confirmação" : "Nenhum morador cadastrado"}>
-          {busca ? "Confira a busca: nome, unidade ou parte do telefone." : aConfirmar ? "O que vier da planilha aparece aqui para você conferir." : "Inclua contatos pela ficha de cada unidade ou importe a planilha."}
-        </Vazio>
-      ) : (
-        <>
-          {podeMarcar ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" className="h-4 w-4 accent-violeta-600" checked={todosMarcados}
-                  onChange={(e) => setMarcados(e.target.checked ? [...new Set([...marcados, ...daPagina])] : marcados.filter((id) => !daPagina.includes(id)))} />
-                Marcar todos desta página
-              </label>
-              <Botao disabled={enviando || escolhidos.length === 0} onClick={() => void confirmar(escolhidos)}>
-                {escolhidos.length === 1 ? "Confirmar 1 selecionado" : `Confirmar ${escolhidos.length} selecionados`}
-              </Botao>
-            </div>
-          ) : null}
-          <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
-            <table className="w-full text-sm">
-              <caption className="sr-only">{aConfirmar ? "Contatos a confirmar" : "Moradores do condomínio"}</caption>
-              <thead className="bg-superficie-2 text-left text-tinta-suave">
-                <tr>
-                  {podeMarcar ? <th scope="col" className="w-12 px-4 py-2.5"><span className="sr-only">Selecionar</span></th> : null}
-                  <th scope="col" className="px-4 py-2.5 font-semibold">Contato</th>
-                  <th scope="col" className="px-4 py-2.5 font-semibold">Unidade</th>
-                  {aConfirmar ? null : <th scope="col" className="px-4 py-2.5 font-semibold">Situação</th>}
-                  {podeMarcar ? <th scope="col" className="px-4 py-2.5"><span className="sr-only">Ações</span></th> : null}
-                </tr>
-              </thead>
-              <tbody>
-                {d.itens.map((i) => (
-                  <tr key={i.vinculoId} className="border-t border-linha align-top">
-                    {podeMarcar ? (
-                      <td className="px-4 py-3">
-                        <input type="checkbox" className="h-4 w-4 accent-violeta-600" aria-label={`Selecionar ${i.nome}`} checked={marcados.includes(i.vinculoId)}
-                          onChange={(e) => setMarcados(e.target.checked ? [...marcados, i.vinculoId] : marcados.filter((x) => x !== i.vinculoId))} />
-                      </td>
-                    ) : null}
-                    <td className="min-w-44 px-4 py-3">
-                      <span className="font-medium">{i.nome}</span>
-                      <span className="block text-xs text-tinta-suave">
-                        {[nomeRelacao(i.relacao), i.principal ? "responsável" : null, mostrarTelefone(i.telefone), i.origem === "PLANILHA" ? "veio da planilha" : null,
-                          i.emailSituacao ? SITUACOES_EMAIL[i.emailSituacao].toLowerCase() : null,
-                          d.comunicadosWhatsappLigado && i.comunicadosWhatsapp ? `WhatsApp: ${SITUACOES_COMUNICADOS_WHATSAPP[i.comunicadosWhatsapp]}` : null].filter(Boolean).join(" · ")}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <Link href={`/moradores/unidade?id=${i.unidadeId}`} className="font-medium text-violeta-600 hover:underline">{nomeDaUnidade(i.bloco, i.andar, i.unidade)}</Link>
-                    </td>
-                    {aConfirmar ? null : <td className="px-4 py-3"><SeloEstado estado={i.estado} /></td>}
-                    {podeMarcar ? (
-                      <td className="px-4 py-3 text-right">
-                        <Botao variante="discreto" onClick={() => setRecusar(i)} aria-label={`Recusar ${i.nome}`}>Recusar</Botao>
-                      </td>
-                    ) : null}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <section aria-labelledby="t-pessoas" className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
+        <h2 id="t-pessoas" className="sr-only">{aConfirmar ? "Contatos a confirmar" : "Pessoas do condomínio"}</h2>
+        {aConfirmar ? (
+          <p role="note" className="flex items-center gap-3 rounded-[14px] border border-atencao-borda bg-atencao-fundo px-4 py-3 text-sm md:rounded-none md:border-0 md:border-b md:border-linha md:px-5">
+            <span className="ladrilho h-8 w-8 rounded-[10px]" data-tom="atencao" aria-hidden="true"><Icone nome="relogio" className="h-4 w-4" /></span>
+            <span>Confira se cada pessoa é mesmo daquela unidade. Contato a confirmar não recebe nada e não acessa nada.{d.podeConfirmar ? "" : " Só o síndico confirma."}</span>
+          </p>
+        ) : atalhos.length ? (
+          <div role="group" aria-label="O que pede atenção" className="flex items-center gap-2 overflow-x-auto py-3 md:border-b md:border-linha md:bg-fundo md:px-5">
+            <span className="t-apoio shrink-0 max-md:hidden">Pede atenção</span>
+            {atalhos.map((a) => (
+              <button key={a.valor} type="button" aria-pressed={sem === a.valor} data-tom="neutro" className="chip-atencao"
+                onClick={() => { setSem((x) => (x === a.valor ? null : a.valor)); setPagina(1); }}>
+                <Icone nome={a.icone} className="h-4 w-4" />{a.texto}{a.n !== undefined ? <> <b>{a.n}</b></> : null}
+              </button>
+            ))}
           </div>
-          {paginas > 1 ? (
-            <nav aria-label="Páginas" className="flex items-center justify-between gap-3 text-sm">
-              <Botao variante="contorno" disabled={pagina <= 1} onClick={() => { setPagina(pagina - 1); setMarcados([]); }}>Anterior</Botao>
-              <span>Página {pagina} de {paginas} · {d.total} contatos</span>
-              <Botao variante="contorno" disabled={pagina >= paginas} onClick={() => { setPagina(pagina + 1); setMarcados([]); }}>Próxima</Botao>
-            </nav>
-          ) : <p className="text-sm text-tinta-suave">{d.total === 1 ? "1 contato" : `${d.total} contatos`}</p>}
-        </>
-      )}
+        ) : null}
+
+        {d.itens.length === 0 ? (
+          <div className="md:p-5">
+            <Vazio titulo={busca ? "Ninguém encontrado" : aConfirmar ? "Nenhum contato esperando confirmação" : "Nenhuma pessoa cadastrada"} icone={busca ? "busca" : aConfirmar ? "check" : "pessoas"}>
+              {busca ? "Confira a busca: nome, unidade ou parte do telefone." : aConfirmar ? "O que vier da planilha aparece aqui para você conferir." : "Inclua pessoas pela ficha de cada unidade ou importe a planilha."}
+            </Vazio>
+          </div>
+        ) : (
+          <>
+            {podeMarcar ? (
+              <div className={`flex flex-wrap items-center justify-between gap-3 px-1 py-2 md:border-b md:px-5 ${escolhidos.length ? "md:border-violeta-200 md:bg-violeta-50" : "md:border-linha"}`}>
+                <label className="flex min-h-11 items-center gap-3 text-sm font-medium">
+                  <input type="checkbox" className="h-5 w-5 accent-violeta-600" checked={todosMarcados} aria-label="Marcar todos desta página"
+                    onChange={(e) => setMarcados(e.target.checked ? [...new Set([...marcados, ...daPagina])] : marcados.filter((id) => !daPagina.includes(id)))} />
+                  <span aria-live="polite">{escolhidos.length ? `${escolhidos.length} de ${d.itens.length} ${escolhidos.length === 1 ? "marcada" : "marcadas"}` : "Marcar todos desta página"}</span>
+                </label>
+                {escolhidos.length ? (
+                  <span className="flex gap-2">
+                    <Botao variante="discreto" tamanho="m" onClick={() => setMarcados([])}>Desmarcar</Botao>
+                    <Botao variante="contorno" tamanho="m" disabled={enviando} onClick={() => void confirmar(escolhidos)}>
+                      <Icone nome="check" />{escolhidos.length === 1 ? "Confirmar 1 pessoa" : `Confirmar ${escolhidos.length} pessoas`}
+                    </Botao>
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+            {!podeMarcar ? (
+              <div aria-hidden="true" className={`hidden gap-4 border-b border-linha bg-fundo px-5 py-2.5 md:grid ${COLUNAS}`}>
+                <span /><span className="t-rotulo">Pessoa</span><span className="t-rotulo">Telefone</span><span className="t-rotulo">Unidade</span><span className="t-rotulo">Situação</span><span />
+              </div>
+            ) : null}
+            <ul aria-label={aConfirmar ? "Contatos a confirmar" : "Pessoas"} className="grid max-md:gap-3">
+              {d.itens.map((i) => (
+                <li key={i.vinculoId}
+                  className={`relative grid items-center gap-x-4 gap-y-1 px-5 py-3 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 md:border-t md:border-linha md:first:border-t-0 ${podeMarcar ? `grid-cols-[24px_40px_minmax(0,1fr)_40px] ${COLUNAS_CONFIRMAR} ${marcados.includes(i.vinculoId) ? "bg-violeta-50/60" : ""}` : `grid-cols-[40px_minmax(0,1fr)_20px] hover:bg-violeta-50/50 ${COLUNAS}`}`}>
+                  {podeMarcar ? (
+                    <input type="checkbox" className="h-5 w-5 accent-violeta-600" aria-label={`Selecionar ${i.nome}`} checked={marcados.includes(i.vinculoId)}
+                      onChange={(e) => setMarcados(e.target.checked ? [...marcados, i.vinculoId] : marcados.filter((x) => x !== i.vinculoId))} />
+                  ) : null}
+                  <Iniciais nome={i.nome} className="h-10 w-10 self-start md:self-center" />
+                  <div className="grid min-w-0 gap-0.5">
+                    <span className="font-medium">{i.nome}</span>
+                    <span className="t-apoio">{detalhe(i, whatsapp)}</span>
+                  </div>
+                  <span className={`t-codigo ${podeMarcar ? "max-md:col-start-3" : "max-md:col-start-2"}`}>{mostrarTelefone(i.telefone)}</span>
+                  <Link href={`/moradores/unidade?id=${i.unidadeId}`}
+                    className={`justify-self-start font-medium text-violeta-600 ${podeMarcar ? "relative z-[1] hover:underline max-md:col-start-3" : "after:absolute after:inset-0 after:content-[''] max-md:col-start-2"}`}>{unidade(i)}</Link>
+                  {podeMarcar ? (
+                    <span className="relative z-[2] justify-self-end max-md:col-start-4 max-md:row-start-1">
+                      <MenuAcoes rotulo={`Ações de ${i.nome}`} itens={[
+                        { texto: "Confirmar", icone: "check", rotulo: `Confirmar ${i.nome}`, acao: () => void confirmar([i]) },
+                        { texto: "Recusar…", icone: "fechar", rotulo: `Recusar ${i.nome}`, perigo: true, acao: () => setRecusar(i) },
+                      ]} />
+                    </span>
+                  ) : (
+                    <>
+                      {aConfirmar ? <span className="max-md:hidden" /> : <span className="max-md:col-start-2"><SeloEstado estado={i.estado} /></span>}
+                      <Icone nome="dir" className="h-5 w-5 text-tinta-suave max-md:col-start-3 max-md:row-start-1 max-md:self-center" />
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <div className="flex flex-wrap items-center justify-between gap-2 py-4 md:border-t md:border-linha md:px-5">
+              <span className="t-apoio">{d.total === 1 ? "1 contato" : `${d.total} contatos`}{aConfirmar ? " a confirmar" : ""}</span>
+              {aConfirmar ? <span className="t-apoio">Recusar fica no menu de cada pessoa e pede confirmação.</span> : <span className="t-apoio">Quem saiu fica no histórico da unidade.</span>}
+              {paginas > 1 ? (
+                <nav aria-label="Páginas" className="flex items-center gap-2">
+                  <Botao variante="contorno" tamanho="m" disabled={pagina <= 1} onClick={() => { setPagina(pagina - 1); setMarcados([]); }}><Icone nome="esq" />Anterior</Botao>
+                  <span className="t-apoio">Página {pagina} de {paginas}</span>
+                  <Botao variante="contorno" tamanho="m" disabled={pagina >= paginas} onClick={() => { setPagina(pagina + 1); setMarcados([]); }}>Próxima<Icone nome="dir" /></Botao>
+                </nav>
+              ) : null}
+            </div>
+          </>
+        )}
+      </section>
       <Janela aberto={!!recusar} titulo={recusar ? `Recusar ${recusar.nome}` : "Recusar"} campos={[]} iniciais={{}} textoBotao="Recusar contato"
-        explicacao={recusar ? `${recusar.nome} não vai falar por ${nomeDaUnidade(recusar.bloco, recusar.andar, recusar.unidade)}. A recusa fica registrada no histórico.` : undefined}
+        explicacao={recusar ? `${recusar.nome} não vai falar por ${unidade(recusar)}. A recusa fica registrada no histórico.` : undefined}
         aoFechar={() => setRecusar(null)} recarregar={carga.recarregar}
         aoSalvar={async () => {
           const alvo = recusar!;
@@ -166,7 +198,7 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
           if (r.ok) {
             setRecusar(null);
             setMarcados(marcados.filter((x) => x !== alvo.vinculoId));
-            salvo({ tom: "ok", texto: `${alvo.nome} recusado em ${nomeDaUnidade(alvo.bloco, alvo.andar, alvo.unidade)}.` });
+            salvo({ tom: "ok", texto: `${alvo.nome} recusado em ${unidade(alvo)}.` });
           }
           return r;
         }} />

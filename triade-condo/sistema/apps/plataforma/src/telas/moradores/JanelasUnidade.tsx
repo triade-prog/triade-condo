@@ -9,7 +9,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { AVISOS_CONTATO, chaveUnidade, mostrarAndar, mostrarTelefone, MOTIVOS_ENCERRAMENTO, nomeDaUnidade, relacaoDasMarcas, SITUACOES_EMAIL } from "@triade/domain";
 import {
-  Aviso, AvisoErro, Botao, CampoSelecao, CampoTexto, camposComErro, chamarApi, Carregando, Dialogo, ErroCarregar, textoDoErro, type ErroApi, type Resposta,
+  Aviso, AvisoErro, Botao, CampoSelecao, CampoTexto, camposComErro, chamarApi, Carregando, Dialogo, ErroCarregar, Icone, textoDoErro, type ErroApi, type Resposta,
 } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
 import type { ContatoDaUnidade, ListaMoradores, Recado, UnidadeDetalhe, Unidades } from "../tipos.ts";
@@ -20,7 +20,7 @@ import { CamposVinculo, marcasDe, VINCULO_NOVO, vinculoDe, type CamposDoVinculo 
 type Salvo = (r: Recado) => void;
 
 /** Formulário com erro da API no topo, Cancelar e o botão de salvar. */
-function Form({ aoEnviar, aoFechar, erro, textoBotao, recarregar, children, perigo }: {
+function Form({ aoEnviar, aoFechar, erro, textoBotao, recarregar, children, perigo, rodape }: {
   aoEnviar: () => Promise<void>;
   aoFechar: () => void;
   erro: ErroApi | null;
@@ -28,6 +28,8 @@ function Form({ aoEnviar, aoFechar, erro, textoBotao, recarregar, children, peri
   recarregar?: () => void;
   children: ReactNode;
   perigo?: boolean;
+  /** Rodapé próprio (os passos do celular); recebe se está enviando. */
+  rodape?: (enviando: boolean) => ReactNode;
 }) {
   const [enviando, setEnviando] = useState(false);
   async function enviar(ev: FormEvent) {
@@ -40,10 +42,12 @@ function Form({ aoEnviar, aoFechar, erro, textoBotao, recarregar, children, peri
     <form onSubmit={enviar} noValidate className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar ? () => { aoFechar(); recarregar(); } : undefined} /> : null}
       {children}
-      <div className="flex justify-end gap-2">
-        <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
-        <Botao type="submit" variante={perigo ? "perigo" : "primario"} disabled={enviando}>{enviando ? "Salvando…" : textoBotao}</Botao>
-      </div>
+      {rodape ? rodape(enviando) : (
+        <div className="flex justify-end gap-2">
+          <Botao variante="contorno" onClick={aoFechar}>Cancelar</Botao>
+          <Botao type="submit" variante={perigo ? "perigo" : "primario"} disabled={enviando}>{enviando ? "Salvando…" : textoBotao}</Botao>
+        </div>
+      )}
     </form>
   );
 }
@@ -103,7 +107,8 @@ export function IncluirContato({ aberto, unidade, relacaoInicial, aoFechar, salv
  */
 export function CadastrarMorador({ aberto, dados, aoFechar, salvo }: { aberto: boolean; dados: Unidades; aoFechar: () => void; salvo: Salvo }) {
   return (
-    <Dialogo aberto={aberto} titulo="Cadastrar morador ou proprietário" aoFechar={aoFechar}>
+    <Dialogo aberto={aberto} titulo="Cadastrar pessoa" aoFechar={aoFechar} media fechar
+      apoio={`Morador ou proprietário. ${dados.podeConfirmar ? "Quem você inclui já fica confirmado." : "A pessoa fica a confirmar até o síndico conferir."}`}>
       {aberto ? <FormCadastrar dados={dados} aoFechar={aoFechar} salvo={salvo} /> : null}
     </Dialogo>
   );
@@ -126,8 +131,10 @@ function FormCadastrar({ dados, aoFechar, salvo }: { dados: Unidades; aoFechar: 
   const prontoBloco = !pedeBloco || blocoId !== "";
   const prontoAndar = !pedeAndar || andar !== "" || noBloco.some((u) => !u.andar);
 
-  return (
-    <div className="grid gap-4">
+  const [passo, setPasso] = useState<Passo>(1);
+  const nomeUnidade = unidade ? nomeDaUnidade(dados.blocos.find((b) => b.id === unidade.blocoId)?.nome, unidade.andar, unidade.identificacao) : null;
+  const escolhaUnidade = (
+    <>
       {pedeBloco ? (
         <CampoSelecao id="cm-bloco" rotulo={div.um} value={blocoId} onChange={(e) => { setBlocoId(e.target.value); setAndar(""); setUnidadeId(""); }}
           opcoes={[{ valor: "", texto: `Escolha ${div.um === "Torre" || div.um === "Quadra" ? "a" : "o"} ${div.um.toLowerCase()}` },
@@ -143,14 +150,73 @@ function FormCadastrar({ dados, aoFechar, salvo }: { dados: Unidades; aoFechar: 
             ...[...noAndar].sort((a, b) => chaveUnidade(a.identificacao).localeCompare(chaveUnidade(b.identificacao)))
               .map((u) => ({ valor: u.id, texto: `${u.identificacao}${u.principal ? ` · ${u.principal}` : ""}` }))]} />
       ) : null}
-      {unidade ? (
-        <FormIncluir key={unidade.id} alvo={{ id: unidade.id, temContatos: unidade.confirmados + unidade.pendentes > 0, temProprietario: unidade.temProprietario, contatoIds: [],
-          responsavel: unidade.principal ? { nome: unidade.principal, mora: false } : null }}
-          podeConfirmar={dados.podeConfirmar} aoFechar={aoFechar} salvo={salvo}
-          nomeUnidade={nomeDaUnidade(dados.blocos.find((b) => b.id === unidade.blocoId)?.nome, unidade.andar, unidade.identificacao)} />
-      ) : (
-        <div className="flex justify-end"><Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao></div>
-      )}
+    </>
+  );
+  const parte1 = (
+    <Parte n={1} passo={passo}>
+      <div className="grid gap-4 sm:grid-cols-2">{escolhaUnidade}</div>
+    </Parte>
+  );
+
+  if (!unidade || !nomeUnidade) {
+    return (
+      <div className="grid gap-4">
+        <TopoPassos passo={1} resumos={[]} irPara={setPasso} />
+        {parte1}
+        <p className="t-apoio max-md:hidden">Escolha a unidade para dizer quem é a pessoa e a ligação dela com a unidade.</p>
+        <div className="flex justify-end gap-2 max-md:grid max-md:grid-cols-[1fr_2fr]">
+          <Botao variante="contorno" onClick={aoFechar}>Cancelar</Botao>
+          <Botao className="md:hidden" disabled><Icone nome="dir" />Continuar</Botao>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <FormIncluir key={unidade.id} alvo={{ id: unidade.id, temContatos: unidade.confirmados + unidade.pendentes > 0, temProprietario: unidade.temProprietario, contatoIds: [],
+      responsavel: unidade.principal ? { nome: unidade.principal, mora: false } : null }}
+      podeConfirmar={dados.podeConfirmar} aoFechar={aoFechar} salvo={salvo} nomeUnidade={nomeUnidade}
+      partes={{ parte1, passo, setPasso, nomeUnidade }} />
+  );
+}
+
+const PARTES_CADASTRAR = ["Unidade", "Quem é", "Ligação com a unidade"] as const;
+type Passo = 1 | 2 | 3;
+
+/** Uma parte do Cadastrar pessoa: com número no computador; no celular, só aparece no seu passo. */
+function Parte({ n, passo, children }: { n: Passo; passo: Passo; children: ReactNode }) {
+  return (
+    <div className={`parte ${n === 1 ? "border-t-0 pt-2" : ""} ${n === passo ? "" : "max-md:hidden"}`}>
+      <div className="cabeca">
+        <span className="numero" aria-hidden="true">{n}</span>
+        <h3 className="t-titulo-cartao">{PARTES_CADASTRAR[n - 1]}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** No celular: em que passo está, a barra de progresso e o que já foi escolhido, com Alterar. */
+function TopoPassos({ passo, resumos, irPara }: { passo: Passo; resumos: string[]; irPara: (p: Passo) => void }) {
+  return (
+    <div className="grid gap-3 md:hidden">
+      <p className="grid">
+        <span className="t-apoio">Passo {passo} de 3</span>
+        <span className="t-titulo-cartao">{PARTES_CADASTRAR[passo - 1]}</span>
+      </p>
+      <div className="passos" role="progressbar" aria-label="Passos do cadastro" aria-valuemin={1} aria-valuemax={3} aria-valuenow={passo}
+        aria-valuetext={`Passo ${passo} de 3: ${PARTES_CADASTRAR[passo - 1]}`}>
+        {[1, 2, 3].map((n) => <span key={n} data-feito={n <= passo ? "" : undefined} />)}
+      </div>
+      {resumos.slice(0, passo - 1).map((texto, i) => (
+        <button key={i} type="button" className="resumo-passo" onClick={() => irPara((i + 1) as Passo)}>
+          <span className="numero" aria-hidden="true"><Icone nome="check" className="h-3.5 w-3.5" /></span>
+          <span className="grid min-w-0 flex-1">
+            <span className="t-apoio">{PARTES_CADASTRAR[i]}</span>
+            <span className="truncate">{texto}</span>
+          </span>
+          <span className="alterar">Alterar</span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -236,13 +302,15 @@ function EscolherPessoa({ prefixo, rotulo, textoCadastrada, de = "", pessoa, aoM
   );
 }
 
-function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nomeUnidade }: {
+function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nomeUnidade, partes }: {
   alvo: Alvo;
   podeConfirmar: boolean;
   relacaoInicial?: string;
   aoFechar: () => void;
   salvo: Salvo;
   nomeUnidade?: string;
+  /** No Cadastrar pessoa: a parte 1 (a unidade) e o passo do celular. */
+  partes?: { parte1: ReactNode; passo: Passo; setPasso: (p: Passo) => void; nomeUnidade: string };
 }) {
   const [pessoa, setPessoa] = useState<Pessoa>(PESSOA_VAZIA);
   const [dono, setDono] = useState<Pessoa>(PESSOA_VAZIA);
@@ -257,12 +325,20 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
 
   async function incluir() {
     setErro(null);
-    if (pessoa.modo === "cadastrada" && !pessoa.contatoId) return setErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: ["contatoId"] } });
+    if (pessoa.modo === "cadastrada" && !pessoa.contatoId) {
+      partes?.setPasso(2);
+      return setErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: ["contatoId"] } });
+    }
     if (pedeDono && dono.modo === "cadastrada" && !dono.contatoId) return setErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: ["proprietario"] } });
     const marcas = { ...marcasDe(vinculo), ocupaDesde: vinculo.ocupaDesde || null };
     const corpo = { ...corpoDaPessoa(pessoa), marcas, recebeComunicados: recebe, ...(pedeDono ? { proprietario: corpoDaPessoa(dono) } : {}) };
     const r = await chamarApi<{ avisos: string[] }>(`/v1/condominio/unidades/${alvo.id}/contatos`, { corpo });
-    if (!r.ok) return setErro(r.erro);
+    if (!r.ok) {
+      // No celular, volta para o passo do campo com erro.
+      const comErro = camposComErro(r.erro);
+      if (partes && ["nome", "telefone", "contatoId"].some((c) => comErro.includes(c))) partes.setPasso(2);
+      return setErro(r.erro);
+    }
     const onde = nomeUnidade ? `em ${nomeUnidade}` : "na unidade";
     const texto = pedeDono ? `${nomeDaPessoa(pessoa)} incluído ${onde}, com ${nomeDaPessoa(dono)} como proprietário.` : `${nomeDaPessoa(pessoa)} incluído ${onde}.`;
     aoFechar();
@@ -271,12 +347,15 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
 
   const campos = camposComErro(erro);
   const erroDono = campos.includes("proprietario") ? (dono.modo === "nova" ? "Confira o nome e o telefone (com DDD) do proprietário." : "Busque e escolha o proprietário.") : null;
-  return (
-    <Form aoEnviar={incluir} aoFechar={aoFechar} erro={erro} textoBotao={pedeDono ? "Incluir inquilino e proprietário" : "Incluir pessoa"}>
-      <EscolherPessoa prefixo="c" rotulo="Quem é" textoCadastrada="Já cadastrada em outra unidade" pessoa={pessoa} excluir={alvo.contatoIds}
-        aoMudar={(p) => { setPessoa(p); setErro(null); }}
-        erros={{ nome: campos.includes("nome") ? ERRO_CAMPO.nome : null, telefone: campos.includes("telefone") ? ERRO_CAMPO.telefone : null,
-          contato: campos.includes("contatoId") ? "Busque e escolha a pessoa." : null }} />
+  const textoBotao = pedeDono ? "Incluir inquilino e proprietário" : "Incluir pessoa";
+  const quem = (
+    <EscolherPessoa prefixo="c" rotulo={partes ? "Pessoa nova ou já cadastrada" : "Quem é"} textoCadastrada="Já cadastrada em outra unidade" pessoa={pessoa} excluir={alvo.contatoIds}
+      aoMudar={(p) => { setPessoa(p); setErro(null); }}
+      erros={{ nome: campos.includes("nome") ? ERRO_CAMPO.nome : null, telefone: campos.includes("telefone") ? ERRO_CAMPO.telefone : null,
+        contato: campos.includes("contatoId") ? "Busque e escolha a pessoa." : null }} />
+  );
+  const ligacao = (
+    <>
       <CamposVinculo prefixo="c" valor={vinculo} aoMudar={(v) => { setVinculo(v); setErro(null); }} responsavelAtual={alvo.responsavel}
         erros={errosDoVinculo(campos)} />
       {pedeDono ? (
@@ -295,6 +374,32 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
       <p className="text-sm text-tinta-suave">
         {podeConfirmar ? "Quem você inclui já fica confirmado." : "A pessoa fica a confirmar até o síndico conferir."} Ter o telefone não dá acesso a nada além do que a unidade pode ver.
       </p>
+    </>
+  );
+
+  if (!partes) {
+    return <Form aoEnviar={incluir} aoFechar={aoFechar} erro={erro} textoBotao={textoBotao}>{quem}{ligacao}</Form>;
+  }
+  const { passo, setPasso } = partes;
+  const nomeQuem = pessoa.modo === "nova" ? pessoa.nome.trim() : pessoa.nomeEscolhido ?? "";
+  // O celular só segue do passo 2 com a pessoa escrita ou escolhida.
+  const podeSeguir = passo === 1 || (pessoa.modo === "nova" ? !!pessoa.nome.trim() && !!pessoa.telefone.trim() : !!pessoa.contatoId);
+  return (
+    <Form aoEnviar={incluir} aoFechar={aoFechar} erro={erro} textoBotao={textoBotao}
+      rodape={(enviando) => (
+        <div className="flex justify-end gap-2 max-md:grid max-md:grid-cols-[1fr_2fr]">
+          <Botao variante="contorno" onClick={aoFechar} className={passo > 1 ? "max-md:hidden" : ""}>Cancelar</Botao>
+          {passo > 1 ? <Botao variante="contorno" className="md:hidden" onClick={() => setPasso((passo - 1) as Passo)}><Icone nome="esq" />Voltar</Botao> : null}
+          {passo < 3 ? (
+            <Botao className="md:hidden" disabled={!podeSeguir} onClick={() => setPasso((passo + 1) as Passo)}>Continuar<Icone nome="dir" /></Botao>
+          ) : null}
+          <Botao type="submit" disabled={enviando} className={passo < 3 ? "max-md:hidden" : ""}>{enviando ? "Salvando…" : textoBotao}</Botao>
+        </div>
+      )}>
+      <TopoPassos passo={passo} resumos={[partes.nomeUnidade, nomeQuem || "Pessoa"]} irPara={setPasso} />
+      {partes.parte1}
+      <Parte n={2} passo={passo}><div className="grid gap-4">{quem}</div></Parte>
+      <Parte n={3} passo={passo}><div className="grid gap-4">{ligacao}</div></Parte>
     </Form>
   );
 }

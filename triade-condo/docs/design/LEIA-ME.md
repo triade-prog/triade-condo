@@ -17,6 +17,9 @@ Este é o padrão visual em vigor das duas aplicações, a Plataforma do síndic
 | Agenda: filtros com a cor de cada origem, dia num quadrado, origem em cada item e, no celular, a semana no topo | `telas-modelo/agenda-computador.html` e `telas-modelo/agenda-celular.html` |
 | Manutenção, no modelo da lista: abas internas, situação, o que pede atenção, quem executa e retorno | `telas-modelo/manutencao-computador.html` e `telas-modelo/manutencao-celular.html` |
 | Decisões, com as alternativas no cartão, e a janela Decidir | `telas-modelo/decisoes-computador.html`, `telas-modelo/decisoes-celular.html` e `telas-modelo/decidir.html` |
+| Moradores e unidades: abas Unidades, Pessoas, Garagens e A confirmar; busca, Filtros numa janela, ocupação em botões, o que pede atenção em atalhos e a lista que vira cartões no celular; montar o prédio (planilha, divisões, unidades, vagas e organização) num menu e Cadastrar pessoa como único botão principal | `telas-modelo/moradores-unidades-computador.html`, `telas-modelo/moradores-unidades-celular.html`, `telas-modelo/moradores-pessoas-computador.html`, `telas-modelo/moradores-confirmar-computador.html` e `telas-modelo/moradores-garagens-computador.html` |
+| Ficha da unidade, com as pessoas em cartão, as ações de cada uma num menu, a situação da unidade com interruptores que gravam na hora e as garagens | `telas-modelo/unidade-ficha-computador.html` e `telas-modelo/unidade-ficha-celular.html` |
+| Cadastrar pessoa (partes numeradas no computador, 3 passos no celular) e Importar planilha (3 passos, área para escolher ou arrastar o arquivo e as colunas ao lado) | `telas-modelo/cadastrar-pessoa-computador.html`, `telas-modelo/cadastrar-pessoa-celular.html` e `telas-modelo/importar-planilha-computador.html` |
 
 Cada tela-modelo tem um PNG com o mesmo nome. Os HTML são referência visual exportada do quadro de desenho: não são código do app e não usam o tema do sistema.
 
@@ -29,6 +32,7 @@ Cada tela-modelo tem um PNG com o mesmo nome. Os HTML são referência visual ex
 - Arte da marca (anéis, arco e traço laranja) em três tamanhos: cheia nas telas de entrar, faixa no topo do Início e leve nas telas vazias. No máximo uma arte por tela, e ela nunca encosta no texto.
 - Nenhuma tela usa emoji.
 - Formulário longo no celular vai em passos: barra de progresso no alto, Continuar e Voltar embaixo, os passos feitos resumidos no topo com "Alterar", e nada do que foi preenchido se perde ao voltar. No computador o mesmo formulário fica numa tela só, em partes numeradas.
+- Ação que é de uma linha (editar, recusar, encerrar, tirar de uso) fica no menu de três pontos da linha, e o nome dele diz de quem é ("Ações de Joana Lima"). O que monta a tela (importar, incluir divisões, unidades e vagas) fica num menu no topo, ao lado do único botão principal.
 - Agenda: cada origem tem sua cor (compromisso violeta, preventiva jade, reserva petróleo, contrato âmbar, documento rubi, assembleia violeta-claro e feriado cinza), a mesma no filtro e no traço de cada item.
 - Toda tela nova é desenhada e aprovada antes do código. As telas que faltam passam ao padrão novo por grupo do menu, em rodadas: Dia a dia, Comunicação, Prédio e pessoas, Gestão e, por fim, as páginas por link e o Console.
 

@@ -2,11 +2,14 @@
 // Importar planilha (F3.3, PI-04, MU-02): o CSV da administradora é lido aqui no navegador e
 // a prévia aponta cada linha com erro antes de enviar. A importação é tudo ou nada, cria os
 // blocos e unidades que faltam, não duplica o que já existe e deixa os contatos a confirmar.
+// DC15 (telas-modelo moradores-importar): barra dos três passos, área para escolher ou arrastar
+// o arquivo e, ao lado, as colunas que a planilha pode ter.
 
 import Link from "next/link";
-import { useState, type ChangeEvent } from "react";
+import { useState, type DragEvent } from "react";
 import { lerPlanilhaMoradores, MODELO_PLANILHA, TEXTOS_CAMPO_PLANILHA, type LeituraPlanilha } from "@triade/domain";
-import { Aviso, AvisoErro, Botao, classeBotao, Selo, textoDoErro, chamarApi, type ErroApi } from "@triade/ui";
+import { Aviso, AvisoErro, Botao, classeBotao, Icone, Selo, textoDoErro, chamarApi, type ErroApi } from "@triade/ui";
+import { CartaoFicha } from "./comum.tsx";
 import { usePlataforma } from "../sessao.tsx";
 
 interface Resultado {
@@ -26,16 +29,28 @@ function plural(n: number, um: string, varios: string): string {
   return `${n} ${n === 1 ? um : varios}`;
 }
 
+const PASSOS = ["Escolher arquivo", "Conferir", "Importar"];
+
+const COLUNAS: [string, string][] = [
+  ["Torre ou bloco", "opcional"], ["Andar", "opcional"], ["Unidade", "obrigatória"], ["Nome", "obrigatória"], ["Telefone", "obrigatória"],
+  ["Relação", "opcional"], ["Mora na unidade", "opcional, sim ou não"], ["Responsável pela unidade", "opcional, sim ou não"],
+  ["Parentesco e ocupa desde", "opcional"], ["E-mail", "opcional, a própria pessoa confirma"],
+];
+
+/** A barra dos três passos, com o nome de cada um embaixo. */
 function Passos({ atual }: { atual: 1 | 2 | 3 }) {
   return (
-    <ol className="flex flex-wrap gap-2 text-sm">
-      {["Escolher arquivo", "Conferir", "Importar"].map((p, i) => (
-        <li key={p} aria-current={atual === i + 1 ? "step" : undefined}
-          className="rounded-full border border-linha px-3 py-1 aria-[current=step]:border-violeta-600 aria-[current=step]:bg-violeta-50 aria-[current=step]:font-semibold aria-[current=step]:text-violeta-700">
-          {i + 1} · {p}
-        </li>
-      ))}
-    </ol>
+    <div className="grid gap-2">
+      <div className="passos" role="progressbar" aria-label="Passos da importação" aria-valuemin={1} aria-valuemax={3} aria-valuenow={atual}
+        aria-valuetext={`Passo ${atual} de 3: ${PASSOS[atual - 1]}`}>
+        {PASSOS.map((p, i) => <span key={p} data-feito={i < atual ? "" : undefined} />)}
+      </div>
+      <ol className="flex gap-1.5 text-xs" aria-hidden="true">
+        {PASSOS.map((p, i) => (
+          <li key={p} className={`flex-1 ${i + 1 === atual ? "font-semibold text-tinta" : i + 1 < atual ? "text-violeta-700" : "text-tinta-suave"}`}>{p}</li>
+        ))}
+      </ol>
+    </div>
   );
 }
 
@@ -46,17 +61,21 @@ export function Importar() {
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const voltar = <Link href="/moradores" className="text-sm font-medium text-violeta-600 hover:underline">Voltar às unidades</Link>;
+  const [arrastando, setArrastando] = useState(false);
+  const voltar = (
+    <Link href="/moradores" className="inline-flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline">
+      <Icone nome="esq" className="h-4 w-4" />Moradores e unidades
+    </Link>
+  );
 
   if (!pode("moradores.editar")) {
     return (
-      <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Importar planilha</h1>
+      <div className="grid gap-3">{voltar}<h1 className="t-titulo-tela">Importar planilha</h1>
         <Aviso tom="atencao">Você não tem acesso a esta ação. Peça ao síndico a permissão Cadastrar moradores.</Aviso></div>
     );
   }
 
-  async function escolher(ev: ChangeEvent<HTMLInputElement>) {
-    const f = ev.target.files?.[0];
+  async function escolher(f: File | undefined) {
     setErro(null);
     setResultado(null);
     if (!f) return;
@@ -75,6 +94,12 @@ export function Importar() {
     atualizar();
   }
 
+  function soltar(ev: DragEvent<HTMLLabelElement>) {
+    ev.preventDefault();
+    setArrastando(false);
+    void escolher(ev.dataTransfer.files[0]);
+  }
+
   function recomecar() {
     setArquivo(null);
     setLeitura(null);
@@ -88,30 +113,39 @@ export function Importar() {
 
   return (
     <div className="grid gap-5">
-      {voltar}
-      <div>
-        <h1 className="text-[28px] font-normal tracking-tight">Importar planilha</h1>
-        <p className="mt-1 text-tinta-suave">
-          A lista de moradores e proprietários da administradora, salva como CSV no Excel ou no Google Planilhas. Colunas: torre ou bloco (opcional), andar
-          (opcional), unidade, nome, telefone e relação (opcional). Também opcionais: mora na unidade e responsável pela unidade (sim ou não), parentesco e
-          ocupa desde, e e-mail, que espera a própria pessoa confirmar. Os nomes mais comuns são reconhecidos: torre, bloco, quadra, andar, pavimento,
-          apto, celular, tipo.
-        </p>
+      <div className="grid gap-3">
+        {voltar}
+        <div>
+          <h1 className="t-titulo-tela">Importar planilha</h1>
+          <p className="t-apoio mt-1">A lista de moradores e proprietários da administradora, salva como CSV. Nada é gravado antes de você confirmar a importação.</p>
+        </div>
       </div>
+
+      <div className={`grid items-start gap-5 ${passo === 1 ? "lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]" : ""}`}>
+      <section aria-label="Importação" className="grid gap-5 rounded-[18px] border border-linha bg-superficie p-6 shadow-s1 max-md:p-4">
       <Passos atual={passo} />
 
       {passo === 1 ? (
-        <div className="grid justify-items-start gap-3 rounded-[18px] border border-linha bg-superficie p-5">
-          <label htmlFor="i-arquivo" className="text-[13px] font-medium">Arquivo da planilha (CSV)</label>
-          <input id="i-arquivo" type="file" accept=".csv,text/csv" onChange={(e) => void escolher(e)} aria-describedby="i-ajuda"
-            className="text-sm file:mr-3 file:min-h-10 file:rounded-md file:border file:border-contorno file:bg-superficie file:px-3.5 file:text-sm file:font-semibold" />
-          <p id="i-ajuda" className="text-xs text-tinta-suave">No Excel: Arquivo, Salvar como, CSV. Arquivo .xlsx precisa ser salvo como CSV antes.</p>
+        <div className="grid gap-4">
+          <label htmlFor="i-arquivo" onDragOver={(e) => { e.preventDefault(); setArrastando(true); }} onDragLeave={() => setArrastando(false)} onDrop={soltar}
+            data-arrastando={arrastando ? "" : undefined}
+            className="grid cursor-pointer justify-items-center gap-2.5 rounded-[18px] border-[1.5px] border-dashed border-violeta-300 bg-violeta-50 px-6 py-9 text-center hover:border-violeta-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-violeta-600 data-[arrastando]:border-violeta-600">
+            <span className="ladrilho h-12 w-12" data-tom="violeta" aria-hidden="true"><Icone nome="baixar" /></span>
+            <span className="text-base font-semibold">Escolher planilha</span>
+            <span className="t-apoio">ou arraste o arquivo CSV para cá</span>
+            <span id="i-ajuda" className="text-[13px] text-tinta-suave">No Excel: Arquivo, Salvar como, CSV. Arquivo .xlsx precisa ser salvo como CSV antes.</span>
+            <input id="i-arquivo" type="file" accept=".csv,text/csv" className="sr-only" aria-label="Arquivo da planilha (CSV)" aria-describedby="i-ajuda"
+              onChange={(e) => { void escolher(e.target.files?.[0]); e.target.value = ""; }} />
+          </label>
           {leitura?.faltam.length ? (
             <Aviso tom="erro">
               Não achamos {leitura.faltam.length === 1 ? "a coluna" : "as colunas"} {leitura.faltam.join(", ")} em {arquivo}. A primeira linha precisa ter os nomes das colunas, como no modelo.
             </Aviso>
           ) : null}
-          <a href={MODELO} download="modelo-moradores.csv" className={classeBotao("contorno")}>Baixar modelo de planilha</a>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <a href={MODELO} download="modelo-moradores.csv" className={classeBotao("discreto")}><Icone nome="baixar" />Baixar modelo de planilha</a>
+            <Link href="/moradores" className={classeBotao("contorno")}>Cancelar</Link>
+          </div>
         </div>
       ) : null}
 
@@ -181,6 +215,22 @@ export function Importar() {
           </div>
         </div>
       ) : null}
+      </section>
+
+      {passo === 1 ? (
+        <CartaoFicha id="colunas" titulo="Colunas que a planilha pode ter" icone="lista">
+          <dl className="grid">
+            {COLUNAS.map(([nome, como]) => (
+              <div key={nome} className="flex justify-between gap-3 border-t border-linha py-2 text-sm">
+                <dt>{nome}</dt>
+                <dd className={`text-[13px] ${como === "obrigatória" ? "font-medium text-atencao" : "text-tinta-suave"}`}>{como}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-2.5 text-[13px] text-tinta-suave">Reconhece os nomes mais comuns: torre, bloco, quadra, andar, pavimento, apto, celular, tipo.</p>
+        </CartaoFicha>
+      ) : null}
+      </div>
     </div>
   );
 }

@@ -7,6 +7,8 @@ import { useRef, type KeyboardEvent, type ReactNode } from "react";
 export interface Aba<T extends string> {
   id: T;
   texto: string;
+  /** Número ao lado do texto, num círculo; o leitor de tela ouve "A confirmar (2)". */
+  contagem?: number;
 }
 
 export function Abas<T extends string>({ abas, atual, aoMudar, rotulo, children }: {
@@ -46,6 +48,13 @@ export function Abas<T extends string>({ abas, atual, aoMudar, rotulo, children 
             className="-mb-px min-h-11 border-b-2 border-transparent px-0.5 text-sm font-medium whitespace-nowrap text-tinta-suave hover:text-tinta aria-selected:border-violeta-600 aria-selected:text-violeta-600"
           >
             {a.texto}
+            {a.contagem !== undefined ? <span className="sr-only">{` (${a.contagem})`}</span> : null}
+            {a.contagem !== undefined ? (
+              <span aria-hidden="true" className="ml-2 inline-grid h-5.5 min-w-5.5 place-items-center rounded-full bg-superficie-2 px-1.5 text-xs font-semibold text-tinta-suave data-[atual]:bg-violeta-600 data-[atual]:text-superficie"
+                data-atual={atual === a.id ? "" : undefined}>
+                {a.contagem}
+              </span>
+            ) : null}
           </button>
         ))}
       </div>

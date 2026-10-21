@@ -6,6 +6,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { alternarOrigem, origemLigada } from "./agenda";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { A101 } from "./api-falsa-moradores";
+import { filtrar, linha } from "./moradores-telas";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -87,12 +88,12 @@ test.describe("Agenda, indicadores e unidades", () => {
     await conferir(page);
 
     await page.goto(`${PLATAFORMA}/moradores`);
-    const ocupacao = page.getByRole("group", { name: "Ocupação" });
-    await ocupacao.getByRole("button", { name: "1 à venda" }).click();
+    await filtrar(page, { Marca: "À venda (1)" });
     await expect(page.getByRole("link", { name: "Torre A · 101" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Torre A · 102" })).toHaveCount(0);
-    await expect(page.getByText("À venda", { exact: true })).toBeVisible();
-    await expect(page.getByText("Para alugar", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Tirar o filtro À venda" })).toBeVisible();
+    await expect(linha(page, "Torre A · 101").getByText("À venda", { exact: true }).filter({ visible: true })).toBeVisible();
+    await expect(linha(page, "Torre A · 101").getByText("Para alugar", { exact: true }).filter({ visible: true })).toBeVisible();
     await conferir(page);
 
     await page.goto(`${PLATAFORMA}/moradores/unidade?id=${A101}`);

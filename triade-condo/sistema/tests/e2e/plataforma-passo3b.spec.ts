@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { A102 } from "./api-falsa-moradores";
+import { filtrar, linha, noMenu, nomesUnidades } from "./moradores-telas";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -19,28 +20,28 @@ test.describe("Plataforma do síndico · passo 3b", () => {
   test("MU-11: a lista mostra a ocupação e os contadores filtram", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/moradores`);
-    const ocupacao = page.getByRole("group", { name: "Ocupação" });
-    await expect(ocupacao.getByRole("button", { name: "2 com morador" })).toBeVisible();
-    await expect(page.getByRole("row", { name: /Torre A · 101/ })).toContainText("O proprietário mora");
+    const ocupacao = page.getByRole("navigation", { name: "Ocupação" });
+    await expect(ocupacao.getByRole("button", { name: "Com morador 2" })).toBeVisible();
+    await expect(linha(page, "Torre A · 101")).toContainText("O proprietário mora");
     await conferir(page);
-    await ocupacao.getByRole("button", { name: "1 alugada" }).click();
-    expect(await page.getByRole("table").locator("tbody tr td:first-child").allInnerTexts()).toEqual(["Torre A · 102"]);
-    await expect(page.getByRole("row", { name: /Torre A · 102/ })).toContainText("Joana Lima");
-    await expect(page.getByRole("row", { name: /Torre A · 102/ })).toContainText("Alugada");
-    await ocupacao.getByRole("button", { name: "1 alugada" }).click();
-    await expect(page.getByRole("row", { name: /Torre A · 101/ })).toBeVisible();
+    await ocupacao.getByRole("button", { name: "Alugadas 1" }).click();
+    expect(await nomesUnidades(page)).toEqual(["Torre A · 102"]);
+    await expect(linha(page, "Torre A · 102")).toContainText("Joana Lima");
+    await expect(linha(page, "Torre A · 102")).toContainText("Alugada");
+    await ocupacao.getByRole("button", { name: /^Todas/ }).click();
+    await expect(linha(page, "Torre A · 101")).toBeVisible();
   });
 
   test("MU-10: a ficha mostra as marcações e o período; trocar o responsável avisa quem perde", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/moradores/unidade?id=${A102}`);
     await expect(page.getByText("Alugada · 2 moram aqui")).toBeVisible();
-    const joana = page.getByRole("row", { name: /Joana Lima/ });
+    const joana = linha(page, "Joana Lima");
     await expect(joana).toContainText("Responsável · Mora aqui");
     await expect(joana).toContainText("inquilino · desde 01/03/2025");
     await conferir(page);
 
-    await page.getByRole("button", { name: "Editar Paulo Lima" }).click();
+    await noMenu(page, "Ações de Paulo Lima", "Editar Paulo Lima");
     const janela = page.getByRole("dialog", { name: "Editar Paulo Lima" });
     await expect(janela.getByLabel("Ligação com a unidade")).toHaveValue("FAMILIAR");
     await janela.getByLabel("Parentesco com Joana Lima (responsável)").selectOption({ label: "Cônjuge ou companheiro(a)" });
@@ -50,14 +51,14 @@ test.describe("Plataforma do síndico · passo 3b", () => {
     await conferir(page);
     await janela.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Paulo Lima atualizado." })).toBeVisible();
-    await expect(page.getByRole("row", { name: /Paulo Lima/ })).toContainText("Responsável · Mora aqui");
-    await expect(page.getByRole("row", { name: /Joana Lima/ })).not.toContainText("Responsável");
+    await expect(linha(page, "Paulo Lima")).toContainText("Responsável · Mora aqui");
+    await expect(linha(page, "Joana Lima")).not.toContainText("Responsável");
   });
 
   test("MU-07: a saída não fica antes da entrada; quem saiu fica com o período inteiro", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/moradores/unidade?id=${A102}`);
-    await page.getByRole("button", { name: "Encerrar o vínculo de Joana Lima" }).click();
+    await noMenu(page, "Ações de Joana Lima", "Encerrar o vínculo de Joana Lima");
     const janela = page.getByRole("dialog", { name: "Encerrar o vínculo de Joana Lima" });
     await janela.getByLabel("Motivo").selectOption({ label: "A pedido do contato" });
     await janela.getByLabel("Ocupou até").fill("2025-01-10");
@@ -80,10 +81,10 @@ test.describe("Plataforma do síndico · passo 3b", () => {
     await expect(janela.getByLabel("Ligação com a unidade")).toHaveCount(0);
     await janela.getByRole("button", { name: "Incluir pessoa" }).click();
     await expect(page.getByText("Alugada · 2 moram aqui · o proprietário não mora")).toBeVisible();
-    await expect(page.getByRole("row", { name: /Roberto Dias/ })).toContainText("não mora aqui");
+    await expect(linha(page, "Roberto Dias")).toContainText("não mora aqui");
     await page.goto(`${PLATAFORMA}/moradores`);
-    await page.getByRole("group", { name: "Ocupação" }).getByRole("button", { name: "1 proprietário não mora" }).click();
-    await expect(page.getByRole("row", { name: /Torre A · 102/ })).toContainText("Roberto Dias, proprietário, não mora");
+    await filtrar(page, { Marca: "Proprietário não mora (1)" });
+    await expect(linha(page, "Torre A · 102")).toContainText("Roberto Dias, proprietário, não mora");
     await conferir(page);
   });
 });

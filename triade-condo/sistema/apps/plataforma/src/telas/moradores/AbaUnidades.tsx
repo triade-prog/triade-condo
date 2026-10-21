@@ -1,75 +1,46 @@
 "use client";
-// Unidades (F3.1, MU-08), do jeito que o prédio se organiza: por torre, bloco, quadra ou
-// prédio (ou sem divisão), com ou sem andar. Ordem natural (2 antes de 10; térreo antes do
-// 1º andar), o responsável de cada unidade, a ocupação (MU-10, MU-11), as marcas à venda e
-// para alugar (MU-11) e se há contato a confirmar. A busca acha a unidade pela identificação, pelo nome ou
-// telefone de quem está nela e pela placa (MU-11, MU-06); cada linha tem o menu com os atalhos da unidade. Os contadores de ocupação filtram a lista. Divisão e unidade não se apagam: são
-// desativadas, e só quando não têm nada ativo dentro.
+// Unidades (F3.1, MU-08; DC15, telas-modelo moradores-unidades-*), do jeito que o prédio se
+// organiza: por torre, bloco, quadra ou prédio (ou sem divisão), com ou sem andar. Ordem natural
+// (2 antes de 10; térreo antes do 1º andar), o responsável de cada unidade, a ocupação (MU-10,
+// MU-11), as marcas à venda e para alugar (MU-11) e os contatos. A busca acha a unidade pela
+// identificação, pelo nome ou telefone de quem está nela e pela placa (MU-11, MU-06). A ocupação
+// fica em abas, o que pede atenção em atalhos, e a torre, o andar e as marcas em Filtros. No
+// celular, cada unidade é um cartão. Divisão e unidade não se apagam: são desativadas, e só
+// quando não têm nada ativo dentro.
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { AGRUPAMENTOS, chaveAndar, chaveUnidade, gerarUnidades, mostrarAndar, nomeDaUnidade, OCUPACOES, type UnidadeNova } from "@triade/domain";
 import {
-  AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, Dialogo, Icone, Selo, textoDoErro, Vazio, type ErroApi,
+  AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, Chip, Dialogo, Icone, Selo, textoDoErro, Vazio, type ErroApi, type Tom,
 } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import type { AchadoUnidade, Bloco, Estrutura, Recado, UnidadeResumo, Unidades } from "../tipos.ts";
-import { Caixa, Escolha, nomeRelacao, nomesDivisao } from "./comum.tsx";
+import { Caixa, Escolha, LadrilhoUnidade, nomeRelacao, nomesDivisao } from "./comum.tsx";
 
-type Filtro = "todos" | "sem-bloco" | "sem-contato" | "sem-proprietario" | "com-morador" | "alugadas" | "nao-mora" | "sem-responsavel" | "a-venda" | "para-alugar" | string;
+type Situacao = "" | "com-morador" | "alugadas" | "sem-cadastro";
+type Atencao = "" | "sem-contato" | "sem-proprietario" | "sem-responsavel";
+type Marca = "" | "nao-mora" | "a-venda" | "para-alugar";
+interface Filtros { bloco: string; andar: string; marca: Marca }
+const SEM_FILTROS: Filtros = { bloco: "", andar: "", marca: "" };
 
 function plural(n: number, um: string, varios: string): string {
   return `${n} ${n === 1 ? um : varios}`;
 }
 
-function Contatos({ u }: { u: UnidadeResumo }) {
-  if (!u.ativa) return <Selo tom="neutro">Desativada</Selo>;
-  if (!u.confirmados && !u.pendentes) return <Selo tom="neutro">Sem contato</Selo>;
-  return (
-    <span className="flex flex-wrap gap-1">
-      {u.confirmados ? <Selo tom="ok">{plural(u.confirmados, "confirmado", "confirmados")}</Selo> : null}
-      {u.pendentes ? <Selo tom="atencao">{u.pendentes} a confirmar</Selo> : null}
-      {u.semProprietario ? <Selo tom="atencao">Falta o proprietário</Selo> : null}
-    </span>
-  );
+const NOME_MARCA: Record<Exclude<Marca, "">, string> = { "nao-mora": "Proprietário não mora", "a-venda": "À venda", "para-alugar": "Para alugar" };
+
+/** Um selo para os contatos da unidade: o que mais pede atenção primeiro. */
+function seloContatos(u: UnidadeResumo): { texto: string; tom: Tom } {
+  if (!u.ativa) return { texto: "Desativada", tom: "neutro" };
+  if (u.semProprietario) return { texto: "Falta o proprietário", tom: "atencao" };
+  if (!u.confirmados && !u.pendentes) return { texto: "Sem contato", tom: "atencao" };
+  if (!u.confirmados) return { texto: `${u.pendentes} a confirmar`, tom: "atencao" };
+  return { texto: plural(u.confirmados, "confirmado", "confirmados"), tom: "ok" };
 }
 
-/** Atalhos da unidade, abertos logo abaixo do nome: no celular ficam à vista, sem rolar a tabela. Fecha com Esc ou clicando fora. */
-function MenuUnidade({ u, nome, edita, children }: { u: UnidadeResumo; nome: string; edita: boolean; children: ReactNode }) {
-  const [aberto, setAberto] = useState(false);
-  const caixa = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!aberto) return;
-    const fora = (e: MouseEvent) => { if (!caixa.current?.contains(e.target as Node)) setAberto(false); };
-    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setAberto(false); };
-    document.addEventListener("mousedown", fora);
-    document.addEventListener("keydown", esc);
-    return () => { document.removeEventListener("mousedown", fora); document.removeEventListener("keydown", esc); };
-  }, [aberto]);
-  const base = `/moradores/unidade?id=${u.id}`;
-  const itens = [
-    { href: base, texto: "Abrir a unidade" },
-    { href: `${base}#garagens`, texto: "Garagens e veículos" },
-    ...(edita && u.ativa ? [{ href: `${base}&abrir=incluir`, texto: "Incluir pessoa" }, { href: `${base}&abrir=mudanca`, texto: "Registrar mudança" }] : []),
-  ];
-  return (
-    <div ref={caixa}>
-      <span className="inline-flex items-center gap-3 whitespace-nowrap">
-        {children}
-        <button type="button" aria-expanded={aberto} aria-controls={`menu-${u.id}`} aria-label={`Atalhos de ${nome}`} onClick={() => setAberto((a) => !a)}
-          className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-md align-middle text-tinta-suave hover:bg-superficie-2 focus-visible:outline-2 focus-visible:outline-violeta-600">
-          <Icone nome="pontos" className="h-5 w-5" />
-        </button>
-      </span>
-      {aberto ? (
-        <ul id={`menu-${u.id}`} className="mt-2 grid min-w-48 rounded-xl border border-linha bg-superficie py-1 shadow-s1">
-          {itens.map((i) => (
-            <li key={i.texto}><Link href={i.href} className="block px-3 py-2 text-sm hover:bg-superficie-2" onClick={() => setAberto(false)}>{i.texto}</Link></li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  );
+function contagemContatos(u: UnidadeResumo): string {
+  return [u.confirmados ? plural(u.confirmados, "confirmado", "confirmados") : null, u.pendentes ? `${u.pendentes} a confirmar` : null].filter(Boolean).join(" · ");
 }
 
 /** Busca na API (MU-11): o que achou em cada unidade, ou null enquanto a busca é curta. */
@@ -100,9 +71,83 @@ export function textoEstrutura(e: Estrutura): string {
   return `${AGRUPAMENTOS[e.agrupamento].nome}, ${e.usaAndar ? "com andares" : "sem andares"}`;
 }
 
+/** A torre (ou bloco), o andar e as marcas, numa janela. */
+function JanelaFiltros({ aberto, dados, f, aoFechar, aplicar }: { aberto: boolean; dados: Unidades; f: Filtros; aoFechar: () => void; aplicar: (f: Filtros) => void }) {
+  const [v, setV] = useState(f);
+  const div = nomesDivisao(dados.estrutura);
+  const ativos = dados.blocos.filter((b) => b.ativo);
+  const temSemBloco = dados.unidades.some((u) => !u.blocoId);
+  const doBloco = dados.unidades.filter((u) => (v.bloco === "" ? true : v.bloco === "sem-bloco" ? !u.blocoId : u.blocoId === v.bloco));
+  const andares = dados.estrutura.usaAndar ? andaresDe(doBloco) : [];
+  const o = dados.ocupacao;
+  const n: Record<Exclude<Marca, "">, number> = { "nao-mora": o.proprietarioNaoMora, "a-venda": o.aVenda, "para-alugar": o.paraAlugar };
+  return (
+    <Dialogo aberto={aberto} titulo="Filtrar unidades" aoFechar={aoFechar}>
+      <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); aplicar(v); }}>
+        {div.usa && ativos.length ? (
+          <CampoSelecao id="u-f-bloco" rotulo={div.um} value={v.bloco} onChange={(e) => setV({ ...v, bloco: e.target.value, andar: "" })}
+            opcoes={[{ valor: "", texto: `${div.varios}: todos` }, ...ativos.map((b) => ({ valor: b.id, texto: b.nome })), ...(temSemBloco ? [{ valor: "sem-bloco", texto: div.sem }] : [])]} />
+        ) : null}
+        {andares.length ? (
+          <CampoSelecao id="u-f-andar" rotulo="Andar" value={v.andar} onChange={(e) => setV({ ...v, andar: e.target.value })}
+            opcoes={[{ valor: "", texto: "Todos os andares" }, ...andares.map((a) => ({ valor: a, texto: mostrarAndar(a) }))]} />
+        ) : null}
+        <CampoSelecao id="u-f-marca" rotulo="Marca" value={v.marca} onChange={(e) => setV({ ...v, marca: e.target.value as Marca })}
+          opcoes={[{ valor: "", texto: "Qualquer uma" }, ...(Object.keys(NOME_MARCA) as Exclude<Marca, "">[]).map((m) => ({ valor: m, texto: `${NOME_MARCA[m]} (${n[m]})` }))]} />
+        <div className="flex justify-end gap-2">
+          <Botao variante="discreto" onClick={() => aplicar(SEM_FILTROS)}>Tirar filtros</Botao>
+          <Botao type="submit">Mostrar unidades</Botao>
+        </div>
+      </form>
+    </Dialogo>
+  );
+}
+
+const COLUNAS = "md:grid-cols-[44px_minmax(0,1.6fr)_minmax(0,1.1fr)_minmax(0,1fr)_20px]";
+
+function LinhaUnidade({ u, nome, achado }: { u: UnidadeResumo; nome: string; achado?: AchadoUnidade }) {
+  const selo = seloContatos(u);
+  const contagem = contagemContatos(u);
+  const ocupacao = (
+    <>
+      <span className={u.ocupacao === "SEM_CADASTRO" ? "text-tinta-suave" : ""}>{OCUPACOES[u.ocupacao]}</span>
+      {u.proprietarioNaoMora && u.proprietario ? <span className="t-apoio block">{u.proprietario}, proprietário, não mora</span> : null}
+      {u.aVenda || u.paraAlugar ? (
+        <span className="mt-1 flex flex-wrap gap-1">
+          {u.aVenda ? <Selo tom="info">À venda</Selo> : null}
+          {u.paraAlugar ? <Selo tom="info">Para alugar</Selo> : null}
+        </span>
+      ) : null}
+    </>
+  );
+  return (
+    <li className={`relative grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-5 py-3 hover:bg-violeta-50/50 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 ${COLUNAS} md:border-t md:border-linha md:first:border-t-0`}>
+      <span className="self-start md:self-center"><LadrilhoUnidade texto={u.identificacao} /></span>
+      <div className="grid min-w-0 gap-0.5">
+        <Link href={`/moradores/unidade?id=${u.id}`} className="font-medium text-tinta after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">{nome}</Link>
+        <span className="t-apoio">
+          {u.principal ? `${u.principal}${u.principalRelacao ? ` · ${nomeRelacao(u.principalRelacao).toLowerCase()}` : ""}`
+            : <span className="font-medium text-atencao">{u.ocupacao === "SEM_CADASTRO" ? "Ninguém cadastrado" : "Sem responsável"}</span>}
+        </span>
+        {achado && achado.tipo !== "UNIDADE" ? <span className="t-apoio">{achado.tipo === "TELEFONE" ? `telefone de ${achado.texto}` : achado.texto}</span> : null}
+        <span className="grid gap-1 pt-1 text-sm md:hidden">
+          <span>{ocupacao}</span>
+          <span className="flex flex-wrap items-center gap-2"><Selo tom={selo.tom}>{selo.texto}</Selo>{contagem && contagem !== selo.texto ? <span className="t-apoio">{contagem}</span> : null}</span>
+        </span>
+      </div>
+      <span className="text-sm max-md:hidden">{ocupacao}</span>
+      <span className="grid justify-items-start gap-1 max-md:hidden">
+        <Selo tom={selo.tom}>{selo.texto}</Selo>
+        {contagem && contagem !== selo.texto ? <span className="t-apoio">{contagem}</span> : null}
+      </span>
+      <Icone nome="dir" className="h-5 w-5 text-tinta-suave" />
+    </li>
+  );
+}
+
 export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoOrganizar, salvo, recarregar }: {
   dados: Unidades;
-  filtroInicial: Filtro;
+  filtroInicial: Atencao;
   aoMudarBloco: (id: string | null) => void;
   aoIncluir: () => void;
   aoOrganizar: () => void;
@@ -110,24 +155,24 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
   recarregar: () => void;
 }) {
   const div = nomesDivisao(dados.estrutura);
-  const ativos = dados.blocos.filter((b) => b.ativo);
   const inativos = dados.blocos.filter((b) => !b.ativo);
-  const temSemBloco = dados.unidades.some((u) => !u.blocoId);
-  const [filtro, setFiltro] = useState<Filtro>(filtroInicial);
-  const [andar, setAndar] = useState("");
+  const [situacao, setSituacao] = useState<Situacao>("");
+  const [atencao, setAtencao] = useState<Atencao>(filtroInicial);
+  const [f, setF] = useState<Filtros>(SEM_FILTROS);
+  const [filtrando, setFiltrando] = useState(false);
   const [texto, setTexto] = useState("");
   const busca = useBuscaUnidades(texto);
   const [janela, setJanela] = useState<{ tipo: "renomear" | "desativar" | "reativar"; bloco: Bloco } | null>(null);
-  const bloco = ativos.find((b) => b.id === filtro) ?? null;
+  const bloco = dados.blocos.find((b) => b.ativo && b.id === f.bloco) ?? null;
   useEffect(() => aoMudarBloco(bloco?.id ?? null), [bloco, aoMudarBloco]);
 
   if (dados.unidades.length === 0 && dados.blocos.length === 0) {
     return (
-      <Vazio titulo="Nenhuma unidade ainda"
+      <Vazio titulo="Nenhuma unidade ainda" icone="predio"
         acao={dados.podeEditar ? (
           <span className="flex flex-wrap gap-2">
             <Botao variante="contorno" onClick={aoOrganizar}>Como o prédio se organiza</Botao>
-            <Botao onClick={aoIncluir}>+ Unidades</Botao>
+            <Botao onClick={aoIncluir}>Novas unidades</Botao>
           </span>
         ) : undefined}>
         Primeiro diga como o prédio se organiza: por torre, bloco, quadra ou prédio, e se as unidades ficam em andares. Depois cadastre as unidades
@@ -136,130 +181,125 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
     );
   }
 
-  const doFiltro = dados.unidades.filter((u) =>
-    filtro === "todos" ? true
-      : filtro === "sem-bloco" ? !u.blocoId
-        : filtro === "sem-contato" ? u.ativa && u.confirmados === 0
-          : filtro === "sem-proprietario" ? u.semProprietario
-            : filtro === "com-morador" ? u.ativa && ["PROPRIETARIO_MORA", "ALUGADA", "CEDIDA"].includes(u.ocupacao)
-              : filtro === "alugadas" ? u.ativa && u.ocupacao === "ALUGADA"
-                : filtro === "nao-mora" ? u.ativa && u.proprietarioNaoMora
-                  : filtro === "sem-responsavel" ? u.semResponsavel
-                    : filtro === "a-venda" ? u.ativa && u.aVenda
-                      : filtro === "para-alugar" ? u.ativa && u.paraAlugar
-                    : u.blocoId === filtro);
-  const andares = dados.estrutura.usaAndar ? andaresDe(doFiltro) : [];
-  const doAndar = andar ? doFiltro.filter((u) => u.andar === andar) : doFiltro;
-  const lista = busca.achados ? doAndar.filter((u) => busca.achados!.has(u.id)) : doAndar;
+  const ativas = dados.unidades.filter((u) => u.ativa);
+  const naSituacao = (s: Situacao) => dados.unidades.filter((u) =>
+    s === "" ? true
+      : s === "com-morador" ? u.ativa && ["PROPRIETARIO_MORA", "ALUGADA", "CEDIDA"].includes(u.ocupacao)
+        : s === "alugadas" ? u.ativa && u.ocupacao === "ALUGADA"
+          : u.ativa && u.ocupacao === "SEM_CADASTRO");
+  const naAtencao = (u: UnidadeResumo) =>
+    atencao === "" ? true : atencao === "sem-contato" ? u.ativa && u.confirmados === 0 : atencao === "sem-proprietario" ? u.semProprietario : u.semResponsavel;
+  const nosFiltros = (u: UnidadeResumo) =>
+    (f.bloco === "" ? true : f.bloco === "sem-bloco" ? !u.blocoId : u.blocoId === f.bloco)
+    && (f.andar === "" || u.andar === f.andar)
+    && (f.marca === "" ? true : f.marca === "nao-mora" ? u.ativa && u.proprietarioNaoMora : f.marca === "a-venda" ? u.ativa && u.aVenda : u.ativa && u.paraAlugar);
+  const filtradas = naSituacao(situacao).filter((u) => naAtencao(u) && nosFiltros(u));
+  const lista = busca.achados ? filtradas.filter((u) => busca.achados!.has(u.id)) : filtradas;
   const buscou = busca.achados !== null;
   const nomeBloco = (id: string | null) => dados.blocos.find((b) => b.id === id)?.nome ?? null;
-  const opcoes = [
-    { valor: "todos", texto: "Todas" },
-    ...(div.usa ? ativos.map((b) => ({ valor: b.id, texto: b.nome })) : []),
-    ...(div.usa && temSemBloco && ativos.length ? [{ valor: "sem-bloco", texto: div.sem }] : []),
-    { valor: "sem-contato", texto: "Sem contato confirmado" },
-    ...(dados.resumo.semProprietario || filtro === "sem-proprietario" ? [{ valor: "sem-proprietario", texto: "Inquilino sem proprietário" }] : []),
-  ];
   const o = dados.ocupacao;
-  const contadores = [
-    { valor: "com-morador", texto: `${o.comMorador} com morador`, n: o.comMorador },
-    { valor: "alugadas", texto: plural(o.alugadas, "alugada", "alugadas"), n: o.alugadas },
-    { valor: "nao-mora", texto: `${o.proprietarioNaoMora} proprietário não mora`, n: o.proprietarioNaoMora },
-    { valor: "sem-responsavel", texto: `${o.semResponsavel} sem responsável`, n: o.semResponsavel },
-    { valor: "a-venda", texto: `${o.aVenda} à venda`, n: o.aVenda },
-    { valor: "para-alugar", texto: `${o.paraAlugar} para alugar`, n: o.paraAlugar },
-  ].filter((c) => c.n > 0 || c.valor === filtro);
-  const resolvido = filtro === "sem-contato" ? "Todas as unidades têm contato confirmado"
-    : filtro === "sem-proprietario" ? "Toda unidade com inquilino tem o proprietário no cadastro"
-      : filtro === "sem-responsavel" ? "Toda unidade com gente cadastrada tem um responsável"
-        : ["com-morador", "alugadas", "nao-mora", "a-venda", "para-alugar"].includes(filtro) ? "Nenhuma unidade nesta situação" : null;
+  const situacoes: { valor: Situacao; texto: string; n: number }[] = [
+    { valor: "", texto: "Todas", n: dados.unidades.length },
+    { valor: "com-morador", texto: "Com morador", n: o.comMorador },
+    { valor: "alugadas", texto: "Alugadas", n: o.alugadas },
+    { valor: "sem-cadastro", texto: "Sem cadastro", n: ativas.filter((u) => u.ocupacao === "SEM_CADASTRO").length },
+  ];
+  const atalhos: { valor: Exclude<Atencao, "">; texto: string; n: number }[] = ([
+    { valor: "sem-contato", texto: "Sem contato confirmado", n: dados.resumo.semContato },
+    { valor: "sem-proprietario", texto: "Inquilino sem proprietário", n: dados.resumo.semProprietario },
+    { valor: "sem-responsavel", texto: "Sem responsável", n: o.semResponsavel },
+  ] as const).filter((a) => a.n > 0 || a.valor === atencao);
+  const escolhidos = [
+    ...(f.bloco ? [{ texto: f.bloco === "sem-bloco" ? div.sem : nomeBloco(f.bloco) ?? div.um, tirar: () => setF({ ...f, bloco: "", andar: "" }) }] : []),
+    ...(f.andar ? [{ texto: mostrarAndar(f.andar), tirar: () => setF({ ...f, andar: "" }) }] : []),
+    ...(f.marca ? [{ texto: NOME_MARCA[f.marca], tirar: () => setF({ ...f, marca: "" }) }] : []),
+  ];
+  const resolvido = atencao === "sem-contato" ? "Todas as unidades têm contato confirmado"
+    : atencao === "sem-proprietario" ? "Toda unidade com inquilino tem o proprietário no cadastro"
+      : atencao === "sem-responsavel" ? "Toda unidade com gente cadastrada tem um responsável"
+        : situacao || f.marca ? "Nenhuma unidade nesta situação" : null;
+  const limpar = () => { setSituacao(""); setAtencao(""); setF(SEM_FILTROS); setTexto(""); };
 
   return (
     <div className="grid gap-4">
-      <p className="flex flex-wrap items-center gap-x-2 text-sm text-tinta-suave">
-        Organização do prédio: {textoEstrutura(dados.estrutura).toLowerCase()}
-        {dados.podeEditar ? <><span aria-hidden="true">·</span><Botao variante="discreto" onClick={aoOrganizar}>Mudar</Botao></> : null}
-      </p>
-      <Escolha rotulo="Mostrar unidades" opcoes={opcoes} atual={filtro} aoMudar={(f) => { setFiltro(f); setAndar(""); }} />
-      {contadores.length ? (
-        <Escolha rotulo="Ocupação" opcoes={contadores} atual={filtro} aoMudar={(f) => { setFiltro(f === filtro ? "todos" : f); setAndar(""); }} />
+      <div className="flex items-center gap-3">
+        <form role="search" aria-label="Buscar unidades" className="busca min-w-0 flex-1 md:max-w-[520px]" onSubmit={(e) => e.preventDefault()}>
+          <Icone nome="busca" />
+          <label htmlFor="u-busca" className="sr-only">Buscar unidade</label>
+          <input id="u-busca" className="campo" type="search" placeholder="Buscar por unidade, nome, telefone ou placa" maxLength={60} value={texto}
+            onChange={(e) => setTexto(e.target.value)} aria-describedby="u-busca-ajuda" />
+        </form>
+        <Botao variante="contorno" className="max-md:w-11 max-md:px-0" onClick={() => setFiltrando(true)}>
+          <Icone nome="filtro" /><span className="max-md:sr-only">Filtros{escolhidos.length ? ` · ${escolhidos.length}` : ""}</span>
+        </Botao>
+      </div>
+      <p id="u-busca-ajuda" className="sr-only">A placa acha com ou sem hífen, em maiúsculas ou minúsculas.</p>
+      {escolhidos.length || buscou || busca.buscando || busca.falha ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {escolhidos.map((e) => <Chip key={e.texto} aoTirar={e.tirar} rotuloTirar={`Tirar o filtro ${e.texto}`}>{e.texto}</Chip>)}
+          <span className="t-apoio" aria-live="polite">
+            {busca.buscando ? "Buscando…" : busca.falha ? busca.falha : buscou ? plural(lista.length, "unidade encontrada", "unidades encontradas") : ""}
+          </span>
+        </div>
       ) : null}
-      <form role="search" className="grid max-w-xl gap-1" onSubmit={(e) => e.preventDefault()}>
-        <span className="flex gap-2">
-          <CampoTexto id="u-busca" rotulo="Buscar unidade" className="flex-1" type="search" maxLength={60} value={texto} onChange={(e) => setTexto(e.target.value)}
-            ajuda="Busca por unidade, nome, telefone ou placa. A placa acha com ou sem hífen, em maiúsculas ou minúsculas." />
-          {texto ? <span className="self-start pt-6"><Botao variante="discreto" onClick={() => setTexto("")}>Limpar</Botao></span> : null}
-        </span>
-        <span className="text-sm text-tinta-suave" aria-live="polite">
-          {busca.buscando ? "Buscando…" : busca.falha ? busca.falha : buscou ? plural(lista.length, "unidade encontrada", "unidades encontradas") : ""}
-        </span>
-      </form>
-      {andares.length ? (
-        <CampoSelecao id="u-filtro-andar" rotulo="Andar" className="max-w-56" value={andar} onChange={(e) => setAndar(e.target.value)}
-          opcoes={[{ valor: "", texto: "Todos os andares" }, ...andares.map((a) => ({ valor: a, texto: mostrarAndar(a) }))]} />
-      ) : null}
+
+      <section aria-labelledby="t-unidades" className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
+        <h2 id="t-unidades" className="sr-only">Unidades do condomínio</h2>
+        <nav aria-label="Ocupação" className="flex gap-1 overflow-x-auto border-b border-linha md:px-3">
+          {situacoes.map((s) => {
+            const atual = situacao === s.valor;
+            return (
+              <button key={s.valor || "todas"} type="button" aria-pressed={atual} onClick={() => setSituacao(s.valor)}
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                {s.texto}
+                <span className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{s.n}</span>
+              </button>
+            );
+          })}
+        </nav>
+        {atalhos.length ? (
+          <div role="group" aria-label="O que pede atenção" className="flex items-center gap-2 overflow-x-auto py-3 md:border-b md:border-linha md:bg-fundo md:px-5">
+            <span className="t-apoio shrink-0 max-md:hidden">Pede atenção</span>
+            {atalhos.map((a) => (
+              <button key={a.valor} type="button" aria-pressed={atencao === a.valor} data-tom="atencao" className="chip-atencao"
+                onClick={() => setAtencao(atencao === a.valor ? "" : a.valor)}>
+                {a.texto} <b>{a.n}</b>
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {lista.length === 0 ? (
+          <div className="md:p-5">
+            {buscou ? <Vazio titulo="Nenhuma unidade encontrada" icone="busca">Confira o que foi escrito ou busque por outra coisa: unidade, nome, telefone ou placa.</Vazio>
+              : <Vazio titulo={resolvido ?? "Nenhuma unidade aqui"} icone={resolvido ? "check" : "predio"}
+                  acao={situacao || atencao || escolhidos.length ? <Botao variante="contorno" onClick={limpar}>Limpar filtros</Botao> : undefined}>
+                  {resolvido ? "Nada a fazer por enquanto." : "Inclua unidades em Montar o prédio, Novas unidades."}
+                </Vazio>}
+          </div>
+        ) : (
+          <>
+            <div aria-hidden="true" className={`hidden gap-4 border-b border-linha bg-fundo px-5 py-2.5 md:grid ${COLUNAS}`}>
+              <span /><span className="t-rotulo">Unidade</span><span className="t-rotulo">Ocupação</span><span className="t-rotulo">Contatos</span><span />
+            </div>
+            <ul aria-label="Unidades" className="grid max-md:gap-3">
+              {lista.map((u) => (
+                <LinhaUnidade key={u.id} u={u} achado={busca.achados?.get(u.id)}
+                  nome={nomeDaUnidade(f.bloco === u.blocoId ? null : nomeBloco(u.blocoId), f.andar ? null : u.andar, u.identificacao)} />
+              ))}
+            </ul>
+            <p className="t-apoio py-4 md:border-t md:border-linha md:px-5">{plural(lista.length, "unidade", "unidades")}</p>
+          </>
+        )}
+      </section>
+
       {bloco && dados.podeEditar ? (
         <p className="flex flex-wrap items-center gap-x-2 text-sm text-tinta-suave">
-          {bloco.nome} · {plural(doFiltro.filter((u) => u.ativa).length, "unidade ativa", "unidades ativas")} ·
+          {bloco.nome} · {plural(dados.unidades.filter((u) => u.ativa && u.blocoId === bloco.id).length, "unidade ativa", "unidades ativas")} ·
           <Botao variante="discreto" onClick={() => setJanela({ tipo: "renomear", bloco })}>Renomear</Botao>·
           <Botao variante="discreto" onClick={() => setJanela({ tipo: "desativar", bloco })}>Desativar</Botao>
         </p>
       ) : null}
-      {lista.length === 0 && buscou ? (
-        <Vazio titulo="Nenhuma unidade encontrada">Confira o que foi escrito ou busque por outra coisa: unidade, nome, telefone ou placa.</Vazio>
-      ) : lista.length === 0 ? (
-        <Vazio titulo={resolvido ?? "Nenhuma unidade aqui"}>
-          {resolvido ? "Nada a fazer por enquanto." : "Inclua unidades pelo botão + Unidades."}
-        </Vazio>
-      ) : (
-        <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
-          <table className="w-full text-sm">
-            <caption className="sr-only">Unidades do condomínio</caption>
-            <thead className="bg-superficie-2 text-left text-tinta-suave">
-              <tr>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Unidade</th>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Responsável</th>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Ocupação</th>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Contatos</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lista.map((u) => {
-                const achado = busca.achados?.get(u.id);
-                return (
-                <tr key={u.id} className="border-t border-linha align-top">
-                  <td className="px-4 py-3">
-                    <MenuUnidade u={u} edita={dados.podeEditar} nome={nomeDaUnidade(nomeBloco(u.blocoId), u.andar, u.identificacao)}>
-                      <Link href={`/moradores/unidade?id=${u.id}`} className="font-medium text-violeta-600 hover:underline">
-                        {nomeDaUnidade(filtro === u.blocoId ? null : nomeBloco(u.blocoId), andar ? null : u.andar, u.identificacao)}
-                      </Link>
-                    </MenuUnidade>
-                    {achado && achado.tipo !== "UNIDADE" ? (
-                      <span className="block text-xs text-tinta-suave">{achado.tipo === "TELEFONE" ? `telefone de ${achado.texto}` : achado.texto}</span>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3">
-                    {u.principal ? <>{u.principal}{u.principalRelacao ? <span className="block text-xs text-tinta-suave">{nomeRelacao(u.principalRelacao)}</span> : null}</>
-                      : <span className="text-tinta-suave">Nenhum</span>}
-                  </td>
-                  <td className="px-4 py-3">
-                    {u.ocupacao === "SEM_CADASTRO" ? <span className="text-tinta-suave">{OCUPACOES.SEM_CADASTRO}</span> : OCUPACOES[u.ocupacao]}
-                    {u.proprietarioNaoMora && u.proprietario ? <span className="block text-xs text-tinta-suave">{u.proprietario}, proprietário, não mora</span> : null}
-                    {u.aVenda || u.paraAlugar ? (
-                      <span className="mt-1 flex flex-wrap gap-1">
-                        {u.aVenda ? <Selo tom="info">À venda</Selo> : null}
-                        {u.paraAlugar ? <Selo tom="info">Para alugar</Selo> : null}
-                      </span>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3"><Contatos u={u} /></td>
-                </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
       {inativos.length && dados.podeEditar ? (
         <p className="flex flex-wrap items-center gap-x-2 text-sm text-tinta-suave">
           {div.varios} desativados:
@@ -268,6 +308,7 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
           ))}
         </p>
       ) : null}
+      <JanelaFiltros key={`${filtrando}`} aberto={filtrando} dados={dados} f={f} aoFechar={() => setFiltrando(false)} aplicar={(v) => { setFiltrando(false); setF(v); }} />
       <JanelaBloco aberto={janela?.tipo === "renomear"} bloco={janela?.bloco ?? null} estrutura={dados.estrutura} aoFechar={() => setJanela(null)}
         salvo={salvo} recarregar={recarregar} />
       <Janela aberto={janela?.tipo === "desativar" || janela?.tipo === "reativar"}
@@ -280,7 +321,7 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
           const r = await chamarApi(`/v1/condominio/blocos/${b.id}`, { metodo: "PUT", corpo: { versao: b.versao, nome: b.nome, ativo: janela!.tipo === "reativar" } });
           if (r.ok) {
             setJanela(null);
-            setFiltro("todos");
+            setF(SEM_FILTROS);
             salvo({ tom: "ok", texto: `${b.nome}: ${janela!.tipo === "reativar" ? "reativado" : "desativado"}.` });
           }
           return r;

@@ -1,42 +1,48 @@
 "use client";
-// Moradores e unidades (passo 3; design "Telas do passo 3", aprovado em 16/10/2026): as
-// unidades do jeito que o prédio se organiza (torre, bloco, quadra ou prédio, com ou sem
-// andar), a lista de moradores e proprietários e o que espera confirmação do síndico (MU-02).
-// Cada botão só aparece para quem pode (CF-03): a pessoa com Cadastrar moradores inclui, mas
-// só o síndico confirma. A aba Garagens mostra todas as vagas (MU-06).
+// Moradores e unidades (passo 3; DC15, telas-modelo moradores-*): as unidades do jeito que o
+// prédio se organiza (torre, bloco, quadra ou prédio, com ou sem andar), as pessoas de cada
+// unidade, as garagens e o que espera confirmação do síndico (MU-02). Um só botão principal,
+// Cadastrar pessoa; montar o prédio (planilha, divisões, unidades, vagas e a organização) fica
+// num menu. No celular, o Cadastrar pessoa flutua sobre a barra de baixo. Cada botão só aparece
+// para quem pode (CF-03): a pessoa com Cadastrar moradores inclui, mas só o síndico confirma.
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Abas, Aviso, Botao, Carregando, classeBotao, ErroCarregar } from "@triade/ui";
+import { nomeDaUnidade } from "@triade/domain";
+import { Abas, Aviso, Botao, Carregando, ErroCarregar, Icone } from "@triade/ui";
 import { assinatura, useCarregar, usePlataforma } from "../sessao.tsx";
 import type { Recado, Unidades } from "../tipos.ts";
-import { AbaUnidades, IncluirUnidades, JanelaBloco, JanelaEstrutura } from "./AbaUnidades.tsx";
-import { nomesDivisao } from "./comum.tsx";
-import { AbaGaragens } from "./Garagens.tsx";
+import { AbaUnidades, IncluirUnidades, JanelaBloco, JanelaEstrutura, textoEstrutura } from "./AbaUnidades.tsx";
+import { MenuAcoes, nomesDivisao, type ItemMenu } from "./comum.tsx";
+import { AbaGaragens, JanelaVaga } from "./Garagens.tsx";
 import { CadastrarMorador } from "./JanelasUnidade.tsx";
 import { ListaContatos } from "./ListaContatos.tsx";
 
-type IdAba = "unidades" | "moradores" | "garagens" | "confirmar";
+type IdAba = "unidades" | "pessoas" | "garagens" | "confirmar";
 
 /** Filtros que o Início abre pelo endereço. */
 const FILTROS_DO_ENDERECO = ["sem-contato", "sem-proprietario"] as const;
+
+/** "Nova torre", "Novo bloco". */
+const nova = (um: string) => `${["Torre", "Quadra"].includes(um) ? "Nova" : "Novo"} ${um.toLowerCase()}`;
 
 export function Moradores() {
   const { atualizar } = usePlataforma();
   const carga = useCarregar<Unidades>("/v1/condominio/unidades");
   const busca = useSearchParams();
   const router = useRouter();
-  const [aba, setAba] = useState<IdAba>((["moradores", "garagens", "confirmar"] as const).find((a) => a === busca.get("aba")) ?? "unidades");
+  const doEndereco = busca.get("aba") === "moradores" ? "pessoas" : busca.get("aba");
+  const [aba, setAba] = useState<IdAba>((["pessoas", "garagens", "confirmar"] as const).find((a) => a === doEndereco) ?? "unidades");
   const [recado, setRecado] = useState<Recado>(null);
-  const [janela, setJanela] = useState<"bloco" | "unidades" | "estrutura" | "morador" | null>(null);
+  const [janela, setJanela] = useState<"bloco" | "unidades" | "estrutura" | "morador" | "vaga" | null>(null);
   const [blocoAtual, setBlocoAtual] = useState<string | null>(null);
+  const [garagens, setGaragens] = useState(0);
 
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando as unidades…" />;
   if (carga.estado === "erro") {
     return (
       <div className="grid gap-3">
-        <h1 className="text-[28px] font-normal tracking-tight">Moradores e unidades</h1>
+        <h1 className="t-titulo-tela">Moradores e unidades</h1>
         <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />
       </div>
     );
@@ -47,45 +53,55 @@ export function Moradores() {
   const salvo = (r: Recado) => { setRecado(r); carga.recarregar(); atualizar(); };
   const abas = [
     { id: "unidades" as const, texto: "Unidades" },
-    { id: "moradores" as const, texto: "Moradores" },
+    { id: "pessoas" as const, texto: "Pessoas" },
     { id: "garagens" as const, texto: "Garagens" },
-    { id: "confirmar" as const, texto: `A confirmar (${dados.resumo.aConfirmar})` },
+    { id: "confirmar" as const, texto: "A confirmar", contagem: dados.resumo.aConfirmar },
   ];
+  const temUnidade = dados.unidades.some((u) => u.ativa);
+  const montar: ItemMenu[] = dados.podeEditar ? [
+    { texto: "Importar planilha", icone: "baixar", apoio: "Moradores e proprietários de uma vez", href: "/moradores/importar" },
+    ...(div.usa ? [{ texto: nova(div.um), icone: "mais" as const, acao: () => setJanela("bloco") }] : []),
+    { texto: "Novas unidades", icone: "mais", apoio: "Uma ou várias, pela numeração", acao: () => setJanela("unidades") },
+    { texto: "Nova vaga de garagem", icone: "pin", acao: () => setJanela("vaga") },
+    { texto: "Organização do prédio", icone: "ajuste", apoio: `Hoje: ${textoEstrutura(dados.estrutura).toLowerCase()}`, acao: () => setJanela("estrutura") },
+  ] : [];
+  const cadastrar = <Botao onClick={() => setJanela("morador")}><Icone nome="pessoa-mais" />Cadastrar pessoa</Botao>;
+  const unidadesDaVaga = dados.unidades.filter((u) => u.ativa)
+    .map((u) => ({ id: u.id, nome: nomeDaUnidade(dados.blocos.find((b) => b.id === u.blocoId)?.nome, u.andar, u.identificacao) }));
 
   return (
-    <div className="grid gap-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-[28px] font-normal tracking-tight">Moradores e unidades</h1>
-          <p className="mt-1 text-tinta-suave">Moradores e proprietários de cada unidade. Ninguém aqui tem senha: falam com o condomínio pelo WhatsApp.</p>
+    <div className="grid gap-5 max-md:pb-16">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="t-titulo-tela">Moradores e unidades</h1>
+          <p className="t-apoio mt-1">Quem fala por cada unidade. Ninguém aqui tem senha: falam com o condomínio pelo WhatsApp.</p>
         </div>
-        {dados.podeEditar ? (
-          <div className="flex flex-wrap gap-2">
-            <Link href="/moradores/importar" className={classeBotao("contorno")}>Importar planilha</Link>
-            {div.usa ? <Botao variante="contorno" onClick={() => setJanela("bloco")}>+ {div.um}</Botao> : null}
-            <Botao variante="contorno" onClick={() => setJanela("unidades")}>+ Unidades</Botao>
-            {dados.unidades.some((u) => u.ativa) ? <Botao onClick={() => setJanela("morador")}>+ Morador ou proprietário</Botao> : null}
-          </div>
-        ) : null}
+        <div className="flex shrink-0 gap-2">
+          <MenuAcoes rotulo="Montar o prédio" texto="Montar o prédio" icone="predio" itens={montar} />
+          {dados.podeEditar && temUnidade ? <span className="max-md:hidden">{cadastrar}</span> : null}
+        </div>
       </div>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
       <Abas abas={abas} atual={aba} rotulo="Partes de moradores e unidades"
         aoMudar={(id) => { setAba(id); setRecado(null); router.replace(id === "unidades" ? "/moradores" : `/moradores?aba=${id}`, { scroll: false }); }}>
-        <div key={`${aba}-${assinatura(dados)}`} className="pt-5">
+        <div key={`${aba}-${assinatura(dados)}-${garagens}`} className="pt-5">
           {aba === "unidades" ? (
-            <AbaUnidades dados={dados} filtroInicial={FILTROS_DO_ENDERECO.find((f) => f === busca.get("filtro")) ?? "todos"} aoMudarBloco={setBlocoAtual}
+            <AbaUnidades dados={dados} filtroInicial={FILTROS_DO_ENDERECO.find((f) => f === busca.get("filtro")) ?? ""} aoMudarBloco={setBlocoAtual}
               aoIncluir={() => setJanela("unidades")} aoOrganizar={() => setJanela("estrutura")} salvo={salvo} recarregar={carga.recarregar} />
           ) : aba === "garagens" ? (
             <AbaGaragens salvo={(r) => { setRecado(r); atualizar(); }} />
           ) : (
-            <ListaContatos estado={aba === "confirmar" ? "PENDENTE" : undefined} salvo={salvo} buscaInicial={aba === "moradores" ? busca.get("busca") ?? "" : ""} />
+            <ListaContatos estado={aba === "confirmar" ? "PENDENTE" : undefined} salvo={salvo} buscaInicial={aba === "pessoas" ? busca.get("busca") ?? "" : ""} />
           )}
         </div>
       </Abas>
+      {dados.podeEditar && temUnidade ? <div className="fixed right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] z-20 md:hidden">{cadastrar}</div> : null}
       <JanelaBloco aberto={janela === "bloco"} bloco={null} estrutura={dados.estrutura} aoFechar={() => setJanela(null)} salvo={salvo} recarregar={carga.recarregar} />
       <JanelaEstrutura aberto={janela === "estrutura"} estrutura={dados.estrutura} aoFechar={() => setJanela(null)} salvo={salvo} recarregar={carga.recarregar} />
       <CadastrarMorador aberto={janela === "morador"} dados={dados} aoFechar={() => setJanela(null)} salvo={salvo} />
       <IncluirUnidades aberto={janela === "unidades"} dados={dados} blocoInicial={blocoAtual} aoFechar={() => setJanela(null)} salvo={salvo} />
+      <JanelaVaga aberto={janela === "vaga"} vaga={null} unidades={unidadesDaVaga} aoFechar={() => setJanela(null)} recarregar={carga.recarregar}
+        salvo={(r) => { setJanela(null); setRecado(r); setGaragens((n) => n + 1); }} />
     </div>
   );
 }
