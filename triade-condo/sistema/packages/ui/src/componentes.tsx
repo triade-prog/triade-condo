@@ -26,6 +26,8 @@ interface PropsCampo {
   ajuda?: ReactNode;
   erro?: string | null;
   opcional?: boolean;
+  /** Ícone à esquerda, dentro do campo (DC15). */
+  icone?: NomeIcone;
 }
 
 function Rotulo({ id, rotulo, opcional }: Pick<PropsCampo, "id" | "rotulo" | "opcional">) {
@@ -46,11 +48,15 @@ function descrito(p: PropsCampo) {
   return { id: p.id, "aria-invalid": p.erro ? true : undefined, "aria-describedby": p.erro || p.ajuda ? `${p.id}-ajuda` : undefined };
 }
 
-export function CampoTexto({ id, rotulo, ajuda, erro, opcional, className = "", ...props }: PropsCampo & InputHTMLAttributes<HTMLInputElement>) {
+function ComIcone({ icone, children }: { icone?: NomeIcone; children: ReactNode }) {
+  return icone ? <div className="com-icone"><Icone nome={icone} className="h-4.5 w-4.5" />{children}</div> : <>{children}</>;
+}
+
+export function CampoTexto({ id, rotulo, ajuda, erro, opcional, icone, className = "", ...props }: PropsCampo & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className={`grid content-start gap-1 ${className}`}>
       <Rotulo id={id} rotulo={rotulo} opcional={opcional} />
-      <input className={CONTROLE} {...descrito({ id, rotulo, ajuda, erro })} {...props} />
+      <ComIcone icone={icone}><input className={CONTROLE} {...descrito({ id, rotulo, ajuda, erro })} {...props} /></ComIcone>
       <Rodape id={id} ajuda={ajuda} erro={erro} />
     </div>
   );
@@ -67,16 +73,33 @@ export function CampoAreaTexto({ id, rotulo, ajuda, erro, opcional, className = 
 }
 
 export function CampoSelecao({
-  id, rotulo, ajuda, erro, opcional, opcoes, className = "", ...props
+  id, rotulo, ajuda, erro, opcional, opcoes, icone, className = "", ...props
 }: PropsCampo & SelectHTMLAttributes<HTMLSelectElement> & { opcoes: { valor: string; texto: string }[] }) {
   return (
     <div className={`grid content-start gap-1 ${className}`}>
       <Rotulo id={id} rotulo={rotulo} opcional={opcional} />
-      <select className={CONTROLE} {...descrito({ id, rotulo, ajuda, erro })} {...props}>
-        {opcoes.map((o) => <option key={o.valor} value={o.valor}>{o.texto}</option>)}
-      </select>
+      <ComIcone icone={icone}>
+        <select className={CONTROLE} {...descrito({ id, rotulo, ajuda, erro })} {...props}>
+          {opcoes.map((o) => <option key={o.valor} value={o.valor}>{o.texto}</option>)}
+        </select>
+      </ComIcone>
       <Rodape id={id} ajuda={ajuda} erro={erro} />
     </div>
+  );
+}
+
+/** Interruptor: liga e desliga uma escolha (role="switch"), com o nome e a explicação ao lado. */
+export function Interruptor({ id, rotulo, ajuda, icone, marcado, aoMudar }: {
+  id: string; rotulo: string; ajuda?: string; icone?: NomeIcone; marcado: boolean; aoMudar: (v: boolean) => void;
+}) {
+  return (
+    <label htmlFor={id} className="interruptor">
+      <span className="grid flex-1 gap-0.5">
+        <span className="flex items-center gap-2 font-medium">{icone ? <Icone nome={icone} className="h-4 w-4" /> : null}{rotulo}</span>
+        {ajuda ? <span id={`${id}-ajuda`} className="t-apoio">{ajuda}</span> : null}
+      </span>
+      <input id={id} type="checkbox" role="switch" checked={marcado} aria-describedby={ajuda ? `${id}-ajuda` : undefined} onChange={(e) => aoMudar(e.target.checked)} />
+    </label>
   );
 }
 

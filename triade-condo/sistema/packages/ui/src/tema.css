@@ -341,6 +341,59 @@ body {
   .t-codigo { font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
   .t-destaque { font-family: var(--font-destaque); font-style: italic; font-weight: 400; }
 
+  /* Formulário no padrão novo (DC15, telas-modelo/pedido-registrar-*). Campo com ícone à
+     esquerda; partes numeradas no computador; passos com barra de progresso no celular. */
+  .com-icone { position: relative; }
+  .com-icone > svg { position: absolute; left: 12px; top: 22px; width: 18px; height: 18px; transform: translateY(-50%); color: var(--color-tinta-suave); pointer-events: none; }
+  .com-icone > .campo { padding-left: 40px; }
+  .parte { display: grid; gap: 16px; padding: 24px 0; border-top: 1px solid var(--color-linha); }
+  .parte:first-child { border-top: 0; padding-top: 8px; }
+  .parte > .cabeca { display: flex; align-items: center; gap: 10px; }
+  .numero { display: inline-grid; place-items: center; width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; background: var(--color-violeta-100); color: var(--color-violeta-700); font-size: 13px; font-weight: 700; }
+  .passos { display: flex; gap: 6px; }
+  .passos > span { flex: 1; height: 6px; border-radius: 999px; background: var(--color-superficie-2); }
+  .passos > span[data-feito] { background: var(--grad-acao); }
+  .resumo-passo { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--color-linha); background: var(--color-violeta-50); color: var(--color-tinta); text-align: left; cursor: pointer; }
+  .resumo-passo:hover { border-color: var(--color-violeta-300); }
+  .resumo-passo .alterar { font-size: 13px; font-weight: 500; color: var(--color-violeta-600); }
+  @media (max-width: 767px) {
+    .parte { padding: 0; border-top: 0; }
+    .parte > .cabeca { display: none; }
+  }
+
+  /* Interruptor: liga e desliga uma escolha, com a explicação ao lado. */
+  .interruptor { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--color-linha); background: #fff; cursor: pointer; }
+  .interruptor input { appearance: none; position: relative; width: 40px; height: 24px; flex-shrink: 0; margin: 2px 0 0; border-radius: 999px; background: #d9d2e6; cursor: pointer; transition: background .15s; }
+  .interruptor input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 999px; background: #fff; box-shadow: 0 1px 3px #1e153133; transition: left .15s; }
+  .interruptor input:checked { background: var(--color-violeta-600); }
+  .interruptor input:checked::after { left: 19px; }
+  .interruptor input:focus-visible { outline: 0; box-shadow: var(--anel); }
+
+  /* Anexar arquivos (DC15, guia de padrões): área tracejada com o que aceita, e cada arquivo numa linha. */
+  .anexar { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-radius: 18px; border: 1.5px dashed var(--color-violeta-300); background: var(--color-violeta-50); }
+  .anexar > .quadro { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 14px; background: #fff; color: var(--color-violeta-600); box-shadow: var(--shadow-s1); }
+  .anexar > .quadro svg { width: 24px; height: 24px; }
+  .anexar > .acoes { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  @media (max-width: 767px) { .anexar { flex-direction: column; text-align: center; gap: 12px; padding: 20px 16px; } }
+  .arquivo { display: grid; gap: 8px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--color-linha); background: #fff; }
+  .arquivo[data-problema] { border-color: var(--color-atencao-borda); background: var(--color-atencao-fundo); }
+
+  /* Atalho do que pede atenção na fila: cada um no tom do que avisa, com a contagem. */
+  .chip-atencao { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--borda, var(--color-linha)); background: var(--fundo, #fff); color: var(--tinta, var(--color-tinta)); font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+  .chip-atencao b { font-weight: 700; }
+  .chip-atencao[data-tom="erro"] { --tinta: var(--color-erro); --fundo: var(--color-erro-fundo); --borda: var(--color-erro-borda); }
+  .chip-atencao[data-tom="atencao"] { --tinta: var(--color-atencao); --fundo: var(--color-atencao-fundo); --borda: var(--color-atencao-borda); }
+  .chip-atencao[data-tom="andamento"] { --tinta: var(--color-andamento); --fundo: var(--color-andamento-fundo); --borda: var(--color-andamento-borda); }
+  .chip-atencao[data-tom="neutro"] { --tinta: var(--color-neutro); --fundo: var(--color-neutro-fundo); --borda: var(--color-neutro-borda); }
+  .chip-atencao[aria-pressed="true"] { background: var(--grad-acao); color: #fff; border-color: transparent; box-shadow: inset 0 1px 0 #ffffff47, 0 8px 16px -8px #5808ccb3; }
+  .chip-atencao:focus-visible { outline: 0; box-shadow: var(--anel); }
+
+  /* Ladrilho: ícone num quadrado. A categoria fica sempre em cinza. */
+  .ladrilho { display: inline-grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0; border-radius: 11px; background: var(--color-neutro-fundo); color: var(--color-neutro); }
+  .ladrilho svg { width: 18px; height: 18px; }
+  .ladrilho[data-tom="violeta"] { background: var(--color-violeta-100); color: var(--color-violeta-700); }
+  .ladrilho[data-tom="ok"] { background: var(--color-ok-fundo); color: var(--color-ok); }
+
   /* Iniciais da pessoa, no topo e nas listas. */
   .iniciais { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; background: var(--color-violeta-100); color: var(--color-violeta-700); font-size: 12px; font-weight: 600; }
 

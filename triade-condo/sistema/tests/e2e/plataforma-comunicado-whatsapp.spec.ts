@@ -4,10 +4,11 @@
 // registro do pedido e o botão do mural e do link pessoal. As regras de verdade (aceite, fila
 // lenta, horário sem envio) estão no banco (pgTAP 033). Cada tela passa no axe (WCAG 2.2 AA) no
 // celular e no computador e não usa emoji.
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { LINK_FALSO, MURAL_FALSO } from "./api-falsa-comunicados";
+import { avisado, irAoPasso } from "./registro";
 
 const PLATAFORMA = "http://localhost:3000";
 const CONVITE = "https://wa.me/5561981244000?text=COMUNICADOS";
@@ -18,8 +19,6 @@ async function conferir(page: Page) {
   const texto = await page.locator("body").innerText();
   expect(texto.match(/\p{Extended_Pictographic}/gu) ?? []).toEqual([]);
 }
-
-const linha = (tabela: Locator, quem: string) => tabela.getByRole("row").filter({ hasText: quem });
 
 test.describe("Plataforma · comunicado pelo WhatsApp", () => {
   test("CF-11, W-20: o cartão começa desligado, conta por telefone e dá o convite e o cartaz", async ({ page }) => {
@@ -145,23 +144,23 @@ test.describe("Plataforma · comunicado pelo WhatsApp", () => {
   test("AT-26, CD-02: o comunicado do registro do pedido segue o mesmo caminho e conta o WhatsApp", async ({ page, isMobile }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true, comComunicadosWhatsapp: true });
     await page.goto(`${PLATAFORMA}/pedidos`);
-    await page.getByRole("button", { name: "+ Registrar pedido" }).first().click();
+    await page.getByRole("button", { name: "Registrar pedido" }).first().click();
     const j = page.getByRole("dialog", { name: "Registrar pedido" });
     await j.getByRole("button", { name: "Em área comum" }).click();
     await j.getByLabel("Local").fill("Casa de bombas");
+    await irAoPasso(j, isMobile, 2);
     await j.getByLabel("Assunto").fill("Bomba vazando");
     await j.getByLabel("O que foi relatado").fill("Água no piso da casa de bombas.");
+    await irAoPasso(j, isMobile, 3);
     await j.getByLabel("Responsável", { exact: true }).selectOption({ label: "Bruna" });
-    const qa = j.getByRole("region", { name: "Quem avisar" });
-    if (isMobile) await qa.getByRole("button", { name: "Ver e mudar" }).click();
-    await qa.getByRole("button", { name: "+ Avisar" }).click();
+    const qa = j.getByRole("region", { name: "Quem fica sabendo" });
+    await qa.getByRole("button", { name: "Avisar", exact: true }).click();
     await expect(qa.getByText("5 unidades · comunicado por e-mail, pelo WhatsApp de quem aceitou e no mural")).toBeVisible();
     await qa.getByRole("group", { name: "Para quem" }).getByRole("button", { name: "Blocos" }).click();
     await qa.getByLabel("Torre A").check();
     await expect(qa.getByText("4 unidades · comunicado por e-mail e pelo WhatsApp de quem aceitou ·")).toBeVisible();
     await conferir(page);
     await j.getByRole("button", { name: /Registrar e avisar/ }).click();
-    const tabela = j.getByRole("table", { name: "Quem foi avisado" });
-    await expect(linha(tabela, "Moradores · Torre A")).toContainText("Publicado · 1 e-mail · 2 pelo WhatsApp");
+    await expect(avisado(j, "Moradores · Torre A")).toContainText("Publicado · 1 e-mail · 2 pelo WhatsApp");
   });
 });

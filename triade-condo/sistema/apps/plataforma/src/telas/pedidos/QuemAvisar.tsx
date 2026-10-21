@@ -10,7 +10,7 @@
 // prazo para responder (contado da saída da mensagem) e a troca para a reserva do cadastro.
 
 import { useEffect, useState } from "react";
-import { Aviso, Botao, CampoAreaTexto, CampoTexto, chamarApi, Selo } from "@triade/ui";
+import { Aviso, Botao, CampoAreaTexto, CampoTexto, chamarApi, Icone, Selo } from "@triade/ui";
 import type { OpcoesPedidos, PessoaAvisada, QuemAvisar as Previa } from "../tipos.ts";
 import { Escolha } from "../moradores/comum.tsx";
 
@@ -141,11 +141,11 @@ function Linha({ marca, titulo, texto, extra, acao, apagada }: {
   marca: React.ReactNode; titulo: React.ReactNode; texto: React.ReactNode; extra?: React.ReactNode; acao?: React.ReactNode; apagada?: boolean;
 }) {
   return (
-    <li className={`flex items-start gap-3 px-3 py-2.5 text-sm ${apagada ? "text-tinta-suave" : ""}`}>
+    <li className={`flex items-start gap-3 py-3 text-sm ${apagada ? "text-tinta-suave" : ""}`}>
       <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">{marca}</span>
       <span className="min-w-0 flex-1">
         <span className="block font-medium">{titulo}</span>
-        <span className="block text-xs text-tinta-suave">{texto}</span>
+        <span className="t-apoio block">{texto}</span>
         {extra}
       </span>
       {acao ? <span className="shrink-0">{acao}</span> : null}
@@ -165,7 +165,6 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
   /** Campos do link que faltaram ao tentar registrar. */
   faltas?: string[];
 }) {
-  const [aberto, setAberto] = useState(false);
   const [escolhendo, setEscolhendo] = useState(false);
   const [busca, setBusca] = useState("");
   const [verMensagem, setVerMensagem] = useState(false);
@@ -205,7 +204,7 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
   }
 
   const linhas = (
-    <ul className="divide-y divide-linha">
+    <ul>
       {qp.meio ? (
         <Linha
           marca={<input id="qa-quem-pediu" type="checkbox" className={CAIXA} checked={protocoloVai(p, escolha)}
@@ -279,13 +278,13 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
               <Botao variante="discreto" tamanho="p" onClick={() => mudar({ ...escolha, prestador: null })}>Tirar</Botao>
             </span>} />
         ) : (
-          <Linha marca={<span aria-hidden="true" className="text-tinta-suave">+</span>} titulo="Prestador"
+          <Linha marca={<Icone nome="ferramenta" className="h-4.5 w-4.5 text-tinta-suave" />} titulo="Prestador"
             texto="Ninguém de fora é avisado sem você escolher e ver a mensagem."
-            acao={<Botao variante="contorno" tamanho="p" aria-expanded={escolhendo} onClick={() => setEscolhendo(!escolhendo)}>+ Escolher</Botao>} />
+            acao={<Botao variante="contorno" tamanho="p" aria-expanded={escolhendo} onClick={() => setEscolhendo(!escolhendo)}><Icone nome="mais" />Escolher</Botao>} />
         )
       ) : null}
       {escolhendo && p.prestador.disponivel ? (
-        <li className="grid gap-2 bg-superficie-2 px-3 py-3">
+        <li className="grid gap-2 rounded-[14px] bg-superficie px-3 py-3">
           <CampoTexto id="qa-busca-prestador" rotulo="Escolher o prestador" value={busca} onChange={(ev) => setBusca(ev.target.value)} placeholder="Nome ou serviço" />
           {lista.length === 0 ? <p className="text-sm text-tinta-suave">{p.prestadores.length ? "Nenhum prestador com esse nome." : "Nenhum prestador no cadastro ainda."}</p> : (
             <ul className="grid max-h-56 gap-1 overflow-y-auto">
@@ -323,7 +322,7 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
                 <Escolha rotulo="Para quem" atual={moradores.publico} aoMudar={(v) => mudar({ ...escolha, moradores: { ...moradores, publico: v } })}
                   opcoes={[{ valor: "TODOS", texto: "Todos" }, { valor: "BLOCOS", texto: "Blocos" }, { valor: "UNIDADES", texto: "Unidades" }]} />
                 {moradores.publico === "BLOCOS" ? (
-                  <fieldset className="grid gap-1">
+                  <fieldset className="grid gap-2">
                     <legend className="sr-only">Blocos</legend>
                     {p.blocos.map((b) => (
                       <label key={b.id} className="flex items-center gap-2 text-sm">
@@ -335,7 +334,7 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
                   </fieldset>
                 ) : null}
                 {moradores.publico === "UNIDADES" ? (
-                  <fieldset className="grid max-h-44 gap-1 overflow-y-auto rounded-xl border border-linha p-2">
+                  <fieldset className="grid max-h-44 gap-2 overflow-y-auto rounded-xl border border-linha p-2">
                     <legend className="sr-only">Unidades</legend>
                     {opcoes.unidades.map((u) => (
                       <label key={u.id} className="flex items-center gap-2 text-sm">
@@ -356,32 +355,31 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
             ) : null}
             acao={<Botao variante="discreto" tamanho="p" onClick={() => mudar({ ...escolha, moradores: null })}>Tirar</Botao>} />
         ) : (
-          <Linha marca={<span aria-hidden="true" className="text-tinta-suave">+</span>} titulo="Moradores afetados"
+          <Linha marca={<Icone nome="pessoas" className="h-4.5 w-4.5 text-tinta-suave" />} titulo="Moradores afetados"
             texto="Comunicado ligado ao pedido, para um bloco, algumas unidades ou todos."
-            acao={<Botao variante="contorno" tamanho="p" onClick={avisarMoradores}>+ Avisar</Botao>} />
+            acao={<Botao variante="contorno" tamanho="p" onClick={avisarMoradores}><Icone nome="mais" />Avisar</Botao>} />
         )
       ) : null}
     </ul>
   );
 
   return (
-    <section aria-labelledby="qa-titulo" className="grid gap-2 rounded-2xl border border-linha bg-superficie">
-      <div className="flex items-center justify-between gap-2 px-3 pt-3">
-        <h3 id="qa-titulo" className="font-medium">Quem avisar</h3>
-        <button type="button" className="text-sm text-violeta-600 hover:underline sm:hidden" aria-expanded={aberto} aria-controls="qa-lista"
-          onClick={() => setAberto(!aberto)}>{aberto ? "Pronto" : "Ver e mudar"}</button>
+    <section aria-labelledby="qa-titulo" className="grid gap-1 rounded-[18px] border border-linha bg-fundo p-5 max-md:p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex items-center gap-2.5">
+          <span className="ladrilho h-8 w-8 rounded-[10px]" data-tom="violeta" aria-hidden="true"><Icone nome="sino" className="h-4 w-4" /></span>
+          <h3 id="qa-titulo" className="t-titulo-cartao">Quem fica sabendo</h3>
+        </span>
+        <Selo tom="andamento">{resumo.n === 1 ? "1 aviso" : `${resumo.n} avisos`}</Selo>
       </div>
-      <p className="px-3 text-sm sm:hidden" hidden={aberto}>
-        <span className="font-medium">Quem avisar: {resumo.n}</span>
-        {resumo.n ? <span className="block text-xs text-tinta-suave">{juntar(resumo.nomes)}</span> : null}
-      </p>
-      <div id="qa-lista" className={aberto ? "grid" : "hidden sm:grid"}>{linhas}</div>
-      {p.prestador.motivo === "PRIVADO" ? <p className="px-3 text-xs text-tinta-suave">Pedido privado: prestador e moradores afetados não aparecem.</p> : null}
-      <p className="px-3 pb-3 text-xs text-tinta-suave">
-        O que estiver marcado sai junto com o registro. Nome e telefone de quem pediu nunca vão para o prestador nem para os outros moradores.
+      <div className="mt-2 [&>ul>li]:border-t [&>ul>li]:border-linha">{linhas}</div>
+      {p.prestador.motivo === "PRIVADO" ? <p className="t-apoio">Pedido privado: prestador e moradores afetados não aparecem.</p> : null}
+      <p className="t-apoio flex gap-2 pt-1">
+        <Icone nome="escudo" className="h-4 w-4 shrink-0" />
+        <span>O que estiver marcado sai junto com o registro. Nome e telefone de quem pediu nunca vão para o prestador nem para os outros moradores.</span>
       </p>
       {p.prestador.textoComDadoDeMorador || p.moradores.textoComDadoDeMorador
-        ? <div className="px-3 pb-3"><Aviso tom="atencao">Há dado de morador num texto editado. Tire antes de registrar, ou o registro é recusado.</Aviso></div> : null}
+        ? <Aviso tom="atencao">Há dado de morador num texto editado. Tire antes de registrar, ou o registro é recusado.</Aviso> : null}
     </section>
   );
 }

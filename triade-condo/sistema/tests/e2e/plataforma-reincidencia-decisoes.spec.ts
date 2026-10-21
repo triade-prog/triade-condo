@@ -4,6 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { abrirMaisAcoes, historicoCompleto, maisAcoes } from "./registro";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -53,8 +54,8 @@ test.describe("Plataforma · reincidência e decisões", () => {
     await expect(rel).toContainText("“O mesmo portão parou de fechar de novo.”");
     await expect(rel.getByRole("button", { name: "2026-0004 é reincidência" })).toHaveCount(0);
 
-    await page.getByRole("tab", { name: "Histórico" }).click();
-    await expect(page.getByRole("tabpanel")).toContainText("Reincidência de 2026-0004");
+    await historicoCompleto(page);
+    await expect((await historicoCompleto(page))).toContainText("Reincidência de 2026-0004");
 
     await rel.getByRole("button", { name: "Desfazer a ligação com 2026-0004" }).click();
     const desfazer = page.getByRole("dialog", { name: "Desfazer a ligação com 2026-0004" });
@@ -62,8 +63,8 @@ test.describe("Plataforma · reincidência e decisões", () => {
     await desfazer.getByRole("button", { name: "Desfazer a ligação" }).click();
     await expect(recado(page, "Ligação desfeita.")).toBeVisible();
     await expect(rel.getByRole("button", { name: "2026-0004 é reincidência" })).toBeVisible();
-    await page.getByRole("tab", { name: "Histórico" }).click();
-    await expect(page.getByRole("tabpanel")).toContainText("Ligação com 2026-0004 desfeita. Motivo: Era o portão de pedestres, não o da garagem.");
+    await historicoCompleto(page);
+    await expect((await historicoCompleto(page))).toContainText("Ligação com 2026-0004 desfeita. Motivo: Era o portão de pedestres, não o da garagem.");
   });
 
   test("AT-18: o duplicado pode ser encerrado com o retorno ao morador; cada um mostra o outro", async ({ page }) => {
@@ -86,8 +87,8 @@ test.describe("Plataforma · reincidência e decisões", () => {
     const outro = page.getByRole("region", { name: "Pedidos relacionados" });
     await expect(outro).toContainText("Duplicado de2026-0002");
     await expect(outro).toContainText("ligado por Ana Souza em 16/10");
-    await page.getByRole("tab", { name: "Histórico" }).click();
-    await expect(page.getByRole("tabpanel")).toContainText("Duplicado de 2026-0002");
+    await historicoCompleto(page);
+    await expect((await historicoCompleto(page))).toContainText("Duplicado de 2026-0002");
     await conferir(page);
   });
 
@@ -122,7 +123,7 @@ test.describe("Plataforma · reincidência e decisões", () => {
   test("AT-23: pedir decisão abre a pendência que se resolve sozinha; quem pediu pode retirar com motivo", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(`${PLATAFORMA}/pedidos/pedido?id=${estado.pedidos[1]!.id}`);
-    await page.getByRole("button", { name: "Pedir decisão" }).click();
+    await maisAcoes(page, "Pedir decisão");
     const pedir = page.getByRole("dialog", { name: "Pedir decisão ao síndico" });
     await expect(pedir.getByLabel("Quem decide")).toContainText("Ana Souza (síndico)");
     await expect(pedir.getByLabel("Decidir até")).toHaveValue("2026-10-19");
@@ -167,9 +168,9 @@ test.describe("Plataforma · reincidência e decisões", () => {
     await page.getByText("1 decisão respondida ou retirada").click();
     await expect(page.getByText(/Retirada por Ana Souza em .*: A administradora já autorizou o conserto\./)).toBeVisible();
 
-    await page.getByRole("tab", { name: "Histórico" }).click();
-    await expect(page.getByRole("tabpanel")).toContainText("Decisão pedida ao síndico · 2 alternativas · prazo 19/10/2026");
-    await expect(page.getByRole("tabpanel")).toContainText("Pedido de decisão retirado. Motivo: A administradora já autorizou o conserto.");
+    await historicoCompleto(page);
+    await expect((await historicoCompleto(page))).toContainText("Decisão pedida ao síndico · 2 alternativas · prazo 19/10/2026");
+    await expect((await historicoCompleto(page))).toContainText("Pedido de decisão retirado. Motivo: A administradora já autorizou o conserto.");
   });
 
   test("AT-23: a decisão vencida aparece no início, no menu e no sino; decidir pede a alternativa e a justificativa", async ({ page }) => {
@@ -218,8 +219,8 @@ test.describe("Plataforma · reincidência e decisões", () => {
     await decidida.getByRole("link", { name: "Abrir o pedido 2026-0001" }).click();
     await expect(page.getByRole("heading", { level: 1, name: /Vazamento no banheiro/ })).toBeVisible();
     await expect(page.getByRole("listitem").filter({ hasText: "Aguardando decisão do síndico" })).toHaveCount(0);
-    await page.getByRole("tab", { name: "Histórico" }).click();
-    await expect(page.getByRole("tabpanel")).toContainText("Decisão respondida: aprovada a alternativa 2");
+    await historicoCompleto(page);
+    await expect((await historicoCompleto(page))).toContainText("Decisão respondida: aprovada a alternativa 2");
   });
 
   test("CF-03: quem só vê não pede, não decide e não liga; a janela dos parecidos muda nas Regras", async ({ page }) => {
@@ -229,6 +230,7 @@ test.describe("Plataforma · reincidência e decisões", () => {
     const faixa = page.getByRole("status").filter({ hasText: "Esperando a decisão de Ana Souza até 15/10 (prazo vencido)" });
     await expect(faixa).toBeVisible();
     await expect(faixa.getByRole("button", { name: "Decidir" })).toHaveCount(0);
+    await abrirMaisAcoes(page);
     await expect(page.getByRole("button", { name: "Pedir decisão" })).toHaveCount(0);
     await expect(page.getByRole("region", { name: "Pedidos relacionados" })).toHaveCount(0);
     await conferir(page);

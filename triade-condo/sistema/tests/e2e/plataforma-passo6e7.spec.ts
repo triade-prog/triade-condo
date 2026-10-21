@@ -4,6 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
+import { historicoCompleto } from "./registro";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -56,7 +57,7 @@ test.describe("Plataforma do síndico · passos 6 e 7", () => {
     const faixa = page.getByRole("status").filter({ hasText: "Retorno vencido há 4 h de atendimento" });
     await expect(faixa).toContainText("Avisado ao responsável, Bruna, às 11:00; ao síndico, Ana Souza, às 13:00.");
     await expect(faixa).toContainText("O vencimento só acaba com o retorno ao morador.");
-    await page.getByRole("tab", { name: "Histórico" }).click();
+    await historicoCompleto(page);
     await expect(page.getByText("Aviso escalado ao síndico")).toBeVisible();
     await expect(page.getByText("Retorno venceu")).toBeVisible();
     await conferir(page);

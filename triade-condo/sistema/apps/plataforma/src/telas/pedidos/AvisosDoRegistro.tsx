@@ -8,11 +8,11 @@
 
 import Link from "next/link";
 import { DESTINOS_AVISO_REGISTRO, MEIOS_AVISO_REGISTRO, SITUACOES_LINK_REGISTRO, SITUACOES_MANUTENCAO } from "@triade/domain";
-import { Botao, Selo } from "@triade/ui";
+import { Botao, Icone, Selo, type NomeIcone } from "@triade/ui";
 import type { AvisoDoRegistro, LinkDoRegistro } from "../tipos.ts";
 import { diaHora } from "./comum.tsx";
 
-export interface Registrado { id: string; protocolo: string; linha: string; avisos: AvisoDoRegistro[] }
+export interface Registrado { id: string; protocolo: string; linha: string; avisos: AvisoDoRegistro[]; arquivos?: number }
 
 const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 const hora = (iso: string) => HORA.format(new Date(iso));
@@ -76,6 +76,10 @@ function quem(a: AvisoDoRegistro): string {
   return `${a.nome ?? ""}, ${DESTINOS_AVISO_REGISTRO[a.destino].toLowerCase()}`;
 }
 
+const ICONE_MEIO: Record<string, NomeIcone> = { SINO: "sino", WHATSAPP: "whats", EMAIL: "email", COMUNICADO: "megafone", CONVERSA: "whats" };
+
+/** Pedido registrado (DC15, telas-modelo/pedido-registrado): o protocolo em destaque, cada aviso
+ * com a situação e as duas saídas. */
 export function ConfirmacaoRegistro({ feito, outro, abrir }: { feito: Registrado; outro: () => void; abrir: () => void }) {
   const linhas = feito.avisos.filter((a) => a.meio !== "CONVERSA");
   const falhas = linhas.filter((a) => situacaoAviso(a).tom === "erro");
@@ -83,44 +87,48 @@ export function ConfirmacaoRegistro({ feito, outro, abrir }: { feito: Registrado
   const esperando = linhas.some((a) => a.enviarApos);
   return (
     <div className="grid gap-4" role="status">
-      <div>
-        <p className="text-lg font-medium">Pedido <span className="font-mono">{feito.protocolo}</span> registrado</p>
-        <p className="text-sm text-tinta-suave">{feito.linha}</p>
+      <div className="grid justify-items-center gap-2 text-center">
+        <span className="ladrilho h-14 w-14 rounded-[18px]" data-tom="ok" aria-hidden="true"><Icone nome="check" className="h-7 w-7" /></span>
+        <p className="t-titulo-secao">Pedido registrado</p>
+        <p className="font-mono text-[22px] font-medium tracking-[.02em]">{feito.protocolo}</p>
+        <p className="t-apoio">{feito.linha}</p>
       </div>
       {linhas.length === 0 ? (
-        <p className="text-sm text-tinta-suave">Ninguém foi avisado: não havia contato para o protocolo e quem cuida do pedido é você.</p>
+        <p className="t-apoio">Ninguém foi avisado: não havia contato para o protocolo e quem cuida do pedido é você.</p>
       ) : (
-        // Rola de lado no celular; com tabIndex, também pelo teclado.
-        <div className="overflow-x-auto rounded-2xl border border-linha" tabIndex={0}>
-          <table className="w-full text-sm">
-            <caption className="sr-only">Quem foi avisado</caption>
-            <thead className="bg-superficie-2 text-left text-tinta-suave">
-              <tr>
-                <th scope="col" className="px-3 py-2 font-semibold">Quem</th>
-                <th scope="col" className="px-3 py-2 font-semibold">Por onde</th>
-                <th scope="col" className="px-3 py-2 font-semibold">Situação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {linhas.map((a, i) => {
-                const s = situacaoDaLinha(a);
-                return (
-                  <tr key={i} className="border-t border-linha">
-                    <td className="px-3 py-2">{quem(a)}{a.pelaRegra ? <span className="block text-xs text-tinta-suave">pela regra</span> : null}</td>
-                    <td className="px-3 py-2 sm:whitespace-nowrap">{porOnde(a)}</td>
-                    <td className="px-3 py-2"><Selo tom={s.tom}>{s.texto}</Selo></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="grid gap-1">
+          <p className="t-rotulo">Avisos do registro</p>
+          <ul aria-label="Quem foi avisado" className="divide-y divide-linha border-t border-linha">
+            {linhas.map((a, i) => {
+              const s = situacaoDaLinha(a);
+              return (
+                <li key={i} className="flex items-center gap-3 py-3">
+                  <span className="ladrilho" data-tom={s.tom === "ok" ? "ok" : "violeta"} aria-hidden="true"><Icone nome={ICONE_MEIO[a.meio] ?? "sino"} /></span>
+                  <span className="grid min-w-0 flex-1">
+                    <span className="font-medium">{quem(a)}</span>
+                    <span className="t-apoio">{porOnde(a)}{a.pelaRegra ? " · pela regra" : ""}</span>
+                  </span>
+                  <Selo tom={s.tom}>{s.texto}</Selo>
+                </li>
+              );
+            })}
+            {feito.arquivos ? (
+              <li className="flex items-center gap-3 py-3">
+                <span className="ladrilho" aria-hidden="true"><Icone nome="clipe" /></span>
+                <span className="grid min-w-0 flex-1">
+                  <span className="font-medium">{feito.arquivos === 1 ? "1 arquivo" : `${feito.arquivos} arquivos`}</span>
+                  <span className="t-apoio">Guardado no pedido, junto com o relato</span>
+                </span>
+              </li>
+            ) : null}
+          </ul>
         </div>
       )}
       {link ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-linha p-3 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-[14px] border border-linha p-3">
           <span>
             <span className="block font-medium">Manutenção corretiva criada</span>
-            <span className="block text-tinta-suave">
+            <span className="t-apoio block">
               {link.titulo} · ligada a este pedido
               {link.reserva ? ` · se não responder, passa para ${link.reserva.nome}` : " · sem reserva no cadastro"}
             </span>
@@ -128,12 +136,12 @@ export function ConfirmacaoRegistro({ feito, outro, abrir }: { feito: Registrado
           <Link href={abrirManutencao(link)} className="text-sm font-medium text-violeta-600 hover:underline" aria-label={`Abrir a manutenção ${link.titulo}`}>Abrir</Link>
         </div>
       ) : null}
-      {link?.situacao === "ESPERANDO_ENVIO" ? <p className="text-xs text-tinta-suave">O prazo para responder só começa quando a mensagem sai.</p> : null}
-      {esperando ? <p className="text-xs text-tinta-suave">O WhatsApp de quem atende espera o horário de funcionamento. O sino já avisou.</p> : null}
-      {falhas.length ? <p className="text-xs text-tinta-suave">O que falhou vai para Falhas de envio, com responsável. O pedido fica registrado do mesmo jeito.</p> : null}
-      <div className="flex flex-wrap justify-end gap-2">
-        <Botao variante="contorno" onClick={outro}>Registrar outro</Botao>
-        <Botao onClick={abrir}>Abrir o pedido</Botao>
+      {link?.situacao === "ESPERANDO_ENVIO" ? <p className="t-apoio">O prazo para responder só começa quando a mensagem sai.</p> : null}
+      {esperando ? <p className="t-apoio">O WhatsApp de quem atende espera o horário de funcionamento. O sino já avisou.</p> : null}
+      {falhas.length ? <p className="t-apoio">O que falhou vai para Falhas de envio, com responsável. O pedido fica registrado do mesmo jeito.</p> : null}
+      <div className="flex flex-wrap justify-end gap-2 max-md:grid max-md:grid-cols-1">
+        <Botao variante="contorno" onClick={outro}><Icone nome="mais" />Registrar outro</Botao>
+        <Botao onClick={abrir}><Icone nome="seta" />Abrir o pedido</Botao>
       </div>
     </div>
   );
