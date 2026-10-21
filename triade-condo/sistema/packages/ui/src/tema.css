@@ -401,34 +401,73 @@ body {
   /* Iniciais da pessoa, no topo e nas listas. */
   .iniciais { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; background: var(--color-violeta-100); color: var(--color-violeta-700); font-size: 12px; font-weight: 600; }
 
-  /* Agenda (peça R7): a cor de cada tipo numa faixa, sempre com o nome do tipo ao lado. */
-  [data-tipo="REUNIAO"] { --fx: var(--fx-andamento); }
-  [data-tipo="VISITA"] { --fx: var(--fx-atencao); }
-  [data-tipo="ATIVIDADE"] { --fx: var(--fx-ok); }
-  [data-tipo="LEMBRETE"] { --fx: var(--fx-info); }
-  [data-tipo="FERIADO"] { --fx: var(--fx-neutro); }
-  [data-tipo="PREVENTIVA"] { --fx: var(--fx-ok); }
-  [data-tipo="RESERVA"] { --fx: var(--fx-andamento); }
-  [data-tipo="CONTRATO"] { --fx: var(--fx-atencao); }
-  [data-tipo="DOCUMENTO"] { --fx: var(--fx-erro); }
-  [data-tipo="ASSEMBLEIA"] { --fx: var(--fx-andamento); }
+  /* Agenda (peça R7; DC15, telas-modelo agenda-*): a cor de cada origem numa faixa, sempre com o nome ao lado.
+     Compromisso violeta, preventiva jade, reserva petróleo, contrato âmbar, documento rubi,
+     assembleia violeta-claro e feriado cinza. */
+  [data-tipo="COMPROMISSO"], [data-tipo="REUNIAO"], [data-tipo="VISITA"], [data-tipo="ATIVIDADE"], [data-tipo="LEMBRETE"] { --fx: var(--color-violeta-600); }
+  [data-tipo="PREVENTIVA"] { --fx: var(--color-ok); }
+  [data-tipo="RESERVA"] { --fx: var(--color-info); }
+  [data-tipo="CONTRATO"] { --fx: var(--color-atencao); }
+  [data-tipo="DOCUMENTO"] { --fx: var(--color-erro); }
+  [data-tipo="ASSEMBLEIA"] { --fx: var(--color-violeta-500); }
+  [data-tipo="FERIADO"] { --fx: var(--color-contorno); }
   .tp { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--color-tinta-suave); }
   .tp::before { content: ""; width: 8px; height: 8px; border-radius: 3px; background: var(--fx); }
-  .ag-dia { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-top: 1px solid var(--color-linha); }
+  /* Filtro "Mostrar": ligado em branco com o quadradinho cheio; desligado em cinza com o quadradinho vazio. */
+  .chip.ag-fonte[aria-pressed] { background: #fff; color: var(--color-tinta); border-color: var(--color-violeta-200); box-shadow: none; }
+  .chip.ag-fonte[aria-pressed="false"] { background: var(--color-superficie-2); color: var(--color-tinta-suave); border-color: var(--color-linha); }
+  .ag-fonte .ponto { width: 10px; height: 10px; flex-shrink: 0; border-radius: 3px; background: var(--fx); border: 1.5px solid var(--fx); }
+  .ag-fonte[aria-pressed="false"] .ponto { background: transparent; border-color: var(--color-contorno); }
+  /* Lista por dia: o dia num ladrilho (o de hoje no degradê) e os cartões ao lado. */
+  .ag-lista { border: 1px solid var(--color-linha); border-radius: 18px; background: var(--color-superficie); box-shadow: var(--shadow-s1); }
+  .ag-dia { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 20px; padding: 20px; border-top: 1px solid var(--color-linha); }
   .ag-dia:first-child { border-top: 0; }
-  .ag-dia .data b { display: block; font-size: 26px; font-weight: 300; line-height: 1.1; }
-  .ag-dia .data span { font-size: 13px; color: var(--color-tinta-suave); }
-  .ag-hoje, .ag-dia .data .ag-hoje { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: var(--color-violeta-600); border-radius: 999px; padding: 1px 8px; }
-  .ag-ev { display: grid; grid-template-columns: 62px 4px minmax(0, 1fr) auto; gap: 12px; align-items: center; background: #fff; border: 1px solid var(--color-linha); border-radius: 14px; padding: 10px 14px; }
-  .ag-ev .hora { font-size: 14px; font-weight: 500; }
-  .ag-ev .hora small { display: block; font-size: 12px; font-weight: 400; color: var(--color-tinta-suave); }
-  .ag-ev .barra { align-self: stretch; border-radius: 4px; background: var(--fx); }
-  .ag-ev[data-fonte] { background: transparent; border-style: dashed; }
+  .ag-dia .data { display: flex; align-items: flex-start; gap: 12px; }
+  .ag-dia .dia { display: grid; place-content: center; justify-items: center; width: 56px; height: 56px; flex-shrink: 0; border-radius: 16px; background: var(--color-superficie-2); }
+  .ag-dia .dia b { font-size: 22px; font-weight: 600; line-height: 1; }
+  .ag-dia .dia span { font-size: 11px; font-weight: 500; color: var(--color-tinta-suave); }
+  .ag-dia .dia[data-hoje] { background: var(--grad-acao); color: #fff; }
+  .ag-dia .dia[data-hoje] span { color: #fff; }
+  .ag-dia .nome { display: grid; padding-top: 14px; font-size: 13px; color: var(--color-tinta-suave); }
+  .ag-dia .nome[data-hoje] { color: var(--color-violeta-600); font-weight: 600; }
+  .ag-ev { position: relative; display: grid; grid-template-columns: 72px 3px minmax(0, 1fr) auto; gap: 12px; align-items: start; background: #fff; border: 1px solid var(--color-linha); border-radius: 14px; padding: 12px 14px; }
+  .ag-ev:has([data-alvo]):hover { border-color: var(--color-violeta-300); }
+  .ag-ev .hora { display: grid; font-size: 13px; color: var(--color-tinta-suave); }
+  .ag-ev .hora code { font-family: var(--font-mono); font-size: 13px; color: var(--color-tinta); }
+  .ag-ev .hora code.fim { font-size: 12px; color: var(--color-tinta-suave); }
+  .ag-ev .barra { align-self: stretch; width: 3px; border-radius: 999px; background: var(--fx); }
+  .ag-ev .textos { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; row-gap: 2px; min-width: 0; }
+  .ag-ev .titulo { font-size: 15px; font-weight: 500; }
+  .ag-ev [data-alvo]::after { content: ""; position: absolute; inset: 0; border-radius: 14px; }
+  .ag-ev [data-alvo]:focus-visible { outline: 0; }
+  .ag-ev [data-alvo]:focus-visible::after { box-shadow: var(--anel); }
+  .ag-ev .selos { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+  .ag-ev .detalhe, .ag-ev .linha { flex-basis: 100%; min-width: 0; }
+  .ag-ev .detalhe { font-size: 13px; color: var(--color-tinta-suave); }
+  .ag-ev .ligado { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; color: var(--color-violeta-600); }
+  .ag-ev .ligado[data-alvo] { position: static; }
+  .ag-ev .ligado:hover { text-decoration: underline; }
+  .ag-ev .nota { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; color: var(--color-tinta-suave); }
+  .ag-ev .seta { align-self: center; color: var(--color-tinta-suave); }
+  .ag-ev[data-tipo="FERIADO"] { background: transparent; border-style: dashed; }
   .ag-ev[data-cancelado] .titulo { text-decoration: line-through; color: var(--color-tinta-suave); }
-  @media (max-width: 640px) {
-    .ag-dia { grid-template-columns: 1fr; gap: 8px; }
-    .ag-ev { grid-template-columns: 52px 4px minmax(0, 1fr); }
-    .ag-ev > :last-child:not(.titulos) { grid-column: 3; }
+  /* Faixa da semana no celular: o dia escolhido no degradê e um ponto onde há o que ver. */
+  .ag-faixa { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .ag-faixa button { display: grid; justify-items: center; gap: 2px; min-height: 64px; padding: 6px 0; border-radius: 14px; font-size: 12px; color: var(--color-tinta-suave); background: transparent; border: 0; cursor: pointer; }
+  .ag-faixa button b { font-size: 18px; font-weight: 500; color: var(--color-tinta); }
+  .ag-faixa button i { width: 5px; height: 5px; border-radius: 50%; background: var(--color-violeta-600); }
+  .ag-faixa button[aria-pressed="true"] { background: var(--grad-acao); color: #fff; box-shadow: 0 8px 16px -8px #5808ccb3; }
+  .ag-faixa button[aria-pressed="true"] b { color: #fff; }
+  .ag-faixa button[aria-pressed="true"] i { background: #fff; }
+  .ag-faixa button:focus-visible { outline: 0; box-shadow: var(--anel); }
+  @media (max-width: 767px) {
+    .ag-lista { border: 0; background: transparent; box-shadow: none; }
+    .ag-dia { grid-template-columns: 1fr; gap: 8px; padding: 0 0 16px; border-top: 0; }
+    .ag-dia .dia { display: none; }
+    .ag-dia .nome { display: block; padding-top: 0; font-weight: 600; }
+    .ag-ev { grid-template-columns: 60px 3px minmax(0, 1fr) auto; padding: 12px; }
+    .ag-ev .selos { order: 1; flex-basis: 100%; margin-top: 2px; }
+    .ag-ev .linha { order: 2; }
   }
   .ag-cal { border: 1px solid var(--color-linha); border-radius: 18px; overflow: hidden; background: #fff; }
   .ag-cal .sem { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); background: var(--color-violeta-50); font-size: 12px; font-weight: 500; color: var(--color-tinta-suave); }

@@ -3,6 +3,7 @@
 // computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { alternarOrigem, origemLigada } from "./agenda";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { A101 } from "./api-falsa-moradores";
 
@@ -29,17 +30,17 @@ test.describe("Agenda, indicadores e unidades", () => {
     await expect(page.getByText("Convocada", { exact: true })).toBeVisible();
     await conferir(page);
 
-    const filtros = page.getByRole("group", { name: "O que mostrar na agenda" });
-    await filtros.getByRole("button", { name: "Documentos" }).click();
+    await expect(page.getByRole("link", { name: "Vem de Prestadores" })).toHaveAttribute("href", /\/manutencao\/prestadores$/);
+    await alternarOrigem(page, "Documentos");
     await expect(page.getByRole("link", { name: "Vence AVCB" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Vence o contrato de Elevadores Atlas" })).toBeVisible();
-    await filtros.getByRole("button", { name: "Compromissos" }).click();
+    await alternarOrigem(page, "Compromissos");
     await expect(page.getByText("Encanador no apto 101")).toHaveCount(0);
     await page.reload();
     await expect(page.getByRole("link", { name: "Vence o contrato de Elevadores Atlas" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Vence AVCB" })).toHaveCount(0);
     await expect(page.getByText("Encanador no apto 101")).toHaveCount(0);
-    await expect(filtros.getByRole("button", { name: "Documentos" })).toHaveAttribute("aria-pressed", "false");
+    await origemLigada(page, "Documentos", false);
 
     await page.getByRole("group", { name: "Como ver a agenda" }).getByRole("button", { name: "Mês" }).click();
     await expect(page.getByText("Vence o contrato de Elevadores Atlas")).toBeVisible();

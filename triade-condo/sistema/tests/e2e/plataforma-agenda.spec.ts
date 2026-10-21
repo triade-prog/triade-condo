@@ -2,6 +2,7 @@
 // tela passa no axe (WCAG 2.2 AA) no celular e no computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { abrirFiltros, alternarOrigem, fecharFiltros, filtrarTipo } from "./agenda";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { hojeFalso, somar } from "./api-falsa-agenda";
 
@@ -21,7 +22,7 @@ test.describe("Plataforma do síndico · agenda", () => {
     await page.goto(`${PLATAFORMA}/agenda`);
     await expect(page.getByRole("heading", { level: 1, name: "Agenda" })).toBeVisible();
     const hoje = page.getByRole("region", { name: /, hoje$/ });
-    await expect(hoje).toContainText("Hoje");
+    await expect(hoje).toContainText("hoje");
     await expect(hoje).toContainText("Encanador no apto 101");
     await expect(hoje).toContainText("Confirmado");
     await expect(hoje).toContainText("Pedido 2026-0001 · Vazamento no banheiro");
@@ -41,7 +42,10 @@ test.describe("Plataforma do síndico · agenda", () => {
     await page.getByRole("button", { name: /, hoje: 2 itens/ }).click();
     await expect(page.getByRole("region", { name: /, hoje$/ })).toContainText("Reunião do conselho");
 
-    await page.getByLabel("Tipo").selectOption("REUNIAO");
+    await abrirFiltros(page);
+    await conferir(page);
+    await fecharFiltros(page);
+    await filtrarTipo(page, "REUNIAO");
     await expect(page.getByText("Encanador no apto 101")).toHaveCount(0);
     await expect(page.getByText("Reunião do conselho")).toBeVisible();
   });
@@ -49,7 +53,7 @@ test.describe("Plataforma do síndico · agenda", () => {
   test("AG-01, AG-04: marcar avisa o conflito com a mesma pessoa e deixa salvar mesmo assim", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/agenda`);
-    await page.getByRole("button", { name: "+ Novo compromisso" }).click();
+    await page.getByRole("button", { name: "Novo compromisso" }).click();
     const j = page.getByRole("dialog", { name: "Novo compromisso" });
     await j.getByRole("group", { name: "Tipo do compromisso" }).getByRole("button", { name: "Visita técnica" }).click();
     await j.getByLabel("Título").fill("Vistoria da bomba");
@@ -65,7 +69,7 @@ test.describe("Plataforma do síndico · agenda", () => {
     await expect(page.getByRole("status").filter({ hasText: "Compromisso marcado." })).toBeVisible();
     await expect(page.getByRole("region", { name: /, hoje$/ })).toContainText("Vistoria da bomba");
 
-    await page.getByRole("button", { name: "+ Novo compromisso" }).click();
+    await page.getByRole("button", { name: "Novo compromisso" }).click();
     await j.getByLabel("Título").fill("Ronda da portaria");
     await j.getByLabel("Dia todo").check();
     await j.getByLabel("Repetir").selectOption("SEMANAL");
@@ -135,16 +139,16 @@ test.describe("Plataforma do síndico · agenda", () => {
     await conferir(page);
   });
 
-  test("AG-09: os feriados das configurações entram tracejados e saem com o filtro", async ({ page }) => {
+  test("AG-09: os feriados das configurações entram tracejados, levam às configurações e saem com o filtro", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/configuracoes?aba=feriados`);
     await page.getByRole("button", { name: /Trazer feriados nacionais de 2026/ }).click();
     await expect(page.getByRole("status").filter({ hasText: "feriados nacionais de 2026 incluídos" })).toBeVisible();
     await page.goto(`${PLATAFORMA}/agenda?data=2026-11-01`);
     await expect(page.getByText("Finados")).toBeVisible();
-    await expect(page.getByText(/vem de Configurações › Feriados/).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Vem de Configurações › Feriados" }).first()).toHaveAttribute("href", /\/configuracoes\?aba=feriados/);
     await conferir(page);
-    await page.getByRole("group", { name: "O que mostrar na agenda" }).getByRole("button", { name: "Feriados" }).click();
+    await alternarOrigem(page, "Feriados");
     await expect(page.getByText("Finados")).toHaveCount(0);
   });
 
@@ -152,7 +156,7 @@ test.describe("Plataforma do síndico · agenda", () => {
     await instalarApiPlataformaFalsa(page, { quem: "SO_VE" });
     await page.goto(`${PLATAFORMA}/agenda`);
     await expect(page.getByText("Encanador no apto 101")).toBeVisible();
-    await expect(page.getByRole("button", { name: "+ Novo compromisso" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Novo compromisso" })).toHaveCount(0);
     await page.getByRole("link", { name: "Encanador no apto 101" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Encanador no apto 101" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Reagendar" })).toHaveCount(0);
