@@ -12,6 +12,6 @@ Para construir:
 - [`docs/CONTEXTO.md`](docs/CONTEXTO.md): onde está cada coisa, decisões fechadas, o que está em aberto e a situação. **Leia antes de continuar o trabalho.**
 - [`docs/painel-execucao.html`](docs/painel-execucao.html): fases, entregas, testes, publicação, dependências e histórico da construção.
 - [`sistema/`](sistema/): o código dos dois sistemas (passo 0 em diante). O [`sistema/README.md`](sistema/README.md) explica como rodar, como a base funciona e como criar uma tabela nova.
-- [`docs/design-frontend.html`](docs/design-frontend.html): base visual adotada (paleta e tipografia), princípios, componentes e textos da Plataforma do síndico e do Console TRÍADE. Notas e prévias em [`docs/design/`](docs/design/).
+- [`docs/design/`](docs/design/LEIA-ME.md): padrão das telas da Plataforma do síndico e do Console TRÍADE (DC15), com o guia de padrões e as telas-modelo. Cores, fontes e logo em [`docs/identidade/sistema.html`](docs/identidade/sistema.html).
 
 O material de planejamento e pesquisa que levou até aqui está guardado em [`../arquivo/`](../arquivo/), apenas para consulta.

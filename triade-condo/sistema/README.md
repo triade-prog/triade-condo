@@ -76,7 +76,7 @@ Se a tabela não tiver condomínio, ela precisa de um motivo em `tabelas_sem_con
   - A Edge Function convida pelo Supabase Auth. O banco confere a permissão antes de o convite sair.
   - Quem já tem conta (síndico profissional, MU-04) não recebe e-mail: o acesso aparece no próximo login.
   - O convidado cria a senha em `/convite` do app (`POST /v1/auth/criar-senha`).
-- **As telas** seguem o desenho aprovado em `../docs/design-frontend.html` ("Telas do passo 1"):
+- **As telas** seguem o desenho aprovado no antigo `docs/design-frontend.html` (saiu em 21/10/2026; está no histórico do git) ("Telas do passo 1"):
   - Ficam em `apps/console/src/telas`, e as rotas em `apps/console/src/app`.
   - Os componentes base (campos, selos, avisos, vazio, erro, carregando, janela e o cliente da API) ficam em `packages/ui`.
   - Os testes ponta a ponta usam uma API falsa no navegador (`tests/e2e/api-falsa.ts`).
@@ -115,7 +115,7 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
   - A TRÍADE monta as Configurações pela aba Configuração da ficha no Console, com as mesmas rotas do app em `/v1/clientes/:id/condominio/...` (`supabase/functions/_shared/rotas_configuracao.ts`). Cada uma das 11 partes é marcada como conferida e volta a pedir conferência quando muda; a etapa 4 do roteiro só fica realizada com todas conferidas.
   - Fuso, etapas dos pedidos e da manutenção, janela dos parecidos e tempo de anexar do WhatsApp são só da TRÍADE: mudam só pelo Console (`console_definir_fuso`, `console_salvar_etapa_pedido`, `console_salvar_etapa_manutencao`, `console_definir_parecidos`, `console_definir_anexar`). Com o cliente ativo, pedem motivo e avisam cada síndico no sino. No app ficam em leitura, com Pedir mudança, que abre um chamado.
   - Termo do piloto, os próprios avisos, revisar e reabrir e trocar o link do mural são só do síndico.
-- **Telas.** Seguem o desenho aprovado em `../docs/design-frontend.html` ("Telas do passo 2").
+- **Telas.** Seguem o desenho aprovado no antigo `docs/design-frontend.html` (saiu em 21/10/2026; está no histórico do git) ("Telas do passo 2").
   - Ficam em `apps/plataforma/src/telas`, e as rotas em `apps/plataforma/src/app`.
   - Abas, aviso de conflito e selos com forma em SVG ficam em `packages/ui`.
   - Nenhuma tela usa emoji nem emoticon; o teste ponta a ponta confere.
@@ -149,7 +149,7 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
   - O síndico tem `moradores.ver`, `moradores.editar` e `moradores.confirmar`.
   - A permissão `CADASTRAR` dá à pessoa autorizada ver e editar. O que ela inclui nasce pendente, e confirmar ou recusar fica com o síndico.
 - **Rotas.** `/v1/condominio/unidades`, `blocos`, `unidades/:id/contatos`, `unidades/:id/mudanca`, `moradores`, `contatos/:id`, `vinculos-unidade/...` e `importacoes`.
-- **Telas.** Seguem o desenho aprovado em `../docs/design-frontend.html` ("Telas do passo 3").
+- **Telas.** Seguem o desenho aprovado no antigo `docs/design-frontend.html` (saiu em 21/10/2026; está no histórico do git) ("Telas do passo 3").
   - Ficam em `apps/plataforma/src/telas/moradores`, com as rotas `/moradores`, `/moradores/unidade?id=` e `/moradores/importar`.
   - Os testes ponta a ponta usam `tests/e2e/api-falsa-moradores.ts`.
 
@@ -165,7 +165,7 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
 - **Histórico (AT-17).** Tudo vai para `historico` com `entidade = 'pedidos'`; `descreverEventoPedido` (domínio) transforma em frase.
 - **Permissão (CF-03).** O síndico tem `pedidos.ver`, `responder`, `atualizar`, `concluir` e `revisar`. As permissões `ACOMPANHAR`, `RESPONDER`, `ATUALIZAR` e `CONCLUIR` passam a valer. O responsável de um pedido responde, atualiza e repassa aquele pedido (`pode_no_pedido`).
 - **Rotas.** `/v1/condominio/pedidos` (fila e registro), `pedidos/opcoes`, `pedidos/contatos/:unidade`, `pedidos/:id` e as ações `etapa`, `responsavel`, `aceitar`, `retornos`, `notas`, `proximo-retorno`, `previsao`, `pendencias`, `concluir`, `revisar`, `reabrir`, `cancelar`; `regras-pedidos`.
-- **Telas.** Seguem o desenho aprovado em `../docs/design-frontend.html` ("Telas do passo 4").
+- **Telas.** Seguem o desenho aprovado no antigo `docs/design-frontend.html` (saiu em 21/10/2026; está no histórico do git) ("Telas do passo 4").
   - Ficam em `apps/plataforma/src/telas/pedidos`, com as rotas `/pedidos` (filtros no endereço: `situacao`, `responsavel`, `prioridade`, `categoria`, `atencao`, `busca`) e `/pedidos/pedido?id=`. As regras ficam na aba Regras dos pedidos das configurações.
   - Os testes ponta a ponta usam `tests/e2e/api-falsa-pedidos.ts`.
 - **Publicar.** Mudou a `api-plataforma`? Ela precisa ser publicada de novo no Supabase, num pacote só (o domínio e o `_shared` juntos).

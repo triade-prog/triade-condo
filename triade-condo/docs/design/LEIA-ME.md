@@ -1,29 +1,32 @@
-# Base visual TRÍADE Condo
+# Novo frontend TRÍADE: o padrão das telas
 
-Abra design-frontend.html para ver a biblioteca visual ou painel-execucao.html para acompanhar o planejamento. Os HTMLs têm os estilos e a navegação incorporados e podem ser abertos diretamente no navegador.
+Este é o padrão visual em vigor das duas aplicações, a Plataforma do síndico e o Console TRÍADE. Foi aprovado pela Carolina em 21/10/2026 (DC15). Toda tela nova, ou tela redesenhada, parte daqui.
 
-## Direção visual
-Navegação lateral clara, cabeçalho de busca, destaque lilás, cartões com bordas suaves e tabelas com bastante espaço. A referência de composição é a Lattice; a marca e o conteúdo são da TRÍADE. O logo oficial está em `docs/identidade` (DC13). Plataforma: verde-petróleo; Console e navegação: violeta. Inter é a fonte principal, com alternativas locais caso não haja internet.
+## O que vale e onde está
 
-## Arquivos reutilizáveis
-- tema-triade.css: camada de tema utilizada nos dois HTMLs, para reutilizar com as estruturas e estilos base desses documentos.
-- navegacao-triade.js: busca por seção, navegação móvel, destaque da seção e alternância de tema. Depende da estrutura do cabeçalho e da barra lateral presente nos HTMLs.
+| O quê | Arquivo |
+|---|---|
+| Cores, fontes e logo (DC13) | `../identidade/sistema.html` e os PNGs do logo em `../identidade/` |
+| Como usar: escala de letra e de espaço, cantos e sombras, regra de cada lugar, botões, ícones, anexar arquivos e arte da marca | `guia-padroes.html` (imagem em `guia-padroes.png`) |
+| Moldura nova: menu em 4 grupos, busca no topo e barra de baixo no celular | `telas-modelo/moldura-computador.html` e `telas-modelo/moldura-celular.html` |
+| Tela sem permissão, vazia e com erro | `telas-modelo/estados.html` |
+| Ficha do pedido, que é o modelo de toda ficha | `telas-modelo/pedido-ficha-computador.html` e `telas-modelo/pedido-ficha-celular.html` |
+| Lista de pedidos, que é o modelo de toda lista | `telas-modelo/pedido-lista-computador.html` e `telas-modelo/pedido-lista-celular.html` |
 
-Os estilos e o script também estão incorporados em cada HTML. Ao editar o tema separado, atualize as cópias incorporadas ou substitua-as por referências aos arquivos externos.
+Cada tela-modelo tem um PNG com o mesmo nome. Os HTML são referência visual exportada do quadro de desenho: não são código do app e não usam o tema do sistema.
 
-## Escopo
-Base visual e documentos de planejamento. Os botões demonstrativos da biblioteca são amostras de componentes, sem operações de negócio. Nenhum backend foi criado. Os dados, status e lógica original do painel foram preservados.
+## Regras que não mudam
 
-As referências a mapa.html, IDEIAS.md e CONTEXTO.md foram mantidas, mas esses documentos não foram fornecidos. Para funcionar, precisam ser colocados na estrutura original de pastas. A fonte Inter é carregada do Google Fonts quando houver conexão.
+- Não se mudam as fontes (Manrope, Playfair Display itálico e IBM Plex Mono) nem a paleta oficial (DC13).
+- Cada tela tem no máximo um botão principal. Cartão e linha de lista nunca levam botão principal.
+- Ícones só do conjunto oficial (`sistema/packages/ui/src/Icone.tsx`), sempre com palavra junto. Se faltar algum, ele entra primeiro no conjunto.
+- Uma cor por situação: Aberto em petróleo, Em andamento em violeta, Em revisão em âmbar, Encerrado em jade e Cancelado em cinza. A prioridade só aparece quando é Alta ou Urgente. O ícone da categoria fica sempre em cinza.
+- Arte da marca (anéis, arco e traço laranja) em três tamanhos: cheia nas telas de entrar, faixa no topo do Início e leve nas telas vazias. No máximo uma arte por tela, e ela nunca encosta no texto.
+- Nenhuma tela usa emoji.
+- Toda tela nova é desenhada e aprovada antes do código.
 
-## Verificação
-Conferência de igualdade dos dados e do script original do painel; filtros, temas e busca testados no navegador. Layout inspecionado em desktop e celular. Não houve auditoria completa de acessibilidade.
+## O que saiu
 
-## Revisão de fidelidade
-Veja REVISAO-VISUAL.md para os valores extraídos dos ZIPs. A revisão mantém os textos, dados e scripts anteriores e ajusta somente a apresentação. Prévias atualizadas em previa-design.png e previa-painel.png.
+Em 21/10/2026 saíram o `design-frontend.html` (base Lattice, fonte Inter e Plataforma verde-petróleo, superada pela DC13), o `tema-triade.css`, o `navegacao-triade.js`, a revisão visual e as prévias antigas desta pasta. Também saíram, de `docs/identidade`, a proposta, as versões para escolher, as comparações de letras, o plano de aplicação (já executado) e as telas-modelo da DC13, que foram substituídas pelas desta pasta. Tudo continua no histórico do git.
 
-## Identidade adotada — 16/10/2026
-Paleta e tipografia seguem a interface Lattice das referências fornecidas, conforme a seção “Base adotada” de design-frontend.html. Esses dois itens foram definidos por Carolina; não são provisórios. Logo oficial, tom de voz e aprovação dos demais componentes permanecem separados.
-
-## Duas estruturas de frontend
-A seção “Dois sistemas, uma família” apresenta exemplos da Plataforma do síndico e do Console TRÍADE Admin. A navegação administrativa segue os prints Admin overview: lateral contínua azul-acinzentada com grupos e identificação persistente Admin. Os exemplos são ilustrações, sem funções de negócio.
+Os desenhos em `docs/telas` ficam onde estão, porque o painel cita cada um como evidência do que foi aprovado. Eles valem para o **conteúdo** de cada peça (o que a tela mostra e faz). O **visual** segue esta pasta.
