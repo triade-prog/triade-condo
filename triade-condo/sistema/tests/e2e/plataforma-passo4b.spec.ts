@@ -52,7 +52,7 @@ test.describe("Plataforma do síndico · passo 4b", () => {
       { name: "orcamento.pdf", mimeType: "application/pdf", buffer: PDF },
       { name: "fatura.pdf", mimeType: "application/pdf", buffer: Buffer.from("<html>não é PDF</html>") },
     ]);
-    await expect(j.getByText(/não foi aceito: só fotos e PDF\. Vídeo e áudio chegam com o WhatsApp/)).toBeVisible();
+    await expect(j.getByText(/não foi aceito: aqui só entram fotos e PDF\. Vídeo e áudio entram quando o morador manda pelo WhatsApp/)).toBeVisible();
     await j.getByLabel("Descrição de orcamento.pdf").fill("Orçamento do encanador");
     await expect(j.getByRole("button", { name: "Enviar 2 arquivos" })).toBeEnabled();
     await conferir(page);

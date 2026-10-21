@@ -13,7 +13,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { CANAIS_PEDIDO_EXIBICAO, descreverEventoPedido, mostrarDataSemHora, mostrarTelefone, REVISOES_CONCLUSAO, TIPOS_PENDENCIA, tempoAberto } from "@triade/domain";
+import { descreverEventoPedido, mostrarDataSemHora, mostrarTelefone, ORIGEM_PEDIDO_FRASE, REVISOES_CONCLUSAO, TIPOS_PENDENCIA, tempoAberto } from "@triade/domain";
 import { Abas, Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, IconeMarca, Selo, textoDoErro, Vazio } from "@triade/ui";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { OpcoesPedidos, PedidoDetalhe, PendenciaPedido, Recado } from "../tipos.ts";
@@ -109,7 +109,7 @@ export function Pedido() {
           <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-tinta-suave">
             <SeloEstadoPedido estado={p.estado} />
             {p.privado ? <Selo tom="neutro">Privado</Selo> : null}
-            <span>{[ativo ? p.etapa.nome : null, p.categoria.nome, p.prioridade.nome, onde, quem, `por ${nomeDe(CANAIS_PEDIDO_EXIBICAO, p.canal).toLowerCase()}`,
+            <span>{[ativo ? p.etapa.nome : null, p.categoria.nome, p.prioridade.nome, onde, quem, nomeDe(ORIGEM_PEDIDO_FRASE, p.canal),
               p.prestador ? `prestador ${p.prestador.nome}` : null].filter(Boolean).join(" · ")}</span>
           </p>
           <p className="mt-1 text-xs text-tinta-suave">{p.registradoPor ? `Registrado por ${p.registradoPor}` : "Aberto pelo morador no WhatsApp"} em {diaHora(p.abertoEm)} · aberto há {tempoAberto(p.abertoEm, p.encerradoEm ?? p.cancelamento?.em ?? d.agora)}</p>

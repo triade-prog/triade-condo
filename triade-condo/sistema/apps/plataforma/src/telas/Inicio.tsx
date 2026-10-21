@@ -8,6 +8,7 @@
 import Link from "next/link";
 import { CENARIOS, mostrarHoras, mostrarPorcentagem, nomeDoMes, nomeDoMesAnterior, PENDENCIAS_CONFIG } from "@triade/domain";
 import { Carregando, classeBotao, ErroCarregar, IconeMarca, Selo } from "@triade/ui";
+import { CabecaCartao } from "./CabecaCartao.tsx";
 import { diaHora } from "./pedidos/comum.tsx";
 import { HojeNaAgenda } from "./agenda/HojeNaAgenda.tsx";
 import { CartaoManutencao } from "./manutencao/CartaoManutencao.tsx";
@@ -31,7 +32,7 @@ function plural(n: number, um: string, varios: string): string {
 /** Resumo de moradores (MU-02): cada número leva até onde se resolve. */
 function Moradores({ resumo }: { resumo: NonNullable<ReturnType<typeof usePlataforma>["painel"]["moradores"]> }) {
   const linhas = [
-    { texto: plural(resumo.unidades, "unidade cadastrada", "unidades cadastradas"), href: "/moradores", botao: "Ver unidades", ajuda: null, aviso: false },
+    { texto: plural(resumo.unidades, "unidade cadastrada", "unidades cadastradas"), href: "/moradores", botao: "Ver", ajuda: null, aviso: false },
     ...(resumo.aConfirmar ? [{ texto: plural(resumo.aConfirmar, "contato a confirmar", "contatos a confirmar"), href: "/moradores?aba=confirmar", botao: "Conferir",
       ajuda: "Só valem depois de confirmados.", aviso: true }] : []),
     ...(resumo.semContato ? [{ texto: plural(resumo.semContato, "unidade sem contato confirmado", "unidades sem contato confirmado"),
@@ -41,7 +42,7 @@ function Moradores({ resumo }: { resumo: NonNullable<ReturnType<typeof usePlataf
   ];
   return (
     <section aria-labelledby="t-moradores" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-moradores" className="text-lg font-medium">Moradores e unidades</h2>
+      <CabecaCartao id="t-moradores" titulo="Moradores e unidades" href="/moradores" />
       {resumo.unidades === 0 ? (
         <div className="grid justify-items-start gap-2 text-sm">
           <p>Nenhuma unidade ainda. Cadastre as unidades ou importe a planilha da administradora.</p>
@@ -55,7 +56,7 @@ function Moradores({ resumo }: { resumo: NonNullable<ReturnType<typeof usePlataf
                 {l.aviso ? <IconeMarca marca="atencao" className="mt-0.5 h-4 w-4 text-atencao" /> : null}
                 <span>{l.texto}{l.ajuda ? <span className="block text-xs text-tinta-suave">{l.ajuda}</span> : null}</span>
               </span>
-              <Link href={l.href} className={classeBotao("discreto", "", "m")}>{l.botao}</Link>
+              <Link href={l.href} className={classeBotao("discreto", "", "m")} aria-label={l.botao === "Ver" ? `Ver: ${l.texto}` : undefined}>{l.botao}</Link>
             </li>
           ))}
         </ul>
@@ -101,7 +102,7 @@ function Agora({ resumo, decisoes, registrar, paradaDias }: {
   ];
   return (
     <section aria-labelledby="t-agora" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-agora" className="text-lg font-medium">Agora</h2>
+      <CabecaCartao id="t-agora" titulo="Agora" href="/pedidos" />
       {linhas.length ? (
         <ul className="divide-y divide-linha">
           {linhas.map((l) => (
@@ -120,10 +121,7 @@ function Agora({ resumo, decisoes, registrar, paradaDias }: {
       )}
       <p className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <span className="text-tinta-suave">{plural(resumo.ativos, "pedido ativo", "pedidos ativos")}</span>
-        <span className="flex gap-2">
-          {registrar ? <Link href="/pedidos" className={classeBotao("contorno")}>Registrar pedido</Link> : null}
-          <Link href="/pedidos" className={classeBotao("discreto")}>Ver todos</Link>
-        </span>
+        {registrar ? <Link href="/pedidos" className={classeBotao("contorno")}>Registrar pedido</Link> : null}
       </p>
     </section>
   );
@@ -134,7 +132,7 @@ function MesFechadoCartao({ mes }: { mes: MesFechado }) {
   const r = mes.retornos;
   return (
     <section aria-labelledby="t-mes" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-mes" className="text-lg font-medium">Mês fechado · {nomeDoMes(mes.mes)}</h2>
+      <CabecaCartao id="t-mes" titulo={`Mês fechado · ${nomeDoMes(mes.mes)}`} href="/indicadores" rotulo="Ver indicadores" />
       <ul className="divide-y divide-linha text-sm">
         <li className="py-2.5">
           <strong className="text-lg">{mostrarPorcentagem(r.porcentagem)}</strong> {r.porcentagem === undefined || r.porcentagem === null ? "de retornos no prazo: nenhum retorno no mês" : "dos retornos no prazo"}
@@ -144,7 +142,6 @@ function MesFechadoCartao({ mes }: { mes: MesFechado }) {
         <li className="py-2.5">Primeiro retorno em <strong>{mostrarHoras(mes.primeiroRetornoHoras)}</strong>{mes.primeiroRetornoHoras === undefined || mes.primeiroRetornoHoras === null ? "" : ", em média"}</li>
       </ul>
       <p className="text-xs text-tinta-suave">Os números do mês fechado não mudam com o dia.</p>
-      <Link href="/indicadores" className={classeBotao("discreto", "justify-self-start")}>Ver indicadores</Link>
     </section>
   );
 }

@@ -5,7 +5,7 @@ import { descreverEventoPedido } from "./pedidos.ts";
 describe("fotos e documentos dos pedidos (F4.8, PT-07)", () => {
   it("confere tipo e tamanho antes de enviar, dizendo o motivo", () => {
     expect(conferirAntesDeEnviar({ name: "a.jpg", type: "image/jpeg", size: 2_000_000 })).toBeNull();
-    expect(conferirAntesDeEnviar({ name: "v.mov", type: "video/quicktime", size: 10 })).toMatch(/Vídeo e áudio chegam com o WhatsApp/);
+    expect(conferirAntesDeEnviar({ name: "v.mov", type: "video/quicktime", size: 10 })).toMatch(/Vídeo e áudio entram quando o morador manda pelo WhatsApp/);
     expect(conferirAntesDeEnviar({ name: "a.docx", type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", size: 10 }))
       .toMatch(/só fotos/);
     expect(conferirAntesDeEnviar({ name: "planta.pdf", type: "application/pdf", size: 14_890_000 })).toBe(

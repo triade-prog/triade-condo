@@ -259,7 +259,7 @@ export function AjudaSuporte() {
         <section aria-labelledby="t-chamados" className="grid gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 id="t-chamados" className="text-lg font-medium">{lista.estado === "pronto" && lista.dados.todos ? "Chamados do condomínio" : "Seus chamados"}</h2>
-            <Botao onClick={() => setAbrindo(true)}>Abrir chamado</Botao>
+            <Botao onClick={() => setAbrindo(true)}>+ Abrir chamado</Botao>
           </div>
           {lista.estado === "carregando" ? <Carregando /> : null}
           {lista.estado === "erro" ? <ErroCarregar texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}

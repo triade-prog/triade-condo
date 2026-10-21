@@ -26,6 +26,11 @@ const FEITO: Record<string, string> = {
   CORRIGIR: "Correção publicada. A versão anterior ficou guardada como substituída.",
 };
 
+/** O motivo vem com maiúscula do provedor e entra no meio da frase ("não chegou (número sem WhatsApp)"). */
+function minuscula(t: string): string {
+  return t.charAt(0).toLowerCase() + t.slice(1);
+}
+
 /** Trocar de versão troca o id: a tela recomeça, com o recado da ação que trouxe até aqui. */
 export function Comunicado() {
   const busca = useSearchParams();
@@ -219,12 +224,12 @@ function ComunicadoAberto() {
                     <span className="text-xs text-tinta-suave">
                       <span className="font-medium">{x.canal === "WHATSAPP" ? "WhatsApp" : "E-mail"}: </span>
                       {x.canal === "WHATSAPP"
-                        ? (x.estado === "DESCONHECIDO" ? "Pode ter saído; o WhatsApp não confirmou."
-                          : x.estado === "CANCELADA" ? "Não saiu: o número ficou desconectado por mais de 24 horas."
-                          : `Não chegou: ${x.motivo ?? "o WhatsApp recusou"}.`)
-                        : x.estado === "SPAM" ? "Marcou como spam. Não recebe mais por e-mail."
-                        : x.estado === "DEVOLVIDO" ? `${x.motivo ?? "Endereço não existe"}. O e-mail foi desligado: corrija no cadastro.`
-                        : `Não saiu: ${x.motivo ?? "o provedor recusou"}.`}
+                        ? (x.estado === "DESCONHECIDO" ? "pode ter saído; o WhatsApp não confirmou."
+                          : x.estado === "CANCELADA" ? "não saiu (o número ficou desconectado por mais de 24 horas)."
+                          : `não chegou (${minuscula(x.motivo ?? "o WhatsApp recusou")}).`)
+                        : x.estado === "SPAM" ? "marcou como spam. Não recebe mais por e-mail."
+                        : x.estado === "DEVOLVIDO" ? `${minuscula(x.motivo ?? "endereço não existe")}. O e-mail foi desligado: corrija no cadastro.`
+                        : `não saiu (${minuscula(x.motivo ?? "o provedor recusou")}).`}
                     </span>
                   </li>
                 ))}

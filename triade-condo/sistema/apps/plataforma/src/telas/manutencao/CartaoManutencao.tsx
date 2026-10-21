@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { mostrarDataCurta } from "@triade/domain";
 import { classeBotao, Icone } from "@triade/ui";
+import { CabecaCartao } from "../CabecaCartao.tsx";
 import { diaHora } from "../pedidos/comum.tsx";
 import type { ResumoManutencao } from "../tipos.ts";
 
@@ -26,10 +27,7 @@ export function CartaoManutencao({ resumo: r }: { resumo: ResumoManutencao }) {
 
   return (
     <section aria-labelledby="t-manutencao" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-manutencao" className="flex items-center justify-between text-lg font-medium">
-        Manutenção
-        <Link href="/manutencao" className="text-sm font-medium underline underline-offset-4">Ver todas</Link>
-      </h2>
+      <CabecaCartao id="t-manutencao" titulo="Manutenção" href="/manutencao" />
       {linhas.length === 0 ? (
         <p className="text-sm text-tinta-suave">{r.abertas ? `${r.abertas === 1 ? "1 manutenção aberta" : `${r.abertas} manutenções abertas`}, nada atrasado.` : "Nada aberto na manutenção."}</p>
       ) : (

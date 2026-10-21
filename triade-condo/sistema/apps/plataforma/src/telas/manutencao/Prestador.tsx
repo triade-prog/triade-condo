@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { ACORDOS_PRESTADOR, mostrarDataCurta } from "@triade/domain";
+import { ACORDOS_PRESTADOR, mostrarDataCurta, mostrarTelefone } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { useCarregar } from "../sessao.tsx";
@@ -71,7 +71,7 @@ export function Prestador() {
             <h2 id="t-contato" className="text-lg font-medium">Contato</h2>
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
               <div><dt className="text-xs text-tinta-suave">Pessoa de contato</dt><dd>{p.contato ?? "Não informada"}</dd></div>
-              <div><dt className="text-xs text-tinta-suave">Telefone</dt><dd>{p.telefone ?? "Não informado"}</dd></div>
+              <div><dt className="text-xs text-tinta-suave">Telefone</dt><dd>{p.telefone ? mostrarTelefone(p.telefone) : "Não informado"}</dd></div>
               <div><dt className="text-xs text-tinta-suave">E-mail</dt><dd className="[overflow-wrap:anywhere]">{p.email ?? "Não informado"}</dd></div>
               <div><dt className="text-xs text-tinta-suave">CNPJ ou CPF</dt><dd>{p.documento ?? "Não informado"}</dd></div>
             </dl>

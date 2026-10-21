@@ -75,7 +75,7 @@ export function AbaLinksQr({ salvo }: PropsAba) {
           <h3 id="lq-etiquetas" className="text-lg font-medium">Etiquetas por local</h3>
           <span className="flex flex-wrap gap-2">
             {emUso.length && noApp ? <Link href="/etiquetas" target="_blank" className={classeBotao("contorno", "", "m")}><Icone nome="imprimir" />Imprimir etiquetas</Link> : null}
-            {l.podeEditar && l.numeroWhatsapp ? <Botao tamanho="m" onClick={() => setNova(true)}><Icone nome="mais" />Nova etiqueta</Botao> : null}
+            {l.podeEditar && l.numeroWhatsapp ? <Botao tamanho="m" onClick={() => setNova(true)}>+ Nova etiqueta</Botao> : null}
           </span>
         </div>
         {l.numeroWhatsapp

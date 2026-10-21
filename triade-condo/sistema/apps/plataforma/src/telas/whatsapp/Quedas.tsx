@@ -348,7 +348,7 @@ export function AbaQuedas({ queda, quedas, responsavel, pode, recarregar }: {
       {queda ? <QuedaAberta q={queda} pode={pode} aoMudar={mudou} /> : (
         <Vazio titulo="Nenhuma queda aberta"
           acao={pode ? <Botao variante="contorno" onClick={() => setAbrir(true)}>Abrir queda à mão</Botao> : undefined}>
-          Quando o número do condomínio desconecta, a queda abre sozinha e {responsavel ?? "o síndico"} é avisado no sino.
+          Quando o número do condomínio desconecta, a queda abre sozinha e {responsavel ?? "o síndico"} recebe o aviso no sino.
           Se as mensagens pararem de chegar sem aviso, abra à mão.
         </Vazio>
       )}

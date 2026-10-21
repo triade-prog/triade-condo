@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { descreverEventoPedido, registrarPedidoSchema, revisarPedidoSchema, tempoAberto } from "./pedidos.ts";
+import { CANAIS_PEDIDO_EXIBICAO, descreverEventoPedido, ORIGEM_PEDIDO_FRASE, registrarPedidoSchema, revisarPedidoSchema, tempoAberto } from "./pedidos.ts";
 
 const V = "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9";
 const NOVO = { categoriaId: V, prioridadeId: V, assunto: "Vazamento", descricao: "Mancha no teto", canal: "TELEFONE" };
@@ -33,5 +33,16 @@ describe("pedidos (passo 4)", () => {
       .toBe("Reaberto. Situação: Encerrado → Em andamento. Motivo: A mancha voltou");
     expect(descreverEventoPedido("pedido.previsao_mudou", { de: "2026-10-20", para: null, motivo: "Sem data do fornecedor" }))
       .toBe("Previsão de solução: 20/10/2026 → sem previsão. Motivo: Sem data do fornecedor");
+  });
+});
+
+describe("Como o pedido chegou, na ficha (AT-01)", () => {
+  it("todo canal tem a frase inteira, sem \"por\" na frente de quem não é meio", () => {
+    expect(Object.keys(ORIGEM_PEDIDO_FRASE).sort()).toEqual(Object.keys(CANAIS_PEDIDO_EXIBICAO).sort());
+    expect(ORIGEM_PEDIDO_FRASE.OBSERVACAO).toBe("visto pela gestão");
+    expect(ORIGEM_PEDIDO_FRASE.PRESENCIAL).toBe("pessoalmente");
+    expect(ORIGEM_PEDIDO_FRASE.OUTRO).toBe("por outro meio");
+    expect(ORIGEM_PEDIDO_FRASE.WHATSAPP).toBe("pelo WhatsApp do condomínio");
+    for (const f of Object.values(ORIGEM_PEDIDO_FRASE)) expect(f).not.toMatch(/^por (visto|pessoalmente|outro$)/);
   });
 });

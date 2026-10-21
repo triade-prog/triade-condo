@@ -7,7 +7,7 @@
 import { useState, type FormEvent } from "react";
 import { BLOCOS_MINUTOS, CONFIRMACOES_AREA, descreverArea, duracaoBloco, MODOS_AREA, PERIODOS_LIMITE, reais } from "@triade/domain";
 import {
-  AvisoErro, Botao, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio,
+  AvisoErro, Botao, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Selo, textoDoErro, Vazio,
   type ErroApi,
 } from "@triade/ui";
 import { esquecerLocais } from "./Locais.tsx";
@@ -39,7 +39,7 @@ export function AbaAreasComuns({ salvo }: PropsAba) {
           {criadas ? ` e ${criadas} ${criadas === 1 ? "criada" : "criadas"} pelo síndico` : ""}, {ativas} {ativas === 1 ? "ativa" : "ativas"}.
           {" "}Crie as que o prédio tem e não estão na lista.
         </p>
-        {l.pode.editar ? <Botao onClick={() => setAberta("nova")}><Icone nome="mais" />Nova área</Botao> : null}
+        {l.pode.editar ? <Botao onClick={() => setAberta("nova")}>+ Nova área</Botao> : null}
       </div>
       {l.areas.length === 0 ? (
         <Vazio titulo="Nenhuma área comum">Crie as áreas do prédio pelo botão Nova área.</Vazio>

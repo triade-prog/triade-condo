@@ -99,7 +99,7 @@ test.describe("Plataforma · comunicado pelo WhatsApp", () => {
     await expect(chegou.getByText("Lida é o que o WhatsApp informa", { exact: false })).toBeVisible();
     const falhas = page.getByRole("region", { name: "Mensagens que não chegaram" });
     await expect(falhas.getByText("Pedro Souza · Torre A · 101")).toBeVisible();
-    await expect(falhas.getByText("Não chegou: Número sem WhatsApp.", { exact: false })).toBeVisible();
+    await expect(falhas.getByText("WhatsApp: não chegou (número sem WhatsApp).", { exact: false })).toBeVisible();
     await expect(falhas.getByText("não tem reenvio", { exact: false })).toBeVisible();
     await conferir(page);
 

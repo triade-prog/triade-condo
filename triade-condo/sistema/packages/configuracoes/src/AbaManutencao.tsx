@@ -9,7 +9,7 @@ import { Botao, Carregando, chamarApi, ErroCarregar, Selo } from "@triade/ui";
 import { Janela, type Campo, type Valores } from "./Janela.tsx";
 import { useCarregar, naBase } from "./contexto.tsx";
 import type { PropsAba } from "./Configuracoes.tsx";
-import { campoMotivo, FaixaTriade } from "./tecnica.tsx";
+import { campoMotivo, etapasAtivas, FaixaTriade } from "./tecnica.tsx";
 
 interface Etapa { id: string; nome: string; situacao: "PLANEJADA" | "EM_ANDAMENTO" | "PENDENTE" | "CONCLUIDA"; ordem: number; ativa: boolean; versao: number }
 const SITUACOES = ["PLANEJADA", "EM_ANDAMENTO", "PENDENTE", "CONCLUIDA"] as const;
@@ -39,7 +39,7 @@ export function AbaManutencao({ salvo, tecnica }: PropsAba) {
       </div>
       {tecnica.pode ? null : (
         <FaixaTriade porque="As etapas organizam o acompanhamento da manutenção" parte="Etapas da manutenção"
-          valor={`${etapas.filter((e) => e.ativa).length} etapas ativas`} />
+          valor={etapasAtivas(etapas)} />
       )}
       <p className="text-sm text-tinta-suave">As situações são fixas. As etapas dizem onde a manutenção está dentro delas, como &ldquo;Aguardando visita&rdquo; ou &ldquo;Aguardando orçamento&rdquo;. Nenhuma é obrigatória.</p>
       {SITUACOES.map((sit) => {

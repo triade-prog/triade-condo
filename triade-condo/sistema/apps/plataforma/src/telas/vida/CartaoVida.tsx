@@ -5,6 +5,7 @@
 
 import Link from "next/link";
 import { classeBotao, Icone } from "@triade/ui";
+import { CabecaCartao } from "../CabecaCartao.tsx";
 import type { ResumoVida } from "../tipos.ts";
 import { ESTADOS_ASSEMBLEIA, formatarDataHora, textoRespostas } from "@triade/domain";
 import { diaCurto } from "./comum.tsx";
@@ -13,10 +14,7 @@ import { prazoCurto } from "./Enquetes.tsx";
 export function CartaoVida({ resumo: r }: { resumo: ResumoVida }) {
   return (
     <section aria-labelledby="t-vida" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-vida" className="flex items-center justify-between text-lg font-medium">
-        Vida em condomínio
-        <Link href="/vida" className="text-sm font-medium underline underline-offset-4">Abrir</Link>
-      </h2>
+      <CabecaCartao id="t-vida" titulo="Vida em condomínio" href="/vida" />
       <ul className="divide-y divide-linha">
         {r.reservasAAprovar ? <li className="flex items-center gap-3 py-2.5">
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-atencao-fundo text-atencao"><Icone nome="calendario" /></span>

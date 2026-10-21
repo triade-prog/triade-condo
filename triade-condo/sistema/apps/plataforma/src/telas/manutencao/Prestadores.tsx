@@ -5,7 +5,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ACORDOS_PRESTADOR, mostrarDataCurta } from "@triade/domain";
+import { ACORDOS_PRESTADOR, mostrarDataCurta, mostrarTelefone } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Selo, Vazio } from "@triade/ui";
 import { Escolha } from "../moradores/comum.tsx";
 import { opcoesDe } from "../pedidos/comum.tsx";
@@ -111,7 +111,7 @@ export function Prestadores() {
                     <li key={p.id} className="grid gap-1 border-b border-linha px-4 py-3 text-sm last:border-b-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_11rem] md:items-center md:gap-4">
                       <span className="grid min-w-0 gap-0.5">
                         <Link href={`/manutencao/prestador?id=${p.id}`} className="font-medium hover:text-violeta-600 hover:underline">{p.nome}</Link>
-                        <span className="truncate text-[13px] text-tinta-suave">{[p.contato, p.telefone ?? p.email].filter(Boolean).join(" · ") || "Sem contato"}</span>
+                        <span className="truncate text-[13px] text-tinta-suave">{[p.contato, p.telefone ? mostrarTelefone(p.telefone) : p.email].filter(Boolean).join(" · ") || "Sem contato"}</span>
                       </span>
                       <span>{p.servico}</span>
                       <span className="text-tinta-suave">
