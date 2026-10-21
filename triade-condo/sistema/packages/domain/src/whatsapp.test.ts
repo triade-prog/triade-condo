@@ -38,10 +38,9 @@ describe("WhatsApp do condomínio (passo 5)", () => {
     expect(prometePrazo("Respondemos em até 2 horas.")).toBe(true);
     expect(prometePrazo("Atendimento imediato pelo síndico.")).toBe(true);
     expect(prometePrazo("Recebemos sua mensagem fora do horário. O condomínio confere no próximo horário.")).toBe(false);
-    expect(configWhatsappSchema.safeParse({ versao: 1, foraHorario: "Curta", categoriaId: ID, prioridadeId: ID, anexarMinutos: 30 }).success)
-      .toBe(false);
+    expect(configWhatsappSchema.safeParse({ versao: 1, foraHorario: "Curta", categoriaId: ID, prioridadeId: ID }).success).toBe(false);
     expect(configWhatsappSchema.safeParse({ versao: 1, foraHorario: "Recebemos fora do horário de atendimento.", categoriaId: ID,
-                                            prioridadeId: ID, anexarMinutos: 45 }).success).toBe(false);
+                                            prioridadeId: ID }).success).toBe(true);
   });
 
   it("W-11: os avisos no WhatsApp pedem um celular válido e tipos conhecidos", () => {

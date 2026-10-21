@@ -59,9 +59,9 @@ select is((teste.erro($$ select plataforma_definir_horarios(sindica, ipe, 'ATEND
   'TC409', 'AT-24: horário salvo com a versão velha é conflito');
 select is((select dados ->> 'tipo' from historico, c where acao = 'horarios.alterados' and condominio_id = ipe order by id limit 1),
   'ATENDIMENTO', 'a mudança de horário vai para o histórico');
-select is((select plataforma_definir_fuso(sindica, ipe, 1, 'America/Manaus') from ids, c), 2, 'CF-10: o síndico troca o fuso');
-select throws_ok($$ select plataforma_definir_fuso(sindica, ipe, 2, 'Europe/Lisbon') from ids, c $$, 'TC422', null, 'só os fusos do Brasil');
-select lives_ok($$ select plataforma_definir_fuso(sindica, ipe, 2, 'America/Sao_Paulo') from ids, c $$, 'volta para Brasília');
+select is((select console_definir_fuso(adm, ipe, 1, 'America/Manaus', null) from ids, c), 2, 'CF-10: a TRÍADE troca o fuso na implantação');
+select throws_ok($$ select console_definir_fuso(adm, ipe, 2, 'Europe/Lisbon', null) from ids, c $$, 'TC422', null, 'só os fusos do Brasil');
+select lives_ok($$ select console_definir_fuso(adm, ipe, 2, 'America/Sao_Paulo', null) from ids, c $$, 'volta para Brasília');
 select is((select pendencias_configuracao(ipe) from c), array['SEM_RESPONSAVEL'], 'com horário de atendimento, sai a pendência');
 
 -- Feriados (CF-10): data sem hora, sai como foi escrita.
@@ -102,19 +102,19 @@ select is((teste.erro($$ select plataforma_salvar_prioridade(sindica, ipe, p.id,
 update prioridades set ativa = true where condominio_id = (select ipe from c);
 
 -- Etapas (AT-05, CF-09): sempre ligadas a aberto, em andamento ou encerrado.
-create temp table et as select (plataforma_salvar_etapa(sindica, ipe, null, null, 'Orçamento', 'EM_ANDAMENTO', null, true, null) ->> 'id')::uuid as orc
+create temp table et as select (console_salvar_etapa_pedido(adm, ipe, null, null, 'Orçamento', 'EM_ANDAMENTO', null, true, null, null) ->> 'id')::uuid as orc
   from ids, c;
 select is((select ordem from etapas, et where id = orc), 4::smallint, 'a etapa nova entra no fim da situação');
 select throws_ok($$ update etapas set situacao = 'ENCERRADO' where id = (select orc from et) $$, 'TC422', null,
   'CF-09: a situação da etapa não muda');
-select throws_ok($$ select plataforma_salvar_etapa(sindica, ipe, null, null, 'Arquivado', 'ENCERRADO', null, true, null) from ids, c $$,
+select throws_ok($$ select console_salvar_etapa_pedido(adm, ipe, null, null, 'Arquivado', 'ENCERRADO', null, true, null, null) from ids, c $$,
   'TC422', null, 'etapa encerrada não pausa prazo');
-select is((teste.erro($$ select plataforma_salvar_etapa(sindica, ipe, null, null, 'Poda', 'EM_ANDAMENTO',
-            (select id from categorias where condominio_id = jatoba limit 1), false, null) from ids, c $$)) -> 'detalhe',
+select is((teste.erro($$ select console_salvar_etapa_pedido(adm, ipe, null, null, 'Poda', 'EM_ANDAMENTO',
+            (select id from categorias where condominio_id = jatoba limit 1), false, null, null) from ids, c $$)) -> 'detalhe',
   '{"campos": ["categoriaId"]}'::jsonb, 'etapa não usa categoria de outro condomínio');
-select lives_ok($$ select plataforma_salvar_etapa(sindica, ipe, e.id, e.versao, e.nome, null, null, null, false)
+select lives_ok($$ select console_salvar_etapa_pedido(adm, ipe, e.id, e.versao, e.nome, null, null, null, false, null)
                     from ids, c, etapas e where e.condominio_id = ipe and e.modelo = 'NAO_PROCEDE' $$, 'desativar uma etapa encerrada');
-select is((teste.erro($$ select plataforma_salvar_etapa(sindica, ipe, e.id, e.versao, e.nome, null, null, null, false)
+select is((teste.erro($$ select console_salvar_etapa_pedido(adm, ipe, e.id, e.versao, e.nome, null, null, null, false, null)
                          from ids, c, etapas e where e.condominio_id = ipe and e.modelo = 'CONCLUIDO' $$)) -> 'detalhe' ->> 'motivo',
   'ETAPA_ESSENCIAL', 'sobra ao menos uma etapa geral de aberto e uma de encerrado');
 
