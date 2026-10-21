@@ -89,6 +89,8 @@ function detalhe(a: AvisoDoPainel): string {
       return `${a.nome ?? "O prestador"} não respondeu e a reserva saiu do cadastro: escolha quem executa.`;
     case "TROCA_RESERVA_SEM_RESPOSTA":
       return `${a.nome ?? "A reserva"} também não respondeu. Não há nova troca: combine com outro prestador.`;
+    case "TROCA_SEM_RESPOSTA":
+      return `${a.nome ?? "O prestador"} não respondeu no prazo e não há reserva para passar: combine com ele ou com outro prestador.`;
     case "DECISAO_PEDIDA":
       return `Pediram a sua decisão${a.prazo ? ` até ${mostrarDataCurta(a.prazo)}` : ""}.`;
     case "DECISAO_VENCIDA":
@@ -275,7 +277,7 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                 <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
                     <Selo tom={a.tipo === "PRESTADOR_CONFIRMOU" || a.tipo === "TROCA_TROCOU" ? "info" : "atencao"}>
-                      {a.tipo === "MANUTENCAO_RETORNO_VENCIDO" ? "Manutenção" : a.tipo.startsWith("TROCA_") ? "Troca de prestador" : "Prestador"}
+                      {a.tipo === "MANUTENCAO_RETORNO_VENCIDO" ? "Manutenção" : a.tipo.startsWith("TROCA_") && a.tipo !== "TROCA_SEM_RESPOSTA" ? "Troca de prestador" : "Prestador"}
                     </Selo>
                     {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
                   </span>

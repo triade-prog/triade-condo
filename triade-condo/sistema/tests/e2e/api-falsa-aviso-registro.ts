@@ -1,16 +1,18 @@
 // Aviso de pedido registrado (F6.4, AT-26) na API falsa da Plataforma: a prévia de Quem avisar,
 // o que sai no registro e a regra do síndico. As regras de verdade (quem entra, o texto que pode
 // sair, a idempotência, o e-mail e o WhatsApp) estão no banco (pgTAP 029) e na API (Deno); aqui
-// só o bastante para a tela.
+// só o bastante para a tela. Com o link do serviço no registro (F6.7; pgTAP 031): a manutenção
+// corretiva nasce com o pedido e o link espera a mensagem sair para o prazo começar.
 import type { Route } from "@playwright/test";
 import type { EstadoMoradores } from "./api-falsa-moradores";
 import type { EstadoManutencao } from "./api-falsa-manutencao";
+import { PRESTADOR_FALSO, type EstadoLinks, type LinkFalso } from "./api-falsa-links";
 
 type Regra = "NUNCA" | "SEM_RESPONSAVEL_OU_URGENTE" | "TODOS";
 interface Pessoa { vinculoId: string; nome: string; funcao: string; responsavel: boolean; disponivel: boolean }
 interface Prioridade { id: string; nome: string; nivel: number; ativa: boolean }
 interface Aviso { destino: string; meio: string; nome?: string; situacao?: string; enviarApos?: string; pelaRegra?: boolean; editado?: boolean;
-  emails?: number; destinatarios?: number; noMural?: boolean; em: string }
+  emails?: number; destinatarios?: number; noMural?: boolean; em: string; linkId?: string }
 
 export interface EstadoAvisoRegistro {
   regra: { sindico: Regra; protocolo: boolean };
@@ -28,6 +30,9 @@ export interface ContextoAviso {
   prioridades: Prioridade[];
   conectado: boolean;
   podePublicar: boolean;
+  /** Quem registra pode editar manutenção: o link do serviço aparece (F6.7). */
+  podeManutencao: boolean;
+  links: EstadoLinks;
   condominio: string;
 }
 
@@ -80,6 +85,39 @@ function meioPrestador(r: EstadoManutencao["prestadores"][number], conectado: bo
   return r.telefone && conectado ? "WHATSAPP" as const : r.email ? "EMAIL" as const : undefined;
 }
 
+const urgenteDe = (ctx: ContextoAviso, prioridadeId: unknown) => {
+  const nivel = ctx.prioridades.find((p) => p.id === prioridadeId)?.nivel ?? 0;
+  return nivel >= Math.max(...ctx.prioridades.filter((p) => p.ativa).map((p) => p.nivel));
+};
+const diaMais = (agora: string, dias: number) => new Date(Date.parse(agora) + dias * 86400_000).toISOString().slice(0, 10);
+
+/** Em que pé está o link (link_do_registro). A mensagem "sai" na primeira leitura do pedido. */
+function linkDoRegistro(ctx: ContextoAviso, l: LinkFalso, iniciar: boolean) {
+  if (iniciar && !l.responderAte && l.prazoNoEnvio) {
+    l.responderHoras = l.prazoNoEnvio;
+    l.responderAte = new Date(Date.now() + l.prazoNoEnvio * 3600_000).toISOString();
+    if (l.reservaNoEnvio) l.reservaId = l.reservaNoEnvio;
+  }
+  const m = ctx.manutencao.manutencoes.find((x) => x.id === l.manutencaoId)!;
+  const reserva = l.reservaId ?? l.reservaNoEnvio;
+  const situacao = l.trocaResultado === "TROCOU" ? "PASSOU_RESERVA" : l.resposta ? l.resposta : l.revogado ? "CANCELADO"
+    : m.estado === "CONCLUIDA" ? "CONCLUIDA" : m.estado === "CANCELADA" ? "MANUTENCAO_CANCELADA"
+      : !l.responderAte ? "ESPERANDO_ENVIO" : l.responderAte <= new Date().toISOString() ? "SEM_RESPOSTA" : "ESPERANDO";
+  return { manutencaoId: m.id, titulo: m.titulo, estadoManutencao: m.estado, situacao, responderAte: l.responderAte, horas: l.responderHoras ?? l.prazoNoEnvio,
+    respondidoEm: l.respondidoEm, reserva: reserva ? { nome: ctx.manutencao.prestadores.find((p) => p.id === reserva)!.nome } : undefined,
+    paraReserva: l.trocaResultado === "TROCOU" ? ctx.links.links.find((x) => x.trocaDe === l.para && x.manutencaoId === l.manutencaoId)?.para : undefined };
+}
+
+/** Os avisos do registro de um pedido, com o link do serviço na linha do prestador. */
+export function avisosDoPedido(est: EstadoAvisoRegistro, ctx: ContextoAviso, id: string) {
+  const r = est.porPedido.get(id);
+  if (!r) return undefined;
+  return { ...r, avisos: r.avisos.map(({ linkId, ...a }) => {
+    const l = linkId ? ctx.links.links.find((x) => x.id === linkId) : undefined;
+    return l ? { ...a, link: linkDoRegistro(ctx, l, true) } : a;
+  }) };
+}
+
 function rascunhoPrestador(d: Record<string, unknown>, eu: string) {
   const descricao = String(d.descricao ?? "").trim();
   return `${String(d.local ?? "").trim() || "Numa unidade do condomínio"}: ${String(d.assunto ?? "").trim()}.${descricao ? `\n\n${descricao}` : ""}\n\nPara combinar, fale com ${curto(eu)}, do condomínio.`;
@@ -115,7 +153,16 @@ export function previaQuemAvisar(est: EstadoAvisoRegistro, ctx: ContextoAviso, d
     sindico: l.sindico,
     prestador: {
       disponivel: !l.privado, motivo: l.privado ? "PRIVADO" : undefined,
-      escolhido: escolhido ? { id: escolhido.id, nome: escolhido.nome, meio: meioPrestador(escolhido, ctx.conectado) } : undefined,
+      escolhido: escolhido ? { id: escolhido.id, nome: escolhido.nome, meio: meioPrestador(escolhido, ctx.conectado),
+        meioLink: meioPrestador(escolhido, ctx.conectado),
+        paraLink: escolhido.telefone && ctx.conectado ? mascarar(escolhido.telefone) : escolhido.email ?? undefined,
+        reserva: ((r) => (r ? { id: r.id, nome: r.nome } : undefined))(ctx.manutencao.prestadores.find((x) => x.id === escolhido.reservaId && !x.arquivado)) } : undefined,
+      link: {
+        disponivel: !l.privado && ctx.podeManutencao, motivo: l.privado ? "PRIVADO" : !ctx.podeManutencao ? "SEM_PERMISSAO" : undefined,
+        valeAte: diaMais(new Date().toISOString(), 7), responderHoras: urgenteDe(ctx, d.prioridadeId) ? 4 : 24,
+        mensagem: `O ${ctx.condominio} tem um serviço para [prestador]: ${String(d.assunto ?? "").trim() || "[assunto]"} (${String(d.local ?? "").trim() || "Numa unidade do condomínio"}).`
+          + "\n\nVeja o que fazer e confirme até [prazo]: [link]\n\nO link é só para este serviço e não precisa de conta.",
+      },
       rascunho: rascunhoPrestador(d, ctx.eu.nome),
       cabecalho: `${ctx.condominio} · pedido [nº do protocolo] (${prioridade})`,
       rodape: "O condomínio nunca pede pagamento por mensagem.",
@@ -131,7 +178,7 @@ export function previaQuemAvisar(est: EstadoAvisoRegistro, ctx: ContextoAviso, d
     prestadores: ctx.manutencao.prestadores.filter((r) => !r.arquivado).sort((a, b) => a.nome.localeCompare(b.nome)).map((r) => {
       const meio = meioPrestador(r, ctx.conectado);
       return { id: r.id, nome: r.nome, servico: r.servico, acordo: r.acordo, contratoAte: r.contratoAte ?? undefined,
-        reserva: ctx.manutencao.prestadores.find((x) => x.id === r.reservaId)?.nome, meio,
+        reserva: ctx.manutencao.prestadores.find((x) => x.id === r.reservaId)?.nome, meio, meioLink: meio,
         para: meio === "WHATSAPP" ? mascarar(r.telefone!) : meio === "EMAIL" ? r.email! : undefined, temCelular: Boolean(r.telefone), temEmail: Boolean(r.email) };
     }),
     blocos: m.blocos.filter((b) => b.ativo).map((b) => ({ id: b.id, nome: b.nome, unidades: m.unidades.filter((u) => u.ativa && u.blocoId === b.id).length })),
@@ -147,14 +194,21 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
 
 /** O que sai no registro, como avisar_registro: devolve a recusa ou os avisos, que ficam no pedido. */
 export function avisarNoRegistro(est: EstadoAvisoRegistro, ctx: ContextoAviso, pedido: { id: string; protocolo: string }, d: Record<string, unknown>, agora: string):
-  { recusa: string } | { avisos: Aviso[] } {
+  { recusa: string } | { campos: string[] } | { avisos: Aviso[] } {
   const m = ctx.moradores;
-  const a = (d.avisar ?? {}) as { quemPediu?: boolean; sindico?: boolean; prestador?: { id: string; texto: string } | null;
+  const a = (d.avisar ?? {}) as { quemPediu?: boolean; sindico?: boolean;
+    prestador?: { id: string; texto: string; link?: { quando: string; comoEntrar: string; valeAte: string; responderHoras: number; reserva: boolean } } | null;
     moradores?: { publico: string; blocos: string[]; unidades: string[]; titulo: string; texto: string } | null };
   const l = linhas(est, ctx, d);
   const avisos: Aviso[] = [];
   let prestador: { id: string; nome: string } | undefined;
   if (a.prestador && comDadoDeMorador(a.prestador.texto, m, l.contato?.id ?? null)) return { recusa: "DADO_DE_MORADOR" };
+  const link = a.prestador?.link;
+  if (link) {
+    if (!ctx.podeManutencao) return { recusa: "SEM_PERMISSAO_MANUTENCAO" };
+    if (link.quando.trim().length < 2) return { campos: ["quando"] };
+    if (link.comoEntrar.trim().length < 2) return { campos: ["comoEntrar"] };
+  }
   if (a.moradores && comDadoDeMorador(`${a.moradores.titulo} ${a.moradores.texto}`, m, l.contato?.id ?? null)) return { recusa: "DADO_DE_MORADOR" };
   if ((a.quemPediu ?? l.quemPediu.marcado) && l.quemPediu.meio) {
     avisos.push({ destino: "QUEM_PEDIU", meio: l.quemPediu.meio, nome: l.quemPediu.nome, situacao: "NA_FILA", em: agora });
@@ -170,8 +224,28 @@ export function avisarNoRegistro(est: EstadoAvisoRegistro, ctx: ContextoAviso, p
   if (a.prestador) {
     const r = ctx.manutencao.prestadores.find((x) => x.id === a.prestador!.id)!;
     prestador = { id: r.id, nome: r.nome };
+    let linkId: string | undefined;
+    if (link) {
+      // A manutenção corretiva nasce com o pedido, com o responsável dele (sem ele, quem registra).
+      const assunto = String(d.assunto).trim();
+      const man = { id: `6d7e8f9a-0b1c-4d2e-8f3a-${String(ctx.manutencao.manutencoes.length + 1).padStart(12, "0")}`, tipo: "CORRETIVA", titulo: assunto.slice(0, 120),
+        local: String(d.local ?? "").trim() || "Numa unidade do condomínio", detalhes: null, prioridadeId: String(d.prioridadeId), responsavelId: l.resp ?? ctx.eu.vinculo,
+        prestadorId: r.id, executorVinculo: null, executorTexto: null, estado: "PLANEJADA", etapaId: null, proximoRetorno: null, previsao: null, dataPrevista: null,
+        pendencia: null, pedidoId: pedido.id, preventivaId: null, origemId: null, conclusao: null, criadoEm: agora, versao: 2, providencias: [], itens: [],
+        historico: [
+          { acao: "manutencao.link_no_registro", em: agora, autor: ctx.eu.nome, dados: { canal: meioPrestador(r, ctx.conectado), horas: link.responderHoras } },
+          { acao: "manutencao.registrada", em: agora, autor: ctx.eu.nome, dados: { tipo: "CORRETIVA" } },
+        ] };
+      ctx.manutencao.manutencoes.push(man);
+      const novo: LinkFalso = { id: `7e8f9a0b-1c2d-4e3f-9a4b-${String(ctx.links.links.length + 1).padStart(12, "0")}`, manutencaoId: man.id, para: r.nome,
+        oQueFazer: a.prestador.texto.trim(), quando: link.quando.trim(), comoEntrar: link.comoEntrar.trim(), expiraEm: `${link.valeAte}T23:59:59-03:00`, abertoEm: null,
+        criadoEm: agora, codigo: PRESTADOR_FALSO, revogado: null, prazoNoEnvio: link.responderHoras,
+        reservaNoEnvio: link.reserva && r.reservaId ? r.reservaId : undefined, noRegistro: { pedidoId: pedido.id, protocolo: pedido.protocolo, meio: meioPrestador(r, ctx.conectado)! } };
+      ctx.links.links.push(novo);
+      linkId = novo.id;
+    }
     avisos.push({ destino: "PRESTADOR", meio: meioPrestador(r, ctx.conectado)!, nome: r.nome, situacao: "NA_FILA",
-      editado: a.prestador.texto !== rascunhoPrestador(d, ctx.eu.nome) || undefined, em: agora });
+      editado: a.prestador.texto !== rascunhoPrestador(d, ctx.eu.nome) || undefined, em: agora, linkId });
   }
   if (a.moradores) {
     const unidades = a.moradores.publico === "TODOS" ? m.unidades.filter((u) => u.ativa).map((u) => u.id)
@@ -186,7 +260,10 @@ export function avisarNoRegistro(est: EstadoAvisoRegistro, ctx: ContextoAviso, p
       editado: a.moradores.titulo !== rascunho.titulo || a.moradores.texto !== rascunho.texto || undefined, em: agora });
   }
   est.porPedido.set(pedido.id, { avisos, prestador });
-  return { avisos };
+  return { avisos: avisos.map(({ linkId, ...x }) => {
+    const nl = linkId ? ctx.links.links.find((y) => y.id === linkId) : undefined;
+    return nl ? { ...x, link: linkDoRegistro(ctx, nl, false) } : x;
+  }) };
 }
 
 /** A regra do síndico e o protocolo (Configurações › Prazos e avisos). */

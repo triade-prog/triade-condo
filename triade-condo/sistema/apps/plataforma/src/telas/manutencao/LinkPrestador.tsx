@@ -5,7 +5,10 @@
 // depois, mandar de novo gera um link novo e o anterior para. Com reserva no cadastro (MP-09), quem manda diz
 // em quanto tempo o prestador precisa confirmar; sem resposta, ou se ele não puder, o serviço passa sozinho
 // para a reserva, uma vez só, com aviso e registro no histórico. "Não trocar sozinho" desliga a troca.
+// O link mandado no registro do pedido (F6.7) diz de que pedido veio e, até a mensagem sair, que o
+// prazo para responder ainda não começou.
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { IMPEDIMENTOS_PRESTADOR, LINK_PRESTADOR_DIAS, linkWhatsapp, mensagemPrestador, PRAZO_RESPOSTA_PADRAO, PRAZOS_RESPOSTA_PRESTADOR } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, classeBotao, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
@@ -48,6 +51,10 @@ function linhasReserva(l: NonNullable<LinkPrestadorInfo["link"]>): string[] {
     linhas.push(`Responder até ${diaHora(l.responderAte)}.`);
     if (l.reserva && !l.trocaDesligadaEm && !l.trocadoEm) linhas.push(`Se não responder, passa para ${l.reserva.nome}.`);
   }
+  else if (l.situacao === "VALE" && l.prazoNoEnvio) {
+    linhas.push(`Responder em ${l.prazoNoEnvio} horas, contadas de quando a mensagem sair.`);
+    if (l.reservaNoEnvio && !l.trocaDesligadaEm) linhas.push(`Se não responder, passa para ${l.reservaNoEnvio.nome}.`);
+  }
   if (l.trocaDesligadaEm) linhas.push(`Troca automática desligada em ${diaHora(l.trocaDesligadaEm)}: o serviço fica com ${l.para}.`);
   if (l.trocaResultado === "NAO_TROCOU") linhas.push("Não passou para a reserva: o link parou antes ou a reserva saiu do cadastro.");
   return linhas;
@@ -86,13 +93,21 @@ export function LinkPrestador({ manutencaoId, titulo, versao, recarregarManutenc
           <span className="flex flex-wrap items-center gap-2">
             <span className="font-medium">{l.para}</span>
             <Selo tom={l.situacao === "VALE" ? (l.responderAte && !l.respondidoEm ? "atencao" : "andamento") : "neutro"}>
-              {l.situacao === "VALE" && l.responderAte && !l.respondidoEm ? "Esperando resposta" : SITUACAO[l.situacao]}
+              {l.situacao === "VALE" && l.responderAte && !l.respondidoEm ? "Esperando resposta"
+                : l.situacao === "VALE" && l.prazoNoEnvio ? "Esperando a mensagem sair" : SITUACAO[l.situacao]}
             </Selo>
           </span>
           <span className="text-xs text-tinta-suave">
             Mandado em {diaHora(l.criadoEm)}{l.criadoPor ? ` por ${l.criadoPor}` : ""} · vale até {diaHora(l.expiraEm)}
             {l.abertoEm ? ` · aberto em ${diaHora(l.abertoEm)}` : " · ainda não foi aberto"}
           </span>
+          {l.noRegistro ? (
+            <span className="text-xs text-tinta-suave">
+              Mandado no registro do pedido{" "}
+              <Link href={`/pedidos/pedido?id=${l.noRegistro.pedidoId}`} className="font-mono text-violeta-600 underline">{l.noRegistro.protocolo}</Link>
+              {l.noRegistro.meio === "WHATSAPP" ? ", pelo WhatsApp do condomínio" : ", por e-mail"}
+            </span>
+          ) : null}
           {l.motivoCancelamento ? <span className="text-xs text-tinta-suave">Motivo: {l.motivoCancelamento}</span> : null}
           {linhasReserva(l).map((t) => <span key={t} className="text-xs text-tinta-suave">{t}</span>)}
         </div>

@@ -1,7 +1,8 @@
 "use client";
 // A manutenção dentro do pedido (design "Telas da Manutenção", tela 7; MP-04): a manutenção
 // ligada aparece no pedido, e dá para abrir uma a partir dele. Quando ela termina, o pedido
-// pede o retorno ao morador; nada muda sozinho no pedido.
+// pede o retorno ao morador; nada muda sozinho no pedido. Pedido cancelado com manutenção aberta
+// ganha o aviso de que ela continua (F6.7).
 
 import Link from "next/link";
 import { useState } from "react";
@@ -21,6 +22,8 @@ export function NaManutencao({ pedido, ativo, avisar }: { pedido: PedidoDetalhe[
   const { manutencoes } = carga.dados;
   if (manutencoes.length === 0 && !podeAbrir) return null;
   const concluida = manutencoes.some((m) => m.estado === "CONCLUIDA");
+  // Cancelar o pedido não cancela a manutenção (F6.7, decisão 11): o pedido avisa, quem decide cancela.
+  const abertaNoCancelado = Boolean(pedido.cancelamento) && manutencoes.some((m) => m.estado !== "CONCLUIDA" && m.estado !== "CANCELADA");
 
   return (
     <section aria-labelledby="t-na-manutencao" className="grid content-start gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
@@ -38,6 +41,7 @@ export function NaManutencao({ pedido, ativo, avisar }: { pedido: PedidoDetalhe[
           ))}
         </ul>
       ) : <p className="text-sm text-tinta-suave">Nenhuma manutenção ligada.</p>}
+      {abertaNoCancelado ? <Aviso tom="atencao" papel="status">O pedido foi cancelado, mas a manutenção ligada continua aberta. Se ela também não vai mais acontecer, cancele-a na manutenção.</Aviso> : null}
       {concluida && ativo ? <Aviso tom="info" papel="status">Manutenção concluída: dê o retorno ao morador. Nada muda sozinho no pedido.</Aviso> : null}
       {podeAbrir ? (
         <div className="grid justify-items-start gap-1">

@@ -5,7 +5,7 @@ import type {
   CanalEnquete, ConfirmacaoArea, EscopoEnquete, EstadoReserva, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite, SituacaoEnquete,
   EstadoAssembleia, EstadoItem, EstadoProcuracao, FormaAssembleia, PesoAssembleia, Quorum, SituacaoItem, TipoAssembleia, TipoItem,
   EstadoAnuncio, TipoAnuncio, TipoVeiculo, DecisaoQueda, EstadoQueda, AvisoNovoSindico, DestinoAvisoRegistro, MeioAvisoRegistro,
-  EstadoDecisao, FiltroDecisao, TipoLigacao,
+  EstadoDecisao, FiltroDecisao, TipoLigacao, SituacaoLinkRegistro,
 } from "@triade/domain";
 
 
@@ -262,7 +262,7 @@ export interface AvisoDoPainel {
     | "WHATSAPP_PEDIDO_NOVO" | "WHATSAPP_REVISAO" | "WHATSAPP_A_IDENTIFICAR" | "WHATSAPP_FALHA_ENVIO" | "WHATSAPP_DESCONECTADO"
     | "RESERVA_A_APROVAR" | "RESERVA_CANCELADA"
     | "PRESTADOR_CONFIRMOU" | "PRESTADOR_RECUSOU" | "WHATSAPP_QUEDA" | "WHATSAPP_QUEDA_VOLTOU"
-    | "TROCA_TROCOU" | "TROCA_MANDAR_LINK" | "TROCA_NAO_TROCOU" | "TROCA_RESERVA_SEM_RESPOSTA"
+    | "TROCA_TROCOU" | "TROCA_MANDAR_LINK" | "TROCA_NAO_TROCOU" | "TROCA_RESERVA_SEM_RESPOSTA" | "TROCA_SEM_RESPOSTA"
     | "DECISAO_PEDIDA" | "DECISAO_VENCIDA" | "DECISAO_RESPONDIDA";
   pedidoId?: string;
   protocolo?: string;
@@ -551,6 +551,20 @@ export interface AvisoDoRegistro {
   pelaRegra?: boolean;
   editado?: boolean;
   em: string;
+  /** O link do serviço mandado no registro (F6.7) e a manutenção que nasceu com ele. */
+  link?: LinkDoRegistro;
+}
+
+export interface LinkDoRegistro {
+  manutencaoId: string;
+  titulo: string;
+  estadoManutencao: string;
+  situacao: SituacaoLinkRegistro;
+  responderAte?: string;
+  horas?: number;
+  respondidoEm?: string;
+  reserva?: { nome: string };
+  paraReserva?: string;
 }
 
 export interface PessoaAvisada { id: string; nome: string; voceMesmo: boolean; whatsapp: boolean }
@@ -562,13 +576,19 @@ export interface QuemAvisar {
   sindico: { pelaRegra: boolean; regra: AvisoNovoSindico; pessoas: PessoaAvisada[] };
   prestador: {
     disponivel: boolean; motivo?: "PRIVADO"; rascunho: string; cabecalho: string; rodape: string; textoComDadoDeMorador?: boolean;
-    escolhido?: { id: string; nome: string; meio?: "WHATSAPP" | "EMAIL" };
+    escolhido?: {
+      id: string; nome: string; meio?: "WHATSAPP" | "EMAIL";
+      /** Por onde vai o link do serviço (F6.7) e a reserva ativa do cadastro. */
+      meioLink?: "WHATSAPP" | "EMAIL"; paraLink?: string; reserva?: { id: string; nome: string };
+    };
+    /** O link do serviço no registro (F6.7): se pode, a validade e o prazo padrão e a prévia da mensagem. */
+    link: { disponivel: boolean; motivo?: "PRIVADO" | "SEM_PERMISSAO"; valeAte: string; responderHoras: 4 | 8 | 24 | 48; mensagem: string };
   };
   moradores: {
     disponivel: boolean; motivo?: "PRIVADO" | "SEM_PERMISSAO"; rascunho: { titulo: string; texto: string }; publico: "TODOS" | "BLOCOS";
     blocos?: string[]; textoComDadoDeMorador?: boolean;
   };
-  prestadores: { id: string; nome: string; servico: string; acordo: string; contratoAte?: string; reserva?: string; meio?: "WHATSAPP" | "EMAIL"; para?: string; temCelular: boolean; temEmail: boolean }[];
+  prestadores: { id: string; nome: string; servico: string; acordo: string; contratoAte?: string; reserva?: string; meio?: "WHATSAPP" | "EMAIL"; meioLink?: "WHATSAPP" | "EMAIL"; para?: string; temCelular: boolean; temEmail: boolean }[];
   blocos: { id: string; nome: string; unidades: number }[];
   totalUnidades: number;
   condominio: string;
@@ -1118,6 +1138,9 @@ export interface LinkPrestadorInfo {
     responderAte?: string; responderHoras?: number; respondidoEm?: string; resposta?: "CONFIRMOU" | "RECUSOU" | "CHEGOU";
     reserva?: { id: string; nome: string }; trocaDesligadaEm?: string; trocaResultado?: "TROCOU" | "NAO_TROCOU"; trocadoEm?: string;
     trocaDe?: { nome: string };
+    /** Mandado no registro do pedido (F6.7): o prazo só começa quando a mensagem sai. */
+    prazoNoEnvio?: number; reservaNoEnvio?: { id: string; nome: string };
+    noRegistro?: { pedidoId: string; protocolo: string; meio: "WHATSAPP" | "EMAIL" };
   };
   /** A reserva do cadastro de quem executa, para oferecer o prazo ao mandar o link (MP-09). */
   reservaDoCadastro?: { id: string; nome: string };
@@ -1154,6 +1177,8 @@ export interface PrestadorPublico {
   responderAte?: string;
   resposta?: "CONFIRMOU" | "RECUSOU" | "CHEGOU";
   para?: string;
+  /** O número do pedido de onde veio a manutenção (F6.7). */
+  pedido?: string;
   tipo?: "CORRETIVA" | "PREVENTIVA" | "VISTORIA";
   titulo?: string;
   local?: string;

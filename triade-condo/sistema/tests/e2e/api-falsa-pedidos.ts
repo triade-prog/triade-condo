@@ -104,7 +104,7 @@ type DetalheExtra = (p: PedidoFalso) => { pode: Record<string, boolean> } & Reco
 
 /** Os avisos do registro (F6.4): o que sai ao registrar e o que o pedido mostra depois. */
 export interface AvisosDoRegistroFalsos {
-  registrar: (p: PedidoFalso, corpo: Record<string, unknown>) => { recusa: string } | { avisos: unknown[] };
+  registrar: (p: PedidoFalso, corpo: Record<string, unknown>) => { recusa: string } | { campos: string[] } | { avisos: unknown[] };
   doPedido: (id: string) => { avisos: unknown[]; prestador?: { id: string; nome: string } } | undefined;
 }
 
@@ -192,6 +192,7 @@ export async function rotasPedidos(route: Route, ped: PedidoFalso[], c: Config, 
     };
     const saiu = avisos?.registrar(p, corpo);
     if (saiu && "recusa" in saiu) return erro(route, 400, "VALIDATION_ERROR", { motivo: saiu.recusa });
+    if (saiu && "campos" in saiu) return erro(route, 400, "VALIDATION_ERROR", { campos: saiu.campos });
     ped.push(p);
     return route.fulfill({ status: 201, json: { id: p.id, protocolo, versao: 1, ...(saiu ? { avisos: saiu.avisos } : {}) } });
   }

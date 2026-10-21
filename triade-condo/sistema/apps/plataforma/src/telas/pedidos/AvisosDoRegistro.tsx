@@ -3,11 +3,13 @@
 // e 5): a confirmação logo depois de registrar e o cartão Avisos do registro no pedido. Cada
 // linha diz quem, por onde e em que pé está (W-13): no sino, na fila, entregue, lida, falhou.
 // O WhatsApp de quem atende espera o horário de funcionamento; a falha vai para Falhas de envio.
+// Com o link do serviço (F6.7; desenho "Link do serviço no registro", telas 4 e 5), a linha do
+// prestador diz a resposta dele e leva à manutenção que nasceu no registro.
 
 import Link from "next/link";
-import { DESTINOS_AVISO_REGISTRO, MEIOS_AVISO_REGISTRO } from "@triade/domain";
+import { DESTINOS_AVISO_REGISTRO, MEIOS_AVISO_REGISTRO, SITUACOES_LINK_REGISTRO, SITUACOES_MANUTENCAO } from "@triade/domain";
 import { Botao, Selo } from "@triade/ui";
-import type { AvisoDoRegistro } from "../tipos.ts";
+import type { AvisoDoRegistro, LinkDoRegistro } from "../tipos.ts";
 import { diaHora } from "./comum.tsx";
 
 export interface Registrado { id: string; protocolo: string; linha: string; avisos: AvisoDoRegistro[] }
@@ -40,11 +42,33 @@ export function situacaoAviso(a: AvisoDoRegistro): { texto: string; tom: Tom } {
   }
 }
 
-/** "WhatsApp", "E-mail", "E-mail e mural". */
+/** Em que pé está o link do serviço: a resposta do prestador, ou o prazo que corre. */
+export function situacaoLink(l: LinkDoRegistro): { texto: string; tom: Tom } {
+  switch (l.situacao) {
+    case "ESPERANDO_ENVIO": return { texto: SITUACOES_LINK_REGISTRO.ESPERANDO_ENVIO, tom: "andamento" };
+    case "ESPERANDO": return { texto: l.responderAte ? `Esperando resposta até ${hora(l.responderAte)}` : SITUACOES_LINK_REGISTRO.ESPERANDO, tom: "andamento" };
+    case "SEM_RESPOSTA": return { texto: SITUACOES_LINK_REGISTRO.SEM_RESPOSTA, tom: "atencao" };
+    case "CONFIRMOU": return { texto: l.respondidoEm ? `Confirmou às ${hora(l.respondidoEm)}` : "Confirmou", tom: "ok" };
+    case "CHEGOU": return { texto: SITUACOES_LINK_REGISTRO.CHEGOU, tom: "ok" };
+    case "RECUSOU": return { texto: SITUACOES_LINK_REGISTRO.RECUSOU, tom: "atencao" };
+    case "PASSOU_RESERVA": return { texto: SITUACOES_LINK_REGISTRO.PASSOU_RESERVA, tom: "info" };
+    default: return { texto: SITUACOES_LINK_REGISTRO[l.situacao] ?? l.situacao, tom: "neutro" };
+  }
+}
+
+/** A situação da linha: a falha do envio vem antes; depois, a do link. */
+function situacaoDaLinha(a: AvisoDoRegistro): { texto: string; tom: Tom } {
+  const s = situacaoAviso(a);
+  return a.link && s.tom !== "erro" && !a.parado ? situacaoLink(a.link) : s;
+}
+
+/** "WhatsApp", "E-mail", "E-mail e mural", "WhatsApp · link do serviço". */
 function porOnde(a: AvisoDoRegistro): string {
   if (a.meio === "COMUNICADO") return a.noMural ? "E-mail e mural" : "E-mail";
-  return MEIOS_AVISO_REGISTRO[a.meio];
+  return a.link ? `${MEIOS_AVISO_REGISTRO[a.meio]} · link do serviço` : MEIOS_AVISO_REGISTRO[a.meio];
 }
+
+const abrirManutencao = (l: LinkDoRegistro) => `/manutencao/manutencao?id=${l.manutencaoId}`;
 
 function quem(a: AvisoDoRegistro): string {
   if (a.destino === "MORADORES") return a.nome ? `Moradores · ${a.nome}` : "Moradores";
@@ -54,6 +78,7 @@ function quem(a: AvisoDoRegistro): string {
 export function ConfirmacaoRegistro({ feito, outro, abrir }: { feito: Registrado; outro: () => void; abrir: () => void }) {
   const linhas = feito.avisos.filter((a) => a.meio !== "CONVERSA");
   const falhas = linhas.filter((a) => situacaoAviso(a).tom === "erro");
+  const link = linhas.find((a) => a.link)?.link;
   const esperando = linhas.some((a) => a.enviarApos);
   return (
     <div className="grid gap-4" role="status">
@@ -77,7 +102,7 @@ export function ConfirmacaoRegistro({ feito, outro, abrir }: { feito: Registrado
             </thead>
             <tbody>
               {linhas.map((a, i) => {
-                const s = situacaoAviso(a);
+                const s = situacaoDaLinha(a);
                 return (
                   <tr key={i} className="border-t border-linha">
                     <td className="px-3 py-2">{quem(a)}{a.pelaRegra ? <span className="block text-xs text-tinta-suave">pela regra</span> : null}</td>
@@ -90,6 +115,19 @@ export function ConfirmacaoRegistro({ feito, outro, abrir }: { feito: Registrado
           </table>
         </div>
       )}
+      {link ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-linha p-3 text-sm">
+          <span>
+            <span className="block font-medium">Manutenção corretiva criada</span>
+            <span className="block text-tinta-suave">
+              {link.titulo} · ligada a este pedido
+              {link.reserva ? ` · se não responder, passa para ${link.reserva.nome}` : " · sem reserva no cadastro"}
+            </span>
+          </span>
+          <Link href={abrirManutencao(link)} className="text-sm font-medium text-violeta-600 hover:underline" aria-label={`Abrir a manutenção ${link.titulo}`}>Abrir</Link>
+        </div>
+      ) : null}
+      {link?.situacao === "ESPERANDO_ENVIO" ? <p className="text-xs text-tinta-suave">O prazo para responder só começa quando a mensagem sai.</p> : null}
       {esperando ? <p className="text-xs text-tinta-suave">O WhatsApp de quem atende espera o horário de funcionamento. O sino já avisou.</p> : null}
       {falhas.length ? <p className="text-xs text-tinta-suave">O que falhou vai para Falhas de envio, com responsável. O pedido fica registrado do mesmo jeito.</p> : null}
       <div className="flex flex-wrap justify-end gap-2">
@@ -122,8 +160,8 @@ export function CartaoAvisosRegistro({ avisos }: { avisos: AvisoDoRegistro[] }) 
       <ul className="grid gap-2">
         {grupos.map((g) => {
           const envio = g.itens.find((x) => x.meio !== "SINO") ?? g.itens[0]!;
-          const s = situacaoAviso(envio);
-          const meios = g.itens.map((x) => MEIO_NA_FRASE[x.meio] ?? x.meio);
+          const s = situacaoDaLinha(envio);
+          const meios = g.itens.map((x) => (x.link ? `link pelo ${MEIO_NA_FRASE[x.meio] ?? x.meio}` : MEIO_NA_FRASE[x.meio] ?? x.meio));
           const nomeMeios = meios.length > 1 ? `${meios.slice(0, -1).join(", ")} e ${meios[meios.length - 1]}` : meios[0];
           return (
             <li key={g.chave} className="grid gap-0.5 text-sm sm:grid-cols-[120px_1fr_auto] sm:items-center sm:gap-3">
@@ -133,6 +171,14 @@ export function CartaoAvisosRegistro({ avisos }: { avisos: AvisoDoRegistro[] }) 
                 <span className="text-tinta-suave"> · {nomeMeios}{g.itens.some((x) => x.pelaRegra) ? " · pela regra" : ""}{g.itens.some((x) => x.editado) ? " · texto editado" : ""}</span>
                 {envio.motivo ? <span className="block text-xs text-erro">{envio.motivo}</span> : null}
                 {s.tom === "erro" && envio.meio === "WHATSAPP" ? <Link href="/whatsapp" className="block text-xs text-violeta-600 hover:underline">Resolver em WhatsApp › Falhas de envio</Link> : null}
+                {envio.link ? (
+                  <span className="block text-xs text-tinta-suave">
+                    Manutenção{" "}
+                    <Link href={abrirManutencao(envio.link)} className="text-violeta-600 underline">{envio.link.titulo}</Link>
+                    {" · "}{(SITUACOES_MANUTENCAO as Record<string, string>)[envio.link.estadoManutencao]?.toLowerCase() ?? envio.link.estadoManutencao}
+                    {envio.link.situacao === "PASSOU_RESERVA" && envio.link.paraReserva ? ` · passou para ${envio.link.paraReserva}` : ""}
+                  </span>
+                ) : null}
               </span>
               <span><Selo tom={s.tom}>{s.texto}</Selo></span>
             </li>
