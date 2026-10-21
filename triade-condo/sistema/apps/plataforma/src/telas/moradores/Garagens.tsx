@@ -6,10 +6,11 @@
 
 import { useState } from "react";
 import { TIPOS_VEICULO, type TipoVeiculo } from "@triade/domain";
-import { Botao, Carregando, chamarApi, ErroCarregar, Selo, Vazio } from "@triade/ui";
+import { Botao, Carregando, chamarApi, ErroCarregar, Icone, Selo, Vazio, type NomeIcone } from "@triade/ui";
 import { Janela, type Campo } from "../Janela.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { ContatoDaUnidade, Garagens, Recado, Vaga, Veiculo } from "../tipos.ts";
+import { CartaoFicha, MenuAcoes } from "./comum.tsx";
 
 type Salvo = (r: Recado) => void;
 
@@ -116,7 +117,7 @@ export function JanelaVeiculo({ aberto, veiculo, unidadeId, nomeUnidade, contato
   );
 }
 
-/** A parte Garagens e veículos da ficha da unidade. */
+/** A parte Garagens e veículos da ficha da unidade: as vagas e os veículos, cada um com o seu menu. */
 export function GaragensDaUnidade({ unidadeId, nomeUnidade, vagas, veiculos, contatos, edita, salvo, recarregar }: {
   unidadeId: string;
   nomeUnidade: string;
@@ -132,88 +133,55 @@ export function GaragensDaUnidade({ unidadeId, nomeUnidade, vagas, veiculos, con
   >(null);
   const fechar = () => setJanela(null);
   const pronto = (r: Recado) => { fechar(); salvo(r); };
+  const incluir = edita ? (
+    <MenuAcoes rotulo="Incluir vaga ou veículo" texto="Incluir" icone="mais" itens={[
+      { texto: "Vaga", icone: "pin", acao: () => setJanela({ tipo: "vaga", vaga: null }) },
+      { texto: "Veículo", icone: "chave", acao: () => setJanela({ tipo: "veiculo", veiculo: null }) },
+    ]} />
+  ) : undefined;
 
   return (
-    <section id="garagens" aria-labelledby="t-garagens" className="grid gap-3 scroll-mt-24">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="t-garagens" className="text-lg font-medium">Garagens e veículos</h2>
-        {edita ? (
-          <span className="flex flex-wrap gap-2">
-            <Botao variante="contorno" onClick={() => setJanela({ tipo: "vaga", vaga: null })}>+ Vaga</Botao>
-            <Botao variante="contorno" onClick={() => setJanela({ tipo: "veiculo", veiculo: null })}>+ Veículo</Botao>
-          </span>
-        ) : null}
-      </div>
-      {vagas.length === 0 && veiculos.length === 0 ? (
-        <p className="text-sm text-tinta-suave">Nenhuma vaga nem veículo nesta unidade.</p>
-      ) : null}
+    <CartaoFicha id="garagens" titulo="Garagens e veículos" icone="pin" acao={incluir}>
+      {vagas.length === 0 && veiculos.length === 0 ? <p className="border-t border-linha pt-3 text-sm text-tinta-suave">Nenhuma vaga nem veículo nesta unidade.</p> : null}
       {vagas.length ? (
-        <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
-          <table className="w-full text-sm">
-            <caption className="sr-only">Vagas de {nomeUnidade}</caption>
-            <thead className="bg-superficie-2 text-left text-tinta-suave">
-              <tr>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Vaga</th>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Onde</th>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Veículo nela</th>
-                {edita ? <th scope="col" className="px-4 py-2.5"><span className="sr-only">Ações</span></th> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {vagas.map((v) => (
-                <tr key={v.id} className="border-t border-linha">
-                  <td className="px-4 py-3 font-medium">{v.identificacao}</td>
-                  <td className="px-4 py-3">{ondeFica(v) || <span className="text-tinta-suave">Não informado</span>}</td>
-                  <td className="px-4 py-3">{v.veiculos.length ? veiculoNaVaga(v) : <span className="text-tinta-suave">Livre</span>}</td>
-                  {edita ? (
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <Botao variante="discreto" onClick={() => setJanela({ tipo: "vaga", vaga: v })} aria-label={`Editar a vaga ${v.identificacao}`}>Editar</Botao>
-                      {v.veiculos.length ? null : (
-                        <Botao variante="discreto" onClick={() => setJanela({ tipo: "uso", vaga: v })} aria-label={`Tirar de uso a vaga ${v.identificacao}`}>Tirar de uso</Botao>
-                      )}
-                    </td>
-                  ) : null}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul aria-label={`Vagas de ${nomeUnidade}`} className="grid">
+          {vagas.map((v) => (
+            <li key={v.id} className="flex items-center gap-3 border-t border-linha py-3">
+              <span className="ladrilho t-codigo h-10 w-10" aria-hidden="true">{v.identificacao.slice(0, 1)}</span>
+              <span className="grid min-w-0 flex-1">
+                <span className="font-medium">Vaga <span className="t-codigo">{v.identificacao}</span></span>
+                <span className="t-apoio">{[ondeFica(v) || "Não informado", veiculoNaVaga(v)].join(" · ")}</span>
+              </span>
+              {edita ? (
+                <MenuAcoes rotulo={`Ações da vaga ${v.identificacao}`} itens={[
+                  { texto: "Editar", icone: "editar", rotulo: `Editar a vaga ${v.identificacao}`, acao: () => setJanela({ tipo: "vaga", vaga: v }) },
+                  ...(v.veiculos.length ? [] : [{ texto: "Tirar de uso…", icone: "sair" as const, perigo: true, rotulo: `Tirar de uso a vaga ${v.identificacao}`, acao: () => setJanela({ tipo: "uso", vaga: v }) }]),
+                ]} />
+              ) : null}
+            </li>
+          ))}
+        </ul>
       ) : null}
       {veiculos.length ? (
-        <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
-          <table className="w-full text-sm">
-            <caption className="sr-only">Veículos de {nomeUnidade}</caption>
-            <thead className="bg-superficie-2 text-left text-tinta-suave">
-              <tr>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Placa</th>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Veículo</th>
-                <th scope="col" className="px-4 py-2.5 font-semibold">De quem</th>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Vaga</th>
-                {edita ? <th scope="col" className="px-4 py-2.5"><span className="sr-only">Ações</span></th> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {veiculos.map((x) => (
-                <tr key={x.id} className="border-t border-linha">
-                  <td className="px-4 py-3 font-mono font-medium">{x.placa}</td>
-                  <td className="px-4 py-3">{[TIPOS_VEICULO[x.tipo], x.modelo].filter(Boolean).join(" · ")}</td>
-                  <td className="px-4 py-3">{x.contato ?? <span className="text-tinta-suave">Da unidade</span>}</td>
-                  <td className="px-4 py-3">{x.vaga ?? <span className="text-tinta-suave">Sem vaga</span>}</td>
-                  {edita ? (
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <Botao variante="discreto" onClick={() => setJanela({ tipo: "veiculo", veiculo: x })} aria-label={`Editar o veículo ${x.placa}`}>Editar</Botao>
-                      <Botao variante="discreto" onClick={() => setJanela({ tipo: "retirar", veiculo: x })} aria-label={`Retirar o veículo ${x.placa}`}>Retirar</Botao>
-                    </td>
-                  ) : null}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul aria-label={`Veículos de ${nomeUnidade}`} className="grid">
+          {veiculos.map((x) => (
+            <li key={x.id} className="flex items-center gap-3 border-t border-linha py-3">
+              <span className="ladrilho h-10 w-10" aria-hidden="true"><Icone nome="chave" /></span>
+              <span className="grid min-w-0 flex-1">
+                <span className="t-codigo text-[15px]">{x.placa}</span>
+                <span className="t-apoio">{[[TIPOS_VEICULO[x.tipo], x.modelo].filter(Boolean).join(" · "), x.contato ?? "Da unidade", x.vaga ? `vaga ${x.vaga}` : "sem vaga"].join(" · ")}</span>
+              </span>
+              {edita ? (
+                <MenuAcoes rotulo={`Ações do veículo ${x.placa}`} itens={[
+                  { texto: "Editar", icone: "editar", rotulo: `Editar o veículo ${x.placa}`, acao: () => setJanela({ tipo: "veiculo", veiculo: x }) },
+                  { texto: "Retirar…", icone: "sair", perigo: true, rotulo: `Retirar o veículo ${x.placa}`, acao: () => setJanela({ tipo: "retirar", veiculo: x }) },
+                ]} />
+              ) : null}
+            </li>
+          ))}
+        </ul>
       ) : null}
-      <p className="text-xs text-tinta-suave">
-        A vaga é da unidade. O veículo pode ser de alguém da unidade ou só da unidade. A placa aparece só para quem vê os moradores, nunca no mural, no WhatsApp ou no histórico.
-      </p>
+      <p className="t-apoio">A placa aparece só para quem vê os moradores, nunca no mural, no WhatsApp ou no histórico.</p>
 
       <JanelaVaga aberto={janela?.tipo === "vaga"} vaga={janela?.tipo === "vaga" ? janela.vaga : null} unidadeFixa={unidadeId}
         aoFechar={fechar} salvo={pronto} recarregar={recarregar} />
@@ -229,77 +197,94 @@ export function GaragensDaUnidade({ unidadeId, nomeUnidade, vagas, veiculos, con
           if (r.ok) pronto({ tom: "ok", texto: `Veículo ${x.placa} retirado.` });
           return r;
         }} />
-    </section>
+    </CartaoFicha>
   );
 }
 
-/** A aba Garagens de Moradores e unidades: todas as vagas, de quem é cada uma e o veículo nela. */
+type DeQuem = "" | "unidades" | "condominio";
+const COLUNAS = "md:grid-cols-[44px_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_40px]";
+
+/** A aba Garagens de Moradores e unidades: todas as vagas, de quem é cada uma e o veículo nela.
+ * Nova vaga fica em Montar o prédio; Editar e Tirar de uso, no menu de cada vaga. */
 export function AbaGaragens({ salvo }: { salvo: Salvo }) {
   const carga = useCarregar<Garagens>("/v1/condominio/garagens");
   const [janela, setJanela] = useState<{ tipo: "vaga"; vaga: Vaga | null } | { tipo: "uso"; vaga: Vaga } | null>(null);
+  const [deQuem, setDeQuem] = useState<DeQuem>("");
+  const [texto, setTexto] = useState("");
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando as garagens…" />;
   if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const d = carga.dados;
   const fechar = () => setJanela(null);
   const pronto = (r: Recado) => { fechar(); salvo(r); carga.recarregar(); };
   const r = d.resumo;
-  const numeros = [
-    [r.vagas, r.vagas === 1 ? "vaga" : "vagas"], [r.deUnidades, "de unidades"], [r.doCondominio, "do condomínio"],
-    [r.veiculos, r.veiculos === 1 ? "veículo" : "veículos"], [r.semVaga, "veículos sem vaga"],
-  ] as const;
+  const q = texto.trim().toLowerCase().replace(/[^0-9a-z]/g, "");
+  const lista = d.vagas.filter((v) => (deQuem === "" ? true : deQuem === "unidades" ? Boolean(v.unidadeId) : !v.unidadeId)
+    && (!q || [v.identificacao, v.unidade ?? "", ...v.veiculos.map((x) => x.placa)].some((t) => t.toLowerCase().replace(/[^0-9a-z]/g, "").includes(q))));
+  const abas: { valor: DeQuem; texto: string; n: number }[] = [
+    { valor: "", texto: "Todas as vagas", n: r.vagas }, { valor: "unidades", texto: "De unidades", n: r.deUnidades }, { valor: "condominio", texto: "Do condomínio", n: r.doCondominio },
+  ];
+  const nova = d.podeEditar ? <Botao variante="contorno" onClick={() => setJanela({ tipo: "vaga", vaga: null })}><Icone nome="mais" />Nova vaga de garagem</Botao> : undefined;
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <ul className="flex flex-wrap gap-2" aria-label="Resumo das garagens">
-          {numeros.map(([n, t]) => (
-            <li key={t} className="rounded-xl border border-linha bg-superficie px-3 py-2 text-sm"><b className="mr-1 text-base">{n}</b>{t}</li>
-          ))}
-        </ul>
-        {d.podeEditar ? <Botao onClick={() => setJanela({ tipo: "vaga", vaga: null })}>+ Vaga</Botao> : null}
-      </div>
+      <form role="search" aria-label="Buscar vagas" className="busca min-w-0 md:max-w-[520px]" onSubmit={(e) => e.preventDefault()}>
+        <Icone nome="busca" />
+        <label htmlFor="g-busca" className="sr-only">Buscar por vaga, unidade ou placa</label>
+        <input id="g-busca" className="campo" type="search" placeholder="Buscar por vaga, unidade ou placa" maxLength={40} value={texto} onChange={(e) => setTexto(e.target.value)} />
+      </form>
       {d.vagas.length === 0 ? (
-        <Vazio titulo="Nenhuma vaga cadastrada" acao={d.podeEditar ? <Botao onClick={() => setJanela({ tipo: "vaga", vaga: null })}>+ Vaga</Botao> : undefined}>
+        <Vazio titulo="Nenhuma vaga cadastrada" icone="pin" acao={nova}>
           Cadastre as vagas de cada unidade e as do condomínio, como as de visitantes. Os veículos entram na ficha de cada unidade.
         </Vazio>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
-          <table className="w-full text-sm">
-            <caption className="sr-only">Vagas do condomínio</caption>
-            <thead className="bg-superficie-2 text-left text-tinta-suave">
-              <tr>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Vaga</th>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Onde</th>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Unidade</th>
-                <th scope="col" className="px-4 py-2.5 font-semibold">Veículo nela</th>
-                {d.podeEditar ? <th scope="col" className="px-4 py-2.5"><span className="sr-only">Ações</span></th> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {d.vagas.map((v) => (
-                <tr key={v.id} className="border-t border-linha">
-                  <td className="px-4 py-3 font-medium">{v.identificacao}{v.ativa ? null : <span className="ml-2"><Selo tom="neutro">Fora de uso</Selo></span>}</td>
-                  <td className="px-4 py-3">{ondeFica(v) || <span className="text-tinta-suave">Não informado</span>}</td>
-                  <td className="px-4 py-3">{v.unidade ?? <span className="text-tinta-suave">Do condomínio</span>}</td>
-                  <td className="px-4 py-3">{v.veiculos.length ? veiculoNaVaga(v) : <span className="text-tinta-suave">Livre</span>}</td>
-                  {d.podeEditar ? (
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      {v.ativa ? <Botao variante="discreto" onClick={() => setJanela({ tipo: "vaga", vaga: v })} aria-label={`Editar a vaga ${v.identificacao}`}>Editar</Botao> : null}
-                      {v.veiculos.length ? null : (
-                        <Botao variante="discreto" onClick={() => setJanela({ tipo: "uso", vaga: v })}
-                          aria-label={`${v.ativa ? "Tirar de uso" : "Voltar ao uso"} a vaga ${v.identificacao}`}>{v.ativa ? "Tirar de uso" : "Voltar ao uso"}</Botao>
-                      )}
-                    </td>
-                  ) : null}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <section aria-labelledby="t-garagens-lista" className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
+          <h2 id="t-garagens-lista" className="sr-only">Vagas do condomínio</h2>
+          <nav aria-label="De quem é" className="flex gap-1 overflow-x-auto border-b border-linha md:px-3">
+            {abas.map((a) => {
+              const atual = deQuem === a.valor;
+              return (
+                <button key={a.valor || "todas"} type="button" aria-pressed={atual} onClick={() => setDeQuem(a.valor)}
+                  className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                  {a.texto}<span className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{a.n}</span>
+                </button>
+              );
+            })}
+          </nav>
+          {lista.length === 0 ? <div className="md:p-5"><Vazio titulo="Nenhuma vaga encontrada" icone="busca">Confira a busca: vaga, unidade ou placa.</Vazio></div> : (
+            <>
+              <div aria-hidden="true" className={`hidden gap-4 border-b border-linha bg-fundo px-5 py-2.5 md:grid ${COLUNAS}`}>
+                <span /><span className="t-rotulo">Vaga</span><span className="t-rotulo">Unidade</span><span className="t-rotulo">Veículo nela</span><span />
+              </div>
+              <ul aria-label="Vagas" className="grid max-md:gap-3">
+                {lista.map((v) => (
+                  <li key={v.id} className={`grid grid-cols-[44px_minmax(0,1fr)_40px] items-center gap-x-4 gap-y-1 px-5 py-3 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 ${COLUNAS} md:border-t md:border-linha md:first:border-t-0`}>
+                    <span className="ladrilho t-codigo h-11 w-11 rounded-xl" aria-hidden="true">{v.identificacao.slice(0, 1)}</span>
+                    <span className="grid min-w-0">
+                      <span className="flex flex-wrap items-center gap-2 font-medium">Vaga <span className="t-codigo">{v.identificacao}</span>{v.ativa ? null : <Selo tom="neutro">Fora de uso</Selo>}</span>
+                      <span className="t-apoio">{ondeFica(v) || "Não informado"}</span>
+                    </span>
+                    <span className="text-sm max-md:col-start-2">{v.unidade ?? <span className="text-tinta-suave">Do condomínio</span>}</span>
+                    <span className="text-sm max-md:col-start-2">{v.veiculos.length ? veiculoNaVaga(v) : <span className="text-tinta-suave">Livre</span>}</span>
+                    <span className="justify-self-end max-md:col-start-3 max-md:row-start-1">
+                      {d.podeEditar ? (
+                        <MenuAcoes rotulo={`Ações da vaga ${v.identificacao}`} itens={[
+                          ...(v.ativa ? [{ texto: "Editar", icone: "editar" as const, rotulo: `Editar a vaga ${v.identificacao}`, acao: () => setJanela({ tipo: "vaga", vaga: v }) }] : []),
+                          ...(v.veiculos.length ? [] : [{ texto: v.ativa ? "Tirar de uso…" : "Voltar ao uso", icone: (v.ativa ? "sair" : "trocar") as NomeIcone, perigo: v.ativa,
+                            rotulo: `${v.ativa ? "Tirar de uso" : "Voltar ao uso"} a vaga ${v.identificacao}`, acao: () => setJanela({ tipo: "uso", vaga: v }) }]),
+                        ]} />
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <p className="t-apoio py-4 md:border-t md:border-linha md:px-5">
+            {r.vagas === 1 ? "1 vaga" : `${r.vagas} vagas`} · {r.veiculos === 1 ? "1 veículo" : `${r.veiculos} veículos`}{r.semVaga ? ` · ${r.semVaga === 1 ? "1 veículo sem vaga" : `${r.semVaga} veículos sem vaga`}` : ""}
+          </p>
+        </section>
       )}
-      <p className="text-xs text-tinta-suave">
-        Vaga do condomínio não é de nenhuma unidade: visitantes, carga e descarga, vaga rotativa. A identificação não se repete entre as vagas em uso.
-      </p>
+      <p className="t-apoio">Vaga do condomínio não é de nenhuma unidade: visitantes, carga e descarga, vaga rotativa. Nova vaga fica em Montar o prédio.</p>
       <JanelaVaga aberto={janela?.tipo === "vaga"} vaga={janela?.tipo === "vaga" ? janela.vaga : null} unidades={d.unidades}
         aoFechar={fechar} salvo={pronto} recarregar={carga.recarregar} />
       <JanelaUsoVaga vaga={janela?.tipo === "uso" ? janela.vaga : null} aoFechar={fechar} salvo={pronto} recarregar={carga.recarregar} />

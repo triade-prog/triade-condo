@@ -7,6 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { A101 } from "./api-falsa-moradores";
+import { linha, noMenu } from "./moradores-telas";
 import { ETIQUETA_FALSA, PRESTADOR_FALSO, RESERVA_FALSO } from "./api-falsa-links";
 import { derrubarNumero, numeroVoltou } from "./api-falsa-whatsapp";
 
@@ -25,9 +26,9 @@ test.describe("Plataforma · garagens, prestador reserva e queda do WhatsApp", (
     const estado = await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/moradores/unidade?id=${A101}`);
     const garagens = page.getByRole("region", { name: "Garagens e veículos" });
-    await expect(garagens.getByRole("cell", { name: "G-23", exact: true })).toBeVisible();
+    await expect(linha(garagens.getByRole("list", { name: "Vagas de Torre A · 101" }), "G-23")).toBeVisible();
     await expect(garagens.getByText("Subsolo 1 · coberta").first()).toBeVisible();
-    await garagens.getByRole("button", { name: "+ Veículo" }).click();
+    await noMenu(garagens, "Incluir vaga ou veículo", "Veículo");
     const j = page.getByRole("dialog", { name: "Incluir veículo · Torre A · 101" });
     await j.getByLabel("Placa").fill("QMF 2A4");
     await j.getByRole("button", { name: "Incluir veículo" }).click();
@@ -39,24 +40,26 @@ test.describe("Plataforma · garagens, prestador reserva e queda do WhatsApp", (
     await conferir(page);
     await j.getByRole("button", { name: "Incluir veículo" }).click();
     await expect(page.getByText("Veículo incluído.")).toBeVisible();
-    await expect(garagens.getByRole("cell", { name: "QMF2A41", exact: true })).toBeVisible();
-    await expect(garagens.getByRole("cell", { name: "QMF2A41 · Onix prata" })).toBeVisible();
+    const veiculo = linha(garagens.getByRole("list", { name: "Veículos de Torre A · 101" }), "QMF2A41");
+    await expect(veiculo).toContainText("Onix prata");
+    await expect(veiculo).toContainText("Marina Souza");
+    // A vaga com veículo não sai de uso.
+    await garagens.getByRole("button", { name: "Ações da vaga G-23" }).click();
+    await expect(garagens.getByRole("button", { name: "Editar a vaga G-23" })).toBeVisible();
     await expect(garagens.getByRole("button", { name: "Tirar de uso a vaga G-23" })).toHaveCount(0);
+    await page.keyboard.press("Escape");
     expect(estado.moradores.veiculos[0]!.placa).toBe("QMF2A41");
     await conferir(page);
 
     await page.goto(`${PLATAFORMA}/moradores`);
-    await page.getByLabel("Buscar unidade").fill("qmf-2a");
+    await page.getByRole("searchbox", { name: "Buscar unidade" }).fill("qmf-2a");
     await expect(page.getByText("1 unidade encontrada")).toBeVisible();
     await expect(page.getByText("placa QMF2A41 · Onix prata · vaga G-23")).toBeVisible();
     await conferir(page);
-    await page.getByRole("button", { name: "Atalhos de Torre A · 101" }).click();
-    await expect(page.getByRole("link", { name: "Registrar mudança" })).toBeVisible();
-    await page.getByRole("link", { name: "Garagens e veículos" }).click();
-    await expect(page).toHaveURL(/#garagens$/);
-    await expect(page.getByRole("region", { name: "Garagens e veículos" }).getByRole("cell", { name: "QMF2A41", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Torre A · 101" }).click();
+    await expect(page.getByRole("region", { name: "Garagens e veículos" }).getByRole("list", { name: "Veículos de Torre A · 101" })).toContainText("QMF2A41");
 
-    await page.getByRole("button", { name: "Retirar o veículo QMF2A41" }).click();
+    await noMenu(page, "Ações do veículo QMF2A41", "Retirar o veículo QMF2A41");
     await page.getByRole("dialog", { name: "Retirar o veículo QMF2A41" }).getByRole("button", { name: "Retirar veículo" }).click();
     await expect(page.getByText("Veículo QMF2A41 retirado.")).toBeVisible();
     await expect(page.getByText("Nenhuma vaga nem veículo nesta unidade.")).toHaveCount(0);
@@ -66,12 +69,12 @@ test.describe("Plataforma · garagens, prestador reserva e queda do WhatsApp", (
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/moradores`);
     await page.getByRole("tab", { name: "Garagens" }).click();
-    const resumo = page.getByRole("list", { name: "Resumo das garagens" });
-    await expect(resumo.getByText("3vagas")).toBeVisible();
-    await expect(resumo.getByText("1do condomínio")).toBeVisible();
-    await expect(page.getByRole("cell", { name: "Do condomínio" })).toBeVisible();
+    const deQuem = page.getByRole("navigation", { name: "De quem é" });
+    await expect(deQuem.getByRole("button", { name: "Todas as vagas 3" })).toBeVisible();
+    await expect(deQuem.getByRole("button", { name: "Do condomínio 1" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Vagas" })).toContainText("Do condomínio");
     await conferir(page);
-    await page.getByRole("tabpanel").getByRole("button", { name: "+ Vaga" }).first().click();
+    await noMenu(page, "Montar o prédio", "Nova vaga de garagem");
     const j = page.getByRole("dialog", { name: "Incluir vaga" });
     await j.getByLabel("Identificação").fill("g-23");
     await j.getByRole("button", { name: "Incluir vaga" }).click();
@@ -81,7 +84,7 @@ test.describe("Plataforma · garagens, prestador reserva e queda do WhatsApp", (
     await conferir(page);
     await j.getByRole("button", { name: "Incluir vaga" }).click();
     await expect(page.getByText("Vaga V-02 incluída.")).toBeVisible();
-    await expect(resumo.getByText("4vagas")).toBeVisible();
+    await expect(deQuem.getByRole("button", { name: "Todas as vagas 4" })).toBeVisible();
   });
 
   test("MP-09: com prazo para confirmar, o prestador que não pode atender passa o serviço para a reserva", async ({ page }) => {
