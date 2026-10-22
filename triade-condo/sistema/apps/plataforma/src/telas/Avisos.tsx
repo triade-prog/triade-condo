@@ -215,7 +215,8 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
               );
             }
             if (a.tipo.startsWith("WHATSAPP_")) {
-              const destino = a.pedidoId ? `/pedidos/pedido?id=${a.pedidoId}` : "/whatsapp";
+              const destino = a.pedidoId ? `/pedidos/pedido?id=${a.pedidoId}`
+                : a.tipo === "WHATSAPP_FALHA_ENVIO" ? "/whatsapp?parte=falhas" : a.tipo === "WHATSAPP_DESCONECTADO" ? "/whatsapp?parte=quedas" : "/whatsapp";
               return (
                 <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">

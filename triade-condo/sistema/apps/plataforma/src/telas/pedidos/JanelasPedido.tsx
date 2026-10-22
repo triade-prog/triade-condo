@@ -1,18 +1,20 @@
 "use client";
 // Janelas das ações sobre um pedido (design "Telas do passo 4", telas 5 a 9): retorno ao
 // morador e nota interna, próximo retorno, previsão, pendência, concluir, revisar, reabrir,
-// cancelar, repassar, mudar etapa e editar. A conclusão pode levar fotos e documentos como
+// cancelar, repassar, mudar etapa e editar. Com a conversa do WhatsApp, o retorno pode ir
+// "Pelo WhatsApp" (decisão C.1 de 22/10/2026): sai pela conversa e conta na hora do registro. A conclusão pode levar fotos e documentos como
 // evidência (passo 4b, AT-13), enviados depois de concluir. Toda ação leva a versão lida (AT-24); no
 // conflito, a janela avisa e o que a pessoa escreveu fica.
 
 import { useState, type FormEvent } from "react";
-import { REVISOES_CONCLUSAO } from "@triade/domain";
-import { AvisoErro, Botao, CampoAreaTexto, CampoSelecao, camposComErro, chamarApi, Dialogo, textoDoErro, type ErroApi, type Resposta } from "@triade/ui";
+import { LIMITE_FORA_DA_JANELA, REVISOES_CONCLUSAO, TEXTOS_MOTIVO } from "@triade/domain";
+import { AvisoErro, Botao, CampoAreaTexto, CampoSelecao, camposComErro, chamarApi, Dialogo, Icone, textoDoErro, type ErroApi, type Resposta } from "@triade/ui";
 import { Janela, type Campo, type Valores } from "../Janela.tsx";
 import type { ConclusaoPedido, OpcoesPedidos, PedidoDetalhe, PendenciaPedido } from "../tipos.ts";
 import { Escolha } from "../moradores/comum.tsx";
+import { AvisoJanela, PreviaModelo, type ConversaDoPedido } from "../whatsapp/ConversaWhatsapp.tsx";
 import { EscolherArquivos, enviarArquivos, resumoEnvio, type ItemEnvio } from "./Arquivos.tsx";
-import { deDataHoraLocal, diaHora, nomeDe, opcoesMeio, opcoesPendencia, paraDataHoraLocal } from "./comum.tsx";
+import { deDataHoraLocal, diaHora, ICONE_CANAL, nomeDe, opcoesMeio, opcoesPendencia, paraDataHoraLocal } from "./comum.tsx";
 
 export type AcaoPedido =
   | "retorno" | "proximo" | "previsao" | "pendencia" | "concluir" | "revisar" | "reabrir" | "cancelar" | "repassar" | "etapa" | "editar";
@@ -22,12 +24,14 @@ interface PropsJanelas {
   resolver: PendenciaPedido | null;
   d: PedidoDetalhe;
   opcoes: OpcoesPedidos;
+  /** A conversa do WhatsApp do pedido, para dar o retorno por ela. */
+  whatsapp?: ConversaDoPedido | null;
   aoFechar: () => void;
   salvo: (texto: string, tom?: "ok" | "atencao") => void;
   recarregar: () => void;
 }
 
-export function JanelasPedido({ acao, resolver, d, opcoes, aoFechar, salvo, recarregar }: PropsJanelas) {
+export function JanelasPedido({ acao, resolver, d, opcoes, whatsapp, aoFechar, salvo, recarregar }: PropsJanelas) {
   const p = d.pedido;
   const base = `/v1/condominio/pedidos/${p.id}`;
   const enviar = async (caminho: string, corpo: Record<string, unknown>, texto: string, metodo: "POST" | "PUT" = "POST"): Promise<Resposta<unknown>> => {
@@ -60,8 +64,8 @@ export function JanelasPedido({ acao, resolver, d, opcoes, aoFechar, salvo, reca
 
   return (
     <>
-      <Dialogo aberto={acao === "retorno"} titulo={`${d.pode.responder && (p.estado === "ABERTO" || p.estado === "EM_ANDAMENTO") ? "Dar retorno ao morador" : "Nota interna"} · ${p.protocolo}`} aoFechar={aoFechar}>
-        {acao === "retorno" ? <DarRetorno d={d} opcoes={opcoes} aoFechar={aoFechar} enviar={enviar} recarregar={recarregar} /> : null}
+      <Dialogo aberto={acao === "retorno"} titulo={`${d.pode.responder && (p.estado === "ABERTO" || p.estado === "EM_ANDAMENTO") ? "Dar retorno ao morador" : "Nota interna"} · ${p.protocolo}`} aoFechar={aoFechar} media>
+        {acao === "retorno" ? <DarRetorno d={d} opcoes={opcoes} whatsapp={whatsapp ?? null} aoFechar={aoFechar} enviar={enviar} salvo={salvo} recarregar={recarregar} /> : null}
       </Dialogo>
       <Dialogo aberto={acao === "revisar"} titulo={`Revisar conclusão · ${p.protocolo}`} aoFechar={aoFechar}>
         {acao === "revisar" ? <Revisar conclusao={d.conclusoes.find((c) => c.revisao === "AGUARDANDO") ?? null} aoFechar={aoFechar} enviar={enviar} recarregar={recarregar} /> : null}
@@ -147,21 +151,39 @@ export function JanelasPedido({ acao, resolver, d, opcoes, aoFechar, salvo, reca
 
 type Enviar = (caminho: string, corpo: Record<string, unknown>, texto: string, metodo?: "POST" | "PUT") => Promise<Resposta<unknown>>;
 
-/** Retorno ao morador (AT-06) ou nota interna, com os modelos de resposta (AT-25). */
-function DarRetorno({ d, opcoes, aoFechar, enviar, recarregar }: { d: PedidoDetalhe; opcoes: OpcoesPedidos; aoFechar: () => void; enviar: Enviar; recarregar: () => void }) {
+/** Retorno ao morador (AT-06) ou nota interna, com os modelos de resposta (AT-25). Quando o pedido
+ * tem conversa no WhatsApp, "Pelo WhatsApp" vem escolhido: a resposta sai pela conversa, com o
+ * limite e a prévia do modelo quando a conversa fechou (W-20). */
+function DarRetorno({ d, opcoes, whatsapp, aoFechar, enviar, salvo, recarregar }: {
+  d: PedidoDetalhe; opcoes: OpcoesPedidos; whatsapp: ConversaDoPedido | null; aoFechar: () => void; enviar: Enviar;
+  salvo: (texto: string, tom?: "ok" | "atencao") => void; recarregar: () => void;
+}) {
   const podeRetorno = d.pode.responder && (d.pedido.estado === "ABERTO" || d.pedido.estado === "EM_ANDAMENTO");
+  const zap = podeRetorno && whatsapp?.pode.responder ? whatsapp : null;
+  const meios = zap ? [{ valor: "WHATSAPP", texto: "Pelo WhatsApp" }, ...opcoesMeio] : opcoesMeio;
   const [tipo, setTipo] = useState<"RETORNO" | "NOTA">(podeRetorno ? "RETORNO" : "NOTA");
-  const [meio, setMeio] = useState("TELEFONE");
+  const [meio, setMeio] = useState(zap ? "WHATSAPP" : "TELEFONE");
   const [texto, setTexto] = useState("");
   const [modelo, setModelo] = useState("");
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const modelos = opcoes.modelos.filter((m) => !m.categoriaId || m.categoriaId === d.pedido.categoria.id);
+  const pelo = tipo === "RETORNO" && meio === "WHATSAPP" && zap ? zap : null;
+  const limite = pelo?.janela && !pelo.janela.aberta ? LIMITE_FORA_DA_JANELA : 2000;
+  const longo = texto.trim().length > limite;
 
   async function salvar(ev: FormEvent) {
     ev.preventDefault();
     setErro(null);
     setEnviando(true);
+    if (pelo) {
+      const r = await chamarApi<{ aviso?: string }>(`/v1/condominio/pedidos/${d.pedido.id}/whatsapp`, { corpo: { versao: d.pedido.versao, texto: texto.trim() } });
+      setEnviando(false);
+      if (!r.ok) return setErro(r.erro);
+      return r.dados.aviso
+        ? salvo(`Retorno registrado. A mensagem não vai pelo WhatsApp: avise por outro meio. ${TEXTOS_MOTIVO[r.dados.aviso] ?? ""}`.trim(), "atencao")
+        : salvo("Retorno registrado e enviado pelo WhatsApp.");
+    }
     const r = tipo === "RETORNO"
       ? await enviar("/retornos", { meio, texto: texto.trim() }, "Retorno registrado. O próximo retorno foi recalculado; a previsão não mudou.")
       : await enviar("/notas", { texto: texto.trim() }, "Nota interna registrada.");
@@ -170,6 +192,7 @@ function DarRetorno({ d, opcoes, aoFechar, enviar, recarregar }: { d: PedidoDeta
   }
 
   const comErro = camposComErro(erro);
+  const para = d.pedido.contato?.nome;
   return (
     <form onSubmit={salvar} noValidate className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={() => { aoFechar(); recarregar(); }} /> : null}
@@ -178,22 +201,34 @@ function DarRetorno({ d, opcoes, aoFechar, enviar, recarregar }: { d: PedidoDeta
           opcoes={[{ valor: "RETORNO", texto: "Retorno ao morador" }, { valor: "NOTA", texto: "Nota interna" }]} />
       ) : null}
       {tipo === "RETORNO" ? (
-        <>
-          <CampoSelecao id="r-meio" rotulo="Como foi dado" value={meio} onChange={(e) => setMeio(e.target.value)} opcoes={opcoesMeio} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <CampoSelecao id="r-meio" rotulo="Como foi dado" icone={ICONE_CANAL[meio] ?? "info"} value={meio} onChange={(e) => setMeio(e.target.value)} opcoes={meios}
+            ajuda={zap ? "Vem escolhido quando o pedido tem conversa no WhatsApp." : undefined} />
           {modelos.length ? (
             <CampoSelecao id="r-modelo" rotulo="Usar um modelo" opcional value={modelo}
               onChange={(e) => { setModelo(e.target.value); const m = modelos.find((x) => x.id === e.target.value); if (m) setTexto(m.texto); }}
               opcoes={[{ valor: "", texto: "Sem modelo" }, ...modelos.map((m) => ({ valor: m.id, texto: m.titulo }))]} />
           ) : null}
-        </>
+        </div>
       ) : null}
-      <CampoAreaTexto id="r-texto" rotulo={tipo === "RETORNO" ? "O que foi dito" : "Nota"} required maxLength={2000} rows={4} value={texto}
-        onChange={(e) => setTexto(e.target.value)} erro={comErro.includes("texto") ? "De 3 a 2000 caracteres." : null}
-        ajuda={tipo === "NOTA" ? "Só a gestão lê. Não conta como retorno ao morador (cobrar o fornecedor, por exemplo)." : undefined} />
-      {tipo === "RETORNO" ? <p className="text-sm text-tinta-suave">Ao salvar, o próximo retorno é recalculado pelo prazo. A previsão de solução não muda.</p> : null}
+      {pelo?.janela ? <AvisoJanela janela={pelo.janela} /> : null}
+      <CampoAreaTexto id="r-texto" rotulo={tipo === "RETORNO" ? "O que foi dito" : "Nota"} required maxLength={limite} rows={4} value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        erro={comErro.includes("texto") ? `De 3 a ${limite} caracteres.` : longo ? `Com a conversa fechada, até ${LIMITE_FORA_DA_JANELA} caracteres.` : null}
+        ajuda={tipo === "NOTA" ? "Só a gestão lê. Não conta como retorno ao morador (cobrar o fornecedor, por exemplo)."
+          : pelo ? `${texto.trim().length} de ${limite} caracteres${para ? ` · vai para ${para} pelo WhatsApp` : ""}` : undefined} />
+      {pelo?.janela ? <PreviaModelo janela={pelo.janela} texto={texto} /> : null}
+      {tipo === "RETORNO" ? (
+        <p className="text-sm text-tinta-suave">
+          {pelo ? "Conta como retorno na hora do registro e o próximo retorno é recalculado. Se o envio falhar, o retorno continua registrado e a falha aparece em Falhas de envio, com quem cuida."
+            : "Ao salvar, o próximo retorno é recalculado pelo prazo. A previsão de solução não muda."}
+        </p>
+      ) : null}
       <div className="flex justify-end gap-2">
         <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
-        <Botao type="submit" disabled={enviando}>{enviando ? "Salvando…" : tipo === "RETORNO" ? "Registrar retorno" : "Salvar nota"}</Botao>
+        <Botao type="submit" disabled={enviando || longo}>
+          {enviando ? (pelo ? "Enviando…" : "Salvando…") : pelo ? <><Icone nome="enviar" />Enviar e registrar retorno</> : tipo === "RETORNO" ? "Registrar retorno" : "Salvar nota"}
+        </Botao>
       </div>
     </form>
   );

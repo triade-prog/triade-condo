@@ -9,7 +9,9 @@
 // o andamento, o histórico completo (AT-17), as conclusões e as fotos e documentos (passo 4b,
 // PT-07). Com o retorno vencido, a faixa do aviso (passo 6, AT-09).
 // A visita marcada na agenda, separada dos dois compromissos (peça R7, AG-08, MP-04), e a
-// manutenção ligada (peça R6, MP-04). A conversa do WhatsApp do condomínio (passo 5). Quem
+// manutenção ligada (peça R6, MP-04). A conversa do WhatsApp do condomínio (passo 5) fica
+// logo abaixo do topo, e o pedido de revisão do morador numa faixa no alto (decisão D.1 de
+// 22/10/2026); responder pelo WhatsApp é em Dar retorno ao morador (C.1). Quem
 // foi avisado no registro e o prestador escolhido (F6.4, AT-26). Da F7.4: os pedidos
 // relacionados (AT-18) e a decisão pedida ao síndico, com a pendência que se resolve sozinha
 // quando ele responde (AT-23).
@@ -29,7 +31,7 @@ import { FaixaPrazo } from "./FaixaPrazo.tsx";
 import { NaAgenda } from "../agenda/NaAgenda.tsx";
 import { NaManutencao } from "../manutencao/NaManutencao.tsx";
 import { NosComunicados } from "../comunicados/NosComunicados.tsx";
-import { ConversaWhatsapp } from "../whatsapp/ConversaWhatsapp.tsx";
+import { ConversaWhatsapp, FaixaRevisao, type ConversaDoPedido } from "../whatsapp/ConversaWhatsapp.tsx";
 import { DecisoesNoPedido, PedirDecisao, pendenciaDaDecisao } from "../decisoes/NoPedido.tsx";
 import { PedidosRelacionados } from "./Relacionados.tsx";
 import { CartaoAvisosRegistro } from "./AvisosDoRegistro.tsx";
@@ -194,6 +196,7 @@ export function Pedido() {
   const carga = useCarregar<PedidoDetalhe>(id ? `/v1/condominio/pedidos/${id}` : null);
   const opcoes = useCarregar<OpcoesPedidos>("/v1/condominio/pedidos/opcoes");
   const arquivos = useCarregar<ArquivosDoPedido>(id ? `/v1/condominio/pedidos/${id}/arquivos` : null);
+  const conversa = useCarregar<ConversaDoPedido>(id ? `/v1/condominio/pedidos/${id}/whatsapp` : null);
   const [recado, setRecado] = useState<Recado>(busca.get("novo") ? { tom: "ok", texto: "Pedido registrado." } : null);
   const [falha, setFalha] = useState<string | null>(null);
   const [acao, setAcao] = useState<AcaoPedido | null>(null);
@@ -221,13 +224,14 @@ export function Pedido() {
   const fechado = p.estado === "ENCERRADO" || p.estado === "CANCELADO";
   const fechar = () => { setAcao(null); setResolver(null); setPedirDecisao(false); };
   const salvo = (texto: string, tom: "ok" | "atencao" = "ok") => {
-    fechar(); setRecado({ tom, texto }); setFalha(null); carga.recarregar(); arquivos.recarregar(); atualizar();
+    fechar(); setRecado({ tom, texto }); setFalha(null); carga.recarregar(); arquivos.recarregar(); conversa.recarregar(); atualizar();
   };
   const qtdArquivos = arquivos.estado === "pronto" ? arquivos.dados.arquivos.length : 0;
   const abertas = d.pendencias.filter((x) => !x.resolvidaEm);
   const resolvidas = d.pendencias.filter((x) => x.resolvidaEm);
   const anotar = (d.pode.responder || d.pode.atualizar) && !fechado;
   const reabrir = d.pode.concluir && p.estado === "ENCERRADO" && d.regras.reabertura;
+  const zap = conversa.estado === "pronto" ? conversa.dados : null;
 
   async function aceitar() {
     const r = await chamarApi(`/v1/condominio/pedidos/${p.id}/aceitar`, { corpo: { versao: p.versao } });
@@ -299,6 +303,7 @@ export function Pedido() {
 
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
       {falha ? <Aviso tom="erro">{falha}</Aviso> : null}
+      <FaixaRevisao conversa={zap} aoReabrir={reabrir ? () => setAcao("reabrir") : undefined} salvo={(texto) => salvo(texto)} />
       {p.retornoVencido && ativo ? (
         <FaixaPrazo pedidoId={p.id} agora={d.agora} versao={p.versao} semResponsavel={!p.responsavel}
           aoDarRetorno={d.pode.responder ? () => setAcao("retorno") : undefined} />
@@ -318,6 +323,7 @@ export function Pedido() {
 
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5">
+          <ConversaWhatsapp pedidoId={p.id} conversa={zap} />
           {!fechado ? <CartaoRetorno d={d} mudar={d.pode.responder && ativo ? () => setAcao("proximo") : undefined} /> : null}
 
           {abertas.length ? (
@@ -404,8 +410,6 @@ export function Pedido() {
           <NaManutencao pedido={p} ativo={!fechado} avisar={(texto) => { setRecado({ tom: "ok", texto }); setFalha(null); }} />
           <CartaoAvisosRegistro avisos={d.avisosRegistro ?? []} />
           <NosComunicados pedidoId={p.id} ativo={!fechado} />
-          <ConversaWhatsapp key={`${p.id}-${p.estado}`} pedidoId={p.id} versao={p.versao} aoResponder={(texto) => salvo(texto)}
-            aoReabrir={reabrir ? () => setAcao("reabrir") : undefined} />
           <PedidosRelacionados d={d} podeConcluir={d.pode.concluir} salvo={(t) => salvo(t)} recarregar={carga.recarregar} />
 
           <Cartao id="t-arquivos" icone="clipe" titulo={<>Fotos e documentos{qtdArquivos ? <span aria-hidden="true" className="t-apoio font-normal">{qtdArquivos}</span> : null}</>}>
@@ -450,7 +454,7 @@ export function Pedido() {
         </div>
       ) : null}
 
-      <JanelasPedido acao={acao} resolver={resolver} d={d} opcoes={opcoes.dados} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
+      <JanelasPedido acao={acao} resolver={resolver} d={d} opcoes={opcoes.dados} whatsapp={zap} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
       <PedirDecisao aberto={pedirDecisao} d={d} aoFechar={() => setPedirDecisao(false)} salvo={(t) => salvo(t)} recarregar={carga.recarregar} />
     </div>
   );

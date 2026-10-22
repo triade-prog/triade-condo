@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   configWhatsappSchema,
+  diaDaConversa,
+  relatoDasMensagens,
   decidirModeloSchema,
   LIMITE_FORA_DA_JANELA,
   modeloCorpoValido,
@@ -71,5 +73,24 @@ describe("Janela de 24h e modelos (F5.4, W-20)", () => {
     expect(decidirModeloSchema.safeParse({ versao: 1, situacao: "APROVADO_PILOTO" }).success).toBe(true);
     expect(PROXIMAS_SITUACOES_MODELO.RASCUNHO).toEqual(["APROVADO_PILOTO", "ENVIADO"]);
     expect(LIMITE_FORA_DA_JANELA).toBe(800);
+  });
+});
+
+describe("A conversa de um número em A identificar (D4, B.1)", () => {
+  it("separa os dias no horário de Brasília", () => {
+    const agora = "2026-10-22T13:00:00Z";
+    expect(diaDaConversa("2026-10-22T03:30:00Z", agora)).toBe("Hoje");
+    // 00:30 de 22/10 em UTC ainda é 21/10 em Brasília.
+    expect(diaDaConversa("2026-10-22T00:30:00Z", agora)).toBe("Ontem");
+    expect(diaDaConversa("2026-10-18T14:20:00Z", agora)).toBe("18/10");
+  });
+
+  it("o relato junta os textos na ordem em que chegaram, sem as mensagens só de arquivo", () => {
+    expect(relatoDasMensagens([
+      { texto: "Mandei ontem: o portão travou", enviadaEm: "2026-10-16T09:00:00Z" },
+      { texto: null, enviadaEm: "2026-10-15T21:41:00Z" },
+      { texto: " O portão da garagem travou aberto. ", enviadaEm: "2026-10-15T21:40:00Z" },
+    ])).toBe("O portão da garagem travou aberto.\nMandei ontem: o portão travou");
+    expect(relatoDasMensagens([{ texto: "a".repeat(5000), enviadaEm: "2026-10-16T09:00:00Z" }])).toHaveLength(4000);
   });
 });

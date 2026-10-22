@@ -4,12 +4,15 @@
 // alternativo, que aparece nas etiquetas e no mural enquanto durar, e pode avisar os moradores por
 // comunicado (nada é publicado sem a pessoa). Quando o número volta, nada do que estava na fila sai
 // sozinho: quem cuida decide cada mensagem, e a queda só se encerra com tudo decidido e um resumo.
+// No padrão novo (canvas do novo frontend, quadros 110 e 111): sem queda aberta, um cartão diz se
+// o número está no ar, com "Abrir uma queda"; na queda aberta, o canal alternativo vem primeiro,
+// com o Salvar logo abaixo, e "O que aconteceu" fica recolhido até alguém escrever.
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { DECISOES_QUEDA, descreverEventoQueda, ESTADOS_ENVIO_WHATSAPP, ESTADOS_QUEDA, FINALIDADES_ENVIO, ORIGENS_QUEDA, type DecisaoQueda } from "@triade/domain";
 import {
-  Aviso, AvisoErro, Botao, CampoAreaTexto, camposComErro, Carregando, chamarApi, classeBotao, Dialogo, ErroCarregar, Selo, textoDoErro, Vazio, type ErroApi,
+  Aviso, AvisoErro, Botao, CampoAreaTexto, camposComErro, Carregando, chamarApi, classeBotao, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi,
 } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
@@ -42,7 +45,7 @@ export function FaixaQueda({ q }: { q: QuedaWhatsapp }) {
       {q.responsavel ? `${q.responsavel} cuida da queda. ` : ""}
       {q.canalAlternativo
         ? <>Enquanto isso, as etiquetas e o mural mostram: “{q.canalAlternativo}”</>
-        : "Escreva o canal alternativo na aba Quedas para os moradores saberem por onde falar."}
+        : "Escreva o canal alternativo em Quedas para os moradores saberem por onde falar."}
     </Aviso>
   );
 }
@@ -78,12 +81,10 @@ function ForaDoAr({ q, pode, aoMudar }: { q: QuedaWhatsapp; pode: boolean; aoMud
         <div><dt className="text-tinta-suave">Quem cuida</dt><dd>{q.responsavel ?? "O síndico"}</dd></div>
         <div><dt className="text-tinta-suave">Mensagens paradas</dt><dd>{quantas(q.faltam, "na fila", "na fila")}</dd></div>
       </dl>
-      <CampoAreaTexto id="q-canal" rotulo="Canal alternativo (aparece nas etiquetas e no mural)" rows={2} maxLength={300} value={canal} disabled={!pode}
+      <CampoAreaTexto id="q-canal" rotulo="Canal alternativo" rows={2} maxLength={300} value={canal} disabled={!pode}
         onChange={(e) => setCanal(e.target.value)} placeholder="Ligue para a portaria, (61) 3333-0000, das 7h às 22h."
+        ajuda="Aparece nas etiquetas e no mural enquanto durar a queda."
         erro={comErro.includes("canalAlternativo") ? "De 5 a 300 caracteres." : null} />
-      <CampoAreaTexto id="q-oque" rotulo="O que aconteceu" opcional rows={2} maxLength={1000} value={oQue} disabled={!pode}
-        onChange={(e) => setOQue(e.target.value)} ajuda="Para o registro. Quem cuida escreve e completa depois."
-        erro={comErro.includes("oQueAconteceu") ? "De 3 a 1.000 caracteres." : null} />
       {pode ? (
         <div className="flex flex-wrap justify-end gap-2">
           {q.origem === "MANUAL" ? <Botao variante="discreto" onClick={() => setVoltou(true)}>O número voltou</Botao> : null}
@@ -91,9 +92,19 @@ function ForaDoAr({ q, pode, aoMudar }: { q: QuedaWhatsapp; pode: boolean; aoMud
             <Link href={`/comunicados/escrever?titulo=${encodeURIComponent(comunicado.titulo)}&texto=${encodeURIComponent(comunicado.texto)}`}
               className={classeBotao("contorno")}>Avisar os moradores por comunicado</Link>
           ) : null}
-          <Botao type="submit">Salvar</Botao>
+          <Botao type="submit"><Icone nome="check" />Salvar</Botao>
         </div>
       ) : null}
+      <details open={!!q.oQueAconteceu || comErro.includes("oQueAconteceu")} className="group border-t border-linha pt-3">
+        <summary className="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-violeta-600">
+          O que aconteceu (para o registro)<Icone nome="baixo" className="h-4 w-4 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="pt-3">
+          <CampoAreaTexto id="q-oque" rotulo="O que aconteceu" opcional rows={2} maxLength={1000} value={oQue} disabled={!pode}
+            onChange={(e) => setOQue(e.target.value)} ajuda="Quem cuida escreve e completa depois. Salva junto com o canal alternativo."
+            erro={comErro.includes("oQueAconteceu") ? "De 3 a 1.000 caracteres." : null} />
+        </div>
+      </details>
       <p className="text-xs text-tinta-suave">
         {comunicado ? "O comunicado já vem escrito com o canal alternativo e sai pelo mural e pelo e-mail de quem confirmou o e-mail. Nada é mandado sem a pessoa publicar."
           : "Salve o canal alternativo para avisar os moradores por comunicado."}
@@ -333,8 +344,8 @@ function VerQueda({ id, aoFechar }: { id: string; aoFechar: () => void }) {
 }
 
 /** A aba Quedas do WhatsApp: a queda aberta, abrir à mão e as últimas encerradas. */
-export function AbaQuedas({ queda, quedas, responsavel, pode, recarregar }: {
-  queda?: QuedaWhatsapp; quedas: QuedaWhatsapp[]; responsavel?: string; pode: boolean; recarregar: () => void;
+export function AbaQuedas({ queda, quedas, responsavel, pode, noAr, recarregar }: {
+  queda?: QuedaWhatsapp; quedas: QuedaWhatsapp[]; responsavel?: string; pode: boolean; noAr: boolean; recarregar: () => void;
 }) {
   const { atualizar } = usePlataforma();
   const [recado, setRecado] = useState<string | null>(null);
@@ -346,33 +357,42 @@ export function AbaQuedas({ queda, quedas, responsavel, pode, recarregar }: {
     <div className="grid gap-4">
       {recado ? <Aviso tom="ok" papel="status">{recado}</Aviso> : null}
       {queda ? <QuedaAberta q={queda} pode={pode} aoMudar={mudou} /> : (
-        <Vazio titulo="Nenhuma queda aberta"
-          acao={pode ? <Botao variante="contorno" onClick={() => setAbrir(true)}>Abrir queda à mão</Botao> : undefined}>
-          Quando o número do condomínio desconecta, a queda abre sozinha e {responsavel ?? "o síndico"} recebe o aviso no sino.
-          Se as mensagens pararem de chegar sem aviso, abra à mão.
-        </Vazio>
+        <section aria-label="Situação do número" className="flex flex-wrap items-center gap-4 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+          <span className="ladrilho h-11 w-11 rounded-xl" data-tom={noAr ? "ok" : "erro"} aria-hidden="true"><Icone nome={noAr ? "check" : "alerta"} /></span>
+          <span className="grid min-w-0 flex-1 basis-64 gap-0.5">
+            <span className="t-titulo-cartao">{noAr ? "O número está no ar" : "Nenhuma queda aberta"}</span>
+            <span className="t-apoio">
+              Quando o número desconecta, a queda abre sozinha e {responsavel ?? "o síndico"} recebe o aviso no sino. Se as mensagens pararem de chegar sem aviso, abra à mão.
+            </span>
+          </span>
+          {pode ? <Botao onClick={() => setAbrir(true)}><Icone nome="alerta" />Abrir uma queda</Botao> : null}
+        </section>
       )}
       {quedas.length ? (
-        <section aria-labelledby="t-quedas" className="grid gap-2">
-          <h2 id="t-quedas" className="text-lg font-medium">Quedas anteriores</h2>
-          <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
+        <section aria-labelledby="t-quedas" className="overflow-hidden rounded-[18px] border border-linha bg-superficie shadow-s1">
+          <h2 id="t-quedas" className="t-titulo-cartao px-5 py-3.5">Quedas anteriores</h2>
+          <ul>
             {quedas.map((x) => (
-              <li key={x.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-                <span>
-                  <span className="font-medium">{diaHora(x.inicio)}</span>
-                  <span className="block text-xs text-tinta-suave">
-                    {x.voltouEm ? `${duracao(x.inicio, x.voltouEm)} fora do ar` : ESTADOS_QUEDA[x.estado]} · {quantas(x.paradas, "mensagem parada", "mensagens paradas")}
-                    {x.encerradaPor ? ` · encerrada por ${x.encerradaPor}` : ""}
+              <li key={x.id} className="relative flex items-center gap-4 border-t border-linha px-5 py-3 hover:bg-violeta-50/50">
+                <span className="ladrilho" aria-hidden="true"><Icone nome="relogio" /></span>
+                <span className="grid min-w-0 flex-1 gap-0.5">
+                  <button type="button" onClick={() => setVer(x.id)} aria-label={`Ver a queda de ${diaHora(x.inicio)}`}
+                    className="text-left font-medium after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">
+                    Queda de {diaHora(x.inicio)}{x.voltouEm ? ` · ${duracao(x.inicio, x.voltouEm)}` : ""}
+                  </button>
+                  <span className="t-apoio">
+                    {quantas(x.paradas, "mensagem parada", "mensagens paradas")}{x.encerradaPor ? ` · encerrada por ${x.encerradaPor}` : ""}
                   </span>
                 </span>
-                <Botao variante="discreto" onClick={() => setVer(x.id)} aria-label={`Ver a queda de ${diaHora(x.inicio)}`}>Ver</Botao>
+                <span className="max-md:hidden"><Selo tom="neutro">{ESTADOS_QUEDA[x.estado]}</Selo></span>
+                <Icone nome="dir" className="h-5 w-5 text-tinta-suave" />
               </li>
             ))}
           </ul>
         </section>
       ) : null}
       {abrir ? (
-        <Confirmar titulo="Abrir queda à mão" botao="Abrir queda"
+        <Confirmar titulo="Abrir uma queda" botao="Abrir a queda"
           texto="Use quando as mensagens pararem de chegar e o provedor não avisou. O que entrar na fila espera a sua decisão quando o número voltar."
           aoFechar={() => setAbrir(false)} enviar={() => chamarApi(BASE, { corpo: { oQueAconteceu: null } })}
           aoConfirmar={() => { setAbrir(false); mudou("Queda aberta. Escreva o canal alternativo para os moradores."); }} />

@@ -249,3 +249,28 @@ export function descreverEventoQueda(acao: string, d: Record<string, unknown>): 
       return null;
   }
 }
+
+// ---------------------------------------------------------------------------------------
+// A conversa de um número em "A identificar" (novo frontend, decisão B.1 de 22/10/2026): as
+// mensagens do número, separadas por dia, e o relato que vai para o pedido registrado com elas.
+
+const DIA_EM_BRASILIA = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
+
+function diaEmBrasilia(iso: string): number {
+  const [a, m, d] = DIA_EM_BRASILIA.format(new Date(iso)).split("-").map(Number);
+  return Date.UTC(a!, m! - 1, d!) / 86400000;
+}
+
+/** O separador do dia na conversa: "Hoje", "Ontem" ou "18/10", no horário de Brasília. */
+export function diaDaConversa(iso: string, agora: string): string {
+  const falta = diaEmBrasilia(agora) - diaEmBrasilia(iso);
+  if (falta === 0) return "Hoje";
+  if (falta === 1) return "Ontem";
+  return DIA_EM_BRASILIA.format(new Date(iso)).split("-").slice(1).reverse().join("/");
+}
+
+/** O relato do pedido registrado com as mensagens: os textos na ordem em que chegaram, um por linha. */
+export function relatoDasMensagens(mensagens: { texto?: string | null; enviadaEm: string }[]): string {
+  return [...mensagens].sort((a, b) => Date.parse(a.enviadaEm) - Date.parse(b.enviadaEm))
+    .map((m) => (m.texto ?? "").trim()).filter(Boolean).join("\n").slice(0, 4000);
+}
