@@ -23,7 +23,7 @@ test.describe("Agenda, indicadores e unidades", () => {
     await page.goto(`${PLATAFORMA}/agenda`);
     await expect(page.getByRole("link", { name: "Vence o contrato de Elevadores Atlas" })).toHaveAttribute("href", /\/manutencao\/prestador\?id=/);
     await expect(page.getByText("Vence em 2 dias")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Vence AVCB" })).toHaveAttribute("href", /\/comunicados\/documento\?id=/);
+    await expect(page.getByRole("link", { name: "Vence AVCB" })).toHaveAttribute("href", /\/documentos\/documento\?id=/);
     await expect(page.getByRole("link", { name: "Vence Apólice do seguro" })).toBeVisible();
     await expect(page.getByText("Restrito", { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Assembleia geral ordinária" })).toHaveAttribute("href", /\/vida\/assembleia\?id=/);

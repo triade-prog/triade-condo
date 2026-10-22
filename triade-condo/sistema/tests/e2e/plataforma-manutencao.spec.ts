@@ -21,7 +21,7 @@ test.describe("Plataforma do síndico · manutenção", () => {
     const cartao = await abrirArea(page, "Manutenção");
     await expect(cartao).toContainText("1 retorno vencido");
     await expect(cartao).toContainText("1 preventiva atrasada");
-    await expect(await abrirArea(page, "Vencimentos")).toContainText("1 contrato vence em 60 dias");
+    await expect(await abrirArea(page, "Vencimentos")).toContainText(/Contrato da Aqualimp vence em \d+ dias/);
 
     await page.goto(`${PLATAFORMA}/manutencao`);
     await expect(page.getByRole("heading", { level: 1, name: "Manutenção" })).toBeVisible();

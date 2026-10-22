@@ -1,14 +1,8 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
-import { Carregando } from "@triade/ui";
-import { Memoria } from "@/telas/memoria/Memoria";
+import { redirect } from "next/navigation";
+import { enderecoParteDocumentos, parteDaAbaAntiga } from "@triade/domain";
 
-export const metadata: Metadata = { title: "Memória do prédio" };
-
-export default function Pagina() {
-  return (
-    <Suspense fallback={<Carregando />}>
-      <Memoria />
-    </Suspense>
-  );
+// Endereço antigo da Memória do prédio: cada aba virou uma parte de Documentos e memória (DC15, decisões A.1 e C.1 de 22/10/2026).
+export default async function Pagina({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const aba = (await searchParams).aba;
+  redirect(enderecoParteDocumentos(parteDaAbaAntiga(typeof aba === "string" ? aba : null)));
 }

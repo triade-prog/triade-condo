@@ -131,9 +131,9 @@ export function LinhaDataDeFora({ d, hoje }: { d: DataDeOutraTela; hoje: string 
       );
     case "DOCUMENTO":
       return (
-        <LinhaDeFora d={d} titulo={`Vence ${d.titulo}`} href={`/comunicados/documento?id=${d.id}`}
+        <LinhaDeFora d={d} titulo={`Vence ${d.titulo}`} href={`/documentos/documento?id=${d.id}`}
           selo={<><Selo tom="erro">{textoVencimento(hoje, d.data)}</Selo>{d.restrito ? <Selo tom="neutro">Restrito</Selo> : null}</>}
-          detalhe="Documento do prédio" origem={{ href: "/comunicados/documentos", tela: "Documentos" }} />
+          detalhe="Documento do prédio" origem={{ href: "/documentos", tela: "Documentos" }} />
       );
     case "ASSEMBLEIA":
       return (

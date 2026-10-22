@@ -4,7 +4,6 @@
 // e o envio de um arquivo direto ao armazenamento privado, conferido antes de liberar.
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { ASSUNTOS_COMUNICADO, mostrarTamanho, SITUACOES_COMUNICADO, TIPOS_ARQUIVO, TIPOS_DOCUMENTO } from "@triade/domain";
 import { chamarApi, Icone, Selo, textoDoErro, type ErroApi, type NomeIcone, type Tom } from "@triade/ui";
 import { subir } from "../pedidos/Arquivos.tsx";
@@ -27,25 +26,6 @@ export function SeloQuemVe({ d, sempre }: { d: { restrito: boolean; aoMorador: b
   if (d.restrito) return <Selo tom="atencao">Só quem cuida</Selo>;
   if (d.aoMorador) return <Selo tom="ok">Vai ao morador</Selo>;
   return sempre ? <Selo tom="neutro">Só a gestão</Selo> : null;
-}
-
-/** Documentos e memória do prédio, juntos no topo de cada um (DC15: o item "Documentos e memória"
- * do menu). Quem vê os documentos vê os dois. */
-export function PartesDocumentos() {
-  const caminho = usePathname();
-  const partes = [
-    { href: "/comunicados/documentos", texto: "Documentos", atual: caminho.startsWith("/comunicados/documento") },
-    { href: "/memoria", texto: "Memória do prédio", atual: caminho.startsWith("/memoria") },
-  ];
-  return (
-    <nav aria-label="Partes de documentos e memória" className="trilho justify-self-start">
-      {partes.map((p) => (
-        <Link key={p.href} href={p.href} className="chip" aria-current={p.atual ? "page" : undefined} data-escolhido={p.atual ? "" : undefined}>
-          {p.texto}
-        </Link>
-      ))}
-    </nav>
-  );
 }
 
 /** Quando: publicado, programado ou a última mudança do rascunho. */

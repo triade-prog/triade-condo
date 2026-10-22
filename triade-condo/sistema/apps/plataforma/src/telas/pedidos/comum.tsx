@@ -1,7 +1,7 @@
 "use client";
 // Peças comuns das telas de pedidos (passo 4).
 
-import { CANAIS_PEDIDO, ESTADOS_PEDIDO, MEIOS_RETORNO, TIPOS_PENDENCIA } from "@triade/domain";
+import { CANAIS_PEDIDO, ESTADOS_PEDIDO, MEIOS_RETORNO, mostrarDataCurta, TIPOS_PENDENCIA } from "@triade/domain";
 import { Icone, Selo, type NomeIcone, type Tom } from "@triade/ui";
 import type { EstadoPedido } from "../tipos.ts";
 
@@ -54,6 +54,11 @@ export function diaDe(iso: string): string {
 /** 17/10 09:00, no horário de Brasília. */
 export function diaHora(iso: string): string {
   return DIA_HORA.format(new Date(iso)).replace(",", "");
+}
+
+/** 22/10/2026, 09:40, no horário de Brasília: para o que fica guardado (dossiê, exportação). */
+export function diaHoraComAno(iso: string): string {
+  return `${mostrarDataCurta(diaDe(iso))}, ${HORA.format(new Date(iso))}`;
 }
 
 /** Quanto falta (ou quanto passou) até o próximo retorno: "daqui a 20 h", "venceu às 14:00". */

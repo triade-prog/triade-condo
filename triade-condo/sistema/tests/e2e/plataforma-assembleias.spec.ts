@@ -110,7 +110,7 @@ test.describe("Assembleias", () => {
     await page.getByLabel("Texto da ata").fill("Presidente: Ana Souza\nSecretário: Bruna");
     await page.getByLabel("Ata assinada (de Documentos › Atas)").selectOption({ label: "Ata da AGO 2026 assinada" });
     await page.getByRole("button", { name: "Salvar a ata" }).click();
-    await expect(page.getByText("Ata assinada ligada à assembleia. Ela aparece na Memória do prédio.")).toBeVisible();
+    await expect(page.getByText("Ata assinada ligada à assembleia. Ela aparece na linha do tempo de Documentos e memória.")).toBeVisible();
     await expect(page.getByRole("link", { name: "Abrir a ata assinada" })).toBeVisible();
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: "Baixar a lista de presença" }).first().click();

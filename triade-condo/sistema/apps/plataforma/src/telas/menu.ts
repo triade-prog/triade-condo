@@ -51,8 +51,8 @@ export const ITENS_MENU: ItemDoMenu[] = [
 
   { href: "/moradores", texto: "Moradores e unidades", icone: "predio", grupo: "Prédio e pessoas", ve: (p) => p("moradores.ver"), caminhos: ["/moradores"],
     permissao: PERMISSOES.CADASTRAR },
-  { href: "/comunicados/documentos", texto: "Documentos e memória", icone: "documento", grupo: "Prédio e pessoas", ve: (p) => p("documentos.ver"),
-    caminhos: ["/comunicados/documento", "/memoria"], permissao: PERMISSOES.VER_COMUNICADOS },
+  { href: "/documentos", texto: "Documentos e memória", icone: "documento", grupo: "Prédio e pessoas", ve: (p) => p("documentos.ver"),
+    caminhos: ["/documentos", "/comunicados/documento", "/memoria"], permissao: PERMISSOES.VER_COMUNICADOS },
   { href: "/indicadores", texto: "Indicadores", icone: "grafico", grupo: "Prédio e pessoas", ve: (p) => p("pedidos.ver"), caminhos: ["/indicadores"],
     permissao: PERMISSOES.ACOMPANHAR },
 

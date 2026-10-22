@@ -7,6 +7,7 @@
 // vitrine dos Classificados, os anúncios esperando aprovação.
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ASSUNTOS_COMUNICADO, MOTIVOS_FORA_DO_MURAL, MURAL_CONFERIR_S, textoConferido } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Selo, textoDoErro } from "@triade/ui";
@@ -137,7 +138,9 @@ function EsperandoAprovacao({ anuncios }: { anuncios: AnuncioTela[] }) {
 
 export function NoMural() {
   const vivo = useMuralAoVivo();
-  const [vista, setVista] = useState<VistaMural>({ aba: "avisos" });
+  // Ver no mural, do Manual do prédio, abre na aba Manual.
+  const abaInicial = useSearchParams().get("aba") === "manual" ? "manual" : "avisos";
+  const [vista, setVista] = useState<VistaMural>({ aba: abaInicial });
   const [recado, setRecado] = useState<{ tom: "ok" | "erro"; texto: string } | null>(null);
   const [tirando, setTirando] = useState<AnuncioTela | null>(null);
   const dados = vivo.estado === "pronto" ? vivo.dados : null;
@@ -223,7 +226,7 @@ export function NoMural() {
     documentos: (
       <FaixaPainel>
         <span className="text-xs text-tinta-suave">o botão do morador não funciona aqui</span>
-        <Link href="/comunicados/documentos?filtro=PEDIDOS" className="flex items-center gap-1 text-[13px] font-medium text-violeta-600 hover:underline">
+        <Link href="/documentos?filtro=PEDIDOS" className="flex items-center gap-1 text-[13px] font-medium text-violeta-600 hover:underline">
           Pedidos por e-mail<Icone nome="dir" className="h-4 w-4" />
         </Link>
       </FaixaPainel>

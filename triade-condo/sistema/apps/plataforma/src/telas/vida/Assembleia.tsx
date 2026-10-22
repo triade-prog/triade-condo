@@ -365,7 +365,7 @@ function Ata({ d, aoMudar }: { d: AssembleiaDetalhe; aoMudar: (texto: string) =>
     const r = await chamarApi(`/v1/condominio/assembleias/${a.id}/ata`, { metodo: "PUT", corpo: { versao: a.versao, texto, documentoId: documento || null } });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
-    aoMudar(documento && documento !== a.ataDocumento?.id ? "Ata assinada ligada à assembleia. Ela aparece na Memória do prédio." : "Ata salva.");
+    aoMudar(documento && documento !== a.ataDocumento?.id ? "Ata assinada ligada à assembleia. Ela aparece na linha do tempo de Documentos e memória." : "Ata salva.");
   }
 
   return (
@@ -381,7 +381,7 @@ function Ata({ d, aoMudar }: { d: AssembleiaDetalhe; aoMudar: (texto: string) =>
         <span className="flex flex-wrap gap-2">
           {d.pode.editar ? <Botao type="submit" disabled={enviando}>Salvar a ata</Botao> : null}
           <Botao variante="contorno" onClick={() => baixarPresenca(d)}><Icone nome="baixar" />Baixar a lista de presença</Botao>
-          {a.ataDocumento ? <Link href={`/comunicados/documento?id=${a.ataDocumento.id}`} className="inline-flex min-h-11 items-center font-medium text-violeta-600 hover:underline">Abrir a ata assinada</Link> : null}
+          {a.ataDocumento ? <Link href={`/documentos/documento?id=${a.ataDocumento.id}`} className="inline-flex min-h-11 items-center font-medium text-violeta-600 hover:underline">Abrir a ata assinada</Link> : null}
         </span>
       </form>
     </section>

@@ -159,7 +159,7 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
       <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-superficie focus:px-3 focus:py-2">
         Ir para o conteúdo
       </a>
-      <header className="topo">
+      <header className="topo print:hidden">
         <span className="marca"><Marca sistema="Plataforma do síndico" /></span>
         {buscar ? <FormBusca className="max-md:hidden" chave={caminho} aoBuscar={(q) => router.push(`/busca?q=${encodeURIComponent(q)}`)} /> : null}
         {buscar ? (
@@ -175,8 +175,8 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
         {painel.avisosNaoVistos !== undefined ? <SinoAvisos naoVistos={painel.avisosNaoVistos} /> : null}
         <Conta sessao={sessao} painel={painel} aoTrocar={() => setTrocando(true)} aoSair={sair} />
       </header>
-      <div className="min-h-[calc(100dvh-63px)] pb-24 md:grid md:grid-cols-[248px_minmax(0,1fr)] md:gap-8 md:p-6 md:pb-6">
-        <nav id="menu-plataforma" aria-label="Plataforma" className="lateral max-md:hidden md:sticky md:top-6 md:self-start">
+      <div className="min-h-[calc(100dvh-63px)] pb-24 md:grid md:grid-cols-[248px_minmax(0,1fr)] md:gap-8 md:p-6 md:pb-6 print:block print:min-h-0 print:p-0">
+        <nav id="menu-plataforma" aria-label="Plataforma" className="lateral max-md:hidden md:sticky md:top-6 md:self-start print:hidden">
           <Menu itens={itens} painel={painel} escolhido={escolhido} />
         </nav>
         <main id="conteudo" className="min-w-0 px-4 py-6 md:p-0">
@@ -187,7 +187,7 @@ function Moldura({ sessao, painel, aoTrocar, children }: { sessao: Sessao; paine
           ) : children}
         </main>
       </div>
-      <nav aria-label="Atalhos" className="barra-baixo">
+      <nav aria-label="Atalhos" className="barra-baixo print:hidden">
         {atalhos.map((item) => (
           <Link key={item.href} href={item.href} aria-current={item === escolhido ? "page" : undefined}>
             <Icone nome={item.icone} />

@@ -162,7 +162,7 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                   <span className="font-semibold">{a.titulo}</span>
                   <span className="text-xs text-tinta-suave">{detalhe(a)} Avisado em {formatarDataHora(a.criadoEm)}.</span>
                   <span className="flex flex-wrap gap-2">
-                    <Link href={a.tipo === "DOCUMENTO_PEDIDO" ? "/comunicados/documentos?filtro=PEDIDOS" : `/comunicados/documento?id=${a.documentoId}`}
+                    <Link href={a.tipo === "DOCUMENTO_PEDIDO" ? "/documentos?filtro=PEDIDOS" : `/documentos/documento?id=${a.documentoId}`}
                       className="font-medium text-violeta-600 hover:underline"
                       onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
                       {a.tipo === "DOCUMENTO_PEDIDO" ? "Ver pedidos" : "Ver documento"}
@@ -183,7 +183,7 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                   {a.titulo ? <span className="font-semibold">{a.titulo}</span> : null}
                   <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
                   <span className="flex flex-wrap gap-2">
-                    <Link href={prontuario ? "/memoria" : "/memoria?aba=exportar"} className="font-medium text-violeta-600 hover:underline"
+                    <Link href={prontuario ? "/documentos/prontuario" : "/documentos/passagem"} className="font-medium text-violeta-600 hover:underline"
                       onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
                       {prontuario ? "Ver prontuário" : "Ver exportação"}
                     </Link>
