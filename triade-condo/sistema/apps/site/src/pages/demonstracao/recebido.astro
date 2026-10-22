@@ -1,0 +1,18 @@
+---
+// Confirmação do envio sem JavaScript.
+import Base from "../../layouts/Base.astro";
+import Olho from "../../components/Olho.astro";
+import { linkWhatsapp, promessaRetorno } from "../../dados/empresa";
+const zap = linkWhatsapp("Olá! Acabei de pedir uma demonstração da TRÍADE Condo.");
+---
+<Base titulo="Pedido recebido" descricao="Recebemos o seu pedido de demonstração." semIndice>
+<section class="wrap secao pilha" style="--gap:18px;max-width:760px">
+  <Olho cor="verde">Pedido recebido</Olho>
+  <h1 style="font-size:clamp(30px,5vw,48px)">Recebemos o seu pedido de demonstração</h1>
+  <p class="suave" style="font-size:18px">Guardamos os seus dados e respondemos pelo WhatsApp que você informou, {promessaRetorno}.</p>
+  <div class="linha-flex">
+    {zap && <a href={zap} class="botao laranja">Falar agora pelo WhatsApp</a>}
+    <a href="/como-funciona" class="botao claro">Ver como funciona enquanto espera</a>
+  </div>
+</section>
+</Base>

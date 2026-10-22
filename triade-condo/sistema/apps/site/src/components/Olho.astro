@@ -1,0 +1,6 @@
+---
+// Marcador de seção: as três barras do símbolo e um texto curto em caixa alta.
+interface Props { cor?: "violeta" | "ambar" | "verde" | "cinza"; }
+const { cor = "violeta" } = Astro.props;
+---
+<span class:list={["olho", cor !== "violeta" && cor]}><span class="barras" aria-hidden="true"><i></i><i></i><i></i></span><slot /></span>

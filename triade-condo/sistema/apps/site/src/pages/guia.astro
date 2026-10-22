@@ -1,0 +1,29 @@
+---
+import Base from "../layouts/Base.astro";
+import Olho from "../components/Olho.astro";
+import FaixaFinal from "../components/FaixaFinal.astro";
+// Guia do síndico (NG-11). Os textos ainda estão sendo escritos; a página diz isso em vez de prometer links vazios.
+const temas = [
+  { titulo: "Organizar os pedidos sem virar refém do grupo", resumo: "Como separar conversa de pedido, dar protocolo e combinar quando dar notícia." },
+  { titulo: "O que entregar ao próximo síndico", resumo: "A lista do que passa de mão: contratos, laudos, prestadores, pendências e o histórico dos pedidos." },
+  { titulo: "Preventivas pela NBR 5674", resumo: "O que a norma pede, com que frequência e como não depender da memória de ninguém." },
+];
+---
+<Base titulo="Guia do síndico" atual="/guia" descricao="Textos práticos para síndicos: organizar os pedidos, passar o bastão e manter as preventivas em dia.">
+<section class="faixa-branca" style="border-top:0">
+  <span class="cunha cunha-dir" aria-hidden="true"></span>
+  <div class="wrap pilha" style="--gap:20px;position:relative;padding-block:80px 56px">
+    <Olho>Guia do síndico</Olho>
+    <h1 style="max-width:760px">O que aprendemos organizando prédios</h1>
+    <p class="suave" style="font-size:clamp(16px,2vw,20px);max-width:680px">Textos curtos e práticos, sem precisar usar a TRÍADE. Os primeiros estão sendo escritos.</p>
+  </div>
+</section>
+<section class="wrap secao">
+  <ul class="grade">
+    {temas.map((t) => (
+      <li class="cartao topo-violeta pilha" style="--gap:10px"><span class="chip" style="align-self:flex-start">Em preparação</span><h2 style="font-size:20px">{t.titulo}</h2><p class="suave" style="font-size:15px">{t.resumo}</p></li>
+    ))}
+  </ul>
+</section>
+<FaixaFinal />
+</Base>
