@@ -38,6 +38,7 @@ Cada tela-modelo tem um PNG com o mesmo nome. Os HTML são referência visual ex
 - Não se mudam as fontes (Manrope, Playfair Display itálico e IBM Plex Mono) nem a paleta oficial (DC13).
 - Cada tela tem no máximo um botão principal. Cartão e linha de lista nunca levam botão principal.
 - Ícones só do conjunto oficial (`sistema/packages/ui/src/Icone.tsx`), sempre com palavra junto. Se faltar algum, ele entra primeiro no conjunto.
+- O selo é uma pílula de canto redondo, com a cor da situação no fundo, na borda e na letra, sem a faixa lateral da DC13 (decisão da Carolina em 22/10/2026, para ficar igual às telas-modelo). O aviso continua com a faixa.
 - Uma cor por situação: Aberto em petróleo, Em andamento em violeta, Em revisão em âmbar, Encerrado em jade e Cancelado em cinza. A prioridade só aparece quando é Alta ou Urgente. O ícone da categoria fica sempre em cinza.
 - Arte da marca (anéis, arco e traço laranja) em três tamanhos: cheia nas telas de entrar, faixa no topo do Início e leve nas telas vazias. No máximo uma arte por tela, e ela nunca encosta no texto.
 - Nenhuma tela usa emoji.

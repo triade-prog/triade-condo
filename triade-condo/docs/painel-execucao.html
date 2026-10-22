@@ -490,6 +490,15 @@
           "nota": "Do desenho de 21/10/2026 ficaram: o período em Filtros dos comunicados (a API ainda não filtra por data); o número em todas as abas de Comunicados (hoje só a aba aberta mostra, porque a API devolve o total de uma situação por vez); o aviso Rascunho salvo às hh:mm enquanto se escreve (o rascunho só grava ao tocar em Salvar rascunho); e, no WhatsApp desligado, o desenho dizia Configurações › Comunicados, mas o cartão fica em Configurações › WhatsApp, que é o que a tela diz."
         },
         {
+          "id": "D4.12",
+          "texto": "Novo frontend: o selo em pílula, como nas telas-modelo, em todo o app",
+          "peca": "B4",
+          "refs": ["PT-10"],
+          "status": "feito",
+          "nota": "A Carolina viu no condominio.trihub.com.br que o selo da coluna Contatos de Moradores e unidades não era o do desenho e escolheu a pílula do desenho em 22/10/2026. O selo (packages/ui, tema.css) passa a ser uma pílula de canto redondo, letra de 12px, com a cor da situação no fundo, na borda e na letra, sem a faixa lateral da DC13; vale para todas as telas e para o Console. O aviso continua com a faixa. Fontes e paleta não mudam. A regra entrou no LEIA-ME de docs/design e em docs/identidade/sistema.html. Sem banco.",
+          "evidencia": "Playwright: a suíte inteira com axe (contraste dos selos nos dois aparelhos); lint, tipos, 236 Vitest e 362 ponta a ponta passando localmente."
+        },
+        {
           "id": "D4.10",
           "texto": "Novo frontend, rodada Comunicação: Vida em condomínio (Reservas, Enquetes, Assembleias e Classificados) no padrão novo",
           "peca": "B4",
@@ -2416,6 +2425,13 @@
     ]
   ],
   "historico": [
+    {
+      "data": "21/10/2026",
+      "inicio": "23:37",
+      "fim": "23:51",
+      "texto": "Novo frontend (D4.12): o selo virou a pílula das telas-modelo, sem a faixa lateral, em todas as telas da Plataforma e do Console, por escolha da Carolina ao ver Moradores e unidades no ar. Sem banco; publica na Vercel pelo merge.",
+      "ref": "PT-10"
+    },
     {
       "data": "21/10/2026",
       "inicio": "22:50",

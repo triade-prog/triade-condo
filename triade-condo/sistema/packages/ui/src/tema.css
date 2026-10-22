@@ -162,25 +162,21 @@ body {
     cursor: not-allowed;
   }
 
-  /* Selo: faixa lateral com brilho e palavra (versão D com o brilho do C). */
+  /* Selo: pílula com a cor da situação (telas-modelo DC15, decisão da Carolina em 22/10/2026). */
   .selo {
-    position: relative;
-    overflow: hidden;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 3px 10px 3px 12px;
-    border-radius: 7px;
+    gap: 4px;
+    padding: 2px 10px;
+    border-radius: 999px;
     border: 1px solid var(--selo-borda);
     color: var(--selo-tinta);
-    background: linear-gradient(180deg, #fff -40%, var(--selo-fundo) 100%);
-    box-shadow: inset 0 1px 0 #fff;
-    font-size: 12.5px;
+    background: var(--selo-fundo);
+    font-size: 12px;
     font-weight: 500;
     line-height: 1.4;
     white-space: nowrap;
   }
-  .selo::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--selo-faixa); }
   .selo[data-tom="ok"] { --selo-tinta: var(--color-ok); --selo-fundo: var(--color-ok-fundo); --selo-borda: var(--color-ok-borda); --selo-faixa: var(--fx-ok); }
   .selo[data-tom="atencao"] { --selo-tinta: var(--color-atencao); --selo-fundo: var(--color-atencao-fundo); --selo-borda: var(--color-atencao-borda); --selo-faixa: var(--fx-atencao); }
   .selo[data-tom="erro"] { --selo-tinta: var(--color-erro); --selo-fundo: var(--color-erro-fundo); --selo-borda: var(--color-erro-borda); --selo-faixa: var(--fx-erro); }
@@ -495,5 +491,5 @@ body {
 /* Alto contraste do Windows: as bordas em degradê somem, então entra uma borda sólida. */
 @media (forced-colors: active) {
   .bt, .chip, .selo, .aviso { border: 1px solid CanvasText; }
-  .selo::before, .aviso::before { background: CanvasText; }
+  .aviso::before { background: CanvasText; }
 }
