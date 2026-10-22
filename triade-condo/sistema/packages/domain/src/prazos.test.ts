@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { descreverEventoPedido } from "./pedidos.ts";
-import { marcarAvisosSchema, mostrarDuracao, mostrarHoras, mostrarPorcentagem, nomeDoMes, nomeDoMesAnterior, regrasAvisoSchema } from "./prazos.ts";
+import { marcarAvisosSchema, mostrarDuracao, mostrarHoras, mostrarPorcentagem, nomeDoMes, nomeDoMesAnterior, regrasAvisoSchema, textoDoPeriodo } from "./prazos.ts";
 
 const V = "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9";
 const REGRAS = { versao: 1, sindicoHoras: 2, substitutoHoras: 8, semResponsavelHoras: 4, pendenciaDias: 3 };
@@ -56,5 +56,12 @@ describe("prazos e avisos (passos 6 e 7)", () => {
     expect(mostrarDuracao(26.2)).toBe("1 dia e 2 h");
     expect(mostrarDuracao(52)).toBe("2 dias e 4 h");
     expect(mostrarDuracao(144)).toBe("6 dias");
+  });
+
+  it("diz as datas do período dos indicadores em palavras", () => {
+    expect(textoDoPeriodo("2026-09-01", "2026-09-30")).toBe("Setembro de 2026 · de 1 a 30/09");
+    expect(textoDoPeriodo("2026-07-01", "2026-09-30")).toBe("de 01/07 a 30/09/2026");
+    expect(textoDoPeriodo("2025-11-01", "2026-01-31")).toBe("de 01/11/2025 a 31/01/2026");
+    expect(textoDoPeriodo("", "2026-01-31")).toBe("");
   });
 });

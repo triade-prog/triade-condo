@@ -88,13 +88,19 @@ test.describe("Plataforma do síndico · passos 6 e 7", () => {
     await page.goto(`${PLATAFORMA}/indicadores`);
     const prazo = page.getByRole("region", { name: "Retornos no prazo" });
     await expect(prazo).toContainText("Sem dados");
-    await expect(prazo).toContainText("Nenhum retorno combinado no período. Mês passado: 86%.");
+    await expect(prazo).toContainText("Nenhum retorno combinado no período.");
+    await expect(prazo).toContainText("Mês passado: 86%.");
     await conferir(page);
     await page.getByRole("group", { name: "Período" }).getByRole("button", { name: "Mês passado" }).click();
     await expect(prazo).toContainText("86%");
     await expect(prazo).toContainText("37 de 43 retornos dados até o prazo combinado.");
-    await expect(page.getByRole("row", { name: /Manutenção/ })).toContainText("90% (27 de 30)");
-    await expect(page.getByRole("row", { name: /Segurança/ })).toContainText("Sem dados");
+    // A diferença para o período anterior vem em pontos, com a palavra além da cor.
+    await expect(prazo).toContainText("7 pontos acima do anterior");
+    await expect(prazo).toContainText("O mês antes dele: 79%.");
+    await expect(page.getByRole("region", { name: "No período", exact: true })).toContainText("Setembro de 2026 · de 1 a 30/09");
+    const cat = page.getByRole("region", { name: "Por categoria" });
+    await expect(cat).toContainText("(27 de 30)");
+    await expect(cat.getByRole("link", { name: /^Segurança/ })).toBeVisible();
     await conferir(page);
   });
 

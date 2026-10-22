@@ -111,7 +111,8 @@ vencido: (id: string) => boolean, outros?: { avisos: () => ({ id: string; criado
     const solucao = periodo === "ESTE_MES"
       ? [{ categoriaId: novoId(), nome: "Manutenção", concluidos: 3, medianaHoras: 52, maisDemoradoHoras: 144 },
         { categoriaId: novoId(), nome: "Limpeza", concluidos: 0, medianaHoras: null, maisDemoradoHoras: null }]
-      : [{ categoriaId: novoId(), nome: "Limpeza", concluidos: 9, medianaHoras: 5, maisDemoradoHoras: 26 }];
+      : [{ categoriaId: novoId(), nome: "Limpeza", concluidos: 9, medianaHoras: 5, maisDemoradoHoras: 26 },
+        { categoriaId: novoId(), nome: "Manutenção", concluidos: 29, medianaHoras: 52, maisDemoradoHoras: 144 }];
     // F7.4: a reincidência segue o período; das decisões, aguardando é de agora.
     const reincidencia = periodo === "ESTE_MES"
       ? { pedidos: 3, reincidencias: 1, porcentagem: 33, ondeVolta: [{ onde: "Portão da garagem", categoria: "Portaria e acesso", vezes: 1, ultima: "2026-0002" }] }
