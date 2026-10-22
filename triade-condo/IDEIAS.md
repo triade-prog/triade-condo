@@ -152,6 +152,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | CD-12 | **Mural online do prédio**: um link (e um QR para o elevador e o hall) que qualquer morador abre sem app, conta ou senha e mostra os comunicados em uso para todo o condomínio, do mais novo ao mais antigo, com fotos e a versão corrigida no lugar da antiga. O síndico escolhe, em cada comunicado, se ele aparece no mural (assuntos de segurança começam desligados), troca o link quando ele vazar (o antigo para na hora) ou desliga o mural. A página não mostra nomes, telefones nem unidades, não entra em buscadores e abre os arquivos por links que expiram em minutos (CD-04). Comunicados de bloco ou unidade e documentos não aparecem no link do prédio; a lista de documentos que podem ir ao morador aparece só como "pedir por e-mail" (CD-14). Conta quantas vezes o mural foi aberto, sem saber quem abriu | [C] |
 | CD-13 | **Comunicados por e-mail**: o contato pode ter um e-mail, confirmado por ele num link antes do primeiro envio, e escolhe receber os comunicados também por e-mail. Ao publicar, o e-mail vai para os mesmos destinatários da CD-02 que têm e-mail confirmado, respeitando o horário sem envio do plano de comunicação (CD-11); a tela mostra antes quantos recebem por e-mail e quantos ficam só no grupo ou no mural. Cada e-mail traz o texto, as fotos e um link pessoal para o comunicado (com os arquivos), que deixa de funcionar quando o vínculo com a unidade termina; traz também "parar de receber" em um clique. Correção só reenvia se o síndico pedir, dizendo o que mudou. Sai pelo Resend em nome do condomínio, com respostas indo para quem o síndico indicar; devoluções e marcações de spam desligam aquele e-mail e aparecem para o síndico. O histórico guarda quantos e-mails saíram, voltaram ou foram recusados. Em convocação, o e-mail é prova de envio, não de recebimento, e só vale como convocação formal se a convenção aceitar (CD-10) | [C] (W-18) |
 | CD-14 | **Documento por e-mail quando pedido**: o morador pede pelo mural (CD-12), e depois pelo WhatsApp (CD-03), um documento marcado "pode ir ao morador", e o síndico também pode enviar pela tela do documento. Vai a versão em vigor, por um link que expira em 7 dias e pode ser revogado (CD-04), nunca como anexo solto. Se o e-mail pedido for de um contato com vínculo confirmado, o envio é automático ou passa pela aprovação do síndico, conforme a configuração; se não for, o pedido fica numa fila para o síndico decidir (comprador, imobiliária, advogado). A resposta na tela é sempre neutra ("se o e-mail estiver cadastrado, o documento chega em instantes"), para não revelar quem mora no prédio, e há limite de pedidos por e-mail e por aparelho. Cada envio e cada abertura ficam no histórico do documento | [C] |
+| CD-15 | **Mural visto do painel**: o síndico vê, dentro do painel, o mural como o morador vê pelo link (CD-12), ao vivo. A tela confere de novo sozinha a cada 30 segundos e logo depois de pôr ou tirar um aviso, e ver por ali não conta como abertura do mural. Embaixo de cada aviso, só no painel, ficam abrir a ficha e tirar do mural; ao lado, os comunicados publicados que não aparecem, cada um com o motivo (só para um bloco ou unidade, assunto que começa fora, tirado) e "pôr no mural", e as aberturas do link nos últimos 7 dias. Um cartão no Início mostra as três primeiras coisas do mural. O mural, no link e no painel, é um feed: um cartão por aviso com a foto grande, a enquete aberta fixada no alto e "compartilhar"; os classificados (AC-05) ficam numa vitrine com foto, preço e a página do anúncio. Sem curtidas, comentários nem seguidores, porque o mural não tem conta, e sem nomes ou unidades nos avisos | [C] |
 
 ---
 
@@ -489,7 +490,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 2. Canal WhatsApp | 22 |
 | 3. Atendimento | 33 |
 | 4. Inteligência artificial | 21 |
-| 5. Comunicados e documentos | 14 |
+| 5. Comunicados e documentos | 15 |
 | 6. Configuração e ficha | 12 |
 | 7. Moradores e unidades | 11 |
 | 8. Manutenção e prédio | 16 |
@@ -507,7 +508,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 20. Princípios técnicos | 18 |
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
-| **Total** | **312** |
+| **Total** | **313** |
 
 ---
 
@@ -644,3 +645,16 @@ Pedida pela Carolina ao revisar os textos do WhatsApp: uma atendente virtual com
 **1 ideia nova:** W-22 (Nina, a assistente virtual).
 
 **Como conversa com o que já está decidido:** ela não muda a regra de que uma pessoa do condomínio decide (AT-15, W-10), por isso só assina o que é automático; não é IA (as funções de IA ficam para a R14, dentro da política da Meta, IA-16); e o aviso contra golpes (W-21) continua em toda confirmação.
+
+---
+
+## Pedido da Carolina sobre o mural no painel (22/10/2026)
+
+Pedido pela Carolina durante a rodada do novo frontend: ver o mural dentro do painel do síndico, para não precisar sair para ver o mural em tempo real. No desenho, ela pediu também que o mural fosse pensado como um feed do Instagram e os classificados como anúncios da OLX ou do Marketplace.
+
+**1 ideia nova:** CD-15 (mural visto do painel).
+
+**Como conversa com o que já está decidido:**
+- Mostra o mesmo conteúdo do link do prédio (CD-12): só o que é para todo o condomínio, sem nomes, telefones ou unidades nos avisos.
+- A contagem de aberturas da CD-12 continua contando só quem abre o link; o painel tem leitura própria.
+- Os classificados continuam com o aviso de que o condomínio não vende nem garante nada (AC-05). Uma foto por anúncio, como hoje; mais fotos ficam para depois, porque pedem mudança no banco.

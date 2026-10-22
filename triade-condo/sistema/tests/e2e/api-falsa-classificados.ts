@@ -47,7 +47,7 @@ export const classificadosAAprovar = (v: EstadoClassificados) => v.anuncios.filt
 
 /** Os anúncios no mural, como o banco manda: primeiro nome e bloco; WhatsApp só com o SIM. */
 export const classificadosDoMural = (v: EstadoClassificados) => v.anuncios.filter((a) => a.estado === "NO_MURAL").map((a) => ({
-  id: a.id, tipo: a.tipo, titulo: a.titulo, texto: a.texto, valorCentavos: a.valorCentavos, ate: a.noMuralAte, foto: a.foto,
+  id: a.id, tipo: a.tipo, titulo: a.titulo, texto: a.texto, valorCentavos: a.valorCentavos, ate: a.noMuralAte, foto: a.foto, desde: a.criadoEm,
   quem: a.contato.split(" ")[0], bloco: a.bloco, ...(a.mostrarTelefone ? { whatsapp: a.telefone } : {}),
 }));
 

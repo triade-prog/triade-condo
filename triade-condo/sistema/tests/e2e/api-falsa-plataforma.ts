@@ -8,7 +8,7 @@ import { criarAvisos, escalado, MES_FECHADO, naoVistos, regrasAvisoIniciais, rot
 import { rotasArmazenamento, semearArquivos } from "./api-falsa-arquivos";
 import { criarAgenda, rotasAgenda } from "./api-falsa-agenda";
 import { criarManutencao, resumoManutencao, rotasManutencao } from "./api-falsa-manutencao";
-import { criarComunicados, resumoComunicados, rotasComunicados, rotasPublicas } from "./api-falsa-comunicados";
+import { criarComunicados, muralNoPainelFalso, resumoComunicados, rotasComunicados, rotasPublicas } from "./api-falsa-comunicados";
 import { criarLinks, rotasLinks, rotasLinksPublicas } from "./api-falsa-links";
 import { criarMemoria, manualDoMural, resumoProntuario, rotasMemoria } from "./api-falsa-memoria";
 import { criarSuporte, resumoAcessos, rotasSuporte } from "./api-falsa-suporte";
@@ -182,8 +182,9 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (etiquetaOuPrestador !== null) return etiquetaOuPrestador;
     const fotoDoAnuncio = await rotasClassificadoPublico(route, caminho);
     if (fotoDoAnuncio !== null) return fotoDoAnuncio;
-    const publicas = await rotasPublicas(route, comunicados, caminho, metodo, corpo, () => manualDoMural(memoria),
-      () => ({ classificados: classificadosDoMural(classificados) }), estado.moradores.zap);
+    const manualMural = () => manualDoMural(memoria);
+    const extraMural = () => ({ classificados: classificadosDoMural(classificados) });
+    const publicas = await rotasPublicas(route, comunicados, caminho, metodo, corpo, manualMural, extraMural, estado.moradores.zap);
     if (publicas !== null) return publicas;
     if (!estado.logado) return erro(route, 401, "UNAUTHORIZED");
 
@@ -203,6 +204,11 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         funcoes: [quem === "SINDICA" ? "SINDICO" : "AUTORIZADO"] } });
     }
     const pode = (a: string) => acoes().includes(a);
+    // O mural no painel (CD-15): sem contar abertura.
+    if (caminho === "/v1/condominio/mural" && metodo === "GET") {
+      if (!pode("comunicados.ver")) return erro(route, 403, "FORBIDDEN");
+      return route.fulfill({ json: muralNoPainelFalso(comunicados, pode, manualMural, extraMural, estado.moradores.zap) });
+    }
     const nomeUnidade = (id: string | null) => {
       const u = estado.moradores.unidades.find((x) => x.id === id);
       return u ? [estado.moradores.blocos.find((b) => b.id === u.blocoId)?.nome, u.identificacao].filter(Boolean).join(" · ") : null;

@@ -207,7 +207,7 @@ function Revisar({ a, aoFechar }: { a: AnuncioTela; aoFechar: (texto?: string) =
   );
 }
 
-function Tirar({ a, aoFechar }: { a: AnuncioTela; aoFechar: (texto?: string) => void }) {
+export function Tirar({ a, aoFechar }: { a: AnuncioTela; aoFechar: (texto?: string) => void }) {
   const [motivo, setMotivo] = useState("");
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);

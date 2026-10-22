@@ -14,13 +14,7 @@ export function TelaPublica({ titulo, subtitulo, icone = "megafone", rodape, chi
   return (
     <div className="min-h-dvh bg-fundo">
       <main className="mx-auto grid max-w-2xl gap-4 pb-10">
-        <header className="flex items-center gap-3 bg-violeta-700 px-5 py-4 text-white sm:mt-6 sm:rounded-2xl">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 text-laranja-200"><Icone nome={icone} /></span>
-          <span className="grid min-w-0">
-            <h1 className="text-lg leading-snug font-medium">{titulo}</h1>
-            {subtitulo ? <span className="text-[13px] text-violeta-100">{subtitulo}</span> : null}
-          </span>
-        </header>
+        <CabecaPublica titulo={titulo} subtitulo={subtitulo} icone={icone} className="sm:mt-6 sm:rounded-2xl" />
         <div className="grid gap-3 px-4 sm:px-0">{children}</div>
         <footer className="grid gap-2 px-5 text-[13px] text-tinta-suave sm:px-1">
           <p>{rodape ?? "Não precisa de conta nem senha."} O condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem.</p>
@@ -28,6 +22,22 @@ export function TelaPublica({ titulo, subtitulo, icone = "megafone", rodape, chi
         </footer>
       </main>
     </div>
+  );
+}
+
+/** A faixa violeta do alto das páginas sem conta. No painel, a prévia do mural usa a mesma (CD-15), sem ser o título da tela. */
+export function CabecaPublica({ titulo, subtitulo, icone = "megafone", className = "", nivel = 1 }: {
+  titulo: string; subtitulo?: string; icone?: NomeIcone; className?: string; nivel?: 1 | 2;
+}) {
+  const Titulo = nivel === 1 ? "h1" : "h2";
+  return (
+    <header className={`flex items-center gap-3 bg-violeta-700 px-5 py-4 text-white ${className}`}>
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15 text-laranja-200"><Icone nome={icone} /></span>
+      <span className="grid min-w-0">
+        <Titulo className="text-lg leading-snug font-medium">{titulo}</Titulo>
+        {subtitulo ? <span className="text-[13px] text-violeta-100">{subtitulo}</span> : null}
+      </span>
+    </header>
   );
 }
 

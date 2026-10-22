@@ -9,24 +9,24 @@ Versão visual e interativa (com busca e filtro por forma): [`mapa.html`](mapa.h
 
 | Parte | Peças | Ideias |
 |---|---|---|
-| Plataforma do síndico | 16 | 203 |
+| Plataforma do síndico | 16 | 204 |
 | Console TRÍADE | 9 | 38 |
 | Base comum | 6 | 37 |
 | Fora do software | 4 | 34 |
-| **Total** | **35** | **312** |
+| **Total** | **35** | **313** |
 
 ## Mapa mental
 
 ```mermaid
 mindmap
-  root((TRÍADE Condo · 312 ideias))
-    Plataforma do síndico · 203
+  root((TRÍADE Condo · 313 ideias))
+    Plataforma do síndico · 204
       Painel web do síndico
         Início · 4
         Pedidos · 25
         Decisões e aprovações · 4
         Moradores e unidades · 8
-        Comunicados e documentos · 15
+        Comunicados e documentos · 16
         Manutenção e prestadores · 14
         Agenda · 9
         Orçamentos e compras · 9
@@ -76,7 +76,7 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Pedidos | AT-01 a 04, 06, 07, 09, 11 a 15, 17, 18, 20, 26, 27, 31 a 33; IA-03, 04, 12, 13, 19 |
 | Decisões e aprovações | V-14; AT-23; IA-08; FC-10 |
 | Moradores e unidades | MU-01, 02, 06 a 11 |
-| Comunicados e documentos | CD-01, 02, 04 a 11, 13, 14; IA-05 a 07 |
+| Comunicados e documentos | CD-01, 02, 04 a 11, 13 a 15; IA-05 a 07 |
 | Manutenção e prestadores | V-13; MP-01 a 07, 09 a 11, 13, 15, 16 |
 | Agenda | AG-01 a 09 |
 | Orçamentos e compras | OC-01, 02, 04 a 10 |
@@ -215,7 +215,7 @@ Quem mora em cada unidade, os contatos autorizados e as mudanças.
 | MU-11 | Lista de unidades com contadores, etiquetas à venda e à locação, busca por nome, telefone e placa | Função |
 | MU-02 | Verificação do vínculo contato ↔ unidade; contato desconhecido não acessa nada restrito | Regra |
 
-#### Comunicados e documentos (15)
+#### Comunicados e documentos (16)
 
 Avisos, regimento, convenção, atas e o arquivo do prédio.
 
@@ -228,6 +228,7 @@ Avisos, regimento, convenção, atas e o arquivo do prédio.
 | CD-09 | Avisos com foto | Função |
 | CD-13 | Comunicados por e-mail, com e-mail confirmado, link pessoal e "parar de receber" | Função |
 | CD-14 | Documento por e-mail quando pedido, por link que expira | Função |
+| CD-15 | Mural visto do painel, ao vivo e sem contar abertura; o mural em feed e os classificados em vitrine | Aba |
 | IA-05 | Redação de comunicados e avisos | Função |
 | IA-06 | Rascunho de ata a partir de anotações de reunião real | Função |
 | IA-07 | Resumo de documentos longos: orçamento anual, laudos, contratos | Função |

@@ -62,7 +62,7 @@ test.describe("Agenda, indicadores e unidades", () => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/indicadores`);
     // Agora (A.1): cada número abre a lista de onde veio.
-    const agora = page.getByRole("region", { name: "Agora" });
+    const agora = page.getByRole("region", { name: "Agora", exact: true });
     await expect(agora.getByRole("link", { name: /^2 retornos vencidos/ })).toHaveAttribute("href", /\/pedidos\?atencao=RETORNO_VENCIDO$/);
     await expect(agora.getByRole("link", { name: /^1 sem responsável/ })).toHaveAttribute("href", /\/pedidos\?atencao=SEM_RESPONSAVEL$/);
     const pend = page.getByRole("region", { name: "Pendências por responsável" });

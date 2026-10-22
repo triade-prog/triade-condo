@@ -75,17 +75,25 @@ test.describe("Classificados", () => {
     await expect(page.getByText("Anúncio recusado. O motivo vai para quem anunciou pelo WhatsApp.")).toBeVisible();
   });
 
-  test("CD-12: a aba Classificados do mural, com o primeiro nome, o bloco e o aviso", async ({ page }) => {
+  test("CD-12, CD-15: a aba Classificados do mural é uma vitrine, com o primeiro nome, o bloco e o aviso", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/m/${MURAL_FALSO}`);
     await page.getByRole("button", { name: "Classificados" }).click();
     await expect(page).toHaveURL(/aba=classificados/);
-    await expect(page.getByRole("heading", { name: "Aulas de violão para crianças" })).toBeVisible();
-    await expect(page.getByRole("img", { name: "Foto do anúncio Aulas de violão para crianças" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Chamar no WhatsApp" })).toHaveAttribute("href", "https://wa.me/5561977771212");
-    await expect(page.getByText(/^Marta · Torre A · até \d\d\/\d\d · contato pelo condomínio$/)).toBeVisible();
+    const vitrine = page.getByRole("list", { name: "Classificados entre moradores" });
+    await expect(vitrine.getByRole("link", { name: /Aulas de violão para crianças/ })).toBeVisible();
+    await expect(vitrine.getByText(/^Marta · Torre A · hoje$/)).toBeVisible();
     await expect(page.getByText("Anúncios de moradores, aprovados pelo condomínio. O condomínio não vende nem garante nada daqui.")).toBeVisible();
     await expect(page.getByText("Torre A · 302")).toHaveCount(0);
     await conferir(page);
+    await vitrine.getByRole("link", { name: /Aulas de violão para crianças/ }).click();
+    await expect(page.getByRole("heading", { name: "Aulas de violão para crianças" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Foto do anúncio Aulas de violão para crianças" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Chamar no WhatsApp" })).toHaveAttribute("href", "https://wa.me/5561977771212");
+    await conferir(page);
+    await page.getByRole("button", { name: "Voltar aos classificados" }).click();
+    await vitrine.getByRole("link", { name: /Doo berço de madeira/ }).click();
+    await expect(page.getByText("Contato pelo condomínio.")).toBeVisible();
+    await expect(page.getByText(/^Marta · Torre A$/)).toBeVisible();
   });
 });

@@ -5,7 +5,7 @@ import type {
   CanalEnquete, ConfirmacaoArea, EscopoEnquete, EstadoReserva, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite, SituacaoEnquete,
   EstadoAssembleia, EstadoItem, EstadoProcuracao, FormaAssembleia, PesoAssembleia, Quorum, SituacaoItem, TipoAssembleia, TipoItem,
   EstadoAnuncio, TipoAnuncio, TipoVeiculo, DecisaoQueda, EstadoQueda, AvisoNovoSindico, DestinoAvisoRegistro, MeioAvisoRegistro,
-  EstadoDecisao, FiltroDecisao, TipoLigacao, SituacaoLinkRegistro,
+  EstadoDecisao, FiltroDecisao, TipoLigacao, SituacaoLinkRegistro, MotivoForaDoMural,
 } from "@triade/domain";
 
 
@@ -1719,9 +1719,23 @@ export interface AnuncioPublico {
   titulo: string;
   texto: string;
   valorCentavos?: number;
+  /** Quando entrou no mural, para a vitrine mostrar há quanto tempo (CD-15). */
+  desde?: string;
   ate: string;
   foto: boolean;
   quem?: string;
   bloco?: string;
   whatsapp?: string;
+}
+
+/** O mural visto do painel (CD-15): o mesmo do link, sem contar abertura, e o que ficou de fora. */
+export interface MuralNoPainel {
+  ligado: boolean;
+  codigo?: string;
+  aberturas: number;
+  mural?: MuralPublico;
+  /** A versão de cada aviso que está no mural, para tirar dali mesmo. */
+  versoes: Record<string, number>;
+  fora: { id: string; titulo: string; assunto: AssuntoComunicado; publicadoEm: string; versao: number; motivo: MotivoForaDoMural }[];
+  pode: { mural: boolean; configurar: boolean; classificados: boolean };
 }

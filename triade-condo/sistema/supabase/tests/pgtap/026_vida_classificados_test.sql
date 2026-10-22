@@ -4,7 +4,7 @@
 -- mural; a decisão vai ao morador. Publicado, fica 30 dias na aba Classificados do mural, com o
 -- primeiro nome e o bloco. O relógio fica numa quarta-feira, 03/03/2027.
 begin;
-select plan(56);
+select plan(57);
 
 select ajustar_relogio(timestamptz '2027-03-03 12:00:00-03' - now());
 
@@ -207,11 +207,13 @@ select is((select count(*)::integer from historico where acao in ('classificado.
 
 -- O mural (CD-12): primeiro nome e bloco, telefone só com SIM, foto por link.
 select is((select jsonb_array_length(pg_temp.mural() -> 'classificados')), 2, 'CD-12: os anúncios publicados aparecem no mural');
-select is((select x - 'id' from jsonb_array_elements(pg_temp.mural() -> 'classificados') x where x ->> 'tipo' = 'VENDO'),
+select is((select x - 'id' - 'desde' from jsonb_array_elements(pg_temp.mural() -> 'classificados') x where x ->> 'tipo' = 'VENDO'),
   '{"ate": "2027-04-02", "foto": true, "quem": "Marta", "tipo": "VENDO", "bloco": "Torre A", "texto": "Bicicleta aro 29, pouco usada, R$ 900", "titulo": "Vendo bicicleta aro 29", "whatsapp": "5561999990001", "valorCentavos": 90000}'::jsonb,
   'CD-12: no mural vão o primeiro nome e o bloco, nunca a unidade, e o WhatsApp com SIM');
 select ok((select not (x ? 'whatsapp') from jsonb_array_elements(pg_temp.mural() -> 'classificados') x where x ->> 'tipo' = 'DOO'),
   'CD-12: sem o SIM, o telefone não aparece');
+select is((select (x ->> 'desde')::timestamptz from jsonb_array_elements(pg_temp.mural() -> 'classificados') x where x ->> 'tipo' = 'VENDO'),
+  (select decidido_em from classificados where tipo = 'VENDO'), 'CD-15: o anúncio diz quando entrou no mural, para a vitrine mostrar há quanto tempo');
 select is((select publico_mural_classificado_foto(mural_codigo, (pg_temp.cl('Bicicleta aro 29, pouco usada, R$ 900')).id) ->> 'tipo'
              from configuracao_condominio where condominio_id = (select ipe from c)), 'image/jpeg', 'CD-12: a foto do anúncio abre pelo mural');
 select throws_ok($$ select publico_mural_classificado_foto(mural_codigo, (pg_temp.cl('Procuro babá para as tardes')).id)
