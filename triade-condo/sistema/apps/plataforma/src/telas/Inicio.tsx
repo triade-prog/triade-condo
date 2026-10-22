@@ -23,7 +23,7 @@ import { useCarregar, usePlataforma } from "./sessao.tsx";
 import type { Configuracoes, MesFechado } from "./tipos.ts";
 
 const ONDE: Record<string, { href: string; texto: string; acao: string }> = {
-  SEM_HORARIO_ATENDIMENTO: { href: "/configuracoes?aba=horarios", texto: "Definir", acao: "config.editar" },
+  SEM_HORARIO_ATENDIMENTO: { href: "/configuracoes/horarios", texto: "Definir", acao: "config.editar" },
   SEM_RESPONSAVEL: { href: "/pessoas?aba=atendimento", texto: "Escolher", acao: "atendimento.responsaveis" },
   SEM_RESPONSAVEL_PADRAO: { href: "/pessoas?aba=atendimento", texto: "Escolher", acao: "atendimento.responsaveis" },
 };

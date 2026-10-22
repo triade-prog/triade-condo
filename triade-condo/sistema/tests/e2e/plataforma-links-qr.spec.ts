@@ -18,9 +18,8 @@ async function conferir(page: Page) {
 
 async function abrirAba(page: Page) {
   await page.goto(`${PLATAFORMA}/configuracoes?aba=links`);
-  const aba = page.getByRole("tab", { name: "Links e QR" });
-  if (await aba.isVisible()) await aba.click();
-  await expect(page.getByRole("heading", { name: "Aberto sem conta" })).toBeVisible();
+  await expect(page).toHaveURL(`${PLATAFORMA}/configuracoes/etiquetas`);
+  await expect(page.getByRole("heading", { level: 1, name: "Etiquetas por local" })).toBeVisible();
 }
 
 test.describe("Links e QR", () => {
@@ -28,10 +27,16 @@ test.describe("Links e QR", () => {
     await instalarApiPlataformaFalsa(page);
     await abrirAba(page);
     await expect(page.getByText("As etiquetas abrem o WhatsApp do condomínio: +55 61 99000-1234")).toBeVisible();
-    await expect(page.getByText("Aberto 214 vezes em 7 dias")).toBeVisible();
-    await expect(page.getByRole("cell", { name: "E04" })).toBeVisible();
+    await expect(page.getByRole("listitem").filter({ hasText: "E04" })).toBeVisible();
     await expect(page.getByText("Desativada", { exact: true })).toBeVisible();
     await conferir(page);
+    await page.goto(`${PLATAFORMA}/configuracoes/abertos`);
+    await expect(page.getByRole("heading", { name: "Aberto sem conta" })).toBeVisible();
+    await expect(page.getByText("Aberto 214 vezes em 7 dias")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Mural e e-mail" })).toHaveAttribute("href", "/configuracoes/mural");
+    await conferir(page);
+    await page.getByRole("link", { name: "Etiquetas", exact: true }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Etiquetas por local" })).toBeVisible();
 
     await page.getByRole("button", { name: "Nova etiqueta" }).click();
     const j = page.getByRole("dialog", { name: "Nova etiqueta" });

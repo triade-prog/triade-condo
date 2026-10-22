@@ -2,6 +2,7 @@
 // no axe (WCAG 2.2 AA) no celular e no computador, só mostra o que a pessoa pode fazer
 // (CF-03) e não usa emoji nem emoticon.
 import { expect, test, type Page } from "@playwright/test";
+import { salvarPagina } from "./configuracoes";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { abrirMaisAcoes, historicoCompleto, irAoPasso } from "./registro";
@@ -156,11 +157,12 @@ test.describe("Plataforma do síndico · passo 4", () => {
   test("AT-14, AT-15: as regras dos pedidos ficam nas configurações", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(`${PLATAFORMA}/configuracoes?aba=regras`);
-    await expect(page.getByRole("tab", { name: "Regras dos pedidos", selected: true })).toBeVisible();
+    await expect(page).toHaveURL(`${PLATAFORMA}/configuracoes/prazos`);
+    await expect(page.getByRole("region", { name: "Revisar e reabrir" })).toBeVisible();
     await expect(page.getByLabel("Reabrir pedido encerrado")).toBeChecked();
     await page.getByLabel("Revisar a conclusão antes de encerrar").check();
     await conferir(page);
-    await page.getByRole("button", { name: "Salvar" }).click();
+    await salvarPagina(page);
     await expect(page.getByRole("status").filter({ hasText: "Regras dos pedidos salvas." })).toBeVisible();
   });
 });

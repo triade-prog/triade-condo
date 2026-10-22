@@ -4,12 +4,13 @@
 // comunicados e os documentos pedidos pelo mural. Mexe quem pode configurar.
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoTexto, camposComErro, chamarApi, classeBotao, Dialogo, Icone, textoDoErro, type ErroApi } from "@triade/ui";
 import { enderecoMural, QrCode } from "./QrCode.tsx";
 import type { PlanoComunicacao } from "./tipos.ts";
 import { naBase, useAmbiente } from "./contexto.tsx";
+import { contarMudancas, useParte } from "./salvar.tsx";
 
 function Chave({ id, rotulo, ajuda, marcado, aoMudar, desligado }: {
   id: string; rotulo: string; ajuda?: string; marcado: boolean; aoMudar: (v: boolean) => void; desligado?: boolean;
@@ -29,7 +30,6 @@ export function MuralEmail({ p, recarregar, salvo }: { p: PlanoComunicacao; reca
     documentosNoMural: p.documentos.noMural, documentosAutomatico: p.documentos.automatico,
   });
   const [erro, setErro] = useState<ErroApi | null>(null);
-  const [enviando, setEnviando] = useState(false);
   const [trocar, setTrocar] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const comErro = camposComErro(erro);
@@ -37,16 +37,17 @@ export function MuralEmail({ p, recarregar, salvo }: { p: PlanoComunicacao; reca
   // Trocar o link e o cartaz são do condomínio, no app (CF-03).
   const noApp = useAmbiente().onde === "app";
 
-  async function salvar(ev: FormEvent) {
-    ev.preventDefault();
+  async function salvar(): Promise<string | null> {
     setErro(null);
-    setEnviando(true);
     const r = await chamarApi(naBase("/mural-email"), { metodo: "PUT", corpo: { ...v, versao: p.versao } });
-    setEnviando(false);
-    if (!r.ok) return setErro(r.erro);
-    recarregar();
-    salvo("Mural e e-mail salvos.");
+    if (!r.ok) { setErro(r.erro); return null; }
+    return "Mural e e-mail salvos.";
   }
+  const iniciais = {
+    muralLigado: p.mural.ligado, muralAssuntos: p.mural.assuntos, emailLigado: p.email.ligado, responderPara: p.email.responderPara ?? "",
+    documentosNoMural: p.documentos.noMural, documentosAutomatico: p.documentos.automatico,
+  };
+  useParte("mural-email", { nome: "Mural e e-mail", mudancas: contarMudancas(iniciais, v), salvar });
 
   async function copiar() {
     if (!link) return;
@@ -55,12 +56,11 @@ export function MuralEmail({ p, recarregar, salvo }: { p: PlanoComunicacao; reca
   }
 
   return (
-    <form onSubmit={salvar} noValidate className="grid content-start gap-4 border-t border-linha pt-6 lg:max-w-2xl" aria-labelledby="me-titulo">
-      <h3 id="me-titulo" className="text-lg font-medium">Mural online e e-mail</h3>
+    <div className="grid content-start gap-4 lg:max-w-3xl">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar} /> : null}
 
-      <section className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4" aria-labelledby="me-mural">
-        <h4 id="me-mural" className="font-medium">Mural online</h4>
+      <section className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1" aria-labelledby="me-mural">
+        <h2 id="me-mural" className="text-[17px] font-medium">Mural online</h2>
         <Chave id="me-mural-ligado" rotulo="Mural ligado" marcado={v.muralLigado} desligado={!p.podeEditar}
           ajuda="Desligado, o link mostra só: este mural está fora do ar." aoMudar={(x) => setV({ ...v, muralLigado: x })} />
         {link ? (
@@ -96,8 +96,8 @@ export function MuralEmail({ p, recarregar, salvo }: { p: PlanoComunicacao; reca
         </fieldset>
       </section>
 
-      <section className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4" aria-labelledby="me-email">
-        <h4 id="me-email" className="font-medium">E-mail</h4>
+      <section className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1" aria-labelledby="me-email">
+        <h2 id="me-email" className="text-[17px] font-medium">E-mail</h2>
         <Chave id="me-email-ligado" rotulo="Enviar os comunicados também por e-mail" marcado={v.emailLigado} desligado={!p.podeEditar}
           ajuda={`Para quem tem e-mail confirmado e recebe comunicados. ${p.email.comEmail} de ${p.email.contatos} contatos hoje.`}
           aoMudar={(x) => setV({ ...v, emailLigado: x })} />
@@ -110,8 +110,8 @@ export function MuralEmail({ p, recarregar, salvo }: { p: PlanoComunicacao; reca
         </Aviso>
       </section>
 
-      <section className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4" aria-labelledby="me-docs">
-        <h4 id="me-docs" className="font-medium">Documentos pedidos pelo mural</h4>
+      <section className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1" aria-labelledby="me-docs">
+        <h2 id="me-docs" className="text-[17px] font-medium">Documentos pedidos pelo mural</h2>
         <Chave id="me-docs-mural" rotulo="Mostrar no mural os documentos que podem ir ao morador" marcado={v.documentosNoMural} desligado={!p.podeEditar}
           ajuda="Só com o e-mail ligado: o documento vai por link que vale 7 dias." aoMudar={(x) => setV({ ...v, documentosNoMural: x })} />
         <fieldset className="grid gap-1">
@@ -126,9 +126,8 @@ export function MuralEmail({ p, recarregar, salvo }: { p: PlanoComunicacao; reca
         </fieldset>
       </section>
 
-      {p.podeEditar ? <Botao type="submit" className="justify-self-start" disabled={enviando}>{enviando ? "Salvando…" : "Salvar mural e e-mail"}</Botao> : null}
-      <TrocarLink aberto={trocar} versao={p.versao} aoFechar={() => setTrocar(false)} aoTrocar={() => { setTrocar(false); recarregar(); salvo("Link do mural trocado."); }} />
-    </form>
+      <TrocarLink aberto={trocar} versao={p.versao} aoFechar={() => setTrocar(false)} aoTrocar={() => { setTrocar(false); salvo("Link do mural trocado."); }} />
+    </div>
   );
 }
 

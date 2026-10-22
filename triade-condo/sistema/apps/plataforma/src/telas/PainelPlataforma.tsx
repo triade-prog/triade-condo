@@ -9,7 +9,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FUNCOES_PLATAFORMA } from "@triade/domain";
-import { Aviso, Botao, Carregando, chamarApi, DestinosDosEstados, Dialogo, ErroCarregar, Icone, Iniciais, Marca, SemPermissao, textoDoErro, type ErroApi } from "@triade/ui";
+import { Aviso, Botao, Carregando, classeBotao, chamarApi, DestinosDosEstados, Dialogo, ErroCarregar, Icone, Iniciais, Marca, SemPermissao, textoDoErro, type ErroApi } from "@triade/ui";
 import { SinoAvisos } from "./Avisos.tsx";
 import { GRUPOS_MENU, itemDoCaminho, ITENS_MENU, type ItemDoMenu } from "./menu.ts";
 import { Contexto, useCarregar, type CondominioDaPessoa, type Painel } from "./sessao.tsx";
@@ -77,7 +77,7 @@ function Menu({ itens, painel, escolhido, aoIr }: { itens: ItemDoMenu[]; painel:
   );
 }
 
-/** A pessoa no topo: abre o menu com o condomínio, trocar e sair. */
+/** A pessoa no topo: abre o menu com o condomínio, Meus avisos (decisão C.1 de Configurações), trocar e sair. */
 function Conta({ sessao, painel, aoTrocar, aoSair }: { sessao: Sessao; painel: Painel; aoTrocar: () => void; aoSair: () => void }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -102,6 +102,9 @@ function Conta({ sessao, painel, aoTrocar, aoSair }: { sessao: Sessao; painel: P
             <span className="t-titulo-cartao">{painel.pessoa.nome}</span>
             <span className="t-apoio">{nomeFuncoes(painel.funcoes)} · {painel.condominio.nome}</span>
           </div>
+          {painel.acoes.includes("config.ver") ? (
+            <Link href="/conta/avisos" className={classeBotao("discreto", "", "m")} onClick={() => setAberto(false)}><Icone nome="sino" />Meus avisos</Link>
+          ) : null}
           {sessao.condominios.length > 1 ? (
             <Botao variante="discreto" tamanho="m" onClick={() => { setAberto(false); aoTrocar(); }}><Icone nome="trocar" />Trocar condomínio</Botao>
           ) : null}

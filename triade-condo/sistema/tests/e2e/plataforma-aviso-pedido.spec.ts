@@ -5,6 +5,7 @@
 // síndico em Configurações. No celular, o bloco abre num resumo. Cada tela passa no axe
 // (WCAG 2.2 AA) no celular e no computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
+import { salvarPagina } from "./configuracoes";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { avisado, escolherPrioridade, irAoPasso } from "./registro";
@@ -170,7 +171,7 @@ test.describe("Plataforma · aviso de pedido registrado", () => {
     await expect(regra.getByRole("radio", { name: "Todos os pedidos" })).toBeChecked();
     await cartao.getByLabel("Mandar o protocolo para quem pediu").uncheck();
     await conferir(page);
-    await cartao.getByRole("button", { name: "Salvar" }).click();
+    await salvarPagina(page);
     await expect(page.getByRole("status").filter({ hasText: "Regra de pedido novo salva." })).toBeVisible();
     expect(estado.avisoRegistro.regra).toEqual({ sindico: "TODOS", protocolo: false });
   });

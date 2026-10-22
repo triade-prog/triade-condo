@@ -100,7 +100,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   MURAL_SO_PARA_TODOS: "Só comunicado para todo o condomínio vai ao mural. Os de bloco ou unidade chegam por e-mail.",
   MURAL_SEM_LINK: "O mural ainda não tem link. Ligue o mural primeiro.",
   EMAIL_NAO_PENDENTE: "Este e-mail não está esperando confirmação.",
-  EMAIL_DESLIGADO: "O envio por e-mail está desligado. Ligue em Configurações › Comunicados.",
+  EMAIL_DESLIGADO: "O envio por e-mail está desligado. Ligue em Configurações › Mural e e-mail.",
   CONFIRMACAO_RECENTE: "Já mandamos o pedido de confirmação há pouco. Espere alguns minutos.",
   DOCUMENTO_NAO_VAI_POR_EMAIL: "Só vai por e-mail documento marcado \"pode ir ao morador\", não restrito e com versão em vigor.",
   PEDIDO_JA_DECIDIDO: "Este pedido já foi decidido. Atualize a página.",

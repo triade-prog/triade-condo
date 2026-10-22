@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { SITUACOES_MANUTENCAO } from "@triade/domain";
-import { Botao, Carregando, chamarApi, ErroCarregar, Selo } from "@triade/ui";
+import { Botao, Carregando, chamarApi, ErroCarregar, Icone, Selo } from "@triade/ui";
 import { Janela, type Campo, type Valores } from "./Janela.tsx";
 import { useCarregar, naBase } from "./contexto.tsx";
 import type { PropsAba } from "./Configuracoes.tsx";
@@ -34,8 +34,8 @@ export function AbaManutencao({ salvo, tecnica }: PropsAba) {
   return (
     <section aria-labelledby="t-etapas-man" className="grid content-start gap-3 lg:max-w-2xl">
       <div className="flex items-center justify-between gap-3">
-        <h2 id="t-etapas-man" className="flex flex-wrap items-center gap-2 text-lg font-medium">Etapas da manutenção <Selo tom="neutro">Só a TRÍADE</Selo></h2>
-        {tecnica.pode ? <Botao variante="contorno" onClick={() => setEdicao({ item: null })}>+ Etapa</Botao> : null}
+        <h2 id="t-etapas-man" className="text-lg font-medium">Etapas da manutenção</h2>
+        {tecnica.pode ? <Botao variante="contorno" tamanho="m" onClick={() => setEdicao({ item: null })}><Icone nome="mais" />Nova etapa</Botao> : null}
       </div>
       {tecnica.pode ? null : (
         <FaixaTriade porque="As etapas organizam o acompanhamento da manutenção" parte="Etapas da manutenção"

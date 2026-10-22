@@ -1,7 +1,8 @@
 "use client";
 // Configurações › Links e QR (design "Links e QR", telas 1 e 2; AT-30, V-11): tudo o que abre sem
 // conta neste condomínio, num lugar só, e as etiquetas por local. As etiquetas são cuidadas aqui
-// por quem pode configurar; os links de prestador, na própria manutenção.
+// por quem pode configurar; os links de prestador, na própria manutenção. Na página por tarefa
+// (decisão A.1) são duas páginas: "O que abre sem conta" e "Etiquetas por local".
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
@@ -12,7 +13,7 @@ import {
 } from "@triade/ui";
 import { diaHora } from "./comum.tsx";
 import { QrCode } from "./QrCode.tsx";
-import { useAmbiente, useCarregar, naBase } from "./contexto.tsx";
+import { LinkPagina, useAmbiente, useCarregar, naBase } from "./contexto.tsx";
 import type { Etiqueta, EtiquetaDetalhe, LinksQr } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
 import { enderecoEtiqueta } from "./ImprimirEtiquetas.tsx";
@@ -27,7 +28,7 @@ function diasDepois(n: number): string {
 const vezes = (n: number) => (n === 1 ? "1 vez" : `${n} vezes`);
 const numeroBonito = (n: string) => n.replace(/^\+55(\d{2})(\d{4,5})(\d{4})$/, "+55 $1 $2-$3");
 
-export function AbaLinksQr({ salvo }: PropsAba) {
+export function AbaLinksQr({ salvo, parte }: PropsAba & { parte: "etiquetas" | "abertos" }) {
   // As páginas do app (mural, manutenção, impressão) só abrem no app.
   const noApp = useAmbiente().onde === "app";
   const carga = useCarregar<LinksQr>(naBase("/links-qr"));
@@ -39,17 +40,17 @@ export function AbaLinksQr({ salvo }: PropsAba) {
   const emUso = l.etiquetas.filter((e) => e.ativa);
   const aposSalvar = (texto: string) => { esquecerLocais(); carga.recarregar(); salvo(texto); };
 
-  return (
-    <div className="grid gap-5">
+  if (parte === "abertos") return (
       <section aria-labelledby="lq-aberto" className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4 shadow-s1">
-        <h3 id="lq-aberto" className="text-lg font-medium">Aberto sem conta</h3>
+        <h2 id="lq-aberto" className="text-lg font-medium">Aberto sem conta</h2>
         <ul className="divide-y divide-linha rounded-xl border border-linha">
           <Linha icone="megafone" titulo="Mural do prédio" sub={`Aberto ${vezes(l.mural.aberturas)} em 7 dias`}
             selo={l.mural.ligado ? <Selo tom="ok">Ligado</Selo> : <Selo tom="neutro">Desligado</Selo>}
-            acao={noApp ? <Link href="/configuracoes?aba=comunicados" className="text-sm font-medium text-violeta-600 hover:underline">Mural e e-mail</Link> : undefined} />
+            acao={<span className="text-sm"><LinkPagina pagina="mural">Mural e e-mail</LinkPagina></span>} />
           <Linha icone="pin" titulo="Etiquetas por local"
             sub={`${emUso.length} em uso · abertas ${vezes(emUso.reduce((s, e) => s + e.aberturas7, 0))} em 7 dias`}
-            selo={<Selo tom={emUso.length ? "ok" : "neutro"}>{emUso.length} em uso</Selo>} />
+            selo={<Selo tom={emUso.length ? "ok" : "neutro"}>{emUso.length} em uso</Selo>}
+            acao={<span className="text-sm"><LinkPagina pagina="etiquetas">Etiquetas</LinkPagina></span>} />
           <Linha icone="ferramenta" titulo="Links de prestador"
             sub={l.prestador.validos ? `${l.prestador.validos} ${l.prestador.validos === 1 ? "válido" : "válidos"} · o primeiro vence ${diaHora(l.prestador.venceEm ?? "")}` : "Nenhum valendo agora"}
             selo={<Selo tom={l.prestador.validos ? "andamento" : "neutro"}>{l.prestador.validos} {l.prestador.validos === 1 ? "válido" : "válidos"}</Selo>} />
@@ -69,13 +70,16 @@ export function AbaLinksQr({ salvo }: PropsAba) {
         ) : null}
         <p className="text-xs text-tinta-suave">Cada link conta quantas vezes foi aberto, sem saber quem abriu. Desligar ou trocar pede motivo e fica no histórico.</p>
       </section>
+  );
 
+  return (
+    <div className="grid gap-5">
       <section aria-labelledby="lq-etiquetas" className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4 shadow-s1">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 id="lq-etiquetas" className="text-lg font-medium">Etiquetas por local</h3>
+          <h2 id="lq-etiquetas" className="text-lg font-medium">Etiquetas por local</h2>
           <span className="flex flex-wrap gap-2">
             {emUso.length && noApp ? <Link href="/etiquetas" target="_blank" className={classeBotao("contorno", "", "m")}><Icone nome="imprimir" />Imprimir etiquetas</Link> : null}
-            {l.podeEditar && l.numeroWhatsapp ? <Botao tamanho="m" onClick={() => setNova(true)}>+ Nova etiqueta</Botao> : null}
+            {l.podeEditar && l.numeroWhatsapp ? <Botao tamanho="m" onClick={() => setNova(true)}><Icone nome="mais" />Nova etiqueta</Botao> : null}
           </span>
         </div>
         {l.numeroWhatsapp
@@ -84,26 +88,21 @@ export function AbaLinksQr({ salvo }: PropsAba) {
         {l.etiquetas.length === 0 ? (
           <p className="text-sm text-tinta-suave">Nenhuma etiqueta ainda. Uma etiqueta no elevador, na garagem ou no hall deixa o morador avisar um problema apontando a câmera, com o local já escrito.</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-linha">
-            <table className="w-full text-sm">
-              <thead className="bg-superficie-2 text-left text-xs text-tinta-suave">
-                <tr><th className="px-3 py-2 font-medium">Código</th><th className="px-3 py-2 font-medium">Local</th><th className="px-3 py-2 font-medium">Abertas em 7 dias</th><th className="px-3 py-2 font-medium">Situação</th></tr>
-              </thead>
-              <tbody className="divide-y divide-linha">
-                {l.etiquetas.map((e) => (
-                  <tr key={e.id}>
-                    <td className="px-3 py-2 font-mono">{e.rotulo}</td>
-                    <td className="px-3 py-2">
-                      <button type="button" className="text-left font-medium text-violeta-600 hover:underline" onClick={() => setAberta(e.id)}>{e.local}</button>
-                      <span className="block text-xs text-tinta-suave">{[e.onde, e.recadoAte ? `recado até ${diaHora(`${e.recadoAte}T12:00:00`).slice(0, 5)}` : null].filter(Boolean).join(" · ")}</span>
-                    </td>
-                    <td className="px-3 py-2">{e.aberturas7}</td>
-                    <td className="px-3 py-2">{e.ativa ? (e.semUso ? <Selo tom="atencao">Sem uso há 90 dias</Selo> : <Selo tom="ok">Em uso</Selo>) : <Selo tom="neutro">Desativada</Selo>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="divide-y divide-linha rounded-xl border border-linha">
+            {l.etiquetas.map((e) => (
+              <li key={e.id} className="grid gap-2 px-3 py-2.5 text-sm sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-4">
+                <span className="grid min-w-0">
+                  <span className="flex flex-wrap items-baseline gap-x-2">
+                    <button type="button" className="text-left font-medium text-violeta-600 hover:underline" onClick={() => setAberta(e.id)}>{e.local}</button>
+                    <span className="font-mono text-xs text-tinta-suave">{e.rotulo}</span>
+                  </span>
+                  <span className="text-xs text-tinta-suave">{[e.onde, e.recadoAte ? `recado até ${diaHora(`${e.recadoAte}T12:00:00`).slice(0, 5)}` : null].filter(Boolean).join(" · ")}</span>
+                </span>
+                <span className="text-xs text-tinta-suave">Aberta {vezes(e.aberturas7)} em 7 dias</span>
+                <span>{e.ativa ? (e.semUso ? <Selo tom="atencao">Sem uso há 90 dias</Selo> : <Selo tom="ok">Em uso</Selo>) : <Selo tom="neutro">Desativada</Selo>}</span>
+              </li>
+            ))}
+          </ul>
         )}
         <p className="text-xs text-tinta-suave">A etiqueta desativada continua na lista, com o motivo. Quem apontar a câmera para ela vê só que ela não está mais em uso.</p>
       </section>

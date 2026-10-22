@@ -246,9 +246,10 @@ test.describe("Plataforma · reincidência e decisões", () => {
   test("AT-18 e CF-09: a janela dos parecidos aparece nas Regras; para mudar, o síndico pede à TRÍADE", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true, comDecisoes: true });
     await page.goto(`${PLATAFORMA}/configuracoes?aba=regras`);
-    const parecidos = page.getByRole("region", { name: "Pedidos parecidos" });
+    const bloco = page.getByRole("region", { name: "Feito pela TRÍADE" });
+    await expect(bloco).toContainText("Só a TRÍADE muda.");
+    const parecidos = bloco.getByRole("region", { name: "Pedidos parecidos" });
     await expect(parecidos).toContainText("90 dias");
-    await expect(parecidos).toContainText("Ajustado pela TRÍADE");
     await expect(parecidos.getByRole("group", { name: "Janela dos parecidos" })).toHaveCount(0);
     await conferir(page);
     await parecidos.getByRole("link", { name: "Pedir mudança" }).click();

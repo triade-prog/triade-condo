@@ -241,7 +241,7 @@ function ComunicadoAberto() {
                     {whatsapp.abertos ? <span className="block">Link pessoal aberto por {whatsapp.abertos === 1 ? "1 pessoa" : `${whatsapp.abertos} pessoas`}.</span> : null}
                   </>} />
               ) : canais ? (
-                <Canal icone="whats" tom="neutro" titulo="WhatsApp" apoio="Desligado para comunicados. Liga em Configurações › WhatsApp." />
+                <Canal icone="whats" tom="neutro" titulo="WhatsApp" apoio="Desligado para comunicados. Liga em Configurações › Comunicados." />
               ) : null}
               {d.pode.copiar ? (
                 <Canal icone="copiar" tom="andamento" titulo="Copiar texto" apoio="Para colar no grupo do prédio, com título e assinatura."

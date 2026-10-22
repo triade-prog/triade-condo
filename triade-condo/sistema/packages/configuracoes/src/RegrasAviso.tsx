@@ -5,14 +5,16 @@
 
 import { useState } from "react";
 import { REGRAS_AVISO_PADRAO } from "@triade/domain";
-import { AvisoErro, Botao, CampoSelecao, CampoTexto, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
+import { AvisoErro, CampoSelecao, CampoTexto, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
 import type { PropsAba } from "./Configuracoes.tsx";
 import { naBase } from "./contexto.tsx";
+import { ParteNumerada } from "./comum.tsx";
+import { contarMudancas, useParte, useVersao } from "./salvar.tsx";
 
 const LIMITES = { sindicoHoras: 240, substitutoHoras: 240, semResponsavelHoras: 240, pendenciaDias: 60 } as const;
 type Campo = keyof typeof LIMITES;
 
-export function RegrasAviso({ config, pode, recarregar, salvo }: PropsAba) {
+export function RegrasAviso({ config, pode, recarregar, n: numeroParte }: PropsAba & { n: number }) {
   const a = config.avisos;
   const [v, setV] = useState<Record<Campo, string>>({
     sindicoHoras: String(a.sindicoHoras), substitutoHoras: String(a.substitutoHoras),
@@ -21,26 +23,31 @@ export function RegrasAviso({ config, pode, recarregar, salvo }: PropsAba) {
   const [substituto, setSubstituto] = useState(a.substitutoId ?? "");
   const [erros, setErros] = useState<string[]>([]);
   const [falha, setFalha] = useState<ErroApi | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const versao = useVersao("config", config.versao);
   const nomeSubstituto = a.substitutosPossiveis.find((p) => p.vinculoId === a.substitutoId);
 
-  async function salvar() {
+  async function salvar(): Promise<string | null> {
     setFalha(null);
     const n = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, Number(x.trim())])) as Record<Campo, number>;
     const ruins = (Object.keys(LIMITES) as Campo[]).filter((k) => !Number.isInteger(n[k]) || n[k] < 1 || n[k] > LIMITES[k]);
     if (!ruins.includes("substitutoHoras") && !ruins.includes("sindicoHoras") && n.substitutoHoras <= n.sindicoHoras) ruins.push("substitutoHoras");
     setErros(ruins);
-    if (ruins.length) return;
-    setEnviando(true);
-    const r = await chamarApi(naBase("/regras-aviso"), { metodo: "PUT", corpo: { versao: config.versao, ...n, substitutoId: substituto || null } });
-    setEnviando(false);
+    if (ruins.length) return null;
+    const r = await chamarApi(naBase("/regras-aviso"), { metodo: "PUT", corpo: { versao: versao.atual(), ...n, substitutoId: substituto || null } });
     if (!r.ok) {
       const campos = r.erro.detalhes?.campos;
       if (Array.isArray(campos)) setErros(campos.map(String));
-      return setFalha(r.erro);
+      setFalha(r.erro);
+      return null;
     }
-    salvo("Regras de aviso salvas.");
+    versao.gravou(r.dados);
+    return "Regras de aviso salvas.";
   }
+  const iniciais = {
+    sindicoHoras: String(a.sindicoHoras), substitutoHoras: String(a.substitutoHoras),
+    semResponsavelHoras: String(a.semResponsavelHoras), pendenciaDias: String(a.pendenciaDias), substituto: a.substitutoId ?? "",
+  };
+  useParte("regras-aviso", { nome: "Quando o retorno vence", mudancas: contarMudancas(iniciais, { ...v, substituto }), salvar });
 
   const erroDe = (k: string, texto: string) => (erros.includes(k) ? texto : null);
   const numero = (k: Campo, rotulo: string, unidade: string, extra?: string) => (
@@ -51,8 +58,7 @@ export function RegrasAviso({ config, pode, recarregar, salvo }: PropsAba) {
   );
 
   return (
-    <section aria-labelledby="t-avisos" className="grid gap-4 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-avisos" className="text-lg font-medium">Quando o retorno vence</h2>
+    <ParteNumerada n={numeroParte} id="t-avisos" titulo="Quando o retorno vence">
       {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={recarregar} /> : null}
       {pode ? (
         <>
@@ -78,7 +84,6 @@ export function RegrasAviso({ config, pode, recarregar, salvo }: PropsAba) {
             {numero("pendenciaDias", "Pendência parada depois de", "Dias", "Avisa quem cuida da pendência.")}
           </div>
           <p className="text-sm text-tinta-suave">As horas contam só o horário de atendimento e pulam feriados. Etapa que pausa o prazo também pausa o aviso. Ninguém recebe o mesmo aviso duas vezes.</p>
-          <div className="flex justify-end"><Botao disabled={enviando} onClick={() => void salvar()}>{enviando ? "Salvando…" : "Salvar regras"}</Botao></div>
         </>
       ) : (
         <ul className="grid gap-2 text-sm">
@@ -89,6 +94,6 @@ export function RegrasAviso({ config, pode, recarregar, salvo }: PropsAba) {
           <li>Pendência parada: depois de {a.pendenciaDias} {a.pendenciaDias === 1 ? "dia" : "dias"}</li>
         </ul>
       )}
-    </section>
+    </ParteNumerada>
   );
 }

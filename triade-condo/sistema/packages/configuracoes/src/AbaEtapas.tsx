@@ -6,7 +6,7 @@
 
 import { useState } from "react";
 import { SITUACOES_ETAPA } from "@triade/domain";
-import { Botao, chamarApi, Selo } from "@triade/ui";
+import { Botao, chamarApi, Icone, Selo } from "@triade/ui";
 import { Janela, type Campo, type Valores } from "./Janela.tsx";
 import type { Configuracoes } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
@@ -17,7 +17,8 @@ type Etapa = Configuracoes["etapas"][number];
 type Modelo = Configuracoes["modelos"][number];
 type Edicao = { tipo: "etapa"; item: Etapa | null } | { tipo: "modelo"; item: Modelo | null } | null;
 
-export function AbaEtapas({ config, pode, recarregar, salvo, tecnica }: PropsAba) {
+/** Uma das duas páginas: Etapas (da TRÍADE) ou Respostas prontas (do síndico). */
+export function AbaEtapas({ config, pode, recarregar, salvo, tecnica, parte }: PropsAba & { parte: "etapas" | "modelos" }) {
   const [edicao, setEdicao] = useState<Edicao>(null);
   const fechar = () => setEdicao(null);
   const nomeCategoria = (id: string | null) => config.categorias.find((c) => c.id === id)?.nome;
@@ -31,7 +32,7 @@ export function AbaEtapas({ config, pode, recarregar, salvo, tecnica }: PropsAba
       return [
         { id: "titulo", rotulo: "Título", tipo: "texto", obrigatorio: true, max: 60, erro: "Escreva de 2 a 60 caracteres." },
         { id: "texto", rotulo: "Texto da resposta", tipo: "area", obrigatorio: true, max: 2000, erro: "Escreva o texto (até 2.000 caracteres)." },
-        { id: "categoriaId", rotulo: "Categoria", tipo: "selecao", opcoes: opcoesCategoria("Qualquer categoria"), ajuda: "Com categoria, o modelo aparece primeiro nos pedidos dela." },
+        { id: "categoriaId", rotulo: "Categoria", tipo: "selecao", opcoes: opcoesCategoria("Qualquer categoria"), ajuda: "Com categoria, a resposta aparece primeiro nos pedidos dela." },
         ...(edicao.item ? [{ id: "ativo", rotulo: "Ativo", tipo: "caixa" } as Campo] : []),
       ];
     }
@@ -80,16 +81,17 @@ export function AbaEtapas({ config, pode, recarregar, salvo, tecnica }: PropsAba
     const r = item
       ? await chamarApi(naBase(`/${rota}/${item.id}`), { metodo: "PUT", corpo })
       : await chamarApi(naBase(`/${rota}`), { corpo });
-    if (r.ok) { fechar(); salvo(edicao.tipo === "modelo" ? "Modelo de resposta salvo." : "Etapa salva."); }
+    if (r.ok) { fechar(); salvo(edicao.tipo === "modelo" ? "Resposta pronta salva." : "Etapa salva."); }
     return r;
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
+    <div className="grid gap-8 lg:max-w-3xl">
+      {parte === "etapas" ? (
       <section aria-labelledby="t-etapas" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="t-etapas" className="flex flex-wrap items-center gap-2 text-lg font-medium">Etapas <Selo tom="neutro">Só a TRÍADE</Selo></h2>
-          {tecnica.pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "etapa", item: null })}>+ Etapa</Botao> : null}
+          <h2 id="t-etapas" className="text-lg font-medium">Etapas dos pedidos</h2>
+          {tecnica.pode ? <Botao variante="contorno" tamanho="m" onClick={() => setEdicao({ tipo: "etapa", item: null })}><Icone nome="mais" />Nova etapa</Botao> : null}
         </div>
         {tecnica.pode ? null : (
           <FaixaTriade porque="As etapas mexem no prazo e no histórico" parte="Etapas dos pedidos"
@@ -115,10 +117,11 @@ export function AbaEtapas({ config, pode, recarregar, salvo, tecnica }: PropsAba
         ))}
         <p className="text-sm text-tinta-suave">Sempre sobra ao menos uma etapa geral de aberto e uma de encerrado.</p>
       </section>
+      ) : (
       <section aria-labelledby="t-modelos" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="t-modelos" className="text-lg font-medium">Modelos de resposta</h2>
-          {pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "modelo", item: null })}>+ Modelo</Botao> : null}
+          <h2 id="t-modelos" className="text-lg font-medium">Respostas prontas</h2>
+          {pode ? <Botao variante="contorno" tamanho="m" onClick={() => setEdicao({ tipo: "modelo", item: null })}><Icone nome="mais" />Nova resposta</Botao> : null}
         </div>
         <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
           {config.modelos.map((m) => (
@@ -131,15 +134,16 @@ export function AbaEtapas({ config, pode, recarregar, salvo, tecnica }: PropsAba
                 </span>
                 <span className="whitespace-pre-line text-tinta-suave">{m.texto}</span>
               </span>
-              {pode ? <Botao variante="discreto" onClick={() => setEdicao({ tipo: "modelo", item: m })} aria-label={`Editar o modelo ${m.titulo}`}>Editar</Botao> : null}
+              {pode ? <Botao variante="discreto" onClick={() => setEdicao({ tipo: "modelo", item: m })} aria-label={`Editar a resposta ${m.titulo}`}>Editar</Botao> : null}
             </li>
           ))}
         </ul>
-        <p className="text-sm text-tinta-suave">Os modelos aparecem na hora de dar retorno a um pedido.</p>
+        <p className="text-sm text-tinta-suave">As respostas prontas aparecem na hora de dar retorno a um pedido.</p>
       </section>
+      )}
       <Janela
         aberto={edicao !== null}
-        titulo={edicao?.tipo === "modelo" ? (edicao.item ? `Editar o modelo ${edicao.item.titulo}` : "Novo modelo de resposta") : edicao?.item ? `Editar a etapa ${edicao.item.nome}` : "Nova etapa"}
+        titulo={edicao?.tipo === "modelo" ? (edicao.item ? `Editar a resposta ${edicao.item.titulo}` : "Nova resposta pronta") : edicao?.item ? `Editar a etapa ${edicao.item.nome}` : "Nova etapa"}
         textoBotao="Salvar"
         campos={campos()}
         iniciais={iniciais()}

@@ -4,7 +4,7 @@
 
 import { useState } from "react";
 import { feriadosNacionais, mostrarDataSemHora } from "@triade/domain";
-import { Aviso, Botao, chamarApi, textoDoErro, Vazio } from "@triade/ui";
+import { Aviso, Botao, chamarApi, Icone, textoDoErro, Vazio } from "@triade/ui";
 import { Janela } from "./Janela.tsx";
 import type { PropsAba } from "./Configuracoes.tsx";
 import { naBase } from "./contexto.tsx";
@@ -43,13 +43,13 @@ export function AbaFeriados({ config, pode, salvo }: PropsAba) {
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-tinta-suave">No feriado não há atendimento e o prazo para.</p>
+        <p className="text-sm text-tinta-suave">{config.feriados.length ? `${config.feriados.length} ${config.feriados.length === 1 ? "feriado" : "feriados"} na lista.` : "Nenhum feriado na lista ainda."}</p>
         {pode ? (
           <div className="flex flex-wrap gap-2">
-            {[ano, ano + 1].map((a) => (
-              <Botao key={a} variante="contorno" disabled={trazendo} onClick={() => void trazer(a)}>Trazer feriados nacionais de {a}</Botao>
+            {[ano, ano + 1].filter((a) => !feriadosNacionais(a).some((x) => existentes.has(x.data))).slice(0, 1).map((a) => (
+              <Botao key={a} disabled={trazendo} onClick={() => void trazer(a)}>Trazer feriados nacionais de {a}</Botao>
             ))}
-            <Botao onClick={() => setNovo(true)}>+ Feriado</Botao>
+            <Botao variante="contorno" onClick={() => setNovo(true)}><Icone nome="mais" />Novo feriado</Botao>
           </div>
         ) : null}
       </div>

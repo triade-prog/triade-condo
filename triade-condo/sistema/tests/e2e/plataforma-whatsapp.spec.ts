@@ -4,6 +4,7 @@
 // WhatsApp (termo do piloto, mensagem sem promessa de prazo, avisos no próprio celular). Cada tela
 // passa no axe (WCAG 2.2 AA) no celular e no computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
+import { salvarPagina } from "./configuracoes";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { pedirRevisao } from "./api-falsa-whatsapp";
@@ -106,7 +107,7 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
 
   test("W-11, W-12 e W-21: termo do piloto, mensagem sem promessa de prazo e avisos no meu WhatsApp", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page);
-    await page.goto(`${PLATAFORMA}/configuracoes?aba=whatsapp`);
+    await page.goto(`${PLATAFORMA}/configuracoes/whatsapp`);
     await expect(page.getByRole("heading", { name: "Termo do piloto do WhatsApp" })).toBeVisible();
     await conferir(page);
     await page.getByRole("button", { name: "Li e aceito o termo do piloto" }).click();
@@ -116,21 +117,30 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
 
     await page.getByLabel("Fora do horário").fill("Recebemos sua mensagem e respondemos em até 2 horas.");
     await expect(page.getByText("Tire a promessa de prazo ou de atendimento imediato.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Salvar", exact: true })).toBeDisabled();
+    await salvarPagina(page);
+    await expect(page.getByRole("alert").filter({ hasText: "Nada foi salvo. Veja o que corrigir em Mensagens e pedidos que chegam." })).toBeVisible();
     await page.getByLabel("Fora do horário").fill("Recebemos sua mensagem fora do horário. O condomínio confere no próximo horário de atendimento.");
-    await page.getByRole("button", { name: "Salvar", exact: true }).click();
+    await salvarPagina(page);
     await expect(page.getByText("Configurações do WhatsApp salvas.")).toBeVisible();
     // O tempo de anexar é ajuste da TRÍADE (CF-09): no app fica em leitura.
     const anexar = page.getByRole("region", { name: "Mensagens seguintes" });
     await expect(anexar).toContainText("30 min");
     await expect(anexar.getByRole("button", { name: "60 min" })).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Feito pela TRÍADE" })).toContainText("Mensagens seguintes");
+    await expect(page.getByLabel("Meu celular")).toHaveCount(0);
+
+    // Os avisos de cada pessoa ficam no menu da conta (decisão C.1).
+    await page.getByRole("button", { name: /^Conta de / }).click();
+    await page.getByRole("link", { name: "Meus avisos" }).click();
+    await expect(page).toHaveURL(`${PLATAFORMA}/conta/avisos`);
+    await expect(page.getByRole("heading", { level: 1, name: "Meus avisos" })).toBeVisible();
 
     await page.getByLabel("Meu celular").fill("+55 61 99");
-    await page.getByRole("button", { name: "Salvar meus avisos" }).click();
+    await salvarPagina(page);
     await expect(page.getByText("Celular com DDI e DDD (ex.: +5561999998888).")).toBeVisible();
     await conferir(page);
     await page.getByLabel("Meu celular").fill("+55 (61) 99100-2233");
-    await page.getByRole("button", { name: "Salvar meus avisos" }).click();
+    await salvarPagina(page);
     await expect(page.getByText("Seus avisos no WhatsApp foram salvos.")).toBeVisible();
     expect(estado.whatsapp.meusAvisos?.telefone).toBe("+5561991002233");
   });

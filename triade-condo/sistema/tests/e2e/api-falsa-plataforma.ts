@@ -245,7 +245,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     }
     const ctxAviso: ContextoAviso = { eu, pessoas: estado.pessoas, responsavelPadrao: estado.responsavelPadrao, moradores: estado.moradores, manutencao,
       prioridades: c.prioridades, conectado: whatsapp.conexao.situacao === "CONECTADO", podePublicar: pode("comunicados.publicar"),
-      podeManutencao: pode("manutencao.editar"), links, condominio: "Residencial Ipê" };
+      podeManutencao: pode("manutencao.editar"), links, condominio: "Residencial Ipê", config: estado.config };
     const noAviso = await rotasAvisoRegistro(route, avisoRegistro, ctxAviso, caminho, metodo, corpo, pode, quem === "SINDICA");
     if (noAviso !== null) return noAviso;
     const prazos = await rotasPrazos(route, estado, eu, caminho, metodo, corpo, url, pode,

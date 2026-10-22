@@ -3,7 +3,7 @@
 // histórico não quebra; desativa em vez de apagar. Prioridade sempre com o significado escrito.
 
 import { useState } from "react";
-import { AvisoErro, Botao, chamarApi, Selo, textoDoErro, type ErroApi } from "@triade/ui";
+import { AvisoErro, Botao, chamarApi, Dialogo, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
 import { Janela, type Campo, type Valores } from "./Janela.tsx";
 import type { Configuracoes } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
@@ -28,9 +28,11 @@ const CAMPOS_PRIORIDADE: Campo[] = [
 export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
   const [edicao, setEdicao] = useState<Edicao>(null);
   const [falha, setFalha] = useState<ErroApi | null>(null);
+  const [desativando, setDesativando] = useState<Categoria | null>(null);
   const fechar = () => setEdicao(null);
 
   async function alternar(c: Categoria) {
+    setDesativando(null);
     const r = await chamarApi(naBase(`/categorias/${c.id}`), { metodo: "PUT", corpo: { versao: c.versao, nome: c.nome, ativa: !c.ativa } });
     if (r.ok) salvo(c.ativa ? `Categoria ${c.nome} desativada. Os pedidos antigos continuam com ela.` : `Categoria ${c.nome} reativada.`);
     else setFalha(r.erro);
@@ -51,12 +53,12 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
 
   const prioridades = [...config.prioridades].sort((a, b) => b.nivel - a.nivel);
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
-      {falha ? <div className="lg:col-span-2"><AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={recarregar} /></div> : null}
+    <div className="grid gap-8 xl:grid-cols-2">
+      {falha ? <div className="xl:col-span-2"><AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={recarregar} /></div> : null}
       <section aria-labelledby="t-categorias" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
           <h2 id="t-categorias" className="text-lg font-medium">Categorias</h2>
-          {pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "categoria", item: null })}>+ Categoria</Botao> : null}
+          {pode ? <Botao variante="contorno" tamanho="m" onClick={() => setEdicao({ tipo: "categoria", item: null })}><Icone nome="mais" />Nova categoria</Botao> : null}
         </div>
         <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
           {config.categorias.map((c) => (
@@ -68,7 +70,7 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
               {pode ? (
                 <span className="flex gap-1">
                   {c.ativa ? <Botao variante="discreto" onClick={() => setEdicao({ tipo: "categoria", item: c })} aria-label={`Renomear ${c.nome}`}>Renomear</Botao> : null}
-                  <Botao variante="discreto" onClick={() => void alternar(c)} aria-label={`${c.ativa ? "Desativar" : "Reativar"} ${c.nome}`}>{c.ativa ? "Desativar" : "Reativar"}</Botao>
+                  <Botao variante="discreto" onClick={() => (c.ativa ? setDesativando(c) : void alternar(c))} aria-label={`${c.ativa ? "Desativar" : "Reativar"} ${c.nome}`}>{c.ativa ? "Desativar" : "Reativar"}</Botao>
                 </span>
               ) : null}
             </li>
@@ -79,7 +81,7 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
       <section aria-labelledby="t-prioridades" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
           <h2 id="t-prioridades" className="text-lg font-medium">Prioridades</h2>
-          {pode ? <Botao variante="contorno" onClick={() => setEdicao({ tipo: "prioridade", item: null })}>+ Prioridade</Botao> : null}
+          {pode ? <Botao variante="contorno" tamanho="m" onClick={() => setEdicao({ tipo: "prioridade", item: null })}><Icone nome="mais" />Nova prioridade</Botao> : null}
         </div>
         <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
           {prioridades.map((p) => (
@@ -96,6 +98,18 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
           ))}
         </ul>
       </section>
+      {desativando ? (
+        <Dialogo aberto titulo={`Desativar a categoria ${desativando.nome}?`} aoFechar={() => setDesativando(null)}>
+          <div className="grid gap-3">
+            <p>Pedidos novos não podem mais usar {desativando.nome}. Os pedidos que já têm {desativando.nome} continuam com ela, no histórico e nos indicadores.</p>
+            <p className="text-[13px] text-tinta-suave">Dá para reativar depois, com o mesmo nome e o mesmo histórico.</p>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Botao variante="contorno" onClick={() => setDesativando(null)}>Voltar</Botao>
+              <Botao onClick={() => void alternar(desativando)}>Desativar {desativando.nome}</Botao>
+            </div>
+          </div>
+        </Dialogo>
+      ) : null}
       <Janela
         aberto={edicao !== null}
         titulo={edicao?.tipo === "prioridade" ? (edicao.item ? `Editar prioridade ${edicao.item.nome}` : "Nova prioridade") : edicao?.item ? `Renomear ${edicao.item.nome}` : "Nova categoria"}

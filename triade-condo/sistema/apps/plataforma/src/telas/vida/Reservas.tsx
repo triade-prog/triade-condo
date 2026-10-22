@@ -71,7 +71,7 @@ export function AbaReservas({ aoMudar }: { aoMudar: (texto: string) => void }) {
               <Vazio titulo={filtro === "A_APROVAR" ? "Nada esperando aprovação" : "Nenhuma reserva aqui"} icone="calendario">
                 {l.areas.length
                   ? "Os moradores reservam pelo WhatsApp do condomínio, mandando RESERVAR. A reserva pedida por telefone entra pelo botão Nova reserva."
-                  : <>Nenhuma área aceita reserva ainda. Ative as áreas do prédio em <Link href="/configuracoes?aba=areas" className="font-medium text-violeta-600 hover:underline">Configurações › Áreas comuns</Link>.</>}
+                  : <>Nenhuma área aceita reserva ainda. Ative as áreas do prédio em <Link href="/configuracoes/areas" className="font-medium text-violeta-600 hover:underline">Configurações › Áreas comuns</Link>.</>}
               </Vazio>
             </div>
           ) : filtro === "A_APROVAR" ? (

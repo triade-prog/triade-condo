@@ -1,6 +1,6 @@
 "use client";
 // Comunicados pelo WhatsApp do condomínio (design "Comunicado pelo WhatsApp", tela 4; CD-11, W-20,
-// CF-11): o cartão de Configurações › WhatsApp que liga e desliga, conta quem aceitou por telefone
+// CF-11): o cartão de Configurações › Comunicados (antes em WhatsApp) que liga e desliga, conta quem aceitou por telefone
 // e dá o convite pronto para o grupo do prédio, com o cartaz de QR. Quem aceita é sempre o morador,
 // do próprio celular: aqui ninguém marca o aceite. Fica só no app (o Console não liga).
 
@@ -74,7 +74,7 @@ export function CartaoComunicadosWhatsapp({ aoSalvar }: { aoSalvar: (texto: stri
       ) : null}
       <p className="text-xs text-tinta-suave">
         As mensagens saem {d.porMinuto} por minuto, para não parecer disparo em massa. O horário sem envio ({d.silencio.inicio} às {d.silencio.fim}) é o mesmo do
-        e-mail, em <Link href="/configuracoes?aba=comunicados" className="font-medium underline">Configurações › Comunicados</Link>.
+        e-mail, na parte 3 desta página.
         Desligar cancela o que está na fila; os aceites ficam guardados.
       </p>
     </section>

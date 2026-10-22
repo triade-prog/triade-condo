@@ -2,25 +2,29 @@
 // Configurações › Áreas comuns (peça R12, design "Vida em condomínio", tela 1; AC-07, AC-06): os
 // tipos mais comuns já vêm prontos, com regras sugeridas e inativos. O síndico ajusta, ativa as que
 // o prédio tem e cria outras pelo botão Nova área, com os mesmos campos. Área inativa não aparece
-// para ninguém. O nome da área também é o "Qual área" da Agenda e o local das etiquetas.
+// para ninguém. O nome da área também é o "Qual área" da Agenda e o local das etiquetas. Na página
+// por tarefa (decisões A.1 e B.1) cada área abre numa página própria, em 3 partes, com a chave
+// "Área ativa" e o Salvar da barra do rodapé, no lugar da janela com "Salvar sem ativar".
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { BLOCOS_MINUTOS, CONFIRMACOES_AREA, descreverArea, duracaoBloco, MODOS_AREA, PERIODOS_LIMITE, reais } from "@triade/domain";
 import {
-  AvisoErro, Botao, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Selo, textoDoErro, Vazio,
+  AvisoErro, Botao, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, ErroCarregar, Icone, Interruptor, Selo, textoDoErro, Vazio,
   type ErroApi,
 } from "@triade/ui";
 import { esquecerLocais } from "./Locais.tsx";
 import { useCarregar, naBase } from "./contexto.tsx";
 import type { AreaComumTela, AreasComuns } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
+import { Escolha, ParteNumerada } from "./comum.tsx";
+import { contarMudancas, useParte } from "./salvar.tsx";
 
 const NOVA: Omit<AreaComumTela, "id" | "versao"> = {
   criadaPeloSindico: true, nome: "", ativa: false, reserva: "SINDICO", antecedenciaMin: 1, antecedenciaMax: 30, horaInicio: "08:00", horaFim: "22:00",
   modo: "PERIODO", cancelarSemAvisoDias: 3, podeProprietarioMorador: true, podeInquilino: true, podeProprietarioAusente: false,
 };
 
-export function AbaAreasComuns({ salvo }: PropsAba) {
+export function AbaAreasComuns(_: PropsAba) {
   const carga = useCarregar<AreasComuns>(naBase("/areas-comuns"));
   const [aberta, setAberta] = useState<AreaComumTela | "nova" | null>(null);
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando as áreas comuns…" />;
@@ -29,8 +33,10 @@ export function AbaAreasComuns({ salvo }: PropsAba) {
   const prontas = l.areas.filter((a) => !a.criadaPeloSindico).length;
   const criadas = l.areas.length - prontas;
   const ativas = l.areas.filter((a) => a.ativa).length;
-  const aposSalvar = (texto: string) => { setAberta(null); esquecerLocais(); carga.recarregar(); salvo(texto); };
 
+  if (aberta) {
+    return <PaginaArea area={aberta === "nova" ? null : aberta} documentos={l.documentos} pode={l.pode.editar} aoVoltar={() => setAberta(null)} />;
+  }
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -39,7 +45,7 @@ export function AbaAreasComuns({ salvo }: PropsAba) {
           {criadas ? ` e ${criadas} ${criadas === 1 ? "criada" : "criadas"} pelo síndico` : ""}, {ativas} {ativas === 1 ? "ativa" : "ativas"}.
           {" "}Crie as que o prédio tem e não estão na lista.
         </p>
-        {l.pode.editar ? <Botao onClick={() => setAberta("nova")}>+ Nova área</Botao> : null}
+        {l.pode.editar ? <Botao tamanho="m" onClick={() => setAberta("nova")}><Icone nome="mais" />Nova área</Botao> : null}
       </div>
       {l.areas.length === 0 ? (
         <Vazio titulo="Nenhuma área comum">Crie as áreas do prédio pelo botão Nova área.</Vazio>
@@ -48,7 +54,7 @@ export function AbaAreasComuns({ salvo }: PropsAba) {
           {l.areas.map((a) => (
             <li key={a.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
               <span className="grid min-w-0 flex-1 gap-0.5">
-                <button type="button" className="min-h-6 text-left font-medium hover:text-violeta-600 hover:underline" onClick={() => setAberta(a)}>{a.nome}</button>
+                <button type="button" className="min-h-6 text-left font-medium text-violeta-600 hover:underline" onClick={() => setAberta(a)}>{a.nome}</button>
                 <span className="text-[13px] text-tinta-suave">{descreverArea(a)}</span>
               </span>
               {a.ativa ? <Selo tom="ok">Ativa</Selo> : <Selo tom="neutro">Inativa</Selo>}
@@ -57,10 +63,6 @@ export function AbaAreasComuns({ salvo }: PropsAba) {
         </ul>
       )}
       <p className="text-xs text-tinta-suave">Só pessoas com vínculo confirmado em Moradores e unidades reservam. O valor de uso só aparece; a cobrança entra com o Dinheiro do prédio.</p>
-      {aberta ? (
-        <FormArea area={aberta === "nova" ? null : aberta} documentos={l.documentos} pode={l.pode.editar}
-          aoFechar={() => setAberta(null)} aoSalvar={aposSalvar} />
-      ) : null}
     </div>
   );
 }
@@ -72,29 +74,29 @@ const centavos = (s: string) => {
 };
 const texto = (n: number | null | undefined) => (n === null || n === undefined ? "" : String(n));
 
-function FormArea({ area, documentos, pode, aoFechar, aoSalvar }: {
-  area: AreaComumTela | null; documentos: AreasComuns["documentos"]; pode: boolean; aoFechar: () => void; aoSalvar: (texto: string) => void;
+/** A área em página própria: a chave "Área ativa" e 3 partes; grava pela barra do rodapé. */
+function PaginaArea({ area, documentos, pode, aoVoltar }: {
+  area: AreaComumTela | null; documentos: AreasComuns["documentos"]; pode: boolean; aoVoltar: () => void;
 }) {
   const a = area ?? NOVA;
-  const [v, setV] = useState({
+  const [inicial] = useState(() => ({
     nome: a.nome, reserva: a.reserva, antecedenciaMin: texto(a.antecedenciaMin), antecedenciaMax: texto(a.antecedenciaMax),
     horaInicio: a.horaInicio, horaFim: a.horaFim, modo: a.modo, blocoMinutos: texto(a.blocoMinutos), capacidade: texto(a.capacidade),
     limiteQuantidade: texto(a.limiteQuantidade), limitePeriodo: a.limitePeriodo ?? "MES", toleranciaDias: texto(a.toleranciaDias),
     cancelarSemAvisoDias: texto(a.cancelarSemAvisoDias), valor: a.valorCentavos ? reais(a.valorCentavos).replace("R$ ", "") : "",
     regrasDocumentoId: a.regras?.id ?? "", podeProprietarioMorador: a.podeProprietarioMorador, podeInquilino: a.podeInquilino,
-    podeProprietarioAusente: a.podeProprietarioAusente,
-  });
+    podeProprietarioAusente: a.podeProprietarioAusente, ativa: a.ativa,
+  }));
+  const [v, setV] = useState(inicial);
   const [erro, setErro] = useState<ErroApi | null>(null);
-  const [enviando, setEnviando] = useState(false);
   const comErro = camposComErro(erro);
   const err = (campo: string, msg: string) => (comErro.includes(campo) ? msg : null);
   const mudar = <K extends keyof typeof v>(campo: K, valor: (typeof v)[K]) => setV((x) => ({ ...x, [campo]: valor }));
   const semReserva = v.reserva === "SEM_RESERVA";
 
-  async function salvar(ativa: boolean, ev?: FormEvent) {
-    ev?.preventDefault();
+  async function salvar(): Promise<string | null> {
     setErro(null);
-    setEnviando(true);
+    const ativa = v.ativa;
     const limite = numero(v.limiteQuantidade);
     const corpo = {
       ...(area ? { versao: area.versao } : {}),
@@ -110,71 +112,45 @@ function FormArea({ area, documentos, pode, aoFechar, aoSalvar }: {
     const r = area
       ? await chamarApi(naBase(`/areas-comuns/${area.id}`), { metodo: "PUT", corpo })
       : await chamarApi(naBase("/areas-comuns"), { corpo });
-    setEnviando(false);
-    if (!r.ok) return setErro(r.erro);
+    if (!r.ok) { setErro(r.erro); return null; }
+    esquecerLocais();
     const nome = v.nome.trim();
-    aoSalvar(ativa ? `${nome} salva e ativa.` : area?.ativa ? `${nome} desativada. Ela não aparece mais para reservar.` : `${nome} salva, sem ativar.`);
+    if (ativa) return area?.ativa ? `${nome} salva.` : `${nome} salva e ativa.`;
+    return area?.ativa ? `${nome} desativada. Ela não aparece mais para reservar.` : `${nome} salva, sem ativar.`;
   }
+  useParte("area", { nome: area?.nome ?? "Nova área", mudancas: contarMudancas(inicial, v), salvar });
 
-  const titulo = area ? area.nome : "Nova área";
   return (
-    <Dialogo aberto titulo={titulo} aoFechar={aoFechar}>
-      <form onSubmit={(e) => void salvar(true, e)} noValidate className="grid gap-3">
+    <div className="grid gap-5">
+      <div className="grid gap-1">
+        <button type="button" onClick={aoVoltar} className="inline-flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline">
+          <Icone nome="esq" className="h-4 w-4" />Todas as áreas comuns
+        </button>
+        <h2 className="text-2xl">{area ? area.nome : "Nova área"}</h2>
         <p className="text-sm text-tinta-suave">
           {area && !area.criadaPeloSindico
             ? "Veio pronta com as regras sugeridas. Ajuste o que a convenção e o regimento do prédio dizem e ative."
             : "Uma área nova tem os mesmos campos das que vieram prontas."}
         </p>
-        {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-        <fieldset disabled={!pode} className="grid gap-3 sm:grid-cols-2">
-          <CampoTexto id="ar-nome" rotulo="Nome" className="sm:col-span-2" maxLength={60} required value={v.nome} onChange={(e) => mudar("nome", e.target.value)}
+      </div>
+      {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
+      <fieldset disabled={!pode} className="contents">
+        <section aria-label="Situação da área" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+          <CampoTexto id="ar-nome" rotulo="Nome" className="max-w-md" maxLength={60} required value={v.nome} onChange={(e) => mudar("nome", e.target.value)}
             erro={err("nome", "Escreva o nome, com 2 a 60 letras, diferente das outras áreas")} />
-          <CampoSelecao id="ar-reserva" rotulo="Como a reserva é confirmada" className="sm:col-span-2" value={v.reserva}
-            onChange={(e) => mudar("reserva", e.target.value as typeof v.reserva)}
-            opcoes={Object.entries(CONFIRMACOES_AREA).map(([valor, t]) => ({ valor, texto: t }))}
-            ajuda={v.reserva === "AUTOMATICA" ? "Confirma na hora se a data estiver livre." : v.reserva === "SINDICO" ? "Fica esperando você aprovar." : "Não se reserva: aparece só o horário de uso."} />
-          <CampoTexto id="ar-hi" rotulo="Abre às" inputMode="numeric" maxLength={5} placeholder="10:00" value={v.horaInicio} onChange={(e) => mudar("horaInicio", e.target.value)}
-            erro={err("horaInicio", "Use o formato 10:00")} />
-          <CampoTexto id="ar-hf" rotulo="Fecha às" inputMode="numeric" maxLength={5} placeholder="23:00" value={v.horaFim} onChange={(e) => mudar("horaFim", e.target.value)}
-            ajuda="Use 24:00 para meia-noite." erro={err("horaFim", "O fim vem depois do início, no formato 23:00")} />
+          {pode ? (
+            <Interruptor id="ar-ativa" rotulo="Área ativa" marcado={v.ativa} aoMudar={(x) => mudar("ativa", x)}
+              ajuda={v.ativa ? "Os moradores podem pedir reserva. Desligar não cancela o que já está marcado." : "Inativa, a área não aparece para ninguém."} />
+          ) : <span>{v.ativa ? <Selo tom="ok">Ativa</Selo> : <Selo tom="neutro">Inativa</Selo>}</span>}
+        </section>
+        <ParteNumerada n={1} id="t-ar-quem" titulo="Quem confirma">
+          <Escolha rotulo="Como a reserva é confirmada" atual={v.reserva} aoMudar={(x) => mudar("reserva", x)}
+            opcoes={Object.entries(CONFIRMACOES_AREA).map(([valor, t]) => ({ valor: valor as typeof v.reserva, texto: t }))} />
+          <p className="text-sm text-tinta-suave">
+            {v.reserva === "AUTOMATICA" ? "Confirma na hora se a data estiver livre." : v.reserva === "SINDICO" ? "O pedido chega em Vida em condomínio e o morador espera a resposta." : "Não se reserva: aparece só o horário de uso."}
+          </p>
           {semReserva ? null : (
-            <>
-              <CampoTexto id="ar-amin" rotulo="Antecedência mínima (dias)" type="number" min={0} max={365} value={v.antecedenciaMin}
-                onChange={(e) => mudar("antecedenciaMin", e.target.value)} ajuda="Nem em cima da hora." erro={err("antecedenciaMin", "De 0 a 365 dias")} />
-              <CampoTexto id="ar-amax" rotulo="Antecedência máxima (dias)" type="number" min={1} max={730} value={v.antecedenciaMax}
-                onChange={(e) => mudar("antecedenciaMax", e.target.value)} ajuda="Nem para o ano que vem." erro={err("antecedenciaMax", "Maior que a mínima, até 730 dias")} />
-              <CampoSelecao id="ar-modo" rotulo="Como se reserva" value={v.modo} onChange={(e) => mudar("modo", e.target.value as typeof v.modo)}
-                opcoes={Object.entries(MODOS_AREA).map(([valor, t]) => ({ valor, texto: t }))} />
-              {v.modo === "BLOCOS" ? (
-                <CampoSelecao id="ar-bloco" rotulo="Tamanho do bloco" value={v.blocoMinutos} onChange={(e) => mudar("blocoMinutos", e.target.value)}
-                  opcoes={[{ valor: "", texto: "Escolha" }, ...BLOCOS_MINUTOS.map((b) => ({ valor: String(b), texto: duracaoBloco(b) }))]}
-                  erro={err("blocoMinutos", "Escolha o tamanho do bloco")} />
-              ) : <span className="hidden sm:block" />}
-              <CampoTexto id="ar-lim" rotulo="Limite por unidade" opcional type="number" min={1} max={31} value={v.limiteQuantidade}
-                onChange={(e) => mudar("limiteQuantidade", e.target.value)} ajuda="Conta as reservas confirmadas e as que esperam aprovação."
-                erro={err("limiteQuantidade", "De 1 a 31")} />
-              <CampoSelecao id="ar-per" rotulo="Por" value={v.limitePeriodo} onChange={(e) => mudar("limitePeriodo", e.target.value as typeof v.limitePeriodo)}
-                opcoes={Object.entries(PERIODOS_LIMITE).map(([valor, t]) => ({ valor, texto: t.replace("por ", "") }))} disabled={!v.limiteQuantidade} />
-              <CampoTexto id="ar-tol" rotulo="Tolerância (dias antes)" opcional type="number" min={1} max={60} value={v.toleranciaDias}
-                onChange={(e) => mudar("toleranciaDias", e.target.value)} disabled={!v.limiteQuantidade}
-                ajuda="Mais uma reserva, se a data ainda estiver livre tantos dias antes." erro={err("toleranciaDias", "A tolerância vale com limite, de 1 a 60 dias")} />
-              <CampoTexto id="ar-canc" rotulo="Cancelar sem aviso ao síndico até (dias antes)" type="number" min={0} max={60} value={v.cancelarSemAvisoDias}
-                onChange={(e) => mudar("cancelarSemAvisoDias", e.target.value)} ajuda="Depois disso o cancelamento chega para quem cuida." />
-            </>
-          )}
-          <CampoTexto id="ar-cap" rotulo="Capacidade (pessoas)" opcional type="number" min={1} max={2000} value={v.capacidade}
-            onChange={(e) => mudar("capacidade", e.target.value)} erro={err("capacidade", "De 1 a 2000")} />
-          {semReserva ? null : (
-            <CampoTexto id="ar-valor" rotulo="Valor de uso (R$)" opcional inputMode="decimal" placeholder="150,00" value={v.valor}
-              onChange={(e) => mudar("valor", e.target.value)} ajuda="Só aparece na reserva." erro={err("valorCentavos", "Valor inválido")} />
-          )}
-          <CampoSelecao id="ar-regras" rotulo="Regras de uso" opcional className="sm:col-span-2" value={v.regrasDocumentoId}
-            onChange={(e) => mudar("regrasDocumentoId", e.target.value)}
-            opcoes={[{ valor: "", texto: "Nenhum documento" }, ...(area?.regras && !documentos.some((d) => d.id === area.regras!.id) ? [{ valor: area.regras.id, texto: area.regras.titulo }] : []),
-              ...documentos.map((d) => ({ valor: d.id, texto: d.titulo }))]}
-            ajuda="Documento de Comunicados e documentos; o link vai junto na confirmação." />
-          {semReserva ? null : (
-            <fieldset className="grid gap-1.5 sm:col-span-2">
+            <fieldset className="grid gap-1.5">
               <legend className="mb-1 text-sm font-medium">Quem pode reservar</legend>
               {([["podeProprietarioMorador", "Proprietário que mora"], ["podeInquilino", "Inquilino"], ["podeProprietarioAusente", "Proprietário que não mora"]] as const).map(([k, t]) => (
                 <label key={k} className="flex items-center gap-2 text-sm">
@@ -185,17 +161,58 @@ function FormArea({ area, documentos, pode, aoFechar, aoSalvar }: {
               <span className="text-xs text-tinta-suave">Só pessoas com vínculo confirmado em Moradores e unidades.</span>
             </fieldset>
           )}
-        </fieldset>
-        <div className="flex flex-wrap justify-end gap-2">
-          <Botao variante="discreto" onClick={aoFechar}>{pode ? "Cancelar" : "Fechar"}</Botao>
-          {pode ? (
-            <>
-              <Botao variante="contorno" disabled={enviando} onClick={() => void salvar(false)}>{area?.ativa ? "Desativar" : "Salvar sem ativar"}</Botao>
-              <Botao type="submit" disabled={enviando}>{area?.ativa ? "Salvar" : "Salvar e ativar"}</Botao>
-            </>
-          ) : null}
-        </div>
-      </form>
-    </Dialogo>
+        </ParteNumerada>
+        <ParteNumerada n={2} id="t-ar-quando" titulo="Quando">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <CampoTexto id="ar-hi" rotulo="Abre às" inputMode="numeric" maxLength={5} placeholder="10:00" value={v.horaInicio} onChange={(e) => mudar("horaInicio", e.target.value)}
+              erro={err("horaInicio", "Use o formato 10:00")} />
+            <CampoTexto id="ar-hf" rotulo="Fecha às" inputMode="numeric" maxLength={5} placeholder="23:00" value={v.horaFim} onChange={(e) => mudar("horaFim", e.target.value)}
+              ajuda="Use 24:00 para meia-noite." erro={err("horaFim", "O fim vem depois do início, no formato 23:00")} />
+            {semReserva ? null : (
+              <>
+                <CampoTexto id="ar-amin" rotulo="Antecedência mínima (dias)" type="number" min={0} max={365} value={v.antecedenciaMin}
+                  onChange={(e) => mudar("antecedenciaMin", e.target.value)} ajuda="Nem em cima da hora." erro={err("antecedenciaMin", "De 0 a 365 dias")} />
+                <CampoTexto id="ar-amax" rotulo="Antecedência máxima (dias)" type="number" min={1} max={730} value={v.antecedenciaMax}
+                  onChange={(e) => mudar("antecedenciaMax", e.target.value)} ajuda="Nem para o ano que vem." erro={err("antecedenciaMax", "Maior que a mínima, até 730 dias")} />
+                <CampoSelecao id="ar-modo" rotulo="Como se reserva" value={v.modo} onChange={(e) => mudar("modo", e.target.value as typeof v.modo)}
+                  opcoes={Object.entries(MODOS_AREA).map(([valor, t]) => ({ valor, texto: t }))} />
+                {v.modo === "BLOCOS" ? (
+                  <CampoSelecao id="ar-bloco" rotulo="Tamanho do bloco" value={v.blocoMinutos} onChange={(e) => mudar("blocoMinutos", e.target.value)}
+                    opcoes={[{ valor: "", texto: "Escolha" }, ...BLOCOS_MINUTOS.map((b) => ({ valor: String(b), texto: duracaoBloco(b) }))]}
+                    erro={err("blocoMinutos", "Escolha o tamanho do bloco")} />
+                ) : <span className="hidden sm:block" />}
+                <CampoTexto id="ar-canc" rotulo="Cancelar sem aviso ao síndico até (dias antes)" type="number" min={0} max={60} value={v.cancelarSemAvisoDias}
+                  onChange={(e) => mudar("cancelarSemAvisoDias", e.target.value)} ajuda="Depois disso o cancelamento chega para quem cuida." />
+              </>
+            )}
+          </div>
+        </ParteNumerada>
+        <ParteNumerada n={3} id="t-ar-limites" titulo="Limites">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <CampoTexto id="ar-cap" rotulo="Capacidade (pessoas)" opcional type="number" min={1} max={2000} value={v.capacidade}
+              onChange={(e) => mudar("capacidade", e.target.value)} erro={err("capacidade", "De 1 a 2000")} />
+            {semReserva ? null : (
+              <>
+                <CampoTexto id="ar-valor" rotulo="Valor de uso (R$)" opcional inputMode="decimal" placeholder="150,00" value={v.valor}
+                  onChange={(e) => mudar("valor", e.target.value)} ajuda="Só aparece para o morador; a cobrança entra com o Dinheiro do prédio." erro={err("valorCentavos", "Valor inválido")} />
+                <CampoTexto id="ar-lim" rotulo="Limite por unidade" opcional type="number" min={1} max={31} value={v.limiteQuantidade}
+                  onChange={(e) => mudar("limiteQuantidade", e.target.value)} ajuda="Conta as reservas confirmadas e as que esperam aprovação."
+                  erro={err("limiteQuantidade", "De 1 a 31")} />
+                <CampoSelecao id="ar-per" rotulo="Por" value={v.limitePeriodo} onChange={(e) => mudar("limitePeriodo", e.target.value as typeof v.limitePeriodo)}
+                  opcoes={Object.entries(PERIODOS_LIMITE).map(([valor, t]) => ({ valor, texto: t.replace("por ", "") }))} disabled={!v.limiteQuantidade} />
+                <CampoTexto id="ar-tol" rotulo="Tolerância (dias antes)" opcional type="number" min={1} max={60} value={v.toleranciaDias}
+                  onChange={(e) => mudar("toleranciaDias", e.target.value)} disabled={!v.limiteQuantidade}
+                  ajuda="Mais uma reserva, se a data ainda estiver livre tantos dias antes." erro={err("toleranciaDias", "A tolerância vale com limite, de 1 a 60 dias")} />
+              </>
+            )}
+            <CampoSelecao id="ar-regras" rotulo="Regras de uso" opcional className="sm:col-span-2" value={v.regrasDocumentoId}
+              onChange={(e) => mudar("regrasDocumentoId", e.target.value)}
+              opcoes={[{ valor: "", texto: "Nenhum documento" }, ...(area?.regras && !documentos.some((d) => d.id === area.regras!.id) ? [{ valor: area.regras.id, texto: area.regras.titulo }] : []),
+                ...documentos.map((d) => ({ valor: d.id, texto: d.titulo }))]}
+              ajuda="Documento de Comunicados e documentos; o link vai junto na confirmação." />
+          </div>
+        </ParteNumerada>
+      </fieldset>
+    </div>
   );
 }

@@ -416,11 +416,11 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
               publico && !incompleto ? (publico.comEmail === 1 ? "1 contato com e-mail confirmado." : `${publico.comEmail ?? 0} contatos com e-mail confirmado.`) : "Para quem tem e-mail confirmado.",
               v.porEmail, (x) => mudar({ porEmail: x })) : null}
             {whatsappLigado ? canalCaixa("Vai pelo WhatsApp do condomínio",
-              ninguemNoWhatsapp ? <>Ninguém do público aceitou receber comunicados pelo WhatsApp. <Link href="/configuracoes?aba=whatsapp" className="font-medium text-violeta-600 hover:underline">Como convidar</Link></>
+              ninguemNoWhatsapp ? <>Ninguém do público aceitou receber comunicados pelo WhatsApp. <Link href="/configuracoes/comunicados" className="font-medium text-violeta-600 hover:underline">Como convidar</Link></>
                 : <>{publico && !incompleto ? (publico.comWhatsapp === 1 ? "1 contato aceitou" : `${publico.comWhatsapp ?? 0} contatos aceitaram`) : "Para quem aceitou"} receber
                   comunicados por lá. Vai o título e o link pessoal; o texto inteiro fica no link.</>,
               v.porWhatsapp && !ninguemNoWhatsapp, ninguemNoWhatsapp ? undefined : (x) => mudar({ porWhatsapp: x }), ninguemNoWhatsapp)
-              : canalCaixa("WhatsApp", "Desligado para comunicados. Liga em Configurações › WhatsApp.", false, undefined, true)}
+              : canalCaixa("WhatsApp", "Desligado para comunicados. Liga em Configurações › Comunicados.", false, undefined, true)}
           </div>
         </fieldset>
       ) : null}
@@ -498,7 +498,7 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
               <Aviso tom="atencao" titulo={conta.nenhum === 1 ? "1 contato não recebe por nenhum dos dois" : `${conta.nenhum} contatos não recebem por nenhum dos dois`}>
                 Não aceitaram o WhatsApp nem confirmaram o e-mail. Ficam com o grupo do prédio{noMural ? " e o mural" : ""}.
                 {publico.quem ? <> <button type="button" className="font-medium underline" onClick={() => setVerNenhum((x) => !x)}>{verNenhum ? "Esconder quem fica de fora" : "Ver quem fica de fora"}</button></> : null}
-                {" · "}<Link href="/configuracoes?aba=whatsapp" className="font-medium underline">Como convidar</Link>
+                {" · "}<Link href="/configuracoes/comunicados" className="font-medium underline">Como convidar</Link>
               </Aviso>
             ) : null}
             {verNenhum && nenhum.length ? (

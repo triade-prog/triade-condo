@@ -2,6 +2,7 @@
 // e-mail, as configurações, como vai chegar e como chegou, o e-mail do contato e os pedidos de
 // documento. Cada tela passa no axe (WCAG 2.2 AA) no celular e no computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
+import { salvarPagina } from "./configuracoes";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { LINK_FALSO, MURAL_FALSO } from "./api-falsa-comunicados";
@@ -73,10 +74,9 @@ test.describe("Mural online e e-mail", () => {
 
   test("CD-12, CD-13: configurações mostram o link, o QR, o e-mail e trocam o link com motivo", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
-    await page.goto(`${PLATAFORMA}/configuracoes?aba=comunicados`);
-    const aba = page.getByRole("tab", { name: "Comunicados" });
-    if (await aba.isVisible()) await aba.click();
-    await expect(page.getByRole("heading", { name: "Mural online e e-mail" })).toBeVisible();
+    await page.goto(`${PLATAFORMA}/configuracoes/mural`);
+    await expect(page.getByRole("heading", { level: 1, name: "Mural e e-mail" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Mural online", exact: true })).toBeVisible();
     await expect(page.getByText(`/m/${MURAL_FALSO}`)).toBeVisible();
     await expect(page.getByRole("img", { name: "QR do mural online" })).toBeVisible();
     await expect(page.getByText("Aberto 214 vezes nos últimos 7 dias")).toBeVisible();
@@ -88,7 +88,7 @@ test.describe("Mural online e e-mail", () => {
     await page.getByRole("dialog").getByRole("button", { name: "Trocar link" }).click();
     await expect(page.getByText("/m/AB3C-DE4F-GH5J")).toBeVisible();
     await page.getByRole("switch", { name: /Enviar os comunicados também por e-mail/ }).uncheck();
-    await page.getByRole("button", { name: "Salvar mural e e-mail" }).click();
+    await salvarPagina(page);
     await expect(page.getByText("Mural e e-mail salvos.")).toBeVisible();
   });
 
