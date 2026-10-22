@@ -4,6 +4,7 @@
 
 import { mostrarDataCurta } from "@triade/domain";
 import type { LinhaInicio } from "../CartaoInicio.tsx";
+import { hojeEmBrasilia } from "../moradores/comum.tsx";
 import { diaHora } from "../pedidos/comum.tsx";
 import type { ResumoManutencao } from "../tipos.ts";
 
@@ -25,9 +26,17 @@ export function linhasManutencao(r: ResumoManutencao): LinhaInicio[] {
 /** O contrato que vence em 60 dias, para o cartão Vencimentos. */
 export function linhaContrato(r: ResumoManutencao): LinhaInicio | null {
   if (!r.contratosAVencer) return null;
-  const titulo = r.contratosAVencer === 1 ? "1 contrato vence em 60 dias" : `${r.contratosAVencer} contratos vencem em 60 dias`;
-  return { icone: "documento", tom: "violeta", titulo, detalhe: r.contratoMaisProximo ? `${r.contratoMaisProximo.nome} · ${mostrarDataCurta(r.contratoMaisProximo.ate)}` : undefined,
-    href: "/manutencao/prestadores", rotuloBotao: `Ver: ${titulo}` };
+  const c = r.contratoMaisProximo;
+  if (!c) {
+    const titulo = r.contratosAVencer === 1 ? "1 contrato vence em 60 dias" : `${r.contratosAVencer} contratos vencem em 60 dias`;
+    return { icone: "ferramenta", tom: "atencao", titulo, href: "/documentos?filtro=CONTRATOS", rotuloBotao: `Ver: ${titulo}` };
+  }
+  const dias = Math.round((Date.parse(`${c.ate}T12:00:00Z`) - Date.parse(`${hojeEmBrasilia()}T12:00:00Z`)) / 86_400_000);
+  const titulo = `Contrato da ${c.nome} ${dias <= 0 ? "vence hoje" : dias === 1 ? "vence amanhã" : `vence em ${dias} dias`}`;
+  const outros = r.contratosAVencer - 1;
+  return { icone: "ferramenta", tom: "atencao", titulo,
+    detalhe: `Prestador · até ${mostrarDataCurta(c.ate)}${outros ? ` · e mais ${outros} em 60 dias` : ""}`,
+    href: `/manutencao/prestador?id=${c.id}`, botao: "Abrir", rotuloBotao: `Abrir: contrato da ${c.nome}` };
 }
 
 export function vazioManutencao(r: ResumoManutencao): string {

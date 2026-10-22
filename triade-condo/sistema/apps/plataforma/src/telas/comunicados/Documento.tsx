@@ -5,7 +5,9 @@
 // arquivo, quando ainda não há); Editar e Arquivar ficam em Mais ações. Nova versão pede o arquivo, o
 // que mudou e a data em que passa a valer; até lá, a anterior continua em vigor. Enviar por
 // e-mail (design "Mural online e e-mail", tela 7; CD-14): a versão em vigor, por link de 7 dias
-// que pode ser cancelado.
+// que pode ser cancelado. O trilho de Documentos e memória fica no topo, e o cartão No prontuário
+// diz a qual item do prontuário o documento está ligado e abre o item (canvas do novo frontend,
+// quadro 84).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -15,12 +17,14 @@ import {
   Aviso, AvisoErro, Botao, CampoTexto, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi,
 } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
+import { TrilhoDocumentos } from "../documentos/DocumentosEMemoria.tsx";
+import { seloProntuario } from "../memoria/Prontuario.tsx";
 import { CartaoFicha, MenuAcoes, type ItemMenu } from "../moradores/comum.tsx";
 import { diaHora } from "../pedidos/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
-import type { DocumentoDetalhe, EnvioDocumento, Recado, VersaoDocumento } from "../tipos.ts";
-import { abrirLink, conferirArquivo, enviarUm, nomeTipoDocumento, PartesDocumentos, SeloQuemVe } from "./comum.tsx";
-import { camposDocumento, documentoParaApi } from "./Documentos.tsx";
+import type { DocumentoDetalhe, EnvioDocumento, Prontuario, Recado, VersaoDocumento } from "../tipos.ts";
+import { abrirLink, conferirArquivo, enviarUm, nomeTipoDocumento, SeloQuemVe } from "./comum.tsx";
+import { camposDocumento, chaveDoItem, documentoParaApi, lerProntuario } from "./Documentos.tsx";
 
 export function Documento() {
   const busca = useSearchParams();
@@ -29,7 +33,8 @@ export function Documento() {
   const [acao, setAcao] = useState<"versao" | "editar" | "arquivar" | "email" | null>(busca.get("novo") ? "versao" : null);
   const [cancelar, setCancelar] = useState<EnvioDocumento | null>(null);
   const [recado, setRecado] = useState<Recado>(busca.get("novo") ? { tom: "ok", texto: "Documento guardado. Agora envie o arquivo da versão 1." } : null);
-  const voltar = <Link href="/comunicados/documentos" className="flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline"><Icone nome="esq" className="h-4 w-4" />Documentos</Link>;
+  const prontuario = useCarregar<Prontuario>(id ? "/v1/condominio/memoria/prontuario" : null);
+  const voltar = <Link href="/documentos" className="flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline"><Icone nome="esq" className="h-4 w-4" />Documentos</Link>;
 
   if (!id) return <div className="grid gap-3">{voltar}<h1 className="t-titulo-tela">Documento</h1><Vazio titulo="Documento não encontrado" /></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o documento…" />;
@@ -56,7 +61,7 @@ export function Documento() {
 
   return (
     <div className="grid gap-5 max-md:pb-20">
-      <PartesDocumentos />
+      <TrilhoDocumentos atual="documentos" />
       {voltar}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="grid gap-2">
@@ -142,6 +147,7 @@ export function Documento() {
         </CartaoFicha>
 
         <div className="grid gap-5">
+          {prontuario.estado === "pronto" ? <NoProntuario p={prontuario.dados} doc={doc} /> : null}
           <CartaoFicha id="quem-ve" titulo="Quem vê" icone="olho">
             <span className="justify-self-start"><SeloQuemVe d={doc} sempre /></span>
             <p className="text-sm">{doc.restrito ? "Não vai ao mural nem por e-mail. Só quem cuida dos documentos vê."
@@ -229,6 +235,36 @@ export function Documento() {
           return r;
         }} />
     </div>
+  );
+}
+
+/** A qual item do prontuário o documento está ligado; ou o item que falta e parece ser dele. */
+function NoProntuario({ p, doc }: { p: Prontuario; doc: DocumentoDetalhe["documento"] }) {
+  const itens = p.itens.filter((i) => i.documento?.id === doc.id);
+  const sugestao = itens.length ? undefined : lerProntuario(p)(doc)?.sugestao;
+  if (!itens.length && !sugestao) return null;
+  return (
+    <CartaoFicha id="prontuario" titulo="No prontuário" icone="lista">
+      <ul className="grid gap-2">
+        {itens.map((i) => (
+          <li key={chaveDoItem(i)} className="relative flex items-center gap-3 rounded-[14px] border border-linha p-3 hover:bg-violeta-50/50">
+            <span className="grid min-w-0 flex-1">
+              <Link href={`/documentos/prontuario?item=${encodeURIComponent(chaveDoItem(i))}`} className="font-medium after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">{i.nome}</Link>
+              <span className="t-apoio">Avisa {i.avisarDias} {i.avisarDias === 1 ? "dia" : "dias"} antes de vencer</span>
+            </span>
+            {seloProntuario(i)}
+            <Icone nome="dir" className="h-5 w-5 text-tinta-suave" />
+          </li>
+        ))}
+      </ul>
+      {itens.length ? <p className="t-apoio">Este documento vale por {itens.length === 1 ? "este item" : "estes itens"}. A troca da ligação fica no item.</p> : null}
+      {sugestao ? (
+        <p className="text-sm">
+          Parece ser o documento do item {sugestao.nome}, que falta.{" "}
+          <Link href={`/documentos/prontuario?item=${encodeURIComponent(chaveDoItem(sugestao))}&ligar=${doc.id}`} className="font-medium text-violeta-600 hover:underline">Ligar ao item</Link>
+        </p>
+      ) : null}
+    </CartaoFicha>
   );
 }
 

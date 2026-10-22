@@ -30,9 +30,9 @@ test.describe("Plataforma · moldura do novo frontend", () => {
     await expect(menu.getByRole("link", { name: /^Pedidos/ })).toHaveAttribute("aria-current", "page");
     await conferir(page);
     await menu.getByRole("link", { name: "Documentos e memória" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Documentos" })).toBeVisible();
-    await page.getByRole("navigation", { name: "Partes de documentos e memória" }).getByRole("link", { name: "Memória do prédio" }).click();
-    await expect(page.getByRole("heading", { level: 1, name: "Memória do prédio" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Documentos e memória" })).toBeVisible();
+    await page.getByRole("navigation", { name: "Partes de Documentos e memória" }).getByRole("link", { name: "Linha do tempo" }).click();
+    await expect(page).toHaveURL(/\/documentos\/linha$/);
   });
 
   test("DC15: no celular, a barra de baixo com os atalhos e o Mais; no computador, a lateral", async ({ page }, info) => {

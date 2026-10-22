@@ -146,7 +146,7 @@ test.describe("Mural online e e-mail", () => {
 
   test("CD-14: os pedidos por e-mail esperam o síndico; o documento vai por e-mail e o link se cancela", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
-    await page.goto(`${PLATAFORMA}/comunicados/documentos?filtro=PEDIDOS`);
+    await page.goto(`${PLATAFORMA}/documentos?filtro=PEDIDOS`);
     await expect(page.getByText("imobiliaria@exemplo.com.br")).toBeVisible();
     await expect(page.getByText("Não é contato do prédio", { exact: true })).toBeVisible();
     await conferir(page);
@@ -157,8 +157,8 @@ test.describe("Mural online e e-mail", () => {
     await page.getByRole("button", { name: "Recusar", exact: true }).click();
     await expect(page.getByText("Pedido recusado.")).toBeVisible();
 
-    await page.goto(`${PLATAFORMA}/comunicados/documentos`);
-    await page.getByRole("link", { name: "Regimento interno" }).click();
+    await page.goto(`${PLATAFORMA}/documentos`);
+    await page.getByRole("link", { name: "Regimento interno", exact: true }).click();
     await page.getByRole("button", { name: "Enviar por e-mail" }).click();
     await page.getByRole("checkbox", { name: /Marina Souza/ }).check();
     await page.getByLabel("Outros e-mails").fill("advogado@exemplo.com.br");

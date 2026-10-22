@@ -168,3 +168,66 @@ export function descreverEventoMemoria(acao: string, d: Record<string, unknown>)
       return "Alteração";
   }
 }
+
+/** As cinco partes de Documentos e memória, na ordem do trilho (DC15, telas-modelo documentos-memoria-*; decisão A.1 de 22/10/2026). */
+export const PARTES_DOCUMENTOS = {
+  documentos: "Documentos",
+  prontuario: "Prontuário",
+  linha: "Linha do tempo",
+  manual: "Manual do prédio",
+  passagem: "Passagem e exportação",
+} as const;
+export type ParteDocumentos = keyof typeof PARTES_DOCUMENTOS;
+
+/** O endereço de cada parte. */
+export const enderecoParteDocumentos = (p: ParteDocumentos) => (p === "documentos" ? "/documentos" : `/documentos/${p}`);
+
+/** A parte nova de um endereço antigo da Memória do prédio (/memoria?aba=...). Passagem e Exportar viraram uma parte só (C.1). */
+export function parteDaAbaAntiga(aba: string | null | undefined): ParteDocumentos {
+  if (aba === "linha" || aba === "manual") return aba;
+  if (aba === "passagem" || aba === "exportar") return "passagem";
+  return "prontuario";
+}
+
+/**
+ * O que o item sugerido do prontuário espera (B.1): o tipo do documento que o resolve, uma dica
+ * de onde achar e as palavras que, no nome de um documento solto do mesmo tipo, sugerem ligar.
+ */
+export const ESPERADO_PRONTUARIO: Record<string, { tipo: "CONVENCAO" | "REGIMENTO" | "ATA" | "CONTRATO" | "LAUDO" | "ORCAMENTO" | "OUTRO"; dica: string; palavras: string[] }> = {
+  CONVENCAO: { tipo: "CONVENCAO", dica: "Registrada em cartório; costuma ficar com a administradora", palavras: ["convenção", "convencao"] },
+  REGIMENTO: { tipo: "REGIMENTO", dica: "Aprovado em assembleia; costuma ficar com a administradora", palavras: ["regimento"] },
+  ATA_AGO: { tipo: "ATA", dica: "A ata registrada em cartório", palavras: ["ata", "ago"] },
+  SEGURO: { tipo: "OUTRO", dica: "A apólice que a corretora manda na renovação", palavras: ["apólice", "apolice", "seguro"] },
+  GARANTIA: { tipo: "OUTRO", dica: "Vem no manual do proprietário entregue pela construtora", palavras: ["garantia"] },
+  AVCB: { tipo: "LAUDO", dica: "Emitido pelo Corpo de Bombeiros depois da vistoria", palavras: ["avcb", "bombeiro"] },
+  ELEVADORES: { tipo: "LAUDO", dica: "Feita pela empresa dos elevadores, todo ano", palavras: ["elevador"] },
+  SPDA: { tipo: "LAUDO", dica: "Laudo de empresa com engenheiro responsável, em geral todo ano", palavras: ["spda", "para-raios", "pararaios"] },
+  AGUA: { tipo: "LAUDO", dica: "Laudo da limpeza e da análise da água, a cada seis meses", palavras: ["caixa d", "potabilidade", "água", "agua"] },
+  EXTINTORES: { tipo: "LAUDO", dica: "O certificado da empresa que recarregou", palavras: ["extintor"] },
+  INSPECAO_PREDIAL: { tipo: "LAUDO", dica: "Laudo de engenheiro ou arquiteto, com ART ou RRT", palavras: ["inspeção predial", "inspecao predial"] },
+  PLANTAS: { tipo: "OUTRO", dica: "Na prefeitura ou com a construtora", palavras: ["planta"] },
+  PROJETOS: { tipo: "OUTRO", dica: "Com a construtora ou com quem fez a última reforma", palavras: ["projeto"] },
+  MANUAL_CONSTRUTORA: { tipo: "OUTRO", dica: "Entregue pela construtora junto com as chaves", palavras: ["manual"] },
+};
+
+const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/** O documento parece ser o do item? Mesmo tipo e uma das palavras no nome. */
+export function documentoPareceDoItem(chave: string | undefined, d: { titulo: string; tipo: string }): boolean {
+  const e = chave ? ESPERADO_PRONTUARIO[chave] : undefined;
+  if (!e || e.tipo !== d.tipo) return false;
+  const t = semAcento(d.titulo);
+  return e.palavras.some((p) => t.includes(semAcento(p)));
+}
+
+/** Para ligar um documento que já existe: os do tipo que o item espera vêm primeiro. */
+export function ordenarParaLigar<T extends { titulo: string; tipo: string }>(chave: string | undefined, docs: T[]): { mesmoTipo: T[]; outros: T[] } {
+  const tipo = chave ? ESPERADO_PRONTUARIO[chave]?.tipo : undefined;
+  const porNome = (a: T, b: T) => Number(documentoPareceDoItem(chave, b)) - Number(documentoPareceDoItem(chave, a)) || a.titulo.localeCompare(b.titulo, "pt-BR");
+  return { mesmoTipo: docs.filter((d) => tipo && d.tipo === tipo).sort(porNome), outros: docs.filter((d) => !tipo || d.tipo !== tipo).sort(porNome) };
+}
+
+/** "Laudo e certificado: AVCB 2025" no dossiê; quando o título é o próprio tipo ("Convenção"), o tipo não se repete. */
+export function nomeNoDossie(titulo: string, nomeTipo: string): string {
+  return semAcento(titulo) === semAcento(nomeTipo) ? titulo : `${nomeTipo}: ${titulo}`;
+}

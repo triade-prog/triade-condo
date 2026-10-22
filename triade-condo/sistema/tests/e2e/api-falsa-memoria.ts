@@ -19,7 +19,11 @@ export interface EstadoMemoria {
   secoes: SecaoFalsa[];
   dossies: { id: string; geradoEm: string; autor: string }[];
   exportacoes: { id: string; situacao: string; pedidaEm: string; autor: string; prontaEm?: string; expiraEm?: string; vistas: number }[];
+  /** Os documentos guardados em Documentos (a parte dos comunicados da API falsa), para ligar aos itens. */
+  deDocumentos?: () => DocumentoFalso[];
 }
+/** Os documentos da memória e os de Documentos, numa lista só. */
+const docs = (est: EstadoMemoria) => [...est.documentos, ...(est.deDocumentos?.() ?? [])];
 
 let n = 0;
 const novoId = () => `7e8f9a0b-1c2d-4e3f-8a4b-${String(++n).padStart(12, "0")}`;
@@ -69,7 +73,7 @@ export function criarMemoria(): EstadoMemoria {
 
 function situacao(est: EstadoMemoria, i: ItemFalso) {
   if (i.motivo) return { situacao: "NAO_SE_APLICA" };
-  const d = est.documentos.find((x) => x.id === i.documentoId);
+  const d = docs(est).find((x) => x.id === i.documentoId);
   if (!d) return { situacao: "FALTA" };
   if (!d.valeAte) return { situacao: "EM_DIA" };
   if (d.valeAte < dia(0)) return { situacao: "VENCEU", valeAte: d.valeAte };
@@ -94,13 +98,13 @@ export async function rotasMemoria(route: Route, est: EstadoMemoria, caminho: st
   if (!pode("documentos.ver")) return erro(route, 403, "FORBIDDEN");
   const editar = pode("documentos.editar");
   const itemJson = (i: ItemFalso) => {
-    const d = est.documentos.find((x) => x.id === i.documentoId);
+    const d = docs(est).find((x) => x.id === i.documentoId);
     return { ...i, ...situacao(est, i), documento: d ? { id: d.id, titulo: d.titulo, tipo: d.tipo, emVigor: { numero: 1, vigenteDesde: "2025-04-12" } } : undefined };
   };
 
   if (caminho === "/v1/condominio/memoria/prontuario") {
     return route.fulfill({ json: {
-      itens: est.itens.map(itemJson), resumo: resumoProntuario(est), documentos: est.documentos,
+      itens: est.itens.map(itemJson), resumo: resumoProntuario(est), documentos: docs(est),
       contratos: { total: 4, vencendo: [{ id: "x", prestador: "Aqualimp", ate: dia(38) }] }, preventivas: { ativas: 12, atrasadas: 1 }, podeEditar: editar,
     } });
   }

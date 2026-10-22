@@ -118,6 +118,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const assembleias = criarAssembleias();
   const classificados = criarClassificados();
   const memoria = criarMemoria();
+  memoria.deDocumentos = () => comunicados.documentos.filter((d) => !d.arquivado)
+    .map((d) => ({ id: d.id, titulo: d.titulo, tipo: d.tipo, ...(d.valeAte ? { valeAte: d.valeAte } : {}) }));
   const suporte = criarSuporte();
   const whatsapp = criarWhatsapp(estado.pedidos[0]!, cats[0]!.id, pris[1]!.id);
   const avisoRegistro = criarAvisoRegistro(V_ANA);

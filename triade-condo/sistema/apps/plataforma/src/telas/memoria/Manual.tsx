@@ -1,33 +1,43 @@
 "use client";
-// Manual do prédio (design "Memória do prédio", tela 4; MP-14): seções curtas, em ordem, escritas
-// pela gestão. As marcadas "no mural" aparecem numa aba do mural online, sem conta; as outras
-// ficam para a gestão e para o próximo síndico. Mudar guarda a versão anterior.
+// Manual do prédio (DC15, telas-modelo documentos-memoria-*; canvas do novo frontend, quadros 95 e
+// 96; MP-14): seções curtas, em ordem, escritas pela gestão. As marcadas "no mural" aparecem numa
+// aba do mural online, sem conta; as outras ficam para a gestão e para o próximo síndico. A linha
+// inteira abre a seção; Ver no mural, Subir, Descer e Tirar do manual ficam em Mais ações. As
+// sugestões para escrever ficam fechadas numa linha só. Mudar guarda a versão anterior.
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
-import { SECOES_SUGERIDAS } from "@triade/domain";
+import { useEffect, useState, type FormEvent } from "react";
+import { mostrarDataCurta, SECOES_SUGERIDAS } from "@triade/domain";
 import {
   Aviso, AvisoErro, Botao, CampoAreaTexto, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro,
   type ErroApi,
 } from "@triade/ui";
-import { diaHora } from "../pedidos/comum.tsx";
+import type { PropsAbaMemoria } from "../documentos/DocumentosEMemoria.tsx";
+import { diaDe, diaHora } from "../pedidos/comum.tsx";
+import { MenuAcoes, type ItemMenu } from "../moradores/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { Manual, SecaoManual } from "../tipos.ts";
-import type { PropsAbaMemoria } from "./Memoria.tsx";
 
 interface Versoes {
   versoes: { numero: number; titulo: string; texto: string; escritaEm: string; autor?: string; substituidaEm: string }[];
 }
+type Editando = { secao: SecaoManual | { titulo: string; resumo?: string }; tirar?: boolean };
 
-export function AbaManual({ feito }: PropsAbaMemoria) {
+export function AbaManual({ feito, definir }: PropsAbaMemoria) {
   const carga = useCarregar<Manual>("/v1/condominio/memoria/manual");
-  const [editando, setEditando] = useState<SecaoManual | { titulo: string; resumo?: string } | null>(null);
+  const [editando, setEditando] = useState<Editando | null>(null);
+  const [verSugestoes, setVerSugestoes] = useState(false);
   const [erro, setErro] = useState<ErroApi | null>(null);
+  const podeEditar = carga.estado === "pronto" && carga.dados.podeEditar;
+  useEffect(() => {
+    definir({ principal: podeEditar ? { texto: "Nova seção", icone: "mais", aoClicar: () => setEditando({ secao: { titulo: "" } }) } : null });
+  }, [podeEditar, definir]);
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o manual…" />;
-  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} oQue="o manual" />;
   const m = carga.dados;
   const escritos = new Set(m.secoes.map((s) => s.titulo.trim().toLowerCase()));
   const sugestoes = SECOES_SUGERIDAS.filter((s) => !escritos.has(s.titulo.toLowerCase()));
+  const noMural = m.secoes.filter((s) => s.noMural).length;
   const mudou = (texto: string) => { setEditando(null); carga.recarregar(); feito(texto); };
 
   async function mover(i: number, para: number) {
@@ -38,63 +48,79 @@ export function AbaManual({ feito }: PropsAbaMemoria) {
     if (!r.ok) return setErro(r.erro);
     carga.recarregar();
   }
+  const acoes = (s: SecaoManual, i: number): ItemMenu[] => [
+    ...(s.noMural ? [{ texto: "Ver no mural", icone: "olho" as const, apoio: "Como o morador vê", href: "/comunicados/no-mural?aba=manual" }] : []),
+    ...(m.podeEditar && i > 0 ? [{ texto: "Subir", icone: "seta" as const, rotulo: `Subir ${s.titulo}`, acao: () => void mover(i, i - 1) }] : []),
+    ...(m.podeEditar && i < m.secoes.length - 1 ? [{ texto: "Descer", icone: "baixo" as const, rotulo: `Descer ${s.titulo}`, acao: () => void mover(i, i + 1) }] : []),
+    ...(m.podeEditar ? [{ texto: "Tirar do manual", icone: "sair" as const, perigo: true, rotulo: `Tirar do manual ${s.titulo}`, acao: () => setEditando({ secao: s, tirar: true }) }] : []),
+  ];
 
   return (
     <div className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-      {!m.muralLigado && m.secoes.some((s) => s.noMural) ? (
+      {!m.muralLigado && noMural ? (
         <Aviso tom="atencao" titulo="O mural online está desligado">
           As seções marcadas só aparecem para os moradores quando o mural estiver ligado em <Link href="/configuracoes/mural" className="font-medium underline">Configurações › Mural e e-mail</Link>.
         </Aviso>
       ) : null}
-      <section aria-labelledby="mn-secoes" className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4 shadow-s1">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="mn-secoes" className="text-lg font-medium">Seções</h2>
-          {m.podeEditar ? <Botao tamanho="m" onClick={() => setEditando({ titulo: "" })}>+ Nova seção</Botao> : null}
+      <section aria-labelledby="mn-secoes" className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 md:border-b md:border-linha md:px-5 md:py-3.5">
+          <h2 id="mn-secoes" className="text-[15px] font-semibold">{m.secoes.length === 1 ? "1 seção" : `${m.secoes.length} seções`}</h2>
+          {m.secoes.length ? <span className="t-apoio">{noMural ? `${noMural} no mural dos moradores` : "Nenhuma no mural dos moradores"}</span> : null}
         </div>
-        {m.secoes.length === 0 ? <p className="text-sm text-tinta-suave">Nenhuma seção escrita ainda. Comece por uma das sugestões abaixo.</p> : (
-          <ol className="divide-y divide-linha">
-            {m.secoes.map((s, i) => (
-              <li key={s.id} className="flex flex-wrap items-center gap-3 py-2.5">
-                <span className="grid min-w-0 flex-1 text-sm">
-                  <span className="font-medium">{s.titulo}</span>
-                  <span className="text-[13px] text-tinta-suave">{s.resumo ?? s.texto.slice(0, 90)}</span>
-                </span>
-                {s.noMural ? <Selo tom="ok">No mural</Selo> : <Selo tom="info">Só a gestão</Selo>}
-                {m.podeEditar ? (
-                  <span className="flex gap-1">
-                    <Botao variante="discreto" tamanho="p" soIcone aria-label={`Subir ${s.titulo}`} disabled={i === 0} onClick={() => void mover(i, i - 1)}><Icone nome="seta" className="h-4 w-4 -rotate-90" /></Botao>
-                    <Botao variante="discreto" tamanho="p" soIcone aria-label={`Descer ${s.titulo}`} disabled={i === m.secoes.length - 1} onClick={() => void mover(i, i + 1)}><Icone nome="baixo" className="h-4 w-4" /></Botao>
-                    <Botao variante="discreto" tamanho="p" soIcone aria-label={`Editar ${s.titulo}`} onClick={() => setEditando(s)}><Icone nome="editar" className="h-4 w-4" /></Botao>
+        {m.secoes.length === 0 ? <p className="t-apoio px-5 py-4 max-md:px-0">Nenhuma seção escrita ainda. Comece por uma das sugestões abaixo.</p> : (
+          <ol className="grid max-md:gap-2.5">
+            {m.secoes.map((s, i) => {
+              const mais = acoes(s, i);
+              return (
+                <li key={s.id} className="relative grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-3 hover:bg-violeta-50/50 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 md:grid-cols-[44px_minmax(0,1fr)_140px_170px_44px_20px] md:border-t md:border-linha md:first:border-t-0">
+                  <span className="ladrilho h-11 w-11 rounded-xl font-mono text-[15px] font-semibold" data-tom="violeta" aria-hidden="true">{i + 1}</span>
+                  <span className="grid min-w-0 gap-0.5">
+                    <button type="button" className="text-left font-medium text-tinta after:absolute after:inset-0 after:content-[''] hover:text-violeta-600" onClick={() => setEditando({ secao: s })}>{s.titulo}</button>
+                    <span className="t-apoio line-clamp-1">{s.resumo ?? s.texto.slice(0, 90)}</span>
+                    <span className="pt-1 md:hidden">{s.noMural ? <Selo tom="ok">No mural</Selo> : <Selo tom="neutro">Só a gestão</Selo>}</span>
                   </span>
-                ) : <Botao variante="discreto" tamanho="p" onClick={() => setEditando(s)}>Ler</Botao>}
-              </li>
-            ))}
+                  <span className="max-md:hidden">{s.noMural ? <Selo tom="ok">No mural</Selo> : <Selo tom="neutro">Só a gestão</Selo>}</span>
+                  <span className="t-apoio max-md:hidden">Mudou em {mostrarDataCurta(diaDe(s.escritaEm))}</span>
+                  <span className="relative z-10">{mais.length ? <MenuAcoes rotulo={`Mais ações: ${s.titulo}`} itens={mais} /> : null}</span>
+                  <Icone nome="dir" className="h-5 w-5 text-tinta-suave max-md:hidden" />
+                </li>
+              );
+            })}
           </ol>
         )}
-        <p className="text-xs text-tinta-suave">Cada seção escolhe se aparece no mural do prédio. Seção nova começa só para a gestão. O manual entra inteiro no dossiê de passagem.</p>
       </section>
       {m.podeEditar && sugestoes.length ? (
-        <section aria-labelledby="mn-sugestoes" className="grid gap-2 rounded-2xl border border-dashed border-linha p-4">
-          <h2 id="mn-sugestoes" className="font-medium">Sugestões para escrever</h2>
-          <ul className="flex flex-wrap gap-2">
-            {sugestoes.map((s) => (
-              <li key={s.titulo}><Botao variante="contorno" tamanho="m" onClick={() => setEditando({ titulo: s.titulo, resumo: s.resumo })}><Icone nome="mais" />{s.titulo}</Botao></li>
-            ))}
-          </ul>
+        <section aria-label="Sugestões para escrever" className="grid gap-3 rounded-[18px] border-[1.5px] border-dashed border-violeta-300 bg-violeta-50/60 px-5 py-3.5 max-md:px-4">
+          <button type="button" aria-expanded={verSugestoes} onClick={() => setVerSugestoes(!verSugestoes)} className="flex w-full items-center gap-3 text-left">
+            <span className="ladrilho" data-tom="violeta" aria-hidden="true"><Icone nome="lista" /></span>
+            <span className="grid min-w-0 flex-1">
+              <span className="text-[15px] font-semibold">{sugestoes.length === 1 ? "1 sugestão para escrever" : `${sugestoes.length} sugestões para escrever`}</span>
+              <span className="t-apoio">{sugestoes.slice(0, 3).map((s) => s.titulo).join(", ")}{sugestoes.length > 3 ? ` e mais ${sugestoes.length - 3}` : ""}</span>
+            </span>
+            <Icone nome="baixo" className={`h-5 w-5 text-tinta-suave ${verSugestoes ? "rotate-180" : ""}`} />
+          </button>
+          {verSugestoes ? (
+            <ul className="flex flex-wrap gap-2">
+              {sugestoes.map((s) => (
+                <li key={s.titulo}><Botao variante="contorno" tamanho="m" onClick={() => setEditando({ secao: { titulo: s.titulo, resumo: s.resumo } })}><Icone nome="mais" />{s.titulo}</Botao></li>
+              ))}
+            </ul>
+          ) : null}
         </section>
       ) : null}
-      {editando ? <FormSecao secao={editando} podeEditar={m.podeEditar} aoFechar={() => setEditando(null)} aoSalvar={mudou} /> : null}
+      <p className="t-apoio">Cada seção escolhe se aparece no mural do prédio. Seção nova começa só para a gestão. O manual entra inteiro no dossiê de passagem.</p>
+      {editando ? <FormSecao secao={editando.secao} tirarLogo={editando.tirar} podeEditar={m.podeEditar} aoFechar={() => setEditando(null)} aoSalvar={mudou} /> : null}
     </div>
   );
 }
 
-function FormSecao({ secao, podeEditar, aoFechar, aoSalvar }: {
-  secao: SecaoManual | { titulo: string; resumo?: string }; podeEditar: boolean; aoFechar: () => void; aoSalvar: (t: string) => void;
+function FormSecao({ secao, tirarLogo, podeEditar, aoFechar, aoSalvar }: {
+  secao: SecaoManual | { titulo: string; resumo?: string }; tirarLogo?: boolean; podeEditar: boolean; aoFechar: () => void; aoSalvar: (t: string) => void;
 }) {
   const existente = "id" in secao ? secao : null;
   const [v, setV] = useState({ titulo: secao.titulo, resumo: secao.resumo ?? "", texto: existente?.texto ?? "", noMural: existente?.noMural ?? false });
-  const [modo, setModo] = useState<"editar" | "tirar" | "versoes">("editar");
+  const [modo, setModo] = useState<"editar" | "tirar" | "versoes">(tirarLogo ? "tirar" : "editar");
   const [motivo, setMotivo] = useState("");
   const [versoes, setVersoes] = useState<Versoes["versoes"] | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -137,7 +163,7 @@ function FormSecao({ secao, podeEditar, aoFechar, aoSalvar }: {
     );
   }
   return (
-    <Dialogo aberto titulo={existente ? existente.titulo : "Nova seção do manual"} aoFechar={aoFechar}>
+    <Dialogo aberto media titulo={existente ? existente.titulo : "Nova seção do manual"} aoFechar={aoFechar}>
       {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
       {modo === "versoes" ? (
         <div className="grid gap-3">
@@ -159,7 +185,7 @@ function FormSecao({ secao, podeEditar, aoFechar, aoSalvar }: {
           <CampoAreaTexto id="mn-motivo" rotulo="Por que tirar a seção" rows={2} maxLength={500} value={motivo} onChange={(e) => setMotivo(e.target.value)}
             erro={comErro.includes("motivo") ? "Explique o motivo (de 3 a 500 caracteres)." : null} ajuda="Sai do manual e do mural. Fica guardada no histórico." />
           <div className="flex flex-wrap justify-end gap-2">
-            <Botao variante="contorno" onClick={() => setModo("editar")}>Voltar</Botao>
+            <Botao variante="discreto" onClick={() => (tirarLogo ? aoFechar() : setModo("editar"))}>{tirarLogo ? "Cancelar" : "Voltar"}</Botao>
             <Botao type="submit" variante="perigo">Tirar do manual</Botao>
           </div>
         </form>
@@ -181,7 +207,7 @@ function FormSecao({ secao, podeEditar, aoFechar, aoSalvar }: {
               {existente ? <Botao variante="discreto" tamanho="m" className="text-erro" onClick={() => setModo("tirar")}>Tirar do manual</Botao> : null}
             </span>
             <span className="flex flex-wrap gap-2">
-              <Botao variante="contorno" onClick={aoFechar}>Voltar</Botao>
+              <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
               <Botao type="submit" disabled={enviando}>{enviando ? "Salvando…" : "Salvar seção"}</Botao>
             </span>
           </div>

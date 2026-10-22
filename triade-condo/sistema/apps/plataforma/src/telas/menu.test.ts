@@ -25,6 +25,9 @@ describe("menu da Plataforma (DC15)", () => {
     expect(de("/pedidos/pedido")).toBe("Pedidos");
     expect(de("/comunicados")).toBe("Comunicados");
     expect(de("/comunicados/escrever")).toBe("Comunicados");
+    expect(de("/documentos")).toBe("Documentos e memória");
+    expect(de("/documentos/prontuario")).toBe("Documentos e memória");
+    expect(de("/documentos/documento")).toBe("Documentos e memória");
     expect(de("/comunicados/documentos")).toBe("Documentos e memória");
     expect(de("/comunicados/documento")).toBe("Documentos e memória");
     expect(de("/memoria")).toBe("Documentos e memória");

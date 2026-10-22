@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   anotacaoSchema,
   descreverEventoMemoria,
+  documentoPareceDoItem,
+  enderecoParteDocumentos,
   itemProntuarioSchema,
+  nomeNoDossie,
+  ordenarParaLigar,
+  parteDaAbaAntiga,
   rotuloSituacaoProntuario,
   secaoManualSchema,
 } from "./index.ts";
@@ -42,5 +47,34 @@ describe("memória (CT-03)", () => {
 describe("manual do prédio (MP-14)", () => {
   it("resumo vazio vira nulo", () => {
     expect(secaoManualSchema.parse({ titulo: "Água e gás", resumo: " ", texto: "Registro na casa de bombas" }).resumo).toBeNull();
+  });
+});
+
+describe("Documentos e memória (DC15, decisões de 22/10/2026)", () => {
+  it("o endereço antigo leva à parte nova; Passagem e Exportar viram uma parte só", () => {
+    expect(parteDaAbaAntiga("exportar")).toBe("passagem");
+    expect(parteDaAbaAntiga("passagem")).toBe("passagem");
+    expect(parteDaAbaAntiga("linha")).toBe("linha");
+    expect(parteDaAbaAntiga(null)).toBe("prontuario");
+    expect(enderecoParteDocumentos("documentos")).toBe("/documentos");
+    expect(enderecoParteDocumentos("manual")).toBe("/documentos/manual");
+  });
+  it("o documento solto do mesmo tipo e com o nome parecido sugere o item", () => {
+    expect(documentoPareceDoItem("SPDA", { titulo: "Laudo SPDA 2026", tipo: "LAUDO" })).toBe(true);
+    expect(documentoPareceDoItem("ELEVADORES", { titulo: "Laudo SPDA 2026", tipo: "LAUDO" })).toBe(false);
+    expect(documentoPareceDoItem("SPDA", { titulo: "SPDA", tipo: "OUTRO" })).toBe(false);
+    expect(documentoPareceDoItem("AGUA", { titulo: "Potabilidade da água", tipo: "LAUDO" })).toBe(true);
+    expect(documentoPareceDoItem(undefined, { titulo: "Laudo SPDA 2026", tipo: "LAUDO" })).toBe(false);
+  });
+  it("para ligar, os do tipo esperado vêm primeiro, com o mais parecido no topo", () => {
+    const docs = [{ titulo: "Convenção", tipo: "CONVENCAO" }, { titulo: "AVCB 2025", tipo: "LAUDO" }, { titulo: "Laudo SPDA 2026", tipo: "LAUDO" }];
+    const r = ordenarParaLigar("SPDA", docs);
+    expect(r.mesmoTipo.map((d) => d.titulo)).toEqual(["Laudo SPDA 2026", "AVCB 2025"]);
+    expect(r.outros.map((d) => d.titulo)).toEqual(["Convenção"]);
+    expect(ordenarParaLigar(undefined, docs).mesmoTipo).toEqual([]);
+  });
+  it("no dossiê, o tipo não se repete quando é o próprio título", () => {
+    expect(nomeNoDossie("Convenção", "Convenção")).toBe("Convenção");
+    expect(nomeNoDossie("AVCB 2025", "Laudo e certificado")).toBe("Laudo e certificado: AVCB 2025");
   });
 });

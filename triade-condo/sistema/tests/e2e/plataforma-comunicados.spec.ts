@@ -23,7 +23,8 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/`);
     await expect(await abrirArea(page, "Comunicação e moradores")).toContainText("1 rascunho parado há mais de 3 dias");
-    await expect(await abrirArea(page, "Vencimentos")).toContainText("AVCB vence em 42 dias");
+    // Vencimentos mostra até três linhas (DC15, quadro 100); o AVCB guardado em Documentos fica no "e mais".
+    await expect(await abrirArea(page, "Vencimentos")).toContainText("e mais 1 vencendo");
 
     const menu = page.getByRole("button", { name: "Mais", exact: true });
     if (await menu.isVisible()) await menu.click();
@@ -153,19 +154,19 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
 
   test("CD-07, CD-04, MP-12: documentos com versão em vigor, validade e nova versão", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
-    await page.goto(`${PLATAFORMA}/comunicados/documentos`);
-    await expect(page.getByRole("heading", { level: 1, name: "Documentos" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Regimento interno" })).toBeVisible();
+    await page.goto(`${PLATAFORMA}/documentos`);
+    await expect(page.getByRole("heading", { level: 1, name: "Documentos e memória" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Regimento interno", exact: true })).toBeVisible();
     await expect(page.getByText("Vence em 42 dias").filter({ visible: true })).toBeVisible();
     await expect(page.getByText("Só quem cuida").filter({ visible: true })).toBeVisible();
     await expect(page.getByRole("group", { name: "O que pede atenção" })).toContainText("Vence em até 60 dias 1");
     await page.getByRole("button", { name: "Sem arquivo 1" }).click();
-    await expect(page.getByRole("link", { name: "Regimento interno" })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "AVCB" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Regimento interno", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "AVCB", exact: true })).toBeVisible();
     await conferir(page);
     await page.getByRole("button", { name: "Sem arquivo 1" }).click();
 
-    await page.getByRole("link", { name: "Regimento interno" }).click();
+    await page.getByRole("link", { name: "Regimento interno", exact: true }).click();
     await expect(page.getByText("Versão 1 em vigor")).toBeVisible();
     await expect(page.getByRole("region", { name: "Versão em vigor" })).toContainText("Nenhuma versão anterior");
     await expect(page.getByRole("region", { name: "Histórico" })).toContainText("Nada aconteceu com este documento ainda");
@@ -188,9 +189,9 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
 
   test("CD-04: quem só vê não guarda documento nem vê o restrito, e não escreve comunicado", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { quem: "SO_VE" });
-    await page.goto(`${PLATAFORMA}/comunicados/documentos`);
-    await expect(page.getByRole("link", { name: "Regimento interno" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "AVCB" })).toHaveCount(0);
+    await page.goto(`${PLATAFORMA}/documentos`);
+    await expect(page.getByRole("link", { name: "Regimento interno", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "AVCB", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Novo documento" })).toHaveCount(0);
     await page.goto(`${PLATAFORMA}/comunicados`);
     await expect(page.getByRole("link", { name: "Falta de água na quinta" })).toBeVisible();

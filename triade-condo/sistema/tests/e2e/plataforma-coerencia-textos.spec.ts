@@ -54,10 +54,12 @@ test.describe("Plataforma · coerência das telas, textos", () => {
     await page.getByRole("link", { name: "HidroPress Bombas" }).click();
     await expect(page.getByRole("region", { name: "Contato" })).toContainText("+55 13 99812-4455");
     await conferir(page);
-    for (const [url, botao] of [["/memoria", "+ Novo item"], ["/suporte", "+ Abrir chamado"]] as const) {
-      await page.goto(PLATAFORMA + url);
-      await expect(page.getByRole("button", { name: botao, exact: true })).toBeVisible();
-    }
+    await page.goto(`${PLATAFORMA}/suporte`);
+    await expect(page.getByRole("button", { name: "+ Abrir chamado", exact: true })).toBeVisible();
+    // No prontuário (DC15), Novo item foi para Mais ações.
+    await page.goto(`${PLATAFORMA}/documentos/prontuario`);
+    await page.getByRole("button", { name: "Mais ações" }).click();
+    await expect(page.getByRole("button", { name: /^Novo item/ })).toBeVisible();
     // Na Vida em condomínio (DC15) o + virou o ícone de mais, como nas telas novas.
     await page.goto(`${PLATAFORMA}/vida`);
     await expect(page.getByRole("button", { name: "Nova reserva", exact: true })).toBeVisible();

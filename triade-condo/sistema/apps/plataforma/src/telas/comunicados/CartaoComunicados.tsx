@@ -28,5 +28,5 @@ export function linhaDocumento(r: ResumoComunicados): LinhaInicio | null {
   const titulo = r.documentoMaisProximo ? `${r.documentoMaisProximo.titulo} ${descreverValidade(r.documentoMaisProximo.valeAte, hojeEmBrasilia())}` : "Documento perto de vencer";
   return { icone: "escudo", tom: "atencao", titulo,
     detalhe: r.documentosVencendo === 1 ? "1 documento vence em até 60 dias" : `${r.documentosVencendo} documentos vencem em até 60 dias`,
-    href: "/comunicados/documentos?filtro=VENCENDO", rotuloBotao: `Ver: ${titulo}` };
+    href: "/documentos?filtro=VENCENDO", rotuloBotao: `Ver: ${titulo}` };
 }

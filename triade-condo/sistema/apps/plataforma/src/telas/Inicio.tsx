@@ -17,12 +17,12 @@ import { HojeNaAgenda } from "./agenda/HojeNaAgenda.tsx";
 import { linhaContrato, linhasManutencao, vazioManutencao } from "./manutencao/CartaoManutencao.tsx";
 import { linhaDocumento, linhasComunicados } from "./comunicados/CartaoComunicados.tsx";
 import { CartaoMural } from "./comunicados/CartaoMural.tsx";
-import { linhasProntuario } from "./memoria/CartaoMemoria.tsx";
+import { documentoNoProntuario, itensVencendo, linhaItem, linhasProntuario, MAXIMO_VENCIMENTOS, maisVencimentos } from "./memoria/CartaoMemoria.tsx";
 import { CartaoAcessoExcepcional } from "./suporte/CartaoAcessoExcepcional.tsx";
 import { linhasVida, temVida } from "./vida/CartaoVida.tsx";
 import { useCelular } from "./celular.ts";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
-import type { Configuracoes, MesFechado } from "./tipos.ts";
+import type { Configuracoes, MesFechado, Prontuario } from "./tipos.ts";
 
 const ONDE: Record<string, { href: string; texto: string; acao: string }> = {
   SEM_HORARIO_ATENDIMENTO: { href: "/configuracoes/horarios", texto: "Definir", acao: "config.editar" },
@@ -140,14 +140,37 @@ function Pronto({ config }: { config: Configuracoes }) {
   );
 }
 
-/** Vencimentos (MP-05, MP-12): o documento, o contrato e o prontuário, juntos num cartão só. */
-function Vencimentos({ linhas }: { linhas: LinhaInicio[] }) {
+/** Vencimentos (MP-05, MP-12): o documento, o contrato e o prontuário, juntos num cartão só. Até
+ * três linhas, das mais urgentes; o resto vira "e mais", que abre o prontuário. */
+function Vencimentos({ linhas, mais }: { linhas: LinhaInicio[]; mais: { texto: string; href: string } | null }) {
   return (
     <CartaoInicio titulo="Vencimentos" icone="relogio" href="/agenda"
       area={{ resumo: linhas.length ? resumoDasLinhas(linhas) : "Nada vencendo", quantos: linhas.length }}>
       {linhas.length ? <LinhasInicio linhas={linhas} /> : <p className="t-apoio">Nenhum documento, contrato ou item do prontuário vencendo nos próximos 60 dias.</p>}
+      {mais ? (
+        <Link href={mais.href} className="inline-flex items-center gap-1 border-t border-linha pt-3 text-sm font-medium text-violeta-600 hover:underline">
+          {mais.texto}<Icone nome="dir" className="h-4 w-4" />
+        </Link>
+      ) : null}
     </CartaoInicio>
   );
+}
+
+/** As linhas de Vencimentos: com a lista do prontuário, pelo nome do item; sem ela, as contagens. */
+function useVencimentos(): { linhas: LinhaInicio[]; mais: { texto: string; href: string } | null } {
+  const { painel } = usePlataforma();
+  const carga = useCarregar<Prontuario>(painel.memoria ? "/v1/condominio/memoria/prontuario" : null);
+  const p = carga.estado === "pronto" ? carga.dados : null;
+  const doc = painel.comunicados?.documentoMaisProximo;
+  const documento = painel.comunicados && !(p && documentoNoProntuario(p, doc?.id)) ? linhaDocumento(painel.comunicados) : null;
+  const contrato = painel.manutencao ? linhaContrato(painel.manutencao) : null;
+  if (!p) {
+    return { linhas: [documento, contrato, ...(painel.memoria ? linhasProntuario(painel.memoria.prontuario) : [])].filter((x) => x !== null), mais: null };
+  }
+  const itens = itensVencendo(p).map(linhaItem);
+  const vencidos = itens.filter((l) => l.tom === "erro");
+  const todas = [...vencidos, ...[...itens.filter((l) => l.tom !== "erro"), contrato, documento].filter((x) => x !== null)];
+  return { linhas: todas.slice(0, MAXIMO_VENCIMENTOS), mais: maisVencimentos(Math.max(0, todas.length - MAXIMO_VENCIMENTOS), p.resumo.falta) };
 }
 
 const SAUDACAO = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "numeric", hourCycle: "h23" });
@@ -164,11 +187,7 @@ export function Inicio() {
   // No celular, Vencimentos desce para "Por área" e fecha numa linha curta, como as outras áreas.
   const celular = useCelular();
 
-  const vencimentos = [
-    painel.comunicados ? linhaDocumento(painel.comunicados) : null,
-    painel.manutencao ? linhaContrato(painel.manutencao) : null,
-    ...(painel.memoria ? linhasProntuario(painel.memoria.prontuario) : []),
-  ].filter((x) => x !== null);
+  const vencimentos = useVencimentos();
   const temVencimentos = !!(painel.comunicados || painel.manutencao || painel.memoria);
   const manutencao = painel.manutencao ? linhasManutencao(painel.manutencao) : [];
   const vida = painel.vida && temVida(painel.vida) ? linhasVida(painel.vida) : [];
@@ -202,7 +221,7 @@ export function Inicio() {
       {pode("agenda.ver") || (temVencimentos && !celular) ? (
         <div className="grid items-start gap-5 lg:grid-cols-2">
           {pode("agenda.ver") ? <HojeNaAgenda /> : null}
-          {temVencimentos && !celular ? <Vencimentos linhas={vencimentos} /> : null}
+          {temVencimentos && !celular ? <Vencimentos {...vencimentos} /> : null}
         </div>
       ) : null}
       <section aria-labelledby="t-por-area" className="grid gap-5 max-md:gap-0 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:px-4 max-md:pt-4 max-md:pb-1 max-md:shadow-s1">
@@ -216,14 +235,14 @@ export function Inicio() {
               {manutencao.length ? <LinhasInicio linhas={manutencao} /> : <p className="t-apoio">{vazioManutencao(painel.manutencao)}</p>}
             </CartaoInicio>
           ) : null}
-          {temVencimentos && celular ? <Vencimentos linhas={vencimentos} /> : null}
+          {temVencimentos && celular ? <Vencimentos {...vencimentos} /> : null}
           {vida.length ? (
             <CartaoInicio titulo="Vida em condomínio" icone="convivio" href="/vida" area={{ resumo: resumoDasLinhas(vida), quantos: pedemAtencao(vida) }}>
               <LinhasInicio linhas={vida} />
             </CartaoInicio>
           ) : null}
           {painel.comunicados || painel.moradores ? (
-            <CartaoInicio titulo="Comunicação e moradores" icone="megafone" href={painel.comunicados ? (pode("comunicados.ver") ? "/comunicados" : "/comunicados/documentos") : "/moradores"}
+            <CartaoInicio titulo="Comunicação e moradores" icone="megafone" href={painel.comunicados ? (pode("comunicados.ver") ? "/comunicados" : "/documentos") : "/moradores"}
               area={{ resumo: resumoDasLinhas(comunicacao), quantos: pedemAtencao(comunicacao) }}>
               {painel.moradores && painel.moradores.unidades === 0 ? (
                 <div className="grid justify-items-start gap-2">
