@@ -1,5 +1,5 @@
-// Assembleias (peça R12; AC-02, CD-07) com a API falsa: a aba com as regras e as frações, a
-// assembleia nova com a pauta, convocar, conferir a procuração, a votação item a item com o aviso
+// Assembleias (peça R12; AC-02, CD-07; telas DC15) com a API falsa: a aba com as regras e as frações
+// em Mais ações, a assembleia nova em página com a pauta, convocar, conferir a procuração, a votação item a item com o aviso
 // de quórum, registrar o voto de quem está no salão, encerrar com a ata, e o link pessoal sem conta.
 // Cada tela passa no axe (WCAG 2.2 AA) no celular e no computador.
 import { expect, test, type Page } from "@playwright/test";
@@ -21,11 +21,14 @@ test.describe("Assembleias", () => {
     await page.goto(`${PLATAFORMA}/`);
     await expect(page.getByText("Assembleia: Assembleia geral ordinária 2026")).toBeVisible();
     await page.goto(`${PLATAFORMA}/vida?aba=assembleias`);
-    await expect(page.getByRole("tab", { name: "Assembleias", selected: true })).toBeVisible();
-    await expect(page.getByText(/Convocação com 10 dias de antecedência · pela fração ideal/)).toBeVisible();
-    await expect(page.getByText(/1 procuração a conferir/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Assembleias" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText(/Regra em vigor: convocação com 10 dias de antecedência · pela fração ideal/)).toBeVisible();
+    await page.getByRole("button", { name: /^Próximas/ }).click();
+    await expect(page.getByText(/1 procuração a conferir/).filter({ visible: true })).toBeVisible();
     await conferir(page);
 
+    // DC15: Regras e Frações ficam em Mais ações.
+    await page.getByRole("button", { name: "Mais ações" }).click();
     await page.getByRole("button", { name: "Frações ideais" }).click();
     const f = page.getByRole("dialog", { name: "Frações ideais" });
     await expect(f.getByText("Soma: 100%")).toBeVisible();
@@ -33,22 +36,29 @@ test.describe("Assembleias", () => {
     await expect(f.getByText("Entre 0 e 100")).toBeVisible();
     await f.getByRole("button", { name: "Voltar" }).click();
 
-    await page.getByRole("button", { name: "Nova assembleia" }).click();
-    const d = page.getByRole("dialog", { name: "Nova assembleia" });
-    await d.getByLabel("Nome").fill("Assembleia do elevador");
-    await d.getByLabel("Tipo").selectOption("EXTRAORDINARIA");
-    await d.getByLabel("1ª chamada").fill("2030-05-10T19:00");
-    await d.getByLabel("2ª chamada").fill("2030-05-10T19:30");
-    await d.getByLabel("Local").fill("Salão de festas");
-    await d.getByLabel("Item 1", { exact: true }).fill("Trocar o elevador social");
-    await d.getByRole("button", { name: "Item da pauta" }).click();
-    await d.getByLabel("Item 2", { exact: true }).fill("Eleger a comissão de obra");
-    await d.getByLabel("Votação").nth(1).selectOption("ESCOLHA");
-    await d.getByLabel("Opção 1 do item 2").fill("Marta");
-    await d.getByLabel("Opção 2 do item 2").fill("Rafael");
-    await expect(d.getByText("Em branco entra sozinho no fim.")).toBeVisible();
+    // A assembleia nova é uma página: partes no computador, passos no celular.
+    await page.getByRole("link", { name: "Nova assembleia" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Nova assembleia" })).toBeVisible();
+    const continuar = page.getByRole("button", { name: "Continuar" });
+    const seguir = async () => { if (await continuar.isVisible()) await continuar.click(); };
+    await page.getByLabel("Nome").fill("Assembleia do elevador");
+    await page.getByRole("group", { name: "Tipo" }).getByRole("button", { name: "Extraordinária" }).click();
     await conferir(page);
-    await d.getByRole("button", { name: "Salvar o rascunho" }).click();
+    await seguir();
+    await page.getByLabel("1ª chamada").fill("2030-05-10T19:00");
+    await page.getByLabel("2ª chamada").fill("2030-05-10T19:30");
+    await page.getByLabel("Local").fill("Salão de festas");
+    await expect(page.getByText("Enviar o edital até")).toBeVisible();
+    await seguir();
+    await page.getByLabel("O que se vota no item 1").fill("Trocar o elevador social");
+    await page.getByRole("button", { name: "Item da pauta" }).click();
+    await page.getByLabel("O que se vota no item 2").fill("Eleger a comissão de obra");
+    await page.getByLabel("Votação").nth(1).selectOption("ESCOLHA");
+    await page.getByLabel("Opção 1 do item 2").fill("Marta");
+    await page.getByLabel("Opção 2 do item 2").fill("Rafael");
+    await expect(page.getByText("Em branco entra sozinho no fim.")).toBeVisible();
+    await conferir(page);
+    await page.getByRole("button", { name: "Salvar o rascunho" }).click();
 
     await expect(page.getByRole("heading", { name: /Assembleia do elevador/ })).toBeVisible();
     await expect(page.getByText("Proprietário ou procurador")).toBeVisible();
@@ -59,8 +69,10 @@ test.describe("Assembleias", () => {
     await expect(page.getByText("Assembleia convocada. O edital foi publicado e 4 unidades recebem um link só dela.")).toBeVisible();
 
     await page.goto(`${PLATAFORMA}/vida?aba=assembleias`);
+    await page.getByRole("button", { name: /^Próximas/ }).click();
     await page.getByRole("link", { name: "Assembleia da fachada" }).click();
-    await expect(page.getByText("Procuração a conferir")).toBeVisible();
+    await expect(page.getByText("Procuração a conferir", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Ações de Torre A · 201" }).click();
     await page.getByRole("button", { name: "Conferir a procuração de Torre A · 201" }).click();
     const p = page.getByRole("dialog", { name: "Procuração de Torre A · 201" });
     await expect(p.getByText("Aceita, o link da Torre A · 302 passa a votar pelas duas.")).toBeVisible();
@@ -74,14 +86,14 @@ test.describe("Assembleias", () => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/vida?aba=assembleias`);
     await page.getByRole("link", { name: "Assembleia geral ordinária 2026" }).click();
-    await expect(page.getByText("3 de 4 · 75% das frações")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Presença" })).toContainText(/3 de 4\s*unidades presentes\s*75% das frações/);
     await expect(page.getByText(/Sim 73,3% · Não 26,7% · Abstenção 0% das frações presentes · 3 unidades votaram/)).toBeVisible();
     await expect(page.getByText("1 de 3 unidades presentes já votaram", { exact: false })).toBeVisible();
     await expect(page.getByText("Presentes somam 75%. Os presentes não alcançam unanimidade: mesmo com todos a favor, o item não passa.")).toBeVisible();
     await expect(page.getByRole("button", { name: "Abrir a votação do item 3" })).toBeDisabled();
     await conferir(page);
 
-    await page.getByRole("button", { name: "Registrar voto" }).click();
+    await page.getByRole("button", { name: "Registrar voto do salão no item 2" }).click();
     const v = page.getByRole("dialog", { name: "Registrar voto no item 2" });
     await v.getByLabel("Unidade").selectOption({ label: "Torre A · 102" });
     await v.getByLabel("Não").check();
@@ -101,7 +113,7 @@ test.describe("Assembleias", () => {
     await expect(page.getByText("Ata assinada ligada à assembleia. Ela aparece na Memória do prédio.")).toBeVisible();
     await expect(page.getByRole("link", { name: "Abrir a ata assinada" })).toBeVisible();
     const download = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Baixar a lista de presença" }).click();
+    await page.getByRole("button", { name: "Baixar a lista de presença" }).first().click();
     expect((await download).suggestedFilename()).toBe("presenca-assembleia-geral-ordin-ria-2026.csv");
     await conferir(page);
   });

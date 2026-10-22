@@ -39,36 +39,40 @@ test.describe("Vida em condomínio", () => {
     await expect(page.getByText(/Criada pelo síndico · Automática · 1 a 30 dias de antecedência · blocos de 2 horas/)).toBeVisible();
   });
 
-  test("AC-01 e AC-06: aprovar recusa o outro pedido da mesma data; recusar pede motivo", async ({ page }) => {
+  test("AC-01 e AC-06: os pedidos do mesmo dia num cartão; aprovar um recusa o outro; recusar pede motivo", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/`);
     const vida = await abrirArea(page, "Vida em condomínio");
     await expect(vida.getByText("2 reservas a aprovar")).toBeVisible();
     await page.getByRole("link", { name: "Ver as reservas a aprovar" }).click();
 
-    await expect(page.getByRole("button", { name: "A aprovar · 2" })).toBeVisible();
-    await expect(page.getByText("Mesma data de outro pedido: aprovar um recusa o outro, com o motivo.").first()).toBeVisible();
+    // DC15: os pedidos da mesma área e dia vêm num cartão só, com um Decidir.
+    await expect(page.getByRole("button", { name: "A aprovar (2)" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("2 pedidos para o Salão de festas")).toBeVisible();
+    await expect(page.getByText(/ao aprovar um, os outros recebem a recusa com o motivo/)).toBeVisible();
     await expect(page.getByText("1ª reserva da unidade", { exact: false }).first()).toBeVisible();
     await conferir(page);
 
-    await page.getByRole("button", { name: "Recusar a reserva 2026-R015" }).click();
-    const recusa = page.getByRole("dialog", { name: "Recusar a reserva 2026-R015" });
-    await recusa.getByRole("button", { name: "Recusar" }).click();
-    await expect(recusa.getByText("Escreva o motivo, com pelo menos 3 letras")).toBeVisible();
+    await page.getByRole("button", { name: /^Decidir: Salão de festas, / }).click();
+    const dec = page.getByRole("dialog", { name: /^Decidir: Salão de festas, / });
+    await expect(dec.getByRole("radio", { name: /Torre A · 302 · Marta Lima/ })).toBeChecked();
+    await expect(dec.getByText(/Torre B · 104 recebe a recusa com o motivo/)).toBeVisible();
     await conferir(page);
-    await recusa.getByRole("button", { name: "Voltar" }).click();
+    await dec.getByRole("button", { name: "Recusar os 2" }).click();
+    await dec.getByRole("button", { name: "Recusar os 2 pedidos" }).click();
+    await expect(dec.getByText("Escreva o motivo, com pelo menos 3 letras")).toBeVisible();
+    await conferir(page);
+    await dec.getByRole("button", { name: "Voltar" }).click();
 
-    await page.getByRole("button", { name: "Aprovar a reserva 2026-R014" }).click();
-    const ap = page.getByRole("dialog", { name: "Aprovar a reserva 2026-R014" });
-    await ap.getByLabel(/Recado para o morador/).fill("A chave fica com o zelador.");
-    await ap.getByRole("button", { name: "Aprovar" }).click();
+    await dec.getByLabel(/Recado para quem ficou com o dia/).fill("A chave fica com o zelador.");
+    await dec.getByRole("button", { name: "Aprovar Torre A · 302" }).click();
     await expect(page.getByText("Reserva 2026-R014 aprovada. O morador recebe a confirmação pelo WhatsApp. O outro pedido da mesma data foi recusado, com o motivo.")).toBeVisible();
     await expect(page.getByText("Nada esperando aprovação")).toBeVisible();
 
-    await page.getByRole("button", { name: "Todas" }).click();
+    await page.getByRole("button", { name: /^Todas/ }).click();
     await expect(page.getByText("Recusada: A data ficou com outro pedido de reserva")).toBeVisible();
     await page.getByRole("button", { name: /Salão de festas · .* · 10:00 às 23:00/ }).first().click();
-    await expect(page.getByRole("dialog", { name: /Reserva 2026-R01/ }).getByText("Histórico")).toBeVisible();
+    await expect(page.getByRole("dialog", { name: /Reserva 2026-R01/ }).getByText("Andamento")).toBeVisible();
     await conferir(page);
   });
 

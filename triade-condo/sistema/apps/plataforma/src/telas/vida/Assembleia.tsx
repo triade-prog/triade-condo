@@ -1,5 +1,9 @@
 "use client";
-// Uma assembleia (design "Vida em condomínio", telas 6 e 8; AC-02, CD-07, AT-17): a convocação com
+// Uma assembleia (design "Vida em condomínio", telas 6 e 8; DC15, telas-modelo vida-assembleia-*;
+// AC-02, CD-07, AT-17): um botão principal por estado (Convocar, Começar, Encerrar), com Editar,
+// Cancelar e a lista de presença em Mais ações; a presença em número grande; o item em votação em
+// destaque, com o voto do salão e o encerrar ali mesmo; as unidades com busca, filtros e um menu
+// por linha; e o andamento numa linha do tempo. A convocação com
 // a antecedência e o peso do voto; as unidades com presença, procuração e direito a voto; cada
 // item com o resultado em números pelo peso escolhido e o aviso quando o quórum não é alcançável;
 // no fim, o rascunho da ata (texto editável, números não), a ata assinada de Documentos e a lista
@@ -15,29 +19,45 @@ import {
   Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Icone, Selo,
   textoDoErro, type ErroApi,
 } from "@triade/ui";
+import { CartaoFicha, LadrilhoUnidade, MenuAcoes, type ItemMenu } from "../moradores/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { AssembleiaDetalhe, AssembleiaTela, ItemAssembleia, Recado, ResultadoItem, UnidadeAssembleia } from "../tipos.ts";
-import { FormAssembleia, SeloAssembleia, tipoEForma } from "./Assembleias.tsx";
+import { SeloAssembleia, tipoEForma } from "./Assembleias.tsx";
+import { LinhaDoTempo, Voltar, type PassoTempo } from "./comum.tsx";
+
+const FEITO: Record<string, string> = { rascunho: "Rascunho salvo. Confira a convocação e convoque quando estiver pronto." };
 
 export function Assembleia() {
   const busca = useSearchParams();
   const id = busca.get("id");
   const carga = useCarregar<AssembleiaDetalhe>(id ? `/v1/condominio/assembleias/${id}` : null);
-  const [recado, setRecado] = useState<Recado>(null);
+  const [recado, setRecado] = useState<Recado>(FEITO[busca.get("feito") ?? ""] ? { tom: "ok", texto: FEITO[busca.get("feito")!]! } : null);
   const { atualizar } = usePlataforma();
+  const voltar = <Voltar href="/vida?aba=assembleias" texto="Assembleias" />;
 
-  if (!id) return <Aviso tom="atencao">Assembleia não encontrada.</Aviso>;
+  if (!id) return <div className="grid gap-3">{voltar}<Aviso tom="atencao">Assembleia não encontrada.</Aviso></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando a assembleia…" />;
-  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
+  if (carga.estado === "erro") return <div className="grid gap-3">{voltar}<ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
   const mudou = (texto: string) => { setRecado({ tom: "ok", texto }); carga.recarregar(); atualizar(); };
-  return <Tela d={carga.dados} recado={recado} aoMudar={mudou} />;
+  return <Tela d={carga.dados} voltar={voltar} recado={recado} aoMudar={mudou} />;
 }
 
 type Acao =
-  | { tipo: "editar" | "convocar" | "cancelar" | "iniciar" | "encerrar" | "voto" }
+  | { tipo: "convocar" | "cancelar" | "iniciar" | "encerrar" | "voto" }
   | { tipo: "procuracao" | "direito"; u: UnidadeAssembleia };
 
-function Tela({ d, recado, aoMudar }: { d: AssembleiaDetalhe; recado: Recado; aoMudar: (texto: string) => void }) {
+function marca(acao: string): Pick<PassoTempo, "icone" | "tom"> {
+  if (acao === "assembleia.convocada" || acao === "assembleia.lembrete") return { icone: "megafone", tom: "andamento" };
+  if (acao === "assembleia.iniciada") return { icone: "pessoas", tom: "ok" };
+  if (acao === "assembleia.item_encerrado" || acao === "assembleia.encerrada" || acao === "assembleia.procuracao_aceita") return { icone: "check", tom: "ok" };
+  if (acao === "assembleia.item_aberto") return { icone: "grafico", tom: "andamento" };
+  if (acao === "assembleia.cancelada") return { icone: "sair", tom: "neutro" };
+  if (acao.startsWith("assembleia.procuracao")) return { icone: "documento", tom: "atencao" };
+  if (acao === "assembleia.ata_ligada") return { icone: "documento", tom: "ok" };
+  return { icone: "editar", tom: "neutro" };
+}
+
+function Tela({ d, voltar, recado, aoMudar }: { d: AssembleiaDetalhe; voltar: React.ReactNode; recado: Recado; aoMudar: (texto: string) => void }) {
   const a = d.assembleia;
   const [acao, setAcao] = useState<Acao | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -64,30 +84,38 @@ function Tela({ d, recado, aoMudar }: { d: AssembleiaDetalhe; recado: Recado; ao
     setLink({ nome: u.unidade, url, copiado });
   }
 
+  // Um principal por estado, sempre no mesmo lugar (DC15): o resto vai para Mais ações.
+  const principal = !editar ? null
+    : a.estado === "RASCUNHO" ? <Botao onClick={() => setAcao({ tipo: "convocar" })}><Icone nome="megafone" />Convocar</Botao>
+      : a.estado === "CONVOCADA" ? <Botao onClick={() => setAcao({ tipo: "iniciar" })}><Icone nome="pessoas" />Começar a assembleia</Botao>
+        : a.estado === "EM_ANDAMENTO" ? <Botao onClick={() => setAcao({ tipo: "encerrar" })}><Icone nome="check" />Encerrar a assembleia</Botao> : null;
+  const mais: ItemMenu[] = [
+    ...(editar && a.estado === "RASCUNHO" ? [{ texto: "Editar", icone: "editar" as const, href: `/vida/nova-assembleia?id=${a.id}` }] : []),
+    ...(a.estado === "EM_ANDAMENTO" || a.estado === "ENCERRADA" ? [{ texto: "Baixar a lista de presença", icone: "baixar" as const, acao: () => baixarPresenca(d) }] : []),
+    ...(editar && (a.estado === "RASCUNHO" || a.estado === "CONVOCADA") ? [{ texto: "Cancelar a assembleia…", icone: "sair" as const, perigo: true, acao: () => setAcao({ tipo: "cancelar" }) }] : []),
+  ];
+  const tempo: PassoTempo[] = [...d.historico].sort((x, y) => x.em.localeCompare(y.em)).map((h) => ({
+    ...marca(h.acao), titulo: descreverEventoAssembleia(h.acao, h.dados), quando: [formatarDataHora(h.em), h.autor].filter(Boolean).join(" · "),
+  }));
+  if (a.estado === "CONVOCADA") tempo.push({ icone: "pessoas", tom: "andamento", titulo: "1ª chamada", quando: formatarDataHora(a.primeiraChamada), futuro: true });
+
   return (
-    <div className="grid gap-5">
-      <Link href="/vida?aba=assembleias" className="inline-flex min-h-6 items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
-        <Icone nome="esq" />Assembleias
-      </Link>
+    <div className="grid gap-5 max-md:pb-20">
+      {voltar}
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="grid gap-1">
-          <h1 className="flex flex-wrap items-center gap-2 text-[28px] font-normal tracking-tight">{a.titulo} <SeloAssembleia estado={a.estado} /></h1>
-          <p className="text-tinta-suave">
-            {tipoEForma(a)} · 1ª chamada em {formatarDataHora(a.primeiraChamada)} · 2ª em {formatarDataHora(a.segundaChamada)}
-            {a.local ? ` · ${a.local}` : ""}
+        <div className="grid gap-2">
+          <h1 className="t-titulo-tela">{a.titulo}</h1>
+          <p className="flex flex-wrap items-center gap-2 text-sm">
+            <SeloAssembleia estado={a.estado} />
+            <Selo tom="neutro">{tipoEForma(a)}</Selo>
+            {a.local ? <span>{a.local}</span> : null}
+            {a.linkVideo ? <a href={a.linkVideo} className="inline-flex items-center gap-1 font-medium text-violeta-600 hover:underline" target="_blank" rel="noreferrer"><Icone nome="link" className="h-4 w-4" />Videochamada</a> : null}
           </p>
-          {a.linkVideo ? <p className="text-sm">Videochamada: <a href={a.linkVideo} className="break-all text-violeta-600 underline" target="_blank" rel="noreferrer">{a.linkVideo}</a></p> : null}
         </div>
-        {editar ? (
-          <span className="flex flex-wrap gap-2">
-            {a.estado === "RASCUNHO" ? <Botao variante="contorno" onClick={() => setAcao({ tipo: "editar" })}>Editar</Botao> : null}
-            {a.estado === "RASCUNHO" ? <Botao onClick={() => setAcao({ tipo: "convocar" })}>Convocar</Botao> : null}
-            {a.estado === "CONVOCADA" ? <Botao onClick={() => setAcao({ tipo: "iniciar" })}>Começar a assembleia</Botao> : null}
-            {a.estado === "EM_ANDAMENTO" ? <Botao variante="contorno" onClick={() => setAcao({ tipo: "voto" })} disabled={!itemAberto}>Registrar voto</Botao> : null}
-            {a.estado === "EM_ANDAMENTO" ? <Botao onClick={() => setAcao({ tipo: "encerrar" })}>Encerrar a assembleia</Botao> : null}
-            {a.estado === "RASCUNHO" || a.estado === "CONVOCADA" ? <Botao variante="discreto" onClick={() => setAcao({ tipo: "cancelar" })}>Cancelar</Botao> : null}
-          </span>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <MenuAcoes rotulo="Mais ações" texto="Mais ações" itens={mais} />
+          {principal ? <div className="max-md:hidden">{principal}</div> : null}
+        </div>
       </div>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
@@ -98,37 +126,39 @@ function Tela({ d, recado, aoMudar }: { d: AssembleiaDetalhe; recado: Recado; ao
         </Aviso>
       ) : null}
 
-      {a.estado === "RASCUNHO" ? <Convocacao a={a} /> : null}
-      {a.presenca ? <Presenca a={a} /> : null}
+      <dl className="grid gap-x-5 gap-y-3 rounded-[18px] border border-linha bg-superficie p-4 text-sm shadow-s1 sm:grid-cols-2 md:px-5 lg:grid-cols-4">
+        <div><dt className="t-apoio">1ª chamada</dt><dd className="text-[15px]">{formatarDataHora(a.primeiraChamada)}</dd></div>
+        <div><dt className="t-apoio">2ª chamada</dt><dd className="text-[15px]">{formatarDataHora(a.segundaChamada)}</dd></div>
+        <div><dt className="t-apoio">Peso do voto</dt><dd className="text-[15px]">{PESOS_ASSEMBLEIA[a.peso]}</dd></div>
+        <div><dt className="t-apoio">Quem vota</dt><dd className="text-[15px]">Proprietário ou procurador</dd></div>
+      </dl>
 
-      <section aria-labelledby="as-pauta" className="grid gap-3">
-        <h2 id="as-pauta" className="text-lg font-medium">Pauta</h2>
-        <ol className="grid gap-3">
-          {a.itens.map((i) => (
-            <Item key={i.id} i={i} a={a} podeAgir={editar && a.estado === "EM_ANDAMENTO"} outroAberto={!!itemAberto && itemAberto.id !== i.id}
-              aoAgir={(qual) => void chamar(`itens/${qual}`, { itemId: i.id }, qual === "abrir" ? `Item ${i.ordem} em votação.` : `Item ${i.ordem} votado. Os números ficaram guardados.`)} />
-          ))}
-        </ol>
-      </section>
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div className="grid gap-5">
+          {a.estado === "RASCUNHO" ? <Convocacao a={a} /> : null}
+          <CartaoFicha id="pauta" titulo="Pauta" icone="lista">
+            <ol className="grid gap-2.5">
+              {a.itens.map((i) => (
+                <Item key={i.id} i={i} a={a} podeAgir={editar && a.estado === "EM_ANDAMENTO"} outroAberto={!!itemAberto && itemAberto.id !== i.id}
+                  aoVoto={() => setAcao({ tipo: "voto" })}
+                  aoAgir={(qual) => void chamar(`itens/${qual}`, { itemId: i.id }, qual === "abrir" ? `Item ${i.ordem} em votação.` : `Item ${i.ordem} votado. Os números ficaram guardados.`)} />
+              ))}
+            </ol>
+          </CartaoFicha>
+          {a.estado === "ENCERRADA" ? <Ata d={d} aoMudar={aoMudar} /> : null}
+          <div className="max-lg:order-last"><CartaoFicha id="andamento" titulo="Andamento" icone="relogio"><LinhaDoTempo itens={tempo} /></CartaoFicha></div>
+        </div>
+        {a.estado !== "RASCUNHO" && a.estado !== "CANCELADA" ? (
+          <div className="grid gap-5 max-lg:order-first">
+            {a.presenca ? <Presenca a={a} /> : null}
+            <Unidades d={d} podeAgir={editar && aberta} aoCopiar={(u) => void copiar(u)} aoAgir={(tipo, u) => setAcao({ tipo, u })}
+              aoPresenca={(u, presente) => void chamar("presenca", { conviteId: u.id, presente },
+                presente ? `${u.unidade} presente no salão.` : `Presença de ${u.unidade} retirada.`)} />
+          </div>
+        ) : null}
+      </div>
 
-      {a.estado === "ENCERRADA" ? <Ata d={d} aoMudar={aoMudar} /> : null}
-
-      {a.estado !== "RASCUNHO" && a.estado !== "CANCELADA" ? (
-        <Unidades d={d} podeAgir={editar && aberta} aoCopiar={(u) => void copiar(u)} aoAgir={(tipo, u) => setAcao({ tipo, u })}
-          aoPresenca={(u, presente) => void chamar("presenca", { conviteId: u.id, presente },
-            presente ? `${u.unidade} presente no salão.` : `Presença de ${u.unidade} retirada.`)} />
-      ) : null}
-
-      <section aria-labelledby="as-historico" className="grid gap-2">
-        <h2 id="as-historico" className="text-lg font-medium">Histórico</h2>
-        <ul className="grid gap-1 text-sm">
-          {d.historico.map((h, n) => (
-            <li key={n}>{descreverEventoAssembleia(h.acao, h.dados)}<span className="text-tinta-suave"> · {formatarDataHora(h.em)}{h.autor ? ` · ${h.autor}` : ""}</span></li>
-          ))}
-        </ul>
-      </section>
-
-      {acao?.tipo === "editar" ? <FormAssembleia a={a} aoFechar={() => setAcao(null)} aoSalvar={(_id, t) => fechar(t)} /> : null}
+      {principal ? <div className="fixed inset-x-0 bottom-[calc(61px+env(safe-area-inset-bottom))] z-20 grid border-t border-linha bg-superficie px-4 py-3 md:hidden">{principal}</div> : null}
       {acao?.tipo === "convocar" ? <Convocar a={a} aoFechar={fechar} /> : null}
       {acao?.tipo === "iniciar" ? (
         <Confirmar titulo="Começar a assembleia?" botao="Começar" aoFechar={fechar} caminho={`${a.id}/iniciar`} corpo={{ versao: a.versao }}
@@ -154,34 +184,38 @@ function Tela({ d, recado, aoMudar }: { d: AssembleiaDetalhe; recado: Recado; ao
 function Convocacao({ a }: { a: AssembleiaTela }) {
   const [ano, mes, dia] = a.enviarAte.split("-");
   return (
-    <section aria-labelledby="as-convocacao" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-4 text-sm shadow-s1">
-      <h2 id="as-convocacao" className="text-lg font-medium">Convocação</h2>
-      <dl className="grid gap-3 sm:grid-cols-4">
-        <div><dt className="text-[13px] text-tinta-suave">Antecedência</dt><dd>{a.antecedencia} dias (regra da convenção)</dd></div>
-        <div><dt className="text-[13px] text-tinta-suave">Enviar até</dt><dd>{dia}/{mes}/{ano}</dd></div>
-        <div><dt className="text-[13px] text-tinta-suave">Peso do voto</dt><dd>{PESOS_ASSEMBLEIA[a.peso]}</dd></div>
-        <div><dt className="text-[13px] text-tinta-suave">Quem vota</dt><dd>Proprietário ou procurador</dd></div>
+    <CartaoFicha id="convocacao" titulo="Convocação" icone="megafone">
+      <dl className="grid gap-3 text-sm sm:grid-cols-3">
+        <div><dt className="t-apoio">Antecedência</dt><dd>{a.antecedencia} dias (regra da convenção)</dd></div>
+        <div><dt className="t-apoio">Enviar até</dt><dd>{dia}/{mes}/{ano}</dd></div>
+        <div><dt className="t-apoio">Peso do voto</dt><dd>{PESOS_ASSEMBLEIA[a.peso]}</dd></div>
       </dl>
-      <p className="text-tinta-suave">
+      <p className="t-apoio">
         Ao convocar, o edital com a pauta, as chamadas, o local e como votar vai como comunicado (mural e e-mail), e cada unidade recebe pelo WhatsApp
         ou pelo e-mail dos proprietários um link só dela. O lembrete vai na véspera.
       </p>
-    </section>
+    </CartaoFicha>
   );
 }
 
 function Presenca({ a }: { a: AssembleiaTela }) {
   const p = a.presenca!;
   return (
-    <section aria-labelledby="as-presenca" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-4 text-sm shadow-s1">
-      <h2 id="as-presenca" className="text-lg font-medium">Presença</h2>
-      <dl className="grid gap-3 sm:grid-cols-4">
-        <div><dt className="text-[13px] text-tinta-suave">Unidades presentes</dt><dd>{p.presentes} de {p.unidades} · {porcento(p.porcentagem)} {a.peso === "FRACAO" ? "das frações" : "das unidades"}</dd></div>
-        <div><dt className="text-[13px] text-tinta-suave">Online · no salão</dt><dd>{p.online} · {p.salao}</dd></div>
-        <div><dt className="text-[13px] text-tinta-suave">Por procuração</dt><dd>{p.porProcuracao}{p.procuracoesPendentes ? ` · ${p.procuracoesPendentes} a conferir` : ""}</dd></div>
-        <div><dt className="text-[13px] text-tinta-suave">Sem direito a voto</dt><dd>{p.semDireito}</dd></div>
+    <CartaoFicha id="presenca" titulo="Presença" icone="pessoas">
+      <div className="grid gap-1">
+        <p className="flex items-baseline gap-2.5">
+          <span className="text-[40px] leading-none font-semibold tracking-tight">{p.presentes} de {p.unidades}</span>
+          <span className="text-[15px]">unidades presentes</span>
+        </p>
+        <p className="text-sm">{porcento(p.porcentagem)} {a.peso === "FRACAO" ? "das frações" : "das unidades"}</p>
+      </div>
+      <dl className="grid grid-cols-2 gap-3 border-t border-linha pt-3 text-sm sm:grid-cols-4">
+        <div><dt className="t-apoio">Online</dt><dd className="font-semibold">{p.online}</dd></div>
+        <div><dt className="t-apoio">No salão</dt><dd className="font-semibold">{p.salao}</dd></div>
+        <div><dt className="t-apoio">Por procuração</dt><dd className="font-semibold">{p.porProcuracao}{p.procuracoesPendentes ? ` · ${p.procuracoesPendentes} a conferir` : ""}</dd></div>
+        <div><dt className="t-apoio">Sem direito a voto</dt><dd className="font-semibold">{p.semDireito}</dd></div>
       </dl>
-    </section>
+    </CartaoFicha>
   );
 }
 
@@ -190,36 +224,44 @@ function linhaResultado(r: ResultadoItem, fracao: boolean): string {
   return `${r.opcoes.map((o) => `${o.texto} ${porcento(o.porcentagem)}`).join(" · ")} ${fracao ? "das frações presentes" : "das unidades presentes"} · ${r.votaram === 1 ? "1 unidade votou" : `${r.votaram} unidades votaram`}`;
 }
 
-function Item({ i, a, podeAgir, outroAberto, aoAgir }: {
-  i: ItemAssembleia; a: AssembleiaTela; podeAgir: boolean; outroAberto: boolean; aoAgir: (qual: "abrir" | "encerrar") => void;
+function Item({ i, a, podeAgir, outroAberto, aoAgir, aoVoto }: {
+  i: ItemAssembleia; a: AssembleiaTela; podeAgir: boolean; outroAberto: boolean; aoAgir: (qual: "abrir" | "encerrar") => void; aoVoto: () => void;
 }) {
   const r = i.resultado;
-  const aviso = i.estado !== "ENCERRADO" && a.estado !== "RASCUNHO" ? avisoQuorum(i.quorum, r.alcancavel) : null;
+  // O aviso de quórum só faz sentido com a assembleia correndo: antes dela, ninguém está presente.
+  const aviso = i.estado !== "ENCERRADO" && a.estado === "EM_ANDAMENTO" ? avisoQuorum(i.quorum, r.alcancavel) : null;
   const situacao = i.estado === "ENCERRADO"
     ? (r.situacao === "ESCOLHIDA" ? `Escolhida: ${r.vencedor}` : SITUACOES_ITEM[r.situacao])
     : ESTADOS_ITEM[i.estado];
   const tom = i.estado === "ABERTO" ? "andamento" : i.estado === "AGUARDANDO" ? "neutro" : r.situacao === "APROVADO" || r.situacao === "ESCOLHIDA" ? "ok" : "atencao";
+  const aberto = i.estado === "ABERTO";
   return (
-    <li className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-4 text-sm shadow-s1">
+    <li className={`grid gap-2 rounded-2xl p-4 text-sm ${aberto ? "border-2 border-violeta-600 bg-violeta-50/40" : "border border-linha bg-superficie"}`}>
       <span className="flex flex-wrap items-center gap-2">
-        <span className="font-medium">{i.ordem}. {i.titulo}</span>
+        <span className="numero" aria-hidden="true">{i.ordem}</span>
+        <span className="text-[15px] font-semibold">{i.ordem}. {i.titulo}</span>
         {a.estado !== "RASCUNHO" && a.estado !== "CANCELADA" ? <Selo tom={tom}>{situacao}</Selo> : null}
       </span>
       {i.descricao ? <span>{i.descricao}</span> : null}
-      <span className="text-tinta-suave">{QUORUNS[i.quorum]} · {i.opcoes.join(", ")}</span>
-      {i.estado === "ENCERRADO" || i.estado === "ABERTO" ? <span>{linhaResultado(r, a.peso === "FRACAO")}</span> : null}
-      {i.estado === "ABERTO" ? <span className="text-tinta-suave">{r.votaram} de {r.presentes} unidades presentes já votaram · fecha quando o presidente encerrar o item</span> : null}
+      <span className="t-apoio">{QUORUNS[i.quorum]} · {i.opcoes.join(", ")}</span>
+      {i.estado === "ENCERRADO" || aberto ? <span>{linhaResultado(r, a.peso === "FRACAO")}</span> : null}
+      {aberto ? <span className="t-apoio">{r.votaram} de {r.presentes} unidades presentes já votaram · fecha quando o presidente encerrar o item</span> : null}
       {aviso ? <Aviso tom="atencao">{`Presentes somam ${porcento(r.porcentagemPresentes)}. ${aviso}`}</Aviso> : null}
       {podeAgir && i.estado === "AGUARDANDO" ? (
         <Botao tamanho="m" variante="contorno" className="justify-self-start" disabled={outroAberto} onClick={() => aoAgir("abrir")}
           aria-label={`Abrir a votação do item ${i.ordem}`}>Abrir a votação</Botao>
       ) : null}
-      {podeAgir && i.estado === "ABERTO" ? (
-        <Botao tamanho="m" className="justify-self-start" onClick={() => aoAgir("encerrar")} aria-label={`Encerrar a votação do item ${i.ordem}`}>Encerrar a votação</Botao>
+      {podeAgir && aberto ? (
+        <span className="flex flex-wrap gap-2">
+          <Botao tamanho="m" variante="contorno" onClick={aoVoto} aria-label={`Registrar voto do salão no item ${i.ordem}`}><Icone nome="editar" className="h-4 w-4" />Registrar voto do salão</Botao>
+          <Botao tamanho="m" variante="contorno" onClick={() => aoAgir("encerrar")} aria-label={`Encerrar a votação do item ${i.ordem}`}><Icone nome="check" className="h-4 w-4" />Encerrar a votação</Botao>
+        </span>
       ) : null}
     </li>
   );
 }
+
+type FiltroUnidade = "" | "PRESENTES" | "FALTAM" | "PROCURACAO";
 
 function Unidades({ d, podeAgir, aoCopiar, aoAgir, aoPresenca }: {
   d: AssembleiaDetalhe; podeAgir: boolean; aoCopiar: (u: UnidadeAssembleia) => void; aoAgir: (tipo: "procuracao" | "direito", u: UnidadeAssembleia) => void;
@@ -227,44 +269,68 @@ function Unidades({ d, podeAgir, aoCopiar, aoAgir, aoPresenca }: {
 }) {
   const a = d.assembleia;
   const fracao = a.peso === "FRACAO";
+  const [busca, setBusca] = useState("");
+  const [filtro, setFiltro] = useState<FiltroUnidade>("");
+  const de: Record<Exclude<FiltroUnidade, "">, (u: UnidadeAssembleia) => boolean> = {
+    PRESENTES: (u) => !!u.presenteEm, FALTAM: (u) => !u.presenteEm, PROCURACAO: (u) => u.procuracao?.estado === "PENDENTE",
+  };
+  const chips: [Exclude<FiltroUnidade, "">, string][] = [["PRESENTES", "Presentes"], ["FALTAM", "Faltam"], ["PROCURACAO", "Procuração a conferir"]];
+  const termo = busca.trim().toLowerCase();
+  const lista = d.unidades.filter((u) => (!filtro || de[filtro](u)) && (!termo || `${u.unidade} ${u.proprietarios ?? ""}`.toLowerCase().includes(termo)));
+
+  function itens(u: UnidadeAssembleia): ItemMenu[] {
+    if (!podeAgir) return [];
+    return [
+      ...(a.estado === "EM_ANDAMENTO" && !u.presenteEm ? [{ texto: "Presente no salão", icone: "predio" as const, rotulo: `Marcar ${u.unidade} presente no salão`, acao: () => aoPresenca(u, true) }] : []),
+      ...(a.estado === "EM_ANDAMENTO" && u.presenteEm && !u.votos ? [{ texto: "Retirar a presença", icone: "sair" as const, rotulo: `Retirar a presença de ${u.unidade}`, acao: () => aoPresenca(u, false) }] : []),
+      ...(u.procuracao?.estado === "PENDENTE" ? [{ texto: "Conferir a procuração", icone: "documento" as const, rotulo: `Conferir a procuração de ${u.unidade}`, acao: () => aoAgir("procuracao", u) }] : []),
+      { texto: "Copiar o link", icone: "copiar" as const, rotulo: `Copiar o link de ${u.unidade}`, acao: () => aoCopiar(u) },
+      u.semDireito
+        ? { texto: "Devolver o direito a voto", icone: "check" as const, rotulo: `Devolver o direito a voto: ${u.unidade}`, acao: () => aoAgir("direito", u) }
+        : { texto: "Marcar sem direito a voto…", icone: "cadeado" as const, perigo: true, rotulo: `Marcar sem direito a voto…: ${u.unidade}`, acao: () => aoAgir("direito", u) },
+    ];
+  }
+
   return (
-    <section aria-labelledby="as-unidades" className="grid gap-2">
-      <h2 id="as-unidades" className="text-lg font-medium">Unidades</h2>
-      <ul className="grid gap-2">
-        {d.unidades.map((u) => (
-          <li key={u.id} className="grid gap-1 rounded-xl border border-linha bg-superficie px-3 py-2 text-sm">
-            <span className="flex flex-wrap items-center gap-2">
-              <span className="font-medium">{u.unidade}</span>
-              {fracao ? <span className="text-tinta-suave">{porcento(u.peso)}</span> : null}
-              {u.presenteEm ? <Selo tom="ok">{u.presencaForma === "SALAO" ? "No salão" : "Online"}</Selo> : null}
-              {u.semDireito ? <Selo tom="neutro">Sem direito a voto</Selo> : null}
-              {u.procuracao ? <Selo tom={u.procuracao.estado === "PENDENTE" ? "atencao" : u.procuracao.estado === "ACEITA" ? "ok" : "neutro"}>Procuração {ESTADOS_PROCURACAO[u.procuracao.estado].toLowerCase()}</Selo> : null}
-            </span>
-            <span className="text-tinta-suave">
-              {u.proprietarios ?? "Sem proprietário confirmado"}{u.semContato ? " · sem WhatsApp nem e-mail para receber" : ""}
-              {u.procuracao ? ` · procurador: ${u.procuracao.nome}${u.procuracao.unidade ? ` (${u.procuracao.unidade})` : ""}${u.procuracao.motivo ? ` · ${u.procuracao.motivo}` : ""}` : ""}
-              {u.motivoSemDireito ? ` · ${u.motivoSemDireito}` : ""}
-            </span>
-            {podeAgir ? (
-              <span className="flex flex-wrap gap-2">
-                <Botao tamanho="p" variante="discreto" onClick={() => aoCopiar(u)} aria-label={`Copiar o link de ${u.unidade}`}>Copiar o link</Botao>
-                {u.procuracao?.estado === "PENDENTE" ? (
-                  <Botao tamanho="p" variante="contorno" onClick={() => aoAgir("procuracao", u)} aria-label={`Conferir a procuração de ${u.unidade}`}>Conferir a procuração</Botao>
-                ) : null}
-                <Botao tamanho="p" variante="discreto" onClick={() => aoAgir("direito", u)} aria-label={`${u.semDireito ? "Devolver o direito a voto" : "Marcar sem direito a voto"}: ${u.unidade}`}>
-                  {u.semDireito ? "Devolver o direito a voto" : "Marcar sem direito a voto"}
-                </Botao>
-                {a.estado === "EM_ANDAMENTO" ? (
-                  u.presenteEm
-                    ? (u.votos ? null : <Botao tamanho="p" variante="discreto" onClick={() => aoPresenca(u, false)} aria-label={`Retirar a presença de ${u.unidade}`}>Retirar a presença</Botao>)
-                    : <Botao tamanho="p" variante="contorno" onClick={() => aoPresenca(u, true)} aria-label={`Marcar ${u.unidade} presente no salão`}>Presente no salão</Botao>
-                ) : null}
+    <CartaoFicha id="unidades" titulo="Unidades" icone="predio">
+      <div className="grid gap-2.5">
+        <div className="busca">
+          <Icone nome="busca" />
+          <label htmlFor="as-busca" className="sr-only">Buscar unidade ou nome</label>
+          <input id="as-busca" className="campo" type="search" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar unidade ou nome" />
+        </div>
+        <div role="group" aria-label="Mostrar" className="flex flex-wrap gap-2">
+          {chips.map(([f, texto]) => (
+            <button key={f} type="button" aria-pressed={filtro === f} className="chip" onClick={() => setFiltro(filtro === f ? "" : f)}>
+              {texto} <b className="font-bold">{d.unidades.filter(de[f]).length}</b>
+            </button>
+          ))}
+        </div>
+      </div>
+      {lista.length === 0 ? <p className="t-apoio">Nenhuma unidade com esse filtro.</p> : (
+        <ul className="grid">
+          {lista.map((u) => (
+            <li key={u.id} className="flex items-center gap-3 border-t border-linha py-3">
+              <LadrilhoUnidade texto={u.unidade.split(" · ").at(-1) ?? u.unidade} />
+              <span className="grid min-w-0 flex-1 gap-0.5">
+                <span className="text-[15px] font-medium">{u.unidade}</span>
+                <span className="t-apoio">
+                  {[u.proprietarios ?? "Sem proprietário confirmado", fracao ? porcento(u.peso) : null, u.semContato ? "sem WhatsApp nem e-mail para receber" : null,
+                    u.procuracao ? `procurador: ${u.procuracao.nome}${u.procuracao.unidade ? ` (${u.procuracao.unidade})` : ""}${u.procuracao.motivo ? ` · ${u.procuracao.motivo}` : ""}` : null,
+                    u.motivoSemDireito ?? null].filter(Boolean).join(" · ")}
+                </span>
+                <span className="flex flex-wrap gap-1.5 pt-0.5">
+                  {u.presenteEm ? <Selo tom="ok">{u.presencaForma === "SALAO" ? "No salão" : "Online"}</Selo> : a.estado === "EM_ANDAMENTO" ? <Selo tom="neutro">Faltando</Selo> : null}
+                  {u.semDireito ? <Selo tom="neutro">Sem direito a voto</Selo> : null}
+                  {u.procuracao ? <Selo tom={u.procuracao.estado === "PENDENTE" ? "atencao" : u.procuracao.estado === "ACEITA" ? "ok" : "neutro"}>Procuração {ESTADOS_PROCURACAO[u.procuracao.estado].toLowerCase()}</Selo> : null}
+                </span>
               </span>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-    </section>
+              <MenuAcoes rotulo={`Ações de ${u.unidade}`} itens={itens(u)} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </CartaoFicha>
   );
 }
 
