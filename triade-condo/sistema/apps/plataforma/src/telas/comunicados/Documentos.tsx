@@ -1,5 +1,5 @@
 "use client";
-// Documentos (design "Telas dos Comunicados", tela 4; DC15, telas-modelo documentos-lista-* e
+// Documentos (design "Telas dos Comunicados", tela 4; DC15, telas-modelo
 // documentos-memoria-*; CD-04, CD-07, MP-12): a primeira parte de Documentos e memória. Abas Em
 // vigor, Contratos, Arquivados e Pedidos por e-mail; o tipo e quem vê em Filtros; o que pede atenção
 // (vence em até 60 dias, vencido, sem arquivo) em atalhos, só quando existe. Cada linha mostra a
