@@ -2,6 +2,7 @@
 // falsa, no padrão novo (DC15: abas por situação, Andamento numa linha só e Escrever em partes no
 // computador e em passos no celular). Cada tela passa no axe (WCAG 2.2 AA) no celular e no computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
+import { salvarPagina } from "./configuracoes";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { abrirArea } from "./inicio";
@@ -199,18 +200,18 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
 
   test("CD-11: o plano de comunicação nas Configurações", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
-    await page.goto(`${PLATAFORMA}/configuracoes?aba=comunicados`);
+    await page.goto(`${PLATAFORMA}/configuracoes/comunicados`);
     const assuntos = page.getByRole("group", { name: "Assuntos em uso" });
     await expect(assuntos.getByRole("checkbox", { name: "Assembleia e convocação" })).toBeChecked();
     for (const a of ["Aviso geral", "Obras e manutenção", "Segurança", "Assembleia e convocação", "Lembrete"]) {
       await assuntos.getByRole("checkbox", { name: a }).uncheck();
     }
-    await page.getByRole("button", { name: "Salvar", exact: true }).click();
+    await salvarPagina(page);
     await expect(page.getByText("Deixe pelo menos um assunto em uso.")).toBeVisible();
     await assuntos.getByRole("checkbox", { name: "Obras e manutenção" }).check();
     await page.getByLabel("O que o morador recebe e quando").fill("Avisos de obra com 2 dias de antecedência.");
     await conferir(page);
-    await page.getByRole("button", { name: "Salvar", exact: true }).click();
+    await salvarPagina(page);
     await expect(page.getByText("Plano de comunicação salvo.")).toBeVisible();
     await page.goto(`${PLATAFORMA}/comunicados/escrever`);
     await expect(page.getByText("Avisos de obra com 2 dias de antecedência.")).toBeVisible();

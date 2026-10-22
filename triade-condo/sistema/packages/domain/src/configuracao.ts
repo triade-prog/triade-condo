@@ -25,11 +25,11 @@ export const PARTES_CONFIGURACAO = {
   AREAS: { nome: "Áreas comuns", aba: "areas", grupo: "MONTA" },
   CATEGORIAS: { nome: "Categorias e prioridades", aba: "categorias", grupo: "MONTA" },
   ETAPAS: { nome: "Etapas dos pedidos", aba: "etapas", grupo: "TRIADE" },
-  MODELOS: { nome: "Modelos de resposta", aba: "etapas", grupo: "MONTA" },
+  MODELOS: { nome: "Modelos de resposta", aba: "respostas", grupo: "MONTA" },
   PRAZOS: { nome: "Prazos e avisos", aba: "prazos", grupo: "MONTA" },
   MANUTENCAO: { nome: "Etapas da manutenção", aba: "manutencao", grupo: "TRIADE" },
   COMUNICADOS: { nome: "Comunicados, mural e e-mail", aba: "comunicados", grupo: "MONTA" },
-  ETIQUETAS: { nome: "Etiquetas por local", aba: "links", grupo: "MONTA" },
+  ETIQUETAS: { nome: "Etiquetas por local", aba: "etiquetas", grupo: "MONTA" },
   WHATSAPP: { nome: "WhatsApp", aba: "whatsapp", grupo: "MONTA" },
 } as const satisfies Record<string, { nome: string; aba: string; grupo: GrupoConfiguracao }>;
 export type ParteConfiguracao = keyof typeof PARTES_CONFIGURACAO;

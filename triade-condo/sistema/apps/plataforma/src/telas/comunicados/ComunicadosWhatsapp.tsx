@@ -28,7 +28,7 @@ export function CartazComunicadosWhatsapp() {
         <p className="text-sm text-tinta-suave">Imprima em folha A4 em pé e cole no elevador e no hall.</p>
         <Botao onClick={() => window.print()} disabled={!link || !d.ligado}>Imprimir</Botao>
       </div>
-      {!d.ligado ? <Aviso tom="atencao" className="print:hidden">Os comunicados pelo WhatsApp estão desligados. Ligue em Configurações › WhatsApp antes de imprimir.</Aviso> : null}
+      {!d.ligado ? <Aviso tom="atencao" className="print:hidden">Os comunicados pelo WhatsApp estão desligados. Ligue em Configurações › Comunicados antes de imprimir.</Aviso> : null}
       {link ? (
         <section className="grid justify-items-center gap-5 rounded-2xl border border-linha p-10 text-center print:border-0">
           <Marca sistema="Comunicados" />

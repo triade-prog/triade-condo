@@ -38,7 +38,7 @@ export function ImprimirEtiquetas() {
         </div>
         <Botao onClick={() => window.print()} disabled={!etiquetas.length}>Imprimir</Botao>
       </div>
-      {!etiquetas.length ? <Aviso tom="info">Nenhuma etiqueta em uso. Crie em Configurações › Links e QR.</Aviso> : null}
+      {!etiquetas.length ? <Aviso tom="info">Nenhuma etiqueta em uso. Crie em Configurações › Etiquetas por local.</Aviso> : null}
       <p className="text-xs text-tinta-suave print:hidden">Etiqueta durável, plastificada ou em acrílico, e a colagem no prédio são um serviço à parte da TRÍADE.</p>
       {folhas.map((f, i) => (
         <section key={i} aria-label={`Folha ${i + 1}`}

@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa, V_ANA, V_BRUNA } from "./api-falsa-plataforma";
 import { abrirArea } from "./inicio";
+import { salvarPagina } from "./configuracoes";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -65,17 +66,21 @@ test.describe("Plataforma do síndico · passo 2", () => {
   test("CF-06 e CF-10: horário de atendimento com dois intervalos; sobreposição avisa; a pendência sai", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/configuracoes`);
-    await expect(page.getByRole("tab", { name: "Horários", selected: true })).toBeVisible();
-    await page.getByRole("button", { name: "Acrescentar intervalo na Segunda" }).click();
-    await page.getByRole("button", { name: "Acrescentar intervalo na Segunda" }).click();
+    await page.getByRole("link", { name: /^Horários/ }).click();
+    await expect(page).toHaveURL(`${PLATAFORMA}/configuracoes/horarios`);
+    await expect(page.getByRole("heading", { level: 1, name: "Horários" })).toBeVisible();
+    await page.getByRole("button", { name: "Montar dia a dia" }).click();
+    await page.getByRole("button", { name: "Atender neste dia, Segunda" }).click();
+    await page.getByRole("button", { name: "Mais um intervalo, Segunda" }).click();
     await page.getByLabel("Segunda, fim").nth(1).fill("18:00");
     await page.getByLabel("Segunda, início").nth(1).fill("11:00");
-    await page.getByRole("button", { name: "Salvar horário de atendimento" }).click();
+    await salvarPagina(page);
     await expect(page.getByRole("alert").filter({ hasText: "se sobrepõem" })).toBeVisible();
+    await expect(page.getByRole("alert").filter({ hasText: "Nada foi salvo. Veja o que corrigir em Horário de atendimento." })).toBeVisible();
     await page.getByLabel("Segunda, início").nth(1).fill("13:00");
     await page.getByRole("button", { name: "Copiar segunda para terça a sexta" }).click();
     await conferir(page);
-    await page.getByRole("button", { name: "Salvar horário de atendimento" }).click();
+    await salvarPagina(page);
     await expect(page.getByRole("status").filter({ hasText: "Horário de atendimento salvo." })).toBeVisible();
     await expect(page.getByLabel("Sexta, início")).toHaveCount(2);
     await menuPara(page, "Início");
@@ -97,7 +102,7 @@ test.describe("Plataforma do síndico · passo 2", () => {
 
   test("CF-08, CF-09 e AT-04: categoria renomeada e desativada; prioridade com significado", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
-    await page.goto(`${PLATAFORMA}/configuracoes?aba=categorias`);
+    await page.goto(`${PLATAFORMA}/configuracoes/categorias`);
     await page.getByRole("button", { name: "Renomear Limpeza" }).click();
     const janela = page.getByRole("dialog", { name: "Renomear Limpeza" });
     await expect(janela).toContainText("mantém o mesmo identificador");
@@ -108,8 +113,12 @@ test.describe("Plataforma do síndico · passo 2", () => {
     await janela.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Categoria salva." })).toBeVisible();
     await page.getByRole("button", { name: "Desativar Limpeza e conservação" }).click();
+    const confirmar = page.getByRole("dialog", { name: "Desativar a categoria Limpeza e conservação?" });
+    await expect(confirmar).toContainText("Os pedidos que já têm Limpeza e conservação continuam com ela");
+    await conferir(page);
+    await confirmar.getByRole("button", { name: "Desativar Limpeza e conservação" }).click();
     await expect(page.getByRole("listitem").filter({ hasText: "Limpeza e conservação" })).toContainText("Desativada");
-    await page.getByRole("button", { name: "+ Prioridade" }).click();
+    await page.getByRole("button", { name: "Nova prioridade" }).click();
     const nova = page.getByRole("dialog", { name: "Nova prioridade" });
     await nova.getByLabel("Nome da prioridade").fill("Crítica");
     await nova.getByLabel("O que ela significa").fill("Para o prédio inteiro.");
@@ -121,13 +130,15 @@ test.describe("Plataforma do síndico · passo 2", () => {
   test("AT-05, AT-25 e CF-09: etapas em leitura (são da TRÍADE); modelo de resposta", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/configuracoes?aba=etapas`);
+    await expect(page).toHaveURL(`${PLATAFORMA}/configuracoes/etapas`);
     await expect(page.getByRole("listitem").filter({ hasText: "Aguardando o morador" })).toContainText("pausa o prazo");
-    await expect(page.getByText("Ajustado pela TRÍADE")).toBeVisible();
-    await expect(page.getByRole("button", { name: "+ Etapa" })).toHaveCount(0);
+    await expect(page.getByText("Feito pela TRÍADE")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Nova etapa" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Pedir mudança" })).toHaveAttribute("href", /\/suporte\?mudar=Etapas\+dos\+pedidos/);
     await conferir(page);
-    await page.getByRole("button", { name: "+ Modelo" }).click();
-    const modelo = page.getByRole("dialog", { name: "Novo modelo de resposta" });
+    await page.goto(`${PLATAFORMA}/configuracoes/respostas`);
+    await page.getByRole("button", { name: "Nova resposta" }).click();
+    const modelo = page.getByRole("dialog", { name: "Nova resposta pronta" });
     await modelo.getByLabel("Título").fill("Vazamento");
     await modelo.getByLabel("Texto da resposta").fill("Vamos mandar alguém olhar ainda hoje.");
     await modelo.getByLabel("Categoria").selectOption({ label: "Manutenção" });
@@ -137,11 +148,12 @@ test.describe("Plataforma do síndico · passo 2", () => {
 
   test("AT-10: prazos com regra geral e exceções; sem horário, horas corridas", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
-    await page.goto(`${PLATAFORMA}/configuracoes?aba=prazos`);
+    await page.goto(`${PLATAFORMA}/configuracoes/prazos`);
     await expect(page.getByText("os prazos contam em horas corridas")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Definir o horário" })).toHaveAttribute("href", "/configuracoes/horarios");
     await expect(page.getByRole("row", { name: /Regra geral/ })).toContainText("24 h de atendimento");
     await expect(page.getByRole("button", { name: "Tirar a exceção de Regra geral" })).toHaveCount(0);
-    await page.getByRole("button", { name: "+ Exceção" }).click();
+    await page.getByRole("button", { name: "Nova exceção" }).click();
     const janela = page.getByRole("dialog", { name: "Nova exceção de prazo" });
     await janela.getByLabel("Categoria").selectOption({ label: "Limpeza" });
     await janela.getByLabel("Horas de atendimento").fill("48");
@@ -192,14 +204,14 @@ test.describe("Plataforma do síndico · passo 2", () => {
 
   test("CF-03: quem só vê não encontra botão de mudar nem pessoas", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { quem: "SO_VE" });
-    await page.goto(`${PLATAFORMA}/configuracoes?aba=categorias`);
+    await page.goto(`${PLATAFORMA}/configuracoes/categorias`);
     await expect(page.getByText("o síndico precisa dar a você a permissão Configurar")).toBeVisible();
-    await expect(page.getByRole("button", { name: "+ Categoria" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Nova categoria" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Renomear / })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Conta de / })).toBeVisible();
     const menu = page.getByRole("button", { name: "Mais", exact: true });
     if (await menu.isVisible()) await menu.click();
-    await expect(page.getByRole("link", { name: "Configurações" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Configurações", exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Pessoas e acesso" })).toHaveCount(0);
     await conferir(page);
   });

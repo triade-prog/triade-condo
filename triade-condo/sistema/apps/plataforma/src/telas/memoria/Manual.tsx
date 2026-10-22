@@ -44,7 +44,7 @@ export function AbaManual({ feito }: PropsAbaMemoria) {
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
       {!m.muralLigado && m.secoes.some((s) => s.noMural) ? (
         <Aviso tom="atencao" titulo="O mural online está desligado">
-          As seções marcadas só aparecem para os moradores quando o mural estiver ligado em <Link href="/configuracoes?aba=comunicados" className="font-medium underline">Configurações › Comunicados</Link>.
+          As seções marcadas só aparecem para os moradores quando o mural estiver ligado em <Link href="/configuracoes/mural" className="font-medium underline">Configurações › Mural e e-mail</Link>.
         </Aviso>
       ) : null}
       <section aria-labelledby="mn-secoes" className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4 shadow-s1">

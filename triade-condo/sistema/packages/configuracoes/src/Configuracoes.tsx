@@ -1,39 +1,29 @@
 "use client";
-// Configurações do condomínio (CF-06, CF-08, CF-10, AT-10, AT-14, AT-15; áreas comuns, AC-07), em abas. Quem só vê (pessoa
-// autorizada sem a permissão Configurar) não encontra botão de mudar (CF-03). As mesmas abas
-// servem ao app e à aba Configuração do Console (PI-04, decisão 7); quem hospeda guarda a aba.
+// Configurações do condomínio (CF-06, CF-08, CF-10, CF-12, AT-10, AT-14, AT-15; áreas comuns, AC-07),
+// por tarefa (decisões A.1 a D.1 da análise de Configurações, 22/10/2026): uma entrada com 5 grupos
+// e uma página por tarefa, cada uma com um Salvar na barra do rodapé. Quem só vê (pessoa autorizada
+// sem a permissão Configurar) não encontra botão de mudar (CF-03). As mesmas páginas servem ao app e
+// à aba Configuração do Console (PI-04, decisão 7); quem hospeda guarda a página aberta.
 
-import { useState, type ReactNode } from "react";
-import { Abas, Aviso, Carregando, ErroCarregar } from "@triade/ui";
+import Link from "next/link";
+import { useId, useState, type ReactNode } from "react";
+import { Aviso, Carregando, ErroCarregar, Icone, Selo, type NomeIcone } from "@triade/ui";
 import { assinatura, ProvedorConfiguracao, useAmbiente, useCarregar, naBase, type Ambiente } from "./contexto.tsx";
-import type { Tecnica } from "./tecnica.tsx";
-import type { Configuracoes as Config, Recado } from "./tipos.ts";
-import { AbaHorarios } from "./AbaHorarios.tsx";
+import { SeloTriade, type Tecnica } from "./tecnica.tsx";
+import type { AreasComuns, Configuracoes as Config, LinksQr, PlanoComunicacao, Recado } from "./tipos.ts";
+import { GRUPOS_TAREFA, grupoDaPagina, PAGINAS_CONFIGURACAO, PAGINAS_DA_TRIADE, type IdGrupo, type IdPagina } from "./paginas.ts";
+import { PaginaSalvavel } from "./salvar.tsx";
+import { AbaHorarios, resumoHorario } from "./AbaHorarios.tsx";
 import { AbaFeriados } from "./AbaFeriados.tsx";
 import { AbaCategorias } from "./AbaCategorias.tsx";
 import { AbaEtapas } from "./AbaEtapas.tsx";
-import { AbaPrazos } from "./AbaPrazos.tsx";
-import { AbaRegras } from "./AbaRegras.tsx";
+import { AbaPrazos, EXEMPLO_PRAZO } from "./AbaPrazos.tsx";
 import { AbaManutencao } from "./AbaManutencao.tsx";
-import { AbaComunicados } from "./AbaComunicados.tsx";
+import { AbaComunicados, AbaMural } from "./AbaComunicados.tsx";
 import { AbaLinksQr } from "./AbaLinksQr.tsx";
 import { AbaWhatsapp } from "./AbaWhatsapp.tsx";
 import { AbaAreasComuns } from "./AbaAreasComuns.tsx";
-
-export const ABAS_CONFIGURACAO = [
-  { id: "horarios", texto: "Horários" },
-  { id: "feriados", texto: "Feriados" },
-  { id: "areas", texto: "Áreas comuns" },
-  { id: "categorias", texto: "Categorias e prioridades" },
-  { id: "etapas", texto: "Etapas e respostas" },
-  { id: "prazos", texto: "Prazos e avisos" },
-  { id: "regras", texto: "Regras dos pedidos" },
-  { id: "manutencao", texto: "Manutenção" },
-  { id: "comunicados", texto: "Comunicados" },
-  { id: "links", texto: "Links e QR" },
-  { id: "whatsapp", texto: "WhatsApp" },
-] as const;
-export type IdAba = (typeof ABAS_CONFIGURACAO)[number]["id"];
+import type { Conexao } from "./conexao.tsx";
 
 export interface PropsAba {
   config: Config;
@@ -45,62 +35,214 @@ export interface PropsAba {
   tecnica: Tecnica;
 }
 
-/** As abas das Configurações no ambiente dado; `aba` e `aoMudarAba` ficam com quem hospeda. */
-export function Configuracoes({ ambiente, aba, aoMudarAba, apresentacao }: {
-  ambiente: Ambiente;
-  aba: IdAba;
-  aoMudarAba: (id: IdAba) => void;
-  /** Texto do topo, de quem hospeda. */
-  apresentacao?: ReactNode;
-}) {
+export const APOIO_CONFIGURACOES = "A TRÍADE montou tudo na implantação. Ajuste o que mudar no seu condomínio.";
+
+/** O "Como funciona" de cada página: a regra por trás, sem mudar uma palavra do que se ajusta. */
+const COMO: Partial<Record<IdPagina, string>> = {
+  horarios: "O horário de atendimento conta os prazos de retorno: fora dele, nos feriados e nas etapas que pausam, o prazo para. O de funcionamento é quando o prédio está aberto e quando chegam os avisos no WhatsApp de quem trabalha nele.",
+  feriados: "No feriado não há atendimento: o prazo de retorno para e volta a contar no dia seguinte, no horário de atendimento.",
+  prazos: EXEMPLO_PRAZO,
+  categorias: "Renomear não quebra o histórico. Desativar tira a categoria dos pedidos novos; os que já têm continuam com ela, no histórico e nos indicadores.",
+  areas: "Só pessoas com vínculo confirmado em Moradores e unidades reservam. Área inativa não aparece para ninguém.",
+  comunicados: "O plano fica à vista de quem escreve comunicados. No horário sem envio, nada sai por e-mail nem pelo WhatsApp: programar nesse horário mostra um aviso.",
+  whatsapp: "A conexão do número fica com a TRÍADE. Aqui o condomínio escolhe o que o morador recebe fora do horário, como o pedido chega e quem cuida quando o número cai.",
+};
+
+/** Uma página das Configurações no ambiente dado. No Console, `aoVoltar` volta à lista das partes. */
+export function PaginaConfiguracao({ ambiente, pagina, aoVoltar }: { ambiente: Ambiente; pagina: IdPagina; aoVoltar?: () => void }) {
   return (
     <ProvedorConfiguracao ambiente={ambiente}>
-      <Abas_ aba={aba} aoMudarAba={aoMudarAba} apresentacao={apresentacao} />
+      <Pagina_ pagina={pagina} aoVoltar={aoVoltar} />
     </ProvedorConfiguracao>
   );
 }
 
-function Abas_({ aba, aoMudarAba, apresentacao }: { aba: IdAba; aoMudarAba: (id: IdAba) => void; apresentacao?: ReactNode }) {
+function Voltar({ aoVoltar, children }: { aoVoltar?: () => void; children: ReactNode }) {
+  const { endereco } = useAmbiente();
+  const cls = "inline-flex min-h-8 items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline";
+  if (aoVoltar) return <button type="button" onClick={aoVoltar} className={cls}><Icone nome="esq" className="h-4 w-4" />{children}</button>;
+  if (endereco) return <Link href={endereco(null)} className={cls}><Icone nome="esq" className="h-4 w-4" />{children}</Link>;
+  return null;
+}
+
+function Pagina_({ pagina, aoVoltar }: { pagina: IdPagina; aoVoltar?: () => void }) {
   const ambiente = useAmbiente();
   const config = useCarregar<Config>(naBase("/configuracoes"));
   const [recado, setRecado] = useState<Recado>(null);
+  const [como, setComo] = useState(false);
+  const idComo = useId();
+  const info = PAGINAS_CONFIGURACAO[pagina];
+  const textoComo = COMO[pagina];
 
-  function mudarAba(id: IdAba) {
-    setRecado(null);
-    aoMudarAba(id);
-  }
+  const cabecalho = (
+    <div className="grid gap-2">
+      <Voltar aoVoltar={aoVoltar}>Configurações · {grupoDaPagina(pagina).nome}</Voltar>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="grid gap-1">
+          {ambiente.onde === "app" ? <h1 className="text-[28px] font-normal tracking-tight">{info.nome}</h1> : <h2 className="text-xl font-medium">{info.nome}</h2>}
+          <p className="text-sm text-tinta-suave">{info.apoio}</p>
+        </div>
+        {textoComo ? (
+          <button type="button" aria-expanded={como} aria-controls={idComo} onClick={() => setComo(!como)}
+            className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-[10px] px-2.5 text-[13px] font-medium text-violeta-600 hover:bg-violeta-50 aria-expanded:bg-violeta-50">
+            <Icone nome="info" className="h-4 w-4" />Como funciona<Icone nome="baixo" className={`h-3.5 w-3.5 ${como ? "rotate-180" : ""}`} />
+          </button>
+        ) : null}
+      </div>
+      {textoComo ? <p id={idComo} hidden={!como} className="rounded-[14px] border border-violeta-200 bg-violeta-50 px-4 py-3 text-[13px] text-tinta-suave">{textoComo}</p> : null}
+    </div>
+  );
 
-  if (config.estado === "carregando") return <Carregando rotulo="Carregando as configurações…" />;
-  if (config.estado === "erro") return <ErroCarregar texto={config.texto} tentarDeNovo={config.recarregar} />;
+  if (config.estado === "carregando") return <div className="grid gap-5">{cabecalho}<Carregando rotulo="Carregando as configurações…" /></div>;
+  if (config.estado === "erro") return <div className="grid gap-5">{cabecalho}<ErroCarregar texto={config.texto} tentarDeNovo={config.recarregar} /></div>;
 
   const c = config.dados;
-  const props: PropsAba = {
-    config: c,
-    pode: c.podeEditar,
-    recarregar: config.recarregar,
-    salvo: (texto) => { setRecado({ tom: "ok", texto }); config.recarregar(); ambiente.aoMudar?.(); },
-    tecnica: c.tecnica ?? { pode: false, motivo: false },
+  const salvo = (texto: string) => { setRecado({ tom: "ok", texto }); config.recarregar(); ambiente.aoMudar?.(); };
+  const props: PropsAba = { config: c, pode: c.podeEditar, recarregar: config.recarregar, salvo, tecnica: c.tecnica ?? { pode: false, motivo: false } };
+  const daTriade = PAGINAS_DA_TRIADE.includes(pagina) && ambiente.onde === "app";
+
+  return (
+    <div className="grid gap-5">
+      {cabecalho}
+      {!c.podeEditar && ambiente.onde === "app" && !daTriade ? <Aviso tom="info">Você pode ver as configurações. Para mudar, o síndico precisa dar a você a permissão Configurar.</Aviso> : null}
+      {recado ? <Aviso tom={recado.tom} papel="status">{recado.texto}</Aviso> : null}
+      <PaginaSalvavel key={`${pagina}-${assinatura(c)}`} aoSalvar={salvo}>
+        {pagina === "horarios" ? <AbaHorarios {...props} /> : null}
+        {pagina === "feriados" ? <AbaFeriados {...props} /> : null}
+        {pagina === "prazos" ? <AbaPrazos {...props} /> : null}
+        {pagina === "categorias" ? <AbaCategorias {...props} /> : null}
+        {pagina === "respostas" ? <AbaEtapas {...props} parte="modelos" /> : null}
+        {pagina === "etapas" ? <AbaEtapas {...props} parte="etapas" /> : null}
+        {pagina === "areas" ? <AbaAreasComuns {...props} /> : null}
+        {pagina === "manutencao" ? <AbaManutencao {...props} /> : null}
+        {pagina === "comunicados" ? <AbaComunicados {...props} /> : null}
+        {pagina === "mural" ? <AbaMural {...props} /> : null}
+        {pagina === "whatsapp" ? <AbaWhatsapp aoSalvar={salvo} tecnica={props.tecnica} /> : null}
+        {pagina === "etiquetas" ? <AbaLinksQr {...props} parte="etiquetas" /> : null}
+        {pagina === "abertos" ? <AbaLinksQr {...props} parte="abertos" /> : null}
+      </PaginaSalvavel>
+    </div>
+  );
+}
+
+const ICONE_GRUPO: Record<IdGrupo, NomeIcone> = { atendimento: "relogio", pedidos: "pedido", predio: "predio", comunicacao: "megafone", links: "link" };
+const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
+const hora = (h: string) => h.replace(/^0(\d)/, "$1").replace(":00", "h").replace(/:(\d\d)$/, "h$1");
+
+/** O resumo de cada página na entrada, com o que já carregou. */
+function useResumos(c: Config) {
+  const areas = useCarregar<AreasComuns>(naBase("/areas-comuns"));
+  const manutencao = useCarregar<{ etapas: { ativa: boolean }[] }>(naBase("/etapas-manutencao"));
+  const plano = useCarregar<PlanoComunicacao>(naBase("/plano-comunicacao"));
+  const zap = useCarregar<{ conexao: Conexao }>(naBase("/whatsapp/config"));
+  const links = useCarregar<LinksQr>(naBase("/links-qr"));
+  const ano = new Date().getFullYear();
+  const deste = c.feriados.filter((f) => f.data.startsWith(String(ano))).length;
+  const geral = c.prazos.find((p) => !p.categoriaId && !p.prioridadeId);
+  const excecoes = c.prazos.length - (geral ? 1 : 0);
+  const atendimento = resumoHorario(c.horarios.ATENDIMENTO.intervalos);
+  const pronto = <T,>(x: { estado: string; dados?: T }, f: (d: T) => string) => (x.estado === "pronto" ? f(x.dados as T) : x.estado === "erro" ? "" : "…");
+  const SITUACAO_ZAP: Record<Conexao["situacao"], string> = { SEM_CREDENCIAIS: "Ainda não ligado", DESCONECTADO: "Desconectado", CONECTANDO: "Conectando", CONECTADO: "Conectado" };
+  const r: Record<IdPagina, string> = {
+    horarios: atendimento ? `Atendimento: ${atendimento}` : "Atendimento ainda sem horário",
+    feriados: deste ? `${plural(deste, "feriado", "feriados")} em ${ano}` : `Nenhum em ${ano} · traga os nacionais`,
+    prazos: [geral ? `Prazo geral ${geral.horas} h` : "Sem prazo geral", excecoes ? plural(excecoes, "exceção", "exceções") : null].filter(Boolean).join(" · "),
+    categorias: `${plural(c.categorias.filter((x) => x.ativa).length, "categoria", "categorias")} · ${plural(c.prioridades.filter((x) => x.ativa).length, "prioridade", "prioridades")}`,
+    respostas: plural(c.modelos.filter((m) => m.ativo).length, "resposta", "respostas"),
+    etapas: plural(c.etapas.filter((e) => e.ativa).length, "etapa", "etapas"),
+    areas: pronto<AreasComuns>(areas, (d) => `${plural(d.areas.length, "área", "áreas")} · ${plural(d.areas.filter((a) => a.ativa).length, "ativa", "ativas")}`),
+    manutencao: pronto<{ etapas: { ativa: boolean }[] }>(manutencao, (d) => plural(d.etapas.filter((e) => e.ativa).length, "etapa", "etapas")),
+    comunicados: pronto<PlanoComunicacao>(plano, (d) => `${plural(d.assuntos.length, "assunto", "assuntos")} · sem envio das ${hora(d.silencioInicio)} às ${hora(d.silencioFim)}`),
+    mural: pronto<PlanoComunicacao>(plano, (d) => `Mural ${d.mural.ligado ? "ligado" : "desligado"} · e-mail ${d.email.ligado ? "ligado" : "desligado"}`),
+    whatsapp: pronto<{ conexao: Conexao }>(zap, (d) => SITUACAO_ZAP[d.conexao.situacao] + (d.conexao.oficial === false ? " · conexão de teste" : "")),
+    etiquetas: pronto<LinksQr>(links, (d) => {
+      const uso = d.etiquetas.filter((e) => e.ativa).length;
+      const fora = d.etiquetas.length - uso;
+      return d.etiquetas.length ? `${uso} em uso${fora ? ` · ${plural(fora, "desativada", "desativadas")}` : ""}` : "Nenhuma etiqueta ainda";
+    }),
+    abertos: pronto<LinksQr>(links, (d) => `Mural ${d.mural.ligado ? "ligado" : "desligado"} · ${plural(d.prestador.validos, "link de prestador", "links de prestador")}`),
+  };
+  return r;
+}
+
+/** A entrada das Configurações (A.1): 5 grupos por tarefa, o que falta e onde ficaram os avisos de cada pessoa. */
+export function EntradaConfiguracoes({ ambiente, enderecoMeusAvisos }: { ambiente: Ambiente; enderecoMeusAvisos?: string }) {
+  return (
+    <ProvedorConfiguracao ambiente={ambiente}>
+      <Entrada_ enderecoMeusAvisos={enderecoMeusAvisos} />
+    </ProvedorConfiguracao>
+  );
+}
+
+function Entrada_({ enderecoMeusAvisos }: { enderecoMeusAvisos?: string }) {
+  const config = useCarregar<Config>(naBase("/configuracoes"));
+  const cab = (
+    <div className="grid gap-1">
+      <h1 className="text-[28px] font-normal tracking-tight">Configurações</h1>
+      <p className="text-sm text-tinta-suave">{APOIO_CONFIGURACOES}</p>
+    </div>
+  );
+  if (config.estado === "carregando") return <div className="grid gap-5">{cab}<Carregando rotulo="Carregando as configurações…" /></div>;
+  if (config.estado === "erro") return <div className="grid gap-5">{cab}<ErroCarregar texto={config.texto} tentarDeNovo={config.recarregar} /></div>;
+  return <EntradaPronta c={config.dados} cab={cab} enderecoMeusAvisos={enderecoMeusAvisos} />;
+}
+
+function EntradaPronta({ c, cab, enderecoMeusAvisos }: { c: Config; cab: ReactNode; enderecoMeusAvisos?: string }) {
+  const { endereco, onde } = useAmbiente();
+  const resumos = useResumos(c);
+  const falta = new Set<IdPagina>(c.pendencias.includes("SEM_HORARIO_ATENDIMENTO") ? ["horarios"] : []);
+  const href = (p: IdPagina) => endereco?.(p) ?? "#";
+  const colunas: IdGrupo[][] = [["atendimento", "links"], ["pedidos", "predio"], ["comunicacao"]];
+  const cartao = (id: IdGrupo) => {
+    const g = GRUPOS_TAREFA.find((x) => x.id === id)!;
+    const comFalta = g.paginas.some((p) => falta.has(p));
+    return (
+      <section key={g.id} aria-labelledby={`g-${g.id}`} className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1 md:p-5">
+        <div className="flex items-center gap-3">
+          <span className="ladrilho h-10 w-10 rounded-xl" data-tom={comFalta ? "atencao" : "violeta"} aria-hidden="true"><Icone nome={ICONE_GRUPO[g.id]} className="h-5 w-5" /></span>
+          <span className="grid">
+            <h2 id={`g-${g.id}`} className="text-[17px] font-semibold">{g.nome}</h2>
+            <span className="text-[13px] text-tinta-suave">{g.apoio}</span>
+          </span>
+        </div>
+        <ul className="mt-1 grid">
+          {g.paginas.map((p) => {
+            const triade = PAGINAS_DA_TRIADE.includes(p) && onde === "app";
+            return (
+              <li key={p} className="border-t border-linha">
+                <Link href={href(p)} className="flex min-h-[52px] items-center gap-3 py-2.5 hover:text-violeta-600">
+                  <span className="grid min-w-0 flex-1">
+                    <span className="text-[15px] font-medium">{PAGINAS_CONFIGURACAO[p].nome}</span>
+                    <span className="text-[13px] text-tinta-suave">{resumos[p] || " "}</span>
+                  </span>
+                  {falta.has(p) ? <Selo tom="atencao">Falta</Selo> : triade ? <span className="max-sm:hidden"><SeloTriade /></span> : null}
+                  <Icone nome="dir" className="h-[18px] w-[18px] shrink-0 text-tinta-suave" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    );
   };
   return (
     <div className="grid gap-5">
-      {apresentacao}
-      {!c.podeEditar && ambiente.onde === "app" ? <Aviso tom="info">Você pode ver as configurações. Para mudar, o síndico precisa dar a você a permissão Configurar.</Aviso> : null}
-      {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
-      <Abas abas={ABAS_CONFIGURACAO} atual={aba} aoMudar={mudarAba} rotulo="Partes das configurações">
-        <div key={`${aba}-${assinatura(c)}`} className="pt-5">
-          {aba === "horarios" ? <AbaHorarios {...props} /> : null}
-          {aba === "feriados" ? <AbaFeriados {...props} /> : null}
-          {aba === "areas" ? <AbaAreasComuns {...props} /> : null}
-          {aba === "categorias" ? <AbaCategorias {...props} /> : null}
-          {aba === "etapas" ? <AbaEtapas {...props} /> : null}
-          {aba === "prazos" ? <AbaPrazos {...props} /> : null}
-          {aba === "regras" ? <AbaRegras {...props} /> : null}
-          {aba === "manutencao" ? <AbaManutencao {...props} /> : null}
-          {aba === "comunicados" ? <AbaComunicados {...props} /> : null}
-          {aba === "links" ? <AbaLinksQr {...props} /> : null}
-          {aba === "whatsapp" ? <AbaWhatsapp aoSalvar={props.salvo} tecnica={props.tecnica} /> : null}
-        </div>
-      </Abas>
+      {cab}
+      {falta.has("horarios") ? (
+        <Aviso tom="atencao" titulo="Falta 1 coisa: horário de atendimento">
+          Sem ele, os prazos contam em horas corridas, de dia e de noite. Nada aqui é obrigatório; o painel só avisa.{" "}
+          <Link href={href("horarios")} className="font-medium text-violeta-600 underline-offset-2 hover:underline">Definir o horário</Link>
+        </Aviso>
+      ) : null}
+      <div className="grid items-start gap-4 lg:grid-cols-3 lg:gap-5">
+        {colunas.map((col, i) => <div key={i} className="grid content-start gap-4 lg:gap-5">{col.map(cartao)}</div>)}
+      </div>
+      {enderecoMeusAvisos ? (
+        <p className="text-[13px] text-tinta-suave">
+          Os avisos no seu WhatsApp agora ficam no menu da sua conta, em{" "}
+          <Link href={enderecoMeusAvisos} className="font-semibold text-violeta-600 hover:underline">Meus avisos</Link>.
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -168,11 +168,11 @@ test.describe("Plataforma do síndico · manutenção", () => {
 
   test("MP-02 e CF-09: as etapas da manutenção aparecem nas configurações; quem muda é a TRÍADE", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
-    await page.goto(`${PLATAFORMA}/configuracoes?aba=manutencao`);
+    await page.goto(`${PLATAFORMA}/configuracoes/manutencao`);
     const aba = page.getByRole("region", { name: "Etapas da manutenção" });
     await expect(aba).toContainText("Aguardando visita");
-    await expect(aba).toContainText("Ajustado pela TRÍADE");
-    await expect(aba.getByRole("button", { name: "+ Etapa" })).toHaveCount(0);
+    await expect(aba).toContainText("Feito pela TRÍADE");
+    await expect(aba.getByRole("button", { name: "Nova etapa" })).toHaveCount(0);
     await expect(aba.getByRole("button", { name: /Editar a etapa/ })).toHaveCount(0);
     await conferir(page);
     await aba.getByRole("link", { name: "Pedir mudança" }).click();

@@ -5,29 +5,30 @@
 
 import { useState } from "react";
 import { AVISO_NOVO_SINDICO, type AvisoNovoSindico } from "@triade/domain";
-import { AvisoErro, Botao, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
+import { AvisoErro, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
 import type { PropsAba } from "./Configuracoes.tsx";
 import { naBase } from "./contexto.tsx";
+import { ParteNumerada } from "./comum.tsx";
+import { useParte, useVersao } from "./salvar.tsx";
 
-export function AvisoPedidoNovo({ config, recarregar, salvo }: PropsAba) {
+export function AvisoPedidoNovo({ config, recarregar, n }: PropsAba & { n: number }) {
   const a = config.avisoNovo;
   const [sindico, setSindico] = useState<AvisoNovoSindico>(a.sindico);
   const [protocolo, setProtocolo] = useState(a.protocolo);
   const [falha, setFalha] = useState<ErroApi | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const versao = useVersao("config", config.versao);
 
-  async function salvar() {
+  async function salvar(): Promise<string | null> {
     setFalha(null);
-    setEnviando(true);
-    const r = await chamarApi(naBase("/regras-aviso-novo"), { metodo: "PUT", corpo: { versao: config.versao, sindico, protocolo } });
-    setEnviando(false);
-    if (!r.ok) return setFalha(r.erro);
-    salvo("Regra de pedido novo salva.");
+    const r = await chamarApi(naBase("/regras-aviso-novo"), { metodo: "PUT", corpo: { versao: versao.atual(), sindico, protocolo } });
+    if (!r.ok) { setFalha(r.erro); return null; }
+    versao.gravou(r.dados);
+    return "Regra de pedido novo salva.";
   }
+  useParte("aviso-novo", { nome: "Pedido novo", mudancas: Number(sindico !== a.sindico) + Number(protocolo !== a.protocolo), salvar });
 
   return (
-    <section aria-labelledby="t-pedido-novo" className="grid gap-4 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-pedido-novo" className="text-lg font-medium">Pedido novo</h2>
+    <ParteNumerada n={n} id="t-pedido-novo" titulo="Pedido novo">
       <p className="text-sm text-tinta-suave">O responsável fica sabendo sempre, menos quando foi ele quem registrou. Sem responsável, ficam sabendo os que cuidam dos pedidos.</p>
       {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={recarregar} /> : null}
       {a.podeMudar ? (
@@ -48,7 +49,6 @@ export function AvisoPedidoNovo({ config, recarregar, salvo }: PropsAba) {
               <span className="block text-xs text-tinta-suave">Ligado, a linha Quem pediu já vem marcada. Pelo WhatsApp do condomínio quando o número está conectado; senão, por e-mail confirmado. Quem registra pode desmarcar em cada pedido.</span>
             </span>
           </label>
-          <div className="flex justify-end"><Botao disabled={enviando} onClick={() => void salvar()}>{enviando ? "Salvando…" : "Salvar"}</Botao></div>
         </>
       ) : (
         <ul className="grid gap-2 text-sm">
@@ -57,6 +57,6 @@ export function AvisoPedidoNovo({ config, recarregar, salvo }: PropsAba) {
           <li className="text-tinta-suave">Só o síndico muda esta regra.</li>
         </ul>
       )}
-    </section>
+    </ParteNumerada>
   );
 }

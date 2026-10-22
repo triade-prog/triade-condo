@@ -1,5 +1,5 @@
 // Comunicado pelo WhatsApp do condomínio (F6.6; CD-02, W-20, W-16) com a API falsa: o cartão de
-// Configurações › WhatsApp, o cartaz, como vai chegar ao escrever, como chegou e a correção que
+// Configurações › Comunicados, o cartaz, como vai chegar ao escrever, como chegou e a correção que
 // avisa de novo, a ficha da unidade, o filtro da lista de contatos, a linha dos moradores no
 // registro do pedido e o botão do mural e do link pessoal. As regras de verdade (aceite, fila
 // lenta, horário sem envio) estão no banco (pgTAP 033). Cada tela passa no axe (WCAG 2.2 AA) no
@@ -32,7 +32,7 @@ test.describe("Plataforma · comunicado pelo WhatsApp", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Mural do Residencial Ipê" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Receber pelo WhatsApp" })).toHaveCount(0);
 
-    await page.goto(`${PLATAFORMA}/configuracoes?aba=whatsapp`);
+    await page.goto(`${PLATAFORMA}/configuracoes/comunicados`);
     const cartao = page.getByRole("region", { name: "Comunicados pelo WhatsApp" });
     const chave = cartao.getByRole("switch", { name: /Mandar comunicados pelo WhatsApp do condomínio/ });
     await expect(chave).not.toBeChecked();
@@ -74,7 +74,7 @@ test.describe("Plataforma · comunicado pelo WhatsApp", () => {
     await expect(chegar.getByText("1 contato não recebe por nenhum dos dois")).toBeVisible();
     await chegar.getByRole("button", { name: "Ver quem fica de fora" }).click();
     await expect(chegar.getByRole("listitem").filter({ hasText: "Joana Lima" })).toBeVisible();
-    await expect(chegar.getByRole("link", { name: "Como convidar" })).toHaveAttribute("href", "/configuracoes?aba=whatsapp");
+    await expect(chegar.getByRole("link", { name: "Como convidar" })).toHaveAttribute("href", "/configuracoes/comunicados");
     await conferir(page);
     await zap.uncheck();
     await expect(canais).toContainText("0 pelo WhatsApp");

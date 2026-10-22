@@ -2,16 +2,20 @@
 // Prazos de retorno (AT-10): uma regra geral e exceções por categoria, por prioridade ou
 // pelas duas. Vale a mais específica, e a prioridade vem antes da categoria. Conta em horas
 // de atendimento e para fora do horário, nos feriados e nas etapas que pausam. Em cima, as
-// regras de aviso (passo 6) e quem fica sabendo de pedido novo (F6.4).
+// regras de aviso (passo 6) e quem fica sabendo de pedido novo (F6.4). Na página por tarefa, as 4
+// partes numeradas: pedido novo, retorno vencido, prazos e revisar e reabrir (antes, a aba Regras).
 
 import { useState } from "react";
-import { AvisoErro, Aviso, Botao, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
+import { AvisoErro, Aviso, Botao, chamarApi, Icone, textoDoErro, type ErroApi } from "@triade/ui";
 import { Janela, type Valores } from "./Janela.tsx";
 import type { Configuracoes } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
 import { RegrasAviso } from "./RegrasAviso.tsx";
 import { AvisoPedidoNovo } from "./AvisoPedidoNovo.tsx";
-import { naBase } from "./contexto.tsx";
+import { Parecidos, RegrasPedidos } from "./AbaRegras.tsx";
+import { ParteNumerada } from "./comum.tsx";
+import { BlocoTriade } from "./tecnica.tsx";
+import { LinkPagina, naBase } from "./contexto.tsx";
 
 type Prazo = Configuracoes["prazos"][number];
 
@@ -19,15 +23,17 @@ function horas(n: number): string {
   return `${n} h de atendimento`;
 }
 
+export const EXEMPLO_PRAZO =
+  "Exemplo: pedido aberto quinta às 17h com prazo de 4 h, atendimento de segunda a sexta até as 18h. Conta 1 h na quinta; se sexta for feriado, o retorno vence segunda às 11h.";
+
 export function AbaPrazos(props: PropsAba) {
   return (
-    <div className="grid gap-6">
-      <AvisoPedidoNovo {...props} />
-      <RegrasAviso {...props} />
-      <section aria-labelledby="t-prazos" className="grid gap-3">
-        <h2 id="t-prazos" className="text-lg font-medium">Prazos de retorno</h2>
-        <TabelaPrazos {...props} />
-      </section>
+    <div className="grid gap-5">
+      <AvisoPedidoNovo {...props} n={1} />
+      <RegrasAviso {...props} n={2} />
+      <ParteNumerada n={3} id="t-prazos" titulo="Prazos de retorno"><TabelaPrazos {...props} /></ParteNumerada>
+      <RegrasPedidos {...props} n={4} />
+      {props.config.parecidosDias !== undefined ? <BlocoTriade><Parecidos {...props} dias={props.config.parecidosDias} /></BlocoTriade> : null}
     </div>
   );
 }
@@ -57,7 +63,11 @@ function TabelaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
 
   return (
     <div className="grid gap-4">
-      {semHorario ? <Aviso tom="atencao">Sem horário de atendimento definido, os prazos contam em horas corridas. Defina o horário na aba Horários.</Aviso> : null}
+      {semHorario ? (
+        <Aviso tom="atencao" titulo="Ainda sem horário de atendimento">
+          Até definir, os prazos contam em horas corridas. <LinkPagina pagina="horarios">Definir o horário</LinkPagina>
+        </Aviso>
+      ) : null}
       {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={recarregar} /> : null}
       <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
         <table className="w-full text-sm">
@@ -91,10 +101,12 @@ function TabelaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
           </tbody>
         </table>
       </div>
-      {pode ? <Botao variante="contorno" className="justify-self-start" onClick={() => setNova(true)}>+ Exceção</Botao> : null}
-      <Aviso tom="info">
-        Exemplo: pedido aberto quinta às 17h com prazo de 4 h, atendimento de segunda a sexta até as 18h. Conta 1 h na quinta; se sexta for feriado, o retorno vence segunda às 11h.
-      </Aviso>
+      {pode ? (
+        <span className="flex flex-wrap items-center gap-3">
+          <Botao variante="contorno" tamanho="m" onClick={() => setNova(true)}><Icone nome="mais" />Nova exceção</Botao>
+          <span className="text-[13px] text-tinta-suave">Por categoria ou prioridade. A exceção grava na hora, pela janela.</span>
+        </span>
+      ) : null}
 
       <Janela
         aberto={mudando !== null}

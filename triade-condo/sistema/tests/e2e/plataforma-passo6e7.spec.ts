@@ -2,6 +2,7 @@
 // indicadores, com a API falsa. Cada tela passa no axe (WCAG 2.2 AA) no celular e no
 // computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
+import { salvarPagina } from "./configuracoes";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { abrirArea } from "./inicio";
@@ -68,16 +69,16 @@ test.describe("Plataforma do síndico · passos 6 e 7", () => {
 
   test("F6.2: as regras de aviso, com o substituto entre as pessoas autorizadas", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true });
-    await page.goto(`${PLATAFORMA}/configuracoes?aba=prazos`);
-    await expect(page.getByRole("tab", { name: "Prazos e avisos", selected: true })).toBeVisible();
+    await page.goto(`${PLATAFORMA}/configuracoes/prazos`);
+    await expect(page.getByRole("heading", { level: 1, name: "Prazos e avisos" })).toBeVisible();
     await expect(page.getByLabel("2. Avisar o síndico depois de")).toHaveValue("2");
     await page.getByLabel("3. Avisar o substituto depois de").fill("2");
-    await page.getByRole("button", { name: "Salvar regras" }).click();
+    await salvarPagina(page);
     await expect(page.getByText("O substituto é avisado depois do síndico. Use mais horas.")).toBeVisible();
     await conferir(page);
     await page.getByLabel("3. Avisar o substituto depois de").fill("6");
     await page.getByLabel("Substituto", { exact: true }).selectOption({ label: "Bruna · Secretária" });
-    await page.getByRole("button", { name: "Salvar regras" }).click();
+    await salvarPagina(page);
     await expect(page.getByRole("status").filter({ hasText: "Regras de aviso salvas." })).toBeVisible();
     await expect(page.getByLabel("Substituto", { exact: true })).toHaveValue(/.+/);
     await expect(page.getByRole("heading", { name: "Prazos de retorno" })).toBeVisible();
@@ -108,7 +109,8 @@ test.describe("Plataforma do síndico · passos 6 e 7", () => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true, quem: "SO_VE" });
     await page.goto(`${PLATAFORMA}/configuracoes?aba=prazos`);
     await expect(page.getByText("Síndico: depois de 2 h de atendimento")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Salvar regras" })).toHaveCount(0);
+    await expect(page.getByLabel("3. Avisar o substituto depois de")).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Mudanças ainda não salvas" })).toHaveCount(0);
     await page.goto(`${PLATAFORMA}/indicadores`);
     await expect(page.getByRole("heading", { level: 1, name: "Indicadores" })).toBeVisible();
   });

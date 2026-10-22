@@ -90,8 +90,8 @@ test.describe("Console · configuração na implantação", () => {
 
     await painel.getByRole("button", { name: "Etapas dos pedidos", exact: true }).click();
     await expect(page.getByText("Cliente ativo: o que a TRÍADE montou, o síndico ajusta.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "+ Modelo" })).toHaveCount(0);
-    await page.getByRole("button", { name: "+ Etapa" }).click();
+    await expect(page.getByRole("button", { name: "Nova resposta" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Nova etapa" }).click();
     const j = page.getByRole("dialog", { name: "Nova etapa" });
     await j.getByLabel("Nome da etapa").fill("Aguardando orçamento");
     await j.getByRole("button", { name: "Salvar" }).click();

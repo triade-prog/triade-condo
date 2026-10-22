@@ -34,6 +34,8 @@ export interface ContextoAviso {
   podeManutencao: boolean;
   links: EstadoLinks;
   condominio: string;
+  /** A linha de configuração do condomínio: a regra de pedido novo divide a versão com as outras regras. */
+  config: { versao: number };
 }
 
 /** A síndica ligou o aviso de pedido novo no WhatsApp dela; a regra começa no padrão. */
@@ -278,8 +280,10 @@ export function rotasAvisoRegistro(route: Route, est: EstadoAvisoRegistro, ctx: 
   }
   if (caminho === "/v1/condominio/regras-aviso-novo" && metodo === "PUT") {
     if (!pode("config.editar") || !sindica) return erro(route, 403, "FORBIDDEN");
+    if (corpo.versao !== ctx.config.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: ctx.config.versao });
     est.regra = { sindico: corpo.sindico as Regra, protocolo: corpo.protocolo === true };
-    return route.fulfill({ json: { versao: Number(corpo.versao) + 1 } });
+    ctx.config.versao++;
+    return route.fulfill({ json: { versao: ctx.config.versao } });
   }
   return null;
 }

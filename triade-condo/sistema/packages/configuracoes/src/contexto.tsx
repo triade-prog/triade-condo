@@ -4,8 +4,10 @@
 // as mesmas; muda o começo das rotas e o que cada lado pode fazer.
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { chamarApi, pedeLogin, textoDoErro, type ErroApi } from "@triade/ui";
+import type { IdPagina } from "./paginas.ts";
 
 export interface Ambiente {
   /** "app": Plataforma do síndico; "console": ficha do cliente no Console. */
@@ -16,6 +18,8 @@ export interface Ambiente {
   origemPlataforma?: string;
   /** Depois de salvar (no app, o painel recarrega as pendências). */
   aoMudar?: () => void;
+  /** Endereço de uma página das Configurações (no app; null é a entrada); sem ele, os links viram texto. */
+  endereco?: (pagina: IdPagina | null) => string;
 }
 
 const PADRAO: Ambiente = { onde: "app", base: "/v1/condominio" };
@@ -76,4 +80,11 @@ export function assinatura(dados: unknown): string {
   let h = 5381;
   for (let i = 0; i < texto.length; i++) h = ((h << 5) + h + texto.charCodeAt(i)) | 0;
   return String(h >>> 0);
+}
+
+/** Link para outra página das Configurações; no Console, que não tem as páginas, só o texto. */
+export function LinkPagina({ pagina, children }: { pagina: IdPagina; children: ReactNode }) {
+  const { endereco } = useAmbiente();
+  if (!endereco) return <span className="font-medium">{children}</span>;
+  return <Link href={endereco(pagina)} className="font-medium text-violeta-600 underline-offset-2 hover:underline">{children}</Link>;
 }

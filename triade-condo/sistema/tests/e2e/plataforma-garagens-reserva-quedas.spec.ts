@@ -4,6 +4,7 @@
 // reserva; e a queda do número, com o canal alternativo na etiqueta e a conferência do que ficou
 // parado. Cada tela passa no axe (WCAG 2.2 AA) no celular e no computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
+import { salvarPagina } from "./configuracoes";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { A101 } from "./api-falsa-moradores";
@@ -212,11 +213,11 @@ test.describe("Plataforma · garagens, prestador reserva e queda do WhatsApp", (
 
   test("W-17: quem cuida das quedas se escolhe em Configurações › WhatsApp", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
-    await page.goto(`${PLATAFORMA}/configuracoes?aba=whatsapp`);
+    await page.goto(`${PLATAFORMA}/configuracoes/whatsapp`);
     await expect(page.getByRole("heading", { name: "Quando o WhatsApp cair" })).toBeVisible();
     await page.getByLabel("Quem cuida das quedas").selectOption({ label: "Bruna Lima" });
     await conferir(page);
-    await page.getByRole("button", { name: "Salvar quem cuida" }).click();
+    await salvarPagina(page);
     await expect(page.getByText("Bruna Lima cuida das quedas do WhatsApp.")).toBeVisible();
     expect(estado.whatsapp.quedasPessoa).toBe("1c8d4a1f-6e2b-4d3c-8f9a-2b3c4d5e6f7a");
   });

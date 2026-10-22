@@ -148,7 +148,7 @@ test.describe("Plataforma do síndico · agenda", () => {
     await origemLigada(page, "Feriados", false);
     await alternarOrigem(page, "Feriados");
     await expect(page.getByText("Finados")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Vem de Configurações › Feriados" }).first()).toHaveAttribute("href", /\/configuracoes\?aba=feriados/);
+    await expect(page.getByRole("link", { name: "Vem de Configurações › Feriados" }).first()).toHaveAttribute("href", "/configuracoes/feriados");
     await conferir(page);
     await alternarOrigem(page, "Feriados");
     await expect(page.getByText("Finados")).toHaveCount(0);

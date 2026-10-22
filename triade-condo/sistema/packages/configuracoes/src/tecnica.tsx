@@ -5,7 +5,7 @@
 // equipe muda, e com o cliente ativo diz o motivo, que vai no aviso ao síndico e no histórico.
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { AvisoErro, Botao, CampoAreaTexto, camposComErro, classeBotao, Selo, textoDoErro, type ErroApi, type Resposta } from "@triade/ui";
 import { useAmbiente } from "./contexto.tsx";
 import { Escolha } from "./comum.tsx";
@@ -25,8 +25,28 @@ export const campoMotivo: Campo = {
   id: "motivo", rotulo: "Motivo", tipo: "area", obrigatorio: true, max: 500, ajuda: AJUDA_MOTIVO, erro: "Diga o motivo (3 a 500 caracteres).",
 };
 
+/** Uma marca só para o que é da TRÍADE (decisão D.1): no bloco do fim da página ou no topo da página que é toda dela. */
 export function SeloTriade() {
-  return <Selo tom="neutro">Ajustado pela TRÍADE</Selo>;
+  return <Selo tom="neutro">Feito pela TRÍADE</Selo>;
+}
+
+/** O bloco do fim da página com o que só a TRÍADE muda (decisão D.1). No Console, os ajustes vêm abertos. */
+export function BlocoTriade({ children }: { children: ReactNode }) {
+  const { onde } = useAmbiente();
+  return (
+    <section aria-labelledby="t-feito-triade" className="grid gap-2 rounded-[18px] border border-dashed border-neutro-borda bg-neutro-fundo p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="grid gap-0.5">
+          <h2 id="t-feito-triade" className="text-[15px] font-semibold">Feito pela TRÍADE</h2>
+          <span className="text-[13px] text-tinta-suave">{onde === "app"
+            ? "Só a TRÍADE muda. Se precisar, peça e acompanhe em Ajuda e suporte."
+            : "Só a TRÍADE muda. Com o cliente ativo, mudar pede motivo e avisa o síndico."}</span>
+        </span>
+        <SeloTriade />
+      </div>
+      <div className="grid divide-y divide-linha">{children}</div>
+    </section>
+  );
 }
 
 /** No app: abre um chamado para a TRÍADE já com a parte e o valor de hoje (decisão 11). */
@@ -34,7 +54,7 @@ export function PedirMudanca({ parte, valor }: { parte: string; valor: string })
   const { onde } = useAmbiente();
   if (onde !== "app") return null;
   const busca = new URLSearchParams({ mudar: parte, valor });
-  return <Link href={`/suporte?${busca}`} className={classeBotao("contorno", "", "m")}>Pedir mudança</Link>;
+  return <Link href={`/suporte?${busca}`} className={classeBotao("discreto", "", "m")}>Pedir mudança</Link>;
 }
 
 /** "1 etapa ativa", "3 etapas ativas": o resumo das etapas na faixa da TRÍADE. */
@@ -88,26 +108,23 @@ export function AjusteTecnico<T extends string>({ id, titulo, parte, ajuda, opco
     aoSalvar(valor);
   }
 
-  const cabeca = (
-    <div className="flex flex-wrap items-center gap-2">
-      <h2 id={`t-${id}`} className="text-lg font-medium">{titulo}</h2>
-      <Selo tom="neutro">Só a TRÍADE</Selo>
-    </div>
-  );
   if (!tecnica.pode) {
+    // No app, uma linha do bloco "Feito pela TRÍADE": o valor, para que serve e "Pedir mudança".
     return (
-      <section aria-labelledby={`t-${id}`} className="grid max-w-2xl gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-        {cabeca}
-        <p className="flex flex-wrap items-center gap-2 text-sm"><span className="font-medium">{textoAtual}</span><SeloTriade /></p>
-        <p className="text-xs text-tinta-suave">{ajuda}</p>
-        <div><PedirMudanca parte={titulo} valor={textoAtual} /></div>
+      <section aria-labelledby={`t-${id}`} className="flex flex-wrap items-center gap-3 py-3">
+        <span className="grid min-w-0 flex-1 gap-0.5">
+          <h3 id={`t-${id}`} className="text-sm font-medium">{titulo}</h3>
+          <span className="text-sm">{textoAtual}</span>
+          <span className="text-[13px] text-tinta-suave">{ajuda}</span>
+        </span>
+        <PedirMudanca parte={titulo} valor={textoAtual} />
       </section>
     );
   }
   const campos = camposComErro(erro);
   return (
-    <form onSubmit={enviar} noValidate aria-labelledby={`t-${id}`} className="grid max-w-2xl gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      {cabeca}
+    <form onSubmit={enviar} noValidate aria-labelledby={`t-${id}`} className="grid max-w-2xl gap-3 py-4">
+      <h3 id={`t-${id}`} className="font-medium">{titulo}</h3>
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar} /> : null}
       <Escolha rotulo={parte} atual={valor} aoMudar={setValor} opcoes={opcoes} />
       <p className="text-xs text-tinta-suave">{ajuda}</p>

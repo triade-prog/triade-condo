@@ -2,6 +2,7 @@
 // a aba Reservas com aprovar e recusar com motivo, a reserva pedida por telefone e o cartão no
 // início. Cada tela passa no axe (WCAG 2.2 AA) no celular e no computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
+import { salvarPagina } from "./configuracoes";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { abrirArea } from "./inicio";
@@ -18,23 +19,26 @@ async function conferir(page: Page) {
 test.describe("Vida em condomínio", () => {
   test("AC-07: as áreas vêm prontas, o síndico ativa e cria uma área nova", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
-    await page.goto(`${PLATAFORMA}/configuracoes?aba=areas`);
+    await page.goto(`${PLATAFORMA}/configuracoes/areas`);
     await expect(page.getByText("5 áreas prontas, 2 ativas.", { exact: false })).toBeVisible();
     await expect(page.getByText("Síndico aprova · 2 a 60 dias de antecedência · 10h às 23h · até 80 pessoas · 1 por mês por unidade")).toBeVisible();
     await expect(page.getByText("Uso livre, sem reserva · 6h às 23h")).toBeVisible();
     await conferir(page);
 
     await page.getByRole("button", { name: "Nova área" }).click();
-    const j = page.getByRole("dialog", { name: "Nova área" });
-    await j.getByLabel("Nome").fill("Salão de festas");
-    await j.getByRole("button", { name: "Salvar e ativar" }).click();
-    await expect(j.getByText("Escreva o nome, com 2 a 60 letras, diferente das outras áreas")).toBeVisible();
-    await j.getByLabel("Nome").fill("Brinquedoteca");
-    await j.getByLabel("Como a reserva é confirmada").selectOption("AUTOMATICA");
-    await j.getByLabel("Como se reserva").selectOption("BLOCOS");
-    await j.getByLabel("Tamanho do bloco").selectOption("120");
+    // A área abre numa página própria, em 3 partes, e grava pela barra do rodapé (B.1).
+    await expect(page.getByRole("heading", { level: 2, name: "Nova área" })).toBeVisible();
+    await page.getByLabel("Nome").fill("Salão de festas");
+    await page.getByRole("switch", { name: /Área ativa/ }).check();
+    await salvarPagina(page);
+    await expect(page.getByText("Escreva o nome, com 2 a 60 letras, diferente das outras áreas")).toBeVisible();
+    await expect(page.getByRole("alert").filter({ hasText: "Nada foi salvo. Veja o que corrigir em Nova área." })).toBeVisible();
+    await page.getByLabel("Nome").fill("Brinquedoteca");
+    await page.getByRole("region", { name: "Quem confirma" }).getByRole("button", { name: "Automática" }).click();
+    await page.getByLabel("Como se reserva").selectOption("BLOCOS");
+    await page.getByLabel("Tamanho do bloco").selectOption("120");
     await conferir(page);
-    await j.getByRole("button", { name: "Salvar e ativar" }).click();
+    await salvarPagina(page);
     await expect(page.getByText("Brinquedoteca salva e ativa.")).toBeVisible();
     await expect(page.getByText(/Criada pelo síndico · Automática · 1 a 30 dias de antecedência · blocos de 2 horas/)).toBeVisible();
   });

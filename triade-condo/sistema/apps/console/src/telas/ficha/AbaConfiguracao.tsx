@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { formatarData, GRUPOS_CONFIGURACAO, PARTES_CONFIGURACAO, type GrupoConfiguracao, type ParteConfiguracao } from "@triade/domain";
-import { PainelConfiguracoes, type IdAba } from "@triade/configuracoes";
+import { PaginaConfiguracao, paginaDe, type IdPagina } from "@triade/configuracoes";
 import {
   Aviso, AvisoErro, Botao, CampoAreaTexto, Carregando, chamarApi, classeBotao, Dialogo, ErroCarregar, FaixaInterna, Selo, textoDoErro,
   type ErroApi, type Tom,
@@ -86,7 +86,9 @@ function Conferir({ condominio, parte, aoFechar, aoConferir }: {
 export function AbaConfiguracao({ ficha }: PropsAba) {
   const id = ficha.condominio.id;
   const carga = useCarregar<ConfiguracaoCliente>(`/v1/clientes/${id}/configuracao`);
-  const [aberta, setAberta] = useState<IdAba | null>(null);
+  const [aberta, setAberta_] = useState<IdPagina[] | null>(null);
+  // A parte Comunicados do roteiro abrange duas páginas: Comunicados e Mural e e-mail.
+  const setAberta = (aba: string) => { const p = paginaDe(aba); if (p) setAberta_(p === "comunicados" ? ["comunicados", "mural"] : [p]); };
   const [conferindo, setConferindo] = useState<ParteConfiguracao | null>(null);
   const [recado, setRecado] = useState<string | null>(null);
 
@@ -101,14 +103,16 @@ export function AbaConfiguracao({ ficha }: PropsAba) {
     return (
       <div className="grid gap-4">
         <p className="text-sm">
-          <button type="button" className="text-violeta-600 hover:underline" onClick={() => { setAberta(null); carga.recarregar(); }}>Voltar às partes</button>
+          <button type="button" className="text-violeta-600 hover:underline" onClick={() => { setAberta_(null); carga.recarregar(); }}>Voltar às partes</button>
         </p>
         <FaixaInterna>{d.pode.montar
           ? "Você muda como TRÍADE. O que salvar vale no app do condomínio e entra no histórico dele."
           : depois ? "Cliente ativo: o que a TRÍADE montou, o síndico ajusta. Aqui fica em leitura; os ajustes técnicos continuam com a TRÍADE."
             : "Sua função só vê a configuração."}</FaixaInterna>
-        <PainelConfiguracoes aba={aberta} aoMudarAba={setAberta}
-          ambiente={{ onde: "console", base: `/v1/clientes/${id}/condominio`, origemPlataforma: URL_PLATAFORMA, aoMudar: carga.recarregar }} />
+        {aberta.map((p) => (
+          <PaginaConfiguracao key={p} pagina={p}
+            ambiente={{ onde: "console", base: `/v1/clientes/${id}/condominio`, origemPlataforma: URL_PLATAFORMA, aoMudar: carga.recarregar }} />
+        ))}
       </div>
     );
   }
@@ -164,7 +168,7 @@ export function AbaConfiguracao({ ficha }: PropsAba) {
           <Botao variante="contorno" tamanho="m" onClick={() => setAberta("horarios")}>Fuso</Botao>
           <Botao variante="contorno" tamanho="m" onClick={() => setAberta("etapas")}>Etapas dos pedidos</Botao>
           <Botao variante="contorno" tamanho="m" onClick={() => setAberta("manutencao")}>Etapas da manutenção</Botao>
-          <Botao variante="contorno" tamanho="m" onClick={() => setAberta("regras")}>Pedidos parecidos</Botao>
+          <Botao variante="contorno" tamanho="m" onClick={() => setAberta("prazos")}>Pedidos parecidos</Botao>
           <Botao variante="contorno" tamanho="m" onClick={() => setAberta("whatsapp")}>Mensagens seguintes do WhatsApp</Botao>
         </span>
       </section>

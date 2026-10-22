@@ -150,7 +150,7 @@ export function LinhaDataDeFora({ d, hoje }: { d: DataDeOutraTela; hoje: string 
     default:
       return (
         <LinhaDeFora d={d} titulo={d.titulo} detalhe="Feriado · os prazos não correm"
-          origem={{ href: "/configuracoes?aba=feriados", tela: "Configurações › Feriados" }} />
+          origem={{ href: "/configuracoes/feriados", tela: "Configurações › Feriados" }} />
       );
   }
 }

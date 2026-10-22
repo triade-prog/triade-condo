@@ -36,3 +36,19 @@ const DIA_HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo
 export function diaHora(iso: string): string {
   return DIA_HORA.format(new Date(iso)).replace(",", "");
 }
+
+/** Uma parte numerada da página (Prazos e avisos, Área comum, Comunicados), como no Registrar pedido. */
+export function ParteNumerada({ n, id, titulo, children, direita }: { n: number; id: string; titulo: string; children: ReactNode; direita?: ReactNode }) {
+  return (
+    <section aria-labelledby={id} className="grid gap-4 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="flex items-center gap-2.5">
+          <span aria-hidden="true" className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full bg-violeta-50 text-[13px] font-bold text-violeta-700">{n}</span>
+          <h2 id={id} className="text-[17px] font-medium">{titulo}</h2>
+        </span>
+        {direita}
+      </div>
+      {children}
+    </section>
+  );
+}
