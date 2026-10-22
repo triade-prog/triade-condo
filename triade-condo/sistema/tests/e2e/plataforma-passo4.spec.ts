@@ -73,10 +73,13 @@ test.describe("Plataforma do síndico · passo 4", () => {
 
     await page.getByRole("button", { name: "Dar retorno ao morador" }).click();
     const r = page.getByRole("dialog", { name: /Dar retorno ao morador/ });
+    // O pedido tem conversa no WhatsApp: vem "Pelo WhatsApp" (C.1); aqui o retorno foi por telefone.
+    await expect(r.getByLabel("Como foi dado")).toHaveValue("WHATSAPP");
+    await r.getByLabel("Como foi dado").selectOption({ label: "Por telefone" });
     await r.getByLabel("Usar um modelo").selectOption({ label: "Recebemos seu pedido" });
     await expect(r.getByLabel("O que foi dito")).toHaveValue(/Recebemos seu pedido/);
     await conferir(page);
-    await r.getByRole("button", { name: "Registrar retorno" }).click();
+    await r.getByRole("button", { name: "Registrar retorno", exact: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Retorno registrado." })).toBeVisible();
     await expect(page.getByRole("region", { name: "Próximo retorno ao morador" })).toContainText("daqui a 24 h");
 

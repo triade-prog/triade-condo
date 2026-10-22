@@ -7,6 +7,7 @@
 // prestador diz a resposta dele e leva à manutenção que nasceu no registro.
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { DESTINOS_AVISO_REGISTRO, MEIOS_AVISO_REGISTRO, SITUACOES_LINK_REGISTRO, SITUACOES_MANUTENCAO } from "@triade/domain";
 import { Botao, Icone, Selo, type NomeIcone } from "@triade/ui";
 import type { AvisoDoRegistro, LinkDoRegistro } from "../tipos.ts";
@@ -79,8 +80,9 @@ function quem(a: AvisoDoRegistro): string {
 const ICONE_MEIO: Record<string, NomeIcone> = { SINO: "sino", WHATSAPP: "whats", EMAIL: "email", COMUNICADO: "megafone", CONVERSA: "whats" };
 
 /** Pedido registrado (DC15, telas-modelo/pedido-registrado): o protocolo em destaque, cada aviso
- * com a situação e as duas saídas. */
-export function ConfirmacaoRegistro({ feito, outro, abrir }: { feito: Registrado; outro: () => void; abrir: () => void }) {
+ * com a situação e as duas saídas. Registrado com as mensagens do WhatsApp, `extra` diz se elas
+ * foram juntadas, e sem `outro` não há Registrar outro. */
+export function ConfirmacaoRegistro({ feito, outro, abrir, extra }: { feito: Registrado; outro?: () => void; abrir: () => void; extra?: ReactNode }) {
   const linhas = feito.avisos.filter((a) => a.meio !== "CONVERSA");
   const falhas = linhas.filter((a) => situacaoAviso(a).tom === "erro");
   const link = linhas.find((a) => a.link)?.link;
@@ -93,6 +95,7 @@ export function ConfirmacaoRegistro({ feito, outro, abrir }: { feito: Registrado
         <p className="font-mono text-[22px] font-medium tracking-[.02em]">{feito.protocolo}</p>
         <p className="t-apoio">{feito.linha}</p>
       </div>
+      {extra}
       {linhas.length === 0 ? (
         <p className="t-apoio">Ninguém foi avisado: não havia contato para o protocolo e quem cuida do pedido é você.</p>
       ) : (
@@ -140,7 +143,7 @@ export function ConfirmacaoRegistro({ feito, outro, abrir }: { feito: Registrado
       {esperando ? <p className="t-apoio">O WhatsApp de quem atende espera o horário de funcionamento. O sino já avisou.</p> : null}
       {falhas.length ? <p className="t-apoio">O que falhou vai para Falhas de envio, com responsável. O pedido fica registrado do mesmo jeito.</p> : null}
       <div className="flex flex-wrap justify-end gap-2 max-md:grid max-md:grid-cols-1">
-        <Botao variante="contorno" onClick={outro}><Icone nome="mais" />Registrar outro</Botao>
+        {outro ? <Botao variante="contorno" onClick={outro}><Icone nome="mais" />Registrar outro</Botao> : null}
         <Botao onClick={abrir}><Icone nome="seta" />Abrir o pedido</Botao>
       </div>
     </div>
@@ -179,7 +182,7 @@ export function CartaoAvisosRegistro({ avisos }: { avisos: AvisoDoRegistro[] }) 
                 <span className="font-medium">{g.nome ?? ""}</span>
                 <span className="text-tinta-suave"> · {nomeMeios}{g.itens.some((x) => x.pelaRegra) ? " · pela regra" : ""}{g.itens.some((x) => x.editado) ? " · texto editado" : ""}</span>
                 {envio.motivo ? <span className="block text-xs text-erro">{envio.motivo}</span> : null}
-                {s.tom === "erro" && envio.meio === "WHATSAPP" ? <Link href="/whatsapp" className="block text-xs text-violeta-600 hover:underline">Resolver em WhatsApp › Falhas de envio</Link> : null}
+                {s.tom === "erro" && envio.meio === "WHATSAPP" ? <Link href="/whatsapp?parte=falhas" className="block text-xs text-violeta-600 hover:underline">Resolver em WhatsApp › Falhas de envio</Link> : null}
                 {envio.link ? (
                   <span className="block text-xs text-tinta-suave">
                     Manutenção{" "}

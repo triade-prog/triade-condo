@@ -161,12 +161,13 @@ test.describe("Plataforma · garagens, prestador reserva e queda do WhatsApp", (
     derrubarNumero(estado.whatsapp, estado.pedidos[0]!, "Ana Souza");
     await page.goto(`${PLATAFORMA}/whatsapp`);
     await expect(page.getByText("WhatsApp fora do ar desde", { exact: false })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "Quedas (1)" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("navigation", { name: "Partes do WhatsApp" }).locator('[aria-current="page"]')).toContainText("Quedas");
     const queda = page.getByRole("region", { name: /Queda de/ });
     await expect(queda.getByText("Fora do ar", { exact: true })).toBeVisible();
     await expect(queda.getByText("2 na fila")).toBeVisible();
     await conferir(page);
     await queda.getByLabel(/Canal alternativo/).fill("Ligue para a portaria, (61) 3333-0000, das 7h às 22h.");
+    await queda.getByText("O que aconteceu (para o registro)").click();
     await queda.getByLabel(/O que aconteceu/).fill("O celular do condomínio ficou sem bateria.");
     await queda.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByText("Queda salva. As etiquetas e o mural já mostram o canal alternativo.")).toBeVisible();
@@ -203,7 +204,7 @@ test.describe("Plataforma · garagens, prestador reserva e queda do WhatsApp", (
     await queda.getByLabel("O que foi feito (para encerrar)").fill("Respondi por telefone quem ligou. Carregador novo fica na portaria.");
     await queda.getByRole("button", { name: "Encerrar a queda" }).click();
     await expect(page.getByText("Queda encerrada. O canal alternativo saiu das etiquetas e do mural.")).toBeVisible();
-    await expect(page.getByText("Nenhuma queda aberta")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Situação do número" }).getByText("O número está no ar")).toBeVisible();
     await page.getByRole("button", { name: /^Ver a queda de/ }).click();
     const ver = page.getByRole("dialog", { name: "Queda do WhatsApp" });
     await expect(ver.getByText("Liguei para a Marta e combinei a visita. · decidido por Ana Souza")).toBeVisible();

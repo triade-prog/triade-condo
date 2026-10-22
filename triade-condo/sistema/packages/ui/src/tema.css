@@ -183,6 +183,11 @@ body {
   .selo[data-tom="info"] { --selo-tinta: var(--color-info); --selo-fundo: var(--color-info-fundo); --selo-borda: var(--color-info-borda); --selo-faixa: var(--fx-info); }
   .selo[data-tom="andamento"] { --selo-tinta: var(--color-andamento); --selo-fundo: var(--color-andamento-fundo); --selo-borda: var(--color-andamento-borda); --selo-faixa: var(--fx-andamento); }
   .selo[data-tom="neutro"] { --selo-tinta: var(--color-neutro); --selo-fundo: var(--color-neutro-fundo); --selo-borda: var(--color-neutro-borda); --selo-faixa: var(--fx-neutro); }
+  /* Selo que abre detalhes (o número do WhatsApp no topo): a mesma pílula, do tamanho de um botão. */
+  .selo-botao { min-height: 40px; gap: 6px; padding: 0 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .selo-botao:hover { filter: brightness(.97); }
+  .selo-botao:focus-visible { outline: 0; box-shadow: var(--anel); }
+  @media (max-width: 767px) { .selo-botao { padding: 0 10px; } }
 
   /* Aviso: cartão branco com a mesma faixa e o ícone num quadro tingido. */
   .aviso {

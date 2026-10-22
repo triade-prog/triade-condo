@@ -61,6 +61,7 @@ export function criarWhatsapp(pedido: { id: string; protocolo: string }, categor
     janela: { aberta: true, ate: "2026-10-19T18:41:00Z", limite: 2000, parou: false } as
       { aberta: boolean; ate?: string; limite: number; parou: boolean; modelo?: { titulo: string; previa: string } },
     enviados: [] as string[],
+    triagens: [] as { acao: string; pedidoId?: string; contatoId?: string }[],
     queda: undefined as QuedaFalsa | undefined,
     quedas: [] as QuedaFalsa[],
     quedasPessoa: null as string | null,
@@ -229,6 +230,7 @@ export async function rotasWhatsapp(route: Route, w: EstadoWhatsapp, caminho: st
     const m = w.aIdentificar.find((x) => x.id === tm[1]);
     if (!m) return erro(route, 404, "NOT_FOUND");
     if (corpo.acao === "ARQUIVAR" && String(corpo.motivo ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
+    w.triagens.push({ acao: String(corpo.acao), ...(corpo.pedidoId ? { pedidoId: String(corpo.pedidoId) } : {}), ...(corpo.contatoId ? { contatoId: String(corpo.contatoId) } : {}) });
     const antes = w.aIdentificar.length;
     w.aIdentificar = w.aIdentificar.filter((x) => x.telefone !== m.telefone);
     return route.fulfill({ json: { tratadas: antes - w.aIdentificar.length, ...(corpo.acao === "CONTATO" ? { contatoAtivo: true } : {}) } });
