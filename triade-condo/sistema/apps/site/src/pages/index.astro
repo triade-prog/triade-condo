@@ -1,0 +1,152 @@
+---
+import Base from "../layouts/Base.astro";
+import Olho from "../components/Olho.astro";
+import FaixaFinal from "../components/FaixaFinal.astro";
+import { faixas, reais } from "../dados/oferta";
+const menor = faixas[0];
+---
+<Base titulo="TRÍADE Condo" descricao="O morador pede pelo WhatsApp do condomínio. A TRÍADE registra, dá protocolo e acompanha quem resolve, quando dá retorno e como cada caso terminou. Para síndicos em Brasília e no DF.">
+
+<section class="hero">
+  <span class="cunha cunha-grande" aria-hidden="true"></span>
+  <span class="cunha cunha-laranja" aria-hidden="true"></span>
+  <div class="wrap hero-grade">
+    <div class="pilha" style="--gap:24px">
+      <Olho>Para síndicos de prédios sem administradora · Brasília e DF</Olho>
+      <h1>Nenhum pedido do seu prédio fica sem resposta</h1>
+      <p class="suave lead">O morador pede pelo WhatsApp do condomínio. O sistema registra, dá protocolo e acompanha: quem resolve, quando dá retorno e como cada caso terminou. Você responde pelo painel.</p>
+      <div class="linha-flex" style="margin-top:4px">
+        <a href="/demonstracao" class="botao primario">Agendar demonstração</a>
+        <a href="/como-funciona" class="botao claro">Ver o painel em ação</a>
+      </div>
+    </div>
+
+    <div class="cena" role="img" aria-label="Exemplo do painel do síndico: um retorno vencido em destaque e o pedido 0412, vazamento na garagem, em andamento com retorno marcado para sexta ao meio-dia. Ao lado, a conversa no WhatsApp em que a moradora registra o pedido.">
+      <div class="painel" aria-hidden="true">
+        <div class="topo">
+          <div class="pilha" style="--gap:2px"><span class="mono" style="font-size:11px;letter-spacing:.08em;color:#d9c6f7">QUINTA-FEIRA, 22 DE OUTUBRO</span><b style="font-size:20px">Residencial Ipê</b></div>
+          <div class="linha-flex" style="--gap:8px"><span class="contador"><b>1</b><span>retorno vencido</span></span><span class="contador"><b>2</b><span>vencem hoje</span></span></div>
+        </div>
+        <div class="corpo">
+          <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">Agora</b><span class="suave" style="font-size:12.5px">4 pedidos ativos</span></div>
+          <div class="aviso vermelho p1"><span class="selo vermelho" style="background:#fff">Vencido</span><div><b>1 retorno vencido</b><br /><span class="suave">Infiltração na garagem, vaga 14 · desde 20/10, 16:30. O morador está esperando notícia.</span></div></div>
+          <div style="border:1px solid var(--linha);border-radius:12px;padding:12px 14px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding-bottom:8px;border-bottom:1px solid var(--linha-fina);flex-wrap:wrap"><div><span class="mono" style="font-size:11px;color:var(--tinta-suave)">#0412</span> <b style="font-size:14px">Vazamento na garagem, vaga 12</b></div><span class="selo violeta">Em andamento</span></div>
+            <div class="linha-dado"><span class="suave">Unidade</span><b>302 · Ana</b></div>
+            <div class="linha-dado"><span class="suave">Responsável</span><b>Carlos (síndico)</b></div>
+            <div class="linha-dado p2"><span class="suave">Próximo retorno ao morador</span><b style="color:var(--ok)">Sex, 23/10 · 12:00</b></div>
+            <div class="aviso p2"><div><b>Pendência real:</b> <span class="suave">aguardando visita do prestador Hidráulica Souza, segunda de manhã.</span></div></div>
+          </div>
+          <div class="linha-flex" style="--gap:8px"><span class="botao primario pequeno">Dar retorno ao morador</span><span class="chip">Mudar etapa</span><span class="chip">+ Pendência</span><span class="chip">Concluir</span></div>
+        </div>
+      </div>
+      <div class="conversa conversa-mini" aria-hidden="true">
+        <div class="conversa-topo" style="padding-bottom:6px"><span class="avatar" style="width:26px;height:26px;font-size:10px">RI</span><b style="font-size:12.5px">WhatsApp do condomínio</b></div>
+        <div class="balao morador m1">O vazamento da garagem voltou, perto da vaga 12.<span class="hora">22:41</span></div>
+        <div class="balao condo m2">Registrado: pedido <b>#0412</b>. Você terá notícia até <b>sexta, 12h</b>.<span class="hora">22:41</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap secao-curta revela">
+  <ul class="grade" aria-label="O essencial">
+    <li class="vantagem"><svg class="icone" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19.2L4 20z" /></svg><div><b>Sem app para o morador</b><p class="suave" style="font-size:14.5px">Ele usa o WhatsApp que já tem. Sem senha, sem instalar nada.</p></div></li>
+    <li class="vantagem"><svg class="icone" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg><div><b>Responsável definido</b><p class="suave" style="font-size:14.5px">Cada pedido tem dono: o síndico, a secretária ou quem ele autorizar.</p></div></li>
+    <li class="vantagem"><svg class="icone" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg><div><b>Retorno acompanhado</b><p class="suave" style="font-size:14.5px">Data combinada para dar notícia. Venceu, o sistema avisa e escala.</p></div></li>
+  </ul>
+</section>
+
+<section class="faixa-branca">
+  <span class="cunha cunha-esq" aria-hidden="true"></span>
+  <div class="wrap secao pilha revela" style="--gap:40px;position:relative">
+    <div class="linha-flex" style="justify-content:space-between;align-items:flex-end;--gap:24px">
+      <div class="titulo-secao"><Olho>O pedido, do início ao fim</Olho><h2>Quatro etapas. Um protocolo. A conversa vira trabalho organizado.</h2></div>
+      <a href="/como-funciona" class="botao laranja">Ver etapa por etapa</a>
+    </div>
+    <ol class="grade" style="--cols:4">
+      <li class="cartao topo-violeta etapa-cartao"><span class="mono" style="font-size:12px;color:var(--violeta-600)">01 · REGISTRO</span><h3>O morador manda a mensagem</h3><p class="suave" style="font-size:14.5px">O sistema reconhece a unidade e devolve um protocolo com a data da próxima notícia.</p><span class="chip">#0412 registrado</span></li>
+      <li class="cartao topo-violeta etapa-cartao"><span class="mono" style="font-size:12px;color:var(--violeta-600)">02 · RESPONSÁVEL E RETORNO</span><h3>O síndico define quem resolve e quando dá notícia</h3><p class="suave" style="font-size:14.5px">Retorno é compromisso de notícia, separado da previsão de solução.</p><span class="chip" style="color:var(--ok)">Retorno sex, 12:00</span></li>
+      <li class="cartao topo-laranja etapa-cartao"><span class="mono" style="font-size:12px;color:var(--atencao)">03 · ANDAMENTO</span><h3>O prestador recebe por um link e informa o que fez</h3><p class="suave" style="font-size:14.5px">A pendência real fica visível: peça, visita, decisão.</p><span class="chip" style="color:var(--atencao)">Pendência: visita seg.</span></li>
+      <li class="cartao topo-verde etapa-cartao"><span class="mono" style="font-size:12px;color:var(--ok)">04 · CONCLUSÃO</span><h3>Concluído com explicação; o morador avalia</h3><p class="suave" style="font-size:14.5px">O caso fica no histórico do prédio, com autor e data.</p><span class="chip" style="color:var(--ok)">Avaliação 5</span></li>
+    </ol>
+  </div>
+</section>
+
+<section class="wrap secao pilha revela" style="--gap:36px">
+  <div class="titulo-secao"><Olho>O que a TRÍADE faz diferente</Olho><h2>Registrar o pedido é o começo. O compromisso é com o retorno.</h2></div>
+  <div class="grade">
+    <div class="cartao pilha" style="--gap:14px;padding:26px">
+      <div class="campo-dado" aria-hidden="true">
+        <span class="rotulo-dado">Próximo retorno ao morador</span>
+        <div class="linha-flex" style="--gap:10px"><b style="font-size:18px">16/10 11:00</b><span class="selo vermelho">venceu às 11:00</span></div>
+        <p class="suave" style="font-size:12.5px">Avisado ao responsável, Bruna, às 11:00; ao síndico às 13:00.</p>
+      </div>
+      <h3>Prazo de retorno, com escalonamento</h3>
+      <p class="suave" style="font-size:15px">"Quando vou dar notícia" é separado de "quando vai resolver". Venceu, o responsável é avisado; continuou vencido, o síndico também.</p>
+    </div>
+    <div class="cartao pilha" style="--gap:14px;padding:26px">
+      <div class="campo-dado" style="gap:8px" aria-hidden="true">
+        <div class="linha-flex" style="--gap:6px"><span class="selo verde">Concluído</span><span class="chip">Nota 5 · Ana, 302</span></div>
+        <p style="font-size:13px"><b>Conclusão:</b> trocado o registro da coluna 3, pela Hidráulica Souza.</p>
+        <span class="chip" style="align-self:flex-start;font-size:11px">Reabrir pelo WhatsApp: REABRIR</span>
+      </div>
+      <h3>Conclusão explicada, avaliada, reabrível</h3>
+      <p class="suave" style="font-size:15px">O morador sabe o que foi feito, dá nota e pode reabrir. O síndico prova o próprio trabalho.</p>
+    </div>
+    <div class="cartao pilha" style="--gap:14px;padding:26px">
+      <div class="campo-dado" style="gap:0" aria-hidden="true">
+        <span class="rotulo-dado" style="padding-bottom:6px">Memória do prédio</span>
+        <div class="linha-dado" style="font-size:13px;padding:6px 0"><span>AVCB</span><b style="color:var(--atencao)">vence em 42 dias</b></div>
+        <div class="linha-dado" style="font-size:13px;padding:6px 0"><span>Contrato Aqualimp</span><b>até 30/11/2026</b></div>
+        <div class="linha-dado" style="font-size:13px;padding:6px 0"><span>Dossiê de passagem</span><b style="color:var(--violeta-600)">Gerar</b></div>
+      </div>
+      <h3>A história é do prédio, não do síndico</h3>
+      <p class="suave" style="font-size:15px">Prestadores, contratos, documentos e pendências ficam no histórico e passam ao próximo síndico num dossiê.</p>
+    </div>
+  </div>
+  <p class="nota-ilustrativa"><span class="mono">DADOS ILUSTRATIVOS ·</span>o prédio, as pessoas e os números das telas são exemplos, não resultados de clientes.</p>
+</section>
+
+<section id="implantacao" class="faixa-branca">
+  <span class="cunha cunha-ambar" aria-hidden="true"></span>
+  <div class="wrap secao lado-a-lado revela" style="--alinhar:center;position:relative">
+    <div class="pilha">
+      <Olho cor="ambar">Implantação e apoio</Olho>
+      <h2>Gente da TRÍADE na reunião do seu prédio</h2>
+      <p class="suave" style="font-size:17px">Em Brasília e no DF, a equipe apresenta o sistema na reunião ou assembleia, cadastra as unidades com você, organiza os documentos e deixa o WhatsApp do condomínio funcionando. Depois, continua por perto: software para o dia a dia, pessoas quando precisa.</p>
+      <a href="/precos#implantacao" class="link-forte">O que a implantação inclui e quanto custa →</a>
+    </div>
+    <ol class="grade" style="--cols:2;--cols-medio:2;--gap:14px">
+      <li class="cartao pilha" style="--gap:6px"><span class="mono" style="font-size:12px;color:var(--atencao)">1</span><b>Reunião de apresentação</b><p class="suave" style="font-size:14px">Um pedido do início ao fim, com os moradores vendo.</p></li>
+      <li class="cartao pilha" style="--gap:6px"><span class="mono" style="font-size:12px;color:var(--atencao)">2</span><b>Cadastro junto</b><p class="suave" style="font-size:14px">Unidades, contatos e quem recebe o quê.</p></li>
+      <li class="cartao pilha" style="--gap:6px"><span class="mono" style="font-size:12px;color:var(--atencao)">3</span><b>Documentos no lugar</b><p class="suave" style="font-size:14px">Convenção, atas, contratos e laudos no prontuário.</p></li>
+      <li class="cartao pilha" style="--gap:6px"><span class="mono" style="font-size:12px;color:var(--atencao)">4</span><b>Orientação ao síndico</b><p class="suave" style="font-size:14px">E à secretária, se houver. Com etiquetas QR para o mural.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="wrap secao lado-a-lado revela" style="padding-bottom:64px">
+  <div class="pilha" style="--gap:18px">
+    <Olho>Preço</Olho>
+    <h2>Uma mensalidade por prédio, pelo tamanho dele</h2>
+    <div class="cartao realce pilha" style="--gap:10px;padding:28px">
+      <span class="suave" style="font-size:14px;font-weight:600">A partir de</span>
+      <div class="linha-flex" style="--gap:6px;align-items:baseline"><span class="preco-grande">{reais(menor.mensal)}</span><span class="suave">/mês · {menor.rotulo.toLowerCase()}</span></div>
+      <p class="suave" style="font-size:15px">Todas as funções do painel, para quantas pessoas quiser na equipe. Não muda com o número de moradores. Implantação à parte, grátis no plano anual.</p>
+      <a href="/precos" class="link-forte">Ver as faixas, a implantação e as condições →</a>
+    </div>
+  </div>
+  <div class="pilha" style="--gap:18px">
+    <Olho>Perguntas essenciais</Olho>
+    <div class="perguntas">
+      <div><h3>O morador precisa instalar alguma coisa?</h3><p class="suave" style="font-size:15px">Não. Ele manda mensagem para o número do condomínio no WhatsApp que já tem.</p></div>
+      <div><h3>Quem responde ao morador?</h3><p class="suave" style="font-size:15px">Uma pessoa. O sistema registra, organiza e avisa; o síndico ou quem ele autorizar responde pelo atendimento.</p></div>
+      <div><h3>E se eu sair da função de síndico?</h3><p class="suave" style="font-size:15px">A memória é do prédio. Você gera o dossiê de passagem e o próximo síndico recebe histórico, prestadores, contratos e pendências.</p></div>
+      <div><h3>Os dados dos moradores ficam seguros?</h3><p class="suave" style="font-size:15px">Um condomínio nunca vê dados de outro, nada é apagado em silêncio e a TRÍADE atua como operadora dos dados, conforme a LGPD.</p></div>
+    </div>
+  </div>
+</section>
+
+<FaixaFinal />
+</Base>

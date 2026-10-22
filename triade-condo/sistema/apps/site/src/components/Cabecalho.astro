@@ -1,0 +1,37 @@
+---
+import { enderecoPlataforma } from "../dados/empresa";
+interface Props { atual?: string; }
+const { atual } = Astro.props;
+const itens = [
+  { href: "/como-funciona", texto: "Como funciona" },
+  { href: "/#implantacao", texto: "Implantação" },
+  { href: "/precos", texto: "Preços" },
+  { href: "/guia", texto: "Guia do síndico" },
+];
+const corrente = (href: string) => (href === atual ? "page" : undefined);
+---
+<header class="cabecalho">
+  <div class="wrap">
+    <a href="/" class="marca" aria-label="TRÍADE Condo, início">
+      <picture>
+        <source type="image/webp" srcset="/logo-triade-240.webp 240w, /logo-triade-480.webp 480w" sizes="120px" />
+        <img src="/logo-triade.png" alt="TRÍADE Condo" width="120" height="38" />
+      </picture>
+    </a>
+    <nav class="nav" aria-label="Seções do site">
+      {itens.map((i) => <a href={i.href} aria-current={corrente(i.href)}>{i.texto}</a>)}
+    </nav>
+    <div class="cabecalho-acoes">
+      <a href={enderecoPlataforma} class="entrar">Entrar</a>
+      <a href="/demonstracao" class="botao primario botao-topo">Agendar demonstração</a>
+      <details class="menu-celular">
+        <summary aria-label="Menu"><span class="tracos" aria-hidden="true"><i></i><i></i><i></i></span></summary>
+        <nav class="gaveta" aria-label="Menu do site">
+          {itens.map((i) => <a href={i.href} aria-current={corrente(i.href)}>{i.texto}</a>)}
+          <a href="/demonstracao" aria-current={corrente("/demonstracao")}>Agendar demonstração</a>
+          <a href={enderecoPlataforma}>Entrar na Plataforma</a>
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>

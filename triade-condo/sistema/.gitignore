@@ -12,3 +12,7 @@ playwright-report/
 supabase/.temp/
 supabase/.branches/
 next-env.d.ts
+
+# Site (Astro)
+.astro/
+dist/

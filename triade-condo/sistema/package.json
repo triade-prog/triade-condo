@@ -15,7 +15,9 @@
     "test": "vitest run",
     "test:db": "bash scripts/test-db.sh",
     "test:deno": "bash scripts/test-deno.sh",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "dev:site": "pnpm --filter @triade/site dev",
+    "e2e:site": "playwright test -c playwright.site.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
