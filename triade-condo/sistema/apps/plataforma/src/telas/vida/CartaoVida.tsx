@@ -23,7 +23,7 @@ export function linhasVida(r: ResumoVida): LinhaInicio[] {
   }
   for (const e of r.enquetesAbertas ?? []) {
     linhas.push({ chave: e.id, icone: "grafico", tom: "andamento", titulo: `Enquete: ${e.pergunta}`, detalhe: `${textoRespostas(e.responderam, e.total)} · fecha ${prazoCurto(e.abertaAte)}`,
-      href: "/vida?aba=enquetes", rotuloBotao: `Ver a enquete: ${e.pergunta}` });
+      href: `/vida/enquete?id=${e.id}`, rotuloBotao: `Ver a enquete: ${e.pergunta}` });
   }
   if (r.assembleia) {
     const a = r.assembleia;

@@ -1,16 +1,15 @@
 "use client";
-// Vida em condomínio › Enquetes (design "Vida em condomínio", tela 4; AC-03): a pergunta, o
-// resultado enquanto corre, quantos faltam e o lembrete. Na enquete secreta, o síndico vê quem
-// respondeu, nunca o que respondeu. Ao fechar, o resultado vira comunicado em rascunho.
+// Vida em condomínio › Enquetes (design "Vida em condomínio", tela 4; DC15, telas-modelo
+// vida-enquetes-*; AC-03): abas Abertas e Encerradas. O cartão inteiro abre a enquete, com o
+// resultado enquanto corre, quantos faltam e o lembrete; encerrar e publicar o resultado ficam na
+// ficha. Na enquete secreta, o síndico vê quem respondeu, nunca o que respondeu.
 
 import Link from "next/link";
 import { useState } from "react";
-import { CANAIS_ENQUETE, descreverEventoEnquete, formatarDataHora, porcentagem, textoRespostas } from "@triade/domain";
-import { Aviso, AvisoErro, Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
+import { formatarDataHora, porcentagem } from "@triade/domain";
+import { Carregando, ErroCarregar, Icone, Selo, Vazio } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
-import type { EnqueteDetalhe, EnqueteTela, ListaEnquetes, ResultadoEnquete } from "../tipos.ts";
-
-type Acao = { tipo: "ver" | "encerrar"; enquete: EnqueteTela };
+import type { EnqueteTela, ListaEnquetes, ResultadoEnquete } from "../tipos.ts";
 
 /** "31/10, 23:59". */
 export function prazoCurto(iso: string): string {
@@ -18,29 +17,44 @@ export function prazoCurto(iso: string): string {
   return `${x.slice(0, 5)}, ${x.slice(11)}`;
 }
 
-export function AbaEnquetes({ aoMudar }: { aoMudar: (texto: string) => void }) {
-  const carga = useCarregar<ListaEnquetes>("/v1/condominio/enquetes");
-  const [acao, setAcao] = useState<Acao | null>(null);
+const ABAS = { ABERTA: "Abertas", ENCERRADA: "Encerradas" } as const;
+type Aba = keyof typeof ABAS;
 
-  if (carga.estado === "carregando") return <Carregando rotulo="Carregando as enquetes…" />;
-  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
-  const l = carga.dados;
-  const fechar = (texto?: string) => { setAcao(null); if (texto) aoMudar(texto); };
+export function AbaEnquetes() {
+  const carga = useCarregar<ListaEnquetes>("/v1/condominio/enquetes");
+  const [aba, setAba] = useState<Aba>("ABERTA");
+  const l = carga.estado === "pronto" ? carga.dados : null;
+  const daAba = (a: Aba) => l?.enquetes.filter((e) => (a === "ABERTA" ? e.situacao === "ABERTA" : e.situacao !== "ABERTA")) ?? [];
+  const lista = daAba(aba);
 
   return (
-    <div className="grid gap-3">
-      {l.enquetes.length === 0 ? (
-        <Vazio titulo="Nenhuma enquete ainda">
-          Uma pergunta, de 2 a 6 opções e um prazo. Cada unidade recebe um link só dela, pelo WhatsApp ou pelo e-mail, e responde sem conta.
-        </Vazio>
-      ) : (
-        <ul className="grid gap-3">
-          {l.enquetes.map((e) => <CartaoEnquete key={e.id} e={e} podeEditar={l.pode.editar} aoAgir={(tipo) => setAcao({ tipo, enquete: e })} aoMudar={aoMudar} />)}
-        </ul>
-      )}
-      <p className="text-[13px] text-tinta-suave">Enquete consulta, não decide. O que precisa de votação com valor de assembleia vai para Assembleias.</p>
-      {acao?.tipo === "ver" ? <DetalheEnquete id={acao.enquete.id} aoFechar={() => setAcao(null)} /> : null}
-      {acao?.tipo === "encerrar" ? <Encerrar e={acao.enquete} aoFechar={fechar} /> : null}
+    <div className="grid gap-5">
+      <nav aria-label="Situação" className="flex gap-1 overflow-x-auto border-b border-linha">
+        {(Object.keys(ABAS) as Aba[]).map((a) => {
+          const atual = aba === a;
+          const n = l ? daAba(a).length : 0;
+          return (
+            <button key={a} type="button" aria-pressed={atual} onClick={() => setAba(a)}
+              className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+              {ABAS[a]}
+              {n ? <><span className="sr-only"> ({n})</span><span aria-hidden="true" className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{n}</span></> : null}
+            </button>
+          );
+        })}
+      </nav>
+      {carga.estado === "carregando" ? <Carregando rotulo="Carregando as enquetes…" /> : null}
+      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} oQue="as enquetes" /> : null}
+      {l ? (
+        lista.length === 0 ? (
+          <Vazio titulo={aba === "ABERTA" ? "Nenhuma enquete aberta" : "Nenhuma enquete encerrada"} icone="grafico">
+            {aba === "ABERTA" ? "Uma pergunta, de 2 a 6 opções e um prazo. Cada unidade recebe um link só dela, pelo WhatsApp ou pelo e-mail, e responde sem conta." : "A enquete encerrada fica aqui, com o resultado."}
+          </Vazio>
+        ) : (
+          <ul aria-label="Enquetes" className="grid items-start gap-5 lg:grid-cols-2">
+            {lista.map((e) => <CartaoEnquete key={e.id} e={e} />)}
+          </ul>
+        )
+      ) : null}
     </div>
   );
 }
@@ -48,7 +62,7 @@ export function AbaEnquetes({ aoMudar }: { aoMudar: (texto: string) => void }) {
 export function Barras({ r, marcar }: { r: ResultadoEnquete; marcar?: number }) {
   const votos = r.opcoes.reduce((s, o) => s + o.votos, 0);
   return (
-    <ul className="grid gap-2">
+    <ul className="grid gap-2.5">
       {r.opcoes.map((o, i) => {
         const p = porcentagem(o.votos, votos);
         return (
@@ -58,7 +72,7 @@ export function Barras({ r, marcar }: { r: ResultadoEnquete; marcar?: number }) 
               <span className="text-tinta-suave">{o.votos} · {p}%</span>
             </span>
             <span className="h-2 overflow-hidden rounded-full bg-superficie-2" aria-hidden="true">
-              <span className="block h-full rounded-full bg-violeta-500" style={{ width: `${p}%` }} />
+              <span className="block h-full rounded-full bg-[image:var(--grad-acao)]" style={{ width: `${p}%` }} />
             </span>
           </li>
         );
@@ -67,175 +81,37 @@ export function Barras({ r, marcar }: { r: ResultadoEnquete; marcar?: number }) 
   );
 }
 
-function descricao(e: EnqueteTela): string {
-  return [
-    e.por === "UNIDADE" ? "Uma resposta por unidade" : "Uma resposta por pessoa",
-    e.secreta ? "respostas secretas" : "respostas abertas",
-    `enviada por ${e.canais.map((c) => CANAIS_ENQUETE[c]).join(", ").replace(/, ([^,]*)$/, " e $1")} em ${formatarDataHora(e.criadoEm).slice(0, 5)}`,
-  ].join(" · ");
+/** "Aberta até 26/10, 22:30" ou "Encerrada em 20/10". */
+export function SeloEnquete({ e }: { e: Pick<EnqueteTela, "situacao" | "abertaAte" | "encerradaEm"> }) {
+  return e.situacao === "ABERTA"
+    ? <Selo tom="andamento">Aberta até {prazoCurto(e.abertaAte)}</Selo>
+    : <Selo tom="neutro">Encerrada{e.encerradaEm ? ` em ${prazoCurto(e.encerradaEm).slice(0, 5)}` : ""}</Selo>;
 }
 
-function CartaoEnquete({ e, podeEditar, aoAgir, aoMudar }: {
-  e: EnqueteTela; podeEditar: boolean; aoAgir: (t: Acao["tipo"]) => void; aoMudar: (texto: string) => void;
-}) {
-  const [erro, setErro] = useState<ErroApi | null>(null);
-  const [enviando, setEnviando] = useState(false);
+function CartaoEnquete({ e }: { e: EnqueteTela }) {
   const r = e.resultado;
   const faltam = r.total - r.responderam;
-  const unidade = e.por === "UNIDADE" ? (faltam === 1 ? "unidade" : "unidades") : (faltam === 1 ? "pessoa" : "pessoas");
-  const aberta = e.situacao === "ABERTA";
-
-  async function publicar() {
-    setErro(null);
-    setEnviando(true);
-    const res = await chamarApi<{ comunicadoId: string }>(`/v1/condominio/enquetes/${e.id}/publicar`, { corpo: { versao: e.versao } });
-    setEnviando(false);
-    if (!res.ok) return setErro(res.erro);
-    aoMudar("O resultado virou um comunicado em rascunho. Confira e publique em Comunicados.");
-  }
-
+  const quem = e.por === "UNIDADE" ? "unidades" : "pessoas";
   return (
-    <li className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
-      <span className="flex flex-wrap items-center gap-2">
-        <button type="button" className="min-h-6 text-left font-medium hover:text-violeta-600 hover:underline" onClick={() => aoAgir("ver")}>{e.pergunta}</button>
-        {aberta ? <Selo tom="andamento">Aberta até {prazoCurto(e.abertaAte)}</Selo> : <Selo tom="neutro">Encerrada</Selo>}
+    <li className="relative grid gap-3.5 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1 hover:border-violeta-300 max-md:p-4">
+      <span className="flex items-start gap-3">
+        <span className="ladrilho h-10 w-10 rounded-xl" data-tom="violeta" aria-hidden="true"><Icone nome="grafico" /></span>
+        <span className="grid min-w-0 flex-1 gap-1.5">
+          <Link href={`/vida/enquete?id=${e.id}`} className="t-titulo-cartao text-base after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">{e.pergunta}</Link>
+          <span className="flex flex-wrap gap-1.5">
+            <SeloEnquete e={e} />
+            {e.secreta ? <Selo tom="neutro">Respostas secretas</Selo> : null}
+          </span>
+        </span>
+        <Icone nome="dir" className="h-5 w-5 text-tinta-suave" />
       </span>
-      <span className="text-sm text-tinta-suave">{descricao(e)}</span>
       <Barras r={r} />
-      <dl className="grid gap-2 text-sm sm:grid-cols-3">
-        <div><dt className="text-[13px] text-tinta-suave">Responderam</dt><dd>{r.responderam} de {r.total} {e.por === "UNIDADE" ? "unidades" : "pessoas"} ({porcentagem(r.responderam, r.total)}%)</dd></div>
-        {aberta ? (
-          <div><dt className="text-[13px] text-tinta-suave">Sem resposta</dt><dd>{faltam} {unidade}{faltam ? <> · <button type="button" className="min-h-6 font-medium text-violeta-600 hover:underline" onClick={() => aoAgir("ver")}>ver quais</button></> : null}</dd></div>
-        ) : null}
-        {aberta ? (
-          <div><dt className="text-[13px] text-tinta-suave">Lembrete</dt><dd>
-            {e.lembreteEnviadoEm ? `Enviado em ${prazoCurto(e.lembreteEnviadoEm)}` : e.lembreteEm ? `Vai em ${prazoCurto(e.lembreteEm).slice(0, 5)}, só para quem falta` : "Sem lembrete: o prazo é curto"}
-          </dd></div>
-        ) : (
-          <div><dt className="text-[13px] text-tinta-suave">Fechou</dt><dd>{e.encerradaEm ? prazoCurto(e.encerradaEm) : ""}{e.encerradaPor ? `, por ${e.encerradaPor}` : ""}</dd></div>
-        )}
-      </dl>
-      {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-      {e.comunicado ? (
-        <span className="text-sm">
-          Resultado em Comunicados ({e.comunicado.estado === "RASCUNHO" ? "rascunho" : "publicado"}).{" "}
-          <Link href={`/comunicados/comunicado?id=${e.comunicado.id}`} className="font-medium text-violeta-600 hover:underline">Abrir o comunicado</Link>
-        </span>
-      ) : null}
-      {podeEditar && (aberta || !e.comunicado) ? (
-        <span className="flex flex-wrap gap-2">
-          {aberta ? <Botao tamanho="m" variante="contorno" onClick={() => aoAgir("encerrar")} aria-label={`Encerrar agora: ${e.pergunta}`}>Encerrar agora</Botao> : null}
-          {!aberta ? <Botao tamanho="m" onClick={() => void publicar()} disabled={enviando} aria-label={`Publicar o resultado: ${e.pergunta}`}>Publicar o resultado</Botao> : null}
-        </span>
-      ) : null}
+      <span className="flex flex-wrap justify-between gap-2 text-[13px] text-tinta-suave">
+        <span><b className="font-semibold text-tinta">{r.responderam} de {r.total} {quem}</b> responderam ({porcentagem(r.responderam, r.total)}%){e.situacao === "ABERTA" && faltam ? ` · ${faltam} ainda não` : ""}</span>
+        {e.situacao === "ABERTA"
+          ? <span>{e.lembreteEnviadoEm ? `Lembrete enviado em ${prazoCurto(e.lembreteEnviadoEm).slice(0, 5)}` : e.lembreteEm ? `Lembrete em ${prazoCurto(e.lembreteEm).slice(0, 5)}, só para quem falta` : "Sem lembrete: o prazo é curto"}</span>
+          : e.comunicado ? <span>Resultado em Comunicados</span> : null}
+      </span>
     </li>
-  );
-}
-
-function Encerrar({ e, aoFechar }: { e: EnqueteTela; aoFechar: (texto?: string) => void }) {
-  const [erro, setErro] = useState<ErroApi | null>(null);
-  const [enviando, setEnviando] = useState(false);
-  async function encerrar() {
-    setErro(null);
-    setEnviando(true);
-    const res = await chamarApi(`/v1/condominio/enquetes/${e.id}/encerrar`, { corpo: { versao: e.versao } });
-    setEnviando(false);
-    if (!res.ok) return setErro(res.erro);
-    aoFechar("Enquete encerrada. Os links param de aceitar resposta e o resultado já pode virar comunicado.");
-  }
-  return (
-    <Dialogo aberto titulo="Encerrar a enquete agora?" aoFechar={() => aoFechar()}>
-      <div className="grid gap-3 text-sm">
-        <p>{e.pergunta}</p>
-        <p className="text-tinta-suave">
-          Os links param de aceitar resposta e o lembrete não vai mais.{e.secreta ? " Na enquete secreta, a ligação entre unidade e resposta é apagada de vez." : ""}
-        </p>
-        {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-        <div className="flex flex-wrap justify-end gap-2">
-          <Botao variante="discreto" onClick={() => aoFechar()}>Voltar</Botao>
-          <Botao variante="perigo" onClick={() => void encerrar()} disabled={enviando}>Encerrar</Botao>
-        </div>
-      </div>
-    </Dialogo>
-  );
-}
-
-function DetalheEnquete({ id, aoFechar }: { id: string; aoFechar: () => void }) {
-  const carga = useCarregar<EnqueteDetalhe>(`/v1/condominio/enquetes/${id}`);
-  return (
-    <Dialogo aberto titulo={carga.estado === "pronto" ? carga.dados.enquete.pergunta : "Enquete"} aoFechar={aoFechar}>
-      {carga.estado === "carregando" ? <Carregando rotulo="Carregando a enquete…" /> : null}
-      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
-      {carga.estado === "pronto" ? <Detalhe d={carga.dados} aoFechar={aoFechar} /> : null}
-    </Dialogo>
-  );
-}
-
-function Detalhe({ d, aoFechar }: { d: EnqueteDetalhe; aoFechar: () => void }) {
-  const e = d.enquete;
-  const [link, setLink] = useState<{ nome: string; url: string; copiado: boolean } | null>(null);
-  const [erro, setErro] = useState<ErroApi | null>(null);
-  const faltam = d.convites.filter((c) => !c.respondeuEm);
-  const responderam = d.convites.filter((c) => c.respondeuEm);
-  const aberta = e.situacao === "ABERTA";
-
-  async function copiar(conviteId: string, nome: string) {
-    setErro(null);
-    const r = await chamarApi<{ codigo: string }>(`/v1/condominio/enquetes/${e.id}/link`, { corpo: { conviteId } });
-    if (!r.ok) return setErro(r.erro);
-    const url = `${window.location.origin}/v/${r.dados.codigo}`;
-    let copiado = false;
-    try { await navigator.clipboard.writeText(url); copiado = true; } catch { copiado = false; }
-    setLink({ nome, url, copiado });
-  }
-
-  return (
-    <div className="grid gap-4 text-sm">
-      <p className="text-tinta-suave">{textoRespostas(e.resultado.responderam, e.resultado.total)} · {aberta ? `aberta até ${prazoCurto(e.abertaAte)}` : "encerrada"}</p>
-      <Barras r={e.resultado} />
-      {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-      {link ? (
-        <Aviso tom="ok" titulo={link.copiado ? `Link de ${link.nome} copiado` : `Link de ${link.nome}`}>
-          <span className="break-all">{link.url}</span>. É só de {link.nome}: mande por outro meio, como um bilhete na portaria.
-        </Aviso>
-      ) : null}
-      {aberta ? (
-        <section aria-labelledby="eq-faltam" className="grid gap-2">
-          <h3 id="eq-faltam" className="font-medium">Sem resposta ({faltam.length})</h3>
-          {faltam.length ? (
-            <ul className="grid gap-1">
-              {faltam.map((c) => (
-                <li key={c.id} className="flex flex-wrap items-center justify-between gap-2">
-                  <span>{c.nome}{c.semContato ? <span className="text-tinta-suave"> · sem WhatsApp nem e-mail para receber</span> : null}</span>
-                  {d.pode.editar ? <Botao tamanho="p" variante="discreto" onClick={() => void copiar(c.id, c.nome)} aria-label={`Copiar o link de ${c.nome}`}>Copiar o link</Botao> : null}
-                </li>
-              ))}
-            </ul>
-          ) : <p className="text-tinta-suave">Todos responderam.</p>}
-        </section>
-      ) : null}
-      <section aria-labelledby="eq-responderam" className="grid gap-2">
-        <h3 id="eq-responderam" className="font-medium">Responderam ({responderam.length})</h3>
-        {e.secreta ? <p className="text-[13px] text-tinta-suave">Respostas secretas: aparece quem respondeu, não o que respondeu.</p> : null}
-        <ul className="grid gap-1">
-          {responderam.map((c) => (
-            <li key={c.id}>
-              {c.nome}<span className="text-tinta-suave"> · {formatarDataHora(c.respondeuEm!)}{c.opcao ? ` · ${e.opcoes[c.opcao - 1]}` : ""}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-      <section aria-labelledby="eq-historico" className="grid gap-2">
-        <h3 id="eq-historico" className="font-medium">Histórico</h3>
-        <ul className="grid gap-1">
-          {d.historico.map((h, i) => (
-            <li key={i} className="text-[13px]">
-              {descreverEventoEnquete(h.acao, h.dados)}<span className="text-tinta-suave"> · {formatarDataHora(h.em)}{h.autor ? ` · ${h.autor}` : ""}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-      <div className="flex justify-end"><Botao variante="discreto" onClick={aoFechar}>Fechar</Botao></div>
-    </div>
   );
 }

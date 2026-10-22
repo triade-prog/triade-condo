@@ -4,9 +4,9 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
 /** Vai ao passo do registro (1 Quem pediu e onde, 2 O que aconteceu, 3 Como tratar). No computador, nada a fazer. */
-export async function irAoPasso(j: Locator, celular: boolean, n: 1 | 2 | 3) {
+export async function irAoPasso(j: Locator, celular: boolean, n: 1 | 2 | 3, barraNome = "Passos do registro") {
   if (!celular) return;
-  const barra = j.getByRole("progressbar", { name: "Passos do registro" });
+  const barra = j.getByRole("progressbar", { name: barraNome });
   for (let i = 0; i < 3; i++) {
     const atual = Number(await barra.getAttribute("aria-valuenow"));
     if (atual === n) return;

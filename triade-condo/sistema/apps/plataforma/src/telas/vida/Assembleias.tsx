@@ -1,20 +1,24 @@
 "use client";
-// Vida em condomínio › Assembleias (design "Vida em condomínio", tela 6; AC-02): a lista, a
-// assembleia nova com a pauta (cada item com o seu quórum), as regras da convenção (antecedência e
-// peso do voto) e a fração ideal de cada unidade, que o voto pela fração pede antes de convocar.
+// Vida em condomínio › Assembleias (design "Vida em condomínio", tela 6; DC15, telas-modelo
+// vida-assembleia*; AC-02): a lista em abas, com a regra em vigor numa linha e a linha inteira
+// abrindo a assembleia; as regras da convenção (antecedência e peso do voto) e a fração ideal de
+// cada unidade, que o voto pela fração pede antes de convocar; e a assembleia nova em página.
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
-  ESTADOS_ASSEMBLEIA, FORMAS_ASSEMBLEIA, formatarDataHora, PESOS_ASSEMBLEIA, QUORUNS, TIPOS_ASSEMBLEIA, TIPOS_ITEM,
-  type EstadoAssembleia, type FormaAssembleia, type PesoAssembleia, type Quorum, type TipoAssembleia, type TipoItem,
+  ESTADOS_ASSEMBLEIA, FORMAS_ASSEMBLEIA, formatarDataHora, PESOS_ASSEMBLEIA, TIPOS_ASSEMBLEIA,
+  type EstadoAssembleia, type FormaAssembleia, type PesoAssembleia, type TipoAssembleia,
 } from "@triade/domain";
 import {
-  Aviso, AvisoErro, Botao, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Selo, textoDoErro, Vazio,
+  Aviso, AvisoErro, Botao, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio,
   type ErroApi, type Tom,
 } from "@triade/ui";
+import type { ItemMenu } from "../moradores/comum.tsx";
+import { diaDe } from "../pedidos/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
-import type { AssembleiaTela, Fracoes, ListaAssembleias } from "../tipos.ts";
+import type { Fracoes, ListaAssembleias } from "../tipos.ts";
+import { DiaQuadro } from "./comum.tsx";
 
 const TOM_ESTADO: Record<EstadoAssembleia, Tom> = { RASCUNHO: "neutro", CONVOCADA: "info", EM_ANDAMENTO: "andamento", ENCERRADA: "ok", CANCELADA: "neutro" };
 
@@ -29,61 +33,101 @@ export function tipoEForma(a: { tipo: TipoAssembleia; forma: FormaAssembleia }):
 
 type Dialogos = "regras" | "fracoes" | null;
 
-export function AbaAssembleias({ aoMudar }: { aoMudar: (texto: string) => void }) {
+/** As abas (DC15): o que vem, o que está correndo e o que já passou. */
+const ABAS = { PROXIMAS: "Próximas", EM_ANDAMENTO: "Em andamento", ENCERRADAS: "Encerradas" } as const;
+type Aba = keyof typeof ABAS;
+const ABA_DO_ESTADO: Record<EstadoAssembleia, Aba> = { RASCUNHO: "PROXIMAS", CONVOCADA: "PROXIMAS", EM_ANDAMENTO: "EM_ANDAMENTO", ENCERRADA: "ENCERRADAS", CANCELADA: "ENCERRADAS" };
+const TOM_DIA: Record<EstadoAssembleia, Tom | "violeta"> = { RASCUNHO: "neutro", CONVOCADA: "info", EM_ANDAMENTO: "andamento", ENCERRADA: "neutro", CANCELADA: "neutro" };
+
+/** Regras da convenção e Frações ideais vão para o Mais ações do topo (decisão C.1 de
+ * 22/10/2026); na rodada Gestão, passam para Configurações. */
+export function AbaAssembleias({ aoMudar, definirMais }: { aoMudar: (texto: string) => void; definirMais: (itens: ItemMenu[]) => void }) {
   const carga = useCarregar<ListaAssembleias>("/v1/condominio/assembleias");
   const [dialogo, setDialogo] = useState<Dialogos>(null);
+  const l = carga.estado === "pronto" ? carga.dados : null;
+  const [aba, setAba] = useState<Aba | null>(null);
+  const configurar = !!l?.pode.configurar;
+  const fracoes = !!l?.pode.fracoes;
+
+  useEffect(() => {
+    definirMais([
+      ...(configurar ? [{ texto: "Regras da convenção", icone: "ajuste" as const, acao: () => setDialogo("regras") }] : []),
+      ...(fracoes ? [{ texto: "Frações ideais", icone: "grafico" as const, acao: () => setDialogo("fracoes") }] : []),
+    ]);
+  }, [configurar, fracoes, definirMais]);
 
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando as assembleias…" />;
-  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
-  const l = carga.dados;
+  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} oQue="as assembleias" />;
+  const lista = carga.dados;
+  const daAba = (a: Aba) => lista.assembleias.filter((x) => ABA_DO_ESTADO[x.estado] === a);
+  // Abre onde há algo acontecendo: em andamento primeiro, se houver.
+  const atual: Aba = aba ?? (daAba("EM_ANDAMENTO").length ? "EM_ANDAMENTO" : "PROXIMAS");
+  const itens = daAba(atual);
   const fechar = (texto?: string) => { setDialogo(null); if (texto) aoMudar(texto); };
 
   return (
     <div className="grid gap-4">
-      <section aria-labelledby="as-regras" className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-4 text-sm shadow-s1">
-        <h2 id="as-regras" className="font-medium">Regras da convenção</h2>
-        <p>
-          Convocação com {l.regras.antecedencia} dias de antecedência · {PESOS_ASSEMBLEIA[l.regras.peso].toLowerCase()} · votam o proprietário
-          ou o procurador com procuração aceita.
+      <section aria-labelledby="t-assembleias" className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
+        <h2 id="t-assembleias" className="sr-only">Assembleias</h2>
+        <nav aria-label="Situação" className="flex gap-1 overflow-x-auto border-b border-linha md:px-3">
+          {(Object.keys(ABAS) as Aba[]).map((a) => {
+            const esta = atual === a;
+            const n = daAba(a).length;
+            return (
+              <button key={a} type="button" aria-pressed={esta} onClick={() => setAba(a)}
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${esta ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                {ABAS[a]}
+                {n ? <><span className="sr-only"> ({n})</span><span aria-hidden="true" className={`contagem ml-0 ${esta ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{n}</span></> : null}
+              </button>
+            );
+          })}
+        </nav>
+        <p className="flex items-start gap-2 py-3 text-[13px] text-tinta-suave md:border-b md:border-linha md:bg-fundo md:px-5">
+          <Icone nome="info" className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>Regra em vigor: convocação com {lista.regras.antecedencia} dias de antecedência · {PESOS_ASSEMBLEIA[lista.regras.peso].toLowerCase()} · votam o proprietário ou o procurador com procuração aceita.</span>
         </p>
-        {l.regras.peso === "FRACAO" && l.semFracao ? (
-          <Aviso tom="atencao">
-            {l.semFracao === 1 ? "1 unidade está" : `${l.semFracao} unidades estão`} sem fração ideal: preencha antes de convocar.
-          </Aviso>
+        {lista.regras.peso === "FRACAO" && lista.semFracao ? (
+          <div className="pb-3 md:px-5 md:pt-3">
+            <Aviso tom="atencao">{lista.semFracao === 1 ? "1 unidade está" : `${lista.semFracao} unidades estão`} sem fração ideal: preencha em Mais ações › Frações ideais antes de convocar.</Aviso>
+          </div>
         ) : null}
-        <span className="flex flex-wrap gap-2">
-          {l.pode.configurar ? <Botao tamanho="m" variante="contorno" onClick={() => setDialogo("regras")}>Mudar as regras</Botao> : null}
-          {l.pode.fracoes ? <Botao tamanho="m" variante="contorno" onClick={() => setDialogo("fracoes")}>Frações ideais</Botao> : null}
-        </span>
+        {itens.length === 0 ? (
+          <div className="md:p-5">
+            <Vazio titulo={atual === "PROXIMAS" ? "Nenhuma assembleia marcada" : atual === "EM_ANDAMENTO" ? "Nenhuma assembleia em andamento" : "Nenhuma assembleia encerrada"} icone="pessoas">
+              {atual === "PROXIMAS" ? "Monte a pauta e convoque: o edital vai como comunicado e cada unidade recebe um link para indicar procurador, registrar presença e votar." : null}
+            </Vazio>
+          </div>
+        ) : (
+          <ul aria-label="Assembleias" className="grid max-md:gap-3">
+            {itens.map((a) => (
+              <li key={a.id} className={`relative grid grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-3 hover:bg-violeta-50/50 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 md:grid-cols-[52px_minmax(0,1.4fr)_minmax(0,1fr)_140px_20px] md:border-t md:border-linha md:first:border-t-0`}>
+                <DiaQuadro d={diaDe(a.primeiraChamada)} tom={TOM_DIA[a.estado]} />
+                <span className="grid min-w-0 gap-0.5">
+                  <Link href={`/vida/assembleia?id=${a.id}`} className="text-[15px] font-medium after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">{a.titulo}</Link>
+                  <span className="t-apoio">{tipoEForma(a)} · {a.itens === 1 ? "1 item" : `${a.itens} itens`} na pauta</span>
+                  {a.procuracoesPendentes ? <span className="t-apoio md:hidden">{procuracoes(a.procuracoesPendentes)}</span> : null}
+                  <span className="pt-1 md:hidden"><SeloAssembleia estado={a.estado} /></span>
+                </span>
+                <span className="text-sm text-tinta-suave max-md:hidden">
+                  {a.estado === "EM_ANDAMENTO" || a.estado === "ENCERRADA" ? `${a.presentes} de ${a.unidades} unidades presentes` : `1ª chamada às ${formatarDataHora(a.primeiraChamada).slice(11)}`}
+                  {a.procuracoesPendentes ? ` · ${procuracoes(a.procuracoesPendentes)}` : ""}
+                </span>
+                <span className="justify-self-start max-md:hidden"><SeloAssembleia estado={a.estado} /></span>
+                <Icone nome="dir" className="h-5 w-5 text-tinta-suave" />
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-2 py-4 md:border-t md:border-linha md:px-5">
+          <span className="t-apoio">{itens.length === 1 ? "1 assembleia" : `${itens.length} assembleias`}</span>
+          <span className="t-apoio">Ao convocar, o edital vai como comunicado.</span>
+        </div>
       </section>
-      {l.assembleias.length === 0 ? (
-        <Vazio titulo="Nenhuma assembleia ainda">
-          Monte a pauta e convoque: o edital vai como comunicado e cada unidade recebe um link para indicar procurador, registrar presença e votar.
-        </Vazio>
-      ) : (
-        <ul className="grid gap-3">
-          {l.assembleias.map((a) => (
-            <li key={a.id} className="flex flex-wrap items-center gap-3 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
-              <span className="grid min-w-0 flex-1 gap-1">
-                <span className="flex flex-wrap items-center gap-2">
-                  <Link href={`/vida/assembleia?id=${a.id}`} className="font-medium hover:text-violeta-600 hover:underline">{a.titulo}</Link>
-                  <SeloAssembleia estado={a.estado} />
-                </span>
-                <span className="text-sm text-tinta-suave">
-                  {tipoEForma(a)} · 1ª chamada em {formatarDataHora(a.primeiraChamada)} · {a.itens === 1 ? "1 item" : `${a.itens} itens`} na pauta
-                  {a.estado === "EM_ANDAMENTO" || a.estado === "ENCERRADA" ? ` · ${a.presentes} de ${a.unidades} unidades presentes` : ""}
-                  {a.procuracoesPendentes ? ` · ${a.procuracoesPendentes === 1 ? "1 procuração" : `${a.procuracoesPendentes} procurações`} a conferir` : ""}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      <p className="text-[13px] text-tinta-suave">
+      <p className="t-apoio">
         O quórum de cada item segue a convenção do prédio: confira antes de convocar. A videochamada é de um serviço de fora (Meet, Zoom ou Jitsi);
         o sistema cuida da presença, das procurações e dos votos.
       </p>
-      {dialogo === "regras" ? <Regras regras={l.regras} aoFechar={fechar} /> : null}
+      {dialogo === "regras" ? <Regras regras={lista.regras} aoFechar={fechar} /> : null}
       {dialogo === "fracoes" ? <FracoesIdeais aoFechar={fechar} /> : null}
     </div>
   );
@@ -185,123 +229,7 @@ function FormFracoes({ f, aoFechar }: { f: Fracoes; aoFechar: (texto?: string) =
   );
 }
 
-// ---------------------------------------------------------------------------------------
-// A assembleia nova (ou o rascunho).
-
-interface ItemForm { titulo: string; descricao: string; tipo: TipoItem; opcoes: string[]; quorum: Quorum }
-const itemVazio = (): ItemForm => ({ titulo: "", descricao: "", tipo: "APROVACAO", opcoes: ["", ""], quorum: "MAIORIA_PRESENTES" });
-
-/** ISO para o campo "AAAA-MM-DDTHH:MM", no relógio de quem usa a tela. */
-function paraCampo(iso?: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-const paraIso = (v: string) => { const d = new Date(v); return Number.isNaN(d.getTime()) ? v : d.toISOString(); };
-
-export function FormAssembleia({ a, aoFechar, aoSalvar }: { a?: AssembleiaTela; aoFechar: () => void; aoSalvar: (id: string, texto: string) => void }) {
-  const [titulo, setTitulo] = useState(a?.titulo ?? "");
-  const [tipo, setTipo] = useState<TipoAssembleia>(a?.tipo ?? "ORDINARIA");
-  const [forma, setForma] = useState<FormaAssembleia>(a?.forma ?? "PRESENCIAL");
-  const [primeira, setPrimeira] = useState(paraCampo(a?.primeiraChamada));
-  const [segunda, setSegunda] = useState(paraCampo(a?.segundaChamada));
-  const [local, setLocal] = useState(a?.local ?? "");
-  const [video, setVideo] = useState(a?.linkVideo ?? "");
-  const [itens, setItens] = useState<ItemForm[]>(a?.itens.length
-    ? a.itens.map((i) => ({ titulo: i.titulo, descricao: i.descricao ?? "", tipo: i.tipo, quorum: i.quorum,
-                          opcoes: i.tipo === "ESCOLHA" ? i.opcoes.slice(0, -1) : ["", ""] }))
-    : [itemVazio()]);
-  const [erro, setErro] = useState<ErroApi | null>(null);
-  const [enviando, setEnviando] = useState(false);
-  const comErro = camposComErro(erro);
-  const detalhe = (erro?.detalhes?.campos as string[] | undefined) ?? [];
-
-  const mudarItem = (n: number, x: Partial<ItemForm>) => setItens((xs) => xs.map((i, j) => (j === n ? { ...i, ...x } : i)));
-
-  async function salvar(ev: FormEvent) {
-    ev.preventDefault();
-    setErro(null);
-    setEnviando(true);
-    const corpo = {
-      ...(a ? { versao: a.versao } : {}), titulo, tipo, forma, primeiraChamada: paraIso(primeira), segundaChamada: paraIso(segunda || primeira),
-      local: forma === "ONLINE" ? "" : local, linkVideo: forma === "PRESENCIAL" ? "" : video,
-      itens: itens.map((i) => ({ titulo: i.titulo, descricao: i.descricao, tipo: i.tipo, quorum: i.quorum, ...(i.tipo === "ESCOLHA" ? { opcoes: i.opcoes } : {}) })),
-    };
-    const r = await chamarApi<{ id: string }>(a ? `/v1/condominio/assembleias/${a.id}` : "/v1/condominio/assembleias", { metodo: a ? "PUT" : "POST", corpo });
-    setEnviando(false);
-    if (!r.ok) return setErro(r.erro);
-    aoSalvar(r.dados.id, "Rascunho salvo. Confira a convocação e convoque quando estiver pronto.");
-  }
-
-  const erroItem = (n: number, campo: string) => detalhe.includes(`itens.${n + 1}.${campo}`);
-
-  return (
-    <Dialogo aberto titulo={a ? "Editar a assembleia" : "Nova assembleia"} aoFechar={aoFechar}>
-      <form onSubmit={salvar} noValidate className="grid gap-3">
-        {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-        {comErro.some((c) => c.startsWith("itens")) ? <Aviso tom="erro" papel="alert">Confira a pauta: cada item precisa de título e, na escolha, de 2 a 10 opções diferentes.</Aviso> : null}
-        <CampoTexto id="as-titulo" rotulo="Nome" maxLength={120} value={titulo} onChange={(e) => setTitulo(e.target.value)}
-          erro={comErro.includes("titulo") ? "Escreva o nome, com 5 a 120 letras" : null} ajuda="Por exemplo: Assembleia geral ordinária 2026" />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <CampoSelecao id="as-tipo" rotulo="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value as TipoAssembleia)}
-            opcoes={(Object.keys(TIPOS_ASSEMBLEIA) as TipoAssembleia[]).map((v) => ({ valor: v, texto: TIPOS_ASSEMBLEIA[v] }))}
-            ajuda="Ordinária: contas, orçamento e eleição. Extraordinária: o resto" />
-          <CampoSelecao id="as-forma" rotulo="Forma" value={forma} onChange={(e) => setForma(e.target.value as FormaAssembleia)}
-            opcoes={(Object.keys(FORMAS_ASSEMBLEIA) as FormaAssembleia[]).map((v) => ({ valor: v, texto: FORMAS_ASSEMBLEIA[v] }))}
-            ajuda="Online pede que a convenção não proíba" />
-          <CampoTexto id="as-primeira" rotulo="1ª chamada" type="datetime-local" value={primeira} onChange={(e) => setPrimeira(e.target.value)}
-            erro={comErro.includes("primeiraChamada") ? "Escolha uma data no futuro" : null} />
-          <CampoTexto id="as-segunda" rotulo="2ª chamada" type="datetime-local" value={segunda} onChange={(e) => setSegunda(e.target.value)}
-            erro={comErro.includes("segundaChamada") ? "Na hora da 1ª chamada ou depois" : null} />
-          {forma !== "ONLINE" ? (
-            <CampoTexto id="as-local" rotulo="Local" maxLength={200} value={local} onChange={(e) => setLocal(e.target.value)}
-              erro={comErro.includes("local") ? "Escreva onde vai ser" : null} />
-          ) : null}
-          {forma !== "PRESENCIAL" ? (
-            <CampoTexto id="as-video" rotulo="Link da videochamada" type="url" maxLength={300} value={video} onChange={(e) => setVideo(e.target.value)}
-              erro={comErro.includes("linkVideo") ? "Cole o endereço que começa com https://" : null} ajuda="Vai só nos links pessoais, não no edital do mural" />
-          ) : null}
-        </div>
-        <fieldset className="grid gap-3">
-          <legend className="mb-1 text-[13px] font-medium">Pauta</legend>
-          {itens.map((i, n) => (
-            <div key={n} className="grid gap-2 rounded-xl border border-linha p-3">
-              <CampoTexto id={`as-item-${n}`} rotulo={`Item ${n + 1}`} maxLength={200} value={i.titulo} onChange={(e) => mudarItem(n, { titulo: e.target.value })}
-                erro={erroItem(n, "titulo") ? "Escreva o item, com 3 a 200 letras" : null} />
-              <CampoTexto id={`as-item-${n}-desc`} rotulo="Detalhe" opcional maxLength={1000} value={i.descricao} onChange={(e) => mudarItem(n, { descricao: e.target.value })} />
-              <div className="grid gap-2 sm:grid-cols-2">
-                <CampoSelecao id={`as-item-${n}-tipo`} rotulo="Votação" value={i.tipo} onChange={(e) => mudarItem(n, { tipo: e.target.value as TipoItem })}
-                  opcoes={(Object.keys(TIPOS_ITEM) as TipoItem[]).map((v) => ({ valor: v, texto: TIPOS_ITEM[v] }))} />
-                <CampoSelecao id={`as-item-${n}-quorum`} rotulo="Quórum" value={i.quorum} onChange={(e) => mudarItem(n, { quorum: e.target.value as Quorum })}
-                  opcoes={(Object.keys(QUORUNS) as Quorum[]).map((v) => ({ valor: v, texto: QUORUNS[v] }))} ajuda="Confira na convenção" />
-              </div>
-              {i.tipo === "ESCOLHA" ? (
-                <div className="grid gap-2">
-                  {i.opcoes.map((o, k) => (
-                    <CampoTexto key={k} id={`as-item-${n}-op-${k}`} rotulo={`Opção ${k + 1} do item ${n + 1}`} maxLength={80} value={o}
-                      onChange={(e) => mudarItem(n, { opcoes: i.opcoes.map((x, j) => (j === k ? e.target.value : x)) })} />
-                  ))}
-                  <span className="flex flex-wrap items-center gap-2 text-[13px] text-tinta-suave">
-                    {i.opcoes.length < 10 ? <Botao variante="discreto" tamanho="p" onClick={() => mudarItem(n, { opcoes: [...i.opcoes, ""] })}>Mais uma opção</Botao> : null}
-                    Em branco entra sozinho no fim.
-                  </span>
-                  {erroItem(n, "opcoes") ? <span className="text-[13px] text-erro" role="alert">Escreva de 2 a 10 opções, diferentes entre si</span> : null}
-                </div>
-              ) : null}
-              {itens.length > 1 ? (
-                <Botao variante="discreto" tamanho="p" className="justify-self-start" onClick={() => setItens((xs) => xs.filter((_, j) => j !== n))}
-                  aria-label={`Tirar o item ${n + 1}`}>Tirar o item</Botao>
-              ) : null}
-            </div>
-          ))}
-          {itens.length < 30 ? <Botao variante="contorno" tamanho="m" className="justify-self-start" onClick={() => setItens((xs) => [...xs, itemVazio()])}>Item da pauta</Botao> : null}
-        </fieldset>
-        <div className="flex flex-wrap justify-end gap-2">
-          <Botao variante="discreto" onClick={aoFechar}>Voltar</Botao>
-          <Botao type="submit" disabled={enviando}>Salvar o rascunho</Botao>
-        </div>
-      </form>
-    </Dialogo>
-  );
+/** "1 procuração a conferir". */
+function procuracoes(n: number): string {
+  return `${n === 1 ? "1 procuração" : `${n} procurações`} a conferir`;
 }

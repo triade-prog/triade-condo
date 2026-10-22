@@ -1,12 +1,13 @@
 "use client";
-// Nova reserva (decisão 1 do desenho "Vida em condomínio"): o síndico registra a reserva pedida
+// Nova reserva (decisão 1 do desenho "Vida em condomínio"; DC15, tela-modelo vida-nova-reserva;
+// a área mostra o horário e como confirma, e o rodapé diz o que falta): o síndico registra a reserva pedida
 // por telefone. Segue a regra da área: confirma na hora quando é automática e espera aprovação
 // quando o síndico aprova. Antes de salvar, a tela confere o dia (prazo, ocupação e limite).
 
 import { useEffect, useState, type FormEvent } from "react";
 import { PERIODOS_LIMITE, somarDias, textoLimite } from "@triade/domain";
 import {
-  Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, textoDoErro,
+  Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Icone, textoDoErro,
   type ErroApi,
 } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
@@ -16,7 +17,7 @@ import { diaCurto } from "./comum.tsx";
 export function NovaReserva({ aoFechar, aoSalvar }: { aoFechar: () => void; aoSalvar: (texto: string) => void }) {
   const opcoes = useCarregar<OpcoesReserva>("/v1/condominio/reservas/opcoes");
   return (
-    <Dialogo aberto titulo="Nova reserva" aoFechar={aoFechar}>
+    <Dialogo aberto media fechar titulo="Nova reserva" aoFechar={aoFechar} apoio="Para a reserva pedida por telefone ou no balcão. Segue a regra da área, como pelo WhatsApp.">
       {opcoes.estado === "carregando" ? <Carregando rotulo="Carregando as áreas…" /> : null}
       {opcoes.estado === "erro" ? <ErroCarregar erro={opcoes.erro} texto={opcoes.texto} tentarDeNovo={opcoes.recarregar} /> : null}
       {opcoes.estado === "pronto" ? (
@@ -91,15 +92,19 @@ function Form({ o, aoFechar, aoSalvar }: { o: OpcoesReserva; aoFechar: () => voi
   }
 
   const aviso = conf && v.data ? textoConferencia(conf, area, v.data) : null;
+  // O botão diz o que falta, em vez de só ficar apagado.
+  const falta = !v.unidadeId ? "Falta escolher a unidade." : !v.data ? "Falta escolher o dia." : aviso?.tom === "atencao" ? "Escolha outro dia." : null;
   return (
     <form onSubmit={salvar} noValidate className="grid gap-3">
-      <p className="text-sm text-tinta-suave">Para a reserva pedida por telefone ou no balcão. Segue a regra da área, como pelo WhatsApp.</p>
       {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-      <CampoSelecao id="nr-area" rotulo="Área" value={v.areaId} onChange={(e) => setV((x) => ({ ...x, areaId: e.target.value, horaInicio: "" }))}
-        opcoes={o.areas.map((a) => ({ valor: a.id, texto: a.nome }))} erro={comErro.includes("areaId") ? "Escolha a área" : null} />
+      <div className="grid gap-3 sm:grid-cols-2">
+      <CampoSelecao id="nr-area" rotulo="Área" icone="calendario" value={v.areaId} onChange={(e) => setV((x) => ({ ...x, areaId: e.target.value, horaInicio: "" }))}
+        opcoes={o.areas.map((a) => ({ valor: a.id, texto: a.nome }))} erro={comErro.includes("areaId") ? "Escolha a área" : null}
+        ajuda={`${area.reserva === "AUTOMATICA" ? "Confirma na hora" : "O síndico aprova"} · ${area.horaInicio.slice(0, 5)} às ${area.horaFim.slice(0, 5)}`} />
       <CampoSelecao id="nr-unidade" rotulo="Unidade" value={v.unidadeId} onChange={(e) => setV((x) => ({ ...x, unidadeId: e.target.value, contatoId: "" }))}
         opcoes={[{ valor: "", texto: "Escolha a unidade" }, ...o.unidades.map((u) => ({ valor: u.id, texto: u.nome }))]}
         erro={comErro.includes("unidadeId") ? "Escolha a unidade" : null} />
+      </div>
       {unidade ? (
         <CampoSelecao id="nr-contato" rotulo="Quem pediu" opcional value={v.contatoId} onChange={(e) => mudar("contatoId", e.target.value)}
           opcoes={[{ valor: "", texto: "Não informar" }, ...unidade.contatos.map((c) => ({ valor: c.id, texto: c.nome }))]}
@@ -117,9 +122,12 @@ function Form({ o, aoFechar, aoSalvar }: { o: OpcoesReserva; aoFechar: () => voi
       {aviso ? <Aviso tom={aviso.tom}>{aviso.texto}</Aviso> : null}
       <CampoAreaTexto id="nr-obs" rotulo="Observação" opcional maxLength={300} value={v.observacao} onChange={(e) => mudar("observacao", e.target.value)}
         ajuda="Por exemplo: aniversário, 60 pessoas." />
-      <div className="flex flex-wrap justify-end gap-2">
-        <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
-        <Botao type="submit" disabled={enviando || !v.unidadeId || !v.data || aviso?.tom === "atencao"}>Registrar reserva</Botao>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-linha pt-4">
+        <span className="t-apoio">{falta ?? (v.contatoId ? "A confirmação vai pelo WhatsApp." : "")}</span>
+        <span className="flex gap-2">
+          <Botao variante="contorno" onClick={aoFechar}>Cancelar</Botao>
+          <Botao type="submit" disabled={enviando || !!falta}><Icone nome="check" />Registrar reserva</Botao>
+        </span>
       </div>
     </form>
   );

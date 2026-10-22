@@ -6,6 +6,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { LINK_FALSO, MURAL_FALSO } from "./api-falsa-comunicados";
 import { noMenu } from "./moradores-telas";
+import { irAoPasso } from "./registro";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -91,21 +92,24 @@ test.describe("Mural online e e-mail", () => {
     await expect(page.getByText("Mural e e-mail salvos.")).toBeVisible();
   });
 
-  test("CD-12, CD-13: escrever mostra como vai chegar; o publicado mostra como chegou e corrige avisando por e-mail", async ({ page }) => {
+  test("CD-12, CD-13: escrever mostra como vai chegar; o publicado mostra como chegou e corrige avisando por e-mail", async ({ page, isMobile }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/comunicados/escrever`);
-    const chegar = page.getByRole("region", { name: "Como vai chegar" });
+    await irAoPasso(page.locator("body"), isMobile, 2, "Passos do comunicado");
+    const chegar = page.getByRole("region", { name: "Para quem e como chega" });
     await expect(chegar.getByRole("switch", { name: /Aparece no mural online/ })).toBeVisible();
     await expect(chegar.getByText("1 contato com e-mail confirmado.")).toBeVisible();
-    await expect(chegar.getByText("2 contatos sem e-mail confirmado")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Quem vai receber" }).getByText("2 contatos sem e-mail confirmado")).toBeVisible();
     await page.getByRole("group", { name: "Para quem" }).getByRole("button", { name: "Blocos" }).click();
     await page.getByRole("checkbox", { name: "Torre A" }).check();
     await expect(chegar.getByRole("switch", { name: /Aparece no mural online/ })).toBeDisabled();
     await conferir(page);
     await page.getByRole("group", { name: "Para quem" }).getByRole("button", { name: "Todo o condomínio" }).click();
+    await irAoPasso(page.locator("body"), isMobile, 1, "Passos do comunicado");
     await page.getByLabel("Título").fill("Dedetização das áreas comuns");
     await page.getByRole("textbox", { name: "Texto", exact: true }).fill("Na segunda, das 8h às 12h.");
-    await page.getByRole("button", { name: "Publicar", exact: true }).click();
+    await irAoPasso(page.locator("body"), isMobile, 3, "Passos do comunicado");
+    await page.getByRole("button", { name: "Publicar agora", exact: true }).last().click();
     await expect(page.getByRole("heading", { level: 1, name: "Dedetização das áreas comuns" })).toBeVisible();
     const chegou = page.getByRole("region", { name: "Como chegou" });
     await expect(chegou.getByText("E-mail · 1 enviado")).toBeVisible();

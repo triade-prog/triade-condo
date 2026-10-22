@@ -1,6 +1,8 @@
 "use client";
-// Documento aberto (design "Telas dos Comunicados", tela 5; CD-04, CD-07, MP-12): a versão em
-// vigor, as anteriores com o que mudou e quem abriu ou baixou. Nova versão pede o arquivo, o
+// Documento aberto (design "Telas dos Comunicados", tela 5; DC15, telas-modelo documento-ficha-*;
+// CD-04, CD-07, MP-12): a versão em vigor num cartão com Abrir e Baixar, as outras embaixo com o
+// que mudou, quem vê e quem abriu ou baixou. Nova versão é o único botão principal (Enviar o
+// arquivo, quando ainda não há); Editar e Arquivar ficam em Mais ações. Nova versão pede o arquivo, o
 // que mudou e a data em que passa a valer; até lá, a anterior continua em vigor. Enviar por
 // e-mail (design "Mural online e e-mail", tela 7; CD-14): a versão em vigor, por link de 7 dias
 // que pode ser cancelado.
@@ -10,13 +12,14 @@ import { useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { descreverEventoDocumento, descreverValidade, mostrarDataCurta, mostrarTamanho, TAMANHO_MAXIMO_DOCUMENTO } from "@triade/domain";
 import {
-  Aviso, AvisoErro, Botao, CampoTexto, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar, Selo, textoDoErro, Vazio, type ErroApi,
+  Aviso, AvisoErro, Botao, CampoTexto, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi,
 } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
+import { CartaoFicha, MenuAcoes, type ItemMenu } from "../moradores/comum.tsx";
 import { diaHora } from "../pedidos/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { DocumentoDetalhe, EnvioDocumento, Recado, VersaoDocumento } from "../tipos.ts";
-import { abrirLink, conferirArquivo, enviarUm, nomeTipoDocumento, PartesDocumentos } from "./comum.tsx";
+import { abrirLink, conferirArquivo, enviarUm, nomeTipoDocumento, PartesDocumentos, SeloQuemVe } from "./comum.tsx";
 import { camposDocumento, documentoParaApi } from "./Documentos.tsx";
 
 export function Documento() {
@@ -26,12 +29,12 @@ export function Documento() {
   const [acao, setAcao] = useState<"versao" | "editar" | "arquivar" | "email" | null>(busca.get("novo") ? "versao" : null);
   const [cancelar, setCancelar] = useState<EnvioDocumento | null>(null);
   const [recado, setRecado] = useState<Recado>(busca.get("novo") ? { tom: "ok", texto: "Documento guardado. Agora envie o arquivo da versão 1." } : null);
-  const voltar = <Link href="/comunicados/documentos" className="text-sm font-medium text-violeta-600 hover:underline">Voltar aos documentos</Link>;
+  const voltar = <Link href="/comunicados/documentos" className="flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline"><Icone nome="esq" className="h-4 w-4" />Documentos</Link>;
 
-  if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Documento</h1><Vazio titulo="Documento não encontrado" /></div>;
+  if (!id) return <div className="grid gap-3">{voltar}<h1 className="t-titulo-tela">Documento</h1><Vazio titulo="Documento não encontrado" /></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o documento…" />;
   if (carga.estado === "erro") {
-    return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Documento</h1><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+    return <div className="grid gap-3">{voltar}<h1 className="t-titulo-tela">Documento</h1><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
   }
   const d = carga.dados;
   const doc = d.documento;
@@ -43,27 +46,33 @@ export function Documento() {
       carga.recarregar();
     });
 
+  const mais: ItemMenu[] = d.pode.editar ? [
+    { texto: "Editar", icone: "editar", acao: () => setAcao("editar") },
+    { texto: "Arquivar…", icone: "sair", perigo: true, acao: () => setAcao("arquivar") },
+  ] : [];
+  const principal = d.pode.enviar ? <Botao onClick={() => setAcao("versao")}><Icone nome="enviar" />{temVersao ? "Nova versão" : "Enviar o arquivo"}</Botao> : null;
+  const emVigor = d.versoes.find((x) => x.emVigor);
+  const outras = d.versoes.filter((x) => x !== emVigor);
+
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-5 max-md:pb-20">
       <PartesDocumentos />
       {voltar}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="grid gap-2">
-          <h1 className="text-[28px] font-normal tracking-tight">{doc.titulo}</h1>
+          <h1 className="t-titulo-tela">{doc.titulo}</h1>
+          {doc.descricao ? <p className="t-apoio">{doc.descricao}</p> : null}
           <p className="flex flex-wrap items-center gap-2 text-sm">
-            <Selo tom="info">{nomeTipoDocumento(doc.tipo)}</Selo>
+            <Selo tom="neutro">{nomeTipoDocumento(doc.tipo)}</Selo>
             {doc.emVigor ? <Selo tom="andamento">Versão {doc.emVigor.numero} em vigor</Selo> : <Selo tom="neutro">Sem arquivo</Selo>}
-            {doc.restrito ? <Selo tom="atencao">Só quem cuida dos documentos</Selo> : doc.aoMorador ? <Selo tom="ok">Pode ir ao morador</Selo> : null}
+            <SeloQuemVe d={doc} />
             {doc.arquivadoEm ? <Selo tom="neutro">Arquivado</Selo> : null}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {doc.emVigor ? <Botao variante="contorno" onClick={() => abrir({ id: doc.emVigor!.id } as VersaoDocumento, false)}>Abrir</Botao> : null}
-          {doc.emVigor ? <Botao variante="contorno" onClick={() => abrir({ id: doc.emVigor!.id } as VersaoDocumento, true)}>Baixar</Botao> : null}
-          {d.pode.enviarEmail ? <Botao variante="contorno" onClick={() => setAcao("email")}>Enviar por e-mail</Botao> : null}
-          {d.pode.enviar ? <Botao onClick={() => setAcao("versao")}>{temVersao ? "Nova versão" : "Enviar o arquivo"}</Botao> : null}
-          {d.pode.editar ? <Botao variante="discreto" onClick={() => setAcao("editar")}>Editar</Botao> : null}
-          {d.pode.editar ? <Botao variante="discreto" onClick={() => setAcao("arquivar")}>Arquivar</Botao> : null}
+          <MenuAcoes rotulo="Mais ações" texto="Mais ações" itens={mais} />
+          {d.pode.enviarEmail ? <Botao variante="contorno" className="max-md:w-11 max-md:px-0" aria-label="Enviar por e-mail" onClick={() => setAcao("email")}><Icone nome="email" /><span className="max-md:hidden">Enviar por e-mail</span></Botao> : null}
+          {principal ? <span className="max-md:hidden">{principal}</span> : null}
         </div>
       </div>
 
@@ -72,32 +81,49 @@ export function Documento() {
       {doc.vencido || doc.vencendo ? <Aviso tom={doc.vencido ? "erro" : "atencao"} titulo={`Validade: ${validade}`}>Guarde a versão renovada quando ela chegar.</Aviso> : null}
       {doc.proxima ? <Aviso tom="info" titulo={`A versão ${doc.proxima.numero} passa a valer em ${mostrarDataCurta(doc.proxima.vigenteDesde)}`}>Até lá, a versão {doc.emVigor?.numero ?? "anterior"} continua em vigor.</Aviso> : null}
 
-      <dl className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-4 text-sm shadow-s1 sm:grid-cols-4">
-        <div><dt className="text-xs text-tinta-suave">Em vigor desde</dt><dd>{doc.emVigor ? mostrarDataCurta(doc.emVigor.vigenteDesde) : "Sem arquivo"}</dd></div>
-        <div><dt className="text-xs text-tinta-suave">Aprovado em</dt><dd>{doc.emVigor?.aprovadoEm ?? "Não informado"}</dd></div>
-        <div><dt className="text-xs text-tinta-suave">Validade</dt><dd>{validade ?? "Sem validade"}</dd></div>
-        <div><dt className="text-xs text-tinta-suave">Guardado</dt><dd>{diaHora(doc.criadoEm)}{doc.criadoPor ? ` por ${doc.criadoPor}` : ""}</dd></div>
-        {doc.descricao ? <div className="sm:col-span-4"><dt className="text-xs text-tinta-suave">Descrição</dt><dd>{doc.descricao}</dd></div> : null}
+      <dl className="grid gap-x-5 gap-y-3 rounded-[18px] border border-linha bg-superficie p-4 text-sm shadow-s1 sm:grid-cols-4 md:px-5">
+        <div><dt className="t-apoio">Em vigor desde</dt><dd className="text-[15px]">{doc.emVigor ? mostrarDataCurta(doc.emVigor.vigenteDesde) : "Sem arquivo"}</dd></div>
+        <div><dt className="t-apoio">Aprovado em</dt><dd className="text-[15px]">{doc.emVigor?.aprovadoEm ?? "Não informado"}</dd></div>
+        <div><dt className="t-apoio">Validade</dt><dd className="text-[15px]">{validade ?? "Sem validade"}</dd></div>
+        <div><dt className="t-apoio">Guardado</dt><dd className="text-[15px]">{diaHora(doc.criadoEm)}{doc.criadoPor ? ` por ${doc.criadoPor}` : ""}</dd></div>
       </dl>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <section aria-labelledby="t-versoes" className="grid gap-2">
-          <h2 id="t-versoes" className="text-lg font-medium">Versões</h2>
-          {d.versoes.length === 0 ? <Vazio titulo="Nenhum arquivo ainda">Envie o arquivo do documento. Cada arquivo novo vira uma versão.</Vazio> : (
-            <ol className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
-              {d.versoes.map((x) => (
-                <li key={x.id} className="flex flex-wrap items-start justify-between gap-2 px-4 py-3 text-sm">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <CartaoFicha id="versoes" titulo="Versão em vigor" icone="documento">
+          {emVigor ? (
+            <div className="flex flex-wrap items-center gap-3 rounded-[14px] border border-linha bg-fundo p-3.5">
+              <span className="ladrilho h-11 w-11 rounded-xl" data-tom="violeta" aria-hidden="true"><Icone nome="documento" /></span>
+              <span className="grid min-w-0 flex-1">
+                <span className="font-semibold [overflow-wrap:anywhere]">Versão {emVigor.numero} · {emVigor.nome}</span>
+                <span className="t-apoio">{emVigor.tipo.startsWith("image/") ? "Foto" : "PDF"} {mostrarTamanho(emVigor.tamanho)} · guardado em {diaHora(emVigor.enviadoEm)}{emVigor.enviadoPor ? ` por ${emVigor.enviadoPor}` : ""}</span>
+                {emVigor.mudanca ? <span className="text-sm">{emVigor.mudanca}</span> : null}
+              </span>
+              <span className="flex gap-2 max-md:w-full">
+                <Botao variante="contorno" tamanho="m" className="max-md:flex-1" aria-label={`Abrir a versão ${emVigor.numero}`} onClick={() => abrir(emVigor, false)}><Icone nome="olho" />Abrir</Botao>
+                <Botao variante="contorno" tamanho="m" className="max-md:flex-1" aria-label={`Baixar a versão ${emVigor.numero}`} onClick={() => abrir(emVigor, true)}><Icone nome="baixar" />Baixar</Botao>
+              </span>
+            </div>
+          ) : (
+            <div className="grid justify-items-center gap-2 rounded-2xl border-[1.5px] border-dashed border-violeta-300 bg-violeta-50 px-4 py-5 text-center">
+              <span className="ladrilho h-11 w-11 rounded-xl" data-tom="violeta" aria-hidden="true"><Icone nome="enviar" /></span>
+              <span className="font-semibold">Ainda não há arquivo em vigor</span>
+              <span className="t-apoio">{temVersao ? "A versão guardada passa a valer na data marcada." : "Envie o arquivo. Ele vira a versão 1 e passa a valer na data que você marcar."}</span>
+            </div>
+          )}
+          {outras.length ? (
+            <ol aria-label="Outras versões" className="grid border-t border-linha pt-1">
+              {outras.map((x) => (
+                <li key={x.id} className="flex flex-wrap items-start justify-between gap-2 border-t border-linha py-3 text-sm first:border-t-0">
                   <span className="grid min-w-0 gap-0.5">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{x.numero ? `Versão ${x.numero}` : x.nome}</span>
-                      {x.emVigor ? <Selo tom="ok">Em vigor</Selo> : null}
-                      {x.situacao === "LIBERADO" && !x.emVigor && x.vigenteDesde > d.hoje ? <Selo tom="info">A partir de {mostrarDataCurta(x.vigenteDesde)}</Selo> : null}
+                      {x.situacao === "LIBERADO" && x.vigenteDesde > d.hoje ? <Selo tom="info">A partir de {mostrarDataCurta(x.vigenteDesde)}</Selo> : null}
                       {x.situacao === "ENVIANDO" ? <Selo tom="info">Verificando</Selo> : null}
                       {x.situacao === "NAO_LIBERADO" ? <Selo tom="atencao">Não liberado</Selo> : null}
                     </span>
                     {x.mudanca ? <span>{x.mudanca}</span> : null}
                     {x.situacao === "NAO_LIBERADO" ? <span className="text-atencao">{x.motivoRecusa}</span> : null}
-                    <span className="text-xs text-tinta-suave">
+                    <span className="t-apoio">
                       Vale desde {mostrarDataCurta(x.vigenteDesde)}{x.aprovadoEm ? ` · ${x.aprovadoEm}` : ""} · {x.tipo.startsWith("image/") ? "Foto" : "PDF"} {mostrarTamanho(x.tamanho)}
                       {x.enviadoPor ? ` · ${x.enviadoPor}` : ""} · {diaHora(x.enviadoEm)}
                     </span>
@@ -111,45 +137,58 @@ export function Documento() {
                 </li>
               ))}
             </ol>
-          )}
-          <p className="text-xs text-tinta-suave">O arquivo fica guardado sem acesso público. Abrir e baixar usam link de 5 minutos, e cada abertura fica no histórico. Depois de baixada, a cópia não tem mais controle.</p>
-        </section>
+          ) : emVigor ? <p className="t-apoio border-t border-linha pt-3">Nenhuma versão anterior. Quando chegar a versão {(emVigor.numero ?? 1) + 1}, esta fica guardada aqui embaixo.</p> : null}
+          <p className="t-apoio">Abrir e baixar ficam registrados no histórico.</p>
+        </CartaoFicha>
 
-        <div className="grid gap-4">
-        {d.envios?.length ? (
-          <section aria-labelledby="t-envios" className="grid gap-2">
-            <h2 id="t-envios" className="text-lg font-medium">Enviado por e-mail</h2>
-            <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
-              {d.envios.map((e) => (
-                <li key={e.id} className="flex flex-wrap items-start justify-between gap-2 px-4 py-2.5 text-sm">
-                  <span className="grid min-w-0 gap-0.5 [overflow-wrap:anywhere]">
-                    <span className="font-medium">{e.contato ?? e.para}</span>
-                    <span className="text-xs text-tinta-suave">
-                      {e.pedido ? "Pedido pelo mural · " : ""}{e.numero ? `versão ${e.numero} · ` : ""}{diaHora(e.criadoEm)}
-                      {e.cancelado ? " · link cancelado" : e.abertoEm ? ` · aberto ${diaHora(e.abertoEm)}` : e.estado === "NA_FILA" || e.estado === "ENVIANDO" ? " · saindo" : ""}
+        <div className="grid gap-5">
+          <CartaoFicha id="quem-ve" titulo="Quem vê" icone="olho">
+            <span className="justify-self-start"><SeloQuemVe d={doc} sempre /></span>
+            <p className="text-sm">{doc.restrito ? "Não vai ao mural nem por e-mail. Só quem cuida dos documentos vê."
+              : doc.aoMorador ? "Aparece no mural online e o morador pode pedir por e-mail. Quem pede recebe um link que vale 7 dias."
+                : "Fica com a gestão. Não aparece no mural e não vai ao morador."}</p>
+          </CartaoFicha>
+          {d.envios?.length ? (
+            <CartaoFicha id="envios" titulo="Enviado por e-mail" icone="email">
+              <ul className="grid">
+                {d.envios.map((e) => (
+                  <li key={e.id} className="flex flex-wrap items-start justify-between gap-2 border-t border-linha py-2.5 text-sm first:border-t-0 first:pt-0">
+                    <span className="grid min-w-0 gap-0.5 [overflow-wrap:anywhere]">
+                      <span className="font-medium">{e.contato ?? e.para}</span>
+                      <span className="t-apoio">
+                        {e.pedido ? "Pedido pelo mural · " : ""}{e.numero ? `versão ${e.numero} · ` : ""}{diaHora(e.criadoEm)}
+                        {e.cancelado ? " · link cancelado" : e.abertoEm ? ` · aberto ${diaHora(e.abertoEm)}` : e.estado === "NA_FILA" || e.estado === "ENVIANDO" ? " · saindo" : ""}
+                      </span>
                     </span>
-                  </span>
-                  {!e.cancelado && d.pode.editar && (!e.vence || e.vence > new Date().toISOString()) && e.estado !== "FALHOU" ? (
-                    <Botao variante="discreto" tamanho="p" aria-label={`Cancelar o link enviado a ${e.contato ?? e.para}`} onClick={() => setCancelar(e)}>Cancelar link</Botao>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-        <section aria-labelledby="t-hist" className="grid gap-2">
-          <h2 id="t-hist" className="text-lg font-medium">Histórico</h2>
-          <ol className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
-            {d.historico.map((h, i) => (
-              <li key={i} className="grid gap-0.5 px-4 py-2.5 text-sm">
-                <span>{descreverEventoDocumento(h.acao, h.dados)}</span>
-                <span className="text-xs text-tinta-suave">{h.autor ?? "Sistema"} · {diaHora(h.em)}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
+                    {!e.cancelado && d.pode.editar && (!e.vence || e.vence > new Date().toISOString()) && e.estado !== "FALHOU" ? (
+                      <Botao variante="discreto" tamanho="p" aria-label={`Cancelar o link enviado a ${e.contato ?? e.para}`} onClick={() => setCancelar(e)}>Cancelar link</Botao>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </CartaoFicha>
+          ) : null}
+          <CartaoFicha id="historico" titulo="Histórico" icone="relogio">
+            {d.historico.length === 0 ? (
+              <div className="grid justify-items-center gap-1 py-3 text-center">
+                <span className="font-medium">Nada aconteceu com este documento ainda</span>
+                <span className="t-apoio">Aberturas, downloads, envios por e-mail e versões novas aparecem aqui.</span>
+              </div>
+            ) : (
+              <ol className="grid">
+                {d.historico.map((h, i) => (
+                  <li key={i} className="grid gap-0.5 border-t border-linha py-2.5 text-sm first:border-t-0 first:pt-0">
+                    <span>{descreverEventoDocumento(h.acao, h.dados)}</span>
+                    <span className="t-apoio">{h.autor ?? "Sistema"} · {diaHora(h.em)}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </CartaoFicha>
         </div>
       </div>
+
+      {principal ? <div className="fixed inset-x-0 bottom-[calc(61px+env(safe-area-inset-bottom))] z-20 border-t border-linha bg-superficie px-4 py-3 md:hidden [&_button]:w-full">{principal}</div> : null}
 
       <Dialogo aberto={acao === "email"} titulo={`Enviar por e-mail · ${doc.titulo}`} aoFechar={() => setAcao(null)}>
         {acao === "email" ? (

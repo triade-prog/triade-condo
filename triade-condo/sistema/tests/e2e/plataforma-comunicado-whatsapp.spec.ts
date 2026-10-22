@@ -21,10 +21,12 @@ async function conferir(page: Page) {
 }
 
 test.describe("Plataforma · comunicado pelo WhatsApp", () => {
-  test("CF-11, W-20: o cartão começa desligado, conta por telefone e dá o convite e o cartaz", async ({ page }) => {
+  test("CF-11, W-20: o cartão começa desligado, conta por telefone e dá o convite e o cartaz", async ({ page, isMobile }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/comunicados/escrever`);
-    await expect(page.getByRole("heading", { name: "Como vai chegar" })).toBeVisible();
+    await irAoPasso(page.locator("body"), isMobile, 2, "Passos do comunicado");
+    await expect(page.getByRole("group", { name: "Como chega" })).toBeVisible();
+    await expect(page.getByRole("switch", { name: /^WhatsApp/ })).toBeDisabled();
     await expect(page.getByRole("switch", { name: /Vai pelo WhatsApp do condomínio/ })).toHaveCount(0);
     await page.goto(`${PLATAFORMA}/m/${MURAL_FALSO}`);
     await expect(page.getByRole("heading", { level: 1, name: "Mural do Residencial Ipê" })).toBeVisible();
@@ -55,32 +57,37 @@ test.describe("Plataforma · comunicado pelo WhatsApp", () => {
     await conferir(page);
   });
 
-  test("CD-02, W-14: escrever mostra quem recebe por cada canal, quem fica sem nenhum e o ritmo da fila", async ({ page }) => {
+  test("CD-02, W-14: escrever mostra quem recebe por cada canal, quem fica sem nenhum e o ritmo da fila", async ({ page, isMobile }) => {
     await instalarApiPlataformaFalsa(page, { comComunicadosWhatsapp: true });
     await page.goto(`${PLATAFORMA}/comunicados/escrever`);
-    const chegar = page.getByRole("region", { name: "Como vai chegar" });
-    const zap = chegar.getByRole("switch", { name: /Vai pelo WhatsApp do condomínio/ });
+    await irAoPasso(page.locator("body"), isMobile, 2, "Passos do comunicado");
+    const como = page.getByRole("region", { name: "Para quem e como chega" });
+    const chegar = page.getByRole("region", { name: "Quem vai receber" });
+    const zap = como.getByRole("switch", { name: /Vai pelo WhatsApp do condomínio/ });
     await expect(zap).toBeChecked();
-    await expect(chegar.getByText("2 contatos aceitaram receber comunicados por lá.", { exact: false })).toBeVisible();
+    await expect(como.getByText("2 contatos aceitaram receber comunicados por lá.", { exact: false })).toBeVisible();
     const canais = chegar.getByRole("list", { name: "Por onde chega" });
     await expect(canais).toContainText("2 pelo WhatsApp");
     await expect(canais).toContainText("1 por e-mail");
     await expect(canais).toContainText("1 pelos dois");
     await expect(canais).toContainText("1 por nenhum");
     await expect(chegar.getByText("1 contato não recebe por nenhum dos dois")).toBeVisible();
-    await chegar.getByRole("button", { name: "Ver quem" }).click();
+    await chegar.getByRole("button", { name: "Ver quem fica de fora" }).click();
     await expect(chegar.getByRole("listitem").filter({ hasText: "Joana Lima" })).toBeVisible();
-    await expect(chegar.getByText("10 por minuto: estas 2 saem em cerca de 1 minuto.", { exact: false })).toBeVisible();
     await expect(chegar.getByRole("link", { name: "Como convidar" })).toHaveAttribute("href", "/configuracoes?aba=whatsapp");
     await conferir(page);
     await zap.uncheck();
     await expect(canais).toContainText("0 pelo WhatsApp");
     await expect(chegar.getByText("2 contatos não recebem por nenhum dos dois")).toBeVisible();
     await zap.check();
+    await irAoPasso(page.locator("body"), isMobile, 3, "Passos do comunicado");
+    await expect(page.getByText("10 por minuto: estas 2 saem em cerca de 1 minuto.", { exact: false })).toBeVisible();
 
+    await irAoPasso(page.locator("body"), isMobile, 1, "Passos do comunicado");
     await page.getByRole("textbox", { name: "Título" }).fill("Dedetização das áreas comuns");
     await page.getByRole("textbox", { name: "Texto", exact: true }).fill("Na segunda, das 8h às 12h.");
-    await page.getByRole("button", { name: "Publicar", exact: true }).click();
+    await irAoPasso(page.locator("body"), isMobile, 3, "Passos do comunicado");
+    await page.getByRole("button", { name: "Publicar agora", exact: true }).last().click();
     await expect(page.getByRole("heading", { level: 1, name: "Dedetização das áreas comuns" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Como chegou" }).getByText("WhatsApp do condomínio · 2 mensagens")).toBeVisible();
     await expect(page.getByText("WhatsApp da versão 1: 2 mensagens na fila")).toBeVisible();

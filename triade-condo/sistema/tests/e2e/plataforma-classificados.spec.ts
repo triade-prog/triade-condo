@@ -18,33 +18,36 @@ async function conferir(page: Page) {
 }
 
 test.describe("Classificados", () => {
-  test("AC-05: publicar com título e valor, recusar com motivo e tirar do mural", async ({ page }) => {
+  test("AC-05: revisar e publicar com título e valor, recusar com motivo e tirar do mural", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/`);
     await abrirArea(page, "Vida em condomínio");
     await expect(page.getByText("1 anúncio a aprovar")).toBeVisible();
     await page.getByRole("link", { name: "Ver os anúncios a aprovar" }).click();
-    await expect(page.getByRole("tab", { name: "Classificados", selected: true })).toBeVisible();
-    await expect(page.getByText("Vendo · R$ 900,00 · Torre B · 201 · Paulo Mendes · mostrar WhatsApp: sim")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Classificados/ })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("Vendo · R$ 900,00 · Torre B · 201 · Paulo Mendes", { exact: true })).toBeVisible();
+    await expect(page.getByText("Mostra o WhatsApp")).toBeVisible();
     await expect(page.getByRole("img", { name: "Foto do anúncio Vendo bicicleta aro 29" })).toBeVisible();
     await conferir(page);
 
-    await page.getByRole("button", { name: "Publicar o anúncio Vendo bicicleta aro 29" }).click();
-    const d = page.getByRole("dialog", { name: "Publicar o anúncio" });
+    await page.getByRole("button", { name: "Revisar o anúncio Vendo bicicleta aro 29" }).click();
+    const d = page.getByRole("dialog", { name: "Revisar o anúncio" });
+    await expect(d.getByText("Bicicleta aro 29, pouco usada, R$ 900")).toBeVisible();
     await expect(d.getByLabel("Título no mural")).toHaveValue("Vendo bicicleta aro 29");
     await expect(d.getByLabel("Valor")).toHaveValue("900,00");
     await d.getByLabel("Valor").fill("novecentos");
-    await d.getByRole("button", { name: "Publicar" }).click();
+    await d.getByRole("button", { name: "Publicar no mural" }).click();
     await expect(d.getByText("Escreva o valor como 900 ou 1.150,50")).toBeVisible();
     await d.getByLabel("Valor").fill("850");
     await conferir(page);
-    await d.getByRole("button", { name: "Publicar" }).click();
+    await d.getByRole("button", { name: "Publicar no mural" }).click();
     await expect(page.getByText(/^Anúncio publicado no mural até \d\d\/\d\d\. Quem anunciou recebe o aviso pelo WhatsApp\.$/)).toBeVisible();
     await expect(page.getByText("Nada esperando aprovação")).toBeVisible();
 
-    await page.getByRole("button", { name: "No mural" }).click();
-    await expect(page.getByText("Vendo · R$ 850,00 · Torre B · 201 · Paulo Mendes · mostrar WhatsApp: sim")).toBeVisible();
-    await expect(page.getByText("Doação · Torre A · 302 · Marta Souza · contato pelo condomínio")).toBeVisible();
+    await page.getByRole("button", { name: /^No mural/ }).click();
+    await expect(page.getByText("Vendo · R$ 850,00 · Torre B · 201 · Paulo Mendes", { exact: true })).toBeVisible();
+    await expect(page.getByText("Doação · Torre A · 302 · Marta Souza", { exact: true })).toBeVisible();
+    await expect(page.getByText("Contato pelo condomínio")).toBeVisible();
     await page.getByRole("button", { name: "Tirar do mural o anúncio Doo berço de madeira" }).click();
     const t = page.getByRole("dialog", { name: "Tirar do mural?" });
     await t.getByLabel("Motivo").fill("O berço já foi doado");
@@ -52,7 +55,7 @@ test.describe("Classificados", () => {
     await t.getByRole("button", { name: "Tirar do mural" }).click();
     await expect(page.getByText("\"Doo berço de madeira\" saiu do mural. Quem anunciou recebe o aviso pelo WhatsApp.")).toBeVisible();
 
-    await page.getByRole("button", { name: "Encerrados" }).click();
+    await page.getByRole("button", { name: /^Encerrados/ }).click();
     await expect(page.getByText("Recusado por Ana Souza: Serviço de fora do prédio")).toBeVisible();
     await expect(page.getByText("Tirado do mural: O berço já foi doado")).toBeVisible();
     await conferir(page);
@@ -61,7 +64,8 @@ test.describe("Classificados", () => {
   test("AC-05: recusar pede o motivo, que vai para quem anunciou", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/vida?aba=classificados`);
-    await page.getByRole("button", { name: "Recusar o anúncio Vendo bicicleta aro 29" }).click();
+    await page.getByRole("button", { name: "Revisar o anúncio Vendo bicicleta aro 29" }).click();
+    await page.getByRole("dialog", { name: "Revisar o anúncio" }).getByRole("button", { name: "Recusar…" }).click();
     const r = page.getByRole("dialog", { name: "Recusar o anúncio" });
     await r.getByRole("button", { name: "Recusar" }).click();
     await expect(r.getByText("Escreva o motivo, com pelo menos 3 letras")).toBeVisible();

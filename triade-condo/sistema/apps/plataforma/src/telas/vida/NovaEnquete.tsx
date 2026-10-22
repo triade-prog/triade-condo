@@ -1,12 +1,23 @@
 "use client";
-// Nova enquete (design "Vida em condomínio", tela 4; AC-03): pergunta, de 2 a 6 opções, quem
-// responde, se é secreta, o prazo e por onde chega. Enviada, não muda: encerra-se e cria-se outra.
+// Nova enquete (design "Vida em condomínio", tela 4; DC15, tela-modelo vida-nova-enquete; decisão
+// D.1 de 22/10/2026; AC-03): uma página. No computador, 2 partes numeradas (a pergunta; quem
+// responde e por onde chega) com quem vai receber ao lado e o rodapé fixo; no celular, 2 passos
+// com Continuar e Voltar. Enviada, não muda: encerra-se e cria-se outra.
 
-import { useState, type FormEvent } from "react";
-import { CANAIS_ENQUETE, ESCOPOS_ENQUETE, type CanalEnquete, type EscopoEnquete } from "@triade/domain";
-import { AvisoErro, Botao, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, textoDoErro, type ErroApi } from "@triade/ui";
-import { useCarregar } from "../sessao.tsx";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent, type ReactNode } from "react";
+import { CANAIS_ENQUETE, type CanalEnquete, type EscopoEnquete } from "@triade/domain";
+import { AvisoErro, Botao, CampoTexto, Carregando, camposComErro, chamarApi, ErroCarregar, Icone, textoDoErro, type ErroApi, type NomeIcone } from "@triade/ui";
+import { useCelular } from "../celular.ts";
+import { CartaoFicha, Escolha } from "../moradores/comum.tsx";
+import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { ListaEnquetes } from "../tipos.ts";
+import { Voltar } from "./comum.tsx";
+
+type Passo = 1 | 2;
+const PARTES = ["A pergunta", "Quem responde e por onde chega"] as const;
+const PASSO_DO_CAMPO: Record<string, Passo> = { pergunta: 1, opcoes: 1, por: 2, secreta: 2, abertaAte: 2, canais: 2 };
+const ICONE_CANAL: Record<CanalEnquete, NomeIcone> = { WHATSAPP: "whats", MURAL: "casa", EMAIL: "email" };
 
 /** Daqui a 7 dias, às 23:59, no relógio de quem usa a tela ("AAAA-MM-DDTHH:MM"). */
 function prazoPadrao(): string {
@@ -15,31 +26,44 @@ function prazoPadrao(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T23:59`;
 }
 
-export function NovaEnquete({ aoFechar, aoSalvar }: { aoFechar: () => void; aoSalvar: (texto: string) => void }) {
-  const carga = useCarregar<ListaEnquetes>("/v1/condominio/enquetes");
+function Parte({ n, passo, children }: { n: Passo; passo: Passo; children: ReactNode }) {
   return (
-    <Dialogo aberto titulo="Nova enquete" aoFechar={aoFechar}>
-      {carga.estado === "carregando" ? <Carregando rotulo="Abrindo…" /> : null}
-      {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
-      {carga.estado === "pronto" ? <Formulario canais={carga.dados.canais} aoFechar={aoFechar} aoSalvar={aoSalvar} /> : null}
-    </Dialogo>
+    <section aria-labelledby={`t-parte-${n}`} className={`parte ${n === passo ? "" : "max-md:hidden"}`}>
+      <div className="cabeca">
+        <span className="numero" aria-hidden="true">{n}</span>
+        <h2 id={`t-parte-${n}`} className="t-titulo-cartao">{PARTES[n - 1]}</h2>
+      </div>
+      {children}
+    </section>
   );
 }
 
-function Formulario({ canais: ligados, aoFechar, aoSalvar }: { canais: ListaEnquetes["canais"]; aoFechar: () => void; aoSalvar: (texto: string) => void }) {
+export function NovaEnquete() {
+  const carga = useCarregar<ListaEnquetes>("/v1/condominio/enquetes");
+  const voltar = <Voltar href="/vida?aba=enquetes" texto="Enquetes" />;
+  if (carga.estado === "carregando") return <Carregando rotulo="Abrindo…" />;
+  if (carga.estado === "erro") return <div className="grid gap-3">{voltar}<h1 className="t-titulo-tela">Nova enquete</h1><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+  return <Formulario l={carga.dados} voltar={voltar} />;
+}
+
+function Formulario({ l, voltar }: { l: ListaEnquetes; voltar: ReactNode }) {
+  const router = useRouter();
+  const celular = useCelular();
+  const { atualizar } = usePlataforma();
+  const [passo, setPasso] = useState<Passo>(1);
   const [pergunta, setPergunta] = useState("");
   const [opcoes, setOpcoes] = useState(["", "", ""]);
   const [por, setPor] = useState<EscopoEnquete>("UNIDADE");
-  const [secreta, setSecreta] = useState("sim");
+  const [secreta, setSecreta] = useState<"sim" | "nao">("sim");
   const [ate, setAte] = useState(prazoPadrao());
-  const disponivel: Record<CanalEnquete, boolean> = { WHATSAPP: ligados.whatsapp, MURAL: ligados.mural, EMAIL: ligados.email };
+  const disponivel: Record<CanalEnquete, boolean> = { WHATSAPP: l.canais.whatsapp, MURAL: l.canais.mural, EMAIL: l.canais.email };
   const [canais, setCanais] = useState<CanalEnquete[]>((Object.keys(CANAIS_ENQUETE) as CanalEnquete[]).filter((c) => disponivel[c]));
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const comErro = camposComErro(erro);
 
-  async function enviar(ev: FormEvent) {
-    ev.preventDefault();
+  async function enviar(ev?: FormEvent) {
+    ev?.preventDefault();
     setErro(null);
     setEnviando(true);
     const quando = new Date(ate);
@@ -47,57 +71,130 @@ function Formulario({ canais: ligados, aoFechar, aoSalvar }: { canais: ListaEnqu
       corpo: { pergunta, opcoes, por, secreta: secreta === "sim", abertaAte: Number.isNaN(quando.getTime()) ? ate : quando.toISOString(), canais },
     });
     setEnviando(false);
-    if (!res.ok) return setErro(res.erro);
-    const n = res.dados.convites;
-    const quem = por === "UNIDADE" ? (n === 1 ? "1 unidade" : `${n} unidades`) : (n === 1 ? "1 pessoa" : `${n} pessoas`);
-    aoSalvar(`Enquete enviada para ${quem}. Cada uma recebe um link só dela${canais.includes("MURAL") ? ", e a pergunta aparece no mural" : ""}.`);
+    if (!res.ok) {
+      setErro(res.erro);
+      const volta = camposComErro(res.erro).map((c) => PASSO_DO_CAMPO[c]).filter(Boolean).sort()[0];
+      if (volta) setPasso(volta);
+      return;
+    }
+    atualizar();
+    router.push(`/vida?aba=enquetes&feito=enquete&n=${res.dados.convites}&por=${por}${canais.includes("MURAL") ? "&mural=1" : ""}`);
   }
 
   const alternar = (c: CanalEnquete) => setCanais((xs) => (xs.includes(c) ? xs.filter((x) => x !== c) : [...xs, c]));
+  const resumo = pergunta.trim() || "Sem pergunta ainda";
 
-  return (
-    <form onSubmit={enviar} noValidate className="grid gap-3">
-      {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
+  const parte1 = (
+    <>
       <CampoTexto id="eq-pergunta" rotulo="Pergunta" maxLength={200} required value={pergunta} onChange={(e) => setPergunta(e.target.value)}
         erro={comErro.includes("pergunta") ? "Escreva a pergunta, com 5 a 200 letras" : null} />
-      <fieldset className="grid gap-2">
-        <legend className="mb-1 text-[13px] font-medium">Opções</legend>
+      <fieldset className="grid gap-3">
+        <legend className="mb-1 text-[13px] font-medium">Opções <span className="font-normal text-tinta-suave">· de 2 a 6</span></legend>
         {opcoes.map((o, i) => (
           <CampoTexto key={i} id={`eq-opcao-${i}`} rotulo={`Opção ${i + 1}`} opcional={i >= 2} maxLength={80} value={o}
             onChange={(e) => setOpcoes((xs) => xs.map((x, j) => (j === i ? e.target.value : x)))} />
         ))}
         {opcoes.length < 6 ? (
-          <Botao variante="discreto" tamanho="p" className="justify-self-start" onClick={() => setOpcoes((xs) => [...xs, ""])}>Mais uma opção</Botao>
+          <Botao variante="discreto" tamanho="p" className="justify-self-start" onClick={() => setOpcoes((xs) => [...xs, ""])}><Icone nome="mais" className="h-4 w-4" />Mais uma opção</Botao>
         ) : null}
-        <span className={`text-[13px] ${comErro.includes("opcoes") ? "text-erro" : "text-tinta-suave"}`} role={comErro.includes("opcoes") ? "alert" : undefined}>
-          {comErro.includes("opcoes") ? "Escreva de 2 a 6 opções, diferentes entre si" : "De 2 a 6 opções"}
-        </span>
+        {comErro.includes("opcoes") ? <span className="text-[13px] text-erro" role="alert">Escreva de 2 a 6 opções, diferentes entre si</span> : null}
       </fieldset>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <CampoSelecao id="eq-por" rotulo="Quem responde" value={por} onChange={(e) => setPor(e.target.value as EscopoEnquete)}
-          opcoes={(Object.keys(ESCOPOS_ENQUETE) as EscopoEnquete[]).map((v) => ({ valor: v, texto: ESCOPOS_ENQUETE[v] }))}
-          ajuda={por === "UNIDADE" ? "Os contatos da unidade dividem o mesmo link" : "Cada pessoa com vínculo confirmado"} />
-        <CampoSelecao id="eq-secreta" rotulo="Respostas" value={secreta} onChange={(e) => setSecreta(e.target.value)}
-          opcoes={[{ valor: "sim", texto: "Secretas" }, { valor: "nao", texto: "Abertas" }]}
-          ajuda={secreta === "sim" ? "Ninguém vê quem escolheu o quê, nem o síndico" : "O síndico vê o que cada um respondeu"} />
+    </>
+  );
+
+  const parte2 = (
+    <>
+      <div className="grid gap-4">
+        <div className="grid gap-1.5">
+          <span className="text-[13px] font-medium">Quem responde</span>
+          <Escolha rotulo="Quem responde" atual={por} aoMudar={setPor} opcoes={[{ valor: "UNIDADE", texto: "Uma por unidade" }, { valor: "PESSOA", texto: "Uma por pessoa" }]} />
+          <span className="t-apoio">{por === "UNIDADE" ? "Os contatos da unidade dividem o mesmo link." : "Cada pessoa com vínculo confirmado."}</span>
+        </div>
+        <div className="grid gap-1.5">
+          <span className="text-[13px] font-medium">Respostas</span>
+          <Escolha rotulo="Respostas" atual={secreta} aoMudar={setSecreta}
+            opcoes={[{ valor: "sim", texto: <><Icone nome="cadeado" className="h-4 w-4" />Secretas</> }, { valor: "nao", texto: <><Icone nome="olho" className="h-4 w-4" />Abertas</> }]} />
+          <span className="t-apoio">{secreta === "sim" ? "Ninguém vê quem escolheu o quê, nem o síndico." : "O síndico vê o que cada um respondeu."}</span>
+        </div>
       </div>
-      <CampoTexto id="eq-ate" rotulo="Aberta até" type="datetime-local" required value={ate} onChange={(e) => setAte(e.target.value)}
-        erro={comErro.includes("abertaAte") ? "Escolha um prazo de 1 hora a 90 dias a partir de agora" : null}
-        ajuda="Um lembrete vai dois dias antes, só para quem não respondeu" />
-      <fieldset className="grid gap-1">
+      <fieldset className="grid gap-1.5">
         <legend className="mb-1 text-[13px] font-medium">Por onde chega</legend>
-        {(Object.keys(CANAIS_ENQUETE) as CanalEnquete[]).map((c) => (
-          <label key={c} className="flex min-h-6 items-center gap-2 text-sm">
-            <input type="checkbox" checked={canais.includes(c)} onChange={() => alternar(c)} disabled={!disponivel[c]} />
-            {c === "WHATSAPP" ? "WhatsApp (modelo aprovado)" : CANAIS_ENQUETE[c]}
-            {!disponivel[c] ? <span className="text-tinta-suave">· {c === "WHATSAPP" ? "WhatsApp não conectado" : c === "EMAIL" ? "e-mail desligado" : "mural desligado"}</span> : null}
-          </label>
-        ))}
+        <div className="grid gap-2">
+          {(Object.keys(CANAIS_ENQUETE) as CanalEnquete[]).map((c) => (
+            <label key={c} className={`flex items-start gap-3 rounded-2xl border border-linha px-4 py-3 ${disponivel[c] ? "cursor-pointer" : "opacity-70"}`}>
+              <input type="checkbox" className="mt-1 h-4 w-4 accent-violeta-600" checked={canais.includes(c)} onChange={() => alternar(c)} disabled={!disponivel[c]} />
+              <span className="grid">
+                <span>{c === "WHATSAPP" ? "WhatsApp do condomínio" : c === "MURAL" ? "Mural online" : "E-mail"}</span>
+                <span className="t-apoio">{!disponivel[c] ? (c === "WHATSAPP" ? "WhatsApp não conectado" : c === "EMAIL" ? "E-mail desligado" : "Mural desligado")
+                  : c === "WHATSAPP" ? "Com o link de cada unidade (modelo aprovado)" : c === "MURAL" ? "Para quem abre o mural" : "Para quem tem e-mail confirmado"}</span>
+              </span>
+            </label>
+          ))}
+        </div>
         {comErro.includes("canais") ? <span className="text-[13px] text-erro" role="alert">Escolha pelo menos um canal</span> : null}
       </fieldset>
-      <div className="flex flex-wrap justify-end gap-2">
-        <Botao variante="discreto" onClick={aoFechar}>Voltar</Botao>
-        <Botao type="submit" disabled={enviando}>Enviar enquete</Botao>
+      <CampoTexto id="eq-ate" rotulo="Aberta até" type="datetime-local" required value={ate} onChange={(e) => setAte(e.target.value)} className="max-w-sm"
+        erro={comErro.includes("abertaAte") ? "Escolha um prazo de 1 hora a 90 dias a partir de agora" : null}
+        ajuda="Um lembrete vai dois dias antes, só para quem não respondeu." />
+    </>
+  );
+
+  const quemRecebe = (
+    <CartaoFicha id="quem" titulo="Quem vai receber" icone="pessoas">
+      <div className="grid gap-1">
+        {por === "UNIDADE" ? (
+          <p className="flex items-baseline gap-2.5"><span className="text-[40px] leading-none font-semibold tracking-tight" aria-hidden="true">{l.unidades}</span>
+            <span className="text-[15px]">{l.unidades === 1 ? "unidade recebe o link" : "unidades recebem o link"}<span className="sr-only">: {l.unidades}</span></span></p>
+        ) : <p className="text-[15px]">Cada pessoa com vínculo confirmado recebe o seu link.</p>}
+        <p className="t-apoio">{por === "UNIDADE" ? "Uma resposta por unidade." : "Uma resposta por pessoa."} Quem não tem WhatsApp nem e-mail recebe o link copiado na ficha da enquete.</p>
+      </div>
+      <ul className="grid text-sm" aria-label="Canais">
+        {(Object.keys(CANAIS_ENQUETE) as CanalEnquete[]).map((c) => {
+          const vai = canais.includes(c);
+          return (
+            <li key={c} className="flex items-center justify-between gap-3 border-t border-linha py-2.5">
+              <span className="flex items-center gap-2.5"><span className="ladrilho h-7 w-7 rounded-[9px]" data-tom={vai ? "ok" : "neutro"} aria-hidden="true"><Icone nome={ICONE_CANAL[c]} className="h-3.5 w-3.5" /></span>{CANAIS_ENQUETE[c]}</span>
+              <span className={`font-semibold ${vai ? "" : "text-tinta-suave"}`}>{!disponivel[c] ? "desligado" : vai ? "vai" : "não vai"}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </CartaoFicha>
+  );
+
+  return (
+    <form onSubmit={(e) => { if (celular && passo < 2) { e.preventDefault(); setPasso(2); return; } void enviar(e); }} noValidate className="grid gap-5">
+      {voltar}
+      <div>
+        <h1 className="t-titulo-tela">Nova enquete</h1>
+        <p className="t-apoio mt-1">Enquete consulta, não decide. Cada unidade recebe um link só dela, sem conta.</p>
+      </div>
+      {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
+      <div className="grid gap-3 md:hidden">
+        <div className="passos" role="progressbar" aria-label="Passos da enquete" aria-valuemin={1} aria-valuemax={2} aria-valuenow={passo}
+          aria-valuetext={`Passo ${passo} de 2: ${PARTES[passo - 1]}`}>
+          {[1, 2].map((n) => <span key={n} data-feito={n <= passo ? "" : undefined} />)}
+        </div>
+        {passo === 2 ? (
+          <button type="button" className="resumo-passo" onClick={() => setPasso(1)}>
+            <span className="numero" aria-hidden="true"><Icone nome="check" className="h-3.5 w-3.5" /></span>
+            <span className="grid min-w-0 flex-1"><span className="t-apoio">{PARTES[0]}</span><span className="truncate">{resumo}</span></span>
+            <span className="alterar">Alterar</span>
+          </button>
+        ) : null}
+      </div>
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <section aria-label="Enquete" className="rounded-[18px] border border-linha bg-superficie px-6 shadow-s1 max-md:border-0 max-md:bg-transparent max-md:px-0 max-md:shadow-none">
+          <Parte n={1} passo={passo}>{parte1}</Parte>
+          <Parte n={2} passo={passo}>{parte2}</Parte>
+        </section>
+        <div className={`lg:sticky lg:top-6 ${passo === 2 ? "" : "max-md:hidden"}`}>{quemRecebe}</div>
+      </div>
+      <div className="sticky bottom-0 z-20 -mx-4 flex items-center justify-end gap-2 border-t border-linha bg-superficie px-4 py-3 shadow-s2 max-md:bottom-[calc(61px+env(safe-area-inset-bottom))] md:-mx-6 md:px-6">
+        {passo > 1 ? <Botao variante="contorno" className="md:hidden" onClick={() => setPasso(1)}><Icone nome="esq" />Voltar</Botao> : null}
+        <Botao variante="contorno" className={passo > 1 ? "max-md:hidden" : ""} onClick={() => router.push("/vida?aba=enquetes")}>Cancelar</Botao>
+        {passo < 2 ? <Botao className="md:hidden max-md:flex-1" onClick={() => setPasso(2)}>Continuar<Icone nome="dir" /></Botao> : null}
+        <Botao type="submit" disabled={enviando} className={passo < 2 ? "max-md:hidden" : "max-md:flex-1"}><Icone nome="enviar" />{enviando ? "Enviando…" : "Enviar a enquete"}</Botao>
       </div>
     </form>
   );
