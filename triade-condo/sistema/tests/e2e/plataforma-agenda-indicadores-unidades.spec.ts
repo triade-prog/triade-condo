@@ -61,18 +61,30 @@ test.describe("Agenda, indicadores e unidades", () => {
   test("TR-01: pendências por responsável agora e tempo de solução por categoria no período", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/indicadores`);
+    // Agora (A.1): cada número abre a lista de onde veio.
+    const agora = page.getByRole("region", { name: "Agora" });
+    await expect(agora.getByRole("link", { name: /^2 retornos vencidos/ })).toHaveAttribute("href", /\/pedidos\?atencao=RETORNO_VENCIDO$/);
+    await expect(agora.getByRole("link", { name: /^1 sem responsável/ })).toHaveAttribute("href", /\/pedidos\?atencao=SEM_RESPONSAVEL$/);
     const pend = page.getByRole("region", { name: "Pendências por responsável" });
-    await expect(pend.getByRole("row", { name: "Ana Souza 2 1 12 dias" })).toBeVisible();
-    await expect(pend.getByRole("row", { name: "Sem responsável 1 1 1 dia" })).toBeVisible();
-    await expect(pend).toContainText("Agora, não no período");
-    const sol = page.getByRole("region", { name: "Tempo de solução por categoria" });
-    await expect(sol.getByRole("row", { name: "Manutenção 3 2 dias e 4 h 6 dias" })).toBeVisible();
-    await expect(sol.getByRole("row", { name: "Limpeza 0 Sem dados" })).toBeVisible();
-    await expect(sol).toContainText("Tempo típico é a mediana");
+    await expect(pend.getByRole("link", { name: /^Ana Souza/ })).toHaveAttribute("href", /responsavel=2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e$/);
+    await expect(pend.getByRole("link", { name: /^Sem responsável/ })).toHaveAttribute("href", /atencao=SEM_RESPONSAVEL$/);
+    await expect(pend).toContainText("12 dias");
+    // A base de cálculo fica atrás de "Como se calcula" (B.1), sem mudar uma palavra.
+    await expect(page.getByText(/^Agora, não no período/)).toBeHidden();
+    await agora.getByRole("button", { name: "Como se calcula: agora" }).click();
+    await expect(page.getByText(/^Agora, não no período/)).toBeVisible();
+    // Uma tabela só por categoria (C.1), com o tempo de solução.
+    const cat = page.getByRole("region", { name: "Por categoria" });
+    await expect(cat.getByRole("link", { name: /^Manutenção/ })).toHaveAttribute("href", /\/pedidos\?categoria=/);
+    await expect(cat).toContainText("2 dias e 4 h");
+    await expect(cat).toContainText("6 dias");
+    await expect(cat.getByRole("link", { name: /^Limpeza/ })).toBeVisible();
+    await cat.getByRole("button", { name: "Como se calcula: por categoria" }).click();
+    await expect(cat.getByText(/Tempo típico é a mediana: metade/)).toBeVisible();
     await conferir(page);
     await page.getByRole("group", { name: "Período" }).getByRole("button", { name: "Mês passado" }).click();
-    await expect(sol.getByRole("row", { name: "Limpeza 9 5 h 1 dia e 2 h" })).toBeVisible();
-    await expect(pend.getByRole("row", { name: "Ana Souza 2 1 12 dias" })).toBeVisible();
+    await expect(cat).toContainText("1 dia e 2 h");
+    await expect(pend.getByRole("link", { name: /^Ana Souza/ })).toBeVisible();
   });
 
   test("MU-11: marcar a unidade à venda e para alugar, com contador e filtro na lista", async ({ page }) => {

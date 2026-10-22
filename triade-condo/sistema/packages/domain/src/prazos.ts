@@ -96,6 +96,19 @@ export function nomeDoMes(mes: string): string {
   return m ? NOMES_MES[Number(m[1]) - 1] ?? mes : mes;
 }
 
+/** As datas do período dos indicadores em palavras: "Setembro de 2026 · de 1 a 30/09";
+ * se passa de um mês, "de 01/07 a 30/09/2026". */
+export function textoDoPeriodo(de: string, ate: string): string {
+  const [a1, m1, d1] = de.split("-");
+  const [a2, m2, d2] = ate.split("-");
+  if (!a1 || !m1 || !d1 || !a2 || !m2 || !d2) return "";
+  if (a1 === a2 && m1 === m2) {
+    const nome = NOMES_MES[Number(m1) - 1] ?? m1;
+    return `${nome[0]!.toUpperCase()}${nome.slice(1)} de ${a1} · de ${Number(d1)} a ${d2}/${m2}`;
+  }
+  return `de ${d1}/${m1}${a1 === a2 ? "" : `/${a1}`} a ${d2}/${m2}/${a2}`;
+}
+
 /** O mês anterior a "2026-09": "agosto". */
 export function nomeDoMesAnterior(mes: string): string {
   const m = /^\d{4}-(\d{2})$/.exec(mes);
