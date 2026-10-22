@@ -1307,6 +1307,8 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     if (d.avisarWhatsapp) noFundo(processarFilaWhatsapp);
     return c.json(r, 201);
   });
+  // O mural visto do painel (CD-15): o mesmo do link, sem contar abertura e sem o limite por aparelho.
+  app.get("/v1/condominio/mural", async (c) => c.json(await rpc("plataforma_mural", quem(c))));
   app.put("/v1/condominio/comunicados/:id/mural", async (c) => {
     const d = await lerCorpo(c, muralComunicadoSchema);
     return c.json(await rpc("plataforma_mural_comunicado", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_no_mural: d.noMural }));

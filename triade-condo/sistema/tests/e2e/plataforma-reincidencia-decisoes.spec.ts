@@ -176,7 +176,7 @@ test.describe("Plataforma · reincidência e decisões", () => {
   test("AT-23: a decisão vencida aparece no início, no menu e no sino; decidir pede a alternativa e a justificativa", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true, comDecisoes: true });
     await page.goto(PLATAFORMA);
-    const agora = page.getByRole("region", { name: "Agora" });
+    const agora = page.getByRole("region", { name: "Agora", exact: true });
     await expect(agora).toContainText("1 decisão aguardando você");
     await expect(agora).toContainText("1 com o prazo vencido; a mais antiga foi pedida há 2 dias.");
     await alternarMenu(page);
@@ -270,7 +270,7 @@ test.describe("Plataforma · reincidência e decisões", () => {
     await volta.getByRole("button", { name: "Como se calcula: reincidência" }).click();
     await expect(volta.getByText(/Duplicado não conta\./)).toBeVisible();
     // Aguardando é de agora; decididas e tempo típico, do período.
-    const agora = page.getByRole("region", { name: "Agora" });
+    const agora = page.getByRole("region", { name: "Agora", exact: true });
     await expect(agora.getByRole("link", { name: /^1 decisão aguardando/ })).toHaveAttribute("href", /\/decisoes$/);
     await expect(agora).toContainText("1 com prazo vencido · a mais antiga espera há 2 dias.");
     const dec = page.getByRole("region", { name: "Decisões no período" });

@@ -21,7 +21,7 @@ test.describe("Plataforma do síndico · passos 6 e 7", () => {
   test("F7.1: o início mostra o agora e o mês fechado, separados", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(PLATAFORMA);
-    const agora = page.getByRole("region", { name: "Agora" });
+    const agora = page.getByRole("region", { name: "Agora", exact: true });
     await expect(agora).toContainText("1 retorno vencido");
     await expect(agora).toContainText("O mais antigo venceu em 16/10 11:00, já avisado ao síndico.");
     await expect(agora).toContainText("1 sem responsável");
@@ -47,7 +47,7 @@ test.describe("Plataforma do síndico · passos 6 e 7", () => {
     await expect(janela.getByText("Sem ver")).toHaveCount(0);
     await janela.getByRole("button", { name: "Fechar" }).click();
     await expect(page.getByRole("button", { name: "Avisos", exact: true })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Agora" })).toContainText("1 retorno vencido");
+    await expect(page.getByRole("region", { name: "Agora", exact: true })).toContainText("1 retorno vencido");
   });
 
   test("AT-09: o pedido vencido diz quem já foi avisado e quando o próximo será", async ({ page }) => {

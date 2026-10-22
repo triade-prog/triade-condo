@@ -3,7 +3,7 @@
 // situação, Publicados primeiro; o que pede atenção em atalhos, só quando existe; busca e o assunto
 // em Filtros, numa janela. A linha inteira abre o comunicado, com um selo de situação e data. Cada
 // correção é uma versão nova; arquivado vai para a sua aba e nada é apagado. Os filtros ficam no
-// endereço, para o Início levar direto ao que importa.
+// endereço, para o Início levar direto ao que importa. A aba "No mural" abre o mural ao vivo (CD-15).
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -13,6 +13,7 @@ import { Botao, Carregando, CampoSelecao, classeBotao, Dialogo, ErroCarregar, Ic
 import { useCarregar } from "../sessao.tsx";
 import type { ListaComunicados } from "../tipos.ts";
 import { CabecaComunicados, LinhaComunicado } from "./comum.tsx";
+import { AbaNoMural } from "./NoMural.tsx";
 
 /** As abas (decisão B.1 de 21/10/2026): "Em uso" saiu, Publicados abre primeiro. */
 const ABAS = { PUBLICADO: "Publicados", PROGRAMADO: "Programados", RASCUNHO: "Rascunhos", ARQUIVADO: "Arquivados" } as const;
@@ -129,6 +130,7 @@ export function Comunicados() {
               </button>
             );
           })}
+          <AbaNoMural />
         </nav>
         {atalhos.length ? (
           <div role="group" aria-label="O que pede atenção" className="flex items-center gap-2 overflow-x-auto py-3 md:border-b md:border-linha md:bg-fundo md:px-5">

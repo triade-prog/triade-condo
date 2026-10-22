@@ -25,7 +25,7 @@ test.describe("Plataforma do síndico · passo 4", () => {
   test("AT-02: o início mostra o que pede atenção e leva à fila filtrada", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(PLATAFORMA);
-    const cartao = page.getByRole("region", { name: "Agora" });
+    const cartao = page.getByRole("region", { name: "Agora", exact: true });
     await expect(cartao).toContainText("1 retorno vencido");
     await expect(cartao).toContainText("1 sem responsável");
     await expect(cartao).toContainText("3 pedidos ativos");
@@ -123,8 +123,8 @@ test.describe("Plataforma do síndico · passo 4", () => {
   test("AT-03, CF-03: a responsável aceita e dá retorno, mas só quem pode conclui", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { comAtendimento: true, quem: "SECRETARIA" });
     await page.goto(PLATAFORMA);
-    await expect(page.getByRole("region", { name: "Agora" })).toContainText("1 pedido para você aceitar");
-    await page.getByRole("region", { name: "Agora" }).getByRole("link", { name: "Ver e aceitar" }).click();
+    await expect(page.getByRole("region", { name: "Agora", exact: true })).toContainText("1 pedido para você aceitar");
+    await page.getByRole("region", { name: "Agora", exact: true }).getByRole("link", { name: "Ver e aceitar" }).click();
     await abrirPedido(page, "Vazamento no banheiro");
     await expect(page.getByText("Esperando aceite")).toBeVisible();
     await page.getByRole("button", { name: "Aceitar o pedido" }).click();

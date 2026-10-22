@@ -93,17 +93,44 @@ export function criarComunicados(pedidoId: string): EstadoComunicados {
   };
 }
 
+const publicoDe = (est: EstadoComunicados) => (c: ComunicadoFalso) => ({ id: c.id, assunto: c.assunto, titulo: c.titulo, texto: c.texto,
+  assinatura: c.assinatura ?? undefined, publicadoEm: c.publicadoEm, numero: c.numero, mudanca: c.mudanca ?? undefined,
+  arquivos: est.arquivos.filter((a) => a.familiaId === c.familiaId && a.situacao === "LIBERADO").map((a) => ({ id: a.id, nome: a.nome, tipo: a.tipo })) });
+const doMural = (est: EstadoComunicados) => est.comunicados.filter((c) => c.estado === "PUBLICADO" && c.noMural && c.publico === "TODOS");
+const docsDoMural = (est: EstadoComunicados) =>
+  est.documentos.filter((d) => d.aoMorador && !d.restrito && !d.arquivado && d.versoes.some((v) => v.situacao === "LIBERADO"));
+
+/** O mural como o morador vê: o mesmo para o link e para a prévia do painel (CD-15). */
+export function muralFalso(est: EstadoComunicados, manual: () => unknown[] = () => [], extra: () => Record<string, unknown> = () => ({}),
+  zap?: EstadoMoradores["zap"]) {
+  const mu = est.mural;
+  const lista = doMural(est).sort((a, b) => String(b.publicadoEm).localeCompare(String(a.publicadoEm)));
+  return { condominio: "Residencial Ipê", comunicados: lista.map(publicoDe(est)),
+    documentos: mu.documentosNoMural && mu.emailLigado ? docsDoMural(est).map((d) => ({ id: d.id, titulo: d.titulo, tipo: d.tipo })) : [],
+    manual: manual(), ...extra(), ...(zap?.ligado ? { comunicadosWhatsapp: zap.numero } : {}), atualizadoEm: lista[0]?.publicadoEm };
+}
+
+/** O mural no painel (CD-15): a prévia não conta abertura; vem o que ficou de fora e o motivo. */
+export function muralNoPainelFalso(est: EstadoComunicados, pode: (a: string) => boolean, manual: () => unknown[], extra: () => Record<string, unknown>,
+  zap?: EstadoMoradores["zap"]) {
+  const mu = est.mural;
+  const fora = est.comunicados.filter((c) => c.estado === "PUBLICADO" && !(c.noMural && c.publico === "TODOS"))
+    .sort((a, b) => String(b.publicadoEm).localeCompare(String(a.publicadoEm))).slice(0, 30)
+    .map((c) => ({ id: c.id, titulo: c.titulo, assunto: c.assunto, publicadoEm: c.publicadoEm, versao: c.versao,
+      motivo: c.publico !== "TODOS" ? "SO_PARA_ALGUNS" : !mu.assuntos.includes(c.assunto) ? "ASSUNTO_FORA" : "TIRADO" }));
+  return { ligado: mu.ligado, ...(mu.ligado ? { codigo: mu.codigo, mural: muralFalso(est, manual, extra, zap) } : {}), aberturas: mu.aberturas,
+    versoes: Object.fromEntries(doMural(est).map((c) => [c.id, c.versao])), fora,
+    pode: { mural: pode("comunicados.publicar"), configurar: pode("config.ver"), classificados: pode("classificados.ver") } };
+}
+
 /** Sem conta (CD-12 a CD-14): o mural, os links do e-mail e o pedido de documento. */
 export async function rotasPublicas(route: Route, est: EstadoComunicados, caminho: string, metodo: string, corpo: Record<string, unknown>,
   manual: () => unknown[] = () => [], extra: () => Record<string, unknown> = () => ({}), zap?: EstadoMoradores["zap"]): Promise<unknown> {
   if (!caminho.startsWith("/v1/publico/")) return null;
   const mu = est.mural;
   const botao = zap?.ligado ? { comunicadosWhatsapp: zap.numero } : {};
-  const pub = (c: ComunicadoFalso) => ({ id: c.id, assunto: c.assunto, titulo: c.titulo, texto: c.texto, assinatura: c.assinatura ?? undefined,
-    publicadoEm: c.publicadoEm, numero: c.numero, mudanca: c.mudanca ?? undefined, arquivos: est.arquivos.filter((a) => a.familiaId === c.familiaId && a.situacao === "LIBERADO")
-      .map((a) => ({ id: a.id, nome: a.nome, tipo: a.tipo })) });
-  const doMural = () => est.comunicados.filter((c) => c.estado === "PUBLICADO" && c.noMural && c.publico === "TODOS");
-  const docs = () => est.documentos.filter((d) => d.aoMorador && !d.restrito && !d.arquivado && d.versoes.some((v) => v.situacao === "LIBERADO"));
+  const pub = publicoDe(est);
+  const docs = () => docsDoMural(est);
   const m = /^\/v1\/publico\/mural\/([^/]+)(\/documentos|\/comunicados\/([^/]+)\/arquivos\/([^/]+))?$/.exec(caminho);
   if (m) {
     const codigo = decodeURIComponent(m[1]!).toUpperCase();
@@ -118,10 +145,7 @@ export async function rotasPublicas(route: Route, est: EstadoComunicados, caminh
     }
     if (m[3]) return route.fulfill({ json: { url: `/api/v1/armazenamento/${m[4]}`, nome: "foto", tipo: "image/jpeg" } });
     mu.aberturas++;
-    const lista = doMural().sort((a, b) => String(b.publicadoEm).localeCompare(String(a.publicadoEm)));
-    return route.fulfill({ json: { condominio: "Residencial Ipê", comunicados: lista.map(pub),
-      documentos: mu.documentosNoMural && mu.emailLigado ? docs().map((d) => ({ id: d.id, titulo: d.titulo, tipo: d.tipo })) : [],
-      manual: manual(), ...extra(), ...botao, atualizadoEm: lista[0]?.publicadoEm } });
+    return route.fulfill({ json: muralFalso(est, manual, extra, zap) });
   }
   const c = /^\/v1\/publico\/c\/([^/]+)(?:\/arquivos\/([^/]+))?$/.exec(caminho);
   if (c) {

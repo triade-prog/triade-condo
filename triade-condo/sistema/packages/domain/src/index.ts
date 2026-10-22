@@ -21,3 +21,4 @@ export * from "./suporte.ts";
 export * from "./whatsapp.ts";
 export * from "./vida.ts";
 export * from "./configuracao.ts";
+export * from "./mural.ts";

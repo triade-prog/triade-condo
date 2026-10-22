@@ -4,8 +4,9 @@
 // botão de cada linha (passo 7, F7.1; e as decisões que esperam resposta, F7.4, AT-23); Hoje
 // na agenda (peça R7) e Vencimentos (documento, contrato e prontuário); e, em "Por área", a
 // manutenção (R6), a Vida em condomínio (R12), comunicação e moradores (passo 3), o mês
-// fechado, separado do agora, e o que falta configurar com o que já veio pronto. No celular,
-// os cartões "Por área" fecham numa linha curta e abrem com um toque.
+// fechado, separado do agora, o que está no mural agora (CD-15) e o que falta configurar com o
+// que já veio pronto. No celular, os cartões "Por área" fecham numa linha curta e abrem com um
+// toque.
 
 import Link from "next/link";
 import { CENARIOS, mostrarHoras, mostrarPorcentagem, nomeDoMes, nomeDoMesAnterior, PENDENCIAS_CONFIG } from "@triade/domain";
@@ -15,6 +16,7 @@ import { diaHora } from "./pedidos/comum.tsx";
 import { HojeNaAgenda } from "./agenda/HojeNaAgenda.tsx";
 import { linhaContrato, linhasManutencao, vazioManutencao } from "./manutencao/CartaoManutencao.tsx";
 import { linhaDocumento, linhasComunicados } from "./comunicados/CartaoComunicados.tsx";
+import { CartaoMural } from "./comunicados/CartaoMural.tsx";
 import { linhasProntuario } from "./memoria/CartaoMemoria.tsx";
 import { CartaoAcessoExcepcional } from "./suporte/CartaoAcessoExcepcional.tsx";
 import { linhasVida, temVida } from "./vida/CartaoVida.tsx";
@@ -232,6 +234,7 @@ export function Inicio() {
               <LinhasInicio linhas={painel.moradores?.unidades === 0 ? comunicacao.filter((l) => l.icone !== "predio") : comunicacao} />
             </CartaoInicio>
           ) : null}
+          {pode("comunicados.ver") ? <CartaoMural /> : null}
           {painel.mesFechado ? <MesFechadoCartao mes={painel.mesFechado} /> : null}
           <CartaoInicio titulo="O que falta configurar" icone="ajuste" href={pode("config.ver") ? "/configuracoes" : undefined} rotulo="Configurações"
             area={{ resumo: painel.pendencias.length ? painel.pendencias.map((p) => PENDENCIAS_CONFIG[p as keyof typeof PENDENCIAS_CONFIG] ?? p).join(" · ") : "Nada pendente", quantos: painel.pendencias.length }}>

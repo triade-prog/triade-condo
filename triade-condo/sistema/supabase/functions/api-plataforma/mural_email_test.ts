@@ -52,6 +52,7 @@ function montar(opcoes: { correio?: Correio; fila?: MensagemFila[] } = {}) {
     plataforma_enviar_documento: () => ({ enviados: 2 }),
     plataforma_cancelar_envio_documento: () => ({ ok: true }),
     publico_mural: () => ({ condominio: "Residencial Aurora", comunicados: [], documentos: [] }),
+    plataforma_mural: () => ({ ligado: true, codigo: MURAL, aberturas: 4, mural: { condominio: "Residencial Aurora", comunicados: [] }, fora: [], versoes: {} }),
     publico_mural_arquivo: () => ({ caminho: `${AURORA}/${COMUNICADO}/${ARQUIVO}`, nome: "foto.jpg", tipo: "image/jpeg" }),
     publico_pedir_documento: () => ({ ok: true }),
     publico_comunicado: () => ({ condominio: "Residencial Aurora", comunicado: { titulo: "Falta de água" } }),
@@ -114,6 +115,17 @@ Deno.test("CD-12: o mural abre sem sessão, só pelo código, e conta o uso por 
   await m.pedir(`/v1/publico/mural/${MURAL}`);
   assertEquals((await erro(await m.pedir(`/v1/publico/mural/${MURAL}`))).codigo, "RATE_LIMITED");
   assertEquals((await m.pedir(`/v1/publico/mural/${MURAL}`, { segredo: null })).status, 403);
+});
+
+Deno.test("CD-15: o mural no painel pede a sessão e não passa pelo limite nem pela rota pública", async () => {
+  const m = montar();
+  assertEquals((await m.pedir("/v1/condominio/mural")).status, 401);
+  const cookie = await entrar(m);
+  const r = await m.pedir("/v1/condominio/mural", { cookie });
+  assertEquals((await r.json()).aberturas, 4);
+  assertEquals(chamada(m, "plataforma_mural"), { p_pessoa: ANA, p_condominio: AURORA });
+  assertEquals(quantas(m, "publico_mural"), 0);
+  assert(!m.chamadas.some((x) => x.funcao === "limite_contar" && x.args.p_tipo === "mural"), "a prévia não gasta o limite do mural");
 });
 
 Deno.test("CD-12, CD-04: a foto do mural sai por link de 5 minutos do armazenamento dos comunicados", async () => {
