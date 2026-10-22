@@ -1,9 +1,11 @@
 // Comunicados e documentos (peça R1; CD-01, CD-02, CD-04 a CD-07, CD-09, CD-11, MP-12) com a API
-// falsa. Cada tela passa no axe (WCAG 2.2 AA) no celular e no computador e não usa emoji.
+// falsa, no padrão novo (DC15: abas por situação, Andamento numa linha só e Escrever em partes no
+// computador e em passos no celular). Cada tela passa no axe (WCAG 2.2 AA) no celular e no computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { abrirArea } from "./inicio";
+import { irAoPasso } from "./registro";
 
 const PLATAFORMA = "http://localhost:3000";
 const PDF = Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n");
@@ -16,7 +18,7 @@ async function conferir(page: Page) {
 }
 
 test.describe("Plataforma do síndico · comunicados e documentos", () => {
-  test("CD-01, CD-06: a lista em uso com os atalhos; o início mostra o cartão", async ({ page }) => {
+  test("CD-01, CD-06: a lista abre em Publicados, com os atalhos; o início mostra o cartão", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/`);
     await expect(await abrirArea(page, "Comunicação e moradores")).toContainText("1 rascunho parado há mais de 3 dias");
@@ -28,18 +30,23 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Comunicados" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Falta de água na quinta" })).toBeVisible();
     await expect(page.getByText("Pedido 2026-0001")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Publicados/ })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("Publicado · ").filter({ visible: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Assembleia geral ordinária: convocação" })).toHaveCount(0);
     await conferir(page);
-    await page.getByRole("button", { name: /Rascunhos parados há mais de 3 dias · 1/ }).click();
-    await expect(page).toHaveURL(/atencao=RASCUNHOS_PARADOS/);
+    await page.getByRole("button", { name: /Rascunhos parados há mais de 3 dias 1/ }).click();
+    await expect(page).toHaveURL(/filtro=RASCUNHO&atencao=RASCUNHOS_PARADOS/);
+    await expect(page.getByRole("button", { name: /^Rascunhos/ }).first()).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByRole("link", { name: "Falta de água na quinta" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Assembleia geral ordinária: convocação" })).toBeVisible();
   });
 
-  test("CD-02, CD-01: escrever mostra quem recebe e publica com a assinatura", async ({ page }) => {
+  test("CD-02, CD-01: escrever mostra quem recebe e publica com a assinatura", async ({ page, isMobile }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/comunicados`);
-    await page.getByRole("link", { name: "+ Escrever comunicado" }).click();
+    await page.getByRole("link", { name: "Escrever comunicado" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Escrever comunicado" })).toBeVisible();
+    await irAoPasso(page.locator("body"), isMobile, 2, "Passos do comunicado");
     await expect(page.getByText("3 contatos de 2 unidades")).toBeVisible();
     await expect(page.getByText(/unidades sem ninguém que recebe/)).toBeVisible();
     await page.getByRole("group", { name: "Para quem" }).getByRole("button", { name: "Blocos" }).click();
@@ -51,11 +58,13 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
     await expect(page.getByText("Marina Souza")).toBeVisible();
     await conferir(page);
 
-    await page.getByRole("button", { name: "Publicar", exact: true }).click();
+    await irAoPasso(page.locator("body"), isMobile, 3, "Passos do comunicado");
+    await page.getByRole("button", { name: "Publicar agora", exact: true }).last().click();
     await expect(page.getByText("De 3 a 120 caracteres.")).toBeVisible();
     await page.getByLabel("Título").fill("Dedetização das áreas comuns");
     await page.getByRole("textbox", { name: "Texto", exact: true }).fill("Na segunda, das 8h às 12h. Mantenham os animais dentro de casa.");
-    await page.getByRole("button", { name: "Publicar", exact: true }).click();
+    await irAoPasso(page.locator("body"), isMobile, 3, "Passos do comunicado");
+    await page.getByRole("button", { name: "Publicar agora", exact: true }).last().click();
     await expect(page.getByRole("heading", { level: 1, name: "Dedetização das áreas comuns" })).toBeVisible();
     await expect(page.getByText("Comunicado publicado.")).toBeVisible();
     await expect(page.getByText("Ana, síndica do Residencial Ipê")).toBeVisible();
@@ -63,18 +72,19 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
     await conferir(page);
   });
 
-  test("CD-06: programar pede dia e hora e avisa o horário sem envio", async ({ page }) => {
+  test("CD-06: programar pede dia e hora e avisa o horário sem envio", async ({ page, isMobile }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/comunicados/escrever`);
     await page.getByLabel("Título").fill("Lavagem da garagem");
     await page.getByRole("textbox", { name: "Texto", exact: true }).fill("No sábado, das 7h às 11h. Tirem os carros.");
+    await irAoPasso(page.locator("body"), isMobile, 3, "Passos do comunicado");
     await page.getByRole("group", { name: "Quando" }).getByRole("button", { name: "Programar" }).click();
     const amanha = new Date(Date.now() + 86400_000).toISOString().slice(0, 10);
     await page.getByLabel("Dia e hora").fill(`${amanha}T22:00`);
     await expect(page.getByText(/cai no horário sem envio \(21:00 às 08:00\)/)).toBeVisible();
     await page.getByLabel("Dia e hora").fill(`${amanha}T09:00`);
     await conferir(page);
-    await page.getByRole("button", { name: "Programar", exact: true }).last().click();
+    await page.getByRole("button", { name: /^Programar para \d\d\/\d\d às 09:00$/ }).click();
     await expect(page.getByText("Comunicado programado. Ele é publicado sozinho na hora marcada.")).toBeVisible();
     await expect(page.getByText(/^Programado para/)).toBeVisible();
     await expect(page.getByRole("link", { name: "Editar" })).toBeVisible();
@@ -88,7 +98,7 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
     await expect(page.getByRole("link", { name: "Editar" })).toHaveCount(0);
     await page.getByRole("button", { name: "Copiar texto" }).click();
     await expect(page.getByText("Texto copiado, com o título e a assinatura.")).toBeVisible();
-    await expect(page.getByRole("region", { name: "Histórico" })).toContainText("Texto copiado");
+    await expect(page.getByRole("region", { name: "Andamento" })).toContainText("Texto copiado");
     await conferir(page);
 
     await page.getByRole("button", { name: "Corrigir" }).click();
@@ -101,9 +111,9 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
     await j.getByRole("button", { name: "Publicar versão 2" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Falta de água na quinta, das 9h às 13h" })).toBeVisible();
     await expect(page.getByText("Versão 2", { exact: true }).first()).toBeVisible();
-    const versoes = page.getByRole("region", { name: "Versões" });
-    await expect(versoes).toContainText("Horário corrigido: termina às 13h");
-    await versoes.getByRole("link", { name: "Versão 1" }).click();
+    const andamento = page.getByRole("region", { name: "Andamento" });
+    await expect(andamento).toContainText("Horário corrigido: termina às 13h");
+    await andamento.getByRole("link", { name: "Ver a versão 1" }).click();
     await expect(page.getByText("Esta versão foi trocada")).toBeVisible();
     await expect(page.getByRole("button", { name: "Copiar texto" })).toHaveCount(0);
   });
@@ -111,16 +121,21 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
   test("CD-01: arquivar pede motivo e tira da lista em uso", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/comunicados`);
+    await page.getByRole("button", { name: /^Rascunhos/ }).first().click();
     await page.getByRole("link", { name: "Assembleia geral ordinária: convocação" }).click();
-    await page.getByRole("button", { name: "Arquivar" }).click();
+    await page.getByRole("button", { name: "Mais ações" }).click();
+    await page.getByRole("button", { name: "Arquivar…" }).click();
     const j = page.getByRole("dialog", { name: "Arquivar comunicado" });
     await j.getByRole("button", { name: "Arquivar" }).click();
     await expect(j.getByText("Diga o motivo, de 3 a 500 caracteres.")).toBeVisible();
     await j.getByLabel("Por que arquivar").fill("Assembleia remarcada");
     await j.getByRole("button", { name: "Arquivar" }).click();
     await expect(page.getByText("Comunicado arquivado.")).toBeVisible();
-    await page.goto(`${PLATAFORMA}/comunicados`);
+    await page.goto(`${PLATAFORMA}/comunicados?filtro=RASCUNHO`);
     await expect(page.getByRole("link", { name: "Assembleia geral ordinária: convocação" })).toHaveCount(0);
+    await page.getByRole("button", { name: /^Arquivados/ }).click();
+    await expect(page.getByRole("link", { name: "Assembleia geral ordinária: convocação" })).toBeVisible();
+    await conferir(page);
   });
 
   test("CD-05: o pedido mostra o comunicado ligado e abre um rascunho já ligado", async ({ page }) => {
@@ -140,12 +155,19 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
     await page.goto(`${PLATAFORMA}/comunicados/documentos`);
     await expect(page.getByRole("heading", { level: 1, name: "Documentos" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Regimento interno" })).toBeVisible();
-    await expect(page.getByText("vence em 42 dias")).toBeVisible();
-    await expect(page.getByText("Só quem cuida")).toBeVisible();
+    await expect(page.getByText("Vence em 42 dias").filter({ visible: true })).toBeVisible();
+    await expect(page.getByText("Só quem cuida").filter({ visible: true })).toBeVisible();
+    await expect(page.getByRole("group", { name: "O que pede atenção" })).toContainText("Vence em até 60 dias 1");
+    await page.getByRole("button", { name: "Sem arquivo 1" }).click();
+    await expect(page.getByRole("link", { name: "Regimento interno" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "AVCB" })).toBeVisible();
     await conferir(page);
+    await page.getByRole("button", { name: "Sem arquivo 1" }).click();
 
     await page.getByRole("link", { name: "Regimento interno" }).click();
     await expect(page.getByText("Versão 1 em vigor")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Versão em vigor" })).toContainText("Nenhuma versão anterior");
+    await expect(page.getByRole("region", { name: "Histórico" })).toContainText("Nada aconteceu com este documento ainda");
     await page.getByRole("button", { name: "Nova versão" }).click();
     const j = page.getByRole("dialog", { name: /Nova versão de Regimento interno/ });
     await j.getByLabel("Arquivo").setInputFiles({ name: "regimento-v2.pdf", mimeType: "application/pdf", buffer: PDF });
@@ -168,10 +190,10 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
     await page.goto(`${PLATAFORMA}/comunicados/documentos`);
     await expect(page.getByRole("link", { name: "Regimento interno" })).toBeVisible();
     await expect(page.getByRole("link", { name: "AVCB" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "+ Novo documento" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Novo documento" })).toHaveCount(0);
     await page.goto(`${PLATAFORMA}/comunicados`);
     await expect(page.getByRole("link", { name: "Falta de água na quinta" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "+ Escrever comunicado" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Escrever comunicado" })).toHaveCount(0);
     await conferir(page);
   });
 
