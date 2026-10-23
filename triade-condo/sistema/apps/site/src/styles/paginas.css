@@ -597,23 +597,24 @@ b.prot, .prot { white-space: nowrap; }
 .sem-fid2 { background: #fff; border: 1px solid var(--linha); box-shadow: 0 40px 80px -60px #5808cc59; position: relative; overflow: hidden; }
 .sem-fid2::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--grad-barra); }
 
-/* Faixa do pedido de exemplo, logo abaixo do topo */
-.pedido-faixa { display: grid !important; grid-template-columns: minmax(0, 1fr) 36px minmax(0, 1fr) 36px minmax(0, 1.15fr); align-items: center; gap: 12px; padding-block: 8px 32px; }
-.pf-cartao { position: relative; background: #fff; border: 1px solid var(--linha); border-radius: 18px; padding: 16px 18px; font-size: 14.5px; box-shadow: 0 30px 60px -40px #3a07a059; display: flex; flex-direction: column; gap: 6px; }
+/* Pedido de exemplo em volta do prédio: os cartões só encostam na imagem, sem cobri-la */
+.pf-cartao { position: relative; z-index: 3; background: #fff; border: 1px solid var(--linha); border-radius: 18px; padding: 14px 16px; font-size: 14.5px; box-shadow: 0 30px 60px -36px #3a07a066; display: flex; flex-direction: column; gap: 6px; }
 .pf-cartao small { color: var(--tinta-suave); font-size: 12px; font-weight: 700; }
-.pf-rot { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--violeta-600); }
-.pf-msg { border-top: 4px solid #7b2be0; }
-.pf-resp { background: var(--balao-condo); border-top: 4px solid #25a36f; }
-.pf-resp .pf-rot { color: #0b7558; }
-.pf-ficha { border-top: 4px solid var(--laranja-500); }
-.pf-ficha .pf-rot { color: #95560a; }
+.pf-msg { border-radius: 18px 18px 18px 4px; }
+.pf-resp { background: var(--balao-condo); border-color: #bfe8d6; border-radius: 18px 18px 4px 18px; }
+.pf-ficha { gap: 9px; }
 .pf-ficha .app-titulo { font-size: 15.5px; margin: 0; }
-.pf-seta { height: 2px; background: repeating-linear-gradient(90deg, var(--laranja-500) 0 6px, transparent 6px 11px); position: relative; }
-.pf-seta::after { content: ""; position: absolute; right: -2px; top: -4px; border: 5px solid transparent; border-left: 7px solid var(--laranja-500); }
+@media (min-width: 1001px) {
+  .palco-predio .pf-cartao { position: absolute; }
+  .palco-predio { padding-block: 24px 40px; }
+  .pf-msg { left: -6%; top: 0; width: 230px; }
+  .pf-resp { right: -4%; top: 28%; width: 230px; }
+  .pf-ficha { right: -6%; bottom: 0; width: 270px; }
+}
 @media (max-width: 1000px) {
-  .pedido-faixa { grid-template-columns: minmax(0, 1fr); gap: 0; padding-block: 0 24px; }
-  .pf-seta { width: 2px; height: 22px; margin-left: 28px; background: repeating-linear-gradient(180deg, var(--laranja-500) 0 5px, transparent 5px 9px); }
-  .pf-seta::after { right: auto; left: -4px; top: auto; bottom: -4px; border: 5px solid transparent; border-top: 7px solid var(--laranja-500); }
+  .palco-predio { display: flex; flex-direction: column; gap: 10px; padding-bottom: 24px; }
+  .pf-msg { max-width: 300px; }
+  .pf-resp { max-width: 300px; align-self: flex-end; }
 }
 
 /* Faixa de fatos centralizada */
@@ -652,14 +653,32 @@ b.prot, .prot { white-space: nowrap; }
 
 /* Prédio recortado em fundo transparente (Python, 23/10/2026): sem a caixa lilás atrás */
 .palco-predio img.predio, .pag-topo-img.predio { mix-blend-mode: normal; -webkit-mask-image: none; mask-image: none; filter: drop-shadow(0 40px 40px #3a07a033); }
-@media (min-width: 1001px) { .palco-predio img.predio { width: 112%; margin: 0 0 0 -4%; } }
+@media (min-width: 1001px) { .palco-predio img.predio { width: 100%; margin: 0; } }
 @media (max-width: 1000px) { .palco-predio img.predio { width: 100%; margin: 0; } }
 .pag-topo-img.predio { width: 110%; margin: 0; }
 @media (max-width: 900px) { .pag-topo-img.predio { width: 100%; margin: 8px 0 0; } }
-.hero2 .wrap.pedido-faixa { grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr) 40px minmax(0, 1.15fr); padding-block: 12px 36px; }
-@media (max-width: 1000px) { .hero2 .wrap.pedido-faixa { grid-template-columns: minmax(0, 1fr); } }
 .hero2 .deco-a, .pag-topo .deco-a, .topo-precos .deco-a { left: auto; right: -40px; bottom: 0; width: 200px; height: 240px; clip-path: polygon(0 100%, 100% 100%, 75% 0); opacity: .10; }
 .hero2 .deco-b, .pag-topo .deco-b, .topo-precos .deco-b { left: auto; right: 190px; height: 120px; opacity: .45; }
 .hero2 .deco-c, .pag-topo .deco-c, .topo-precos .deco-c { left: auto; right: 160px; height: 76px; opacity: .3; }
 .hero2 .cor-cunha { display: none; }
 .cor-cunha.deco-b, .cor-cunha.deco-c { display: none; }
+
+/* Gente de verdade: a foto inteira, de ponta a ponta, com o texto por cima (pedido da Carol em 23/10/2026) */
+.gente { position: relative; padding: 0; background: #1e1531; }
+.gente-foto { margin: 0; border-radius: 0; box-shadow: none; aspect-ratio: auto; overflow: hidden; }
+.gente-foto img { display: block; width: 100%; height: auto; object-fit: initial; }
+.gente-foto::after { display: none; }
+.gente::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, #120a24e6 0%, #120a24b8 36%, #120a2400 62%); }
+.gente::after { content: ""; position: absolute; left: 0; bottom: 0; z-index: 2; width: 38%; height: 7px; background: var(--grad-barra); }
+.gente .wrap.gente-texto { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: flex-start; padding-block: 0; }
+.gente-texto > div { max-width: 30rem; color: #fff; }
+.gente-texto .titulo-g, .gente-texto .lead2 { color: #fff; }
+.gente-texto .lead2 { color: #ece6f8; }
+.gente-texto .botao.claro { background: #fff; }
+.gente-foto .selo-ilus { right: 16px; left: auto; top: 16px; z-index: 3; }
+@media (max-width: 900px) {
+  .gente::before { display: none; }
+  .gente-foto { position: relative; }
+  .gente-foto::after { display: block; content: ""; position: absolute; inset: 45% 0 0; width: auto; height: auto; background: linear-gradient(180deg, #120a2400, #120a24f2 92%, #120a24); }
+  .gente .wrap.gente-texto { position: relative; inset: auto; margin-top: -16vw; padding-block: 0 44px; justify-content: flex-start; }
+}

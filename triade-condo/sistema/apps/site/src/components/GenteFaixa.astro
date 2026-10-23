@@ -1,13 +1,13 @@
 ---
-// A implantação presencial em uma faixa curta, com a foto da equipe (imagem ilustrativa).
+// A implantação presencial em uma faixa: a foto da equipe inteira (imagem ilustrativa), com o texto por cima.
 import Destaque from "./Destaque.astro";
 ---
 <section class="gente ancora">
-  <div class="wrap">
-    <figure class="gente-foto">
-      <img src="/encontro-1400.webp" srcset="/encontro-800.webp 800w, /encontro-1400.webp 1400w" sizes="(max-width: 900px) 100vw, 640px" loading="lazy" width="1400" height="933" alt="Síndica com um tablet conversa com uma moradora e um prestador no jardim do condomínio, ao fim da tarde." />
-      <span class="selo-ilus">IMAGEM ILUSTRATIVA</span>
-    </figure>
+  <figure class="gente-foto">
+    <img src="/encontro-1400.webp" srcset="/encontro-800.webp 800w, /encontro-1400.webp 1400w" sizes="100vw" loading="lazy" width="1400" height="933" alt="Síndica com um tablet conversa com uma moradora e um prestador no jardim do condomínio, ao fim da tarde." />
+    <span class="selo-ilus">IMAGEM ILUSTRATIVA</span>
+  </figure>
+  <div class="wrap gente-texto">
     <div>
       <h2 class="titulo-g">Gente de verdade <Destaque>do seu lado</Destaque></h2>
       <p class="lead2">Em Brasília e no DF, a equipe da TRÍADE apresenta o sistema na reunião do condomínio, cadastra o prédio com você e deixa o WhatsApp funcionando.</p>

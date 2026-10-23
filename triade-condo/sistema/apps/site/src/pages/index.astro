@@ -30,20 +30,16 @@ const comTriade = ["Cada pedido tem um responsável", "Data combinada para dar n
       <p class="lead2">O morador escreve no WhatsApp do condomínio. A TRÍADE dá um número ao pedido, um responsável e uma data para dar notícia. Você acompanha tudo por um painel.</p>
       <div class="acoes"><a href="#pedir" class="botao primario">Agendar demonstração</a><a href="#etapas" class="botao claro">Ver um pedido do início ao fim</a></div>
     </div>
-    <div class="palco-predio">
-      <img class="predio" src="/predio-triade-1400.webp" srcset="/predio-triade-800.webp 800w, /predio-triade-1400.webp 1400w" sizes="(max-width: 1000px) 120vw, 760px" width="1400" height="956" fetchpriority="high" alt="Ilustração do prédio da TRÍADE, com as formas do símbolo da marca." />
-    </div>
-  </div>
-  <div class="wrap pedido-faixa" role="img" aria-label={`Exemplo: a moradora escreve no WhatsApp, recebe o protocolo ${protocolo} com a data do retorno, e o pedido aparece no painel com responsável e prazo.`}>
-    <div class="pf-cartao pf-msg s1" aria-hidden="true"><span class="pf-rot">WhatsApp da moradora</span><small>Ana · apto 302</small><span>O vazamento da garagem voltou, perto da vaga 12.</span></div>
-    <span class="pf-seta" aria-hidden="true"></span>
-    <div class="pf-cartao pf-resp s2" aria-hidden="true"><span class="pf-rot">Resposta automática</span><span>Registrado: pedido <b class="prot">{protocolo}</b>. Você terá notícia até <b>sexta, 12h</b>.</span></div>
-    <span class="pf-seta" aria-hidden="true"></span>
-    <div class="pf-cartao pf-ficha s3" aria-hidden="true">
-      <span class="pf-rot">No painel do síndico</span>
-      <p class="app-titulo">Vazamento na garagem, vaga 12</p>
-      <div class="app-linha"><span>Responsável</span><b>Carlos, síndico</b></div>
-      <div class="app-linha"><span>Retorno</span><b style="color:var(--ok)">sex 23/10, 12:00</b></div>
+    <div class="palco-predio" role="img" aria-label={`O prédio da TRÍADE. Ao lado, um exemplo: a moradora escreve no WhatsApp, recebe o protocolo ${protocolo} com a data do retorno, e o pedido aparece no painel com responsável e prazo.`}>
+      <img class="predio" src="/predio-triade-1400.webp" srcset="/predio-triade-800.webp 800w, /predio-triade-1400.webp 1400w" sizes="(max-width: 1000px) 100vw, 640px" width="1400" height="956" fetchpriority="high" alt="" />
+      <div class="pf-cartao pf-msg s1" aria-hidden="true"><small>Ana · apto 302</small><span>O vazamento da garagem voltou, perto da vaga 12.</span></div>
+      <div class="pf-cartao pf-resp s2" aria-hidden="true"><span>Registrado: pedido <b class="prot">{protocolo}</b>. Você terá notícia até <b>sexta, 12h</b>.</span></div>
+      <div class="pf-cartao pf-ficha s3" aria-hidden="true">
+        <div class="app-pilulas"><span class="pil cinza">Manutenção</span><span class="pil violeta">Em andamento</span></div>
+        <p class="app-titulo">Vazamento na garagem, vaga 12</p>
+        <div class="app-linha"><span>Responsável</span><b>Carlos, síndico</b></div>
+        <div class="app-linha"><span>Retorno ao morador</span><b style="color:var(--ok)">sex 23/10, 12:00</b></div>
+      </div>
     </div>
   </div>
   <div class="wrap hero-fatos">
