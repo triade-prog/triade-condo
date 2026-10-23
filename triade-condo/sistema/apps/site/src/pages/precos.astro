@@ -25,27 +25,30 @@ const perguntas = [
       <h1>Um plano. O preço muda só com o <Destaque quebra>tamanho do prédio</Destaque>.</h1>
       <p class="lead2" style="margin-top:24px">Todas as funções em qualquer faixa. Contamos só as unidades ativas.</p>
     </div>
-    <div class="pilha" style="--gap:12px">
+    <div class="forma-cartao pilha" style="--gap:16px">
+      <span class="forma-rot">Como você prefere pagar</span>
       <div class="alternador so-com-js" style="align-self:flex-start" role="group" aria-label="Forma de pagamento">
         <button type="button" aria-pressed="true" data-forma="mensal">Mensal</button>
         <button type="button" aria-pressed="false" data-forma="anual">Anual</button>
       </div>
-      <p class="suave" style="font-size:16px" id="explica-forma" aria-live="polite">{textoMensal}</p>
+      <p class="suave" id="explica-forma" aria-live="polite">{textoMensal}</p>
       <p class="suave sem-js" style="font-size:16px">{textoAnual}</p>
+      <ul class="forma-chips" aria-label="Em qualquer forma"><li>Todas as funções</li><li>Sem taxa por usuário</li><li>Suporte por WhatsApp</li></ul>
     </div>
   </div>
 </section>
 
 <section class="wrap" style="padding-block:var(--secao-ritmo-curto) 0">
   <ul class="faixas3">
-    {faixas.map((f) => (
+    {faixas.map((f, i) => (
       <li class:list={["faixa3 faixa-preco", f.destaque && "destaque"]}>
         {f.destaque && <span class="selo-comum">Mais comum</span>}
+        <span class="faixa-tam" aria-hidden="true">{faixas.map((_, j) => <i class:list={[j <= i && "acesa"]}></i>)}</span>
         <b class="rot">{f.rotulo}</b>
         <div><span class="valor3" data-mensal={reais(f.mensal)} data-anual={reais(mensalNoAnual(f.mensal))}>{reais(f.mensal)}</span><span class="suave"> por mês</span></div>
         <span class="suave" data-mensal={`Implantação de ${reais(f.implantacao)}, uma vez, em até 3x`} data-anual="Implantação grátis no anual">Implantação de {reais(f.implantacao)}, uma vez, em até 3x</span>
         <span class="suave">{inteiro(f.franquiaComunicados)} comunicados por WhatsApp no mês</span>
-        <a href="#pedir" class:list={["botao", f.destaque ? "primario" : "claro"]}>Agendar demonstração</a>
+        <a href="#pedir" class:list={["botao", f.destaque ? "branco" : "claro"]}>Agendar demonstração</a>
       </li>
     ))}
   </ul>
@@ -56,26 +59,26 @@ const perguntas = [
   <div class="sem-fid2">
     <div class="pilha" style="--gap:16px"><h2>Sem fidelidade no mensal. Fica <Destaque semTraco>porque funciona</Destaque>.</h2><a href="#pedir" class="botao primario" style="align-self:flex-start">Agendar demonstração</a></div>
     <ul>
-      <li><b>Cancela quando quiser</b>Sem multa. Basta avisar pelo WhatsApp.</li>
-      <li><b>Implantação paga uma vez</b>Não volta a ser cobrada enquanto o prédio estiver com a TRÍADE.</li>
-      <li><b>A história é do prédio</b>Pedidos, documentos e prestadores ficam registrados no condomínio, com autor e data.</li>
-      <li><b>Quer pagar menos?</b>No anual, a implantação sai de graça.</li>
+      <li><span class="ic-bola violeta" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg></span><b>Cancela quando quiser</b>Sem multa. Basta avisar pelo WhatsApp.</li>
+      <li><span class="ic-bola laranja" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7" /></svg></span><b>Implantação paga uma vez</b>Não volta a ser cobrada enquanto o prédio estiver com a TRÍADE.</li>
+      <li><span class="ic-bola verde" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6" /></svg></span><b>A história é do prédio</b>Pedidos, documentos e prestadores ficam registrados no condomínio, com autor e data.</li>
+      <li><span class="ic-bola violeta" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 12l-8 8-9-9V3h8zM7.5 7.5h.01" /></svg></span><b>Quer pagar menos?</b>No anual, a implantação sai de graça.</li>
     </ul>
   </div>
 </section>
 
-<section class="wrap lado-a-lado" style="--gap:48px;padding-block:var(--secao-ritmo-curto)">
-  <div class="pilha" style="--gap:12px">
+<section class="wrap lado-a-lado incluido-limite" style="--gap:24px;padding-block:var(--secao-ritmo-curto)">
+  <div class="cartao-cor verde pilha" style="--gap:12px">
     <h2 style="font-size:20px">Incluído em todas as faixas</h2>
     <div>
-      <div class="linha-dado"><span>Pedidos pelo WhatsApp, com responsável, retorno e conclusão</span><b style="color:var(--ok)">Sem limite</b></div>
-      <div class="linha-dado"><span>Avisos de atendimento ao morador</span><b style="color:var(--ok)">Sem limite</b></div>
-      <div class="linha-dado"><span>Painel para síndico, conselho e portaria</span><b>Quantos usuários precisar</b></div>
-      <div class="linha-dado"><span>Comunicados, documentos, manutenção, enquetes, indicadores</span><b>Incluído</b></div>
-      <div class="linha-dado"><span>Suporte por WhatsApp em dias úteis, das 9h às 18h</span><b>Incluído</b></div>
+      <div class="linha-dado"><span>Pedidos pelo WhatsApp, com responsável, retorno e conclusão</span><b class="tag-cor verde">Sem limite</b></div>
+      <div class="linha-dado"><span>Avisos de atendimento ao morador</span><b class="tag-cor verde">Sem limite</b></div>
+      <div class="linha-dado"><span>Painel para síndico, conselho e portaria</span><b class="tag-cor violeta">Quantos usuários precisar</b></div>
+      <div class="linha-dado"><span>Comunicados, documentos, manutenção, enquetes, indicadores</span><b class="tag-cor violeta">Incluído</b></div>
+      <div class="linha-dado"><span>Suporte por WhatsApp em dias úteis, das 9h às 18h</span><b class="tag-cor violeta">Incluído</b></div>
     </div>
   </div>
-  <div class="pilha" style="--gap:12px">
+  <div class="cartao-cor laranja pilha" style="--gap:12px">
     <h2 style="font-size:20px">O que tem limite, e por quê</h2>
     <p class="suave">Cada comunicado enviado por WhatsApp tem custo de envio. Por isso cada faixa tem uma franquia mensal: um comunicado para o prédio todo conta uma vez por unidade que recebe.</p>
     <div>
@@ -89,14 +92,14 @@ const perguntas = [
 <section id="implantacao" class="faixa-branca">
   <div class="wrap secao2 lado-a-lado" style="--colunas:minmax(0,5fr) minmax(0,7fr);--gap:48px">
     <div class="pilha" style="--gap:16px">
-      <h2 class="titulo-g">De <span class="nw">{reais(faixas[0].implantacao)}</span> a <span class="nw">{reais(faixas[faixas.length - 1].implantacao)}</span>, uma vez</h2>
+      <h2 class="titulo-g">De <span class="nw cor-valor">{reais(faixas[0].implantacao)}</span> a <span class="nw cor-valor">{reais(faixas[faixas.length - 1].implantacao)}</span>, uma vez</h2>
       <p class="lead2">A implantação acompanha a faixa, porque é isso que define o trabalho: quantas pessoas cadastrar, quantos documentos trazer e quanta gente treinar. Grátis no anual; em até 3 vezes no mensal.</p>
     </div>
-    <div class="cartao" style="padding:0;overflow:hidden">
+    <div class="cartao impl-cartao" style="padding:0;overflow:hidden">
       <table class="tabela-impl">
         <caption class="so-leitor">Valor da implantação por faixa de unidades</caption>
         <thead><tr><th scope="col">Faixa</th><th scope="col">Implantação</th><th scope="col" class="inclui">O que inclui</th></tr></thead>
-        <tbody>{faixas.map((f) => <tr><td>{f.rotulo.replace(" unidades", "")}</td><td><b>{reais(f.implantacao)}</b></td><td class="inclui suave">{f.implantacaoInclui}</td></tr>)}</tbody>
+        <tbody>{faixas.map((f, i) => <tr><td><span class="faixa-tam" aria-hidden="true">{faixas.map((_, j) => <i class:list={[j <= i && "acesa"]}></i>)}</span>{f.rotulo.replace(" unidades", "")}</td><td><b class="valor-impl">{reais(f.implantacao)}</b></td><td class="inclui suave">{f.implantacaoInclui}</td></tr>)}</tbody>
       </table>
     </div>
   </div>
