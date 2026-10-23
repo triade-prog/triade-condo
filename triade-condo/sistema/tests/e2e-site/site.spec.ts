@@ -23,6 +23,7 @@ const paginas = [
   { caminho: "/precos", titulo: /^Um plano\. O preço muda só com o tamanho do prédio/ },
   { caminho: "/demonstracao", titulo: "Veja o sistema com um pedido do seu prédio" },
   { caminho: "/guia", titulo: "O que aprendemos organizando prédios" },
+  { caminho: "/guia/organizar-pedidos", titulo: "Organizar os pedidos sem virar refém do grupo" },
   { caminho: "/privacidade", titulo: "Política de privacidade deste site" },
 ];
 
@@ -120,6 +121,16 @@ test.describe("Site · soluções", () => {
     await expect(page.getByText("Para de responder o grupo à meia-noite.")).toBeVisible();
     await page.getByRole("tab", { name: "41 a 100 unidades" }).click();
     await expect(page.getByRole("tabpanel", { name: "41 a 100 unidades" })).toContainText("Escalonamento quando o prazo vence");
+  });
+});
+
+test.describe("Site · guia", () => {
+  test("o primeiro texto do Guia abre pelo cartão e os outros dizem que estão em preparação", async ({ page }) => {
+    await page.goto("/guia");
+    await expect(page.getByText("Em preparação")).toHaveCount(2);
+    await page.getByRole("link", { name: "Organizar os pedidos sem virar refém do grupo" }).first().click();
+    await expect(page).toHaveURL(/\/guia\/organizar-pedidos$/);
+    await expect(page.getByRole("heading", { level: 2, name: "1. Separe conversa de pedido" })).toBeVisible();
   });
 });
 

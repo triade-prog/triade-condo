@@ -2,9 +2,9 @@
 import Base from "../layouts/Base.astro";
 import Olho from "../components/Olho.astro";
 import FaixaFinal from "../components/FaixaFinal.astro";
-// Guia do síndico (NG-11). Os textos ainda estão sendo escritos; a página diz isso em vez de prometer links vazios.
-const temas = [
-  { titulo: "Organizar os pedidos sem virar refém do grupo", resumo: "Como separar conversa de pedido, dar protocolo e combinar quando dar notícia." },
+// Guia do síndico (NG-11). Texto pronto tem link; o que ainda está sendo escrito diz isso em vez de prometer link vazio.
+const temas: { titulo: string; resumo: string; link?: string }[] = [
+  { titulo: "Organizar os pedidos sem virar refém do grupo", resumo: "Como separar conversa de pedido, dar protocolo e combinar quando dar notícia.", link: "/guia/organizar-pedidos" },
   { titulo: "O que entregar ao próximo síndico", resumo: "A lista do que passa de mão: contratos, laudos, prestadores, pendências e o histórico dos pedidos." },
   { titulo: "Preventivas pela NBR 5674", resumo: "O que a norma pede, com que frequência e como não depender da memória de ninguém." },
 ];
@@ -15,13 +15,18 @@ const temas = [
   <div class="wrap pilha" style="--gap:24px;position:relative;padding-block:var(--secao-ritmo-curto)">
     <Olho>Guia do síndico</Olho>
     <h1 style="max-width:760px">O que aprendemos organizando prédios</h1>
-    <p class="suave" style="font-size:clamp(16px,2vw,20px);max-width:680px">Textos curtos e práticos, sem precisar usar a TRÍADE. Os primeiros estão sendo escritos.</p>
+    <p class="suave" style="font-size:clamp(16px,2vw,20px);max-width:680px">Textos curtos e práticos, sem precisar usar a TRÍADE.</p>
   </div>
 </section>
 <section class="wrap secao">
   <ul class="grade">
     {temas.map((t) => (
-      <li class="cartao topo-violeta pilha" style="--gap:12px"><span class="chip" style="align-self:flex-start">Em preparação</span><h2 style="font-size:20px">{t.titulo}</h2><p class="suave" style="font-size:16px">{t.resumo}</p></li>
+      <li class="cartao topo-violeta pilha guia-cartao" style="--gap:12px">
+        <span class="chip" style="align-self:flex-start">{t.link ? "5 minutos de leitura" : "Em preparação"}</span>
+        <h2 style="font-size:20px">{t.link ? <a href={t.link}>{t.titulo}</a> : t.titulo}</h2>
+        <p class="suave" style="font-size:16px">{t.resumo}</p>
+        {t.link && <a href={t.link} class="botao claro" style="align-self:flex-start" aria-hidden="true" tabindex="-1">Ler o texto</a>}
+      </li>
     ))}
   </ul>
 </section>
