@@ -871,3 +871,11 @@ h2, .titulo-g { font-size: var(--t-58); font-weight: 600; }
 .tabela-rola th { background: var(--violeta-50); font-weight: 700; }
 .guia-cartao h2 a { color: inherit; text-decoration: none; }
 .guia-cartao h2 a:hover { color: var(--violeta-600); }
+/* Rodapé com a coluna Contato (WhatsApp, redes e endereço, passados pela Carolina em 23/10/2026) */
+.rodape .wrap { grid-template-columns: minmax(0, 1.3fr) repeat(4, minmax(0, 1fr)); }
+.rodape-contato span { font-size: var(--t-14); }
+@media (max-width: 1000px) { .rodape .wrap { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .rodape .wrap { grid-template-columns: minmax(0, 1fr); }
+  .rodape .rodape-contato span { flex-basis: 100%; }
+}

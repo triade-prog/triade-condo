@@ -5,7 +5,8 @@ const digitos = (v: string | undefined) => (v ?? "").replace(/\D/g, "");
 // As páginas são geradas no build: vale o .env e também a variável do ambiente (a da Vercel).
 const ler = (nome: string): string => (import.meta.env[nome] as string | undefined) ?? (typeof process !== "undefined" ? process.env[nome] : undefined) ?? "";
 
-export const whatsappComercial = digitos(ler("PUBLIC_WHATSAPP_COMERCIAL"));
+// Número comercial passado pela Carolina em 23/10/2026; a variável do ambiente, se existir, vale mais.
+export const whatsappComercial = digitos(ler("PUBLIC_WHATSAPP_COMERCIAL")) || "5511957850073";
 export const razaoSocial = ler("PUBLIC_RAZAO_SOCIAL").trim();
 export const cnpj = ler("PUBLIC_CNPJ").trim();
 
@@ -14,6 +15,11 @@ export const horarioAtendimento = "dias úteis, das 9h às 18h";
 export const promessaRetorno = "até o fim do próximo dia útil";
 export const duracaoDemonstracao = "30 minutos";
 export const enderecoPlataforma = "https://condominio.trihub.com.br";
+export const endereco = "Brasília, Distrito Federal, CEP 72006-080";
+export const redes = [
+  { nome: "Instagram", url: "https://www.instagram.com/triadecondo" },
+  { nome: "Facebook", url: "https://www.facebook.com/triadecondo" },
+];
 
 /** Link do WhatsApp comercial com a mensagem pronta, ou null se o número não estiver configurado. */
 export function linkWhatsapp(mensagem?: string): string | null {
