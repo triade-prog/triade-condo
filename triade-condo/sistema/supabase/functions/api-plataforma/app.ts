@@ -135,6 +135,13 @@ import {
   retirarFamiliaPetSchema,
   buscaHistoricoSchema,
   buscaAniversariantesSchema,
+  criarLinkCadastroSchema,
+  encerrarLinkCadastroSchema,
+  buscaUnidadeOpcionalSchema,
+  aprovarCadastroSchema,
+  recusarCadastroSchema,
+  enviarCadastroSchema,
+  verCadastroSchema,
   abrirQuedaSchema,
   conciliarQuedaSchema,
   editarQuedaSchema,
@@ -509,7 +516,43 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.get("/v1/condominio/moradores", async (c) => {
     const r = buscaMoradoresSchema.safeParse(c.req.query());
     if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
-    return c.json(await rpc("plataforma_moradores", { ...quem(c), p_busca: r.data.busca ?? null, p_estado: r.data.estado ?? null, p_pagina: r.data.pagina }));
+    return c.json(await rpc("plataforma_moradores", {
+      ...quem(c), p_busca: r.data.busca ?? null, p_estado: r.data.estado ?? null, p_pagina: r.data.pagina, p_unidade: r.data.unidade ?? null,
+    }));
+  });
+
+  // Link de cadastro (F3.10; MU-09): quem cadastra moradores cria; o que chega espera o síndico.
+  const unidadeDaBusca = (c: Context) => {
+    const q = buscaUnidadeOpcionalSchema.safeParse(c.req.query());
+    if (!q.success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["unidade"] });
+    return q.data.unidade ?? null;
+  };
+  app.get("/v1/condominio/links-cadastro", async (c) =>
+    c.json(await rpc("plataforma_links_cadastro", { ...quem(c), p_unidade: unidadeDaBusca(c) })));
+  app.post("/v1/condominio/links-cadastro", async (c) => {
+    const d = await lerCorpo(c, criarLinkCadastroSchema);
+    return c.json(await rpc("plataforma_criar_link_cadastro", { ...quem(c), p_unidade: d.unidadeId, p_pede: d.pede, p_dias: d.dias }), 201);
+  });
+  app.post("/v1/condominio/links-cadastro/:id/encerrar", async (c) => {
+    const d = await lerCorpo(c, encerrarLinkCadastroSchema);
+    return c.json(await rpc("plataforma_encerrar_link_cadastro", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao }));
+  });
+  app.get("/v1/condominio/cadastros-link", async (c) =>
+    c.json(await rpc("plataforma_cadastros_link", { ...quem(c), p_unidade: unidadeDaBusca(c) })));
+  app.post("/v1/condominio/cadastros-link/:id/aprovar", async (c) => {
+    const d = await lerCorpo(c, aprovarCadastroSchema);
+    const r = await rpc<{ confirmacaoNaFila?: boolean }>("plataforma_aprovar_cadastro_link", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_nome: d.nome, p_telefone: d.telefone, p_ligacao: d.ligacao,
+      p_email: d.email, p_familia: d.familia, p_pets: d.pets, p_veiculos: d.veiculos,
+    });
+    if (r.confirmacaoNaFila) esvaziarFila();
+    return c.json(r);
+  });
+  app.post("/v1/condominio/cadastros-link/:id/recusar", async (c) => {
+    const d = await lerCorpo(c, recusarCadastroSchema);
+    return c.json(await rpc("plataforma_recusar_cadastro_link", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo, p_explicacao: d.explicacao,
+    }));
   });
 
   app.put("/v1/condominio/contatos/:id", async (c) => {
@@ -1712,6 +1755,25 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       return c.json(await rpc(funcao!, { p_codigo: d.codigo }));
     });
   }
+
+  // Link de cadastro (MU-09): sem conta. A chave de quem mandou vai no corpo, nunca no endereço.
+  app.get("/v1/publico/cadastro/:codigo", async (c) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("link", await aparelho(c));
+    return c.json(await rpc("publico_cadastro", { p_codigo: codigo, p_chave: null }));
+  });
+  app.post("/v1/publico/cadastro/:codigo/ver", async (c) => {
+    const codigo = codigoDaRota(c);
+    const d = await lerCorpo(c, verCadastroSchema);
+    await dentroDoLimite("link", await aparelho(c));
+    return c.json(await rpc("publico_cadastro", { p_codigo: codigo, p_chave: d.chave }));
+  });
+  app.post("/v1/publico/cadastro/:codigo", async (c) => {
+    const codigo = codigoDaRota(c);
+    const { chave, ...dados } = await lerCorpo(c, enviarCadastroSchema);
+    await dentroDoLimite("cadastro", await aparelho(c));
+    return c.json(await rpc("publico_enviar_cadastro", { p_codigo: codigo, p_chave: chave, p_dados: dados }));
+  });
 
   // Etiqueta por local (AT-30): quem aponta a câmera vê o local e o botão do WhatsApp.
   app.get("/v1/publico/etiqueta/:codigo", async (c) => {

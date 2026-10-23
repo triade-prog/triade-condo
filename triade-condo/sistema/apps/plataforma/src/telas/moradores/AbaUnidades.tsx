@@ -7,7 +7,7 @@
 // fica em abas, o que pede atenção em atalhos, e a torre, o andar e as marcas em Filtros. No
 // celular, cada unidade é um cartão. Divisão e unidade não se apagam: são desativadas, e só
 // quando não têm nada ativo dentro. Cada linha tem o seu menu (ficha, garagens, histórico,
-// pendentes e aniversariantes), e a busca acha também por etiqueta e pelo nome de quem é da
+// pendentes, link de cadastro e aniversariantes), e a busca acha também por etiqueta e pelo nome de quem é da
 // família (F3.10; MU-11).
 
 import Link from "next/link";
@@ -120,7 +120,7 @@ function JanelaFiltros({ aberto, dados, f, aoFechar, aplicar }: { aberto: boolea
 
 const COLUNAS = "md:grid-cols-[44px_minmax(0,1.6fr)_minmax(0,1.1fr)_minmax(0,1fr)_40px]";
 
-function LinhaUnidade({ u, nome, achado }: { u: UnidadeResumo; nome: string; achado?: AchadoUnidade }) {
+function LinhaUnidade({ u, nome, achado, podeEditar }: { u: UnidadeResumo; nome: string; achado?: AchadoUnidade; podeEditar: boolean }) {
   const selo = seloContatos(u);
   const contagem = contagemContatos(u);
   const ocupacao = (
@@ -162,7 +162,8 @@ function LinhaUnidade({ u, nome, achado }: { u: UnidadeResumo; nome: string; ach
           { texto: "Abrir a ficha", icone: "predio", href: `/moradores/unidade?id=${u.id}` },
           { texto: "Garagens e veículos", icone: "pin", href: `/moradores/unidade?id=${u.id}#garagens` },
           { texto: "Histórico", icone: "relogio", href: `/moradores/historico?id=${u.id}` },
-          ...(u.pendentes > 0 ? [{ texto: `Pendentes (${u.pendentes})`, icone: "alerta" as const, apoio: "A confirmar na ficha", href: `/moradores/unidade?id=${u.id}#pessoas` }] : []),
+          ...(u.pendentes > 0 ? [{ texto: `Pendentes (${u.pendentes})`, icone: "alerta" as const, apoio: u.cadastrosLink ? "Inclui o que chegou pelo link" : "A confirmar", href: `/moradores?aba=confirmar&unidade=${u.id}` }] : []),
+          ...(podeEditar && u.ativa ? [{ texto: "Link de cadastro", icone: "link" as const, apoio: "O morador preenche pelo celular", href: `/moradores/unidade?id=${u.id}&abrir=link` }] : []),
           { texto: "Aniversariantes", icone: "bolo", href: `/moradores/aniversariantes?unidade=${u.id}` },
         ]} />
       </span>
@@ -344,7 +345,7 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
             </div>
             <ul aria-label="Unidades" className="grid max-md:gap-3">
               {lista.map((u) => (
-                <LinhaUnidade key={u.id} u={u} achado={busca.achados?.get(u.id)}
+                <LinhaUnidade key={u.id} u={u} achado={busca.achados?.get(u.id)} podeEditar={dados.podeEditar}
                   nome={nomeDaUnidade(f.bloco === u.blocoId ? null : nomeBloco(u.blocoId), f.andar ? null : u.andar, u.identificacao)} />
               ))}
             </ul>

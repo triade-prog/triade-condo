@@ -256,7 +256,7 @@ test.describe("Plataforma do síndico · passo 3", () => {
       relacao: "OUTRO", proprietario: false, mora: false, ligacao: "OUTRO", parentesco: null, ocupaDesde: null, principal: false, recebeComunicados: true, estado: "PENDENTE", origem: "PLANILHA", criadoEm: "2026-10-16T15:00:00Z", versao: 1 });
     await page.goto(`${PLATAFORMA}/moradores?aba=confirmar`);
     await expect(page.getByRole("tab", { name: "A confirmar (2)", selected: true })).toBeVisible();
-    await expect(page.getByRole("note").filter({ hasText: "Contato a confirmar não recebe nada e não acessa nada." })).toBeVisible();
+    await expect(page.getByRole("note").filter({ hasText: "Quem está a confirmar não recebe nada e não acessa nada." })).toBeVisible();
     await conferir(page);
     await noMenu(page, "Ações de Padaria Sol", "Recusar Padaria Sol");
     await page.getByRole("dialog", { name: "Recusar Padaria Sol" }).getByRole("button", { name: "Recusar contato" }).click();

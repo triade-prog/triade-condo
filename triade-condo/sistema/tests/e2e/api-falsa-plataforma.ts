@@ -2,7 +2,7 @@
 // sem Supabase. As regras de verdade estão testadas no banco (pgTAP 008, 009 e 010) e na API
 // (Deno); aqui se confere a tela: fluxo, textos, o que cada pessoa vê e acessibilidade.
 import type { Page, Route } from "@playwright/test";
-import { criarMoradores, resumoMoradores, rotasMoradores } from "./api-falsa-moradores";
+import { criarMoradores, resumoMoradores, rotasCadastroPublico, rotasMoradores } from "./api-falsa-moradores";
 import { AGORA, criarPedidos, resumoPedidos, rotasPedidos, vencido, vencidoMaisAntigo } from "./api-falsa-pedidos";
 import { criarAvisos, escalado, MES_FECHADO, naoVistos, regrasAvisoIniciais, rotasPrazos } from "./api-falsa-prazos";
 import { rotasArmazenamento, semearArquivos } from "./api-falsa-arquivos";
@@ -251,6 +251,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (fotoDoAnuncio !== null) return fotoDoAnuncio;
     const manualMural = () => manualDoMural(memoria);
     const extraMural = () => ({ classificados: classificadosDoMural(classificados) });
+    const cadastroPeloLink = await rotasCadastroPublico(route, estado.moradores, caminho, metodo, corpo);
+    if (cadastroPeloLink !== null) return cadastroPeloLink;
     const publicas = await rotasPublicas(route, comunicados, caminho, metodo, corpo, manualMural, extraMural, estado.moradores.zap);
     if (publicas !== null) return publicas;
     if (!estado.logado) return erro(route, 401, "UNAUTHORIZED");

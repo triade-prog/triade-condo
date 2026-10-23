@@ -290,6 +290,8 @@ export const buscaMoradoresSchema = z.object({
   busca: z.string().trim().max(60).optional(),
   estado: z.enum(["PENDENTE", "CONFIRMADO", "SEM_EMAIL", "SEM_WHATSAPP"]).optional(),
   pagina: z.coerce.number().int().min(1).max(1000).default(1),
+  /** Só uma unidade: o "Pendentes" do menu da linha (F3.10). */
+  unidade: id.optional(),
 });
 
 /** Situação do e-mail do contato (CD-13). */
@@ -722,3 +724,126 @@ export function etiquetasDoTexto(texto: string): EtiquetaUnidade[] {
     return semAcento(nome).includes(q) || termos.some((t) => semAcento(t).startsWith(q) || q.startsWith(semAcento(t)));
   });
 }
+
+// ---------------------------------------------------------------------------------------
+// Link de cadastro da unidade e a fila do que chega por ele (F3.10; MU-09). Os mesmos valores
+// estão no banco (0288_link_cadastro.sql).
+
+/** O que o link pede além do nome e do telefone, que vêm sempre. A ordem é a da janela. */
+export const PEDIDOS_LINK = {
+  LIGACAO: { nome: "Ligação com a unidade", apoio: "Proprietário, inquilino, familiar" },
+  EMAIL: { nome: "E-mail", apoio: "A pessoa confirma depois" },
+  ANIVERSARIO: { nome: "Aniversário", apoio: "Só dia e mês" },
+  FAMILIA: { nome: "Família", apoio: "Nome, parentesco e se mora" },
+  PETS: { nome: "Pets", apoio: null },
+  VEICULOS: { nome: "Veículos", apoio: "Modelo, cor e placa" },
+} as const;
+export type PedidoLink = keyof typeof PEDIDOS_LINK;
+
+/** Quantos dias o link vale. */
+export const VALIDADES_LINK = [1, 3, 7, 15, 30] as const;
+
+/** A ligação como a pessoa escolhe na página do link. */
+export const LIGACOES_CADASTRO = {
+  PROPRIETARIO_MORA: "Proprietário, moro aqui",
+  PROPRIETARIO: "Proprietário, não moro aqui",
+  INQUILINO: "Inquilino",
+  FAMILIAR: "Familiar de quem mora",
+  OUTRO: "Outro (cedido, procurador, funcionário)",
+} as const;
+export type LigacaoCadastro = keyof typeof LIGACOES_CADASTRO;
+
+/** A mesma ligação, como o síndico lê na fila. */
+export const LIGACOES_CADASTRO_SINDICO: Record<LigacaoCadastro, string> = {
+  PROPRIETARIO_MORA: "Proprietário que mora",
+  PROPRIETARIO: "Proprietário que não mora",
+  INQUILINO: "Inquilino",
+  FAMILIAR: "Familiar ou cônjuge",
+  OUTRO: "Outra ligação",
+};
+
+/** Motivo da recusa: a pessoa vê ao abrir o link de novo. */
+export const MOTIVOS_RECUSA_CADASTRO = {
+  NAO_E_DA_UNIDADE: "Não é desta unidade",
+  NAO_CONHECO: "Ninguém conhece esta pessoa",
+  JA_CADASTRADO: "Já está no cadastro",
+  OUTRO: "Outro motivo",
+} as const;
+export type MotivoRecusaCadastro = keyof typeof MOTIVOS_RECUSA_CADASTRO;
+
+export const criarLinkCadastroSchema = z.object({
+  /** Nulo: o link serve para o prédio todo e a pessoa escolhe a unidade. */
+  unidadeId: id.nullable(),
+  pede: z.array(z.enum(chaves(PEDIDOS_LINK))).max(6).transform((p) => [...new Set(p)]),
+  dias: z.number().int().refine((d) => (VALIDADES_LINK as readonly number[]).includes(d), { message: "Vale por 1, 3, 7, 15 ou 30 dias" }),
+});
+
+export const encerrarLinkCadastroSchema = z.object({ versao });
+
+export const buscaUnidadeOpcionalSchema = z.object({ unidade: id.optional() });
+
+const emailOpcional = z.union([z.string().trim().max(254).email(), z.literal(""), z.null()]).optional().transform((v) => v || null);
+
+export const familiarCadastroSchema = z.object({
+  nome,
+  parentesco: z.enum(chaves(PARENTESCOS_FAMILIAR)),
+  mora: z.boolean().default(true),
+  aniversario: aniversarioSchema.nullable().optional().transform((v) => v ?? null),
+});
+export const petCadastroSchema = z.object({
+  nome: z.string().trim().min(1).max(60),
+  especie: z.enum(chaves(ESPECIES)),
+  porte: z.enum(chaves(PORTES)).nullable().optional().transform((v) => v ?? null),
+  raca: opcional(60, 2),
+});
+export const veiculoCadastroSchema = z.object({
+  placa: z.string().max(10).transform((p, ctx) => {
+    const n = normalizarPlaca(p);
+    if (!n) ctx.addIssue({ code: "custom", message: "Placa Mercosul (ABC1D23) ou antiga (ABC-1234)" });
+    return n ?? "";
+  }),
+  tipo: z.enum(chaves(TIPOS_VEICULO)),
+  modelo: opcional(60, 2),
+});
+export type FamiliarCadastro = z.infer<typeof familiarCadastroSchema>;
+export type PetCadastro = z.infer<typeof petCadastroSchema>;
+export type VeiculoCadastro = z.infer<typeof veiculoCadastroSchema>;
+
+const itensCadastro = {
+  familia: z.array(familiarCadastroSchema).max(10).default([]),
+  pets: z.array(petCadastroSchema).max(10).default([]),
+  veiculos: z.array(veiculoCadastroSchema).max(5).default([]),
+};
+
+/** A chave de quem mandou: só ela corrige e vê o resultado. */
+export const chaveCadastro = z.string().regex(/^[A-Za-z0-9_-]{20,64}$/);
+
+/** O que a pessoa manda pela página do link. O banco guarda só o que o link pede. */
+export const enviarCadastroSchema = z.object({
+  chave: chaveCadastro.nullable().optional().transform((v) => v ?? null),
+  unidadeId: id.nullable().optional().transform((v) => v ?? null),
+  nome,
+  telefone: telefoneContato,
+  ligacao: z.enum(chaves(LIGACOES_CADASTRO)).nullable().optional().transform((v) => v ?? null),
+  email: emailOpcional,
+  aniversario: aniversarioSchema.nullable().optional().transform((v) => v ?? null),
+  ...itensCadastro,
+});
+
+export const verCadastroSchema = z.object({ chave: chaveCadastro });
+
+/** Aprovar com o que o síndico corrigiu (nome, telefone, ligação, e-mail) e tirou da lista. */
+export const aprovarCadastroSchema = z.object({
+  versao,
+  nome,
+  telefone: telefoneContato,
+  ligacao: z.enum(chaves(LIGACOES_CADASTRO)),
+  email: emailOpcional,
+  ...itensCadastro,
+});
+
+export const recusarCadastroSchema = z.object({
+  versao,
+  motivo: z.enum(chaves(MOTIVOS_RECUSA_CADASTRO)),
+  explicacao: opcional(500, 3),
+}).refine((r) => r.motivo !== "OUTRO" || r.explicacao, { message: "Explique o motivo", path: ["explicacao"] });

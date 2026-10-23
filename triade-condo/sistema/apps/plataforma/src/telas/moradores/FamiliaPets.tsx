@@ -62,8 +62,8 @@ export function DiaDoAniversario({ a }: { a?: Aniversario | null }) {
     : <span className="t-apoio text-tinta-suave">Sem aniversário</span>;
 }
 
-/** Janela de formulário com o erro da API em cima e Cancelar e o botão principal embaixo. */
-function JanelaForm({ aberto, titulo, explicacao, textoBotao, aoFechar, aoSalvar, children, recarregar, erro, setErro }: {
+/** Janela de formulário com o erro da API em cima e Cancelar e o botão principal embaixo; à esquerda, uma ação a mais (Recusar…). */
+export function JanelaForm({ aberto, titulo, explicacao, textoBotao, aoFechar, aoSalvar, children, recarregar, erro, setErro, media, esquerda }: {
   aberto: boolean;
   titulo: string;
   explicacao?: string;
@@ -74,6 +74,8 @@ function JanelaForm({ aberto, titulo, explicacao, textoBotao, aoFechar, aoSalvar
   recarregar: () => void;
   erro: ErroApi | null;
   setErro: (e: ErroApi | null) => void;
+  media?: boolean;
+  esquerda?: ReactNode;
 }) {
   const [enviando, setEnviando] = useState(false);
   async function salvar(ev: FormEvent) {
@@ -85,15 +87,18 @@ function JanelaForm({ aberto, titulo, explicacao, textoBotao, aoFechar, aoSalvar
     if (!r.ok) setErro(r.erro);
   }
   return (
-    <Dialogo aberto={aberto} titulo={titulo} aoFechar={aoFechar}>
+    <Dialogo aberto={aberto} titulo={titulo} aoFechar={aoFechar} media={media}>
       {aberto ? (
         <form onSubmit={salvar} noValidate className="grid gap-4">
           {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={() => { aoFechar(); recarregar(); }} /> : null}
           {explicacao ? <p className="t-apoio text-tinta-suave">{explicacao}</p> : null}
           {children}
-          <div className="flex justify-end gap-2">
-            <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
-            <Botao type="submit" disabled={enviando}>{enviando ? "Salvando…" : textoBotao}</Botao>
+          <div className={`flex flex-wrap gap-2 ${esquerda ? "justify-between" : "justify-end"}`}>
+            {esquerda}
+            <span className="flex gap-2">
+              <Botao variante={esquerda ? "contorno" : "discreto"} onClick={aoFechar}>Cancelar</Botao>
+              <Botao type="submit" disabled={enviando}>{enviando ? "Salvando…" : textoBotao}</Botao>
+            </span>
           </div>
         </form>
       ) : null}

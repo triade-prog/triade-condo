@@ -7,6 +7,7 @@ import type {
   EstadoAnuncio, TipoAnuncio, TipoVeiculo, DecisaoQueda, EstadoQueda, AvisoNovoSindico, DestinoAvisoRegistro, MeioAvisoRegistro,
   EstadoDecisao, FiltroDecisao, TipoLigacao, SituacaoLinkRegistro, MotivoForaDoMural,
   Aniversario, CategoriaHistorico, Especie, ParentescoFamiliar, Porte,
+  FamiliarCadastro, LigacaoCadastro, MotivoRecusaCadastro, PedidoLink, PetCadastro, VeiculoCadastro,
 } from "@triade/domain";
 
 
@@ -77,6 +78,8 @@ export interface UnidadeResumo {
   pets?: number;
   familia?: number;
   aniversariantesMes?: number;
+  /** F3.10 (MU-09): cadastros pelo link esperando conferência (já somados em pendentes). */
+  cadastrosLink?: number;
 }
 
 export interface Unidades {
@@ -240,6 +243,8 @@ export interface ListaMoradores {
   comunicadosWhatsappLigado?: boolean;
   podeEditar: boolean;
   podeConfirmar: boolean;
+  /** Quando a lista é de uma unidade só (Pendentes do menu da unidade). */
+  unidade?: { id: string; nome: string };
 }
 
 // Pedidos no painel (passo 4).
@@ -1798,4 +1803,69 @@ export interface Aniversariantes {
   mesAtual: number;
   itens: { tipo: "PESSOA" | "FAMILIA"; id: string; nome: string; dia: number; descricao: string; unidadeId: string; unidade: string }[];
   unidades: { id: string; nome: string }[];
+}
+
+/** Link de cadastro da unidade ou do prédio (F3.10; MU-09). O código só vem na hora de criar. */
+export interface LinkCadastro {
+  id: string;
+  unidadeId?: string;
+  unidade?: string;
+  pede: PedidoLink[];
+  expiraEm: string;
+  criadoEm: string;
+  criadoPor?: string;
+  encerradoEm?: string;
+  ativo: boolean;
+  envios: number;
+  aConferir: number;
+  versao: number;
+  codigo?: string;
+}
+
+export interface LinksCadastro {
+  itens: LinkCadastro[];
+  unidade?: string;
+  podeCriar: boolean;
+}
+
+/** O que chegou pelo link, como a pessoa mandou. */
+export interface CadastroLink {
+  id: string;
+  linkId: string;
+  unidadeId: string;
+  unidade: string;
+  nome: string;
+  telefone: string;
+  ligacao?: LigacaoCadastro;
+  email?: string;
+  aniversario?: Aniversario;
+  familia: FamiliarCadastro[];
+  pets: PetCadastro[];
+  veiculos: VeiculoCadastro[];
+  estado: "ENVIADO" | "APROVADO" | "RECUSADO";
+  enviadoEm: string;
+  corrigidoEm?: string;
+  motivo?: MotivoRecusaCadastro;
+  explicacao?: string;
+  versao: number;
+  linkAtivo: boolean;
+  linkExpiraEm: string;
+}
+
+export interface FilaCadastros {
+  itens: CadastroLink[];
+  podeConfirmar: boolean;
+}
+
+/** A página do link, sem conta. envio: o que esta pessoa mandou, pela chave guardada no aparelho. */
+export interface CadastroPublico {
+  condominio: string;
+  unidadeId?: string;
+  unidade?: string;
+  unidades?: { id: string; nome: string }[];
+  pede: PedidoLink[];
+  expiraEm: string;
+  aberto: boolean;
+  envio?: Omit<CadastroLink, "id" | "linkId" | "versao" | "linkAtivo" | "linkExpiraEm" | "corrigidoEm">;
+  chave?: string;
 }
