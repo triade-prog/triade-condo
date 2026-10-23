@@ -10,8 +10,11 @@ const Titulo = nivel === 1 ? "h1" : "h2";
 const etapas: Etapa[] = [1, 2, 3, 4];
 ---
 <section class="wrap secao2" id="etapas">
-  <Titulo class="titulo-g" style="max-width:13em">Um pedido, <Destaque>do WhatsApp ao fim</Destaque></Titulo>
+  <Titulo class="titulo-g" style="max-width:13em">Um pedido, <Destaque semTraco>do WhatsApp ao fim</Destaque></Titulo>
   <p class="lead2" style="margin-top:16px"><span class="so-pc">Role a página</span><span class="so-cel">Deslize para o lado</span>: o morador conversa pelo WhatsApp e o síndico acompanha o pedido {protocolo} no painel. <span class="suave" style="font-size:14px">Dados ilustrativos.</span></p>
+  <nav class="passos-nav" aria-label="Ir para um passo">
+    {passos.map((p, i) => <button type="button" data-ir-passo={i}><b>{p.num}</b>{p.titulo.split(".")[0]}</button>)}
+  </nav>
   <div class="rolagem">
     <div class="passos2" tabindex="0" role="region" aria-roledescription="carrossel" aria-label="Passos do pedido">
       {passos.map((p, i) => (
@@ -45,6 +48,7 @@ const etapas: Etapa[] = [1, 2, 3, 4];
       for (const e of entradas) {
         if (!e.isIntersecting) continue;
         passos.forEach((p) => p.classList.toggle("ativo", p === e.target));
+        document.querySelectorAll<HTMLElement>("[data-ir-passo]").forEach((b, i) => b.toggleAttribute("aria-current", passos[i] === e.target));
         palco.dataset.etapa = (e.target as HTMLElement).dataset.passo;
       }
     }, { rootMargin: "-45% 0px -45% 0px" });
@@ -53,6 +57,11 @@ const etapas: Etapa[] = [1, 2, 3, 4];
   } else {
     document.body.classList.add("sem-rolagem");
   }
+
+  // Computador: os atalhos levam direto ao passo.
+  document.querySelectorAll<HTMLElement>("[data-ir-passo]").forEach((b) => b.addEventListener("click", () => {
+    passos[Number(b.dataset.irPasso)]?.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }));
 
   // Celular: carrossel. Pontos e setas acompanham o passo que está à vista e levam a outro passo.
   const trilho = document.querySelector<HTMLElement>(".passos2");

@@ -49,7 +49,7 @@ const perguntas = [
         <div><span class="valor3" data-mensal={reais(f.mensal)} data-anual={reais(mensalNoAnual(f.mensal))}>{reais(f.mensal)}</span><span class="suave"> por mês</span></div>
         <span class="suave" data-mensal={`Implantação de ${reais(f.implantacao)}, uma vez, em até 3x`} data-anual="Implantação grátis no anual">Implantação de {reais(f.implantacao)}, uma vez, em até 3x</span>
         <span class="suave">{inteiro(f.franquiaComunicados)} comunicados por WhatsApp no mês</span>
-        <a href="#pedir" class:list={["botao", f.destaque ? "branco" : "claro"]}>Agendar demonstração</a>
+        <a href="#pedir" class:list={["botao", f.destaque ? "branco" : "claro"]}>Solicitar demonstração</a>
       </li>
     ))}
   </ul>
@@ -58,7 +58,7 @@ const perguntas = [
 
 <section class="wrap" style="padding-block:var(--secao-ritmo-curto) 0">
   <div class="sem-fid2">
-    <div class="pilha" style="--gap:16px"><h2>Sem fidelidade no mensal. Fica <Destaque semTraco>porque funciona</Destaque>.</h2><a href="#pedir" class="botao primario" style="align-self:flex-start">Agendar demonstração</a></div>
+    <div class="pilha" style="--gap:16px"><h2>Sem fidelidade no mensal. Fica <Destaque semTraco>porque funciona</Destaque>.</h2><a href="#pedir" class="botao primario" style="align-self:flex-start">Solicitar demonstração</a></div>
     <ul>
       <li><span class="ic-bola violeta" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg></span><b>Cancela quando quiser</b>Sem multa. Basta avisar pelo WhatsApp.</li>
       <li><span class="ic-bola laranja" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7" /></svg></span><b>Implantação paga uma vez</b>Não volta a ser cobrada enquanto o prédio estiver com a TRÍADE.</li>

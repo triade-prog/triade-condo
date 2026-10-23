@@ -140,7 +140,7 @@ test.describe("Site · preços", () => {
 test.describe("Site · demonstração", () => {
   test("sem os campos, mostra o que falta e põe o foco no primeiro", async ({ page }) => {
     await page.goto("/demonstracao");
-    await page.getByRole("button", { name: "Pedir demonstração" }).click();
+    await page.getByRole("button", { name: "Solicitar demonstração" }).click();
     await expect(page.getByRole("alert")).toContainText("Faltam alguns campos.");
     await expect(page.getByLabel(/Seu nome/)).toBeFocused();
     await expect(page.getByLabel(/Seu nome/)).toHaveAttribute("aria-invalid", "true");
@@ -160,7 +160,7 @@ test.describe("Site · demonstração", () => {
     await page.getByLabel(/Condomínio/).fill("Residencial Ipê, Brasília");
     await page.getByLabel(/Quantas unidades/).selectOption("41 a 100");
     await page.getByLabel(/Autorizo o uso destes dados/).check();
-    await page.getByRole("button", { name: "Pedir demonstração" }).click();
+    await page.getByRole("button", { name: "Solicitar demonstração" }).click();
     const conf = page.getByRole("status");
     await expect(conf).toContainText("Pedido recebido, Carlos.");
     await expect(conf).toContainText("Residencial Ipê, Brasília (41 a 100 unidades) às 09:12 de hoje");
@@ -179,9 +179,9 @@ test.describe("Site · demonstração", () => {
     await page.getByLabel(/Condomínio/).fill("Ipê");
     await page.getByLabel(/Quantas unidades/).selectOption("Até 40");
     await page.getByLabel(/Autorizo o uso destes dados/).check();
-    await page.getByRole("button", { name: "Pedir demonstração" }).click();
+    await page.getByRole("button", { name: "Solicitar demonstração" }).click();
     await expect(page.getByRole("alert")).toContainText("Não conseguimos guardar o seu pedido agora.");
-    await expect(page.getByRole("button", { name: "Pedir demonstração" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Solicitar demonstração" })).toBeEnabled();
   });
 
   test("a API recusa pedido incompleto", async ({ request }) => {

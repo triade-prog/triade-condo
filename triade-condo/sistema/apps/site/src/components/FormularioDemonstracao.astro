@@ -37,7 +37,7 @@ const temWhatsapp = linkWhatsapp() !== null;
         <span class="erro-campo" id="erro-consentimento"></span>
       </div>
       <div class="robo" aria-hidden="true"><label for="site">Não preencha</label><input id="site" name="site" tabindex="-1" autocomplete="off" /></div>
-      <div class="linha-flex"><button type="submit" class="botao primario" id="enviar">Pedir demonstração</button></div>
+      <div class="linha-flex"><button type="submit" class="botao primario" id="enviar">Solicitar demonstração</button></div>
       <p id="promessa" class="suave" style="font-size:14px">Ao enviar, você recebe a confirmação aqui mesmo. Respondemos pelo WhatsApp {promessaRetorno}.</p>
     </div>
   </form>
@@ -132,6 +132,6 @@ const temWhatsapp = linkWhatsapp() !== null;
       mostrarErroGeral("<div><b>Sem conexão.</b> Confira a internet e tente de novo.</div>");
     }
     botao.disabled = false;
-    botao.textContent = "Pedir demonstração";
+    botao.textContent = "Solicitar demonstração";
   });
 </script>
