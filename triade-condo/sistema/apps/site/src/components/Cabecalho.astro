@@ -23,12 +23,12 @@ const corrente = (href: string) => (href === atual ? "page" : undefined);
     </nav>
     <div class="cabecalho-acoes">
       <a href={enderecoPlataforma} class="entrar">Entrar</a>
-      <a href="/demonstracao" class="botao primario botao-topo">Agendar demonstração</a>
+      <a href="/demonstracao" class="botao primario botao-topo">Solicitar demonstração</a>
       <details class="menu-celular">
         <summary aria-label="Menu"><span class="tracos" aria-hidden="true"><i></i><i></i><i></i></span></summary>
         <nav class="gaveta" aria-label="Menu do site">
           {itens.map((i) => <a href={i.href} aria-current={corrente(i.href)}>{i.texto}</a>)}
-          <a href="/demonstracao" aria-current={corrente("/demonstracao")}>Agendar demonstração</a>
+          <a href="/demonstracao" aria-current={corrente("/demonstracao")}>Solicitar demonstração</a>
           <a href={enderecoPlataforma}>Entrar na Plataforma</a>
         </nav>
       </details>

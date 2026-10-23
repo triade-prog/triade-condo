@@ -9,8 +9,8 @@ const identificacao = [razaoSocial, cnpj && `CNPJ ${cnpj}`].filter(Boolean).join
       <p class="suave" style="font-size:14px">Organiza o atendimento e a rotina de condomínios. {cidade}.</p>
       {identificacao && <p class="suave" style="font-size:14px">{identificacao}</p>}
     </div>
-    <div class="pilha" style="--gap:8px"><b>Produto</b><a href="/plataforma">Plataforma</a><a href="/solucoes">Soluções</a><a href="/como-funciona">Como funciona</a><a href="/solucoes#implantacao">Implantação</a><a href="/precos">Preços</a><a href="/demonstracao">Agendar demonstração</a></div>
-    <div class="pilha" style="--gap:8px"><b>Guia do síndico</b><a href="/guia">Organizar os pedidos sem virar refém do grupo</a><a href="/guia">O que entregar ao próximo síndico</a><a href="/guia">Preventivas pela NBR 5674</a></div>
+    <div class="pilha" style="--gap:8px"><b>Produto</b><a href="/plataforma">Plataforma</a><a href="/solucoes">Soluções</a><a href="/como-funciona">Como funciona</a><a href="/solucoes#implantacao">Implantação</a><a href="/precos">Preços</a><a href="/demonstracao">Solicitar demonstração</a><a href="/guia" class="so-cel">Guia do síndico</a></div>
+    <div class="pilha rodape-guia" style="--gap:8px"><b>Guia do síndico</b><a href="/guia">Organizar os pedidos sem virar refém do grupo</a><a href="/guia">O que entregar ao próximo síndico</a><a href="/guia">Preventivas pela NBR 5674</a></div>
     <div class="pilha" style="--gap:8px"><b>Legal</b><a href="/privacidade">Política de privacidade deste site</a><a href={enderecoPlataforma}>Entrar na Plataforma</a></div>
   </div>
 </footer>

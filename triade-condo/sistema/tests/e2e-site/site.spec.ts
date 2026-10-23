@@ -45,11 +45,11 @@ test.describe("Site · páginas", () => {
 
   test("EM-07: as telas de exemplo dizem que os dados são ilustrativos", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText("Dados ilustrativos").first()).toBeVisible();
+    await expect(page.getByText("Dados ilustrativos").locator("visible=true").first()).toBeVisible();
     await page.goto("/como-funciona");
-    await expect(page.getByText("Dados ilustrativos").first()).toBeVisible();
+    await expect(page.getByText("Dados ilustrativos").locator("visible=true").first()).toBeVisible();
     await page.goto("/plataforma");
-    await expect(page.getByText("Dados ilustrativos").first()).toBeVisible();
+    await expect(page.getByText("Dados ilustrativos").locator("visible=true").first()).toBeVisible();
   });
 });
 
@@ -66,17 +66,23 @@ test.describe("Site · como funciona", () => {
     await expect(palco.locator(".c1")).toBeHidden();
   });
 
-  test("no celular, os quatro passos aparecem um embaixo do outro, cada um com a sua cena", async ({ page, isMobile }) => {
+  test("no celular, os quatro passos ficam num carrossel, cada um com a sua cena", async ({ page, isMobile }) => {
     test.skip(!isMobile, "Só no celular.");
     await page.goto("/como-funciona");
     await expect(page.locator(".palco-fixo")).toBeHidden();
-    for (const nome of ["O morador escreve. O pedido ganha número.", "Alguém fica responsável. O morador sabe quem.", "O prestador conta o que fez, por um link.", "Concluído com explicação. O morador avalia."]) {
+    const nomes = ["O morador escreve. O pedido ganha número.", "Alguém fica responsável. O morador sabe quem.", "O prestador conta o que fez, por um link.", "Concluído com explicação. O morador avalia."];
+    const proximo = page.getByRole("button", { name: "Próximo passo" });
+    await expect(page.getByRole("button", { name: "Passo anterior" })).toBeDisabled();
+    for (const [i, nome] of nomes.entries()) {
       const passo = page.locator(".passo2", { has: page.getByRole("heading", { level: 3, name: nome }) });
-      await expect(passo).toBeVisible();
+      await expect.poll(async () => { const x = (await passo.boundingBox())?.x ?? -1; return x >= 0 && x < 80; }).toBe(true);
       await expect(passo.locator(".cena")).toBeVisible();
       await expect(passo.locator(".painel-cel")).toBeVisible();
       await expect(passo.locator(".note")).toBeHidden();
+      await expect(page.getByRole("button", { name: `Ir para o passo 0${i + 1}` })).toHaveAttribute("aria-current", "true");
+      if (i < nomes.length - 1) await proximo.click();
     }
+    await expect(proximo).toBeDisabled();
   });
 });
 
@@ -134,7 +140,7 @@ test.describe("Site · preços", () => {
 test.describe("Site · demonstração", () => {
   test("sem os campos, mostra o que falta e põe o foco no primeiro", async ({ page }) => {
     await page.goto("/demonstracao");
-    await page.getByRole("button", { name: "Pedir demonstração" }).click();
+    await page.getByRole("button", { name: "Solicitar demonstração" }).click();
     await expect(page.getByRole("alert")).toContainText("Faltam alguns campos.");
     await expect(page.getByLabel(/Seu nome/)).toBeFocused();
     await expect(page.getByLabel(/Seu nome/)).toHaveAttribute("aria-invalid", "true");
@@ -154,7 +160,7 @@ test.describe("Site · demonstração", () => {
     await page.getByLabel(/Condomínio/).fill("Residencial Ipê, Brasília");
     await page.getByLabel(/Quantas unidades/).selectOption("41 a 100");
     await page.getByLabel(/Autorizo o uso destes dados/).check();
-    await page.getByRole("button", { name: "Pedir demonstração" }).click();
+    await page.getByRole("button", { name: "Solicitar demonstração" }).click();
     const conf = page.getByRole("status");
     await expect(conf).toContainText("Pedido recebido, Carlos.");
     await expect(conf).toContainText("Residencial Ipê, Brasília (41 a 100 unidades) às 09:12 de hoje");
@@ -173,9 +179,9 @@ test.describe("Site · demonstração", () => {
     await page.getByLabel(/Condomínio/).fill("Ipê");
     await page.getByLabel(/Quantas unidades/).selectOption("Até 40");
     await page.getByLabel(/Autorizo o uso destes dados/).check();
-    await page.getByRole("button", { name: "Pedir demonstração" }).click();
+    await page.getByRole("button", { name: "Solicitar demonstração" }).click();
     await expect(page.getByRole("alert")).toContainText("Não conseguimos guardar o seu pedido agora.");
-    await expect(page.getByRole("button", { name: "Pedir demonstração" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Solicitar demonstração" })).toBeEnabled();
   });
 
   test("a API recusa pedido incompleto", async ({ request }) => {

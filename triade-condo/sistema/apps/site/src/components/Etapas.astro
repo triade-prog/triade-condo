@@ -1,6 +1,6 @@
 ---
 // Um pedido, do WhatsApp ao fim. No computador, a cena fica parada ao lado e acompanha o passo
-// que está no meio da tela; no celular, cada passo traz a própria cena logo abaixo do texto.
+// que está no meio da tela; no celular, os passos viram um carrossel de deslizar, cada um com a própria cena.
 import CenaPedido from "./CenaPedido.astro";
 import Destaque from "./Destaque.astro";
 import { passos, protocolo, type Etapa } from "../dados/vitrine";
@@ -10,18 +10,28 @@ const Titulo = nivel === 1 ? "h1" : "h2";
 const etapas: Etapa[] = [1, 2, 3, 4];
 ---
 <section class="wrap secao2" id="etapas">
-  <Titulo class="titulo-g" style="max-width:13em">Um pedido, <Destaque>do WhatsApp ao fim</Destaque></Titulo>
-  <p class="lead2" style="margin-top:16px">Role a página: o morador conversa pelo WhatsApp e o síndico acompanha o pedido {protocolo} no painel. <span class="suave" style="font-size:14px">Dados ilustrativos.</span></p>
+  <Titulo class="titulo-g" style="max-width:13em">Um pedido, <Destaque semTraco>do WhatsApp ao fim</Destaque></Titulo>
+  <p class="lead2" style="margin-top:16px"><span class="so-pc">Role a página</span><span class="so-cel">Deslize para o lado</span>: o morador conversa pelo WhatsApp e o síndico acompanha o pedido {protocolo} no painel. <span class="suave" style="font-size:14px">Dados ilustrativos.</span></p>
+  <nav class="passos-nav" aria-label="Ir para um passo">
+    {passos.map((p, i) => <button type="button" data-ir-passo={i}><b>{p.num}</b>{p.titulo.split(".")[0]}</button>)}
+  </nav>
   <div class="rolagem">
-    <div class="passos2">
+    <div class="passos2" tabindex="0" role="region" aria-roledescription="carrossel" aria-label="Passos do pedido">
       {passos.map((p, i) => (
-        <div class="passo2" data-passo={i + 1}>
+        <div class="passo2" data-passo={i + 1} aria-roledescription="passo" aria-label={`${i + 1} de ${passos.length}`}>
           <span class="num">{p.num}</span>
           <h3>{p.titulo}</h3>
           <p>{p.texto}</p>
           <div class="tela-passo"><CenaPedido etapa={etapas[i]} /></div>
         </div>
       ))}
+    </div>
+    <div class="carrossel-ctl">
+      <button type="button" class="carrossel-seta" data-ir="-1" aria-label="Passo anterior" disabled>‹</button>
+      <div class="carrossel-pontos">
+        {passos.map((p, i) => <button type="button" data-ponto={i} aria-label={`Ir para o passo ${p.num}`} aria-current={i === 0 ? "true" : undefined}></button>)}
+      </div>
+      <button type="button" class="carrossel-seta" data-ir="1" aria-label="Próximo passo">›</button>
     </div>
     <div class="palco-fixo palco-cena" data-etapa="1" aria-hidden="true">
       {etapas.map((e) => <CenaPedido etapa={e} />)}
@@ -38,6 +48,7 @@ const etapas: Etapa[] = [1, 2, 3, 4];
       for (const e of entradas) {
         if (!e.isIntersecting) continue;
         passos.forEach((p) => p.classList.toggle("ativo", p === e.target));
+        document.querySelectorAll<HTMLElement>("[data-ir-passo]").forEach((b, i) => b.toggleAttribute("aria-current", passos[i] === e.target));
         palco.dataset.etapa = (e.target as HTMLElement).dataset.passo;
       }
     }, { rootMargin: "-45% 0px -45% 0px" });
@@ -45,5 +56,32 @@ const etapas: Etapa[] = [1, 2, 3, 4];
     passos[0]?.classList.add("ativo");
   } else {
     document.body.classList.add("sem-rolagem");
+  }
+
+  // Computador: os atalhos levam direto ao passo.
+  document.querySelectorAll<HTMLElement>("[data-ir-passo]").forEach((b) => b.addEventListener("click", () => {
+    passos[Number(b.dataset.irPasso)]?.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }));
+
+  // Celular: carrossel. Pontos e setas acompanham o passo que está à vista e levam a outro passo.
+  const trilho = document.querySelector<HTMLElement>(".passos2");
+  const pontos = document.querySelectorAll<HTMLButtonElement>(".carrossel-pontos button");
+  const setas = document.querySelectorAll<HTMLButtonElement>(".carrossel-seta");
+  if (trilho) {
+    let atual = 0;
+    const ir = (i: number) => {
+      const alvo = passos[Math.max(0, Math.min(passos.length - 1, i))];
+      if (alvo) trilho.scrollTo({ left: alvo.offsetLeft - trilho.offsetLeft, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    };
+    const marcar = () => {
+      const meio = trilho.scrollLeft + trilho.clientWidth / 2;
+      passos.forEach((p, i) => { const x = p.offsetLeft - trilho.offsetLeft; if (meio >= x && meio < x + p.offsetWidth) atual = i; });
+      pontos.forEach((b, i) => (i === atual ? b.setAttribute("aria-current", "true") : b.removeAttribute("aria-current")));
+      setas[0].disabled = atual === 0;
+      setas[1].disabled = atual === passos.length - 1;
+    };
+    trilho.addEventListener("scroll", () => requestAnimationFrame(marcar), { passive: true });
+    pontos.forEach((b, i) => b.addEventListener("click", () => ir(i)));
+    setas.forEach((b) => b.addEventListener("click", () => ir(atual + Number(b.dataset.ir))));
   }
 </script>

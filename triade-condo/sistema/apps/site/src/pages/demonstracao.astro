@@ -5,18 +5,19 @@ import FormularioDemonstracao from "../components/FormularioDemonstracao.astro";
 import { cidade, duracaoDemonstracao, horarioAtendimento, linkWhatsapp, promessaRetorno, whatsappLegivel } from "../dados/empresa";
 const zap = linkWhatsapp("Olá! Quero conhecer a TRÍADE Condo.");
 ---
-<Base titulo="Agendar demonstração" atual="/demonstracao" descricao={`Peça uma demonstração da TRÍADE Condo com um pedido do seu prédio. Quatro campos; respondemos pelo WhatsApp ${promessaRetorno}.`}>
+<Base titulo="Solicitar demonstração" atual="/demonstracao" descricao={`Peça uma demonstração da TRÍADE Condo com um pedido do seu prédio. Quatro campos; respondemos pelo WhatsApp ${promessaRetorno}.`}>
 
 <section class="faixa-branca" style="border-top:0">
   <span class="cunha cunha-dir" aria-hidden="true"></span>
-  <div class="wrap pilha" style="--gap:24px;position:relative;padding-block:var(--secao-ritmo-curto)">
+  <div class="wrap pilha" style="--gap:16px;position:relative;padding-block:var(--e-7) var(--e-6)">
     <Olho>Demonstração</Olho>
-    <h1 style="max-width:760px">Veja o sistema com um pedido do seu prédio</h1>
-    <p class="suave" style="font-size:clamp(16px,2vw,20px);max-width:680px">Quatro campos. Guardamos o seu pedido, confirmamos o recebimento na hora e respondemos pelo WhatsApp {promessaRetorno} para marcar a demonstração.</p>
+    <h1 class="titulo-texto" style="max-width:760px">Veja o sistema com um pedido do seu prédio</h1>
+    <ul class="demo-chips" aria-label="Como é a demonstração"><li>{duracaoDemonstracao}</li><li>Por vídeo ou na reunião do condomínio</li><li>Sem compromisso</li></ul>
+    <p class="suave" style="font-size:var(--t-16);max-width:680px">Quatro campos. Confirmamos o recebimento na hora e respondemos pelo WhatsApp {promessaRetorno} para marcar.</p>
   </div>
 </section>
 
-<section class="wrap lado-a-lado" style="--colunas:minmax(0,3fr) minmax(0,2fr);--gap:48px;padding-block:var(--secao-ritmo-curto) var(--secao-ritmo)">
+<section class="wrap lado-a-lado" style="--colunas:minmax(0,3fr) minmax(0,2fr);--gap:48px;padding-block:var(--e-6) var(--secao-ritmo)">
   <FormularioDemonstracao />
   <div class="pilha" style="--gap:16px">
     <div class="cartao pilha">

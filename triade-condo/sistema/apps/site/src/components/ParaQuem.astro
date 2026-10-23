@@ -7,7 +7,7 @@ import { perfis } from "../dados/vitrine";
 ---
 <section class="faixa-branca ancora sem-js-perfis" id="perfis">
   <div class="wrap secao2">
-    <h2 class="titulo-g" style="max-width:14em">Feita para quem cuida do prédio <Destaque quebra>sem administradora</Destaque></h2>
+    <h2 class="titulo-g" style="max-width:14em">Feita para quem cuida do prédio <Destaque quebra semTraco>sem administradora</Destaque></h2>
     <div class="abas2" role="tablist" aria-label="Quem é você">
       {perfis.map((p, i) => <button type="button" role="tab" id={`aba-${p.id}`} aria-controls={`perfil-${p.id}`} aria-selected={i === 0 ? "true" : "false"} tabindex={i === 0 ? 0 : -1} data-perfil={p.id}>{p.nome}</button>)}
     </div>
