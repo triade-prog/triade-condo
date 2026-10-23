@@ -189,7 +189,35 @@ export const TIPOS_CHAMADO = {
   DUVIDA: "Dúvida",
   PROBLEMA: "Problema",
   SUGESTAO: "Sugestão",
+  MUDANCA: "Mudança de configuração",
 } as const;
+export type TipoChamado = keyof typeof TIPOS_CHAMADO;
+
+/** Os tipos do "Abrir chamado"; a mudança de configuração nasce do "Pedir mudança" (0286). */
+export const TIPOS_ABRIR_CHAMADO = ["DUVIDA", "PROBLEMA", "SUGESTAO"] as const satisfies readonly TipoChamado[];
+
+/**
+ * O que só a TRÍADE muda nas Configurações e que o síndico pede pelo "Pedir mudança" (CF-09,
+ * PI-04): o nome de cada parte e a página das Configurações onde ela fica.
+ */
+export const PARTES_MUDANCA = {
+  FUSO: { nome: "Fuso do condomínio", pagina: "horarios" },
+  PARECIDOS: { nome: "Pedidos parecidos", pagina: "prazos" },
+  ANEXAR: { nome: "Mensagens seguintes do WhatsApp", pagina: "whatsapp" },
+  ETAPAS_PEDIDOS: { nome: "Etapas dos pedidos", pagina: "etapas" },
+  ETAPAS_MANUTENCAO: { nome: "Etapas da manutenção", pagina: "manutencao" },
+} as const;
+export type ParteMudanca = keyof typeof PARTES_MUDANCA;
+
+/** O nome de uma parte guardada no chamado; uma parte que esta versão não conhece aparece como veio. */
+export function nomeDaParte(parte: string): string {
+  return (PARTES_MUDANCA as Record<string, { nome: string }>)[parte]?.nome ?? parte;
+}
+
+/** O título do chamado de mudança: "Mudar: Fuso do condomínio". */
+export function tituloMudanca(parte: ParteMudanca): string {
+  return `Mudar: ${PARTES_MUDANCA[parte].nome}`;
+}
 
 export const AREAS_CHAMADO = {
   INICIO: "Início",
@@ -225,9 +253,15 @@ export const IMAGENS_CHAMADO = { maximo: 3, tamanho: 10 * 1024 * 1024, tipos: ["
 export const DIAS_REABRIR_CHAMADO = 7;
 
 export const abrirChamadoSchema = z.object({
-  tipo: z.enum(chaves(TIPOS_CHAMADO)),
+  tipo: z.enum(TIPOS_ABRIR_CHAMADO),
   area: z.enum(chaves(AREAS_CHAMADO)),
   titulo: z.string().trim().min(3).max(120),
+  texto: z.string().trim().min(2).max(4000),
+});
+
+export const pedirMudancaSchema = z.object({
+  parte: z.enum(chaves(PARTES_MUDANCA)),
+  hoje: z.string().trim().min(1).max(300),
   texto: z.string().trim().min(2).max(4000),
 });
 
@@ -305,7 +339,7 @@ export function descreverEventoSuporte(acao: string, d: Record<string, unknown>)
     case "acesso_excepcional.leitura":
       return `A TRÍADE abriu ${AREAS_EXCEPCIONAIS[d.area as AreaExcepcional] ?? String(d.area)} pelo acesso excepcional`;
     case "chamado.aberto":
-      return `Chamado de suporte aberto · ${TIPOS_CHAMADO[d.tipo as keyof typeof TIPOS_CHAMADO] ?? String(d.tipo)}`;
+      return `Chamado de suporte aberto · ${TIPOS_CHAMADO[d.tipo as keyof typeof TIPOS_CHAMADO] ?? String(d.tipo)}${d.parte ? ` · ${nomeDaParte(String(d.parte))}` : ""}`;
     case "chamado.reaberto":
       return "Chamado reaberto pelo cliente";
     case "chamado.resolvido":

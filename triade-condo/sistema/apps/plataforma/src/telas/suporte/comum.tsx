@@ -18,6 +18,9 @@ export interface Chamado {
   situacao: string;
   abertoPor: string;
   imagens: number;
+  /** Só no chamado de mudança (0286): a parte e como estava quando foi pedido. */
+  parte?: string;
+  hoje?: string;
   ultima?: { lado: "CLIENTE" | "TRIADE"; autor: string; em: string };
   resolvidoEm?: string;
   criadoEm: string;
@@ -53,7 +56,7 @@ export function SeloChamado({ situacao }: { situacao: string }) {
   return <Selo tom={TOM[situacao] ?? "info"}>{rotuloSituacaoChamadoCliente(situacao)}</Selo>;
 }
 
-export const ICONE_TIPO: Record<keyof typeof TIPOS_CHAMADO, NomeIcone> = { DUVIDA: "balao", PROBLEMA: "alerta", SUGESTAO: "estrela" };
+export const ICONE_TIPO: Record<keyof typeof TIPOS_CHAMADO, NomeIcone> = { DUVIDA: "balao", PROBLEMA: "alerta", SUGESTAO: "estrela", MUDANCA: "trocar" };
 
 /** As partes de Ajuda e suporte, juntas no topo de cada uma. Acesso da TRÍADE só para quem aprova. */
 export function PartesSuporte() {
@@ -75,4 +78,4 @@ export function PartesSuporte() {
   );
 }
 
-export const TEXTO_SUPORTE = "Problemas e dúvidas sobre o sistema, respondidos pela TRÍADE em dias úteis, das 9h às 18h. Não é reparo nem canal de emergência: vazamento, elevador parado ou segurança vão para o síndico ou para os serviços de emergência.";
+export const TEXTO_SUPORTE = "Dúvidas, problemas e pedidos de mudança no que a TRÍADE configurou, respondidos em dias úteis, das 9h às 18h. Não é reparo nem canal de emergência: vazamento, elevador parado ou segurança vão para o síndico ou para os serviços de emergência.";

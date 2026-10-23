@@ -6,8 +6,11 @@
 
 import Link from "next/link";
 import { useState, type FormEvent, type ReactNode } from "react";
-import { AvisoErro, Botao, CampoAreaTexto, camposComErro, classeBotao, Selo, textoDoErro, type ErroApi, type Resposta } from "@triade/ui";
-import { useAmbiente } from "./contexto.tsx";
+import { PARTES_MUDANCA, rotuloSituacaoChamadoCliente, type ParteMudanca } from "@triade/domain";
+import {
+  AvisoErro, Botao, CampoAreaTexto, camposComErro, chamarApi, Dialogo, Icone, Selo, textoDoErro, type ErroApi, type Resposta,
+} from "@triade/ui";
+import { useAmbiente, useCarregar } from "./contexto.tsx";
 import { Escolha } from "./comum.tsx";
 import type { Campo } from "./Janela.tsx";
 
@@ -39,7 +42,7 @@ export function BlocoTriade({ children }: { children: ReactNode }) {
         <span className="grid gap-0.5">
           <h2 id="t-feito-triade" className="text-[15px] font-semibold">Feito pela TRÍADE</h2>
           <span className="text-[13px] text-tinta-suave">{onde === "app"
-            ? "Só a TRÍADE muda. Se precisar, peça e acompanhe em Ajuda e suporte."
+            ? "Só a TRÍADE muda. Peça aqui mesmo; a resposta chega no sino e em Ajuda e suporte."
             : "Só a TRÍADE muda. Com o cliente ativo, mudar pede motivo e avisa o síndico."}</span>
         </span>
         <SeloTriade />
@@ -49,12 +52,79 @@ export function BlocoTriade({ children }: { children: ReactNode }) {
   );
 }
 
-/** No app: abre um chamado para a TRÍADE já com a parte e o valor de hoje (decisão 11). */
-export function PedirMudanca({ parte, valor }: { parte: string; valor: string }) {
+/** Uma mudança pedida e ainda aberta (0286): "ver" diz se a pessoa pode abrir o chamado. */
+interface MudancaPedida { parte: string; id: string; numero: number; situacao: string; abertoPor: string; ver: boolean }
+
+/**
+ * No app, o "Pedir mudança à TRÍADE" (item 8, decisões A.1 e B.1 de 23/10/2026): abre uma janela
+ * ali mesmo, com a parte e o valor de hoje, e vira um chamado de Mudança de configuração. Com um
+ * pedido aberto para a parte, mostra "Mudança pedida", a situação e "Ver chamado", em vez de
+ * oferecer pedir de novo.
+ */
+export function PedirMudanca({ parte, valor }: { parte: ParteMudanca; valor: string }) {
   const { onde } = useAmbiente();
+  const pedidas = useCarregar<{ itens: MudancaPedida[] }>(onde === "app" ? "/v1/condominio/chamados/mudancas" : null);
+  const [aberta, setAberta] = useState(false);
   if (onde !== "app") return null;
-  const busca = new URLSearchParams({ mudar: parte, valor });
-  return <Link href={`/suporte?${busca}`} className={classeBotao("discreto", "", "m")}>Pedir mudança</Link>;
+  const pedida = pedidas.estado === "pronto" ? pedidas.dados.itens.find((m) => m.parte === parte) : undefined;
+  if (pedida) {
+    return (
+      <span className="flex flex-wrap items-center gap-2">
+        <Selo tom="andamento"><Icone nome="trocar" className="h-3.5 w-3.5" />Mudança pedida</Selo>
+        <Selo tom={pedida.situacao === "ESPERANDO_CLIENTE" ? "atencao" : "info"}>{rotuloSituacaoChamadoCliente(pedida.situacao)}</Selo>
+        {pedida.ver
+          ? <Link href={`/suporte?id=${pedida.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
+              Ver chamado {pedida.numero}<Icone nome="dir" className="h-4 w-4" />
+            </Link>
+          : <span className="text-[13px] text-tinta-suave">chamado {pedida.numero}, por {pedida.abertoPor}</span>}
+      </span>
+    );
+  }
+  return (
+    <>
+      <Botao variante="discreto" tamanho="m" onClick={() => setAberta(true)} disabled={pedidas.estado === "carregando"}>
+        <Icone nome="trocar" />Pedir mudança
+      </Botao>
+      {aberta ? <JanelaPedirMudanca parte={parte} valor={valor} aoFechar={() => setAberta(false)} aoPedir={() => { setAberta(false); pedidas.recarregar(); }} /> : null}
+    </>
+  );
+}
+
+function JanelaPedirMudanca({ parte, valor, aoFechar, aoPedir }: { parte: ParteMudanca; valor: string; aoFechar: () => void; aoPedir: () => void }) {
+  const [texto, setTexto] = useState("");
+  const [erro, setErro] = useState<ErroApi | null>(null);
+  const [enviando, setEnviando] = useState(false);
+
+  async function pedir(ev: FormEvent) {
+    ev.preventDefault();
+    setErro(null);
+    setEnviando(true);
+    const r = await chamarApi("/v1/condominio/chamados/mudanca", { corpo: { parte, hoje: valor, texto } });
+    setEnviando(false);
+    if (!r.ok) return setErro(r.erro);
+    aoPedir();
+  }
+
+  const fixo = "flex min-h-11 items-center rounded-xl border border-linha bg-fundo px-3.5 py-2.5 text-[15px]";
+  return (
+    <Dialogo aberto media fechar titulo="Pedir mudança à TRÍADE" apoio="A parte e o valor de hoje já vêm preenchidos." aoFechar={aoFechar}>
+      <form onSubmit={pedir} noValidate className="grid gap-4">
+        {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
+        <dl className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-1"><dt className="text-[13px] font-medium">Parte</dt><dd className={fixo}>{PARTES_MUDANCA[parte].nome}</dd></div>
+          <div className="grid gap-1"><dt className="text-[13px] font-medium">Como está hoje</dt><dd className={fixo}>{valor}</dd></div>
+        </dl>
+        <CampoAreaTexto id={`mudar-${parte}`} rotulo="O que precisa e por quê" required maxLength={4000} value={texto} onChange={(e) => setTexto(e.target.value)}
+          ajuda="A TRÍADE responde em dias úteis, das 9h às 18h, e pode pedir mais detalhes."
+          erro={camposComErro(erro).includes("texto") ? "Diga o que precisa e por quê." : null} />
+        <p className="text-[13px] text-tinta-suave">Vai como chamado de Mudança de configuração. Acompanhe aqui ou em Ajuda e suporte.</p>
+        <div className="sticky -bottom-6 -mx-6 -mb-6 flex flex-wrap items-center justify-end gap-2 rounded-b-[24px] border-t border-linha bg-superficie px-6 py-4 max-md:grid max-md:rounded-none">
+          <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
+          <Botao type="submit" disabled={enviando}><Icone nome="enviar" />{enviando ? "Enviando…" : "Pedir a mudança"}</Botao>
+        </div>
+      </form>
+    </Dialogo>
+  );
 }
 
 /** "1 etapa ativa", "3 etapas ativas": o resumo das etapas na faixa da TRÍADE. */
@@ -64,7 +134,7 @@ export function etapasAtivas(etapas: { ativa: boolean }[]): string {
 }
 
 /** Faixa do app sobre uma parte que é da TRÍADE (tela 6). */
-export function FaixaTriade({ parte, valor, porque }: { parte: string; valor: string; porque: string }) {
+export function FaixaTriade({ parte, valor, porque }: { parte: ParteMudanca; valor: string; porque: string }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-linha bg-superficie-2 px-4 py-3 text-sm">
       <span className="grid gap-0.5">
@@ -80,10 +150,12 @@ export function FaixaTriade({ parte, valor, porque }: { parte: string; valor: st
  * Um ajuste de escolha única (fuso, janela dos parecidos, tempo de anexar). Quem não pode vê o
  * valor com a marca e "Pedir mudança"; a equipe escolhe e salva, com motivo se o cliente está ativo.
  */
-export function AjusteTecnico<T extends string>({ id, titulo, parte, ajuda, opcoes, atual, tecnica, salvar, aoSalvar, recarregar }: {
+export function AjusteTecnico<T extends string>({ id, titulo, parte, mudanca, ajuda, opcoes, atual, tecnica, salvar, aoSalvar, recarregar }: {
   id: string;
   titulo: string;
   parte: string;
+  /** A parte no "Pedir mudança" do app (0286). */
+  mudanca: ParteMudanca;
   ajuda: string;
   opcoes: { valor: T; texto: string }[];
   atual: T;
@@ -117,7 +189,7 @@ export function AjusteTecnico<T extends string>({ id, titulo, parte, ajuda, opco
           <span className="text-sm">{textoAtual}</span>
           <span className="text-[13px] text-tinta-suave">{ajuda}</span>
         </span>
-        <PedirMudanca parte={titulo} valor={textoAtual} />
+        <PedirMudanca parte={mudanca} valor={textoAtual} />
       </section>
     );
   }

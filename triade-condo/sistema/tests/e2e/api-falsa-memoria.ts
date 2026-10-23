@@ -139,7 +139,7 @@ export async function rotasMemoria(route: Route, est: EstadoMemoria, caminho: st
       { fonte: "MANUTENCAO", categoria: "MANUTENCAO", id: "m1", manutencaoId: "m1", data: dia(-3), titulo: "Manutenção concluída: troca da bomba de recalque", detalhe: "HidroPress Bombas" },
       { fonte: "PRONTUARIO", categoria: "DOCUMENTOS", id: "p1", data: dia(-16), titulo: "AVCB (Corpo de Bombeiros) venceu", detalhe: "Do prontuário" },
       { fonte: "DOCUMENTO", categoria: "DOCUMENTOS", id: "d1", documentoId: est.documentos[0]!.id, data: "2019-03-12", titulo: "Documento guardado: Convenção" },
-      { fonte: "PESSOA", categoria: "PESSOAS", id: "v1", data: "2025-03-01", titulo: "Ana Souza assume como síndico", detalhe: "Entrada na Plataforma" },
+      { fonte: "PESSOA", categoria: "PESSOAS", id: "v1", data: "2025-03-01", titulo: "Ana Souza assume a sindicatura", detalhe: "Entrada na Plataforma" },
     ].filter((e) => filtro === "TUDO" || e.categoria === filtro).sort((a, b) => b.data.localeCompare(a.data));
     return route.fulfill({ json: { eventos, podeAnotar: editar } });
   }

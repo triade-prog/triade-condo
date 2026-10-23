@@ -147,6 +147,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   NAO_VALE: "Este acesso não está valendo.",
   LIMITE_CHAMADOS: "Muitos chamados abertos hoje. Responda num dos que já existem.",
   CHAMADO_FECHADO: "Este chamado foi resolvido há mais de 7 dias. Abra outro chamado.",
+  MUDANCA_JA_PEDIDA: "Esta parte já tem um pedido de mudança aberto. Acompanhe por ele, em Ajuda e suporte.",
   JA_RESOLVIDO: "Este chamado já está resolvido.",
   SO_IMAGEM: "Só imagens (JPG, PNG, WEBP).",
   LIMITE_IMAGENS: "O chamado já tem 3 imagens.",

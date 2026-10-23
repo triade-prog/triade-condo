@@ -21,7 +21,9 @@ import {
   abrirChamadoSchema,
   decidirAcessoExcepcionalSchema,
   iniciarImagemChamadoSchema,
+  pedirMudancaSchema,
   responderChamadoSchema,
+  tituloMudanca,
   alterarContatoSchema,
   alterarPessoaSchema,
   alterarUnidadeSchema,
@@ -1784,6 +1786,17 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/chamados", async (c) => {
     const d = await lerCorpo(c, abrirChamadoSchema);
     return c.json(await rpc("plataforma_abrir_chamado", { ...quem(c), p_tipo: d.tipo, p_area: d.area, p_titulo: d.titulo, p_texto: d.texto }), 201);
+  });
+
+  // Pedir mudança à TRÍADE (0286; PI-04, CF-09): o chamado de mudança, com a parte e o valor de
+  // hoje, e as mudanças pedidas que a Configuração mostra ao lado de cada parte.
+  app.get("/v1/condominio/chamados/mudancas", async (c) => c.json({ itens: await rpc("plataforma_mudancas_pedidas", quem(c)) }));
+
+  app.post("/v1/condominio/chamados/mudanca", async (c) => {
+    const d = await lerCorpo(c, pedirMudancaSchema);
+    return c.json(await rpc("plataforma_pedir_mudanca", {
+      ...quem(c), p_parte: d.parte, p_titulo: tituloMudanca(d.parte), p_hoje: d.hoje, p_texto: d.texto,
+    }), 201);
   });
 
   app.get("/v1/condominio/chamados/:id", async (c) => c.json(await rpc("plataforma_chamado", { ...quem(c), p_id: idDaRota(c, "id") })));

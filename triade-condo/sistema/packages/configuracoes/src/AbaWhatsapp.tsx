@@ -196,7 +196,7 @@ export function AbaWhatsapp({ aoSalvar, tecnica }: { aoSalvar: (texto: string) =
         </p>
       )}
       <BlocoTriade>
-        <AjusteTecnico key={`x-${d.config.versao}`} id="anexar" titulo="Mensagens seguintes" parte="Anexar ao mesmo pedido o que chegar por"
+        <AjusteTecnico key={`x-${d.config.versao}`} id="anexar" titulo="Mensagens seguintes" mudanca="ANEXAR" parte="Anexar ao mesmo pedido o que chegar por"
           atual={String(d.config.anexarMinutos)} tecnica={tecnica} recarregar={carga.recarregar}
           opcoes={MINUTOS_ANEXAR.map((m) => ({ valor: String(m), texto: `${m} min` }))}
           ajuda="Depois de abrir o pedido pelo WhatsApp, o que o morador mandar neste tempo, como foto, áudio ou documento, entra no mesmo pedido."

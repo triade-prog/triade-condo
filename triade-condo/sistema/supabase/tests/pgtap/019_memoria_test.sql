@@ -156,7 +156,7 @@ select ok(exists (select 1 from ids, c, jsonb_array_elements(plataforma_linha_do
 select ok(not exists (select 1 from ids, c, jsonb_array_elements(plataforma_linha_do_tempo(fabio, ipe, 'TUDO', null) -> 'eventos') e
                       where e ->> 'titulo' like '%SPDA restrito%'), 'PT-02: o documento restrito não aparece a quem não vê os restritos');
 select ok(exists (select 1 from ids, c, jsonb_array_elements(plataforma_linha_do_tempo(fabio, ipe, 'PESSOAS', null) -> 'eventos') e
-                  where e ->> 'titulo' = 'Síndica Ana assume como síndico'), 'CT-03: a entrada do síndico entra sozinha');
+                  where e ->> 'titulo' = 'Síndica Ana assume a sindicatura'), 'CT-03: a entrada do síndico entra sozinha');
 select is((select jsonb_agg(distinct e ->> 'categoria') from ids, c, jsonb_array_elements(plataforma_linha_do_tempo(fabio, ipe, 'ANOTADO', null) -> 'eventos') e),
   '["ANOTADO"]'::jsonb, 'CT-03: o filtro mostra só o escolhido');
 

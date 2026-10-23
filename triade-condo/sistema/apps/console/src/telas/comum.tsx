@@ -150,12 +150,13 @@ export function AbasLista<T extends string>({ abas, atual, aoMudar, rotulo }: { 
 }
 
 /** A caixa de uma lista: no computador, cartão com o cabeçalho das colunas e o rodapé; no celular, cartões soltos. */
-export function CaixaLista({ titulo, abas, colunas, cabecalho, rodape, children }: {
-  titulo: string; abas?: ReactNode; colunas: string; cabecalho?: string[]; rodape?: ReactNode; children: ReactNode;
+export function CaixaLista({ titulo, abas, filtros, colunas, cabecalho, rodape, children }: {
+  titulo: string; abas?: ReactNode; filtros?: ReactNode; colunas: string; cabecalho?: string[]; rodape?: ReactNode; children: ReactNode;
 }) {
   return (
     <section aria-label={titulo} className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
       {abas}
+      {filtros}
       {cabecalho ? (
         <div aria-hidden="true" className={`hidden gap-4 border-b border-linha bg-fundo px-5 py-2.5 md:grid ${colunas}`}>
           {cabecalho.map((c, i) => <span key={i} className="t-rotulo">{c}</span>)}

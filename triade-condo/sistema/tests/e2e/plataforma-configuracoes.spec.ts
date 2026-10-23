@@ -70,7 +70,7 @@ test.describe("Configurações por tarefa", () => {
     // O fuso é da TRÍADE: no fim da página, com um selo só.
     const bloco = page.getByRole("region", { name: "Feito pela TRÍADE" });
     await expect(bloco).toContainText("Fuso do condomínio");
-    await expect(bloco.getByRole("link", { name: "Pedir mudança" })).toBeVisible();
+    await expect(bloco.getByRole("button", { name: "Pedir mudança" })).toBeVisible();
   });
 
   test("B.1: um Salvar grava as partes da página; se uma falha, as outras ficam e a tela diz qual falta", async ({ page }) => {

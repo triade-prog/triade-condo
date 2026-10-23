@@ -170,7 +170,7 @@ function Semana({ tipo, config, pode, recarregar, oculta }: PropsAba & { tipo: T
 
 function Fuso({ config, tecnica, recarregar, salvo }: PropsAba) {
   return (
-    <AjusteTecnico id="fuso" titulo="Fuso do condomínio" parte="Fuso" atual={config.fuso} tecnica={tecnica} recarregar={recarregar}
+    <AjusteTecnico id="fuso" titulo="Fuso do condomínio" parte="Fuso" mudanca="FUSO" atual={config.fuso} tecnica={tecnica} recarregar={recarregar}
       opcoes={Object.entries(FUSOS).map(([valor, texto]) => ({ valor, texto }))}
       ajuda="Os horários e os prazos seguem este fuso."
       salvar={(fuso, motivo) => chamarApi(naBase("/fuso"), { metodo: "PUT", corpo: { versao: config.versao, fuso, motivo } })}

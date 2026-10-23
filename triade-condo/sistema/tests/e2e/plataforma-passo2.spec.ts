@@ -135,7 +135,7 @@ test.describe("Plataforma do síndico · passo 2", () => {
     await expect(page.getByRole("listitem").filter({ hasText: "Aguardando o morador" })).toContainText("pausa o prazo");
     await expect(page.getByText("Feito pela TRÍADE")).toBeVisible();
     await expect(page.getByRole("button", { name: "Nova etapa" })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Pedir mudança" })).toHaveAttribute("href", /\/suporte\?mudar=Etapas\+dos\+pedidos/);
+    await expect(page.getByRole("button", { name: "Pedir mudança" })).toBeVisible();
     await conferir(page);
     await page.goto(`${PLATAFORMA}/configuracoes/respostas`);
     await page.getByRole("button", { name: "Nova resposta" }).click();
