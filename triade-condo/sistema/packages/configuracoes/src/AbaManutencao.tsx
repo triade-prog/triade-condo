@@ -34,23 +34,23 @@ export function AbaManutencao({ salvo, tecnica }: PropsAba) {
   return (
     <section aria-labelledby="t-etapas-man" className="grid content-start gap-3 lg:max-w-2xl">
       <div className="flex items-center justify-between gap-3">
-        <h2 id="t-etapas-man" className="text-lg font-medium">Etapas da manutenção</h2>
+        <h2 id="t-etapas-man" className="t-titulo-secao font-medium">Etapas da manutenção</h2>
         {tecnica.pode ? <Botao variante="contorno" tamanho="m" onClick={() => setEdicao({ item: null })}><Icone nome="mais" />Nova etapa</Botao> : null}
       </div>
       {tecnica.pode ? null : (
         <FaixaTriade porque="As etapas organizam o acompanhamento da manutenção" parte="ETAPAS_MANUTENCAO"
           valor={etapasAtivas(etapas)} />
       )}
-      <p className="text-sm text-tinta-suave">As situações são fixas. As etapas dizem onde a manutenção está dentro delas, como &ldquo;Aguardando visita&rdquo; ou &ldquo;Aguardando orçamento&rdquo;. Nenhuma é obrigatória.</p>
+      <p className="t-apoio text-tinta-suave">As situações são fixas. As etapas dizem onde a manutenção está dentro delas, como &ldquo;Aguardando visita&rdquo; ou &ldquo;Aguardando orçamento&rdquo;. Nenhuma é obrigatória.</p>
       {SITUACOES.map((sit) => {
         const daSituacao = etapas.filter((e) => e.situacao === sit);
         return (
           <div key={sit} className="grid gap-1">
-            <h3 className="text-xs font-semibold tracking-wide text-tinta-suave uppercase">{SITUACOES_MANUTENCAO[sit]}</h3>
-            {daSituacao.length === 0 ? <p className="rounded-2xl border border-dashed border-linha px-4 py-2.5 text-sm text-tinta-suave">Sem etapas.</p> : (
+            <h3 className="t-rotulo font-semibold tracking-wide text-tinta-suave uppercase">{SITUACOES_MANUTENCAO[sit]}</h3>
+            {daSituacao.length === 0 ? <p className="rounded-2xl border border-dashed border-linha px-4 py-2.5 t-apoio text-tinta-suave">Sem etapas.</p> : (
               <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
                 {daSituacao.map((e) => (
-                  <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
+                  <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 t-texto">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className={e.ativa ? "font-medium" : "text-tinta-suave"}>{e.nome}</span>
                       {e.ativa ? null : <Selo tom="neutro">Desativada</Selo>}

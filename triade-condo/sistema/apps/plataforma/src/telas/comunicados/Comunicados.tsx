@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ASSUNTOS_COMUNICADO, ATALHOS_COMUNICADO } from "@triade/domain";
 import { Botao, Carregando, CampoSelecao, classeBotao, Dialogo, ErroCarregar, Icone, Vazio, type NomeIcone } from "@triade/ui";
-import { useCarregar } from "../sessao.tsx";
+import { useCarregar, useContagens } from "../sessao.tsx";
 import type { ListaComunicados } from "../tipos.ts";
 import { CabecaComunicados, LinhaComunicado } from "./comum.tsx";
 import { AbaNoMural } from "./NoMural.tsx";
@@ -86,6 +86,7 @@ export function Comunicados() {
   const api = new URLSearchParams(consulta(f));
   api.set("filtro", f.aba);
   const lista = useCarregar<ListaComunicados>(`/v1/condominio/comunicados?${api}`);
+  const contagens = useContagens("comunicados", consulta(f));
   const [filtrandoAberto, setFiltrando] = useState(false);
 
   const ir = (m: Partial<Filtros>) => {
@@ -122,11 +123,12 @@ export function Comunicados() {
         <nav aria-label="Situação" className="flex gap-1 overflow-x-auto border-b border-linha md:px-3">
           {(Object.keys(ABAS) as Aba[]).map((a) => {
             const atual = f.aba === a;
+            const n = contagens.n[a];
             return (
               <button key={a} type="button" aria-pressed={atual} onClick={() => ir({ aba: a, atencao: ABA_DO_ATALHO[f.atencao] === a ? f.atencao : "" })}
-                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
                 {ABAS[a]}
-                {atual && dados ? <><span className="sr-only"> ({dados.total})</span><span aria-hidden="true" className="contagem ml-0 bg-violeta-600 text-superficie">{dados.total}</span></> : null}
+                {n !== undefined && (n > 0 || atual) ? <><span className="sr-only"> ({n})</span><span aria-hidden="true" className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{n}</span></> : null}
               </button>
             );
           })}

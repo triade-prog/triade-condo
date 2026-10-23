@@ -73,7 +73,7 @@ function Conferir({ condominio, parte, aoFechar, aoConferir }: {
   return (
     <Dialogo aberto titulo={`Marcar como conferida: ${PARTES_CONFIGURACAO[parte].nome}`} aoFechar={aoFechar}>
       <div className="grid gap-3">
-        <p className="text-sm text-tinta-suave">Diz que a parte foi montada a partir do levantamento. Mudar a parte depois tira a marca.</p>
+        <p className="t-apoio text-tinta-suave">Diz que a parte foi montada a partir do levantamento. Mudar a parte depois tira a marca.</p>
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <CampoAreaTexto id="conf-nota" rotulo="De onde veio" opcional maxLength={500} rows={3} value={nota} onChange={(e) => setNota(e.target.value)}
           ajuda="Fica só no Console, nunca aparece para o cliente." />
@@ -105,8 +105,8 @@ export function AbaConfiguracao({ ficha }: PropsAba) {
   if (aberta) {
     return (
       <div className="grid gap-4">
-        <p className="text-sm">
-          <button type="button" className="inline-flex min-h-8 items-center gap-1 font-medium text-violeta-600 hover:underline" onClick={() => { setAberta_(null); carga.recarregar(); }}>
+        <p className="t-texto">
+          <button type="button" className="elo min-h-8 gap-1" onClick={() => { setAberta_(null); carga.recarregar(); }}>
             <Icone nome="esq" className="h-4 w-4" />Voltar às partes
           </button>
         </p>
@@ -127,7 +127,7 @@ export function AbaConfiguracao({ ficha }: PropsAba) {
       <Cartao id="t-partes" titulo={`As ${d.partes.length} partes`} icone="ajuste" className="lg:row-span-3">
         {recado ? <Aviso tom="ok" papel="status">{recado}</Aviso> : null}
         <div className="grid gap-2">
-          <div className="flex flex-wrap justify-between gap-x-3 text-[13px] text-tinta-suave">
+          <div className="flex flex-wrap justify-between gap-x-3 t-apoio text-tinta-suave">
             <h3 className="font-normal">{depois ? `Configuração · ${d.estagio === "ATIVO" ? "cliente ativo" : "fora da implantação"}` : `${conferidas} de ${d.partes.length} partes conferidas`}</h3>
             {!depois && faltando.length ? <span>falta: {faltando.join(", ")}</span> : null}
           </div>
@@ -145,17 +145,17 @@ export function AbaConfiguracao({ ficha }: PropsAba) {
             return (
               <li key={p.parte} className="grid gap-1.5 border-t border-linha py-3 first:border-t-0">
                 <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <span className="text-[15px] font-medium">{info.nome}</span>
+                  <span className="t-texto font-medium">{info.nome}</span>
                   <span className="flex flex-wrap items-center gap-1">
-                    <button type="button" className="inline-flex min-h-11 items-center gap-1 rounded-xl px-2 text-sm font-medium text-violeta-600 hover:bg-violeta-50"
-                      onClick={() => setAberta(info.aba)} aria-label={`Abrir ${info.nome}`}>Abrir<Icone nome="dir" className="h-4 w-4" /></button>
+                    <Botao variante="discreto" className="gap-1"
+                      onClick={() => setAberta(info.aba)} aria-label={`Abrir ${info.nome}`}>Abrir<Icone nome="dir" className="h-4 w-4" /></Botao>
                     {d.pode.conferir && !p.conferida ? (
                       <Botao variante="contorno" tamanho="m" onClick={() => setConferindo(p.parte)} aria-label={`Marcar ${info.nome} como conferida`}><Icone nome="check" />Conferida</Botao>
                     ) : null}
                   </span>
                 </span>
                 <span className="flex flex-wrap items-center gap-2">
-                  <span className={`inline-flex items-center gap-1 text-[13px] ${falta ? "font-medium text-atencao" : d.emImplantacao ? "text-ok" : "text-tinta-suave"}`}>
+                  <span className={`inline-flex items-center gap-1 t-apoio ${falta ? "font-medium text-atencao" : d.emImplantacao ? "text-ok" : "text-tinta-suave"}`}>
                     <Icone nome={falta ? "relogio" : "check"} className="h-3.5 w-3.5" />{situacaoParte(p, d.emImplantacao)}
                   </span>
                   {info.grupo === "MONTA" && !depois ? null : <SeloGrupo grupo={info.grupo} depois={depois} />}
@@ -182,7 +182,7 @@ export function AbaConfiguracao({ ficha }: PropsAba) {
       <Cartao id="t-sindico" titulo="O que o síndico faz no app" icone="pessoa">
         <span className="justify-self-start"><SeloGrupo grupo="SINDICO" /></span>
         <p className="t-apoio">A TRÍADE não muda nada disto; só acompanha.</p>
-        <ul className="divide-y divide-linha text-sm">
+        <ul className="divide-y divide-linha t-texto">
           <li className="flex justify-between gap-3 py-2.5"><span>Termo do piloto do WhatsApp</span>
             <span className="text-right text-tinta-suave">{d.sindico.termoAceito ? "Aceito" : "Ainda não aceito"}</span></li>
           <li className="flex justify-between gap-3 py-2.5"><span>Revisar a conclusão</span>

@@ -94,10 +94,10 @@ export function Pessoas() {
               <span className="grid min-w-0 gap-0.5">
                 <Link href={`/pessoas/pessoa?id=${p.vinculoId}`} className="font-medium text-tinta after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">{p.nome}</Link>
                 <span className="t-apoio">{papelDe(p)} · desde {formatarData(p.desde)}</span>
-                <span className="text-sm md:hidden">{acessoDe(p)}</span>
+                <span className="t-texto md:hidden">{acessoDe(p)}</span>
                 <span className="flex flex-wrap items-center gap-2 pt-1 md:hidden"><SeloAtendimento p={p} padrao={dados.responsavelPadrao} /></span>
               </span>
-              <span className="text-sm max-md:hidden">{acessoDe(p)}</span>
+              <span className="t-texto max-md:hidden">{acessoDe(p)}</span>
               <span className="max-md:hidden"><SeloAtendimento p={p} padrao={dados.responsavelPadrao} /></span>
               <Icone nome="dir" className="h-5 w-5 text-tinta-suave max-md:col-start-3 max-md:row-start-1" />
             </li>

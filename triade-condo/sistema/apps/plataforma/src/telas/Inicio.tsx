@@ -110,11 +110,11 @@ function MesFechadoCartao({ mes }: { mes: MesFechado }) {
       area={{ resumo: semRetorno ? "Nenhum retorno no mês" : `${mostrarPorcentagem(r.porcentagem)} dos retornos no prazo` }}>
       <ul className="divide-y divide-linha">
         <li className="grid gap-0.5 py-3">
-          <span><strong className="text-2xl font-semibold tracking-tight">{mostrarPorcentagem(r.porcentagem)}</strong> {semRetorno ? "de retornos no prazo: nenhum retorno no mês" : "dos retornos no prazo"}</span>
+          <span><strong className="t-titulo-ficha font-semibold tracking-tight">{mostrarPorcentagem(r.porcentagem)}</strong> {semRetorno ? "de retornos no prazo: nenhum retorno no mês" : "dos retornos no prazo"}</span>
           {r.total ? <span className="t-apoio">{r.noPrazo} de {r.total}. {nomeDoMesAnterior(mes.mes).replace(/^./, (x) => x.toUpperCase())}: {mostrarPorcentagem(mes.porcentagemAnterior)}.</span> : null}
         </li>
-        <li className="py-3"><strong className="text-2xl font-semibold tracking-tight">{mes.concluidos}</strong> {mes.concluidos === 1 ? "pedido concluído" : "pedidos concluídos"} · <strong>{mes.reabertos}</strong> {mes.reabertos === 1 ? "reaberto" : "reabertos"}</li>
-        <li className="py-3">Primeiro retorno em <strong className="text-2xl font-semibold tracking-tight">{mostrarHoras(mes.primeiroRetornoHoras)}</strong>{mes.primeiroRetornoHoras === undefined || mes.primeiroRetornoHoras === null ? "" : ", em média"}</li>
+        <li className="py-3"><strong className="t-titulo-ficha font-semibold tracking-tight">{mes.concluidos}</strong> {mes.concluidos === 1 ? "pedido concluído" : "pedidos concluídos"} · <strong>{mes.reabertos}</strong> {mes.reabertos === 1 ? "reaberto" : "reabertos"}</li>
+        <li className="py-3">Primeiro retorno em <strong className="t-titulo-ficha font-semibold tracking-tight">{mostrarHoras(mes.primeiroRetornoHoras)}</strong>{mes.primeiroRetornoHoras === undefined || mes.primeiroRetornoHoras === null ? "" : ", em média"}</li>
       </ul>
       <p className="t-apoio">Os números do mês fechado não mudam com o dia.</p>
     </CartaoInicio>
@@ -152,7 +152,7 @@ function Vencimentos({ linhas, mais }: { linhas: LinhaInicio[]; mais: { texto: s
       area={{ resumo: linhas.length ? resumoDasLinhas(linhas) : "Nada vencendo", quantos: linhas.length }}>
       {linhas.length ? <LinhasInicio linhas={linhas} /> : <p className="t-apoio">Nenhum documento, contrato ou item do prontuário vencendo nos próximos 60 dias.</p>}
       {mais ? (
-        <Link href={mais.href} className="inline-flex items-center gap-1 border-t border-linha pt-3 text-sm font-medium text-violeta-600 hover:underline">
+        <Link href={mais.href} className="inline-flex items-center gap-1 border-t border-linha pt-3 t-texto font-medium text-violeta-600 hover:underline">
           {mais.texto}<Icone nome="dir" className="h-4 w-4" />
         </Link>
       ) : null}
@@ -206,9 +206,9 @@ export function Inicio() {
         <span aria-hidden="true" className="pointer-events-none absolute top-5 right-16 h-44 w-6 rotate-[26deg] rounded-full bg-[image:var(--grad-trilha)] shadow-[var(--shadow-trilha)] max-md:top-3.5 max-md:right-6 max-md:h-24 max-md:w-4" />
         <div className="relative flex flex-wrap items-end justify-between gap-6 md:pr-52">
           <div className="grid gap-2">
-            <p className="text-xs font-medium tracking-[.12em] text-violeta-100 uppercase">{HOJE.format(new Date())}</p>
+            <p className="t-rotulo font-medium tracking-[.12em] text-violeta-100 uppercase">{HOJE.format(new Date())}</p>
             <h1 className="t-destaque text-4xl leading-tight max-md:text-[28px]">{saudacao()}, {primeiroNome}</h1>
-            <p className="flex items-center gap-1.5 text-sm text-violeta-100">
+            <p className="flex items-center gap-1.5 t-texto text-violeta-100">
               <Icone nome="pin" className="h-4 w-4" />
               {[c.nome, c.cenario ? CENARIOS[c.cenario as keyof typeof CENARIOS] ?? c.cenario : null, c.cidade, c.uf].filter(Boolean).join(" · ")}
             </p>

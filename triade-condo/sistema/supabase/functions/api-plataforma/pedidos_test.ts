@@ -162,3 +162,22 @@ Deno.test("os códigos do domínio são os mesmos do banco", async () => {
   assertEquals(lista(/meio +text check \(meio in \(([^)]*)\)/), Object.keys(MEIOS_RETORNO));
   assertEquals(lista(/tipo +text not null check \(tipo in \(('FORNECEDOR'[^)]*)\)/), Object.keys(TIPOS_PENDENCIA));
 });
+
+Deno.test("AT-01 (D4.20): registrar com as mensagens do WhatsApp junta a conversa na mesma chamada", async () => {
+  let juntar = true;
+  const m = montar({ plataforma_triar_whatsapp: () => (juntar ? { tratadas: 2 } : erroBanco("TC409")) });
+  const cookie = await entrar(m);
+  const r = await m.pedir("/v1/condominio/pedidos", { corpo: { ...NOVO, mensagemId: ITEM }, cookie });
+  assertEquals(r.status, 201);
+  assertEquals((await r.json()).juntou, true);
+  assertEquals(chamada(m, "plataforma_triar_whatsapp"), {
+    p_pessoa: ANA, p_condominio: AURORA, p_mensagem: ITEM, p_acao: "PEDIDO", p_motivo: null, p_pedido: PEDIDO, p_contato: null,
+  });
+  juntar = false;
+  const s = await m.pedir("/v1/condominio/pedidos", { corpo: { ...NOVO, mensagemId: ITEM }, cookie });
+  assertEquals([s.status, (await s.json()).juntou], [201, false]);
+  const sem = montar();
+  const semCookie = await entrar(sem);
+  assertEquals("juntou" in (await (await sem.pedir("/v1/condominio/pedidos", { corpo: NOVO, cookie: semCookie })).json()), false);
+  assertEquals(chamada(sem, "plataforma_triar_whatsapp"), undefined);
+});

@@ -153,6 +153,13 @@ export const concluirManutencaoSchema = z.object({
   conclusao: z.string().trim().min(10).max(2000),
   realizadaEm: data,
   fecharProvidencias: z.boolean().default(false),
+  /** A foto do depois (D4.22): a conclusão já abre o envio de cada uma. */
+  fotos: z.array(z.object({
+    nome: z.string().trim().min(1).max(200),
+    descricao: z.string().trim().max(300).nullable().optional().transform((v) => (v ? v : null)),
+    tipo: z.string().max(100),
+    tamanho: z.number().int().min(1),
+  })).max(10).default([]),
 });
 export const cancelarManutencaoSchema = z.object({ versao, motivo });
 export const reabrirManutencaoSchema = z.object({ versao, motivo });

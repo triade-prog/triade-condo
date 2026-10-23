@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ATALHOS_MANUTENCAO, FILTROS_MANUTENCAO, TIPOS_MANUTENCAO } from "@triade/domain";
 import { Aviso, Botao, Carregando, CampoSelecao, Dialogo, ErroCarregar, Icone, Vazio, type NomeIcone, type Tom } from "@triade/ui";
-import { useCarregar, usePlataforma } from "../sessao.tsx";
+import { useCarregar, useContagens, usePlataforma } from "../sessao.tsx";
 import type { ListaManutencoes, OpcoesManutencao, Recado } from "../tipos.ts";
 import { LinhaManutencao, PartesManutencao } from "./comum.tsx";
 import { FormManutencao } from "./FormManutencao.tsx";
@@ -65,6 +65,7 @@ export function Manutencoes() {
   };
   const q = consulta(f);
   const lista = useCarregar<ListaManutencoes>(`/v1/condominio/manutencao${q ? `?${q}` : ""}`);
+  const contagens = useContagens("manutencao", q);
   const opcoes = useCarregar<OpcoesManutencao>("/v1/condominio/manutencao/opcoes");
   const [nova, setNova] = useState(false);
   const [visita, setVisita] = useState<string | null>(null);
@@ -114,11 +115,12 @@ export function Manutencoes() {
         <nav aria-label="Situação" className="flex gap-1 overflow-x-auto border-b border-linha md:px-3">
           {Object.entries(FILTROS_MANUTENCAO).map(([valor, nome]) => {
             const atual = f.situacao === valor;
+            const n = contagens.n[valor];
             return (
               <button key={valor} type="button" aria-pressed={atual} onClick={() => ir({ situacao: valor })}
-                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
                 {nome}
-                {atual && dados ? <span className="contagem ml-0 bg-violeta-600 text-superficie">{dados.total}</span> : null}
+                {n !== undefined && (n > 0 || atual) ? <span className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{n}</span> : null}
               </button>
             );
           })}
@@ -180,6 +182,7 @@ export function Manutencoes() {
             setNova(false);
             setRecado({ tom: "ok", texto: t });
             lista.recarregar();
+            contagens.recarregar();
             atualizar();
             if (marcar) setVisita(id); else router.push(`/manutencao/manutencao?id=${id}`);
           }} />

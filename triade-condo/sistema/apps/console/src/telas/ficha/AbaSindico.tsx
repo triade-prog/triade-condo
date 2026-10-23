@@ -29,11 +29,11 @@ function Trocas({ condominio }: { condominio: string }) {
   return (
     <section aria-labelledby="titulo-trocas" className="grid gap-2 border-t border-linha pt-3">
       <h3 id="titulo-trocas" className="t-rotulo">Trocas de síndico</h3>
-      <ul className="divide-y divide-linha text-sm">
+      <ul className="divide-y divide-linha t-texto">
         {carga.dados.trocas.map((t) => (
           <li key={t.id} className="grid gap-0.5 py-2.5">
             <span><span className="font-medium">{t.anterior}</span> → <span className="font-medium">{t.novo}</span> · {formatarData(t.feitaEm)} por {t.feitaPor}</span>
-            <span className="text-xs text-tinta-suave">Pedido de {t.pedidoPor} por {CANAIS_SUPORTE[t.canal] ?? t.canal}. Conferido: {t.conferido.join("; ")}.</span>
+            <span className="t-apoio text-tinta-suave">Pedido de {t.pedidoPor} por {CANAIS_SUPORTE[t.canal] ?? t.canal}. Conferido: {t.conferido.join("; ")}.</span>
           </li>
         ))}
       </ul>
@@ -114,7 +114,7 @@ export function CartaoSindico({ ficha, pode, recarregar, avisar, pedido }: Props
             erro={campos.includes("nome") ? "Escreva o nome da pessoa." : null} />
           <CampoTexto id="s-email" rotulo="E-mail" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
             erro={campos.includes("email") ? "Confira o e-mail." : null} />
-          <p className="text-sm text-tinta-suave">
+          <p className="t-apoio text-tinta-suave">
             A pessoa recebe um e-mail para criar a própria senha. O link só pode ser usado uma vez. Se ela já tiver conta, o condomínio aparece no próximo acesso.
           </p>
           <div className="flex justify-end gap-2">

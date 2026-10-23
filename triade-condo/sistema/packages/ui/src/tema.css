@@ -154,6 +154,17 @@ body {
   .bt-claro:hover { background: #fff; }
   .bt-claro:focus-visible { box-shadow: 0 0 0 2px var(--color-violeta-800), 0 0 0 4px var(--color-laranja-200); }
 
+  /* Botão que lê como link (ver, abrir, desfazer): texto violeta que sublinha ao passar (DC15). */
+  .elo { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; color: var(--color-violeta-600); font-weight: 500; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+  .elo:hover { text-decoration: underline; }
+  .elo:focus-visible { outline: 0; border-radius: 6px; box-shadow: var(--anel); }
+  /* O título que abre o item: a linha ou o cartão inteiro responde ao toque. */
+  .elo-linha { color: var(--color-tinta); font-weight: 500; text-align: left; cursor: pointer; }
+  .elo-linha::after { content: ""; position: absolute; inset: 0; }
+  .elo-linha:hover { color: var(--color-violeta-600); }
+  .elo-linha:focus-visible { outline: 0; }
+  .elo-linha:focus-visible::after { border-radius: 14px; box-shadow: var(--anel); }
+
   .bt:disabled, .bt[aria-disabled="true"] {
     background: var(--color-superficie-2);
     color: #8a8296;
@@ -254,6 +265,9 @@ body {
   }
   .campo:hover { border-color: #83758f; }
   .campo:focus-visible { outline: 0; border-color: var(--color-violeta-600); box-shadow: 0 0 0 4px #5808cc1f; background: #fff; }
+  /* O campo que mudou e ainda não foi salvo (Configurações, D4.15): a borda no laranja do acento. */
+  .campo[data-mudou]:not([aria-invalid="true"]) { border: 2px solid var(--color-acento); }
+  input[type="checkbox"][data-mudou], input[type="radio"][data-mudou] { outline: 2px solid var(--color-acento); outline-offset: 2px; }
   .campo[aria-invalid="true"] { border-color: var(--color-erro); box-shadow: 0 0 0 4px #bc14501a; }
   .campo:disabled { background: var(--color-superficie-2); border-color: transparent; color: #8a8296; }
 
@@ -338,8 +352,10 @@ body {
   .t-titulo-secao { font-size: 18px; font-weight: 600; line-height: 1.35; }
   .t-titulo-cartao { font-size: 15px; font-weight: 600; }
   .t-texto { font-size: 15px; font-weight: 400; }
-  .t-apoio { font-size: 13px; color: var(--color-tinta-suave); }
-  .t-rotulo { font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--color-tinta-suave); }
+  .t-apoio { font-size: 13px; }
+  .t-rotulo { font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; }
+  /* A cor suave fica sem peso: a cor de uma peça do tema (selo, chip, botão) ou da tela vale sobre ela. */
+  :where(.t-apoio, .t-rotulo) { color: var(--color-tinta-suave); }
   .t-codigo { font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
   .t-destaque { font-family: var(--font-destaque); font-style: italic; font-weight: 400; }
 

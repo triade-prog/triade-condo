@@ -23,16 +23,16 @@ const COLUNAS = "md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1.2fr)_auto]";
 function EscolhaFuncoes({ valor, aoMudar, erro }: { valor: string[]; aoMudar: (f: string[]) => void; erro?: boolean }) {
   return (
     <fieldset className="grid gap-2" aria-describedby={erro ? "funcoes-erro" : undefined}>
-      <legend className="mb-1 text-[13px] font-medium">Funções</legend>
+      <legend className="mb-1 t-apoio font-medium">Funções</legend>
       {(Object.keys(FUNCOES_CONSOLE) as FuncaoConsole[]).map((f) => (
-        <label key={f} className="flex min-h-9 items-center gap-2 text-sm">
+        <label key={f} className="flex min-h-9 items-center gap-2 t-texto">
           <input type="checkbox" className="h-4 w-4 accent-violeta-600" checked={valor.includes(f)}
             onChange={(e) => aoMudar(e.target.checked ? [...valor, f] : valor.filter((x) => x !== f))} />
           {FUNCOES_CONSOLE[f]}
         </label>
       ))}
-      {erro ? <span id="funcoes-erro" className="text-xs text-erro">Escolha ao menos uma função.</span> : null}
-      <p className="text-xs text-tinta-suave">Cada função só age nos clientes atribuídos à pessoa.</p>
+      {erro ? <span id="funcoes-erro" className="t-apoio text-erro">Escolha ao menos uma função.</span> : null}
+      <p className="t-apoio text-tinta-suave">Cada função só age nos clientes atribuídos à pessoa.</p>
     </fieldset>
   );
 }
@@ -133,7 +133,7 @@ export function Equipe() {
           <CampoTexto id="m-nome" rotulo="Nome" value={nome} onChange={(e) => setNome(e.target.value)} erro={campos.includes("nome") ? "Escreva o nome." : null} />
           <CampoTexto id="m-email" rotulo="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} erro={campos.includes("email") ? "Confira o e-mail." : null} />
           <EscolhaFuncoes valor={funcoes} aoMudar={setFuncoes} erro={campos.includes("funcoes")} />
-          <p className="text-sm text-tinta-suave">A pessoa recebe um e-mail para criar a senha e, no primeiro acesso, cadastra o autenticador.</p>
+          <p className="t-apoio text-tinta-suave">A pessoa recebe um e-mail para criar a senha e, no primeiro acesso, cadastra o autenticador.</p>
           <div className="flex justify-end gap-2">
             <Botao variante="contorno" onClick={() => setConvidando(false)}>Cancelar</Botao>
             <Botao type="submit">Enviar convite</Botao>

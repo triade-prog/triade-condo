@@ -163,3 +163,24 @@ Deno.test("MP-07, PT-07: a foto da manutenção vai para o armazenamento dela e 
   assertEquals((await v.json()).situacao, "LIBERADO");
   assertEquals(m.pedidos.objetos.size, 0);
 });
+
+Deno.test("MP-02 (D4.22): concluir com a foto do depois abre o envio na mesma chamada", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  const base = `/v1/condominio/manutencao/${MANUTENCAO}`;
+  const corpo = { versao: 3, conclusao: "Rolamento trocado e testado", realizadaEm: "2026-10-17" };
+  const sem = await (await m.pedir(`${base}/concluir`, { corpo, cookie })).json();
+  assertEquals(sem, { versao: 4 });
+  assertEquals(chamada(m, "plataforma_iniciar_arquivo_manutencao"), undefined);
+  const r = await m.pedir(`${base}/concluir`, { corpo: { ...corpo, fotos: [{ nome: "depois.jpg", descricao: "Foto do depois", tipo: "image/jpeg", tamanho: 14 }] }, cookie });
+  assertEquals(r.status, 200);
+  assertEquals(await r.json(), {
+    versao: 4,
+    envios: [{ nome: "depois.jpg", arquivoId: ARQUIVO, envio: { url: `https://armazenamento.exemplo/envio/${CAMINHO}?token=t`, metodo: "PUT", tipo: "image/jpeg" } }],
+  });
+  assertEquals(chamada(m, "plataforma_iniciar_arquivo_manutencao"), {
+    p_pessoa: ANA, p_condominio: AURORA, p_id: MANUTENCAO, p_item: null, p_nome: "depois.jpg", p_descricao: "Foto do depois", p_tipo: "image/jpeg", p_tamanho: 14,
+  });
+  const ruim = await m.pedir(`${base}/concluir`, { corpo: { ...corpo, fotos: [{ nome: "", tipo: "image/jpeg", tamanho: 0 }] }, cookie });
+  assertEquals((await erro(ruim)).codigo, "VALIDATION_ERROR");
+});

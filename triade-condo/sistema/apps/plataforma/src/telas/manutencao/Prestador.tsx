@@ -26,7 +26,7 @@ export function Prestador() {
   const [recado, setRecado] = useState<Recado>(null);
   const [falha, setFalha] = useState<ErroApi | null>(null);
   const voltar = (
-    <Link href="/manutencao/prestadores" className="inline-flex items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
+    <Link href="/manutencao/prestadores" className="inline-flex items-center gap-1 t-texto font-medium text-violeta-600 hover:underline">
       <Icone nome="esq" className="h-4 w-4" />Voltar aos prestadores
     </Link>
   );
@@ -59,7 +59,7 @@ export function Prestador() {
           <MaisAcoes itens={podeEditar ? [{ texto: "Arquivar", icone: "sair", acao: () => void arquivar(true), perigo: true }] : []} />
         </div>
         <div className="flex items-center gap-5 max-md:gap-4">
-          <Iniciais nome={p.nome} className="h-16 w-16 shrink-0 text-lg max-md:h-14 max-md:w-14" />
+          <Iniciais nome={p.nome} className="h-16 w-16 shrink-0 t-titulo-secao max-md:h-14 max-md:w-14" />
           <div className="grid min-w-0 flex-1 gap-2">
             <h1 className="t-titulo-ficha [overflow-wrap:anywhere]">{p.nome}</h1>
             <p className="flex flex-wrap items-center gap-2">
@@ -129,7 +129,7 @@ export function Prestador() {
             </ul>
           )}
           {manutencoes.length ? (
-            <Link href={`/manutencao?prestador=${p.id}&situacao=TODAS`} className="inline-flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline">
+            <Link href={`/manutencao?prestador=${p.id}&situacao=TODAS`} className="inline-flex items-center gap-1 justify-self-start t-texto font-medium text-violeta-600 hover:underline">
               Ver todas na lista de manutenções<Icone nome="dir" className="h-4 w-4" />
             </Link>
           ) : null}

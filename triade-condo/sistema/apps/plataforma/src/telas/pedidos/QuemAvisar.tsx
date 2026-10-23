@@ -141,7 +141,7 @@ function Linha({ marca, titulo, texto, extra, acao, apagada }: {
   marca: React.ReactNode; titulo: React.ReactNode; texto: React.ReactNode; extra?: React.ReactNode; acao?: React.ReactNode; apagada?: boolean;
 }) {
   return (
-    <li className={`flex items-start gap-3 py-3 text-sm ${apagada ? "text-tinta-suave" : ""}`}>
+    <li className={`flex items-start gap-3 py-3 t-texto ${apagada ? "text-tinta-suave" : ""}`}>
       <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">{marca}</span>
       <span className="min-w-0 flex-1">
         <span className="block font-medium">{titulo}</span>
@@ -170,7 +170,7 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
   const [verMensagem, setVerMensagem] = useState(false);
   const [editandoPrestador, setEditandoPrestador] = useState(false);
   const [editandoMoradores, setEditandoMoradores] = useState(false);
-  if (!previa) return <p className="text-sm text-tinta-suave">Conferindo quem avisar…</p>;
+  if (!previa) return <p className="t-apoio text-tinta-suave">Conferindo quem avisar…</p>;
 
   const p = previa;
   const resumo = contarAvisos(p, escolha);
@@ -212,11 +212,11 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
           titulo={<label htmlFor="qa-quem-pediu">{qp.nome}, quem pediu</label>}
           texto={<span id="qa-quem-pediu-texto">
             Protocolo {qp.meio === "WHATSAPP" ? "pelo WhatsApp do condomínio" : "por e-mail"} ·{" "}
-            <button type="button" className="text-violeta-600 hover:underline" aria-expanded={verMensagem} onClick={() => setVerMensagem(!verMensagem)}>
+            <button type="button" className="elo" aria-expanded={verMensagem} onClick={() => setVerMensagem(!verMensagem)}>
               {verMensagem ? "esconder mensagem" : "ver mensagem"}
             </button>
           </span>}
-          extra={verMensagem && qp.mensagem ? <span className="mt-2 block rounded-xl bg-superficie-2 p-3 text-xs whitespace-pre-line">{qp.mensagem}</span> : null}
+          extra={verMensagem && qp.mensagem ? <span className="mt-2 block rounded-xl bg-superficie-2 p-3 t-apoio whitespace-pre-line">{qp.mensagem}</span> : null}
         />
       ) : (
         <Linha apagada marca={<input type="checkbox" className={CAIXA} disabled aria-label="Quem pediu" />} titulo="Quem pediu"
@@ -251,23 +251,23 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
               {comLink
                 ? `${prestador.meioLink === "WHATSAPP" ? "WhatsApp do condomínio" : "E-mail"}${p.prestador.escolhido?.paraLink ? ` para ${p.prestador.escolhido.paraLink}` : ""} · link do serviço`
                 : prestador.meio === "WHATSAPP" ? `WhatsApp do condomínio para ${prestador.para ?? ""}` : `E-mail para ${prestador.para ?? ""}`} ·{" "}
-              <button type="button" className="text-violeta-600 hover:underline" aria-expanded={editandoPrestador} onClick={() => setEditandoPrestador(!editandoPrestador)}>
+              <button type="button" className="elo" aria-expanded={editandoPrestador} onClick={() => setEditandoPrestador(!editandoPrestador)}>
                 {editandoPrestador ? "fechar mensagem" : "ver e editar mensagem"}
               </button>
             </>}
             extra={<>
               {editandoPrestador && !comLink ? (
                 <span className="mt-2 grid gap-1.5">
-                  <span className="block text-xs text-tinta-suave">{p.prestador.cabecalho}</span>
+                  <span className="block t-apoio text-tinta-suave">{p.prestador.cabecalho}</span>
                   <CampoAreaTexto id="qa-texto-prestador" rotulo="Mensagem ao prestador" rows={6} maxLength={1500} value={escolha.prestador!.texto}
                     onChange={(ev) => mudar({ ...escolha, prestador: { ...escolha.prestador!, texto: ev.target.value, editado: true } })}
                     erro={p.prestador.textoComDadoDeMorador ? "Tire o nome, o telefone ou o e-mail de morador: não vão para o prestador." : null}
                     ajuda="Sem nome, telefone nem unidade de quem pediu." />
-                  <span className="block text-xs text-tinta-suave">{p.prestador.rodape}</span>
+                  <span className="block t-apoio text-tinta-suave">{p.prestador.rodape}</span>
                 </span>
               ) : null}
               {editandoPrestador && comLink && p.prestador.escolhido?.id === prestador.id ? (
-                <span className="mt-2 block rounded-xl bg-superficie-2 p-3 text-xs whitespace-pre-line">
+                <span className="mt-2 block rounded-xl bg-superficie-2 p-3 t-apoio whitespace-pre-line">
                   {p.prestador.link.mensagem.replace("[prestador]", prestador.nome).replace("[prazo]", `o prazo (${escolha.prestador!.link.responderHoras} horas depois de a mensagem sair)`).replace("[link]", "o link do serviço")}
                 </span>
               ) : null}
@@ -286,13 +286,13 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
       {escolhendo && p.prestador.disponivel ? (
         <li className="grid gap-2 rounded-[14px] bg-superficie px-3 py-3">
           <CampoTexto id="qa-busca-prestador" rotulo="Escolher o prestador" value={busca} onChange={(ev) => setBusca(ev.target.value)} placeholder="Nome ou serviço" />
-          {lista.length === 0 ? <p className="text-sm text-tinta-suave">{p.prestadores.length ? "Nenhum prestador com esse nome." : "Nenhum prestador no cadastro ainda."}</p> : (
+          {lista.length === 0 ? <p className="t-apoio text-tinta-suave">{p.prestadores.length ? "Nenhum prestador com esse nome." : "Nenhum prestador no cadastro ainda."}</p> : (
             <ul className="grid max-h-56 gap-1 overflow-y-auto">
               {lista.map((x) => (
-                <li key={x.id} className="flex items-center justify-between gap-2 rounded-xl bg-superficie px-3 py-2 text-sm">
+                <li key={x.id} className="flex items-center justify-between gap-2 rounded-xl bg-superficie px-3 py-2 t-texto">
                   <span className="min-w-0">
                     <span className="block font-medium">{x.nome}</span>
-                    <span className="block text-xs text-tinta-suave">
+                    <span className="block t-apoio text-tinta-suave">
                       {[x.servico, x.contratoAte ? `contrato até ${x.contratoAte.slice(5, 7)}/${x.contratoAte.slice(0, 4)}` : null, x.reserva ? `reserva: ${x.reserva}` : null,
                         x.meio === "WHATSAPP" ? (x.temEmail ? "WhatsApp e e-mail" : "WhatsApp") : x.meio === "EMAIL" ? "só e-mail"
                           : x.temCelular ? "celular, mas o WhatsApp do condomínio não está conectado" : "sem celular nem e-mail no cadastro"].filter(Boolean).join(" · ")}
@@ -304,7 +304,7 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
               ))}
             </ul>
           )}
-          <p className="text-xs text-tinta-suave">Só prestadores do cadastro, sem arquivar. Sem celular nem e-mail, o prestador não pode ser avisado por aqui.</p>
+          <p className="t-apoio text-tinta-suave">Só prestadores do cadastro, sem arquivar. Sem celular nem e-mail, o prestador não pode ser avisado por aqui.</p>
         </li>
       ) : null}
       {p.moradores.disponivel ? (
@@ -313,7 +313,7 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
             titulo={nomePublico}
             texto={<>
               {unidadesDoPublico} {unidadesDoPublico === 1 ? "unidade" : "unidades"} · comunicado por e-mail{p.moradores.whatsapp ? `${moradores.publico === "TODOS" ? "," : " e"} pelo WhatsApp de quem aceitou` : ""}{moradores.publico === "TODOS" ? " e no mural" : ""} ·{" "}
-              <button type="button" className="text-violeta-600 hover:underline" aria-expanded={editandoMoradores} onClick={() => setEditandoMoradores(!editandoMoradores)}>
+              <button type="button" className="elo" aria-expanded={editandoMoradores} onClick={() => setEditandoMoradores(!editandoMoradores)}>
                 {editandoMoradores ? "fechar comunicado" : "ver e editar comunicado"}
               </button>
             </>}
@@ -325,10 +325,10 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
                   <fieldset className="grid gap-2">
                     <legend className="sr-only">Blocos</legend>
                     {p.blocos.map((b) => (
-                      <label key={b.id} className="flex items-center gap-2 text-sm">
+                      <label key={b.id} className="flex items-center gap-2 t-texto">
                         <input type="checkbox" className={CAIXA} checked={moradores.blocos.includes(b.id)}
                           onChange={(ev) => mudar({ ...escolha, moradores: { ...moradores, blocos: ev.target.checked ? [...moradores.blocos, b.id] : moradores.blocos.filter((y) => y !== b.id) } })} />
-                        {b.nome} <span className="text-xs text-tinta-suave">· {b.unidades} {b.unidades === 1 ? "unidade" : "unidades"}</span>
+                        {b.nome} <span className="t-apoio text-tinta-suave">· {b.unidades} {b.unidades === 1 ? "unidade" : "unidades"}</span>
                       </label>
                     ))}
                   </fieldset>
@@ -337,7 +337,7 @@ export function BlocoQuemAvisar({ previa, escolha, mudar, opcoes, faltas = [] }:
                   <fieldset className="grid max-h-44 gap-2 overflow-y-auto rounded-xl border border-linha p-2">
                     <legend className="sr-only">Unidades</legend>
                     {opcoes.unidades.map((u) => (
-                      <label key={u.id} className="flex items-center gap-2 text-sm">
+                      <label key={u.id} className="flex items-center gap-2 t-texto">
                         <input type="checkbox" className={CAIXA} checked={moradores.unidades.includes(u.id)}
                           onChange={(ev) => mudar({ ...escolha, moradores: { ...moradores, unidades: ev.target.checked ? [...moradores.unidades, u.id] : moradores.unidades.filter((y) => y !== u.id) } })} />
                         {u.nome}
@@ -396,18 +396,18 @@ function BlocoLink({ p, escolha, mudar, faltas }: { p: Previa; escolha: EscolhaA
   const mudarLink = (m: Partial<EscolhaLink>) => mudar({ ...escolha, prestador: { ...e, link: { ...l, ...m } } });
   if (!p.prestador.link.disponivel) {
     return p.prestador.link.motivo === "SEM_PERMISSAO"
-      ? <span className="mt-2 block text-xs text-tinta-suave">O link do serviço fica com quem cuida da manutenção; daqui, o prestador recebe só a mensagem.</span>
+      ? <span className="mt-2 block t-apoio text-tinta-suave">O link do serviço fica com quem cuida da manutenção; daqui, o prestador recebe só a mensagem.</span>
       : null;
   }
-  if (!x?.meioLink) return <span className="mt-2 block text-xs text-tinta-suave">Este prestador não recebe o link por aqui: só a mensagem.</span>;
+  if (!x?.meioLink) return <span className="mt-2 block t-apoio text-tinta-suave">Este prestador não recebe o link por aqui: só a mensagem.</span>;
   return (
     <span className="mt-2 grid gap-2 rounded-xl border border-linha p-3">
-      <label className="flex items-center gap-2 text-sm font-medium">
+      <label className="flex items-center gap-2 t-texto font-medium">
         <input id="qa-link" type="checkbox" className={CAIXA} checked={l.marcado} onChange={(ev) => mudarLink({ marcado: ev.target.checked })}
           aria-describedby="qa-link-ajuda" />
         Mandar o link do serviço
       </label>
-      <span id="qa-link-ajuda" className="text-xs text-tinta-suave">
+      <span id="qa-link-ajuda" className="t-apoio text-tinta-suave">
         {l.marcado
           ? "Com o link, o prestador confirma ou recusa, avisa a chegada e o impedimento. Nasce a manutenção corretiva ligada a este pedido."
           : "Sem o link, o prestador recebe só a mensagem e nenhuma manutenção nasce. O link pode ir depois, pela manutenção."}
@@ -432,17 +432,17 @@ function BlocoLink({ p, escolha, mudar, faltas }: { p: Previa; escolha: EscolhaA
               aoMudar={(v) => mudarLink({ responderHoras: Number(v) as EscolhaLink["responderHoras"], horasEscolhidas: true })}
               opcoes={HORAS.map((h) => ({ valor: String(h), texto: `${h} horas` }))} />
           </span>
-          <span className="text-xs text-tinta-suave">Urgente vem com 4 horas; os outros, com 24. O prazo começa quando a mensagem sai.</span>
+          <span className="t-apoio text-tinta-suave">Urgente vem com 4 horas; os outros, com 24. O prazo começa quando a mensagem sai.</span>
           {reserva ? (
-            <label className="flex items-start gap-2 text-sm">
+            <label className="flex items-start gap-2 t-texto">
               <input id="qa-reserva" type="checkbox" className={`${CAIXA} mt-0.5`} checked={l.reserva} onChange={(ev) => mudarLink({ reserva: ev.target.checked })} />
               <span>
                 <span className="block font-medium">Se não responder, passar para {reserva.nome}</span>
-                <span className="block text-xs text-tinta-suave">A reserva do cadastro. Sem resposta em {l.responderHoras} horas, ou se recusar, o serviço passa sozinho, com o mesmo texto.</span>
+                <span className="block t-apoio text-tinta-suave">A reserva do cadastro. Sem resposta em {l.responderHoras} horas, ou se recusar, o serviço passa sozinho, com o mesmo texto.</span>
               </span>
             </label>
           ) : (
-            <span className="text-xs text-tinta-suave">Sem reserva no cadastro: sem resposta no prazo, quem cuida da manutenção é avisado no sino.</span>
+            <span className="t-apoio text-tinta-suave">Sem reserva no cadastro: sem resposta no prazo, quem cuida da manutenção é avisado no sino.</span>
           )}
         </>
       ) : null}

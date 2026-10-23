@@ -92,10 +92,14 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
 
   test("B.1: se juntar falhar, o pedido fica e dá para juntar de novo", async ({ page, isMobile }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
+    // A junção vai no mesmo registro (D4.20); aqui ela não acontece, e o pedido fica sem as mensagens.
     let falhar = true;
-    await page.route(/\/whatsapp\/mensagens\/[^/]+\/triar$/, (route) => (falhar
-      ? (falhar = false, route.fulfill({ status: 503, json: { erro: { codigo: "UNAVAILABLE", mensagem: "Fora do ar" } } }))
-      : route.fallback()));
+    await page.route(/\/v1\/condominio\/pedidos$/, (route) => {
+      if (route.request().method() !== "POST" || !falhar) return route.fallback();
+      falhar = false;
+      const { mensagemId: _, ...resto } = route.request().postDataJSON() as Record<string, unknown>;
+      return route.fallback({ postData: JSON.stringify(resto) });
+    });
     await page.goto(`${PLATAFORMA}/whatsapp`);
     await page.getByRole("button", { name: "Abrir a conversa de +55 61 95555-4444" }).click();
     await page.getByRole("button", { name: "Registrar pedido com esta mensagem" }).click();

@@ -51,16 +51,16 @@ function Conversa({ mensagens, condominio }: { mensagens: Mensagem[]; condominio
   let dia = "";
   for (const m of mensagens) {
     const d = formatarData(m.criadoEm).slice(0, 5);
-    if (d !== dia) linhas.push(<li key={`dia-${m.id}`} className="justify-self-center rounded-full bg-superficie-2 px-3 py-0.5 text-xs text-tinta-suave">{d}</li>);
+    if (d !== dia) linhas.push(<li key={`dia-${m.id}`} className="justify-self-center rounded-full bg-superficie-2 px-3 py-0.5 t-apoio text-tinta-suave">{d}</li>);
     dia = d;
     const triade = m.lado === "TRIADE";
     linhas.push(
-      <li key={m.id} className={`grid max-w-[min(560px,85%)] gap-1.5 border px-3.5 py-2.5 text-sm ${m.interna
+      <li key={m.id} className={`grid max-w-[min(560px,85%)] gap-1.5 border px-3.5 py-2.5 t-texto ${m.interna
         ? "justify-self-end rounded-[16px_4px_16px_16px] border-dashed border-violeta-300 bg-superficie"
         : triade ? "justify-self-end rounded-[16px_4px_16px_16px] border-violeta-200 bg-violeta-50" : "justify-self-start rounded-[4px_16px_16px_16px] border-linha bg-superficie-2"}`}>
         {m.interna ? <span className="selo justify-self-start" data-tom="neutro"><Icone nome="cadeado" className="h-3.5 w-3.5" />Nota interna · o cliente não vê</span> : null}
         <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{m.texto}</p>
-        <span className="text-xs text-tinta-suave">{m.autor}{triade ? " · TRÍADE" : condominio ? ` · ${condominio}` : ""} · {hora(m.criadoEm)}</span>
+        <span className="t-apoio text-tinta-suave">{m.autor}{triade ? " · TRÍADE" : condominio ? ` · ${condominio}` : ""} · {hora(m.criadoEm)}</span>
       </li>,
     );
   }
@@ -122,7 +122,7 @@ export function ChamadoConsole() {
         <div className="grid gap-2 border-t border-linha pt-3">
           {c.situacao !== "RESOLVIDO" && c.pode.atualizar ? <Botao variante="contorno" tamanho="m" onClick={() => atualizar("RESOLVIDO", c.responsavelId ?? null)}><Icone nome="check" />Marcar resolvido</Botao> : null}
           {c.pode.pedirAcesso ? <Botao variante="discreto" tamanho="m" onClick={() => setPedindo(true)}><Icone nome="escudo" />Pedir acesso excepcional</Botao> : null}
-          {c.pode.pedirAcesso ? <p className="text-xs text-tinta-suave">O acesso excepcional pede motivo e fica registrado; o síndico aprova.</p> : null}
+          {c.pode.pedirAcesso ? <p className="t-apoio text-tinta-suave">O acesso excepcional pede motivo e fica registrado; o síndico aprova.</p> : null}
         </div>
       ) : null}
     </div>
@@ -130,7 +130,7 @@ export function ChamadoConsole() {
 
   const mudanca = c.tipo === "MUDANCA" && c.parte ? (
     <Cartao id="t-mudanca-pedida" titulo="Mudança pedida" icone="trocar">
-      <dl className="grid gap-2 text-sm">
+      <dl className="grid gap-2 t-texto">
         <div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3"><dt className="text-tinta-suave">Parte</dt><dd>{nomeDaParte(c.parte)}</dd></div>
         <div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3"><dt className="text-tinta-suave">Hoje</dt><dd>{c.hoje}</dd></div>
         <div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3"><dt className="text-tinta-suave">Pedida por</dt><dd>{c.abertoPor}</dd></div>
@@ -138,7 +138,7 @@ export function ChamadoConsole() {
       <Link href={`/clientes/${condominio}?aba=configuracao`} className={classeBotao("contorno", "justify-self-start max-md:justify-self-stretch", "m")}>
         <Icone nome="ajuste" />Abrir a Configuração do cliente
       </Link>
-      <p className="text-xs text-tinta-suave">Mudar com o cliente ativo pede motivo e avisa o síndico. Depois, responda e marque resolvido.</p>
+      <p className="t-apoio text-tinta-suave">Mudar com o cliente ativo pede motivo e avisa o síndico. Depois, responda e marque resolvido.</p>
     </Cartao>
   ) : null;
 
@@ -202,7 +202,7 @@ export function ChamadoConsole() {
               </Botao>
             </form>
           ) : null}
-          <p className="text-xs text-tinta-suave">Resolvido volta a abrir se o cliente responder em até 7 dias; depois disso, abre-se outro.</p>
+          <p className="t-apoio text-tinta-suave">Resolvido volta a abrir se o cliente responder em até 7 dias; depois disso, abre-se outro.</p>
         </Cartao>
         {celular ? null : (
           <div className="grid gap-6 lg:sticky lg:top-24">

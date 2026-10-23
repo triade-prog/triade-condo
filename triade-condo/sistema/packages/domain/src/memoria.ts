@@ -3,6 +3,7 @@
 // (0180_memoria.sql).
 
 import { z } from "zod";
+import { documentoSchema } from "./comunicados.ts";
 const chaves = <T extends Record<string, unknown>>(o: T) => Object.keys(o) as [keyof T & string, ...(keyof T & string)[]];
 const versao = z.number().int().min(1);
 const id = z.string().uuid();
@@ -39,6 +40,12 @@ export const itemProntuarioSchema = z.discriminatedUnion("acao", [
   z.object({ acao: z.literal("NAO_SE_APLICA"), versao: versao.nullable().optional(), motivo }),
   z.object({ acao: z.literal("VALE"), versao: versao.nullable().optional() }),
 ]);
+/** Guardar o documento em Documentos e ligar ao item numa chamada só (D4.18); o arquivo sobe depois. */
+export const guardarELigarSchema = z.object({
+  documento: documentoSchema,
+  versao: versao.nullable().optional(),
+  avisarDias: z.number().int().min(0).max(365).default(60),
+});
 export const novoItemProntuarioSchema = z.object({
   nome: z.string().trim().min(3).max(120),
   grupo: z.enum(chaves(GRUPOS_PRONTUARIO)),

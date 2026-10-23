@@ -28,7 +28,7 @@ function AbasComunicados() {
     <nav aria-label="Situação" className="flex gap-1 overflow-x-auto border-b border-linha md:px-3">
       {ABAS.map(([filtro, texto]) => (
         <Link key={texto} href={filtro ? `/comunicados?filtro=${filtro}` : "/comunicados"}
-          className="-mb-px flex min-h-12 shrink-0 items-center border-b-2 border-transparent px-3 text-sm font-medium whitespace-nowrap text-tinta-suave hover:text-tinta">{texto}</Link>
+          className="-mb-px flex min-h-12 shrink-0 items-center border-b-2 border-transparent px-3 t-apoio font-medium whitespace-nowrap text-tinta-suave hover:text-tinta">{texto}</Link>
       ))}
       <AbaNoMural atual />
     </nav>
@@ -41,7 +41,7 @@ export function AbaNoMural({ atual = false }: { atual?: boolean }) {
     <>
       <span aria-hidden="true" className="mx-2 my-auto h-5 w-px shrink-0 bg-linha" />
       <Link href="/comunicados/no-mural" aria-current={atual ? "page" : undefined}
-        className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+        className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
         <Icone nome="casa" className="h-4 w-4" />No mural<span aria-hidden="true" className="h-2 w-2 rounded-full bg-ok ring-4 ring-ok/15" />
       </Link>
     </>
@@ -89,14 +89,14 @@ function ForaDoMural({ fora, podeMural, aoPor }: { fora: MuralNoPainel["fora"]; 
             <li key={f.id} className="grid gap-0.5 py-3">
               <Link href={`/comunicados/comunicado?id=${f.id}`} className="font-medium hover:text-violeta-600">{f.titulo}</Link>
               <span className="t-apoio">{ASSUNTOS_COMUNICADO[f.assunto]} · publicado {diaHora(f.publicadoEm)}</span>
-              <span className="text-sm">{MOTIVOS_FORA_DO_MURAL[f.motivo]}</span>
+              <span className="t-texto">{MOTIVOS_FORA_DO_MURAL[f.motivo]}</span>
               {podeMural && f.motivo !== "SO_PARA_ALGUNS" ? (
                 <span className="pt-1.5"><Botao variante="contorno" tamanho="m" onClick={() => aoPor(f)} aria-label={`Pôr no mural: ${f.titulo}`}>Pôr no mural</Botao></span>
               ) : null}
             </li>
           ))}
         </ul>
-      ) : <p className="py-3 text-sm">Todo comunicado publicado para o condomínio inteiro está no mural.</p>}
+      ) : <p className="py-3 t-texto">Todo comunicado publicado para o condomínio inteiro está no mural.</p>}
     </section>
   );
 }
@@ -105,10 +105,10 @@ function OLinkDoMural({ aberturas, configurar }: { aberturas: number; configurar
   return (
     <section aria-labelledby="t-link" className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
       <h2 id="t-link" className="t-titulo-cartao flex items-center gap-3"><span className="ladrilho" data-tom="violeta" aria-hidden="true"><Icone nome="link" /></span>O link do mural</h2>
-      <p className="flex items-baseline gap-2"><span className="text-[26px] font-semibold">{aberturas}</span><span>{aberturas === 1 ? "abertura" : "aberturas"} nos últimos 7 dias</span></p>
+      <p className="flex items-baseline gap-2"><span className="t-titulo-ficha font-semibold">{aberturas}</span><span>{aberturas === 1 ? "abertura" : "aberturas"} nos últimos 7 dias</span></p>
       <p className="t-apoio">Conta quantas vezes o link abriu, sem saber quem abriu. Ver por aqui não conta.</p>
       {configurar ? (
-        <span className="flex flex-wrap gap-x-4 gap-y-1 border-t border-linha pt-3 text-[13px]">
+        <span className="flex flex-wrap gap-x-4 gap-y-1 border-t border-linha pt-3 t-apoio">
           <Link href="/mural/cartaz" target="_blank" className="flex items-center gap-1.5 font-medium text-violeta-600 hover:underline"><Icone nome="imprimir" className="h-4 w-4" />Cartaz com o QR</Link>
           <Link href="/configuracoes/mural" className="flex items-center gap-1.5 font-medium text-violeta-600 hover:underline"><Icone nome="ajuste" className="h-4 w-4" />Mural e e-mail nas Configurações</Link>
         </span>
@@ -131,7 +131,7 @@ function EsperandoAprovacao({ anuncios }: { anuncios: AnuncioTela[] }) {
             </li>
           ))}
         </ul>
-      ) : <p className="py-3 text-sm">Nenhum anúncio esperando.</p>}
+      ) : <p className="py-3 t-texto">Nenhum anúncio esperando.</p>}
     </section>
   );
 }
@@ -193,7 +193,7 @@ export function NoMural() {
   const faixas: FaixasDoPainel = {
     aviso: (c) => (
       <FaixaPainel>
-        <Link href={`/comunicados/comunicado?id=${c.id}`} className="flex items-center gap-1 text-[13px] font-medium text-violeta-600 hover:underline" aria-label={`Abrir a ficha: ${c.titulo}`}>
+        <Link href={`/comunicados/comunicado?id=${c.id}`} className="flex items-center gap-1 t-apoio font-medium text-violeta-600 hover:underline" aria-label={`Abrir a ficha: ${c.titulo}`}>
           Abrir a ficha<Icone nome="dir" className="h-4 w-4" />
         </Link>
         {d.pode.mural ? (
@@ -205,7 +205,7 @@ export function NoMural() {
     ),
     enquete: (e) => (
       <FaixaPainel>
-        <Link href={`/vida/enquete?id=${e.id}`} className="flex items-center gap-1 text-[13px] font-medium text-violeta-600 hover:underline" aria-label={`Abrir a enquete: ${e.pergunta}`}>
+        <Link href={`/vida/enquete?id=${e.id}`} className="flex items-center gap-1 t-apoio font-medium text-violeta-600 hover:underline" aria-label={`Abrir a enquete: ${e.pergunta}`}>
           Abrir a enquete<Icone nome="dir" className="h-4 w-4" />
         </Link>
       </FaixaPainel>
@@ -214,7 +214,7 @@ export function NoMural() {
       const tela = anunciosTela.find((x) => x.id === a.id);
       return (
         <FaixaPainel>
-          <Link href="/vida?aba=classificados" className="flex items-center gap-1 text-[13px] font-medium text-violeta-600 hover:underline" aria-label={`Abrir nos classificados: ${a.titulo}`}>
+          <Link href="/vida?aba=classificados" className="flex items-center gap-1 t-apoio font-medium text-violeta-600 hover:underline" aria-label={`Abrir nos classificados: ${a.titulo}`}>
             Abrir<Icone nome="dir" className="h-4 w-4" />
           </Link>
           {tela && podeTirarAnuncio ? (
@@ -225,8 +225,8 @@ export function NoMural() {
     },
     documentos: (
       <FaixaPainel>
-        <span className="text-xs text-tinta-suave">o botão do morador não funciona aqui</span>
-        <Link href="/documentos?filtro=PEDIDOS" className="flex items-center gap-1 text-[13px] font-medium text-violeta-600 hover:underline">
+        <span className="t-apoio text-tinta-suave">o botão do morador não funciona aqui</span>
+        <Link href="/documentos?filtro=PEDIDOS" className="flex items-center gap-1 t-apoio font-medium text-violeta-600 hover:underline">
           Pedidos por e-mail<Icone nome="dir" className="h-4 w-4" />
         </Link>
       </FaixaPainel>
@@ -245,8 +245,8 @@ export function NoMural() {
           <BarraAoVivo conferidoEm={vivo.conferidoEm} falhou={vivo.falhou} codigo={codigo} conferir={vivo.conferir} />
           <section aria-label="O que o morador vê" className="overflow-hidden rounded-[20px] border border-linha bg-fundo shadow-s1">
             <div className="flex items-center justify-between gap-3 border-b border-linha bg-superficie px-4 py-2.5">
-              <span className="flex items-center gap-2 text-[13px] font-semibold whitespace-nowrap"><Icone nome="olho" className="h-4 w-4" />O que o morador vê</span>
-              <code className="truncate font-mono text-xs text-tinta-suave max-sm:hidden">{`/m/${codigo}`}</code>
+              <span className="flex items-center gap-2 t-apoio font-semibold whitespace-nowrap"><Icone nome="olho" className="h-4 w-4" />O que o morador vê</span>
+              <code className="truncate font-mono t-codigo text-tinta-suave max-sm:hidden">{`/m/${codigo}`}</code>
             </div>
             <div className="mx-auto grid w-full max-w-[640px] gap-3 p-3 sm:p-6">
               <CabecaPublica titulo={`Mural do ${m.condominio}`} subtitulo={subtitulo} nivel={2} className="rounded-2xl" />

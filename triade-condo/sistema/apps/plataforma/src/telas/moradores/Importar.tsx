@@ -45,7 +45,7 @@ function Passos({ atual }: { atual: 1 | 2 | 3 }) {
         aria-valuetext={`Passo ${atual} de 3: ${PASSOS[atual - 1]}`}>
         {PASSOS.map((p, i) => <span key={p} data-feito={i < atual ? "" : undefined} />)}
       </div>
-      <ol className="flex gap-1.5 text-xs" aria-hidden="true">
+      <ol className="flex gap-1.5 t-apoio" aria-hidden="true">
         {PASSOS.map((p, i) => (
           <li key={p} className={`flex-1 ${i + 1 === atual ? "font-semibold text-tinta" : i + 1 < atual ? "text-violeta-700" : "text-tinta-suave"}`}>{p}</li>
         ))}
@@ -63,7 +63,7 @@ export function Importar() {
   const [enviando, setEnviando] = useState(false);
   const [arrastando, setArrastando] = useState(false);
   const voltar = (
-    <Link href="/moradores" className="inline-flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline">
+    <Link href="/moradores" className="inline-flex items-center gap-1 justify-self-start t-texto font-medium text-violeta-600 hover:underline">
       <Icone nome="esq" className="h-4 w-4" />Moradores e unidades
     </Link>
   );
@@ -131,9 +131,9 @@ export function Importar() {
             data-arrastando={arrastando ? "" : undefined}
             className="grid cursor-pointer justify-items-center gap-2.5 rounded-[18px] border-[1.5px] border-dashed border-violeta-300 bg-violeta-50 px-6 py-9 text-center hover:border-violeta-600 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-violeta-600 data-[arrastando]:border-violeta-600">
             <span className="ladrilho h-12 w-12" data-tom="violeta" aria-hidden="true"><Icone nome="baixar" /></span>
-            <span className="text-base font-semibold">Escolher planilha</span>
+            <span className="t-titulo-cartao font-semibold">Escolher planilha</span>
             <span className="t-apoio">ou arraste o arquivo CSV para cá</span>
-            <span id="i-ajuda" className="text-[13px] text-tinta-suave">No Excel: Arquivo, Salvar como, CSV. Arquivo .xlsx precisa ser salvo como CSV antes.</span>
+            <span id="i-ajuda" className="t-apoio text-tinta-suave">No Excel: Arquivo, Salvar como, CSV. Arquivo .xlsx precisa ser salvo como CSV antes.</span>
             <input id="i-arquivo" type="file" accept=".csv,text/csv" className="sr-only" aria-label="Arquivo da planilha (CSV)" aria-describedby="i-ajuda"
               onChange={(e) => { void escolher(e.target.files?.[0]); e.target.value = ""; }} />
           </label>
@@ -151,7 +151,7 @@ export function Importar() {
 
       {passo === 2 && leitura ? (
         <div className="grid gap-4">
-          <p className="flex flex-wrap items-center gap-2 text-sm">
+          <p className="flex flex-wrap items-center gap-2 t-texto">
             {arquivo} · {plural(leitura.linhas.length + leitura.erros.length, "linha", "linhas")}
             <Selo tom="ok">{plural(leitura.linhas.length, "pronta", "prontas")}</Selo>
             {leitura.erros.length ? <Selo tom="atencao">{plural(leitura.erros.length, "com erro", "com erro")}</Selo> : null}
@@ -161,7 +161,7 @@ export function Importar() {
           ) : null}
           {leitura.erros.length ? (
             <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
-              <table className="w-full text-sm">
+              <table className="w-full t-texto">
                 <caption className="sr-only">Linhas da planilha com erro</caption>
                 <thead className="bg-superficie-2 text-left text-tinta-suave">
                   <tr><th scope="col" className="px-4 py-2.5 font-semibold">Linha</th><th scope="col" className="px-4 py-2.5 font-semibold">O que corrigir</th></tr>
@@ -177,11 +177,11 @@ export function Importar() {
               </table>
             </div>
           ) : null}
-          {leitura.erros.length > 50 ? <p className="text-sm text-tinta-suave">Mais {leitura.erros.length - 50} linhas com erro não aparecem aqui.</p> : null}
+          {leitura.erros.length > 50 ? <p className="t-apoio text-tinta-suave">Mais {leitura.erros.length - 50} linhas com erro não aparecem aqui.</p> : null}
           {leitura.linhas.length > LIMITE ? (
             <Aviso tom="atencao">São mais de {LIMITE} linhas prontas. Divida a planilha em partes de até {LIMITE} e importe uma de cada vez.</Aviso>
           ) : null}
-          <p className="text-sm text-tinta-suave">
+          <p className="t-apoio text-tinta-suave">
             {leitura.erros.length ? `Corrija na planilha e escolha o arquivo de novo, ou importe só as ${leitura.linhas.length} prontas. ` : ""}
             O que já existe não se repete. Todo contato importado fica a confirmar: só vale depois que o síndico conferir. Inclua o proprietário na planilha também quando a unidade tem inquilino.
             {leitura.agrupamento || leitura.linhas.some((l) => l.andar) ? " Se o condomínio ainda não usa torre, bloco ou andar, passa a usar, como na planilha." : ""}
@@ -221,13 +221,13 @@ export function Importar() {
         <CartaoFicha id="colunas" titulo="Colunas que a planilha pode ter" icone="lista">
           <dl className="grid">
             {COLUNAS.map(([nome, como]) => (
-              <div key={nome} className="flex justify-between gap-3 border-t border-linha py-2 text-sm">
+              <div key={nome} className="flex justify-between gap-3 border-t border-linha py-2 t-texto">
                 <dt>{nome}</dt>
-                <dd className={`text-[13px] ${como === "obrigatória" ? "font-medium text-atencao" : "text-tinta-suave"}`}>{como}</dd>
+                <dd className={`t-apoio ${como === "obrigatória" ? "font-medium text-atencao" : "text-tinta-suave"}`}>{como}</dd>
               </div>
             ))}
           </dl>
-          <p className="mt-2.5 text-[13px] text-tinta-suave">Reconhece os nomes mais comuns: torre, bloco, quadra, andar, pavimento, apto, celular, tipo.</p>
+          <p className="mt-2.5 t-apoio text-tinta-suave">Reconhece os nomes mais comuns: torre, bloco, quadra, andar, pavimento, apto, celular, tipo.</p>
         </CartaoFicha>
       ) : null}
       </div>

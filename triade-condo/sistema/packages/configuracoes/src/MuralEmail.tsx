@@ -16,10 +16,10 @@ function Chave({ id, rotulo, ajuda, marcado, aoMudar, desligado }: {
   id: string; rotulo: string; ajuda?: string; marcado: boolean; aoMudar: (v: boolean) => void; desligado?: boolean;
 }) {
   return (
-    <label htmlFor={id} className="flex items-start gap-3 text-sm">
+    <label htmlFor={id} className="flex items-start gap-3 t-texto">
       <input id={id} type="checkbox" role="switch" className="mt-0.5 h-5 w-5 shrink-0 accent-violeta-600" checked={marcado} disabled={desligado}
         onChange={(e) => aoMudar(e.target.checked)} />
-      <span className="grid gap-0.5"><span className="font-medium">{rotulo}</span>{ajuda ? <span className="text-[13px] text-tinta-suave">{ajuda}</span> : null}</span>
+      <span className="grid gap-0.5"><span className="font-medium">{rotulo}</span>{ajuda ? <span className="t-apoio text-tinta-suave">{ajuda}</span> : null}</span>
     </label>
   );
 }
@@ -60,30 +60,30 @@ export function MuralEmail({ p, recarregar, salvo }: { p: PlanoComunicacao; reca
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar} /> : null}
 
       <section className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1" aria-labelledby="me-mural">
-        <h2 id="me-mural" className="text-[17px] font-medium">Mural online</h2>
+        <h2 id="me-mural" className="t-titulo-secao font-medium">Mural online</h2>
         <Chave id="me-mural-ligado" rotulo="Mural ligado" marcado={v.muralLigado} desligado={!p.podeEditar}
           ajuda="Desligado, o link mostra só: este mural está fora do ar." aoMudar={(x) => setV({ ...v, muralLigado: x })} />
         {link ? (
           <div className="flex flex-wrap items-center gap-4">
             <div className="rounded-xl border border-linha bg-white p-2"><QrCode texto={link} rotulo="QR do mural online" /></div>
             <div className="grid min-w-0 flex-1 gap-2">
-              <code className="rounded-lg border border-violeta-200 bg-violeta-50 px-3 py-2 text-[13px] break-all text-violeta-800">{link}</code>
+              <code className="rounded-lg border border-violeta-200 bg-violeta-50 px-3 py-2 t-apoio break-all text-violeta-800">{link}</code>
               <span className="flex flex-wrap gap-2">
                 <Botao variante="contorno" tamanho="m" onClick={() => void copiar()}><Icone nome="copiar" />{copiado ? "Link copiado" : "Copiar link"}</Botao>
                 {noApp ? <Link href="/mural/cartaz" target="_blank" className={classeBotao("contorno", "", "m")}><Icone nome="imprimir" />Cartaz com QR</Link> : null}
                 {p.podeEditar && noApp ? <Botao variante="discreto" tamanho="m" onClick={() => setTrocar(true)}>Trocar link</Botao> : null}
               </span>
-              <span className="text-[13px] text-tinta-suave">
+              <span className="t-apoio text-tinta-suave">
                 Aberto {p.mural.aberturas === 1 ? "1 vez" : `${p.mural.aberturas} vezes`} nos últimos 7 dias. Não sabemos quem abriu.
               </span>
             </div>
           </div>
-        ) : <p className="text-sm text-tinta-suave">O link e o QR aparecem ao ligar o mural e salvar.</p>}
+        ) : <p className="t-apoio text-tinta-suave">O link e o QR aparecem ao ligar o mural e salvar.</p>}
         <fieldset className="grid gap-2">
-          <legend className="mb-1 text-sm font-medium">O que aparece no mural por padrão</legend>
+          <legend className="mb-1 t-texto font-medium">O que aparece no mural por padrão</legend>
           <ul className="divide-y divide-linha rounded-xl border border-linha">
             {(Object.keys(ASSUNTOS_COMUNICADO) as AssuntoComunicado[]).map((a) => (
-              <li key={a} className="px-3 py-2 text-sm">
+              <li key={a} className="px-3 py-2 t-texto">
                 <label className="flex items-center gap-2">
                   <input type="checkbox" className="h-4 w-4 accent-violeta-600" disabled={!p.podeEditar} checked={v.muralAssuntos.includes(a)}
                     onChange={() => setV({ ...v, muralAssuntos: v.muralAssuntos.includes(a) ? v.muralAssuntos.filter((x) => x !== a) : [...v.muralAssuntos, a] })} />
@@ -92,12 +92,12 @@ export function MuralEmail({ p, recarregar, salvo }: { p: PlanoComunicacao; reca
               </li>
             ))}
           </ul>
-          <p className="text-xs text-tinta-suave">Só comunicados para todo o condomínio. Em cada comunicado dá para mudar. Segurança começa desligado: o link pode chegar a quem não mora no prédio.</p>
+          <p className="t-apoio text-tinta-suave">Só comunicados para todo o condomínio. Em cada comunicado dá para mudar. Segurança começa desligado: o link pode chegar a quem não mora no prédio.</p>
         </fieldset>
       </section>
 
       <section className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1" aria-labelledby="me-email">
-        <h2 id="me-email" className="text-[17px] font-medium">E-mail</h2>
+        <h2 id="me-email" className="t-titulo-secao font-medium">E-mail</h2>
         <Chave id="me-email-ligado" rotulo="Enviar os comunicados também por e-mail" marcado={v.emailLigado} desligado={!p.podeEditar}
           ajuda={`Para quem tem e-mail confirmado e recebe comunicados. ${p.email.comEmail} de ${p.email.contatos} contatos hoje.`}
           aoMudar={(x) => setV({ ...v, emailLigado: x })} />
@@ -111,18 +111,18 @@ export function MuralEmail({ p, recarregar, salvo }: { p: PlanoComunicacao; reca
       </section>
 
       <section className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1" aria-labelledby="me-docs">
-        <h2 id="me-docs" className="text-[17px] font-medium">Documentos pedidos pelo mural</h2>
+        <h2 id="me-docs" className="t-titulo-secao font-medium">Documentos pedidos pelo mural</h2>
         <Chave id="me-docs-mural" rotulo="Mostrar no mural os documentos que podem ir ao morador" marcado={v.documentosNoMural} desligado={!p.podeEditar}
           ajuda="Só com o e-mail ligado: o documento vai por link que vale 7 dias." aoMudar={(x) => setV({ ...v, documentosNoMural: x })} />
         <fieldset className="grid gap-1">
-          <legend className="text-sm font-medium">Quando quem pede é contato confirmado</legend>
+          <legend className="t-texto font-medium">Quando quem pede é contato confirmado</legend>
           <span className="trilho">
             <button type="button" className="chip" aria-pressed={v.documentosAutomatico} data-escolhido={v.documentosAutomatico ? "" : undefined}
               disabled={!p.podeEditar} onClick={() => setV({ ...v, documentosAutomatico: true })}>Enviar na hora</button>
             <button type="button" className="chip" aria-pressed={!v.documentosAutomatico} data-escolhido={!v.documentosAutomatico ? "" : undefined}
               disabled={!p.podeEditar} onClick={() => setV({ ...v, documentosAutomatico: false })}>Eu aprovo cada um</button>
           </span>
-          <span className="text-xs text-tinta-suave">Pedido de e-mail que não é de contato sempre espera você aprovar.</span>
+          <span className="t-apoio text-tinta-suave">Pedido de e-mail que não é de contato sempre espera você aprovar.</span>
         </fieldset>
       </section>
 

@@ -54,8 +54,8 @@ export function ConfirmarEmail() {
     return (
       <TelaPublica titulo={`Comunicados do ${feito.condominio}`} icone="email">
         <Cartao className="gap-3">
-          <h2 className="text-lg font-medium">{semQuebra("E-mail confirmado")}</h2>
-          <p className="text-[15px]">Pronto{feito.nome ? `, ${feito.nome.split(" ")[0]}` : ""}. Você vai receber os comunicados do {feito.condominio} em <span className="[overflow-wrap:anywhere]">{feito.email}</span>.
+          <h2 className="t-titulo-secao font-medium">{semQuebra("E-mail confirmado")}</h2>
+          <p className="t-texto">Pronto{feito.nome ? `, ${feito.nome.split(" ")[0]}` : ""}. Você vai receber os comunicados do {feito.condominio} em <span className="[overflow-wrap:anywhere]">{feito.email}</span>.
             Dá para parar quando quiser, pelo link no fim de cada {semQuebra("e-mail")}.</p>
         </Cartao>
       </TelaPublica>
@@ -64,8 +64,8 @@ export function ConfirmarEmail() {
   return (
     <TelaPublica titulo="Confirmar o e-mail" icone="email">
       <Cartao className="gap-3">
-        <h2 className="text-lg font-medium">{semQuebra("Receber os comunicados do condomínio por e-mail")}</h2>
-        <p className="text-[15px]">{semQuebra("A gestão do condomínio cadastrou este e-mail para você receber os comunicados. Se é seu, confirme.")}</p>
+        <h2 className="t-titulo-secao font-medium">{semQuebra("Receber os comunicados do condomínio por e-mail")}</h2>
+        <p className="t-texto">{semQuebra("A gestão do condomínio cadastrou este e-mail para você receber os comunicados. Se é seu, confirme.")}</p>
         {erro ? <Aviso tom="atencao">{erro}</Aviso> : null}
         <Botao className="w-full" disabled={!codigo || estado === "enviando"} onClick={() => void confirmar()}>
           <Icone nome="check" />{estado === "enviando" ? "Confirmando…" : "Confirmar meu e-mail"}
@@ -93,19 +93,19 @@ export function PararEmail() {
       <Cartao className="gap-3">
         {r?.parou ? (
           <>
-            <h2 className="text-lg font-medium">{semQuebra(`Você não recebe mais e-mails do ${r.condominio}`)}</h2>
-            <p className="text-[15px]">Os avisos continuam no mural e no grupo do prédio.</p>
+            <h2 className="t-titulo-secao font-medium">{semQuebra(`Você não recebe mais e-mails do ${r.condominio}`)}</h2>
+            <p className="t-texto">Os avisos continuam no mural e no grupo do prédio.</p>
             <Botao variante="contorno" className="w-full" disabled={estado === "enviando"} onClick={() => void chamar("voltar")}>Voltar a receber</Botao>
           </>
         ) : r ? (
           <>
-            <h2 className="text-lg font-medium">{semQuebra("Você voltou a receber os comunicados por e-mail")}</h2>
-            <p className="text-[15px]">{semQuebra("Dá para parar quando quiser, pelo link no fim de cada e-mail.")}</p>
+            <h2 className="t-titulo-secao font-medium">{semQuebra("Você voltou a receber os comunicados por e-mail")}</h2>
+            <p className="t-texto">{semQuebra("Dá para parar quando quiser, pelo link no fim de cada e-mail.")}</p>
           </>
         ) : (
           <>
-            <h2 className="text-lg font-medium">{semQuebra("Parar de receber os comunicados por e-mail")}</h2>
-            <p className="text-[15px]">Os avisos continuam no mural e no grupo do prédio. Só você consegue voltar a receber, por este mesmo link.</p>
+            <h2 className="t-titulo-secao font-medium">{semQuebra("Parar de receber os comunicados por e-mail")}</h2>
+            <p className="t-texto">Os avisos continuam no mural e no grupo do prédio. Só você consegue voltar a receber, por este mesmo link.</p>
             <Botao className="w-full" disabled={!codigo || estado === "enviando"} onClick={() => void chamar("parar")}>
               {estado === "enviando" ? "Parando…" : "Parar de receber"}
             </Botao>
@@ -134,8 +134,8 @@ export function DocumentoDoLink() {
   return (
     <TelaPublica titulo={aberto ? `${aberto.titulo} · ${aberto.condominio}` : "Documento do condomínio"} icone="documento">
       <Cartao className="gap-3">
-        <h2 className="text-lg font-medium">{aberto ? `Baixando a versão ${aberto.numero}` : "Documento enviado pelo condomínio"}</h2>
-        <p className="text-[15px]">O link vale 7 dias e pode ser cancelado pelo condomínio. Depois de baixado, guarde o arquivo com cuidado.</p>
+        <h2 className="t-titulo-secao font-medium">{aberto ? `Baixando a versão ${aberto.numero}` : "Documento enviado pelo condomínio"}</h2>
+        <p className="t-texto">O link vale 7 dias e pode ser cancelado pelo condomínio. Depois de baixado, guarde o arquivo com cuidado.</p>
         {erro ? <Aviso tom="atencao">{erro}</Aviso> : null}
         <Botao className="w-full" disabled={estado === "abrindo"} onClick={() => void abrir()}><Icone nome="baixar" />{estado === "abrindo" ? "Abrindo…" : aberto ? "Baixar de novo" : "Abrir o documento"}</Botao>
       </Cartao>

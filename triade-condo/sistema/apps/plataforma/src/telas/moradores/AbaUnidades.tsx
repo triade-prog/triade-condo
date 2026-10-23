@@ -130,12 +130,12 @@ function LinhaUnidade({ u, nome, achado }: { u: UnidadeResumo; nome: string; ach
             : <span className="font-medium text-atencao">{u.ocupacao === "SEM_CADASTRO" ? "Ninguém cadastrado" : "Sem responsável"}</span>}
         </span>
         {achado && achado.tipo !== "UNIDADE" ? <span className="t-apoio">{achado.tipo === "TELEFONE" ? `telefone de ${achado.texto}` : achado.texto}</span> : null}
-        <span className="grid gap-1 pt-1 text-sm md:hidden">
+        <span className="grid gap-1 pt-1 t-texto md:hidden">
           <span>{ocupacao}</span>
           <span className="flex flex-wrap items-center gap-2"><Selo tom={selo.tom}>{selo.texto}</Selo>{contagem && contagem !== selo.texto ? <span className="t-apoio">{contagem}</span> : null}</span>
         </span>
       </div>
-      <span className="text-sm max-md:hidden">{ocupacao}</span>
+      <span className="t-texto max-md:hidden">{ocupacao}</span>
       <span className="grid justify-items-start gap-1 max-md:hidden">
         <Selo tom={selo.tom}>{selo.texto}</Selo>
         {contagem && contagem !== selo.texto ? <span className="t-apoio">{contagem}</span> : null}
@@ -250,7 +250,7 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
             const atual = situacao === s.valor;
             return (
               <button key={s.valor || "todas"} type="button" aria-pressed={atual} onClick={() => setSituacao(s.valor)}
-                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
                 {s.texto}
                 <span className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{s.n}</span>
               </button>
@@ -294,14 +294,14 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
       </section>
 
       {bloco && dados.podeEditar ? (
-        <p className="flex flex-wrap items-center gap-x-2 text-sm text-tinta-suave">
+        <p className="flex flex-wrap items-center gap-x-2 t-apoio text-tinta-suave">
           {bloco.nome} · {plural(dados.unidades.filter((u) => u.ativa && u.blocoId === bloco.id).length, "unidade ativa", "unidades ativas")} ·
           <Botao variante="discreto" onClick={() => setJanela({ tipo: "renomear", bloco })}>Renomear</Botao>·
           <Botao variante="discreto" onClick={() => setJanela({ tipo: "desativar", bloco })}>Desativar</Botao>
         </p>
       ) : null}
       {inativos.length && dados.podeEditar ? (
-        <p className="flex flex-wrap items-center gap-x-2 text-sm text-tinta-suave">
+        <p className="flex flex-wrap items-center gap-x-2 t-apoio text-tinta-suave">
           {div.varios} desativados:
           {inativos.map((b) => (
             <Botao key={b.id} variante="discreto" onClick={() => setJanela({ tipo: "reativar", bloco: b })} aria-label={`Reativar ${b.nome}`}>{b.nome}</Botao>
@@ -374,12 +374,12 @@ function FormEstrutura({ estrutura, aoFechar, salvo, recarregar }: { estrutura: 
     <form onSubmit={salvar} className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={() => { aoFechar(); recarregar(); }} /> : null}
       <fieldset className="grid gap-2">
-        <legend className="mb-1 text-[13px] font-medium">Divisão do condomínio</legend>
+        <legend className="mb-1 t-apoio font-medium">Divisão do condomínio</legend>
         {(Object.keys(AGRUPAMENTOS) as Estrutura["agrupamento"][]).map((a) => (
-          <label key={a} className="flex items-start gap-2 rounded-md border border-linha px-3 py-2 text-sm has-[:checked]:border-violeta-600 has-[:checked]:bg-violeta-50">
+          <label key={a} className="flex items-start gap-2 rounded-md border border-linha px-3 py-2 t-texto has-[:checked]:border-violeta-600 has-[:checked]:bg-violeta-50">
             <input type="radio" name="e-agrupamento" className="mt-1 accent-violeta-600" checked={agrupamento === a} onChange={() => setAgrupamento(a)} />
             <span><span className="font-medium">{a === "NENHUM" ? "Sem divisão" : `Por ${AGRUPAMENTOS[a].um.toLowerCase()}`}</span>
-              <span className="block text-xs text-tinta-suave">{EXPLICA[a]}</span></span>
+              <span className="block t-apoio text-tinta-suave">{EXPLICA[a]}</span></span>
           </label>
         ))}
       </fieldset>
@@ -502,14 +502,14 @@ function FormUnidades({ dados, blocoInicial, aoFechar, salvo }: { dados: Unidade
           <CampoTexto id="u-por" rotulo="Por andar" inputMode="numeric" value={porAndar} onChange={(e) => setPorAndar(e.target.value)} />
         </div>
       )}
-      <p className="text-sm text-tinta-suave" aria-live="polite">
+      <p className="t-apoio text-tinta-suave" aria-live="polite">
         {lista.length === 0
           ? modo === "gerar" ? "Confira os andares: até o andar 200, até 99 por andar e no máximo 1000 unidades." : "Escreva as unidades para ver a prévia."
           : <>Prévia: {previa.slice(0, 6).join(", ")}{previa.length > 6 ? ` … ${previa.at(-1)}` : ""} · <strong>{plural(lista.length, "unidade", "unidades")}</strong>.
             {modo === "gerar" ? " Andar 0 é o térreo: 1, 2, 3." : ""}{modo === "gerar" && usaAndar ? " Cada unidade já fica no andar dela." : ""}</>}
       </p>
       {repetidas.length ? (
-        <p className="rounded-lg border border-atencao-borda bg-atencao-fundo px-3 py-2 text-sm text-atencao">
+        <p className="rounded-lg border border-atencao-borda bg-atencao-fundo px-3 py-2 t-texto text-atencao">
           {repetidas.slice(0, 5).map((u) => nomeDaUnidade(null, u.andar, u.identificacao)).join(", ")}{repetidas.length > 5 ? "…" : ""}{" "}
           {repetidas.length === 1 ? "já existe e fica como está" : "já existem e ficam como estão"}.
         </p>

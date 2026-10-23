@@ -35,9 +35,9 @@ export function DiaQuadro({ d, tom = "violeta" }: { d: string; tom?: Tom | "viol
   const mes = new Date(`${d}T12:00:00`).toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
   return (
     <span className="ladrilho h-13 w-13 content-center rounded-[14px] leading-tight" data-tom={tom} aria-hidden="true">
-      <span className="text-[11px] font-semibold uppercase tracking-wider">{diaDaSemana(d).slice(0, 3)}</span>
-      <span className="text-[19px] font-bold">{d.slice(8, 10)}</span>
-      <span className="text-[11px]">{mes}</span>
+      <span className="t-rotulo font-semibold uppercase tracking-wider">{diaDaSemana(d).slice(0, 3)}</span>
+      <span className="t-titulo-secao font-bold">{d.slice(8, 10)}</span>
+      <span className="t-apoio">{mes}</span>
     </span>
   );
 }
@@ -65,7 +65,7 @@ export function LinhaDoTempo({ itens }: { itens: PassoTempo[] }) {
 /** O link de volta, no topo das páginas da Vida em condomínio. */
 export function Voltar({ href, texto }: { href: string; texto: string }) {
   return (
-    <Link href={href} className="flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline">
+    <Link href={href} className="flex items-center gap-1 justify-self-start t-texto font-medium text-violeta-600 hover:underline">
       <Icone nome="esq" className="h-4 w-4" />{texto}
     </Link>
   );

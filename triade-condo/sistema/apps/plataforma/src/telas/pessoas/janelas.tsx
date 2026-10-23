@@ -66,8 +66,8 @@ export function EscolhaAcesso({ dados, marcadas, aoMudar, nome, prefixo }: {
         </fieldset>
       ))}
       <p role="status" className="grid gap-1 rounded-[14px] border border-violeta-200 bg-violeta-50 px-3.5 py-3">
-        <span className="text-[13px] font-semibold text-violeta-700">Com isso, {nome || "a pessoa"} vai poder</span>
-        <span className="text-sm">{fraseDoAcesso(marcadas)}</span>
+        <span className="t-apoio font-semibold text-violeta-700">Com isso, {nome || "a pessoa"} vai poder</span>
+        <span className="t-texto">{fraseDoAcesso(marcadas)}</span>
       </p>
     </div>
   );

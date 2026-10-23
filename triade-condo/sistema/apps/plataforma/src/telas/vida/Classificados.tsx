@@ -47,7 +47,7 @@ export function AbaClassificados({ aoMudar }: { aoMudar: (texto: string) => void
           const n = daAba(f).length;
           return (
             <button key={f} type="button" aria-pressed={atual} onClick={() => setFiltro(f)}
-              className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+              className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
               {FILTROS_ANUNCIO[f]}
               {n && f !== "ENCERRADOS" ? <><span className="sr-only"> ({n})</span><span aria-hidden="true" className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{n}</span></> : null}
             </button>
@@ -97,12 +97,12 @@ function CartaoAnuncio({ a, podeEditar, aoAgir }: { a: AnuncioTela; podeEditar: 
       {a.foto ? <FotoAnuncio id={a.id} titulo={titulo} /> : <span className="grid h-24 w-24 place-items-center rounded-[14px] bg-superficie-2 text-tinta-suave max-md:h-[72px] max-md:w-[72px]" aria-hidden="true"><Icone nome="camera" /></span>}
       <span className="grid min-w-0 content-start gap-1.5">
         <span className="flex flex-wrap items-center gap-2">
-          <span className="t-titulo-cartao text-base">{titulo}</span>
+          <span className="t-titulo-cartao">{titulo}</span>
           <SeloAnuncio a={a} />
         </span>
-        <span className="text-sm whitespace-pre-line">&ldquo;{a.texto}&rdquo;</span>
-        <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] text-tinta-suave"><span>{linhaDoAnuncio(a)}</span><Contato a={a} /></span>
-        {decisao ? <span className="text-[13px] text-tinta-suave">{decisao}</span> : null}
+        <span className="t-texto whitespace-pre-line">&ldquo;{a.texto}&rdquo;</span>
+        <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 t-apoio text-tinta-suave"><span>{linhaDoAnuncio(a)}</span><Contato a={a} /></span>
+        {decisao ? <span className="t-apoio text-tinta-suave">{decisao}</span> : null}
         {podeEditar && a.estado === "A_APROVAR" ? (
           <span className="pt-1"><Botao tamanho="m" variante="contorno" onClick={() => aoAgir("publicar")} aria-label={`Revisar o anúncio ${titulo}`}><Icone nome="olho" className="h-4 w-4" />Revisar</Botao></span>
         ) : null}
@@ -167,7 +167,7 @@ function Revisar({ a, aoFechar }: { a: AnuncioTela; aoFechar: (texto?: string) =
     <Dialogo aberto media fechar titulo={recusando ? "Recusar o anúncio" : "Revisar o anúncio"} aoFechar={() => aoFechar()} apoio="Chegou pelo WhatsApp · fica 30 dias no mural">
       <div className="flex gap-3.5">
         {a.foto ? <FotoAnuncio id={a.id} titulo={a.tituloSugerido} /> : null}
-        <blockquote className="flex-1 rounded-r-xl border-l-[3px] border-violeta-300 bg-violeta-50 px-4 py-3 text-[15px] whitespace-pre-line">
+        <blockquote className="flex-1 rounded-r-xl border-l-[3px] border-violeta-300 bg-violeta-50 px-4 py-3 t-texto whitespace-pre-line">
           {a.texto}
           <span className="t-apoio mt-1 block">{[a.contato?.nome, a.unidade.nome].filter(Boolean).join(" · ")} · {a.mostrarTelefone ? "aceitou mostrar o WhatsApp" : "contato pelo condomínio"}</span>
         </blockquote>
@@ -188,7 +188,7 @@ function Revisar({ a, aoFechar }: { a: AnuncioTela; aoFechar: (texto?: string) =
           <CampoTexto id="cl-titulo" rotulo="Título no mural" maxLength={80} required value={titulo} onChange={(e) => setTitulo(e.target.value)}
             erro={comErro.includes("titulo") ? "Escreva o título, de 3 a 80 letras" : null} ajuda="Curto, como o morador escreveria. O texto vai inteiro abaixo dele." />
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid content-start gap-1.5 text-sm"><span className="text-[13px] font-medium">Tipo</span><span className="flex min-h-11 items-center">{TIPOS_ANUNCIO[a.tipo]}</span></div>
+            <div className="grid content-start gap-1.5 t-texto"><span className="t-apoio font-medium">Tipo</span><span className="flex min-h-11 items-center">{TIPOS_ANUNCIO[a.tipo]}</span></div>
             <CampoTexto id="cl-valor" rotulo="Valor" opcional inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)}
               erro={valorRuim || comErro.includes("valorCentavos") ? "Escreva o valor como 900 ou 1.150,50" : null} ajuda="Em reais. Vazio na doação ou sem preço." />
           </div>

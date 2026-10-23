@@ -31,9 +31,9 @@ export function SituacaoDaConexao({ numero, conexao }: { numero: string | null; 
           Enquanto isso, atenda por telefone e registre no painel.
         </Aviso>
       ) : null}
-      {conexao.situacao === "SEM_CREDENCIAIS" ? <p className="text-sm text-tinta-suave">A TRÍADE ainda não ligou o WhatsApp deste condomínio.</p> : null}
+      {conexao.situacao === "SEM_CREDENCIAIS" ? <p className="t-apoio text-tinta-suave">A TRÍADE ainda não ligou o WhatsApp deste condomínio.</p> : null}
       {conexao.situacao === "CONECTADO" ? (
-        <p className="text-sm text-tinta-suave">
+        <p className="t-apoio text-tinta-suave">
           Conectado desde {formatarDataHora(conexao.conectadoEm ?? "")}{conexao.ultimaRecebida ? ` · última mensagem recebida ${formatarDataHora(conexao.ultimaRecebida)}` : ""}.
         </p>
       ) : null}

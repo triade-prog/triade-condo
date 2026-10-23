@@ -48,7 +48,7 @@ export function TrocaSindico({ ficha, sindico, aoFechar, aoTrocar }: {
   return (
     <Dialogo aberto titulo={`Troca de síndico · ${ficha.condominio.nome}`} aoFechar={aoFechar}>
       <form onSubmit={confirmar} noValidate className="grid gap-4">
-        <ol className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-tinta-suave" aria-label="Passos da troca">
+        <ol className="flex flex-wrap gap-x-3 gap-y-1 t-apoio text-tinta-suave" aria-label="Passos da troca">
           {PASSOS.map((p, i) => (
             <li key={p} aria-current={i === passo ? "step" : undefined} className={i === passo ? "font-semibold text-violeta-700" : ""}>{i + 1} · {p}</li>
           ))}
@@ -66,15 +66,15 @@ export function TrocaSindico({ ficha, sindico, aoFechar, aoTrocar }: {
 
         {passo === 1 ? (
           <fieldset className="grid gap-2">
-            <legend className="mb-1 text-sm font-medium">O que foi conferido</legend>
+            <legend className="mb-1 t-texto font-medium">O que foi conferido</legend>
             {conferido.map((c, i) => (
               <CampoTexto key={i} id={`tr-conf-${i}`} rotulo={`Item ${i + 1}`} opcional={i > 0} maxLength={200} value={c}
                 onChange={(e) => setConferido(conferido.map((x, j) => (j === i ? e.target.value : x)))}
                 ajuda={i === 0 ? "Ex.: ata da AGE de 12/10/2026 com a eleição; identidade do novo síndico conferida por vídeo." : undefined} />
             ))}
             {conferido.length < 6 ? <Botao variante="discreto" tamanho="m" className="justify-self-start" onClick={() => setConferido([...conferido, ""])}>+ Mais um item</Botao> : null}
-            <p className="text-sm text-tinta-suave">Ata não é exigida em todo caso. O Console registra o que foi conferido, não guarda cópia; o arquivo fica com o condomínio, em Documentos, se o síndico quiser guardar.</p>
-            {campos.includes("conferido") ? <p className="text-xs text-erro">Registre de 1 a 6 itens conferidos.</p> : null}
+            <p className="t-apoio text-tinta-suave">Ata não é exigida em todo caso. O Console registra o que foi conferido, não guarda cópia; o arquivo fica com o condomínio, em Documentos, se o síndico quiser guardar.</p>
+            {campos.includes("conferido") ? <p className="t-apoio text-erro">Registre de 1 a 6 itens conferidos.</p> : null}
           </fieldset>
         ) : null}
 
@@ -84,14 +84,14 @@ export function TrocaSindico({ ficha, sindico, aoFechar, aoTrocar }: {
               erro={campos.includes("nome") ? "Escreva o nome." : null} />
             <CampoTexto id="tr-email" rotulo="E-mail" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
               erro={campos.includes("email") ? "Confira o e-mail." : null} />
-            <p className="text-sm text-tinta-suave">Ganha conta própria pelo convite. O acesso do síndico atual nunca é passado para outra pessoa.</p>
+            <p className="t-apoio text-tinta-suave">Ganha conta própria pelo convite. O acesso do síndico atual nunca é passado para outra pessoa.</p>
           </>
         ) : null}
 
         {passo === 3 ? (
           <div className="grid gap-2">
             <p className="font-medium">Ao confirmar</p>
-            <ul className="grid list-disc gap-1 pl-5 text-sm">
+            <ul className="grid list-disc gap-1 pl-5 t-texto">
               <li>{sindico.nome} deixa de ser síndico e sai na hora (as sessões abertas param de valer).</li>
               <li>Tudo o que {sindico.nome} fez desde {formatarData(sindico.desde)} continua com o nome e a data.</li>
               <li>{nome || "O novo síndico"} recebe o convite em {email || "seu e-mail"}.</li>

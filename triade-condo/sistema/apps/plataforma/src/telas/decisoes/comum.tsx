@@ -40,11 +40,11 @@ export function ListaAlternativas({ alternativas, aprovada }: { alternativas: Al
   return (
     <ul className="grid gap-2">
       {alternativas.map((a) => (
-        <li key={a.numero} className={`flex items-center gap-3 rounded-[14px] border px-3 py-2.5 text-sm ${a.numero === aprovada ? "border-violeta-600 bg-violeta-50" : "border-linha bg-violeta-50/40"}`}>
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-violeta-100 text-[13px] font-semibold text-violeta-700" aria-hidden="true">{a.numero}</span>
+        <li key={a.numero} className={`flex items-center gap-3 rounded-[14px] border px-3 py-2.5 t-texto ${a.numero === aprovada ? "border-violeta-600 bg-violeta-50" : "border-linha bg-violeta-50/40"}`}>
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-violeta-100 t-apoio font-semibold text-violeta-700" aria-hidden="true">{a.numero}</span>
           <span className="grid min-w-0 flex-1 gap-0.5">
             <span><span className="sr-only">{a.numero} · </span>{a.descricao}</span>
-            {a.detalhe ? <span className="text-xs text-tinta-suave">{a.detalhe}</span> : null}
+            {a.detalhe ? <span className="t-apoio text-tinta-suave">{a.detalhe}</span> : null}
           </span>
           <span className="t-codigo shrink-0">{custo(a)}</span>
           {a.numero === aprovada ? <span className="sr-only">(aprovada)</span> : null}
@@ -79,16 +79,16 @@ function FormResponder({ d, aoFechar, salvo, recarregar }: { d: DecisaoPedido; a
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={() => { aoFechar(); recarregar(); }} /> : null}
       <p className="t-apoio md:hidden">{apoioDecidir(d)}</p>
       <div className="grid gap-1 rounded-[14px] border border-linha bg-violeta-50/50 p-4">
-        <p className="text-sm font-semibold">{d.pergunta}</p>
-        {d.porque ? <p className="text-sm">{d.porque}</p> : null}
+        <p className="t-titulo-cartao font-semibold">{d.pergunta}</p>
+        {d.porque ? <p className="t-texto">{d.porque}</p> : null}
       </div>
       <fieldset className="grid gap-2">
-        <legend className="mb-2 text-[13px] font-medium">Alternativas</legend>
+        <legend className="mb-2 t-apoio font-medium">Alternativas</legend>
         {d.alternativas.map((a) => {
           const marcada = escolhida === a.numero;
           return (
             <label key={a.numero}
-              className={`flex cursor-pointer items-start gap-3 rounded-[14px] p-4 text-sm ${marcada ? "border-2 border-violeta-600 bg-violeta-50 p-[15px]" : "border border-linha bg-superficie hover:border-violeta-300"}`}>
+              className={`flex cursor-pointer items-start gap-3 rounded-[14px] p-4 t-texto ${marcada ? "border-2 border-violeta-600 bg-violeta-50 p-[15px]" : "border border-linha bg-superficie hover:border-violeta-300"}`}>
               <input type="radio" name={`alt-${d.id}`} value={a.numero} checked={marcada} onChange={() => setEscolhida(a.numero)}
                 className="mt-0.5 h-5 w-5 shrink-0 accent-violeta-600" />
               <span className="grid min-w-0 flex-1 gap-0.5">
@@ -96,16 +96,16 @@ function FormResponder({ d, aoFechar, salvo, recarregar }: { d: DecisaoPedido; a
                   <span className="font-medium">{a.numero} · {a.descricao}</span>
                   <span className="t-codigo">{custo(a)}</span>
                 </span>
-                {a.detalhe ? <span className="text-xs text-tinta-suave">{a.detalhe}</span> : null}
+                {a.detalhe ? <span className="t-apoio text-tinta-suave">{a.detalhe}</span> : null}
               </span>
             </label>
           );
         })}
-        {comErro.includes("alternativa") ? <p className="text-sm text-erro">Escolha a alternativa que você aprova.</p> : null}
+        {comErro.includes("alternativa") ? <p className="t-texto text-erro">Escolha a alternativa que você aprova.</p> : null}
       </fieldset>
       <CampoAreaTexto id={`just-${d.id}`} rotulo="Justificativa" required maxLength={1000} rows={3} value={justificativa}
         onChange={(e) => setJustificativa(e.target.value)} erro={comErro.includes("justificativa") ? "Explique a resposta (3 a 1000 caracteres)." : null} />
-      <p className="flex items-start gap-2 text-xs text-tinta-suave">
+      <p className="flex items-start gap-2 t-apoio text-tinta-suave">
         <Icone nome="info" className="mt-px h-4 w-4 shrink-0" />
         Sua resposta fica no histórico do pedido, com seu nome, e {d.pedidaPor ?? "quem pediu"} é avisado no sino. Aprovar não contrata nem paga nada.
       </p>

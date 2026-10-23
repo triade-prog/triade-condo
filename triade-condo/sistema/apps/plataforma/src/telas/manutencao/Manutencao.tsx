@@ -22,7 +22,7 @@ import { EscolherArquivos, resumoEnvio, type ItemEnvio } from "../pedidos/Arquiv
 import { deDataHoraLocal, diaHora, faltaPara, opcoesDe, paraDataHoraLocal } from "../pedidos/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { ItemVistoria, ManutencaoDetalhe, OpcoesManutencao, Providencia, Recado } from "../tipos.ts";
-import { ArquivosManutencao, enviarArquivosManutencao } from "./ArquivosManutencao.tsx";
+import { ArquivosManutencao, fotosParaAbrir, subirAbertos } from "./ArquivosManutencao.tsx";
 import { executorParaApi, ICONE_TIPO, nomeExecutor, nomePendencia, opcoesExecutor, SeloManutencao, textoTipo, valorExecutor } from "./comum.tsx";
 import { FormManutencao } from "./FormManutencao.tsx";
 import { MarcarVisita } from "./MarcarVisita.tsx";
@@ -88,9 +88,9 @@ function QuemExecuta({ d, condominio, trocar, children, className }: {
           <span className="grid min-w-0 flex-1">
             <span className="font-semibold">{p.nome}</span>
             <span className="t-apoio">{p.servico} · {p.acordo === "CONTRATO" ? "com contrato" : "por chamado"}</span>
-            {p.contato || p.telefone ? <span className="text-sm">{[p.contato, p.telefone ? mostrarTelefone(p.telefone) : null].filter(Boolean).join(" · ")}</span> : null}
+            {p.contato || p.telefone ? <span className="t-texto">{[p.contato, p.telefone ? mostrarTelefone(p.telefone) : null].filter(Boolean).join(" · ")}</span> : null}
           </span>
-          <Link href={`/manutencao/prestador?id=${p.id}`} className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
+          <Link href={`/manutencao/prestador?id=${p.id}`} className="inline-flex shrink-0 items-center gap-1 t-texto font-medium text-violeta-600 hover:underline">
             Ver ficha<Icone nome="dir" className="h-4 w-4" />
           </Link>
         </div>
@@ -102,7 +102,7 @@ function QuemExecuta({ d, condominio, trocar, children, className }: {
             </a>
           </div>
         ) : (
-          <p className="aviso items-center justify-between text-sm" data-tom="atencao">
+          <p className="aviso items-center justify-between t-texto" data-tom="atencao">
             <span className="texto">Sem telefone no cadastro: Ligar e Chamar no WhatsApp aparecem quando tiver.</span>
             <Link href={`/manutencao/prestador?id=${p.id}`} className="shrink-0 font-medium text-violeta-600 hover:underline">Adicionar</Link>
           </p>
@@ -144,7 +144,7 @@ function QuemExecuta({ d, condominio, trocar, children, className }: {
 /** Uma ligação da manutenção: o pedido, a visita, a vistoria de onde veio ou o que ela abriu. */
 function Ligacao({ href, icone, titulo, apoio }: { href: string; icone: NomeIcone; titulo: string; apoio: string }) {
   return (
-    <Link href={href} className="flex items-center gap-3 rounded-[14px] border border-linha px-3 py-2.5 text-sm hover:border-violeta-300">
+    <Link href={href} className="flex items-center gap-3 rounded-[14px] border border-linha px-3 py-2.5 t-texto hover:border-violeta-300">
       <span className="ladrilho h-8 w-8 rounded-[10px]" aria-hidden="true"><Icone nome={icone} className="h-4 w-4" /></span>
       <span className="grid min-w-0 flex-1">
         <span className="font-medium">{titulo}</span>
@@ -174,7 +174,7 @@ function Historico({ d, className }: { d: ManutencaoDetalhe; className?: string 
         ))}
       </ol>
       {d.historico.length > 3 ? (
-        <button type="button" className="flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline" aria-expanded={completo}
+        <button type="button" className="elo flex gap-1 justify-self-start t-texto" aria-expanded={completo}
           aria-controls="historico-completo" onClick={() => setCompleto(!completo)}>
           {completo ? "Esconder o histórico completo" : `Ver histórico completo · ${d.historico.length} registros`}
           <Icone nome={completo ? "baixo" : "dir"} className="h-4 w-4" />
@@ -183,7 +183,7 @@ function Historico({ d, className }: { d: ManutencaoDetalhe; className?: string 
       {completo ? (
         <ol id="historico-completo" aria-label="Histórico completo" className="divide-y divide-linha rounded-[14px] border border-linha">
           {d.historico.map((h, i) => (
-            <li key={i} className="grid gap-0.5 px-3 py-2.5 text-sm">
+            <li key={i} className="grid gap-0.5 px-3 py-2.5 t-texto">
               <span>{descreverEventoManutencao(h.acao, h.dados)}</span>
               <span className="t-apoio">{ver(h)}</span>
             </li>
@@ -205,7 +205,7 @@ export function Manutencao() {
   const [falha, setFalha] = useState<ErroApi | null>(null);
   const [fotoDepois, setFotoDepois] = useState<ItemEnvio[]>([]);
   const voltar = (
-    <Link href="/manutencao" className="inline-flex items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
+    <Link href="/manutencao" className="inline-flex items-center gap-1 t-texto font-medium text-violeta-600 hover:underline">
       <Icone nome="esq" className="h-4 w-4" />Voltar às manutenções
     </Link>
   );
@@ -239,12 +239,15 @@ export function Manutencao() {
   };
 
   async function concluir(v: Valores): Promise<Resposta<unknown>> {
-    const r = await chamarApi(`${url}/concluir`, { corpo: { versao: m.versao, conclusao: v.conclusao, realizadaEm: v.realizadaEm, fecharProvidencias: v.fechar === true } });
+    // A foto do depois vai junto (D4.22): concluir já abre o envio de cada uma.
+    const fotos = fotoDepois.map((f) => ({ ...f, descricao: f.descricao.trim() || "Foto do depois" }));
+    const r = await chamarApi<{ envios?: { nome: string; arquivoId?: string; envio?: { url: string; tipo: string } }[] }>(`${url}/concluir`, { corpo: {
+      versao: m.versao, conclusao: v.conclusao, realizadaEm: v.realizadaEm, fecharProvidencias: v.fechar === true, fotos: fotosParaAbrir(fotos),
+    } });
     if (!r.ok) return r;
     const texto = m.preventiva ? "Manutenção concluída. A preventiva já tem a próxima data." : "Manutenção concluída.";
-    const fotos = fotoDepois.map((f) => ({ ...f, descricao: f.descricao.trim() || "Foto do depois" }));
     if (fotos.some((f) => !f.problema)) {
-      const envio = resumoEnvio(await enviarArquivosManutencao(m.id, null, fotos, () => {}));
+      const envio = resumoEnvio(await subirAbertos(m.id, fotos, r.dados.envios ?? []));
       salvo(envio ? `${texto} ${envio.texto}` : texto, envio?.tom ?? "ok");
     } else salvo(texto);
     return r;
@@ -443,7 +446,7 @@ export function Manutencao() {
               <span className="grid min-w-0 flex-1 gap-0.5">
                 <span className="font-medium">{p.texto}</span>
                 <span className="t-apoio">{nomeExecutor(p.executor)}{p.feitaEm ? ` · feita em ${diaHora(p.feitaEm).replace(" ", ", ")}${p.feitaPor ? ` por ${p.feitaPor}` : ""}` : ""}</span>
-                {p.resultado ? <span className="mt-1 rounded-lg bg-ok-fundo px-2.5 py-1.5 text-[13px]">{p.resultado}</span> : null}
+                {p.resultado ? <span className="mt-1 rounded-lg bg-ok-fundo px-2.5 py-1.5 t-apoio">{p.resultado}</span> : null}
               </span>
               {p.feitaEm ? <Selo tom="ok">Feita</Selo> : editar
                 ? <Botao variante="contorno" tamanho="p" onClick={() => setAcao({ tipo: "fazer", providencia: p })}><Icone nome="check" />Marcar feita</Botao>
@@ -466,7 +469,7 @@ export function Manutencao() {
               <span className="grid min-w-0 gap-0.5">
                 <span>{i.texto}</span>
                 {i.observacao || i.fotos ? <span className="t-apoio">{[i.observacao, i.fotos ? (i.fotos === 1 ? "1 foto" : `${i.fotos} fotos`) : null].filter(Boolean).join(" · ")}</span> : null}
-                {i.gerada ? <Link href={`/manutencao/manutencao?id=${i.gerada.id}`} className="text-[13px] font-medium text-violeta-600 hover:underline">Virou manutenção: {i.gerada.titulo}</Link> : null}
+                {i.gerada ? <Link href={`/manutencao/manutencao?id=${i.gerada.id}`} className="t-apoio font-medium text-violeta-600 hover:underline">Virou manutenção: {i.gerada.titulo}</Link> : null}
               </span>
               <span className="flex flex-wrap items-center gap-2">
                 {i.resultado ? <Selo tom={TOM_ITEM[i.resultado]}>{RESULTADOS_ITEM[i.resultado]}</Selo> : <Selo tom="neutro">Sem resposta</Selo>}

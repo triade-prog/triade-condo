@@ -76,7 +76,7 @@ function ForaDoAr({ q, pode, aoMudar }: { q: QuedaWhatsapp; pode: boolean; aoMud
   return (
     <form onSubmit={salvar} noValidate className="grid gap-4">
       {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-      <dl className="grid gap-3 text-sm sm:grid-cols-3">
+      <dl className="grid gap-3 t-texto sm:grid-cols-3">
         <div><dt className="text-tinta-suave">Começou</dt><dd>{diaHora(q.inicio)} · {q.origem === "PROVEDOR" ? "o provedor avisou" : `aberta à mão${q.abertaPor ? ` por ${q.abertaPor}` : ""}`}</dd></div>
         <div><dt className="text-tinta-suave">Quem cuida</dt><dd>{q.responsavel ?? "O síndico"}</dd></div>
         <div><dt className="text-tinta-suave">Mensagens paradas</dt><dd>{quantas(q.faltam, "na fila", "na fila")}</dd></div>
@@ -96,7 +96,7 @@ function ForaDoAr({ q, pode, aoMudar }: { q: QuedaWhatsapp; pode: boolean; aoMud
         </div>
       ) : null}
       <details open={!!q.oQueAconteceu || comErro.includes("oQueAconteceu")} className="group border-t border-linha pt-3">
-        <summary className="inline-flex cursor-pointer items-center gap-1 text-sm font-medium text-violeta-600">
+        <summary className="inline-flex cursor-pointer items-center gap-1 t-texto font-medium text-violeta-600">
           O que aconteceu (para o registro)<Icone nome="baixo" className="h-4 w-4 transition-transform group-open:rotate-180" />
         </summary>
         <div className="pt-3">
@@ -105,7 +105,7 @@ function ForaDoAr({ q, pode, aoMudar }: { q: QuedaWhatsapp; pode: boolean; aoMud
             erro={comErro.includes("oQueAconteceu") ? "De 3 a 1.000 caracteres." : null} />
         </div>
       </details>
-      <p className="text-xs text-tinta-suave">
+      <p className="t-apoio text-tinta-suave">
         {comunicado ? "O comunicado já vem escrito com o canal alternativo e sai pelo mural e pelo e-mail de quem confirmou o e-mail. Nada é mandado sem a pessoa publicar."
           : "Salve o canal alternativo para avisar os moradores por comunicado."}
         {q.origem === "PROVEDOR" ? " A queda passa para a conferência sozinha quando o número reconectar." : ""}
@@ -127,7 +127,7 @@ function Confirmar({ titulo, texto, botao, aoFechar, enviar, aoConfirmar }: {
   return (
     <Dialogo aberto titulo={titulo} aoFechar={aoFechar}>
       <div className="grid gap-3">
-        <p className="text-sm">{texto}</p>
+        <p className="t-texto">{texto}</p>
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <div className="flex flex-wrap justify-end gap-2">
           <Botao variante="contorno" onClick={aoFechar}>Voltar</Botao>
@@ -169,7 +169,7 @@ function Decidir({ q, envios, decisao, aoFechar, aoDecidir }: {
   return (
     <Dialogo aberto titulo={`${DECISOES_QUEDA[decisao]} · ${quantas(envios.length, "mensagem", "mensagens")}`} aoFechar={aoFechar}>
       <form onSubmit={enviar} noValidate className="grid gap-3">
-        <p className="text-sm">{explica}</p>
+        <p className="t-texto">{explica}</p>
         {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         {decisao !== "MANDAR" ? (
           <CampoAreaTexto id="q-motivo" rotulo={decisao === "OUTRO_CANAL" ? "Por onde foi resolvido" : "Motivo"} opcional={decisao === "NAO_MANDAR"}
@@ -199,11 +199,11 @@ function ListaEnvios({ q, pode, aoMudar }: { q: QuedaWhatsapp; pode: boolean; ao
   const [decidir, setDecidir] = useState<{ envios: EnvioDaQueda[]; decisao: DecisaoQueda } | null>(null);
   const conferindo = q.estado === "CONFERINDO" && pode && aoMudar;
   const escolhidas = paradas.filter((e) => marcadas.includes(e.id));
-  if (!envios.length) return <p className="text-sm text-tinta-suave">Nada ficou parado na fila durante esta queda.</p>;
+  if (!envios.length) return <p className="t-apoio text-tinta-suave">Nada ficou parado na fila durante esta queda.</p>;
   return (
     <div className="grid gap-2">
       {conferindo && paradas.length > 1 ? (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 t-texto">
           <label className="flex items-center gap-2">
             <input type="checkbox" className="h-4 w-4 accent-violeta-600" checked={escolhidas.length === paradas.length}
               onChange={(ev) => setMarcadas(ev.target.checked ? paradas.map((e) => e.id) : [])} />
@@ -218,7 +218,7 @@ function ListaEnvios({ q, pode, aoMudar }: { q: QuedaWhatsapp; pode: boolean; ao
       ) : null}
       <ul className="grid gap-2">
         {envios.map((e) => (
-          <li key={e.id} className={`grid gap-1.5 rounded-2xl border p-3 text-sm ${e.parada ? "border-atencao-borda bg-superficie" : "border-linha bg-superficie-2"}`}>
+          <li key={e.id} className={`grid gap-1.5 rounded-2xl border p-3 t-texto ${e.parada ? "border-atencao-borda bg-superficie" : "border-linha bg-superficie-2"}`}>
             <span className="flex flex-wrap items-center gap-2">
               {conferindo && e.parada && paradas.length > 1 ? (
                 <input type="checkbox" className="h-4 w-4 accent-violeta-600" aria-label={`Escolher a mensagem para ${e.para ?? "o destinatário"}`}
@@ -267,14 +267,14 @@ function Conferindo({ q, pode, aoMudar }: { q: QuedaWhatsapp; pode: boolean; aoM
   }
   return (
     <div className="grid gap-4">
-      <dl className="grid gap-3 text-sm sm:grid-cols-3">
+      <dl className="grid gap-3 t-texto sm:grid-cols-3">
         <div><dt className="text-tinta-suave">Fora do ar</dt><dd>{diaHora(q.inicio)} a {q.voltouEm ? `${diaHora(q.voltouEm).slice(-5)} (${duracao(q.inicio, q.voltouEm)})` : "agora"}</dd></div>
         <div><dt className="text-tinta-suave">Paradas na fila</dt><dd>{q.paradas}{q.faltam ? `, faltam ${q.faltam}` : ", todas decididas"}</dd></div>
         <div><dt className="text-tinta-suave">Chegaram atrasadas</dt><dd>{q.atrasadas}{q.atrasadas ? ", em A identificar" : ""}</dd></div>
       </dl>
       <ListaEnvios q={q} pode={pode} aoMudar={aoMudar} />
       {q.outroCanal ? (
-        <p className="text-sm text-tinta-suave">Pedidos registrados por outro canal durante a queda: {q.outroCanal}. Ficam no resumo, sem nada a fazer.</p>
+        <p className="t-apoio text-tinta-suave">Pedidos registrados por outro canal durante a queda: {q.outroCanal}. Ficam no resumo, sem nada a fazer.</p>
       ) : null}
       {pode ? (
         <form onSubmit={encerrar} noValidate className="grid gap-3">
@@ -294,12 +294,12 @@ function Historico({ q }: { q: QuedaWhatsapp }) {
   if (!q.historico?.length) return null;
   return (
     <section aria-label="Histórico da queda" className="grid gap-2">
-      <h3 className="text-base font-medium">Histórico da queda</h3>
+      <h3 className="t-texto font-medium">Histórico da queda</h3>
       <ol className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
         {q.historico.map((h, i) => (
-          <li key={i} className="grid gap-0.5 px-4 py-2.5 text-sm">
+          <li key={i} className="grid gap-0.5 px-4 py-2.5 t-texto">
             <span>{descreverEventoQueda(h.acao, h.dados) ?? h.acao}</span>
-            <span className="text-xs text-tinta-suave">{h.autor ?? "Sistema"} · {diaHora(h.em)}</span>
+            <span className="t-apoio text-tinta-suave">{h.autor ?? "Sistema"} · {diaHora(h.em)}</span>
           </li>
         ))}
       </ol>
@@ -310,7 +310,7 @@ function Historico({ q }: { q: QuedaWhatsapp }) {
 function QuedaAberta({ q, pode, aoMudar }: { q: QuedaWhatsapp; pode: boolean; aoMudar: (texto: string) => void }) {
   return (
     <section aria-labelledby="t-queda" className="grid gap-4 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-queda" className="flex flex-wrap items-center gap-2 text-lg font-medium">
+      <h2 id="t-queda" className="flex flex-wrap items-center gap-2 t-titulo-secao font-medium">
         Queda de {diaHora(q.inicio).slice(0, 5)}
         <Selo tom={q.estado === "FORA_DO_AR" ? "erro" : "atencao"}>{q.estado === "FORA_DO_AR" ? "Fora do ar" : "Conferindo"}</Selo>
       </h2>
@@ -327,7 +327,7 @@ function VerQueda({ id, aoFechar }: { id: string; aoFechar: () => void }) {
   return (
     <Dialogo aberto titulo="Queda do WhatsApp" aoFechar={aoFechar}>
       {carga.estado === "carregando" ? <Carregando /> : carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : (
-        <div className="grid gap-3 text-sm">
+        <div className="grid gap-3 t-texto">
           <p>
             {diaHora(carga.dados.inicio)} a {carga.dados.voltouEm ? `${diaHora(carga.dados.voltouEm)} (${duracao(carga.dados.inicio, carga.dados.voltouEm)})` : "sem volta registrada"}
             {" · "}{ORIGENS_QUEDA[carga.dados.origem]}{carga.dados.encerradaPor ? ` · encerrada por ${carga.dados.encerradaPor}` : ""}

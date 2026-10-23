@@ -92,7 +92,7 @@ export function ConfirmacaoRegistro({ feito, outro, abrir, extra }: { feito: Reg
       <div className="grid justify-items-center gap-2 text-center">
         <span className="ladrilho h-14 w-14 rounded-[18px]" data-tom="ok" aria-hidden="true"><Icone nome="check" className="h-7 w-7" /></span>
         <p className="t-titulo-secao">Pedido registrado</p>
-        <p className="font-mono text-[22px] font-medium tracking-[.02em]">{feito.protocolo}</p>
+        <p className="font-mono t-titulo-secao font-medium tracking-[.02em]">{feito.protocolo}</p>
         <p className="t-apoio">{feito.linha}</p>
       </div>
       {extra}
@@ -136,7 +136,7 @@ export function ConfirmacaoRegistro({ feito, outro, abrir, extra }: { feito: Reg
               {link.reserva ? ` · se não responder, passa para ${link.reserva.nome}` : " · sem reserva no cadastro"}
             </span>
           </span>
-          <Link href={abrirManutencao(link)} className="text-sm font-medium text-violeta-600 hover:underline" aria-label={`Abrir a manutenção ${link.titulo}`}>Abrir</Link>
+          <Link href={abrirManutencao(link)} className="t-texto font-medium text-violeta-600 hover:underline" aria-label={`Abrir a manutenção ${link.titulo}`}>Abrir</Link>
         </div>
       ) : null}
       {link?.situacao === "ESPERANDO_ENVIO" ? <p className="t-apoio">O prazo para responder só começa quando a mensagem sai.</p> : null}
@@ -168,7 +168,7 @@ export function CartaoAvisosRegistro({ avisos }: { avisos: AvisoDoRegistro[] }) 
   const grupos = agrupar(avisos);
   return (
     <section aria-labelledby="t-avisos-registro" className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
-      <h2 id="t-avisos-registro" className="text-xs font-medium tracking-[.1em] text-tinta-suave uppercase">Avisos do registro</h2>
+      <h2 id="t-avisos-registro" className="t-rotulo font-medium tracking-[.1em] text-tinta-suave uppercase">Avisos do registro</h2>
       <ul className="grid gap-2">
         {grupos.map((g) => {
           const envio = g.itens.find((x) => x.meio !== "SINO") ?? g.itens[0]!;
@@ -176,15 +176,15 @@ export function CartaoAvisosRegistro({ avisos }: { avisos: AvisoDoRegistro[] }) 
           const meios = g.itens.map((x) => (x.link ? `link pelo ${MEIO_NA_FRASE[x.meio] ?? x.meio}` : MEIO_NA_FRASE[x.meio] ?? x.meio));
           const nomeMeios = meios.length > 1 ? `${meios.slice(0, -1).join(", ")} e ${meios[meios.length - 1]}` : meios[0];
           return (
-            <li key={g.chave} className="grid gap-0.5 text-sm sm:grid-cols-[120px_1fr_auto] sm:items-center sm:gap-3">
-              <span className="text-xs text-tinta-suave">{DESTINOS_AVISO_REGISTRO[g.destino]}</span>
+            <li key={g.chave} className="grid gap-0.5 t-texto sm:grid-cols-[120px_1fr_auto] sm:items-center sm:gap-3">
+              <span className="t-apoio text-tinta-suave">{DESTINOS_AVISO_REGISTRO[g.destino]}</span>
               <span>
                 <span className="font-medium">{g.nome ?? ""}</span>
                 <span className="text-tinta-suave"> · {nomeMeios}{g.itens.some((x) => x.pelaRegra) ? " · pela regra" : ""}{g.itens.some((x) => x.editado) ? " · texto editado" : ""}</span>
-                {envio.motivo ? <span className="block text-xs text-erro">{envio.motivo}</span> : null}
-                {s.tom === "erro" && envio.meio === "WHATSAPP" ? <Link href="/whatsapp?parte=falhas" className="block text-xs text-violeta-600 hover:underline">Resolver em WhatsApp › Falhas de envio</Link> : null}
+                {envio.motivo ? <span className="block t-apoio text-erro">{envio.motivo}</span> : null}
+                {s.tom === "erro" && envio.meio === "WHATSAPP" ? <Link href="/whatsapp?parte=falhas" className="block t-apoio text-violeta-600 hover:underline">Resolver em WhatsApp › Falhas de envio</Link> : null}
                 {envio.link ? (
-                  <span className="block text-xs text-tinta-suave">
+                  <span className="block t-apoio text-tinta-suave">
                     Manutenção{" "}
                     <Link href={abrirManutencao(envio.link)} className="text-violeta-600 underline">{envio.link.titulo}</Link>
                     {" · "}{(SITUACOES_MANUTENCAO as Record<string, string>)[envio.link.estadoManutencao]?.toLowerCase() ?? envio.link.estadoManutencao}

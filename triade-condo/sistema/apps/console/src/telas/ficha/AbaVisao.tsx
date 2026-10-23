@@ -120,10 +120,10 @@ function EditarContatos({ ficha, recarregar, avisar, aoFechar }: PropsAba & { ao
     <Dialogo aberto media titulo="Editar contatos" apoio="Com quem a TRÍADE fala no condomínio. Cada um com nome, papel e telefone ou e-mail." aoFechar={aoFechar}>
       <form onSubmit={salvar} noValidate className="grid gap-4">
         {erro ? <ErroOuConflito erro={erro} recarregar={recarregar} /> : null}
-        {camposComErro(erro).includes("contatos") ? <p className="text-xs text-erro">Confira os contatos: cada um precisa de nome, papel e telefone ou e-mail.</p> : null}
+        {camposComErro(erro).includes("contatos") ? <p className="t-apoio text-erro">Confira os contatos: cada um precisa de nome, papel e telefone ou e-mail.</p> : null}
         {contatos.map((x, i) => (
           <fieldset key={i} className="grid gap-3 rounded-2xl border border-linha p-4 sm:grid-cols-2">
-            <legend className="px-1 text-[13px] font-medium">Contato {i + 1}</legend>
+            <legend className="px-1 t-apoio font-medium">Contato {i + 1}</legend>
             <CampoTexto id={`c-${i}-nome`} rotulo="Nome" value={x.nome} onChange={(e) => mudar(i, "nome", e.target.value)} />
             <CampoTexto id={`c-${i}-papel`} rotulo="Papel" placeholder="Síndica, conselho…" value={x.papel} onChange={(e) => mudar(i, "papel", e.target.value)} />
             <CampoTexto id={`c-${i}-telefone`} rotulo="Telefone" inputMode="tel" value={x.telefone} onChange={(e) => mudar(i, "telefone", e.target.value)} />
@@ -230,7 +230,7 @@ function Situacoes(props: PropsAba & { abrir: (j: Janela) => void }) {
             <Icone nome={x.icone} className="h-5 w-5 shrink-0 text-atencao" />
             <span className="grid min-w-0 flex-1 gap-0.5">
               <span className="font-semibold text-atencao">{SITUACOES[s as keyof typeof SITUACOES] ?? s}</span>
-              {x.frase ? <span className="text-sm">{x.frase}</span> : null}
+              {x.frase ? <span className="t-texto">{x.frase}</span> : null}
             </span>
             {fazer ? <Botao variante="contorno" tamanho="m" className="bg-superficie max-md:ml-8" onClick={fazer}><Icone nome={x.iconeBotao} />{x.botao}</Botao> : null}
           </li>
@@ -275,8 +275,8 @@ export function AbaVisao(props: PropsAba) {
                   <span className="grid min-w-0 gap-0.5">
                     <span className="font-medium">{x.nome}</span>
                     <span className="t-apoio">{x.papel}</span>
-                    {x.telefone ? <span className="t-codigo text-sm">{mostrarTelefone(x.telefone)}</span> : null}
-                    {x.email ? <span className="text-sm [overflow-wrap:anywhere]">{x.email}</span> : null}
+                    {x.telefone ? <span className="t-codigo">{mostrarTelefone(x.telefone)}</span> : null}
+                    {x.email ? <span className="t-texto [overflow-wrap:anywhere]">{x.email}</span> : null}
                   </span>
                 </li>
               ))}
@@ -306,7 +306,7 @@ export function AbaVisao(props: PropsAba) {
         </Cartao>
         {ficha.exportacoes?.length ? (
           <Cartao id="t-exportacoes" titulo="Exportações pedidas pelo síndico" icone="baixar">
-            <ul className="grid gap-1 text-sm">
+            <ul className="grid gap-1 t-texto">
               {ficha.exportacoes.map((e) => (
                 <li key={e.id}>
                   {new Date(e.pedidaEm).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" })}

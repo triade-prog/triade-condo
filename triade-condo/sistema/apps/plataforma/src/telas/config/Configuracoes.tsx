@@ -42,8 +42,8 @@ export function MeusAvisos() {
   return (
     <div className="grid gap-5">
       <div className="grid gap-1">
-        <h1 className="text-[28px] font-normal tracking-tight">Meus avisos</h1>
-        <p className="text-sm text-tinta-suave">Vale só para você. Cada pessoa liga os seus, para o próprio celular. Decisões continuam no painel.</p>
+        <h1 className="t-titulo-tela font-normal tracking-tight">Meus avisos</h1>
+        <p className="t-apoio text-tinta-suave">Vale só para você. Cada pessoa liga os seus, para o próprio celular. Decisões continuam no painel.</p>
       </div>
       <ProvedorConfiguracao ambiente={ambiente}><PaginaMeusAvisos /></ProvedorConfiguracao>
     </div>

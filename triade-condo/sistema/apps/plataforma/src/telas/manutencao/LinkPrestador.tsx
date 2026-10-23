@@ -84,12 +84,12 @@ export function LinkPrestador({ manutencaoId, titulo, versao, recarregarManutenc
 
   return (
     <section aria-labelledby="t-link-prestador" className="grid content-start gap-3 border-t border-linha pt-4">
-      <h3 id="t-link-prestador" className="flex items-center gap-2 text-sm font-semibold"><Icone nome="link" className="h-4 w-4" />Link do prestador</h3>
+      <h3 id="t-link-prestador" className="flex items-center gap-2 t-titulo-cartao font-semibold"><Icone nome="link" className="h-4 w-4" />Link do prestador</h3>
       {terminou && l?.situacao === "VALE" ? (
         <Aviso tom="ok" titulo={`${l.para} contou o que fez`}>Confira as fotos e o relato. A manutenção só fica concluída quando você concluir.</Aviso>
       ) : null}
       {l ? (
-        <div className="grid gap-1 text-sm">
+        <div className="grid gap-1 t-texto">
           <span className="flex flex-wrap items-center gap-2">
             <span className="font-medium">{l.para}</span>
             <Selo tom={l.situacao === "VALE" ? (l.responderAte && !l.respondidoEm ? "atencao" : "andamento") : "neutro"}>
@@ -97,33 +97,33 @@ export function LinkPrestador({ manutencaoId, titulo, versao, recarregarManutenc
                 : l.situacao === "VALE" && l.prazoNoEnvio ? "Esperando a mensagem sair" : SITUACAO[l.situacao]}
             </Selo>
           </span>
-          <span className="text-xs text-tinta-suave">
+          <span className="t-apoio text-tinta-suave">
             Mandado em {diaHora(l.criadoEm)}{l.criadoPor ? ` por ${l.criadoPor}` : ""} · vale até {diaHora(l.expiraEm)}
             {l.abertoEm ? ` · aberto em ${diaHora(l.abertoEm)}` : " · ainda não foi aberto"}
           </span>
           {l.noRegistro ? (
-            <span className="text-xs text-tinta-suave">
+            <span className="t-apoio text-tinta-suave">
               Mandado no registro do pedido{" "}
               <Link href={`/pedidos/pedido?id=${l.noRegistro.pedidoId}`} className="font-mono text-violeta-600 underline">{l.noRegistro.protocolo}</Link>
               {l.noRegistro.meio === "WHATSAPP" ? ", pelo WhatsApp do condomínio" : ", por e-mail"}
             </span>
           ) : null}
-          {l.motivoCancelamento ? <span className="text-xs text-tinta-suave">Motivo: {l.motivoCancelamento}</span> : null}
-          {linhasReserva(l).map((t) => <span key={t} className="text-xs text-tinta-suave">{t}</span>)}
+          {l.motivoCancelamento ? <span className="t-apoio text-tinta-suave">Motivo: {l.motivoCancelamento}</span> : null}
+          {linhasReserva(l).map((t) => <span key={t} className="t-apoio text-tinta-suave">{t}</span>)}
         </div>
       ) : d.semExecutor
-        ? <p className="text-sm text-tinta-suave">Escolha antes quem executa (um prestador do cadastro ou um nome) para mandar o serviço por link.</p>
-        : <p className="text-sm text-tinta-suave">Mande o serviço por link: o prestador vê o que fazer, registra a chegada pela etiqueta do local e conta o que fez, sem conta.</p>}
+        ? <p className="t-apoio text-tinta-suave">Escolha antes quem executa (um prestador do cadastro ou um nome) para mandar o serviço por link.</p>
+        : <p className="t-apoio text-tinta-suave">Mande o serviço por link: o prestador vê o que fazer, registra a chegada pela etiqueta do local e conta o que fez, sem conta.</p>}
 
       {d.registros.length ? (
-        <ol className="grid gap-2 text-sm">
+        <ol className="grid gap-2 t-texto">
           {d.registros.map((r) => (
             <li key={r.id} className={`grid gap-0.5 rounded-xl border px-3 py-2 ${r.tipo === "TERMINOU" ? "border-ok-borda bg-ok-fundo" : r.tipo === "IMPEDIMENTO" ? "border-atencao-borda bg-atencao-fundo" : "border-linha"}`}>
               <span>{textoRegistro(r)}</span>
-              <span className="text-xs text-tinta-suave">{diaHora(r.em)}{r.quemFez ? ` · feito por ${r.quemFez}` : ""}</span>
+              <span className="t-apoio text-tinta-suave">{diaHora(r.em)}{r.quemFez ? ` · feito por ${r.quemFez}` : ""}</span>
               {d.fotos.filter((f) => f.registroId === r.id).map((f) => (
                 <button key={f.id} type="button" onClick={() => void abrirFoto(f.id)}
-                  className="flex items-center gap-1.5 justify-self-start text-xs font-medium text-violeta-600 hover:underline">
+                  className="flex items-center gap-1.5 justify-self-start t-apoio font-medium text-violeta-600 hover:underline">
                   <Icone nome="camera" className="h-4 w-4" />{f.nome}
                 </button>
               ))}
@@ -131,14 +131,14 @@ export function LinkPrestador({ manutencaoId, titulo, versao, recarregarManutenc
           ))}
         </ol>
       ) : null}
-      {falha ? <p className="text-sm text-erro" role="alert">{falha}</p> : null}
+      {falha ? <p className="t-texto text-erro" role="alert">{falha}</p> : null}
 
       <span className="flex flex-wrap gap-2">
         {d.pode.mandar ? <Botao variante="contorno" tamanho="m" onClick={() => setMandar(true)}><Icone nome="enviar" />{l?.situacao === "VALE" ? "Mandar de novo" : "Mandar link"}</Botao> : null}
         {d.pode.naoTrocar ? <Botao variante="contorno" tamanho="m" onClick={() => setNaoTrocar(true)}>Não trocar sozinho</Botao> : null}
         {d.pode.cancelar ? <Botao variante="discreto" tamanho="m" onClick={() => setCancelar(true)}><Icone nome="fechar" />Cancelar link</Botao> : null}
       </span>
-      {l?.situacao === "VALE" ? <p className="text-xs text-tinta-suave">Mandar de novo gera um link novo; o anterior para na hora.</p> : null}
+      {l?.situacao === "VALE" ? <p className="t-apoio text-tinta-suave">Mandar de novo gera um link novo; o anterior para na hora.</p> : null}
 
       {mandar ? (
         <MandarLink manutencaoId={manutencaoId} titulo={titulo} versao={versao} info={d}
@@ -192,7 +192,7 @@ function MandarLink({ manutencaoId, titulo, versao, info, aoFechar, aoMandar }: 
       <Dialogo aberto titulo="Link pronto" aoFechar={aoFechar}>
         <div className="grid gap-3">
           <Aviso tom="ok" titulo={`Link para ${info.para?.nome ?? "o prestador"}`}>Mande agora. Depois de fechar esta janela o link não aparece de novo: mandar de novo gera um link novo.</Aviso>
-          <code className="rounded-lg border border-violeta-200 bg-violeta-50 px-3 py-2 text-[13px] break-all text-violeta-800">{pronto.link}</code>
+          <code className="rounded-lg border border-violeta-200 bg-violeta-50 px-3 py-2 t-apoio break-all text-violeta-800">{pronto.link}</code>
           <div className="flex flex-wrap gap-2">
             <Botao variante="contorno" onClick={() => { void navigator.clipboard?.writeText(msg).catch(() => {}); setCopiado(true); registrar("COPIADO"); }}>
               <Icone nome="copiar" />{copiado ? "Mensagem copiada" : "Copiar mensagem"}
@@ -205,7 +205,7 @@ function MandarLink({ manutencaoId, titulo, versao, info, aoFechar, aoMandar }: 
               <Icone nome="whats" />Mandar pelo WhatsApp
             </a>
           </div>
-          <p className="text-xs text-tinta-suave">
+          <p className="t-apoio text-tinta-suave">
             {telefone ? "Abre o seu WhatsApp com a mensagem pronta para o telefone do prestador." : "O prestador não tem telefone no cadastro: o WhatsApp abre para você escolher o contato."}
           </p>
           <Botao variante="discreto" className="justify-self-end" onClick={aoFechar}>Fechar</Botao>
@@ -218,7 +218,7 @@ function MandarLink({ manutencaoId, titulo, versao, info, aoFechar, aoMandar }: 
     <Dialogo aberto titulo="Mandar link ao prestador" aoFechar={aoFechar}>
       <form onSubmit={criar} noValidate className="grid gap-3">
         {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-        <p className="text-sm">Para: <span className="font-medium">{info.para?.nome}</span>{info.para?.telefone ? ` · ${info.para.telefone}` : ""}</p>
+        <p className="t-texto">Para: <span className="font-medium">{info.para?.nome}</span>{info.para?.telefone ? ` · ${info.para.telefone}` : ""}</p>
         <CampoAreaTexto id="lp-fazer" rotulo="O que fazer" required rows={4} maxLength={2000} value={v.oQueFazer} onChange={(e) => setV({ ...v, oQueFazer: e.target.value })}
           ajuda="Os detalhes internos, o pedido ligado e o morador não vão." erro={comErro.includes("oQueFazer") ? "Diga o que fazer (de 10 a 2.000 caracteres)." : null} />
         <div className="grid gap-3 sm:grid-cols-2">
@@ -232,8 +232,8 @@ function MandarLink({ manutencaoId, titulo, versao, info, aoFechar, aoMandar }: 
           placeholder="Procurar o zelador na portaria do bloco A." erro={comErro.includes("comoEntrar") ? "De 2 a 500 caracteres." : null} />
         {reserva ? (
           <fieldset className="grid gap-2 rounded-xl border border-linha p-3">
-            <legend className="px-1 text-sm font-medium">Se não responder, passar para a reserva</legend>
-            <label className="flex items-start gap-2 text-sm">
+            <legend className="px-1 t-texto font-medium">Se não responder, passar para a reserva</legend>
+            <label className="flex items-start gap-2 t-texto">
               <input type="checkbox" className="mt-1 h-4 w-4 accent-violeta-600" checked={passar} onChange={(e) => setPassar(e.target.checked)} />
               <span>
                 Se {info.para?.nome ?? "o prestador"} não confirmar em {horas} horas, o serviço passa para <span className="font-medium">{reserva.nome}</span>, a reserva do cadastro, com o mesmo texto.
@@ -244,14 +244,14 @@ function MandarLink({ manutencaoId, titulo, versao, info, aoFechar, aoMandar }: 
                 opcoes={PRAZOS_RESPOSTA_PRESTADOR.map((h) => ({ valor: String(h), texto: `${h} horas` }))}
                 erro={comErro.includes("responderHoras") ? "Escolha 4, 8, 24 ou 48 horas." : null} />
             ) : null}
-            <p className="text-xs text-tinta-suave">Só abrir o link não conta como resposta. Vencendo fora do horário de funcionamento, a troca espera o próximo horário.</p>
+            <p className="t-apoio text-tinta-suave">Só abrir o link não conta como resposta. Vencendo fora do horário de funcionamento, a troca espera o próximo horário.</p>
           </fieldset>
         ) : null}
         {info.arquivos.length ? (
           <fieldset className="grid gap-1">
-            <legend className="mb-1 text-sm font-medium">Enviar junto <span className="font-normal text-tinta-suave">(só os que você marcar)</span></legend>
+            <legend className="mb-1 t-texto font-medium">Enviar junto <span className="font-normal text-tinta-suave">(só os que você marcar)</span></legend>
             {info.arquivos.map((a) => (
-              <label key={a.id} className="flex items-center gap-2 text-sm">
+              <label key={a.id} className="flex items-center gap-2 t-texto">
                 <input type="checkbox" className="h-4 w-4 accent-violeta-600" checked={arquivos.includes(a.id)}
                   onChange={() => setArquivos(arquivos.includes(a.id) ? arquivos.filter((x) => x !== a.id) : [...arquivos, a.id].slice(0, 10))} />
                 {a.nome}
@@ -259,7 +259,7 @@ function MandarLink({ manutencaoId, titulo, versao, info, aoFechar, aoMandar }: 
             ))}
           </fieldset>
         ) : null}
-        <p className="text-xs text-tinta-suave">
+        <p className="t-apoio text-tinta-suave">
           {info.etiqueta ? `A chegada é confirmada pela etiqueta ${info.etiqueta.rotulo} (${info.etiqueta.local}).` : `O local "${info.local}" não tem etiqueta: a chegada fica informada pelo prestador.`}
           {info.link?.situacao === "VALE" ? " O link anterior para na hora." : ""}
         </p>
@@ -288,7 +288,7 @@ function NaoTrocar({ manutencaoId, link, aoFechar, aoConfirmar }: {
   return (
     <Dialogo aberto titulo="Não trocar sozinho" aoFechar={aoFechar}>
       <div className="grid gap-3">
-        <p className="text-sm">O serviço fica com {link.para} mesmo sem resposta{link.reserva ? `, e não passa para ${link.reserva.nome}` : ""}. Fica registrado no histórico.</p>
+        <p className="t-texto">O serviço fica com {link.para} mesmo sem resposta{link.reserva ? `, e não passa para ${link.reserva.nome}` : ""}. Fica registrado no histórico.</p>
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <div className="flex flex-wrap justify-end gap-2">
           <Botao variante="contorno" onClick={aoFechar}>Voltar</Botao>

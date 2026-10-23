@@ -56,7 +56,7 @@ export function RegrasPedidos({ config, pode: podeEditar, recarregar, n }: Props
             ajuda="Com motivo, guardando a conclusão anterior. Desligado, quem voltar a reclamar ganha um pedido novo." />
         </>
       ) : (
-        <ul className="grid gap-2 text-sm">
+        <ul className="grid gap-2 t-texto">
           <li>Revisar a conclusão antes de encerrar: {config.regrasPedidos.revisao ? "ligado" : "desligado"}</li>
           <li>Reabrir pedido encerrado: {config.regrasPedidos.reabertura ? "ligado" : "desligado"}</li>
         </ul>

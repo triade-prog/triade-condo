@@ -27,21 +27,45 @@ interface ArquivoManutencao {
   podeTirar: boolean;
 }
 
-/** Envia os arquivos um a um: pede o link, sobe e pede a verificação. Também serve à foto do depois, ao concluir. */
+type EnvioAberto = { arquivoId: string; envio: { url: string; tipo: string } };
+
+/** Sobe o arquivo pelo link já aberto e pede a verificação. */
+async function subirEVerificar(base: string, item: ItemEnvio, aberto: EnvioAberto, aoProgresso: (chave: string, p: number) => void): Promise<ResultadoEnvio> {
+  const nome = item.arquivo.name;
+  const subiu = await subir(aberto.envio.url, item.arquivo, aberto.envio.tipo, (p) => aoProgresso(item.chave, p));
+  const fim = await chamarApi<{ situacao: string; motivo?: string }>(`${base}/${aberto.arquivoId}/verificar`, { corpo: {} });
+  if (!fim.ok) return { nome, liberado: false, motivo: textoDoErro(fim.erro) };
+  return fim.dados.situacao === "LIBERADO" ? { nome, liberado: true }
+    : { nome, liberado: false, motivo: fim.dados.motivo ?? (subiu ? "O arquivo não foi liberado." : "O envio não terminou. Envie de novo.") };
+}
+
+/** Envia os arquivos um a um: pede o link, sobe e pede a verificação. */
 export async function enviarArquivosManutencao(manutencaoId: string, itemId: string | null, itens: ItemEnvio[], aoProgresso: (chave: string, p: number) => void) {
   const base = `/v1/condominio/manutencao/${manutencaoId}/arquivos`;
   const resultados: ResultadoEnvio[] = [];
   for (const item of itens.filter((i) => !i.problema)) {
-    const nome = item.arquivo.name;
-    const inicio = await chamarApi<{ arquivoId: string; envio: { url: string; tipo: string } }>(base, { corpo: {
-      itemId, nome, descricao: item.descricao.trim() || null, tipo: item.arquivo.type, tamanho: item.arquivo.size,
+    const inicio = await chamarApi<EnvioAberto>(base, { corpo: {
+      itemId, nome: item.arquivo.name, descricao: item.descricao.trim() || null, tipo: item.arquivo.type, tamanho: item.arquivo.size,
     } });
-    if (!inicio.ok) { resultados.push({ nome, liberado: false, motivo: textoDoErro(inicio.erro) }); continue; }
-    const subiu = await subir(inicio.dados.envio.url, item.arquivo, inicio.dados.envio.tipo, (p) => aoProgresso(item.chave, p));
-    const fim = await chamarApi<{ situacao: string; motivo?: string }>(`${base}/${inicio.dados.arquivoId}/verificar`, { corpo: {} });
-    if (!fim.ok) { resultados.push({ nome, liberado: false, motivo: textoDoErro(fim.erro) }); continue; }
-    resultados.push(fim.dados.situacao === "LIBERADO" ? { nome, liberado: true }
-      : { nome, liberado: false, motivo: fim.dados.motivo ?? (subiu ? "O arquivo não foi liberado." : "O envio não terminou. Envie de novo.") });
+    if (!inicio.ok) { resultados.push({ nome: item.arquivo.name, liberado: false, motivo: textoDoErro(inicio.erro) }); continue; }
+    resultados.push(await subirEVerificar(base, item, inicio.dados, aoProgresso));
+  }
+  return resultados;
+}
+
+/** O que vai no corpo de quem já abre o envio junto (a foto do depois, ao concluir; D4.22). */
+export const fotosParaAbrir = (itens: ItemEnvio[]) =>
+  itens.filter((i) => !i.problema).map((i) => ({ nome: i.arquivo.name, descricao: i.descricao.trim() || null, tipo: i.arquivo.type, tamanho: i.arquivo.size }));
+
+/** Sobe as fotos cujos envios a API já abriu, na mesma ordem de fotosParaAbrir. */
+export async function subirAbertos(manutencaoId: string, itens: ItemEnvio[], envios: (Partial<EnvioAberto> & { nome: string })[]) {
+  const base = `/v1/condominio/manutencao/${manutencaoId}/arquivos`;
+  const validos = itens.filter((i) => !i.problema);
+  const resultados: ResultadoEnvio[] = [];
+  for (const [n, item] of validos.entries()) {
+    const aberto = envios[n];
+    if (!aberto?.arquivoId || !aberto.envio) { resultados.push({ nome: item.arquivo.name, liberado: false, motivo: "O envio não abriu. Envie de novo na manutenção." }); continue; }
+    resultados.push(await subirEVerificar(base, item, { arquivoId: aberto.arquivoId, envio: aberto.envio }, () => {}));
   }
   return resultados;
 }
@@ -88,13 +112,13 @@ export function ArquivosManutencao({ manutencaoId, itens, avisar }: {
       {arquivos.length === 0 ? <Vazio titulo="Nenhum arquivo ainda">Fotos do antes e do depois, orçamentos e laudos ficam aqui.</Vazio> : (
         <ul className="grid gap-2">
           {arquivos.map((a) => (
-            <li key={a.id} className="flex items-center gap-3 rounded-2xl border border-linha px-3 py-2 text-sm">
+            <li key={a.id} className="flex items-center gap-3 rounded-2xl border border-linha px-3 py-2 t-texto">
               <span className="grid min-w-0 flex-1 gap-0.5">
                 {a.situacao === "LIBERADO"
-                  ? <button type="button" className="w-fit text-left font-medium text-violeta-600 [overflow-wrap:anywhere] hover:underline" onClick={() => void abrir(a)}>{a.nome}</button>
+                  ? <button type="button" className="elo w-fit" onClick={() => void abrir(a)}>{a.nome}</button>
                   : <span className="font-medium [overflow-wrap:anywhere]">{a.nome}</span>}
-                {a.descricao ? <span className="text-xs">{a.descricao}</span> : null}
-                <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-tinta-suave">
+                {a.descricao ? <span className="t-apoio">{a.descricao}</span> : null}
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1 t-apoio text-tinta-suave">
                   {a.situacao === "ENVIANDO" ? <Selo tom="info">Verificando</Selo> : null}
                   {a.situacao === "NAO_LIBERADO" ? <Selo tom="atencao">Não liberado</Selo> : null}
                   {a.situacao === "NAO_LIBERADO" ? <span className="text-atencao">{a.motivoRecusa}</span>
@@ -113,8 +137,8 @@ export function ArquivosManutencao({ manutencaoId, itens, avisar }: {
         {abrindo ? (
           <div className="grid gap-4">
             {itens.length ? (
-              <label className="grid gap-1 text-sm">
-                <span className="text-[13px] font-medium">Do item da vistoria <span className="font-normal text-tinta-suave">(opcional)</span></span>
+              <label className="grid gap-1 t-texto">
+                <span className="t-apoio font-medium">Do item da vistoria <span className="font-normal text-tinta-suave">(opcional)</span></span>
                 <select className="campo" value={item} onChange={(e) => setItem(e.target.value)} disabled={enviando}>
                   <option value="">Da manutenção toda</option>
                   {itens.map((i) => <option key={i.id} value={i.id}>{i.texto}</option>)}
@@ -122,7 +146,7 @@ export function ArquivosManutencao({ manutencaoId, itens, avisar }: {
               </label>
             ) : null}
             <EscolherArquivos rotulo="Fotos e documentos" itens={escolhidos} aoMudar={setEscolhidos} enviando={enviando} />
-            <p className="text-xs text-tinta-suave">Antes de liberar, o sistema confere o conteúdo e tira a localização das fotos.</p>
+            <p className="t-apoio text-tinta-suave">Antes de liberar, o sistema confere o conteúdo e tira a localização das fotos.</p>
             <div className="flex justify-end gap-2">
               <Botao variante="discreto" disabled={enviando} onClick={() => { setEscolhidos([]); setAbrindo(false); }}>Cancelar</Botao>
               <Botao disabled={!validos || enviando} onClick={() => void mandar()}>

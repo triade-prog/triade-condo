@@ -29,7 +29,7 @@ export function Chamado({ id, falhouImagem }: { id: string; falhouImagem: boolea
   const [recado, setRecado] = useState<{ tom: "ok" | "atencao"; texto: string } | null>(falhouImagem
     ? { tom: "atencao", texto: "O chamado foi aberto, mas alguma imagem não passou na conferência." } : null);
   const voltar = (
-    <Link href="/suporte" className="inline-flex items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
+    <Link href="/suporte" className="inline-flex items-center gap-1 t-texto font-medium text-violeta-600 hover:underline">
       <Icone nome="esq" className="h-4 w-4" />Voltar aos chamados
     </Link>
   );
@@ -119,7 +119,7 @@ export function Chamado({ id, falhouImagem }: { id: string; falhouImagem: boolea
                   <li key={a.id}>
                     {a.situacao === "LIBERADO"
                       ? <Botao variante="contorno" tamanho="m" onClick={() => void abrirImagem(a.id)}><Icone nome="camera" />Abrir {a.nome}</Botao>
-                      : <span className="text-xs text-erro">{a.nome}: {a.motivoRecusa ?? "não liberada"}</span>}
+                      : <span className="t-apoio text-erro">{a.nome}: {a.motivoRecusa ?? "não liberada"}</span>}
                   </li>
                 ))}
               </ul>
@@ -148,7 +148,7 @@ export function Chamado({ id, falhouImagem }: { id: string; falhouImagem: boolea
               {c.resolvidoEm ? <Dado icone="check" nome="Resolvido em">{formatarDataHora(c.resolvidoEm)}</Dado> : null}
             </div>
             {pagina ? (
-              <Link href={`/configuracoes/${pagina}`} className="inline-flex items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
+              <Link href={`/configuracoes/${pagina}`} className="inline-flex items-center gap-1 t-texto font-medium text-violeta-600 hover:underline">
                 Ver em Configurações › {PAGINAS_CONFIGURACAO[pagina].nome}<Icone nome="dir" className="h-4 w-4" />
               </Link>
             ) : null}

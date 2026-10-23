@@ -52,7 +52,7 @@ function AbrirChamado({ aoFechar }: { aoFechar: () => void }) {
       <form onSubmit={abrir} noValidate className="grid gap-4">
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <div className="grid gap-1.5">
-          <span className="text-[13px] font-medium">Tipo</span>
+          <span className="t-apoio font-medium">Tipo</span>
           <Escolha rotulo="Tipo do chamado" atual={tipo} aoMudar={setTipo}
             opcoes={TIPOS_ABRIR_CHAMADO.map((k) => ({ valor: k, texto: <><Icone nome={ICONE_TIPO[k]} className="h-4 w-4" />{TIPOS_CHAMADO[k]}</> }))} />
         </div>
@@ -116,7 +116,7 @@ export function AjudaSuporte() {
             const atual = aba === a.valor;
             return (
               <button key={a.valor} type="button" aria-pressed={atual} onClick={() => setAba(a.valor)}
-                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
                 {a.texto}
                 {lista.estado === "pronto" ? <span className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : ""}`}>{a.n}</span> : null}
               </button>
@@ -147,7 +147,7 @@ export function AjudaSuporte() {
                       <span className="t-apoio">{TIPOS_CHAMADO[c.tipo]} · {AREAS_CHAMADO[c.area]} · aberto {formatarDataHora(c.criadoEm)}</span>
                       <span className="t-apoio md:hidden">{ultimaResposta(c)}</span>
                     </span>
-                    <span className="text-sm max-md:hidden">{ultimaResposta(c)}</span>
+                    <span className="t-texto max-md:hidden">{ultimaResposta(c)}</span>
                     <span className="max-md:hidden"><SeloChamado situacao={c.situacao} /></span>
                     <Icone nome="dir" className="h-5 w-5 text-tinta-suave max-md:col-start-3 max-md:row-start-1" />
                   </li>

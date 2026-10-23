@@ -87,6 +87,16 @@ export function useCarregar<T>(caminho: string | null): Carga<T> & { recarregar:
   return { ...carga, recarregar };
 }
 
+/** O número de cada aba de uma lista (D4.2): os mesmos filtros da tela, sem a aba e a página.
+ * Com q null, não pede (quem não vê a lista). */
+export function useContagens(lista: string, q: string | null) {
+  const p = new URLSearchParams(q ?? "");
+  for (const k of ["situacao", "filtro", "pagina"]) p.delete(k);
+  const s = p.toString();
+  const c = useCarregar<Partial<Record<string, number>>>(q === null ? null : `/v1/condominio/contagens/${lista}${s ? `?${s}` : ""}`);
+  return { n: c.estado === "pronto" ? c.dados : {}, recarregar: c.recarregar };
+}
+
 /** Assinatura curta dos dados: muda quando qualquer coisa muda (remonta os formulários). */
 export function assinatura(dados: unknown): string {
   const texto = JSON.stringify(dados);

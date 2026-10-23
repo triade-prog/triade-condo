@@ -56,18 +56,18 @@ export function PedirAcessoExcepcional({ condominio, nome, chamadoId, aoFechar, 
         <CampoAreaTexto id="ae-motivo" rotulo="Por que precisa ver os dados" required maxLength={1000} value={motivo} onChange={(e) => setMotivo(e.target.value)}
           erro={campos.includes("motivo") ? "Explique o motivo (10 a 1.000 caracteres)." : null} />
         <fieldset className="grid gap-2">
-          <legend className="mb-1 text-sm font-medium">O que vai ver</legend>
+          <legend className="mb-1 t-texto font-medium">O que vai ver</legend>
           <div className="trilho flex-wrap">
             {Object.entries(AREAS_EXCEPCIONAIS).map(([k, texto]) => (
               <button key={k} type="button" className="chip" aria-pressed={areas.includes(k as AreaExcepcional)}
                 onClick={() => setAreas(areas.includes(k as AreaExcepcional) ? areas.filter((a) => a !== k) : [...areas, k as AreaExcepcional])}>{texto}</button>
             ))}
           </div>
-          {campos.includes("areas") ? <p className="text-xs text-erro">Escolha ao menos uma área.</p> : null}
+          {campos.includes("areas") ? <p className="t-apoio text-erro">Escolha ao menos uma área.</p> : null}
         </fieldset>
         <CampoSelecao id="ae-horas" rotulo="Por quanto tempo" value={horas} onChange={(e) => setHoras(e.target.value)}
           opcoes={PRAZOS_ACESSO_EXCEPCIONAL.map((h) => ({ valor: String(h), texto: `${h} horas` }))} />
-        <p className="text-sm text-tinta-suave">Só para cliente atribuído a você. Só leitura. O síndico aprova na Plataforma.</p>
+        <p className="t-apoio text-tinta-suave">Só para cliente atribuído a você. Só leitura. O síndico aprova na Plataforma.</p>
         <div className="flex justify-end gap-2">
           <Botao variante="contorno" onClick={aoFechar}>Voltar</Botao>
           <Botao type="submit" disabled={areas.length === 0}>Pedir ao síndico</Botao>
@@ -100,11 +100,11 @@ function Area({ condominio, area }: { condominio: string; area: AreaExcepcional 
       {grupos.map(([titulo, itens]) => (
         <section key={titulo} className="grid gap-2">
           <h3 className="font-medium">{titulo}</h3>
-          {itens.length === 0 ? <p className="text-sm text-tinta-suave">Nada aqui.</p> : (
-            <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie text-sm">
+          {itens.length === 0 ? <p className="t-apoio text-tinta-suave">Nada aqui.</p> : (
+            <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie t-texto">
               {itens.map((i, n) => {
                 const l = linha(i);
-                return <li key={String(i.id ?? n)} className="px-4 py-2.5"><span className="font-medium">{l.titulo}</span>{l.detalhe ? <span className="block text-xs text-tinta-suave">{l.detalhe}</span> : null}</li>;
+                return <li key={String(i.id ?? n)} className="px-4 py-2.5"><span className="font-medium">{l.titulo}</span>{l.detalhe ? <span className="block t-apoio text-tinta-suave">{l.detalhe}</span> : null}</li>;
               })}
             </ul>
           )}
@@ -138,7 +138,7 @@ export function AcessoExcepcional() {
           <div role="group" aria-label="Áreas aprovadas" className="trilho flex-wrap justify-self-start">
             {valendo.areas.map((a) => <button key={a} type="button" className="chip" aria-pressed={area === a} onClick={() => setArea(a)}>{AREAS_EXCEPCIONAIS[a]}</button>)}
           </div>
-          {area ? <Area key={area} condominio={id} area={area} /> : <p className="text-sm text-tinta-suave">Escolha a área. Cada abertura fica registrada.</p>}
+          {area ? <Area key={area} condominio={id} area={area} /> : <p className="t-apoio text-tinta-suave">Escolha a área. Cada abertura fica registrada.</p>}
         </section>
       ) : null}
 
@@ -150,8 +150,8 @@ export function AcessoExcepcional() {
                 <span className="font-medium">{a.pedidoPor} · {descreverAcessoExcepcional(a.areas, a.horas)}</span>
                 <Selo tom={TOM[a.situacao]}>{SITUACOES_ACESSO_EXCEPCIONAL[a.situacao]}</Selo>
               </span>
-              <span className="text-sm">&ldquo;{a.motivo}&rdquo;</span>
-              <span className="text-xs text-tinta-suave">
+              <span className="t-texto">&ldquo;{a.motivo}&rdquo;</span>
+              <span className="t-apoio text-tinta-suave">
                 Pedido em {formatarDataHora(a.criadoEm)}
                 {a.decididoPor ? ` · decidido por ${a.decididoPor}` : ""}
                 {a.validoAte && a.situacao === "APROVADO" ? ` · vale até ${formatarDataHora(a.validoAte)}` : ""}

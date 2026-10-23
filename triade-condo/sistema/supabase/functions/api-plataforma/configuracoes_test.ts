@@ -150,3 +150,24 @@ Deno.test("as listas do domínio (permissões, fusos, situações, pendências) 
     assert(migration.includes(`'${s}'`), s);
   }
 });
+
+Deno.test("CF-06 (D4.15): a entrada das Configurações numa chamada só; a parte recusada volta null", async () => {
+  const m = montar({ handlers: {
+    plataforma_areas_comuns: () => ({ areas: [] }),
+    plataforma_etapas_manutencao: () => ({ etapas: [] }),
+    plataforma_plano_comunicacao: () => ({ assuntos: [] }),
+    plataforma_config_whatsapp: () => erroBanco("TC403"),
+    plataforma_links_qr: () => ({ etiquetas: [] }),
+  } });
+  const cookie = await entrar(m);
+  const r = await m.pedir("/v1/condominio/configuracoes/entrada", { cookie });
+  assertEquals(r.status, 200);
+  assertEquals(await r.json(), {
+    configuracoes: { fuso: "America/Sao_Paulo" }, areas: { areas: [] }, manutencao: { etapas: [] }, plano: { assuntos: [] }, whatsapp: null, links: { etiquetas: [] },
+  });
+  for (const f of ["plataforma_configuracoes", "plataforma_areas_comuns", "plataforma_config_whatsapp", "plataforma_links_qr"]) {
+    assertEquals(chamada(m, f), { p_pessoa: ANA, p_condominio: AURORA }, f);
+  }
+  const sem = montar({ handlers: { plataforma_configuracoes: () => erroBanco("TC403") } });
+  assertEquals((await sem.pedir("/v1/condominio/configuracoes/entrada", { cookie: await entrar(sem) })).status, 403);
+});

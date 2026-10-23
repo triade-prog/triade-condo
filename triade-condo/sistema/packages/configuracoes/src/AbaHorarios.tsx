@@ -108,8 +108,8 @@ function Semana({ tipo, config, pode, recarregar, oculta }: PropsAba & { tipo: T
   if (pode && linhas.length === 0 && !diaADia && h.intervalos.length === 0) {
     return (
       <section aria-labelledby={`t-vazio-${tipo}`} hidden={oculta} className="grid justify-items-start gap-3 rounded-[18px] border border-linha bg-superficie p-6 shadow-s1">
-        <h2 id={`t-vazio-${tipo}`} className="text-lg font-medium">Ainda sem horário de {nome}</h2>
-        <p className="max-w-2xl text-sm">
+        <h2 id={`t-vazio-${tipo}`} className="t-titulo-secao font-medium">Ainda sem horário de {nome}</h2>
+        <p className="max-w-2xl t-texto">
           {tipo === "ATENDIMENTO" ? "Sem ele, os prazos contam em horas corridas, de dia e de noite. " : ""}Comece por um horário comum e ajuste os dias depois.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -123,7 +123,7 @@ function Semana({ tipo, config, pode, recarregar, oculta }: PropsAba & { tipo: T
   return (
     <section aria-label={`Horário de ${nome}`} hidden={oculta} className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar} /> : null}
-      {aviso ? <p role="alert" className="text-sm text-erro">{aviso}</p> : null}
+      {aviso ? <p role="alert" className="t-texto text-erro">{aviso}</p> : null}
       <div className="overflow-hidden rounded-[18px] border border-linha bg-superficie shadow-s1">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-linha px-4 py-3 sm:px-5">
           <h2 className="font-medium">Horário de {nome}</h2>
@@ -136,19 +136,19 @@ function Semana({ tipo, config, pode, recarregar, oculta }: PropsAba & { tipo: T
               <li key={dia} aria-label={DIAS_SEMANA[dia]} className="grid gap-2 px-4 py-3 sm:grid-cols-[140px_minmax(0,1fr)] sm:items-center sm:px-5">
                 <span className="font-medium">{DIAS_SEMANA[dia]}</span>
                 <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
-                  {doDia.length === 0 ? <span className="text-sm text-tinta-suave">Sem {nome}</span> : null}
+                  {doDia.length === 0 ? <span className="t-apoio text-tinta-suave">Sem {nome}</span> : null}
                   {doDia.map((l) => pode ? (
                     <div key={l.chave} className="flex items-end gap-2">
                       <CampoTexto id={`h-${l.chave}-i`} rotulo={`${DIAS_SEMANA[dia]}, início`} className="w-24 [&_label]:sr-only" inputMode="numeric" maxLength={5}
                         value={l.inicio} onChange={(e) => mudar(l.chave, "inicio", e.target.value)} />
-                      <span className="pb-3 text-sm text-tinta-suave">às</span>
+                      <span className="pb-3 t-apoio text-tinta-suave">às</span>
                       <CampoTexto id={`h-${l.chave}-f`} rotulo={`${DIAS_SEMANA[dia]}, fim`} className="w-24 [&_label]:sr-only" inputMode="numeric" maxLength={5}
                         value={l.fim} onChange={(e) => mudar(l.chave, "fim", e.target.value)} />
                       <Botao variante="discreto" tamanho="m" onClick={() => setLinhas((x) => x.filter((y) => y.chave !== l.chave))}
                         aria-label={`Tirar o intervalo de ${DIAS_SEMANA[dia]} das ${l.inicio} às ${l.fim}`}>Tirar</Botao>
                     </div>
                   ) : (
-                    <span key={l.chave} className="w-max rounded border border-info-borda bg-info-fundo px-2 py-0.5 text-sm text-info">{l.inicio} às {l.fim}</span>
+                    <span key={l.chave} className="w-max rounded border border-info-borda bg-info-fundo px-2 py-0.5 t-texto text-info">{l.inicio} às {l.fim}</span>
                   ))}
                   {pode ? (
                     <Botao variante="discreto" tamanho="m" onClick={() => incluir(dia)}
@@ -161,9 +161,9 @@ function Semana({ tipo, config, pode, recarregar, oculta }: PropsAba & { tipo: T
             );
           })}
         </ul>
-        {resumo ? <p className="border-t border-linha px-4 py-3 text-[13px] text-tinta-suave sm:px-5">{resumo}{tipo === "ATENDIMENTO" ? " · os prazos contam só neste horário" : ""}</p> : null}
+        {resumo ? <p className="border-t border-linha px-4 py-3 t-apoio text-tinta-suave sm:px-5">{resumo}{tipo === "ATENDIMENTO" ? " · os prazos contam só neste horário" : ""}</p> : null}
       </div>
-      {tipo === "ATENDIMENTO" ? <p className="text-sm text-tinta-suave">Fora destes horários e nos feriados, o prazo de retorno para.</p> : null}
+      {tipo === "ATENDIMENTO" ? <p className="t-apoio text-tinta-suave">Fora destes horários e nos feriados, o prazo de retorno para.</p> : null}
     </section>
   );
 }
@@ -184,7 +184,7 @@ export function AbaHorarios(props: PropsAba) {
     <div className="grid gap-5">
       <Escolha rotulo="Qual horário" atual={tipo} aoMudar={setTipo}
         opcoes={(["ATENDIMENTO", "FUNCIONAMENTO"] as const).map((t) => ({ valor: t, texto: TIPOS_HORARIO[t] }))} />
-      <p className="text-sm text-tinta-suave">
+      <p className="t-apoio text-tinta-suave">
         {tipo === "ATENDIMENTO" ? "Quando os pedidos dos moradores são tratados. Fora destas horas e nos feriados, o prazo de retorno para." : "Quando o condomínio funciona (administração, áreas comuns). Serve de informação aos moradores."}
       </p>
       {/* Os dois ficam montados: trocar no trilho não perde o que foi digitado. */}

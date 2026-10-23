@@ -62,7 +62,7 @@ export function Prestador() {
   const pronto = (texto: string | null) => { setRecado(texto); setModo(null); carregar(); };
   const confirmouSemHora = p.resposta === "CONFIRMOU" && !registros.some((r) => r.tipo === "CONFIRMOU");
   const abrir = (m: Modo) => { setRecado(null); setFalha(null); setModo(m); };
-  const voltar = <button type="button" onClick={() => setModo(null)} className="justify-self-start text-sm font-medium text-violeta-600 hover:underline">Voltar ao serviço</button>;
+  const voltar = <button type="button" onClick={() => setModo(null)} className="justify-self-start t-texto font-medium text-violeta-600 hover:underline">Voltar ao serviço</button>;
   const barra = <BarraDosPassos atual={passo} />;
 
   if (modo === "chegada") return tela(<>{barra}{voltar}<Chegada base={base} aoRegistrar={() => pronto(null)} /></>);
@@ -89,12 +89,12 @@ export function Prestador() {
           <Cartao className="gap-3">
             {p.responderAte ? (
               <>
-                <p className="flex items-center gap-2 text-[15px] font-semibold"><Icone nome="relogio" />Confirme até {diaHora(p.responderAte)}</p>
-                <p className="t-apoio text-sm">Sem resposta até lá, o condomínio passa o serviço para outro prestador.</p>
+                <p className="flex items-center gap-2 t-titulo-cartao font-semibold"><Icone nome="relogio" />Confirme até {diaHora(p.responderAte)}</p>
+                <p className="t-texto text-tinta-suave">Sem resposta até lá, o condomínio passa o serviço para outro prestador.</p>
               </>
             ) : null}
             <Botao className="w-full" onClick={() => void confirmar()}><Icone nome="check" />Confirmo que vou fazer</Botao>
-            {falha ? <p className="text-sm text-erro" role="alert">{falha}</p> : null}
+            {falha ? <p className="t-texto text-erro" role="alert">{falha}</p> : null}
             <Botao variante="discreto" className="justify-self-center" onClick={() => abrir("recusar")}><Icone nome="fechar" />Não posso atender</Botao>
           </Cartao>
         )}
@@ -111,7 +111,7 @@ export function Prestador() {
         ) : null)}
         <Servico base={base} p={p} resumido />
         <Cartao className="gap-3">
-          <p className="t-apoio text-sm">Ao chegar, aponte a câmera para a etiqueta do local. Ela prova que você esteve lá, sem usar a localização do celular.</p>
+          <p className="t-texto text-tinta-suave">Ao chegar, aponte a câmera para a etiqueta do local. Ela prova que você esteve lá, sem usar a localização do celular.</p>
           <Botao className="w-full" onClick={() => abrir("chegada")}><Icone nome="pin" />Cheguei</Botao>
           <span className="flex flex-wrap justify-between gap-2">
             <Botao variante="discreto" onClick={() => abrir("impedimento")}><Icone nome="alerta" />Não consegui fazer</Botao>
@@ -152,7 +152,7 @@ export function Prestador() {
           {confirmouSemHora ? (
             <li className="flex gap-3 py-2.5">
               <span className="ladrilho h-8 w-8" data-tom="ok" aria-hidden="true"><Icone nome="check" /></span>
-              <span className="self-center text-sm font-semibold">Confirmou que vai fazer</span>
+              <span className="self-center t-titulo-cartao font-semibold">Confirmou que vai fazer</span>
             </li>
           ) : null}
           {[...registros].reverse().map((r, i) => <LinhaDoRegistro key={`${r.tipo}-${r.em}-${i}`} r={r} primeira={i === 0 && !confirmouSemHora} />)}
@@ -160,7 +160,7 @@ export function Prestador() {
       </Cartao>
       {registros.length < 20 ? (
         <Cartao className="gap-3">
-          <p className="t-apoio text-sm">Esqueceu alguma coisa ou apareceu um problema depois?</p>
+          <p className="t-texto text-tinta-suave">Esqueceu alguma coisa ou apareceu um problema depois?</p>
           <Botao variante="contorno" className="w-full" onClick={() => abrir("terminei")}><Icone nome="mais" />Mandar mais uma coisa</Botao>
         </Cartao>
       ) : null}
@@ -172,12 +172,12 @@ export function Prestador() {
 function BarraDosPassos({ atual }: { atual: number }) {
   return (
     <section className="grid gap-2 rounded-2xl border border-linha bg-superficie px-4 py-3.5">
-      <span className="text-xs font-semibold text-tinta-suave">Passo {atual} de 4</span>
+      <span className="t-apoio font-semibold text-tinta-suave">Passo {atual} de 4</span>
       <div className="passos" role="progressbar" aria-label="Passos do serviço" aria-valuemin={1} aria-valuemax={4} aria-valuenow={atual}
         aria-valuetext={`Passo ${atual} de 4: ${PASSOS[atual - 1]}`}>
         {PASSOS.map((t, i) => <span key={t} data-feito={i < atual ? "" : undefined} />)}
       </div>
-      <ol className="flex gap-1.5 text-[11px]" aria-hidden="true">
+      <ol className="flex gap-1.5 t-apoio" aria-hidden="true">
         {PASSOS.map((t, i) => (
           <li key={t} className={`flex flex-1 items-center gap-0.5 ${i + 1 === atual ? "font-bold text-tinta" : i + 1 < atual ? "text-violeta-700" : "text-tinta-suave"}`}>
             {i + 1 < atual ? <Icone nome="check" className="h-3 w-3" /> : null}{t}
@@ -192,14 +192,14 @@ function BarraDosPassos({ atual }: { atual: number }) {
 function Servico({ base, p, resumido = false }: { base: string; p: PrestadorPublico; resumido?: boolean }) {
   const detalhes = (
     <>
-      <p className="text-[15px] whitespace-pre-line">{p.oQueFazer}</p>
-      <dl className="grid grid-cols-2 gap-3 text-[15px]">
-        <div><dt className="text-[13px] text-tinta-suave">Local</dt><dd>{p.local}</dd></div>
-        {p.quando ? <div><dt className="text-[13px] text-tinta-suave">Quando</dt><dd>{p.quando}</dd></div> : null}
-        {p.comoEntrar ? <div className="col-span-2"><dt className="text-[13px] text-tinta-suave">Como entrar</dt><dd className="whitespace-pre-line">{p.comoEntrar}</dd></div> : null}
+      <p className="t-texto whitespace-pre-line">{p.oQueFazer}</p>
+      <dl className="grid grid-cols-2 gap-3 t-texto">
+        <div><dt className="t-apoio text-tinta-suave">Local</dt><dd>{p.local}</dd></div>
+        {p.quando ? <div><dt className="t-apoio text-tinta-suave">Quando</dt><dd>{p.quando}</dd></div> : null}
+        {p.comoEntrar ? <div className="col-span-2"><dt className="t-apoio text-tinta-suave">Como entrar</dt><dd className="whitespace-pre-line">{p.comoEntrar}</dd></div> : null}
       </dl>
       <ArquivosDoServico base={base} arquivos={p.arquivos ?? []} />
-      {p.expiraEm ? <p className="text-[13px] text-tinta-suave">Este link vale até {diaHora(p.expiraEm)}.</p> : null}
+      {p.expiraEm ? <p className="t-apoio text-tinta-suave">Este link vale até {diaHora(p.expiraEm)}.</p> : null}
     </>
   );
   const tipo = p.tipo ? (
@@ -208,14 +208,14 @@ function Servico({ base, p, resumido = false }: { base: string; p: PrestadorPubl
     </span>
   ) : null;
   if (!resumido) {
-    return <Cartao>{tipo}<h2 className="text-xl font-medium">{p.titulo}</h2>{detalhes}</Cartao>;
+    return <Cartao>{tipo}<h2 className="t-titulo-secao font-medium">{p.titulo}</h2>{detalhes}</Cartao>;
   }
   return (
     <details className="group rounded-2xl border border-linha bg-superficie p-3.5 shadow-s1">
       <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
         <span className="ladrilho h-10 w-10" data-tom="violeta" aria-hidden="true"><Icone nome="ferramenta" /></span>
         <span className="grid min-w-0 flex-1 gap-0.5">
-          <span className="text-[15px] font-semibold">{p.titulo}</span>
+          <span className="t-titulo-cartao font-semibold">{p.titulo}</span>
           <span className="t-apoio">{[p.local, p.quando].filter(Boolean).join(" · ")}</span>
         </span>
         <span className="text-tinta-suave transition-transform group-open:rotate-180"><Icone nome="baixo" /></span>
@@ -242,7 +242,7 @@ function LinhaDoRegistro({ r, primeira }: { r: NonNullable<PrestadorPublico["reg
     <li className={`flex gap-3 py-2.5 ${primeira ? "" : "border-t border-linha"}`}>
       <span className="ladrilho h-8 w-8" data-tom={d.tom} aria-hidden="true"><Icone nome={d.icone} /></span>
       <span className="grid flex-1 gap-0.5">
-        <span className="text-sm font-semibold">{d.texto} {diaHora(r.em)}</span>
+        <span className="t-titulo-cartao font-semibold">{d.texto} {diaHora(r.em)}</span>
         {apoio ? <span className="t-apoio">{apoio}</span> : null}
       </span>
     </li>
@@ -265,8 +265,8 @@ function Recusar({ base, aoEnviar }: { base: string; aoEnviar: () => void }) {
   }
   return (
     <form onSubmit={enviar} noValidate className="grid gap-3">
-      <h2 className="text-xl font-medium">Não posso atender</h2>
-      <p className="text-[15px]">O condomínio é avisado na hora e pode passar o serviço para outro prestador.</p>
+      <h2 className="t-titulo-secao font-medium">Não posso atender</h2>
+      <p className="t-texto">O condomínio é avisado na hora e pode passar o serviço para outro prestador.</p>
       {erro && !camposComErro(erro).length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
       <CampoAreaTexto id="pr-motivo" rotulo="Por quê" opcional rows={3} maxLength={500} value={texto} onChange={(e) => setTexto(e.target.value)}
         erro={camposComErro(erro).includes("texto") ? "De 3 a 500 caracteres." : null} />
@@ -289,11 +289,11 @@ function ArquivosDoServico({ base, arquivos }: { base: string; arquivos: { id: s
     <div className="grid gap-2">
       {arquivos.map((a) => (
         <button key={a.id} type="button" onClick={() => void abrir(a.id)}
-          className="flex items-center gap-2 justify-self-start rounded-xl border border-linha px-3 py-2 text-sm font-medium text-violeta-600 hover:underline">
+          className="flex items-center gap-2 justify-self-start rounded-xl border border-linha px-3 py-2 t-texto font-medium text-violeta-600 hover:underline">
           <Icone nome={a.tipo.startsWith("image/") ? "camera" : "documento"} />{a.nome}
         </button>
       ))}
-      {falha ? <p className="text-sm text-erro" role="alert">{falha}</p> : null}
+      {falha ? <p className="t-texto text-erro" role="alert">{falha}</p> : null}
     </div>
   );
 }
@@ -367,8 +367,8 @@ function Chegada({ base, aoRegistrar }: { base: string; aoRegistrar: () => void 
   return (
     <>
       <Cartao>
-        <h2 className="text-lg font-medium">Registrar a chegada</h2>
-        <p className="text-[15px]">Aponte a câmera para a etiqueta do local.</p>
+        <h2 className="t-titulo-secao font-medium">Registrar a chegada</h2>
+        <p className="t-texto">Aponte a câmera para a etiqueta do local.</p>
       </Cartao>
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
       {situacao === "sem-camera" ? (
@@ -377,7 +377,7 @@ function Chegada({ base, aoRegistrar }: { base: string; aoRegistrar: () => void 
         <div className="relative grid aspect-square place-items-center overflow-hidden rounded-2xl bg-violeta-900">
           <video ref={video} className="absolute inset-0 h-full w-full object-cover" playsInline muted aria-label="Câmera para ler a etiqueta" />
           <span className="relative h-2/3 w-2/3 rounded-2xl border-[3px] border-laranja-200" aria-hidden="true" />
-          <span className="absolute inset-x-0 bottom-3 text-center text-[13px] text-violeta-100" role="status">
+          <span className="absolute inset-x-0 bottom-3 text-center t-apoio text-violeta-100" role="status">
             {situacao === "abrindo" ? "Abrindo a câmera…" : situacao === "enviando" ? "Registrando a chegada…" : "Procurando a etiqueta…"}
           </span>
         </div>
@@ -386,7 +386,7 @@ function Chegada({ base, aoRegistrar }: { base: string; aoRegistrar: () => void 
       <Botao variante="discreto" className="justify-self-start" disabled={situacao === "enviando"} onClick={() => void registrar(null)}>
         Estou no local, mas não achei a etiqueta
       </Botao>
-      <p className="text-[13px] text-tinta-suave">A página não usa a localização do celular: a etiqueta é uma prova simples de que você esteve no local.</p>
+      <p className="t-apoio text-tinta-suave">A página não usa a localização do celular: a etiqueta é uma prova simples de que você esteve no local.</p>
     </>
   );
 }
@@ -421,11 +421,11 @@ function Fotos({ base, fotos, aoMudar }: { base: string; fotos: Foto[]; aoMudar:
   const mudou = (e: React.ChangeEvent<HTMLInputElement>) => { void incluir(e.target.files); e.target.value = ""; };
   return (
     <fieldset className="grid gap-2">
-      <legend className="mb-1.5 text-[13px] font-medium">Fotos <span className="font-normal text-tinta-suave">(opcional)</span></legend>
+      <legend className="mb-1.5 t-apoio font-medium">Fotos <span className="font-normal text-tinta-suave">(opcional)</span></legend>
       <div className="anexar">
         <span className="quadro" aria-hidden="true"><Icone nome="camera" /></span>
         <span className="grid flex-1 gap-0.5">
-          <span className="text-sm font-semibold">Fotos do serviço</span>
+          <span className="t-titulo-cartao font-semibold">Fotos do serviço</span>
           <span className="t-apoio">JPG, PNG ou WEBP · até 10 fotos · a localização da foto é apagada</span>
         </span>
         <span className="acoes">
@@ -442,9 +442,9 @@ function Fotos({ base, fotos, aoMudar }: { base: string; fotos: Foto[]; aoMudar:
               <span className="flex items-center gap-3">
                 <span className="ladrilho" data-tom={f.estado === "pronta" ? "ok" : undefined} aria-hidden="true"><Icone nome="camera" /></span>
                 <span className="grid min-w-0 flex-1 [overflow-wrap:anywhere]">
-                  <span className="text-sm font-medium">{f.nome}</span>
+                  <span className="t-texto font-medium">{f.nome}</span>
                   {f.estado === "recusada" ? <span className="t-apoio text-atencao">{f.motivo}</span>
-                    : f.estado === "pronta" ? <span className="flex items-center gap-1 text-xs text-ok"><Icone nome="check" className="h-3.5 w-3.5" />Pronta</span>
+                    : f.estado === "pronta" ? <span className="flex items-center gap-1 t-apoio text-ok"><Icone nome="check" className="h-3.5 w-3.5" />Pronta</span>
                       : <span className="t-apoio">Enviando…</span>}
                 </span>
                 {f.estado !== "enviando" ? (
@@ -480,10 +480,10 @@ function Impedimento({ base, aoEnviar }: { base: string; aoEnviar: () => void })
   return (
     <form onSubmit={enviar} noValidate className="grid gap-3">
       <Cartao>
-        <h2 className="text-lg font-medium">Não consegui fazer</h2>
+        <h2 className="t-titulo-secao font-medium">Não consegui fazer</h2>
         {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <fieldset className="grid gap-1">
-          <legend className="mb-1 text-sm font-medium">O que aconteceu</legend>
+          <legend className="mb-1 t-texto font-medium">O que aconteceu</legend>
           <span className="trilho">
             {(Object.keys(IMPEDIMENTOS_PRESTADOR) as ImpedimentoPrestador[]).map((k) => (
               <button key={k} type="button" className="chip" aria-pressed={tipo === k} data-escolhido={tipo === k ? "" : undefined} onClick={() => setTipo(k)}>
@@ -491,7 +491,7 @@ function Impedimento({ base, aoEnviar }: { base: string; aoEnviar: () => void })
               </button>
             ))}
           </span>
-          {comErro.includes("impedimento") ? <span className="text-xs text-erro">Escolha o que aconteceu.</span> : null}
+          {comErro.includes("impedimento") ? <span className="t-apoio text-erro">Escolha o que aconteceu.</span> : null}
         </fieldset>
         <CampoAreaTexto id="im-texto" rotulo="Conte em poucas palavras" required rows={3} maxLength={2000} value={texto} onChange={(e) => setTexto(e.target.value)}
           erro={comErro.includes("texto") ? "Conte o que aconteceu (de 3 a 2.000 caracteres)." : null} />
@@ -520,12 +520,12 @@ function Terminei({ base, aoEnviar }: { base: string; aoEnviar: () => void }) {
   return (
     <form onSubmit={enviar} noValidate className="grid gap-3">
       <Cartao className="gap-4">
-        <h2 className="text-lg font-medium">Conte o que foi feito</h2>
+        <h2 className="t-titulo-secao font-medium">Conte o que foi feito</h2>
         {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <CampoAreaTexto id="te-texto" rotulo="O que foi feito" required rows={4} maxLength={2000} value={v.texto} onChange={(e) => setV({ ...v, texto: e.target.value })}
           erro={comErro.includes("texto") ? "Conte o que foi feito (de 3 a 2.000 caracteres)." : null} />
         <fieldset className="grid gap-1">
-          <legend className="mb-1 text-sm font-medium">Ficou algo para depois?</legend>
+          <legend className="mb-1 t-texto font-medium">Ficou algo para depois?</legend>
           <span className="trilho">
             <button type="button" className="chip" aria-pressed={!v.ficouPendente} data-escolhido={!v.ficouPendente ? "" : undefined} onClick={() => setV({ ...v, ficouPendente: false })}>Não</button>
             <button type="button" className="chip" aria-pressed={v.ficouPendente} data-escolhido={v.ficouPendente ? "" : undefined} onClick={() => setV({ ...v, ficouPendente: true })}>Sim</button>

@@ -65,7 +65,7 @@ export function AbaManual({ feito, definir }: PropsAbaMemoria) {
       ) : null}
       <section aria-labelledby="mn-secoes" className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2 md:border-b md:border-linha md:px-5 md:py-3.5">
-          <h2 id="mn-secoes" className="text-[15px] font-semibold">{m.secoes.length === 1 ? "1 seção" : `${m.secoes.length} seções`}</h2>
+          <h2 id="mn-secoes" className="t-titulo-cartao font-semibold">{m.secoes.length === 1 ? "1 seção" : `${m.secoes.length} seções`}</h2>
           {m.secoes.length ? <span className="t-apoio">{noMural ? `${noMural} no mural dos moradores` : "Nenhuma no mural dos moradores"}</span> : null}
         </div>
         {m.secoes.length === 0 ? <p className="t-apoio px-5 py-4 max-md:px-0">Nenhuma seção escrita ainda. Comece por uma das sugestões abaixo.</p> : (
@@ -74,9 +74,9 @@ export function AbaManual({ feito, definir }: PropsAbaMemoria) {
               const mais = acoes(s, i);
               return (
                 <li key={s.id} className="relative grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-3 hover:bg-violeta-50/50 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 md:grid-cols-[44px_minmax(0,1fr)_140px_170px_44px_20px] md:border-t md:border-linha md:first:border-t-0">
-                  <span className="ladrilho h-11 w-11 rounded-xl font-mono text-[15px] font-semibold" data-tom="violeta" aria-hidden="true">{i + 1}</span>
+                  <span className="ladrilho h-11 w-11 rounded-xl font-mono t-titulo-cartao font-semibold" data-tom="violeta" aria-hidden="true">{i + 1}</span>
                   <span className="grid min-w-0 gap-0.5">
-                    <button type="button" className="text-left font-medium text-tinta after:absolute after:inset-0 after:content-[''] hover:text-violeta-600" onClick={() => setEditando({ secao: s })}>{s.titulo}</button>
+                    <button type="button" className="elo-linha" onClick={() => setEditando({ secao: s })}>{s.titulo}</button>
                     <span className="t-apoio line-clamp-1">{s.resumo ?? s.texto.slice(0, 90)}</span>
                     <span className="pt-1 md:hidden">{s.noMural ? <Selo tom="ok">No mural</Selo> : <Selo tom="neutro">Só a gestão</Selo>}</span>
                   </span>
@@ -95,7 +95,7 @@ export function AbaManual({ feito, definir }: PropsAbaMemoria) {
           <button type="button" aria-expanded={verSugestoes} onClick={() => setVerSugestoes(!verSugestoes)} className="flex w-full items-center gap-3 text-left">
             <span className="ladrilho" data-tom="violeta" aria-hidden="true"><Icone nome="lista" /></span>
             <span className="grid min-w-0 flex-1">
-              <span className="text-[15px] font-semibold">{sugestoes.length === 1 ? "1 sugestão para escrever" : `${sugestoes.length} sugestões para escrever`}</span>
+              <span className="t-titulo-cartao font-semibold">{sugestoes.length === 1 ? "1 sugestão para escrever" : `${sugestoes.length} sugestões para escrever`}</span>
               <span className="t-apoio">{sugestoes.slice(0, 3).map((s) => s.titulo).join(", ")}{sugestoes.length > 3 ? ` e mais ${sugestoes.length - 3}` : ""}</span>
             </span>
             <Icone nome="baixo" className={`h-5 w-5 text-tinta-suave ${verSugestoes ? "rotate-180" : ""}`} />
@@ -156,8 +156,8 @@ function FormSecao({ secao, tirarLogo, podeEditar, aoFechar, aoSalvar }: {
   if (!podeEditar && existente) {
     return (
       <Dialogo aberto titulo={existente.titulo} aoFechar={aoFechar}>
-        <p className="text-sm whitespace-pre-line">{existente.texto}</p>
-        <p className="text-xs text-tinta-suave">Escrita {existente.autor ? `por ${existente.autor} ` : ""}em {diaHora(existente.escritaEm)}.</p>
+        <p className="t-texto whitespace-pre-line">{existente.texto}</p>
+        <p className="t-apoio text-tinta-suave">Escrita {existente.autor ? `por ${existente.autor} ` : ""}em {diaHora(existente.escritaEm)}.</p>
         <div className="flex justify-end"><Botao variante="discreto" onClick={aoFechar}>Fechar</Botao></div>
       </Dialogo>
     );
@@ -170,14 +170,14 @@ function FormSecao({ secao, tirarLogo, podeEditar, aoFechar, aoSalvar }: {
           {versoes?.length ? (
             <ol className="divide-y divide-linha rounded-xl border border-linha">
               {versoes.map((x) => (
-                <li key={x.numero} className="grid gap-0.5 px-3 py-2 text-sm">
+                <li key={x.numero} className="grid gap-0.5 px-3 py-2 t-texto">
                   <span className="font-medium">Versão {x.numero}: {x.titulo}</span>
                   <span className="whitespace-pre-line">{x.texto}</span>
-                  <span className="text-xs text-tinta-suave">Escrita {x.autor ? `por ${x.autor} ` : ""}em {diaHora(x.escritaEm)} · trocada em {diaHora(x.substituidaEm)}</span>
+                  <span className="t-apoio text-tinta-suave">Escrita {x.autor ? `por ${x.autor} ` : ""}em {diaHora(x.escritaEm)} · trocada em {diaHora(x.substituidaEm)}</span>
                 </li>
               ))}
             </ol>
-          ) : <p className="text-sm text-tinta-suave">Esta seção ainda não mudou.</p>}
+          ) : <p className="t-apoio text-tinta-suave">Esta seção ainda não mudou.</p>}
           <div className="flex justify-end"><Botao variante="contorno" onClick={() => setModo("editar")}>Voltar</Botao></div>
         </div>
       ) : modo === "tirar" ? (
@@ -197,9 +197,9 @@ function FormSecao({ secao, tirarLogo, podeEditar, aoFechar, aoSalvar }: {
             erro={comErro.includes("resumo") ? "De 3 a 160 caracteres." : null} />
           <CampoAreaTexto id="mn-texto" rotulo="Texto" rows={8} maxLength={8000} value={v.texto} onChange={(e) => setV({ ...v, texto: e.target.value })}
             placeholder="O registro geral de água fica na casa de bombas, atrás do portão da garagem." erro={comErro.includes("texto") ? "De 3 a 8.000 caracteres." : null} />
-          <label className="flex items-start gap-2 text-sm">
+          <label className="flex items-start gap-2 t-texto">
             <input type="checkbox" className="mt-1 h-4 w-4 accent-violeta-600" checked={v.noMural} onChange={(e) => setV({ ...v, noMural: e.target.checked })} />
-            <span><span className="font-medium">Mostrar no mural do prédio</span><span className="block text-xs text-tinta-suave">Qualquer pessoa com o link do mural lê, sem conta. Deixe desmarcado o que é só da gestão.</span></span>
+            <span><span className="font-medium">Mostrar no mural do prédio</span><span className="block t-apoio text-tinta-suave">Qualquer pessoa com o link do mural lê, sem conta. Deixe desmarcado o que é só da gestão.</span></span>
           </label>
           <div className="flex flex-wrap justify-between gap-2">
             <span className="flex flex-wrap gap-2">

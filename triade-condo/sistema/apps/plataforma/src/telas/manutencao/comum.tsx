@@ -53,13 +53,13 @@ const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", h
 export function Retorno({ m }: { m: ManutencaoResumo }) {
   if (!m.proximoRetorno) return null;
   if (m.retornoVencido) {
-    return <span className="inline-flex items-center gap-1 text-[13px] font-medium text-erro"><Icone nome="relogio" className="h-4 w-4" />Retorno venceu {diaHora(m.proximoRetorno)}</span>;
+    return <span className="inline-flex items-center gap-1 t-apoio font-medium text-erro"><Icone nome="relogio" className="h-4 w-4" />Retorno venceu {diaHora(m.proximoRetorno)}</span>;
   }
   const quando = new Date(m.proximoRetorno);
   if (DIA.format(quando) === DIA.format(new Date())) {
-    return <span className="inline-flex items-center gap-1 text-[13px] font-medium text-atencao"><Icone nome="relogio" className="h-4 w-4" />Retorno hoje {HORA.format(quando)}</span>;
+    return <span className="inline-flex items-center gap-1 t-apoio font-medium text-atencao"><Icone nome="relogio" className="h-4 w-4" />Retorno hoje {HORA.format(quando)}</span>;
   }
-  return <span className="text-[13px] text-tinta-suave">Retorno {diaHora(m.proximoRetorno)}</span>;
+  return <span className="t-apoio text-tinta-suave">Retorno {diaHora(m.proximoRetorno)}</span>;
 }
 
 /** O ícone de cada tipo; a preventiva é o calendário (DC15, rodada Manutenção). */
@@ -91,10 +91,10 @@ export function LinhaManutencao({ m }: { m: ManutencaoResumo }) {
             </Link>
           ) : null}
         </span>
-        {m.visita ? <span className="text-[12.5px] font-medium text-violeta-600">Visita {mostrarDataCurta(m.visita.data).slice(0, 5)}{m.visita.horaInicio ? `, ${m.visita.horaInicio}` : ""}</span> : null}
+        {m.visita ? <span className="t-apoio font-medium text-violeta-600">Visita {mostrarDataCurta(m.visita.data).slice(0, 5)}{m.visita.horaInicio ? `, ${m.visita.horaInicio}` : ""}</span> : null}
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 md:hidden"><SeloDaLinha m={m} /><Retorno m={m} /></span>
       </div>
-      <span className="grid min-w-0 text-sm max-md:hidden">
+      <span className="grid min-w-0 t-texto max-md:hidden">
         <span className="truncate">{quem}</span>
         <span className="t-apoio truncate">{textoTipo(m)} · {responsavel}</span>
       </span>

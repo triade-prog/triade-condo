@@ -1,25 +1,49 @@
-// DC15 (docs/design/guia-padroes.html): as peças já feitas no padrão novo usam só a escala de
-// letra com nome e os botões do sistema. A lista cresce a cada bloco do novo frontend (D4.2);
-// quando todas as telas passarem, o teste vale para a pasta inteira, como o das cores.
-import { readFileSync } from "node:fs";
+// DC15 (docs/design/guia-padroes.html): as telas usam só a escala de letra com nome e os botões do
+// sistema. Desde a rodada de 23/10 (D4.2) o teste vale para a pasta inteira, como o das cores.
+// Ficam fora da regra de letra só as folhas de imprimir (medida de papel) e a marca.
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const RAIZ = join(import.meta.dirname, "..", "..", "..");
-const NO_PADRAO = [
-  "apps/plataforma/src/telas/PainelPlataforma.tsx",
-  "apps/plataforma/src/telas/menu.ts",
-  "packages/ui/src/Estados.tsx",
-  "packages/ui/src/Dialogo.tsx",
+const PASTAS = ["apps/plataforma/src", "apps/console/src", "packages/ui/src", "packages/configuracoes/src"];
+const IMPRESSOS = [
+  "apps/plataforma/src/telas/comunicados/Mural.tsx",
+  "apps/plataforma/src/telas/comunicados/Cartaz.tsx",
+  "apps/plataforma/src/telas/comunicados/ComunicadosWhatsapp.tsx",
+  "apps/plataforma/src/telas/memoria/DossieImpresso.tsx",
+  "apps/console/src/telas/ficha/ResumoConfiguracao.tsx",
+  "packages/configuracoes/src/ImprimirEtiquetas.tsx",
+  "packages/ui/src/Impressos.tsx",
+  "packages/ui/src/Marca.tsx",
 ];
-const PECAS = NO_PADRAO.map((caminho) => ({ caminho, texto: readFileSync(join(RAIZ, caminho), "utf8") }));
+
+function arquivos(pasta: string): string[] {
+  return readdirSync(join(RAIZ, pasta), { withFileTypes: true }).flatMap((e) => {
+    const caminho = `${pasta}/${e.name}`;
+    if (e.isDirectory()) return arquivos(caminho);
+    return /\.tsx?$/.test(e.name) && !/\.test\.tsx?$/.test(e.name) ? [caminho] : [];
+  });
+}
+const PECAS = PASTAS.flatMap(arquivos).map((caminho) => ({ caminho, texto: readFileSync(join(RAIZ, caminho), "utf8") }));
 
 // Classes de peça do tema que um <button> pode usar (o resto sai de Botao ou classeBotao).
-const BOTOES_DO_TEMA = new Set(["emblema", "pessoa", "condominio", "escolha"]);
+const BOTOES_DO_TEMA = new Set(["emblema", "pessoa", "condominio", "escolha", "chip", "chip-atencao", "resumo-passo", "selo-botao", "tirar", "c", "elo", "elo-linha"]);
 
-describe("peças no padrão novo (DC15)", () => {
+// Tamanho escrito direto abaixo de 30 px. Acima disso é número de destaque (indicador, saudação),
+// que a escala não tem; com prefixo (max-md:) é o ajuste da peça no celular.
+const TAMANHO = /(?<![\w:-])text-(?:\[(\d+(?:\.\d+)?)px\]|xs|sm|base|lg|xl|2xl)(?![\w-])/g;
+
+describe("telas no padrão novo (DC15)", () => {
+  it("lê as telas do app, do Console e das peças", () => {
+    expect(PECAS.length).toBeGreaterThan(200);
+    expect(PECAS.some((p) => p.caminho.endsWith("telas/pedidos/Pedido.tsx"))).toBe(true);
+  });
+
   it("nenhum tamanho de letra escrito direto: só a escala com nome", () => {
-    const achados = PECAS.flatMap((p) => (p.texto.match(/\btext-(?:\[\d+(?:\.\d+)?px\]|xs|sm|base|lg|xl|[2-9]xl)\b/g) ?? []).map((t) => `${p.caminho}: ${t}`));
+    const achados = PECAS.filter((p) => !IMPRESSOS.includes(p.caminho)).flatMap((p) =>
+      [...p.texto.matchAll(TAMANHO)].filter((m) => m[1] === undefined || Number(m[1]) < 30).map((m) => `${p.caminho}: ${m[0]}`),
+    );
     expect(achados).toEqual([]);
   });
 

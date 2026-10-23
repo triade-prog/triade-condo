@@ -132,10 +132,10 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, compromisso, inicio }
           onChange={(e) => mudar({ horaFim: e.target.value })} />
       </div>
       <Caixa id="ag-dia-todo" rotulo="Dia todo" ajuda="Sem horário: a data aparece como foi escrita." marcada={v.diaTodo} aoMudar={(x) => mudar({ diaTodo: x })} />
-      {c ? <p className="text-xs text-tinta-suave">Para mudar a data, use Reagendar: o motivo fica no histórico.</p> : null}
+      {c ? <p className="t-apoio text-tinta-suave">Para mudar a data, use Reagendar: o motivo fica no histórico.</p> : null}
 
       <fieldset className="grid gap-2">
-        <legend className="mb-1 text-[13px] font-medium">Onde</legend>
+        <legend className="mb-1 t-apoio font-medium">Onde</legend>
         <Escolha rotulo="Onde acontece" atual={v.onde} aoMudar={(x) => mudar({ onde: x })} opcoes={lugares} />
         {v.onde === "UNIDADE" ? (
           <CampoSelecao id="ag-unidade" rotulo="Unidade" value={v.unidadeId} erro={msg("unidadeId", "Escolha a unidade.")}
@@ -151,7 +151,7 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, compromisso, inicio }
       </fieldset>
 
       <fieldset className="grid gap-2">
-        <legend className="mb-1 text-[13px] font-medium">Quem participa <span className="font-normal text-tinta-suave">(opcional)</span></legend>
+        <legend className="mb-1 t-apoio font-medium">Quem participa <span className="font-normal text-tinta-suave">(opcional)</span></legend>
         {opcoes.pessoas.length ? (
           <div className="grid gap-1.5 sm:grid-cols-2">
             {opcoes.pessoas.map((p) => (
@@ -160,13 +160,13 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, compromisso, inicio }
             ))}
           </div>
         ) : null}
-        {comErro.includes("participantes") ? <span className="text-xs text-erro">Só pessoas com acesso ao condomínio, até 30.</span> : null}
+        {comErro.includes("participantes") ? <span className="t-apoio text-erro">Só pessoas com acesso ao condomínio, até 30.</span> : null}
         <CampoTexto id="ag-de-fora" rotulo="Quem é de fora" opcional maxLength={200} value={v.deFora}
           ajuda="Prestador, empresa ou convidado, por escrito. Não entra na conta de conflito." erro={msg("deFora", "De 2 a 200 caracteres.")}
           onChange={(e) => mudar({ deFora: e.target.value })} />
       </fieldset>
 
-      {daManutencao ? <p className="text-xs text-tinta-suave">A visita fica ligada à manutenção (e ao pedido dela). Cancelar a visita não apaga a manutenção.</p> : null}
+      {daManutencao ? <p className="t-apoio text-tinta-suave">A visita fica ligada à manutenção (e ao pedido dela). Cancelar a visita não apaga a manutenção.</p> : null}
       {!daManutencao && (opcoes.pedidos.length || v.pedidoId) ? (
         <CampoSelecao id="ag-pedido" rotulo="Pedido ligado" opcional value={v.pedidoId} erro={msg("pedidoId", "Pedido não encontrado.")}
           ajuda="Ligar não muda o próximo retorno nem a previsão do pedido."
@@ -196,11 +196,11 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, compromisso, inicio }
                 <CampoTexto id="ag-ate" rotulo="Repete até" type="date" value={v.ate}
                   erro={msg("ate", "Depois da primeira data e em até 2 anos.")} onChange={(e) => mudar({ ate: e.target.value })} />
               )}
-              <p className="text-xs text-tinta-suave">No máximo 2 anos. No mês sem o dia (31), fica o último dia do mês.</p>
+              <p className="t-apoio text-tinta-suave">No máximo 2 anos. No mês sem o dia (31), fica o último dia do mês.</p>
             </div>
           ) : null}
           <fieldset className="grid gap-2">
-            <legend className="mb-1 text-[13px] font-medium">Situação</legend>
+            <legend className="mb-1 t-apoio font-medium">Situação</legend>
             <Escolha rotulo="Situação inicial" atual={v.estado} aoMudar={(x) => mudar({ estado: x })}
               opcoes={(["PLANEJADO", "A_CONFIRMAR", "CONFIRMADO"] as const).map((x) => ({ valor: x, texto: SITUACOES_COMPROMISSO[x] }))} />
           </fieldset>
@@ -212,9 +212,9 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, compromisso, inicio }
 
       {repete ? (
         <fieldset className="grid gap-2">
-          <legend className="mb-1 text-[13px] font-medium">Este compromisso se repete</legend>
+          <legend className="mb-1 t-apoio font-medium">Este compromisso se repete</legend>
           <Escolha rotulo="Vale para" atual={v.escopo} aoMudar={(x) => mudar({ escopo: x })} opcoes={opcoesDe(ESCOPOS)} />
-          <p className="text-xs text-tinta-suave">As datas que já passaram não mudam.</p>
+          <p className="t-apoio text-tinta-suave">As datas que já passaram não mudam.</p>
         </fieldset>
       ) : null}
 

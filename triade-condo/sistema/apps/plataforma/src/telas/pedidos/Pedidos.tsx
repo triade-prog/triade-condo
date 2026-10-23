@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { FILTROS_ATENCAO, FILTROS_SITUACAO } from "@triade/domain";
 import { Aviso, Botao, Carregando, CampoSelecao, Dialogo, ErroCarregar, Icone, Selo, Vazio, type NomeIcone, type Tom } from "@triade/ui";
-import { useCarregar, usePlataforma } from "../sessao.tsx";
+import { useCarregar, useContagens, usePlataforma } from "../sessao.tsx";
 import type { FilaPedidos, OpcoesPedidos, PedidoDaFila, Recado, ResumoPedidos } from "../tipos.ts";
 import { aHora, diaHora, iconeDaCategoria, seloSituacao, SeloPrioridade } from "./comum.tsx";
 import { RegistrarPedido } from "./RegistrarPedido.tsx";
@@ -48,7 +48,7 @@ function Retorno({ p, agora }: { p: PedidoDaFila; agora: string }) {
     tom = p.retornoVencido ? "text-erro" : falta < 4 * 3600_000 ? "text-atencao" : "text-tinta-suave";
   }
   if (!texto) return <span className="t-apoio max-md:hidden">Sem retorno</span>;
-  return <span className={`flex items-center gap-1.5 text-[13px] ${tom}`}><Icone nome="relogio" className="h-4 w-4" />{texto}</span>;
+  return <span className={`flex items-center gap-1.5 t-apoio ${tom}`}><Icone nome="relogio" className="h-4 w-4" />{texto}</span>;
 }
 
 function Item({ p, agora }: { p: PedidoDaFila; agora: string }) {
@@ -71,7 +71,7 @@ function Item({ p, agora }: { p: PedidoDaFila; agora: string }) {
         <span className="t-apoio">
           {p.unidade ?? p.local ?? null}{p.unidade ?? p.local ? <span className="max-md:hidden"> · </span> : null}<span className="max-md:hidden">{p.categoria}</span> · {quem}
         </span>
-        {p.pendencias ? <span className="text-[13px] text-atencao">{p.pendencias === 1 ? "1 pendência" : `${p.pendencias} pendências`}</span> : null}
+        {p.pendencias ? <span className="t-apoio text-atencao">{p.pendencias === 1 ? "1 pendência" : `${p.pendencias} pendências`}</span> : null}
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 md:hidden">
           <Selo tom={situacao.tom}>{situacao.texto}</Selo>
           <Retorno p={p} agora={agora} />
@@ -136,6 +136,7 @@ export function Pedidos() {
   const opcoes = useCarregar<OpcoesPedidos>("/v1/condominio/pedidos/opcoes");
   const q = consulta(f);
   const fila = useCarregar<FilaPedidos>(`/v1/condominio/pedidos${q ? `?${q}` : ""}`);
+  const contagens = useContagens("pedidos", q);
   // O "Registrar pedido" da faixa do Início chega com ?registrar=1 e já abre a janela.
   const [registrando, setRegistrando] = useState(() => busca.get("registrar") === "1");
   const [recado, setRecado] = useState<Recado>(null);
@@ -154,7 +155,7 @@ export function Pedidos() {
   const r = fila.estado === "pronto" ? fila.dados.resumo : null;
   const filtrando = q !== "";
   const outros = [f.responsavel, f.prioridade, f.categoria].filter(Boolean).length;
-  const contaAba: Partial<Record<string, number>> = r ? { ATIVOS: r.ativos, EM_REVISAO: r.emRevisao } : {};
+  const contaAba = contagens.n;
   const registrar = (
     <Botao onClick={() => setRegistrando(true)}><Icone nome="mais" />Registrar pedido</Botao>
   );
@@ -186,9 +187,9 @@ export function Pedidos() {
             const n = contaAba[valor];
             return (
               <button key={valor} type="button" aria-pressed={atual} onClick={() => mudar({ situacao: valor })}
-                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
                 {texto}
-                {n !== undefined ? <span className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{n}</span> : null}
+                {n !== undefined && (n > 0 || atual) ? <span className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{n}</span> : null}
               </button>
             );
           })}
@@ -249,7 +250,7 @@ export function Pedidos() {
       <JanelaFiltros key={`${filtrandoAberto}`} aberto={filtrandoAberto} f={f} o={o} aoFechar={() => setFiltrando(false)}
         aplicar={(m) => { setFiltrando(false); mudar(m); }} />
       <RegistrarPedido aberto={registrando} opcoes={o} aoFechar={() => setRegistrando(false)}
-        aoRegistrar={() => { fila.recarregar(); atualizar(); }}
+        aoRegistrar={() => { fila.recarregar(); contagens.recarregar(); atualizar(); }}
         registrado={(protocolo, id) => {
           setRegistrando(false);
           setRecado({ tom: "ok", texto: `Pedido ${protocolo} registrado.` });

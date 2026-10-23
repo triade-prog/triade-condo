@@ -105,7 +105,7 @@ function Tela({ d, voltar, recado, aoMudar }: { d: AssembleiaDetalhe; voltar: Re
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="grid gap-2">
           <h1 className="t-titulo-tela">{a.titulo}</h1>
-          <p className="flex flex-wrap items-center gap-2 text-sm">
+          <p className="flex flex-wrap items-center gap-2 t-texto">
             <SeloAssembleia estado={a.estado} />
             <Selo tom="neutro">{tipoEForma(a)}</Selo>
             {a.local ? <span>{a.local}</span> : null}
@@ -126,11 +126,11 @@ function Tela({ d, voltar, recado, aoMudar }: { d: AssembleiaDetalhe; voltar: Re
         </Aviso>
       ) : null}
 
-      <dl className="grid gap-x-5 gap-y-3 rounded-[18px] border border-linha bg-superficie p-4 text-sm shadow-s1 sm:grid-cols-2 md:px-5 lg:grid-cols-4">
-        <div><dt className="t-apoio">1ª chamada</dt><dd className="text-[15px]">{formatarDataHora(a.primeiraChamada)}</dd></div>
-        <div><dt className="t-apoio">2ª chamada</dt><dd className="text-[15px]">{formatarDataHora(a.segundaChamada)}</dd></div>
-        <div><dt className="t-apoio">Peso do voto</dt><dd className="text-[15px]">{PESOS_ASSEMBLEIA[a.peso]}</dd></div>
-        <div><dt className="t-apoio">Quem vota</dt><dd className="text-[15px]">Proprietário ou procurador</dd></div>
+      <dl className="grid gap-x-5 gap-y-3 rounded-[18px] border border-linha bg-superficie p-4 t-texto shadow-s1 sm:grid-cols-2 md:px-5 lg:grid-cols-4">
+        <div><dt className="t-apoio">1ª chamada</dt><dd className="t-texto">{formatarDataHora(a.primeiraChamada)}</dd></div>
+        <div><dt className="t-apoio">2ª chamada</dt><dd className="t-texto">{formatarDataHora(a.segundaChamada)}</dd></div>
+        <div><dt className="t-apoio">Peso do voto</dt><dd className="t-texto">{PESOS_ASSEMBLEIA[a.peso]}</dd></div>
+        <div><dt className="t-apoio">Quem vota</dt><dd className="t-texto">Proprietário ou procurador</dd></div>
       </dl>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
@@ -185,7 +185,7 @@ function Convocacao({ a }: { a: AssembleiaTela }) {
   const [ano, mes, dia] = a.enviarAte.split("-");
   return (
     <CartaoFicha id="convocacao" titulo="Convocação" icone="megafone">
-      <dl className="grid gap-3 text-sm sm:grid-cols-3">
+      <dl className="grid gap-3 t-texto sm:grid-cols-3">
         <div><dt className="t-apoio">Antecedência</dt><dd>{a.antecedencia} dias (regra da convenção)</dd></div>
         <div><dt className="t-apoio">Enviar até</dt><dd>{dia}/{mes}/{ano}</dd></div>
         <div><dt className="t-apoio">Peso do voto</dt><dd>{PESOS_ASSEMBLEIA[a.peso]}</dd></div>
@@ -205,11 +205,11 @@ function Presenca({ a }: { a: AssembleiaTela }) {
       <div className="grid gap-1">
         <p className="flex items-baseline gap-2.5">
           <span className="text-[40px] leading-none font-semibold tracking-tight">{p.presentes} de {p.unidades}</span>
-          <span className="text-[15px]">unidades presentes</span>
+          <span className="t-texto">unidades presentes</span>
         </p>
-        <p className="text-sm">{porcento(p.porcentagem)} {a.peso === "FRACAO" ? "das frações" : "das unidades"}</p>
+        <p className="t-texto">{porcento(p.porcentagem)} {a.peso === "FRACAO" ? "das frações" : "das unidades"}</p>
       </div>
-      <dl className="grid grid-cols-2 gap-3 border-t border-linha pt-3 text-sm sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 border-t border-linha pt-3 t-texto sm:grid-cols-4">
         <div><dt className="t-apoio">Online</dt><dd className="font-semibold">{p.online}</dd></div>
         <div><dt className="t-apoio">No salão</dt><dd className="font-semibold">{p.salao}</dd></div>
         <div><dt className="t-apoio">Por procuração</dt><dd className="font-semibold">{p.porProcuracao}{p.procuracoesPendentes ? ` · ${p.procuracoesPendentes} a conferir` : ""}</dd></div>
@@ -236,10 +236,10 @@ function Item({ i, a, podeAgir, outroAberto, aoAgir, aoVoto }: {
   const tom = i.estado === "ABERTO" ? "andamento" : i.estado === "AGUARDANDO" ? "neutro" : r.situacao === "APROVADO" || r.situacao === "ESCOLHIDA" ? "ok" : "atencao";
   const aberto = i.estado === "ABERTO";
   return (
-    <li className={`grid gap-2 rounded-2xl p-4 text-sm ${aberto ? "border-2 border-violeta-600 bg-violeta-50/40" : "border border-linha bg-superficie"}`}>
+    <li className={`grid gap-2 rounded-2xl p-4 t-texto ${aberto ? "border-2 border-violeta-600 bg-violeta-50/40" : "border border-linha bg-superficie"}`}>
       <span className="flex flex-wrap items-center gap-2">
         <span className="numero" aria-hidden="true">{i.ordem}</span>
-        <span className="text-[15px] font-semibold">{i.ordem}. {i.titulo}</span>
+        <span className="t-titulo-cartao font-semibold">{i.ordem}. {i.titulo}</span>
         {a.estado !== "RASCUNHO" && a.estado !== "CANCELADA" ? <Selo tom={tom}>{situacao}</Selo> : null}
       </span>
       {i.descricao ? <span>{i.descricao}</span> : null}
@@ -313,7 +313,7 @@ function Unidades({ d, podeAgir, aoCopiar, aoAgir, aoPresenca }: {
             <li key={u.id} className="flex items-center gap-3 border-t border-linha py-3">
               <LadrilhoUnidade texto={u.unidade.split(" · ").at(-1) ?? u.unidade} />
               <span className="grid min-w-0 flex-1 gap-0.5">
-                <span className="text-[15px] font-medium">{u.unidade}</span>
+                <span className="t-texto font-medium">{u.unidade}</span>
                 <span className="t-apoio">
                   {[u.proprietarios ?? "Sem proprietário confirmado", fracao ? porcento(u.peso) : null, u.semContato ? "sem WhatsApp nem e-mail para receber" : null,
                     u.procuracao ? `procurador: ${u.procuracao.nome}${u.procuracao.unidade ? ` (${u.procuracao.unidade})` : ""}${u.procuracao.motivo ? ` · ${u.procuracao.motivo}` : ""}` : null,
@@ -369,8 +369,8 @@ function Ata({ d, aoMudar }: { d: AssembleiaDetalhe; aoMudar: (texto: string) =>
   }
 
   return (
-    <section aria-labelledby="as-ata" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-4 text-sm shadow-s1">
-      <h2 id="as-ata" className="text-lg font-medium">Ata</h2>
+    <section aria-labelledby="as-ata" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-4 t-texto shadow-s1">
+      <h2 id="as-ata" className="t-titulo-secao font-medium">Ata</h2>
       <p className="text-tinta-suave">Rascunho montado sozinho com a chamada, a presença e o resultado de cada item. O texto é editável; os números dos itens não mudam.</p>
       <form onSubmit={salvar} noValidate className="grid gap-3">
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
@@ -406,7 +406,7 @@ function Confirmar({ titulo, botao, caminho, corpo, feito, aoFechar, children }:
   }
   return (
     <Dialogo aberto titulo={titulo} aoFechar={() => aoFechar()}>
-      <div className="grid gap-3 text-sm">
+      <div className="grid gap-3 t-texto">
         <p>{children}</p>
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <div className="flex flex-wrap justify-end gap-2">
@@ -431,7 +431,7 @@ function Convocar({ a, aoFechar }: { a: AssembleiaTela; aoFechar: (texto?: strin
   }
   return (
     <Dialogo aberto titulo="Convocar a assembleia?" aoFechar={() => aoFechar()}>
-      <div className="grid gap-3 text-sm">
+      <div className="grid gap-3 t-texto">
         <p>Depois de convocada, a assembleia não muda: para mudar, cancele e convoque outra.</p>
         <p className="text-tinta-suave">
           Vão o edital como comunicado publicado e um link pessoal para cada unidade, pelo WhatsApp (modelo aprovado) e pelo e-mail dos proprietários.
@@ -462,7 +462,7 @@ function ComMotivo({ titulo, botao, texto, ajuda, aoEnviar, aoFechar, obrigatori
   }
   return (
     <Dialogo aberto titulo={titulo} aoFechar={aoFechar}>
-      <form onSubmit={enviar} noValidate className="grid gap-3 text-sm">
+      <form onSubmit={enviar} noValidate className="grid gap-3 t-texto">
         <p>{texto}</p>
         {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         {obrigatorio ? (
@@ -524,7 +524,7 @@ function DecidirProcuracao({ a, u, aoFechar }: { a: AssembleiaTela; u: UnidadeAs
   }
   return (
     <Dialogo aberto titulo={`Procuração de ${u.unidade}`} aoFechar={() => aoFechar()}>
-      <div className="grid gap-3 text-sm">
+      <div className="grid gap-3 t-texto">
         <p>{texto}</p>
         <p className="text-tinta-suave">{p.unidade ? `Aceita, o link da ${p.unidade} passa a votar pelas duas.` : "Aceita, copie o link da unidade e mande ao procurador."}</p>
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
@@ -559,13 +559,13 @@ function RegistrarVoto({ d, i, aoFechar }: { d: AssembleiaDetalhe; i: ItemAssemb
 
   return (
     <Dialogo aberto titulo={`Registrar voto no item ${i.ordem}`} aoFechar={() => aoFechar()}>
-      <form onSubmit={registrar} noValidate className="grid gap-3 text-sm">
+      <form onSubmit={registrar} noValidate className="grid gap-3 t-texto">
         <p>{i.titulo}. Para quem está no salão e não usa o link. A unidade fica presente no salão.</p>
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <CampoSelecao id="as-voto-unidade" rotulo="Unidade" value={convite} onChange={(e) => setConvite(e.target.value)}
           opcoes={unidades.map((u) => ({ valor: u.id, texto: u.votos?.[String(i.ordem)] ? `${u.unidade} (já votou)` : u.unidade }))} />
         <fieldset className="grid gap-2">
-          <legend className="mb-1 text-[13px] font-medium">Voto</legend>
+          <legend className="mb-1 t-apoio font-medium">Voto</legend>
           {i.opcoes.map((o, k) => (
             <label key={k} className="flex min-h-11 items-center gap-3 rounded-xl border border-linha px-3 py-2">
               <input type="radio" name="as-voto" checked={opcao === k + 1} onChange={() => setOpcao(k + 1)} />{o}

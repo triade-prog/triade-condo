@@ -4,8 +4,10 @@
 // o prédio tem e cria outras pelo botão Nova área, com os mesmos campos. Área inativa não aparece
 // para ninguém. O nome da área também é o "Qual área" da Agenda e o local das etiquetas. Na página
 // por tarefa (decisões A.1 e B.1) cada área abre numa página própria, em 3 partes, com a chave
-// "Área ativa" e o Salvar da barra do rodapé, no lugar da janela com "Salvar sem ativar".
+// "Área ativa" e o Salvar da barra do rodapé, no lugar da janela com "Salvar sem ativar". A área
+// aberta tem endereço próprio (?area=), então voltar no navegador volta à lista (D4.15).
 
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { BLOCOS_MINUTOS, CONFIRMACOES_AREA, descreverArea, duracaoBloco, MODOS_AREA, PERIODOS_LIMITE, reais } from "@triade/domain";
 import {
@@ -26,21 +28,35 @@ const NOVA: Omit<AreaComumTela, "id" | "versao"> = {
 
 export function AbaAreasComuns(_: PropsAba) {
   const carga = useCarregar<AreasComuns>(naBase("/areas-comuns"));
-  const [aberta, setAberta] = useState<AreaComumTela | "nova" | null>(null);
+  const busca = useSearchParams();
+  const router = useRouter();
+  const caminho = usePathname();
+  const ir = (area: string | null, trocar = false) => {
+    const q = new URLSearchParams(busca.toString());
+    if (area) q.set("area", area);
+    else q.delete("area");
+    const destino = `${caminho}${q.size ? `?${q}` : ""}`;
+    if (trocar) router.replace(destino, { scroll: false });
+    else router.push(destino, { scroll: false });
+  };
+  const setAberta = (a: AreaComumTela | "nova" | null) => ir(a === null ? null : a === "nova" ? "nova" : a.id);
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando as áreas comuns…" />;
   if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const l = carga.dados;
+  const id = busca.get("area");
+  const aberta = id === "nova" ? (l.pode.editar ? "nova" : null) : l.areas.find((a) => a.id === id) ?? null;
   const prontas = l.areas.filter((a) => !a.criadaPeloSindico).length;
   const criadas = l.areas.length - prontas;
   const ativas = l.areas.filter((a) => a.ativa).length;
 
   if (aberta) {
-    return <PaginaArea area={aberta === "nova" ? null : aberta} documentos={l.documentos} pode={l.pode.editar} aoVoltar={() => setAberta(null)} />;
+    return <PaginaArea key={id} area={aberta === "nova" ? null : aberta} documentos={l.documentos} pode={l.pode.editar} aoVoltar={() => setAberta(null)}
+      aoSalvar={() => ir(null, true)} />;
   }
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-tinta-suave">
+        <p className="t-apoio text-tinta-suave">
           {prontas} {prontas === 1 ? "área pronta" : "áreas prontas"}
           {criadas ? ` e ${criadas} ${criadas === 1 ? "criada" : "criadas"} pelo síndico` : ""}, {ativas} {ativas === 1 ? "ativa" : "ativas"}.
           {" "}Crie as que o prédio tem e não estão na lista.
@@ -54,15 +70,15 @@ export function AbaAreasComuns(_: PropsAba) {
           {l.areas.map((a) => (
             <li key={a.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
               <span className="grid min-w-0 flex-1 gap-0.5">
-                <button type="button" className="min-h-6 text-left font-medium text-violeta-600 hover:underline" onClick={() => setAberta(a)}>{a.nome}</button>
-                <span className="text-[13px] text-tinta-suave">{descreverArea(a)}</span>
+                <button type="button" className="elo min-h-6" onClick={() => setAberta(a)}>{a.nome}</button>
+                <span className="t-apoio text-tinta-suave">{descreverArea(a)}</span>
               </span>
               {a.ativa ? <Selo tom="ok">Ativa</Selo> : <Selo tom="neutro">Inativa</Selo>}
             </li>
           ))}
         </ul>
       )}
-      <p className="text-xs text-tinta-suave">Só pessoas com vínculo confirmado em Moradores e unidades reservam. O valor de uso só aparece; a cobrança entra com o Dinheiro do prédio.</p>
+      <p className="t-apoio text-tinta-suave">Só pessoas com vínculo confirmado em Moradores e unidades reservam. O valor de uso só aparece; a cobrança entra com o Dinheiro do prédio.</p>
     </div>
   );
 }
@@ -75,8 +91,8 @@ const centavos = (s: string) => {
 const texto = (n: number | null | undefined) => (n === null || n === undefined ? "" : String(n));
 
 /** A área em página própria: a chave "Área ativa" e 3 partes; grava pela barra do rodapé. */
-function PaginaArea({ area, documentos, pode, aoVoltar }: {
-  area: AreaComumTela | null; documentos: AreasComuns["documentos"]; pode: boolean; aoVoltar: () => void;
+function PaginaArea({ area, documentos, pode, aoVoltar, aoSalvar }: {
+  area: AreaComumTela | null; documentos: AreasComuns["documentos"]; pode: boolean; aoVoltar: () => void; aoSalvar: () => void;
 }) {
   const a = area ?? NOVA;
   const [inicial] = useState(() => ({
@@ -114,6 +130,7 @@ function PaginaArea({ area, documentos, pode, aoVoltar }: {
       : await chamarApi(naBase("/areas-comuns"), { corpo });
     if (!r.ok) { setErro(r.erro); return null; }
     esquecerLocais();
+    aoSalvar();
     const nome = v.nome.trim();
     if (ativa) return area?.ativa ? `${nome} salva.` : `${nome} salva e ativa.`;
     return area?.ativa ? `${nome} desativada. Ela não aparece mais para reservar.` : `${nome} salva, sem ativar.`;
@@ -123,11 +140,11 @@ function PaginaArea({ area, documentos, pode, aoVoltar }: {
   return (
     <div className="grid gap-5">
       <div className="grid gap-1">
-        <button type="button" onClick={aoVoltar} className="inline-flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline">
+        <button type="button" onClick={aoVoltar} className="elo gap-1 justify-self-start t-texto">
           <Icone nome="esq" className="h-4 w-4" />Todas as áreas comuns
         </button>
-        <h2 className="text-2xl">{area ? area.nome : "Nova área"}</h2>
-        <p className="text-sm text-tinta-suave">
+        <h2 className="t-titulo-tela">{area ? area.nome : "Nova área"}</h2>
+        <p className="t-apoio text-tinta-suave">
           {area && !area.criadaPeloSindico
             ? "Veio pronta com as regras sugeridas. Ajuste o que a convenção e o regimento do prédio dizem e ative."
             : "Uma área nova tem os mesmos campos das que vieram prontas."}
@@ -146,19 +163,19 @@ function PaginaArea({ area, documentos, pode, aoVoltar }: {
         <ParteNumerada n={1} id="t-ar-quem" titulo="Quem confirma">
           <Escolha rotulo="Como a reserva é confirmada" atual={v.reserva} aoMudar={(x) => mudar("reserva", x)}
             opcoes={Object.entries(CONFIRMACOES_AREA).map(([valor, t]) => ({ valor: valor as typeof v.reserva, texto: t }))} />
-          <p className="text-sm text-tinta-suave">
+          <p className="t-apoio text-tinta-suave">
             {v.reserva === "AUTOMATICA" ? "Confirma na hora se a data estiver livre." : v.reserva === "SINDICO" ? "O pedido chega em Vida em condomínio e o morador espera a resposta." : "Não se reserva: aparece só o horário de uso."}
           </p>
           {semReserva ? null : (
             <fieldset className="grid gap-1.5">
-              <legend className="mb-1 text-sm font-medium">Quem pode reservar</legend>
+              <legend className="mb-1 t-texto font-medium">Quem pode reservar</legend>
               {([["podeProprietarioMorador", "Proprietário que mora"], ["podeInquilino", "Inquilino"], ["podeProprietarioAusente", "Proprietário que não mora"]] as const).map(([k, t]) => (
-                <label key={k} className="flex items-center gap-2 text-sm">
+                <label key={k} className="flex items-center gap-2 t-texto">
                   <input type="checkbox" className="h-4 w-4 accent-violeta-600" checked={v[k]} onChange={(e) => mudar(k, e.target.checked)} />{t}
                 </label>
               ))}
-              {comErro.includes("podeProprietarioMorador") ? <span className="text-sm text-erro">Escolha quem pode reservar.</span> : null}
-              <span className="text-xs text-tinta-suave">Só pessoas com vínculo confirmado em Moradores e unidades.</span>
+              {comErro.includes("podeProprietarioMorador") ? <span className="t-texto text-erro">Escolha quem pode reservar.</span> : null}
+              <span className="t-apoio text-tinta-suave">Só pessoas com vínculo confirmado em Moradores e unidades.</span>
             </fieldset>
           )}
         </ParteNumerada>

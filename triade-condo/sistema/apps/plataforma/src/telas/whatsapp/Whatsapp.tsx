@@ -155,7 +155,7 @@ function SeloNumero({ d }: { d: DadosWhatsapp }) {
         <div role="group" aria-label="Número do condomínio" className="menu-pessoa w-[min(380px,calc(100vw-32px))] gap-3 p-4">
           <SituacaoDaConexao numero={d.numero} conexao={c} />
           <p className="t-apoio">Quem conecta e desconecta é a TRÍADE, pelo Console. Os avisos e os modelos ficam em Configurações › WhatsApp.</p>
-          <Link href="/configuracoes/whatsapp" className="inline-flex items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
+          <Link href="/configuracoes/whatsapp" className="inline-flex items-center gap-1 t-texto font-medium text-violeta-600 hover:underline">
             Configurações do WhatsApp<Icone nome="dir" className="h-4 w-4" />
           </Link>
         </div>
@@ -177,10 +177,10 @@ function LinhaNumero({ n, abrir }: { n: Numero; abrir: () => void }) {
       <div className="grid min-w-0 gap-0.5">
         <span className="flex items-baseline justify-between gap-2">
           <button type="button" onClick={abrir} aria-label={`Abrir a conversa de ${fone}`}
-            className="text-left font-medium text-tinta after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">{fone}</button>
+            className="elo-linha">{fone}</button>
           <span className="t-apoio whitespace-nowrap md:hidden">{formatarDataHora(n.ultima.enviadaEm)}</span>
         </span>
-        <span className="truncate text-sm">{n.ultima.texto ?? "Mensagem sem texto"}</span>
+        <span className="truncate t-texto">{n.ultima.texto ?? "Mensagem sem texto"}</span>
         <span className="t-apoio">{apoioDoNumero(n)}</span>
         <span className="pt-1 md:hidden"><SeloDoNumero n={n} /></span>
       </div>
@@ -285,7 +285,7 @@ function ConversaDoNumero({ n, d, opcoes, aoFechar, feito, registrado }: {
   if (etapa === "registrar" && opcoes) {
     const origem = (
       <div className="grid gap-3">
-        <p className="flex items-center gap-2.5 rounded-[14px] border border-violeta-100 bg-violeta-50 px-3.5 py-2.5 text-sm">
+        <p className="flex items-center gap-2.5 rounded-[14px] border border-violeta-100 bg-violeta-50 px-3.5 py-2.5 t-texto">
           <Icone nome="whats" className="h-4.5 w-4.5 shrink-0 text-violeta-700" />
           <span>Das mensagens de <b className="font-semibold">{fone}</b> · {quantas(n.mensagens.length, "mensagem", "mensagens")}{arquivos ? ` e ${quantas(arquivos, "arquivo", "arquivos")}` : ""} vão junto com o pedido</span>
         </p>
@@ -298,13 +298,13 @@ function ConversaDoNumero({ n, d, opcoes, aoFechar, feito, registrado }: {
     );
     return (
       <RegistrarPedido aberto opcoes={opcoes} aoFechar={aoFechar} registrado={(_, id) => registrado(id)}
-        daMensagem={{ origem, relato: relatoDasMensagens(n.mensagens), juntar: async (pedidoId) => (await triar("PEDIDO", pedidoId)).ok }} />
+        daMensagem={{ origem, relato: relatoDasMensagens(n.mensagens), mensagemId: m.id, juntar: async (pedidoId) => (await triar("PEDIDO", pedidoId)).ok }} />
     );
   }
 
   const titulo = { conversa: fone, arquivar: "Arquivar a conversa", ligar: "Ligar o número a um contato", juntar: "Juntar a um pedido", registrar: fone }[etapa];
   const voltar = <Botao variante="discreto" onClick={() => ir("conversa")}>Voltar</Botao>;
-  const citacao = <p className="text-sm">{fone}{m.texto ? `: “${m.texto}”` : ""}</p>;
+  const citacao = <p className="t-texto">{fone}{m.texto ? `: “${m.texto}”` : ""}</p>;
   const unidadeDoContato = m.contato?.unidades;
 
   return (
@@ -327,7 +327,7 @@ function ConversaDoNumero({ n, d, opcoes, aoFechar, feito, registrado }: {
                 {x.midia ? (
                   x.midia.situacao === "LIBERADA"
                     ? <Botao variante="contorno" tamanho="p" className="justify-self-start" onClick={() => void abrirMidia(x.id)}><Icone nome="clipe" />Abrir o arquivo</Botao>
-                    : <span className="text-xs text-tinta-suave">Arquivo {x.midia.situacao === "BAIXAR" ? "sendo conferido" : `não liberado: ${x.midia.motivo ?? ""}`}</span>
+                    : <span className="t-apoio text-tinta-suave">Arquivo {x.midia.situacao === "BAIXAR" ? "sendo conferido" : `não liberado: ${x.midia.motivo ?? ""}`}</span>
                 ) : null}
               </Bolha>
             ))}
@@ -472,7 +472,7 @@ function Falhas({ d, recarregar }: { d: DadosWhatsapp; recarregar: () => void })
                 <span className="ladrilho h-11 w-11 self-start rounded-xl md:self-center" data-tom="erro" aria-hidden="true"><Icone nome="alerta" /></span>
                 <div className="grid min-w-0 gap-0.5">
                   <span className="font-medium">{FINALIDADES_ENVIO[f.finalidade]}{f.para ? ` para ${f.para}` : ""}{f.unidades ? ` · ${f.unidades}` : ""}</span>
-                  <span className="line-clamp-2 whitespace-pre-line text-sm">“{f.texto}”</span>
+                  <span className="line-clamp-2 whitespace-pre-line t-texto">“{f.texto}”</span>
                   <span className="t-apoio">
                     {f.pedido ? <><Link href={`/pedidos/pedido?id=${f.pedido.id}`} className="font-medium text-violeta-600 hover:underline">Pedido {f.pedido.protocolo}</Link> · </> : null}
                     {formatarDataHora(f.criadoEm)} · {quantas(f.tentativas, "tentativa", "tentativas")}{f.responsavel ? ` · quem cuida: ${f.responsavel}` : ""}

@@ -54,7 +54,7 @@ function JanelaCredenciais({ id, versao, aoFechar, aoSalvar }: { id: string; ver
     <Dialogo aberto titulo="Credenciais da instância" aoFechar={aoFechar}>
       <form onSubmit={salvar} noValidate className="grid gap-4">
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-        <p className="text-sm text-tinta-suave">Do painel do Wafly, em Instâncias. Guardadas cifradas: depois de salvas, não aparecem mais em lugar nenhum.</p>
+        <p className="t-apoio text-tinta-suave">Do painel do Wafly, em Instâncias. Guardadas cifradas: depois de salvas, não aparecem mais em lugar nenhum.</p>
         <CampoTexto id="wa-instancia" rotulo="Instância" required maxLength={100} autoComplete="off" value={instancia} onChange={(e) => setInstancia(e.target.value)}
           erro={campos.includes("instancia") ? "Só letras, números, hífen e sublinhado." : null} />
         <CampoTexto id="wa-token" rotulo="Token da instância" type="password" required maxLength={500} autoComplete="off" value={token}
@@ -87,7 +87,7 @@ function JanelaConectar({ id, numero, aoFechar, aoConferir }: { id: string; nume
     <Dialogo aberto titulo="Conectar o número" aoFechar={aoFechar}>
       <div className="grid gap-4">
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-        <ol className="grid list-decimal gap-1 pl-5 text-sm">
+        <ol className="grid list-decimal gap-1 pl-5 t-texto">
           <li>No celular do condomínio, abra o WhatsApp do número {numero ? mostrarTelefone(numero) : "da ficha"}.</li>
           <li>Toque em Aparelhos conectados e em Conectar aparelho.</li>
           <li>Aponte para o QR, ou escolha conectar com número de telefone e digite o código.</li>
@@ -96,7 +96,7 @@ function JanelaConectar({ id, numero, aoFechar, aoConferir }: { id: string; nume
           // eslint-disable-next-line @next/next/no-img-element -- imagem do QR que o provedor devolve na hora; não passa por otimizador
           <img src={qr} alt="QR para conectar o WhatsApp do condomínio" className="h-56 w-56 justify-self-center rounded-xl border border-linha bg-white p-2" />
         ) : null}
-        {codigo ? <p className="justify-self-center rounded-xl bg-violeta-50 px-4 py-3 font-mono text-2xl tracking-widest" aria-label={`Código de emparelhamento ${codigo}`}>{codigo}</p> : null}
+        {codigo ? <p className="justify-self-center rounded-xl bg-violeta-50 px-4 py-3 font-mono t-titulo-tela tracking-widest" aria-label={`Código de emparelhamento ${codigo}`}>{codigo}</p> : null}
         {jaConectado ? <Aviso tom="ok">O provedor diz que já está conectado. Confira o aparelho.</Aviso> : null}
         <Aviso tom="info">Depois de conectar, o sistema confere se o aparelho é o número da ficha. Se for outro, desconecta na hora.</Aviso>
         <div className="flex flex-wrap justify-end gap-2">
@@ -152,15 +152,15 @@ export function AbaWhatsapp({ ficha, avisar, pedido }: PropsAba) {
       {aviso ? <Aviso tom={aviso.tom} papel="status">{aviso.texto}</Aviso> : null}
       {erro && janela !== "desconectar" ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
       <section aria-labelledby="t-numero" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-        <h2 id="t-numero" className="flex flex-wrap items-center gap-2 text-lg font-medium">Número do condomínio <Selo tom="atencao">Piloto</Selo></h2>
-        <dl className="grid gap-3 text-sm sm:grid-cols-2">
-          <div><dt className="text-xs text-tinta-suave">Número na ficha</dt><dd className="font-medium">{d.numeroFicha ? mostrarTelefone(d.numeroFicha) : "Sem número: cadastre na Visão geral"}</dd></div>
-          <div><dt className="text-xs text-tinta-suave">Situação</dt><dd><Selo tom={TOM[cx.situacao]}>{SITUACOES_CONEXAO[cx.situacao]}</Selo></dd></div>
-          {cx.aparelho ? <div><dt className="text-xs text-tinta-suave">Aparelho conectado</dt><dd className="font-medium">{mostrarTelefone(cx.aparelho)}</dd></div> : null}
-          {cx.situacao === "CONECTADO" && cx.conectadoEm ? <div><dt className="text-xs text-tinta-suave">Desde</dt><dd>{formatarDataHora(cx.conectadoEm)}</dd></div> : null}
-          {cx.situacao === "DESCONECTADO" && cx.desconectadoEm ? <div><dt className="text-xs text-tinta-suave">Desconectado desde</dt><dd>{formatarDataHora(cx.desconectadoEm)}</dd></div> : null}
-          {cx.ultimaRecebida ? <div><dt className="text-xs text-tinta-suave">Última mensagem recebida</dt><dd>{formatarDataHora(cx.ultimaRecebida)}</dd></div> : null}
-          <div><dt className="text-xs text-tinta-suave">Termo do piloto</dt>
+        <h2 id="t-numero" className="flex flex-wrap items-center gap-2 t-titulo-secao font-medium">Número do condomínio <Selo tom="atencao">Piloto</Selo></h2>
+        <dl className="grid gap-3 t-texto sm:grid-cols-2">
+          <div><dt className="t-apoio text-tinta-suave">Número na ficha</dt><dd className="font-medium">{d.numeroFicha ? mostrarTelefone(d.numeroFicha) : "Sem número: cadastre na Visão geral"}</dd></div>
+          <div><dt className="t-apoio text-tinta-suave">Situação</dt><dd><Selo tom={TOM[cx.situacao]}>{SITUACOES_CONEXAO[cx.situacao]}</Selo></dd></div>
+          {cx.aparelho ? <div><dt className="t-apoio text-tinta-suave">Aparelho conectado</dt><dd className="font-medium">{mostrarTelefone(cx.aparelho)}</dd></div> : null}
+          {cx.situacao === "CONECTADO" && cx.conectadoEm ? <div><dt className="t-apoio text-tinta-suave">Desde</dt><dd>{formatarDataHora(cx.conectadoEm)}</dd></div> : null}
+          {cx.situacao === "DESCONECTADO" && cx.desconectadoEm ? <div><dt className="t-apoio text-tinta-suave">Desconectado desde</dt><dd>{formatarDataHora(cx.desconectadoEm)}</dd></div> : null}
+          {cx.ultimaRecebida ? <div><dt className="t-apoio text-tinta-suave">Última mensagem recebida</dt><dd>{formatarDataHora(cx.ultimaRecebida)}</dd></div> : null}
+          <div><dt className="t-apoio text-tinta-suave">Termo do piloto</dt>
             <dd>{cx.termoAceitoEm ? `Aceito por ${cx.termoAceitoPor ?? "o síndico"} em ${formatarDataHora(cx.termoAceitoEm)}` : "Esperando o síndico aceitar em Configurações › WhatsApp"}</dd></div>
         </dl>
         {d.pode.conectar ? (
@@ -175,13 +175,13 @@ export function AbaWhatsapp({ ficha, avisar, pedido }: PropsAba) {
         ) : cx.situacao !== "SEM_CREDENCIAIS" ? <div><Botao variante="contorno" tamanho="m" onClick={() => void conferir()}>Conferir agora</Botao></div> : null}
       </section>
       <section aria-labelledby="t-hist-zap" className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-        <h2 id="t-hist-zap" className="text-lg font-medium">Histórico da conexão</h2>
-        {d.historico.length === 0 ? <p className="text-sm text-tinta-suave">Nada ainda.</p> : (
-          <ul className="divide-y divide-linha text-sm">
+        <h2 id="t-hist-zap" className="t-titulo-secao font-medium">Histórico da conexão</h2>
+        {d.historico.length === 0 ? <p className="t-apoio text-tinta-suave">Nada ainda.</p> : (
+          <ul className="divide-y divide-linha t-texto">
             {d.historico.map((h, i) => (
               <li key={i} className="grid gap-0.5 py-2">
                 <span>{EVENTOS[h.acao] ?? h.acao}{h.dados.origem === "PROVEDOR" ? " (pelo provedor)" : ""}{h.dados.motivo ? `. Motivo: ${h.dados.motivo}` : ""}</span>
-                <span className="text-xs text-tinta-suave">{formatarDataHora(h.em)}{h.autor ? ` · ${h.autor}` : ""}</span>
+                <span className="t-apoio text-tinta-suave">{formatarDataHora(h.em)}{h.autor ? ` · ${h.autor}` : ""}</span>
               </li>
             ))}
           </ul>
@@ -201,7 +201,7 @@ export function AbaWhatsapp({ ficha, avisar, pedido }: PropsAba) {
         <Dialogo aberto titulo="Desconectar o número" aoFechar={() => setJanela(null)}>
           <div className="grid gap-4">
             {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-            <p className="text-sm">As mensagens dos moradores deixam de chegar e o síndico é avisado no sino.</p>
+            <p className="t-texto">As mensagens dos moradores deixam de chegar e o síndico é avisado no sino.</p>
             <CampoAreaTexto id="wa-motivo" rotulo="Motivo" required maxLength={300} value={motivo} onChange={(e) => setMotivo(e.target.value)}
               erro={camposComErro(erro).includes("motivo") ? "Diga o motivo (3 a 300 caracteres)." : null} />
             <div className="flex justify-end gap-2">

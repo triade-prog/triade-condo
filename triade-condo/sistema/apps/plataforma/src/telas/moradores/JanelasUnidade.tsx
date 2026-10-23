@@ -287,14 +287,14 @@ function EscolherPessoa({ prefixo, rotulo, textoCadastrada, de = "", pessoa, aoM
               <fieldset className="grid gap-1.5">
                 <legend className="sr-only">Escolha a pessoa</legend>
                 {opcoes.map((o) => (
-                  <label key={o.contatoId} className="flex items-start gap-2 rounded-md border border-linha px-3 py-2 text-sm">
+                  <label key={o.contatoId} className="flex items-start gap-2 rounded-md border border-linha px-3 py-2 t-texto">
                     <input type="radio" name={`${prefixo}-contato`} className="mt-1 accent-violeta-600" checked={pessoa.contatoId === o.contatoId}
                       onChange={() => aoMudar({ ...pessoa, contatoId: o.contatoId, nomeEscolhido: o.nome })} />
-                    <span><span className="font-medium">{o.nome}</span><span className="block text-xs text-tinta-suave">{mostrarTelefone(o.telefone)} · {nomeDaUnidade(o.bloco, o.andar, o.unidade)}</span></span>
+                    <span><span className="font-medium">{o.nome}</span><span className="block t-apoio text-tinta-suave">{mostrarTelefone(o.telefone)} · {nomeDaUnidade(o.bloco, o.andar, o.unidade)}</span></span>
                   </label>
                 ))}
               </fieldset>
-            ) : <p className="text-sm text-tinta-suave">Ninguém encontrado. Confira a busca ou cadastre como pessoa nova.</p>
+            ) : <p className="t-apoio text-tinta-suave">Ninguém encontrado. Confira a busca ou cadastre como pessoa nova.</p>
           ) : null}
         </div>
       )}
@@ -360,8 +360,8 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
         erros={errosDoVinculo(campos)} />
       {pedeDono ? (
         <fieldset className="grid gap-3 rounded-2xl border border-linha bg-superficie-2 p-3">
-          <legend className="px-1 text-[13px] font-semibold">Proprietário do imóvel</legend>
-          <p className="text-sm text-tinta-suave">
+          <legend className="px-1 t-apoio font-semibold">Proprietário do imóvel</legend>
+          <p className="t-apoio text-tinta-suave">
             A unidade ainda não tem proprietário no cadastro. Para controle, o inquilino entra junto com o dono do imóvel. O proprietário fica registrado
             sem morar aqui, não é o responsável e não recebe os comunicados do dia a dia (dá para mudar depois).
           </p>
@@ -371,7 +371,7 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
         </fieldset>
       ) : null}
       <Caixa id="c-recebe" rotulo="Recebe comunicados do condomínio" marcada={recebe} aoMudar={setRecebe} />
-      <p className="text-sm text-tinta-suave">
+      <p className="t-apoio text-tinta-suave">
         {podeConfirmar ? "Quem você inclui já fica confirmado." : "A pessoa fica a confirmar até o síndico conferir."} Ter o telefone não dá acesso a nada além do que a unidade pode ver.
       </p>
     </>
@@ -489,7 +489,7 @@ function FormEditar({ contato, responsavel, emailLigado, aoFechar, salvo, recarr
         erro={campos.includes("telefone") ? ERRO_CAMPO.telefone : null} />
       <CamposVinculo prefixo="e" valor={vinculo} aoMudar={(v) => { setVinculo(v); setErro(null); }}
         responsavelAtual={contato.principal ? null : responsavel} erros={errosDoVinculo(campos)} />
-      <p className="text-xs text-tinta-suave">O &quot;ocupou até&quot; é preenchido quando o vínculo é encerrado ou numa mudança.</p>
+      <p className="t-apoio text-tinta-suave">O &quot;ocupou até&quot; é preenchido quando o vínculo é encerrado ou numa mudança.</p>
       <Caixa id="e-recebe" rotulo="Recebe comunicados do condomínio" marcada={recebe} aoMudar={setRecebe} />
       <CampoTexto id="e-email" rotulo="E-mail" opcional type="email" maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)}
         erro={campos.includes("email") ? "Confira o e-mail: precisa do @ e do domínio." : null}
@@ -497,9 +497,9 @@ function FormEditar({ contato, responsavel, emailLigado, aoFechar, salvo, recarr
           ? `${SITUACOES_EMAIL[contato.emailSituacao]}${contato.emailSituacao === "PAROU" ? (contato.emailParouMotivo === "SPAM" ? ": marcou como spam" : ": pediu pelo próprio e-mail") : ""}.`
           : "Só a própria pessoa confirma, pelo link que chega no e-mail. Vazio tira o e-mail."} />
       {contato.emailSituacao === "PENDENTE" && emailLigado && email.trim().toLowerCase() === (contato.email ?? "").toLowerCase() ? (
-        <span className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="flex flex-wrap items-center gap-2 t-texto">
           <Botao variante="discreto" tamanho="p" onClick={() => void reenviar()}>Mandar a confirmação de novo</Botao>
-          {reenvio ? <span className="text-xs text-tinta-suave" role="status">{reenvio}</span> : null}
+          {reenvio ? <span className="t-apoio text-tinta-suave" role="status">{reenvio}</span> : null}
         </span>
       ) : null}
       {email.trim() ? (
@@ -548,7 +548,7 @@ function FormEncerrar({ contato, nomeUnidade, aoFechar, salvo, recarregar }: { c
       <CampoTexto id="x-data" rotulo="Ocupou até" type="date" value={data} onChange={(e) => setData(e.target.value)}
         ajuda="A data de saída fica no período de ocupação da pessoa."
         erro={camposComErro(erro).includes("dataSaida") ? (contato.ocupaDesde ? "A saída não pode ser antes da entrada. Confira a data." : "Confira a data.") : null} />
-      <p className="text-sm">{contato.nome} deixa de falar pela unidade agora. O vínculo encerrado não volta; se precisar, inclua de novo.</p>
+      <p className="t-texto">{contato.nome} deixa de falar pela unidade agora. O vínculo encerrado não volta; se precisar, inclua de novo.</p>
     </Form>
   );
 }
@@ -612,15 +612,15 @@ function FormMudanca({ unidade, aoFechar, salvo, recarregar }: { unidade: Unidad
       <CampoTexto id="m-data" rotulo="Data da mudança" type="date" value={data} onChange={(e) => setData(e.target.value)}
         erro={campos.includes("data") ? "Confira a data." : null} />
       <fieldset className="grid gap-1.5">
-        <legend className="mb-1 text-[13px] font-medium">Quem sai</legend>
-        {unidade.contatos.length === 0 ? <p className="text-sm text-tinta-suave">Ninguém na unidade agora.</p> : unidade.contatos.map((c) => (
+        <legend className="mb-1 t-apoio font-medium">Quem sai</legend>
+        {unidade.contatos.length === 0 ? <p className="t-apoio text-tinta-suave">Ninguém na unidade agora.</p> : unidade.contatos.map((c) => (
           <Caixa key={c.vinculoId} id={`m-sai-${c.vinculoId}`} rotulo={`${c.nome} · ${nomeRelacao(c.relacao).toLowerCase()}${c.principal ? " · responsável" : ""}`} marcada={saem.includes(c.vinculoId)}
             aoMudar={(v) => setSaem(v ? [...saem, c.vinculoId] : saem.filter((x) => x !== c.vinculoId))} />
         ))}
-        {saem.length && ficam.length ? <p className="text-xs text-tinta-suave">Ficam: {ficam.map((c) => c.nome).join(", ")}.</p> : null}
+        {saem.length && ficam.length ? <p className="t-apoio text-tinta-suave">Ficam: {ficam.map((c) => c.nome).join(", ")}.</p> : null}
       </fieldset>
       <fieldset className="grid gap-3">
-        <legend className="mb-1 text-[13px] font-medium">Quem entra</legend>
+        <legend className="mb-1 t-apoio font-medium">Quem entra</legend>
         {entram.map((e, i) => (
           <div key={e.chave} className="grid gap-2 rounded-2xl border border-linha bg-superficie p-3">
             <CampoTexto id={`m-nome-${e.chave}`} rotulo={`Nome da pessoa ${i + 1}`} maxLength={120} value={e.nome} onChange={(ev) => mudar(e.chave, { nome: ev.target.value })} />
@@ -644,10 +644,10 @@ function FormMudanca({ unidade, aoFechar, salvo, recarregar }: { unidade: Unidad
         {entram.length < 20 ? (
           <Botao variante="contorno" className="justify-self-start" onClick={() => incluirPessoa({ ...VINCULO_NOVO, ligacao: "FAMILIAR" })}>+ Mais uma pessoa</Botao>
         ) : null}
-        {campos.includes("entram") || campos.includes("ligacao") ? <p className="text-sm text-erro">Confira nome, telefone (com DDD) e a ligação de quem entra.</p> : null}
-        <p className="text-xs text-tinta-suave">Deixe em branco se ninguém entra agora. Quem entra ocupa desde a data da mudança.</p>
+        {campos.includes("entram") || campos.includes("ligacao") ? <p className="t-texto text-erro">Confira nome, telefone (com DDD) e a ligação de quem entra.</p> : null}
+        <p className="t-apoio text-tinta-suave">Deixe em branco se ninguém entra agora. Quem entra ocupa desde a data da mudança.</p>
       </fieldset>
-      <p className="text-sm">
+      <p className="t-texto">
         {saem.length ? "Quem sai deixa de falar pela unidade agora e fica com o \"ocupou até\" nesta data. Se não estiver em outra unidade, depois você pode remover os dados. " : ""}
         {unidade.podeConfirmar ? "Quem entra já fica confirmado." : "Quem entra fica a confirmar pelo síndico."}
         {preenchidos.some((e) => e.vinculo.proprietario && !e.vinculo.mora) ? " O proprietário que não mora na unidade fica no cadastro sem os comunicados do dia a dia." : ""}

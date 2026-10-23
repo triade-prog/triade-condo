@@ -7,7 +7,7 @@ import { AvisoErro, Botao, chamarApi, Dialogo, Icone, Selo, textoDoErro, type Er
 import { Janela, type Campo, type Valores } from "./Janela.tsx";
 import type { Configuracoes } from "./tipos.ts";
 import type { PropsAba } from "./Configuracoes.tsx";
-import { naBase } from "./contexto.tsx";
+import { naBase, useAmbiente, useCarregar } from "./contexto.tsx";
 
 type Categoria = Configuracoes["categorias"][number];
 type Prioridade = Configuracoes["prioridades"][number];
@@ -24,6 +24,15 @@ const CAMPOS_PRIORIDADE: Campo[] = [
     ajuda: "Quem registra o pedido lê isto para escolher. Ex.: risco à segurança ou dano acontecendo agora." },
   { id: "ativa", rotulo: "Ativa", tipo: "caixa", ajuda: "Desativada não aparece para pedidos novos; os antigos continuam com ela." },
 ];
+
+/** Quantos pedidos em aberto usam a categoria (D4.15). Só no app: a fila de pedidos é do condomínio da sessão. */
+function PedidosDaCategoria({ c }: { c: Categoria }) {
+  const { onde } = useAmbiente();
+  const fila = useCarregar<{ total: number }>(onde === "app" ? `/v1/condominio/pedidos?situacao=ATIVOS&categoria=${c.id}` : null);
+  if (fila.estado !== "pronto") return null;
+  const n = fila.dados.total;
+  return <p>{n === 0 ? `Nenhum pedido em aberto usa ${c.nome} agora.` : n === 1 ? `1 pedido em aberto usa ${c.nome} agora e continua com ela.` : `${n} pedidos em aberto usam ${c.nome} agora e continuam com ela.`}</p>;
+}
 
 export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
   const [edicao, setEdicao] = useState<Edicao>(null);
@@ -57,12 +66,12 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
       {falha ? <div className="xl:col-span-2"><AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={recarregar} /></div> : null}
       <section aria-labelledby="t-categorias" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="t-categorias" className="text-lg font-medium">Categorias</h2>
+          <h2 id="t-categorias" className="t-titulo-secao font-medium">Categorias</h2>
           {pode ? <Botao variante="contorno" tamanho="m" onClick={() => setEdicao({ tipo: "categoria", item: null })}><Icone nome="mais" />Nova categoria</Botao> : null}
         </div>
         <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
           {config.categorias.map((c) => (
-            <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
+            <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 t-texto">
               <span className="flex flex-wrap items-center gap-2">
                 <span className={c.ativa ? "font-medium" : "text-tinta-suave"}>{c.nome}</span>
                 {c.ativa ? <Selo tom="ok">Ativa</Selo> : <Selo tom="neutro">Desativada</Selo>}
@@ -76,16 +85,16 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
             </li>
           ))}
         </ul>
-        <p className="text-sm text-tinta-suave">Desativada não aparece para pedidos novos; os antigos continuam com ela.</p>
+        <p className="t-apoio text-tinta-suave">Desativada não aparece para pedidos novos; os antigos continuam com ela.</p>
       </section>
       <section aria-labelledby="t-prioridades" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="t-prioridades" className="text-lg font-medium">Prioridades</h2>
+          <h2 id="t-prioridades" className="t-titulo-secao font-medium">Prioridades</h2>
           {pode ? <Botao variante="contorno" tamanho="m" onClick={() => setEdicao({ tipo: "prioridade", item: null })}><Icone nome="mais" />Nova prioridade</Botao> : null}
         </div>
         <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
           {prioridades.map((p) => (
-            <li key={p.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
+            <li key={p.id} className="flex items-start justify-between gap-3 px-4 py-2.5 t-texto">
               <span className="grid gap-0.5">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className={p.ativa ? "font-medium" : "text-tinta-suave"}>{p.nome}</span>
@@ -102,7 +111,8 @@ export function AbaCategorias({ config, pode, recarregar, salvo }: PropsAba) {
         <Dialogo aberto titulo={`Desativar a categoria ${desativando.nome}?`} aoFechar={() => setDesativando(null)}>
           <div className="grid gap-3">
             <p>Pedidos novos não podem mais usar {desativando.nome}. Os pedidos que já têm {desativando.nome} continuam com ela, no histórico e nos indicadores.</p>
-            <p className="text-[13px] text-tinta-suave">Dá para reativar depois, com o mesmo nome e o mesmo histórico.</p>
+            <PedidosDaCategoria c={desativando} />
+            <p className="t-apoio text-tinta-suave">Dá para reativar depois, com o mesmo nome e o mesmo histórico.</p>
             <div className="flex flex-wrap justify-end gap-2">
               <Botao variante="contorno" onClick={() => setDesativando(null)}>Voltar</Botao>
               <Botao onClick={() => void alternar(desativando)}>Desativar {desativando.nome}</Botao>

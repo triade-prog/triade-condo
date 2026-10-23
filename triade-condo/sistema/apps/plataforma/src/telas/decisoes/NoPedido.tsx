@@ -49,13 +49,13 @@ export function DecisoesNoPedido({ d, salvo, recarregar }: Props) {
         </div>
       ))}
       {fechadas.length ? (
-        <details className="text-sm">
+        <details className="t-texto">
           <summary className="cursor-pointer font-medium text-violeta-600">{fechadas.length === 1 ? "1 decisão respondida ou retirada" : `${fechadas.length} decisões respondidas ou retiradas`}</summary>
           <ul className="mt-2 grid gap-2">
             {fechadas.map((x) => (
               <li key={x.id} className="grid gap-1 rounded-2xl border border-linha bg-superficie p-3">
                 <span className="flex flex-wrap items-center gap-2"><SeloDecisao d={x} hoje={hoje} /><span className="font-medium">{x.pergunta}</span></span>
-                <span className="text-xs text-tinta-suave">{resumoResposta(x)}</span>
+                <span className="t-apoio text-tinta-suave">{resumoResposta(x)}</span>
                 <Botao variante="discreto" tamanho="m" className="justify-self-start" aria-label={`Ver a decisão: ${x.pergunta}`} onClick={() => setVer(x)}>Ver</Botao>
               </li>
             ))}
@@ -66,12 +66,12 @@ export function DecisoesNoPedido({ d, salvo, recarregar }: Props) {
       <Dialogo aberto={ver !== null} titulo="Decisão pedida" aoFechar={() => setVer(null)}>
         {ver ? (
           <div className="grid gap-3">
-            <p className="flex flex-wrap items-center gap-2 text-sm"><SeloDecisao d={ver} hoje={hoje} /><span className="text-tinta-suave">quem decide: {ver.decisor.nome}</span></p>
-            <p className="text-sm font-medium">{ver.pergunta}</p>
-            {ver.porque ? <p className="text-sm">Por que agora: {ver.porque}</p> : null}
+            <p className="flex flex-wrap items-center gap-2 t-texto"><SeloDecisao d={ver} hoje={hoje} /><span className="text-tinta-suave">quem decide: {ver.decisor.nome}</span></p>
+            <p className="t-texto font-medium">{ver.pergunta}</p>
+            {ver.porque ? <p className="t-texto">Por que agora: {ver.porque}</p> : null}
             <ListaAlternativas alternativas={ver.alternativas} aprovada={ver.alternativaAprovada} />
-            <p className="text-xs text-tinta-suave">Pedida{ver.pedidaPor ? ` por ${ver.pedidaPor}` : ""} em {diaHora(ver.pedidaEm)} · decidir até {diaDoPrazo(ver.prazo)}</p>
-            {resumoResposta(ver) ? <p className="text-sm">{resumoResposta(ver)}</p> : null}
+            <p className="t-apoio text-tinta-suave">Pedida{ver.pedidaPor ? ` por ${ver.pedidaPor}` : ""} em {diaHora(ver.pedidaEm)} · decidir até {diaDoPrazo(ver.prazo)}</p>
+            {resumoResposta(ver) ? <p className="t-texto">{resumoResposta(ver)}</p> : null}
             <div className="flex flex-wrap justify-end gap-2">
               <Botao variante="discreto" onClick={() => setVer(null)}>Fechar</Botao>
               {ver.pode.retirar ? <Botao variante="contorno" onClick={() => { setRetirar(ver); setVer(null); }}>Retirar</Botao> : null}
@@ -141,12 +141,12 @@ function FormPedir({ d, aoFechar, salvo, recarregar }: { d: PedidoDetalhe; aoFec
   return (
     <form onSubmit={enviar} noValidate className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={() => { aoFechar(); recarregar(); }} /> : null}
-      <p className="text-sm text-tinta-suave">Pedido {p.protocolo} · {p.assunto}</p>
+      <p className="t-apoio text-tinta-suave">Pedido {p.protocolo} · {p.assunto}</p>
       <CampoAreaTexto id="dec-pergunta" rotulo="O que precisa ser decidido" required maxLength={500} rows={3} value={pergunta}
         onChange={(e) => setPergunta(e.target.value)} erro={comErro.includes("pergunta") ? "Diga o que precisa ser decidido (3 a 500 caracteres)." : null} />
       <fieldset className="grid gap-3">
-        <legend className="mb-1 text-sm font-medium">Alternativas <span className="text-tinta-suave">(de 1 a 5)</span></legend>
-        {comErro.includes("alternativas") ? <p className="text-sm text-erro">Confira as alternativas: descrição de 3 a 200 caracteres e custo em reais.</p> : null}
+        <legend className="mb-1 t-texto font-medium">Alternativas <span className="text-tinta-suave">(de 1 a 5)</span></legend>
+        {comErro.includes("alternativas") ? <p className="t-texto text-erro">Confira as alternativas: descrição de 3 a 200 caracteres e custo em reais.</p> : null}
         {alternativas.map((a, i) => (
           <div key={i} className="grid gap-2 rounded-2xl border border-linha p-3">
             <CampoTexto id={`dec-alt-${i}`} rotulo={`Alternativa ${i + 1}`} required maxLength={200} value={a.descricao}
@@ -177,7 +177,7 @@ function FormPedir({ d, aoFechar, salvo, recarregar }: { d: PedidoDetalhe; aoFec
       </div>
       <CampoAreaTexto id="dec-porque" rotulo="Por que agora" opcional maxLength={500} rows={2} value={porque}
         onChange={(e) => setPorque(e.target.value)} erro={comErro.includes("porque") ? "De 3 a 500 caracteres." : null} />
-      <p className="text-xs text-tinta-suave">Os orçamentos ficam nos arquivos do pedido. Aprovar não contrata nem paga nada: a contratação continua como o condomínio já faz.</p>
+      <p className="t-apoio text-tinta-suave">Os orçamentos ficam nos arquivos do pedido. Aprovar não contrata nem paga nada: a contratação continua como o condomínio já faz.</p>
       <div className="flex flex-wrap justify-end gap-2">
         <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" disabled={enviando}>{enviando ? "Enviando…" : "Pedir decisão"}</Botao>

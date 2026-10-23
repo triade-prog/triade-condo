@@ -87,9 +87,9 @@ function Identidade() {
     <span className="inline-flex flex-col items-start gap-0.5">
       <Logo />
       <span className="flex items-center gap-1.5">
-        <span className="text-[10px] font-medium tracking-widest text-tinta-suave uppercase">Console TRÍADE</span>
+        <span className="t-rotulo font-medium tracking-widest text-tinta-suave uppercase">Console TRÍADE</span>
         <span className="sr-only"> · </span>
-        <span className="rounded-full bg-laranja-500 px-1.5 text-[9px] leading-[14px] font-bold tracking-wider text-violeta-900 uppercase">Admin</span>
+        <span className="rounded-full bg-laranja-500 px-1.5 t-rotulo leading-[14px] font-bold tracking-wider text-violeta-900 uppercase">Admin</span>
       </span>
     </span>
   );

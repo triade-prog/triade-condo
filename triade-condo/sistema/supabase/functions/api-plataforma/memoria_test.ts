@@ -3,7 +3,7 @@
 // e só sai por link curto; a rota interna pede o segredo de repasse.
 import { assert, assertEquals } from "@std/assert";
 import { criarApiPlataforma } from "./app.ts";
-import { adminFalso, armazenamentoFalso, authFalso, bancoFalso, cookieDe, erro, limitesFalsos, pedido } from "../_shared/teste_util.ts";
+import { adminFalso, armazenamentoFalso, authFalso, bancoFalso, cookieDe, erro, erroBanco, limitesFalsos, pedido } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 const AURORA = "3e0f6c3b-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -15,7 +15,7 @@ const PARTE2 = "8b9c0d1e-2f3a-4b4c-9d5e-f6a7b8c9d0e1";
 const VERSAO = "9c0d1e2f-3a4b-4c5d-8e6f-a7b8c9d0e1f2";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-sindica" };
 
-function montar() {
+function montar(extra: Record<string, (a: Record<string, unknown>) => unknown> = {}) {
   const sessoes = new Map<string, string>();
   const falso = authFalso([{ id: ANA, email: ENTRAR.email, senha: ENTRAR.senha }]);
   const partes = [
@@ -51,6 +51,7 @@ function montar() {
     exportacao_pegar_parte: () => partes.shift() ?? null,
     exportacao_dados: () => ({ condominio: { nome: "Residencial Aurora" }, tabelas: { anotacoes_memoria: [{ id: ITEM, titulo: "Muro; lote 12" }] } }),
     exportacao_parte_pronta: () => ({ ok: true }),
+    ...extra,
   });
   const documentos = armazenamentoFalso();
   documentos.objetos.set(`${AURORA}/${DOC}/${VERSAO}`, new Uint8Array([0x25, 0x50, 0x44, 0x46]));
@@ -135,4 +136,49 @@ Deno.test("CT-04: a rota interna da exportação pede o segredo de repasse", asy
   const m = montar();
   assertEquals((await m.pedir("/v1/interno/exportacao", { metodo: "POST", corpo: {}, segredo: null })).status, 403);
   assertEquals((await (await m.pedir("/v1/interno/exportacao", { metodo: "POST", corpo: {} })).json()).montados, 2);
+});
+
+Deno.test("CT-02 (D4.18): o que vai no dossiê hoje conta com as leituras das telas e os cortes do dossiê", async () => {
+  const m = montar({
+    plataforma_linha_do_tempo: () => ({ eventos: Array.from({ length: 52 }) }),
+    plataforma_pessoas: () => ({ pessoas: [{}, {}, {}] }),
+    plataforma_agenda: () => ({ compromissos: [{ estado: "MARCADO" }, { estado: "CANCELADO" }, { estado: "REALIZADO" }, { estado: "MARCADO" }] }),
+  });
+  assertEquals((await erro(await m.pedir("/v1/condominio/memoria/dossie-hoje?de=2026-10-23"))).codigo, "UNAUTHORIZED");
+  const cookie = await entrar(m);
+  const r = await m.pedir("/v1/condominio/memoria/dossie-hoje?de=2026-10-23", { cookie });
+  assertEquals(await r.json(), { anotacoes: 40, acesso: 3, compromissos: 2 });
+  assertEquals(chamada(m, "plataforma_linha_do_tempo"), { p_pessoa: ANA, p_condominio: AURORA, p_filtro: "ANOTADO", p_antes: null });
+  assertEquals(chamada(m, "plataforma_agenda"), { p_pessoa: ANA, p_condominio: AURORA, p_de: "2026-10-23", p_ate: "2026-12-22" });
+  assertEquals((await m.pedir("/v1/condominio/memoria/dossie-hoje?de=ontem", { cookie })).status, 400);
+  const sem = montar();
+  assertEquals(await (await sem.pedir("/v1/condominio/memoria/dossie-hoje?de=2026-10-23", { cookie: await entrar(sem) })).json(),
+    { anotacoes: 0, acesso: null, compromissos: null });
+});
+
+Deno.test("MP-12 (D4.18): guardar e ligar numa chamada só; se a ligação falha, o documento fica guardado", async () => {
+  let falhar = false;
+  const m = montar({
+    plataforma_salvar_documento: () => ({ id: DOC, versao: 1 }),
+    plataforma_item_prontuario: (a) => (falhar ? erroBanco("TC409") : { id: ITEM, versao: Number(a.p_versao ?? 0) + 1 }),
+  });
+  const cookie = await entrar(m);
+  const corpo = { documento: { tipo: "LAUDO", titulo: "AVCB 2026", valeAte: "2027-10-01" }, versao: 2, avisarDias: 30 };
+  const r = await m.pedir("/v1/condominio/memoria/prontuario/itens/AVCB/documento", { cookie, corpo });
+  assertEquals([r.status, await r.json()], [201, { id: DOC, ligado: true }]);
+  assertEquals(chamada(m, "plataforma_salvar_documento"), {
+    p_pessoa: ANA, p_condominio: AURORA, p_id: null, p_versao: null, p_tipo: "LAUDO", p_titulo: "AVCB 2026", p_descricao: null,
+    p_restrito: false, p_ao_morador: false, p_vale_ate: "2027-10-01",
+  });
+  assertEquals(chamada(m, "plataforma_item_prontuario"), {
+    p_pessoa: ANA, p_condominio: AURORA, p_id: null, p_chave: "AVCB", p_versao: 2, p_acao: "LIGAR", p_nome: null, p_grupo: null,
+    p_documento: DOC, p_avisar_dias: 30, p_motivo: null,
+  });
+  falhar = true;
+  assertEquals(await (await m.pedir("/v1/condominio/memoria/prontuario/itens/AVCB/documento", { cookie, corpo })).json(), { id: DOC, ligado: false });
+  const ruim = await m.pedir("/v1/condominio/memoria/prontuario/itens/AVCB/documento", { cookie, corpo: { documento: { tipo: "LAUDO", titulo: "A" } } });
+  assertEquals((await erro(ruim)).codigo, "VALIDATION_ERROR");
+  const antes = m.chamadas.filter((x) => x.funcao === "plataforma_salvar_documento").length;
+  assertEquals((await m.pedir("/v1/condominio/memoria/prontuario/itens/avcb/documento", { cookie, corpo })).status, 404);
+  assertEquals(m.chamadas.filter((x) => x.funcao === "plataforma_salvar_documento").length, antes);
 });

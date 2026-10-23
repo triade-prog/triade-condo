@@ -68,7 +68,7 @@ export function CartaoInicio({ titulo, icone, href, rotulo = "Ver tudo", area, c
   const [aberto, setAberto] = useState(false);
   const linhaCurta = !!area && celular;
   const ver = href ? (
-    <Link href={href} className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-violeta-600 hover:underline"
+    <Link href={href} className="inline-flex shrink-0 items-center gap-1 t-texto font-medium text-violeta-600 hover:underline"
       aria-label={rotulo === "Ver tudo" ? `Ver tudo de ${titulo}` : undefined}>
       {rotulo}<Icone nome="dir" className="h-4 w-4" />
     </Link>
@@ -81,7 +81,7 @@ export function CartaoInicio({ titulo, icone, href, rotulo = "Ver tudo", area, c
           <span className="ladrilho" aria-hidden="true"><Icone nome={icone} /></span>
           <span className="grid min-w-0 flex-1">
             <h2 className="font-medium">
-              <button type="button" className="text-left after:absolute after:inset-0 focus-visible:outline-0 focus-visible:after:rounded-xl focus-visible:after:shadow-[var(--anel)]"
+              <button type="button" className="elo-linha"
                 aria-expanded={aberto} aria-controls={`${id}-corpo`} aria-describedby={aberto ? undefined : `${id}-resumo`} onClick={() => setAberto(!aberto)}>
                 {titulo}
               </button>

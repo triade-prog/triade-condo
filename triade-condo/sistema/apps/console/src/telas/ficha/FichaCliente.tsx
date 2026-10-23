@@ -132,7 +132,7 @@ export function FichaCliente() {
             aria-controls={`painel-${a.id}`}
             tabIndex={parte === a.id ? 0 : -1}
             onClick={() => ir(a.id)}
-            className="-mb-px min-h-11 shrink-0 border-b-2 border-transparent px-1 text-[15px] whitespace-nowrap text-tinta-suave hover:text-tinta aria-selected:border-violeta-600 aria-selected:font-semibold aria-selected:text-violeta-600"
+            className="-mb-px min-h-11 shrink-0 border-b-2 border-transparent px-1 t-texto whitespace-nowrap text-tinta-suave hover:text-tinta aria-selected:border-violeta-600 aria-selected:font-semibold aria-selected:text-violeta-600"
           >
             {a.texto}
           </button>
