@@ -15,6 +15,8 @@ export const horarioAtendimento = "dias úteis, das 9h às 18h";
 export const promessaRetorno = "até o fim do próximo dia útil";
 export const duracaoDemonstracao = "30 minutos";
 export const enderecoPlataforma = "https://condominio.trihub.com.br";
+// E-mail de contato passado pela Carolina em 23/10/2026.
+export const emailContato = "suporte@trihub.com.br";
 export const endereco = "Brasília, Distrito Federal, CEP 72006-080";
 export const redes = [
   { nome: "Instagram", url: "https://www.instagram.com/triadecondo" },

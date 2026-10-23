@@ -1,5 +1,5 @@
 ---
-import { cidade, cnpj, endereco, enderecoPlataforma, horarioAtendimento, linkWhatsapp, razaoSocial, redes, whatsappLegivel } from "../dados/empresa";
+import { cidade, cnpj, emailContato, endereco, enderecoPlataforma, horarioAtendimento, linkWhatsapp, razaoSocial, redes, whatsappLegivel } from "../dados/empresa";
 const zap = linkWhatsapp("Olá! Quero conhecer a TRÍADE Condo.");
 const identificacao = [razaoSocial, cnpj && `CNPJ ${cnpj}`].filter(Boolean).join(" · ");
 ---
@@ -12,7 +12,7 @@ const identificacao = [razaoSocial, cnpj && `CNPJ ${cnpj}`].filter(Boolean).join
     </div>
     <div class="pilha" style="--gap:8px"><b>Produto</b><a href="/plataforma">Plataforma</a><a href="/solucoes">Soluções</a><a href="/como-funciona">Como funciona</a><a href="/solucoes#implantacao">Implantação</a><a href="/precos">Preços</a><a href="/demonstracao">Solicitar demonstração</a><a href="/guia" class="so-cel">Guia do síndico</a></div>
     <div class="pilha rodape-guia" style="--gap:8px"><b>Guia do síndico</b><a href="/guia/organizar-pedidos">Organizar os pedidos sem virar refém do grupo</a><a href="/guia">Todos os textos do Guia</a></div>
-    <div class="pilha rodape-contato" style="--gap:8px"><b>Contato</b>{zap && <a href={zap}>WhatsApp <span class="nw">{whatsappLegivel()}</span></a>}{redes.map((r) => <a href={r.url} rel="noopener">{r.nome}</a>)}<span class="suave">{endereco}</span><span class="suave">Atendimento em {horarioAtendimento}</span></div>
+    <div class="pilha rodape-contato" style="--gap:8px"><b>Contato</b>{zap && <a href={zap}>WhatsApp <span class="nw">{whatsappLegivel()}</span></a>}<a href={`mailto:${emailContato}`}>{emailContato}</a>{redes.map((r) => <a href={r.url} rel="noopener">{r.nome}</a>)}<span class="suave">{endereco}</span><span class="suave">Atendimento em {horarioAtendimento}</span></div>
     <div class="pilha" style="--gap:8px"><b>Legal</b><a href="/privacidade">Política de privacidade deste site</a><a href={enderecoPlataforma}>Entrar na Plataforma</a></div>
   </div>
 </footer>
