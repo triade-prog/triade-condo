@@ -678,3 +678,10 @@ b.prot, .prot { white-space: nowrap; }
 /* Formulário de demonstração: aceite em texto menor e sem negrito (pedido da Carol em 23/10/2026) */
 .formulario .campo label.consentimento { font-size: 13px; font-weight: 400; line-height: 1.5; color: var(--tinta-suave); }
 .formulario .campo label.consentimento input { margin-top: 1px; }
+
+/* Botão do grupo × TRÍADE: o primário do site com a seta numa bolinha (pedido da Carol em 23/10/2026) */
+.botao-seta { min-height: 56px; padding: 0 10px 0 28px; border-radius: 999px; gap: 14px; font-size: 16px; }
+.botao-seta .seta-bola { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; background: #fff; color: var(--violeta-600); transition: transform .2s ease; }
+.botao-seta .seta-bola svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+@media (prefers-reduced-motion: no-preference) { .botao-seta:hover .seta-bola { transform: translateY(3px); } }
+@media (max-width: 640px) { .virada2 .botao-seta { justify-content: space-between; } }
