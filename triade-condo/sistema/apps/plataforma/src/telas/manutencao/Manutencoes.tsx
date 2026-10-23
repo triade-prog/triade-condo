@@ -16,7 +16,7 @@ import { FormManutencao } from "./FormManutencao.tsx";
 import { MarcarVisita } from "./MarcarVisita.tsx";
 
 type Filtros = { situacao: string; tipo: string; prestador: string; atencao: string; busca: string; pagina: number };
-const ICONE_ATALHO: Record<string, NomeIcone> = { RETORNO_VENCIDO: "relogio", PREVENTIVAS_MES: "trocar", PENDENTES_PARADAS: "alerta" };
+const ICONE_ATALHO: Record<string, NomeIcone> = { RETORNO_VENCIDO: "relogio", PREVENTIVAS_MES: "calendario", PENDENTES_PARADAS: "alerta" };
 const TOM_ATALHO: Record<string, Tom> = { RETORNO_VENCIDO: "erro", PREVENTIVAS_MES: "andamento", PENDENTES_PARADAS: "atencao" };
 
 /** O tipo e o prestador, numa janela. */

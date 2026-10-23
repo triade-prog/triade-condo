@@ -360,7 +360,8 @@ export async function rotasManutencao(route: Route, est: EstadoManutencao, ctx: 
     return route.fulfill({ status: 201, json: { id: nova.id, versao: m.versao } });
   }
   if (acao === "" && metodo === "PUT") {
-    Object.assign(m, { titulo: String(corpo.titulo), local: String(corpo.local), versao: m.versao + 1 });
+    if (corpo.responsavelId && corpo.responsavelId !== m.responsavelId) hist(m, "manutencao.repassada", { responsavel: String(corpo.responsavelId) });
+    Object.assign(m, { titulo: String(corpo.titulo), local: String(corpo.local), responsavelId: String(corpo.responsavelId ?? m.responsavelId), versao: m.versao + 1 });
     return route.fulfill({ json: { versao: m.versao } });
   }
   return erro(route, 404, "NOT_FOUND");

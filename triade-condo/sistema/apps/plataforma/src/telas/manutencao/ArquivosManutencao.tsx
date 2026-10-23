@@ -5,7 +5,8 @@
 
 import { useState } from "react";
 import { mostrarTamanho } from "@triade/domain";
-import { Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Selo, textoDoErro, Vazio } from "@triade/ui";
+import { Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio } from "@triade/ui";
+import { Cartao } from "../Ficha.tsx";
 import { Janela } from "../Janela.tsx";
 import { EscolherArquivos, resumoEnvio, subir, type ItemEnvio, type ResultadoEnvio } from "../pedidos/Arquivos.tsx";
 import { diaHora } from "../pedidos/comum.tsx";
@@ -26,7 +27,8 @@ interface ArquivoManutencao {
   podeTirar: boolean;
 }
 
-async function enviar(manutencaoId: string, itemId: string | null, itens: ItemEnvio[], aoProgresso: (chave: string, p: number) => void) {
+/** Envia os arquivos um a um: pede o link, sobe e pede a verificação. Também serve à foto do depois, ao concluir. */
+export async function enviarArquivosManutencao(manutencaoId: string, itemId: string | null, itens: ItemEnvio[], aoProgresso: (chave: string, p: number) => void) {
   const base = `/v1/condominio/manutencao/${manutencaoId}/arquivos`;
   const resultados: ResultadoEnvio[] = [];
   for (const item of itens.filter((i) => !i.problema)) {
@@ -71,7 +73,7 @@ export function ArquivosManutencao({ manutencaoId, itens, avisar }: {
 
   async function mandar() {
     setEnviando(true);
-    const r = await enviar(manutencaoId, item || null, escolhidos,
+    const r = await enviarArquivosManutencao(manutencaoId, item || null, escolhidos,
       (chave, p) => setEscolhidos((xs) => xs.map((x) => (x.chave === chave ? { ...x, progresso: p } : x))));
     setEnviando(false);
     setEscolhidos([]);
@@ -81,11 +83,8 @@ export function ArquivosManutencao({ manutencaoId, itens, avisar }: {
   }
 
   return (
-    <section aria-labelledby="t-arquivos" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="t-arquivos" className="text-lg font-medium">Fotos e documentos</h2>
-        {pode.enviar ? <Botao variante="contorno" tamanho="m" onClick={() => setAbrindo(true)}>+ Enviar</Botao> : null}
-      </div>
+    <Cartao id="t-arquivos" titulo="Fotos e documentos" icone="clipe"
+      acao={pode.enviar ? <Botao variante="discreto" tamanho="m" onClick={() => setAbrindo(true)}><Icone nome="enviar" />Enviar</Botao> : undefined}>
       {arquivos.length === 0 ? <Vazio titulo="Nenhum arquivo ainda">Fotos do antes e do depois, orçamentos e laudos ficam aqui.</Vazio> : (
         <ul className="grid gap-2">
           {arquivos.map((a) => (
@@ -108,7 +107,7 @@ export function ArquivosManutencao({ manutencaoId, itens, avisar }: {
           ))}
         </ul>
       )}
-      <p className="text-xs text-tinta-suave">Privados do condomínio. Cada vez que alguém abre, o link vale por 5 minutos.</p>
+      <p className="t-apoio">Privados do condomínio. Cada vez que alguém abre, o link vale por 5 minutos.</p>
 
       <Dialogo aberto={abrindo} titulo="Enviar fotos e documentos" aoFechar={() => { if (!enviando) { setEscolhidos([]); setAbrindo(false); } }}>
         {abrindo ? (
@@ -142,6 +141,6 @@ export function ArquivosManutencao({ manutencaoId, itens, avisar }: {
           if (r.ok) { setTirar(null); avisar({ tom: "ok", texto: "Arquivo tirado da manutenção." }); carga.recarregar(); }
           return r;
         }} />
-    </section>
+    </Cartao>
   );
 }
