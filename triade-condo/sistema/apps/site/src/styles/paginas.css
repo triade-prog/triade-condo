@@ -483,3 +483,63 @@ b.prot, .prot { white-space: nowrap; }
 .zap-b small, .zap-dia { color: #5e5475; }
 .zap-pe .campo { color: #5e5475; }
 .foto-faixa h2, .foto-faixa .passos-impl b { color: #fff; }
+
+/* Celular (pedido da Carolina em 23/10/2026): menos rolagem, textos inteiros e telas legíveis */
+.nw { white-space: nowrap; }
+.versus-abas, .painel-cel { display: none; }
+@media (max-width: 1000px) {
+  .passo2 h3 { color: var(--tinta); }
+}
+@media (max-width: 640px) {
+  .hero2 h1 { font-size: 38px; }
+  .hero2 h1 em.d { padding-inline: 0; }
+  .hero2 .acoes { flex-direction: column; align-items: stretch; margin-top: 24px; }
+  .hero2 .acoes .botao { justify-content: center; text-align: center; }
+  .palco-predio { margin-top: 8px; }
+  .hero-fatos { gap: 10px; padding-block: 16px 24px; }
+  .hero-fatos .suave { margin-left: 0 !important; }
+
+  .versus-abas { display: flex; gap: 4px; margin-top: 28px; padding: 4px; background: var(--mesa); border-radius: 999px; }
+  .versus-abas button { flex: 1; min-height: 44px; border: 0; border-radius: 999px; background: transparent; font: 700 15px var(--sans); color: var(--tinta); cursor: pointer; }
+  .versus-abas button[aria-selected="true"] { background: var(--tinta); color: #fff; }
+  .versus { margin-top: 16px; }
+  .lado-v { display: none; padding: 18px; }
+  .lado-v.atual { display: flex; animation: surge .3s ease-out both; }
+  .lado-v h3 { display: none; }
+  .chat-grupo { height: 260px; }
+  .virada2 { margin-top: 32px; }
+  .virada2 .botao { width: 100%; justify-content: center; }
+
+  .abas2 { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -16px; padding: 2px 16px 6px; scroll-padding-inline: 16px; }
+  .abas2::-webkit-scrollbar { display: none; }
+  .abas2 button { flex: 0 0 auto; white-space: nowrap; }
+
+  .agora-l { flex-wrap: wrap; row-gap: 8px; }
+  .agora-l .t { flex: 1 1 calc(100% - 40px); }
+  .agora-l .pil { margin-left: 40px; }
+  .agora-l .app-bt { margin-left: auto; }
+
+  /* Etapas: no celular, o WhatsApp em tamanho de ler e, ao lado, o que mudou no painel */
+  .cena { display: grid; grid-template-columns: 54% minmax(0, 1fr); gap: 12px; align-items: end; padding-bottom: 0 !important; margin: 12px 0 0 !important; }
+  .cena .note { display: none; }
+  .cena .celular, .passo2 .tela-passo .cena .celular, .modulo-v .cena .celular { position: relative; inset: auto; width: 100%; right: auto; bottom: auto; }
+  .modulo-v .cena { margin-right: 0; }
+  .painel-cel { display: flex; flex-direction: column; gap: 8px; align-self: center; background: var(--papel); border: 1px solid var(--linha); border-radius: 14px; padding: 12px; box-shadow: var(--sombra-app); font-size: 12.5px; }
+  .painel-cel-rot { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--tinta-suave); }
+  .painel-cel .app-pilulas { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .painel-cel .app-linha { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--linha); border-radius: 10px; padding: 8px 10px; }
+  .painel-cel .app-linha span { color: var(--tinta-suave); font-size: 11.5px; }
+  .painel-cel .app-linha.mudou { border-color: var(--laranja-500); box-shadow: 0 0 0 1px var(--laranja-500); }
+
+  .foto-faixa > img { height: 240px; }
+  .faixa3 { padding-block: 22px; }
+}
+@media (max-width: 640px) {
+  .cena { grid-template-columns: 58% minmax(0, 1fr); }
+  .cena .zap-topo .nm { font-size: 12px; }
+  .cena .zap-topo .nm small { font-size: 10px; }
+  .cena .zap-b { font-size: 11.5px; line-height: 1.35; }
+  .cena .zap-b small, .cena .zap-dia { font-size: 9.5px; }
+  .cena .zap-pe .campo { font-size: 10px; }
+  .painel-cel .pil { white-space: normal; text-align: left; }
+}

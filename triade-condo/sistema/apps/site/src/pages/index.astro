@@ -52,8 +52,12 @@ const comTriade = ["Cada pedido tem um responsável", "Data combinada para dar n
   <div class="wrap secao2">
     <h2 class="titulo-g" style="max-width:15em">No grupo do prédio, o pedido some. Na TRÍADE, ele <Destaque>ganha número</Destaque>.</h2>
     <p class="lead2" style="margin-top:18px">Pedido perdido, morador sem retorno, prestador que não volta, troca de síndico sem histórico. É o que mais ouvimos de quem cuida de prédio sem administradora.</p>
+    <div class="versus-abas" role="tablist" aria-label="Comparar">
+      <button type="button" role="tab" id="aba-hoje" aria-controls="lado-hoje" aria-selected="true" data-lado="hoje">Hoje</button>
+      <button type="button" role="tab" id="aba-triade" aria-controls="lado-triade" aria-selected="false" tabindex="-1" data-lado="triade">Com a TRÍADE</button>
+    </div>
     <div class="versus ancora">
-      <div class="lado-v grupo">
+      <div class="lado-v grupo atual" id="lado-hoje">
         <h3>Hoje: grupo de WhatsApp e planilha</h3>
         <div class="chat-grupo" role="img" aria-label="Exemplo de grupo de moradores em que o pedido da Ana se perde entre outras mensagens">
           <div class="cab" aria-hidden="true"><span class="avatar" style="width:28px;height:28px;font-size:10px;background:#9184aa">RI</span><div><b>Moradores Residencial Ipê</b><small>87 participantes</small></div></div>
@@ -62,7 +66,7 @@ const comTriade = ["Cada pedido tem um responsável", "Data combinada para dar n
         </div>
         <ul class="lista-vs">{hoje.map((t) => <li><span class="ico-x" aria-hidden="true">×</span><span>{t}</span></li>)}</ul>
       </div>
-      <div class="lado-v nosso">
+      <div class="lado-v nosso" id="lado-triade">
         <h3>Com a TRÍADE</h3>
         <div class="chat-nosso" role="img" aria-label={`Conversa individual da moradora com o condomínio: o pedido ${protocolo} registrado, com responsável e data de retorno`}>
           <div class="balao morador" aria-hidden="true">O vazamento da garagem voltou, perto da vaga 12.<span class="hora">22:41</span></div>
@@ -79,3 +83,8 @@ const comTriade = ["Cada pedido tem um responsável", "Data combinada para dar n
 <Etapas />
 <FaixaFinal />
 </Base>
+
+<script>
+  import { ligarAbas } from "../lib/abas";
+  ligarAbas("[data-lado]", (b) => `lado-${b.dataset.lado}`, ".lado-v");
+</script>

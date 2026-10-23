@@ -218,7 +218,8 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   .linha-flex > .botao { width: 100%; }
   .painel .topo, .painel .topo-claro { flex-direction: column; align-items: flex-start; padding: 12px 14px; }
   .painel .corpo { padding: 14px; }
-  .rodape .wrap { grid-template-columns: minmax(0, 1fr); padding-block: 28px; gap: 24px; }
+  .rodape .wrap { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-block: 28px; gap: 24px 16px; }
+  .rodape .wrap > :first-child { grid-column: 1 / -1; }
   .faixa-final .piramide { display: none; }
   .cunha { display: none; }
 }

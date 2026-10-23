@@ -74,7 +74,30 @@ test.describe("Site · como funciona", () => {
       const passo = page.locator(".passo2", { has: page.getByRole("heading", { level: 3, name: nome }) });
       await expect(passo).toBeVisible();
       await expect(passo.locator(".cena")).toBeVisible();
+      await expect(passo.locator(".painel-cel")).toBeVisible();
+      await expect(passo.locator(".note")).toBeHidden();
     }
+  });
+});
+
+test.describe("Site · início", () => {
+  test("no celular, o grupo e a TRÍADE ficam em abas; no computador, lado a lado", async ({ page, isMobile }) => {
+    await page.goto("/");
+    const hoje = page.locator("#lado-hoje"), triade = page.locator("#lado-triade");
+    if (!isMobile) {
+      await expect(page.getByRole("tablist", { name: "Comparar" })).toBeHidden();
+      await expect(hoje).toBeVisible();
+      await expect(triade).toBeVisible();
+      return;
+    }
+    await expect(hoje).toBeVisible();
+    await expect(triade).toBeHidden();
+    await page.getByRole("tab", { name: "Com a TRÍADE" }).click();
+    await expect(triade).toBeVisible();
+    await expect(hoje).toBeHidden();
+    await page.getByRole("tab", { name: "Com a TRÍADE" }).press("ArrowLeft");
+    await expect(page.getByRole("tab", { name: "Hoje" })).toBeFocused();
+    await expect(hoje).toBeVisible();
   });
 });
 

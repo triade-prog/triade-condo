@@ -61,4 +61,9 @@ const fila = [{ protocolo, titulo: "Vazamento na garagem", selo: f.selo, atual: 
       <span class="ios-home"></span>
     </div>
   </div>
+  <div class="painel-cel">
+    <span class="painel-cel-rot">No painel do síndico</span>
+    <div class="app-pilulas"><span class="mono-d">{protocolo}</span><span class:list={["pil", f.selo[0]]}>{f.selo[1]}</span></div>
+    {f.andamento.map((a) => <div class:list={["app-linha", a.mudou && "mudou"]}><span>{a.rotulo}</span><b style={a.cor ? `color:${a.cor}` : undefined}>{a.valor}</b></div>)}
+  </div>
 </div>
