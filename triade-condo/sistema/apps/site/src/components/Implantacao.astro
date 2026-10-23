@@ -1,0 +1,19 @@
+---
+// Implantação presencial: a foto em tela cheia e os quatro passos.
+import Destaque from "./Destaque.astro";
+const passos = [
+  { titulo: "Reunião", texto: "Um pedido do início ao fim, com os moradores vendo." },
+  { titulo: "Cadastro junto", texto: "Unidades, contatos e quem recebe o quê." },
+  { titulo: "Documentos no lugar", texto: "Convenção, atas, contratos e laudos." },
+  { titulo: "Orientação", texto: "Ao síndico e à equipe, com etiquetas QR para o mural." },
+];
+---
+<section class="foto-faixa" id="implantacao">
+  <img src="/encontro-1400.webp" srcset="/encontro-800.webp 800w, /encontro-1400.webp 1400w" sizes="100vw" loading="lazy" width="1400" height="933" alt="Síndica com um tablet conversa com uma moradora e um prestador no jardim do condomínio, ao fim da tarde." />
+  <div class="wrap">
+    <h2 class="titulo-g">Gente da TRÍADE <Destaque semTraco>na reunião</Destaque> do seu prédio</h2>
+    <p>Em Brasília e no DF, a equipe apresenta o sistema aos moradores, cadastra o prédio com você e deixa o WhatsApp do condomínio funcionando. Depois, continua por perto.</p>
+    <ol class="passos-impl">{passos.map((p, i) => <li><span class="mono-d">{i + 1}</span><b>{p.titulo}</b><span>{p.texto}</span></li>)}</ol>
+    <a href="/precos#implantacao" class="link-claro">Quanto custa a implantação</a>
+  </div>
+</section>

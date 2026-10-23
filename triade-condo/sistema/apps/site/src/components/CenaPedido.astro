@@ -1,0 +1,69 @@
+---
+// O pedido de exemplo numa etapa: o computador ao fundo com o painel do síndico e, na frente,
+// o celular com o WhatsApp da moradora. O que acabou de mudar ganha o contorno laranja.
+import BarraPainel from "./BarraPainel.astro";
+import { conversa, ficha, historico, pedidosDoMes, protocolo, type Etapa } from "../dados/vitrine";
+interface Props { etapa: Etapa; }
+const { etapa } = Astro.props;
+const f = ficha[etapa];
+const inicio = Math.max(0, etapa - 2);
+const linhasHistorico = historico.slice(inicio, etapa).map((h, i) => ({ ...h, nova: inicio + i === etapa - 1 }));
+const fila = [{ protocolo, titulo: "Vazamento na garagem", selo: f.selo, atual: true }, ...pedidosDoMes.map((p) => ({ ...p, atual: false }))];
+---
+<div class:list={["cena", `c${etapa}`]} aria-hidden="true">
+  <div class="note">
+    <div class="note-tampa">
+      <div class="tela-pc">
+        <BarraPainel />
+        <div class="pc-corpo">
+          <div class="col">
+            <div class="app-cartao">
+              <div class="app-pilulas"><span class="pil cinza">Manutenção</span><span class:list={["pil", f.selo[0]]}>{f.selo[1]}</span></div>
+              <p class="app-titulo">Vazamento na garagem, vaga 12</p>
+              <span class="app-meta"><span class="mono-d">{protocolo}</span> · Ana, apto 302 · pelo WhatsApp</span>
+              <div class="anda">{f.andamento.map((a) => <div class:list={["app-linha", a.mudou && "mudou"]}><span>{a.rotulo}</span><b style={a.cor ? `color:${a.cor}` : undefined}>{a.valor}</b></div>)}</div>
+              <div class="app-botoes"><span class="app-bt pri">{f.botoes[0]}</span><span class="app-bt">{f.botoes[1]}</span></div>
+            </div>
+            <div class="app-cartao">
+              <h4 class="pc-h">Histórico do pedido</h4>
+              <ol class="hist">{linhasHistorico.map((h) => <li class:list={[h.nova && "novo"]}><span class="mono-d">{h.quando}</span><b>{h.texto}</b><small>{h.detalhe}</small></li>)}</ol>
+            </div>
+          </div>
+          <div class="app-cartao fila">
+            <h4 class="pc-h">Pedidos do mês</h4>
+            {fila.map((p) => <div class:list={["fila-l", p.atual && "atual"]}><span class="mono-d">{p.protocolo}</span><b>{p.titulo}</b><span class:list={["pil", p.selo[0]]}>{p.selo[1]}</span></div>)}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="note-base"></div>
+  </div>
+  <div class="celular">
+    <i class="bt bt-acao"></i><i class="bt bt-vol1"></i><i class="bt bt-vol2"></i><i class="bt bt-lig"></i>
+    <div class="cel-tela">
+      <div class="ios-status"><b>9:41</b><span class="ilha"></span><span class="ios-ic"><i class="sinal"><u></u><u></u><u></u><u></u></i><i class="bat"><u></u></i></span></div>
+      <div class="zap-topo">
+        <span class="volta"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></svg></span>
+        <span class="av"><svg viewBox="0 0 24 24"><path d="M4 20V14l3-2v8zM10 20V10l3-2.5V20zM16 20V5l4-3v18z" fill="currentColor" /></svg></span>
+        <span class="nm"><b>Residencial Ipê</b><small>conta comercial</small></span>
+        <span class="acoes"><svg viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10l6-3v10l-6-3" /></svg><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" /></svg></span>
+      </div>
+      <div class="zap-corpo">
+        {conversa[etapa].map((m) => m.lado === "dia"
+          ? <span class="zap-dia">{m.texto}</span>
+          : <div class:list={["zap-b", m.lado, m.nova && "novo"]}><span>{m.texto}</span><small>{m.hora}{m.lado === "eu" && <i class="vist">✓✓</i>}</small></div>)}
+      </div>
+      <div class="zap-pe">
+        <span class="mais"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg></span>
+        <span class="campo">Mensagem</span>
+        <span class="mic"><svg viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3zM5 11a7 7 0 0 0 14 0M12 18v3" /></svg></span>
+      </div>
+      <span class="ios-home"></span>
+    </div>
+  </div>
+  <div class="painel-cel">
+    <span class="painel-cel-rot">No painel do síndico</span>
+    <div class="app-pilulas"><span class="mono-d">{protocolo}</span><span class:list={["pil", f.selo[0]]}>{f.selo[1]}</span></div>
+    {f.andamento.map((a) => <div class:list={["app-linha", a.mudou && "mudou"]}><span>{a.rotulo}</span><b style={a.cor ? `color:${a.cor}` : undefined}>{a.valor}</b></div>)}
+  </div>
+</div>

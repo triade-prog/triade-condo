@@ -1,0 +1,30 @@
+---
+// Soluções por tamanho de condomínio: abas em pílula, cada uma com o que mais pesa naquele porte.
+import Destaque from "./Destaque.astro";
+import { plataforma, tamanhos } from "../dados/vitrine";
+---
+<section class="wrap secao2 solucoes ancora" id="tamanhos">
+  <h2 class="titulo-g" style="max-width:15em">Soluções para todos os <Destaque semTraco>tamanhos</Destaque> de condomínio</h2>
+  <div class="abas2 pilulas-tam" role="tablist" aria-label="Tamanho do condomínio">
+    {tamanhos.map((t, i) => <button type="button" role="tab" id={`aba-t-${t.id}`} aria-controls={`tam-${t.id}`} aria-selected={i === 0 ? "true" : "false"} tabindex={i === 0 ? 0 : -1} data-tam={t.id}>{t.nome}</button>)}
+  </div>
+  {tamanhos.map((t, i) => (
+    <div class:list={["tam", i === 0 && "atual"]} id={`tam-${t.id}`} role="tabpanel" aria-labelledby={`aba-t-${t.id}`}>
+      <div>
+        <h3>{t.titulo} <Destaque>{t.destaque}</Destaque></h3>
+        <ul>{t.itens.map((x) => <li><span class="ico-v" aria-hidden="true">✓</span><span>{x}</span></li>)}</ul>
+        <a href="/precos" class="botao primario">Explore a solução</a>
+      </div>
+      <div class="app-cartao tam-cartao" aria-hidden="true">
+        <span class="pc-h2">Residencial Ipê · {t.nome.toLowerCase()}</span>
+        {plataforma.map((b) => <div class="app-linha"><span>{b.titulo}</span><span class="pil verde">Incluído</span></div>)}
+        <p class="app-meta">Um plano só. O preço muda com o tamanho do prédio.</p>
+      </div>
+    </div>
+  ))}
+</section>
+
+<script>
+  import { ligarAbas } from "../lib/abas";
+  ligarAbas("[data-tam]", (b) => `tam-${b.dataset.tam}`, ".tam");
+</script>

@@ -1,0 +1,7 @@
+---
+// Destaque do título: Playfair Display itálico com o traço laranja da marca, como o "Bom dia" do painel.
+// No máximo um por título. `semTraco` tira o traço; `quebra` deixa a expressão quebrar a linha.
+interface Props { semTraco?: boolean; quebra?: boolean; }
+const { semTraco = false, quebra = false } = Astro.props;
+---
+<em class:list={["d", semTraco && "sem-traco", quebra && "quebra"]}><slot /></em>

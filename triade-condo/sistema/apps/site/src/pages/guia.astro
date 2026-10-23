@@ -12,7 +12,7 @@ const temas = [
 <Base titulo="Guia do síndico" atual="/guia" descricao="Textos práticos para síndicos: organizar os pedidos, passar o bastão e manter as preventivas em dia.">
 <section class="faixa-branca" style="border-top:0">
   <span class="cunha cunha-dir" aria-hidden="true"></span>
-  <div class="wrap pilha" style="--gap:20px;position:relative;padding-block:80px 56px">
+  <div class="wrap pilha" style="--gap:24px;position:relative;padding-block:var(--secao-ritmo-curto)">
     <Olho>Guia do síndico</Olho>
     <h1 style="max-width:760px">O que aprendemos organizando prédios</h1>
     <p class="suave" style="font-size:clamp(16px,2vw,20px);max-width:680px">Textos curtos e práticos, sem precisar usar a TRÍADE. Os primeiros estão sendo escritos.</p>
@@ -21,7 +21,7 @@ const temas = [
 <section class="wrap secao">
   <ul class="grade">
     {temas.map((t) => (
-      <li class="cartao topo-violeta pilha" style="--gap:10px"><span class="chip" style="align-self:flex-start">Em preparação</span><h2 style="font-size:20px">{t.titulo}</h2><p class="suave" style="font-size:15px">{t.resumo}</p></li>
+      <li class="cartao topo-violeta pilha" style="--gap:12px"><span class="chip" style="align-self:flex-start">Em preparação</span><h2 style="font-size:20px">{t.titulo}</h2><p class="suave" style="font-size:16px">{t.resumo}</p></li>
     ))}
   </ul>
 </section>

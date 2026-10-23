@@ -3,9 +3,9 @@ import Base from "../layouts/Base.astro";
 import Olho from "../components/Olho.astro";
 ---
 <Base titulo="Página não encontrada" descricao="Esta página não existe." semIndice>
-<section class="wrap secao pilha" style="--gap:18px;max-width:720px">
+<section class="wrap secao pilha" style="--gap:16px;max-width:720px">
   <Olho cor="cinza">Erro 404</Olho>
-  <h1 style="font-size:clamp(30px,5vw,48px)">Esta página não existe</h1>
+  <h1 class="titulo-texto">Esta página não existe</h1>
   <p class="suave" style="font-size:18px">O endereço pode ter mudado. Comece pelo início ou veja como funciona.</p>
   <div class="linha-flex"><a href="/" class="botao primario">Ir para o início</a><a href="/como-funciona" class="botao claro">Como funciona</a></div>
 </section>
