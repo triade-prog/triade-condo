@@ -8,6 +8,7 @@ const temWhatsapp = linkWhatsapp() !== null;
 
   <form id="form-demonstracao" method="post" action="/api/demonstracao" novalidate aria-describedby="promessa">
     <div class="pilha" style="--gap:18px">
+      <p class="suave" style="font-size:13px">Os campos com <span class="obrigatorio" aria-hidden="true">*</span><span class="so-leitor">asterisco</span> são obrigatórios.</p>
       <div class="campo">
         <label for="nome">Seu nome <span class="obrigatorio" aria-hidden="true">*</span></label>
         <input id="nome" name="nome" required maxlength="80" autocomplete="name" placeholder="Como quer ser chamado" aria-describedby="erro-nome" />
@@ -15,8 +16,7 @@ const temWhatsapp = linkWhatsapp() !== null;
       </div>
       <div class="campo">
         <label for="whatsapp">WhatsApp <span class="obrigatorio" aria-hidden="true">*</span></label>
-        <input id="whatsapp" name="whatsapp" type="tel" required inputmode="tel" autocomplete="tel" placeholder="(61) 9 0000-0000" aria-describedby="ajuda-whatsapp erro-whatsapp" />
-        <span class="ajuda" id="ajuda-whatsapp">É por ele que respondemos. Não ligamos sem combinar.</span>
+        <input id="whatsapp" name="whatsapp" type="tel" required inputmode="tel" autocomplete="tel" placeholder="(61) 9 0000-0000" aria-describedby="erro-whatsapp" />
         <span class="erro-campo" id="erro-whatsapp"></span>
       </div>
       <div class="campo">
@@ -26,11 +26,10 @@ const temWhatsapp = linkWhatsapp() !== null;
       </div>
       <div class="campo">
         <label for="unidades">Quantas unidades <span class="obrigatorio" aria-hidden="true">*</span></label>
-        <select id="unidades" name="unidades" required aria-describedby="ajuda-unidades erro-unidades">
+        <select id="unidades" name="unidades" required aria-describedby="erro-unidades">
           <option value="">Escolha a faixa</option>
           {opcoesUnidades.map((o) => <option>{o}</option>)}
         </select>
-        <span class="ajuda" id="ajuda-unidades">Serve para já falarmos do preço da sua faixa.</span>
         <span class="erro-campo" id="erro-unidades"></span>
       </div>
       <div class="campo">
@@ -38,7 +37,6 @@ const temWhatsapp = linkWhatsapp() !== null;
         <span class="erro-campo" id="erro-consentimento"></span>
       </div>
       <div class="robo" aria-hidden="true"><label for="site">Não preencha</label><input id="site" name="site" tabindex="-1" autocomplete="off" /></div>
-      <p class="suave" style="font-size:13px">Os campos com <span class="obrigatorio" aria-hidden="true">*</span><span class="so-leitor">asterisco</span> são obrigatórios.</p>
       <div class="linha-flex"><button type="submit" class="botao primario" id="enviar">Pedir demonstração</button></div>
       <p id="promessa" class="suave" style="font-size:13.5px">Ao enviar, você recebe a confirmação aqui mesmo. Respondemos pelo WhatsApp {promessaRetorno}.</p>
     </div>
