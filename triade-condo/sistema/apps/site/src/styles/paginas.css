@@ -22,12 +22,6 @@
 .hero2 .botao.claro { background: #ffffffb3; }
 .palco-predio { position: relative; min-width: 0; }
 .palco-predio img.predio { height: auto; width: 112%; max-width: none; margin-left: -4%; mix-blend-mode: darken; -webkit-mask-image: linear-gradient(180deg, #000 80%, transparent 100%); mask-image: linear-gradient(180deg, #000 80%, transparent 100%); }
-.flutua { position: absolute; z-index: 3; box-shadow: 0 24px 50px -24px #2b0a6b80; }
-.flutua.msg { left: 0; top: 18%; max-width: 250px; background: #fff; border-radius: 16px 16px 16px 4px; padding: 11px 14px; font-size: 14px; }
-.flutua.msg small { display: block; color: var(--tinta-suave); font-size: 11.5px; margin-bottom: 3px; font-weight: 700; }
-.flutua.resp { left: 10%; top: 41%; max-width: 250px; background: var(--balao-condo); border-radius: 16px 16px 4px 16px; padding: 11px 14px; font-size: 14px; }
-.flutua.ficha { right: 0; top: 58%; width: 280px; background: #fff; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--linha); }
-.flutua.ficha .l { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
 .mono-d { font-family: var(--mono); font-weight: 500; font-size: 12px; }
 .hero-fatos { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 32px; padding-block: 18px 34px; border-top: 1px solid #dccdf6; font-size: 14.5px; color: var(--tinta-suave); }
 .hero-fatos span { display: inline-flex; gap: 8px; align-items: center; }
@@ -178,9 +172,6 @@
 }
 @media (max-width: 640px) {
   .palco-predio img.predio { width: 128%; margin-left: -14%; }
-  .flutua.msg { top: 6%; max-width: 200px; font-size: 13px; }
-  .flutua.resp { top: 30%; left: auto; right: 0; max-width: 200px; font-size: 13px; }
-  .flutua.ficha { position: relative; right: auto; top: auto; width: auto; margin: -40px 0 0; }
   .chat-grupo { height: 300px; }
   .estado { padding: 12px; }
 }
@@ -194,9 +185,6 @@
 .hero2 .wrap.hero-fatos { display: flex; padding-block: 18px 34px; }
 @media (min-width: 1001px) {
   .palco-predio img.predio { width: 138%; margin-left: -22%; margin-block: -40px -30px; }
-  .flutua.msg { top: 10%; left: -4%; }
-  .flutua.resp { top: 27%; left: 2%; }
-  .flutua.ficha { top: auto; bottom: 4%; right: -2%; }
 }
 :root { --serifa: "Playfair Display", Georgia, serif; --app-fundo: #f7f4fc; --sombra-app: 0 1px 2px #1e15310d, 0 4px 12px #3a1a7a0a; }
 body { font-size: 17px; line-height: 1.6; font-feature-settings: "ss01", "cv11"; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
@@ -271,9 +259,6 @@ em.d.quebra { white-space: normal; }
 .agora-l .ic { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 10px; display: inline-flex; }
 .agora-l .t { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 13.5px; font-weight: 500; }
 .agora-l .t small { font-size: 12px; color: var(--tinta-suave); font-weight: 400; }
-/* Ficha flutuante do topo, no padrão do app */
-.flutua.ficha { padding: 16px; gap: 10px; border-radius: 18px; }
-.flutua.ficha .app-titulo { font-size: 16px; }
 @media (max-width: 640px) {
   .estado { grid-template-columns: minmax(0, 1fr); padding: 12px; }
   .app-barra .busca { display: none; }
@@ -281,11 +266,6 @@ em.d.quebra { white-space: normal; }
 }
 /* Ajustes conferidos nas telas */
 .hero2 .wrap > div:first-child { position: relative; z-index: 4; }
-@media (min-width: 1001px) {
-  .flutua.msg { top: 4%; left: 0; }
-  .flutua.resp { top: 25%; left: 10%; }
-  .flutua.ficha { bottom: 0; right: -3%; width: 300px; }
-}
 .app-barra .busca { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .agora-l .ic { align-items: center; justify-content: center; }
 .agora-l .ic svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -543,3 +523,143 @@ b.prot, .prot { white-space: nowrap; }
   .cena .zap-pe .campo { font-size: 10px; }
   .painel-cel .pil { white-space: normal; text-align: left; }
 }
+
+/* Mais vida (pedido da Carolina em 23/10/2026): entrada das seções, prédio e pirâmide flutuando,
+   faixa que corre, o símbolo que se monta e imagens nos topos. Tudo parado para quem pede menos movimento. */
+@media (prefers-reduced-motion: no-preference) {
+  .revela { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
+  .revela.visivel { opacity: 1; transform: none; }
+  .palco-predio img.predio, .flutuando { animation: flutua 7s ease-in-out infinite; }
+  .esteira ul { animation: corre 38s linear infinite; }
+  .esteira:hover ul { animation-play-state: paused; }
+}
+@keyframes flutua { 0%, 100% { translate: 0 0; } 50% { translate: 0 -10px; } }
+@keyframes corre { to { transform: translateX(-100%); } }
+
+.esteira { display: flex; overflow: hidden; border-block: 1px solid #dccdf6; background: #ffffff80; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.esteira ul { display: flex; flex: 0 0 auto; gap: 0; margin: 0; padding: 0; list-style: none; }
+.esteira li { display: inline-flex; align-items: center; gap: 14px; padding: 14px 0 14px 28px; font-weight: 700; font-size: 15px; white-space: nowrap; color: var(--tinta); }
+.esteira li::before { content: ""; width: 9px; height: 9px; transform: rotate(45deg); background: var(--grad-barra); border-radius: 2px; }
+@media (prefers-reduced-motion: reduce) { .esteira { flex-wrap: wrap; -webkit-mask-image: none; mask-image: none; } .esteira ul { flex-wrap: wrap; } .esteira ul[aria-hidden] { display: none; } }
+
+.pag-topo.com-imagem { overflow: hidden; }
+.pag-topo.com-imagem .wrap { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: center; gap: 32px; }
+.pag-topo-texto { display: flex; flex-direction: column; gap: 18px; }
+.pag-topo-img { width: 100%; height: auto; filter: drop-shadow(0 40px 50px #5808cc40); }
+.pag-topo-img.predio { width: 130%; max-width: none; margin-block: -40px -60px; mix-blend-mode: darken; -webkit-mask-image: linear-gradient(180deg, #000 78%, transparent); mask-image: linear-gradient(180deg, #000 78%, transparent); filter: none; }
+@media (max-width: 900px) {
+  .pag-topo.com-imagem .wrap { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .pag-topo-img { width: 78%; margin: 8px auto 0; }
+  .pag-topo-img.predio { width: 118%; margin: -10px -9% -30px; }
+}
+
+.gente { background: var(--papel); }
+.gente .wrap { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 56px; align-items: center; padding-block: clamp(56px, 8vw, 104px); }
+.gente-foto { position: relative; margin: 0; border-radius: 28px; overflow: hidden; box-shadow: 0 50px 90px -50px #3a07a080; aspect-ratio: 4 / 3; }
+.gente-foto img { width: 100%; height: 100%; object-fit: cover; object-position: 60% 40%; transition: transform 1.2s cubic-bezier(.2,.7,.2,1); }
+.gente-foto::after { content: ""; position: absolute; left: 0; bottom: 0; width: 38%; height: 7px; background: var(--grad-barra); }
+.gente-foto .selo-ilus { position: absolute; right: 14px; top: 14px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; background: #1e1531b3; color: #fff; padding: 4px 8px; border-radius: 6px; }
+.gente .lead2 { margin: 18px 0 26px; }
+@media (prefers-reduced-motion: no-preference) { .gente-foto.revela img { transform: scale(1.08); } .gente-foto.visivel img { transform: none; } }
+@media (max-width: 900px) { .gente .wrap { grid-template-columns: minmax(0, 1fr); gap: 28px; } .gente-foto { border-radius: 20px; } }
+
+/* O símbolo que se monta na chamada final */
+.simbolo-monta { position: relative; width: clamp(110px, 13vw, 160px); aspect-ratio: 749 / 626; margin-bottom: 24px; }
+.simbolo-monta img, .simbolo-monta svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.simbolo-monta polyline { stroke-width: 2.5; vector-effect: non-scaling-stroke; stroke: #ffb45c; stroke-dasharray: 1; opacity: 0; }
+.simbolo-monta .brilho { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: linear-gradient(105deg, transparent 35%, #ffffffa0 50%, transparent 65%) no-repeat; background-size: 300% 100%; -webkit-mask: url(/simbolo/ponta-coluna.webp) center / 100% 100% no-repeat; mask: url(/simbolo/ponta-coluna.webp) center / 100% 100% no-repeat; }
+.simbolo-monta.armado img { opacity: 0; }
+.simbolo-monta.montar polyline { animation: sm-traco .9s cubic-bezier(.4,0,.2,1) both, sm-some .5s 1.5s both; }
+.simbolo-monta.montar .p-nucleo { animation: sm-sobe .7s .9s cubic-bezier(.2,.8,.2,1) both; }
+.simbolo-monta.montar .p-ponta-coluna { animation: sm-sobe .75s 1s cubic-bezier(.2,.8,.2,1) both; }
+.simbolo-monta.montar .p-lateral-esquerda { animation: sm-esq .7s 1.15s cubic-bezier(.2,.8,.2,1) both; }
+.simbolo-monta.montar .p-lateral-direita-superior { animation: sm-dir .7s 1.25s cubic-bezier(.2,.8,.2,1) both; }
+.simbolo-monta.montar .p-lateral-direita-inferior { animation: sm-dir .7s 1.32s cubic-bezier(.2,.8,.2,1) both; }
+.simbolo-monta.montar .brilho { animation: sm-brilho .8s 2s ease-out both; }
+@keyframes sm-traco { from { stroke-dashoffset: 1; opacity: 1; } to { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes sm-some { from { opacity: 1; } to { opacity: 0; } }
+@keyframes sm-sobe { from { opacity: 0; transform: translateY(18%); } to { opacity: 1; transform: none; } }
+@keyframes sm-esq { from { opacity: 0; transform: translateX(-16%); } to { opacity: 1; transform: none; } }
+@keyframes sm-dir { from { opacity: 0; transform: translateX(16%); } to { opacity: 1; transform: none; } }
+@keyframes sm-brilho { from { opacity: 1; background-position: 120% 0; } to { opacity: 1; background-position: -20% 0; } }
+
+/* Topo branco com elementos de cor (pedido da Carolina em 23/10/2026): sai o lilás, entram as formas
+   do símbolo em violeta e laranja; os balões e a ficha saem de cima do prédio e viram uma faixa logo abaixo. */
+:root { --lavanda: #ffffff; }
+.topo-lavanda .cabecalho { background: color-mix(in srgb, #fff 90%, transparent); border-bottom-color: var(--linha); }
+.hero2, .pag-topo, .topo-precos { isolation: isolate; }
+.hero2::before, .pag-topo::before, .topo-precos::before { content: ""; position: absolute; z-index: -1; pointer-events: none; right: -6%; top: -18%; width: 46%; aspect-ratio: 1; background: radial-gradient(closest-side, #7b2be026, #7b2be00a 60%, transparent); }
+.pag-topo, .topo-precos { position: relative; overflow: hidden; }
+.cor-cunha { position: absolute; z-index: -1; pointer-events: none; }
+.hero2 .deco-a, .pag-topo .deco-a, .topo-precos .deco-a { left: -60px; bottom: 0; width: 220px; height: 260px; background: linear-gradient(180deg, #7b2be0, #5808cc); clip-path: polygon(0 100%, 100% 100%, 25% 0); opacity: .14; }
+.hero2 .deco-b, .pag-topo .deco-b, .topo-precos .deco-b { left: 120px; bottom: 0; width: 18px; height: 150px; border-radius: 9px 9px 0 0; background: var(--grad-barra); opacity: .55; }
+.hero2 .deco-c, .pag-topo .deco-c, .topo-precos .deco-c { left: 150px; bottom: 0; width: 18px; height: 96px; border-radius: 9px 9px 0 0; background: var(--grad-barra); opacity: .35; }
+.sem-fid2 { background: #fff; border: 1px solid var(--linha); box-shadow: 0 40px 80px -60px #5808cc59; position: relative; overflow: hidden; }
+.sem-fid2::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--grad-barra); }
+
+/* Faixa do pedido de exemplo, logo abaixo do topo */
+.pedido-faixa { display: grid !important; grid-template-columns: minmax(0, 1fr) 36px minmax(0, 1fr) 36px minmax(0, 1.15fr); align-items: center; gap: 12px; padding-block: 8px 32px; }
+.pf-cartao { position: relative; background: #fff; border: 1px solid var(--linha); border-radius: 18px; padding: 16px 18px; font-size: 14.5px; box-shadow: 0 30px 60px -40px #3a07a059; display: flex; flex-direction: column; gap: 6px; }
+.pf-cartao small { color: var(--tinta-suave); font-size: 12px; font-weight: 700; }
+.pf-rot { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--violeta-600); }
+.pf-msg { border-top: 4px solid #7b2be0; }
+.pf-resp { background: var(--balao-condo); border-top: 4px solid #25a36f; }
+.pf-resp .pf-rot { color: #0b7558; }
+.pf-ficha { border-top: 4px solid var(--laranja-500); }
+.pf-ficha .pf-rot { color: #95560a; }
+.pf-ficha .app-titulo { font-size: 15.5px; margin: 0; }
+.pf-seta { height: 2px; background: repeating-linear-gradient(90deg, var(--laranja-500) 0 6px, transparent 6px 11px); position: relative; }
+.pf-seta::after { content: ""; position: absolute; right: -2px; top: -4px; border: 5px solid transparent; border-left: 7px solid var(--laranja-500); }
+@media (max-width: 1000px) {
+  .pedido-faixa { grid-template-columns: minmax(0, 1fr); gap: 0; padding-block: 0 24px; }
+  .pf-seta { width: 2px; height: 22px; margin-left: 28px; background: repeating-linear-gradient(180deg, var(--laranja-500) 0 5px, transparent 5px 9px); }
+  .pf-seta::after { right: auto; left: -4px; top: auto; bottom: -4px; border: 5px solid transparent; border-top: 7px solid var(--laranja-500); }
+}
+
+/* Faixa de fatos centralizada */
+.hero2 .wrap.hero-fatos { justify-content: center; border-top-color: var(--linha); }
+@media (max-width: 640px) { .hero2 .wrap.hero-fatos { flex-direction: column; align-items: center; text-align: center; } }
+
+/* Títulos com traço mais fino (pedido da Carolina em 23/10/2026) */
+.titulo-g, h2.titulo-g { font-weight: 600; letter-spacing: -0.035em; }
+.hero2 h1 { font-weight: 700; }
+
+/* Grupo × TRÍADE: dois cartões do mesmo tamanho, conversas com o fundo do WhatsApp e uma seta no meio */
+.versus { grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr); gap: 0; align-items: stretch; }
+.lado-v { padding: 26px; gap: 18px; border-radius: 24px; }
+.lado-v.grupo { background: #fbfafc; border: 1px solid var(--linha); }
+.lado-v.nosso { background: linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #7b2be0, #ff8d01) border-box; border: 2px solid transparent; box-shadow: 0 50px 90px -50px #5808cc66; }
+.vs-cab { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.vs-cab h3 { font-size: 21px; font-weight: 600; letter-spacing: -0.02em; display: block !important; }
+.vs-rot { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 5px 11px; border-radius: 999px; }
+.vs-rot.ruim { background: #fff0f4; color: #bc1450; }
+.vs-rot.bom { background: linear-gradient(90deg, #f3eaff, #fff1df); color: #5808cc; }
+.chat-grupo, .chat-nosso { height: 300px; background: #efeae2; border-radius: 18px; overflow: hidden; }
+.chat-grupo .cab { background: #f7f4ef; margin: -12px -12px 4px; padding: 10px 12px; border-bottom: 1px solid #e3ddd3; }
+.chat-nosso { justify-content: flex-end; }
+.lado-v.grupo .chat-grupo { filter: saturate(.75); }
+.lista-vs li { font-size: 15px; padding: 12px 0; }
+.vs-meio { align-self: center; justify-self: center; width: 44px; height: 44px; border-radius: 50%; background: var(--grad-barra); color: #fff; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 12px 24px -10px #f2700a99; position: relative; z-index: 2; }
+.vs-meio svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.virada2 { justify-content: center; text-align: center; flex-direction: column; margin-top: 48px; }
+.virada2 p { max-width: 24ch; }
+@media (max-width: 1000px) { .versus { grid-template-columns: minmax(0, 1fr); gap: 16px; } .vs-meio { display: none; } }
+@media (max-width: 640px) { .lado-v { padding: 18px; } .vs-cab .vs-rot { display: none; } .vs-cab h3 { font-size: 18px; } .chat-grupo, .chat-nosso { height: 260px; } }
+
+/* Números das etapas maiores, no laranja da marca (pedido da Carolina em 23/10/2026) */
+.passo2 .num { font-family: var(--sans); font-weight: 700; font-size: clamp(48px, 5vw, 72px); line-height: 1; letter-spacing: -0.04em; background: linear-gradient(180deg, #f2700a, #b8480a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.passo2 h3 { font-weight: 600; }
+
+/* Prédio recortado em fundo transparente (Python, 23/10/2026): sem a caixa lilás atrás */
+.palco-predio img.predio, .pag-topo-img.predio { mix-blend-mode: normal; -webkit-mask-image: none; mask-image: none; filter: drop-shadow(0 40px 40px #3a07a033); }
+@media (min-width: 1001px) { .palco-predio img.predio { width: 112%; margin: 0 0 0 -4%; } }
+@media (max-width: 1000px) { .palco-predio img.predio { width: 100%; margin: 0; } }
+.pag-topo-img.predio { width: 110%; margin: 0; }
+@media (max-width: 900px) { .pag-topo-img.predio { width: 100%; margin: 8px 0 0; } }
+.hero2 .wrap.pedido-faixa { grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr) 40px minmax(0, 1.15fr); padding-block: 12px 36px; }
+@media (max-width: 1000px) { .hero2 .wrap.pedido-faixa { grid-template-columns: minmax(0, 1fr); } }
+.hero2 .deco-a, .pag-topo .deco-a, .topo-precos .deco-a { left: auto; right: -40px; bottom: 0; width: 200px; height: 240px; clip-path: polygon(0 100%, 100% 100%, 75% 0); opacity: .10; }
+.hero2 .deco-b, .pag-topo .deco-b, .topo-precos .deco-b { left: auto; right: 190px; height: 120px; opacity: .45; }
+.hero2 .deco-c, .pag-topo .deco-c, .topo-precos .deco-c { left: auto; right: 160px; height: 76px; opacity: .3; }
+.hero2 .cor-cunha { display: none; }
+.cor-cunha.deco-b, .cor-cunha.deco-c { display: none; }

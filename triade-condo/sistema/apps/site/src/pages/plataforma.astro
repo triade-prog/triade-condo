@@ -22,10 +22,14 @@ const exemplos: Record<string, { titulo: string; linhas: { titulo: string; detal
 };
 ---
 <Base titulo="Plataforma" atual="/plataforma" lavanda descricao="Atendimento, comunicação, operações e indicadores do condomínio num painel só. O morador continua no WhatsApp; o síndico acompanha tudo pelo painel.">
-<section class="pag-topo">
+<section class="pag-topo com-imagem">
+  <span class="cor-cunha deco-a" aria-hidden="true"></span><span class="cor-cunha deco-b" aria-hidden="true"></span><span class="cor-cunha deco-c" aria-hidden="true"></span>
   <div class="wrap">
-    <h1 class="titulo-g">Um painel para o que acontece <Destaque>no prédio</Destaque></h1>
-    <p class="lead2">Atendimento, comunicação, operações e indicadores no mesmo lugar. O morador continua no WhatsApp; o síndico acompanha tudo por aqui.</p>
+    <div class="pag-topo-texto">
+      <h1 class="titulo-g">Um painel para o que acontece <Destaque>no prédio</Destaque></h1>
+      <p class="lead2">Atendimento, comunicação, operações e indicadores no mesmo lugar. O morador continua no WhatsApp; o síndico acompanha tudo por aqui.</p>
+    </div>
+    <img class="pag-topo-img flutuando" src="/piramide-3d-1100.webp" srcset="/piramide-3d-640.webp 640w, /piramide-3d-1100.webp 1100w" sizes="(max-width: 900px) 80vw, 520px" width="1100" height="753" alt="" fetchpriority="high" />
   </div>
 </section>
 

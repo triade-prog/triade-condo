@@ -1,5 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
+import Esteira from "../components/Esteira.astro";
+import GenteFaixa from "../components/GenteFaixa.astro";
 import Destaque from "../components/Destaque.astro";
 import Etapas from "../components/Etapas.astro";
 import FaixaFinal from "../components/FaixaFinal.astro";
@@ -21,31 +23,35 @@ const comTriade = ["Cada pedido tem um responsável", "Data combinada para dar n
 <Base titulo="TRÍADE Condo" lavanda descricao="O morador pede pelo WhatsApp do condomínio. A TRÍADE registra, dá protocolo e acompanha quem resolve, quando dá retorno e como cada caso terminou. Para síndicos em Brasília e no DF.">
 
 <section class="hero2 ancora">
+  <span class="cor-cunha deco-a" aria-hidden="true"></span><span class="cor-cunha deco-b" aria-hidden="true"></span><span class="cor-cunha deco-c" aria-hidden="true"></span>
   <div class="wrap">
     <div>
       <h1>Nenhum pedido do seu prédio fica <Destaque>sem resposta</Destaque></h1>
       <p class="lead2">O morador escreve no WhatsApp do condomínio. A TRÍADE dá um número ao pedido, um responsável e uma data para dar notícia. Você acompanha tudo por um painel.</p>
       <div class="acoes"><a href="#pedir" class="botao primario">Agendar demonstração</a><a href="#etapas" class="botao claro">Ver um pedido do início ao fim</a></div>
     </div>
-    <div class="palco-predio" role="img" aria-label={`O prédio da TRÍADE, com a conversa de uma moradora e a ficha do pedido ${protocolo} ao lado: retorno marcado para sexta ao meio-dia.`}>
-      <img class="predio" src="/predio-triade-1400.webp" srcset="/predio-triade-800.webp 800w, /predio-triade-1400.webp 1400w" sizes="(max-width: 1000px) 120vw, 760px" width="1400" height="933" fetchpriority="high" alt="" />
-      <div class="flutua msg s1" aria-hidden="true"><small>Ana · apto 302</small>O vazamento da garagem voltou, perto da vaga 12.</div>
-      <div class="flutua resp s2" aria-hidden="true">Registrado: pedido <b class="prot">{protocolo}</b>. Você terá notícia até <b>sexta, 12h</b>.</div>
-      <div class="flutua ficha s3" aria-hidden="true">
-        <div class="app-pilulas"><span class="pil cinza">Manutenção</span><span class="pil violeta">Em andamento</span></div>
-        <p class="app-titulo">Vazamento na garagem, vaga 12</p>
-        <span class="app-meta">Aberto pela Ana no WhatsApp em 22/10, 22:41 · 302</span>
-        <div class="app-linha"><span>Responsável</span><b>Carlos, síndico</b></div>
-        <div class="app-linha"><span>Retorno ao morador</span><b style="color:var(--ok)">sex 23/10, 12:00</b></div>
-      </div>
+    <div class="palco-predio">
+      <img class="predio" src="/predio-triade-1400.webp" srcset="/predio-triade-800.webp 800w, /predio-triade-1400.webp 1400w" sizes="(max-width: 1000px) 120vw, 760px" width="1400" height="956" fetchpriority="high" alt="Ilustração do prédio da TRÍADE, com as formas do símbolo da marca." />
+    </div>
+  </div>
+  <div class="wrap pedido-faixa" role="img" aria-label={`Exemplo: a moradora escreve no WhatsApp, recebe o protocolo ${protocolo} com a data do retorno, e o pedido aparece no painel com responsável e prazo.`}>
+    <div class="pf-cartao pf-msg s1" aria-hidden="true"><span class="pf-rot">WhatsApp da moradora</span><small>Ana · apto 302</small><span>O vazamento da garagem voltou, perto da vaga 12.</span></div>
+    <span class="pf-seta" aria-hidden="true"></span>
+    <div class="pf-cartao pf-resp s2" aria-hidden="true"><span class="pf-rot">Resposta automática</span><span>Registrado: pedido <b class="prot">{protocolo}</b>. Você terá notícia até <b>sexta, 12h</b>.</span></div>
+    <span class="pf-seta" aria-hidden="true"></span>
+    <div class="pf-cartao pf-ficha s3" aria-hidden="true">
+      <span class="pf-rot">No painel do síndico</span>
+      <p class="app-titulo">Vazamento na garagem, vaga 12</p>
+      <div class="app-linha"><span>Responsável</span><b>Carlos, síndico</b></div>
+      <div class="app-linha"><span>Retorno</span><b style="color:var(--ok)">sex 23/10, 12:00</b></div>
     </div>
   </div>
   <div class="wrap hero-fatos">
     <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19.2L4 20z" /></svg>O morador usa o WhatsApp que já tem</span>
     <span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8M12 17v4" /></svg>O síndico responde por um painel</span>
     <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3 20a6 6 0 0 1 12 0" /><path d="M16 4.5a3 3 0 0 1 0 6M21 20a5.5 5.5 0 0 0-4-5.3" /></svg>Implantação presencial em Brasília e no DF</span>
-    <span class="suave" style="margin-left:auto;font-size:12.5px">Dados ilustrativos</span>
   </div>
+  <Esteira />
 </section>
 
 <section class="faixa-branca ancora" style="position:relative;overflow:hidden">
@@ -58,7 +64,7 @@ const comTriade = ["Cada pedido tem um responsável", "Data combinada para dar n
     </div>
     <div class="versus ancora">
       <div class="lado-v grupo atual" id="lado-hoje">
-        <h3>Hoje: grupo de WhatsApp e planilha</h3>
+        <div class="vs-cab"><span class="vs-rot ruim">Hoje</span><h3>Grupo de WhatsApp e planilha</h3></div>
         <div class="chat-grupo" role="img" aria-label="Exemplo de grupo de moradores em que o pedido da Ana se perde entre outras mensagens">
           <div class="cab" aria-hidden="true"><span class="avatar" style="width:28px;height:28px;font-size:10px;background:#9184aa">RI</span><div><b>Moradores Residencial Ipê</b><small>87 participantes</small></div></div>
           {grupo.map((m) => <div class:list={["bg", m.perdido && "perdido"]} aria-hidden="true"><b>{m.quem}</b>{m.texto}</div>)}
@@ -66,8 +72,9 @@ const comTriade = ["Cada pedido tem um responsável", "Data combinada para dar n
         </div>
         <ul class="lista-vs">{hoje.map((t) => <li><span class="ico-x" aria-hidden="true">×</span><span>{t}</span></li>)}</ul>
       </div>
+      <span class="vs-meio" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
       <div class="lado-v nosso" id="lado-triade">
-        <h3>Com a TRÍADE</h3>
+        <div class="vs-cab"><span class="vs-rot bom">Com a TRÍADE</span><h3>Conversa individual, com protocolo</h3></div>
         <div class="chat-nosso" role="img" aria-label={`Conversa individual da moradora com o condomínio: o pedido ${protocolo} registrado, com responsável e data de retorno`}>
           <div class="balao morador" aria-hidden="true">O vazamento da garagem voltou, perto da vaga 12.<span class="hora">22:41</span></div>
           <div class="balao condo" aria-hidden="true">Registrado: pedido <b>{protocolo}</b>. Responsável: Carlos, síndico. Você terá notícia até <b>sexta, 12h</b>.<span class="hora">22:41</span></div>
@@ -81,6 +88,7 @@ const comTriade = ["Cada pedido tem um responsável", "Data combinada para dar n
 </section>
 
 <Etapas />
+<GenteFaixa />
 <FaixaFinal />
 </Base>
 
