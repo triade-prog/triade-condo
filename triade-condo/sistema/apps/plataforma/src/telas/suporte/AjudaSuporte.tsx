@@ -1,104 +1,30 @@
 "use client";
-// Ajuda e suporte (peça R4; PI-17, PI-20): chamados de suporte técnico da plataforma. Quem tem
-// conta abre com tipo, área, título, o que aconteceu e até 3 imagens (colar com Ctrl+V ou
-// escolher), acompanha as respostas e diz se resolveu. Não é reparo do prédio nem emergência.
+// Ajuda e suporte (DC15, telas-modelo suporte-chamados-* e suporte-abrir-chamado; peça R4; PI-17,
+// PI-20; decisão C.1 de 23/10/2026): os chamados de suporte técnico da plataforma, em abas Abertos
+// e Resolvidos com o número, cada linha inteira abrindo o chamado, e Abrir chamado numa janela,
+// com tipo, área, título, o que aconteceu e até 3 imagens (colar com Ctrl+V ou escolher). Não é
+// reparo do prédio nem emergência. O chamado aberto mora em Chamado.tsx.
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, type ClipboardEvent, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
+import { AREAS_CHAMADO, DIAS_REABRIR_CHAMADO, formatarDataHora, TIPOS_CHAMADO } from "@triade/domain";
 import {
-  AREAS_CHAMADO, DIAS_REABRIR_CHAMADO, formatarDataHora, IMAGENS_CHAMADO, rotuloSituacaoChamadoCliente, TIPOS_CHAMADO,
-} from "@triade/domain";
-import {
-  Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Carregando, chamarApi, ErroCarregar, Selo, textoDoErro, Vazio,
-  type ErroApi, type Tom,
+  AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, textoDoErro, Vazio,
+  type ErroApi,
 } from "@triade/ui";
+import { Escolha } from "../moradores/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
-import { subir } from "../pedidos/Arquivos.tsx";
-
-interface Chamado {
-  id: string;
-  numero: number;
-  tipo: keyof typeof TIPOS_CHAMADO;
-  area: keyof typeof AREAS_CHAMADO;
-  titulo: string;
-  situacao: string;
-  abertoPor: string;
-  imagens: number;
-  ultima?: { lado: "CLIENTE" | "TRIADE"; autor: string; em: string };
-  resolvidoEm?: string;
-  criadoEm: string;
-}
-
-interface DetalheChamado extends Chamado {
-  mensagens: { id: string; lado: "CLIENTE" | "TRIADE"; autor: string; texto: string; criadoEm: string }[];
-  arquivos: { id: string; nome: string; situacao: string; motivoRecusa?: string }[];
-  pode: { responder: boolean; resolver: boolean; enviarImagem: boolean };
-}
-
-const TOM: Record<string, Tom> = { NOVO: "andamento", ANDAMENTO: "andamento", ESPERANDO_CLIENTE: "atencao", RESOLVIDO: "ok" };
-
-/** Sobe as imagens uma a uma e pede a verificação (tira a localização). */
-async function enviarImagens(chamado: string, imagens: File[]): Promise<string[]> {
-  const problemas: string[] = [];
-  for (const f of imagens) {
-    const base = `/v1/condominio/chamados/${chamado}/imagens`;
-    const inicio = await chamarApi<{ arquivoId: string; envio: { url: string; tipo: string } }>(base, {
-      corpo: { nome: f.name || "imagem-colada.png", tipo: f.type, tamanho: f.size },
-    });
-    if (!inicio.ok) { problemas.push(textoDoErro(inicio.erro)); continue; }
-    await subir(inicio.dados.envio.url, f, inicio.dados.envio.tipo, () => {});
-    const fim = await chamarApi<{ situacao: string; motivo?: string }>(`${base}/${inicio.dados.arquivoId}/verificar`, { corpo: {} });
-    if (!fim.ok) problemas.push(textoDoErro(fim.erro));
-    else if (fim.dados.situacao !== "LIBERADO") problemas.push(fim.dados.motivo ?? "A imagem não foi liberada.");
-  }
-  return problemas;
-}
-
-function CampoImagens({ imagens, mudar }: { imagens: File[]; mudar: (f: File[]) => void }) {
-  const [problema, setProblema] = useState<string | null>(null);
-  function juntar(novas: File[]) {
-    const validas = novas.filter((f) => (IMAGENS_CHAMADO.tipos as readonly string[]).includes(f.type) && f.size <= IMAGENS_CHAMADO.tamanho);
-    setProblema(validas.length < novas.length ? "Só imagens JPG, PNG ou WEBP de até 10 MB." : null);
-    mudar([...imagens, ...validas].slice(0, IMAGENS_CHAMADO.maximo));
-  }
-  function colar(ev: ClipboardEvent) {
-    const arquivos = Array.from(ev.clipboardData.files);
-    if (arquivos.length) {
-      ev.preventDefault();
-      juntar(arquivos);
-    }
-  }
-  return (
-    <div className="grid gap-2">
-      <span className="text-sm font-medium">Imagens <span className="font-normal text-tinta-suave">(opcional)</span></span>
-      <div tabIndex={0} onPaste={colar} role="group" aria-label="Cole a imagem aqui com Ctrl+V"
-        className="grid gap-2 rounded-xl border border-dashed border-contorno p-4 text-sm text-tinta-suave focus:outline-2 focus:outline-foco">
-        <span>Cole a imagem aqui (Ctrl+V) ou escolha um arquivo · até {IMAGENS_CHAMADO.maximo}</span>
-        <input type="file" accept={IMAGENS_CHAMADO.tipos.join(",")} multiple aria-label="Escolher imagens"
-          disabled={imagens.length >= IMAGENS_CHAMADO.maximo} onChange={(e) => { juntar(Array.from(e.target.files ?? [])); e.target.value = ""; }} />
-      </div>
-      {problema ? <p className="text-xs text-erro">{problema}</p> : null}
-      {imagens.length ? (
-        <ul className="flex flex-wrap gap-2">
-          {imagens.map((f, i) => (
-            <li key={`${f.name}-${i}`} className="flex items-center gap-2 rounded-lg border border-linha px-2 py-1 text-xs">
-              {f.name || "imagem colada"}
-              <button type="button" className="text-violeta-600 underline" onClick={() => mudar(imagens.filter((_, j) => j !== i))}>Tirar<span className="sr-only"> {f.name}</span></button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  );
-}
+import { Chamado as FichaChamado } from "./Chamado.tsx";
+import { CampoImagens, enviarImagens } from "./imagens.tsx";
+import { ICONE_TIPO, PartesSuporte, SeloChamado, TEXTO_SUPORTE, type Chamado } from "./comum.tsx";
 
 /** Chamado já preenchido, como o "Pedir mudança" das Configurações (PI-04, decisão 11). */
 interface ChamadoInicial { tipo: string; area: string; titulo: string; texto: string }
 
-function AbrirChamado({ aoVoltar, inicial }: { aoVoltar: () => void; inicial?: ChamadoInicial }) {
+function AbrirChamado({ aoFechar, inicial }: { aoFechar: () => void; inicial?: ChamadoInicial }) {
   const router = useRouter();
-  const [tipo, setTipo] = useState(inicial?.tipo ?? "PROBLEMA");
+  const [tipo, setTipo] = useState<keyof typeof TIPOS_CHAMADO>((inicial?.tipo as keyof typeof TIPOS_CHAMADO) ?? "PROBLEMA");
   const [area, setArea] = useState(inicial?.area ?? "PEDIDOS");
   const [titulo, setTitulo] = useState(inicial?.titulo ?? "");
   const [texto, setTexto] = useState(inicial?.texto ?? "");
@@ -122,119 +48,39 @@ function AbrirChamado({ aoVoltar, inicial }: { aoVoltar: () => void; inicial?: C
 
   const campos = camposComErro(erro);
   return (
-    <form onSubmit={abrir} noValidate className="grid gap-4 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 className="text-lg font-medium">Abrir chamado</h2>
-      {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-      <fieldset className="grid gap-2">
-        <legend className="mb-1 text-sm font-medium">Tipo</legend>
-        <div className="trilho flex-wrap">
-          {Object.entries(TIPOS_CHAMADO).map(([k, t]) => <button key={k} type="button" className="chip" aria-pressed={tipo === k} onClick={() => setTipo(k)}>{t}</button>)}
+    <Dialogo aberto media fechar titulo="Abrir chamado" apoio="A TRÍADE responde em dias úteis, das 9h às 18h. Não é canal de reparo nem de emergência." aoFechar={aoFechar}>
+      <form onSubmit={abrir} noValidate className="grid gap-4">
+        {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
+        <div className="grid gap-1.5">
+          <span className="text-[13px] font-medium">Tipo</span>
+          <Escolha rotulo="Tipo do chamado" atual={tipo} aoMudar={setTipo}
+            opcoes={(Object.keys(TIPOS_CHAMADO) as (keyof typeof TIPOS_CHAMADO)[]).map((k) => ({ valor: k, texto: <><Icone nome={ICONE_TIPO[k]} className="h-4 w-4" />{TIPOS_CHAMADO[k]}</> }))} />
         </div>
-      </fieldset>
-      <CampoSelecao id="cha-area" rotulo="Onde no sistema" value={area} onChange={(e) => setArea(e.target.value)}
-        opcoes={Object.entries(AREAS_CHAMADO).map(([valor, t]) => ({ valor, texto: t }))} />
-      <CampoTexto id="cha-titulo" rotulo="Título" required maxLength={120} value={titulo} onChange={(e) => setTitulo(e.target.value)}
-        erro={campos.includes("titulo") ? "Escreva um título (3 a 120 caracteres)." : null} />
-      <CampoAreaTexto id="cha-texto" rotulo="O que aconteceu" required maxLength={4000} value={texto} onChange={(e) => setTexto(e.target.value)}
-        erro={campos.includes("texto") ? "Conte o que aconteceu." : null} />
-      <CampoImagens imagens={imagens} mudar={setImagens} />
-      <p className="text-xs text-tinta-suave">Imagens passam pelas mesmas regras das fotos dos pedidos (sem localização, até 10 MB).</p>
-      <div className="flex justify-end gap-2">
-        <Botao variante="contorno" onClick={aoVoltar}>Voltar</Botao>
-        <Botao type="submit" disabled={enviando}>{enviando ? "Enviando…" : "Enviar"}</Botao>
-      </div>
-    </form>
+        <CampoSelecao id="cha-area" rotulo="Onde no sistema" value={area} onChange={(e) => setArea(e.target.value)}
+          opcoes={Object.entries(AREAS_CHAMADO).map(([valor, t]) => ({ valor, texto: t }))} />
+        <CampoTexto id="cha-titulo" rotulo="Título" required maxLength={120} value={titulo} onChange={(e) => setTitulo(e.target.value)}
+          erro={campos.includes("titulo") ? "Escreva um título (3 a 120 caracteres)." : null} />
+        <CampoAreaTexto id="cha-texto" rotulo="O que aconteceu" required maxLength={4000} value={texto} onChange={(e) => setTexto(e.target.value)}
+          ajuda="Conte o que fez, o que esperava e o que apareceu." erro={campos.includes("texto") ? "Conte o que aconteceu." : null} />
+        <CampoImagens id="cha-imagens" imagens={imagens} mudar={setImagens} />
+        <div className="sticky -bottom-6 -mx-6 -mb-6 flex flex-wrap items-center justify-end gap-2 rounded-b-[24px] border-t border-linha bg-superficie px-6 py-4 max-md:grid max-md:rounded-none">
+          <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
+          <Botao type="submit" disabled={enviando}><Icone nome="enviar" />{enviando ? "Enviando…" : "Abrir chamado"}</Botao>
+        </div>
+      </form>
+    </Dialogo>
   );
 }
 
-function VerChamado({ id, falhouImagem }: { id: string; falhouImagem: boolean }) {
-  const carga = useCarregar<DetalheChamado>(`/v1/condominio/chamados/${id}`);
-  const [texto, setTexto] = useState("");
-  const [imagens, setImagens] = useState<File[]>([]);
-  const [erro, setErro] = useState<ErroApi | null>(null);
-  const [recado, setRecado] = useState<string | null>(falhouImagem ? "O chamado foi aberto, mas alguma imagem não passou na conferência." : null);
+const COLUNAS = "md:grid-cols-[40px_minmax(0,1.6fr)_minmax(0,1fr)_10rem_20px]";
 
-  if (carga.estado === "carregando") return <Carregando />;
-  if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
-  const c = carga.dados;
-
-  async function responder(ev: FormEvent) {
-    ev.preventDefault();
-    setErro(null);
-    const r = await chamarApi<{ reaberto: boolean }>(`/v1/condominio/chamados/${id}/responder`, { corpo: { texto } });
-    if (!r.ok) return setErro(r.erro);
-    const problemas = imagens.length ? await enviarImagens(id, imagens) : [];
-    setTexto("");
-    setImagens([]);
-    setRecado(problemas.length ? `Resposta enviada. ${problemas.join(" ")}` : r.dados.reaberto ? "Resposta enviada. O chamado voltou a abrir." : "Resposta enviada.");
-    carga.recarregar();
-  }
-
-  async function resolver() {
-    setErro(null);
-    const r = await chamarApi(`/v1/condominio/chamados/${id}/resolver`, { corpo: {} });
-    if (!r.ok) return setErro(r.erro);
-    setRecado("Obrigado. O chamado ficou resolvido.");
-    carga.recarregar();
-  }
-
-  async function abrirImagem(arquivo: string) {
-    const r = await chamarApi<{ url: string }>(`/v1/condominio/chamados/${id}/imagens/${arquivo}/link`);
-    if (r.ok) window.open(r.dados.url, "_blank", "noopener");
-  }
-
-  return (
-    <div className="grid gap-4">
-      <p className="text-sm"><Link href="/suporte" className="text-violeta-600 hover:underline">Voltar aos chamados</Link></p>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-[28px] font-normal tracking-tight">{c.titulo}</h1>
-          <p className="text-tinta-suave">Chamado {c.numero} · {TIPOS_CHAMADO[c.tipo]} · {AREAS_CHAMADO[c.area]} · aberto por {c.abertoPor} em {formatarDataHora(c.criadoEm)}</p>
-        </div>
-        <Selo tom={TOM[c.situacao] ?? "info"}>{rotuloSituacaoChamadoCliente(c.situacao)}</Selo>
-      </div>
-      {recado ? <Aviso tom="ok">{recado}</Aviso> : null}
-      {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-      <ol className="grid gap-3" aria-label="Conversa">
-        {c.mensagens.map((m) => (
-          <li key={m.id} className={`grid gap-1 rounded-2xl border border-linha p-4 ${m.lado === "TRIADE" ? "bg-violeta-50" : "bg-superficie"}`}>
-            <span className="text-sm font-medium">{m.autor}{m.lado === "TRIADE" ? " · TRÍADE" : ""}</span>
-            <p className="whitespace-pre-wrap">{m.texto}</p>
-            <span className="text-xs text-tinta-suave">{formatarDataHora(m.criadoEm)}</span>
-          </li>
-        ))}
-      </ol>
-      {c.arquivos.length ? (
-        <ul className="flex flex-wrap gap-2">
-          {c.arquivos.map((a) => (
-            <li key={a.id}>
-              {a.situacao === "LIBERADO"
-                ? <Botao variante="contorno" tamanho="p" onClick={() => void abrirImagem(a.id)}>Abrir {a.nome}</Botao>
-                : <span className="text-xs text-erro">{a.nome}: {a.motivoRecusa ?? "não liberada"}</span>}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {c.pode.responder ? (
-        <form onSubmit={responder} noValidate className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4">
-          <CampoAreaTexto id="cha-resposta" rotulo="Responder" maxLength={4000} value={texto} onChange={(e) => setTexto(e.target.value)}
-            erro={camposComErro(erro).includes("texto") ? "Escreva a resposta." : null} />
-          {c.pode.enviarImagem ? <CampoImagens imagens={imagens} mudar={setImagens} /> : null}
-          <div className="flex flex-wrap justify-end gap-2">
-            {c.pode.resolver ? <Botao variante="secundario" onClick={() => void resolver()}>Resolveu</Botao> : null}
-            <Botao type="submit">Enviar resposta</Botao>
-          </div>
-        </form>
-      ) : (
-        <Aviso tom="neutro">Este chamado foi resolvido há mais de {DIAS_REABRIR_CHAMADO} dias. Se o problema voltou, abra outro chamado.</Aviso>
-      )}
-    </div>
-  );
+function ultimaResposta(c: Chamado): string {
+  if (!c.ultima) return `Aberto ${formatarDataHora(c.criadoEm)}`;
+  return `${c.ultima.lado === "TRIADE" ? "TRÍADE respondeu" : `${c.ultima.autor} escreveu`} ${formatarDataHora(c.ultima.em)}`;
 }
 
 export function AjudaSuporte() {
   const busca = useSearchParams();
-  const router = useRouter();
   const id = busca.get("id");
   // ?mudar=<parte>&valor=<hoje>: pedido de mudança no que é ajustado pela TRÍADE.
   const mudar = busca.get("mudar");
@@ -243,46 +89,83 @@ export function AjudaSuporte() {
     texto: `Parte ajustada pela TRÍADE: ${mudar}.\nHoje: ${busca.get("valor") ?? ""}.\n\nO que precisamos: `,
   } : undefined;
   const [abrindo, setAbrindo] = useState(!!inicial);
+  const [aba, setAba] = useState<"ABERTOS" | "RESOLVIDOS">("ABERTOS");
   const lista = useCarregar<{ itens: Chamado[]; todos: boolean }>(id ? null : "/v1/condominio/chamados");
 
-  if (id) return <VerChamado key={id} id={id} falhouImagem={busca.get("imagens") === "falhou"} />;
+  if (id) return <FichaChamado key={id} id={id} falhouImagem={busca.get("imagens") === "falhou"} />;
+  const todos = lista.estado === "pronto" ? lista.dados.itens : [];
+  const abertos = todos.filter((c) => c.situacao !== "RESOLVIDO");
+  const resolvidos = todos.filter((c) => c.situacao === "RESOLVIDO");
+  const itens = aba === "ABERTOS" ? abertos : resolvidos;
+  const abrir = <Botao onClick={() => setAbrindo(true)}><Icone nome="mais" />Abrir chamado</Botao>;
+  const abas = [{ valor: "ABERTOS" as const, texto: "Abertos", n: abertos.length }, { valor: "RESOLVIDOS" as const, texto: "Resolvidos", n: resolvidos.length }];
+
   return (
-    <div className="grid gap-5">
-      <div>
-        <h1 className="text-[28px] font-normal tracking-tight">Ajuda e suporte</h1>
-        <p className="text-tinta-suave">Problemas com o sistema. Para reparo no prédio ou emergência, fale com quem cuida do prédio.</p>
+    <div className="grid gap-5 max-md:pb-16">
+      <PartesSuporte />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="t-titulo-tela">Ajuda e suporte</h1>
+          <p className="t-apoio mt-1">{TEXTO_SUPORTE}</p>
+        </div>
+        <div className="max-md:hidden">{abrir}</div>
       </div>
-      <Aviso tom="info" titulo="Suporte técnico da plataforma">
-        Responde sobre o sistema em dias úteis, das 9h às 18h. Não é reparo nem canal de emergência: vazamento, elevador parado ou segurança vão para o síndico ou para os serviços de emergência.
-      </Aviso>
-      {abrindo ? <AbrirChamado aoVoltar={() => setAbrindo(false)} inicial={inicial} /> : (
-        <section aria-labelledby="t-chamados" className="grid gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 id="t-chamados" className="text-lg font-medium">{lista.estado === "pronto" && lista.dados.todos ? "Chamados do condomínio" : "Seus chamados"}</h2>
-            <Botao onClick={() => setAbrindo(true)}>+ Abrir chamado</Botao>
-          </div>
-          {lista.estado === "carregando" ? <Carregando /> : null}
-          {lista.estado === "erro" ? <ErroCarregar erro={lista.erro} texto={lista.texto} tentarDeNovo={lista.recarregar} /> : null}
-          {lista.estado === "pronto" && lista.dados.itens.length === 0 ? <Vazio titulo="Nenhum chamado ainda">Quando algo no sistema não funcionar como esperado, abra um chamado.</Vazio> : null}
-          {lista.estado === "pronto" && lista.dados.itens.length > 0 ? (
-            <ul className="grid gap-2.5">
-              {lista.dados.itens.map((c) => (
-                <li key={c.id} className="grid gap-1 rounded-2xl border border-linha bg-superficie p-4 shadow-s1 sm:grid-cols-[1fr_auto] sm:items-center">
-                  <span>
-                    <button type="button" className="text-left font-semibold hover:underline" onClick={() => router.push(`/suporte?id=${c.id}`)}>{c.titulo}</button>
-                    <span className="block text-sm text-tinta-suave">
-                      {TIPOS_CHAMADO[c.tipo]} · {AREAS_CHAMADO[c.area]} · aberto {formatarDataHora(c.criadoEm)}
-                      {c.ultima ? ` · última resposta: ${c.ultima.autor}, ${formatarDataHora(c.ultima.em)}` : ""}
+
+      <section aria-labelledby="t-chamados" className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
+        <h2 id="t-chamados" className="sr-only">{lista.estado === "pronto" && lista.dados.todos ? "Chamados do condomínio" : "Seus chamados"}</h2>
+        <nav aria-label="Abertos ou resolvidos" className="flex gap-1 border-b border-linha md:px-3">
+          {abas.map((a) => {
+            const atual = aba === a.valor;
+            return (
+              <button key={a.valor} type="button" aria-pressed={atual} onClick={() => setAba(a.valor)}
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                {a.texto}
+                {lista.estado === "pronto" ? <span className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : ""}`}>{a.n}</span> : null}
+              </button>
+            );
+          })}
+        </nav>
+        {lista.estado === "carregando" ? <div className="p-5"><Carregando rotulo="Carregando os chamados…" /></div> : null}
+        {lista.estado === "erro" ? <div className="p-5"><ErroCarregar erro={lista.erro} texto={lista.texto} tentarDeNovo={lista.recarregar} /></div> : null}
+        {lista.estado === "pronto" ? (
+          itens.length === 0 ? (
+            <div className="md:p-5">
+              <Vazio titulo={aba === "ABERTOS" ? "Nenhum chamado aberto" : "Nenhum chamado resolvido"} icone="balao">
+                {aba === "ABERTOS" ? "Quando algo no sistema não funcionar como esperado, abra um chamado." : undefined}
+              </Vazio>
+            </div>
+          ) : (
+            <>
+              <div aria-hidden="true" className={`hidden gap-4 border-b border-linha bg-fundo px-5 py-2.5 md:grid ${COLUNAS}`}>
+                <span /><span className="t-rotulo">Chamado</span><span className="t-rotulo">Última resposta</span><span className="t-rotulo">Situação</span><span />
+              </div>
+              <ul className="grid max-md:gap-3 max-md:pt-3">
+                {itens.map((c) => (
+                  <li key={c.id} className={`relative grid grid-cols-[40px_minmax(0,1fr)_20px] items-center gap-x-4 gap-y-1 px-5 py-3 hover:bg-violeta-50/50 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 md:border-b md:border-linha md:last:border-b-0 ${COLUNAS}`}>
+                    <span className="ladrilho self-start md:self-center" aria-hidden="true"><Icone nome={ICONE_TIPO[c.tipo] ?? "balao"} /></span>
+                    <span className="grid min-w-0 gap-0.5">
+                      <span className="md:hidden"><SeloChamado situacao={c.situacao} /></span>
+                      <Link href={`/suporte?id=${c.id}`} className="font-medium text-tinta after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">{c.titulo}</Link>
+                      <span className="t-apoio">{TIPOS_CHAMADO[c.tipo]} · {AREAS_CHAMADO[c.area]} · aberto {formatarDataHora(c.criadoEm)}</span>
+                      <span className="t-apoio md:hidden">{ultimaResposta(c)}</span>
                     </span>
-                  </span>
-                  <Selo tom={TOM[c.situacao] ?? "info"}>{rotuloSituacaoChamadoCliente(c.situacao)}</Selo>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </section>
-      )}
-      <p className="text-xs text-tinta-suave">O morador não abre chamado: quem tem conta na Plataforma, sim.</p>
+                    <span className="text-sm max-md:hidden">{ultimaResposta(c)}</span>
+                    <span className="max-md:hidden"><SeloChamado situacao={c.situacao} /></span>
+                    <Icone nome="dir" className="h-5 w-5 text-tinta-suave max-md:col-start-3 max-md:row-start-1" />
+                  </li>
+                ))}
+              </ul>
+              <div className="flex flex-wrap items-center justify-between gap-2 py-4 md:border-t md:border-linha md:px-5">
+                <span className="t-apoio">{itens.length === 1 ? "1 chamado" : `${itens.length} chamados`}{aba === "ABERTOS" ? (itens.length === 1 ? " aberto" : " abertos") : (itens.length === 1 ? " resolvido" : " resolvidos")}</span>
+                <span className="t-apoio">Resolvido há até {DIAS_REABRIR_CHAMADO} dias reabre se você responder. O morador não abre chamado: quem tem conta na Plataforma, sim.</span>
+              </div>
+            </>
+          )
+        ) : null}
+      </section>
+
+      <div className="fixed right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] z-20 md:hidden">{abrir}</div>
+      {abrindo ? <AbrirChamado aoFechar={() => setAbrindo(false)} inicial={inicial} /> : null}
     </div>
   );
 }

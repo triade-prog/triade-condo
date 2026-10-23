@@ -6,7 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { useRouter } from "next/navigation";
 import { chamarApi, pedeLogin, textoDoErro, type ErroApi } from "@triade/ui";
 import type { MesFechado, ResumoComunicados, ResumoManutencao, ResumoPedidos, ResumoProntuario, ResumoVida } from "./tipos.ts";
-import type { PedidoAcessoExcepcional } from "./suporte/CartaoAcessoExcepcional.tsx";
+import type { PedidoAcessoExcepcional } from "./suporte/comum.tsx";
 
 export interface Painel {
   condominio: { id: string; nome: string; cidade: string | null; uf: string | null; cenario: string | null };
