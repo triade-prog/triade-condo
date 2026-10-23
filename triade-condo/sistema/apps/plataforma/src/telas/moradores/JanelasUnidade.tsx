@@ -11,6 +11,7 @@ import { AVISOS_CONTATO, chaveUnidade, mostrarAndar, mostrarTelefone, MOTIVOS_EN
 import {
   Aviso, AvisoErro, Botao, CampoSelecao, CampoTexto, camposComErro, chamarApi, Carregando, Dialogo, ErroCarregar, Icone, textoDoErro, type ErroApi, type Resposta,
 } from "@triade/ui";
+import { aniversarioDoCampo, aniversarioNoCampo, CampoAniversario } from "./FamiliaPets.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { ContatoDaUnidade, ListaMoradores, Recado, UnidadeDetalhe, Unidades } from "../tipos.ts";
 import { andaresDe } from "./AbaUnidades.tsx";
@@ -320,6 +321,7 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
       : !alvo.temContatos ? { ...VINCULO_NOVO, proprietario: true, principal: true }
       : { ...VINCULO_NOVO, ligacao: "FAMILIAR" });
   const [recebe, setRecebe] = useState(relacaoInicial === "PROPRIETARIO" ? false : true);
+  const [aniversario, setAniversario] = useState(aniversarioNoCampo(null));
   const [erro, setErro] = useState<ErroApi | null>(null);
   const pedeDono = !vinculo.proprietario && vinculo.ligacao === "INQUILINO" && !alvo.temProprietario;
 
@@ -331,7 +333,8 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
     }
     if (pedeDono && dono.modo === "cadastrada" && !dono.contatoId) return setErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: ["proprietario"] } });
     const marcas = { ...marcasDe(vinculo), ocupaDesde: vinculo.ocupaDesde || null };
-    const corpo = { ...corpoDaPessoa(pessoa), marcas, recebeComunicados: recebe, ...(pedeDono ? { proprietario: corpoDaPessoa(dono) } : {}) };
+    const niver = pessoa.modo === "nova" ? aniversarioDoCampo(aniversario) : null;
+    const corpo = { ...corpoDaPessoa(pessoa), marcas, recebeComunicados: recebe, ...(pedeDono ? { proprietario: corpoDaPessoa(dono) } : {}), ...(niver ? { aniversario: niver } : {}) };
     const r = await chamarApi<{ avisos: string[] }>(`/v1/condominio/unidades/${alvo.id}/contatos`, { corpo });
     if (!r.ok) {
       // No celular, volta para o passo do campo com erro.
@@ -349,10 +352,13 @@ function FormIncluir({ alvo, podeConfirmar, relacaoInicial, aoFechar, salvo, nom
   const erroDono = campos.includes("proprietario") ? (dono.modo === "nova" ? "Confira o nome e o telefone (com DDD) do proprietário." : "Busque e escolha o proprietário.") : null;
   const textoBotao = pedeDono ? "Incluir inquilino e proprietário" : "Incluir pessoa";
   const quem = (
+    <>
     <EscolherPessoa prefixo="c" rotulo={partes ? "Pessoa nova ou já cadastrada" : "Quem é"} textoCadastrada="Já cadastrada em outra unidade" pessoa={pessoa} excluir={alvo.contatoIds}
       aoMudar={(p) => { setPessoa(p); setErro(null); }}
       erros={{ nome: campos.includes("nome") ? ERRO_CAMPO.nome : null, telefone: campos.includes("telefone") ? ERRO_CAMPO.telefone : null,
         contato: campos.includes("contatoId") ? "Busque e escolha a pessoa." : null }} />
+    {pessoa.modo === "nova" ? <CampoAniversario id="c-aniversario" valor={aniversario} aoMudar={setAniversario} erro={campos.includes("aniversario")} /> : null}
+    </>
   );
   const ligacao = (
     <>
@@ -437,27 +443,32 @@ function FormEditar({ contato, responsavel, emailLigado, aoFechar, salvo, recarr
   const [recebe, setRecebe] = useState(contato.recebeComunicados);
   const [email, setEmail] = useState(contato.email ?? "");
   const [recebeEmail, setRecebeEmail] = useState(contato.emailComunicados ?? true);
+  const [aniversario, setAniversario] = useState(aniversarioNoCampo(contato.aniversario));
   const [reenvio, setReenvio] = useState<string | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const mudouEmail = email.trim().toLowerCase() !== (contato.email ?? "").toLowerCase() || recebeEmail !== (contato.emailComunicados ?? true);
   const marcas = { ...marcasDe(vinculo), ocupaDesde: vinculo.ocupaDesde || null };
-  const mudouContato = nome.trim() !== contato.nome || telefone !== mostrarTelefone(contato.telefone);
+  const mudouAniversario = JSON.stringify(aniversarioDoCampo(aniversario)) !== JSON.stringify(contato.aniversario ? { dia: contato.aniversario.dia, mes: contato.aniversario.mes } : null);
+  const mudouContato = nome.trim() !== contato.nome || telefone !== mostrarTelefone(contato.telefone) || mudouAniversario;
   const mudouVinculo = JSON.stringify(marcas) !== JSON.stringify({ ...marcasDe(vinculoDe(contato)), ocupaDesde: contato.ocupaDesde })
     || recebe !== contato.recebeComunicados;
 
   async function salvar() {
     setErro(null);
     let avisos: Resposta<{ avisos?: string[] }> | null = null;
+    // O aniversário muda a versão do contato à parte: o e-mail usa a versão que voltou.
+    let versaoContato = contato.contatoVersao;
     if (mudouContato) {
-      const r = await chamarApi<{ avisos: string[] }>(`/v1/condominio/contatos/${contato.contatoId}`, {
-        metodo: "PUT", corpo: { versao: contato.contatoVersao, nome, telefone },
+      const r = await chamarApi<{ avisos: string[]; versao?: number }>(`/v1/condominio/contatos/${contato.contatoId}`, {
+        metodo: "PUT", corpo: { versao: contato.contatoVersao, nome, telefone, ...(mudouAniversario ? { aniversario: aniversarioDoCampo(aniversario) } : {}) },
       });
       if (!r.ok) return setErro(r.erro);
       avisos = r;
+      versaoContato = r.dados.versao ?? contato.contatoVersao + 1;
     }
     if (mudouEmail) {
       const r = await chamarApi(`/v1/condominio/contatos/${contato.contatoId}/email`, {
-        metodo: "PUT", corpo: { versao: contato.contatoVersao + (mudouContato ? 1 : 0), email: email.trim(), recebe: recebeEmail },
+        metodo: "PUT", corpo: { versao: versaoContato, email: email.trim(), recebe: recebeEmail },
       });
       if (!r.ok) return setErro(r.erro);
     }
@@ -487,6 +498,7 @@ function FormEditar({ contato, responsavel, emailLigado, aoFechar, salvo, recarr
       <CampoTexto id="e-telefone" rotulo="Telefone (WhatsApp)" type="tel" inputMode="tel" required value={telefone} onChange={(e) => setTelefone(e.target.value)}
         ajuda={contato.outrasUnidades.length ? `Nome e telefone mudam também em ${contato.outrasUnidades.join(", ")}.` : undefined}
         erro={campos.includes("telefone") ? ERRO_CAMPO.telefone : null} />
+      <CampoAniversario id="e-aniversario" valor={aniversario} aoMudar={setAniversario} erro={campos.includes("aniversario")} />
       <CamposVinculo prefixo="e" valor={vinculo} aoMudar={(v) => { setVinculo(v); setErro(null); }}
         responsavelAtual={contato.principal ? null : responsavel} erros={errosDoVinculo(campos)} />
       <p className="t-apoio text-tinta-suave">O &quot;ocupou até&quot; é preenchido quando o vínculo é encerrado ou numa mudança.</p>

@@ -52,6 +52,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   BLOCO_COM_UNIDADES: "Ainda há unidades ativas aqui. Desative-as ou mude-as de lugar antes.",
   UNIDADE_REPETIDA: "Já existe uma unidade ativa com esta identificação neste lugar (torre ou bloco e andar).",
   UNIDADE_COM_CONTATOS: "Esta unidade ainda tem contatos. Registre a mudança ou encerre os vínculos antes de desativar.",
+  UNIDADE_COM_FAMILIA: "Esta unidade ainda tem família ou pets cadastrados. Retire cada um na ficha antes de desativar.",
+  JA_SAIU: "Quem já saiu da unidade não muda mais. Recarregue a ficha para ver como está.",
   UNIDADE_INATIVA: "Esta unidade está desativada.",
   CONTATO_JA_NA_UNIDADE: "Este contato já está nesta unidade.",
   CONTATO_REMOVIDO: "Os dados deste contato foram removidos. Cadastre a pessoa de novo, se for o caso.",

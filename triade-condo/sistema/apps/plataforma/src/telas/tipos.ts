@@ -6,6 +6,7 @@ import type {
   EstadoAssembleia, EstadoItem, EstadoProcuracao, FormaAssembleia, PesoAssembleia, Quorum, SituacaoItem, TipoAssembleia, TipoItem,
   EstadoAnuncio, TipoAnuncio, TipoVeiculo, DecisaoQueda, EstadoQueda, AvisoNovoSindico, DestinoAvisoRegistro, MeioAvisoRegistro,
   EstadoDecisao, FiltroDecisao, TipoLigacao, SituacaoLinkRegistro, MotivoForaDoMural,
+  Aniversario, CategoriaHistorico, Especie, ParentescoFamiliar, Porte,
 } from "@triade/domain";
 
 
@@ -72,6 +73,10 @@ export interface UnidadeResumo {
   /** MU-11: marcada à venda e para alugar. */
   aVenda: boolean;
   paraAlugar: boolean;
+  /** F3.9, F3.10 (MU-06, MU-11): pets e família na unidade e aniversariantes do mês (etiquetas da busca). */
+  pets?: number;
+  familia?: number;
+  aniversariantesMes?: number;
 }
 
 export interface Unidades {
@@ -83,6 +88,8 @@ export interface Unidades {
   ocupacao: { comMorador: number; alugadas: number; proprietarioNaoMora: number; semResponsavel: number; aVenda: number; paraAlugar: number };
   podeEditar: boolean;
   podeConfirmar: boolean;
+  /** O mês de hoje no condomínio, para a etiqueta Aniversariante do mês. */
+  mes?: number;
 }
 
 export interface ContatoDaUnidade {
@@ -114,6 +121,8 @@ export interface ContatoDaUnidade {
   comunicadosWhatsapp?: SituacaoComunicadosWhatsapp;
   comunicadosWhatsappEm?: string;
   comunicadosWhatsappOrigem?: "PERGUNTA" | "COMANDO";
+  /** Só dia e mês (decisão B de 23/10/2026). */
+  aniversario?: Aniversario;
 }
 
 export type SituacaoComunicadosWhatsapp = "ACEITOU" | "RECUSOU" | "PAROU" | "SEM_RESPOSTA";
@@ -153,6 +162,10 @@ export interface UnidadeDetalhe {
   /** Garagens e veículos (MU-06): as vagas da unidade e os veículos em uso. */
   vagas?: Vaga[];
   veiculos?: Veiculo[];
+  /** Família, pets e as três últimas mudanças (F3.9, F3.10). */
+  familia?: Familiar[];
+  pets?: Pet[];
+  historico?: ItemHistoricoUnidade[];
 }
 
 /** Vaga de garagem (MU-06): da unidade ou do condomínio. */
@@ -192,7 +205,7 @@ export interface Garagens {
 /** O que a busca da lista de unidades achou em cada unidade (MU-11). */
 export interface AchadoUnidade {
   unidadeId: string;
-  tipo: "UNIDADE" | "PLACA" | "NOME" | "TELEFONE";
+  tipo: "UNIDADE" | "PLACA" | "NOME" | "TELEFONE" | "FAMILIA";
   texto: string;
 }
 
@@ -1738,4 +1751,51 @@ export interface MuralNoPainel {
   versoes: Record<string, number>;
   fora: { id: string; titulo: string; assunto: AssuntoComunicado; publicadoEm: string; versao: number; motivo: MotivoForaDoMural }[];
   pode: { mural: boolean; configurar: boolean; classificados: boolean };
+}
+
+/** Quem é da família (MU-06): sem telefone e sem acesso. */
+export interface Familiar {
+  id: string;
+  nome: string;
+  parentesco: ParentescoFamiliar;
+  mora: boolean;
+  aniversario?: Aniversario;
+  desde: string;
+  versao: number;
+}
+
+export interface Pet {
+  id: string;
+  nome: string;
+  especie: Especie;
+  porte?: Porte;
+  raca?: string;
+  observacao?: string;
+  desde: string;
+  versao: number;
+}
+
+/** Um registro do histórico da unidade (MU-11), já escrito pelo banco; sem telefone nem placa. */
+export interface ItemHistoricoUnidade {
+  id: number;
+  em: string;
+  categoria?: CategoriaHistorico | "UNIDADE";
+  titulo: string;
+  detalhe?: string;
+  autor: string;
+}
+
+export interface HistoricoUnidade {
+  unidade: string;
+  itens: ItemHistoricoUnidade[];
+  mais: boolean;
+  total: number;
+  desde: string | null;
+}
+
+export interface Aniversariantes {
+  mes: number;
+  mesAtual: number;
+  itens: { tipo: "PESSOA" | "FAMILIA"; id: string; nome: string; dia: number; descricao: string; unidadeId: string; unidade: string }[];
+  unidades: { id: string; nome: string }[];
 }

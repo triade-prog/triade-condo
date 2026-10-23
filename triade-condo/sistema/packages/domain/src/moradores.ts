@@ -173,6 +173,27 @@ function conferirMarcas(m: { proprietario: boolean; ligacao: Ligacao | null; par
 
 export const marcasSchema = z.object({ ...camposMarcas, ocupaDesde: data.nullable().default(null) }).superRefine(conferirMarcas);
 
+/** Meses do ano, para o aniversário (MU-06) e os aniversariantes (MU-11). */
+export const MESES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+] as const;
+
+/** Último dia de cada mês num aniversário (29 de fevereiro vale). */
+export function diasDoMes(mes: number): number {
+  return mes === 2 ? 29 : [4, 6, 9, 11].includes(mes) ? 30 : 31;
+}
+
+/** Aniversário só com dia e mês, sem o ano (decisão B de 23/10/2026): ninguém fica sabendo a idade. */
+export const aniversarioSchema = z
+  .object({ dia: z.number().int().min(1).max(31), mes: z.number().int().min(1).max(12) })
+  .refine((a) => a.dia <= diasDoMes(a.mes), { message: "Esse dia não existe nesse mês", path: ["dia"] });
+export type Aniversario = z.infer<typeof aniversarioSchema>;
+
+/** "03/11". */
+export function mostrarAniversario(a: Aniversario): string {
+  return `${String(a.dia).padStart(2, "0")}/${String(a.mes).padStart(2, "0")}`;
+}
+
 /** A tela de antes mandava a relação: vira marcações. */
 const comRelacaoAntiga = (v: unknown) => {
   if (!v || typeof v !== "object" || !("relacao" in v) || "marcas" in v) return v;
@@ -191,10 +212,12 @@ export const incluirContatoSchema = z.preprocess(comRelacaoAntiga, z
     recebeComunicados: z.boolean().default(true),
     /** Inquilino em unidade sem proprietário no cadastro entra junto com o dono do imóvel (MU-01). */
     proprietario: z.union([z.object({ contatoId: id }), z.object({ nome, telefone: telefoneContato })]).optional(),
+    aniversario: aniversarioSchema.optional(),
   })
   .refine((c) => c.contatoId || (c.nome && c.telefone), { message: "Informe nome e telefone", path: ["nome"] }));
 
-export const alterarContatoSchema = z.object({ versao, nome, telefone: telefoneContato });
+/** aniversario: ausente deixa como está; null tira. */
+export const alterarContatoSchema = z.object({ versao, nome, telefone: telefoneContato, aniversario: aniversarioSchema.nullable().optional() });
 
 export const alterarVinculoUnidadeSchema = z.preprocess(comRelacaoAntiga, z.object({
   versao,
@@ -565,7 +588,7 @@ export const retirarVeiculoSchema = z.object({ versao });
 export const buscaUnidadesSchema = z.object({ busca: z.string().trim().min(2).max(60) });
 
 /** O que a busca achou em cada unidade (MU-11). */
-export const ACHADOS_BUSCA = { UNIDADE: "Unidade", PLACA: "Placa", NOME: "Nome", TELEFONE: "Telefone" } as const;
+export const ACHADOS_BUSCA = { UNIDADE: "Unidade", PLACA: "Placa", NOME: "Nome", TELEFONE: "Telefone", FAMILIA: "Família" } as const;
 
 /** Histórico da unidade e da vaga: veículos e vagas. Nulo quando o evento é de outra parte. */
 export function descreverEventoGaragem(acao: string, d: Record<string, unknown>): string | null {
@@ -587,4 +610,115 @@ export function descreverEventoGaragem(acao: string, d: Record<string, unknown>)
     default:
       return null;
   }
+}
+
+// ---------------------------------------------------------------------------------------
+// Família, pets, histórico e aniversariantes da unidade (F3.9, F3.10; MU-06, MU-11). Os mesmos
+// valores estão no banco (0287_familia_pets_historico.sql).
+
+/** Parentesco de quem é da família (sem telefone e sem acesso). */
+export const PARENTESCOS_FAMILIAR = {
+  CONJUGE: "Cônjuge",
+  FILHO: "Filho ou filha",
+  PAI_MAE: "Pai ou mãe",
+  OUTRO_PARENTE: "Outro parente",
+  TRABALHA_NA_CASA: "Trabalha na casa",
+} as const;
+export type ParentescoFamiliar = keyof typeof PARENTESCOS_FAMILIAR;
+
+export const ESPECIES = { CAO: "Cão", GATO: "Gato", OUTRO: "Outro" } as const;
+export type Especie = keyof typeof ESPECIES;
+export const PORTES = { PEQUENO: "Pequeno", MEDIO: "Médio", GRANDE: "Grande" } as const;
+export type Porte = keyof typeof PORTES;
+
+export const familiarSchema = z.object({
+  versao: versao.nullable().optional().transform((v) => v ?? null),
+  unidadeId: id.nullable().optional().transform((v) => v ?? null),
+  nome,
+  parentesco: z.enum(chaves(PARENTESCOS_FAMILIAR)),
+  mora: z.boolean().default(true),
+  aniversario: aniversarioSchema.nullable().optional().transform((v) => v ?? null),
+});
+
+export const petSchema = z.object({
+  versao: versao.nullable().optional().transform((v) => v ?? null),
+  unidadeId: id.nullable().optional().transform((v) => v ?? null),
+  nome: z.string().trim().min(1).max(60),
+  especie: z.enum(chaves(ESPECIES)),
+  porte: z.enum(chaves(PORTES)).nullable().optional().transform((v) => v ?? null),
+  raca: opcional(60, 2),
+  observacao: opcional(280, 2),
+});
+
+/** Retirar: saiu (fica no histórico) ou cadastrado por engano (os dados são apagados). */
+export const MOTIVOS_RETIRAR = {
+  SAIU: "Saiu da unidade",
+  ENGANO: "Foi cadastrado por engano",
+} as const;
+export const retirarFamiliaPetSchema = z.object({ versao, motivo: z.enum(chaves(MOTIVOS_RETIRAR)) });
+
+/** Filtros da página do histórico da unidade. */
+export const CATEGORIAS_HISTORICO = {
+  PESSOAS: "Pessoas",
+  MUDANCA: "Mudança",
+  MARCAS: "Marcas",
+  VEICULOS: "Veículos",
+  FAMILIA_PETS: "Família e pets",
+} as const;
+export type CategoriaHistorico = keyof typeof CATEGORIAS_HISTORICO;
+export const buscaHistoricoSchema = z.object({
+  categoria: z.enum(chaves(CATEGORIAS_HISTORICO)).optional(),
+  antes: z.coerce.number().int().min(1).optional(),
+});
+
+export const buscaAniversariantesSchema = z.object({
+  mes: z.coerce.number().int().min(1).max(12).optional(),
+  unidade: id.optional(),
+});
+
+/**
+ * Etiquetas da busca da lista de unidades (decisão C de 23/10/2026): as marcas que já existem e
+ * duas que saem do cadastro. A ordem é a das sugestões.
+ */
+export const ETIQUETAS_UNIDADE = {
+  A_VENDA: { nome: "À venda", termos: ["venda", "vende"] },
+  PARA_ALUGAR: { nome: "Para alugar", termos: ["alugar", "aluga", "locação", "locacao"] },
+  A_CONFIRMAR: { nome: "A confirmar", termos: ["confirmar", "pendente"] },
+  SEM_RESPONSAVEL: { nome: "Sem responsável", termos: ["responsável", "responsavel"] },
+  COM_PET: { nome: "Com pet", termos: ["pet", "cão", "cao", "cachorro", "gato", "bicho"] },
+  ANIVERSARIO: { nome: "Aniversariante do mês", termos: ["aniversa"] },
+} as const;
+export type EtiquetaUnidade = keyof typeof ETIQUETAS_UNIDADE;
+
+export interface MarcasDaLinha {
+  aVenda?: boolean;
+  paraAlugar?: boolean;
+  pendentes: number;
+  semResponsavel?: boolean;
+  pets?: number;
+  aniversariantesMes?: number;
+}
+
+/** A unidade tem a etiqueta? */
+export function temEtiqueta(u: MarcasDaLinha, e: EtiquetaUnidade): boolean {
+  switch (e) {
+    case "A_VENDA": return !!u.aVenda;
+    case "PARA_ALUGAR": return !!u.paraAlugar;
+    case "A_CONFIRMAR": return u.pendentes > 0;
+    case "SEM_RESPONSAVEL": return !!u.semResponsavel;
+    case "COM_PET": return (u.pets ?? 0) > 0;
+    case "ANIVERSARIO": return (u.aniversariantesMes ?? 0) > 0;
+  }
+}
+
+const semAcento = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+/** Etiquetas que combinam com o que foi escrito ("com", "pet", "aniversa"). Vazio quando nenhuma. */
+export function etiquetasDoTexto(texto: string): EtiquetaUnidade[] {
+  const q = semAcento(texto.trim());
+  if (q.length < 2) return [];
+  return (Object.keys(ETIQUETAS_UNIDADE) as EtiquetaUnidade[]).filter((e) => {
+    const { nome, termos } = ETIQUETAS_UNIDADE[e];
+    return semAcento(nome).includes(q) || termos.some((t) => semAcento(t).startsWith(q) || q.startsWith(semAcento(t)));
+  });
 }

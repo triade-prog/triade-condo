@@ -318,6 +318,10 @@ body {
   .menu-pessoa { position: absolute; right: 0; top: calc(100% + 8px); z-index: 40; display: grid; gap: 4px; width: max-content; min-width: 240px; max-width: calc(100vw - 32px); padding: 12px; border-radius: 18px; border: 1px solid var(--color-linha); background: #fff; box-shadow: var(--shadow-s3); }
   .menu-pessoa .quem { display: grid; gap: 2px; padding: 4px 8px 10px; border-bottom: 1px solid var(--color-linha); margin-bottom: 4px; }
   .menu-pessoa .bt { justify-content: flex-start; }
+  /* No celular, o menu de cada linha da lista sobe como folha, de baixo (F3.10). */
+  @media (max-width: 767px) {
+    .menu-pessoa[data-folha] { position: fixed; inset: auto 0 0 0; width: auto; max-width: none; padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); border-radius: 22px 22px 0 0; }
+  }
 
   /* Escolha numa lista curta (trocar condomínio): a linha inteira é o botão. */
   .escolha { display: grid; gap: 2px; width: 100%; padding: 12px 16px; border-radius: 14px; border: 1px solid var(--color-linha); background: #fff; color: var(--color-tinta); text-align: left; cursor: pointer; }

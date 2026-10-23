@@ -6,17 +6,23 @@
 // identificação, pelo nome ou telefone de quem está nela e pela placa (MU-11, MU-06). A ocupação
 // fica em abas, o que pede atenção em atalhos, e a torre, o andar e as marcas em Filtros. No
 // celular, cada unidade é um cartão. Divisão e unidade não se apagam: são desativadas, e só
-// quando não têm nada ativo dentro.
+// quando não têm nada ativo dentro. Cada linha tem o seu menu (ficha, garagens, histórico,
+// pendentes e aniversariantes), e a busca acha também por etiqueta e pelo nome de quem é da
+// família (F3.10; MU-11).
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { AGRUPAMENTOS, chaveAndar, chaveUnidade, gerarUnidades, mostrarAndar, nomeDaUnidade, OCUPACOES, type UnidadeNova } from "@triade/domain";
 import {
-  AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, Chip, Dialogo, Icone, Selo, textoDoErro, Vazio, type ErroApi, type Tom,
+  AGRUPAMENTOS, chaveAndar, chaveUnidade, ETIQUETAS_UNIDADE, etiquetasDoTexto, gerarUnidades, mostrarAndar, nomeDaUnidade, OCUPACOES, temEtiqueta,
+  type EtiquetaUnidade, type UnidadeNova,
+} from "@triade/domain";
+import {
+  AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, Chip, classeBotao, Dialogo, Icone, Selo, textoDoErro, Vazio, type ErroApi, type Tom,
 } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import type { AchadoUnidade, Bloco, Estrutura, Recado, UnidadeResumo, Unidades } from "../tipos.ts";
-import { Caixa, Escolha, LadrilhoUnidade, nomeRelacao, nomesDivisao } from "./comum.tsx";
+import { Caixa, Escolha, LadrilhoUnidade, MenuAcoes, nomeRelacao, nomesDivisao } from "./comum.tsx";
 
 type Situacao = "" | "com-morador" | "alugadas" | "sem-cadastro";
 type Atencao = "" | "sem-contato" | "sem-proprietario" | "sem-responsavel";
@@ -40,7 +46,16 @@ function seloContatos(u: UnidadeResumo): { texto: string; tom: Tom } {
 }
 
 function contagemContatos(u: UnidadeResumo): string {
-  return [u.confirmados ? plural(u.confirmados, "confirmado", "confirmados") : null, u.pendentes ? `${u.pendentes} a confirmar` : null].filter(Boolean).join(" · ");
+  return [u.confirmados ? plural(u.confirmados, "confirmado", "confirmados") : null, u.pendentes ? `${u.pendentes} a confirmar` : null,
+    u.pets ? "com pet" : null].filter(Boolean).join(" · ");
+}
+
+/** A etiqueta escolhida fica no endereço (?etiqueta=), para voltar à mesma lista. */
+function guardarEtiqueta(e: EtiquetaUnidade | "") {
+  const url = new URL(window.location.href);
+  if (e) url.searchParams.set("etiqueta", e);
+  else url.searchParams.delete("etiqueta");
+  window.history.replaceState(window.history.state, "", url);
 }
 
 /** Busca na API (MU-11): o que achou em cada unidade, ou null enquanto a busca é curta. */
@@ -103,7 +118,7 @@ function JanelaFiltros({ aberto, dados, f, aoFechar, aplicar }: { aberto: boolea
   );
 }
 
-const COLUNAS = "md:grid-cols-[44px_minmax(0,1.6fr)_minmax(0,1.1fr)_minmax(0,1fr)_20px]";
+const COLUNAS = "md:grid-cols-[44px_minmax(0,1.6fr)_minmax(0,1.1fr)_minmax(0,1fr)_40px]";
 
 function LinhaUnidade({ u, nome, achado }: { u: UnidadeResumo; nome: string; achado?: AchadoUnidade }) {
   const selo = seloContatos(u);
@@ -129,7 +144,9 @@ function LinhaUnidade({ u, nome, achado }: { u: UnidadeResumo; nome: string; ach
           {u.principal ? `${u.principal}${u.principalRelacao ? ` · ${nomeRelacao(u.principalRelacao).toLowerCase()}` : ""}`
             : <span className="font-medium text-atencao">{u.ocupacao === "SEM_CADASTRO" ? "Ninguém cadastrado" : "Sem responsável"}</span>}
         </span>
-        {achado && achado.tipo !== "UNIDADE" ? <span className="t-apoio">{achado.tipo === "TELEFONE" ? `telefone de ${achado.texto}` : achado.texto}</span> : null}
+        {achado && achado.tipo !== "UNIDADE" ? (
+          <span className="t-apoio">{achado.tipo === "TELEFONE" ? `telefone de ${achado.texto}` : achado.tipo === "FAMILIA" ? `família: ${achado.texto}` : achado.texto}</span>
+        ) : null}
         <span className="grid gap-1 pt-1 t-texto md:hidden">
           <span>{ocupacao}</span>
           <span className="flex flex-wrap items-center gap-2"><Selo tom={selo.tom}>{selo.texto}</Selo>{contagem && contagem !== selo.texto ? <span className="t-apoio">{contagem}</span> : null}</span>
@@ -140,7 +157,15 @@ function LinhaUnidade({ u, nome, achado }: { u: UnidadeResumo; nome: string; ach
         <Selo tom={selo.tom}>{selo.texto}</Selo>
         {contagem && contagem !== selo.texto ? <span className="t-apoio">{contagem}</span> : null}
       </span>
-      <Icone nome="dir" className="h-5 w-5 text-tinta-suave" />
+      <span className="relative z-10 self-start justify-self-end has-[.menu-pessoa]:z-50 md:self-center">
+        <MenuAcoes rotulo={`Ações de ${nome}`} folha={{ titulo: nome, apoio: u.principal ?? undefined }} itens={[
+          { texto: "Abrir a ficha", icone: "predio", href: `/moradores/unidade?id=${u.id}` },
+          { texto: "Garagens e veículos", icone: "pin", href: `/moradores/unidade?id=${u.id}#garagens` },
+          { texto: "Histórico", icone: "relogio", href: `/moradores/historico?id=${u.id}` },
+          ...(u.pendentes > 0 ? [{ texto: `Pendentes (${u.pendentes})`, icone: "alerta" as const, apoio: "A confirmar na ficha", href: `/moradores/unidade?id=${u.id}#pessoas` }] : []),
+          { texto: "Aniversariantes", icone: "bolo", href: `/moradores/aniversariantes?unidade=${u.id}` },
+        ]} />
+      </span>
     </li>
   );
 }
@@ -161,6 +186,14 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
   const [f, setF] = useState<Filtros>(SEM_FILTROS);
   const [filtrando, setFiltrando] = useState(false);
   const [texto, setTexto] = useState("");
+  const endereco = useSearchParams();
+  const [etiqueta, setEtiquetaAgora] = useState<EtiquetaUnidade | "">(() => {
+    const e = endereco.get("etiqueta");
+    return e && e in ETIQUETAS_UNIDADE ? (e as EtiquetaUnidade) : "";
+  });
+  const [sugerindo, setSugerindo] = useState(false);
+  const setEtiqueta = (e: EtiquetaUnidade | "") => { setEtiquetaAgora(e); guardarEtiqueta(e); };
+  const sugestoes = texto.trim() ? etiquetasDoTexto(texto) : (Object.keys(ETIQUETAS_UNIDADE) as EtiquetaUnidade[]);
   const busca = useBuscaUnidades(texto);
   const [janela, setJanela] = useState<{ tipo: "renomear" | "desativar" | "reativar"; bloco: Bloco } | null>(null);
   const bloco = dados.blocos.find((b) => b.ativo && b.id === f.bloco) ?? null;
@@ -182,7 +215,9 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
   }
 
   const ativas = dados.unidades.filter((u) => u.ativa);
-  const naSituacao = (s: Situacao) => dados.unidades.filter((u) =>
+  const naEtiqueta = (u: UnidadeResumo) => etiqueta === "" || (u.ativa && temEtiqueta(u, etiqueta));
+  const comEtiqueta = (e: EtiquetaUnidade) => ativas.filter((u) => temEtiqueta(u, e)).length;
+  const naSituacao = (s: Situacao) => dados.unidades.filter(naEtiqueta).filter((u) =>
     s === "" ? true
       : s === "com-morador" ? u.ativa && ["PROPRIETARIO_MORA", "ALUGADA", "CEDIDA"].includes(u.ocupacao)
         : s === "alugadas" ? u.ativa && u.ocupacao === "ALUGADA"
@@ -199,10 +234,10 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
   const nomeBloco = (id: string | null) => dados.blocos.find((b) => b.id === id)?.nome ?? null;
   const o = dados.ocupacao;
   const situacoes: { valor: Situacao; texto: string; n: number }[] = [
-    { valor: "", texto: "Todas", n: dados.unidades.length },
-    { valor: "com-morador", texto: "Com morador", n: o.comMorador },
-    { valor: "alugadas", texto: "Alugadas", n: o.alugadas },
-    { valor: "sem-cadastro", texto: "Sem cadastro", n: ativas.filter((u) => u.ocupacao === "SEM_CADASTRO").length },
+    { valor: "", texto: "Todas", n: naSituacao("").length },
+    { valor: "com-morador", texto: "Com morador", n: etiqueta ? naSituacao("com-morador").length : o.comMorador },
+    { valor: "alugadas", texto: "Alugadas", n: etiqueta ? naSituacao("alugadas").length : o.alugadas },
+    { valor: "sem-cadastro", texto: "Sem cadastro", n: naSituacao("sem-cadastro").length },
   ];
   const atalhos: { valor: Exclude<Atencao, "">; texto: string; n: number }[] = ([
     { valor: "sem-contato", texto: "Sem contato confirmado", n: dados.resumo.semContato },
@@ -217,23 +252,48 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
   const resolvido = atencao === "sem-contato" ? "Todas as unidades têm contato confirmado"
     : atencao === "sem-proprietario" ? "Toda unidade com inquilino tem o proprietário no cadastro"
       : atencao === "sem-responsavel" ? "Toda unidade com gente cadastrada tem um responsável"
-        : situacao || f.marca ? "Nenhuma unidade nesta situação" : null;
-  const limpar = () => { setSituacao(""); setAtencao(""); setF(SEM_FILTROS); setTexto(""); };
+        : situacao || f.marca || etiqueta ? "Nenhuma unidade nesta situação" : null;
+  const limpar = () => { setSituacao(""); setAtencao(""); setF(SEM_FILTROS); setTexto(""); setEtiqueta(""); };
+  const escolherEtiqueta = (e: EtiquetaUnidade) => { setEtiqueta(e); setTexto(""); setSugerindo(false); };
 
   return (
     <div className="grid gap-4">
       <div className="flex items-center gap-3">
-        <form role="search" aria-label="Buscar unidades" className="busca min-w-0 flex-1 md:max-w-[520px]" onSubmit={(e) => e.preventDefault()}>
+        <form role="search" aria-label="Buscar unidades" className="busca relative min-w-0 flex-1 md:max-w-[520px]"
+          onSubmit={(e) => { e.preventDefault(); if (sugerindo && texto.trim() && sugestoes.length === 1) escolherEtiqueta(sugestoes[0]!); }}
+          onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSugerindo(false); }}>
           <Icone nome="busca" />
+          {etiqueta ? (
+            <Chip acento aoTirar={() => setEtiqueta("")} rotuloTirar={`Tirar a etiqueta ${ETIQUETAS_UNIDADE[etiqueta].nome}`} className="shrink-0">
+              <Icone nome="etiqueta" className="h-4 w-4" />{ETIQUETAS_UNIDADE[etiqueta].nome}
+            </Chip>
+          ) : null}
           <label htmlFor="u-busca" className="sr-only">Buscar unidade</label>
-          <input id="u-busca" className="campo" type="search" placeholder="Buscar por unidade, nome, telefone ou placa" maxLength={60} value={texto}
-            onChange={(e) => setTexto(e.target.value)} aria-describedby="u-busca-ajuda" />
+          <input id="u-busca" className="campo" type="search" placeholder={etiqueta ? "Buscar nestas unidades" : "Buscar por unidade, nome, telefone, placa ou etiqueta"} maxLength={60} value={texto}
+            onChange={(e) => { setTexto(e.target.value); setSugerindo(true); }} onFocus={() => setSugerindo(true)}
+            onKeyDown={(e) => { if (e.key === "Escape") setSugerindo(false); if (e.key === "Backspace" && !texto && etiqueta) setEtiqueta(""); }}
+            aria-describedby="u-busca-ajuda" />
+          {sugerindo && !etiqueta && sugestoes.length ? (
+            <div id="u-etiquetas" role="group" aria-label="Buscar por etiqueta" className="menu-pessoa left-0 right-auto w-full">
+              <span className="px-2 pb-1 t-rotulo">Buscar por etiqueta</span>
+              {sugestoes.map((e) => {
+                const n = comEtiqueta(e);
+                return (
+                  <button key={e} type="button" disabled={n === 0} onClick={() => escolherEtiqueta(e)}
+                    className={classeBotao("discreto", "!h-auto min-h-11 justify-between py-2 disabled:text-tinta-suave disabled:opacity-60")}>
+                    <span className="flex items-center gap-2"><Icone nome="etiqueta" className="h-4.5 w-4.5 text-tinta-suave" />{ETIQUETAS_UNIDADE[e].nome}</span>
+                    <span className="t-apoio font-normal">{plural(n, "unidade", "unidades")}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
         </form>
         <Botao variante="contorno" className="max-md:w-11 max-md:px-0" onClick={() => setFiltrando(true)}>
           <Icone nome="filtro" /><span className="max-md:sr-only">Filtros{escolhidos.length ? ` · ${escolhidos.length}` : ""}</span>
         </Botao>
       </div>
-      <p id="u-busca-ajuda" className="sr-only">A placa acha com ou sem hífen, em maiúsculas ou minúsculas.</p>
+      <p id="u-busca-ajuda" className="sr-only">A placa acha com ou sem hífen, em maiúsculas ou minúsculas. Ao escrever, aparecem as etiquetas, como Com pet e À venda.</p>
       {escolhidos.length || buscou || busca.buscando || busca.falha ? (
         <div className="flex flex-wrap items-center gap-2">
           {escolhidos.map((e) => <Chip key={e.texto} aoTirar={e.tirar} rotuloTirar={`Tirar o filtro ${e.texto}`}>{e.texto}</Chip>)}
@@ -273,7 +333,7 @@ export function AbaUnidades({ dados, filtroInicial, aoMudarBloco, aoIncluir, aoO
           <div className="md:p-5">
             {buscou ? <Vazio titulo="Nenhuma unidade encontrada" icone="busca">Confira o que foi escrito ou busque por outra coisa: unidade, nome, telefone ou placa.</Vazio>
               : <Vazio titulo={resolvido ?? "Nenhuma unidade aqui"} icone={resolvido ? "check" : "predio"}
-                  acao={situacao || atencao || escolhidos.length ? <Botao variante="contorno" onClick={limpar}>Limpar filtros</Botao> : undefined}>
+                  acao={situacao || atencao || escolhidos.length || etiqueta ? <Botao variante="contorno" onClick={limpar}>Limpar filtros</Botao> : undefined}>
                   {resolvido ? "Nada a fazer por enquanto." : "Inclua unidades em Montar o prédio, Novas unidades."}
                 </Vazio>}
           </div>

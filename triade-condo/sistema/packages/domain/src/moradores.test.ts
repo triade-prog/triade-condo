@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { descreverEvento } from "./eventos.ts";
 import {
+  alterarContatoSchema,
+  aniversarioSchema,
+  buscaAniversariantesSchema,
+  buscaHistoricoSchema,
+  diasDoMes,
+  ETIQUETAS_UNIDADE,
+  etiquetasDoTexto,
+  familiarSchema,
+  mostrarAniversario,
+  petSchema,
+  retirarFamiliaPetSchema,
+  temEtiqueta,
+  type EtiquetaUnidade,
   alterarVinculoUnidadeSchema,
   chaveAndar,
   chaveUnidade,
@@ -150,5 +163,37 @@ describe("moradores e unidades (passo 3)", () => {
       .toBe("Unidade marcada à venda e para alugar");
     expect(descreverEvento({ acao: "unidade.situacao_mudou", entidade: "unidade", dados: { aVenda: false, paraAlugar: false } }))
       .toBe("Unidade sem marca de venda ou aluguel");
+  });
+
+  it("F3.9: aniversário só com dia e mês, e o dia precisa existir no mês", () => {
+    expect(aniversarioSchema.safeParse({ dia: 29, mes: 2 }).success).toBe(true);
+    expect(aniversarioSchema.safeParse({ dia: 31, mes: 4 }).success).toBe(false);
+    expect(aniversarioSchema.safeParse({ dia: 0, mes: 1 }).success).toBe(false);
+    expect(diasDoMes(2)).toBe(29);
+    expect(diasDoMes(11)).toBe(30);
+    expect(mostrarAniversario({ dia: 3, mes: 11 })).toBe("03/11");
+    expect(alterarContatoSchema.parse({ versao: 1, nome: "Joana", telefone: "61988887777", aniversario: null }).aniversario).toBeNull();
+    expect(alterarContatoSchema.parse({ versao: 1, nome: "Joana", telefone: "61988887777" }).aniversario).toBeUndefined();
+  });
+
+  it("F3.9: familiar e pet, e retirar por saída ou engano", () => {
+    expect(familiarSchema.parse({ unidadeId: "8f7c1c3e-6c1a-4d8b-9a0e-2f1b3c4d5e6f", nome: "Lucas", parentesco: "FILHO" })).toMatchObject({ mora: true, aniversario: null, versao: null });
+    expect(familiarSchema.safeParse({ nome: "Lucas", parentesco: "PRIMO" }).success).toBe(false);
+    expect(petSchema.parse({ nome: "Thor", especie: "CAO", raca: "", observacao: "" })).toMatchObject({ porte: null, raca: null, observacao: null });
+    expect(petSchema.safeParse({ nome: "Thor", especie: "PEIXE" }).success).toBe(false);
+    expect(retirarFamiliaPetSchema.safeParse({ versao: 1, motivo: "ENGANO" }).success).toBe(true);
+    expect(retirarFamiliaPetSchema.safeParse({ versao: 1, motivo: "SUMIU" }).success).toBe(false);
+    expect(descreverEvento({ acao: "unidade.pet_apagado", entidade: "unidade", dados: {} })).toBe("Pet retirado (cadastrado por engano)");
+  });
+
+  it("F3.10: etiquetas da busca, sem acento, e o que cada unidade tem", () => {
+    expect(etiquetasDoTexto("pet")).toEqual(["COM_PET"]);
+    expect(etiquetasDoTexto("ANIVERSÁ")).toEqual(["ANIVERSARIO"]);
+    expect(etiquetasDoTexto("a venda")).toEqual(["A_VENDA"]);
+    expect(etiquetasDoTexto("x")).toEqual([]);
+    const u = { pendentes: 1, pets: 2, aniversariantesMes: 0, aVenda: false, paraAlugar: true, semResponsavel: false };
+    expect((Object.keys(ETIQUETAS_UNIDADE) as EtiquetaUnidade[]).filter((e) => temEtiqueta(u, e))).toEqual(["PARA_ALUGAR", "A_CONFIRMAR", "COM_PET"]);
+    expect(buscaHistoricoSchema.safeParse({ categoria: "FAMILIA_PETS", antes: "120" }).data).toEqual({ categoria: "FAMILIA_PETS", antes: 120 });
+    expect(buscaAniversariantesSchema.safeParse({ mes: "13" }).success).toBe(false);
   });
 });
