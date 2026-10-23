@@ -615,7 +615,7 @@ b.prot, .prot { white-space: nowrap; }
 
 /* Títulos com traço mais fino (pedido da Carolina em 23/10/2026) */
 .titulo-g, h2.titulo-g { font-weight: 600; letter-spacing: -0.035em; }
-.hero2 h1 { font-weight: 700; }
+.hero2 h1 { font-weight: 500; letter-spacing: -0.04em; }
 
 /* Grupo × TRÍADE: dois cartões do mesmo tamanho, conversas com o fundo do WhatsApp e uma seta no meio */
 .versus { grid-template-columns: minmax(0, 1fr) 56px minmax(0, 1fr); gap: 0; align-items: stretch; }

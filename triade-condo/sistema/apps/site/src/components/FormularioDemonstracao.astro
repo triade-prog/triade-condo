@@ -8,7 +8,6 @@ const temWhatsapp = linkWhatsapp() !== null;
 
   <form id="form-demonstracao" method="post" action="/api/demonstracao" novalidate aria-describedby="promessa">
     <div class="pilha" style="--gap:18px">
-      <p class="suave" style="font-size:13px">Os campos com <span class="obrigatorio" aria-hidden="true">*</span><span class="so-leitor">asterisco</span> são obrigatórios.</p>
       <div class="campo">
         <label for="nome">Seu nome <span class="obrigatorio" aria-hidden="true">*</span></label>
         <input id="nome" name="nome" required maxlength="80" autocomplete="name" placeholder="Como quer ser chamado" aria-describedby="erro-nome" />
@@ -33,6 +32,7 @@ const temWhatsapp = linkWhatsapp() !== null;
         <span class="erro-campo" id="erro-unidades"></span>
       </div>
       <div class="campo">
+        <p class="suave" style="font-size:13px;margin:0 0 4px">Os campos com <span class="obrigatorio" aria-hidden="true">*</span><span class="so-leitor">asterisco</span> são obrigatórios.</p>
         <label class="consentimento"><input type="checkbox" name="consentimento" id="consentimento" required aria-describedby="erro-consentimento" /><span>Autorizo o uso destes dados só para responder a este pedido, como diz a <a href="/privacidade">política de privacidade</a>. Nada de lista de e-mails. <span class="obrigatorio" aria-hidden="true">*</span></span></label>
         <span class="erro-campo" id="erro-consentimento"></span>
       </div>
