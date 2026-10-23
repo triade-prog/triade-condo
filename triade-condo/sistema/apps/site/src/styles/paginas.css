@@ -525,22 +525,14 @@ b.prot, .prot { white-space: nowrap; }
 }
 
 /* Mais vida (pedido da Carolina em 23/10/2026): entrada das seções, prédio e pirâmide flutuando,
-   faixa que corre, o símbolo que se monta e imagens nos topos. Tudo parado para quem pede menos movimento. */
+   o símbolo que se monta e imagens nos topos. Tudo parado para quem pede menos movimento. */
 @media (prefers-reduced-motion: no-preference) {
   .revela { opacity: 0; transform: translateY(28px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
   .revela.visivel { opacity: 1; transform: none; }
   .palco-predio img.predio, .flutuando { animation: flutua 7s ease-in-out infinite; }
-  .esteira ul { animation: corre 38s linear infinite; }
-  .esteira:hover ul { animation-play-state: paused; }
 }
 @keyframes flutua { 0%, 100% { translate: 0 0; } 50% { translate: 0 -10px; } }
-@keyframes corre { to { transform: translateX(-100%); } }
 
-.esteira { display: flex; overflow: hidden; border-block: 1px solid #dccdf6; background: #ffffff80; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
-.esteira ul { display: flex; flex: 0 0 auto; gap: 0; margin: 0; padding: 0; list-style: none; }
-.esteira li { display: inline-flex; align-items: center; gap: 14px; padding: 14px 0 14px 28px; font-weight: 700; font-size: 15px; white-space: nowrap; color: var(--tinta); }
-.esteira li::before { content: ""; width: 9px; height: 9px; transform: rotate(45deg); background: var(--grad-barra); border-radius: 2px; }
-@media (prefers-reduced-motion: reduce) { .esteira { flex-wrap: wrap; -webkit-mask-image: none; mask-image: none; } .esteira ul { flex-wrap: wrap; } .esteira ul[aria-hidden] { display: none; } }
 
 .pag-topo.com-imagem { overflow: hidden; }
 .pag-topo.com-imagem .wrap { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: center; gap: 32px; }
