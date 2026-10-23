@@ -3,14 +3,16 @@
 // 23/10/2026): a conversa vem primeiro, em bolhas, com a resposta embaixo, como o chamado da
 // Plataforma; a nota interna, que o cliente nunca vê, fica no trilho da resposta. Situação, Com
 // quem e Assumir vão para o cartão Atendimento, ao lado (no celular, fechado no alto). Do
-// chamado dá para pedir o acesso excepcional (PI-11).
+// chamado dá para pedir o acesso excepcional (PI-11). O chamado de mudança (0286, decisão C.1)
+// mostra antes do Atendimento o cartão "Mudança pedida", com a parte, o valor de hoje e o caminho
+// para a Configuração do cliente, onde a mudança é feita.
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
-import { AREAS_CHAMADO, formatarData, formatarDataHora, SITUACOES_CHAMADO, TIPOS_CHAMADO } from "@triade/domain";
+import { AREAS_CHAMADO, formatarData, formatarDataHora, nomeDaParte, SITUACOES_CHAMADO, TIPOS_CHAMADO } from "@triade/domain";
 import {
-  Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, Carregando, chamarApi, ErroCarregar, Icone, textoDoErro, type ErroApi,
+  Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, textoDoErro, type ErroApi,
 } from "@triade/ui";
 import { Cartao, diaHora, useCelular, Voltar } from "../comum.tsx";
 import { useCarregar, useSessao } from "../sessao.tsx";
@@ -126,11 +128,25 @@ export function ChamadoConsole() {
     </div>
   );
 
+  const mudanca = c.tipo === "MUDANCA" && c.parte ? (
+    <Cartao id="t-mudanca-pedida" titulo="Mudança pedida" icone="trocar">
+      <dl className="grid gap-2 text-sm">
+        <div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3"><dt className="text-tinta-suave">Parte</dt><dd>{nomeDaParte(c.parte)}</dd></div>
+        <div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3"><dt className="text-tinta-suave">Hoje</dt><dd>{c.hoje}</dd></div>
+        <div className="grid grid-cols-[7rem_minmax(0,1fr)] gap-3"><dt className="text-tinta-suave">Pedida por</dt><dd>{c.abertoPor}</dd></div>
+      </dl>
+      <Link href={`/clientes/${condominio}?aba=configuracao`} className={classeBotao("contorno", "justify-self-start max-md:justify-self-stretch", "m")}>
+        <Icone nome="ajuste" />Abrir a Configuração do cliente
+      </Link>
+      <p className="text-xs text-tinta-suave">Mudar com o cliente ativo pede motivo e avisa o síndico. Depois, responda e marque resolvido.</p>
+    </Cartao>
+  ) : null;
+
   return (
     <div className="grid gap-5">
       <Voltar href="/chamados" texto="Voltar aos chamados" />
       <header className="flex items-start gap-4">
-        <span className="ladrilho h-12 w-12 shrink-0 rounded-[14px] max-md:hidden" data-tom={c.situacao === "NOVO" ? "atencao" : "violeta"} aria-hidden="true"><Icone nome="balao" className="h-6 w-6" /></span>
+        <span className="ladrilho h-12 w-12 shrink-0 rounded-[14px] max-md:hidden" data-tom={c.situacao === "NOVO" ? "atencao" : "violeta"} aria-hidden="true"><Icone nome={c.tipo === "MUDANCA" ? "trocar" : "balao"} className="h-6 w-6" /></span>
         <div className="grid min-w-0 gap-2">
           <p className="flex flex-wrap gap-1.5">
             <span className="selo" data-tom={TOM_CHAMADO[c.situacao]}>{SITUACOES_CHAMADO[c.situacao]}</span>
@@ -147,6 +163,7 @@ export function ChamadoConsole() {
       {recado ? <Aviso tom="ok" papel="status">{recado}</Aviso> : null}
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={carga.recarregar} /> : null}
 
+      {celular ? mudanca : null}
       {celular ? (
         <details className="group rounded-[18px] border border-linha bg-superficie shadow-s1">
           <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-4 py-3">
@@ -188,7 +205,10 @@ export function ChamadoConsole() {
           <p className="text-xs text-tinta-suave">Resolvido volta a abrir se o cliente responder em até 7 dias; depois disso, abre-se outro.</p>
         </Cartao>
         {celular ? null : (
-          <Cartao id="t-atendimento" titulo="Atendimento" icone="pessoa" className="lg:sticky lg:top-24">{atendimento}</Cartao>
+          <div className="grid gap-6 lg:sticky lg:top-24">
+            {mudanca}
+            <Cartao id="t-atendimento" titulo="Atendimento" icone="pessoa">{atendimento}</Cartao>
+          </div>
         )}
       </div>
       {pedindo ? (

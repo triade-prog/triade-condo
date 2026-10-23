@@ -16,7 +16,7 @@ import { naBase, useAmbiente } from "./contexto.tsx";
 /** Janela dos pedidos parecidos (F7.4, AT-18): muda só as sugestões; o que já foi ligado não muda. Ajuste da TRÍADE (CF-09). */
 export function Parecidos({ config, tecnica, recarregar, salvo, dias }: PropsAba & { dias: number }) {
   return (
-    <AjusteTecnico id="parecidos" titulo="Pedidos parecidos" parte="Janela dos parecidos" atual={String(dias)} tecnica={tecnica} recarregar={recarregar}
+    <AjusteTecnico id="parecidos" titulo="Pedidos parecidos" parte="Janela dos parecidos" mudanca="PARECIDOS" atual={String(dias)} tecnica={tecnica} recarregar={recarregar}
       opcoes={JANELAS_PARECIDOS.map((n) => ({ valor: String(n), texto: `${n} dias` }))}
       ajuda="Sugere como parecidos os pedidos da mesma categoria e do mesmo local desta janela para trás. O mesmo local vale pelo texto do campo Local, sem diferença de maiúscula e espaço (o local da etiqueta QR entra assim), ou pela mesma unidade. Muda só as sugestões; o que já foi ligado não muda."
       salvar={(v, motivo) => chamarApi(naBase("/regras-parecidos"), { metodo: "PUT", corpo: { versao: config.versao, dias: Number(v), motivo } })}

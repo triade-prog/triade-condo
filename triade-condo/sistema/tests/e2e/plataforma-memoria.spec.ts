@@ -160,7 +160,7 @@ test.describe("Documentos e memória", () => {
     await instalarApiPlataformaFalsa(page);
     await abrir(page, "linha");
     await expect(page.getByRole("link", { name: "Manutenção concluída: troca da bomba de recalque" })).toBeVisible();
-    await expect(page.getByText("Ana Souza assume como síndico")).toBeVisible();
+    await expect(page.getByText("Ana Souza assume a sindicatura")).toBeVisible();
     await conferir(page);
     await page.getByRole("button", { name: "Filtros" }).click();
     const f = page.getByRole("dialog", { name: "Filtros" });
@@ -169,7 +169,7 @@ test.describe("Documentos e memória", () => {
     await f.getByRole("button", { name: "Mostrar" }).click();
     await expect(page.getByText("Mostrando: Anotado")).toBeVisible();
     await expect(page).toHaveURL(/filtro=ANOTADO/);
-    await expect(page.getByText("Ana Souza assume como síndico")).toHaveCount(0);
+    await expect(page.getByText("Ana Souza assume a sindicatura")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Anotar na memória" }).click();
     const j = page.getByRole("dialog", { name: "Anotar na memória" });

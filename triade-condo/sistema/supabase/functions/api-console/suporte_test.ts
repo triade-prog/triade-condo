@@ -148,7 +148,9 @@ Deno.test("PI-20: fila com filtro conhecido; imagem por link curto", async () =>
 });
 
 Deno.test("as listas da peça R4 no domínio são as mesmas do banco", async () => {
-  const migration = await Deno.readTextFile(new URL("../../migrations/0190_implantacao_suporte.sql", import.meta.url));
+  // O tipo MUDANCA e as partes vêm da 0286 (Pedir mudança à TRÍADE).
+  const migration = await Deno.readTextFile(new URL("../../migrations/0190_implantacao_suporte.sql", import.meta.url)) +
+    await Deno.readTextFile(new URL("../../migrations/0286_pedir_mudanca.sql", import.meta.url));
   for (const lista of [AREAS_CHAMADO, AREAS_EXCEPCIONAIS, CANAIS_SUPORTE, SITUACOES_CHAMADO, TIPOS_CHAMADO, TIPOS_SUPORTE_ACESSO]) {
     for (const k of Object.keys(lista)) assert(migration.includes(`'${k}'`), k);
   }

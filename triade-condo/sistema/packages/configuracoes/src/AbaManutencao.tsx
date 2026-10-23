@@ -38,7 +38,7 @@ export function AbaManutencao({ salvo, tecnica }: PropsAba) {
         {tecnica.pode ? <Botao variante="contorno" tamanho="m" onClick={() => setEdicao({ item: null })}><Icone nome="mais" />Nova etapa</Botao> : null}
       </div>
       {tecnica.pode ? null : (
-        <FaixaTriade porque="As etapas organizam o acompanhamento da manutenção" parte="Etapas da manutenção"
+        <FaixaTriade porque="As etapas organizam o acompanhamento da manutenção" parte="ETAPAS_MANUTENCAO"
           valor={etapasAtivas(etapas)} />
       )}
       <p className="text-sm text-tinta-suave">As situações são fixas. As etapas dizem onde a manutenção está dentro delas, como &ldquo;Aguardando visita&rdquo; ou &ldquo;Aguardando orçamento&rdquo;. Nenhuma é obrigatória.</p>

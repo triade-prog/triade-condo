@@ -6,6 +6,7 @@ const CAROLINA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
 const DIEGO = "9e0f1a2b-3c4d-4e5f-8a6b-7c8d9e0f1a2b";
 const BRUNA = "2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d";
 export const CHAMADO = "5d6e7f8a-9b0c-4d1e-8f2a-3b4c5d6e7f8a";
+export const CHAMADO_MUDANCA = "7f8a9b0c-1d2e-4f3a-8b4c-5d6e7f8a9b0c";
 export const PEDIDO_ACESSO = "6e7f8a9b-0c1d-4e2f-9a3b-4c5d6e7f8a9b";
 const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 
@@ -55,6 +56,12 @@ export function criarSuporteConsole() {
       responsavel: undefined as string | undefined,
       mensagens: [{ id: novoId(), lado: "CLIENTE", interna: false, autor: "Bruna Alves", texto: "Escolho Limpeza e a lista fica vazia.", criadoEm: agora() }],
     },
+    // Pedido de mudança (0286): só entra na fila quando o teste liga.
+    mudanca: null as null | {
+      id: string; condominioId: string; condominio: string; numero: number; tipo: string; area: string; titulo: string; situacao: string; abertoPor: string;
+      imagens: number; atualizadoEm: string; versao: number; parte: string; hoje: string; responsavelId?: string; responsavel?: string;
+      mensagens: { id: string; lado: string; interna: boolean; autor: string; texto: string; criadoEm: string }[];
+    },
     acessos: [] as { id: string; pedidoPor: string; motivo: string; areas: string[]; horas: number; situacao: string; validoAte?: string; leituras: number; criadoEm: string; meu: boolean }[],
   };
 }
@@ -94,7 +101,9 @@ export async function rotasSuporteConsole(route: Route, est: EstadoSuporteConsol
     const f = url.searchParams.get("filtro") ?? "ABERTOS";
     const c = est.chamado;
     const entra = f === "TODOS" || (f === "ABERTOS" ? ["NOVO", "ANDAMENTO"].includes(c.situacao) : f === "RESOLVIDOS" ? c.situacao === "RESOLVIDO" : c.situacao === f);
-    return route.fulfill({ json: { chamados: entra ? [{ ...c, ultima: { lado: c.mensagens.at(-1)!.lado, autor: c.mensagens.at(-1)!.autor, em: c.mensagens.at(-1)!.criadoEm } }] : [] } });
+    const ultima = (x: { mensagens: { lado: string; autor: string; criadoEm: string }[] }) => ({ lado: x.mensagens.at(-1)!.lado, autor: x.mensagens.at(-1)!.autor, em: x.mensagens.at(-1)!.criadoEm });
+    const mudanca = est.mudanca && f === "TODOS" ? [{ ...est.mudanca, ultima: ultima(est.mudanca) }] : [];
+    return route.fulfill({ json: { chamados: [...mudanca, ...(entra ? [{ ...c, ultima: ultima(c) }] : [])] } });
   }
   if (!cliente) return null;
   const resto = caminho.slice(`/v1/clientes/${cliente.id}`.length);
@@ -180,6 +189,9 @@ export async function rotasSuporteConsole(route: Route, est: EstadoSuporteConsol
     if (!a) return erro(route, 403, "FORBIDDEN");
     a.leituras++;
     return route.fulfill({ json: { area: ex[1]!.toUpperCase(), validoAte: a.validoAte, dados: { itens: [{ id: "1", protocolo: "2026-0007", assunto: "Limpeza do hall", estado: "ABERTO" }] } } });
+  }
+  if (resto === `/chamados/${CHAMADO_MUDANCA}` && metodo === "GET" && est.mudanca) {
+    return route.fulfill({ json: { ...est.mudanca, arquivos: [], equipe, pode: { responder: true, notaInterna: true, atualizar: true, pedirAcesso: true } } });
   }
   if (resto === `/chamados/${CHAMADO}` && metodo === "GET") {
     const c = est.chamado;

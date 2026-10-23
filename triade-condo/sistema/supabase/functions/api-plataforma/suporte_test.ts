@@ -47,6 +47,8 @@ function montar() {
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2 }),
     plataforma_chamados: () => ({ itens: [], todos: true }),
     plataforma_abrir_chamado: () => ({ id: CHAMADO, numero: 1 }),
+    plataforma_pedir_mudanca: () => ({ id: CHAMADO, numero: 3 }),
+    plataforma_mudancas_pedidas: () => [{ parte: "FUSO", id: CHAMADO, numero: 3, situacao: "NOVO", abertoPor: "Ana", ver: true }],
     plataforma_chamado: () => ({ id: CHAMADO, mensagens: [] }),
     plataforma_responder_chamado: () => ({ reaberto: false }),
     plataforma_resolver_chamado: () => ({ situacao: "RESOLVIDO" }),
@@ -86,6 +88,24 @@ Deno.test("PI-20: chamado pede sessão, tipo e área; o condomínio vem da sess�
   assertEquals((await m.pedir(`/v1/condominio/chamados/${CHAMADO}/responder`, { cookie, corpo: { texto: "Voltou." } })).status, 201);
   assertEquals((await m.pedir(`/v1/condominio/chamados/${CHAMADO}/resolver`, { cookie, corpo: {} })).status, 200);
   assertEquals((await m.pedir("/v1/condominio/chamados/nao-e-id", { cookie })).status, 404);
+});
+
+Deno.test("PI-04: Pedir mudança leva a parte e o valor de hoje; o título sai do nome da parte", async () => {
+  const m = montar();
+  assertEquals((await m.pedir("/v1/condominio/chamados/mudancas")).status, 401);
+  const cookie = await entrar(m);
+  const base = { parte: "FUSO", hoje: "Horário de Brasília", texto: "Mudar para o horário de Manaus." };
+  assertEquals((await erro(await m.pedir("/v1/condominio/chamados", { cookie, corpo: { tipo: "MUDANCA", area: "CONFIGURACOES", titulo: "Mudar", texto: "Manaus" } }))).codigo,
+    "VALIDATION_ERROR");
+  assertEquals((await erro(await m.pedir("/v1/condominio/chamados/mudanca", { cookie, corpo: { ...base, parte: "COR" } }))).codigo, "VALIDATION_ERROR");
+  assertEquals((await m.pedir("/v1/condominio/chamados/mudanca", { cookie, corpo: base })).status, 201);
+  assertEquals(chamada(m, "plataforma_pedir_mudanca"), {
+    p_pessoa: ANA, p_condominio: AURORA, p_parte: "FUSO", p_titulo: "Mudar: Fuso do condomínio", p_hoje: "Horário de Brasília",
+    p_texto: "Mudar para o horário de Manaus.",
+  });
+  const lista = await (await m.pedir("/v1/condominio/chamados/mudancas", { cookie })).json();
+  assertEquals(lista.itens[0].parte, "FUSO");
+  assertEquals(chamada(m, "plataforma_mudancas_pedidas"), { p_pessoa: ANA, p_condominio: AURORA });
 });
 
 Deno.test("PT-07: a imagem do chamado perde o texto escondido antes de liberar", async () => {

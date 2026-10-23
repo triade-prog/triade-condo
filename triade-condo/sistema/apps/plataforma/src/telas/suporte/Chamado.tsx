@@ -2,11 +2,14 @@
 // O chamado de suporte (DC15, telas-modelo suporte-chamado-*; PI-20; decisão C.1 de 23/10/2026): a
 // conversa em bolhas, como a do WhatsApp (o condomínio à direita, a TRÍADE à esquerda), a faixa
 // quando a TRÍADE espera a resposta, Resolveu como botão principal e, embaixo, a caixa de resposta
-// com o modelo de anexar. Resolvido há até 7 dias reabre ao responder.
+// com o modelo de anexar. Resolvido há até 7 dias reabre ao responder. O chamado de mudança (0286)
+// troca os dados do chamado pelo cartão "Mudança pedida", com a parte, o valor de hoje e o caminho
+// para a Configuração; nele, Resolveu fica com borda, porque quem resolve é a TRÍADE.
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
-import { AREAS_CHAMADO, DIAS_REABRIR_CHAMADO, formatarDataHora, TIPOS_CHAMADO } from "@triade/domain";
+import { AREAS_CHAMADO, DIAS_REABRIR_CHAMADO, formatarDataHora, nomeDaParte, PARTES_MUDANCA, TIPOS_CHAMADO } from "@triade/domain";
+import { PAGINAS_CONFIGURACAO } from "@triade/configuracoes";
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, camposComErro, Carregando, chamarApi, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
 import { Cartao, Dado } from "../Ficha.tsx";
 import { useCarregar } from "../sessao.tsx";
@@ -68,7 +71,10 @@ export function Chamado({ id, falhouImagem }: { id: string; falhouImagem: boolea
   }
 
   const ultimaTriade = [...c.mensagens].reverse().find((m) => m.lado === "TRIADE");
-  const resolveu = c.pode.resolver ? <Botao onClick={() => void resolver()}><Icone nome="check" />Resolveu</Botao> : null;
+  const mudanca = c.tipo === "MUDANCA" && c.parte ? c.parte : null;
+  const pagina = mudanca ? (PARTES_MUDANCA as Record<string, { pagina: keyof typeof PAGINAS_CONFIGURACAO }>)[mudanca]?.pagina : undefined;
+  const resolveu = c.pode.resolver
+    ? <Botao variante={mudanca ? "contorno" : "primario"} onClick={() => void resolver()}><Icone nome="check" />Resolveu</Botao> : null;
   const agora = new Date().toISOString();
 
   return (
@@ -133,6 +139,21 @@ export function Chamado({ id, falhouImagem }: { id: string; falhouImagem: boolea
             <Aviso tom="neutro">Este chamado foi resolvido há mais de {DIAS_REABRIR_CHAMADO} dias. Se o problema voltou, abra outro chamado.</Aviso>
           )}
         </Cartao>
+        {mudanca ? (
+          <Cartao id="t-mudanca-pedida" titulo="Mudança pedida" icone="trocar">
+            <div>
+              <Dado icone="ajuste" nome="Parte">{nomeDaParte(mudanca)}</Dado>
+              <Dado icone="relogio" nome="Como está hoje">{c.hoje}</Dado>
+              <Dado icone="pessoa" nome="Pedida por">{c.abertoPor}</Dado>
+              {c.resolvidoEm ? <Dado icone="check" nome="Resolvido em">{formatarDataHora(c.resolvidoEm)}</Dado> : null}
+            </div>
+            {pagina ? (
+              <Link href={`/configuracoes/${pagina}`} className="inline-flex items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
+                Ver em Configurações › {PAGINAS_CONFIGURACAO[pagina].nome}<Icone nome="dir" className="h-4 w-4" />
+              </Link>
+            ) : null}
+          </Cartao>
+        ) : (
         <Cartao id="t-dados-chamado" titulo="Dados do chamado" icone="lista">
           <div>
             <Dado icone={ICONE_TIPO[c.tipo] ?? "balao"} nome="Tipo">{TIPOS_CHAMADO[c.tipo]}</Dado>
@@ -142,11 +163,12 @@ export function Chamado({ id, falhouImagem }: { id: string; falhouImagem: boolea
             {c.resolvidoEm ? <Dado icone="check" nome="Resolvido em">{formatarDataHora(c.resolvidoEm)}</Dado> : null}
           </div>
         </Cartao>
+        )}
       </div>
 
       {resolveu ? (
         <div className="fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-20 grid border-t border-linha bg-superficie/95 px-4 py-3 md:hidden">
-          <Botao className="w-full" onClick={() => void resolver()}><Icone nome="check" />Resolveu</Botao>
+          <Botao className="w-full" variante={mudanca ? "contorno" : "primario"} onClick={() => void resolver()}><Icone nome="check" />Resolveu</Botao>
         </div>
       ) : null}
     </div>

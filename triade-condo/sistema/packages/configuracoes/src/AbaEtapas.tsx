@@ -94,7 +94,7 @@ export function AbaEtapas({ config, pode, recarregar, salvo, tecnica, parte }: P
           {tecnica.pode ? <Botao variante="contorno" tamanho="m" onClick={() => setEdicao({ tipo: "etapa", item: null })}><Icone nome="mais" />Nova etapa</Botao> : null}
         </div>
         {tecnica.pode ? null : (
-          <FaixaTriade porque="As etapas mexem no prazo e no histórico" parte="Etapas dos pedidos"
+          <FaixaTriade porque="As etapas mexem no prazo e no histórico" parte="ETAPAS_PEDIDOS"
             valor={etapasAtivas(config.etapas)} />
         )}
         {(Object.keys(SITUACOES_ETAPA) as (keyof typeof SITUACOES_ETAPA)[]).map((sit) => (

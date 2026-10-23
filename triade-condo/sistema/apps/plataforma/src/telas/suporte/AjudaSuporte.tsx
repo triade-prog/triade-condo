@@ -3,14 +3,15 @@
 // PI-20; decisão C.1 de 23/10/2026): os chamados de suporte técnico da plataforma, em abas Abertos
 // e Resolvidos com o número, cada linha inteira abrindo o chamado, e Abrir chamado numa janela,
 // com tipo, área, título, o que aconteceu e até 3 imagens (colar com Ctrl+V ou escolher). Não é
-// reparo do prédio nem emergência. O chamado aberto mora em Chamado.tsx.
+// reparo do prédio nem emergência. O chamado aberto mora em Chamado.tsx. O pedido de mudança
+// (Mudança de configuração, 0286) nasce do "Pedir mudança" das Configurações, e não daqui.
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { AREAS_CHAMADO, DIAS_REABRIR_CHAMADO, formatarDataHora, TIPOS_CHAMADO } from "@triade/domain";
+import { AREAS_CHAMADO, DIAS_REABRIR_CHAMADO, formatarDataHora, TIPOS_ABRIR_CHAMADO, TIPOS_CHAMADO } from "@triade/domain";
 import {
-  AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, textoDoErro, Vazio,
+  Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, textoDoErro, Vazio,
   type ErroApi,
 } from "@triade/ui";
 import { Escolha } from "../moradores/comum.tsx";
@@ -19,15 +20,14 @@ import { Chamado as FichaChamado } from "./Chamado.tsx";
 import { CampoImagens, enviarImagens } from "./imagens.tsx";
 import { ICONE_TIPO, PartesSuporte, SeloChamado, TEXTO_SUPORTE, type Chamado } from "./comum.tsx";
 
-/** Chamado já preenchido, como o "Pedir mudança" das Configurações (PI-04, decisão 11). */
-interface ChamadoInicial { tipo: string; area: string; titulo: string; texto: string }
+type TipoAbrir = (typeof TIPOS_ABRIR_CHAMADO)[number];
 
-function AbrirChamado({ aoFechar, inicial }: { aoFechar: () => void; inicial?: ChamadoInicial }) {
+function AbrirChamado({ aoFechar }: { aoFechar: () => void }) {
   const router = useRouter();
-  const [tipo, setTipo] = useState<keyof typeof TIPOS_CHAMADO>((inicial?.tipo as keyof typeof TIPOS_CHAMADO) ?? "PROBLEMA");
-  const [area, setArea] = useState(inicial?.area ?? "PEDIDOS");
-  const [titulo, setTitulo] = useState(inicial?.titulo ?? "");
-  const [texto, setTexto] = useState(inicial?.texto ?? "");
+  const [tipo, setTipo] = useState<TipoAbrir>("PROBLEMA");
+  const [area, setArea] = useState("PEDIDOS");
+  const [titulo, setTitulo] = useState("");
+  const [texto, setTexto] = useState("");
   const [imagens, setImagens] = useState<File[]>([]);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -54,8 +54,12 @@ function AbrirChamado({ aoFechar, inicial }: { aoFechar: () => void; inicial?: C
         <div className="grid gap-1.5">
           <span className="text-[13px] font-medium">Tipo</span>
           <Escolha rotulo="Tipo do chamado" atual={tipo} aoMudar={setTipo}
-            opcoes={(Object.keys(TIPOS_CHAMADO) as (keyof typeof TIPOS_CHAMADO)[]).map((k) => ({ valor: k, texto: <><Icone nome={ICONE_TIPO[k]} className="h-4 w-4" />{TIPOS_CHAMADO[k]}</> }))} />
+            opcoes={TIPOS_ABRIR_CHAMADO.map((k) => ({ valor: k, texto: <><Icone nome={ICONE_TIPO[k]} className="h-4 w-4" />{TIPOS_CHAMADO[k]}</> }))} />
         </div>
+        <Aviso tom="info" titulo="Quer mudar algo que a TRÍADE configurou?">
+          Use Pedir mudança na própria Configuração: a parte e o valor de hoje já vão juntos.{" "}
+          <Link href="/configuracoes" className="font-medium text-violeta-600 hover:underline">Ir para Configurações</Link>
+        </Aviso>
         <CampoSelecao id="cha-area" rotulo="Onde no sistema" value={area} onChange={(e) => setArea(e.target.value)}
           opcoes={Object.entries(AREAS_CHAMADO).map(([valor, t]) => ({ valor, texto: t }))} />
         <CampoTexto id="cha-titulo" rotulo="Título" required maxLength={120} value={titulo} onChange={(e) => setTitulo(e.target.value)}
@@ -82,13 +86,7 @@ function ultimaResposta(c: Chamado): string {
 export function AjudaSuporte() {
   const busca = useSearchParams();
   const id = busca.get("id");
-  // ?mudar=<parte>&valor=<hoje>: pedido de mudança no que é ajustado pela TRÍADE.
-  const mudar = busca.get("mudar");
-  const inicial: ChamadoInicial | undefined = mudar ? {
-    tipo: "SUGESTAO", area: "CONFIGURACOES", titulo: `Mudar: ${mudar}`.slice(0, 120),
-    texto: `Parte ajustada pela TRÍADE: ${mudar}.\nHoje: ${busca.get("valor") ?? ""}.\n\nO que precisamos: `,
-  } : undefined;
-  const [abrindo, setAbrindo] = useState(!!inicial);
+  const [abrindo, setAbrindo] = useState(false);
   const [aba, setAba] = useState<"ABERTOS" | "RESOLVIDOS">("ABERTOS");
   const lista = useCarregar<{ itens: Chamado[]; todos: boolean }>(id ? null : "/v1/condominio/chamados");
 
@@ -165,7 +163,7 @@ export function AjudaSuporte() {
       </section>
 
       <div className="fixed right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] z-20 md:hidden">{abrir}</div>
-      {abrindo ? <AbrirChamado aoFechar={() => setAbrindo(false)} inicial={inicial} /> : null}
+      {abrindo ? <AbrirChamado aoFechar={() => setAbrindo(false)} /> : null}
     </div>
   );
 }

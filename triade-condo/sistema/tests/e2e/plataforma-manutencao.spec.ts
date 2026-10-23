@@ -234,8 +234,9 @@ test.describe("Plataforma do síndico · manutenção", () => {
     await expect(aba.getByRole("button", { name: "Nova etapa" })).toHaveCount(0);
     await expect(aba.getByRole("button", { name: /Editar a etapa/ })).toHaveCount(0);
     await conferir(page);
-    await aba.getByRole("link", { name: "Pedir mudança" }).click();
-    await expect(page.getByLabel("Título")).toHaveValue("Mudar: Etapas da manutenção");
-    await expect(page.getByLabel("O que aconteceu")).toHaveValue(/Hoje: 1 etapa ativa\./);
+    await aba.getByRole("button", { name: "Pedir mudança" }).click();
+    const janela = page.getByRole("dialog", { name: "Pedir mudança à TRÍADE" });
+    await expect(janela).toContainText("Etapas da manutenção");
+    await expect(janela).toContainText("1 etapa ativa");
   });
 });

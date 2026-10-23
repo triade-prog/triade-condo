@@ -6,6 +6,7 @@ import { conferir, conteudoEnviado } from "./api-falsa-arquivos";
 
 interface ChamadoFalso {
   id: string; numero: number; tipo: string; area: string; titulo: string; situacao: string; abertoPor: string; criadoEm: string; resolvidoEm?: string;
+  parte?: string; hoje?: string;
   mensagens: { id: string; lado: "CLIENTE" | "TRIADE"; autor: string; texto: string; criadoEm: string }[];
   arquivos: { id: string; nome: string; tipo: string; situacao: string; motivoRecusa?: string }[];
 }
@@ -17,6 +18,12 @@ export interface EstadoSuporte {
   chamados: ChamadoFalso[];
   acessos: AcessoFalso[];
 }
+
+// Os nomes de PARTES_MUDANCA (@triade/domain), para o título do pedido de mudança.
+const PARTES: Record<string, string> = {
+  FUSO: "Fuso do condomínio", PARECIDOS: "Pedidos parecidos", ANEXAR: "Mensagens seguintes do WhatsApp",
+  ETAPAS_PEDIDOS: "Etapas dos pedidos", ETAPAS_MANUTENCAO: "Etapas da manutenção",
+};
 
 let n = 0;
 const novoId = () => `8c9d0e1f-2a3b-4c4d-9e5f-${String(++n).padStart(12, "0")}`;
@@ -59,7 +66,7 @@ export function resumoAcessos(est: EstadoSuporte) {
 
 const resumo = (c: ChamadoFalso) => ({
   id: c.id, numero: c.numero, tipo: c.tipo, area: c.area, titulo: c.titulo, situacao: c.situacao, abertoPor: c.abertoPor, criadoEm: c.criadoEm,
-  imagens: c.arquivos.filter((a) => a.situacao === "LIBERADO").length, resolvidoEm: c.resolvidoEm,
+  imagens: c.arquivos.filter((a) => a.situacao === "LIBERADO").length, resolvidoEm: c.resolvidoEm, parte: c.parte, hoje: c.hoje,
   ultima: c.mensagens.length ? { lado: c.mensagens.at(-1)!.lado, autor: c.mensagens.at(-1)!.autor, em: c.mensagens.at(-1)!.criadoEm } : undefined,
 });
 
@@ -94,6 +101,24 @@ export async function rotasSuporte(route: Route, est: EstadoSuporte, caminho: st
     const c: ChamadoFalso = {
       id: novoId(), numero: est.chamados.length + 1, tipo: String(corpo.tipo), area: String(corpo.area), titulo: String(corpo.titulo).trim(),
       situacao: "NOVO", abertoPor: eu.nome, criadoEm: agora(), arquivos: [],
+      mensagens: [{ id: novoId(), lado: "CLIENTE", autor: eu.nome, texto: String(corpo.texto).trim(), criadoEm: agora() }],
+    };
+    est.chamados.unshift(c);
+    return route.fulfill({ status: 201, json: { id: c.id, numero: c.numero } });
+  }
+  // Pedir mudança (0286): um pedido aberto por parte; o título sai do nome da parte.
+  if (caminho === "/v1/condominio/chamados/mudancas" && metodo === "GET") {
+    return route.fulfill({ json: { itens: est.chamados.filter((c) => c.tipo === "MUDANCA" && c.situacao !== "RESOLVIDO")
+      .map((c) => ({ parte: c.parte, id: c.id, numero: c.numero, situacao: c.situacao, abertoPor: c.abertoPor, ver: true })) } });
+  }
+  if (caminho === "/v1/condominio/chamados/mudanca" && metodo === "POST") {
+    if (String(corpo.texto ?? "").trim().length < 2) return erro(route, 400, "VALIDATION_ERROR", { campos: ["texto"] });
+    const parte = String(corpo.parte);
+    const aberto = est.chamados.find((x) => x.tipo === "MUDANCA" && x.parte === parte && x.situacao !== "RESOLVIDO");
+    if (aberto) return erro(route, 422, "VALIDATION_ERROR", { motivo: "MUDANCA_JA_PEDIDA" });
+    const c: ChamadoFalso = {
+      id: novoId(), numero: est.chamados.length + 1, tipo: "MUDANCA", area: "CONFIGURACOES", titulo: `Mudar: ${PARTES[parte] ?? parte}`,
+      situacao: "NOVO", abertoPor: eu.nome, criadoEm: agora(), arquivos: [], parte, hoje: String(corpo.hoje),
       mensagens: [{ id: novoId(), lado: "CLIENTE", autor: eu.nome, texto: String(corpo.texto).trim(), criadoEm: agora() }],
     };
     est.chamados.unshift(c);

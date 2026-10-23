@@ -7,8 +7,12 @@ import {
   descreverEvento,
   etapaImplantacaoSchema,
   mascararEmail,
+  nomeDaParte,
+  PARTES_MUDANCA,
   pedirAcessoExcepcionalSchema,
+  pedirMudancaSchema,
   rotuloSituacaoChamadoCliente,
+  tituloMudanca,
   trocaSindicoSchema,
 } from "./index.ts";
 
@@ -70,9 +74,24 @@ describe("chamados (PI-17, PI-20)", () => {
     expect(abrirChamadoSchema.safeParse({ tipo: "RECLAMACAO", area: "PEDIDOS", titulo: "Fila", texto: "Some" }).success).toBe(false);
     expect(abrirChamadoSchema.parse({ tipo: "PROBLEMA", area: "PEDIDOS", titulo: " Fila some ", texto: "Some ao filtrar" }).titulo).toBe("Fila some");
   });
+  it("a mudança de configuração nasce só do Pedir mudança (0286)", () => {
+    expect(abrirChamadoSchema.safeParse({ tipo: "MUDANCA", area: "CONFIGURACOES", titulo: "Mudar o fuso", texto: "Manaus" }).success).toBe(false);
+    expect(pedirMudancaSchema.safeParse({ parte: "COR_DO_BOTAO", hoje: "Roxo", texto: "Laranja" }).success).toBe(false);
+    expect(pedirMudancaSchema.safeParse({ parte: "FUSO", hoje: " ", texto: "Manaus" }).success).toBe(false);
+    expect(pedirMudancaSchema.parse({ parte: "FUSO", hoje: " Horário de Brasília ", texto: "Manaus" }).hoje).toBe("Horário de Brasília");
+    expect(tituloMudanca("ETAPAS_PEDIDOS")).toBe("Mudar: Etapas dos pedidos");
+    expect(nomeDaParte("FUSO")).toBe("Fuso do condomínio");
+    expect(nomeDaParte("PARTE_NOVA")).toBe("PARTE_NOVA");
+    expect(Object.values(PARTES_MUDANCA).every((p) => tituloMudanca("FUSO").length <= 120 && p.nome.length < 100)).toBe(true);
+  });
   it("o cliente vê com quem está o chamado", () => {
     expect(rotuloSituacaoChamadoCliente("NOVO")).toBe("Com a TRÍADE");
     expect(rotuloSituacaoChamadoCliente("ESPERANDO_CLIENTE")).toBe("Esperando você");
+  });
+  it("o histórico diz a parte do pedido de mudança", () => {
+    expect(descreverEvento({ acao: "chamado.aberto", entidade: "chamado", dados: { tipo: "MUDANCA", area: "CONFIGURACOES", parte: "FUSO" } })).toBe(
+      "Chamado de suporte aberto · Mudança de configuração · Fuso do condomínio",
+    );
   });
   it("o histórico descreve os eventos novos", () => {
     expect(descreverEvento({ acao: "acesso_excepcional.leitura", entidade: "acesso_excepcional", dados: { area: "PEDIDOS" } })).toBe(

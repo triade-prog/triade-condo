@@ -252,10 +252,10 @@ test.describe("Plataforma · reincidência e decisões", () => {
     await expect(parecidos).toContainText("90 dias");
     await expect(parecidos.getByRole("group", { name: "Janela dos parecidos" })).toHaveCount(0);
     await conferir(page);
-    await parecidos.getByRole("link", { name: "Pedir mudança" }).click();
-    await expect(page.getByLabel("Título")).toHaveValue("Mudar: Pedidos parecidos");
-    await expect(page.getByLabel("O que aconteceu")).toHaveValue(/Hoje: 90 dias\./);
-    await expect(page.getByLabel("Onde no sistema")).toHaveValue("CONFIGURACOES");
+    await parecidos.getByRole("button", { name: "Pedir mudança" }).click();
+    const janela = page.getByRole("dialog", { name: "Pedir mudança à TRÍADE" });
+    await expect(janela).toContainText("Pedidos parecidos");
+    await expect(janela).toContainText("90 dias");
   });
 
   test("TR-01: reincidência no período e decisões aguardando o síndico nos indicadores", async ({ page }) => {
