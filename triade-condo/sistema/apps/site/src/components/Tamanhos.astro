@@ -1,7 +1,10 @@
 ---
-// Soluções por tamanho de condomínio: abas em pílula, cada uma com o que mais pesa naquele porte.
+// Soluções por tamanho de condomínio: abas em pílula, cada uma com o que mais pesa naquele porte
+// e, no cartão, o que muda de fato entre as faixas (preço, franquia e implantação). As funções são as mesmas.
 import Destaque from "./Destaque.astro";
-import { plataforma, tamanhos } from "../dados/vitrine";
+import { tamanhos } from "../dados/vitrine";
+import { faixas, inteiro, reais } from "../dados/oferta";
+const faixaDe = (id: string) => faixas.find((f) => f.id === id) ?? faixas[faixas.length - 1];
 ---
 <section class="wrap secao2 solucoes ancora" id="tamanhos">
   <h2 class="titulo-g" style="max-width:15em">Soluções para todos os <Destaque semTraco>tamanhos</Destaque> de condomínio</h2>
@@ -11,14 +14,16 @@ import { plataforma, tamanhos } from "../dados/vitrine";
   {tamanhos.map((t, i) => (
     <div class:list={["tam", i === 0 && "atual"]} id={`tam-${t.id}`} role="tabpanel" aria-labelledby={`aba-t-${t.id}`}>
       <div>
-        <h3>{t.titulo} <Destaque>{t.destaque}</Destaque></h3>
+        <h3>{t.titulo} <Destaque semTraco>{t.destaque}</Destaque></h3>
         <ul>{t.itens.map((x) => <li><span class="ico-v" aria-hidden="true">✓</span><span>{x}</span></li>)}</ul>
         <a href="/precos" class="botao primario">Explore a solução</a>
       </div>
-      <div class="app-cartao tam-cartao" aria-hidden="true">
-        <span class="pc-h2">Residencial Ipê · {t.nome.toLowerCase()}</span>
-        {plataforma.map((b) => <div class="app-linha"><span>{b.titulo}</span><span class="pil verde">Incluído</span></div>)}
-        <p class="app-meta">Um plano só. O preço muda com o tamanho do prédio.</p>
+      <div class="app-cartao tam-cartao">
+        <span class="pc-h2">O que muda nesta faixa</span>
+        <div class="app-linha"><span>Mensalidade</span><b>{reais(faixaDe(t.id).mensal)} por mês</b></div>
+        <div class="app-linha"><span>Comunicados por WhatsApp no mês</span><b>{inteiro(faixaDe(t.id).franquiaComunicados)}</b></div>
+        <div class="app-linha"><span>Implantação, uma vez</span><b>{reais(faixaDe(t.id).implantacao)}</b></div>
+        <p class="app-meta">{t.id === "mais-200" ? "Valores de 201 a 400 unidades; acima disso, sob consulta. " : ""}As funções são as mesmas em todas as faixas.</p>
       </div>
     </div>
   ))}

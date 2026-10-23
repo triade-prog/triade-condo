@@ -33,8 +33,14 @@ const exemplos: Record<string, { titulo: string; linhas: { titulo: string; detal
   </div>
 </section>
 
+<div class="wrap abas-modulos">
+  <div class="abas2" role="tablist" aria-label="Partes da plataforma">
+    {plataforma.map((bloco, i) => <button type="button" role="tab" id={`aba-m-${bloco.id}`} aria-controls={bloco.id} aria-selected={i === 0 ? "true" : "false"} tabindex={i === 0 ? 0 : -1} data-modulo={bloco.id}>{bloco.titulo}</button>)}
+  </div>
+  <p class="suave" style="font-size:14px;margin-top:8px">Telas com dados ilustrativos.</p>
+</div>
 {plataforma.map((bloco, i) => (
-  <section class:list={["wrap modulo ancora", i % 2 === 1 && "inverte"]} id={bloco.id} aria-labelledby={`titulo-${bloco.id}`}>
+  <section class:list={["wrap modulo ancora", i % 2 === 1 && "inverte", i === 0 && "atual"]} id={bloco.id} aria-labelledby={`titulo-${bloco.id}`}>
     <div>
       <h2 class="rotulo-bloco" id={`titulo-${bloco.id}`}>{bloco.titulo}</h2>
       <ul>{bloco.itens.map((t) => <li><span class="ico-v" aria-hidden="true">✓</span><span><b>{t.titulo}</b><small>{t.texto}</small></span></li>)}</ul>
@@ -58,3 +64,11 @@ const exemplos: Record<string, { titulo: string; linhas: { titulo: string; detal
 ))}
 <FaixaFinal />
 </Base>
+
+<script>
+  // No celular, as quatro partes viram abas (uma à vista por vez); no computador, as abas ficam escondidas e tudo aparece.
+  import { ligarAbas } from "../lib/abas";
+  ligarAbas("[data-modulo]", (b) => b.dataset.modulo ?? "", ".modulo");
+  const alvo = document.querySelector<HTMLElement>(`[data-modulo="${location.hash.slice(1)}"]`);
+  if (alvo) { alvo.click(); document.getElementById(alvo.dataset.modulo ?? "")?.scrollIntoView(); }
+</script>
