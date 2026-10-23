@@ -1,18 +1,21 @@
 ---
-// O único momento de violeta profundo, com a pirâmide do símbolo.
-import { duracaoDemonstracao, linkWhatsapp } from "../dados/empresa";
-interface Props { titulo?: string; texto?: string; }
-const { titulo = "Veja um pedido do início ao fim, no seu prédio", texto = `${duracaoDemonstracao[0].toUpperCase()}${duracaoDemonstracao.slice(1)}, por vídeo ou na reunião do condomínio. Sem compromisso.` } = Astro.props;
-const whatsapp = linkWhatsapp("Olá! Quero conhecer a TRÍADE Condo.");
+// A chamada final no violeta profundo, com o formulário de demonstração dentro dela.
+import Destaque from "./Destaque.astro";
+import FormularioDemonstracao from "./FormularioDemonstracao.astro";
+import { duracaoDemonstracao, promessaRetorno } from "../dados/empresa";
 ---
-<section class="faixa-final">
-  <div class="piramide" aria-hidden="true"><span class="base"></span><i></i><i></i><i></i></div>
-  <div class="wrap secao pilha" style="--gap:18px;position:relative">
-    <h2 style="max-width:620px;font-size:clamp(28px,4vw,46px)">{titulo}</h2>
-    <p style="font-size:18px;max-width:540px">{texto}</p>
-    <div class="linha-flex" style="margin-top:8px">
-      <a href="/demonstracao" class="botao laranja">Agendar demonstração</a>
-      {whatsapp && <a href={whatsapp} class="botao contorno-claro">Falar no WhatsApp</a>}
+<section class="final2 ancora" id="pedir">
+  <span class="cunha-a" aria-hidden="true"></span><span class="cunha-b" aria-hidden="true"></span>
+  <div class="wrap">
+    <div>
+      <h2 class="titulo-g" style="color:#fff;max-width:11em">Veja um pedido do seu prédio <Destaque semTraco>no painel</Destaque></h2>
+      <p class="lead2" style="margin-top:18px">Demonstração de {duracaoDemonstracao}, por vídeo ou na reunião do condomínio. Sem compromisso.</p>
+      <ol>
+        <li><span class="mono-d">1</span>Você manda os quatro dados ao lado.</li>
+        <li><span class="mono-d">2</span>Respondemos pelo WhatsApp {promessaRetorno}.</li>
+        <li><span class="mono-d">3</span>Registramos um pedido real do seu prédio e acompanhamos com você.</li>
+      </ol>
     </div>
+    <FormularioDemonstracao />
   </div>
 </section>

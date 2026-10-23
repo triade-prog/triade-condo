@@ -1,0 +1,49 @@
+---
+// Um pedido, do WhatsApp ao fim. No computador, a cena fica parada ao lado e acompanha o passo
+// que está no meio da tela; no celular, cada passo traz a própria cena logo abaixo do texto.
+import CenaPedido from "./CenaPedido.astro";
+import Destaque from "./Destaque.astro";
+import { passos, protocolo, type Etapa } from "../dados/vitrine";
+interface Props { nivel?: 1 | 2; }
+const { nivel = 2 } = Astro.props;
+const Titulo = nivel === 1 ? "h1" : "h2";
+const etapas: Etapa[] = [1, 2, 3, 4];
+---
+<section class="wrap secao2" id="etapas">
+  <Titulo class="titulo-g" style="max-width:13em">Um pedido, <Destaque>do WhatsApp ao fim</Destaque></Titulo>
+  <p class="lead2" style="margin-top:18px">Role a página: o morador conversa pelo WhatsApp e o síndico acompanha o pedido {protocolo} no painel. <span class="suave" style="font-size:13px">Dados ilustrativos.</span></p>
+  <div class="rolagem">
+    <div class="passos2">
+      {passos.map((p, i) => (
+        <div class="passo2" data-passo={i + 1}>
+          <span class="num">{p.num}</span>
+          <h3>{p.titulo}</h3>
+          <p>{p.texto}</p>
+          <div class="tela-passo"><CenaPedido etapa={etapas[i]} /></div>
+        </div>
+      ))}
+    </div>
+    <div class="palco-fixo palco-cena" data-etapa="1" aria-hidden="true">
+      {etapas.map((e) => <CenaPedido etapa={e} />)}
+    </div>
+  </div>
+</section>
+
+<script>
+  // O painel acompanha o passo que está no meio da tela. Sem IntersectionObserver, todos os passos ficam acesos.
+  const palco = document.querySelector<HTMLElement>(".palco-fixo");
+  const passos = document.querySelectorAll<HTMLElement>(".passo2");
+  if (palco && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver((entradas) => {
+      for (const e of entradas) {
+        if (!e.isIntersecting) continue;
+        passos.forEach((p) => p.classList.toggle("ativo", p === e.target));
+        palco.dataset.etapa = (e.target as HTMLElement).dataset.passo;
+      }
+    }, { rootMargin: "-45% 0px -45% 0px" });
+    passos.forEach((p) => io.observe(p));
+    passos[0]?.classList.add("ativo");
+  } else {
+    document.body.classList.add("sem-rolagem");
+  }
+</script>

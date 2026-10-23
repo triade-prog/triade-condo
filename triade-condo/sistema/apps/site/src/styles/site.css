@@ -1,9 +1,12 @@
 /* Site da TRÍADE Condo. Mesmas fontes e paleta da Plataforma (DC13, packages/ui/src/tema.css):
-   Manrope em tudo, IBM Plex Mono só em dados e marcadores. A Playfair saiu dos títulos (22/10/2026).
+   Manrope em tudo, IBM Plex Mono só em dados e marcadores. A Playfair saiu dos títulos (22/10/2026) e voltou
+   só no destaque em itálico, um por título, como o "Bom dia" do painel (aprovado em 23/10/2026).
    Elementos gráficos vêm da geometria do símbolo: cunhas diagonais e as três barras que sobem. */
 
 @import "@fontsource-variable/manrope/index.css";
 @import "@fontsource/ibm-plex-mono/latin-500.css";
+@import "@fontsource/playfair-display/latin-400-italic.css";
+@import "@fontsource/playfair-display/latin-500-italic.css";
 
 :root {
   --violeta-50: #f8f3ff;

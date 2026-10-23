@@ -1,0 +1,56 @@
+---
+import Base from "../layouts/Base.astro";
+import BarraPainel from "../components/BarraPainel.astro";
+import CenaPedido from "../components/CenaPedido.astro";
+import Destaque from "../components/Destaque.astro";
+import FaixaFinal from "../components/FaixaFinal.astro";
+import InicioPainel from "../components/InicioPainel.astro";
+import { plataforma } from "../dados/vitrine";
+
+// Telas de exemplo de Comunicação e Operações (dados ilustrativos).
+const exemplos: Record<string, { titulo: string; linhas: { titulo: string; detalhe: string; tom: string; selo: string }[] }> = {
+  comunicacao: { titulo: "Comunicação", linhas: [
+    { titulo: "Manutenção da caixa d'água", detalhe: "Comunicado · sáb 25/10", tom: "verde", selo: "Lido por 84%" },
+    { titulo: "Assembleia ordinária", detalhe: "Convite · ter 4/11, 19h30", tom: "violeta", selo: "Votação aberta" },
+    { titulo: "Regimento interno", detalhe: "Documento · versão 3", tom: "cinza", selo: "No mural" },
+  ] },
+  operacoes: { titulo: "Operações", linhas: [
+    { titulo: "Bombas de recalque", detalhe: "Preventiva mensal · NBR 5674", tom: "ambar", selo: "Vence hoje" },
+    { titulo: "Extintores", detalhe: "Recarga anual · prontuário", tom: "verde", selo: "Em dia" },
+    { titulo: "Hidráulica Souza", detalhe: "Prestador · check-in 09:12 por QR", tom: "violeta", selo: "No prédio" },
+  ] },
+};
+---
+<Base titulo="Plataforma" atual="/plataforma" lavanda descricao="Atendimento, comunicação, operações e indicadores do condomínio num painel só. O morador continua no WhatsApp; o síndico acompanha tudo pelo painel.">
+<section class="pag-topo">
+  <div class="wrap">
+    <h1 class="titulo-g">Um painel para o que acontece <Destaque>no prédio</Destaque></h1>
+    <p class="lead2">Atendimento, comunicação, operações e indicadores no mesmo lugar. O morador continua no WhatsApp; o síndico acompanha tudo por aqui.</p>
+  </div>
+</section>
+
+{plataforma.map((bloco, i) => (
+  <section class:list={["wrap modulo ancora", i % 2 === 1 && "inverte"]} id={bloco.id} aria-labelledby={`titulo-${bloco.id}`}>
+    <div>
+      <h2 class="rotulo-bloco" id={`titulo-${bloco.id}`}>{bloco.titulo}</h2>
+      <ul>{bloco.itens.map((t) => <li><span class="ico-v" aria-hidden="true">✓</span><span><b>{t.titulo}</b><small>{t.texto}</small></span></li>)}</ul>
+    </div>
+    <div class="modulo-v">
+      {bloco.id === "atendimento" && <CenaPedido etapa={2} />}
+      {bloco.id === "indicadores" && <InicioPainel perfil="morador" />}
+      {exemplos[bloco.id] && (
+        <div class="janela" aria-hidden="true">
+          <BarraPainel />
+          <div style="padding:16px">
+            <div class="app-cartao" style="gap:0">
+              <div class="app-sub" style="padding-bottom:6px"><h4>{exemplos[bloco.id].titulo}</h4><span class="app-meta">Dados ilustrativos</span></div>
+              {exemplos[bloco.id].linhas.map((l) => <div class="agora-l"><span class="t">{l.titulo}<small>{l.detalhe}</small></span><span class:list={["pil", l.tom]}>{l.selo}</span></div>)}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  </section>
+))}
+<FaixaFinal />
+</Base>

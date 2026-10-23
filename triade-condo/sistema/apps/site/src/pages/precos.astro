@@ -1,105 +1,112 @@
 ---
 import Base from "../layouts/Base.astro";
-import Olho from "../components/Olho.astro";
+import Destaque from "../components/Destaque.astro";
+import FaixaFinal from "../components/FaixaFinal.astro";
 import { aDefinir, armazenamentoGb, descontoSindicoProfissional, faixas, inteiro, mensalNoAnual, precosProvisorios, reais } from "../dados/oferta";
 
 const textoMensal = "Mensal: sem fidelidade, cancela quando quiser, sem multa. A implantação é paga uma vez, em até 3 parcelas.";
 const textoAnual = "Anual: 12 meses pelo preço de 11 pagando à vista, ou 12 parcelas sem desconto. Nos dois casos a implantação é grátis.";
 const definir = (v: string | null) => v ?? (precosProvisorios ? "a definir" : "informado na proposta");
+const perguntas = [
+  { p: "“Sem fidelidade” e “implantação grátis no anual” combinam?", r: "Sim, são duas opções. No mensal, você paga a implantação e cancela quando quiser, sem multa. No anual, a implantação é grátis porque você se compromete com 12 meses." },
+  { p: "O anual é pago de uma vez?", r: "Você escolhe: à vista, com 12 meses pelo preço de 11, ou em 12 parcelas mensais, sem o desconto mas com a implantação grátis." },
+  { p: "E se eu cancelar o anual no meio?", r: `Você paga os meses já usados e a implantação que foi dispensada, até o limite do valor da faixa. Nada além disso. Prazo de aviso: ${definir(aDefinir.avisoCancelamentoAnual)}.` },
+  { p: "O que conta como unidade?", r: "Apartamentos, casas ou salas cadastradas e ativas. Vagas, depósitos e unidades vazias não contam. Se o prédio mudar de faixa, o preço muda no mês seguinte, com aviso." },
+  { p: "O morador paga alguma coisa ou instala algo?", r: "Não. Ele usa o WhatsApp que já tem. Quem não tem WhatsApp recebe por e-mail ou vê no mural." },
+  { p: "Posso testar antes?", r: "Sim, com um teste assistido: registramos um pedido real do seu prédio na demonstração e acompanhamos com você. Não há teste grátis aberto, porque sem os moradores cadastrados ele não mostra nada." },
+];
 ---
-<Base titulo="Preços" atual="/precos" descricao={`Um plano com todas as funções; o preço muda só com o tamanho do prédio. A partir de ${reais(faixas[0].mensal)} por mês. Mensal sem fidelidade ou anual com implantação grátis.`}>
+<Base titulo="Preços" atual="/precos" lavanda descricao={`Um plano com todas as funções; o preço muda só com o tamanho do prédio. A partir de ${reais(faixas[0].mensal)} por mês. Mensal sem fidelidade ou anual com implantação grátis.`}>
 
-<section class="faixa-branca" style="border-top:0">
-  <span class="cunha cunha-dir" aria-hidden="true"></span>
-  <div class="wrap pilha" style="--gap:20px;position:relative;padding-block:80px 56px">
-    <Olho>Preços</Olho>
-    <h1 style="max-width:780px">Um plano. O preço muda só com o tamanho do prédio.</h1>
-    <p class="suave" style="font-size:clamp(16px,2vw,20px);max-width:680px">Todas as funções em qualquer faixa. Contamos só as unidades ativas cadastradas. Sem fidelidade no mensal; no anual, a implantação sai de graça.</p>
-    {precosProvisorios && <p class="suave" style="font-size:13px"><span class="mono provisorio">VALORES PROVISÓRIOS ·</span> podem mudar até a assinatura; o valor da sua proposta é o que vale.</p>}
+<section class="topo-precos">
+  <div class="wrap">
+    <div>
+      <h1>Um plano. O preço muda só com o <Destaque quebra>tamanho do prédio</Destaque>.</h1>
+      <p class="lead2" style="margin-top:20px">Todas as funções em qualquer faixa. Contamos só as unidades ativas.</p>
+    </div>
+    <div class="pilha" style="--gap:12px">
+      <div class="alternador so-com-js" style="align-self:flex-start" role="group" aria-label="Forma de pagamento">
+        <button type="button" aria-pressed="true" data-forma="mensal">Mensal</button>
+        <button type="button" aria-pressed="false" data-forma="anual">Anual</button>
+      </div>
+      <p class="suave" style="font-size:15px" id="explica-forma" aria-live="polite">{textoMensal}</p>
+      <p class="suave sem-js" style="font-size:15px">{textoAnual}</p>
+    </div>
   </div>
 </section>
 
-<section class="wrap pilha" style="--gap:22px;padding-block:48px 24px">
-  <div class="linha-flex" style="--gap:18px">
-    <div class="alternador so-com-js" role="group" aria-label="Forma de pagamento">
-      <button type="button" aria-pressed="true" data-forma="mensal">Mensal</button>
-      <button type="button" aria-pressed="false" data-forma="anual">Anual</button>
-    </div>
-    <p class="suave" style="font-size:15px;max-width:620px" id="explica-forma" aria-live="polite">{textoMensal}</p>
-  </div>
-  <p class="suave sem-js" style="font-size:15px">{textoAnual}</p>
-
-  <ul class="grade" style="--cols:4;--gap:16px">
+<section class="wrap" style="padding-block:48px 16px">
+  <ul class="faixas3">
     {faixas.map((f) => (
-      <li class:list={["cartao faixa-preco", f.destaque && "destaque"]}>
-        <span class:list={["olho", !f.destaque && "cinza"]}>{f.rotulo}{f.destaque && " · mais comum"}</span>
-        <div><b class="valor" data-mensal={reais(f.mensal)} data-anual={reais(mensalNoAnual(f.mensal))}>{reais(f.mensal)}</b><span class="suave">/mês</span></div>
-        <span class="suave" style="font-size:13.5px" data-mensal={`Implantação ${reais(f.implantacao)}, uma vez, em até 3x`} data-anual="Implantação grátis no anual">Implantação {reais(f.implantacao)}, uma vez, em até 3x</span>
-        <span class="suave" style="font-size:13.5px">Comunicados por WhatsApp: {inteiro(f.franquiaComunicados)}/mês incluídos</span>
+      <li class:list={["faixa3 faixa-preco", f.destaque && "destaque"]}>
+        {f.destaque && <span class="selo-comum">Mais comum</span>}
+        <b class="rot">{f.rotulo}</b>
+        <div><span class="valor3" data-mensal={reais(f.mensal)} data-anual={reais(mensalNoAnual(f.mensal))}>{reais(f.mensal)}</span><span class="suave"> por mês</span></div>
+        <span class="suave" data-mensal={`Implantação de ${reais(f.implantacao)}, uma vez, em até 3x`} data-anual="Implantação grátis no anual">Implantação de {reais(f.implantacao)}, uma vez, em até 3x</span>
+        <span class="suave">{inteiro(f.franquiaComunicados)} comunicados por WhatsApp no mês</span>
+        <a href="#pedir" class:list={["botao", f.destaque ? "primario" : "claro"]}>Agendar demonstração</a>
       </li>
     ))}
   </ul>
-  <p class="suave" style="font-size:14px">Acima de 400 unidades ou vários prédios do mesmo síndico: <a href="/demonstracao">fale com a gente</a>. Síndico profissional tem {descontoSindicoProfissional}% de desconto a partir do segundo condomínio.</p>
-  <div class="linha-flex"><a href="/demonstracao" class="botao primario">Agendar demonstração</a><a href="/como-funciona" class="botao claro">Ver como funciona</a></div>
+  <p class="suave" style="font-size:14px;margin-top:22px">{precosProvisorios && "Valores provisórios: podem mudar até a assinatura. "}Acima de 400 unidades ou vários prédios: <a href="#pedir">fale com a gente</a>. Síndico profissional tem {descontoSindicoProfissional}% de desconto a partir do segundo condomínio.</p>
 </section>
 
-<section class="wrap lado-a-lado revela" style="--gap:24px;padding-block:48px 64px">
-  <div class="cartao pilha" style="--gap:12px;padding:28px">
-    <Olho cor="verde">Incluído em todas as faixas</Olho>
+<section class="wrap" style="padding-block:48px">
+  <div class="sem-fid2">
+    <div class="pilha" style="--gap:16px"><h2>Sem fidelidade no mensal. Fica <Destaque semTraco>porque funciona</Destaque>.</h2><a href="#pedir" class="botao primario" style="align-self:flex-start">Agendar demonstração</a></div>
+    <ul>
+      <li><b>Cancela quando quiser</b>Sem multa. Basta avisar pelo WhatsApp.</li>
+      <li><b>Implantação paga uma vez</b>Não volta a ser cobrada enquanto o prédio estiver com a TRÍADE.</li>
+      <li><b>A história é do prédio</b>Pedidos, documentos e prestadores ficam registrados no condomínio, com autor e data.</li>
+      <li><b>Quer pagar menos?</b>No anual, a implantação sai de graça.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="wrap lado-a-lado" style="--gap:48px;padding-block:32px 72px">
+  <div class="pilha" style="--gap:10px">
+    <h2 style="font-size:22px">Incluído em todas as faixas</h2>
     <div>
       <div class="linha-dado"><span>Pedidos pelo WhatsApp, com responsável, retorno e conclusão</span><b style="color:var(--ok)">Sem limite</b></div>
-      <div class="linha-dado"><span>Avisos automáticos de atendimento ao morador (registro, retorno, conclusão)</span><b style="color:var(--ok)">Sem limite</b></div>
-      <div class="linha-dado"><span>Painel do síndico, conselho e portaria, quantos usuários precisar</span><b style="color:var(--ok)">Incluído</b></div>
-      <div class="linha-dado"><span>Comunicados, documentos, manutenção, prestadores, enquetes, indicadores</span><b style="color:var(--ok)">Incluído</b></div>
-      <div class="linha-dado"><span>Mural e e-mail para quem não usa WhatsApp</span><b style="color:var(--ok)">Incluído</b></div>
-      <div class="linha-dado"><span>Suporte por WhatsApp em dias úteis, das 9h às 18h</span><b style="color:var(--ok)">Incluído</b></div>
+      <div class="linha-dado"><span>Avisos de atendimento ao morador</span><b style="color:var(--ok)">Sem limite</b></div>
+      <div class="linha-dado"><span>Painel para síndico, conselho e portaria</span><b>Quantos usuários precisar</b></div>
+      <div class="linha-dado"><span>Comunicados, documentos, manutenção, enquetes, indicadores</span><b>Incluído</b></div>
+      <div class="linha-dado"><span>Suporte por WhatsApp em dias úteis, das 9h às 18h</span><b>Incluído</b></div>
     </div>
   </div>
-  <div class="cartao pilha" style="--gap:12px;padding:28px">
-    <Olho cor="ambar">O que tem limite, e por quê</Olho>
-    <p class="suave" style="font-size:15px">Cada comunicado enviado por WhatsApp tem custo de envio. Por isso há uma franquia mensal por faixa, dimensionada para o uso comum: um comunicado para todo o prédio conta uma vez por unidade que recebe.</p>
+  <div class="pilha" style="--gap:10px">
+    <h2 style="font-size:22px">O que tem limite, e por quê</h2>
+    <p class="suave">Cada comunicado enviado por WhatsApp tem custo de envio. Por isso cada faixa tem uma franquia mensal: um comunicado para o prédio todo conta uma vez por unidade que recebe.</p>
     <div>
-      <div class="linha-dado"><span>Franquia mensal de comunicados por WhatsApp</span><b>por faixa, veja acima</b></div>
-      <div class="linha-dado"><span>Acima da franquia</span><b>{definir(aDefinir.valorAcimaDaFranquia)} por mensagem, cobrado no mês seguinte</b></div>
+      <div class="linha-dado"><span>Acima da franquia</span><b>{definir(aDefinir.valorAcimaDaFranquia)}, por mensagem</b></div>
       <div class="linha-dado"><span>Franquia não usada</span><b>não acumula</b></div>
-      <div class="linha-dado"><span>Armazenamento de documentos e fotos</span><b>{armazenamentoGb} GB por condomínio; mais, sob consulta</b></div>
+      <div class="linha-dado"><span>Armazenamento</span><b>{armazenamentoGb} GB por condomínio</b></div>
     </div>
-    <p class="suave" style="font-size:13.5px">Não dizemos "ilimitado" porque não é. Os avisos de atendimento ao morador, que fazem o sistema existir, não têm limite.</p>
   </div>
 </section>
 
 <section id="implantacao" class="faixa-branca">
-  <span class="cunha cunha-esq" aria-hidden="true"></span>
-  <div class="wrap secao lado-a-lado revela" style="--colunas:minmax(0,2fr) minmax(0,3fr);--gap:40px;position:relative">
-    <div class="pilha">
-      <Olho>Implantação</Olho>
-      <h2>De {reais(faixas[0].implantacao)} a {reais(faixas[faixas.length - 1].implantacao)}, uma vez</h2>
-      <p class="suave">O valor acompanha a faixa de unidades, porque é isso que define o trabalho: quantas pessoas cadastrar, quantos documentos trazer e quanta gente treinar. No plano anual, a implantação é grátis. No mensal, pode ser paga em 3 vezes.</p>
+  <div class="wrap secao2 lado-a-lado" style="--colunas:minmax(0,5fr) minmax(0,7fr);--gap:48px">
+    <div class="pilha" style="--gap:16px">
+      <h2 class="titulo-g">De {reais(faixas[0].implantacao)} a {reais(faixas[faixas.length - 1].implantacao)}, uma vez</h2>
+      <p class="lead2">A implantação acompanha a faixa, porque é isso que define o trabalho: quantas pessoas cadastrar, quantos documentos trazer e quanta gente treinar. Grátis no anual; em até 3 vezes no mensal.</p>
     </div>
     <div class="cartao" style="padding:0;overflow:hidden">
       <table class="tabela-impl">
         <caption class="so-leitor">Valor da implantação por faixa de unidades</caption>
         <thead><tr><th scope="col">Faixa</th><th scope="col">Implantação</th><th scope="col" class="inclui">O que inclui</th></tr></thead>
-        <tbody>
-          {faixas.map((f) => (<tr><td>{f.rotulo.replace(" unidades", "")}</td><td><b>{reais(f.implantacao)}</b></td><td class="inclui suave">{f.implantacaoInclui}</td></tr>))}
-        </tbody>
+        <tbody>{faixas.map((f) => <tr><td>{f.rotulo.replace(" unidades", "")}</td><td><b>{reais(f.implantacao)}</b></td><td class="inclui suave">{f.implantacaoInclui}</td></tr>)}</tbody>
       </table>
     </div>
   </div>
 </section>
 
-<section class="wrap secao pilha revela" style="--gap:28px">
-  <div class="titulo-secao"><Olho>Perguntas essenciais</Olho><h2>O que mais perguntam antes de assinar</h2></div>
-  <div class="grade" style="--cols:2">
-    <div class="cartao pilha" style="--gap:8px"><h3>"Sem fidelidade" e "implantação grátis no anual" combinam?</h3><p class="suave" style="font-size:15px">Sim, são duas opções. No mensal, você paga a implantação e cancela quando quiser, sem multa. No anual, a implantação é grátis porque você se compromete com 12 meses.</p></div>
-    <div class="cartao pilha" style="--gap:8px"><h3>O anual é pago de uma vez?</h3><p class="suave" style="font-size:15px">Você escolhe: à vista, com 12 meses pelo preço de 11, ou em 12 parcelas mensais, sem o desconto mas com a implantação grátis.</p></div>
-    <div class="cartao pilha" style="--gap:8px"><h3>E se eu cancelar o anual no meio?</h3><p class="suave" style="font-size:15px">Você paga os meses já usados e a implantação que foi dispensada, até o limite do valor da faixa. Nada além disso. Prazo de aviso: {definir(aDefinir.avisoCancelamentoAnual)}.</p></div>
-    <div class="cartao pilha" style="--gap:8px"><h3>O que conta como unidade?</h3><p class="suave" style="font-size:15px">Apartamentos, casas ou salas cadastradas e ativas. Vagas, depósitos e unidades vazias não contam. Se o prédio mudar de faixa, o preço muda no mês seguinte, com aviso.</p></div>
-    <div class="cartao pilha" style="--gap:8px"><h3>O morador paga alguma coisa ou instala algo?</h3><p class="suave" style="font-size:15px">Não. Ele usa o WhatsApp que já tem. Quem não tem WhatsApp recebe por e-mail ou vê no mural.</p></div>
-    <div class="cartao pilha" style="--gap:8px"><h3>Posso testar antes?</h3><p class="suave" style="font-size:15px">Sim, com um teste assistido: a gente registra um pedido real do seu prédio na demonstração e acompanha com você. Não há teste grátis aberto, porque sem os moradores cadastrados ele não mostra nada.</p></div>
-  </div>
-  <div class="linha-flex"><a href="/demonstracao" class="botao primario">Agendar demonstração</a></div>
+<section class="wrap secao2 lado-a-lado" style="--colunas:minmax(0,5fr) minmax(0,7fr);--gap:64px">
+  <div class="pilha" style="--gap:14px"><h2 class="titulo-g">O que perguntam <Destaque semTraco>antes de assinar</Destaque></h2><p class="lead2">Não achou a sua? Pergunte na demonstração.</p></div>
+  <div class="sanfona">{perguntas.map((q, i) => <details open={i === 0}><summary>{q.p}<span class="mais" aria-hidden="true"></span></summary><p>{q.r}</p></details>)}</div>
 </section>
+
+<FaixaFinal />
 
 <script define:vars={{ textoMensal, textoAnual }}>
   // Mensal / Anual: troca os valores e a explicação. Sem JavaScript, a página mostra o mensal e o texto do anual.

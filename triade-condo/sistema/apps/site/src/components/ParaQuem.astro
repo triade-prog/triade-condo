@@ -1,0 +1,30 @@
+---
+// Para quem é: abas por perfil, cada uma com o Início do painel daquele perfil.
+// Sem JavaScript, os quatro perfis aparecem um embaixo do outro.
+import Destaque from "./Destaque.astro";
+import InicioPainel from "./InicioPainel.astro";
+import { perfis } from "../dados/vitrine";
+---
+<section class="faixa-branca ancora sem-js-perfis" id="perfis">
+  <div class="wrap secao2">
+    <h2 class="titulo-g" style="max-width:14em">Feita para quem cuida do prédio <Destaque quebra>sem administradora</Destaque></h2>
+    <div class="abas2" role="tablist" aria-label="Quem é você">
+      {perfis.map((p, i) => <button type="button" role="tab" id={`aba-${p.id}`} aria-controls={`perfil-${p.id}`} aria-selected={i === 0 ? "true" : "false"} tabindex={i === 0 ? 0 : -1} data-perfil={p.id}>{p.nome}</button>)}
+    </div>
+    {perfis.map((p, i) => (
+      <div class:list={["perfil", i === 0 && "atual"]} id={`perfil-${p.id}`} role="tabpanel" aria-labelledby={`aba-${p.id}`}>
+        <div>
+          <h3>{p.frase}</h3>
+          <ul>{p.itens.map((t) => <li><span class="ico-v" aria-hidden="true">✓</span><span>{t}</span></li>)}</ul>
+        </div>
+        <InicioPainel perfil={p.id} />
+      </div>
+    ))}
+  </div>
+</section>
+
+<script>
+  import { ligarAbas } from "../lib/abas";
+  document.querySelector(".sem-js-perfis")?.classList.remove("sem-js-perfis");
+  ligarAbas("[data-perfil]", (b) => `perfil-${b.dataset.perfil}`, ".perfil");
+</script>

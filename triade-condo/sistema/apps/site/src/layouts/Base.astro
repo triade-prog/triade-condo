@@ -1,10 +1,12 @@
 ---
 import "../styles/site.css";
+import "../styles/paginas.css";
 import Cabecalho from "../components/Cabecalho.astro";
 import Rodape from "../components/Rodape.astro";
 
-interface Props { titulo: string; descricao: string; atual?: string; semIndice?: boolean; }
-const { titulo, descricao, atual, semIndice = false } = Astro.props;
+// `lavanda`: o topo da página é lavanda e o cabeçalho fica translúcido sobre ele.
+interface Props { titulo: string; descricao: string; atual?: string; semIndice?: boolean; lavanda?: boolean; }
+const { titulo, descricao, atual, semIndice = false, lavanda = false } = Astro.props;
 const tituloCompleto = titulo === "TRÍADE Condo" ? titulo : `${titulo} · TRÍADE Condo`;
 const canonico = new URL(Astro.url.pathname, Astro.site);
 const imagem = new URL("/og.png", Astro.site);
@@ -32,7 +34,7 @@ const imagem = new URL("/og.png", Astro.site);
     <meta name="twitter:card" content="summary_large_image" />
     {import.meta.env.PROD && <script is:inline defer src="/_vercel/insights/script.js"></script>}
   </head>
-  <body>
+  <body class:list={[lavanda && "topo-lavanda"]}>
     <a class="pular" href="#conteudo">Pular para o conteúdo</a>
     <Cabecalho atual={atual} />
     <main id="conteudo">

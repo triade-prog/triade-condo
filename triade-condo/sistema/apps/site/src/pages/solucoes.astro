@@ -1,0 +1,20 @@
+---
+import Base from "../layouts/Base.astro";
+import Destaque from "../components/Destaque.astro";
+import ParaQuem from "../components/ParaQuem.astro";
+import Tamanhos from "../components/Tamanhos.astro";
+import Implantacao from "../components/Implantacao.astro";
+import FaixaFinal from "../components/FaixaFinal.astro";
+---
+<Base titulo="Soluções" atual="/solucoes" lavanda descricao="A mesma plataforma para síndico morador, síndico profissional, conselho e portaria, do prédio pequeno ao condomínio de muitos blocos. Com implantação presencial em Brasília e no DF.">
+<section class="pag-topo">
+  <div class="wrap">
+    <h1 class="titulo-g">Do prédio pequeno ao condomínio <Destaque>de muitos blocos</Destaque></h1>
+    <p class="lead2">A mesma plataforma, para quem cuida do prédio. Veja por perfil, por tamanho e como é a implantação.</p>
+  </div>
+</section>
+<ParaQuem />
+<Tamanhos />
+<Implantacao />
+<FaixaFinal />
+</Base>

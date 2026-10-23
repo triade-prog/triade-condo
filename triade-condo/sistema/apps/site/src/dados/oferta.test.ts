@@ -30,10 +30,14 @@ describe("identidade do site (DC13)", () => {
     }
   });
 
-  it("só Manrope e IBM Plex Mono; a Playfair saiu dos títulos", () => {
+  it("Manrope e IBM Plex Mono; a Playfair só no destaque em itálico (em.d)", () => {
     expect(site).toContain("@fontsource-variable/manrope");
     expect(site).toContain("@fontsource/ibm-plex-mono");
-    const semComentarios = site.replace(/\/\*[\s\S]*?\*\//g, "").toLowerCase();
-    expect(semComentarios).not.toContain("playfair");
+    // Só os arquivos itálicos da Playfair entram, e ela só é usada por var(--serifa) nas páginas.
+    const importsPlayfair = site.match(/@import "@fontsource\/playfair-display\/[^"]+";/g) ?? [];
+    expect(importsPlayfair.length).toBeGreaterThan(0);
+    for (const i of importsPlayfair) expect(i).toMatch(/italic\.css/);
+    const paginas = readFileSync(new URL("../styles/paginas.css", import.meta.url), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(paginas.match(/font-family:[^;]*/g)?.filter((f) => !/var\(--(sans|mono|serifa)\)/.test(f)) ?? []).toEqual([]);
   });
 });

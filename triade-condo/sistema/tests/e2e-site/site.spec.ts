@@ -17,8 +17,10 @@ async function semRolagemLateral(page: Page) {
 
 const paginas = [
   { caminho: "/", titulo: "Nenhum pedido do seu prédio fica sem resposta" },
-  { caminho: "/como-funciona", titulo: "Um pedido, do início ao fim" },
-  { caminho: "/precos", titulo: "Um plano. O preço muda só com o tamanho do prédio." },
+  { caminho: "/plataforma", titulo: "Um painel para o que acontece no prédio" },
+  { caminho: "/solucoes", titulo: "Do prédio pequeno ao condomínio de muitos blocos" },
+  { caminho: "/como-funciona", titulo: "Um pedido, do WhatsApp ao fim" },
+  { caminho: "/precos", titulo: /^Um plano\. O preço muda só com o tamanho do prédio/ },
   { caminho: "/demonstracao", titulo: "Veja o sistema com um pedido do seu prédio" },
   { caminho: "/guia", titulo: "O que aprendemos organizando prédios" },
   { caminho: "/privacidade", titulo: "Política de privacidade deste site" },
@@ -43,37 +45,52 @@ test.describe("Site · páginas", () => {
 
   test("EM-07: as telas de exemplo dizem que os dados são ilustrativos", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText("DADOS ILUSTRATIVOS")).toBeVisible();
+    await expect(page.getByText("Dados ilustrativos").first()).toBeVisible();
     await page.goto("/como-funciona");
-    await expect(page.getByText("DADOS ILUSTRATIVOS")).toBeVisible();
+    await expect(page.getByText("Dados ilustrativos").first()).toBeVisible();
+    await page.goto("/plataforma");
+    await expect(page.getByText("Dados ilustrativos").first()).toBeVisible();
   });
 });
 
 test.describe("Site · como funciona", () => {
-  test("no computador, a etapa escolhida troca a conversa e o painel juntos", async ({ page, isMobile }) => {
-    test.skip(isMobile, "No celular as quatro etapas aparecem em sequência.");
-    await page.goto("/como-funciona");
-    const conclusao = page.getByRole("tab", { name: /Conclusão/ });
-    await expect(page.getByRole("tab", { name: /Registro/ })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByText("Sem responsável.")).toBeVisible();
-    await conclusao.click();
-    await expect(conclusao).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByText("5. Ficou ótimo, obrigada!")).toBeVisible();
-    await expect(page.getByText("Concluído em 5 dias, ter 16:05.")).toBeVisible();
-    await expect(page.getByText("Sem responsável.")).toBeHidden();
-    // Setas do teclado, como manda o padrão de abas.
-    await conclusao.press("ArrowRight");
-    await expect(page.getByRole("tab", { name: /Registro/ })).toBeFocused();
-    await expect(page.getByText("Sem responsável.")).toBeVisible();
+  test("no computador, o painel e o celular acompanham o passo que está na tela", async ({ page, isMobile }) => {
+    test.skip(isMobile, "No celular cada passo traz a própria cena.");
+    await page.goto("/");
+    const palco = page.locator(".palco-fixo");
+    await expect(palco).toHaveAttribute("data-etapa", "1");
+    await page.locator(".passo2").nth(3).evaluate((el) => el.scrollIntoView({ block: "center" }));
+    await expect(palco).toHaveAttribute("data-etapa", "4");
+    await expect(palco.locator(".c4 .zap-b.novo")).toHaveText(/5\. Obrigada!/);
+    await expect(palco.locator(".c4 .pil").first()).toBeVisible();
+    await expect(palco.locator(".c1")).toBeHidden();
   });
 
-  test("no celular, as quatro etapas aparecem uma embaixo da outra", async ({ page, isMobile }) => {
+  test("no celular, os quatro passos aparecem um embaixo do outro, cada um com a sua cena", async ({ page, isMobile }) => {
     test.skip(!isMobile, "Só no celular.");
     await page.goto("/como-funciona");
-    await expect(page.getByRole("tablist")).toBeHidden();
-    for (const nome of ["Registro", "Responsável e retorno", "Andamento", "Conclusão"]) {
-      await expect(page.getByRole("heading", { level: 2, name: nome, exact: true })).toBeVisible();
+    await expect(page.locator(".palco-fixo")).toBeHidden();
+    for (const nome of ["O morador escreve. O pedido ganha número.", "Alguém fica responsável. O morador sabe quem.", "O prestador conta o que fez, por um link.", "Concluído com explicação. O morador avalia."]) {
+      const passo = page.locator(".passo2", { has: page.getByRole("heading", { level: 3, name: nome }) });
+      await expect(passo).toBeVisible();
+      await expect(passo.locator(".cena")).toBeVisible();
     }
+  });
+});
+
+test.describe("Site · soluções", () => {
+  test("as abas de perfil e de tamanho trocam o conteúdo, com clique e com as setas", async ({ page }) => {
+    await page.goto("/solucoes");
+    const profissional = page.getByRole("tab", { name: "Síndico profissional" });
+    await profissional.click();
+    await expect(profissional).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByText("Vários prédios, cada um com a sua história.")).toBeVisible();
+    await expect(page.getByText("Para de responder o grupo à meia-noite.")).toBeHidden();
+    await profissional.press("ArrowLeft");
+    await expect(page.getByRole("tab", { name: "Síndico morador" })).toBeFocused();
+    await expect(page.getByText("Para de responder o grupo à meia-noite.")).toBeVisible();
+    await page.getByRole("tab", { name: "41 a 100 unidades" }).click();
+    await expect(page.getByRole("tabpanel", { name: "41 a 100 unidades" })).toContainText("Escalonamento quando o prazo vence");
   });
 });
 
@@ -82,7 +99,7 @@ test.describe("Site · preços", () => {
     await page.goto("/precos");
     const faixa = page.locator(".faixa-preco").first();
     await expect(faixa).toContainText("R$ 199");
-    await expect(faixa).toContainText("Implantação R$ 600");
+    await expect(faixa).toContainText("Implantação de R$ 600");
     await page.getByRole("button", { name: "Anual" }).click();
     await expect(page.getByRole("button", { name: "Anual" })).toHaveAttribute("aria-pressed", "true");
     await expect(faixa).toContainText("R$ 182");
