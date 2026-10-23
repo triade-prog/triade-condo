@@ -42,25 +42,25 @@ export function CampoImagens({ id, imagens, mudar }: { id: string; imagens: File
   const cheio = imagens.length >= IMAGENS_CHAMADO.maximo;
   return (
     <div className="grid gap-2">
-      <span className="text-[13px] font-medium">Imagens <span className="font-normal text-tinta-suave">(opcional)</span></span>
+      <span className="t-apoio font-medium">Imagens <span className="font-normal text-tinta-suave">(opcional)</span></span>
       <div tabIndex={0} onPaste={colar} role="group" aria-label="Cole a imagem aqui com Ctrl+V"
         className="flex flex-wrap items-center gap-3 rounded-[16px] border-[1.5px] border-dashed border-violeta-300 bg-violeta-50 px-4 py-3.5 focus:outline-2 focus:outline-foco">
         <span className="ladrilho" data-tom="violeta" aria-hidden="true"><Icone nome="camera" /></span>
         <span className="grid min-w-40 flex-1 gap-0.5">
-          <span className="text-sm font-medium">Cole a imagem aqui (Ctrl+V) ou escolha</span>
+          <span className="t-texto font-medium">Cole a imagem aqui (Ctrl+V) ou escolha</span>
           <span className="t-apoio">Até {IMAGENS_CHAMADO.maximo} · JPG, PNG ou WEBP de até 10 MB · a localização sai da foto</span>
         </span>
         <label htmlFor={id} className={classeBotao("contorno", cheio ? "pointer-events-none opacity-50" : "cursor-pointer", "m")}><Icone nome="clipe" />Escolher imagens</label>
         <input id={id} type="file" className="sr-only" accept={IMAGENS_CHAMADO.tipos.join(",")} multiple disabled={cheio}
           onChange={(e) => { juntar(Array.from(e.target.files ?? [])); e.target.value = ""; }} />
       </div>
-      {problema ? <p className="text-xs text-erro">{problema}</p> : null}
+      {problema ? <p className="t-apoio text-erro">{problema}</p> : null}
       {imagens.length ? (
         <ul className="flex flex-wrap gap-2">
           {imagens.map((f, i) => (
-            <li key={`${f.name}-${i}`} className="flex items-center gap-2 rounded-[12px] border border-linha bg-superficie px-2.5 py-1.5 text-[13px]">
+            <li key={`${f.name}-${i}`} className="flex items-center gap-2 rounded-[12px] border border-linha bg-superficie px-2.5 py-1.5 t-apoio">
               <Icone nome="camera" className="h-4 w-4" />{f.name || "imagem colada"}
-              <button type="button" className="font-medium text-violeta-600 hover:underline" onClick={() => mudar(imagens.filter((_, j) => j !== i))}>Tirar<span className="sr-only"> {f.name}</span></button>
+              <button type="button" className="elo" onClick={() => mudar(imagens.filter((_, j) => j !== i))}>Tirar<span className="sr-only"> {f.name}</span></button>
             </li>
           ))}
         </ul>

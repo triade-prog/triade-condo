@@ -72,11 +72,11 @@ function TextoComVariaveis({ m }: { m: Pick<Modelo, "corpo" | "rodape" | "variav
   m.corpo.split(/(\{\{[1-9][0-9]*\}\})/).forEach((p, i) => {
     const v = /^\{\{([1-9][0-9]*)\}\}$/.exec(p);
     partes.push(v
-      ? <span key={i} className="rounded bg-violeta-100 px-1 font-mono text-xs text-violeta-800">{p} {m.variaveis[Number(v[1]) - 1] ?? ""}</span>
+      ? <span key={i} className="rounded bg-violeta-100 px-1 font-mono t-codigo text-violeta-800">{p} {m.variaveis[Number(v[1]) - 1] ?? ""}</span>
       : <span key={i}>{p}</span>);
   });
   return (
-    <p className="whitespace-pre-line rounded-xl border border-dashed border-violeta-300 bg-superficie p-3 text-sm">
+    <p className="whitespace-pre-line rounded-xl border border-dashed border-violeta-300 bg-superficie p-3 t-texto">
       {partes}
       {m.rodape ? <span className="text-tinta-suave">{`\n\n${m.rodape}`}</span> : null}
     </p>
@@ -135,11 +135,11 @@ function JanelaModelo({ chave, aoFechar, aoMudar }: { chave: ChaveModelo; aoFech
   return (
     <Dialogo aberto titulo={atual.titulo} aoFechar={aoFechar}>
       <div className="grid gap-4">
-        <p className="flex flex-wrap items-center gap-2 text-sm text-tinta-suave">
+        <p className="flex flex-wrap items-center gap-2 t-apoio text-tinta-suave">
           <Selo tom={TOM_MODELO[atual.situacao]}>{SITUACOES_MODELO[atual.situacao]}</Selo>
           versão {atual.numero} · categoria Utilidade · português (Brasil) · <span className="font-mono">{atual.chave}</span>
         </p>
-        <p className="text-sm">
+        <p className="t-texto">
           Em uso no piloto: {d.emUsoPiloto ? `versão ${d.emUsoPiloto}` : "nenhuma"} · no conector oficial: {d.emUsoOficial ? `versão ${d.emUsoOficial}` : "nenhuma (falta a Meta aprovar)"}
         </p>
         {recado ? <Aviso tom="ok" papel="status">{recado}</Aviso> : null}
@@ -154,8 +154,8 @@ function JanelaModelo({ chave, aoFechar, aoMudar }: { chave: ChaveModelo; aoFech
               maxLength={1024} value={escrevendo.corpo} onChange={(e) => setEscrevendo({ ...escrevendo, corpo: e.target.value })}
               ajuda={`Use ${atual.variaveis.map((v, i) => `{{${i + 1}}} ${v}`).join(", ")}. Não comece nem termine com uma variável.`}
               erro={!valido || camposComErro(erro).includes("corpo") ? `Use as variáveis {{1}} a {{${atual.variaveis.length}}}, sem começar nem terminar com uma delas (20 a 1024 caracteres).` : null} />
-            <p className="text-xs text-tinta-suave">Como chega</p>
-            <p className="whitespace-pre-line rounded-xl border border-linha bg-superficie-2 p-3 text-sm">{renderizarModelo(escrevendo.corpo, atual.rodape, EXEMPLOS[chave])}</p>
+            <p className="t-apoio text-tinta-suave">Como chega</p>
+            <p className="whitespace-pre-line rounded-xl border border-linha bg-superficie-2 p-3 t-texto">{renderizarModelo(escrevendo.corpo, atual.rodape, EXEMPLOS[chave])}</p>
             <div className="flex justify-end gap-2">
               <Botao variante="contorno" onClick={() => setEscrevendo(null)}>Voltar</Botao>
               <Botao type="submit" disabled={!valido}>Salvar rascunho</Botao>
@@ -164,13 +164,13 @@ function JanelaModelo({ chave, aoFechar, aoMudar }: { chave: ChaveModelo; aoFech
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid content-start gap-2">
-              <h3 className="text-sm font-semibold">Texto</h3>
+              <h3 className="t-titulo-cartao font-semibold">Texto</h3>
               <TextoComVariaveis m={atual} />
-              <p className="text-xs text-tinta-suave">A variável não leva quebra de linha: cada uma vai em parágrafo único.</p>
+              <p className="t-apoio text-tinta-suave">A variável não leva quebra de linha: cada uma vai em parágrafo único.</p>
             </div>
             <div className="grid content-start gap-2">
-              <h3 className="text-sm font-semibold">Exemplo</h3>
-              <p className="whitespace-pre-line rounded-xl border border-linha bg-superficie-2 p-3 text-sm">{renderizarModelo(atual.corpo, atual.rodape, EXEMPLOS[chave])}</p>
+              <h3 className="t-titulo-cartao font-semibold">Exemplo</h3>
+              <p className="whitespace-pre-line rounded-xl border border-linha bg-superficie-2 p-3 t-texto">{renderizarModelo(atual.corpo, atual.rodape, EXEMPLOS[chave])}</p>
             </div>
           </div>
         )}
@@ -193,7 +193,7 @@ function JanelaModelo({ chave, aoFechar, aoMudar }: { chave: ChaveModelo; aoFech
 
         {decidindo ? (
           <div className="grid gap-3 rounded-xl border border-linha p-3">
-            <p className="text-sm">Versão {atual.numero} passa a: <b className="font-semibold">{SITUACOES_MODELO[decidindo]}</b>.
+            <p className="t-texto">Versão {atual.numero} passa a: <b className="font-semibold">{SITUACOES_MODELO[decidindo]}</b>.
               {decidindo === "APROVADO_PILOTO" ? " Ela passa a valer no Wafly, no lugar da anterior." : ""}
               {decidindo === "DESATIVADO" ? " Sem outra versão aprovada, a mensagem com a conversa fechada deixa de sair." : ""}</p>
             {pedeMotivo ? (
@@ -208,12 +208,12 @@ function JanelaModelo({ chave, aoFechar, aoMudar }: { chave: ChaveModelo; aoFech
         ) : null}
 
         <section aria-labelledby="t-hist-modelo" className="grid gap-1">
-          <h3 id="t-hist-modelo" className="text-sm font-semibold">Histórico</h3>
-          <ul className="divide-y divide-linha text-sm">
+          <h3 id="t-hist-modelo" className="t-titulo-cartao font-semibold">Histórico</h3>
+          <ul className="divide-y divide-linha t-texto">
             {d.eventos.map((e, i) => (
               <li key={i} className="py-1.5">
                 Versão {e.numero}: {SITUACOES_MODELO[e.situacao]}{e.motivo ? `. ${e.motivo}` : ""}
-                <span className="block text-xs text-tinta-suave">{formatarDataHora(e.em)}{e.por ? ` · ${e.por}` : ""}</span>
+                <span className="block t-apoio text-tinta-suave">{formatarDataHora(e.em)}{e.por ? ` · ${e.por}` : ""}</span>
               </li>
             ))}
           </ul>
@@ -241,7 +241,7 @@ export function ModelosWhatsapp() {
               className="grid w-full gap-1 rounded-2xl border border-linha bg-superficie p-4 text-left shadow-s1 hover:border-violeta-300 sm:grid-cols-[1fr_auto] sm:items-center">
               <span>
                 <span className="font-semibold">{m.titulo}</span>
-                <span className="block text-sm text-tinta-suave">{PARA_MODELO[m.para]} · {m.uso} · versão {m.numero}</span>
+                <span className="block t-apoio text-tinta-suave">{PARA_MODELO[m.para]} · {m.uso} · versão {m.numero}</span>
               </span>
               <Selo tom={TOM_MODELO[m.situacao]}>{SITUACOES_MODELO[m.situacao]}</Selo>
             </button>

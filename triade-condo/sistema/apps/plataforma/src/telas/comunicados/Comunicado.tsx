@@ -78,7 +78,7 @@ function Andamento({ d }: { d: ComunicadoDetalhe }) {
                   <p className="font-medium">{descreverEventoComunicado(h.acao, h.dados)}</p>
                   <p className="t-apoio">{diaHora(h.em)} · {h.autor ?? "Sistema"}</p>
                   {versao && versao.id !== c.id ? (
-                    <Link href={`/comunicados/comunicado?id=${versao.id}`} className="justify-self-start text-sm font-medium text-violeta-600 hover:underline">Ver a versão {versao.numero}</Link>
+                    <Link href={`/comunicados/comunicado?id=${versao.id}`} className="justify-self-start t-texto font-medium text-violeta-600 hover:underline">Ver a versão {versao.numero}</Link>
                   ) : null}
                 </div>
               </li>
@@ -108,7 +108,7 @@ function ComunicadoAberto() {
   const [acao, setAcao] = useState<"corrigir" | "arquivar" | null>(null);
   const [recado, setRecado] = useState<Recado>(FEITO[busca.get("feito") ?? ""] ? { tom: "ok", texto: FEITO[busca.get("feito")!]! } : null);
   const [falha, setFalha] = useState<ErroApi | null>(null);
-  const voltar = <Link href="/comunicados" className="flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline"><Icone nome="esq" className="h-4 w-4" />Comunicados</Link>;
+  const voltar = <Link href="/comunicados" className="flex items-center gap-1 justify-self-start t-texto font-medium text-violeta-600 hover:underline"><Icone nome="esq" className="h-4 w-4" />Comunicados</Link>;
 
   if (!id) return <div className="grid gap-3">{voltar}<h1 className="t-titulo-tela">Comunicado</h1><Vazio titulo="Comunicado não encontrado" /></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o comunicado…" />;
@@ -149,11 +149,11 @@ function ComunicadoAberto() {
 
   return (
     <div className="grid gap-5 max-md:pb-20">
-      <Link href="/comunicados" className="flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline"><Icone nome="esq" className="h-4 w-4" />Comunicados</Link>
+      <Link href="/comunicados" className="flex items-center gap-1 justify-self-start t-texto font-medium text-violeta-600 hover:underline"><Icone nome="esq" className="h-4 w-4" />Comunicados</Link>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="grid gap-2">
           <h1 className="t-titulo-tela">{c.titulo}</h1>
-          <p className="flex flex-wrap items-center gap-2 text-sm">
+          <p className="flex flex-wrap items-center gap-2 t-texto">
             <SeloComunicado estado={c.estado} />
             <Selo tom="neutro">{nomeAssunto(c.assunto)}</Selo>
             <Selo tom="andamento">Versão {c.numero}</Selo>
@@ -176,13 +176,13 @@ function ComunicadoAberto() {
       {c.arquivamento ? <Aviso tom="info" titulo="Comunicado arquivado">{c.arquivamento.por ?? "Alguém"} em {diaHora(c.arquivamento.em)}. Motivo: {c.arquivamento.motivo}</Aviso> : null}
       {c.estado === "PROGRAMADO" && c.programadoPara ? <Aviso tom="info" titulo={`Programado para ${diaHora(c.programadoPara)}`}>É publicado sozinho na hora marcada. Até lá dá para mudar ou voltar a rascunho.</Aviso> : null}
 
-      <dl className="grid gap-x-5 gap-y-3 rounded-[18px] border border-linha bg-superficie p-4 text-sm shadow-s1 sm:grid-cols-3 md:px-5">
+      <dl className="grid gap-x-5 gap-y-3 rounded-[18px] border border-linha bg-superficie p-4 t-texto shadow-s1 sm:grid-cols-3 md:px-5">
         <div><dt className="t-apoio">{c.publicadoEm ? "Publicado" : "Escrito"}</dt>
-          <dd className="text-[15px]">{c.publicadoEm ? `${diaHora(c.publicadoEm)} por ${c.publicadoPor ?? "alguém"}` : `${diaHora(c.criadoEm)} por ${c.autor ?? "alguém"}`}</dd></div>
+          <dd className="t-texto">{c.publicadoEm ? `${diaHora(c.publicadoEm)} por ${c.publicadoPor ?? "alguém"}` : `${diaHora(c.criadoEm)} por ${c.autor ?? "alguém"}`}</dd></div>
         <div><dt className="t-apoio">Para quem</dt>
-          <dd className="text-[15px]">{c.publicoResumo}{c.destinatarios !== undefined ? ` · ${c.destinatarios === 1 ? "1 contato" : `${c.destinatarios} contatos`} na publicação` : ""}</dd></div>
+          <dd className="t-texto">{c.publicoResumo}{c.destinatarios !== undefined ? ` · ${c.destinatarios === 1 ? "1 contato" : `${c.destinatarios} contatos`} na publicação` : ""}</dd></div>
         <div><dt className="t-apoio">Ligado a</dt>
-          <dd className="grid text-[15px]">
+          <dd className="grid t-texto">
             {c.pedido ? <Link href={`/pedidos/pedido?id=${c.pedido.id}`} className="text-violeta-600 hover:underline">Pedido {c.pedido.protocolo}</Link> : null}
             {c.pedidoOculto ? <span className="text-tinta-suave">Um pedido que você não vê</span> : null}
             {c.manutencao ? <Link href={`/manutencao/manutencao?id=${c.manutencao.id}`} className="text-violeta-600 hover:underline">Manutenção: {c.manutencao.titulo}</Link> : null}
@@ -193,13 +193,13 @@ function ComunicadoAberto() {
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <div className="grid gap-5">
           <CartaoFicha id="texto" titulo="Texto" icone="documento">
-            <div className="text-base leading-relaxed whitespace-pre-line">{c.texto}</div>
-            {c.assinatura ? <p className="t-apoio text-[15px]">{c.assinatura}</p> : null}
+            <div className="t-texto leading-relaxed whitespace-pre-line">{c.texto}</div>
+            {c.assinatura ? <p className="t-texto text-tinta-suave">{c.assinatura}</p> : null}
             {fotos.length ? (
               <ul className="grid gap-2">
                 {fotos.map((a) => (
-                  <li key={a.id} className="flex items-center justify-between gap-2 rounded-[14px] border border-linha px-3 py-2 text-sm">
-                    <button type="button" className="flex items-center gap-2 text-left font-medium text-violeta-600 [overflow-wrap:anywhere] hover:underline"
+                  <li key={a.id} className="flex items-center justify-between gap-2 rounded-[14px] border border-linha px-3 py-2 t-texto">
+                    <button type="button" className="elo flex gap-2"
                       onClick={() => void abrirLink(`/v1/condominio/comunicados/${c.id}/arquivos/${a.id}/link`).then((e) => { if (e) setRecado({ tom: "atencao", texto: e }); })}>
                       <Icone nome={a.tipo.startsWith("image/") ? "camera" : "documento"} className="h-4 w-4 shrink-0" />{a.nome}
                     </button>
@@ -249,7 +249,7 @@ function ComunicadoAberto() {
               ) : null}
               {d.pode.copiar ? (
                 <Canal icone="imprimir" tom="andamento" titulo="Folha para o mural" apoio="A4 com o nome do condomínio, a data e a versão."
-                  acao={<Link href={`/mural?id=${c.id}`} target="_blank" className={classeBotao("contorno", "h-9 px-3.5 text-[13px]")}><Icone nome="imprimir" />Abrir a folha</Link>} />
+                  acao={<Link href={`/mural?id=${c.id}`} target="_blank" className={classeBotao("contorno", "h-9 px-3.5 t-apoio")}><Icone nome="imprimir" />Abrir a folha</Link>} />
               ) : null}
             </ul>
             {whatsapp?.total ? <p className="t-apoio">Lida é o que o WhatsApp informa; quem desligou a confirmação de leitura aparece só como entregue.</p> : null}
@@ -258,7 +258,7 @@ function ComunicadoAberto() {
 
           {d.problemas?.length ? (
             <CartaoFicha id="voltaram" titulo={d.problemas.some((x) => x.canal === "WHATSAPP") ? "Mensagens que não chegaram" : "E-mails que não chegaram"} icone="alerta">
-              <ul className="grid gap-2 text-sm">
+              <ul className="grid gap-2 t-texto">
                 {d.problemas.map((x) => (
                   <li key={x.envioId} className="rounded-[14px] border border-linha px-3 py-2">
                     <span className="block font-medium">{x.nome}{x.unidades ? ` · ${x.unidades}` : ""}</span>

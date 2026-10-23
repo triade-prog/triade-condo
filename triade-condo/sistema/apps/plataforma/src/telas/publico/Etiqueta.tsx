@@ -39,27 +39,27 @@ export function Etiqueta() {
   return (
     <TelaPublica titulo={e.condominio} subtitulo="Avisar um problema" icone="pin" rodape={RODAPE}>
       <Cartao>
-        <span className="justify-self-start rounded-full bg-neutro-fundo px-2.5 py-0.5 text-xs font-medium text-tinta-suave">Etiqueta {e.rotulo}</span>
-        <h2 className="text-xl font-medium">{e.local}</h2>
-        <p className="text-[15px]">Viu algo quebrado, vazando ou fora do lugar aqui? Avise o condomínio pelo WhatsApp. O local já vai escrito.</p>
+        <span className="justify-self-start rounded-full bg-neutro-fundo px-2.5 py-0.5 t-apoio font-medium text-tinta-suave">Etiqueta {e.rotulo}</span>
+        <h2 className="t-titulo-secao font-medium">{e.local}</h2>
+        <p className="t-texto">Viu algo quebrado, vazando ou fora do lugar aqui? Avise o condomínio pelo WhatsApp. O local já vai escrito.</p>
       </Cartao>
       {e.reserva && e.whatsapp ? (
         <Cartao className="border-violeta-200 bg-violeta-50">
-          <h2 className="text-lg font-medium">Reservar: {e.reserva.area}</h2>
-          <p className="text-[15px]">
+          <h2 className="t-titulo-secao font-medium">Reservar: {e.reserva.area}</h2>
+          <p className="t-texto">
             {e.reserva.capacidade ? `Até ${e.reserva.capacidade} pessoas, ${e.reserva.horario}` : e.reserva.horario.replace(/^./, (x) => x.toUpperCase())}.
             {e.reserva.livres?.length ? ` Livre em ${e.reserva.livres.map((d) => `${d.slice(8, 10)}/${d.slice(5, 7)}`).join(" e ")}.` : ""}
           </p>
           <a href={linkWhatsapp(e.whatsapp, e.reserva.texto)} rel="noopener noreferrer" className={classeBotao("contorno", "justify-self-stretch sm:justify-self-start")}>
             <Icone nome="calendario" />Reservar pelo WhatsApp
           </a>
-          <p className="text-[13px] text-tinta-suave">O botão abre o WhatsApp do condomínio já com a área escolhida.</p>
+          <p className="t-apoio text-tinta-suave">O botão abre o WhatsApp do condomínio já com a área escolhida.</p>
         </Cartao>
       ) : null}
       {e.recado ? (
         <Cartao className="border-violeta-200 bg-violeta-50">
-          <p className="text-[13px] text-tinta-suave">Recado do condomínio{e.recadoEm ? ` · ${diaHora(e.recadoEm)}` : ""}</p>
-          <p className="text-[15px]">{e.recado}</p>
+          <p className="t-apoio text-tinta-suave">Recado do condomínio{e.recadoEm ? ` · ${diaHora(e.recadoEm)}` : ""}</p>
+          <p className="t-texto">{e.recado}</p>
         </Cartao>
       ) : null}
       <FaixaQueda canal={e.canalAlternativo} />
@@ -68,7 +68,7 @@ export function Etiqueta() {
           <Icone nome="whats" />Avisar pelo WhatsApp do condomínio
         </a>
       ) : <Aviso tom="info">Fale com o condomínio pelo WhatsApp de sempre e diga o local: {e.local}.</Aviso>}
-      <p className="text-[13px] text-tinta-suave">
+      <p className="t-apoio text-tinta-suave">
         Emergência, como fogo, gás ou alguém preso no elevador: ligue 193. O aviso pelo WhatsApp não é atendimento imediato.
       </p>
     </TelaPublica>

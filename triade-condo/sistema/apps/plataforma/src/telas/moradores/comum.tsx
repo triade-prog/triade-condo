@@ -93,7 +93,7 @@ export function CartaoFicha({ id, titulo, icone, acao, children }: { id: string;
 export function LadrilhoUnidade({ texto, grande }: { texto: string; grande?: boolean }) {
   const curto = texto.length > 4 ? `${texto[0]}${texto.replace(/\D/g, "")}`.slice(0, 4) : texto;
   return (
-    <span aria-hidden="true" className={`ladrilho t-codigo ${grande ? "h-14 w-14 rounded-2xl bg-[image:var(--grad-acao)] text-base text-superficie" : "h-11 w-11 rounded-xl"}`}>{curto}</span>
+    <span aria-hidden="true" className={`ladrilho t-codigo ${grande ? "h-14 w-14 rounded-2xl bg-[image:var(--grad-acao)] t-texto text-superficie" : "h-11 w-11 rounded-xl"}`}>{curto}</span>
   );
 }
 

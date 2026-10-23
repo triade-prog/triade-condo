@@ -122,11 +122,11 @@ function Formulario({ l, a, voltar, titulo: tituloTela }: { l: ListaAssembleias;
         erro={comErro.includes("titulo") ? "Escreva o nome, com 5 a 120 letras" : null} ajuda="Como aparece no edital e no link de cada unidade. Por exemplo: Assembleia geral ordinária 2026." />
       <div className="grid gap-4">
         <div className="grid gap-1.5">
-          <span className="text-[13px] font-medium">Tipo</span>
+          <span className="t-apoio font-medium">Tipo</span>
           <Escolha rotulo="Tipo" atual={tipo} aoMudar={setTipo} opcoes={(Object.keys(TIPOS_ASSEMBLEIA) as TipoAssembleia[]).map((v) => ({ valor: v, texto: TIPOS_ASSEMBLEIA[v] }))} />
         </div>
         <div className="grid gap-1.5">
-          <span className="text-[13px] font-medium">Forma</span>
+          <span className="t-apoio font-medium">Forma</span>
           <Escolha rotulo="Forma" atual={forma} aoMudar={setForma} opcoes={(Object.keys(FORMAS_ASSEMBLEIA) as FormaAssembleia[]).map((v) => ({ valor: v, texto: FORMAS_ASSEMBLEIA[v] }))} />
         </div>
       </div>
@@ -178,11 +178,11 @@ function Formulario({ l, a, voltar, titulo: tituloTela }: { l: ListaAssembleias;
                 <CampoTexto key={k} id={`as-item-${n}-op-${k}`} rotulo={`Opção ${k + 1} do item ${n + 1}`} maxLength={80} value={o}
                   onChange={(e) => mudarItem(n, { opcoes: i.opcoes.map((x, j) => (j === k ? e.target.value : x)) })} />
               ))}
-              <span className="flex flex-wrap items-center gap-2 text-[13px] text-tinta-suave">
+              <span className="flex flex-wrap items-center gap-2 t-apoio text-tinta-suave">
                 {i.opcoes.length < 10 ? <Botao variante="discreto" tamanho="p" onClick={() => mudarItem(n, { opcoes: [...i.opcoes, ""] })}>Mais uma opção</Botao> : null}
                 Em branco entra sozinho no fim.
               </span>
-              {erroItem(n, "opcoes") ? <span className="text-[13px] text-erro" role="alert">Escreva de 2 a 10 opções, diferentes entre si</span> : null}
+              {erroItem(n, "opcoes") ? <span className="t-apoio text-erro" role="alert">Escreva de 2 a 10 opções, diferentes entre si</span> : null}
             </div>
           ) : null}
         </div>
@@ -193,7 +193,7 @@ function Formulario({ l, a, voltar, titulo: tituloTela }: { l: ListaAssembleias;
 
   const convocacao = (
     <CartaoFicha id="convocacao" titulo="Convocação" icone="megafone">
-      <dl className="grid text-sm">
+      <dl className="grid t-texto">
         {[["Enviar o edital até", enviarAte], ["Antecedência", `${l.regras.antecedencia} dias, pela convenção`], ["Peso do voto", PESOS_ASSEMBLEIA[l.regras.peso]], ["Unidades que votam", String(l.unidades)]].map(([n, v]) => (
           <div key={n} className="flex justify-between gap-3 border-t border-linha py-2.5"><dt className="t-apoio">{n}</dt><dd className="text-right font-semibold">{v}</dd></div>
         ))}

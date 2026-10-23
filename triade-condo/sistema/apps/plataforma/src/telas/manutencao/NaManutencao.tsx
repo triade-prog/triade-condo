@@ -27,26 +27,26 @@ export function NaManutencao({ pedido, ativo, avisar }: { pedido: PedidoDetalhe[
 
   return (
     <section aria-labelledby="t-na-manutencao" className="grid content-start gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
-      <h2 id="t-na-manutencao" className="text-xs font-medium tracking-[.1em] text-tinta-suave uppercase">Manutenção ligada</h2>
+      <h2 id="t-na-manutencao" className="t-rotulo font-medium tracking-[.1em] text-tinta-suave uppercase">Manutenção ligada</h2>
       {manutencoes.length ? (
         <ul className="grid gap-1.5">
           {manutencoes.map((m) => (
-            <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 t-texto">
               <span className="grid gap-0.5">
                 <Link href={`/manutencao/manutencao?id=${m.id}`} className="font-medium hover:text-violeta-600 hover:underline">{m.titulo}</Link>
-                <span className="text-xs text-tinta-suave">{nomeExecutor(m.executor)}{m.previsao ? ` · previsão ${m.previsao.slice(8)}/${m.previsao.slice(5, 7)}` : ""}</span>
+                <span className="t-apoio text-tinta-suave">{nomeExecutor(m.executor)}{m.previsao ? ` · previsão ${m.previsao.slice(8)}/${m.previsao.slice(5, 7)}` : ""}</span>
               </span>
               <SeloManutencao estado={m.estado} />
             </li>
           ))}
         </ul>
-      ) : <p className="text-sm text-tinta-suave">Nenhuma manutenção ligada.</p>}
+      ) : <p className="t-apoio text-tinta-suave">Nenhuma manutenção ligada.</p>}
       {abertaNoCancelado ? <Aviso tom="atencao" papel="status">O pedido foi cancelado, mas a manutenção ligada continua aberta. Se ela também não vai mais acontecer, cancele-a na manutenção.</Aviso> : null}
       {concluida && ativo ? <Aviso tom="info" papel="status">Manutenção concluída: dê o retorno ao morador. Nada muda sozinho no pedido.</Aviso> : null}
       {podeAbrir ? (
         <div className="grid justify-items-start gap-1">
           <Botao variante="contorno" tamanho="m" disabled={opcoes.estado !== "pronto"} onClick={() => setAbrir(true)}>+ Abrir manutenção a partir deste pedido</Botao>
-          <span className="text-xs text-tinta-suave">Concluir a manutenção não encerra o pedido.</span>
+          <span className="t-apoio text-tinta-suave">Concluir a manutenção não encerra o pedido.</span>
         </div>
       ) : null}
       {opcoes.estado === "pronto" ? (

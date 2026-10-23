@@ -64,8 +64,8 @@ export function Entrar() {
   return (
     <div className="grid gap-5">
       <div>
-        <h1 className="text-[28px] font-normal tracking-tight">Entrar no Console</h1>
-        <ol className="mt-2 flex gap-2 text-xs text-tinta-suave" aria-label="Etapas">
+        <h1 className="t-titulo-tela font-normal tracking-tight">Entrar no Console</h1>
+        <ol className="mt-2 flex gap-2 t-apoio text-tinta-suave" aria-label="Etapas">
           <li aria-current={etapa === "SENHA" ? "step" : undefined} className={etapa === "SENHA" ? "font-semibold text-violeta-700" : ""}>1 Senha</li>
           <li aria-hidden="true">depois</li>
           <li aria-current={etapa !== "SENHA" ? "step" : undefined} className={etapa !== "SENHA" ? "font-semibold text-violeta-700" : ""}>2 Código do autenticador</li>
@@ -78,8 +78,8 @@ export function Entrar() {
           <CampoTexto id="email" rotulo="E-mail" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <CampoTexto id="senha" rotulo="Senha" type="password" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)} />
           <Botao type="submit" disabled={enviando}>{enviando ? "Conferindo…" : "Entrar"}</Botao>
-          <Link href="/recuperar" className="justify-self-center text-sm font-medium text-violeta-600 hover:underline">Esqueci a senha</Link>
-          <p className="text-xs text-tinta-suave">Só a equipe TRÍADE entra aqui. Síndico usa a Plataforma do síndico.</p>
+          <Link href="/recuperar" className="justify-self-center t-texto font-medium text-violeta-600 hover:underline">Esqueci a senha</Link>
+          <p className="t-apoio text-tinta-suave">Só a equipe TRÍADE entra aqui. Síndico usa a Plataforma do síndico.</p>
         </form>
       ) : (
         <form onSubmit={enviarCodigo} className="grid gap-4">
@@ -91,7 +91,7 @@ export function Entrar() {
                   {/* QR gerado na hora em data: (sem otimização de imagem a fazer). */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={imagemQr(cadastro.qrCode)} alt="QR code para cadastrar o autenticador" width={180} height={180} className="justify-self-center rounded-md border border-linha bg-papel p-2" />
-                  <p className="text-xs text-tinta-suave">
+                  <p className="t-apoio text-tinta-suave">
                     Sem câmera? Digite esta chave no aplicativo: <code className="font-mono break-all text-tinta">{cadastro.segredo}</code>
                   </p>
                 </>

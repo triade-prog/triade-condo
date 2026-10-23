@@ -27,12 +27,12 @@ export function Compromisso() {
   const [acao, setAcao] = useState<Acao>(null);
   const [recado, setRecado] = useState<Recado>(null);
   const [falha, setFalha] = useState<ErroApi | null>(null);
-  const voltar = <Link href="/agenda" className="text-sm font-medium text-violeta-600 hover:underline">Voltar à agenda</Link>;
+  const voltar = <Link href="/agenda" className="t-texto font-medium text-violeta-600 hover:underline">Voltar à agenda</Link>;
 
-  if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Compromisso</h1><Vazio titulo="Compromisso não encontrado" /></div>;
+  if (!id) return <div className="grid gap-3">{voltar}<h1 className="t-titulo-tela font-normal tracking-tight">Compromisso</h1><Vazio titulo="Compromisso não encontrado" /></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o compromisso…" />;
   if (carga.estado === "erro") {
-    return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Compromisso</h1><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+    return <div className="grid gap-3">{voltar}<h1 className="t-titulo-tela font-normal tracking-tight">Compromisso</h1><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
   }
 
   const d = carga.dados;
@@ -55,14 +55,14 @@ export function Compromisso() {
       {voltar}
       <div className="grid gap-2">
         <Tipo tipo={c.tipo} />
-        <h1 className="text-[28px] font-normal tracking-tight">{c.titulo}</h1>
-        <p className="flex flex-wrap items-center gap-2 text-sm">
+        <h1 className="t-titulo-tela font-normal tracking-tight">{c.titulo}</h1>
+        <p className="flex flex-wrap items-center gap-2 t-texto">
           <SeloSituacao estado={c.estado} />
           {c.serie ? <span className="text-tinta-suave">{descreverRepeticao(c.serie)}</span> : null}
         </p>
-        <p className="text-sm">{quando}</p>
-        {quem ? <p className="text-sm text-tinta-suave">Quem participa: {quem}</p> : null}
-        <p className="text-xs text-tinta-suave">Registrado por {c.registradoPor ?? "alguém sem acesso agora"} em {diaHora(c.registradoEm)}</p>
+        <p className="t-texto">{quando}</p>
+        {quem ? <p className="t-apoio text-tinta-suave">Quem participa: {quem}</p> : null}
+        <p className="t-apoio text-tinta-suave">Registrado por {c.registradoPor ?? "alguém sem acesso agora"} em {diaHora(c.registradoEm)}</p>
       </div>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
       {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={() => { setFalha(null); carga.recarregar(); }} /> : null}
@@ -73,13 +73,13 @@ export function Compromisso() {
       ) : null}
 
       {c.pedido ? (
-        <p className="text-sm">Pedido ligado: <Link href={`/pedidos/pedido?id=${c.pedido.id}`} className="font-medium text-violeta-600 hover:underline">{c.pedido.protocolo} · {c.pedido.assunto}</Link></p>
-      ) : c.pedidoOculto ? <p className="text-sm text-tinta-suave">Ligado a um pedido que você não vê.</p> : null}
+        <p className="t-texto">Pedido ligado: <Link href={`/pedidos/pedido?id=${c.pedido.id}`} className="font-medium text-violeta-600 hover:underline">{c.pedido.protocolo} · {c.pedido.assunto}</Link></p>
+      ) : c.pedidoOculto ? <p className="t-apoio text-tinta-suave">Ligado a um pedido que você não vê.</p> : null}
       {c.manutencao ? (
-        <p className="text-sm">Manutenção ligada: <Link href={`/manutencao/manutencao?id=${c.manutencao.id}`} className="font-medium text-violeta-600 hover:underline">{c.manutencao.titulo}</Link>
+        <p className="t-texto">Manutenção ligada: <Link href={`/manutencao/manutencao?id=${c.manutencao.id}`} className="font-medium text-violeta-600 hover:underline">{c.manutencao.titulo}</Link>
           <span className="text-tinta-suave"> · cancelar a visita não apaga a manutenção</span></p>
       ) : null}
-      {c.observacao ? <p className="whitespace-pre-line rounded-2xl border border-linha bg-superficie p-4 text-sm">{c.observacao}</p> : null}
+      {c.observacao ? <p className="whitespace-pre-line rounded-2xl border border-linha bg-superficie p-4 t-texto">{c.observacao}</p> : null}
 
       {pode ? (
         <div className="flex flex-wrap items-center gap-2.5">
@@ -96,12 +96,12 @@ export function Compromisso() {
       ) : null}
 
       <section aria-labelledby="t-hist" className="grid gap-2">
-        <h2 id="t-hist" className="text-lg font-medium">Histórico</h2>
+        <h2 id="t-hist" className="t-titulo-secao font-medium">Histórico</h2>
         <ol className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
           {d.historico.map((h, i) => (
-            <li key={i} className="grid gap-0.5 px-4 py-2.5 text-sm">
+            <li key={i} className="grid gap-0.5 px-4 py-2.5 t-texto">
               <span>{descreverEventoCompromisso(h.acao, h.dados)}</span>
-              <span className="text-xs text-tinta-suave">
+              <span className="t-apoio text-tinta-suave">
                 {h.autor ?? "Sistema"} · {diaHora(h.em)}{typeof h.dados.motivo === "string" ? ` · "${h.dados.motivo}"` : ""}
               </span>
             </li>
@@ -169,7 +169,7 @@ function FormReagendar({ c, aoFechar, salvo, recarregar }: { c: CompromissoAgend
   return (
     <form onSubmit={enviar} noValidate className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={() => { aoFechar(); recarregar(); }} /> : null}
-      <p className="text-sm text-tinta-suave">Hoje: {TIPOS_COMPROMISSO[c.tipo].toLowerCase()} em {mostrarDataCurta(c.data)}, {mostrarHorario(c).toLowerCase()}.</p>
+      <p className="t-apoio text-tinta-suave">Hoje: {TIPOS_COMPROMISSO[c.tipo].toLowerCase()} em {mostrarDataCurta(c.data)}, {mostrarHorario(c).toLowerCase()}.</p>
       <div className="grid gap-4 sm:grid-cols-3">
         <CampoTexto id="re-data" rotulo="Nova data" type="date" required value={v.data} erro={msg("data", "Escolha uma data válida.")} onChange={(e) => mudar({ data: e.target.value })} />
         <CampoTexto id="re-inicio" rotulo="Começa" type="time" value={v.horaInicio} disabled={v.diaTodo} onChange={(e) => mudar({ horaInicio: e.target.value })} />
@@ -180,7 +180,7 @@ function FormReagendar({ c, aoFechar, salvo, recarregar }: { c: CompromissoAgend
       <CampoAreaTexto id="re-motivo" rotulo="Por que mudou" required maxLength={500} value={v.motivo} erro={msg("motivo", "Diga o motivo, de 3 a 500 caracteres.")}
         onChange={(e) => mudar({ motivo: e.target.value })} />
       {c.serie ? <Escolha rotulo="Vale para" atual={v.escopo} aoMudar={(x) => mudar({ escopo: x })} opcoes={opcoesEscopo} /> : null}
-      <p className="text-xs text-tinta-suave">A data anterior fica no histórico.{c.serie ? " Nas próximas, a mesma diferença de dias vale para cada data." : ""}</p>
+      <p className="t-apoio text-tinta-suave">A data anterior fica no histórico.{c.serie ? " Nas próximas, a mesma diferença de dias vale para cada data." : ""}</p>
       {conflitos ? (
         <Aviso tom="atencao" titulo="Conflita com outro compromisso">
           <ListaConflitos conflitos={conflitos} />

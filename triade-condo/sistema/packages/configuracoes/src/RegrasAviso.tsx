@@ -64,8 +64,8 @@ export function RegrasAviso({ config, pode, recarregar, n: numeroParte }: PropsA
         <>
           <ol className="grid gap-4 md:grid-cols-2">
             <li className="grid content-start gap-1 md:col-span-2">
-              <span className="text-[13px] font-medium">1. Avisar o responsável</span>
-              <span className="text-sm">Na hora em que o retorno vence. Sem responsável, quem recebe é o síndico.</span>
+              <span className="t-apoio font-medium">1. Avisar o responsável</span>
+              <span className="t-texto">Na hora em que o retorno vence. Sem responsável, quem recebe é o síndico.</span>
             </li>
             <li>{numero("sindicoHoras", "2. Avisar o síndico depois de", "Horas de atendimento", `Sugestão: ${REGRAS_AVISO_PADRAO.sindicoHoras}.`)}</li>
             <li>{numero("substitutoHoras", "3. Avisar o substituto depois de", "Horas de atendimento", `Sugestão: ${REGRAS_AVISO_PADRAO.substitutoHoras}.`)}</li>
@@ -83,10 +83,10 @@ export function RegrasAviso({ config, pode, recarregar, n: numeroParte }: PropsA
             {numero("semResponsavelHoras", "Pedido sem responsável depois de", "Horas de atendimento", "Avisa o síndico.")}
             {numero("pendenciaDias", "Pendência parada depois de", "Dias", "Avisa quem cuida da pendência.")}
           </div>
-          <p className="text-sm text-tinta-suave">As horas contam só o horário de atendimento e pulam feriados. Etapa que pausa o prazo também pausa o aviso. Ninguém recebe o mesmo aviso duas vezes.</p>
+          <p className="t-apoio text-tinta-suave">As horas contam só o horário de atendimento e pulam feriados. Etapa que pausa o prazo também pausa o aviso. Ninguém recebe o mesmo aviso duas vezes.</p>
         </>
       ) : (
-        <ul className="grid gap-2 text-sm">
+        <ul className="grid gap-2 t-texto">
           <li>Responsável: na hora</li>
           <li>Síndico: depois de {a.sindicoHoras} h de atendimento</li>
           <li>Substituto: {nomeSubstituto ? `${nomeSubstituto.nome}, depois de ${a.substitutoHoras} h de atendimento` : "ninguém; o aviso para no síndico"}</li>

@@ -41,9 +41,9 @@ function Termo({ aoAceitar }: { aoAceitar: () => void }) {
   }
   return (
     <section aria-labelledby="t-termo" className="grid gap-3 rounded-[18px] border border-atencao-borda bg-superficie p-5 shadow-s1">
-      <h2 id="t-termo" className="text-lg font-medium">Termo do piloto do WhatsApp</h2>
+      <h2 id="t-termo" className="t-titulo-secao font-medium">Termo do piloto do WhatsApp</h2>
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-      <ul className="grid list-disc gap-1 pl-5 text-sm">
+      <ul className="grid list-disc gap-1 pl-5 t-texto">
         <li>A conexão é de teste: liga o número do condomínio pelo WhatsApp Web, como um aparelho conectado. Não é a API oficial.</li>
         <li>O WhatsApp pode restringir ou bloquear o número a qualquer momento, sem aviso e sem recurso.</li>
         <li>Use um número só do condomínio. Nunca o número pessoal do síndico nem de outra pessoa.</li>
@@ -81,15 +81,15 @@ function Mensagens({ d }: { d: ConfigWhatsapp }) {
   const campos = camposComErro(erro);
   return (
     <section aria-labelledby="t-zap-msg" className="grid gap-4 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-zap-msg" className="text-lg font-medium">Mensagens e pedidos que chegam</h2>
+      <h2 id="t-zap-msg" className="t-titulo-secao font-medium">Mensagens e pedidos que chegam</h2>
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
       <CampoAreaTexto id="zap-fora" rotulo="Fora do horário" maxLength={600} value={fora} disabled={!d.pode.editar} onChange={(e) => setFora(e.target.value)}
         ajuda="Vai uma vez por período fora do horário de atendimento (Configurações › Horários). Não prometa prazo nem atendimento imediato."
         erro={campos.includes("foraHorario") ? "Escreva de 20 a 600 caracteres." : promessa ? "Tire a promessa de prazo ou de atendimento imediato." : null} />
       <div className="grid gap-1">
-        <span className="text-sm font-medium">Aviso contra golpes (fixo)</span>
-        <p className="rounded-xl border border-linha bg-superficie-2 px-3 py-2 text-sm">{d.avisoGolpe}</p>
-        <span className="text-xs text-tinta-suave">Vai nas boas-vindas e na confirmação de cada pedido.</span>
+        <span className="t-texto font-medium">Aviso contra golpes (fixo)</span>
+        <p className="rounded-xl border border-linha bg-superficie-2 px-3 py-2 t-texto">{d.avisoGolpe}</p>
+        <span className="t-apoio text-tinta-suave">Vai nas boas-vindas e na confirmação de cada pedido.</span>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <CampoSelecao id="zap-categoria" rotulo="Categoria do pedido que chega" value={categoria} disabled={!d.pode.editar}
@@ -97,7 +97,7 @@ function Mensagens({ d }: { d: ConfigWhatsapp }) {
         <CampoSelecao id="zap-prioridade" rotulo="Prioridade" value={prioridade} disabled={!d.pode.editar}
           onChange={(e) => setPrioridade(e.target.value)} opcoes={d.prioridades.map((p) => ({ valor: p.id, texto: p.nome }))} />
       </div>
-      <p className="text-xs text-tinta-suave">Quem atende reclassifica cada pedido. O responsável é o padrão da fila (Pessoas e acesso).</p>
+      <p className="t-apoio text-tinta-suave">Quem atende reclassifica cada pedido. O responsável é o padrão da fila (Pessoas e acesso).</p>
     </section>
   );
 }
@@ -119,8 +119,8 @@ function QuemCuidaDasQuedas({ d }: { d: ConfigWhatsapp }) {
 
   return (
     <section aria-labelledby="t-zap-quedas" className="grid gap-4 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-zap-quedas" className="text-lg font-medium">Quando o WhatsApp cair</h2>
-      <p className="text-sm text-tinta-suave">
+      <h2 id="t-zap-quedas" className="t-titulo-secao font-medium">Quando o WhatsApp cair</h2>
+      <p className="t-apoio text-tinta-suave">
         Quem cuida é avisado no sino quando o número desconecta, escreve por onde os moradores falam enquanto isso e, quando o número volta, decide o que ficou parado na fila.
         {d.quedas?.quemCuida ? ` Hoje: ${d.quedas.quemCuida}.` : ""}
       </p>
@@ -152,20 +152,20 @@ function MeusAvisos({ d }: { d: ConfigWhatsapp }) {
 
   return (
     <section aria-labelledby="t-meus-avisos" className="grid gap-4 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-      <h2 id="t-meus-avisos" className="text-lg font-medium">Avisos no meu WhatsApp</h2>
-      <p className="text-sm text-tinta-suave">Chegam do número do condomínio, só no horário de funcionamento, sem nome nem telefone do morador. Decisões continuam no painel.</p>
+      <h2 id="t-meus-avisos" className="t-titulo-secao font-medium">Avisos no meu WhatsApp</h2>
+      <p className="t-apoio text-tinta-suave">Chegam do número do condomínio, só no horário de funcionamento, sem nome nem telefone do morador. Decisões continuam no painel.</p>
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-      <label className="flex items-center gap-3 text-sm">
+      <label className="flex items-center gap-3 t-texto">
         <input type="checkbox" className="h-5 w-5 accent-violeta-600" checked={ligado} onChange={(e) => setLigado(e.target.checked)} />
         Receber avisos no meu WhatsApp
       </label>
       <fieldset className="grid gap-2" disabled={!ligado}>
-        <legend className="mb-1 text-sm font-medium">Quais</legend>
+        <legend className="mb-1 t-texto font-medium">Quais</legend>
         {(Object.entries(AVISOS_NO_WHATSAPP) as [AvisoNoWhatsapp, string][]).map(([k, t]) => (
-          <label key={k} className="flex items-center gap-3 text-sm">
+          <label key={k} className="flex items-center gap-3 t-texto">
             <input type="checkbox" className="h-5 w-5 accent-violeta-600" checked={tipos.includes(k)}
               onChange={(e) => setTipos(e.target.checked ? [...tipos, k] : tipos.filter((x) => x !== k))} />
-            <span>{t}{k === "PEDIDO_NOVO" ? <span className="block text-xs text-tinta-suave">De todos os canais, não só do WhatsApp.</span> : null}</span>
+            <span>{t}{k === "PEDIDO_NOVO" ? <span className="block t-apoio text-tinta-suave">De todos os canais, não só do WhatsApp.</span> : null}</span>
           </label>
         ))}
       </fieldset>
@@ -191,7 +191,7 @@ export function AbaWhatsapp({ aoSalvar, tecnica }: { aoSalvar: (texto: string) =
       <Mensagens key={`m-${d.config.versao}`} d={d} />
       {d.quedas ? <QuemCuidaDasQuedas key={`q-${d.config.versao}`} d={d} /> : null}
       {onde === "app" ? null : (
-        <p className="text-sm text-tinta-suave">
+        <p className="t-apoio text-tinta-suave">
           O termo do piloto {d.conexao.termoAceitoEm ? "já foi aceito" : "ainda não foi aceito"}. O aceite e os avisos no WhatsApp de cada pessoa são do condomínio, no app.
         </p>
       )}

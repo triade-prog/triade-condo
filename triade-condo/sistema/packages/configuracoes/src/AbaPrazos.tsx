@@ -70,7 +70,7 @@ function TabelaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
       ) : null}
       {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={recarregar} /> : null}
       <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
-        <table className="w-full text-sm">
+        <table className="w-full t-texto">
           <caption className="sr-only">Prazos de retorno</caption>
           <thead className="bg-superficie-2 text-left text-tinta-suave">
             <tr>
@@ -86,7 +86,7 @@ function TabelaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
                 <tr key={p.id} className="border-t border-linha">
                   <td className="px-4 py-2.5">
                     <span className={geral ? "font-semibold" : ""}>{valePara(p)}</span>
-                    {geral ? <span className="block text-xs text-tinta-suave">Todos os pedidos sem exceção</span> : null}
+                    {geral ? <span className="block t-apoio text-tinta-suave">Todos os pedidos sem exceção</span> : null}
                   </td>
                   <td className="px-4 py-2.5 whitespace-nowrap">{horas(p.horas)}</td>
                   {pode ? (
@@ -104,7 +104,7 @@ function TabelaPrazos({ config, pode, recarregar, salvo }: PropsAba) {
       {pode ? (
         <span className="flex flex-wrap items-center gap-3">
           <Botao variante="contorno" tamanho="m" onClick={() => setNova(true)}><Icone nome="mais" />Nova exceção</Botao>
-          <span className="text-[13px] text-tinta-suave">Por categoria ou prioridade. A exceção grava na hora, pela janela.</span>
+          <span className="t-apoio text-tinta-suave">Por categoria ou prioridade. A exceção grava na hora, pela janela.</span>
         </span>
       ) : null}
 

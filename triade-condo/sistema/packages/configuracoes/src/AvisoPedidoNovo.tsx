@@ -29,29 +29,29 @@ export function AvisoPedidoNovo({ config, recarregar, n }: PropsAba & { n: numbe
 
   return (
     <ParteNumerada n={n} id="t-pedido-novo" titulo="Pedido novo">
-      <p className="text-sm text-tinta-suave">O responsável fica sabendo sempre, menos quando foi ele quem registrou. Sem responsável, ficam sabendo os que cuidam dos pedidos.</p>
+      <p className="t-apoio text-tinta-suave">O responsável fica sabendo sempre, menos quando foi ele quem registrou. Sem responsável, ficam sabendo os que cuidam dos pedidos.</p>
       {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={recarregar} /> : null}
       {a.podeMudar ? (
         <>
           <fieldset className="grid gap-2">
-            <legend className="mb-1 text-[13px] font-medium">Avisar o síndico</legend>
+            <legend className="mb-1 t-apoio font-medium">Avisar o síndico</legend>
             <div role="radiogroup" aria-label="Avisar o síndico" className="trilho justify-self-start">
               {(Object.entries(AVISO_NOVO_SINDICO) as [AvisoNovoSindico, string][]).map(([k, t]) => (
                 <button key={k} type="button" role="radio" aria-checked={sindico === k} className="chip" data-escolhido={sindico === k ? "" : undefined} onClick={() => setSindico(k)}>{t}</button>
               ))}
             </div>
-            <span className="text-xs text-tinta-suave">“Urgente” é a prioridade de nível mais alto do condomínio. Sem responsável continua avisando também depois, pela regra de escalonamento. Quem registra pode avisar a mais em cada pedido.</span>
+            <span className="t-apoio text-tinta-suave">“Urgente” é a prioridade de nível mais alto do condomínio. Sem responsável continua avisando também depois, pela regra de escalonamento. Quem registra pode avisar a mais em cada pedido.</span>
           </fieldset>
-          <label className="flex items-start gap-3 text-sm">
+          <label className="flex items-start gap-3 t-texto">
             <input type="checkbox" className="mt-0.5 h-5 w-5 accent-violeta-600" checked={protocolo} onChange={(e) => setProtocolo(e.target.checked)} />
             <span>
               Mandar o protocolo para quem pediu
-              <span className="block text-xs text-tinta-suave">Ligado, a linha Quem pediu já vem marcada. Pelo WhatsApp do condomínio quando o número está conectado; senão, por e-mail confirmado. Quem registra pode desmarcar em cada pedido.</span>
+              <span className="block t-apoio text-tinta-suave">Ligado, a linha Quem pediu já vem marcada. Pelo WhatsApp do condomínio quando o número está conectado; senão, por e-mail confirmado. Quem registra pode desmarcar em cada pedido.</span>
             </span>
           </label>
         </>
       ) : (
-        <ul className="grid gap-2 text-sm">
+        <ul className="grid gap-2 t-texto">
           <li>Avisar o síndico: {AVISO_NOVO_SINDICO[a.sindico].toLowerCase()}</li>
           <li>Protocolo para quem pediu: {a.protocolo ? "ligado" : "desligado"}</li>
           <li className="text-tinta-suave">Só o síndico muda esta regra.</li>

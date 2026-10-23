@@ -68,13 +68,13 @@ export function CamposVinculo({ prefixo, valor, aoMudar, responsavelAtual, comPe
   return (
     <>
       <fieldset className="grid gap-2">
-        <legend className="mb-1 text-[13px] font-medium">{quem} é</legend>
+        <legend className="mb-1 t-apoio font-medium">{quem} é</legend>
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           <Caixa id={`${prefixo}-proprietario`} rotulo="Proprietário" marcada={valor.proprietario} aoMudar={(v) => mudar({ proprietario: v })} />
           <Caixa id={`${prefixo}-responsavel`} rotulo="Responsável pela unidade" marcada={valor.principal} aoMudar={(v) => mudar({ principal: v })} />
           <Caixa id={`${prefixo}-mora`} rotulo="Mora na unidade" marcada={valor.mora} aoMudar={(v) => mudar({ mora: v })} />
         </div>
-        <p className="text-xs text-tinta-suave">Marque tudo o que vale. A unidade tem um responsável só: é quem o condomínio procura primeiro.</p>
+        <p className="t-apoio text-tinta-suave">Marque tudo o que vale. A unidade tem um responsável só: é quem o condomínio procura primeiro.</p>
       </fieldset>
       {trocaResponsavel ? (
         <Aviso tom="atencao">
@@ -115,7 +115,7 @@ export function descreverVinculo(c: ComMarcas & { principal?: boolean }): { marc
 export function LinhaOcupacao({ ocupacao }: { ocupacao: { situacao: Ocupacao; moram: number; proprietarioNaoMora: boolean } }) {
   if (ocupacao.situacao === "SEM_CADASTRO") return null;
   return (
-    <p className="text-sm">
+    <p className="t-texto">
       <strong className="font-semibold">{OCUPACOES[ocupacao.situacao]}</strong>
       {ocupacao.moram ? ` · ${ocupacao.moram === 1 ? "1 mora aqui" : `${ocupacao.moram} moram aqui`}` : ""}
       {ocupacao.proprietarioNaoMora ? " · o proprietário não mora" : ""}

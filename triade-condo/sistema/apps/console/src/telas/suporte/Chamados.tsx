@@ -71,7 +71,7 @@ export function Chamados() {
             abas={(Object.keys(FILTROS_CHAMADO) as Filtro[]).map((f) => ({ valor: f, texto: FILTROS_CHAMADO[f], n: f === "TODOS" ? undefined : todos.filter(ACEITA[f]).length }))} />}
           filtros={
             <div className="flex flex-wrap items-center gap-3 border-b border-linha px-5 py-3 max-md:px-0">
-              <span className="text-[13px] font-medium">Tipo</span>
+              <span className="t-apoio font-medium">Tipo</span>
               <div role="group" aria-label="Tipo de chamado" className="trilho">
                 <button type="button" className="chip" aria-pressed={!soMudancas} onClick={() => mudarTipo(false)}>Todos os tipos</button>
                 <button type="button" className="chip" aria-pressed={soMudancas} onClick={() => mudarTipo(true)}><Icone nome="trocar" />Mudanças</button>

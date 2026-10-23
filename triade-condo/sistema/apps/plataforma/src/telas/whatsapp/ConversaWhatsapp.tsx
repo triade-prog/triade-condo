@@ -65,7 +65,7 @@ const NA_FICHA = 3;
 /** O separador do dia na conversa. */
 export function SeparadorDia({ children }: { children: ReactNode }) {
   return (
-    <li aria-hidden="true" className="flex items-center gap-2.5 text-xs font-semibold text-tinta-suave">
+    <li aria-hidden="true" className="flex items-center gap-2.5 t-apoio font-semibold text-tinta-suave">
       <span className="h-px flex-1 bg-linha" />{children}<span className="h-px flex-1 bg-linha" />
     </li>
   );
@@ -74,10 +74,10 @@ export function SeparadorDia({ children }: { children: ReactNode }) {
 /** Uma mensagem: a do morador à esquerda, a do condomínio à direita, com quem e quando embaixo. */
 export function Bolha({ lado, children, rodape }: { lado: "MORADOR" | "CONDOMINIO"; children: ReactNode; rodape: ReactNode }) {
   return (
-    <li className={`grid max-w-[min(560px,85%)] gap-1.5 border px-3.5 py-2.5 text-sm ${lado === "CONDOMINIO"
+    <li className={`grid max-w-[min(560px,85%)] gap-1.5 border px-3.5 py-2.5 t-texto ${lado === "CONDOMINIO"
       ? "justify-self-end rounded-[16px_4px_16px_16px] border-violeta-200 bg-violeta-50" : "justify-self-start rounded-[4px_16px_16px_16px] border-linha bg-superficie-2"}`}>
       {children}
-      <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-tinta-suave">{rodape}</span>
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1 t-apoio text-tinta-suave">{rodape}</span>
     </li>
   );
 }
@@ -138,7 +138,7 @@ export function FaixaRevisao({ conversa, aoReabrir, salvo }: {
         <Dialogo aberto titulo="Manter concluído e responder" aoFechar={() => setManter(null)}>
           <div className="grid gap-4">
             {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-            <p className="text-sm">O morador escreveu: “{manter.texto}”.</p>
+            <p className="t-texto">O morador escreveu: “{manter.texto}”.</p>
             <CampoAreaTexto id="zap-manter" rotulo="Resposta ao morador" required maxLength={2000} value={resposta} onChange={(e) => setResposta(e.target.value)}
               erro={camposComErro(erro).includes("resposta") ? "Escreva a resposta ao morador." : null} />
             <div className="flex justify-end gap-2">
@@ -189,7 +189,7 @@ export function ConversaWhatsapp({ pedidoId, conversa }: { pedidoId: string; con
             {m.midia ? (
               m.midia.situacao === "LIBERADA" && m.midia.arquivoId
                 ? <Botao variante="contorno" tamanho="p" className="justify-self-start" onClick={() => void abrirArquivo(m.midia!.arquivoId!)}>Abrir {MIDIAS_WHATSAPP[m.midia.tipo]?.toLowerCase() ?? "arquivo"}</Botao>
-                : <span className="text-xs text-tinta-suave">
+                : <span className="t-apoio text-tinta-suave">
                     Arquivo {m.midia.situacao === "BAIXAR" ? "sendo conferido" : "não liberado"} ({(MIDIAS_WHATSAPP[m.midia.tipo] ?? "arquivo").toLowerCase()})
                     {m.midia.situacao !== "BAIXAR" && m.midia.motivo ? `: ${m.midia.motivo}` : ""}
                   </span>
@@ -234,7 +234,7 @@ export function PreviaModelo({ janela: j, texto }: { janela: JanelaWhatsapp; tex
   return (
     <div className="grid gap-1.5">
       <p className="t-rotulo">Como chega ao morador</p>
-      <p className="whitespace-pre-line rounded-[14px] border border-dashed border-violeta-300 bg-superficie p-3 text-sm">
+      <p className="whitespace-pre-line rounded-[14px] border border-dashed border-violeta-300 bg-superficie p-3 t-texto">
         {j.modelo.previa.replace("{{texto}}", texto.trim().replace(/\s+/g, " ") || "…")}
       </p>
     </div>

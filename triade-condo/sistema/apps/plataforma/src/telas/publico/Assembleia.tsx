@@ -39,14 +39,14 @@ export function Assembleia() {
       {a.estado === "CONVOCADA" ? <Procuracao a={a} base={base} aoMudar={pronto} /> : null}
       {a.estado === "EM_ANDAMENTO" || a.estado === "ENCERRADA" ? <Pauta a={a} base={base} aoMudar={pronto} /> : null}
       {a.representa?.length ? (
-        <p className="text-[13px] text-tinta-suave">Este link é da {a.unidade} nesta assembleia. Vale também pela procuração da {a.representa.join(" e da ")}.</p>
+        <p className="t-apoio text-tinta-suave">Este link é da {a.unidade} nesta assembleia. Vale também pela procuração da {a.representa.join(" e da ")}.</p>
       ) : null}
     </TelaPublica>
   );
 }
 
 const Dado = ({ rotulo, className = "", children }: { rotulo: string; className?: string; children: ReactNode }) => (
-  <div className={`grid gap-0.5 ${className}`}><dt className="text-[13px] text-tinta-suave">{rotulo}</dt><dd className="text-[15px]">{children}</dd></div>
+  <div className={`grid gap-0.5 ${className}`}><dt className="t-apoio text-tinta-suave">{rotulo}</dt><dd className="t-texto">{children}</dd></div>
 );
 
 /** Quando e onde: antes, as chamadas e o local; durante, o andamento e a presença. */
@@ -68,7 +68,7 @@ function QuandoEOnde({ a }: { a: AssembleiaPublica }) {
             <Dado rotulo="2ª chamada">{formatarDataHora(a.segundaChamada)}</Dado>
             {a.local ? <Dado rotulo="Onde" className="col-span-2">{a.local}</Dado> : null}
           </dl>
-          {a.estado === "CONVOCADA" ? <p className="t-apoio text-sm">No dia, abra este link para registrar a presença e votar, do salão ou de casa.</p> : null}
+          {a.estado === "CONVOCADA" ? <p className="t-texto text-tinta-suave">No dia, abra este link para registrar a presença e votar, do salão ou de casa.</p> : null}
         </>
       )}
       {a.linkVideo && a.estado !== "ENCERRADA" ? (
@@ -190,14 +190,14 @@ function ItemDaPauta({ i, ultimo, peso, children }: { i: Item; ultimo: boolean; 
   const r = i.resultado;
   const corpo = (
     <div className="grid gap-2.5 pb-3.5 pl-[38px]">
-      {i.descricao ? <p className="text-sm">{i.descricao}</p> : null}
+      {i.descricao ? <p className="t-texto">{i.descricao}</p> : null}
       {r ? (
         <>
           {r.opcoes.map((o, k) => {
             const vence = Math.max(...r.opcoes.map((x) => x.porcentagem)) === o.porcentagem && (r.situacao === "APROVADO" || r.situacao === "ESCOLHIDA");
             return (
               <div key={k} className="grid gap-1">
-                <span className="flex justify-between gap-2 text-[13px]">
+                <span className="flex justify-between gap-2 t-apoio">
                   <span>{o.texto}{i.meuVoto === k + 1 ? " · seu voto" : ""}</span><span className="text-tinta-suave">{porcento(o.porcentagem)}</span>
                 </span>
                 <span className="h-1.5 overflow-hidden rounded-full bg-superficie-2" aria-hidden="true">
@@ -206,7 +206,7 @@ function ItemDaPauta({ i, ultimo, peso, children }: { i: Item; ultimo: boolean; 
               </div>
             );
           })}
-          <span className="text-xs text-tinta-suave">{peso ? `${PESOS_ASSEMBLEIA[peso]} · ` : ""}{r.votaram} {r.votaram === 1 ? "unidade votou" : "unidades votaram"}</span>
+          <span className="t-apoio text-tinta-suave">{peso ? `${PESOS_ASSEMBLEIA[peso]} · ` : ""}{r.votaram} {r.votaram === 1 ? "unidade votou" : "unidades votaram"}</span>
         </>
       ) : null}
       {children}
@@ -215,9 +215,9 @@ function ItemDaPauta({ i, ultimo, peso, children }: { i: Item; ultimo: boolean; 
   const temCorpo = Boolean(i.descricao || r || children);
   const linha = (
     <>
-      <span className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full bg-violeta-100 text-[13px] font-bold text-violeta-700" aria-hidden="true">{i.ordem}</span>
+      <span className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full bg-violeta-100 t-apoio font-bold text-violeta-700" aria-hidden="true">{i.ordem}</span>
       <span className="grid min-w-0 flex-1 gap-1">
-        <span className="text-[15px] font-semibold"><span className="sr-only">{i.ordem}. </span>{i.titulo}</span>
+        <span className="t-titulo-cartao font-semibold"><span className="sr-only">{i.ordem}. </span>{i.titulo}</span>
         <span>{seloDoItem(i)}</span>
       </span>
     </>

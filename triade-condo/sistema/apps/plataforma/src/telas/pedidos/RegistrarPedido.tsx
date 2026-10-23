@@ -29,7 +29,9 @@ export interface DaMensagem {
   /** De onde vêm as mensagens, no alto do formulário. */
   origem: ReactNode;
   relato: string;
-  /** Junta as mensagens ao pedido registrado e diz se deu certo. */
+  /** A mensagem de onde o pedido nasce: a API junta a conversa no mesmo registro (D4.20). */
+  mensagemId: string;
+  /** Junta as mensagens ao pedido registrado e diz se deu certo (o Juntar de novo). */
   juntar: (pedidoId: string) => Promise<boolean>;
 }
 
@@ -170,13 +172,14 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
       return;
     }
     setEnviando(true);
-    const r = await chamarApi<{ id: string; protocolo: string; avisos?: AvisoDoRegistro[] }>("/v1/condominio/pedidos", { corpo: {
+    const r = await chamarApi<{ id: string; protocolo: string; avisos?: AvisoDoRegistro[]; juntou?: boolean }>("/v1/condominio/pedidos", { corpo: {
       unidadeId: onde === "UNIDADE" ? v.unidadeId || null : null,
       contatoId: onde === "UNIDADE" ? v.contatoId || null : null,
       local: v.local.trim() || null,
       canal: v.canal, categoriaId: v.categoriaId, prioridadeId: v.prioridadeId,
       assunto: v.assunto, descricao: v.descricao, privado: v.privado, responsavelId: v.responsavelId || null,
       avisar: paraEnviar(previa, escolhaVista),
+      mensagemId: daMensagem?.mensagemId ?? null,
     } });
     if (!r.ok) {
       setEnviando(false);
@@ -185,7 +188,7 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
       return setErro(r.erro);
     }
     await enviarArquivos(r.dados.id, "RELATO", arquivos, (chave, p) => setArquivos((xs) => xs.map((x) => (x.chave === chave ? { ...x, progresso: p } : x))));
-    if (daMensagem) setJuntou(await daMensagem.juntar(r.dados.id));
+    if (daMensagem) setJuntou(r.dados.juntou === true);
     setEnviando(false);
     aoRegistrar?.();
     const resp = opcoes.responsaveis.find((x) => x.vinculoId === v.responsavelId);
@@ -301,12 +304,12 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
                   ...disponiveis.map((r) => ({ valor: r.vinculoId, texto: `${r.eu ? "Eu" : r.nome}${r.vinculoId === opcoes.responsavelPadrao ? " (padrão da fila)" : ""}` }))]} />
             </div>
             <div className="grid gap-1.5">
-              <span aria-hidden="true" className="text-[13px] font-medium">Prioridade</span>
+              <span aria-hidden="true" className="t-apoio font-medium">Prioridade</span>
               <Escolha rotulo="Prioridade" atual={v.prioridadeId} aoMudar={(x) => mudar({ prioridadeId: x })}
                 opcoes={prioridades.map((p) => ({ valor: p.id,
                   texto: <>{/urgente/i.test(p.nome) ? <Icone nome="alerta" className="h-4 w-4" /> : null}{p.nome}</> }))} />
               {msg("prioridadeId", "Escolha uma prioridade ativa.")
-                ? <span className="text-xs text-erro">Escolha uma prioridade ativa.</span>
+                ? <span className="t-apoio text-erro">Escolha uma prioridade ativa.</span>
                 : prioridade?.significado ? <span className="t-apoio">{prioridade.nome}: {prioridade.significado.charAt(0).toLowerCase() + prioridade.significado.slice(1)}</span> : null}
             </div>
             <Interruptor id="p-privado" rotulo="Pedido privado" icone="cadeado" ajuda="Só o síndico, quem registrou e o responsável veem."

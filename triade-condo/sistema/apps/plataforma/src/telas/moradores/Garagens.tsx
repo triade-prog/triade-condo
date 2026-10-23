@@ -4,6 +4,7 @@
 // condomínio. A placa aparece só aqui, para quem vê os moradores: nunca no mural, no WhatsApp
 // nem no histórico. Nada se apaga: a vaga sai de uso e o veículo é retirado.
 
+import Link from "next/link";
 import { useState } from "react";
 import { TIPOS_VEICULO, type TipoVeiculo } from "@triade/domain";
 import { Botao, Carregando, chamarApi, ErroCarregar, Icone, Selo, Vazio, type NomeIcone } from "@triade/ui";
@@ -142,7 +143,7 @@ export function GaragensDaUnidade({ unidadeId, nomeUnidade, vagas, veiculos, con
 
   return (
     <CartaoFicha id="garagens" titulo="Garagens e veículos" icone="pin" acao={incluir}>
-      {vagas.length === 0 && veiculos.length === 0 ? <p className="border-t border-linha pt-3 text-sm text-tinta-suave">Nenhuma vaga nem veículo nesta unidade.</p> : null}
+      {vagas.length === 0 && veiculos.length === 0 ? <p className="border-t border-linha pt-3 t-apoio text-tinta-suave">Nenhuma vaga nem veículo nesta unidade.</p> : null}
       {vagas.length ? (
         <ul aria-label={`Vagas de ${nomeUnidade}`} className="grid">
           {vagas.map((v) => (
@@ -168,7 +169,7 @@ export function GaragensDaUnidade({ unidadeId, nomeUnidade, vagas, veiculos, con
             <li key={x.id} className="flex items-center gap-3 border-t border-linha py-3">
               <span className="ladrilho h-10 w-10" aria-hidden="true"><Icone nome="chave" /></span>
               <span className="grid min-w-0 flex-1">
-                <span className="t-codigo text-[15px]">{x.placa}</span>
+                <span className="t-codigo">{x.placa}</span>
                 <span className="t-apoio">{[[TIPOS_VEICULO[x.tipo], x.modelo].filter(Boolean).join(" · "), x.contato ?? "Da unidade", x.vaga ? `vaga ${x.vaga}` : "sem vaga"].join(" · ")}</span>
               </span>
               {edita ? (
@@ -201,7 +202,7 @@ export function GaragensDaUnidade({ unidadeId, nomeUnidade, vagas, veiculos, con
   );
 }
 
-type DeQuem = "" | "unidades" | "condominio";
+type DeQuem = "" | "unidades" | "condominio" | "veiculos";
 const COLUNAS = "md:grid-cols-[44px_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_40px]";
 
 /** A aba Garagens de Moradores e unidades: todas as vagas, de quem é cada uma e o veículo nela.
@@ -222,7 +223,13 @@ export function AbaGaragens({ salvo }: { salvo: Salvo }) {
     && (!q || [v.identificacao, v.unidade ?? "", ...v.veiculos.map((x) => x.placa)].some((t) => t.toLowerCase().replace(/[^0-9a-z]/g, "").includes(q))));
   const abas: { valor: DeQuem; texto: string; n: number }[] = [
     { valor: "", texto: "Todas as vagas", n: r.vagas }, { valor: "unidades", texto: "De unidades", n: r.deUnidades }, { valor: "condominio", texto: "Do condomínio", n: r.doCondominio },
+    { valor: "veiculos", texto: "Veículos", n: r.veiculos },
   ];
+  // A vista só de veículos (D4.7): os que estão numa vaga, com a vaga e a unidade. O veículo sem
+  // vaga aparece na ficha da unidade; a lista das garagens ainda não traz quais são.
+  const veiculos = d.vagas.flatMap((v) => v.veiculos.map((x) => ({ ...x, vaga: v.identificacao, unidade: v.unidade, unidadeId: v.unidadeId })))
+    .filter((x) => !q || [x.placa, x.vaga, x.unidade ?? "", x.modelo ?? ""].some((t) => t.toLowerCase().replace(/[^0-9a-z]/g, "").includes(q)))
+    .sort((a, b) => a.placa.localeCompare(b.placa));
   const nova = d.podeEditar ? <Botao variante="contorno" onClick={() => setJanela({ tipo: "vaga", vaga: null })}><Icone nome="mais" />Nova vaga de garagem</Botao> : undefined;
 
   return (
@@ -244,13 +251,38 @@ export function AbaGaragens({ salvo }: { salvo: Salvo }) {
               const atual = deQuem === a.valor;
               return (
                 <button key={a.valor || "todas"} type="button" aria-pressed={atual} onClick={() => setDeQuem(a.valor)}
-                  className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                  className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
                   {a.texto}<span className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{a.n}</span>
                 </button>
               );
             })}
           </nav>
-          {lista.length === 0 ? <div className="md:p-5"><Vazio titulo="Nenhuma vaga encontrada" icone="busca">Confira a busca: vaga, unidade ou placa.</Vazio></div> : (
+          {deQuem === "veiculos" ? (
+            veiculos.length === 0 ? <div className="md:p-5"><Vazio titulo="Nenhum veículo encontrado" icone="busca">{q ? "Confira a busca: placa, vaga, unidade ou modelo." : "Nenhum veículo está numa vaga ainda."}</Vazio></div> : (
+              <>
+                <div aria-hidden="true" className={`hidden gap-4 border-b border-linha bg-fundo px-5 py-2.5 md:grid ${COLUNAS}`}>
+                  <span /><span className="t-rotulo">Veículo</span><span className="t-rotulo">Unidade</span><span className="t-rotulo">Vaga</span><span />
+                </div>
+                <ul aria-label="Veículos" className="grid max-md:gap-3">
+                  {veiculos.map((x) => (
+                    <li key={x.id} className={`grid grid-cols-[44px_minmax(0,1fr)_40px] items-center gap-x-4 gap-y-1 px-5 py-3 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 ${COLUNAS} md:border-t md:border-linha md:first:border-t-0`}>
+                      <span className="ladrilho h-11 w-11 rounded-xl" aria-hidden="true"><Icone nome="chave" /></span>
+                      <span className="grid min-w-0">
+                        <span className="t-codigo font-medium">{x.placa}</span>
+                        <span className="t-apoio">{[TIPOS_VEICULO[x.tipo], x.modelo].filter(Boolean).join(" · ")}</span>
+                      </span>
+                      <span className="t-texto max-md:col-start-2">
+                        {x.unidadeId ? <Link href={`/moradores/unidade?id=${x.unidadeId}`} className="hover:text-violeta-600 hover:underline">{x.unidade}</Link> : <span className="text-tinta-suave">Do condomínio</span>}
+                      </span>
+                      <span className="t-texto max-md:col-start-2">Vaga <span className="t-codigo">{x.vaga}</span></span>
+                      <span />
+                    </li>
+                  ))}
+                </ul>
+                {r.semVaga ? <p className="t-apoio px-5 pt-3 max-md:px-0">{r.semVaga === 1 ? "1 veículo está sem vaga e aparece só na ficha da unidade." : `${r.semVaga} veículos estão sem vaga e aparecem só na ficha da unidade.`}</p> : null}
+              </>
+            )
+          ) : lista.length === 0 ? <div className="md:p-5"><Vazio titulo="Nenhuma vaga encontrada" icone="busca">Confira a busca: vaga, unidade ou placa.</Vazio></div> : (
             <>
               <div aria-hidden="true" className={`hidden gap-4 border-b border-linha bg-fundo px-5 py-2.5 md:grid ${COLUNAS}`}>
                 <span /><span className="t-rotulo">Vaga</span><span className="t-rotulo">Unidade</span><span className="t-rotulo">Veículo nela</span><span />
@@ -263,8 +295,8 @@ export function AbaGaragens({ salvo }: { salvo: Salvo }) {
                       <span className="flex flex-wrap items-center gap-2 font-medium">Vaga <span className="t-codigo">{v.identificacao}</span>{v.ativa ? null : <Selo tom="neutro">Fora de uso</Selo>}</span>
                       <span className="t-apoio">{ondeFica(v) || "Não informado"}</span>
                     </span>
-                    <span className="text-sm max-md:col-start-2">{v.unidade ?? <span className="text-tinta-suave">Do condomínio</span>}</span>
-                    <span className="text-sm max-md:col-start-2">{v.veiculos.length ? veiculoNaVaga(v) : <span className="text-tinta-suave">Livre</span>}</span>
+                    <span className="t-texto max-md:col-start-2">{v.unidade ?? <span className="text-tinta-suave">Do condomínio</span>}</span>
+                    <span className="t-texto max-md:col-start-2">{v.veiculos.length ? veiculoNaVaga(v) : <span className="text-tinta-suave">Livre</span>}</span>
                     <span className="justify-self-end max-md:col-start-3 max-md:row-start-1">
                       {d.podeEditar ? (
                         <MenuAcoes rotulo={`Ações da vaga ${v.identificacao}`} itens={[

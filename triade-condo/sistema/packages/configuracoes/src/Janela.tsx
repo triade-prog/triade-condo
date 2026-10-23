@@ -53,16 +53,16 @@ function Formulario({ campos, iniciais, textoBotao, aoFechar, aoSalvar, recarreg
   return (
     <form onSubmit={salvar} noValidate className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar ? () => { aoFechar(); recarregar(); } : undefined} /> : null}
-      {explicacao ? <p className="text-sm text-tinta-suave">{explicacao}</p> : null}
+      {explicacao ? <p className="t-apoio text-tinta-suave">{explicacao}</p> : null}
       {campos.map((c) => {
         const id = `j-${c.id}`;
         const msg = "erro" in c && comErro.includes(c.id) ? c.erro ?? "Confira este campo." : null;
         if (c.tipo === "caixa") {
           return (
-            <label key={c.id} className="flex items-start gap-2 text-sm">
+            <label key={c.id} className="flex items-start gap-2 t-texto">
               <input type="checkbox" className="mt-1 h-4 w-4 accent-violeta-600" checked={valores[c.id] === true} disabled={c.desligado}
                 onChange={(e) => mudar(c.id, e.target.checked)} />
-              <span>{c.rotulo}{c.ajuda ? <span className="block text-xs text-tinta-suave">{c.ajuda}</span> : null}</span>
+              <span>{c.rotulo}{c.ajuda ? <span className="block t-apoio text-tinta-suave">{c.ajuda}</span> : null}</span>
             </label>
           );
         }

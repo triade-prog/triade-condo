@@ -52,16 +52,16 @@ export function PedidosDocumento({ aoMudar }: { aoMudar: () => void }) {
             <li key={p.id} className="grid gap-1.5 border-b border-linha px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1.6fr)_minmax(0,1fr)_auto] md:items-center md:gap-4">
               <span className="grid gap-0.5">
                 <span className="font-medium">{p.titulo}</span>
-                <span className="text-[13px] text-tinta-suave">{diaHora(p.criadoEm)} · pelo mural</span>
+                <span className="t-apoio text-tinta-suave">{diaHora(p.criadoEm)} · pelo mural</span>
               </span>
-              <span className="grid gap-0.5 text-sm [overflow-wrap:anywhere]">
+              <span className="grid gap-0.5 t-texto [overflow-wrap:anywhere]">
                 {p.contato ? <span>{p.contato.nome}{p.contato.unidades ? ` · ${p.contato.unidades}` : ""}</span> : <span>{p.email ?? "E-mail"}</span>}
-                <span className="text-[13px] text-tinta-suave">{p.contato ? "Contato do prédio" : "Não é contato do prédio"}</span>
+                <span className="t-apoio text-tinta-suave">{p.contato ? "Contato do prédio" : "Não é contato do prédio"}</span>
               </span>
-              <span className="grid gap-0.5 text-sm">
+              <span className="grid gap-0.5 t-texto">
                 <Selo tom={SITUACAO[p.estado].tom}>{p.estado === "ENVIADO" && p.automatico ? "Enviado na hora" : SITUACAO[p.estado].texto}</Selo>
-                {p.motivo ? <span className="text-[13px] text-tinta-suave">{p.motivo}</span> : null}
-                {p.abertoEm ? <span className="text-[13px] text-tinta-suave">Aberto {diaHora(p.abertoEm)}</span> : null}
+                {p.motivo ? <span className="t-apoio text-tinta-suave">{p.motivo}</span> : null}
+                {p.abertoEm ? <span className="t-apoio text-tinta-suave">Aberto {diaHora(p.abertoEm)}</span> : null}
               </span>
               {p.estado === "ESPERANDO" && d.podeDecidir ? (
                 <span className="flex flex-wrap gap-2">
@@ -75,7 +75,7 @@ export function PedidosDocumento({ aoMudar }: { aoMudar: () => void }) {
           ))}
         </ul>
       )}
-      <p className="text-sm text-tinta-suave">Recusar pede motivo e não manda nada a quem pediu. O pedido de quem não é contato do prédio avisa no sino de quem cuida dos documentos.</p>
+      <p className="t-apoio text-tinta-suave">Recusar pede motivo e não manda nada a quem pediu. O pedido de quem não é contato do prédio avisa no sino de quem cuida dos documentos.</p>
       <Janela aberto={recusar !== null} titulo="Recusar pedido" textoBotao="Recusar" aoFechar={() => setRecusar(null)}
         explicacao="Quem pediu não recebe nada. O motivo fica no histórico do documento."
         campos={[{ id: "motivo", rotulo: "Por que recusar", tipo: "area", obrigatorio: true, max: 500, erro: "Diga o motivo, de 3 a 500 caracteres." }]}

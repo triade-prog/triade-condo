@@ -45,12 +45,12 @@ export function Abas<T extends string>({ abas, atual, aoMudar, rotulo, children 
             aria-controls={`painel-${a.id}`}
             tabIndex={atual === a.id ? 0 : -1}
             onClick={() => aoMudar(a.id)}
-            className="-mb-px min-h-11 border-b-2 border-transparent px-0.5 text-sm font-medium whitespace-nowrap text-tinta-suave hover:text-tinta aria-selected:border-violeta-600 aria-selected:text-violeta-600"
+            className="-mb-px min-h-11 border-b-2 border-transparent px-0.5 t-apoio font-medium whitespace-nowrap text-tinta-suave hover:text-tinta aria-selected:border-violeta-600 aria-selected:text-violeta-600"
           >
             {a.texto}
             {a.contagem !== undefined ? <span className="sr-only">{` (${a.contagem})`}</span> : null}
             {a.contagem !== undefined ? (
-              <span aria-hidden="true" className="ml-2 inline-grid h-5.5 min-w-5.5 place-items-center rounded-full bg-superficie-2 px-1.5 text-xs font-semibold text-tinta-suave data-[atual]:bg-violeta-600 data-[atual]:text-superficie"
+              <span aria-hidden="true" className="ml-2 inline-grid h-5.5 min-w-5.5 place-items-center rounded-full bg-superficie-2 px-1.5 t-apoio font-semibold text-tinta-suave data-[atual]:bg-violeta-600 data-[atual]:text-superficie"
                 data-atual={atual === a.id ? "" : undefined}>
                 {a.contagem}
               </span>

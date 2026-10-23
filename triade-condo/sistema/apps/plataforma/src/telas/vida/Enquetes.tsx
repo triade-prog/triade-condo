@@ -35,7 +35,7 @@ export function AbaEnquetes() {
           const n = l ? daAba(a).length : 0;
           return (
             <button key={a} type="button" aria-pressed={atual} onClick={() => setAba(a)}
-              className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+              className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
               {ABAS[a]}
               {n ? <><span className="sr-only"> ({n})</span><span aria-hidden="true" className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{n}</span></> : null}
             </button>
@@ -66,7 +66,7 @@ export function Barras({ r, marcar }: { r: ResultadoEnquete; marcar?: number }) 
       {r.opcoes.map((o, i) => {
         const p = porcentagem(o.votos, votos);
         return (
-          <li key={i} className="grid gap-1 text-sm">
+          <li key={i} className="grid gap-1 t-texto">
             <span className="flex justify-between gap-2">
               <span className={marcar === i + 1 ? "font-medium" : ""}>{o.texto}{marcar === i + 1 ? " (sua resposta)" : ""}</span>
               <span className="text-tinta-suave">{o.votos} · {p}%</span>
@@ -97,7 +97,7 @@ function CartaoEnquete({ e }: { e: EnqueteTela }) {
       <span className="flex items-start gap-3">
         <span className="ladrilho h-10 w-10 rounded-xl" data-tom="violeta" aria-hidden="true"><Icone nome="grafico" /></span>
         <span className="grid min-w-0 flex-1 gap-1.5">
-          <Link href={`/vida/enquete?id=${e.id}`} className="t-titulo-cartao text-base after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">{e.pergunta}</Link>
+          <Link href={`/vida/enquete?id=${e.id}`} className="t-titulo-cartao after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">{e.pergunta}</Link>
           <span className="flex flex-wrap gap-1.5">
             <SeloEnquete e={e} />
             {e.secreta ? <Selo tom="neutro">Respostas secretas</Selo> : null}
@@ -106,7 +106,7 @@ function CartaoEnquete({ e }: { e: EnqueteTela }) {
         <Icone nome="dir" className="h-5 w-5 text-tinta-suave" />
       </span>
       <Barras r={r} />
-      <span className="flex flex-wrap justify-between gap-2 text-[13px] text-tinta-suave">
+      <span className="flex flex-wrap justify-between gap-2 t-apoio text-tinta-suave">
         <span><b className="font-semibold text-tinta">{r.responderam} de {r.total} {quem}</b> responderam ({porcentagem(r.responderam, r.total)}%){e.situacao === "ABERTA" && faltam ? ` · ${faltam} ainda não` : ""}</span>
         {e.situacao === "ABERTA"
           ? <span>{e.lembreteEnviadoEm ? `Lembrete enviado em ${prazoCurto(e.lembreteEnviadoEm).slice(0, 5)}` : e.lembreteEm ? `Lembrete em ${prazoCurto(e.lembreteEm).slice(0, 5)}, só para quem falta` : "Sem lembrete: o prazo é curto"}</span>

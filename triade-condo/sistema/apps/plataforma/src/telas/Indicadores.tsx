@@ -42,11 +42,11 @@ function useComo(texto: string, rotulo?: string) {
   const botao = (
     <button type="button" aria-expanded={aberto} aria-controls={id} onClick={() => setAberto(!aberto)}
       aria-label={rotulo ? `Como se calcula: ${rotulo}` : undefined}
-      className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-[10px] px-2.5 text-[13px] font-medium text-violeta-600 hover:bg-violeta-50 aria-expanded:bg-violeta-50">
+      className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-[10px] px-2.5 t-apoio font-medium text-violeta-600 hover:bg-violeta-50 aria-expanded:bg-violeta-50">
       <Icone nome="info" className="h-4 w-4" />Como se calcula<Icone nome="baixo" className={`h-3.5 w-3.5 ${aberto ? "rotate-180" : ""}`} />
     </button>
   );
-  const painel = <p id={id} hidden={!aberto} className="rounded-[14px] border border-violeta-200 bg-violeta-50 px-4 py-3 text-[13px] text-tinta-suave">{texto}</p>;
+  const painel = <p id={id} hidden={!aberto} className="rounded-[14px] border border-violeta-200 bg-violeta-50 px-4 py-3 t-apoio text-tinta-suave">{texto}</p>;
   return { botao, painel };
 }
 
@@ -80,7 +80,7 @@ function Parte({ id, titulo, apoio, direita }: { id: string; titulo: string; apo
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div className="grid gap-0.5">
-        <h2 id={id} className="text-xl font-medium">{titulo}</h2>
+        <h2 id={id} className="t-titulo-secao font-medium">{titulo}</h2>
         <p className="t-apoio">{apoio}</p>
       </div>
       {direita ? <div className="flex flex-wrap items-center gap-3">{direita}</div> : null}
@@ -114,15 +114,15 @@ function Atalho({ href, icone, tom, n, titulo, apoio }: { href?: string; icone: 
 function Numero({ icone, titulo, n, apoio }: { icone: NomeIcone; titulo: string; n: string; apoio?: string }) {
   return (
     <div className="grid content-start gap-1.5 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
-      <span className="flex items-center gap-2 text-[13px] text-tinta-suave">
+      <span className="flex items-center gap-2 t-apoio text-tinta-suave">
         <span className="ladrilho h-7 w-7 rounded-[9px]" aria-hidden="true"><Icone nome={icone} className="h-4 w-4" /></span>{titulo}
       </span>
-      <span className="flex flex-wrap items-baseline gap-1.5"><strong className="text-[26px] font-semibold tracking-tight">{n}</strong>{apoio ? <span className="t-apoio">{apoio}</span> : null}</span>
+      <span className="flex flex-wrap items-baseline gap-1.5"><strong className="t-titulo-ficha font-semibold tracking-tight">{n}</strong>{apoio ? <span className="t-apoio">{apoio}</span> : null}</span>
     </div>
   );
 }
 
-const TH = "px-3 py-2.5 text-xs font-semibold text-tinta-suave";
+const TH = "px-3 py-2.5 t-apoio font-semibold text-tinta-suave";
 const TD = "px-3 py-3 border-t border-linha";
 const ENTRA = "inline-flex items-center gap-2.5 font-medium text-tinta no-underline hover:text-violeta-700 hover:underline";
 
@@ -165,7 +165,7 @@ function Agora({ d, podeDecidir }: { d: Dados; podeDecidir: boolean }) {
       <Cartao id="pendencias" titulo="Pendências por responsável" icone="pessoas" tabela>
         {d.pendencias.length ? (
           <>
-            <table className="w-full text-sm max-md:hidden">
+            <table className="w-full t-texto max-md:hidden">
               <caption className="sr-only">Pendências por responsável, agora</caption>
               <thead className="text-left">
                 <tr><th scope="col" className={`${TH} pl-5`}>Responsável</th><th scope="col" className={`${TH} text-right`}>Abertos</th>
@@ -232,7 +232,7 @@ function PorCategoria({ d }: { d: Dados }) {
       <div className="md:px-5">{como.painel}</div>
       {linhas.length ? (
         <>
-          <table className="w-full text-sm max-md:hidden">
+          <table className="w-full t-texto max-md:hidden">
             <caption className="sr-only">Por categoria, no período</caption>
             <thead className="text-left">
               <tr><th scope="col" className={`${TH} pl-5`}>Categoria</th><th scope="col" className={`${TH} text-right`}>Retornos no prazo</th>
@@ -286,7 +286,7 @@ function OndeVolta({ r }: { r: NonNullable<Dados["reincidencia"]> }) {
       <div className="md:px-5">{como.painel}</div>
       {r.ondeVolta.length ? (
         <>
-          <table className="w-full text-sm max-md:hidden">
+          <table className="w-full t-texto max-md:hidden">
             <caption className="sr-only">Onde o problema volta, no período</caption>
             <thead className="text-left">
               <tr><th scope="col" className={`${TH} pl-5`}>Onde volta</th><th scope="col" className={TH}>Categoria</th>
@@ -310,7 +310,7 @@ function OndeVolta({ r }: { r: NonNullable<Dados["reincidencia"]> }) {
                 <span className="grid flex-1">
                   <span className="font-medium">{o.onde ?? "Sem local"}</span>
                   <span className="t-apoio">{o.categoria} · voltou {plural(o.vezes, "vez", "vezes")}</span>
-                  <span className="text-[13px]">Pedido mais recente: {pedido(o.ultima)}</span>
+                  <span className="t-apoio">Pedido mais recente: {pedido(o.ultima)}</span>
                 </span>
               </li>
             ))}
@@ -325,12 +325,12 @@ function DecisoesPeriodo({ x, podeDecidir }: { x: NonNullable<Dados["decisoes"]>
   const como = useComo(COMO_DECISOES, "decisões");
   const linha = (n: ReactNode, texto: string, apoio: string) => (
     <li className="grid gap-0.5 border-t border-linha py-3">
-      <span className="flex items-baseline gap-2"><strong className="text-2xl font-semibold tracking-tight">{n}</strong><span>{texto}</span></span>
-      <span className="text-xs text-tinta-suave">{apoio}</span>
+      <span className="flex items-baseline gap-2"><strong className="t-titulo-ficha font-semibold tracking-tight">{n}</strong><span>{texto}</span></span>
+      <span className="t-apoio text-tinta-suave">{apoio}</span>
     </li>
   );
   const ver = podeDecidir ? (
-    <Link href="/decisoes" className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">Abrir Decisões<Icone nome="dir" className="h-4 w-4" /></Link>
+    <Link href="/decisoes" className="inline-flex shrink-0 items-center gap-1 t-texto font-medium text-violeta-600 hover:underline">Abrir Decisões<Icone nome="dir" className="h-4 w-4" /></Link>
   ) : undefined;
   return (
     <Cartao id="decisoes" titulo="Decisões no período" icone="decisao" acao={ver} className="md:gap-1">
@@ -404,7 +404,7 @@ export function Indicadores() {
 
   const cabecalho = (
     <div className="grid gap-1">
-      <h1 className="text-[28px] font-normal tracking-tight">Indicadores</h1>
+      <h1 className="t-titulo-tela font-normal tracking-tight">Indicadores</h1>
       <p className="t-apoio">Como o condomínio está respondendo aos moradores. Tudo sai do histórico dos pedidos.</p>
     </div>
   );

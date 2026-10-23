@@ -20,24 +20,24 @@ export function NosComunicados({ pedidoId, manutencaoId, ativo }: { pedidoId?: s
 
   return (
     <section aria-labelledby="t-nos-comunicados" className="grid content-start gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
-      <h2 id="t-nos-comunicados" className="text-xs font-medium tracking-[.1em] text-tinta-suave uppercase">Comunicados</h2>
+      <h2 id="t-nos-comunicados" className="t-rotulo font-medium tracking-[.1em] text-tinta-suave uppercase">Comunicados</h2>
       {comunicados.length ? (
         <ul className="grid gap-1.5">
           {comunicados.map((c) => (
-            <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 t-texto">
               <span className="grid gap-0.5">
                 <Link href={`/comunicados/comunicado?id=${c.id}`} className="font-medium hover:text-violeta-600 hover:underline">{c.titulo}</Link>
-                <span className="text-xs text-tinta-suave">{c.publicoResumo}{c.numero > 1 ? ` · versão ${c.numero}` : ""} · {quando(c)}</span>
+                <span className="t-apoio text-tinta-suave">{c.publicoResumo}{c.numero > 1 ? ` · versão ${c.numero}` : ""} · {quando(c)}</span>
               </span>
               <SeloComunicado estado={c.estado} />
             </li>
           ))}
         </ul>
-      ) : <p className="text-sm text-tinta-suave">Nenhum comunicado ligado.</p>}
+      ) : <p className="t-apoio text-tinta-suave">Nenhum comunicado ligado.</p>}
       {escrever ? (
         <div className="grid justify-items-start gap-1">
           <Link href={novo} className={classeBotao("contorno", "", "m")}>+ Escrever comunicado</Link>
-          {pedidoId ? <span className="text-xs text-tinta-suave">Comunicar o prédio não conta como retorno ao morador do pedido.</span> : null}
+          {pedidoId ? <span className="t-apoio text-tinta-suave">Comunicar o prédio não conta como retorno ao morador do pedido.</span> : null}
         </div>
       ) : null}
     </section>

@@ -27,7 +27,7 @@ const NOMES_FUNCAO: Record<string, string> = { SINDICO: "Síndico", AUTORIZADO: 
 function Conferencia({ ok, titulo, apoio, marcar }: { ok: boolean; titulo: string; apoio: string; marcar?: { desligado: boolean; aoMudar: (v: boolean) => void } }) {
   const corpo = (
     <span className="grid gap-0.5">
-      <span className="text-[15px] font-medium">{titulo}</span>
+      <span className="t-texto font-medium">{titulo}</span>
       <span className="t-apoio">{apoio}</span>
     </span>
   );
@@ -57,7 +57,7 @@ function Saida({ valor, escolhida, aoEscolher, titulo, apoio, children }: {
       <label className="flex cursor-pointer items-start gap-3">
         <input type="radio" name="saida" value={valor} checked={marcada} onChange={() => aoEscolher(valor)} className="mt-0.5 h-5 w-5 shrink-0 accent-violeta-600" />
         <span className="grid gap-0.5">
-          <span className="text-[15px] font-medium">{titulo}</span>
+          <span className="t-texto font-medium">{titulo}</span>
           <span className="t-apoio">{apoio}</span>
         </span>
       </label>
@@ -121,7 +121,7 @@ export function PedidoSuporteAcesso() {
       {aberto && p.pode.decidir ? (
         <div className="grid gap-2">
           <span className="t-rotulo">Passo {passo} de 2</span>
-          <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="grid grid-cols-2 gap-2 t-texto">
             {(["Verificar", "Decidir"] as const).map((t, i) => (
               <span key={t} className="grid gap-1.5">
                 <span className={`h-1.5 rounded-full ${i < passo ? "bg-violeta-600" : "bg-superficie-2"}`} aria-hidden="true" />
@@ -158,13 +158,13 @@ export function PedidoSuporteAcesso() {
               <p className="t-apoio">
                 O link vai só para o e-mail já cadastrado{p.emailMascarado ? <>, <span className="t-codigo">{p.emailMascarado}</span></> : null}. A equipe nunca vê nem escolhe a senha e nunca muda o e-mail por aqui.
               </p>
-              {!verificado ? <p className="text-sm text-atencao">Sem as três conferências, o link não sai. Volte e reveja.</p> : null}
+              {!verificado ? <p className="t-texto text-atencao">Sem as três conferências, o link não sai. Volte e reveja.</p> : null}
               <Botao className="justify-self-start max-md:justify-self-stretch" disabled={!verificado || enviando} onClick={() => void decidir("ENVIAR")}><Icone nome="enviar" />Enviar link</Botao>
             </Cartao>
           ) : p.pode.tirarAutenticador ? (
             <Cartao id="t-autenticador" titulo="Tirar o autenticador perdido" icone="cadeado">
               <p className="t-apoio">No próximo acesso, a pessoa entra com a senha e cadastra outro autenticador.</p>
-              {!verificado ? <p className="text-sm text-atencao">Sem as três conferências, o autenticador não sai. Volte e reveja.</p> : null}
+              {!verificado ? <p className="t-texto text-atencao">Sem as três conferências, o autenticador não sai. Volte e reveja.</p> : null}
               <Botao className="justify-self-start max-md:justify-self-stretch" disabled={!verificado || enviando} onClick={() => void decidir("TIRAR_AUTENTICADOR")}>Tirar o autenticador</Botao>
             </Cartao>
           ) : (
@@ -197,7 +197,7 @@ export function PedidoSuporteAcesso() {
         </>
       ) : (
         <>
-          {p.descricao ? <blockquote className="rounded-[16px] border-l-4 border-violeta-300 bg-superficie px-4 py-3 text-[15px]">&ldquo;{p.descricao}&rdquo;</blockquote> : null}
+          {p.descricao ? <blockquote className="rounded-[16px] border-l-4 border-violeta-300 bg-superficie px-4 py-3 t-texto">&ldquo;{p.descricao}&rdquo;</blockquote> : null}
           <Cartao id="t-verificacao" titulo="Verificação" icone="escudo">
             <fieldset className="grid gap-2" disabled={!p.pode.verificar || !aberto}>
               <legend className="t-rotulo mb-1">O que aconteceu</legend>

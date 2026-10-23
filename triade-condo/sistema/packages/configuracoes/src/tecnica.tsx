@@ -40,8 +40,8 @@ export function BlocoTriade({ children }: { children: ReactNode }) {
     <section aria-labelledby="t-feito-triade" className="grid gap-2 rounded-[18px] border border-dashed border-neutro-borda bg-neutro-fundo p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="grid gap-0.5">
-          <h2 id="t-feito-triade" className="text-[15px] font-semibold">Feito pela TRÍADE</h2>
-          <span className="text-[13px] text-tinta-suave">{onde === "app"
+          <h2 id="t-feito-triade" className="t-titulo-cartao font-semibold">Feito pela TRÍADE</h2>
+          <span className="t-apoio text-tinta-suave">{onde === "app"
             ? "Só a TRÍADE muda. Peça aqui mesmo; a resposta chega no sino e em Ajuda e suporte."
             : "Só a TRÍADE muda. Com o cliente ativo, mudar pede motivo e avisa o síndico."}</span>
         </span>
@@ -73,10 +73,10 @@ export function PedirMudanca({ parte, valor }: { parte: ParteMudanca; valor: str
         <Selo tom="andamento"><Icone nome="trocar" className="h-3.5 w-3.5" />Mudança pedida</Selo>
         <Selo tom={pedida.situacao === "ESPERANDO_CLIENTE" ? "atencao" : "info"}>{rotuloSituacaoChamadoCliente(pedida.situacao)}</Selo>
         {pedida.ver
-          ? <Link href={`/suporte?id=${pedida.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
+          ? <Link href={`/suporte?id=${pedida.id}`} className="inline-flex items-center gap-1 t-texto font-medium text-violeta-600 hover:underline">
               Ver chamado {pedida.numero}<Icone nome="dir" className="h-4 w-4" />
             </Link>
-          : <span className="text-[13px] text-tinta-suave">chamado {pedida.numero}, por {pedida.abertoPor}</span>}
+          : <span className="t-apoio text-tinta-suave">chamado {pedida.numero}, por {pedida.abertoPor}</span>}
       </span>
     );
   }
@@ -105,19 +105,19 @@ function JanelaPedirMudanca({ parte, valor, aoFechar, aoPedir }: { parte: ParteM
     aoPedir();
   }
 
-  const fixo = "flex min-h-11 items-center rounded-xl border border-linha bg-fundo px-3.5 py-2.5 text-[15px]";
+  const fixo = "flex min-h-11 items-center rounded-xl border border-linha bg-fundo px-3.5 py-2.5 t-texto";
   return (
     <Dialogo aberto media fechar titulo="Pedir mudança à TRÍADE" apoio="A parte e o valor de hoje já vêm preenchidos." aoFechar={aoFechar}>
       <form onSubmit={pedir} noValidate className="grid gap-4">
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <dl className="grid gap-3 sm:grid-cols-2">
-          <div className="grid gap-1"><dt className="text-[13px] font-medium">Parte</dt><dd className={fixo}>{PARTES_MUDANCA[parte].nome}</dd></div>
-          <div className="grid gap-1"><dt className="text-[13px] font-medium">Como está hoje</dt><dd className={fixo}>{valor}</dd></div>
+          <div className="grid gap-1"><dt className="t-apoio font-medium">Parte</dt><dd className={fixo}>{PARTES_MUDANCA[parte].nome}</dd></div>
+          <div className="grid gap-1"><dt className="t-apoio font-medium">Como está hoje</dt><dd className={fixo}>{valor}</dd></div>
         </dl>
         <CampoAreaTexto id={`mudar-${parte}`} rotulo="O que precisa e por quê" required maxLength={4000} value={texto} onChange={(e) => setTexto(e.target.value)}
           ajuda="A TRÍADE responde em dias úteis, das 9h às 18h, e pode pedir mais detalhes."
           erro={camposComErro(erro).includes("texto") ? "Diga o que precisa e por quê." : null} />
-        <p className="text-[13px] text-tinta-suave">Vai como chamado de Mudança de configuração. Acompanhe aqui ou em Ajuda e suporte.</p>
+        <p className="t-apoio text-tinta-suave">Vai como chamado de Mudança de configuração. Acompanhe aqui ou em Ajuda e suporte.</p>
         <div className="sticky -bottom-6 -mx-6 -mb-6 flex flex-wrap items-center justify-end gap-2 rounded-b-[24px] border-t border-linha bg-superficie px-6 py-4 max-md:grid max-md:rounded-none">
           <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
           <Botao type="submit" disabled={enviando}><Icone nome="enviar" />{enviando ? "Enviando…" : "Pedir a mudança"}</Botao>
@@ -136,7 +136,7 @@ export function etapasAtivas(etapas: { ativa: boolean }[]): string {
 /** Faixa do app sobre uma parte que é da TRÍADE (tela 6). */
 export function FaixaTriade({ parte, valor, porque }: { parte: ParteMudanca; valor: string; porque: string }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-linha bg-superficie-2 px-4 py-3 text-sm">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-linha bg-superficie-2 px-4 py-3 t-texto">
       <span className="grid gap-0.5">
         <span className="flex flex-wrap items-center gap-2"><span className="font-medium">{porque}</span><SeloTriade /></span>
         <span className="text-tinta-suave">Por isso quem muda é a TRÍADE. Peça a mudança e explique o que precisa.</span>
@@ -185,9 +185,9 @@ export function AjusteTecnico<T extends string>({ id, titulo, parte, mudanca, aj
     return (
       <section aria-labelledby={`t-${id}`} className="flex flex-wrap items-center gap-3 py-3">
         <span className="grid min-w-0 flex-1 gap-0.5">
-          <h3 id={`t-${id}`} className="text-sm font-medium">{titulo}</h3>
-          <span className="text-sm">{textoAtual}</span>
-          <span className="text-[13px] text-tinta-suave">{ajuda}</span>
+          <h3 id={`t-${id}`} className="t-texto font-medium">{titulo}</h3>
+          <span className="t-texto">{textoAtual}</span>
+          <span className="t-apoio text-tinta-suave">{ajuda}</span>
         </span>
         <PedirMudanca parte={mudanca} valor={textoAtual} />
       </section>
@@ -199,7 +199,7 @@ export function AjusteTecnico<T extends string>({ id, titulo, parte, mudanca, aj
       <h3 id={`t-${id}`} className="font-medium">{titulo}</h3>
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar} /> : null}
       <Escolha rotulo={parte} atual={valor} aoMudar={setValor} opcoes={opcoes} />
-      <p className="text-xs text-tinta-suave">{ajuda}</p>
+      <p className="t-apoio text-tinta-suave">{ajuda}</p>
       {tecnica.motivo ? (
         <CampoAreaTexto id={`${id}-motivo`} rotulo="Motivo" required maxLength={500} value={motivo} onChange={(e) => setMotivo(e.target.value)}
           ajuda={AJUDA_MOTIVO} erro={campos.includes("motivo") ? "Diga o motivo (3 a 500 caracteres)." : null} />

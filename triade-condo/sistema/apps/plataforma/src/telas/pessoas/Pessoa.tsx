@@ -103,7 +103,7 @@ function Atendimento({ p, dados, salvo, recarregar, aoTrocar }: {
       {p.responsavel ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-linha bg-fundo px-3.5 py-3">
           <span className="grid gap-0.5">
-            <span className="text-sm font-medium">{ehPadrao ? "É o padrão da fila" : padrao ? `Padrão da fila: ${padrao.nome}` : "Falta o padrão da fila"}</span>
+            <span className="t-texto font-medium">{ehPadrao ? "É o padrão da fila" : padrao ? `Padrão da fila: ${padrao.nome}` : "Falta o padrão da fila"}</span>
             <span className="t-apoio">Todo pedido novo cai para o padrão, até alguém assumir.</span>
           </span>
           {ehPadrao ? (outros.length ? <Botao variante="contorno" tamanho="m" onClick={aoTrocar}><Icone nome="trocar" />Trocar</Botao> : null)
@@ -125,7 +125,7 @@ export function Pessoa() {
   const fechar = () => setJanela(null);
   const salvo = (r: Recado) => { setRecado(r); carga.recarregar(); atualizar(); };
   const voltar = (
-    <Link href="/pessoas" className="inline-flex items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
+    <Link href="/pessoas" className="inline-flex items-center gap-1 t-texto font-medium text-violeta-600 hover:underline">
       <Icone nome="esq" className="h-4 w-4" />Voltar às pessoas
     </Link>
   );
@@ -147,7 +147,7 @@ export function Pessoa() {
           <MaisAcoes itens={muda ? [{ texto: "Revogar acesso", icone: "sair", acao: () => setJanela("revogar"), perigo: true }] : []} />
         </div>
         <div className="flex items-center gap-5 max-md:gap-4">
-          <Iniciais nome={p.nome} className="h-16 w-16 shrink-0 text-lg max-md:h-14 max-md:w-14" />
+          <Iniciais nome={p.nome} className="h-16 w-16 shrink-0 t-titulo-secao max-md:h-14 max-md:w-14" />
           <div className="grid min-w-0 flex-1 gap-2">
             <h1 className="t-titulo-ficha [overflow-wrap:anywhere]">{p.nome}</h1>
             <p className="flex flex-wrap items-center gap-2">

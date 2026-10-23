@@ -219,7 +219,7 @@ function DarRetorno({ d, opcoes, whatsapp, aoFechar, enviar, salvo, recarregar }
           : pelo ? `${texto.trim().length} de ${limite} caracteres${para ? ` · vai para ${para} pelo WhatsApp` : ""}` : undefined} />
       {pelo?.janela ? <PreviaModelo janela={pelo.janela} texto={texto} /> : null}
       {tipo === "RETORNO" ? (
-        <p className="text-sm text-tinta-suave">
+        <p className="t-apoio text-tinta-suave">
           {pelo ? "Conta como retorno na hora do registro e o próximo retorno é recalculado. Se o envio falhar, o retorno continua registrado e a falha aparece em Falhas de envio, com quem cuida."
             : "Ao salvar, o próximo retorno é recalculado pelo prazo. A previsão de solução não muda."}
         </p>
@@ -254,10 +254,10 @@ function Revisar({ conclusao, aoFechar, enviar, recarregar }: { conclusao: Concl
     <div className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={() => { aoFechar(); recarregar(); }} /> : null}
       {conclusao ? (
-        <div className="grid gap-1 rounded-2xl border border-linha bg-superficie-2 p-3 text-sm">
-          <span className="text-xs text-tinta-suave">Concluído por {conclusao.concluidaPor} em {diaHora(conclusao.concluidaEm)} · {conclusao.etapa} · {REVISOES_CONCLUSAO[conclusao.revisao]}</span>
+        <div className="grid gap-1 rounded-2xl border border-linha bg-superficie-2 p-3 t-texto">
+          <span className="t-apoio text-tinta-suave">Concluído por {conclusao.concluidaPor} em {diaHora(conclusao.concluidaEm)} · {conclusao.etapa} · {REVISOES_CONCLUSAO[conclusao.revisao]}</span>
           <span>{conclusao.explicacao}</span>
-          {conclusao.evidencia ? <span className="text-xs text-tinta-suave">Evidência: {conclusao.evidencia}</span> : null}
+          {conclusao.evidencia ? <span className="t-apoio text-tinta-suave">Evidência: {conclusao.evidencia}</span> : null}
         </div>
       ) : null}
       <CampoAreaTexto id="v-motivo" rotulo="Se for devolver, o que falta" maxLength={500} rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)}

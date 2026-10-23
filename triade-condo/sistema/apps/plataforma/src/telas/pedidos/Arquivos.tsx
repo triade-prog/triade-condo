@@ -125,7 +125,7 @@ export function EscolherArquivos({ itens, aoMudar, rotulo, enviando, opcional }:
 
   return (
     <fieldset className="grid gap-2">
-      <legend className="mb-1.5 text-[13px] font-medium">{rotulo}{opcional ? <span className="font-normal text-tinta-suave"> (opcional)</span> : null}</legend>
+      <legend className="mb-1.5 t-apoio font-medium">{rotulo}{opcional ? <span className="font-normal text-tinta-suave"> (opcional)</span> : null}</legend>
       <div onDragOver={(e) => e.preventDefault()} onDrop={soltar} className="anexar">
         <span className="quadro" aria-hidden="true"><Icone nome="enviar" /></span>
         <span className="grid flex-1 gap-0.5">
@@ -140,7 +140,7 @@ export function EscolherArquivos({ itens, aoMudar, rotulo, enviando, opcional }:
         <input ref={camera} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true"
           onChange={(e) => incluir(e.target.files)} />
       </div>
-      {aviso ? <p className="text-xs text-atencao">{aviso}</p> : null}
+      {aviso ? <p className="t-apoio text-atencao">{aviso}</p> : null}
       {itens.length ? (
         <ul className="grid gap-2" aria-label="Arquivos escolhidos">
           {itens.map((it) => (
@@ -197,7 +197,7 @@ export function JanelaEnviarArquivos({ aberto, pedidoId, protocolo, parte, aoFec
       {aberto ? (
         <div className="grid gap-4">
           <EscolherArquivos rotulo={`Fotos e documentos · ${PARTES_ARQUIVO[parte].toLowerCase()}`} itens={itens} aoMudar={setItens} enviando={enviando} />
-          <p className="text-xs text-tinta-suave">O nome do arquivo é só para mostrar. Antes de liberar, o sistema confere o conteúdo e tira a localização das fotos.</p>
+          <p className="t-apoio text-tinta-suave">O nome do arquivo é só para mostrar. Antes de liberar, o sistema confere o conteúdo e tira a localização das fotos.</p>
           <div className="flex justify-end gap-2">
             <Botao variante="discreto" onClick={fechar} disabled={enviando}>Cancelar</Botao>
             <Botao disabled={!validos || enviando} onClick={() => void enviar()}>
@@ -223,7 +223,7 @@ function Miniatura({ pedidoId, a }: { pedidoId: string; a: ArquivoPedido }) {
     void linkDo(pedidoId, a.id).then((r) => { if (vivo && r.ok) setUrl(r.dados.url); });
     return () => { vivo = false; };
   }, [pedidoId, a.id, a.tipo, a.situacao]);
-  const base = "grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-md text-[10px] font-bold";
+  const base = "grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-md t-apoio font-bold";
   if (!ehFoto(a.tipo)) {
     const rotulo = a.tipo === "application/pdf" ? "PDF" : a.tipo.startsWith("audio/") ? "ÁUDIO" : "VÍDEO";
     return <span aria-hidden="true" className={`${base} bg-erro-fundo text-erro`}>{rotulo}</span>;
@@ -234,6 +234,21 @@ function Miniatura({ pedidoId, a }: { pedidoId: string; a: ArquivoPedido }) {
       {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : null}
     </span>
   );
+}
+
+/** A primeira foto liberada do pedido, para a capa do topo da ficha (D4.2). Sem foto, nada. */
+export function CapaDoPedido({ pedidoId, arquivos }: { pedidoId: string; arquivos: ArquivoPedido[] }) {
+  const fotoId = arquivos.find((a) => ehFoto(a.tipo) && a.situacao === "LIBERADO")?.id;
+  const [url, setUrl] = useState<{ id: string; url: string } | null>(null);
+  useEffect(() => {
+    if (!fotoId) return;
+    let vivo = true;
+    void linkDo(pedidoId, fotoId).then((r) => { if (vivo && r.ok) setUrl({ id: fotoId, url: r.dados.url }); });
+    return () => { vivo = false; };
+  }, [pedidoId, fotoId]);
+  if (!fotoId || url?.id !== fotoId) return null;
+  // eslint-disable-next-line @next/next/no-img-element -- link assinado de 5 min do armazenamento privado: não passa pelo otimizador nem por cache
+  return <img src={url.url} alt="" data-capa="" className="absolute inset-0 h-full w-full object-cover" />;
 }
 
 /** Aba "Fotos e documentos" do pedido. */
@@ -266,7 +281,7 @@ export function AbaArquivos({ pedidoId, protocolo, carga, avisar }: {
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-tinta-suave">Os arquivos são privados do condomínio. Cada vez que alguém abre, o link vale por 5 minutos.</p>
+        <p className="t-apoio text-tinta-suave">Os arquivos são privados do condomínio. Cada vez que alguém abre, o link vale por 5 minutos.</p>
         {podeEnviar ? <Botao variante="contorno" onClick={() => setEnviar(true)}>+ Enviar arquivos</Botao> : null}
       </div>
       {arquivos.length === 0 ? <Vazio titulo="Nenhuma foto ou documento ainda.">Fotos do problema, orçamentos e notas ficam aqui, só para quem vê o pedido.</Vazio> : (
@@ -275,17 +290,17 @@ export function AbaArquivos({ pedidoId, protocolo, carga, avisar }: {
           if (!daParte.length) return null;
           return (
             <section key={p} aria-labelledby={`arq-${p}`} className="grid gap-2">
-              <h3 id={`arq-${p}`} className="text-sm font-semibold">{PARTES_ARQUIVO[p]}</h3>
+              <h3 id={`arq-${p}`} className="t-titulo-cartao font-semibold">{PARTES_ARQUIVO[p]}</h3>
               <ul className="grid gap-2">
                 {daParte.map((a) => (
-                  <li key={a.id} className="flex items-center gap-3 rounded-2xl border border-linha bg-superficie px-3 py-2 text-sm">
+                  <li key={a.id} className="flex items-center gap-3 rounded-2xl border border-linha bg-superficie px-3 py-2 t-texto">
                     <Miniatura pedidoId={pedidoId} a={a} />
                     <span className="grid min-w-0 flex-1 gap-0.5">
                       {a.situacao === "LIBERADO"
-                        ? <button type="button" className="w-fit [overflow-wrap:anywhere] text-left font-medium text-violeta-600 hover:underline" onClick={() => void abrir(a)}>{a.nome}</button>
+                        ? <button type="button" className="elo w-fit" onClick={() => void abrir(a)}>{a.nome}</button>
                         : <span className="font-medium [overflow-wrap:anywhere]">{a.nome}</span>}
-                      {a.descricao ? <span className="text-xs">{a.descricao}</span> : null}
-                      <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-tinta-suave">
+                      {a.descricao ? <span className="t-apoio">{a.descricao}</span> : null}
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-1 t-apoio text-tinta-suave">
                         {a.situacao === "ENVIANDO" ? <Selo tom="info">Verificando</Selo> : null}
                         {a.situacao === "NAO_LIBERADO" ? <Selo tom="atencao">Não liberado</Selo> : null}
                         {a.situacao === "NAO_LIBERADO" ? <span className="text-atencao">{a.motivoRecusa}</span>
@@ -350,12 +365,12 @@ function Visualizador({ pedidoId, fotos, indice, aoMudar, aoTirar }: {
     <Dialogo aberto={!!a} titulo={a ? `${a.nome} · ${indice! + 1} de ${fotos.length}` : "Foto"} aoFechar={() => aoMudar(null)}>
       {a ? (
         <div className="grid gap-3">
-          {falha ? <p className="text-sm text-atencao">{falha}</p> : null}
+          {falha ? <p className="t-texto text-atencao">{falha}</p> : null}
           <div className="grid min-h-48 place-items-center overflow-hidden rounded-lg bg-superficie-2">
             {/* eslint-disable-next-line @next/next/no-img-element -- link assinado de 5 min do armazenamento privado: não passa pelo otimizador nem por cache */}
-            {url?.id === a.id ? <img src={url.url} alt={a.descricao ?? a.nome} className="max-h-[60vh] w-full object-contain" /> : <span className="text-sm text-tinta-suave">Carregando a foto…</span>}
+            {url?.id === a.id ? <img src={url.url} alt={a.descricao ?? a.nome} className="max-h-[60vh] w-full object-contain" /> : <span className="t-apoio text-tinta-suave">Carregando a foto…</span>}
           </div>
-          <p className="text-sm">{a.descricao ? `${a.descricao} · ` : ""}<span className="text-tinta-suave">{PARTES_ARQUIVO[a.parte]} · {a.enviadoPor ?? "Morador, pelo WhatsApp"} · {diaHora(a.enviadoEm)} · {mostrarTamanho(a.tamanho)}</span></p>
+          <p className="t-texto">{a.descricao ? `${a.descricao} · ` : ""}<span className="text-tinta-suave">{PARTES_ARQUIVO[a.parte]} · {a.enviadoPor ?? "Morador, pelo WhatsApp"} · {diaHora(a.enviadoEm)} · {mostrarTamanho(a.tamanho)}</span></p>
           <div className="flex flex-wrap justify-between gap-2">
             <Botao variante="contorno" disabled={indice === 0} onClick={() => aoMudar(indice! - 1)}>Anterior</Botao>
             {a.podeTirar ? <Botao variante="contorno" onClick={() => aoTirar(a)}>Tirar do pedido</Botao> : null}

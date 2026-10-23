@@ -42,15 +42,15 @@ export function AbaLinksQr({ salvo, parte }: PropsAba & { parte: "etiquetas" | "
 
   if (parte === "abertos") return (
       <section aria-labelledby="lq-aberto" className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4 shadow-s1">
-        <h2 id="lq-aberto" className="text-lg font-medium">Aberto sem conta</h2>
+        <h2 id="lq-aberto" className="t-titulo-secao font-medium">Aberto sem conta</h2>
         <ul className="divide-y divide-linha rounded-xl border border-linha">
           <Linha icone="megafone" titulo="Mural do prédio" sub={`Aberto ${vezes(l.mural.aberturas)} em 7 dias`}
             selo={l.mural.ligado ? <Selo tom="ok">Ligado</Selo> : <Selo tom="neutro">Desligado</Selo>}
-            acao={<span className="text-sm"><LinkPagina pagina="mural">Mural e e-mail</LinkPagina></span>} />
+            acao={<span className="t-texto"><LinkPagina pagina="mural">Mural e e-mail</LinkPagina></span>} />
           <Linha icone="pin" titulo="Etiquetas por local"
             sub={`${emUso.length} em uso · abertas ${vezes(emUso.reduce((s, e) => s + e.aberturas7, 0))} em 7 dias`}
             selo={<Selo tom={emUso.length ? "ok" : "neutro"}>{emUso.length} em uso</Selo>}
-            acao={<span className="text-sm"><LinkPagina pagina="etiquetas">Etiquetas</LinkPagina></span>} />
+            acao={<span className="t-texto"><LinkPagina pagina="etiquetas">Etiquetas</LinkPagina></span>} />
           <Linha icone="ferramenta" titulo="Links de prestador"
             sub={l.prestador.validos ? `${l.prestador.validos} ${l.prestador.validos === 1 ? "válido" : "válidos"} · o primeiro vence ${diaHora(l.prestador.venceEm ?? "")}` : "Nenhum valendo agora"}
             selo={<Selo tom={l.prestador.validos ? "andamento" : "neutro"}>{l.prestador.validos} {l.prestador.validos === 1 ? "válido" : "válidos"}</Selo>} />
@@ -59,7 +59,7 @@ export function AbaLinksQr({ salvo, parte }: PropsAba & { parte: "etiquetas" | "
             selo={<Selo tom={l.documentos.validos ? "andamento" : "neutro"}>{l.documentos.validos} {l.documentos.validos === 1 ? "válido" : "válidos"}</Selo>} />
         </ul>
         {l.prestador.links?.length ? (
-          <ul className="grid gap-1 text-sm">
+          <ul className="grid gap-1 t-texto">
             {l.prestador.links.map((x) => (
               <li key={x.id}>
                 {noApp ? <Link href={`/manutencao/manutencao?id=${x.manutencaoId}`} className="text-violeta-600 hover:underline">{x.titulo}</Link> : x.titulo}
@@ -68,7 +68,7 @@ export function AbaLinksQr({ salvo, parte }: PropsAba & { parte: "etiquetas" | "
             ))}
           </ul>
         ) : null}
-        <p className="text-xs text-tinta-suave">Cada link conta quantas vezes foi aberto, sem saber quem abriu. Desligar ou trocar pede motivo e fica no histórico.</p>
+        <p className="t-apoio text-tinta-suave">Cada link conta quantas vezes foi aberto, sem saber quem abriu. Desligar ou trocar pede motivo e fica no histórico.</p>
       </section>
   );
 
@@ -76,7 +76,7 @@ export function AbaLinksQr({ salvo, parte }: PropsAba & { parte: "etiquetas" | "
     <div className="grid gap-5">
       <section aria-labelledby="lq-etiquetas" className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4 shadow-s1">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="lq-etiquetas" className="text-lg font-medium">Etiquetas por local</h2>
+          <h2 id="lq-etiquetas" className="t-titulo-secao font-medium">Etiquetas por local</h2>
           <span className="flex flex-wrap gap-2">
             {emUso.length && noApp ? <Link href="/etiquetas" target="_blank" className={classeBotao("contorno", "", "m")}><Icone nome="imprimir" />Imprimir etiquetas</Link> : null}
             {l.podeEditar && l.numeroWhatsapp ? <Botao tamanho="m" onClick={() => setNova(true)}><Icone nome="mais" />Nova etiqueta</Botao> : null}
@@ -86,25 +86,25 @@ export function AbaLinksQr({ salvo, parte }: PropsAba & { parte: "etiquetas" | "
           ? <Aviso tom="info" titulo={`As etiquetas abrem o WhatsApp do condomínio: ${numeroBonito(l.numeroWhatsapp)}`}>O número é o que a TRÍADE cadastrou na implantação.</Aviso>
           : <Aviso tom="atencao" titulo="O condomínio ainda não tem número de WhatsApp cadastrado">Sem número, não dá para criar etiquetas. Peça à TRÍADE para cadastrar.</Aviso>}
         {l.etiquetas.length === 0 ? (
-          <p className="text-sm text-tinta-suave">Nenhuma etiqueta ainda. Uma etiqueta no elevador, na garagem ou no hall deixa o morador avisar um problema apontando a câmera, com o local já escrito.</p>
+          <p className="t-apoio text-tinta-suave">Nenhuma etiqueta ainda. Uma etiqueta no elevador, na garagem ou no hall deixa o morador avisar um problema apontando a câmera, com o local já escrito.</p>
         ) : (
           <ul className="divide-y divide-linha rounded-xl border border-linha">
             {l.etiquetas.map((e) => (
-              <li key={e.id} className="grid gap-2 px-3 py-2.5 text-sm sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-4">
+              <li key={e.id} className="grid gap-2 px-3 py-2.5 t-texto sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-4">
                 <span className="grid min-w-0">
                   <span className="flex flex-wrap items-baseline gap-x-2">
-                    <button type="button" className="text-left font-medium text-violeta-600 hover:underline" onClick={() => setAberta(e.id)}>{e.local}</button>
-                    <span className="font-mono text-xs text-tinta-suave">{e.rotulo}</span>
+                    <button type="button" className="elo" onClick={() => setAberta(e.id)}>{e.local}</button>
+                    <span className="font-mono t-codigo text-tinta-suave">{e.rotulo}</span>
                   </span>
-                  <span className="text-xs text-tinta-suave">{[e.onde, e.recadoAte ? `recado até ${diaHora(`${e.recadoAte}T12:00:00`).slice(0, 5)}` : null].filter(Boolean).join(" · ")}</span>
+                  <span className="t-apoio text-tinta-suave">{[e.onde, e.recadoAte ? `recado até ${diaHora(`${e.recadoAte}T12:00:00`).slice(0, 5)}` : null].filter(Boolean).join(" · ")}</span>
                 </span>
-                <span className="text-xs text-tinta-suave">Aberta {vezes(e.aberturas7)} em 7 dias</span>
+                <span className="t-apoio text-tinta-suave">Aberta {vezes(e.aberturas7)} em 7 dias</span>
                 <span>{e.ativa ? (e.semUso ? <Selo tom="atencao">Sem uso há 90 dias</Selo> : <Selo tom="ok">Em uso</Selo>) : <Selo tom="neutro">Desativada</Selo>}</span>
               </li>
             ))}
           </ul>
         )}
-        <p className="text-xs text-tinta-suave">A etiqueta desativada continua na lista, com o motivo. Quem apontar a câmera para ela vê só que ela não está mais em uso.</p>
+        <p className="t-apoio text-tinta-suave">A etiqueta desativada continua na lista, com o motivo. Quem apontar a câmera para ela vê só que ela não está mais em uso.</p>
       </section>
 
       {nova ? <FormEtiqueta aoFechar={() => setNova(false)} aoSalvar={(t) => { setNova(false); aposSalvar(t); }} /> : null}
@@ -117,7 +117,7 @@ function Linha({ icone, titulo, sub, selo, acao }: { icone: NomeIcone; titulo: s
   return (
     <li className="flex flex-wrap items-center gap-3 px-3 py-2.5">
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violeta-50 text-violeta-600"><Icone nome={icone} /></span>
-      <span className="grid min-w-0 flex-1"><span className="font-medium">{titulo}</span><span className="text-xs text-tinta-suave">{sub}</span></span>
+      <span className="grid min-w-0 flex-1"><span className="font-medium">{titulo}</span><span className="t-apoio text-tinta-suave">{sub}</span></span>
       {selo}
       {acao}
     </li>
@@ -164,9 +164,9 @@ function FormEtiqueta({ etiqueta, aoFechar, aoSalvar }: { etiqueta?: Etiqueta; a
             erro={comErro.includes("recadoAte") ? `Escolha entre hoje e daqui a ${RECADO_DIAS.maximo} dias.` : null} />
         ) : null}
         <div className="grid gap-1 rounded-xl border border-linha p-3">
-          <span className="text-sm font-medium">A mensagem que já vem escrita</span>
-          <span className="rounded-lg bg-violeta-50 px-3 py-2 text-[13px] text-violeta-800">{mensagemEtiqueta(v.local.trim() || "…", etiqueta?.rotulo ?? "E··")}</span>
-          <span className="text-xs text-tinta-suave">A pessoa completa o que viu e envia. Ela pode mudar tudo antes de enviar.</span>
+          <span className="t-texto font-medium">A mensagem que já vem escrita</span>
+          <span className="rounded-lg bg-violeta-50 px-3 py-2 t-apoio text-violeta-800">{mensagemEtiqueta(v.local.trim() || "…", etiqueta?.rotulo ?? "E··")}</span>
+          <span className="t-apoio text-tinta-suave">A pessoa completa o que viu e envia. Ela pode mudar tudo antes de enviar.</span>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
           <Botao variante="contorno" onClick={aoFechar}>Voltar</Botao>
@@ -205,14 +205,14 @@ function EtiquetaAberta({ id, aoFechar, aoMudar }: { id: string; aoFechar: () =>
           <div className="flex flex-wrap items-center gap-4">
             <div className="rounded-xl border border-linha bg-white p-2"><QrCode texto={link} rotulo={`QR da etiqueta ${e.rotulo}`} /></div>
             <div className="grid min-w-0 flex-1 gap-2">
-              <code className="rounded-lg border border-violeta-200 bg-violeta-50 px-3 py-2 text-[13px] break-all text-violeta-800">{link}</code>
+              <code className="rounded-lg border border-violeta-200 bg-violeta-50 px-3 py-2 t-apoio break-all text-violeta-800">{link}</code>
               <span className="flex flex-wrap gap-2">
                 {noApp ? <Link href={`/etiquetas?ids=${e.id}&tamanho=1`} target="_blank" className={classeBotao("contorno", "", "m")}><Icone nome="imprimir" />Imprimir</Link> : null}
                 <Botao variante="discreto" tamanho="m" onClick={() => { void navigator.clipboard?.writeText(link).catch(() => {}); setCopiado(true); }}>
                   <Icone nome="copiar" />{copiado ? "Link copiado" : "Copiar link"}
                 </Botao>
               </span>
-              <span className="text-[13px] text-tinta-suave">Aberta {vezes(e.aberturas7)} nos últimos 7 dias, {vezes(e.aberturasHoje)} hoje. Não sabemos quem abriu.</span>
+              <span className="t-apoio text-tinta-suave">Aberta {vezes(e.aberturas7)} nos últimos 7 dias, {vezes(e.aberturasHoje)} hoje. Não sabemos quem abriu.</span>
             </div>
           </div>
         ) : null}
@@ -228,9 +228,9 @@ function EtiquetaAberta({ id, aoFechar, aoMudar }: { id: string; aoFechar: () =>
           <h4 id="et-hist" className="font-medium">Histórico</h4>
           <ol className="divide-y divide-linha rounded-xl border border-linha">
             {historico.map((h, i) => (
-              <li key={i} className="grid gap-0.5 px-3 py-2 text-sm">
+              <li key={i} className="grid gap-0.5 px-3 py-2 t-texto">
                 <span>{descreverEventoEtiqueta(h.acao, h.dados)}</span>
-                <span className="text-xs text-tinta-suave">{h.autor ?? "Sistema"} · {diaHora(h.em)}</span>
+                <span className="t-apoio text-tinta-suave">{h.autor ?? "Sistema"} · {diaHora(h.em)}</span>
               </li>
             ))}
           </ol>

@@ -89,7 +89,7 @@ function Formulario({ l, voltar }: { l: ListaEnquetes; voltar: ReactNode }) {
       <CampoTexto id="eq-pergunta" rotulo="Pergunta" maxLength={200} required value={pergunta} onChange={(e) => setPergunta(e.target.value)}
         erro={comErro.includes("pergunta") ? "Escreva a pergunta, com 5 a 200 letras" : null} />
       <fieldset className="grid gap-3">
-        <legend className="mb-1 text-[13px] font-medium">Opções <span className="font-normal text-tinta-suave">· de 2 a 6</span></legend>
+        <legend className="mb-1 t-apoio font-medium">Opções <span className="font-normal text-tinta-suave">· de 2 a 6</span></legend>
         {opcoes.map((o, i) => (
           <CampoTexto key={i} id={`eq-opcao-${i}`} rotulo={`Opção ${i + 1}`} opcional={i >= 2} maxLength={80} value={o}
             onChange={(e) => setOpcoes((xs) => xs.map((x, j) => (j === i ? e.target.value : x)))} />
@@ -97,7 +97,7 @@ function Formulario({ l, voltar }: { l: ListaEnquetes; voltar: ReactNode }) {
         {opcoes.length < 6 ? (
           <Botao variante="discreto" tamanho="p" className="justify-self-start" onClick={() => setOpcoes((xs) => [...xs, ""])}><Icone nome="mais" className="h-4 w-4" />Mais uma opção</Botao>
         ) : null}
-        {comErro.includes("opcoes") ? <span className="text-[13px] text-erro" role="alert">Escreva de 2 a 6 opções, diferentes entre si</span> : null}
+        {comErro.includes("opcoes") ? <span className="t-apoio text-erro" role="alert">Escreva de 2 a 6 opções, diferentes entre si</span> : null}
       </fieldset>
     </>
   );
@@ -106,19 +106,19 @@ function Formulario({ l, voltar }: { l: ListaEnquetes; voltar: ReactNode }) {
     <>
       <div className="grid gap-4">
         <div className="grid gap-1.5">
-          <span className="text-[13px] font-medium">Quem responde</span>
+          <span className="t-apoio font-medium">Quem responde</span>
           <Escolha rotulo="Quem responde" atual={por} aoMudar={setPor} opcoes={[{ valor: "UNIDADE", texto: "Uma por unidade" }, { valor: "PESSOA", texto: "Uma por pessoa" }]} />
           <span className="t-apoio">{por === "UNIDADE" ? "Os contatos da unidade dividem o mesmo link." : "Cada pessoa com vínculo confirmado."}</span>
         </div>
         <div className="grid gap-1.5">
-          <span className="text-[13px] font-medium">Respostas</span>
+          <span className="t-apoio font-medium">Respostas</span>
           <Escolha rotulo="Respostas" atual={secreta} aoMudar={setSecreta}
             opcoes={[{ valor: "sim", texto: <><Icone nome="cadeado" className="h-4 w-4" />Secretas</> }, { valor: "nao", texto: <><Icone nome="olho" className="h-4 w-4" />Abertas</> }]} />
           <span className="t-apoio">{secreta === "sim" ? "Ninguém vê quem escolheu o quê, nem o síndico." : "O síndico vê o que cada um respondeu."}</span>
         </div>
       </div>
       <fieldset className="grid gap-1.5">
-        <legend className="mb-1 text-[13px] font-medium">Por onde chega</legend>
+        <legend className="mb-1 t-apoio font-medium">Por onde chega</legend>
         <div className="grid gap-2">
           {(Object.keys(CANAIS_ENQUETE) as CanalEnquete[]).map((c) => (
             <label key={c} className={`flex items-start gap-3 rounded-2xl border border-linha px-4 py-3 ${disponivel[c] ? "cursor-pointer" : "opacity-70"}`}>
@@ -131,7 +131,7 @@ function Formulario({ l, voltar }: { l: ListaEnquetes; voltar: ReactNode }) {
             </label>
           ))}
         </div>
-        {comErro.includes("canais") ? <span className="text-[13px] text-erro" role="alert">Escolha pelo menos um canal</span> : null}
+        {comErro.includes("canais") ? <span className="t-apoio text-erro" role="alert">Escolha pelo menos um canal</span> : null}
       </fieldset>
       <CampoTexto id="eq-ate" rotulo="Aberta até" type="datetime-local" required value={ate} onChange={(e) => setAte(e.target.value)} className="max-w-sm"
         erro={comErro.includes("abertaAte") ? "Escolha um prazo de 1 hora a 90 dias a partir de agora" : null}
@@ -144,11 +144,11 @@ function Formulario({ l, voltar }: { l: ListaEnquetes; voltar: ReactNode }) {
       <div className="grid gap-1">
         {por === "UNIDADE" ? (
           <p className="flex items-baseline gap-2.5"><span className="text-[40px] leading-none font-semibold tracking-tight" aria-hidden="true">{l.unidades}</span>
-            <span className="text-[15px]">{l.unidades === 1 ? "unidade recebe o link" : "unidades recebem o link"}<span className="sr-only">: {l.unidades}</span></span></p>
-        ) : <p className="text-[15px]">Cada pessoa com vínculo confirmado recebe o seu link.</p>}
+            <span className="t-texto">{l.unidades === 1 ? "unidade recebe o link" : "unidades recebem o link"}<span className="sr-only">: {l.unidades}</span></span></p>
+        ) : <p className="t-texto">Cada pessoa com vínculo confirmado recebe o seu link.</p>}
         <p className="t-apoio">{por === "UNIDADE" ? "Uma resposta por unidade." : "Uma resposta por pessoa."} Quem não tem WhatsApp nem e-mail recebe o link copiado na ficha da enquete.</p>
       </div>
-      <ul className="grid text-sm" aria-label="Canais">
+      <ul className="grid t-texto" aria-label="Canais">
         {(Object.keys(CANAIS_ENQUETE) as CanalEnquete[]).map((c) => {
           const vai = canais.includes(c);
           return (

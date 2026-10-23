@@ -88,7 +88,7 @@ export function Escrever() {
   const id = busca.get("id");
   const opcoes = useCarregar<OpcoesComunicado>("/v1/condominio/comunicados/opcoes");
   const atual = useCarregar<ComunicadoDetalhe>(id ? `/v1/condominio/comunicados/${id}` : null);
-  const voltar = <Link href={id ? `/comunicados/comunicado?id=${id}` : "/comunicados"} className="flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline">
+  const voltar = <Link href={id ? `/comunicados/comunicado?id=${id}` : "/comunicados"} className="flex items-center gap-1 justify-self-start t-texto font-medium text-violeta-600 hover:underline">
     <Icone nome="esq" className="h-4 w-4" />{id ? "Comunicado" : "Comunicados"}</Link>;
 
   if (opcoes.estado === "carregando" || (id && atual.estado === "carregando")) return <Carregando rotulo="Abrindo o comunicado…" />;
@@ -151,6 +151,14 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
   const [passo, setPasso] = useState<Passo>(1);
   const [ligar, setLigar] = useState(false);
   const celular = useCelular();
+  // O rascunho grava sozinho (D4.9): 3 segundos depois da última mudança, o novo ou o rascunho
+  // aberto vai como rascunho, sem as fotos novas (que sobem ao salvar). O programado não volta a
+  // rascunho sozinho.
+  const conteudo = JSON.stringify(v);
+  const [ultimoGravado, setUltimoGravado] = useState(conteudo);
+  const [salvoSozinho, setSalvoSozinho] = useState<{ id: string; versao: number; hora: string } | null>(null);
+  const [gravando, setGravando] = useState(false);
+  const guardado = salvoSozinho ?? (c ? { id: c.id, versao: c.versao } : null);
   const mudar = (x: Partial<typeof v>) => setV((y) => ({ ...y, ...x }));
   const existentes = (detalhe?.arquivos ?? []).filter((a) => a.situacao !== "NAO_LIBERADO");
   const vagas = 4 - existentes.length;
@@ -188,23 +196,43 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
   const ninguemNoWhatsapp = whatsappLigado && publico !== null && !incompleto && !publico.comWhatsapp;
   const nenhum = (publico?.quem ?? []).filter((p) => !(canais.emailLigado && v.porEmail && p.email) && !(whatsappLigado && v.porWhatsapp && p.whatsapp));
 
+  const corpoDe = (acao: Acao) => ({
+    assunto: v.assunto, titulo: v.titulo, texto: v.texto, publico: v.publico, blocos: v.blocos, unidades: v.unidades, contatos: v.contatos,
+    pedidoId: v.pedidoId || null, manutencaoId: v.manutencaoId || null,
+    programadoPara: acao === "PROGRAMAR" ? deDataHoraLocal(v.programadoPara) : null,
+    noMural, porEmail: v.porEmail, porWhatsapp: whatsappLigado ? v.porWhatsapp && !ninguemNoWhatsapp : undefined,
+  });
+  const gravar = (corpo: ReturnType<typeof corpoDe>, acao: Acao) => (guardado
+    ? chamarApi<{ id: string; versao: number }>(`/v1/condominio/comunicados/${guardado.id}`, { metodo: "PUT", corpo: { ...corpo, versao: guardado.versao, acao } })
+    : chamarApi<{ id: string; versao: number }>("/v1/condominio/comunicados", { corpo: { ...corpo, acao } }));
+
+  const podeSozinho = conteudo !== ultimoGravado && (!c || c.estado === "RASCUNHO") && enviando === null && !gravando && !incompleto
+    && v.titulo.trim().length >= 3 && v.texto.trim().length >= 3;
+  useEffect(() => {
+    if (!podeSozinho) return;
+    const t = setTimeout(() => {
+      setGravando(true);
+      void gravar(corpoDe("RASCUNHO"), "RASCUNHO").then((r) => {
+        setGravando(false);
+        if (!r.ok) return;
+        setUltimoGravado(conteudo);
+        setSalvoSozinho({ id: r.dados.id, versao: r.dados.versao, hora: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) });
+      });
+    }, 3000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conteudo, podeSozinho]);
+
   async function salvar(acao: Acao, ev?: FormEvent) {
     ev?.preventDefault();
     setErro(null);
     setAviso(null);
     setEnviando(acao);
-    const corpo = {
-      assunto: v.assunto, titulo: v.titulo, texto: v.texto, publico: v.publico, blocos: v.blocos, unidades: v.unidades, contatos: v.contatos,
-      pedidoId: v.pedidoId || null, manutencaoId: v.manutencaoId || null,
-      programadoPara: acao === "PROGRAMAR" ? deDataHoraLocal(v.programadoPara) : null,
-      noMural, porEmail: v.porEmail, porWhatsapp: whatsappLigado ? v.porWhatsapp && !ninguemNoWhatsapp : undefined,
-    };
+    const corpo = corpoDe(acao);
     const validos = novos.filter((n) => !n.problema);
     // Com fotos novas, guarda primeiro como rascunho, envia as fotos e só então publica ou programa.
     const primeira = validos.length && acao !== "RASCUNHO" ? "RASCUNHO" : acao;
-    let r = c
-      ? await chamarApi<{ id: string; versao: number }>(`/v1/condominio/comunicados/${c.id}`, { metodo: "PUT", corpo: { ...corpo, versao: c.versao, acao: primeira } })
-      : await chamarApi<{ id: string; versao: number }>("/v1/condominio/comunicados", { corpo: { ...corpo, acao: primeira } });
+    let r = await gravar(corpo, primeira);
     if (!r.ok) {
       setEnviando(null);
       const campo = camposComErro(r.erro).find((x) => PASSO_DO_CAMPO[x]);
@@ -255,20 +283,20 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
   const parte1 = (
     <>
       <div role="group" aria-label="Assunto" className="grid gap-1.5">
-        <span className="text-[13px] font-medium" aria-hidden="true">Assunto</span>
+        <span className="t-apoio font-medium" aria-hidden="true">Assunto</span>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
           {assuntos.map((a) => {
             const atual = v.assunto === a;
             return (
               <button key={a} type="button" aria-pressed={atual} onClick={() => mudar({ assunto: a })}
-                className={`flex items-center gap-2 rounded-[14px] border p-3 text-left text-[13px] font-medium xl:flex-col xl:items-start ${atual ? "border-violeta-600 bg-violeta-50 ring-1 ring-violeta-600" : "border-linha bg-superficie hover:border-violeta-300"}`}>
+                className={`flex items-center gap-2 rounded-[14px] border p-3 text-left t-apoio font-medium xl:flex-col xl:items-start ${atual ? "border-violeta-600 bg-violeta-50 ring-1 ring-violeta-600" : "border-linha bg-superficie hover:border-violeta-300"}`}>
                 <span className="ladrilho h-8 w-8 rounded-[10px]" data-tom={atual ? "violeta" : undefined} aria-hidden="true"><Icone nome={ICONE_ASSUNTO[a] ?? "megafone"} className="h-4 w-4" /></span>
                 {ASSUNTOS_COMUNICADO[a]}
               </button>
             );
           })}
         </div>
-        {msg("assunto") ? <span className="text-xs text-erro">Escolha um assunto em uso.</span> : null}
+        {msg("assunto") ? <span className="t-apoio text-erro">Escolha um assunto em uso.</span> : null}
       </div>
       <CampoTexto id="cm-titulo" rotulo="Título" required maxLength={120} value={v.titulo} onChange={(e) => mudar({ titulo: e.target.value })}
         erro={msg("titulo", "De 3 a 120 caracteres.")} />
@@ -277,15 +305,15 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
         ajuda={o.assinatura ? `Sai assinado como "${o.assinatura}". A assinatura fica em Configurações › Comunicados.` : "Sem assinatura padrão: defina em Configurações › Comunicados."} />
 
       <div className="grid gap-2">
-        <span className="text-[13px] font-medium">Fotos ou PDF <span className="font-normal text-tinta-suave">(opcional)</span></span>
+        <span className="t-apoio font-medium">Fotos ou PDF <span className="font-normal text-tinta-suave">(opcional)</span></span>
         {vagas - novos.length > 0 ? (
           <label className="flex items-center gap-4 rounded-[18px] border-[1.5px] border-dashed border-violeta-300 bg-violeta-50 px-5 py-4 max-md:flex-col max-md:text-center">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-superficie text-violeta-600 shadow-s1" aria-hidden="true"><Icone nome="enviar" /></span>
             <span className="grid flex-1 gap-0.5">
-              <span className="text-sm font-semibold">Escolher foto ou PDF</span>
+              <span className="t-titulo-cartao font-semibold">Escolher foto ou PDF</span>
               <span className="t-apoio">JPG, PNG, WEBP ou PDF · até 10 MB · até 4 arquivos, sem a localização das fotos</span>
             </span>
-            <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple className="text-sm max-md:w-full"
+            <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple className="t-texto max-md:w-full"
               onChange={(e) => {
                 const lista = [...(e.target.files ?? [])].slice(0, vagas - novos.length).map((arquivo) => ({ arquivo, problema: conferirArquivo(arquivo, LIMITE_FOTO) }));
                 setNovos((xs) => [...xs, ...lista]);
@@ -296,7 +324,7 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
         {existentes.length ? (
           <ul className="grid gap-2">
             {existentes.map((a) => (
-              <li key={a.id} className="flex items-center gap-3 rounded-[14px] border border-linha bg-superficie px-3 py-2.5 text-sm">
+              <li key={a.id} className="flex items-center gap-3 rounded-[14px] border border-linha bg-superficie px-3 py-2.5 t-texto">
                 <span className="ladrilho h-9 w-9 rounded-[11px]" data-tom="ok" aria-hidden="true"><Icone nome={a.tipo.startsWith("image/") ? "camera" : "documento"} className="h-4.5 w-4.5" /></span>
                 <span className="grid min-w-0 flex-1 [overflow-wrap:anywhere]"><span className="font-medium">{a.nome}</span>
                   <span className="t-apoio">{mostrarTamanho(a.tamanho)}{a.situacao === "ENVIANDO" ? " · verificando" : ""}</span></span>
@@ -308,7 +336,7 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
         {novos.length ? (
           <ul className="grid gap-2" aria-label="Arquivos para enviar">
             {novos.map((n, i) => (
-              <li key={`${n.arquivo.name}-${i}`} className={`flex items-center gap-3 rounded-[14px] border px-3 py-2.5 text-sm ${n.problema ? "border-atencao-borda bg-atencao-fundo" : "border-linha bg-superficie"}`}>
+              <li key={`${n.arquivo.name}-${i}`} className={`flex items-center gap-3 rounded-[14px] border px-3 py-2.5 t-texto ${n.problema ? "border-atencao-borda bg-atencao-fundo" : "border-linha bg-superficie"}`}>
                 <span className="ladrilho h-9 w-9 rounded-[11px]" data-tom={n.problema ? "atencao" : "violeta"} aria-hidden="true"><Icone nome={n.problema ? "alerta" : "clipe"} className="h-4.5 w-4.5" /></span>
                 <span className="grid min-w-0 flex-1 [overflow-wrap:anywhere]"><span className="font-medium">{n.arquivo.name}</span>
                   {n.problema ? <span className="text-atencao">{n.problema}</span> : <span className="t-apoio">{mostrarTamanho(n.arquivo.size)} · vai ao salvar</span>}</span>
@@ -340,7 +368,7 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
         ) : (
           <div className="flex items-center gap-3 rounded-[14px] border border-dashed border-violeta-300 px-4 py-3">
             <Icone nome="link" className="h-5 w-5 shrink-0 text-tinta-suave" />
-            <span className="grid flex-1"><span className="text-sm font-medium">Ligar a um pedido ou manutenção</span>
+            <span className="grid flex-1"><span className="t-texto font-medium">Ligar a um pedido ou manutenção</span>
               <span className="t-apoio">Opcional. O pedido passa a mostrar este comunicado. Não conta como retorno ao morador.</span></span>
             <Botao variante="discreto" tamanho="m" onClick={() => setLigar(true)}>Escolher</Botao>
           </div>
@@ -350,7 +378,7 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
   );
 
   const canalCaixa = (rotulo: string, ajuda: ReactNode, marcada: boolean, aoMudar?: (x: boolean) => void, desligada = false) => (
-    <label className={`flex items-start gap-3 rounded-[14px] border border-linha px-3.5 py-3 text-sm ${desligada ? "bg-fundo" : "bg-superficie"}`}>
+    <label className={`flex items-start gap-3 rounded-[14px] border border-linha px-3.5 py-3 t-texto ${desligada ? "bg-fundo" : "bg-superficie"}`}>
       <input type="checkbox" role="switch" className="mt-0.5 h-5 w-5 shrink-0 accent-violeta-600" checked={marcada} disabled={desligada || !aoMudar}
         onChange={(e) => aoMudar?.(e.target.checked)} />
       <span className="grid gap-0.5"><span className={`font-medium ${desligada ? "text-tinta-suave" : ""}`}>{rotulo}</span><span className="t-apoio">{ajuda}</span></span>
@@ -360,7 +388,7 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
   const parte2 = (
     <>
       <div className="grid gap-1.5">
-        <span className="text-[13px] font-medium" aria-hidden="true">Para quem</span>
+        <span className="t-apoio font-medium" aria-hidden="true">Para quem</span>
         <Escolha rotulo="Para quem" atual={v.publico} aoMudar={(x) => mudar({ publico: x })}
           opcoes={(Object.keys(PUBLICOS_COMUNICADO) as PublicoComunicado[])
             .filter((p) => (p !== "BLOCOS" || o.blocos.length > 0) && (p !== "CONTATOS" || o.pode.verMoradores))
@@ -368,46 +396,46 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
       </div>
       {v.publico === "BLOCOS" ? (
         <fieldset className="grid gap-1.5">
-          <legend className="mb-1 text-[13px] font-medium">Blocos</legend>
+          <legend className="mb-1 t-apoio font-medium">Blocos</legend>
           {o.blocos.map((b) => (
-            <label key={b.id} className="flex items-center gap-2 text-sm">
+            <label key={b.id} className="flex items-center gap-2 t-texto">
               <input type="checkbox" className="h-4 w-4 accent-violeta-600" checked={v.blocos.includes(b.id)} onChange={() => mudar({ blocos: alternar(v.blocos, b.id) })} />{b.nome}
             </label>
           ))}
-          {msg("blocos") ? <span className="text-xs text-erro">Escolha os blocos.</span> : null}
+          {msg("blocos") ? <span className="t-apoio text-erro">Escolha os blocos.</span> : null}
         </fieldset>
       ) : null}
       {v.publico === "UNIDADES" ? (
         <fieldset className="grid gap-1.5">
-          <legend className="mb-1 text-[13px] font-medium">Unidades {v.unidades.length ? `(${v.unidades.length} escolhidas)` : ""}</legend>
+          <legend className="mb-1 t-apoio font-medium">Unidades {v.unidades.length ? `(${v.unidades.length} escolhidas)` : ""}</legend>
           <input className="campo" aria-label="Filtrar unidades" placeholder="Filtrar" value={filtroUnidade} onChange={(e) => setFiltroUnidade(e.target.value)} />
           <div className="grid max-h-56 gap-1 overflow-y-auto rounded-xl border border-linha p-2">
             {unidadesVisiveis.map((u) => (
-              <label key={u.id} className="flex items-center gap-2 text-sm">
+              <label key={u.id} className="flex items-center gap-2 t-texto">
                 <input type="checkbox" className="h-4 w-4 accent-violeta-600" checked={v.unidades.includes(u.id)} onChange={() => mudar({ unidades: alternar(v.unidades, u.id) })} />{u.nome}
               </label>
             ))}
           </div>
-          {msg("unidades") ? <span className="text-xs text-erro">Escolha as unidades.</span> : null}
+          {msg("unidades") ? <span className="t-apoio text-erro">Escolha as unidades.</span> : null}
         </fieldset>
       ) : null}
       {v.publico === "CONTATOS" && o.contatos ? (
         <fieldset className="grid gap-1.5">
-          <legend className="mb-1 text-[13px] font-medium">Contatos {v.contatos.length ? `(${v.contatos.length} escolhidos)` : ""}</legend>
+          <legend className="mb-1 t-apoio font-medium">Contatos {v.contatos.length ? `(${v.contatos.length} escolhidos)` : ""}</legend>
           <div className="grid max-h-56 gap-1 overflow-y-auto rounded-xl border border-linha p-2">
             {o.contatos.map((p) => (
-              <label key={p.id} className="flex items-center gap-2 text-sm">
+              <label key={p.id} className="flex items-center gap-2 t-texto">
                 <input type="checkbox" className="h-4 w-4 accent-violeta-600" checked={v.contatos.includes(p.id)} onChange={() => mudar({ contatos: alternar(v.contatos, p.id) })} />
-                <span>{p.nome}<span className="text-xs text-tinta-suave"> · {p.unidades.join(", ")}</span></span>
+                <span>{p.nome}<span className="t-apoio text-tinta-suave"> · {p.unidades.join(", ")}</span></span>
               </label>
             ))}
           </div>
-          {msg("contatos") ? <span className="text-xs text-erro">Escolha os contatos.</span> : null}
+          {msg("contatos") ? <span className="t-apoio text-erro">Escolha os contatos.</span> : null}
         </fieldset>
       ) : null}
       {canais.muralLigado || canais.emailLigado || whatsappLigado ? (
         <fieldset className="grid gap-1.5">
-          <legend className="mb-1 text-[13px] font-medium">Como chega</legend>
+          <legend className="mb-1 t-apoio font-medium">Como chega</legend>
           <div className="grid gap-2 lg:grid-cols-3">
             {canais.muralLigado ? canalCaixa("Aparece no mural online",
               v.publico === "TODOS" ? "Só para comunicados de todo o condomínio." : "Este comunicado não é para todo o condomínio: não vai ao mural do prédio.",
@@ -459,26 +487,26 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
             <div className="grid gap-1">
               <p className="flex items-baseline gap-2.5">
                 <span className={`text-[40px] leading-none font-semibold tracking-tight ${publico.contatos ? "" : "text-atencao"}`} aria-hidden="true">{publico.contatos}</span>
-                <span className="text-[15px]">{descreverAlcance(publico.contatos, publico.unidades)}</span>
+                <span className="t-texto">{descreverAlcance(publico.contatos, publico.unidades)}</span>
               </p>
               <p className="t-apoio">
                 Quem tem vínculo confirmado e recebe comunicados{v.assunto === "ASSEMBLEIA" ? ", mais os proprietários" : ""}.
-                {publico.quem ? <> <button type="button" className="font-medium text-violeta-600 hover:underline" onClick={() => setVerQuem((x) => !x)}>{verQuem ? "Esconder" : "Ver quem"}</button></> : null}
+                {publico.quem ? <> <button type="button" className="elo" onClick={() => setVerQuem((x) => !x)}>{verQuem ? "Esconder" : "Ver quem"}</button></> : null}
               </p>
             </div>
             {verQuem && publico.quem ? (
-              <ul className="max-h-48 overflow-y-auto rounded-xl border border-linha p-2 text-sm">
-                {publico.quem.map((p) => <li key={p.contatoId}>{p.nome} <span className="text-xs text-tinta-suave">· {p.unidades.join(", ")}</span></li>)}
+              <ul className="max-h-48 overflow-y-auto rounded-xl border border-linha p-2 t-texto">
+                {publico.quem.map((p) => <li key={p.contatoId}>{p.nome} <span className="t-apoio text-tinta-suave">· {p.unidades.join(", ")}</span></li>)}
               </ul>
             ) : null}
-            <ul className="grid text-sm" aria-label="Canais">
+            <ul className="grid t-texto" aria-label="Canais">
               {canais.muralLigado ? <LinhaCanal icone="casa" tom="ok" nome="Mural online" valor={noMural ? "todos" : "fora"} apagado={!noMural} /> : null}
               {canais.emailLigado ? <LinhaCanal icone="email" tom="info" nome="E-mail" valor={v.porEmail ? (publico.comEmail === 1 ? "1 contato" : `${publico.comEmail ?? 0} contatos`) : "não vai"} apagado={!v.porEmail} /> : null}
               {whatsappLigado ? <LinhaCanal icone="whats" tom="ok" nome="WhatsApp" valor={v.porWhatsapp && !ninguemNoWhatsapp ? (publico.comWhatsapp === 1 ? "1 contato" : `${publico.comWhatsapp ?? 0} contatos`) : "não vai"} apagado={!v.porWhatsapp || ninguemNoWhatsapp} />
                 : <LinhaCanal icone="whats" tom="neutro" nome="WhatsApp" valor="desligado" apagado />}
             </ul>
             {whatsappLigado && conta ? (
-              <ul className="flex flex-wrap gap-2 text-[13px]" aria-label="Por onde chega">
+              <ul className="flex flex-wrap gap-2 t-apoio" aria-label="Por onde chega">
                 {[[conta.whatsapp, "pelo WhatsApp"], [conta.email, "por e-mail"], [conta.pelosDois, "pelos dois"], [conta.nenhum, "por nenhum"]].map(([n, t]) => (
                   <li key={t} className="rounded-full border border-linha px-3 py-1"><span className="font-medium">{n}</span> {t}</li>
                 ))}
@@ -497,13 +525,13 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
             {whatsappLigado && conta && conta.nenhum > 0 ? (
               <Aviso tom="atencao" titulo={conta.nenhum === 1 ? "1 contato não recebe por nenhum dos dois" : `${conta.nenhum} contatos não recebem por nenhum dos dois`}>
                 Não aceitaram o WhatsApp nem confirmaram o e-mail. Ficam com o grupo do prédio{noMural ? " e o mural" : ""}.
-                {publico.quem ? <> <button type="button" className="font-medium underline" onClick={() => setVerNenhum((x) => !x)}>{verNenhum ? "Esconder quem fica de fora" : "Ver quem fica de fora"}</button></> : null}
+                {publico.quem ? <> <button type="button" className="elo text-current underline" onClick={() => setVerNenhum((x) => !x)}>{verNenhum ? "Esconder quem fica de fora" : "Ver quem fica de fora"}</button></> : null}
                 {" · "}<Link href="/configuracoes/comunicados" className="font-medium underline">Como convidar</Link>
               </Aviso>
             ) : null}
             {verNenhum && nenhum.length ? (
-              <ul className="max-h-48 overflow-y-auto rounded-xl border border-linha p-2 text-sm">
-                {nenhum.map((p) => <li key={p.contatoId}>{p.nome} <span className="text-xs text-tinta-suave">· {p.unidades.join(", ")}</span></li>)}
+              <ul className="max-h-48 overflow-y-auto rounded-xl border border-linha p-2 t-texto">
+                {nenhum.map((p) => <li key={p.contatoId}>{p.nome} <span className="t-apoio text-tinta-suave">· {p.unidades.join(", ")}</span></li>)}
               </ul>
             ) : null}
           </div>
@@ -532,15 +560,19 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
         <div className={`lg:sticky lg:top-6 ${passo === 2 ? "" : "max-md:hidden"}`}>{quemRecebe}</div>
       </div>
 
-      <div className="sticky bottom-0 z-20 -mx-4 flex items-center justify-between gap-3 border-t border-linha bg-superficie px-4 py-3 shadow-s2 max-md:bottom-[calc(61px+env(safe-area-inset-bottom))] md:-mx-6 md:px-6">
-        <span className="t-apoio flex items-center gap-2 max-md:hidden"><Icone nome="info" className="h-4 w-4" />Fica como rascunho até você publicar ou programar.</span>
+      <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-linha bg-superficie px-4 py-3 shadow-s2 max-md:bottom-[calc(61px+env(safe-area-inset-bottom))] md:-mx-6 md:px-6">
+        {salvoSozinho ? (
+          <span role="status" className="t-apoio flex items-center gap-2 max-md:w-full"><Icone nome="check" className="h-4 w-4 max-md:hidden" />Rascunho salvo às {salvoSozinho.hora}</span>
+        ) : (
+          <span className="t-apoio flex items-center gap-2 max-md:hidden"><Icone nome="info" className="h-4 w-4" />Fica como rascunho até você publicar ou programar.</span>
+        )}
         <span className="flex flex-1 justify-end gap-2 md:flex-none">
           {passo > 1 ? <Botao variante="contorno" className="md:hidden" onClick={() => setPasso((passo - 1) as Passo)}><Icone nome="esq" />Voltar</Botao> : null}
-          <Botao variante="contorno" disabled={enviando !== null} className={passo < 3 ? "max-md:hidden" : ""} onClick={() => void salvar("RASCUNHO")}>
+          <Botao variante="contorno" disabled={enviando !== null || gravando} className={passo < 3 ? "max-md:hidden" : ""} onClick={() => void salvar("RASCUNHO")}>
             {enviando === "RASCUNHO" ? "Salvando…" : "Salvar rascunho"}
           </Botao>
           {passo < 3 ? <Botao className="md:hidden max-md:flex-1" onClick={() => setPasso((passo + 1) as Passo)}>Continuar<Icone nome="dir" /></Botao> : null}
-          <Botao type="submit" disabled={enviando !== null} className={passo < 3 ? "max-md:hidden" : ""}>
+          <Botao type="submit" disabled={enviando !== null || gravando} className={passo < 3 ? "max-md:hidden" : ""}>
             <Icone nome={v.quando === "PROGRAMAR" ? "relogio" : "megafone"} />{enviando && enviando !== "RASCUNHO" ? "Salvando…" : textoPrincipal}
           </Botao>
         </span>

@@ -80,6 +80,7 @@ import {
   cancelarCompromissoSchema,
   marcarCompromissoSchema,
   periodoAgendaSchema,
+  somarDias,
   reagendarCompromissoSchema,
   situacaoCompromissoSchema,
   alterarManutencaoSchema,
@@ -139,6 +140,7 @@ import {
   buscaLinhaDoTempoSchema,
   CHAVE_PRONTUARIO,
   itemProntuarioSchema,
+  guardarELigarSchema,
   novoItemProntuarioSchema,
   ordemManualSchema,
   retirarSchema,
@@ -298,6 +300,21 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   // Configurações (CF-06, CF-08, CF-10, AT-10, PI-04): as mesmas rotas que o Console usa na
   // implantação. Fuso, etapas e as janelas técnicas são da TRÍADE e só mudam pelo Console.
   rotasConfiguracao(app, "/v1/condominio", quem, deps.banco, { aoLigarEmail: () => esvaziarFila() });
+
+  // A entrada das Configurações numa chamada só (D4.15): o que cada página lê, junto. A parte que o
+  // banco recusa (quem não vê o WhatsApp, por exemplo) volta null e a entrada mostra o resto.
+  const PARTES_DA_ENTRADA = {
+    configuracoes: "plataforma_configuracoes", areas: "plataforma_areas_comuns", manutencao: "plataforma_etapas_manutencao",
+    plano: "plataforma_plano_comunicacao", whatsapp: "plataforma_config_whatsapp", links: "plataforma_links_qr",
+  } as const;
+  app.get("/v1/condominio/configuracoes/entrada", async (c) => {
+    const lidas = await Promise.allSettled(Object.values(PARTES_DA_ENTRADA).map((f) => rpc(f, quem(c))));
+    if (lidas[0]!.status === "rejected") throw lidas[0]!.reason;
+    return c.json(Object.fromEntries(Object.keys(PARTES_DA_ENTRADA).map((k, i) => {
+      const l = lidas[i]!;
+      return [k, l.status === "fulfilled" ? l.value : null];
+    })));
+  });
 
   // Pessoas autorizadas (V-09, CF-02, CF-03, CF-04).
   app.get("/v1/condominio/pessoas", async (c) => c.json(await rpc("plataforma_pessoas", quem(c))));
@@ -517,11 +534,18 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   // avisar é só o que quem registra mudou; o resto segue as regras do condomínio.
   app.post("/v1/condominio/pedidos", async (c) => {
     const d = await lerCorpo(c, registrarPedidoSchema);
-    return c.json(await rpc("plataforma_registrar_pedido", {
+    const r = await rpc<{ id: string }>("plataforma_registrar_pedido", {
       ...quem(c), p_unidade: d.unidadeId, p_contato: d.contatoId, p_local: d.local, p_categoria: d.categoriaId, p_prioridade: d.prioridadeId,
       p_assunto: d.assunto, p_descricao: d.descricao, p_canal: d.canal, p_privado: d.privado, p_responsavel: d.responsavelId,
       p_avisar: d.avisar,
-    }), 201);
+    });
+    if (!d.mensagemId) return c.json(r, 201);
+    // Registrar com as mensagens do WhatsApp (D4.20): junta a conversa na mesma chamada. Se a
+    // junção falha, o pedido fica registrado e a resposta diz que não juntou (a tela oferece Juntar de novo).
+    const juntou = await rpc("plataforma_triar_whatsapp", {
+      ...quem(c), p_mensagem: d.mensagemId, p_acao: "PEDIDO", p_motivo: null, p_pedido: r.id, p_contato: null,
+    }).then(() => true, () => false);
+    return c.json({ ...r, juntou }, 201);
   });
 
   // O bloco Quem avisar antes de registrar: as linhas pelas regras, os rascunhos editáveis e a
@@ -756,6 +780,48 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.get("/v1/condominio/reservas", async (c) => {
     const q = consulta(c, filtroReservasSchema);
     return c.json(await rpc("plataforma_reservas", { ...quem(c), p_filtro: q.filtro, p_area: q.areaId }));
+  });
+
+  // O número de cada aba de uma lista, de uma vez (D4.2, D4.9, D4.11). Cada lista já devolve o
+  // total da situação pedida; aqui ela é pedida uma vez por situação, com os mesmos filtros da tela.
+  // O banco confere a permissão em cada chamada, como na própria lista.
+  const contar = async (situacoes: readonly string[], chamar: (s: string) => Promise<number>) =>
+    Object.fromEntries(await Promise.all(situacoes.map(async (s) => [s, await chamar(s)] as const))) as Record<string, number>;
+  const total = (r: unknown) => Number((r as { total?: number }).total ?? 0);
+  app.get("/v1/condominio/contagens/:lista", async (c) => {
+    switch (c.req.param("lista")) {
+      case "pedidos": {
+        const f = consulta(c, buscaPedidosSchema);
+        const n = await contar(["ABERTO", "EM_ANDAMENTO", "EM_REVISAO", "ENCERRADO", "CANCELADO"], async (s) => total(await rpc("plataforma_pedidos", {
+          ...quem(c), p_situacao: s, p_responsavel: f.responsavel ?? null, p_prioridade: f.prioridade ?? null,
+          p_categoria: f.categoria ?? null, p_atencao: f.atencao ?? null, p_busca: f.busca ?? null, p_pagina: 1,
+        })));
+        return c.json({ ...n, ATIVOS: n.ABERTO! + n.EM_ANDAMENTO! + n.EM_REVISAO!, TODOS: Object.values(n).reduce((a, b) => a + b, 0) });
+      }
+      case "manutencao": {
+        const q = consulta(c, buscaManutencoesSchema);
+        const n = await contar(["PLANEJADA", "EM_ANDAMENTO", "PENDENTE", "CONCLUIDA", "CANCELADA"], async (s) => total(await rpc("plataforma_manutencoes", {
+          ...quem(c), p_situacao: s, p_tipo: q.tipo ?? null, p_prestador: q.prestador ?? null, p_atencao: q.atencao ?? null, p_busca: q.busca ?? null, p_pagina: 1,
+        })));
+        return c.json({ ...n, ABERTAS: n.PLANEJADA! + n.EM_ANDAMENTO! + n.PENDENTE!, TODAS: Object.values(n).reduce((a, b) => a + b, 0) });
+      }
+      case "comunicados": {
+        const q = consulta(c, buscaComunicadosSchema);
+        return c.json(await contar(["PUBLICADO", "PROGRAMADO", "RASCUNHO", "ARQUIVADO"], async (s) => total(await rpc("plataforma_comunicados", {
+          ...quem(c), p_filtro: s, p_assunto: q.assunto ?? null, p_atencao: q.atencao ?? null, p_busca: q.busca ?? null, p_pagina: 1,
+        }))));
+      }
+      case "decisoes":
+        return c.json(await contar(["DECIDIDAS", "TODAS"], async (s) =>
+          ((await rpc<{ decisoes?: unknown[] }>("plataforma_decisoes", { ...quem(c), p_filtro: s })).decisoes ?? []).length));
+      case "reservas": {
+        const q = consulta(c, filtroReservasSchema);
+        return c.json(await contar(["A_APROVAR", "PROXIMAS", "TODAS"], async (s) =>
+          ((await rpc<{ reservas?: unknown[] }>("plataforma_reservas", { ...quem(c), p_filtro: s, p_area: q.areaId })).reservas ?? []).length));
+      }
+      default:
+        throw new ErroDominio("NOT_FOUND");
+    }
   });
 
   app.get("/v1/condominio/reservas/opcoes", async (c) => c.json(await rpc("plataforma_reserva_opcoes", quem(c))));
@@ -1014,9 +1080,6 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     { rota: "/situacao", metodo: "post", schema: situacaoManutencaoSchema, funcao: "plataforma_situacao_manutencao",
       args: (d: ReturnType<typeof situacaoManutencaoSchema.parse>) => ({
         p_estado: d.estado, p_etapa: d.etapaId, p_pendencia_tipo: d.pendenciaTipo, p_pendencia_motivo: d.pendenciaMotivo }) },
-    { rota: "/concluir", metodo: "post", schema: concluirManutencaoSchema, funcao: "plataforma_concluir_manutencao",
-      args: (d: ReturnType<typeof concluirManutencaoSchema.parse>) => ({
-        p_conclusao: d.conclusao, p_realizada_em: d.realizadaEm, p_fechar_providencias: d.fecharProvidencias }) },
     { rota: "/cancelar", metodo: "post", schema: cancelarManutencaoSchema, funcao: "plataforma_cancelar_manutencao",
       args: (d: ReturnType<typeof cancelarManutencaoSchema.parse>) => ({ p_motivo: d.motivo }) },
     { rota: "/reabrir", metodo: "post", schema: reabrirManutencaoSchema, funcao: "plataforma_reabrir_manutencao",
@@ -1034,6 +1097,30 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       return c.json(await rpc(a.funcao, { ...quem(c), p_id: id, p_versao: d.versao, ...(a.args as (x: any) => object)(d) }));
     });
   }
+
+  // Concluir com a foto do depois numa chamada só (D4.22): conclui e já abre o envio de cada foto;
+  // a tela sobe o arquivo e pede a verificação. A foto cujo envio não abre volta sem link, e a
+  // manutenção fica concluída.
+  app.post("/v1/condominio/manutencao/:id/concluir", async (c) => {
+    const id = idDaRota(c, "id");
+    const d = await lerCorpo(c, concluirManutencaoSchema);
+    const r = await rpc<Record<string, unknown>>("plataforma_concluir_manutencao", {
+      ...quem(c), p_id: id, p_versao: d.versao, p_conclusao: d.conclusao, p_realizada_em: d.realizadaEm, p_fechar_providencias: d.fecharProvidencias,
+    });
+    if (!d.fotos.length) return c.json(r);
+    const envios = [];
+    for (const f of d.fotos) {
+      try {
+        const a = await rpc<{ arquivoId: string; caminho: string; tipo: string }>("plataforma_iniciar_arquivo_manutencao", {
+          ...quem(c), p_id: id, p_item: null, p_nome: f.nome, p_descricao: f.descricao, p_tipo: f.tipo, p_tamanho: f.tamanho,
+        });
+        envios.push({ nome: f.nome, arquivoId: a.arquivoId, envio: { url: await armazenamentoManutencao().linkEnvio(a.caminho), metodo: "PUT", tipo: a.tipo } });
+      } catch {
+        envios.push({ nome: f.nome });
+      }
+    }
+    return c.json({ ...r, envios });
+  });
 
   app.post("/v1/condominio/manutencao/:id/providencias/:providencia/fazer", async (c) => {
     const d = await lerCorpo(c, fazerProvidenciaSchema);
@@ -1195,6 +1282,29 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     }));
   });
 
+  // Guardar e ligar numa chamada só (D4.18): cria o documento em Documentos e liga ao item, nessa
+  // ordem; o arquivo sobe depois, como versão 1. Se a ligação falha, o documento fica guardado e a
+  // resposta diz que não ligou, para a tela oferecer Ligar de novo.
+  app.post("/v1/condominio/memoria/prontuario/itens/:item/documento", async (c) => {
+    const item = c.req.param("item");
+    const porId = UUID.test(item);
+    if (!porId && !CHAVE_PRONTUARIO.test(item)) throw new ErroDominio("NOT_FOUND");
+    const d = await lerCorpo(c, guardarELigarSchema);
+    const doc = await rpc<{ id: string }>("plataforma_salvar_documento", {
+      ...quem(c), p_id: null, p_versao: null, p_tipo: d.documento.tipo, p_titulo: d.documento.titulo, p_descricao: d.documento.descricao,
+      p_restrito: d.documento.restrito, p_ao_morador: d.documento.aoMorador, p_vale_ate: d.documento.valeAte,
+    });
+    try {
+      await rpc("plataforma_item_prontuario", {
+        ...quem(c), p_id: porId ? item.toLowerCase() : null, p_chave: porId ? null : item, p_versao: d.versao ?? null, p_acao: "LIGAR",
+        p_nome: null, p_grupo: null, p_documento: doc.id, p_avisar_dias: d.avisarDias, p_motivo: null,
+      });
+      return c.json({ id: doc.id, ligado: true }, 201);
+    } catch {
+      return c.json({ id: doc.id, ligado: false }, 201);
+    }
+  });
+
   app.get("/v1/condominio/memoria/linha-do-tempo", async (c) => {
     const r = buscaLinhaDoTempoSchema.safeParse({ filtro: c.req.query("filtro") || undefined, antes: c.req.query("antes") || undefined });
     if (!r.success) throw invalido(r);
@@ -1237,6 +1347,25 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json(await rpc("plataforma_retirar_secao_manual", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
   });
 
+  // O que vai no dossiê hoje (D4.18): quantas anotações, quem tem acesso e quantos compromissos,
+  // com as leituras das próprias telas e os cortes do dossiê (as 40 últimas anotações; os
+  // compromissos dos próximos 60 dias, sem os cancelados e os realizados). A parte que o banco
+  // recusa volta null e a tela mostra só o texto.
+  app.get("/v1/condominio/memoria/dossie-hoje", async (c) => {
+    const de = c.req.query("de") ?? "";
+    const p = periodoAgendaSchema.safeParse({ de, ate: /^\d{4}-\d{2}-\d{2}$/.test(de) ? somarDias(de, 60) : de });
+    if (!p.success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["de"] });
+    const [anotacoes, acesso, agenda] = await Promise.allSettled([
+      rpc<{ eventos: unknown[] }>("plataforma_linha_do_tempo", { ...quem(c), p_filtro: "ANOTADO", p_antes: null }),
+      rpc<{ pessoas: unknown[] }>("plataforma_pessoas", quem(c)),
+      rpc<{ compromissos: { estado: string }[] }>("plataforma_agenda", { ...quem(c), p_de: p.data.de, p_ate: p.data.ate }),
+    ]);
+    return c.json({
+      anotacoes: anotacoes.status === "fulfilled" ? Math.min(anotacoes.value.eventos.length, 40) : null,
+      acesso: acesso.status === "fulfilled" ? acesso.value.pessoas.length : null,
+      compromissos: agenda.status === "fulfilled" ? agenda.value.compromissos.filter((x) => x.estado !== "CANCELADO" && x.estado !== "REALIZADO").length : null,
+    });
+  });
   app.get("/v1/condominio/memoria/dossies", async (c) => c.json(await rpc("plataforma_dossies", quem(c))));
   app.post("/v1/condominio/memoria/dossies", async (c) => c.json(await rpc("plataforma_gerar_dossie", quem(c)), 201));
   app.get("/v1/condominio/memoria/dossies/:id", async (c) => c.json(await rpc("plataforma_dossie", { ...quem(c), p_id: idDaRota(c, "id") })));

@@ -38,7 +38,7 @@ export interface LinksDoMural {
 export function FaixaPainel({ children }: { children: ReactNode }) {
   return (
     <div className="-mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-b-2xl border border-t-0 border-dashed border-violeta-200 bg-violeta-50 px-3 py-2">
-      <span className="text-xs text-tinta-suave">Só no painel:</span>{children}
+      <span className="t-apoio text-tinta-suave">Só no painel:</span>{children}
     </div>
   );
 }
@@ -94,8 +94,8 @@ function Remetente({ nome, sub, direita }: { nome: string; sub: string; direita?
     <div className="flex items-center gap-3 px-4 pt-3 pb-2">
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-violeta-700 text-laranja-200" aria-hidden="true"><Icone nome="megafone" className="h-[18px] w-[18px]" /></span>
       <span className="grid min-w-0 flex-1">
-        <span className="text-sm font-semibold">{nome}</span>
-        <span className="text-xs text-tinta-suave">{sub}</span>
+        <span className="t-titulo-cartao font-semibold">{nome}</span>
+        <span className="t-apoio text-tinta-suave">{sub}</span>
       </span>
       {direita}
     </div>
@@ -104,10 +104,9 @@ function Remetente({ nome, sub, direita }: { nome: string; sub: string; direita?
 
 function BotaoCompartilhar({ titulo, aoCompartilhar }: { titulo: string; aoCompartilhar: () => void }) {
   return (
-    <button type="button" onClick={aoCompartilhar} aria-label={`Compartilhar: ${titulo}`}
-      className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] text-tinta hover:bg-violeta-50">
+    <Botao variante="discreto" tamanho="m" soIcone onClick={aoCompartilhar} aria-label={`Compartilhar: ${titulo}`} className="shrink-0 text-tinta">
       <Icone nome="compartilhar" />
-    </button>
+    </Botao>
   );
 }
 
@@ -124,13 +123,13 @@ function Fotos({ fotos, nomes, titulo }: { fotos: (string | undefined)[]; nomes:
             {url ? (
               // eslint-disable-next-line @next/next/no-img-element -- link curto do armazenamento privado
               <img src={url} alt={nomes[i] ?? `Foto ${i + 1}`} className="h-full w-full object-cover" />
-            ) : <span className="grid h-full place-items-center text-[13px] text-tinta-suave">Carregando a foto…</span>}
+            ) : <span className="grid h-full place-items-center t-apoio text-tinta-suave">Carregando a foto…</span>}
           </div>
         ))}
       </div>
       {total > 1 ? (
         <>
-          <span className="absolute top-3 right-3 rounded-full bg-tinta/75 px-2.5 py-0.5 text-xs font-semibold text-superficie" aria-hidden="true">{atual + 1}/{total}</span>
+          <span className="absolute top-3 right-3 rounded-full bg-tinta/75 px-2.5 py-0.5 t-apoio font-semibold text-superficie" aria-hidden="true">{atual + 1}/{total}</span>
           <span className="flex justify-center gap-1.5 pt-2.5" aria-hidden="true">
             {fotos.map((_, i) => <span key={i} className={`h-1.5 w-1.5 rounded-full ${i === atual ? "bg-violeta-600" : "bg-linha"}`} />)}
           </span>
@@ -153,9 +152,9 @@ function Postagem({ c, condominio, links, aoLer, aoCompartilhar }: {
         direita={<>{c.numero > 1 ? <Selo tom="andamento">Corrigido</Selo> : null}<BotaoCompartilhar titulo={c.titulo} aoCompartilhar={aoCompartilhar} /></>} />
       {imagens.length ? <Fotos fotos={imagens.map((a) => fotos[a.id])} nomes={imagens.map((a) => a.nome)} titulo={c.titulo} /> : null}
       <div className="grid gap-1.5 px-4 pt-2 pb-4">
-        <h2 id={`p-${c.id}`} className="text-[17px] font-semibold">{c.titulo}</h2>
-        <p className="line-clamp-3 text-sm text-tinta-suave">{c.texto}</p>
-        <p className="text-[13px] text-tinta-suave">
+        <h2 id={`p-${c.id}`} className="t-titulo-secao font-semibold">{c.titulo}</h2>
+        <p className="line-clamp-3 t-apoio text-tinta-suave">{c.texto}</p>
+        <p className="t-apoio text-tinta-suave">
           {outros ? `${outros === 1 ? "1 arquivo" : `${outros} arquivos`} · ` : ""}
           <a href={links.publico({ aba: "avisos", comunicado: c.id })} onClick={(e) => { e.preventDefault(); aoLer(); }}
             className="font-medium text-violeta-600 hover:underline">Ler tudo<span className="sr-only">: {c.titulo}</span></a>
@@ -169,11 +168,11 @@ function EnqueteFixada({ e, condominio }: { e: NonNullable<MuralPublico["enquete
   return (
     <article aria-labelledby={`e-${e.id}`} className="grid overflow-hidden rounded-[20px] border border-violeta-200 bg-gradient-to-b from-superficie to-violeta-50">
       <Remetente nome={condominio} sub={`Enquete · aberta até ${prazoCurto(e.abertaAte)}`}
-        direita={<span className="flex items-center gap-1 text-xs font-semibold text-violeta-600"><Icone nome="pin" className="h-3.5 w-3.5" />Fixada</span>} />
+        direita={<span className="flex items-center gap-1 t-apoio font-semibold text-violeta-600"><Icone nome="pin" className="h-3.5 w-3.5" />Fixada</span>} />
       <div className="grid gap-2 px-4 pb-4">
-        <h2 id={`e-${e.id}`} className="text-[17px] font-semibold">{e.pergunta}</h2>
-        <ul className="list-disc pl-5 text-sm" aria-label="Opções">{e.opcoes.map((o) => <li key={o}>{o}</li>)}</ul>
-        <p className="text-[13px] text-tinta-suave">
+        <h2 id={`e-${e.id}`} className="t-titulo-secao font-semibold">{e.pergunta}</h2>
+        <ul className="list-disc pl-5 t-texto" aria-label="Opções">{e.opcoes.map((o) => <li key={o}>{o}</li>)}</ul>
+        <p className="t-apoio text-tinta-suave">
           Responda pelo link pessoal que chegou pelo WhatsApp ou pelo e-mail, {e.por === "UNIDADE" ? "um por unidade" : "um por pessoa"}. Não recebeu? Peça ao condomínio.
         </p>
       </div>
@@ -220,19 +219,19 @@ function Vitrine({ anuncios, links, abrir, faixa }: {
                 <FotoAnuncio a={a} links={links} classe="aspect-square" decorativa />
                 {/* Sem valor, a linha grande já diz o tipo: o leitor de tela não ouve duas vezes. */}
                 <span aria-hidden={precoDoAnuncio(a) === TIPOS_ANUNCIO[a.tipo] ? true : undefined}
-                  className="absolute top-2 left-2 rounded-full bg-superficie/90 px-2 py-0.5 text-[11px] font-semibold">{TIPOS_ANUNCIO[a.tipo]}</span>
+                  className="absolute top-2 left-2 rounded-full bg-superficie/90 px-2 py-0.5 t-apoio font-semibold">{TIPOS_ANUNCIO[a.tipo]}</span>
               </span>
               <span className="grid gap-0.5 px-3 pt-2.5 pb-3">
-                <span className="text-base font-bold">{precoDoAnuncio(a)}</span>
-                <span className="line-clamp-2 text-sm leading-snug">{a.titulo}</span>
-                <span className="text-xs text-tinta-suave">{[quemDoAnuncio(a), a.desde ? haQuanto(a.desde) : `até ${ateCurto(a)}`].filter(Boolean).join(" · ")}</span>
+                <span className="t-titulo-cartao font-bold">{precoDoAnuncio(a)}</span>
+                <span className="line-clamp-2 t-texto leading-snug">{a.titulo}</span>
+                <span className="t-apoio text-tinta-suave">{[quemDoAnuncio(a), a.desde ? haQuanto(a.desde) : `até ${ateCurto(a)}`].filter(Boolean).join(" · ")}</span>
               </span>
             </a>
             {faixa ? <div className="mt-3">{faixa(a)}</div> : null}
           </li>
         ))}
       </ul>
-      <p className="text-[13px] text-tinta-suave">{AVISO_CLASSIFICADOS}</p>
+      <p className="t-apoio text-tinta-suave">{AVISO_CLASSIFICADOS}</p>
     </div>
   );
 }
@@ -240,16 +239,16 @@ function Vitrine({ anuncios, links, abrir, faixa }: {
 function PaginaAnuncio({ a, links, voltar, aoCompartilhar }: { a: AnuncioPublico; links: LinksDoMural; voltar: () => void; aoCompartilhar: () => void }) {
   return (
     <article aria-labelledby={`an-${a.id}`} className="grid overflow-hidden rounded-[20px] border border-linha bg-superficie shadow-s1">
-      <button type="button" onClick={voltar} className="flex items-center gap-1.5 justify-self-start px-4 py-3 text-sm font-medium text-violeta-600 hover:underline">
+      <button type="button" onClick={voltar} className="elo flex gap-1.5 justify-self-start px-4 py-3 t-texto">
         <Icone nome="esq" className="h-4 w-4" />Voltar aos classificados
       </button>
       <FotoAnuncio a={a} links={links} classe="aspect-[4/3]" />
       <div className="grid gap-2 p-4">
         <span className="justify-self-start"><Selo tom="neutro">{TIPOS_ANUNCIO[a.tipo]}</Selo></span>
-        <span className="text-[26px] leading-tight font-bold">{precoDoAnuncio(a)}</span>
-        <h2 id={`an-${a.id}`} className="text-xl font-semibold">{a.titulo}</h2>
-        <p className="text-[15px] whitespace-pre-line">{a.texto}</p>
-        <p className="border-y border-linha py-3 text-sm">
+        <span className="t-titulo-ficha leading-tight font-bold">{precoDoAnuncio(a)}</span>
+        <h2 id={`an-${a.id}`} className="t-titulo-secao font-semibold">{a.titulo}</h2>
+        <p className="t-texto whitespace-pre-line">{a.texto}</p>
+        <p className="border-y border-linha py-3 t-texto">
           {quemDoAnuncio(a) ? <span className="block font-medium">{quemDoAnuncio(a)}</span> : null}
           <span className="text-tinta-suave">{a.desde ? `No mural ${haQuanto(a.desde)} · ` : ""}fica até {ateCurto(a)}</span>
         </p>
@@ -257,9 +256,9 @@ function PaginaAnuncio({ a, links, voltar, aoCompartilhar }: { a: AnuncioPublico
           <a href={`https://wa.me/${a.whatsapp}`} target="_blank" rel="noopener noreferrer" className={classeBotao("primario", "w-full")}>
             <Icone nome="whats" />Chamar no WhatsApp
           </a>
-        ) : <p className="text-sm">Contato pelo condomínio.</p>}
+        ) : <p className="t-texto">Contato pelo condomínio.</p>}
         <Botao variante="contorno" className="w-full" onClick={aoCompartilhar}><Icone nome="compartilhar" />Compartilhar</Botao>
-        <p className="text-[13px] text-tinta-suave">{AVISO_CLASSIFICADOS} Combine direto com quem anunciou e não pague adiantado a quem você não conhece.</p>
+        <p className="t-apoio text-tinta-suave">{AVISO_CLASSIFICADOS} Combine direto com quem anunciou e não pague adiantado a quem você não conhece.</p>
       </div>
     </article>
   );
@@ -285,7 +284,7 @@ function PedirDocumento({ codigo, documentos }: { codigo: string; documentos: No
     return (
       <Cartao>
         <h2 className="font-medium">Pedido recebido</h2>
-        <p className="text-sm">Se este e-mail estiver cadastrado no condomínio, o documento chega em instantes. Se não estiver, a síndica vai olhar o pedido. O link do documento vale 7 dias.</p>
+        <p className="t-texto">Se este e-mail estiver cadastrado no condomínio, o documento chega em instantes. Se não estiver, a síndica vai olhar o pedido. O link do documento vale 7 dias.</p>
       </Cartao>
     );
   }
@@ -294,7 +293,7 @@ function PedirDocumento({ codigo, documentos }: { codigo: string; documentos: No
       <form onSubmit={enviar} noValidate className="grid gap-3">
         <h2 className="font-medium">Pedir documento por e-mail</h2>
         <fieldset className="grid gap-1">
-          <legend className="mb-1 text-[13px] font-medium">Documento</legend>
+          <legend className="mb-1 t-apoio font-medium">Documento</legend>
           <span className="flex flex-wrap gap-2">
             {documentos.map((d) => <Chip key={d.id} ativo={documentoId === d.id} onClick={() => setDocumentoId(d.id)}>{d.titulo}</Chip>)}
           </span>
@@ -320,12 +319,12 @@ export function MuralConteudo({ m, codigo, vista, ir, links, painel }: {
   const temClassificados = !!m.classificados?.length;
   const temManual = !!m.manual?.length;
   const aba: AbaMural = vista.aba === "classificados" && temClassificados ? "classificados" : vista.aba === "manual" && temManual ? "manual" : "avisos";
-  const avisoRecado = recado ? <p role="status" className="text-[13px] text-tinta-suave">{recado}</p> : null;
+  const avisoRecado = recado ? <p role="status" className="t-apoio text-tinta-suave">{recado}</p> : null;
 
   if (comunicado) {
     return (
       <>
-        <button type="button" onClick={() => ir({ aba: "avisos" })} className="justify-self-start text-sm font-medium text-violeta-600 hover:underline">Voltar ao mural</button>
+        <button type="button" onClick={() => ir({ aba: "avisos" })} className="justify-self-start t-texto font-medium text-violeta-600 hover:underline">Voltar ao mural</button>
         <ComunicadoLido c={comunicado} linkArquivo={(arquivo) => links.arquivo(comunicado.id, arquivo)} />
         {painel ? painel.aviso(comunicado) : null}
       </>
@@ -344,7 +343,7 @@ export function MuralConteudo({ m, codigo, vista, ir, links, painel }: {
   if (pedir && m.documentos?.length && !painel) {
     return (
       <>
-        <button type="button" onClick={() => setPedir(false)} className="justify-self-start text-sm font-medium text-violeta-600 hover:underline">Voltar ao mural</button>
+        <button type="button" onClick={() => setPedir(false)} className="justify-self-start t-texto font-medium text-violeta-600 hover:underline">Voltar ao mural</button>
         <PedirDocumento codigo={codigo} documentos={m.documentos} />
       </>
     );
@@ -380,8 +379,8 @@ export function MuralConteudo({ m, codigo, vista, ir, links, painel }: {
           {m.manual!.map((s) => (
             <li key={s.id}>
               <Cartao>
-                <h2 className="text-base font-medium">{s.titulo}</h2>
-                <p className="text-sm whitespace-pre-line">{s.texto}</p>
+                <h2 className="t-texto font-medium">{s.titulo}</h2>
+                <p className="t-texto whitespace-pre-line">{s.texto}</p>
               </Cartao>
             </li>
           ))}
@@ -409,13 +408,13 @@ export function MuralConteudo({ m, codigo, vista, ir, links, painel }: {
             </li>
           ))}
         </ul>
-      ) : <Cartao><h2 className="font-medium">Nenhum aviso agora</h2><p className="text-sm text-tinta-suave">Quando o condomínio publicar um aviso para todos, ele aparece aqui.</p></Cartao>}
+      ) : <Cartao><h2 className="font-medium">Nenhum aviso agora</h2><p className="t-apoio text-tinta-suave">Quando o condomínio publicar um aviso para todos, ele aparece aqui.</p></Cartao>}
       {avisoRecado}
       {m.documentos?.length ? (
         <div className="grid gap-3">
           <Cartao>
             <h2 className="font-medium">Documentos do prédio</h2>
-            <p className="text-sm text-tinta-suave">{m.documentos.map((d) => d.titulo).join(", ")}. Peça e receba no seu e-mail.</p>
+            <p className="t-apoio text-tinta-suave">{m.documentos.map((d) => d.titulo).join(", ")}. Peça e receba no seu e-mail.</p>
             <Botao variante="contorno" className="justify-self-start" disabled={!!painel} onClick={() => setPedir(true)}>Pedir por e-mail</Botao>
           </Cartao>
           {painel?.documentos ?? null}

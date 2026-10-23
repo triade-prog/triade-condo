@@ -40,15 +40,15 @@ export function Entrar() {
 
   return (
     <div className="grid gap-5">
-      <h1 className="text-[28px] font-normal tracking-tight">Entrar na Plataforma</h1>
+      <h1 className="t-titulo-tela font-normal tracking-tight">Entrar na Plataforma</h1>
       {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
       {etapa === "SENHA" ? (
         <form onSubmit={enviarSenha} className="grid gap-4">
           <CampoTexto id="email" rotulo="E-mail" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <CampoTexto id="senha" rotulo="Senha" type="password" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)} />
           <Botao type="submit" disabled={enviando}>{enviando ? "Conferindo…" : "Entrar"}</Botao>
-          <Link href="/recuperar" className="justify-self-center text-sm font-medium text-violeta-600 hover:underline">Esqueci a senha</Link>
-          <p className="text-xs text-tinta-suave">Morador não precisa de senha: fala com o condomínio pelo WhatsApp.</p>
+          <Link href="/recuperar" className="justify-self-center t-texto font-medium text-violeta-600 hover:underline">Esqueci a senha</Link>
+          <p className="t-apoio text-tinta-suave">Morador não precisa de senha: fala com o condomínio pelo WhatsApp.</p>
         </form>
       ) : (
         <form onSubmit={enviarCodigo} className="grid gap-4">

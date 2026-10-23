@@ -180,7 +180,46 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const nomeRepetido = (lista: { nome: string; ativa: boolean; id: string }[], nome: string, id?: string) =>
     lista.some((x) => x.ativa && x.id !== id && x.nome.toLowerCase() === nome.trim().toLowerCase());
 
-  await page.route("**/api/v1/**", async (route) => {
+  // As contagens das abas (D4.2): como a api-plataforma, pedem a própria lista uma vez por aba.
+  const CONTADAS: Record<string, { caminho: string; chave: string; abas: string[]; itens?: string; somas?: Record<string, number> }> = {
+    pedidos: { caminho: "/v1/condominio/pedidos", chave: "situacao", abas: ["ABERTO", "EM_ANDAMENTO", "EM_REVISAO", "ENCERRADO", "CANCELADO"], somas: { ATIVOS: 3, TODOS: 5 } },
+    manutencao: { caminho: "/v1/condominio/manutencao", chave: "situacao", abas: ["PLANEJADA", "EM_ANDAMENTO", "PENDENTE", "CONCLUIDA", "CANCELADA"], somas: { ABERTAS: 3, TODAS: 5 } },
+    comunicados: { caminho: "/v1/condominio/comunicados", chave: "filtro", abas: ["PUBLICADO", "PROGRAMADO", "RASCUNHO", "ARQUIVADO"] },
+    decisoes: { caminho: "/v1/condominio/decisoes", chave: "filtro", abas: ["DECIDIDAS", "TODAS"], itens: "decisoes" },
+    reservas: { caminho: "/v1/condominio/reservas", chave: "filtro", abas: ["A_APROVAR", "PROXIMAS", "TODAS"], itens: "reservas" },
+  };
+  /** Uma chamada feita por dentro, como a api-plataforma chama o banco. */
+  async function porDentro(u: URL, corpo?: Record<string, unknown>): Promise<{ status: number; json: Record<string, unknown> }> {
+    let resposta = { status: 500, json: {} as Record<string, unknown> };
+    const interna = {
+      request: () => ({ url: () => u.toString(), method: () => (corpo ? "POST" : "GET"), postDataJSON: () => corpo ?? null, headers: () => ({}) }),
+      fulfill: async (o: { json?: unknown; status?: number }) => { resposta = { status: o.status ?? 200, json: (o.json ?? {}) as Record<string, unknown> }; },
+    } as unknown as Route;
+    await atender(interna);
+    return resposta;
+  }
+  /** A resposta recusada volta null. */
+  const lerPorDentro = async (u: URL, corpo?: Record<string, unknown>) => {
+    const r = await porDentro(u, corpo);
+    return r.status < 300 ? r.json : null;
+  };
+  async function contar(route: Route, lista: string, url: URL) {
+    const def = CONTADAS[lista];
+    if (!def) return erro(route, 404, "NOT_FOUND");
+    const n: Record<string, number> = {};
+    for (const aba of def.abas) {
+      const u = new URL(url.toString());
+      u.pathname = `/api${def.caminho}`;
+      u.searchParams.delete("pagina");
+      u.searchParams.set(def.chave, aba);
+      const dados = (await lerPorDentro(u)) ?? {};
+      n[aba] = def.itens ? ((dados[def.itens] as unknown[] | undefined) ?? []).length : Number(dados.total ?? 0);
+    }
+    for (const [nome, quantas] of Object.entries(def.somas ?? {})) n[nome] = def.abas.slice(0, quantas).reduce((t, a) => t + n[a]!, 0);
+    return route.fulfill({ json: n });
+  }
+
+  async function atender(route: Route): Promise<void> {
     const req = route.request();
     const url = new URL(req.url());
     const caminho = url.pathname.replace(/^\/api/, "");
@@ -226,6 +265,60 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       return route.fulfill({ json: { condominioAtual: estado.condominioAtual } });
     }
     if (caminho.startsWith("/v1/condominio") && !estado.condominioAtual) return erro(route, 403, "CONDOMINIO_REQUIRED");
+    const contagens = /^\/v1\/condominio\/contagens\/([a-z]+)$/.exec(caminho);
+    if (contagens) return contar(route, contagens[1]!, url);
+    // A entrada das Configurações numa chamada só (D4.15).
+    if (caminho === "/v1/condominio/configuracoes/entrada") {
+      const PARTES = { configuracoes: "configuracoes", areas: "areas-comuns", manutencao: "etapas-manutencao", plano: "plano-comunicacao", whatsapp: "whatsapp/config", links: "links-qr" };
+      const e: Record<string, unknown> = {};
+      for (const [k, p] of Object.entries(PARTES)) e[k] = await lerPorDentro(new URL(`/api/v1/condominio/${p}`, url));
+      if (!e.configuracoes) return erro(route, 403, "FORBIDDEN");
+      return route.fulfill({ json: e });
+    }
+    // Registrar com as mensagens do WhatsApp (D4.20): a conversa é juntada na mesma chamada.
+    if (caminho === "/v1/condominio/pedidos" && metodo === "POST" && corpo.mensagemId) {
+      const { mensagemId, ...resto } = corpo;
+      const r = await porDentro(new URL("/api/v1/condominio/pedidos", url), resto);
+      if (r.status >= 300) return route.fulfill(r);
+      const juntou = await lerPorDentro(new URL(`/api/v1/condominio/whatsapp/mensagens/${mensagemId}/triar`, url),
+        { acao: "PEDIDO", pedidoId: r.json.id, motivo: null, contatoId: null });
+      return route.fulfill({ status: r.status, json: { ...r.json, juntou: Boolean(juntou) } });
+    }
+    // Concluir com a foto do depois (D4.22): a conclusão já abre o envio de cada foto.
+    const concluir = /^\/v1\/condominio\/manutencao\/([^/]+)\/concluir$/.exec(caminho);
+    if (concluir && metodo === "POST" && Array.isArray(corpo.fotos) && corpo.fotos.length) {
+      const { fotos, ...resto } = corpo;
+      const r = await porDentro(new URL(caminho.replace(/^/, "/api"), url), resto);
+      if (r.status >= 300) return route.fulfill(r);
+      const envios = [];
+      for (const f of fotos as Record<string, unknown>[]) {
+        const a = await lerPorDentro(new URL(`/api/v1/condominio/manutencao/${concluir[1]}/arquivos`, url), { itemId: null, ...f });
+        envios.push(a ? { nome: f.nome, ...a } : { nome: f.nome });
+      }
+      return route.fulfill({ status: r.status, json: { ...r.json, envios } });
+    }
+    // Guardar e ligar numa chamada só (D4.18): o documento primeiro, depois a ligação.
+    const guardarELigar = /^\/v1\/condominio\/memoria\/prontuario\/itens\/([^/]+)\/documento$/.exec(caminho);
+    if (guardarELigar && metodo === "POST") {
+      const doc = await lerPorDentro(new URL("/api/v1/condominio/documentos", url), corpo.documento as Record<string, unknown>);
+      if (!doc) return erro(route, 400, "VALIDATION_ERROR", { campos: ["titulo"] });
+      const ligou = await lerPorDentro(new URL(`/api/v1/condominio/memoria/prontuario/itens/${guardarELigar[1]}`, url),
+        { acao: "LIGAR", documentoId: doc.id, avisarDias: corpo.avisarDias, versao: corpo.versao });
+      return route.fulfill({ status: 201, json: { id: doc.id, ligado: Boolean(ligou) } });
+    }
+    // O que vai no dossiê hoje (D4.18), com as leituras das telas, como a api-plataforma.
+    if (caminho === "/v1/condominio/memoria/dossie-hoje") {
+      const de = url.searchParams.get("de") ?? "";
+      const ate = new Date(Date.parse(`${de}T12:00:00Z`) + 60 * 86_400_000).toISOString().slice(0, 10);
+      const linha = await lerPorDentro(new URL("/api/v1/condominio/memoria/linha-do-tempo?filtro=ANOTADO", url));
+      const gente = await lerPorDentro(new URL("/api/v1/condominio/pessoas", url));
+      const agenda = await lerPorDentro(new URL(`/api/v1/condominio/agenda?de=${de}&ate=${ate}`, url));
+      return route.fulfill({ json: {
+        anotacoes: linha ? Math.min((linha.eventos as unknown[]).length, 40) : null,
+        acesso: gente ? (gente.pessoas as unknown[]).length : null,
+        compromissos: agenda ? (agenda.compromissos as { estado: string }[]).filter((x) => !["CANCELADO", "REALIZADO"].includes(x.estado)).length : null,
+      } });
+    }
     // O nome do condomínio em uso, para os cartazes.
     if (caminho === "/v1/condominio" && metodo === "GET") {
       return route.fulfill({ json: { id: estado.condominioAtual, nome: estado.condominioAtual === JATOBA ? "Edifício Jatobá" : "Residencial Ipê",
@@ -420,6 +513,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       return route.fulfill({ json: { versao: c.versao } });
     }
     return erro(route, 404, "NOT_FOUND");
-  });
+  }
+  await page.route("**/api/v1/**", atender);
   return Object.assign(estado, { links, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes });
 }

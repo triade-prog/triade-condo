@@ -33,7 +33,7 @@ function Implantacao({ c, i }: { c: ClienteCarteira; i?: ItemImplantacao }) {
   if (!i) return <span className="t-apoio">Em implantação</span>;
   return (
     <span className="grid gap-1.5">
-      <span className="text-sm">Implantação · {i.feitas} de {i.etapas}</span>
+      <span className="t-texto">Implantação · {i.feitas} de {i.etapas}</span>
       <BarraEtapas feitas={i.feitas} total={i.etapas} rotulo={`${i.feitas} de ${i.etapas} etapas feitas`} />
       <span className="t-apoio">{i.proxima ? `Próxima: ${i.proxima.titulo}` : "Falta a entrega"}{i.vencidas ? ` · ${plural(i.vencidas, "pendência vencida", "pendências vencidas")}` : ""}</span>
     </span>

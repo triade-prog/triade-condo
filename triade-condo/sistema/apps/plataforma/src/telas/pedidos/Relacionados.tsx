@@ -33,9 +33,9 @@ function abertoQuando(iso: string, agora: string): string {
 function Linha({ titulo, detalhe, children }: { titulo: React.ReactNode; detalhe: React.ReactNode; children?: React.ReactNode }) {
   return (
     <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-3">
-      <span className="grid min-w-0 gap-0.5 text-sm">
+      <span className="grid min-w-0 gap-0.5 t-texto">
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">{titulo}</span>
-        <span className="text-xs text-tinta-suave">{detalhe}</span>
+        <span className="t-apoio text-tinta-suave">{detalhe}</span>
       </span>
       {children ? <span className="flex flex-wrap gap-2">{children}</span> : null}
     </li>
@@ -69,12 +69,12 @@ export function PedidosRelacionados({ d, podeConcluir, salvo, recarregar }: Prop
 
   return (
     <section aria-labelledby="t-relacionados" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
-      <h2 id="t-relacionados" className="text-lg font-medium">Pedidos relacionados</h2>
+      <h2 id="t-relacionados" className="t-titulo-secao font-medium">Pedidos relacionados</h2>
       {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={recarregar} /> : null}
       {podeLigar && rel.parecidos.length ? (
         <div className="grid gap-1 rounded-2xl bg-superficie-2 px-3 pt-3">
-          <h3 className="text-sm font-medium">Parecidos nos últimos {rel.dias} dias</h3>
-          <p className="text-xs text-tinta-suave">Mesma categoria e mesmo local ou unidade. É só uma sugestão: nada fica ligado sem alguém confirmar.</p>
+          <h3 className="t-texto font-medium">Parecidos nos últimos {rel.dias} dias</h3>
+          <p className="t-apoio text-tinta-suave">Mesma categoria e mesmo local ou unidade. É só uma sugestão: nada fica ligado sem alguém confirmar.</p>
           <ul className="divide-y divide-linha">
             {rel.parecidos.map((o) => (
               <Linha key={o.id}
@@ -94,7 +94,7 @@ export function PedidosRelacionados({ d, podeConcluir, salvo, recarregar }: Prop
       ) : null}
       {rel.ligados.length ? (
         <div className="grid gap-1">
-          <h3 className="text-xs font-medium tracking-[.1em] text-tinta-suave uppercase">Ligados</h3>
+          <h3 className="t-rotulo font-medium tracking-[.1em] text-tinta-suave uppercase">Ligados</h3>
           <ul className="divide-y divide-linha">
             {rel.ligados.map((l) => (
               <Linha key={l.id}
@@ -115,9 +115,9 @@ export function PedidosRelacionados({ d, podeConcluir, salvo, recarregar }: Prop
         </div>
       ) : null}
       {podeLigar && !rel.parecidos.length && !rel.ligados.length ? (
-        <p className="text-sm text-tinta-suave">Nenhum pedido parecido nos últimos {rel.dias} dias.</p>
+        <p className="t-apoio text-tinta-suave">Nenhum pedido parecido nos últimos {rel.dias} dias.</p>
       ) : null}
-      <p className="text-xs text-tinta-suave">
+      <p className="t-apoio text-tinta-suave">
         Cada pedido continua com o seu protocolo, o seu histórico e o seu retorno ao morador. Reincidência é sinal para investigar a causa, não a causa confirmada.
       </p>
       {podeLigar ? <Botao variante="contorno" tamanho="m" className="justify-self-start" onClick={() => setBuscar(true)}>Ligar a outro pedido</Botao> : null}
@@ -194,13 +194,13 @@ function LigarPedido({ atual, outro, tipoInicial, trocarTipo, podeConcluir, aoFe
           opcoes={(outro.podeReincidencia ? (["REINCIDENCIA", "DUPLICADO"] as const) : (["DUPLICADO"] as const)).map((t) => ({ valor: t, texto: TIPOS_LIGACAO[t] }))} />
       ) : null}
       {duplicado ? (
-        <p className="text-sm">
+        <p className="t-texto">
           {atualNovo
             ? <>Este pedido <b className="font-medium">{atual.protocolo}</b> é o mesmo problema que o <b className="font-medium">{outro.protocolo}</b>{ondeOutro}, relatado de novo. O {outro.protocolo} segue como o principal.</>
             : <>O pedido <b className="font-medium">{outro.protocolo}</b>{ondeOutro} é o mesmo problema que este, relatado de novo. O {atual.protocolo} segue como o principal.</>}
         </p>
       ) : (
-        <p className="text-sm">
+        <p className="t-texto">
           {atualNovo ? "Este pedido " : "O pedido "}<b className="font-medium">{novo.protocolo}</b> fica marcado como reincidência de{" "}
           <b className="font-medium">{antigo.protocolo}</b>{antigo.encerradoEm ? `, concluído em ${dia(antigo.encerradoEm)}` : ""}. O problema voltou depois de resolvido.
         </p>
@@ -214,11 +214,11 @@ function LigarPedido({ atual, outro, tipoInicial, trocarTipo, podeConcluir, aoFe
             <CampoAreaTexto id="lig-texto" rotulo="Retorno ao morador" required maxLength={2000} rows={3} value={texto} onChange={(e) => setTexto(e.target.value)}
               erro={comErro.includes("texto") ? "Escreva ao morador (10 a 2000 caracteres)." : null} />
           ) : null}
-          <p className="text-xs text-tinta-suave">O texto pode ser mudado. Desligado, o duplicado fica aberto e segue o seu próprio prazo.</p>
+          <p className="t-apoio text-tinta-suave">O texto pode ser mudado. Desligado, o duplicado fica aberto e segue o seu próprio prazo.</p>
         </div>
       ) : null}
-      {!duplicado ? <p className="text-xs text-tinta-suave">Fica no histórico dos dois pedidos e conta no indicador de reincidência. Pode ser desfeito, com motivo.</p>
-        : <p className="text-xs text-tinta-suave">Fica no histórico dos dois pedidos. Duplicado não conta no indicador de reincidência. Pode ser desfeito, com motivo.</p>}
+      {!duplicado ? <p className="t-apoio text-tinta-suave">Fica no histórico dos dois pedidos e conta no indicador de reincidência. Pode ser desfeito, com motivo.</p>
+        : <p className="t-apoio text-tinta-suave">Fica no histórico dos dois pedidos. Duplicado não conta no indicador de reincidência. Pode ser desfeito, com motivo.</p>}
       <div className="flex flex-wrap justify-end gap-2">
         <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
         <Botao type="submit" disabled={enviando}>{enviando ? "Ligando…" : duplicado ? "Ligar como duplicado" : "Ligar"}</Botao>
@@ -271,14 +271,14 @@ function BuscarPedido({ atual, ligados, aoFechar, aoEscolher }: {
         <Botao type="submit" variante="secundario" disabled={buscando}>{buscando ? "Buscando…" : "Buscar"}</Botao>
       </form>
       {achados === null ? null : achados.length === 0 ? (
-        <p role="status" className="text-sm text-tinta-suave">Nenhum pedido encontrado para ligar.</p>
+        <p role="status" className="t-apoio text-tinta-suave">Nenhum pedido encontrado para ligar.</p>
       ) : (
         <ul className="grid max-h-[40vh] gap-2 overflow-y-auto">
           {achados.map((x) => (
-            <li key={x.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-linha p-3 text-sm">
+            <li key={x.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-linha p-3 t-texto">
               <span className="grid min-w-0 gap-0.5">
                 <span><span className="font-mono text-tinta-suave">{x.protocolo}</span> {x.assunto}</span>
-                <span className="text-xs text-tinta-suave">{[x.categoria, x.local ?? x.unidade, `aberto em ${dia(x.abertoEm)}`].filter(Boolean).join(" · ")}</span>
+                <span className="t-apoio text-tinta-suave">{[x.categoria, x.local ?? x.unidade, `aberto em ${dia(x.abertoEm)}`].filter(Boolean).join(" · ")}</span>
               </span>
               <Botao variante="contorno" tamanho="m" aria-label={`Escolher ${x.protocolo}`} onClick={() => void escolher(x.id)}>Escolher</Botao>
             </li>

@@ -107,10 +107,10 @@ function Tela({ d, voltar, recado, aoMudar }: { d: EnqueteDetalhe; voltar: React
         </Aviso>
       ) : null}
 
-      <dl className="grid gap-x-5 gap-y-3 rounded-[18px] border border-linha bg-superficie p-4 text-sm shadow-s1 sm:grid-cols-3 md:px-5">
-        <div><dt className="t-apoio">Responderam</dt><dd className="text-[15px]">{r.responderam} de {r.total} {quem} ({porcentagem(r.responderam, r.total)}%)</dd></div>
-        <div><dt className="t-apoio">Por onde chegou</dt><dd className="text-[15px]">{juntar(e.canais.map((c) => CANAIS_ENQUETE[c]))}</dd></div>
-        <div><dt className="t-apoio">Enviada</dt><dd className="text-[15px]">{formatarDataHora(e.criadoEm).slice(0, 5)}{e.criadoPor ? ` por ${e.criadoPor}` : ""}</dd></div>
+      <dl className="grid gap-x-5 gap-y-3 rounded-[18px] border border-linha bg-superficie p-4 t-texto shadow-s1 sm:grid-cols-3 md:px-5">
+        <div><dt className="t-apoio">Responderam</dt><dd className="t-texto">{r.responderam} de {r.total} {quem} ({porcentagem(r.responderam, r.total)}%)</dd></div>
+        <div><dt className="t-apoio">Por onde chegou</dt><dd className="t-texto">{juntar(e.canais.map((c) => CANAIS_ENQUETE[c]))}</dd></div>
+        <div><dt className="t-apoio">Enviada</dt><dd className="t-texto">{formatarDataHora(e.criadoEm).slice(0, 5)}{e.criadoPor ? ` por ${e.criadoPor}` : ""}</dd></div>
       </dl>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
@@ -173,7 +173,7 @@ function Encerrar({ d, aoFechar }: { d: EnqueteDetalhe; aoFechar: (texto?: strin
   }
   return (
     <Dialogo aberto titulo="Encerrar a enquete agora?" aoFechar={() => aoFechar()}>
-      <div className="grid gap-3 text-sm">
+      <div className="grid gap-3 t-texto">
         <p>{e.pergunta}</p>
         <p className="text-tinta-suave">
           Os links param de aceitar resposta e o lembrete não vai mais.{e.secreta ? " Na enquete secreta, a ligação entre unidade e resposta é apagada de vez." : ""}

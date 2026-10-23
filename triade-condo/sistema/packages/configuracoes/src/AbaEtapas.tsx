@@ -90,7 +90,7 @@ export function AbaEtapas({ config, pode, recarregar, salvo, tecnica, parte }: P
       {parte === "etapas" ? (
       <section aria-labelledby="t-etapas" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="t-etapas" className="text-lg font-medium">Etapas dos pedidos</h2>
+          <h2 id="t-etapas" className="t-titulo-secao font-medium">Etapas dos pedidos</h2>
           {tecnica.pode ? <Botao variante="contorno" tamanho="m" onClick={() => setEdicao({ tipo: "etapa", item: null })}><Icone nome="mais" />Nova etapa</Botao> : null}
         </div>
         {tecnica.pode ? null : (
@@ -99,10 +99,10 @@ export function AbaEtapas({ config, pode, recarregar, salvo, tecnica, parte }: P
         )}
         {(Object.keys(SITUACOES_ETAPA) as (keyof typeof SITUACOES_ETAPA)[]).map((sit) => (
           <div key={sit} className="grid gap-1">
-            <h3 className="text-xs font-semibold tracking-wide text-tinta-suave uppercase">{SITUACOES_ETAPA[sit]}</h3>
+            <h3 className="t-rotulo font-semibold tracking-wide text-tinta-suave uppercase">{SITUACOES_ETAPA[sit]}</h3>
             <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
               {config.etapas.filter((e) => e.situacao === sit).map((e) => (
-                <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
+                <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 t-texto">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className={e.ativa ? "font-medium" : "text-tinta-suave"}>{e.nome}</span>
                     {e.pausaPrazo ? <Selo tom="atencao">pausa o prazo</Selo> : null}
@@ -115,17 +115,17 @@ export function AbaEtapas({ config, pode, recarregar, salvo, tecnica, parte }: P
             </ul>
           </div>
         ))}
-        <p className="text-sm text-tinta-suave">Sempre sobra ao menos uma etapa geral de aberto e uma de encerrado.</p>
+        <p className="t-apoio text-tinta-suave">Sempre sobra ao menos uma etapa geral de aberto e uma de encerrado.</p>
       </section>
       ) : (
       <section aria-labelledby="t-modelos" className="grid content-start gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="t-modelos" className="text-lg font-medium">Respostas prontas</h2>
+          <h2 id="t-modelos" className="t-titulo-secao font-medium">Respostas prontas</h2>
           {pode ? <Botao variante="contorno" tamanho="m" onClick={() => setEdicao({ tipo: "modelo", item: null })}><Icone nome="mais" />Nova resposta</Botao> : null}
         </div>
         <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
           {config.modelos.map((m) => (
-            <li key={m.id} className="flex items-start justify-between gap-3 px-4 py-2.5 text-sm">
+            <li key={m.id} className="flex items-start justify-between gap-3 px-4 py-2.5 t-texto">
               <span className="grid gap-0.5">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className={m.ativo ? "font-medium" : "text-tinta-suave"}>{m.titulo}</span>
@@ -138,7 +138,7 @@ export function AbaEtapas({ config, pode, recarregar, salvo, tecnica, parte }: P
             </li>
           ))}
         </ul>
-        <p className="text-sm text-tinta-suave">As respostas prontas aparecem na hora de dar retorno a um pedido.</p>
+        <p className="t-apoio text-tinta-suave">As respostas prontas aparecem na hora de dar retorno a um pedido.</p>
       </section>
       )}
       <Janela

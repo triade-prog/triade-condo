@@ -40,10 +40,9 @@ export function Dado({ icone, nome, children }: { icone: NomeIcone; nome: string
 /** O botão discreto de um cartão: Editar, Trocar, Rever. */
 export function AcaoCartao({ icone, children, aoClicar, rotulo }: { icone: NomeIcone; children: ReactNode; aoClicar: () => void; rotulo?: string }) {
   return (
-    <button type="button" aria-label={rotulo} onClick={aoClicar}
-      className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-sm font-medium text-violeta-600 hover:bg-violeta-50">
+    <Botao variante="discreto" aria-label={rotulo} onClick={aoClicar} className="gap-1.5">
       <Icone nome={icone} className="h-4 w-4" />{children}
-    </button>
+    </Botao>
   );
 }
 
@@ -97,7 +96,7 @@ export function MenuAcoes({ rotulo, itens, texto }: { rotulo: string; itens: Ite
 /** O link de volta, no topo das páginas de detalhe. */
 export function Voltar({ href, texto }: { href: string; texto: string }) {
   return (
-    <Link href={href} className="inline-flex min-h-8 items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline">
+    <Link href={href} className="inline-flex min-h-8 items-center gap-1 justify-self-start t-texto font-medium text-violeta-600 hover:underline">
       <Icone nome="esq" className="h-4 w-4" />{texto}
     </Link>
   );
@@ -139,7 +138,7 @@ export function AbasLista<T extends string>({ abas, atual, aoMudar, rotulo }: { 
         const escolhida = atual === a.valor;
         return (
           <button key={a.valor} type="button" aria-pressed={escolhida} onClick={() => aoMudar(a.valor)}
-            className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${escolhida ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+            className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${escolhida ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
             {a.texto}
             {a.n !== undefined ? <span className={`contagem ml-0 ${escolhida ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{a.n}</span> : null}
           </button>
@@ -192,13 +191,13 @@ export function LinhaDoTempo({ itens, rotulo }: { itens: PassoTempo[]; rotulo: s
         <li key={h.chave} className={`relative grid grid-cols-[32px_minmax(0,1fr)] gap-x-3 ${i === itens.length - 1 ? "" : "pb-4 before:absolute before:top-9 before:bottom-0 before:left-[15px] before:w-0.5 before:bg-linha"}`}>
           <span className="ladrilho h-8 w-8 rounded-[10px]" data-tom={h.tom} aria-hidden="true"><Icone nome={h.icone} className="h-4 w-4" /></span>
           <div className="grid min-w-0 gap-1">
-            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-tinta-suave">
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-1 t-apoio text-tinta-suave">
               <span className="t-codigo">{h.quando}</span><span>· {h.quem}</span>
               {h.selo ? <span className="selo" data-tom={h.selo.tom}>{h.selo.texto}</span> : null}
             </p>
             {h.nota
-              ? <p className="rounded-xl border border-violeta-200 bg-violeta-50 px-3 py-2.5 text-sm whitespace-pre-wrap [overflow-wrap:anywhere]">{h.texto}</p>
-              : <p className="text-sm [overflow-wrap:anywhere]">{h.texto}</p>}
+              ? <p className="rounded-xl border border-violeta-200 bg-violeta-50 px-3 py-2.5 t-texto whitespace-pre-wrap [overflow-wrap:anywhere]">{h.texto}</p>
+              : <p className="t-texto [overflow-wrap:anywhere]">{h.texto}</p>}
           </div>
         </li>
       ))}

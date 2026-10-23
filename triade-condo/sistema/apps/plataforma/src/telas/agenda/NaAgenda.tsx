@@ -24,11 +24,11 @@ export function NaAgenda({ pedido, ativo, avisar }: { pedido: PedidoDetalhe["ped
 
   return (
     <section aria-labelledby="t-na-agenda" className="grid content-start gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
-      <h2 id="t-na-agenda" className="text-xs font-medium tracking-[.1em] text-tinta-suave uppercase">Na agenda</h2>
+      <h2 id="t-na-agenda" className="t-rotulo font-medium tracking-[.1em] text-tinta-suave uppercase">Na agenda</h2>
       {compromissos.length ? (
         <ul className="grid gap-1.5">
           {compromissos.map((c) => (
-            <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+            <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-2 t-texto">
               <span>
                 <span className="tp" data-tipo={c.tipo}>{TIPOS_COMPROMISSO[c.tipo]}</span>{" "}
                 <span className="font-medium">{mostrarDataCurta(c.data).slice(0, 5)}, {mostrarHorario(c)}</span>
@@ -38,7 +38,7 @@ export function NaAgenda({ pedido, ativo, avisar }: { pedido: PedidoDetalhe["ped
             </li>
           ))}
         </ul>
-      ) : <p className="text-sm text-tinta-suave">Nenhuma visita marcada.</p>}
+      ) : <p className="t-apoio text-tinta-suave">Nenhuma visita marcada.</p>}
       {divergencia ? (
         <Aviso tom="atencao" titulo="Datas diferentes" papel="status">
           A previsão de solução é {mostrarDataCurta(divergencia.previsao).slice(0, 5)}, mas a visita está marcada para {mostrarDataCurta(divergencia.data).slice(0, 5)}.
@@ -48,7 +48,7 @@ export function NaAgenda({ pedido, ativo, avisar }: { pedido: PedidoDetalhe["ped
       {podeMarcar ? (
         <div className="grid justify-items-start gap-1">
           <Botao variante="contorno" tamanho="m" disabled={opcoes.estado !== "pronto"} onClick={() => setMarcar(true)}>Marcar visita</Botao>
-          <span className="text-xs text-tinta-suave">Marcar a visita não muda o próximo retorno nem a previsão.</span>
+          <span className="t-apoio text-tinta-suave">Marcar a visita não muda o próximo retorno nem a previsão.</span>
         </div>
       ) : null}
       {opcoes.estado === "pronto" ? (

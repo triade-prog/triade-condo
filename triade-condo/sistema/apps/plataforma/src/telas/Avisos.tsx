@@ -121,7 +121,7 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
       {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} /> : null}
       {naoVistos ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm">{naoVistos === 1 ? "1 aviso sem ver" : `${naoVistos} avisos sem ver`}</p>
+          <p className="t-texto">{naoVistos === 1 ? "1 aviso sem ver" : `${naoVistos} avisos sem ver`}</p>
           <Botao variante="contorno" onClick={() => void marcar(null)}>Marcar todos como vistos</Botao>
         </div>
       ) : null}
@@ -133,13 +133,13 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
             const escalado = a.tipo === "ESCALADO_SINDICO" || a.tipo === "ESCALADO_SUBSTITUTO";
             if (a.tipo === "EMAIL_DEVOLVIDO" || a.tipo === "EMAIL_SPAM") {
               return (
-                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 t-texto ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
                     <Selo tom="atencao">E-mail</Selo>
-                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                    {a.vistoEm ? <span className="t-apoio text-tinta-suave">Visto</span> : <span className="t-apoio font-semibold">Sem ver</span>}
                   </span>
                   <span className="font-semibold">{a.nome ?? "Contato"}{a.unidades ? ` · ${a.unidades}` : ""}</span>
-                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="t-apoio text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
                   <span className="flex flex-wrap gap-2">
                     {a.comunicadoId ? (
                       <Link href={`/comunicados/comunicado?id=${a.comunicadoId}`} className="font-medium text-violeta-600 hover:underline"
@@ -154,13 +154,13 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
             }
             if (a.tipo === "DOCUMENTO_VENCENDO" || a.tipo === "DOCUMENTO_PEDIDO") {
               return (
-                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 t-texto ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
                     <Selo tom="atencao">Documento</Selo>
-                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                    {a.vistoEm ? <span className="t-apoio text-tinta-suave">Visto</span> : <span className="t-apoio font-semibold">Sem ver</span>}
                   </span>
                   <span className="font-semibold">{a.titulo}</span>
-                  <span className="text-xs text-tinta-suave">{detalhe(a)} Avisado em {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="t-apoio text-tinta-suave">{detalhe(a)} Avisado em {formatarDataHora(a.criadoEm)}.</span>
                   <span className="flex flex-wrap gap-2">
                     <Link href={a.tipo === "DOCUMENTO_PEDIDO" ? "/documentos?filtro=PEDIDOS" : `/documentos/documento?id=${a.documentoId}`}
                       className="font-medium text-violeta-600 hover:underline"
@@ -175,13 +175,13 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
             if (a.tipo === "PRONTUARIO_VENCE" || a.tipo === "PRONTUARIO_VENCEU" || a.tipo === "EXPORTACAO_PRONTA" || a.tipo === "EXPORTACAO_FALHOU") {
               const prontuario = a.tipo.startsWith("PRONTUARIO");
               return (
-                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 t-texto ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
                     <Selo tom={a.tipo === "EXPORTACAO_PRONTA" ? "ok" : "atencao"}>{prontuario ? "Prontuário" : "Exportação"}</Selo>
-                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                    {a.vistoEm ? <span className="t-apoio text-tinta-suave">Visto</span> : <span className="t-apoio font-semibold">Sem ver</span>}
                   </span>
                   {a.titulo ? <span className="font-semibold">{a.titulo}</span> : null}
-                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="t-apoio text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
                   <span className="flex flex-wrap gap-2">
                     <Link href={prontuario ? "/documentos/prontuario" : "/documentos/passagem"} className="font-medium text-violeta-600 hover:underline"
                       onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
@@ -198,13 +198,13 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
               const rotulo = a.tipo === "CHAMADO_RESPOSTA" ? "Ver chamado" : a.tipo === "ACESSO_PEDIDO" ? "Aprovar ou recusar"
                 : a.tipo === "CONFIGURACAO" ? "Ver as configurações" : "Ajuda e suporte";
               return (
-                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 t-texto ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
                     <Selo tom={a.tipo === "ACESSO_PEDIDO" ? "atencao" : "info"}>TRÍADE</Selo>
-                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                    {a.vistoEm ? <span className="t-apoio text-tinta-suave">Visto</span> : <span className="t-apoio font-semibold">Sem ver</span>}
                   </span>
                   {a.titulo ? <span className="font-semibold">{a.titulo}</span> : null}
-                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="t-apoio text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
                   <span className="flex flex-wrap gap-2">
                     <Link href={destino} className="font-medium text-violeta-600 hover:underline" onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
                       {rotulo}
@@ -218,13 +218,13 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
               const destino = a.pedidoId ? `/pedidos/pedido?id=${a.pedidoId}`
                 : a.tipo === "WHATSAPP_FALHA_ENVIO" ? "/whatsapp?parte=falhas" : a.tipo === "WHATSAPP_DESCONECTADO" ? "/whatsapp?parte=quedas" : "/whatsapp";
               return (
-                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 t-texto ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
                     <Selo tom={a.tipo === "WHATSAPP_PEDIDO_NOVO" ? "info" : "atencao"}>WhatsApp</Selo>
-                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                    {a.vistoEm ? <span className="t-apoio text-tinta-suave">Visto</span> : <span className="t-apoio font-semibold">Sem ver</span>}
                   </span>
                   {a.protocolo ? <span><strong className="font-semibold">{a.protocolo}</strong> {a.assunto ?? "Pedido privado"}</span> : null}
-                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="t-apoio text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
                   <span className="flex flex-wrap gap-2">
                     <Link href={destino} className="font-medium text-violeta-600 hover:underline" onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
                       {a.pedidoId ? `Ver pedido ${a.protocolo ?? ""}`.trim() : "Abrir o WhatsApp"}
@@ -237,13 +237,13 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
             if (a.tipo.startsWith("DECISAO_")) {
               const aguardando = a.estado === "AGUARDANDO" && a.tipo !== "DECISAO_RESPONDIDA";
               return (
-                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 t-texto ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
                     <Selo tom={a.tipo === "DECISAO_VENCIDA" ? "erro" : a.tipo === "DECISAO_RESPONDIDA" ? "ok" : "atencao"}>Decisão</Selo>
-                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                    {a.vistoEm ? <span className="t-apoio text-tinta-suave">Visto</span> : <span className="t-apoio font-semibold">Sem ver</span>}
                   </span>
                   <span><strong className="font-semibold">{a.protocolo}</strong> {a.titulo}</span>
-                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="t-apoio text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
                   <span className="flex flex-wrap gap-2">
                     <Link href={aguardando ? "/decisoes?filtro=AGUARDANDO" : `/pedidos/pedido?id=${a.pedidoId}`} className="font-medium text-violeta-600 hover:underline"
                       onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
@@ -256,13 +256,13 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
             }
             if (a.tipo === "RESERVA_A_APROVAR" || a.tipo === "RESERVA_CANCELADA") {
               return (
-                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 t-texto ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
                     <Selo tom={a.tipo === "RESERVA_A_APROVAR" ? "atencao" : "info"}>Reserva</Selo>
-                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                    {a.vistoEm ? <span className="t-apoio text-tinta-suave">Visto</span> : <span className="t-apoio font-semibold">Sem ver</span>}
                   </span>
                   <span><strong className="font-semibold">{a.protocolo}</strong> {a.titulo}</span>
-                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="t-apoio text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
                   <span className="flex flex-wrap gap-2">
                     <Link href="/vida" className="font-medium text-violeta-600 hover:underline"
                       onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
@@ -275,15 +275,15 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
             }
             if (a.tipo === "MANUTENCAO_RETORNO_VENCIDO" || a.tipo.startsWith("PRESTADOR_") || a.tipo.startsWith("TROCA_")) {
               return (
-                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 t-texto ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
                     <Selo tom={a.tipo === "PRESTADOR_CONFIRMOU" || a.tipo === "TROCA_TROCOU" ? "info" : "atencao"}>
                       {a.tipo === "MANUTENCAO_RETORNO_VENCIDO" ? "Manutenção" : a.tipo.startsWith("TROCA_") && a.tipo !== "TROCA_SEM_RESPOSTA" ? "Troca de prestador" : "Prestador"}
                     </Selo>
-                    {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                    {a.vistoEm ? <span className="t-apoio text-tinta-suave">Visto</span> : <span className="t-apoio font-semibold">Sem ver</span>}
                   </span>
                   <span className="font-semibold">{a.titulo}</span>
-                  <span className="text-xs text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="t-apoio text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
                   <span className="flex flex-wrap gap-2">
                     <Link href={`/manutencao/manutencao?id=${a.manutencaoId}`} className="font-medium text-violeta-600 hover:underline"
                       onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
@@ -295,13 +295,13 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
               );
             }
             return (
-              <li key={a.id} className={`grid gap-1 rounded-lg border p-3 text-sm ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+              <li key={a.id} className={`grid gap-1 rounded-lg border p-3 t-texto ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                 <span className="flex flex-wrap items-center gap-2">
                   <Selo tom={a.tipo === "SEM_RESPONSAVEL" || a.tipo === "PENDENCIA_PARADA" ? "info" : "atencao"}>{TIPOS_AVISO[a.tipo as keyof typeof TIPOS_AVISO]}</Selo>
-                  {a.vistoEm ? <span className="text-xs text-tinta-suave">Visto</span> : <span className="text-xs font-semibold">Sem ver</span>}
+                  {a.vistoEm ? <span className="t-apoio text-tinta-suave">Visto</span> : <span className="t-apoio font-semibold">Sem ver</span>}
                 </span>
                 <span><strong className="font-semibold">{a.protocolo}</strong> {a.assunto ?? "Pedido privado"}</span>
-                <span className="text-xs text-tinta-suave">{escalado ? "Escalado a você. " : ""}{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                <span className="t-apoio text-tinta-suave">{escalado ? "Escalado a você. " : ""}{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
                 <span className="flex flex-wrap gap-2">
                   <Link href={`/pedidos/pedido?id=${a.pedidoId}`} className="font-medium text-violeta-600 hover:underline"
                     onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>

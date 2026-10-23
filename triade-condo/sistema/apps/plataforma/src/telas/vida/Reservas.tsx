@@ -15,7 +15,7 @@ import {
   type ErroApi,
 } from "@triade/ui";
 import { LadrilhoUnidade, MenuAcoes, type ItemMenu } from "../moradores/comum.tsx";
-import { useCarregar } from "../sessao.tsx";
+import { useCarregar, useContagens } from "../sessao.tsx";
 import type { ListaReservas, ReservaDetalhe, ReservaTela, SemanaArea } from "../tipos.ts";
 import { DiaQuadro, diaCurto, horario, LinhaDoTempo, segundaDaSemana, SeloReserva, type PassoTempo } from "./comum.tsx";
 
@@ -37,6 +37,10 @@ export function AbaReservas({ aoMudar }: { aoMudar: (texto: string) => void }) {
   const [filtrando, setFiltrando] = useState(false);
   const [acao, setAcao] = useState<Acao | null>(null);
   const carga = useCarregar<ListaReservas>(`/v1/condominio/reservas?filtro=${filtro}${areaId ? `&areaId=${areaId}` : ""}`);
+  const contagens = useContagens("reservas", areaId ? `areaId=${areaId}` : "");
+  // Embaixo de A aprovar, as próximas que já estão confirmadas (D4.11), como no desenho.
+  const proximas = useCarregar<ListaReservas>(filtro === "A_APROVAR" ? `/v1/condominio/reservas?filtro=PROXIMAS${areaId ? `&areaId=${areaId}` : ""}` : null);
+  const confirmadas = filtro === "A_APROVAR" && proximas.estado === "pronto" ? proximas.dados.reservas.filter((r) => r.estado === "CONFIRMADA") : [];
 
   const l = carga.estado === "pronto" ? carga.dados : null;
   const fechar = (texto?: string) => { setAcao(null); if (texto) aoMudar(texto); };
@@ -52,12 +56,12 @@ export function AbaReservas({ aoMudar }: { aoMudar: (texto: string) => void }) {
         <nav aria-label="Situação" className="flex gap-1 overflow-x-auto border-b border-linha md:px-3">
           {(Object.keys(FILTROS_RESERVA) as FiltroReserva[]).map((f) => {
             const atual = filtro === f;
-            const n = f === "A_APROVAR" ? l?.aAprovar : atual ? l?.reservas.length : undefined;
+            const n = contagens.n[f];
             return (
               <button key={f} type="button" aria-pressed={atual} onClick={() => setFiltro(f)}
-                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
                 {FILTROS_RESERVA[f]}
-                {n ? <><span className="sr-only"> ({n})</span><span aria-hidden="true" className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{n}</span></> : null}
+                {n !== undefined && (n > 0 || atual) ? <><span className="sr-only"> ({n})</span><span aria-hidden="true" className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{n}</span></> : null}
               </button>
             );
           })}
@@ -86,6 +90,14 @@ export function AbaReservas({ aoMudar }: { aoMudar: (texto: string) => void }) {
               {l.reservas.map((r) => <LinhaReserva key={r.id} r={r} aoAbrir={() => setAcao({ tipo: "ver", id: r.id })} />)}
             </ul>
           )
+        ) : null}
+        {confirmadas.length ? (
+          <div className="grid gap-1 md:border-t md:border-linha">
+            <h3 id="t-confirmadas" className="t-rotulo pt-4 md:px-5">Próximas, já confirmadas</h3>
+            <ul aria-labelledby="t-confirmadas" className="grid max-md:gap-3 max-md:py-3">
+              {confirmadas.map((r) => <LinhaReserva key={r.id} r={r} aoAbrir={() => setAcao({ tipo: "ver", id: r.id })} />)}
+            </ul>
+          </div>
         ) : null}
         {l ? (
           <div className="flex flex-wrap items-center justify-between gap-2 py-4 md:border-t md:border-linha md:px-5">
@@ -162,7 +174,7 @@ function textoDecisao(r: ReservaTela): string | null {
 
 function Pesos({ r }: { r: ReservaTela }) {
   return pesos(r).map((p) => (
-    <span key={p.texto} className={`flex items-start gap-1.5 text-[13px] ${p.atencao ? "text-atencao" : "text-tinta-suave"}`}>
+    <span key={p.texto} className={`flex items-start gap-1.5 t-apoio ${p.atencao ? "text-atencao" : "text-tinta-suave"}`}>
       {p.atencao ? <Icone nome="alerta" className="mt-0.5 h-3.5 w-3.5 shrink-0" /> : null}{p.texto}
     </span>
   ));
@@ -189,7 +201,7 @@ function CartaoPedidos({ grupo, podeEditar, aoDecidir, aoAbrir }: { grupo: Reser
           <li key={r.id} className="relative flex items-start gap-3 rounded-[14px] border border-linha bg-fundo px-3.5 py-3 hover:border-violeta-300">
             <LadrilhoUnidade texto={numeroDa(r.unidade.nome)} />
             <span className="grid min-w-0 flex-1 gap-0.5">
-              <button type="button" className="text-left text-[15px] font-medium after:absolute after:inset-0 after:content-[''] hover:text-violeta-600"
+              <button type="button" className="elo-linha t-texto"
                 onClick={() => aoAbrir(r.id)} aria-label={`Abrir a reserva ${r.protocolo}: ${r.unidade.nome}${r.contato ? ` · ${r.contato.nome}` : ""}`}>
                 {r.unidade.nome}{r.contato ? ` · ${r.contato.nome}` : ""}
               </button>
@@ -215,14 +227,14 @@ function LinhaReserva({ r, aoAbrir }: { r: ReservaTela; aoAbrir: () => void }) {
     <li className={`relative grid grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-3 hover:bg-violeta-50/50 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 ${COLUNAS} md:border-t md:border-linha md:first:border-t-0`}>
       <DiaQuadro d={r.data} tom="neutro" />
       <span className="grid min-w-0 gap-0.5">
-        <button type="button" className="text-left text-[15px] font-medium after:absolute after:inset-0 after:content-[''] hover:text-violeta-600" onClick={aoAbrir}>
+        <button type="button" className="elo-linha t-texto" onClick={aoAbrir}>
           {r.area.nome} · {diaCurto(r.data)} · {horario(r)}
         </button>
-        {textoDecisao(r) ? <span className="text-[13px] text-tinta-suave">{textoDecisao(r)}</span> : null}
+        {textoDecisao(r) ? <span className="t-apoio text-tinta-suave">{textoDecisao(r)}</span> : null}
         <span className="t-apoio md:hidden">{r.unidade.nome}{r.contato ? ` · ${r.contato.nome}` : ""}</span>
         <span className="pt-1 md:hidden"><SeloReserva estado={r.estado} tolerancia={r.tolerancia} /></span>
       </span>
-      <span className="grid text-sm max-md:hidden"><span>{r.unidade.nome}{r.contato ? ` · ${r.contato.nome}` : ""}</span><span className="t-apoio">{origem(r)}</span></span>
+      <span className="grid t-texto max-md:hidden"><span>{r.unidade.nome}{r.contato ? ` · ${r.contato.nome}` : ""}</span><span className="t-apoio">{origem(r)}</span></span>
       <span className="justify-self-start max-md:hidden"><SeloReserva estado={r.estado} tolerancia={r.tolerancia} /></span>
       <Icone nome="dir" className="h-5 w-5 text-tinta-suave" />
     </li>
@@ -256,21 +268,21 @@ function SemanaDaArea({ areaId, de: inicio, hoje, aoAbrir }: { areaId: string; d
             {carga.dados.dias.map((d) => {
               const aAprovar = d.reservas.some((r) => r.estado === "A_APROVAR");
               return (
-                <li key={d.data} className={`grid grid-cols-[64px_minmax(0,1fr)] items-start gap-2 rounded-xl px-2.5 py-2 text-sm ${aAprovar ? "border border-atencao-borda bg-atencao-fundo" : d.data === hoje ? "bg-violeta-50" : ""}`}>
+                <li key={d.data} className={`grid grid-cols-[64px_minmax(0,1fr)] items-start gap-2 rounded-xl px-2.5 py-2 t-texto ${aAprovar ? "border border-atencao-borda bg-atencao-fundo" : d.data === hoje ? "bg-violeta-50" : ""}`}>
                   <span className={aAprovar ? "font-semibold text-atencao" : "text-tinta-suave"}>{diaCurto(d.data).slice(0, 3)} {Number(d.data.slice(8))}</span>
                   <span className="grid gap-1">
                     {d.bloqueios.map((b) => (
-                      <Link key={b.id} href={`/agenda/compromisso?id=${b.id}`} className="inline-flex min-h-6 items-center text-[13px] text-tinta-suave hover:underline">
+                      <Link key={b.id} href={`/agenda/compromisso?id=${b.id}`} className="inline-flex min-h-6 items-center t-apoio text-tinta-suave hover:underline">
                         {b.horaInicio ? `${b.horaInicio} ` : ""}{b.titulo} · Agenda
                       </Link>
                     ))}
                     {d.reservas.map((r) => (
-                      <button key={r.id} type="button" className={`inline-flex min-h-6 items-center text-left text-[13px] hover:underline ${r.estado === "A_APROVAR" ? "text-atencao" : "text-ok"}`}
+                      <button key={r.id} type="button" className={`inline-flex min-h-6 items-center text-left t-apoio hover:underline ${r.estado === "A_APROVAR" ? "text-atencao" : "text-ok"}`}
                         onClick={() => aoAbrir(r.id)}>
                         {r.horaInicio.slice(0, 5)} {r.unidade} · {r.estado === "A_APROVAR" ? "a aprovar" : "confirmada"}
                       </button>
                     ))}
-                    {d.bloqueios.length + d.reservas.length === 0 ? <span className="text-[13px] text-tinta-suave">Livre</span> : null}
+                    {d.bloqueios.length + d.reservas.length === 0 ? <span className="t-apoio text-tinta-suave">Livre</span> : null}
                   </span>
                 </li>
               );
@@ -341,16 +353,16 @@ function Decidir({ grupo, aoFechar }: { grupo: ReservaTela[]; aoFechar: (texto?:
           {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
           {varios ? (
             <fieldset className="grid gap-2">
-              <legend className="mb-2 text-[13px] font-medium">Qual pedido fica com o dia</legend>
+              <legend className="mb-2 t-apoio font-medium">Qual pedido fica com o dia</legend>
               {grupo.map((x) => {
                 const marcado = x.id === escolhido;
                 return (
                   <label key={x.id} className={`flex cursor-pointer items-start gap-3 rounded-2xl px-4 py-3.5 ${marcado ? "border-2 border-violeta-600 bg-violeta-50" : "border border-linha bg-superficie"}`}>
                     <input type="radio" name="rs-escolhido" className="mt-1 h-4 w-4 accent-violeta-600" checked={marcado} onChange={() => setEscolhido(x.id)} />
                     <span className="grid gap-0.5">
-                      <span className="text-[15px] font-medium">{x.unidade.nome}{x.contato ? ` · ${x.contato.nome}` : ""}</span>
+                      <span className="t-texto font-medium">{x.unidade.nome}{x.contato ? ` · ${x.contato.nome}` : ""}</span>
                       <span className="t-apoio">{origem(x)}</span>
-                      <span className="text-xs text-tinta-suave">{[x.id === primeiro.id ? "Pediu primeiro" : null, ...pesos(x).map((p) => p.texto)].filter(Boolean).join(" · ")}</span>
+                      <span className="t-apoio text-tinta-suave">{[x.id === primeiro.id ? "Pediu primeiro" : null, ...pesos(x).map((p) => p.texto)].filter(Boolean).join(" · ")}</span>
                     </span>
                   </label>
                 );
@@ -365,12 +377,12 @@ function Decidir({ grupo, aoFechar }: { grupo: ReservaTela[]; aoFechar: (texto?:
           <CampoAreaTexto id="rs-recado" rotulo={varios ? "Recado para quem ficou com o dia" : "Recado para o morador"} opcional maxLength={300} value={recado}
             onChange={(e) => setRecado(e.target.value)} ajuda="Vai pelo WhatsApp, assinado com o seu nome. Por exemplo: a chave fica com o zelador." />
           {outros.length ? (
-            <div className="flex items-start gap-2.5 rounded-[14px] border border-atencao-borda bg-atencao-fundo px-3.5 py-3 text-[13px]">
+            <div className="flex items-start gap-2.5 rounded-[14px] border border-atencao-borda bg-atencao-fundo px-3.5 py-3 t-apoio">
               <Icone nome="info" className="mt-0.5 h-4 w-4 shrink-0 text-atencao" />
               <span>{outros.map((x) => x.unidade.nome).join(", ")} {outros.length === 1 ? "recebe" : "recebem"} a recusa com o motivo &quot;A data ficou com outro pedido de reserva&quot;.</span>
             </div>
           ) : null}
-          {r.ocupacao ? <p className="text-[13px] text-atencao">A área já está ocupada: {r.ocupacao.titulo}. Aprovar não dá enquanto isso estiver marcado.</p> : null}
+          {r.ocupacao ? <p className="t-apoio text-atencao">A área já está ocupada: {r.ocupacao.titulo}. Aprovar não dá enquanto isso estiver marcado.</p> : null}
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-linha pt-4">
             <Botao variante="discreto" onClick={() => { setRecusando(true); setErro(null); }}>{varios ? `Recusar os ${grupo.length}` : "Recusar…"}</Botao>
             <span className="flex flex-wrap gap-2">
@@ -450,14 +462,14 @@ function Ficha({ d, aoFechar, aoDecidir, aoCancelar }: { d: ReservaDetalhe; aoFe
     ...(r.limite ? [["Limite", textoLimite(r.limite, r.data, r.tolerancia)]] : []),
   ];
   return (
-    <div className="grid gap-4 text-sm">
+    <div className="grid gap-4 t-texto">
       <p className="flex flex-wrap gap-2"><SeloReserva estado={r.estado} tolerancia={r.tolerancia} /><Selo tom="neutro">{r.area.nome}</Selo></p>
       <dl className="grid">
         {dados.map(([n, v]) => (
           <div key={n} className="flex justify-between gap-4 border-t border-linha py-3 first:border-t-0"><dt className="t-apoio">{n}</dt><dd className="text-right">{v}</dd></div>
         ))}
       </dl>
-      {r.ocupacao ? <p className="text-[13px] text-atencao">A área já está ocupada: {r.ocupacao.titulo}.</p> : null}
+      {r.ocupacao ? <p className="t-apoio text-atencao">A área já está ocupada: {r.ocupacao.titulo}.</p> : null}
       <section aria-labelledby="rs-andamento" className="grid gap-3">
         <h3 id="rs-andamento" className="t-rotulo">Andamento</h3>
         <LinhaDoTempo itens={tempo} />
@@ -467,7 +479,7 @@ function Ficha({ d, aoFechar, aoDecidir, aoCancelar }: { d: ReservaDetalhe; aoFe
           <h3 id="rs-mensagens" className="t-rotulo">Mensagens ao morador</h3>
           <ul className="grid gap-1">
             {d.mensagens.map((m) => (
-              <li key={m.id} className="text-[13px]">
+              <li key={m.id} className="t-apoio">
                 {formatarDataHora(m.em)} · {ESTADOS_ENVIO_WHATSAPP[m.estado as keyof typeof ESTADOS_ENVIO_WHATSAPP] ?? m.estado}{m.motivo ? ` · ${m.motivo}` : ""}
               </li>
             ))}

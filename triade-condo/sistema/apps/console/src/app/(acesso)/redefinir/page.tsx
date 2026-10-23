@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Criar senha nova" };
 export default function Pagina() {
   return (
     <>
-      <h1 className="text-[28px] font-normal tracking-tight">Criar senha nova</h1>
+      <h1 className="t-titulo-tela font-normal tracking-tight">Criar senha nova</h1>
       <Suspense fallback={<Carregando linhas={2} />}>
         <SenhaPeloLink tipo="redefinir" />
       </Suspense>

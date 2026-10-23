@@ -71,12 +71,12 @@ export function Unidade() {
   }, [carga.estado]);
   const [falha, setFalha] = useState<string | null>(null);
   const fechar = () => setJanela(null);
-  const voltar = <Link href="/moradores" className="inline-flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline"><Icone nome="esq" className="h-4 w-4" />Moradores e unidades</Link>;
+  const voltar = <Link href="/moradores" className="inline-flex items-center gap-1 justify-self-start t-texto font-medium text-violeta-600 hover:underline"><Icone nome="esq" className="h-4 w-4" />Moradores e unidades</Link>;
 
-  if (!id) return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Unidade</h1><Vazio titulo="Unidade não encontrada" /></div>;
+  if (!id) return <div className="grid gap-3">{voltar}<h1 className="t-titulo-tela font-normal tracking-tight">Unidade</h1><Vazio titulo="Unidade não encontrada" /></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando a unidade…" />;
   if (carga.estado === "erro") {
-    return <div className="grid gap-3">{voltar}<h1 className="text-[28px] font-normal tracking-tight">Unidade</h1><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+    return <div className="grid gap-3">{voltar}<h1 className="t-titulo-tela font-normal tracking-tight">Unidade</h1><ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
   }
 
   const d = carga.dados;
@@ -169,7 +169,7 @@ export function Unidade() {
                       <Iniciais nome={c.nome} className="h-10 w-10" />
                       <div className="grid min-w-0 flex-1 gap-0.5">
                         <span className="flex flex-wrap items-center gap-2"><span className="font-semibold">{c.nome}</span><SeloEstado estado={c.estado} /></span>
-                        {marcas ? <span className="text-[13px] font-medium">{marcas}</span> : null}
+                        {marcas ? <span className="t-apoio font-medium">{marcas}</span> : null}
                         <span className="t-apoio">{detalhes(c, d.comunicadosWhatsappLigado === true)}</span>
                         {c.estado === "PENDENTE" && d.podeConfirmar ? (
                           <span className="pt-2 md:hidden"><Botao variante="contorno" tamanho="m" className="w-full" onClick={() => void confirmar(c)} aria-label={`Confirmar ${c.nome}`}><Icone nome="check" />Confirmar</Botao></span>
@@ -192,10 +192,10 @@ export function Unidade() {
             <CartaoFicha id="anteriores" titulo="Anteriores" icone="relogio">
               <ul className="grid">
                 {d.anteriores.map((a) => (
-                  <li key={a.vinculoId} className="flex flex-wrap items-center justify-between gap-2 border-t border-linha py-3 text-sm first:border-t-0 first:pt-1">
+                  <li key={a.vinculoId} className="flex flex-wrap items-center justify-between gap-2 border-t border-linha py-3 t-texto first:border-t-0 first:pt-1">
                     <span>
                       <span className="font-medium">{a.dadosRemovidos ? "Dados removidos" : a.nome}</span>
-                      <span className="block text-xs text-tinta-suave">
+                      <span className="block t-apoio text-tinta-suave">
                         {[descreverVinculo(a).marcas, ...descreverVinculo({ ...a, ocupaDesde: null }).resto].filter(Boolean).join(" · ")}
                         {" · "}{periodo(a)} · {nomeMotivo(a.motivo).toLowerCase()}
                       </span>
@@ -222,7 +222,7 @@ export function Unidade() {
                     marcado={marcado.paraAlugar} aoMudar={(v) => void marcar({ ...marcado, paraAlugar: v })} />
                 </div>
               ) : (
-                <p className="flex flex-wrap gap-2 text-sm">
+                <p className="flex flex-wrap gap-2 t-texto">
                   {u.aVendaDesde ? <Selo tom="info">À venda desde {mostrarDataSemHora(u.aVendaDesde)}</Selo> : null}
                   {u.paraAlugarDesde ? <Selo tom="info">Para alugar desde {mostrarDataSemHora(u.paraAlugarDesde)}</Selo> : null}
                 </p>

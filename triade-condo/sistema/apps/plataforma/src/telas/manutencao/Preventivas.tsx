@@ -112,16 +112,16 @@ export function Preventivas() {
                   <span className="ladrilho self-start md:self-center" aria-hidden="true"><Icone nome="calendario" /></span>
                   <span className="grid min-w-0 gap-0.5">
                     {pode.editar
-                      ? <button type="button" className="w-fit text-left font-medium hover:text-violeta-600 hover:underline" onClick={() => setEdicao({ item: p })}>{p.atividade}</button>
+                      ? <button type="button" className="elo w-fit text-tinta hover:text-violeta-600" onClick={() => setEdicao({ item: p })}>{p.atividade}</button>
                       : <span className="font-medium">{p.atividade}</span>}
                     <span className="t-apoio">{p.local}{p.ultima ? ` · feita em ${mostrarDataCurta(p.ultima.realizadaEm)}` : ""}</span>
-                    <span className="text-sm md:hidden">
+                    <span className="t-texto md:hidden">
                       Repete {repete} · próxima em <b className={`font-semibold ${atrasada ? "text-erro" : ""}`}>{proxima}</b> · {quem}
                     </span>
                   </span>
-                  <span className="text-sm max-md:hidden">{repete}</span>
+                  <span className="t-texto max-md:hidden">{repete}</span>
                   <span className={`t-codigo max-md:hidden ${atrasada ? "text-erro" : ""}`}>{proxima}</span>
-                  <span className="text-sm max-md:hidden">{quem}</span>
+                  <span className="t-texto max-md:hidden">{quem}</span>
                   <span className="flex flex-wrap items-center gap-x-3 gap-y-1 max-md:col-start-2 max-md:pt-1 md:grid md:justify-items-start">
                     {!p.ativa ? <Selo tom="neutro">Parada</Selo>
                       : atrasada ? <Selo tom="erro">Atrasada</Selo>
@@ -129,7 +129,7 @@ export function Preventivas() {
                           : <Selo tom="neutro">Agendada</Selo>}
                     {p.aberta ? (
                       <Link href={`/manutencao/manutencao?id=${p.aberta.id}`} aria-label={`Abrir a manutenção de ${p.atividade}`}
-                        className="inline-flex items-center gap-1 text-[13px] font-medium text-violeta-600 hover:underline">Abrir a manutenção<Icone nome="dir" className="h-3.5 w-3.5" /></Link>
+                        className="inline-flex items-center gap-1 t-apoio font-medium text-violeta-600 hover:underline">Abrir a manutenção<Icone nome="dir" className="h-3.5 w-3.5" /></Link>
                     ) : p.ativa ? <span className="t-apoio">A manutenção abre {p.antecedenciaDias === 1 ? "1 dia" : `${p.antecedenciaDias} dias`} antes</span> : null}
                   </span>
                 </li>

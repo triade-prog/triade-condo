@@ -75,14 +75,14 @@ export function AbaAssembleias({ aoMudar, definirMais }: { aoMudar: (texto: stri
             const n = daAba(a).length;
             return (
               <button key={a} type="button" aria-pressed={esta} onClick={() => setAba(a)}
-                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${esta ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${esta ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
                 {ABAS[a]}
                 {n ? <><span className="sr-only"> ({n})</span><span aria-hidden="true" className={`contagem ml-0 ${esta ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{n}</span></> : null}
               </button>
             );
           })}
         </nav>
-        <p className="flex items-start gap-2 py-3 text-[13px] text-tinta-suave md:border-b md:border-linha md:bg-fundo md:px-5">
+        <p className="flex items-start gap-2 py-3 t-apoio text-tinta-suave md:border-b md:border-linha md:bg-fundo md:px-5">
           <Icone nome="info" className="mt-0.5 h-4 w-4 shrink-0" />
           <span>Regra em vigor: convocação com {lista.regras.antecedencia} dias de antecedência · {PESOS_ASSEMBLEIA[lista.regras.peso].toLowerCase()} · votam o proprietário ou o procurador com procuração aceita.</span>
         </p>
@@ -103,12 +103,12 @@ export function AbaAssembleias({ aoMudar, definirMais }: { aoMudar: (texto: stri
               <li key={a.id} className={`relative grid grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-3 hover:bg-violeta-50/50 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 md:grid-cols-[52px_minmax(0,1.4fr)_minmax(0,1fr)_140px_20px] md:border-t md:border-linha md:first:border-t-0`}>
                 <DiaQuadro d={diaDe(a.primeiraChamada)} tom={TOM_DIA[a.estado]} />
                 <span className="grid min-w-0 gap-0.5">
-                  <Link href={`/vida/assembleia?id=${a.id}`} className="text-[15px] font-medium after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">{a.titulo}</Link>
+                  <Link href={`/vida/assembleia?id=${a.id}`} className="t-texto font-medium after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">{a.titulo}</Link>
                   <span className="t-apoio">{tipoEForma(a)} · {a.itens === 1 ? "1 item" : `${a.itens} itens`} na pauta</span>
                   {a.procuracoesPendentes ? <span className="t-apoio md:hidden">{procuracoes(a.procuracoesPendentes)}</span> : null}
                   <span className="pt-1 md:hidden"><SeloAssembleia estado={a.estado} /></span>
                 </span>
-                <span className="text-sm text-tinta-suave max-md:hidden">
+                <span className="t-apoio text-tinta-suave max-md:hidden">
                   {a.estado === "EM_ANDAMENTO" || a.estado === "ENCERRADA" ? `${a.presentes} de ${a.unidades} unidades presentes` : `1ª chamada às ${formatarDataHora(a.primeiraChamada).slice(11)}`}
                   {a.procuracoesPendentes ? ` · ${procuracoes(a.procuracoesPendentes)}` : ""}
                 </span>
@@ -160,7 +160,7 @@ function Regras({ regras, aoFechar }: { regras: ListaAssembleias["regras"]; aoFe
         <CampoSelecao id="as-peso" rotulo="Peso do voto" value={peso} onChange={(e) => setPeso(e.target.value as PesoAssembleia)}
           opcoes={(Object.keys(PESOS_ASSEMBLEIA) as PesoAssembleia[]).map((v) => ({ valor: v, texto: PESOS_ASSEMBLEIA[v] }))}
           ajuda={peso === "FRACAO" ? "Cada unidade pesa a sua fração ideal: todas precisam da fração" : "Cada unidade vale um voto, qualquer que seja o tamanho"} />
-        <p className="text-[13px] text-tinta-suave">Confira na convenção do prédio. A assembleia já convocada guarda as regras da época.</p>
+        <p className="t-apoio text-tinta-suave">Confira na convenção do prédio. A assembleia já convocada guarda as regras da época.</p>
         <div className="flex flex-wrap justify-end gap-2">
           <Botao variante="discreto" onClick={() => aoFechar()}>Voltar</Botao>
           <Botao type="submit" disabled={enviando}>Salvar</Botao>
@@ -206,7 +206,7 @@ function FormFracoes({ f, aoFechar }: { f: Fracoes; aoFechar: (texto?: string) =
   }
 
   return (
-    <form onSubmit={salvar} noValidate className="grid gap-3 text-sm">
+    <form onSubmit={salvar} noValidate className="grid gap-3 t-texto">
       <p className="text-tinta-suave">Em porcentagem, como na convenção ou na matrícula. A soma de todas fica perto de 100%.</p>
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
       {f.unidades.length === 0 ? <p>Nenhuma unidade ativa.</p> : (

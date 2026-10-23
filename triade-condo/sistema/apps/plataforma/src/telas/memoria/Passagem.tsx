@@ -150,6 +150,10 @@ function OQueVai() {
   const p = prontuario.estado === "pronto" ? prontuario.dados : null;
   const r = painel.memoria?.prontuario;
   const hoje = diaDe(new Date().toISOString());
+  const numeros = useCarregar<{ anotacoes: number | null; acesso: number | null; compromissos: number | null }>(`/v1/condominio/memoria/dossie-hoje?de=${hoje}`);
+  const n = numeros.estado === "pronto" ? numeros.dados : { anotacoes: null, acesso: null, compromissos: null };
+  const compromissos = n.compromissos === null ? "os compromissos dos próximos 60 dias"
+    : n.compromissos ? `${plural(n.compromissos, "compromisso", "compromissos")} nos próximos 60 dias` : "nenhum compromisso nos próximos 60 dias";
   const pendencias = [
     painel.pedidos ? plural(painel.pedidos.ativos, "pedido aberto", "pedidos abertos") : null,
     ...(p ? p.itens.filter((i) => i.situacao === "VENCEU").map((i) => `${i.nome} venceu`) : []),
@@ -166,10 +170,17 @@ function OQueVai() {
     { icone: "documento", tom: "violeta", titulo: "Documentos", apoio: p ? `${plural(p.documentos.length, "em vigor", "em vigor")}, com a versão de cada um` : "Os em vigor, com a versão de cada um" },
     {
       icone: "calendario", tom: "violeta", titulo: "Manutenção e agenda",
-      apoio: p?.preventivas ? `${plural(p.preventivas.ativas, "preventiva", "preventivas")}${p.preventivas.atrasadas ? `, ${plural(p.preventivas.atrasadas, "atrasada", "atrasadas")}` : ""} · os compromissos dos próximos 30 dias` : "O programa de manutenção e os próximos compromissos",
+      apoio: p?.preventivas ? `${plural(p.preventivas.ativas, "preventiva", "preventivas")}${p.preventivas.atrasadas ? `, ${plural(p.preventivas.atrasadas, "atrasada", "atrasadas")}` : ""} · ${compromissos}` : `O programa de manutenção · ${compromissos}`,
     },
-    { icone: "convivio", tom: "violeta", titulo: "Combinados e decisões", apoio: "O que foi anotado na linha do tempo" },
-    { icone: "chave", tom: "violeta", titulo: "Quem tem acesso hoje", apoio: "As pessoas da gestão, com o papel e a data de entrada" },
+    {
+      icone: "convivio", tom: "violeta", titulo: "Combinados e decisões",
+      apoio: n.anotacoes === null ? "O que foi anotado na linha do tempo"
+        : n.anotacoes ? `${n.anotacoes === 40 ? "As 40 últimas anotações" : plural(n.anotacoes, "anotação", "anotações")} da linha do tempo` : "Nada anotado na linha do tempo ainda",
+    },
+    {
+      icone: "chave", tom: "violeta", titulo: "Quem tem acesso hoje",
+      apoio: n.acesso ? `${plural(n.acesso, "pessoa", "pessoas")} da gestão, com o papel e a data de entrada` : "As pessoas da gestão, com o papel e a data de entrada",
+    },
     { icone: "casa", tom: "violeta", titulo: "Manual do prédio", apoio: manual.estado === "pronto" ? (manual.dados.secoes.length ? plural(manual.dados.secoes.length, "seção", "seções") : "Nenhuma seção escrita ainda") : "As seções escritas" },
   ];
   return (
@@ -202,7 +213,7 @@ function LinhaExportacao({ e, baixar }: { e: Exportacao; baixar: (e: Exportacao,
       {e.situacao === "MONTANDO" ? (
         <span className="t-apoio pl-12">{e.partes.filter((p) => p.situacao === "PRONTA").length} de {e.partes.length} pacotes prontos. Pode sair desta tela: o aviso chega no sino.</span>
       ) : null}
-      {e.situacao === "FALHOU" ? <span className="pl-12 text-sm text-erro">{e.erro} Peça de novo.</span> : null}
+      {e.situacao === "FALHOU" ? <span className="pl-12 t-texto text-erro">{e.erro} Peça de novo.</span> : null}
       {e.situacao === "PRONTA" ? (
         <span className="flex flex-wrap gap-2 pl-12">
           {e.partes.map((p) => (

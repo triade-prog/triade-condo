@@ -197,6 +197,8 @@ export const registrarPedidoSchema = z
     privado: z.boolean().default(false),
     responsavelId: id.nullable().optional().transform((v) => v ?? null),
     avisar: avisarRegistroSchema.nullable().optional().transform((v) => v ?? null),
+    /** A mensagem do WhatsApp de onde o pedido nasceu: a conversa é juntada ao pedido na mesma chamada (D4.20). */
+    mensagemId: id.nullable().optional().transform((v) => v ?? null),
   })
   .superRefine((d, ctx) => {
     if (!d.unidadeId && !d.local) {

@@ -158,7 +158,7 @@ function CartaoLista({ id, titulo, icone, href, children }: { id: string; titulo
         <h2 id={id} className="t-titulo-cartao flex items-center gap-3">
           <span className="ladrilho h-8 w-8 rounded-[10px]" data-tom="violeta" aria-hidden="true"><Icone nome={icone} className="h-4 w-4" /></span>{titulo}
         </h2>
-        <Link href={href} className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-violeta-600 hover:underline" aria-label={`Ver na carteira: ${titulo}`}>
+        <Link href={href} className="inline-flex shrink-0 items-center gap-1 t-texto font-medium text-violeta-600 hover:underline" aria-label={`Ver na carteira: ${titulo}`}>
           <span className="max-md:hidden">Ver na carteira</span><span className="md:hidden">Ver</span><Icone nome="dir" className="h-4 w-4" />
         </Link>
       </div>
@@ -235,12 +235,12 @@ export function Inicio() {
         <span aria-hidden="true" className="pointer-events-none absolute top-5 right-16 h-44 w-6 rotate-[26deg] rounded-full bg-[image:var(--grad-trilha)] shadow-[var(--shadow-trilha)] max-md:top-3.5 max-md:right-6 max-md:h-24 max-md:w-4" />
         <div className="relative flex flex-wrap items-end justify-between gap-6 md:pr-52">
           <div className="grid gap-2">
-            <p className="text-xs font-medium tracking-[.12em] text-violeta-100 uppercase">
+            <p className="t-rotulo font-medium tracking-[.12em] text-violeta-100 uppercase">
               <span className="max-md:hidden">{HOJE.format(agora)}</span>
               <span className="md:hidden">Console · {HOJE_CURTO.format(agora).replace(".", "")}</span>
             </p>
             <h1 className="t-destaque text-4xl leading-tight max-md:text-[28px]">{saudacao()}, {primeiroNome}</h1>
-            {resumo ? <p className="flex items-center gap-1.5 text-sm text-violeta-100 max-md:hidden"><Icone nome="predio" className="h-4 w-4" />{resumo}</p> : null}
+            {resumo ? <p className="flex items-center gap-1.5 t-texto text-violeta-100 max-md:hidden"><Icone nome="predio" className="h-4 w-4" />{resumo}</p> : null}
           </div>
           {sessao.acoes.includes("console.condominios.criar") ? (
             <Link href="/clientes/novo" className={classeBotao("claro", "max-md:w-full")}><Icone nome="mais" />Cadastrar condomínio</Link>

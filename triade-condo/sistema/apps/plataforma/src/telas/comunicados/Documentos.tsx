@@ -50,7 +50,7 @@ function Validade({ d, hoje }: { d: DocumentoResumo; hoje: string }) {
   const frase = texto.charAt(0).toUpperCase() + texto.slice(1);
   if (d.vencido) return <Selo tom="erro">{frase}</Selo>;
   if (d.vencendo) return <Selo tom="atencao">{frase}</Selo>;
-  return <span className="text-sm">{frase}</span>;
+  return <span className="t-texto">{frase}</span>;
 }
 
 /** O que o prontuário diz do documento: a que itens está ligado, ou o item que falta e parece ser dele. */
@@ -70,11 +70,11 @@ export function lerProntuario(p: Prontuario | null): (d: { id: string; titulo: s
 
 function LinhaDoProntuario({ n, d }: { n?: NoProntuario; d: DocumentoResumo }) {
   if (!n) return null;
-  if (n.itens.length) return <span className="flex items-center gap-1.5 text-xs text-tinta-suave"><Icone nome="lista" className="h-3.5 w-3.5" />No prontuário: {n.itens.join(", ")}</span>;
+  if (n.itens.length) return <span className="flex items-center gap-1.5 t-apoio text-tinta-suave"><Icone nome="lista" className="h-3.5 w-3.5" />No prontuário: {n.itens.join(", ")}</span>;
   if (!n.sugestao) return null;
   return (
     <Link href={`/documentos/prontuario?item=${encodeURIComponent(chaveDoItem(n.sugestao))}&ligar=${d.id}`}
-      className="relative z-10 flex items-center gap-1.5 justify-self-start text-xs font-semibold text-violeta-600 hover:underline">
+      className="relative z-10 flex items-center gap-1.5 justify-self-start t-apoio font-semibold text-violeta-600 hover:underline">
       <Icone nome="link" className="h-3.5 w-3.5" />Parece o do item {n.sugestao.nome}. Ligar?
     </Link>
   );
@@ -183,7 +183,7 @@ function LinhaContrato({ p, hoje }: { p: PrestadorItem; hoje: string }) {
       </div>
       <span className="justify-self-start max-md:hidden"><Selo tom="andamento">Do prestador</Selo></span>
       <span className="justify-self-start max-md:hidden">
-        {p.contratoVencido || p.contratoVence ? <Selo tom={p.contratoVencido ? "erro" : "atencao"}>{frase}</Selo> : <span className="text-sm">{frase}</span>}
+        {p.contratoVencido || p.contratoVence ? <Selo tom={p.contratoVencido ? "erro" : "atencao"}>{frase}</Selo> : <span className="t-texto">{frase}</span>}
       </span>
       <Icone nome="dir" className="h-5 w-5 text-tinta-suave" />
     </li>
@@ -263,7 +263,7 @@ export function Documentos({ definir }: PropsAbaMemoria) {
             const atual = f.aba === a.id;
             return (
               <button key={a.id} type="button" aria-pressed={atual} onClick={() => ir({ aba: a.id, atencao: "", tipo: a.id === "VIGOR" ? f.tipo : "" })}
-                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
                 {a.texto}
                 {a.n !== undefined ? <><span className="sr-only"> ({a.n})</span><span aria-hidden="true" className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{a.n}</span></> : null}
               </button>

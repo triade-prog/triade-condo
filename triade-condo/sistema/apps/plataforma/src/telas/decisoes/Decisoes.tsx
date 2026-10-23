@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { FILTROS_DECISAO, resumoAlternativas, type FiltroDecisao } from "@triade/domain";
 import { Aviso, Botao, Carregando, classeBotao, ErroCarregar, Icone, Vazio } from "@triade/ui";
-import { useCarregar, usePlataforma } from "../sessao.tsx";
+import { useCarregar, useContagens, usePlataforma } from "../sessao.tsx";
 import type { DecisaoPedido, ListaDecisoes, Recado } from "../tipos.ts";
 import { dia } from "../pedidos/comum.tsx";
 import { ListaAlternativas, ResponderDecisao, resumoResposta, SeloDecisao } from "./comum.tsx";
@@ -27,7 +27,7 @@ function CartaoAguardando({ x, hoje, principal, decidir }: { x: DecisaoPedido; h
         <span className="ladrilho" data-tom="violeta" aria-hidden="true"><Icone nome="decisao" /></span>
         <div className="grid min-w-0 gap-1">
           <span className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-medium">{x.pergunta}</h2>
+            <h2 className="t-texto font-medium">{x.pergunta}</h2>
             <SeloDecisao d={x} hoje={hoje} />
           </span>
           <p className="t-apoio">
@@ -36,7 +36,7 @@ function CartaoAguardando({ x, hoje, principal, decidir }: { x: DecisaoPedido; h
           </p>
         </div>
       </div>
-      {x.porque ? <p className="text-sm">{x.porque}</p> : null}
+      {x.porque ? <p className="t-texto">{x.porque}</p> : null}
       <p className="t-rotulo">{resumoAlternativas(x.alternativas).replace(", ", " · ")}</p>
       <ListaAlternativas alternativas={x.alternativas} />
       <span className="flex flex-wrap items-center gap-2 pt-1 max-md:flex-col max-md:items-stretch">
@@ -63,7 +63,7 @@ function LinhaRespondida({ x, hoje, nivel }: { x: DecisaoPedido; hoje: string; n
         <p className="t-apoio">{resumoResposta(x) ?? "Respondida"} · pedido {x.pedido.protocolo}</p>
       </div>
       <SeloDecisao d={x} hoje={hoje} />
-      <Link href={`/pedidos/pedido?id=${x.pedido.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-violeta-600 hover:underline" aria-label={`Abrir o pedido ${x.pedido.protocolo}`}>
+      <Link href={`/pedidos/pedido?id=${x.pedido.id}`} className="inline-flex items-center gap-1 t-texto font-medium text-violeta-600 hover:underline" aria-label={`Abrir o pedido ${x.pedido.protocolo}`}>
         Abrir o pedido<Icone nome="dir" className="h-4 w-4" />
       </Link>
     </li>
@@ -81,6 +81,7 @@ export function Decisoes() {
   const [responder, setResponder] = useState<DecisaoPedido | null>(null);
   const [recado, setRecado] = useState<Recado>(null);
 
+  const contagens = useContagens("decisoes", podeVer ? "" : null);
   const respondidas = useCarregar<ListaDecisoes>(podeVer && aprova && filtro === "AGUARDANDO" ? "/v1/condominio/decisoes?filtro=DECIDIDAS" : null);
 
   const cabecalho = (
@@ -98,10 +99,10 @@ export function Decisoes() {
     <div role="group" aria-label="Quais decisões" className="flex gap-1 overflow-x-auto border-b border-linha">
       {(Object.keys(FILTROS_DECISAO) as FiltroDecisao[]).filter((f) => aprova || f !== "AGUARDANDO").map((f) => {
         const atual = f === filtro;
-        const n = f === "AGUARDANDO" ? aguardandoEu : atual && carga.estado === "pronto" && f !== "TODAS" ? carga.dados.decisoes.length : 0;
+        const n = f === "AGUARDANDO" ? aguardandoEu : contagens.n[f] ?? 0;
         return (
           <button key={f} type="button" aria-pressed={atual} onClick={() => router.replace(`/decisoes?filtro=${f}`, { scroll: false })}
-            className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+            className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
             {NOME_FILTRO[f]}
             {n ? <span className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{n}</span> : null}
           </button>
@@ -142,7 +143,7 @@ export function Decisoes() {
       ) : null}
       {aprova ? <p className="t-apoio md:hidden">{AVISO}</p> : null}
       <ResponderDecisao d={responder} aoFechar={() => setResponder(null)} recarregar={carga.recarregar}
-        salvo={(t) => { setResponder(null); setRecado({ tom: "ok", texto: t }); carga.recarregar(); respondidas.recarregar(); atualizar(); }} />
+        salvo={(t) => { setResponder(null); setRecado({ tom: "ok", texto: t }); carga.recarregar(); respondidas.recarregar(); contagens.recarregar(); atualizar(); }} />
     </div>
   );
 }

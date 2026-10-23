@@ -163,8 +163,8 @@ export function AbaProntuario({ feito, definir }: PropsAbaMemoria) {
               <span className="ladrilho h-11 w-11 rounded-xl max-md:hidden" data-tom={t.tom} aria-hidden="true"><Icone nome={t.icone} className="h-5.5 w-5.5" /></span>
               <span className="grid min-w-0 flex-1 gap-0.5">
                 <span className="flex items-baseline gap-2 max-md:flex-col max-md:gap-0">
-                  <span className={`text-[28px] leading-tight font-bold max-md:text-2xl ${t.numero}`}>{numero[v]}</span>
-                  <span className="text-[15px] font-semibold max-md:text-xs">{TITULO_VER[v]}</span>
+                  <span className={`t-titulo-ficha leading-tight font-bold max-md:text-2xl ${t.numero}`}>{numero[v]}</span>
+                  <span className="t-titulo-cartao font-semibold max-md:text-xs">{TITULO_VER[v]}</span>
                 </span>
                 <span className="t-apoio line-clamp-2 max-md:hidden">{apoioDoAtalho(v, p)}</span>
               </span>
@@ -177,7 +177,7 @@ export function AbaProntuario({ feito, definir }: PropsAbaMemoria) {
         <Link href="/documentos?filtro=CONTRATOS" className="flex items-center gap-3 rounded-[18px] border border-linha bg-superficie px-3.5 py-3 shadow-s1 md:hidden">
           <span className="ladrilho" data-tom="violeta" aria-hidden="true"><Icone nome="ferramenta" /></span>
           <span className="grid min-w-0 flex-1">
-            <span className="text-sm font-semibold">{p.contratos.total} {plural(p.contratos.total, "contrato com prestador", "contratos com prestadores")}</span>
+            <span className="t-titulo-cartao font-semibold">{p.contratos.total} {plural(p.contratos.total, "contrato com prestador", "contratos com prestadores")}</span>
             {vencendo ? <span className="t-apoio">{vencendo.prestador} vence em {diasEntre(hoje, vencendo.ate)} dias</span> : null}
           </span>
           <Icone nome="dir" className="h-5 w-5 text-tinta-suave" />
@@ -186,11 +186,11 @@ export function AbaProntuario({ feito, definir }: PropsAbaMemoria) {
 
       <section aria-labelledby="pr-titulo" className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
         <div className="flex flex-wrap items-center justify-between gap-2 md:px-5 md:py-3.5 max-md:pb-2">
-          <h2 id="pr-titulo" className="text-[15px] font-semibold">
+          <h2 id="pr-titulo" className="t-titulo-cartao font-semibold">
             {p.itens.length} {plural(p.itens.length, "item", "itens")}{r.naoSeAplica ? ` · ${r.total} ${plural(r.total, "vale", "valem")} para o prédio` : ""}
           </h2>
           {ver ? (
-            <span className="flex items-center gap-2 text-sm"><span className="t-apoio">Mostrando: {TITULO_VER[ver]}</span>
+            <span className="flex items-center gap-2 t-texto"><span className="t-apoio">Mostrando: {TITULO_VER[ver]}</span>
               <Botao variante="discreto" tamanho="p" onClick={() => ir({ ver: null })}>Limpar</Botao></span>
           ) : <span className="t-apoio max-md:hidden">Mostrando todos. Toque num número acima para filtrar.</span>}
         </div>
@@ -222,7 +222,7 @@ export function AbaProntuario({ feito, definir }: PropsAbaMemoria) {
                     {vencendo ? `Contrato da ${vencendo.prestador} vence em ${diasEntre(hoje, vencendo.ate)} dias. ` : ""}Ficam em Documentos, atalho Contratos.
                   </span>
                 </span>
-                <Link href="/documentos?filtro=CONTRATOS" className="flex items-center gap-1 text-sm font-semibold text-violeta-600 hover:underline">Ver contratos<Icone nome="dir" className="h-4 w-4" /></Link>
+                <Link href="/documentos?filtro=CONTRATOS" className="flex items-center gap-1 t-titulo-cartao font-semibold text-violeta-600 hover:underline">Ver contratos<Icone nome="dir" className="h-4 w-4" /></Link>
               </li>
             ) : null}
             {p.preventivas ? (
@@ -234,7 +234,7 @@ export function AbaProntuario({ feito, definir }: PropsAbaMemoria) {
                     {p.preventivas.atrasadas ? `${p.preventivas.atrasadas} ${plural(p.preventivas.atrasadas, "atrasada", "atrasadas")}. ` : ""}O programa fica na Manutenção.
                   </span>
                 </span>
-                <Link href="/manutencao/preventivas" className="flex items-center gap-1 text-sm font-semibold text-violeta-600 hover:underline">Ver preventivas<Icone nome="dir" className="h-4 w-4" /></Link>
+                <Link href="/manutencao/preventivas" className="flex items-center gap-1 t-titulo-cartao font-semibold text-violeta-600 hover:underline">Ver preventivas<Icone nome="dir" className="h-4 w-4" /></Link>
               </li>
             ) : null}
           </ul>
@@ -263,8 +263,8 @@ function LinhaItem({ i, p, hoje, abrir }: { i: ItemProntuario; p: Prontuario; ho
     <li className="relative grid grid-cols-[40px_minmax(0,1fr)_20px] items-center gap-x-3 gap-y-2.5 px-5 py-3 hover:bg-violeta-50/50 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 md:grid-cols-[44px_minmax(0,1fr)_180px_200px_20px] md:gap-x-4 md:border-t md:border-linha md:first:border-t-0">
       <span className="ladrilho h-10 w-10 self-start rounded-xl md:h-11 md:w-11 md:self-center" data-tom={TOM_LADRILHO[i.situacao]} aria-hidden="true"><Icone nome={ICONE_GRUPO[i.grupo]} className="h-5 w-5" /></span>
       <span className="grid min-w-0 gap-0.5">
-        <button type="button" className="text-left font-medium text-tinta after:absolute after:inset-0 after:content-[''] hover:text-violeta-600" onClick={() => abrir(i)}>{i.nome}</button>
-        <span className={`text-[13px] ${apoio.destaque ? "font-semibold text-violeta-600" : "text-tinta-suave"}`}>{apoio.texto}</span>
+        <button type="button" className="elo-linha" onClick={() => abrir(i)}>{i.nome}</button>
+        <span className={`t-apoio ${apoio.destaque ? "font-semibold text-violeta-600" : "text-tinta-suave"}`}>{apoio.texto}</span>
         <span className="pt-1 md:hidden">{seloProntuario(i)}</span>
       </span>
       <span className="max-md:hidden">{seloProntuario(i)}</span>
@@ -313,7 +313,7 @@ function ItemAberto({ item, p, modo, setModo, ligarInicial, aoFechar, aoMudar, r
       <div className="grid gap-4">
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <span>{seloProntuario(item)}</span>
-        {item.situacao === "NAO_SE_APLICA" ? <p className="text-sm">Não se aplica: {item.motivo}</p> : null}
+        {item.situacao === "NAO_SE_APLICA" ? <p className="t-texto">Não se aplica: {item.motivo}</p> : null}
         {item.situacao === "FALTA" ? <p className="t-apoio">{dica ? `${dica}. ` : ""}Envie o PDF ou a foto.</p> : null}
         {item.documento ? (
           <div className="flex items-center gap-3 rounded-[14px] border border-linha p-3">
@@ -322,12 +322,12 @@ function ItemAberto({ item, p, modo, setModo, ligarInicial, aoFechar, aoMudar, r
               <span className="font-medium">{item.documento.restrito ? "Documento restrito" : item.documento.titulo}</span>
               <span className="t-apoio">{apoioDo(item, p, hojeEmBrasilia()).texto}</span>
             </span>
-            {docId && !item.documento.restrito ? <Link href={`/documentos/documento?id=${docId}`} className="text-sm font-semibold text-violeta-600 hover:underline">Abrir</Link> : null}
+            {docId && !item.documento.restrito ? <Link href={`/documentos/documento?id=${docId}`} className="t-titulo-cartao font-semibold text-violeta-600 hover:underline">Abrir</Link> : null}
           </div>
         ) : null}
         <div className="grid grid-cols-2 gap-3">
-          <div className="grid gap-0.5 rounded-[14px] border border-linha bg-fundo px-3.5 py-3"><span className="t-apoio text-xs">Grupo</span><span className="text-sm font-medium">{grupo}</span></div>
-          <div className="grid gap-0.5 rounded-[14px] border border-linha bg-fundo px-3.5 py-3"><span className="t-apoio text-xs">Avisa antes de vencer</span><span className="text-sm font-medium">{item.avisarDias} {plural(item.avisarDias, "dia", "dias")}</span></div>
+          <div className="grid gap-0.5 rounded-[14px] border border-linha bg-fundo px-3.5 py-3"><span className="t-apoio">Grupo</span><span className="t-texto font-medium">{grupo}</span></div>
+          <div className="grid gap-0.5 rounded-[14px] border border-linha bg-fundo px-3.5 py-3"><span className="t-apoio">Avisa antes de vencer</span><span className="t-texto font-medium">{item.avisarDias} {plural(item.avisarDias, "dia", "dias")}</span></div>
         </div>
         {sugestao && p.podeEditar ? (
           <Aviso tom="info" titulo={`Há um documento que parece ser deste item em Documentos`}>
@@ -363,11 +363,11 @@ function CampoArquivo({ arquivo, setArquivo, problema, desligado, rotulo }: {
   return (
     <label className="grid cursor-pointer justify-items-center gap-2 rounded-2xl border-[1.5px] border-dashed border-violeta-300 bg-violeta-50/60 px-4 py-5 text-center has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-violeta-600">
       <span className="ladrilho h-11 w-11 rounded-xl" data-tom="violeta" aria-hidden="true"><Icone nome="enviar" className="h-5.5 w-5.5" /></span>
-      <span className="text-[15px] font-semibold">{arquivo ? arquivo.name : rotulo} <span className="text-erro" aria-hidden="true">*</span></span>
-      <span className={`text-[13px] ${problema ? "font-medium text-atencao" : "text-tinta-suave"}`}>
+      <span className="t-titulo-cartao font-semibold">{arquivo ? arquivo.name : rotulo} <span className="text-erro" aria-hidden="true">*</span></span>
+      <span className={`t-apoio ${problema ? "font-medium text-atencao" : "text-tinta-suave"}`}>
         {problema ?? (arquivo ? mostrarTamanho(arquivo.size) : `PDF, JPG ou PNG, até ${Math.round(TAMANHO_MAXIMO_DOCUMENTO / (1024 * 1024))} MB`)}
       </span>
-      <span className="inline-flex h-9 items-center gap-2 rounded-full border border-linha bg-superficie px-4 text-sm font-semibold"><Icone nome="clipe" className="h-4 w-4" />{arquivo ? "Trocar arquivo" : "Escolher arquivo"}</span>
+      <span className="inline-flex h-9 items-center gap-2 rounded-full border border-linha bg-superficie px-4 t-titulo-cartao font-semibold"><Icone nome="clipe" className="h-4 w-4" />{arquivo ? "Trocar arquivo" : "Escolher arquivo"}</span>
       <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" className="sr-only" disabled={desligado} required aria-label="Arquivo"
         onChange={(e) => setArquivo(e.target.files?.[0] ?? null)} />
     </label>
@@ -396,6 +396,9 @@ function EnviarDocumento({ item, aoFechar, aoMudar, recarregar }: {
       corpo: { acao: "LIGAR", documentoId: id, avisarDias: item.avisarDias, versao: item.versao ?? null },
     });
     if (!r.ok) { setSemLigar({ id, aviso }); recarregar(); return; }
+    avisarLigado(aviso);
+  }
+  function avisarLigado(aviso?: string) {
     if (aviso) aoMudar(`${item.nome}: documento ligado, mas o arquivo não foi liberado (${aviso}). Envie de novo na ficha do documento.`, "atencao");
     else aoMudar(`${item.nome}: documento guardado em Documentos e ligado ao item.`);
   }
@@ -405,13 +408,19 @@ function EnviarDocumento({ item, aoFechar, aoMudar, recarregar }: {
     if (!arquivo || problema) return;
     setErro(null);
     setProgresso(0);
-    const doc = await chamarApi<{ id: string }>("/v1/condominio/documentos", {
-      corpo: { tipo: v.tipo, titulo: v.titulo, descricao: null, valeAte: v.valeAte || null, restrito: v.quem === "RESTRITO", aoMorador: v.quem === "MORADOR" },
+    // Guarda e liga numa chamada só (D4.18); o arquivo sobe depois, como versão 1.
+    const doc = await chamarApi<{ id: string; ligado: boolean }>(`/v1/condominio/memoria/prontuario/itens/${chaveDo(item)}/documento`, {
+      corpo: {
+        documento: { tipo: v.tipo, titulo: v.titulo, descricao: null, valeAte: v.valeAte || null, restrito: v.quem === "RESTRITO", aoMorador: v.quem === "MORADOR" },
+        versao: item.versao ?? null, avisarDias: item.avisarDias,
+      },
     });
     if (!doc.ok) { setProgresso(null); return setErro(doc.erro); }
     const envio = await enviarUm(`/v1/condominio/documentos/${doc.dados.id}/versoes`, { mudanca: null, vigenteDesde: hoje, aprovadoEm: null }, arquivo, (x) => x.versaoId!, setProgresso);
-    await ligar(doc.dados.id, envio.liberado ? undefined : envio.motivo ?? "não foi liberado");
+    const aviso = envio.liberado ? undefined : envio.motivo ?? "não foi liberado";
     setProgresso(null);
+    if (!doc.dados.ligado) { setSemLigar({ id: doc.dados.id, aviso }); recarregar(); return; }
+    avisarLigado(aviso);
   }
 
   if (semLigar) {
@@ -437,7 +446,7 @@ function EnviarDocumento({ item, aoFechar, aoMudar, recarregar }: {
         <div className="flex items-center gap-3 rounded-[14px] border border-violeta-200 bg-violeta-50 px-3.5 py-3">
           <span className="ladrilho h-8 w-8 rounded-[10px]" data-tom="violeta" aria-hidden="true"><Icone nome="lista" className="h-4 w-4" /></span>
           <span className="grid">
-            <span className="text-sm font-semibold">Vai ligar ao item {item.nome}</span>
+            <span className="t-titulo-cartao font-semibold">Vai ligar ao item {item.nome}</span>
             <span className="t-apoio">Ao guardar, o item passa a valer e avisa {item.avisarDias} {plural(item.avisarDias, "dia", "dias")} antes de vencer.</span>
           </span>
         </div>
@@ -511,7 +520,7 @@ function RenovarDocumento({ item, documentoId, aoFechar, aoMudar }: {
           <div className="flex items-center gap-3 rounded-[14px] border border-violeta-200 bg-violeta-50 px-3.5 py-3">
             <span className="ladrilho h-8 w-8 rounded-[10px]" data-tom="violeta" aria-hidden="true"><Icone nome="documento" className="h-4 w-4" /></span>
             <span className="grid">
-              <span className="text-sm font-semibold">{d.titulo}{d.emVigor ? `, versão ${d.emVigor.numero + 1}` : ""}</span>
+              <span className="t-titulo-cartao font-semibold">{d.titulo}{d.emVigor ? `, versão ${d.emVigor.numero + 1}` : ""}</span>
               <span className="t-apoio">A versão anterior fica guardada no documento.{d.valeAte ? ` A de agora vale até ${mostrarDataCurta(d.valeAte)}.` : ""}</span>
             </span>
           </div>
@@ -585,7 +594,7 @@ function LigarExistente({ item, p, inicial, aoFechar, aoMudar }: {
             <legend className="sr-only">Documento</legend>
             {mesmoTipo.length ? <><span className="t-rotulo">Do mesmo tipo: {TIPOS_DOCUMENTO[tipo!].toLowerCase()}</span>{mesmoTipo.map(opcao)}</> : null}
             {outros.length ? <><span className={`t-rotulo ${mesmoTipo.length ? "pt-2" : ""}`}>{mesmoTipo.length ? "Outros documentos" : "Documentos guardados"}</span>{outros.map(opcao)}</> : null}
-            {comErro.includes("documentoId") ? <span className="text-xs text-erro">Escolha um documento guardado em Documentos.</span> : null}
+            {comErro.includes("documentoId") ? <span className="t-apoio text-erro">Escolha um documento guardado em Documentos.</span> : null}
           </fieldset>
         ) : (
           <Aviso tom="info" titulo="Nenhum documento guardado ainda">Use Enviar documento, que guarda o arquivo e já liga ao item.</Aviso>
@@ -654,7 +663,7 @@ function NovoItem({ aoFechar, aoCriar }: { aoFechar: () => void; aoCriar: (t: st
         <CampoTexto id="pr-nome" rotulo="Nome do item" required maxLength={120} value={nome} onChange={(e) => setNome(e.target.value)}
           placeholder="Licença do gerador" erro={comErro.includes("nome") ? "De 3 a 120 caracteres." : null} />
         <div role="group" aria-labelledby="pr-grupo" className="grid gap-1">
-          <span id="pr-grupo" className="text-[13px] font-medium">Grupo</span>
+          <span id="pr-grupo" className="t-apoio font-medium">Grupo</span>
           <span className="trilho flex-wrap">
             {(Object.keys(GRUPOS_PRONTUARIO) as GrupoProntuario[]).map((g) => (
               <button key={g} type="button" className="chip" aria-pressed={grupo === g} data-escolhido={grupo === g ? "" : undefined} onClick={() => setGrupo(g)}>

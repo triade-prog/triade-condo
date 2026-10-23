@@ -42,8 +42,11 @@ test.describe("Plataforma · comunicado pelo WhatsApp", () => {
     await expect(cartao.getByText(`Toque no link e envie a mensagem que aparece: ${CONVITE}`)).toBeVisible();
     await expect(cartao.getByText("As mensagens saem 10 por minuto")).toBeVisible();
     await conferir(page);
-    // A chave muda depois que o servidor responde.
+    // A chave entra na barra de salvar da página (D4.15) e liga ao salvar.
     await chave.click();
+    await expect(cartao.getByText("Liga ao salvar a página.")).toBeVisible();
+    await expect(chave).toHaveAttribute("data-mudou", "");
+    await page.getByRole("region", { name: "Mudanças ainda não salvas" }).getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByText("Comunicados pelo WhatsApp ligados.")).toBeVisible();
     await expect(chave).toBeChecked();
     await expect(cartao.getByText(/Ligado desde .*, por Ana Souza/)).toBeVisible();

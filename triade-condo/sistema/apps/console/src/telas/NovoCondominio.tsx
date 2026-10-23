@@ -22,18 +22,18 @@ export const DESCRICAO_CENARIO: Record<Cenario, [string, string]> = {
 export function EscolhaCenario({ valor, aoMudar, nome = "cenario", legenda = true }: { valor: Cenario | ""; aoMudar: (c: Cenario) => void; nome?: string; legenda?: boolean }) {
   return (
     <fieldset className="grid gap-2">
-      <legend className={legenda ? "mb-1 text-[13px] font-medium" : "sr-only"}>Cenário do prédio{legenda ? <span className="font-normal text-tinta-suave"> (opcional agora)</span> : null}</legend>
+      <legend className={legenda ? "mb-1 t-apoio font-medium" : "sr-only"}>Cenário do prédio{legenda ? <span className="font-normal text-tinta-suave"> (opcional agora)</span> : null}</legend>
       {(Object.keys(CENARIOS) as Cenario[]).map((c) => (
         <label key={c} className="flex cursor-pointer items-start gap-3 rounded-[14px] border border-linha bg-superficie px-4 py-3.5 hover:border-violeta-300 has-checked:border-violeta-600 has-checked:bg-violeta-50 has-checked:ring-1 has-checked:ring-violeta-600">
           <input type="radio" name={nome} value={c} checked={valor === c} onChange={() => aoMudar(c)} className="mt-0.5 h-5 w-5 shrink-0 accent-violeta-600" />
           <span className="grid gap-0.5">
-            <span className="text-[15px] font-medium">{CENARIOS[c]}</span>
-            <span className="text-sm text-tinta-suave">{DESCRICAO_CENARIO[c][0]}</span>
-            <span className="text-xs text-tinta-suave">{DESCRICAO_CENARIO[c][1]}</span>
+            <span className="t-texto font-medium">{CENARIOS[c]}</span>
+            <span className="t-apoio text-tinta-suave">{DESCRICAO_CENARIO[c][0]}</span>
+            <span className="t-apoio text-tinta-suave">{DESCRICAO_CENARIO[c][1]}</span>
           </span>
         </label>
       ))}
-      <p className="text-xs text-tinta-suave">Dá para escolher ou trocar depois, na Visão geral; trocar não apaga nada.</p>
+      <p className="t-apoio text-tinta-suave">Dá para escolher ou trocar depois, na Visão geral; trocar não apaga nada.</p>
     </fieldset>
   );
 }

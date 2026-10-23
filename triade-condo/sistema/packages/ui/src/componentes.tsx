@@ -32,7 +32,7 @@ interface PropsCampo {
 
 function Rotulo({ id, rotulo, opcional }: Pick<PropsCampo, "id" | "rotulo" | "opcional">) {
   return (
-    <label htmlFor={id} className="text-[13px] font-medium">
+    <label htmlFor={id} className="t-apoio font-medium">
       {rotulo}
       {opcional ? <span className="font-normal text-tinta-suave"> (opcional)</span> : null}
     </label>
@@ -40,8 +40,8 @@ function Rotulo({ id, rotulo, opcional }: Pick<PropsCampo, "id" | "rotulo" | "op
 }
 
 function Rodape({ id, ajuda, erro }: Pick<PropsCampo, "id" | "ajuda" | "erro">) {
-  if (erro) return <span id={`${id}-ajuda`} className="text-xs text-erro">{erro}</span>;
-  return ajuda ? <span id={`${id}-ajuda`} className="text-xs text-tinta-suave">{ajuda}</span> : null;
+  if (erro) return <span id={`${id}-ajuda`} className="t-apoio text-erro">{erro}</span>;
+  return ajuda ? <span id={`${id}-ajuda`} className="t-apoio text-tinta-suave">{ajuda}</span> : null;
 }
 
 function descrito(p: PropsCampo) {
@@ -180,7 +180,7 @@ export function Carregando({ linhas = 3, rotulo = "Carregando…" }: { linhas?: 
 /** Faixa que marca área interna: o cliente não vê (PI-06). */
 export function FaixaInterna({ children }: { children: ReactNode }) {
   return (
-    <p className="flex items-center gap-1.5 rounded-xl border border-dashed border-violeta-300 bg-violeta-50 px-3 py-2 text-xs font-medium text-violeta-700">
+    <p className="flex items-center gap-1.5 rounded-xl border border-dashed border-violeta-300 bg-violeta-50 px-3 py-2 t-apoio font-medium text-violeta-700">
       <IconeMarca marca="interno" />
       {children}
     </p>

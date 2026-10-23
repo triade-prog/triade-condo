@@ -97,7 +97,7 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
       <section aria-labelledby="t-pessoas" className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
         <h2 id="t-pessoas" className="sr-only">{aConfirmar ? "Contatos a confirmar" : "Pessoas do condomínio"}</h2>
         {aConfirmar ? (
-          <p role="note" className="flex items-center gap-3 rounded-[14px] border border-atencao-borda bg-atencao-fundo px-4 py-3 text-sm md:rounded-none md:border-0 md:border-b md:border-linha md:px-5">
+          <p role="note" className="flex items-center gap-3 rounded-[14px] border border-atencao-borda bg-atencao-fundo px-4 py-3 t-texto md:rounded-none md:border-0 md:border-b md:border-linha md:px-5">
             <span className="ladrilho h-8 w-8 rounded-[10px]" data-tom="atencao" aria-hidden="true"><Icone nome="relogio" className="h-4 w-4" /></span>
             <span>Confira se cada pessoa é mesmo daquela unidade. Contato a confirmar não recebe nada e não acessa nada.{d.podeConfirmar ? "" : " Só o síndico confirma."}</span>
           </p>
@@ -123,7 +123,7 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
           <>
             {podeMarcar ? (
               <div className={`flex flex-wrap items-center justify-between gap-3 px-1 py-2 md:border-b md:px-5 ${escolhidos.length ? "md:border-violeta-200 md:bg-violeta-50" : "md:border-linha"}`}>
-                <label className="flex min-h-11 items-center gap-3 text-sm font-medium">
+                <label className="flex min-h-11 items-center gap-3 t-texto font-medium">
                   <input type="checkbox" className="h-5 w-5 accent-violeta-600" checked={todosMarcados} aria-label="Marcar todos desta página"
                     onChange={(e) => setMarcados(e.target.checked ? [...new Set([...marcados, ...daPagina])] : marcados.filter((id) => !daPagina.includes(id)))} />
                   <span aria-live="polite">{escolhidos.length ? `${escolhidos.length} de ${d.itens.length} ${escolhidos.length === 1 ? "marcada" : "marcadas"}` : "Marcar todos desta página"}</span>

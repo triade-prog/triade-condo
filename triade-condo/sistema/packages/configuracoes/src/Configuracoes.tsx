@@ -59,7 +59,7 @@ export function PaginaConfiguracao({ ambiente, pagina, aoVoltar }: { ambiente: A
 
 function Voltar({ aoVoltar, children }: { aoVoltar?: () => void; children: ReactNode }) {
   const { endereco } = useAmbiente();
-  const cls = "inline-flex min-h-8 items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline";
+  const cls = "inline-flex min-h-8 items-center gap-1 justify-self-start t-texto font-medium text-violeta-600 hover:underline";
   if (aoVoltar) return <button type="button" onClick={aoVoltar} className={cls}><Icone nome="esq" className="h-4 w-4" />{children}</button>;
   if (endereco) return <Link href={endereco(null)} className={cls}><Icone nome="esq" className="h-4 w-4" />{children}</Link>;
   return null;
@@ -79,17 +79,17 @@ function Pagina_({ pagina, aoVoltar }: { pagina: IdPagina; aoVoltar?: () => void
       <Voltar aoVoltar={aoVoltar}>Configurações · {grupoDaPagina(pagina).nome}</Voltar>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="grid gap-1">
-          {ambiente.onde === "app" ? <h1 className="text-[28px] font-normal tracking-tight">{info.nome}</h1> : <h2 className="text-xl font-medium">{info.nome}</h2>}
-          <p className="text-sm text-tinta-suave">{info.apoio}</p>
+          {ambiente.onde === "app" ? <h1 className="t-titulo-tela font-normal tracking-tight">{info.nome}</h1> : <h2 className="t-titulo-secao font-medium">{info.nome}</h2>}
+          <p className="t-apoio text-tinta-suave">{info.apoio}</p>
         </div>
         {textoComo ? (
           <button type="button" aria-expanded={como} aria-controls={idComo} onClick={() => setComo(!como)}
-            className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-[10px] px-2.5 text-[13px] font-medium text-violeta-600 hover:bg-violeta-50 aria-expanded:bg-violeta-50">
+            className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-[10px] px-2.5 t-apoio font-medium text-violeta-600 hover:bg-violeta-50 aria-expanded:bg-violeta-50">
             <Icone nome="info" className="h-4 w-4" />Como funciona<Icone nome="baixo" className={`h-3.5 w-3.5 ${como ? "rotate-180" : ""}`} />
           </button>
         ) : null}
       </div>
-      {textoComo ? <p id={idComo} hidden={!como} className="rounded-[14px] border border-violeta-200 bg-violeta-50 px-4 py-3 text-[13px] text-tinta-suave">{textoComo}</p> : null}
+      {textoComo ? <p id={idComo} hidden={!como} className="rounded-[14px] border border-violeta-200 bg-violeta-50 px-4 py-3 t-apoio text-tinta-suave">{textoComo}</p> : null}
     </div>
   );
 
@@ -129,19 +129,21 @@ const ICONE_GRUPO: Record<IdGrupo, NomeIcone> = { atendimento: "relogio", pedido
 const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
 const hora = (h: string) => h.replace(/^0(\d)/, "$1").replace(":00", "h").replace(/:(\d\d)$/, "h$1");
 
-/** O resumo de cada página na entrada, com o que já carregou. */
-function useResumos(c: Config) {
-  const areas = useCarregar<AreasComuns>(naBase("/areas-comuns"));
-  const manutencao = useCarregar<{ etapas: { ativa: boolean }[] }>(naBase("/etapas-manutencao"));
-  const plano = useCarregar<PlanoComunicacao>(naBase("/plano-comunicacao"));
-  const zap = useCarregar<{ conexao: Conexao }>(naBase("/whatsapp/config"));
-  const links = useCarregar<LinksQr>(naBase("/links-qr"));
+/** O que a entrada lê numa chamada só (D4.15); a parte que a pessoa não pode ver vem null. */
+type Entrada = {
+  configuracoes: Config; areas: AreasComuns | null; manutencao: { etapas: { ativa: boolean }[] } | null;
+  plano: PlanoComunicacao | null; whatsapp: { conexao: Conexao } | null; links: LinksQr | null;
+};
+
+/** O resumo de cada página na entrada. */
+function resumos(e: Entrada) {
+  const c = e.configuracoes;
   const ano = new Date().getFullYear();
   const deste = c.feriados.filter((f) => f.data.startsWith(String(ano))).length;
   const geral = c.prazos.find((p) => !p.categoriaId && !p.prioridadeId);
   const excecoes = c.prazos.length - (geral ? 1 : 0);
   const atendimento = resumoHorario(c.horarios.ATENDIMENTO.intervalos);
-  const pronto = <T,>(x: { estado: string; dados?: T }, f: (d: T) => string) => (x.estado === "pronto" ? f(x.dados as T) : x.estado === "erro" ? "" : "…");
+  const pronto = <T,>(x: T | null, f: (d: T) => string) => (x ? f(x) : "");
   const SITUACAO_ZAP: Record<Conexao["situacao"], string> = { SEM_CREDENCIAIS: "Ainda não ligado", DESCONECTADO: "Desconectado", CONECTANDO: "Conectando", CONECTADO: "Conectado" };
   const r: Record<IdPagina, string> = {
     horarios: atendimento ? `Atendimento: ${atendimento}` : "Atendimento ainda sem horário",
@@ -150,17 +152,17 @@ function useResumos(c: Config) {
     categorias: `${plural(c.categorias.filter((x) => x.ativa).length, "categoria", "categorias")} · ${plural(c.prioridades.filter((x) => x.ativa).length, "prioridade", "prioridades")}`,
     respostas: plural(c.modelos.filter((m) => m.ativo).length, "resposta", "respostas"),
     etapas: plural(c.etapas.filter((e) => e.ativa).length, "etapa", "etapas"),
-    areas: pronto<AreasComuns>(areas, (d) => `${plural(d.areas.length, "área", "áreas")} · ${plural(d.areas.filter((a) => a.ativa).length, "ativa", "ativas")}`),
-    manutencao: pronto<{ etapas: { ativa: boolean }[] }>(manutencao, (d) => plural(d.etapas.filter((e) => e.ativa).length, "etapa", "etapas")),
-    comunicados: pronto<PlanoComunicacao>(plano, (d) => `${plural(d.assuntos.length, "assunto", "assuntos")} · sem envio das ${hora(d.silencioInicio)} às ${hora(d.silencioFim)}`),
-    mural: pronto<PlanoComunicacao>(plano, (d) => `Mural ${d.mural.ligado ? "ligado" : "desligado"} · e-mail ${d.email.ligado ? "ligado" : "desligado"}`),
-    whatsapp: pronto<{ conexao: Conexao }>(zap, (d) => SITUACAO_ZAP[d.conexao.situacao] + (d.conexao.oficial === false ? " · conexão de teste" : "")),
-    etiquetas: pronto<LinksQr>(links, (d) => {
+    areas: pronto(e.areas, (d) => `${plural(d.areas.length, "área", "áreas")} · ${plural(d.areas.filter((a) => a.ativa).length, "ativa", "ativas")}`),
+    manutencao: pronto(e.manutencao, (d) => plural(d.etapas.filter((e) => e.ativa).length, "etapa", "etapas")),
+    comunicados: pronto(e.plano, (d) => `${plural(d.assuntos.length, "assunto", "assuntos")} · sem envio das ${hora(d.silencioInicio)} às ${hora(d.silencioFim)}`),
+    mural: pronto(e.plano, (d) => `Mural ${d.mural.ligado ? "ligado" : "desligado"} · e-mail ${d.email.ligado ? "ligado" : "desligado"}`),
+    whatsapp: pronto(e.whatsapp, (d) => SITUACAO_ZAP[d.conexao.situacao] + (d.conexao.oficial === false ? " · conexão de teste" : "")),
+    etiquetas: pronto(e.links, (d) => {
       const uso = d.etiquetas.filter((e) => e.ativa).length;
       const fora = d.etiquetas.length - uso;
       return d.etiquetas.length ? `${uso} em uso${fora ? ` · ${plural(fora, "desativada", "desativadas")}` : ""}` : "Nenhuma etiqueta ainda";
     }),
-    abertos: pronto<LinksQr>(links, (d) => `Mural ${d.mural.ligado ? "ligado" : "desligado"} · ${plural(d.prestador.validos, "link de prestador", "links de prestador")}`),
+    abertos: pronto(e.links, (d) => `Mural ${d.mural.ligado ? "ligado" : "desligado"} · ${plural(d.prestador.validos, "link de prestador", "links de prestador")}`),
   };
   return r;
 }
@@ -175,21 +177,22 @@ export function EntradaConfiguracoes({ ambiente, enderecoMeusAvisos }: { ambient
 }
 
 function Entrada_({ enderecoMeusAvisos }: { enderecoMeusAvisos?: string }) {
-  const config = useCarregar<Config>(naBase("/configuracoes"));
+  const config = useCarregar<Entrada>(naBase("/configuracoes/entrada"));
   const cab = (
     <div className="grid gap-1">
-      <h1 className="text-[28px] font-normal tracking-tight">Configurações</h1>
-      <p className="text-sm text-tinta-suave">{APOIO_CONFIGURACOES}</p>
+      <h1 className="t-titulo-tela font-normal tracking-tight">Configurações</h1>
+      <p className="t-apoio text-tinta-suave">{APOIO_CONFIGURACOES}</p>
     </div>
   );
   if (config.estado === "carregando") return <div className="grid gap-5">{cab}<Carregando rotulo="Carregando as configurações…" /></div>;
   if (config.estado === "erro") return <div className="grid gap-5">{cab}<ErroCarregar texto={config.texto} tentarDeNovo={config.recarregar} /></div>;
-  return <EntradaPronta c={config.dados} cab={cab} enderecoMeusAvisos={enderecoMeusAvisos} />;
+  return <EntradaPronta e={config.dados} cab={cab} enderecoMeusAvisos={enderecoMeusAvisos} />;
 }
 
-function EntradaPronta({ c, cab, enderecoMeusAvisos }: { c: Config; cab: ReactNode; enderecoMeusAvisos?: string }) {
+function EntradaPronta({ e, cab, enderecoMeusAvisos }: { e: Entrada; cab: ReactNode; enderecoMeusAvisos?: string }) {
   const { endereco, onde } = useAmbiente();
-  const resumos = useResumos(c);
+  const c = e.configuracoes;
+  const resumo = resumos(e);
   const falta = new Set<IdPagina>(c.pendencias.includes("SEM_HORARIO_ATENDIMENTO") ? ["horarios"] : []);
   const href = (p: IdPagina) => endereco?.(p) ?? "#";
   const colunas: IdGrupo[][] = [["atendimento", "links"], ["pedidos", "predio"], ["comunicacao"]];
@@ -201,8 +204,8 @@ function EntradaPronta({ c, cab, enderecoMeusAvisos }: { c: Config; cab: ReactNo
         <div className="flex items-center gap-3">
           <span className="ladrilho h-10 w-10 rounded-xl" data-tom={comFalta ? "atencao" : "violeta"} aria-hidden="true"><Icone nome={ICONE_GRUPO[g.id]} className="h-5 w-5" /></span>
           <span className="grid">
-            <h2 id={`g-${g.id}`} className="text-[17px] font-semibold">{g.nome}</h2>
-            <span className="text-[13px] text-tinta-suave">{g.apoio}</span>
+            <h2 id={`g-${g.id}`} className="t-titulo-secao font-semibold">{g.nome}</h2>
+            <span className="t-apoio text-tinta-suave">{g.apoio}</span>
           </span>
         </div>
         <ul className="mt-1 grid">
@@ -212,8 +215,8 @@ function EntradaPronta({ c, cab, enderecoMeusAvisos }: { c: Config; cab: ReactNo
               <li key={p} className="border-t border-linha">
                 <Link href={href(p)} className="flex min-h-[52px] items-center gap-3 py-2.5 hover:text-violeta-600">
                   <span className="grid min-w-0 flex-1">
-                    <span className="text-[15px] font-medium">{PAGINAS_CONFIGURACAO[p].nome}</span>
-                    <span className="text-[13px] text-tinta-suave">{resumos[p] || " "}</span>
+                    <span className="t-texto font-medium">{PAGINAS_CONFIGURACAO[p].nome}</span>
+                    <span className="t-apoio text-tinta-suave">{resumo[p] || " "}</span>
                   </span>
                   {falta.has(p) ? <Selo tom="atencao">Falta</Selo> : triade ? <span className="max-sm:hidden"><SeloTriade /></span> : null}
                   <Icone nome="dir" className="h-[18px] w-[18px] shrink-0 text-tinta-suave" />
@@ -238,7 +241,7 @@ function EntradaPronta({ c, cab, enderecoMeusAvisos }: { c: Config; cab: ReactNo
         {colunas.map((col, i) => <div key={i} className="grid content-start gap-4 lg:gap-5">{col.map(cartao)}</div>)}
       </div>
       {enderecoMeusAvisos ? (
-        <p className="text-[13px] text-tinta-suave">
+        <p className="t-apoio text-tinta-suave">
           Os avisos no seu WhatsApp agora ficam no menu da sua conta, em{" "}
           <Link href={enderecoMeusAvisos} className="font-semibold text-violeta-600 hover:underline">Meus avisos</Link>.
         </p>

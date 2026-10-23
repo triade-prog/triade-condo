@@ -119,7 +119,7 @@ export function Prestadores() {
             const atual = arquivados === a.valor;
             return (
               <button key={a.valor} type="button" aria-pressed={atual} onClick={() => { setArquivados(a.valor); setAtencao(""); }}
-                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
                 {a.texto}
                 {a.n !== null ? <span className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : ""}`}>{a.n}</span> : null}
               </button>
@@ -159,7 +159,7 @@ export function Prestadores() {
               </div>
               {grupos.map((g) => (
                 <section key={g.titulo} aria-label={g.titulo}>
-                  <h3 className="flex justify-between py-2 text-[13px] font-medium text-tinta-suave md:border-b md:border-linha md:bg-fundo md:px-5">{g.titulo}<span>{g.itens.length}</span></h3>
+                  <h3 className="flex justify-between py-2 t-apoio font-medium text-tinta-suave md:border-b md:border-linha md:bg-fundo md:px-5">{g.titulo}<span>{g.itens.length}</span></h3>
                   <ul className="grid max-md:gap-3">
                     {g.itens.map((p) => {
                       const contato = [p.contato, p.telefone ? mostrarTelefone(p.telefone) : p.email].filter(Boolean).join(" · ") || "Sem contato";
@@ -173,8 +173,8 @@ export function Prestadores() {
                             <span className="t-apoio truncate">{contato}</span>
                             <span className="flex flex-wrap items-center gap-2 pt-1 md:hidden"><SeloContrato p={p} /><SeloManutencoes p={p} /></span>
                           </span>
-                          <span className="text-sm max-md:hidden">{p.servico}</span>
-                          <span className="grid justify-items-start gap-1 text-sm max-md:hidden">{acordo}<SeloContrato p={p} /></span>
+                          <span className="t-texto max-md:hidden">{p.servico}</span>
+                          <span className="grid justify-items-start gap-1 t-texto max-md:hidden">{acordo}<SeloContrato p={p} /></span>
                           <span className="max-md:hidden"><SeloManutencoes p={p} /></span>
                           <Icone nome="dir" className="h-5 w-5 text-tinta-suave max-md:col-start-3 max-md:row-start-1" />
                         </li>

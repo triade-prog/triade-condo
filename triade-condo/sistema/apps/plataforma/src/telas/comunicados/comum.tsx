@@ -84,7 +84,7 @@ export function LinhaComunicado({ c }: { c: ComunicadoResumo }) {
         <span className="t-apoio md:hidden">{c.publicoResumo}{quantos} · {c.autor ?? "Alguém"}</span>
         <span className="pt-1 md:hidden"><Selo tom={selo.tom}>{selo.texto}</Selo></span>
       </div>
-      <span className="grid text-sm max-md:hidden"><span>{c.publicoResumo}{quantos}</span><span className="t-apoio">por {c.autor ?? "alguém"}</span></span>
+      <span className="grid t-texto max-md:hidden"><span>{c.publicoResumo}{quantos}</span><span className="t-apoio">por {c.autor ?? "alguém"}</span></span>
       <span className="justify-self-start max-md:hidden"><Selo tom={selo.tom}>{selo.texto}</Selo></span>
       <Icone nome="dir" className="h-5 w-5 text-tinta-suave" />
     </li>

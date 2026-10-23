@@ -141,9 +141,9 @@ function EditarEtapa({ condominio, etapa, equipe, aoFechar, aoSalvar }: {
     <Dialogo aberto titulo={`Etapa ${etapa.numero} · ${etapa.titulo}`} aoFechar={aoFechar}>
       <form onSubmit={salvar} noValidate className="grid gap-4">
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={aoSalvar} /> : null}
-        {etapa.descricao ? <p className="text-sm text-tinta-suave">{etapa.descricao}</p> : null}
+        {etapa.descricao ? <p className="t-apoio text-tinta-suave">{etapa.descricao}</p> : null}
         <fieldset className="grid gap-2">
-          <legend className="mb-1 text-sm font-medium">Situação</legend>
+          <legend className="mb-1 t-texto font-medium">Situação</legend>
           <div className="trilho flex-wrap">
             {situacoes.map(([k, texto]) => (
               <button key={k} type="button" className="chip" aria-pressed={situacao === k} onClick={() => setSituacao(k)}>{texto}</button>
@@ -272,7 +272,7 @@ function Entregar({ condominio, nome, dados, aoFechar, aoEntregar }: {
       <form onSubmit={entregar} noValidate className="grid gap-4">
         {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
         <Aviso tom="info">O síndico consegue sozinho? Confira antes de entregar. Notas internas, pendências internas e o roteiro não vão para o cliente.</Aviso>
-        <ul className="grid gap-2 text-sm">
+        <ul className="grid gap-2 t-texto">
           {conferir.map((c) => (
             <li key={c.texto} className="flex items-start gap-2">
               <span className={c.ok ? "text-ok" : "text-atencao"}><IconeMarca marca={c.ok ? "ok" : "atencao"} className="mt-1 h-3.5 w-3.5" /></span>
@@ -282,7 +282,7 @@ function Entregar({ condominio, nome, dados, aoFechar, aoEntregar }: {
         </ul>
         <CampoAreaTexto id="en-recado" rotulo="Recado de entrega ao síndico" required maxLength={1000} value={recado} onChange={(ev) => setRecado(ev.target.value)}
           erro={camposComErro(erro).includes("recado") ? "Escreva o recado (3 a 1.000 caracteres)." : null} />
-        <p className="text-sm text-tinta-suave">Entregar muda o cliente para ativo e manda o recado ao síndico no sino da Plataforma. Fica no histórico e não volta atrás.</p>
+        <p className="t-apoio text-tinta-suave">Entregar muda o cliente para ativo e manda o recado ao síndico no sino da Plataforma. Fica no histórico e não volta atrás.</p>
         <div className="flex justify-end gap-2">
           <Botao variante="contorno" onClick={aoFechar}>Voltar</Botao>
           <Botao type="submit" disabled={enviando || e.faltando.length > 0}>{enviando ? "Entregando…" : "Entregar ao cliente"}</Botao>
@@ -298,7 +298,7 @@ function NumeroEtapa({ e, atual }: { e: Etapa; atual: boolean }) {
     return <span aria-hidden="true" className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[image:var(--grad-acao)] text-superficie"><Icone nome="check" className="h-3.5 w-3.5" /></span>;
   }
   return (
-    <span aria-hidden="true" className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[13px] font-semibold ${atual ? "border-2 border-violeta-600 text-violeta-600" : "border border-linha text-tinta-suave"}`}>
+    <span aria-hidden="true" className={`grid h-7 w-7 shrink-0 place-items-center rounded-full t-apoio font-semibold ${atual ? "border-2 border-violeta-600 text-violeta-600" : "border border-linha text-tinta-suave"}`}>
       {e.numero}
     </span>
   );
@@ -343,7 +343,7 @@ export function AbaImplantacao({ ficha, recarregar, avisar, irPara }: PropsAba) 
         <Cartao id="t-roteiro" titulo="Roteiro de implantação" icone="preparar">
           {interno}
           <div className="grid gap-2">
-            <p className="flex justify-between gap-3 text-[13px] text-tinta-suave">
+            <p className="flex justify-between gap-3 t-apoio text-tinta-suave">
               <span>{feitas} de {etapas.length} etapas</span><span>roteiro versão {d.implantacao!.roteiroVersao}</span>
             </p>
             <BarraEtapas feitas={feitas} total={etapas.length} rotulo={`${feitas} de ${etapas.length} etapas feitas`} />
@@ -358,7 +358,7 @@ export function AbaImplantacao({ ficha, recarregar, avisar, irPara }: PropsAba) 
               <div className="flex items-start gap-3">
                 <NumeroEtapa e={proxima} atual />
                 <span className="grid min-w-0 gap-0.5">
-                  <span className="text-[17px] font-medium">{proxima.titulo}</span>
+                  <span className="t-titulo-secao font-medium">{proxima.titulo}</span>
                   <span className="t-apoio">
                     {proxima.chave === "CONFIGURACAO" && d.configuracao
                       ? (d.configuracao.faltando.length ? `${d.configuracao.conferidas} de ${d.configuracao.total} partes conferidas. Falta conferir: ${d.configuracao.faltando.map((x) => PARTES_CONFIGURACAO[x].nome).join(", ")}.`
@@ -394,7 +394,7 @@ export function AbaImplantacao({ ficha, recarregar, avisar, irPara }: PropsAba) 
                   <NumeroEtapa e={e} atual={e === proxima} />
                   <span className="grid min-w-0 flex-1 gap-0.5">
                     {podeAbrir ? (
-                      <button type="button" className="justify-self-start text-left font-medium text-tinta hover:text-violeta-600 hover:underline" onClick={() => setEtapa(e)}>
+                      <button type="button" className="elo justify-self-start text-tinta hover:text-violeta-600" onClick={() => setEtapa(e)}>
                         <span className="sr-only">Etapa {e.numero}: </span>{e.titulo}
                       </button>
                     ) : <span className="font-medium"><span className="sr-only">Etapa {e.numero}: </span>{e.titulo}</span>}
@@ -440,7 +440,7 @@ export function AbaImplantacao({ ficha, recarregar, avisar, irPara }: PropsAba) 
       </Cartao>
 
       <Dialogo aberto={legenda} titulo="O que é cada etapa" aoFechar={() => setLegenda(false)}>
-        <dl className="grid gap-3 text-sm">
+        <dl className="grid gap-3 t-texto">
           {etapas.map((e) => (
             <div key={e.numero} className="grid gap-0.5">
               <dt className="font-medium">{e.numero} · {e.titulo}</dt>

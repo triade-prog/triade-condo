@@ -43,7 +43,7 @@ export function AbaFeriados({ config, pode, salvo }: PropsAba) {
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-tinta-suave">{config.feriados.length ? `${config.feriados.length} ${config.feriados.length === 1 ? "feriado" : "feriados"} na lista.` : "Nenhum feriado na lista ainda."}</p>
+        <p className="t-apoio text-tinta-suave">{config.feriados.length ? `${config.feriados.length} ${config.feriados.length === 1 ? "feriado" : "feriados"} na lista.` : "Nenhum feriado na lista ainda."}</p>
         {pode ? (
           <div className="flex flex-wrap gap-2">
             {[ano, ano + 1].filter((a) => !feriadosNacionais(a).some((x) => existentes.has(x.data))).slice(0, 1).map((a) => (
@@ -58,7 +58,7 @@ export function AbaFeriados({ config, pode, salvo }: PropsAba) {
         <Vazio titulo="Nenhum feriado cadastrado">Traga os nacionais e acrescente os da cidade.</Vazio>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
-          <table className="w-full text-sm">
+          <table className="w-full t-texto">
             <caption className="sr-only">Feriados do condomínio</caption>
             <thead className="bg-superficie-2 text-left text-tinta-suave">
               <tr>

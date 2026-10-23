@@ -183,7 +183,7 @@ export function Agenda() {
             <Botao variante="contorno" tamanho="m" onClick={() => ir({ data: null })}>Hoje</Botao>
             <Botao variante="contorno" tamanho="m" soIcone aria-label="Período seguinte" onClick={() => ir({ data: seguinte })}><Icone nome="dir" /></Botao>
           </div>
-          <h2 className="text-[17px] font-semibold first-letter:uppercase">{titulo}</h2>
+          <h2 className="t-titulo-secao font-semibold first-letter:uppercase">{titulo}</h2>
         </div>
         {celular ? null : botaoFiltros}
       </div>
@@ -288,15 +288,15 @@ function VistaSemana({ de, dias, hoje, abrirDia }: { de: string; dias: Dias; hoj
         return (
           <li key={d} className="grid content-start gap-1.5 rounded-2xl border border-linha bg-superficie p-2.5">
             <button type="button" onClick={() => abrirDia(d)} aria-current={d === hoje ? "date" : undefined}
-              className="flex items-baseline gap-1.5 rounded-lg text-left text-sm hover:text-violeta-600">
+              className="flex items-baseline gap-1.5 rounded-lg text-left t-texto hover:text-violeta-600">
               <span className={`grid h-7 w-7 place-items-center rounded-full font-medium ${d === hoje ? "bg-violeta-600 text-white" : ""}`}>{Number(d.slice(8))}</span>
               <span className="text-tinta-suave" aria-hidden="true">{SEMANA[new Date(`${d}T12:00:00Z`).getUTCDay()]}</span>
               <span className="sr-only">{restoDoDia(d, itens.length, hoje)}</span>
             </button>
-            {itens.length === 0 ? <span className="text-xs text-tinta-suave">Nada marcado</span> : null}
+            {itens.length === 0 ? <span className="t-apoio text-tinta-suave">Nada marcado</span> : null}
             <ul className="grid gap-1">
               {itens.map((x) => (
-                <li key={x.chave} data-tipo={x.tipo} className="tp block truncate text-[12.5px] font-normal text-tinta">
+                <li key={x.chave} data-tipo={x.tipo} className="tp block truncate t-apoio font-normal text-tinta">
                   {x.hora ? `${x.hora} ` : ""}{x.titulo}
                 </li>
               ))}
@@ -329,7 +329,7 @@ function VistaMes({ data, dias, hoje, abrirDia }: { data: string; dias: Dias; ho
           );
         })}
       </div>
-      <p className="border-t border-linha px-3 py-2 text-xs text-tinta-suave">Clique no dia para ver a lista daquele dia.</p>
+      <p className="border-t border-linha px-3 py-2 t-apoio text-tinta-suave">Clique no dia para ver a lista daquele dia.</p>
     </div>
   );
 }

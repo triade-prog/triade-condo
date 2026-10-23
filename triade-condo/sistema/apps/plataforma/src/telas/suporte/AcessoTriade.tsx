@@ -40,10 +40,10 @@ export function DecidirAcesso({ pedido, aoFechar, decidido }: { pedido: PedidoAc
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <div className="grid gap-1 rounded-[14px] border border-linha bg-fundo px-4 py-3.5">
           <p className="font-semibold">{quem(pedido)} quer ver {descreverAcessoExcepcional(pedido.areas, pedido.horas)}</p>
-          <p className="text-sm">&ldquo;{pedido.motivo}&rdquo;</p>
+          <p className="t-texto">&ldquo;{pedido.motivo}&rdquo;</p>
           <p className="t-apoio">Pedido em {formatarDataHora(pedido.criadoEm)}</p>
         </div>
-        <ul className="grid list-disc gap-1 pl-5 text-sm">
+        <ul className="grid list-disc gap-1 pl-5 t-texto">
           <li>Só leitura: a TRÍADE não muda nada.</li>
           <li>Vale só para quem pediu e acaba sozinho no prazo.</li>
           <li>Cada abertura fica no histórico, e dá para encerrar antes.</li>

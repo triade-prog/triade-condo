@@ -49,7 +49,7 @@ export function NumerosWhatsapp() {
                 <span className="ladrilho" data-tom={n.situacao === "CONECTADO" ? "ok" : "atencao"} aria-hidden="true"><Icone nome="whats" /></span>
                 <span className="grid min-w-0 flex-1 gap-0.5">
                   <span className="font-semibold">{n.nome}</span>
-                  <span className="text-sm text-tinta-suave">
+                  <span className="t-apoio text-tinta-suave">
                     <span className="t-codigo">{n.numero ? mostrarTelefone(n.numero) : "Sem número na ficha"}</span>
                     {n.desde ? ` · ${n.situacao === "CONECTADO" ? "desde" : "desconectado desde"} ${formatarDataHora(n.desde)}` : ""}
                     {n.termo === false && n.situacao !== "CONECTADO" ? " · termo do piloto esperando o síndico" : ""}

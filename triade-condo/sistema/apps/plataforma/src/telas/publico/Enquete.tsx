@@ -55,11 +55,11 @@ export function Enquete() {
             {e.respondeuEm ? `A resposta de ${e.para} foi registrada em ${diaHora(e.respondeuEm)}.` : "Esta enquete não aceita mais resposta."}
           </Aviso>
           <Cartao>
-            <h2 className="text-xl font-medium">{e.pergunta}</h2>
+            <h2 className="t-titulo-secao font-medium">{e.pergunta}</h2>
             {e.resultado ? (
               <>
                 <Barras r={e.resultado} marcar={e.escolha} />
-                <p className="text-[13px] text-tinta-suave">Responderam {e.resultado.responderam} de {e.resultado.total}. A enquete é uma consulta e não tem valor de decisão de assembleia.</p>
+                <p className="t-apoio text-tinta-suave">Responderam {e.resultado.responderam} de {e.resultado.total}. A enquete é uma consulta e não tem valor de decisão de assembleia.</p>
               </>
             ) : null}
           </Cartao>
@@ -68,7 +68,7 @@ export function Enquete() {
         <Cartao>
           <form onSubmit={enviar} noValidate className="grid gap-3">
             <fieldset className="grid gap-3">
-              <legend className="contents"><h2 className="text-xl font-medium">{e.pergunta}</h2></legend>
+              <legend className="contents"><h2 className="t-titulo-secao font-medium">{e.pergunta}</h2></legend>
               <span className="flex flex-wrap gap-1.5">
                 <Selo tom="info">Aberta até {prazoCurto(e.abertaAte)}</Selo>
                 <Selo tom="neutro">{ESCOPOS_ENQUETE[e.por]}</Selo>

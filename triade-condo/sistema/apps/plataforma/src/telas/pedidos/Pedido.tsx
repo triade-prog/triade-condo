@@ -24,7 +24,7 @@ import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, IconeMarca, I
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { OpcoesPedidos, PedidoDetalhe, PendenciaPedido, Recado } from "../tipos.ts";
 import { nomeRelacao } from "../moradores/comum.tsx";
-import { AbaArquivos, type ArquivosDoPedido } from "./Arquivos.tsx";
+import { AbaArquivos, CapaDoPedido, type ArquivosDoPedido } from "./Arquivos.tsx";
 import { JanelasPedido, type AcaoPedido } from "./JanelasPedido.tsx";
 import { aHora, diaHora, faltaPara, iconeDaCategoria, nomeDe, SeloEstadoPedido, SeloPrioridade } from "./comum.tsx";
 import { FaixaPrazo } from "./FaixaPrazo.tsx";
@@ -110,7 +110,7 @@ function LinhaDoTempo({ d }: { d: PedidoDetalhe }) {
           ) : null}
         </ol>
       )}
-      <button type="button" className="flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline" aria-expanded={completo}
+      <button type="button" className="elo flex gap-1 justify-self-start t-texto" aria-expanded={completo}
         aria-controls="historico-completo" onClick={() => setCompleto(!completo)}>
         {completo ? "Esconder o histórico completo" : `Ver histórico completo · ${d.historico.length === 1 ? "1 registro" : `${d.historico.length} registros`}`}
         <Icone nome={completo ? "baixo" : "dir"} className="h-4 w-4" />
@@ -118,7 +118,7 @@ function LinhaDoTempo({ d }: { d: PedidoDetalhe }) {
       {completo ? (
         <ol id="historico-completo" aria-label="Histórico completo" className="divide-y divide-linha rounded-[14px] border border-linha">
           {d.historico.map((h, i) => (
-            <li key={i} className="grid gap-0.5 px-3 py-2.5 text-sm">
+            <li key={i} className="grid gap-0.5 px-3 py-2.5 t-texto">
               <span className="t-apoio">{diaHora(h.em)} · {h.autor ?? "Sistema"}</span>
               <span>{descreverEventoPedido(h.acao, h.dados)}{h.acao === "pedido.registrado" && h.dados.responsavelNome ? ` · responsável ${String(h.dados.responsavelNome)}` : ""}</span>
             </li>
@@ -143,7 +143,7 @@ export function Pedido() {
   const [resolver, setResolver] = useState<PendenciaPedido | null>(null);
   const [pedirDecisao, setPedirDecisao] = useState(false);
   const voltar = (
-    <Link href="/pedidos" className="inline-flex items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
+    <Link href="/pedidos" className="inline-flex items-center gap-1 t-texto font-medium text-violeta-600 hover:underline">
       <Icone nome="esq" className="h-4 w-4" />Voltar aos pedidos
     </Link>
   );
@@ -217,8 +217,9 @@ export function Pedido() {
           {qtdArquivos ? (
             <a href="#t-arquivos" className="relative grid h-36 w-44 shrink-0 place-items-center overflow-hidden rounded-[18px] border border-linha bg-violeta-50 text-violeta-400 max-md:h-24 max-md:w-24">
               <Icone nome="camera" className="h-10 w-10" />
+              {arquivos.estado === "pronto" ? <CapaDoPedido pedidoId={p.id} arquivos={arquivos.dados.arquivos} /> : null}
               <span className="sr-only">Ver </span>
-              <span className="absolute bottom-2 left-2 rounded-full bg-tinta/70 px-2 py-0.5 text-xs font-medium text-superficie">{qtdArquivos === 1 ? "1 arquivo" : `${qtdArquivos} arquivos`}</span>
+              <span className="absolute bottom-2 left-2 rounded-full bg-tinta/70 px-2 py-0.5 t-apoio font-medium text-superficie">{qtdArquivos === 1 ? "1 arquivo" : `${qtdArquivos} arquivos`}</span>
             </a>
           ) : null}
           <div className="grid min-w-0 flex-1 content-start gap-2">
@@ -292,7 +293,7 @@ export function Pedido() {
             </section>
           ) : null}
           {resolvidas.length ? (
-            <details className="text-sm">
+            <details className="t-texto">
               <summary className="cursor-pointer font-medium text-violeta-600">{resolvidas.length === 1 ? "1 pendência resolvida" : `${resolvidas.length} pendências resolvidas`}</summary>
               <ul className="mt-2 grid gap-1">
                 {resolvidas.map((x) => (
@@ -364,7 +365,7 @@ export function Pedido() {
             <Cartao id="t-conclusoes" titulo="Conclusões" icone="check">
               <ul className="grid gap-3">
                 {d.conclusoes.map((c) => (
-                  <li key={c.id} className="grid gap-1 rounded-[14px] border border-linha p-3 text-sm">
+                  <li key={c.id} className="grid gap-1 rounded-[14px] border border-linha p-3 t-texto">
                     <span className="flex flex-wrap items-center gap-2">
                       <Selo tom={c.revisao === "DEVOLVIDA" ? "atencao" : c.revisao === "AGUARDANDO" ? "info" : "ok"}>
                         {c.etapa} · {REVISOES_CONCLUSAO[c.revisao]}

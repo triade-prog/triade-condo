@@ -98,7 +98,7 @@ export function AbaLinhaDoTempo({ feito, definir }: PropsAbaMemoria) {
           <Icone nome="filtro" />Filtros
         </Botao>
         {filtro === "TUDO" ? <span className="t-apoio">Mostrando tudo: anotado, manutenção, documentos, comunicados e pessoas</span> : (
-          <span className="flex items-center gap-2 text-sm"><span className="t-apoio">Mostrando: {FILTROS_LINHA_DO_TEMPO[filtro]}</span>
+          <span className="flex items-center gap-2 t-texto"><span className="t-apoio">Mostrando: {FILTROS_LINHA_DO_TEMPO[filtro]}</span>
             <Botao variante="discreto" tamanho="p" onClick={() => ir("TUDO")}>Limpar</Botao></span>
         )}
       </div>
@@ -219,7 +219,7 @@ function FormAnotacao({ anotacao, aoFechar, aoSalvar }: { anotacao?: AnotacaoDet
       <form onSubmit={salvar} noValidate className="grid gap-3">
         {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <div role="group" aria-labelledby="an-tipo" className="grid gap-1">
-          <span id="an-tipo" className="text-[13px] font-medium">O que é</span>
+          <span id="an-tipo" className="t-apoio font-medium">O que é</span>
           <span className="trilho flex-nowrap overflow-x-auto">
             {(Object.keys(TIPOS_ANOTACAO) as TipoAnotacao[]).map((t) => (
               <button key={t} type="button" className="chip shrink-0" aria-pressed={v.tipo === t} data-escolhido={v.tipo === t ? "" : undefined} onClick={() => setV({ ...v, tipo: t })}>
@@ -275,8 +275,8 @@ function AnotacaoAberta({ id, aoFechar, aoMudar }: { id: string; aoFechar: () =>
     <Dialogo aberto titulo={`${TIPOS_ANOTACAO[a.tipo as TipoAnotacao]}: ${a.titulo}`} aoFechar={aoFechar}>
       <div className="grid gap-3">
         {erro && !camposComErro(erro).length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-        <p className="text-sm whitespace-pre-line">{a.texto}</p>
-        <p className="text-[13px] text-tinta-suave">
+        <p className="t-texto whitespace-pre-line">{a.texto}</p>
+        <p className="t-apoio text-tinta-suave">
           {[`Aconteceu em ${mostrarDataCurta(a.aconteceuEm)}`, a.autor ? `anotado por ${a.autor}` : null, ligacaoTexto(a.ligacao)].filter(Boolean).join(" · ")}
         </p>
         {modo === "tirar" ? (
@@ -302,10 +302,10 @@ function AnotacaoAberta({ id, aoFechar, aoMudar }: { id: string; aoFechar: () =>
                 <h3 id="an-versoes" className="font-medium">Versões anteriores</h3>
                 <ol className="divide-y divide-linha rounded-xl border border-linha">
                   {versoes.map((x) => (
-                    <li key={x.numero} className="grid gap-0.5 px-3 py-2 text-sm">
+                    <li key={x.numero} className="grid gap-0.5 px-3 py-2 t-texto">
                       <span className="flex flex-wrap items-center gap-2"><Selo tom="neutro">Versão {x.numero}</Selo><span className="font-medium">{x.titulo}</span></span>
                       <span className="whitespace-pre-line">{x.texto}</span>
-                      <span className="text-xs text-tinta-suave">Escrita {x.autor ? `por ${x.autor} ` : ""}em {diaHora(x.escritaEm)} · trocada em {diaHora(x.substituidaEm)}</span>
+                      <span className="t-apoio text-tinta-suave">Escrita {x.autor ? `por ${x.autor} ` : ""}em {diaHora(x.escritaEm)} · trocada em {diaHora(x.substituidaEm)}</span>
                     </li>
                   ))}
                 </ol>
