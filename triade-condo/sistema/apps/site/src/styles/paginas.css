@@ -759,3 +759,32 @@ h2, .titulo-g { font-size: var(--t-58); font-weight: 600; }
 .valor-impl { color: var(--violeta-700); font-size: var(--t-18); }
 .tabela-impl tbody tr:hover { background: #fcfaff; }
 @media (max-width: 640px) { .forma-cartao { padding: var(--e-5); } }
+
+/* Etapas no celular em carrossel de deslizar (pedido da Carolina em 23/10/2026): um passo por vez, o próximo aparece na borda */
+.carrossel-ctl { display: none; }
+@media (max-width: 640px) {
+  .passos2 { flex-direction: row; gap: var(--e-3); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; overscroll-behavior-x: contain; }
+  .passos2::-webkit-scrollbar { display: none; }
+  .passo2 { flex: 0 0 88%; scroll-snap-align: start; justify-content: flex-start; border-top: 0; padding: var(--e-5) var(--e-4); background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio-m); box-shadow: 0 20px 40px -30px #0b033066; }
+  .passo2 .num { font-size: var(--t-44); }
+  .rolagem { margin-top: var(--e-6); }
+  .carrossel-ctl { display: flex; align-items: center; justify-content: space-between; gap: var(--e-3); margin-top: var(--e-4); }
+  .carrossel-pontos { display: flex; }
+  .carrossel-pontos button { width: 24px; height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; display: grid; place-items: center; transition: width .25s ease; }
+  .carrossel-pontos button::before { content: ""; width: 10px; height: 10px; border-radius: var(--raio-pilula); background: var(--linha); transition: width .25s ease; }
+  .carrossel-pontos button[aria-current="true"] { width: 40px; }
+  .carrossel-pontos button[aria-current="true"]::before { width: 28px; background: var(--grad-botao); }
+  .passos2:focus-visible { outline: 2px solid var(--violeta-600); outline-offset: 4px; }
+  .carrossel-seta { width: 44px; height: 44px; border-radius: var(--raio-pilula); border: 1px solid var(--linha); background: var(--papel); color: var(--violeta-600); font: 600 24px/1 var(--sans); cursor: pointer; }
+  .carrossel-seta:disabled { color: var(--linha); cursor: default; }
+}
+.so-cel { display: none; }
+@media (max-width: 640px) {
+  .so-pc { display: none; }
+  .so-cel { display: inline; }
+  .passo2 { flex-basis: 90%; padding-inline: var(--e-3); }
+  .passo2 .painel-cel { min-width: 0; padding: var(--e-2); }
+  .passo2 .tela-passo .cena { grid-template-columns: 54% minmax(0, 1fr); gap: var(--e-2); }
+  .passo2 .painel-cel .app-linha { min-width: 0; padding: 6px var(--e-2); }
+  .passo2 .painel-cel .app-linha span { font-size: 11px; }
+}

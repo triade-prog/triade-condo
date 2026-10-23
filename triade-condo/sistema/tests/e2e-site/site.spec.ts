@@ -66,17 +66,23 @@ test.describe("Site · como funciona", () => {
     await expect(palco.locator(".c1")).toBeHidden();
   });
 
-  test("no celular, os quatro passos aparecem um embaixo do outro, cada um com a sua cena", async ({ page, isMobile }) => {
+  test("no celular, os quatro passos ficam num carrossel, cada um com a sua cena", async ({ page, isMobile }) => {
     test.skip(!isMobile, "Só no celular.");
     await page.goto("/como-funciona");
     await expect(page.locator(".palco-fixo")).toBeHidden();
-    for (const nome of ["O morador escreve. O pedido ganha número.", "Alguém fica responsável. O morador sabe quem.", "O prestador conta o que fez, por um link.", "Concluído com explicação. O morador avalia."]) {
+    const nomes = ["O morador escreve. O pedido ganha número.", "Alguém fica responsável. O morador sabe quem.", "O prestador conta o que fez, por um link.", "Concluído com explicação. O morador avalia."];
+    const proximo = page.getByRole("button", { name: "Próximo passo" });
+    await expect(page.getByRole("button", { name: "Passo anterior" })).toBeDisabled();
+    for (const [i, nome] of nomes.entries()) {
       const passo = page.locator(".passo2", { has: page.getByRole("heading", { level: 3, name: nome }) });
-      await expect(passo).toBeVisible();
+      await expect.poll(async () => { const x = (await passo.boundingBox())?.x ?? -1; return x >= 0 && x < 80; }).toBe(true);
       await expect(passo.locator(".cena")).toBeVisible();
       await expect(passo.locator(".painel-cel")).toBeVisible();
       await expect(passo.locator(".note")).toBeHidden();
+      await expect(page.getByRole("button", { name: `Ir para o passo 0${i + 1}` })).toHaveAttribute("aria-current", "true");
+      if (i < nomes.length - 1) await proximo.click();
     }
+    await expect(proximo).toBeDisabled();
   });
 });
 
