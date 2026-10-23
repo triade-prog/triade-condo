@@ -45,11 +45,11 @@ test.describe("Site · páginas", () => {
 
   test("EM-07: as telas de exemplo dizem que os dados são ilustrativos", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText("Dados ilustrativos").first()).toBeVisible();
+    await expect(page.getByText("Dados ilustrativos").locator("visible=true").first()).toBeVisible();
     await page.goto("/como-funciona");
-    await expect(page.getByText("Dados ilustrativos").first()).toBeVisible();
+    await expect(page.getByText("Dados ilustrativos").locator("visible=true").first()).toBeVisible();
     await page.goto("/plataforma");
-    await expect(page.getByText("Dados ilustrativos").first()).toBeVisible();
+    await expect(page.getByText("Dados ilustrativos").locator("visible=true").first()).toBeVisible();
   });
 });
 

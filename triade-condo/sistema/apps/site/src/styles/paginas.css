@@ -766,7 +766,7 @@ h2, .titulo-g { font-size: var(--t-58); font-weight: 600; }
   .passos2 { flex-direction: row; gap: var(--e-3); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: -16px; padding-inline: 16px; scroll-padding-inline: 16px; overscroll-behavior-x: contain; }
   .passos2::-webkit-scrollbar { display: none; }
   .passo2 { flex: 0 0 88%; scroll-snap-align: start; justify-content: flex-start; border-top: 0; padding: var(--e-5) var(--e-4); background: var(--papel); border: 1px solid var(--linha); border-radius: var(--raio-m); box-shadow: 0 20px 40px -30px #0b033066; }
-  .passo2 .num { font-size: var(--t-44); }
+  .passo2 .num { font-size: var(--t-32); }
   .rolagem { margin-top: var(--e-6); }
   .carrossel-ctl { display: flex; align-items: center; justify-content: space-between; gap: var(--e-3); margin-top: var(--e-4); }
   .carrossel-pontos { display: flex; }
@@ -787,4 +787,65 @@ h2, .titulo-g { font-size: var(--t-58); font-weight: 600; }
   .passo2 .tela-passo .cena { grid-template-columns: 54% minmax(0, 1fr); gap: var(--e-2); }
   .passo2 .painel-cel .app-linha { min-width: 0; padding: 6px var(--e-2); }
   .passo2 .painel-cel .app-linha span { font-size: 11px; }
+}
+
+/* Site mais curto no celular (pedido da Carolina em 23/10/2026): cada página entre 3 e 4,5 telas */
+.final-cel { display: none; }
+@media (max-width: 640px) {
+  .final2 ol, .final2 .formulario { display: none; }
+  .final-cel { display: flex; flex-direction: column; gap: var(--e-3); margin-top: var(--e-6); }
+  .final-cel .botao { justify-content: center; text-align: center; }
+  .final-cel p { color: #ece2fb; font-size: var(--t-14); text-align: center; }
+  .final2 .wrap { gap: 0; }
+}
+@media (max-width: 640px) {
+  /* Início: o prédio com um cartão só por cima; o Hoje × TRÍADE com dois itens e conversa mais baixa */
+  .hero2 .acoes .botao.claro { display: none; }
+  .palco-predio .pf-msg, .palco-predio .pf-resp { display: none; }
+  .palco-predio { padding-bottom: 0; }
+  .palco-predio img.predio { margin-block: -24px -40px; }
+  .palco-predio .pf-ficha { margin: -32px var(--e-4) 0; }
+  .hero2 .wrap.hero-fatos { gap: var(--e-2); padding-block: var(--e-5); }
+  .chat-grupo, .chat-nosso { height: 170px; }
+  .lista-vs li:nth-child(n+3) { display: none; }
+  .virada2 { display: none; }
+}
+@media (max-width: 640px) {
+  /* Rodapé: links em linhas corridas; o Guia vira um link só */
+  .rodape .wrap { grid-template-columns: minmax(0, 1fr); gap: var(--e-5); padding-block: var(--e-6); }
+  .rodape .wrap > .pilha:not(:first-child) { flex-direction: row; flex-wrap: wrap; gap: var(--e-2) var(--e-4); }
+  .rodape .wrap > .pilha:not(:first-child) b { flex-basis: 100%; }
+  .rodape .rodape-guia { display: none !important; }
+  .rodape a.so-cel { display: inline; }
+}
+/* Plataforma: no celular, as quatro partes em abas */
+.abas-modulos { display: none; }
+@media (max-width: 640px) {
+  .com-js .abas-modulos { display: block; padding-top: var(--e-6); }
+  .com-js .abas-modulos .abas2 { margin-top: 0; }
+  .com-js .modulo:not(.atual) { display: none; }
+  .com-js .modulo { padding-top: var(--e-5); }
+  .tam-cartao { display: none; }
+}
+/* Preços: faixas em carrossel, Incluído e Limite em abas, cartão da forma de pagar mais curto */
+.abas-incluido { display: none; }
+@media (max-width: 640px) {
+  .dica-deslize.so-cel { display: block; font-size: var(--t-14); color: var(--tinta-suave); margin-bottom: var(--e-3); }
+  .faixas3 { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; gap: var(--e-3); background: transparent; border: 0; box-shadow: none; border-radius: 0; margin-inline: -16px; padding: var(--e-3) 16px var(--e-5); scroll-padding-inline: 16px; }
+  .faixas3::-webkit-scrollbar { display: none; }
+  .faixa3 { flex: 0 0 80%; scroll-snap-align: start; background: var(--papel); border-inline: 1px solid var(--linha); border-bottom: 1px solid var(--linha); border-top-width: 4px; border-top-style: solid; border-radius: var(--raio-m); box-shadow: 0 20px 40px -30px #5808cc55; }
+  .forma-chips { display: none; }
+  .com-js .incluido-limite { display: block; }
+  .com-js .abas-incluido { display: flex; margin: 0 0 var(--e-4); }
+  .com-js .incl:not(.atual) { display: none; }
+}
+@media (max-width: 640px) {
+  /* Topos com imagem mais baixos; Sem fidelidade em grade de dois; perfis com um item no Agora */
+  .pag-topo-img, .pag-topo-img.predio { width: auto; max-width: 100%; height: 200px; margin: var(--e-4) auto 0; display: block; }
+  .sem-fid2 { gap: var(--e-5); }
+  .sem-fid2 ul { gap: var(--e-4); }
+  .sem-fid2 .botao { display: none; }
+  .impl-cartao { display: none; }
+  .so-pc-bloco { display: none; }
+  .perfil .agora-l ~ .agora-l { display: none; }
 }

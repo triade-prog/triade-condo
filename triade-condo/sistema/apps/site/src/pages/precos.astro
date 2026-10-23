@@ -39,6 +39,7 @@ const perguntas = [
 </section>
 
 <section class="wrap" style="padding-block:var(--secao-ritmo-curto) 0">
+  <p class="so-cel dica-deslize">Deslize para ver as outras faixas.</p>
   <ul class="faixas3">
     {faixas.map((f, i) => (
       <li class:list={["faixa3 faixa-preco", f.destaque && "destaque"]}>
@@ -68,7 +69,11 @@ const perguntas = [
 </section>
 
 <section class="wrap lado-a-lado incluido-limite" style="--gap:24px;padding-block:var(--secao-ritmo-curto)">
-  <div class="cartao-cor verde pilha" style="--gap:12px">
+  <div class="abas2 abas-incluido" role="tablist" aria-label="O que vem no plano">
+    <button type="button" role="tab" id="aba-incluido" aria-controls="incluido" aria-selected="true" data-incl="incluido">Incluído</button>
+    <button type="button" role="tab" id="aba-limite" aria-controls="limite" aria-selected="false" tabindex="-1" data-incl="limite">O que tem limite</button>
+  </div>
+  <div class="cartao-cor verde pilha incl atual" id="incluido" style="--gap:12px">
     <h2 style="font-size:20px">Incluído em todas as faixas</h2>
     <div>
       <div class="linha-dado"><span>Pedidos pelo WhatsApp, com responsável, retorno e conclusão</span><b class="tag-cor verde">Sem limite</b></div>
@@ -78,7 +83,7 @@ const perguntas = [
       <div class="linha-dado"><span>Suporte por WhatsApp em dias úteis, das 9h às 18h</span><b class="tag-cor violeta">Incluído</b></div>
     </div>
   </div>
-  <div class="cartao-cor laranja pilha" style="--gap:12px">
+  <div class="cartao-cor laranja pilha incl" id="limite" style="--gap:12px">
     <h2 style="font-size:20px">O que tem limite, e por quê</h2>
     <p class="suave">Cada comunicado enviado por WhatsApp tem custo de envio. Por isso cada faixa tem uma franquia mensal: um comunicado para o prédio todo conta uma vez por unidade que recebe.</p>
     <div>
@@ -122,5 +127,14 @@ const perguntas = [
     document.querySelectorAll("[data-mensal]").forEach((el) => { el.textContent = el.getAttribute(`data-${forma}`); });
     if (explica) explica.textContent = forma === "anual" ? textoAnual : textoMensal;
   }));
+</script>
+<script>
+  // Celular: Incluído e O que tem limite em abas; as faixas em carrossel abrem na mais comum.
+  import { ligarAbas } from "../lib/abas";
+  ligarAbas("[data-incl]", (b) => b.dataset.incl ?? "", ".incl");
+  const trilho = document.querySelector<HTMLElement>(".faixas3");
+  const comum = document.querySelector<HTMLElement>(".faixa3.destaque");
+  if (matchMedia("(max-width: 640px)").matches) document.querySelector(".sanfona details[open]")?.removeAttribute("open");
+  if (trilho && comum && trilho.scrollWidth > trilho.clientWidth) trilho.scrollLeft = comum.offsetLeft - trilho.offsetLeft - 16;
 </script>
 </Base>

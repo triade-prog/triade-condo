@@ -1,9 +1,11 @@
 ---
 // A chamada final no violeta profundo, com o formulário de demonstração dentro dela.
+// No celular, para a página não ficar longa, o formulário dá lugar a dois botões: a página do formulário e o WhatsApp.
 import Destaque from "./Destaque.astro";
 import SimboloMonta from "./SimboloMonta.astro";
 import FormularioDemonstracao from "./FormularioDemonstracao.astro";
-import { duracaoDemonstracao, promessaRetorno } from "../dados/empresa";
+import { duracaoDemonstracao, promessaRetorno, linkWhatsapp } from "../dados/empresa";
+const zap = linkWhatsapp("Olá! Quero ver uma demonstração da TRÍADE Condo.");
 ---
 <section class="final2 ancora" id="pedir">
   <span class="cunha-a" aria-hidden="true"></span><span class="cunha-b" aria-hidden="true"></span>
@@ -17,6 +19,11 @@ import { duracaoDemonstracao, promessaRetorno } from "../dados/empresa";
         <li><span class="mono-d">2</span>Respondemos pelo WhatsApp {promessaRetorno}.</li>
         <li><span class="mono-d">3</span>Registramos um pedido real do seu prédio e acompanhamos com você.</li>
       </ol>
+      <div class="final-cel">
+        <a href="/demonstracao" class="botao branco">Pedir demonstração</a>
+        {zap && <a href={zap} class="botao contorno-claro">Falar pelo WhatsApp</a>}
+        <p>Respondemos pelo WhatsApp {promessaRetorno}.</p>
+      </div>
     </div>
     <FormularioDemonstracao />
   </div>
