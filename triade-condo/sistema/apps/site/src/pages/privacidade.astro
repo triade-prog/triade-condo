@@ -8,27 +8,27 @@ const quem = razaoSocial ? `${razaoSocial}${cnpj ? `, CNPJ ${cnpj}` : ""}` : "TR
 const zap = linkWhatsapp("Olá! Quero saber dos meus dados no site da TRÍADE Condo.");
 ---
 <Base titulo="Política de privacidade deste site" descricao="Que dados o site da TRÍADE Condo coleta, para quê, por quanto tempo e como pedir para ver ou apagar.">
-<article class="wrap secao pilha" style="--gap:22px;max-width:780px">
+<article class="wrap secao pilha" style="--gap:24px;max-width:780px">
   <Olho>Privacidade</Olho>
-  <h1 style="font-size:clamp(30px,5vw,48px)">Política de privacidade deste site</h1>
+  <h1 class="titulo-texto">Política de privacidade deste site</h1>
   <p class="suave">Vale para este site e para o formulário de demonstração. Versão de 22/10/2026.</p>
 
-  <h2 style="font-size:22px">Quem cuida dos dados</h2>
+  <h2 style="font-size:20px">Quem cuida dos dados</h2>
   <p>{quem}, controladora dos dados que você envia por este site, conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018).</p>
 
-  <h2 style="font-size:22px">O que coletamos</h2>
+  <h2 style="font-size:20px">O que coletamos</h2>
   <p>Só o que você escreve no pedido de demonstração: nome, WhatsApp, nome do condomínio e a faixa de unidades. Não usamos cookies de propaganda. Medimos visitas de forma agregada, sem cookies e sem identificar você.</p>
 
-  <h2 style="font-size:22px">Para que usamos</h2>
+  <h2 style="font-size:20px">Para que usamos</h2>
   <p>Para responder ao seu pedido pelo WhatsApp, {promessaRetorno}, e marcar a demonstração. A base legal é o seu consentimento, dado ao marcar a autorização do formulário. Não colocamos você em lista de e-mails e não vendemos nem emprestamos os dados.</p>
 
-  <h2 style="font-size:22px">Por quanto tempo</h2>
+  <h2 style="font-size:20px">Por quanto tempo</h2>
   <p>Enquanto conversamos sobre a demonstração e, se você não virar cliente, por até 12 meses. Depois, apagamos.</p>
 
-  <h2 style="font-size:22px">Com quem compartilhamos</h2>
+  <h2 style="font-size:20px">Com quem compartilhamos</h2>
   <p>Com os serviços que fazem o site funcionar: a hospedagem do site e o serviço que entrega o seu pedido por e-mail à nossa equipe. Eles só tratam os dados para isso.</p>
 
-  <h2 style="font-size:22px">Seus direitos</h2>
+  <h2 style="font-size:20px">Seus direitos</h2>
   <p>Você pode pedir para ver, corrigir ou apagar os seus dados, ou retirar a autorização, a qualquer momento{zap ? <>, pelo <a href={zap}>WhatsApp comercial</a></> : ", respondendo à mensagem que mandarmos"}.</p>
 
   <p class="suave" style="font-size:14px">Os dados dos condomínios clientes, dentro da Plataforma, seguem outra política e o termo de tratamento de dados do contrato, em que a TRÍADE é operadora.</p>

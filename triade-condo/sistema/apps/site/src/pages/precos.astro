@@ -23,20 +23,20 @@ const perguntas = [
   <div class="wrap">
     <div>
       <h1>Um plano. O preço muda só com o <Destaque quebra>tamanho do prédio</Destaque>.</h1>
-      <p class="lead2" style="margin-top:20px">Todas as funções em qualquer faixa. Contamos só as unidades ativas.</p>
+      <p class="lead2" style="margin-top:24px">Todas as funções em qualquer faixa. Contamos só as unidades ativas.</p>
     </div>
     <div class="pilha" style="--gap:12px">
       <div class="alternador so-com-js" style="align-self:flex-start" role="group" aria-label="Forma de pagamento">
         <button type="button" aria-pressed="true" data-forma="mensal">Mensal</button>
         <button type="button" aria-pressed="false" data-forma="anual">Anual</button>
       </div>
-      <p class="suave" style="font-size:15px" id="explica-forma" aria-live="polite">{textoMensal}</p>
-      <p class="suave sem-js" style="font-size:15px">{textoAnual}</p>
+      <p class="suave" style="font-size:16px" id="explica-forma" aria-live="polite">{textoMensal}</p>
+      <p class="suave sem-js" style="font-size:16px">{textoAnual}</p>
     </div>
   </div>
 </section>
 
-<section class="wrap" style="padding-block:48px 16px">
+<section class="wrap" style="padding-block:var(--secao-ritmo-curto) 0">
   <ul class="faixas3">
     {faixas.map((f) => (
       <li class:list={["faixa3 faixa-preco", f.destaque && "destaque"]}>
@@ -49,10 +49,10 @@ const perguntas = [
       </li>
     ))}
   </ul>
-  <p class="suave" style="font-size:14px;margin-top:22px">{precosProvisorios && "Valores provisórios: podem mudar até a assinatura. "}Acima de 400 unidades ou vários prédios: <a href="#pedir">fale com a gente</a>. Síndico profissional tem {descontoSindicoProfissional}% de desconto a partir do segundo condomínio.</p>
+  <p class="suave" style="font-size:14px;margin-top:24px">{precosProvisorios && "Valores provisórios: podem mudar até a assinatura. "}Acima de 400 unidades ou vários prédios: <a href="#pedir">fale com a gente</a>. Síndico profissional tem {descontoSindicoProfissional}% de desconto a partir do segundo condomínio.</p>
 </section>
 
-<section class="wrap" style="padding-block:48px">
+<section class="wrap" style="padding-block:var(--secao-ritmo-curto) 0">
   <div class="sem-fid2">
     <div class="pilha" style="--gap:16px"><h2>Sem fidelidade no mensal. Fica <Destaque semTraco>porque funciona</Destaque>.</h2><a href="#pedir" class="botao primario" style="align-self:flex-start">Agendar demonstração</a></div>
     <ul>
@@ -64,9 +64,9 @@ const perguntas = [
   </div>
 </section>
 
-<section class="wrap lado-a-lado" style="--gap:48px;padding-block:32px 72px">
-  <div class="pilha" style="--gap:10px">
-    <h2 style="font-size:22px">Incluído em todas as faixas</h2>
+<section class="wrap lado-a-lado" style="--gap:48px;padding-block:var(--secao-ritmo-curto)">
+  <div class="pilha" style="--gap:12px">
+    <h2 style="font-size:20px">Incluído em todas as faixas</h2>
     <div>
       <div class="linha-dado"><span>Pedidos pelo WhatsApp, com responsável, retorno e conclusão</span><b style="color:var(--ok)">Sem limite</b></div>
       <div class="linha-dado"><span>Avisos de atendimento ao morador</span><b style="color:var(--ok)">Sem limite</b></div>
@@ -75,8 +75,8 @@ const perguntas = [
       <div class="linha-dado"><span>Suporte por WhatsApp em dias úteis, das 9h às 18h</span><b>Incluído</b></div>
     </div>
   </div>
-  <div class="pilha" style="--gap:10px">
-    <h2 style="font-size:22px">O que tem limite, e por quê</h2>
+  <div class="pilha" style="--gap:12px">
+    <h2 style="font-size:20px">O que tem limite, e por quê</h2>
     <p class="suave">Cada comunicado enviado por WhatsApp tem custo de envio. Por isso cada faixa tem uma franquia mensal: um comunicado para o prédio todo conta uma vez por unidade que recebe.</p>
     <div>
       <div class="linha-dado"><span>Acima da franquia</span><b>{definir(aDefinir.valorAcimaDaFranquia)}, por mensagem</b></div>
@@ -103,7 +103,7 @@ const perguntas = [
 </section>
 
 <section class="wrap secao2 lado-a-lado" style="--colunas:minmax(0,5fr) minmax(0,7fr);--gap:64px">
-  <div class="pilha" style="--gap:14px"><h2 class="titulo-g">O que perguntam <Destaque semTraco>antes de assinar</Destaque></h2><p class="lead2">Não achou a sua? Pergunte na demonstração.</p></div>
+  <div class="pilha" style="--gap:16px"><h2 class="titulo-g">O que perguntam <Destaque semTraco>antes de assinar</Destaque></h2><p class="lead2">Não achou a sua? Pergunte na demonstração.</p></div>
   <div class="sanfona">{perguntas.map((q, i) => <details open={i === 0}><summary>{q.p}<span class="mais" aria-hidden="true"></span></summary><p>{q.r}</p></details>)}</div>
 </section>
 

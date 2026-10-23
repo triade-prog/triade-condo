@@ -47,7 +47,7 @@ const exemplos: Record<string, { titulo: string; linhas: { titulo: string; detal
           <BarraPainel />
           <div style="padding:16px">
             <div class="app-cartao" style="gap:0">
-              <div class="app-sub" style="padding-bottom:6px"><h4>{exemplos[bloco.id].titulo}</h4><span class="app-meta">Dados ilustrativos</span></div>
+              <div class="app-sub" style="padding-bottom:8px"><h4>{exemplos[bloco.id].titulo}</h4><span class="app-meta">Dados ilustrativos</span></div>
               {exemplos[bloco.id].linhas.map((l) => <div class="agora-l"><span class="t">{l.titulo}<small>{l.detalhe}</small></span><span class:list={["pil", l.tom]}>{l.selo}</span></div>)}
             </div>
           </div>
