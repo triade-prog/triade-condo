@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Carteira } from "@/telas/Carteira";
+import { Inicio } from "@/telas/Inicio";
 
-export const metadata: Metadata = { title: "Carteira de clientes" };
+export const metadata: Metadata = { title: "Início" };
 
 export default function Pagina() {
-  return <Carteira />;
+  return <Inicio />;
 }

@@ -1,17 +1,20 @@
 "use client";
-// Aba Configuração da ficha (PI-04, CF-01, CF-12; desenho "Configuração na implantação", telas 1,
-// 2, 3 e 7): as 11 partes na ordem do app, com o grupo e quem conferiu; abrir uma parte mostra as
-// mesmas abas do app, gravando como TRÍADE; o que é só do síndico aparece só com a situação.
-// Depois da entrega, o que o síndico ajusta fica em leitura e a equipe vê quem mudou.
+// Parte Configuração da ficha (PI-04, CF-01, CF-12; desenho "Configuração na implantação", telas 1,
+// 2, 3 e 7, e no padrão novo a tela-modelo console-ficha-configuracao-*, rodada Console de
+// 23/10/2026): a barra com as partes conferidas e o que falta no alto; as 11 partes na ordem do
+// app, cada uma em duas linhas, com quem conferiu e quando, e "Só a TRÍADE" só onde é; abrir uma
+// parte mostra as mesmas abas do app, gravando como TRÍADE; o que é só do síndico aparece só com
+// a situação. Depois da entrega, o que o síndico ajusta fica em leitura e a equipe vê quem mudou.
+// O Resumo para o síndico saiu daqui e foi para Mais ações (decisão D.1).
 
-import Link from "next/link";
 import { useState } from "react";
 import { formatarData, GRUPOS_CONFIGURACAO, PARTES_CONFIGURACAO, type GrupoConfiguracao, type ParteConfiguracao } from "@triade/domain";
 import { PaginaConfiguracao, paginaDe, type IdPagina } from "@triade/configuracoes";
 import {
-  Aviso, AvisoErro, Botao, CampoAreaTexto, Carregando, chamarApi, classeBotao, Dialogo, ErroCarregar, FaixaInterna, Selo, textoDoErro,
+  Aviso, AvisoErro, Botao, CampoAreaTexto, Carregando, chamarApi, Dialogo, ErroCarregar, FaixaInterna, Icone, Selo, textoDoErro,
   type ErroApi, type Tom,
 } from "@triade/ui";
+import { BarraEtapas, Cartao } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { PropsAba } from "./tipos.ts";
 
@@ -103,7 +106,9 @@ export function AbaConfiguracao({ ficha }: PropsAba) {
     return (
       <div className="grid gap-4">
         <p className="text-sm">
-          <button type="button" className="text-violeta-600 hover:underline" onClick={() => { setAberta_(null); carga.recarregar(); }}>Voltar às partes</button>
+          <button type="button" className="inline-flex min-h-8 items-center gap-1 font-medium text-violeta-600 hover:underline" onClick={() => { setAberta_(null); carga.recarregar(); }}>
+            <Icone nome="esq" className="h-4 w-4" />Voltar às partes
+          </button>
         </p>
         <FaixaInterna>{d.pode.montar
           ? "Você muda como TRÍADE. O que salvar vale no app do condomínio e entra no histórico dele."
@@ -118,78 +123,76 @@ export function AbaConfiguracao({ ficha }: PropsAba) {
   }
 
   return (
-    <div className="grid gap-5">
-      <FaixaInterna>Interno da TRÍADE. O que você muda aqui vale no app do condomínio e entra no histórico dele como TRÍADE.</FaixaInterna>
-      {recado ? <Aviso tom="ok" papel="status">{recado}</Aviso> : null}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-medium">{depois ? `Configuração · ${d.estagio === "ATIVO" ? "cliente ativo" : "fora da implantação"}` : `${conferidas} de ${d.partes.length} partes conferidas`}</h2>
-          <p className="text-sm text-tinta-suave">
-            {depois ? "O que a TRÍADE montou, o síndico ajusta no app. Os ajustes técnicos continuam aqui, com motivo e aviso ao síndico."
-              : faltando.length ? `Falta conferir: ${faltando.join(", ")}.` : "Tudo conferido. A etapa 4 do roteiro pode ser marcada como realizada."}
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(300px,1fr)]">
+      <Cartao id="t-partes" titulo={`As ${d.partes.length} partes`} icone="ajuste" className="lg:row-span-3">
+        {recado ? <Aviso tom="ok" papel="status">{recado}</Aviso> : null}
+        <div className="grid gap-2">
+          <div className="flex flex-wrap justify-between gap-x-3 text-[13px] text-tinta-suave">
+            <h3 className="font-normal">{depois ? `Configuração · ${d.estagio === "ATIVO" ? "cliente ativo" : "fora da implantação"}` : `${conferidas} de ${d.partes.length} partes conferidas`}</h3>
+            {!depois && faltando.length ? <span>falta: {faltando.join(", ")}</span> : null}
+          </div>
+          {depois ? null : <BarraEtapas feitas={conferidas} total={d.partes.length} rotulo={`${conferidas} de ${d.partes.length} partes conferidas`} />}
+          <p className="t-apoio">
+            {depois ? "O que a TRÍADE montou, o síndico ajusta no app; aqui fica em leitura. Onde diz Só a TRÍADE, os ajustes continuam aqui, com motivo e aviso ao síndico."
+              : faltando.length ? "A TRÍADE monta e o síndico ajusta no app, menos onde diz Só a TRÍADE."
+                : "Tudo conferido. A etapa 4 do roteiro pode ser marcada como realizada."}
           </p>
         </div>
-        <Link href={`/clientes/${id}/resumo-configuracao`} target="_blank" className={classeBotao("contorno", "", "m")}>Resumo para o síndico</Link>
-      </div>
-
-      <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
-        {d.partes.map((p) => {
-          const info = PARTES_CONFIGURACAO[p.parte];
-          return (
-            <li key={p.parte} className="flex flex-wrap items-center gap-3 px-4 py-3">
-              <span className="min-w-0 flex-1">
-                <span className="font-medium">{info.nome}</span>
-                <span className={`block text-xs ${d.emImplantacao && !p.conferida ? "font-medium text-atencao-texto" : "text-tinta-suave"}`}>
-                  {situacaoParte(p, d.emImplantacao)}
+        <ul>
+          {d.partes.map((p) => {
+            const info = PARTES_CONFIGURACAO[p.parte];
+            const falta = d.emImplantacao && !p.conferida;
+            return (
+              <li key={p.parte} className="grid gap-1.5 border-t border-linha py-3 first:border-t-0">
+                <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <span className="text-[15px] font-medium">{info.nome}</span>
+                  <span className="flex flex-wrap items-center gap-1">
+                    <button type="button" className="inline-flex min-h-11 items-center gap-1 rounded-xl px-2 text-sm font-medium text-violeta-600 hover:bg-violeta-50"
+                      onClick={() => setAberta(info.aba)} aria-label={`Abrir ${info.nome}`}>Abrir<Icone nome="dir" className="h-4 w-4" /></button>
+                    {d.pode.conferir && !p.conferida ? (
+                      <Botao variante="contorno" tamanho="m" onClick={() => setConferindo(p.parte)} aria-label={`Marcar ${info.nome} como conferida`}><Icone nome="check" />Conferida</Botao>
+                    ) : null}
+                  </span>
                 </span>
-              </span>
-              <SeloGrupo grupo={info.grupo} depois={depois} />
-              <span className="flex flex-wrap gap-2">
-                <Botao variante="contorno" tamanho="m" onClick={() => setAberta(info.aba)} aria-label={`Abrir ${info.nome}`}>Abrir</Botao>
-                {d.pode.conferir && !p.conferida ? (
-                  <Botao variante="secundario" tamanho="m" onClick={() => setConferindo(p.parte)} aria-label={`Marcar ${info.nome} como conferida`}>Conferida</Botao>
-                ) : null}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className={`inline-flex items-center gap-1 text-[13px] ${falta ? "font-medium text-atencao" : d.emImplantacao ? "text-ok" : "text-tinta-suave"}`}>
+                    <Icone nome={falta ? "relogio" : "check"} className="h-3.5 w-3.5" />{situacaoParte(p, d.emImplantacao)}
+                  </span>
+                  {info.grupo === "MONTA" && !depois ? null : <SeloGrupo grupo={info.grupo} depois={depois} />}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </Cartao>
 
-      <section aria-labelledby="t-tecnicos" className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 id="t-tecnicos" className="font-medium">Ajustes da TRÍADE</h3>
-          <SeloGrupo grupo="TRIADE" />
-        </div>
-        <p className="text-sm text-tinta-suave">
+      <Cartao id="t-tecnicos" titulo="Ajustes da TRÍADE" icone="engrenagem">
+        <span className="justify-self-start"><SeloGrupo grupo="TRIADE" /></span>
+        <p className="t-apoio">
           Fuso {d.ajustes.fuso} · pedidos parecidos dos últimos {d.ajustes.parecidosDias} dias · o que chega pelo WhatsApp entra no mesmo pedido por {d.ajustes.anexarMinutos} min.
           {d.motivoObrigatorio ? " Com o cliente ativo, mudar pede motivo e avisa o síndico no sino." : " Na implantação, mudam livremente."}
         </p>
         <span className="flex flex-wrap gap-2">
-          <Botao variante="contorno" tamanho="m" onClick={() => setAberta("horarios")}>Fuso</Botao>
-          <Botao variante="contorno" tamanho="m" onClick={() => setAberta("etapas")}>Etapas dos pedidos</Botao>
-          <Botao variante="contorno" tamanho="m" onClick={() => setAberta("manutencao")}>Etapas da manutenção</Botao>
-          <Botao variante="contorno" tamanho="m" onClick={() => setAberta("prazos")}>Pedidos parecidos</Botao>
-          <Botao variante="contorno" tamanho="m" onClick={() => setAberta("whatsapp")}>Mensagens seguintes do WhatsApp</Botao>
+          {([["horarios", "Fuso"], ["etapas", "Etapas dos pedidos"], ["manutencao", "Etapas da manutenção"], ["prazos", "Pedidos parecidos"], ["whatsapp", "Mensagens seguintes do WhatsApp"]] as const).map(([aba, texto]) => (
+            <button key={aba} type="button" className="chip border-violeta-200 text-violeta-600" onClick={() => setAberta(aba)}>{texto}</button>
+          ))}
         </span>
-      </section>
+      </Cartao>
 
-      <section aria-labelledby="t-sindico" className="grid gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 id="t-sindico" className="font-medium">O que o síndico faz no app</h3>
-          <SeloGrupo grupo="SINDICO" />
-        </div>
-        <p className="text-sm text-tinta-suave">A TRÍADE não muda nada disto; só acompanha.</p>
-        <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie text-sm">
-          <li className="flex justify-between gap-3 px-4 py-2.5"><span>Termo do piloto do WhatsApp</span>
-            <span className="text-tinta-suave">{d.sindico.termoAceito ? "Aceito" : "Ainda não aceito"}</span></li>
-          <li className="flex justify-between gap-3 px-4 py-2.5"><span>Revisar a conclusão</span>
-            <span className="text-tinta-suave">{d.sindico.revisao ? "Ligado" : "Desligado (padrão)"}</span></li>
-          <li className="flex justify-between gap-3 px-4 py-2.5"><span>Reabrir pedido encerrado</span>
-            <span className="text-tinta-suave">{d.sindico.reabertura ? "Ligado (padrão)" : "Desligado"}</span></li>
-          <li className="flex justify-between gap-3 px-4 py-2.5"><span>Avisos no WhatsApp de cada pessoa</span>
-            <span className="text-tinta-suave">{d.sindico.avisosLigados} de {d.sindico.pessoas} {d.sindico.pessoas === 1 ? "pessoa ligou" : "pessoas ligaram"}</span></li>
+      <Cartao id="t-sindico" titulo="O que o síndico faz no app" icone="pessoa">
+        <span className="justify-self-start"><SeloGrupo grupo="SINDICO" /></span>
+        <p className="t-apoio">A TRÍADE não muda nada disto; só acompanha.</p>
+        <ul className="divide-y divide-linha text-sm">
+          <li className="flex justify-between gap-3 py-2.5"><span>Termo do piloto do WhatsApp</span>
+            <span className="text-right text-tinta-suave">{d.sindico.termoAceito ? "Aceito" : "Ainda não aceito"}</span></li>
+          <li className="flex justify-between gap-3 py-2.5"><span>Revisar a conclusão</span>
+            <span className="text-right text-tinta-suave">{d.sindico.revisao ? "Ligado" : "Desligado (padrão)"}</span></li>
+          <li className="flex justify-between gap-3 py-2.5"><span>Reabrir pedido encerrado</span>
+            <span className="text-right text-tinta-suave">{d.sindico.reabertura ? "Ligado (padrão)" : "Desligado"}</span></li>
+          <li className="flex justify-between gap-3 py-2.5"><span>Avisos no WhatsApp de cada pessoa</span>
+            <span className="text-right text-tinta-suave">{d.sindico.avisosLigados} de {d.sindico.pessoas} {d.sindico.pessoas === 1 ? "pessoa ligou" : "pessoas ligaram"}</span></li>
         </ul>
-      </section>
+      </Cartao>
 
       {conferindo ? (
         <Conferir condominio={id} parte={conferindo} aoFechar={() => setConferindo(null)}

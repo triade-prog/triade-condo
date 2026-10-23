@@ -64,17 +64,19 @@ test.describe("Console · WhatsApp do condomínio", () => {
     await instalarApiFalsa(page);
     await page.goto(`${CONSOLE}/whatsapp`);
     await expect(page.getByRole("heading", { level: 1, name: "WhatsApp" })).toBeVisible();
-    await expect(page.getByText("Sem credenciais")).toBeVisible();
-    await expect(page.getByText("Piloto")).toBeVisible();
+    await expect(page.getByText("Sem credenciais", { exact: true })).toBeVisible();
+    await expect(page.getByText("Piloto", { exact: true })).toBeVisible();
     await conferir(page);
-    await page.getByRole("link", { name: "Residencial Ipê" }).click();
+    // O botão da linha é o próximo passo: sem credenciais, já abre a janela delas na ficha.
+    await page.getByRole("link", { name: "Guardar credenciais: Residencial Ipê" }).click();
     await expect(page.getByRole("tab", { name: "WhatsApp" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("dialog", { name: "Credenciais da instância" })).toBeVisible();
   });
 
   test("W-20: modelos de mensagem: ver, criar versão, aprovar no piloto e registrar a recusa da Meta", async ({ page }) => {
     const estado = await instalarApiFalsa(page);
     await page.goto(`${CONSOLE}/whatsapp`);
-    await page.getByRole("tab", { name: "Modelos de mensagem" }).click();
+    await page.getByRole("button", { name: "Modelos de mensagem" }).click();
     await expect(page.getByRole("button", { name: /Notícia do pedido/ })).toBeVisible();
     await expect(page.getByText("Aprovado no piloto").first()).toBeVisible();
     await conferir(page);

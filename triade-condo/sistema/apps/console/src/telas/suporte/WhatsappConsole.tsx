@@ -1,25 +1,26 @@
 "use client";
-// WhatsApp no menu do Console (passo 5; W-01, W-17, W-20): os números dos clientes e os modelos
-// de mensagem, que são da TRÍADE e iguais para todos.
+// WhatsApp no menu do Console (passo 5; W-01, W-17, W-20; DC15, tela-modelo
+// console-whatsapp-computador, rodada Console de 23/10/2026): os números dos clientes e os modelos
+// de mensagem, que são da TRÍADE e iguais para todos, em duas vistas num trilho.
 
 import { useState } from "react";
-import { Abas } from "@triade/ui";
+import { CabecaPagina } from "../comum.tsx";
+import { TrilhoFiltro } from "../ListaHistorico.tsx";
 import { NumerosWhatsapp } from "./NumerosWhatsapp.tsx";
 import { ModelosWhatsapp } from "./ModelosWhatsapp.tsx";
 
-const ABAS = [
-  { id: "numeros", texto: "Números" },
-  { id: "modelos", texto: "Modelos de mensagem" },
+const VISTAS = [
+  { valor: "numeros", texto: "Números" },
+  { valor: "modelos", texto: "Modelos de mensagem" },
 ] as const;
 
 export function WhatsappConsole() {
-  const [aba, setAba] = useState<(typeof ABAS)[number]["id"]>("numeros");
+  const [vista, setVista] = useState<(typeof VISTAS)[number]["valor"]>("numeros");
   return (
-    <div className="grid gap-4">
-      <h1 className="text-[28px] font-normal tracking-tight">WhatsApp</h1>
-      <Abas abas={ABAS} atual={aba} aoMudar={setAba} rotulo="Partes do WhatsApp">
-        {aba === "numeros" ? <NumerosWhatsapp /> : <ModelosWhatsapp />}
-      </Abas>
+    <div className="grid gap-5">
+      <CabecaPagina titulo="WhatsApp" apoio="Os números dos condomínios e os modelos de mensagem aprovados." />
+      <span><TrilhoFiltro rotulo="Partes do WhatsApp" opcoes={[...VISTAS]} atual={vista} aoMudar={setVista} /></span>
+      {vista === "numeros" ? <NumerosWhatsapp /> : <ModelosWhatsapp />}
     </div>
   );
 }

@@ -28,7 +28,7 @@ interface DadosWhatsapp {
   pode: { conectar: boolean };
 }
 
-const TOM: Record<SituacaoConexao, Tom> = { SEM_CREDENCIAIS: "neutro", DESCONECTADO: "erro", CONECTANDO: "atencao", CONECTADO: "ok" };
+const TOM: Record<SituacaoConexao, Tom> = { SEM_CREDENCIAIS: "atencao", DESCONECTADO: "erro", CONECTANDO: "atencao", CONECTADO: "ok" };
 
 const EVENTOS: Record<string, string> = {
   "whatsapp.credenciais": "Credenciais da instância guardadas; avisos do provedor religados com segredo novo",
@@ -109,10 +109,10 @@ function JanelaConectar({ id, numero, aoFechar, aoConferir }: { id: string; nume
   );
 }
 
-export function AbaWhatsapp({ ficha, avisar }: PropsAba) {
+export function AbaWhatsapp({ ficha, avisar, pedido }: PropsAba) {
   const id = ficha.condominio.id;
   const carga = useCarregar<DadosWhatsapp>(`/v1/clientes/${id}/whatsapp`);
-  const [janela, setJanela] = useState<"credenciais" | "conectar" | "desconectar" | null>(null);
+  const [janela, setJanela] = useState<"credenciais" | "conectar" | "desconectar" | null>(pedido === "credenciais" ? "credenciais" : null);
   const [motivo, setMotivo] = useState("");
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [aviso, setAviso] = useState<{ tom: Tom; texto: string } | null>(null);
@@ -154,7 +154,7 @@ export function AbaWhatsapp({ ficha, avisar }: PropsAba) {
       <section aria-labelledby="t-numero" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
         <h2 id="t-numero" className="flex flex-wrap items-center gap-2 text-lg font-medium">Número do condomínio <Selo tom="atencao">Piloto</Selo></h2>
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
-          <div><dt className="text-xs text-tinta-suave">Número na ficha</dt><dd className="font-medium">{d.numeroFicha ? mostrarTelefone(d.numeroFicha) : "Sem número: cadastre na aba Ficha"}</dd></div>
+          <div><dt className="text-xs text-tinta-suave">Número na ficha</dt><dd className="font-medium">{d.numeroFicha ? mostrarTelefone(d.numeroFicha) : "Sem número: cadastre na Visão geral"}</dd></div>
           <div><dt className="text-xs text-tinta-suave">Situação</dt><dd><Selo tom={TOM[cx.situacao]}>{SITUACOES_CONEXAO[cx.situacao]}</Selo></dd></div>
           {cx.aparelho ? <div><dt className="text-xs text-tinta-suave">Aparelho conectado</dt><dd className="font-medium">{mostrarTelefone(cx.aparelho)}</dd></div> : null}
           {cx.situacao === "CONECTADO" && cx.conectadoEm ? <div><dt className="text-xs text-tinta-suave">Desde</dt><dd>{formatarDataHora(cx.conectadoEm)}</dd></div> : null}
@@ -187,7 +187,7 @@ export function AbaWhatsapp({ ficha, avisar }: PropsAba) {
           </ul>
         )}
       </section>
-      {janela === "credenciais" ? (
+      {janela === "credenciais" && d.pode.conectar ? (
         <JanelaCredenciais id={id} versao={cx.versao} aoFechar={() => setJanela(null)} aoSalvar={(avisos) => {
           setJanela(null);
           setAviso(avisos ? { tom: "ok", texto: "Credenciais guardadas e avisos do provedor ligados." }
