@@ -632,8 +632,8 @@ b.prot, .prot { white-space: nowrap; }
 .chat-nosso { justify-content: flex-end; }
 .lado-v.grupo .chat-grupo { filter: saturate(.75); }
 .lista-vs li { font-size: 15px; padding: 12px 0; }
-.vs-meio { align-self: center; justify-self: center; width: 44px; height: 44px; border-radius: 50%; background: var(--grad-barra); color: #fff; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 12px 24px -10px #f2700a99; position: relative; z-index: 2; }
-.vs-meio svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.vs-meio { align-self: center; justify-self: center; width: 44px; height: 44px; color: var(--violeta-600); display: inline-flex; align-items: center; justify-content: center; position: relative; z-index: 2; }
+.vs-meio svg { width: 32px; height: 32px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .virada2 { justify-content: center; text-align: center; flex-direction: column; margin-top: 48px; }
 .virada2 p { max-width: 24ch; }
 @media (max-width: 1000px) { .versus { grid-template-columns: minmax(0, 1fr); gap: 16px; } .vs-meio { display: none; } }
