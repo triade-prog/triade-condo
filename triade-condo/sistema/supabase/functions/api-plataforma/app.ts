@@ -54,6 +54,7 @@ import {
   moverPedidoSchema,
   mudarRetornoSchema,
   notaPedidoSchema,
+  ordemPedidosSchema,
   pendenciaSchema,
   previsaoSchema,
   reabrirPedidoSchema,
@@ -626,22 +627,24 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     }));
   });
 
+  // A ordem da fila fica guardada na pessoa e vale em qualquer aparelho (D4.2, decisão A.1).
+  app.put("/v1/condominio/pedidos/ordem", async (c) => {
+    const d = await lerCorpo(c, ordemPedidosSchema);
+    return c.json(await rpc("plataforma_ordem_pedidos", { ...quem(c), p_ordem: d.ordem }));
+  });
+
   // Registrar já avisa os envolvidos, na mesma gravação (F6.4, AT-26, PT-04): o que vem em
   // avisar é só o que quem registra mudou; o resto segue as regras do condomínio.
   app.post("/v1/condominio/pedidos", async (c) => {
     const d = await lerCorpo(c, registrarPedidoSchema);
-    const r = await rpc<{ id: string }>("plataforma_registrar_pedido", {
+    const args = {
       ...quem(c), p_unidade: d.unidadeId, p_contato: d.contatoId, p_local: d.local, p_categoria: d.categoriaId, p_prioridade: d.prioridadeId,
-      p_assunto: d.assunto, p_descricao: d.descricao, p_canal: d.canal, p_privado: d.privado, p_responsavel: d.responsavelId,
-      p_avisar: d.avisar,
-    });
-    if (!d.mensagemId) return c.json(r, 201);
-    // Registrar com as mensagens do WhatsApp (D4.20): junta a conversa na mesma chamada. Se a
-    // junção falha, o pedido fica registrado e a resposta diz que não juntou (a tela oferece Juntar de novo).
-    const juntou = await rpc("plataforma_triar_whatsapp", {
-      ...quem(c), p_mensagem: d.mensagemId, p_acao: "PEDIDO", p_motivo: null, p_pedido: r.id, p_contato: null,
-    }).then(() => true, () => false);
-    return c.json({ ...r, juntou }, 201);
+      p_assunto: d.assunto, p_descricao: d.descricao, p_privado: d.privado, p_responsavel: d.responsavelId, p_avisar: d.avisar,
+    };
+    if (!d.mensagemId) return c.json(await rpc("plataforma_registrar_pedido", { ...args, p_canal: d.canal }), 201);
+    // Registrar com as mensagens do WhatsApp (D4.20, decisão A.2): o banco registra com o canal
+    // WhatsApp do condomínio e junta a conversa na mesma transação; se um falha, nada fica.
+    return c.json(await rpc("plataforma_registrar_pedido_whatsapp", { ...args, p_mensagem: d.mensagemId }), 201);
   });
 
   // O bloco Quem avisar antes de registrar: as linhas pelas regras, os rascunhos editáveis e a

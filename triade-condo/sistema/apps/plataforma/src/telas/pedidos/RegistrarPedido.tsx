@@ -14,6 +14,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, chamarApi, camposComErro, Dialogo, Icone, Interruptor, textoDoErro, type ErroApi } from "@triade/ui";
 import type { AvisoDoRegistro, OpcoesPedidos } from "../tipos.ts";
 import { Escolha, nomeRelacao } from "../moradores/comum.tsx";
+import { CANAIS_PEDIDO_EXIBICAO } from "@triade/domain";
 import { ICONE_CANAL, iconeDaCategoria, opcoesCanal } from "./comum.tsx";
 import { EscolherArquivos, enviarArquivos, type ItemEnvio } from "./Arquivos.tsx";
 import { ListaLocais } from "../Locais.tsx";
@@ -23,16 +24,14 @@ import { ConfirmacaoRegistro, type Registrado } from "./AvisosDoRegistro.tsx";
 
 interface ContatoConfirmado { contatoId: string; nome: string; relacao: string; principal: boolean }
 
-/** Registrar com as mensagens do WhatsApp. Como chegou fica Mensagem: o canal WhatsApp do
- * condomínio é só do pedido que o próprio número abre (o banco recusa o outro jeito). */
+/** Registrar com as mensagens do WhatsApp. Como chegou é o WhatsApp do condomínio, fixo: o banco
+ * grava esse canal só com a mensagem, e registra e junta a conversa juntos (D4.20, decisão A.2). */
 export interface DaMensagem {
   /** De onde vêm as mensagens, no alto do formulário. */
   origem: ReactNode;
   relato: string;
-  /** A mensagem de onde o pedido nasce: a API junta a conversa no mesmo registro (D4.20). */
+  /** A mensagem de onde o pedido nasce: o banco junta a conversa no mesmo registro. */
   mensagemId: string;
-  /** Junta as mensagens ao pedido registrado e diz se deu certo (o Juntar de novo). */
-  juntar: (pedidoId: string) => Promise<boolean>;
 }
 
 export function RegistrarPedido({ aberto, opcoes, aoFechar, registrado, aoRegistrar, daMensagem }: {
@@ -83,7 +82,7 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
   const normal = prioridades.find((p) => p.nome.toLowerCase() === "normal") ?? prioridades[prioridades.length - 1];
   const [onde, setOnde] = useState<"UNIDADE" | "AREA">(opcoes.unidades.length ? "UNIDADE" : "AREA");
   const [v, setV] = useState({
-    unidadeId: "", contatoId: "", local: "", canal: daMensagem ? "MENSAGEM" : "TELEFONE", categoriaId: categorias[0]?.id ?? "", prioridadeId: normal?.id ?? "",
+    unidadeId: "", contatoId: "", local: "", canal: daMensagem ? "WHATSAPP" : "TELEFONE", categoriaId: categorias[0]?.id ?? "", prioridadeId: normal?.id ?? "",
     assunto: "", descricao: daMensagem?.relato ?? "", responsavelId: opcoes.responsavelPadrao ?? "", privado: false,
   });
   const [carga, setCarga] = useState<{ unidade: string; lista: ContatoConfirmado[] } | null>(null);
@@ -93,9 +92,6 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
   const [enviando, setEnviando] = useState(false);
   const [escolha, setEscolha] = useState<EscolhaAvisos>(ESCOLHA_INICIAL);
   const [feito, setFeito] = useState<Registrado | null>(null);
-  // Registrado com as mensagens: se elas foram juntadas ao pedido.
-  const [juntou, setJuntou] = useState<boolean | null>(null);
-  const [juntando, setJuntando] = useState(false);
   const [faltas, setFaltas] = useState<string[]>([]);
   const [passo, setPasso] = useState<Passo>(1);
   // Os campos que faltam no passo, apontados ao tentar seguir (antes de ir ao banco).
@@ -172,11 +168,11 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
       return;
     }
     setEnviando(true);
-    const r = await chamarApi<{ id: string; protocolo: string; avisos?: AvisoDoRegistro[]; juntou?: boolean }>("/v1/condominio/pedidos", { corpo: {
+    const r = await chamarApi<{ id: string; protocolo: string; avisos?: AvisoDoRegistro[] }>("/v1/condominio/pedidos", { corpo: {
       unidadeId: onde === "UNIDADE" ? v.unidadeId || null : null,
       contatoId: onde === "UNIDADE" ? v.contatoId || null : null,
       local: v.local.trim() || null,
-      canal: v.canal, categoriaId: v.categoriaId, prioridadeId: v.prioridadeId,
+      canal: daMensagem ? undefined : v.canal, categoriaId: v.categoriaId, prioridadeId: v.prioridadeId,
       assunto: v.assunto, descricao: v.descricao, privado: v.privado, responsavelId: v.responsavelId || null,
       avisar: paraEnviar(previa, escolhaVista),
       mensagemId: daMensagem?.mensagemId ?? null,
@@ -188,7 +184,6 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
       return setErro(r.erro);
     }
     await enviarArquivos(r.dados.id, "RELATO", arquivos, (chave, p) => setArquivos((xs) => xs.map((x) => (x.chave === chave ? { ...x, progresso: p } : x))));
-    if (daMensagem) setJuntou(r.dados.juntou === true);
     setEnviando(false);
     aoRegistrar?.();
     const resp = opcoes.responsaveis.find((x) => x.vinculoId === v.responsavelId);
@@ -200,13 +195,9 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
   }
 
   if (feito) {
-    const juntar = async () => { setJuntando(true); setJuntou(await daMensagem!.juntar(feito.id)); setJuntando(false); };
-    const extra = !daMensagem ? null : juntou ? (
-      <Aviso tom="ok" titulo="As mensagens estão no pedido">As mensagens e os arquivos do WhatsApp foram para a conversa do pedido e saíram de A identificar.</Aviso>
-    ) : (
-      <Aviso tom="atencao" titulo="As mensagens não foram juntadas">
-        O pedido está na fila. As mensagens continuam em A identificar até juntar.
-        <span className="mt-2 block"><Botao variante="contorno" tamanho="m" disabled={juntando} onClick={() => void juntar()}><Icone nome="link" />Juntar de novo</Botao></span>
+    const extra = !daMensagem ? null : (
+      <Aviso tom="ok" titulo="As mensagens estão no pedido">
+        Chegou pelo WhatsApp do condomínio. As mensagens e os arquivos foram para a conversa do pedido e saíram de A identificar.
       </Aviso>
     );
     return <ConfirmacaoRegistro feito={feito} outro={daMensagem ? undefined : outro} abrir={() => registrado(feito.protocolo, feito.id)} extra={extra} />;
@@ -218,7 +209,7 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
   const categoria = categorias.find((c) => c.id === v.categoriaId);
   const contato = (contatos ?? []).find((c) => c.contatoId === v.contatoId);
   const resumo1 = [onde === "UNIDADE" ? opcoes.unidades.find((u) => u.id === v.unidadeId)?.nome : "Área comum", onde === "AREA" ? v.local.trim() : null,
-    contato?.nome, opcoesCanal.find((c) => c.valor === v.canal)?.texto].filter(Boolean).join(" · ");
+    contato?.nome, daMensagem ? CANAIS_PEDIDO_EXIBICAO.WHATSAPP : opcoesCanal.find((c) => c.valor === v.canal)?.texto].filter(Boolean).join(" · ");
   const prontos = arquivos.filter((x) => !x.problema).length;
   const resumo2 = [v.assunto.trim(), prontos ? (prontos === 1 ? "1 arquivo" : `${prontos} arquivos`) : null].filter(Boolean).join(" · ");
   const textoRegistrar = enviando ? "Registrando…" : avisos.n ? `Registrar e avisar ${avisos.n}` : "Registrar pedido";
@@ -249,7 +240,9 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
           </div>
         ) : null}
       </div>
-      {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
+      {erro ? <AvisoErro erro={erro} texto={daMensagem && !camposComErro(erro).length
+        ? "Nada foi gravado: o pedido e as mensagens vão juntos. As mensagens continuam em A identificar e o que você escreveu está aqui. Tente de novo."
+        : textoDoErro(erro)} /> : null}
       {daMensagem ? daMensagem.origem : null}
 
       <div className="grid gap-x-7 md:grid-cols-[minmax(0,1fr)_340px] md:items-start">
@@ -276,9 +269,14 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
                 onChange={(e) => { mudar({ local: e.target.value }); setFaltaNoPasso((f) => f.filter((x) => x !== "local")); }}
                 erro={msg("local", "Diga onde é (2 a 120 caracteres).")}
                 ajuda={onde === "AREA" ? "Ex.: portão da garagem, elevador social da Torre A." : undefined} />
-              <CampoSelecao id="p-canal" rotulo="Como chegou" icone={ICONE_CANAL[v.canal] ?? "info"} value={v.canal}
-                onChange={(e) => mudar({ canal: e.target.value })} opcoes={opcoesCanal}
-                ajuda={daMensagem ? "O canal WhatsApp do condomínio fica para os pedidos que o próprio número abre." : undefined} />
+              {daMensagem ? (
+                <CampoSelecao id="p-canal" rotulo="Como chegou" icone="whats" value="WHATSAPP" disabled onChange={() => undefined}
+                  opcoes={[{ valor: "WHATSAPP", texto: CANAIS_PEDIDO_EXIBICAO.WHATSAPP }]}
+                  ajuda="Vem das mensagens, por isso não muda. Fica assim na ficha e nos números." />
+              ) : (
+                <CampoSelecao id="p-canal" rotulo="Como chegou" icone={ICONE_CANAL[v.canal] ?? "info"} value={v.canal}
+                  onChange={(e) => mudar({ canal: e.target.value })} opcoes={opcoesCanal} />
+              )}
             </div>
             {onde === "AREA" ? <ListaLocais id="p-locais" /> : null}
           </Parte>

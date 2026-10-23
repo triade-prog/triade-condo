@@ -193,7 +193,8 @@ export const registrarPedidoSchema = z
     prioridadeId: id,
     assunto: z.string().trim().min(3).max(120),
     descricao: z.string().trim().min(3).max(4000),
-    canal: z.enum(chaves(CANAIS_PEDIDO)),
+    /** Como chegou. Com a mensagem do WhatsApp não vai: o banco grava o WhatsApp do condomínio (D4.20). */
+    canal: z.enum(chaves(CANAIS_PEDIDO)).optional(),
     privado: z.boolean().default(false),
     responsavelId: id.nullable().optional().transform((v) => v ?? null),
     avisar: avisarRegistroSchema.nullable().optional().transform((v) => v ?? null),
@@ -206,6 +207,7 @@ export const registrarPedidoSchema = z
       ctx.addIssue({ code: "custom", path: ["local"], message: "Informe a unidade ou o local" });
     }
     if (d.contatoId && !d.unidadeId) ctx.addIssue({ code: "custom", path: ["unidadeId"], message: "Escolha a unidade de quem pediu" });
+    if (!d.canal && !d.mensagemId) ctx.addIssue({ code: "custom", path: ["canal"], message: "Diga como o pedido chegou" });
   });
 
 /** A prévia do bloco Quem avisar: o que já foi preenchido no registro e os textos editados,
@@ -217,13 +219,22 @@ export const quemAvisarSchema = z.object({
   responsavelId: id.nullable().optional(),
   prestadorId: id.nullable().optional(),
   privado: z.boolean().optional(),
-  canal: z.enum(chaves(CANAIS_PEDIDO)).optional(),
+  canal: z.enum(chaves(CANAIS_PEDIDO_EXIBICAO)).optional(),
   local: z.string().max(120).nullable().optional(),
   assunto: z.string().max(120).nullable().optional(),
   descricao: z.string().max(4000).nullable().optional(),
   textoPrestador: z.string().max(1500).optional(),
   textoMoradores: z.string().max(4200).optional(),
 });
+
+/** A ordem da fila, guardada na pessoa (D4.2, decisão A.1). */
+export const ORDENS_PEDIDOS = {
+  ATENCAO: "Pede atenção primeiro",
+  RECENTES: "Mais recentes",
+  ANTIGOS: "Mais antigos",
+} as const;
+export type OrdemPedidos = keyof typeof ORDENS_PEDIDOS;
+export const ordemPedidosSchema = z.object({ ordem: z.enum(chaves(ORDENS_PEDIDOS)) });
 
 export const buscaPedidosSchema = z.object({
   situacao: z.enum(chaves(FILTROS_SITUACAO)).optional(),

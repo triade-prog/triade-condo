@@ -298,7 +298,7 @@ function ConversaDoNumero({ n, d, opcoes, aoFechar, feito, registrado }: {
     );
     return (
       <RegistrarPedido aberto opcoes={opcoes} aoFechar={aoFechar} registrado={(_, id) => registrado(id)}
-        daMensagem={{ origem, relato: relatoDasMensagens(n.mensagens), mensagemId: m.id, juntar: async (pedidoId) => (await triar("PEDIDO", pedidoId)).ok }} />
+        daMensagem={{ origem, relato: relatoDasMensagens(n.mensagens), mensagemId: m.id }} />
     );
   }
 
