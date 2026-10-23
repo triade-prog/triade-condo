@@ -5,11 +5,11 @@
 // Depois, o link mostra o resultado de cada item.
 
 import { useParams } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
-import { ESTADOS_PROCURACAO, formatarDataHora, porcento, QUORUNS, SITUACOES_ITEM } from "@triade/domain";
-import { Aviso, AvisoErro, Botao, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, classeBotao, textoDoErro, type ErroApi } from "@triade/ui";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { ESTADOS_PROCURACAO, formatarDataHora, PESOS_ASSEMBLEIA, porcento, QUORUNS, SITUACOES_ITEM } from "@triade/domain";
+import { Aviso, AvisoErro, Botao, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, classeBotao, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
 import type { AssembleiaPublica } from "../tipos.ts";
-import { Cartao, TelaPublica } from "./comum.tsx";
+import { Cartao, Opcao, TelaPublica } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: AssembleiaPublica };
 type Item = AssembleiaPublica["itens"][number];
@@ -35,10 +35,9 @@ export function Assembleia() {
 
   return (
     <TelaPublica titulo={a.titulo} subtitulo={`${a.condominio} · ${a.unidade}${a.proprietarios ? ` · ${a.proprietarios}` : ""}`} icone="convivio" rodape={RODAPE}>
-      <Cabecalho a={a} />
+      <QuandoEOnde a={a} />
       {a.estado === "CONVOCADA" ? <Procuracao a={a} base={base} aoMudar={pronto} /> : null}
-      {a.estado === "EM_ANDAMENTO" ? <Votacao a={a} base={base} aoMudar={pronto} /> : null}
-      {a.estado === "ENCERRADA" ? <Resultados a={a} /> : null}
+      {a.estado === "EM_ANDAMENTO" || a.estado === "ENCERRADA" ? <Pauta a={a} base={base} aoMudar={pronto} /> : null}
       {a.representa?.length ? (
         <p className="text-[13px] text-tinta-suave">Este link é da {a.unidade} nesta assembleia. Vale também pela procuração da {a.representa.join(" e da ")}.</p>
       ) : null}
@@ -46,19 +45,35 @@ export function Assembleia() {
   );
 }
 
-function Cabecalho({ a }: { a: AssembleiaPublica }) {
+const Dado = ({ rotulo, className = "", children }: { rotulo: string; className?: string; children: ReactNode }) => (
+  <div className={`grid gap-0.5 ${className}`}><dt className="text-[13px] text-tinta-suave">{rotulo}</dt><dd className="text-[15px]">{children}</dd></div>
+);
+
+/** Quando e onde: antes, as chamadas e o local; durante, o andamento e a presença. */
+function QuandoEOnde({ a }: { a: AssembleiaPublica }) {
   if (a.estado === "CANCELADA") return <Aviso tom="atencao" titulo="Assembleia cancelada">{a.motivoCancelamento}</Aviso>;
   return (
-    <Cartao>
-      <p className="text-sm">
-        1ª chamada em {formatarDataHora(a.primeiraChamada)} · 2ª em {formatarDataHora(a.segundaChamada)}
-        {a.local ? ` · ${a.local}` : ""}
-      </p>
+    <Cartao className="gap-2.5">
+      <h2 className="t-titulo-cartao flex items-center gap-2"><Icone nome="calendario" />Quando e onde</h2>
       {a.estado === "EM_ANDAMENTO" ? (
-        <p className="text-sm text-tinta-suave">Em andamento{a.presenteEm ? ` · presença registrada às ${formatarDataHora(a.presenteEm).slice(11)}` : ""}</p>
+        <span className="flex flex-wrap gap-1.5">
+          <Selo tom="andamento">Em andamento</Selo>
+          {a.presenteEm ? <Selo tom="ok">Presença registrada às {formatarDataHora(a.presenteEm).slice(11)}</Selo> : null}
+        </span>
+      ) : (
+        <>
+          {a.estado === "ENCERRADA" ? <span className="justify-self-start"><Selo tom="neutro">Encerrada</Selo></span> : null}
+          <dl className="grid grid-cols-2 gap-3">
+            <Dado rotulo="1ª chamada">{formatarDataHora(a.primeiraChamada)}</Dado>
+            <Dado rotulo="2ª chamada">{formatarDataHora(a.segundaChamada)}</Dado>
+            {a.local ? <Dado rotulo="Onde" className="col-span-2">{a.local}</Dado> : null}
+          </dl>
+          {a.estado === "CONVOCADA" ? <p className="t-apoio text-sm">No dia, abra este link para registrar a presença e votar, do salão ou de casa.</p> : null}
+        </>
+      )}
+      {a.linkVideo && a.estado !== "ENCERRADA" ? (
+        <a href={a.linkVideo} target="_blank" rel="noreferrer" className={classeBotao("contorno", "justify-self-start", "m")}><Icone nome="link" />Entrar na videochamada</a>
       ) : null}
-      {a.estado === "ENCERRADA" ? <p className="text-sm text-tinta-suave">Assembleia encerrada.</p> : null}
-      {a.linkVideo ? <a href={a.linkVideo} target="_blank" rel="noreferrer" className={classeBotao("contorno", "justify-self-start", "m")}>Entrar na videochamada</a> : null}
       {a.semDireito ? <Aviso tom="atencao">O síndico marcou esta unidade sem direito a voto nesta assembleia. A presença continua valendo.</Aviso> : null}
     </Cartao>
   );
@@ -66,7 +81,8 @@ function Cabecalho({ a }: { a: AssembleiaPublica }) {
 
 function Procuracao({ a, base, aoMudar }: { a: AssembleiaPublica; base: string; aoMudar: (d: AssembleiaPublica) => void }) {
   const p = a.procuracao;
-  const [quem, setQuem] = useState(p && p.estado !== "RECUSADA" ? "outra" : "eu");
+  const vale = p && p.estado !== "RECUSADA";
+  const [quem, setQuem] = useState(vale ? "outra" : "eu");
   const [nome, setNome] = useState(p?.nome ?? "");
   const [unidade, setUnidade] = useState("");
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -83,24 +99,28 @@ function Procuracao({ a, base, aoMudar }: { a: AssembleiaPublica; base: string; 
     aoMudar(r.dados);
   }
 
+  const titulo = <h2 className="t-titulo-cartao flex items-center gap-2"><Icone nome="pessoa" />Quem vota pela {a.unidade}</h2>;
   if (p?.estado === "ACEITA") {
     return (
-      <Cartao>
-        <h2 className="font-medium">Quem vota pela {a.unidade}</h2>
+      <Cartao className="gap-2.5">
+        {titulo}
         <Aviso tom="ok">Procuração aceita pelo síndico: {p.nome}{p.unidade ? `, da ${p.unidade}, vota pelo link da unidade dele` : ", pelo link que o condomínio mandar"}.</Aviso>
       </Cartao>
     );
   }
+  // O botão só aparece quando há o que enviar (decisão B.1).
+  const acao = quem === "eu" ? (vale ? "Retirar a procuração" : null)
+    : !vale ? "Indicar o procurador" : nome.trim() !== p.nome || unidade ? "Trocar o procurador" : null;
+  const atual = <Selo tom="andamento">Atual</Selo>;
   return (
-    <Cartao>
+    <Cartao className="gap-2.5">
       <form onSubmit={enviar} noValidate className="grid gap-3">
         <fieldset className="grid gap-2">
-          <legend className="font-medium">Quem vota pela {a.unidade}</legend>
-          {[{ v: "eu", t: "Eu mesmo, pelo proprietário" }, { v: "outra", t: "Outra pessoa, por procuração" }].map((o) => (
-            <label key={o.v} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-[15px] ${quem === o.v ? "border-violeta-500 bg-violeta-50" : "border-linha"}`}>
-              <input type="radio" name="quem" value={o.v} checked={quem === o.v} onChange={() => setQuem(o.v)} />{o.t}
-            </label>
-          ))}
+          <legend className="contents">{titulo}</legend>
+          <div className="mt-0.5 grid gap-2">
+            <Opcao nome="quem" valor="eu" marcada={quem === "eu"} aoMarcar={() => setQuem("eu")} selo={!vale ? atual : null}>Eu mesmo, pelo proprietário</Opcao>
+            <Opcao nome="quem" valor="outra" marcada={quem === "outra"} aoMarcar={() => setQuem("outra")} selo={vale ? atual : null}>Outra pessoa, por procuração</Opcao>
+          </div>
         </fieldset>
         {p ? (
           <Aviso tom={p.estado === "PENDENTE" ? "info" : "atencao"}>
@@ -115,33 +135,109 @@ function Procuracao({ a, base, aoMudar }: { a: AssembleiaPublica; base: string; 
               opcoes={[{ valor: "", texto: "Não, é de fora do prédio" }, ...(a.outrasUnidades ?? []).map((u) => ({ valor: u.id, texto: u.nome }))]}
               erro={comErro.includes("unidadeId") ? "Escolha outra unidade desta assembleia" : null}
               ajuda="Sendo de outra unidade, depois de aceita, o link dela vale pelas duas" />
-            <p className="text-[13px] text-tinta-suave">Entregue a procuração assinada ao condomínio: o síndico confere antes da assembleia e aceita ou recusa.</p>
+            <p className="t-apoio">Entregue a procuração assinada ao condomínio: o síndico confere antes da assembleia e aceita ou recusa.</p>
           </>
         ) : null}
         {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-        <Botao type="submit" disabled={enviando || (quem === "eu" && !p)}>{quem === "eu" ? "Retirar a procuração" : p ? "Trocar o procurador" : "Indicar o procurador"}</Botao>
-        <p className="text-[13px] text-tinta-suave">Até a 1ª chamada. No dia, abra este link para registrar a presença e votar.</p>
+        {acao ? <Botao type="submit" className="w-full" disabled={enviando}>{acao}</Botao> : null}
+        <p className="t-apoio">Até a 1ª chamada dá para indicar um procurador. O condomínio confere a procuração.</p>
       </form>
     </Cartao>
   );
 }
 
-function Votacao({ a, base, aoMudar }: { a: AssembleiaPublica; base: string; aoMudar: (d: AssembleiaPublica) => void }) {
+/** A pauta inteira num cartão (decisão C.1): o que já foi decidido, o item em votação e o que vem depois. */
+function Pauta({ a, base, aoMudar }: { a: AssembleiaPublica; base: string; aoMudar: (d: AssembleiaPublica) => void }) {
+  const decididos = a.itens.filter((i) => i.estado === "ENCERRADO").length;
   const aberto = a.itens.find((i) => i.estado === "ABERTO");
-  const votados = a.itens.filter((i) => i.meuVoto).map((i) => i.ordem);
   const passou = a.procuracao?.estado === "ACEITA";
   return (
     <>
-      {passou ? <Aviso tom="info">O voto desta unidade está com {a.procuracao!.nome}, pela procuração aceita.</Aviso> : null}
-      {aberto && !passou && !a.semDireito ? <Voto key={aberto.id} i={aberto} total={a.itens.length} base={base} aoMudar={aoMudar} /> : null}
-      {!aberto ? <Aviso tom="info">Nenhum item em votação agora. Esta página mostra o próximo quando a mesa abrir: atualize daqui a pouco.</Aviso> : null}
-      {votados.length ? <p className="text-[13px] text-tinta-suave">Itens {votados.join(", ").replace(/, (\d+)$/, " e $1")}: voto registrado.</p> : null}
-      <Resultados a={a} />
+      {passou && a.estado === "EM_ANDAMENTO" ? <Aviso tom="info">O voto desta unidade está com {a.procuracao!.nome}, pela procuração aceita.</Aviso> : null}
+      {a.estado === "EM_ANDAMENTO" && !aberto ? (
+        <Aviso tom="info">Nenhum item em votação agora. Esta página mostra o próximo quando a mesa abrir: atualize daqui a pouco.</Aviso>
+      ) : null}
+      <Cartao className="gap-1">
+        <span className="flex items-baseline justify-between gap-2">
+          <h2 className="t-titulo-cartao flex items-center gap-2"><Icone nome="lista" />Pauta</h2>
+          <span className="t-apoio">{a.itens.length} {a.itens.length === 1 ? "item" : "itens"} · {decididos} {decididos === 1 ? "decidido" : "decididos"}</span>
+        </span>
+        <ol className="grid">
+          {a.itens.map((i, n) => (
+            <ItemDaPauta key={i.id} i={i} ultimo={n === a.itens.length - 1} peso={a.peso}>
+              {i.estado === "ABERTO" ? (passou || a.semDireito
+                ? <p className="t-apoio">{QUORUNS[i.quorum]}. {passou ? "Quem vota é o procurador." : "Esta unidade não vota nesta assembleia."}</p>
+                : <Voto key={i.id} i={i} base={base} aoMudar={aoMudar} />) : null}
+            </ItemDaPauta>
+          ))}
+        </ol>
+      </Cartao>
     </>
   );
 }
 
-function Voto({ i, total, base, aoMudar }: { i: Item; total: number; base: string; aoMudar: (d: AssembleiaPublica) => void }) {
+function seloDoItem(i: Item) {
+  if (i.estado === "ABERTO") return <Selo tom="andamento">Votação aberta</Selo>;
+  if (i.estado === "AGUARDANDO") return <Selo tom="neutro">Depois</Selo>;
+  const r = i.resultado;
+  if (!r) return <Selo tom="neutro">Votado</Selo>;
+  if (r.situacao === "APROVADO") return <Selo tom="ok">Decidido: aprovado</Selo>;
+  if (r.situacao === "ESCOLHIDA") return <Selo tom="ok">Decidido: {r.vencedor}</Selo>;
+  return <Selo tom={r.situacao === "REPROVADO" ? "neutro" : "atencao"}>Decidido: {SITUACOES_ITEM[r.situacao].toLowerCase()}</Selo>;
+}
+
+function ItemDaPauta({ i, ultimo, peso, children }: { i: Item; ultimo: boolean; peso?: AssembleiaPublica["peso"]; children: ReactNode }) {
+  const r = i.resultado;
+  const corpo = (
+    <div className="grid gap-2.5 pb-3.5 pl-[38px]">
+      {i.descricao ? <p className="text-sm">{i.descricao}</p> : null}
+      {r ? (
+        <>
+          {r.opcoes.map((o, k) => {
+            const vence = Math.max(...r.opcoes.map((x) => x.porcentagem)) === o.porcentagem && (r.situacao === "APROVADO" || r.situacao === "ESCOLHIDA");
+            return (
+              <div key={k} className="grid gap-1">
+                <span className="flex justify-between gap-2 text-[13px]">
+                  <span>{o.texto}{i.meuVoto === k + 1 ? " · seu voto" : ""}</span><span className="text-tinta-suave">{porcento(o.porcentagem)}</span>
+                </span>
+                <span className="h-1.5 overflow-hidden rounded-full bg-superficie-2" aria-hidden="true">
+                  <span className={`block h-full rounded-full ${vence ? "bg-ok" : "bg-neutro"}`} style={{ width: `${o.porcentagem}%` }} />
+                </span>
+              </div>
+            );
+          })}
+          <span className="text-xs text-tinta-suave">{peso ? `${PESOS_ASSEMBLEIA[peso]} · ` : ""}{r.votaram} {r.votaram === 1 ? "unidade votou" : "unidades votaram"}</span>
+        </>
+      ) : null}
+      {children}
+    </div>
+  );
+  const temCorpo = Boolean(i.descricao || r || children);
+  const linha = (
+    <>
+      <span className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full bg-violeta-100 text-[13px] font-bold text-violeta-700" aria-hidden="true">{i.ordem}</span>
+      <span className="grid min-w-0 flex-1 gap-1">
+        <span className="text-[15px] font-semibold"><span className="sr-only">{i.ordem}. </span>{i.titulo}</span>
+        <span>{seloDoItem(i)}</span>
+      </span>
+    </>
+  );
+  return (
+    <li className={ultimo ? "" : "border-b border-linha"}>
+      {temCorpo ? (
+        <details open={i.estado !== "AGUARDANDO"} className="group">
+          <summary className="flex cursor-pointer list-none items-center gap-3 py-3.5 [&::-webkit-details-marker]:hidden">
+            {linha}
+            <span className="text-tinta-suave transition-transform group-open:rotate-180" aria-hidden="true"><Icone nome="baixo" /></span>
+          </summary>
+          {corpo}
+        </details>
+      ) : <div className="flex items-center gap-3 py-3.5">{linha}</div>}
+    </li>
+  );
+}
+
+function Voto({ i, base, aoMudar }: { i: Item; base: string; aoMudar: (d: AssembleiaPublica) => void }) {
   const [escolha, setEscolha] = useState<number | null>(i.meuVoto ?? null);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -158,47 +254,20 @@ function Voto({ i, total, base, aoMudar }: { i: Item; total: number; base: strin
   }
 
   return (
-    <Cartao>
-      <form onSubmit={votar} noValidate className="grid gap-3">
-        <fieldset className="grid gap-2">
-          <legend className="grid gap-1">
-            <span className="text-[13px] text-tinta-suave">Item {i.ordem} de {total} · votação aberta</span>
-            <span className="text-xl font-medium">{i.titulo}</span>
-          </legend>
-          <p className="text-[13px] text-tinta-suave">{i.descricao ? `${i.descricao} ` : ""}{QUORUNS[i.quorum]}.</p>
-          {i.opcoes.map((o, k) => (
-            <label key={k} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-[15px] ${escolha === k + 1 ? "border-violeta-500 bg-violeta-50" : "border-linha"}`}>
-              <input type="radio" name="opcao" value={k + 1} checked={escolha === k + 1} onChange={() => setEscolha(k + 1)} />{o}
-            </label>
-          ))}
-        </fieldset>
-        {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-        {i.meuVoto ? <Aviso tom="ok">Voto registrado: {i.opcoes[i.meuVoto - 1]}. Dá para trocar enquanto o item está aberto.</Aviso> : null}
-        <Botao type="submit" disabled={enviando || !escolha || escolha === i.meuVoto}>{i.meuVoto ? "Trocar o voto" : "Votar"}</Botao>
-      </form>
-    </Cartao>
-  );
-}
-
-function Resultados({ a }: { a: AssembleiaPublica }) {
-  const votados = a.itens.filter((i) => i.resultado);
-  if (!votados.length) return null;
-  return (
-    <Cartao>
-      <h2 className="font-medium">Resultado</h2>
-      <ul className="grid gap-2 text-sm">
-        {votados.map((i) => {
-          const r = i.resultado!;
-          return (
-            <li key={i.id} className="grid gap-0.5">
-              <span className="font-medium">{i.ordem}. {i.titulo}: {r.situacao === "ESCOLHIDA" ? `escolhida ${r.vencedor}` : SITUACOES_ITEM[r.situacao].toLowerCase()}</span>
-              <span className="text-tinta-suave">
-                {r.opcoes.map((o) => `${o.texto} ${porcento(o.porcentagem)}`).join(" · ")}{i.meuVoto ? ` · seu voto: ${i.opcoes[i.meuVoto - 1]}` : ""}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </Cartao>
+    <form onSubmit={votar} noValidate className="grid gap-2.5">
+      <fieldset className="grid gap-2">
+        <legend className="t-apoio mb-1">{QUORUNS[i.quorum]}</legend>
+        {i.opcoes.map((o, k) => (
+          <Opcao key={k} nome={`opcao-${i.id}`} valor={k + 1} marcada={escolha === k + 1} aoMarcar={() => setEscolha(k + 1)}
+            selo={i.meuVoto === k + 1 ? <Selo tom="andamento">Seu voto</Selo> : null}>{o}</Opcao>
+        ))}
+      </fieldset>
+      {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
+      {escolha && escolha !== i.meuVoto ? (
+        <Botao type="submit" className="w-full" disabled={enviando}>{i.meuVoto ? "Trocar o voto" : "Votar"}</Botao>
+      ) : i.meuVoto ? (
+        <Aviso tom="ok" titulo={`Voto registrado: ${i.opcoes[i.meuVoto - 1]}`}>Dá para trocar enquanto o item está aberto: escolha outra opção e aparece Trocar o voto.</Aviso>
+      ) : null}
+    </form>
   );
 }

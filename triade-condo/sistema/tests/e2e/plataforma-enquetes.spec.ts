@@ -87,11 +87,17 @@ test.describe("Enquetes", () => {
     await page.goto(`${PLATAFORMA}/v/K7QM-3XPA-9TRE`);
     await expect(page.getByRole("heading", { name: "Enquete do Residencial Ipê" })).toBeVisible();
     await expect(page.getByText("Torre A · 302")).toBeVisible();
-    await expect(page.getByText(/Aberta até .* · uma por unidade · secreta/)).toBeVisible();
+    await expect(page.getByText(/^Aberta até /)).toBeVisible();
+    await expect(page.getByText("Uma por unidade", { exact: true })).toBeVisible();
+    await expect(page.getByText("Secreta", { exact: true })).toBeVisible();
+    // O botão só aparece quando há o que enviar (decisão B.1).
+    await expect(page.getByRole("button", { name: "Enviar resposta" })).toHaveCount(0);
     await conferir(page);
     await page.getByLabel("Das 6h às 22h").check();
     await page.getByRole("button", { name: "Enviar resposta" }).click();
-    await expect(page.getByText(/Resposta de Torre A · 302 registrada em .*\. Dá para trocar até/)).toBeVisible();
+    await expect(page.getByText(/^Resposta registrada em /)).toBeVisible();
+    await expect(page.getByText("Sua resposta", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /resposta$/ })).toHaveCount(0);
     await page.getByLabel("Fechada aos domingos").check();
     await page.getByRole("button", { name: "Trocar a resposta" }).click();
     await expect(page.getByLabel("Fechada aos domingos")).toBeChecked();

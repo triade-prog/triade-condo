@@ -95,7 +95,9 @@ test.describe("Links e QR", () => {
   test("AT-30: a folha para imprimir traz as etiquetas em uso, com QR e código curto", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/etiquetas`);
-    await expect(page.getByText("3 etiquetas.", { exact: false })).toBeVisible();
+    await expect(page.getByText("3 etiquetas em uso", { exact: false })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Imprimir" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Voltar" })).toHaveAttribute("href", "/configuracoes/etiquetas");
     await expect(page.getByRole("img", { name: "QR da etiqueta E01" })).toBeVisible();
     await expect(page.getByRole("img", { name: "QR da etiqueta E04" })).toHaveCount(0);
     await page.getByRole("button", { name: "Uma por folha" }).click();
@@ -130,22 +132,48 @@ test.describe("Links e QR", () => {
     await expect(page.getByRole("heading", { name: "Bomba de recalque com ruído" })).toBeVisible();
     await expect(page.getByText("Bomba 2 com ruído forte.", { exact: false })).toBeVisible();
     await expect(page.getByText("Hoje, 14h às 17h")).toBeVisible();
+    // Um passo por vez: confirmar, chegar, contar e pronto.
+    const passos = page.getByRole("progressbar", { name: "Passos do serviço" });
+    await expect(passos).toHaveAttribute("aria-valuenow", "1");
+    await expect(page.getByRole("button", { name: "Cheguei" })).toHaveCount(0);
+    await conferir(page);
+    await page.getByRole("button", { name: "Confirmo que vou fazer" }).click();
+    await expect(page.getByText("Você confirmou que vai fazer")).toBeVisible();
+    await expect(passos).toHaveAttribute("aria-valuenow", "2");
+    await expect(page.getByRole("button", { name: "Já terminei" })).toBeVisible();
     await conferir(page);
     await page.getByRole("button", { name: "Cheguei" }).click();
     await expect(page.getByRole("heading", { name: "Registrar a chegada" })).toBeVisible();
     await page.getByRole("button", { name: "Estou no local, mas não achei a etiqueta" }).click();
-    await expect(page.getByText("Chegada registrada, informada por você.")).toBeVisible();
+    await expect(page.getByText("Informada por você.")).toBeVisible();
+    await expect(passos).toHaveAttribute("aria-valuenow", "3");
 
-    await page.getByRole("button", { name: "Terminei" }).click();
+    // Depois da chegada, o formulário já aparece: não há mais Cheguei nem Terminei.
+    await expect(page.getByRole("heading", { name: "Conte o que foi feito" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Cheguei" })).toHaveCount(0);
     await page.getByLabel("O que foi feito").fill("Troquei o rolamento e testei as duas bombas.");
-    await page.locator('input[type="file"]').setInputFiles({ name: "depois.png", mimeType: "image/png", buffer: PNG_1PX });
-    await expect(page.getByText("depois.png: pronta")).toBeVisible();
+    await page.locator('input[type="file"]').first().setInputFiles({ name: "depois.png", mimeType: "image/png", buffer: PNG_1PX });
+    const fotos = page.getByRole("list", { name: "Fotos escolhidas" });
+    await expect(fotos.getByText("depois.png")).toBeVisible();
+    await expect(fotos.getByText("Pronta")).toBeVisible();
     await page.getByRole("button", { name: "Enviar" }).click();
     await expect(page.getByText("Diga quem fez o serviço.")).toBeVisible();
     await page.getByLabel("Quem fez").fill("Márcio");
     await conferir(page);
     await page.getByRole("button", { name: "Enviar" }).click();
-    await expect(page.getByText("Enviado. O condomínio confere o que foi feito e conclui a manutenção.")).toBeVisible();
+    await expect(page.getByText("Enviado. Obrigado!")).toBeVisible();
+    await expect(page.getByText("O condomínio confere o que foi feito e conclui a manutenção.", { exact: false })).toBeVisible();
+    await expect(passos).toHaveAttribute("aria-valuenow", "4");
+    await expect(page.getByText(/^Chegou /)).toBeVisible();
+    await expect(page.getByText(/^Terminou /)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mandar mais uma coisa" })).toBeVisible();
+    await conferir(page);
+    await page.reload();
+    await expect(passos).toHaveAttribute("aria-valuenow", "4");
+    await page.getByRole("button", { name: "Mandar mais uma coisa" }).click();
+    await expect(page.getByRole("heading", { name: "Conte o que foi feito" })).toBeVisible();
+    await page.getByRole("button", { name: "Voltar ao serviço" }).click();
+    await expect(page.getByText("Enviado. Obrigado!")).toBeVisible();
 
     await page.goBack();
     await page.goto(`${PLATAFORMA}/manutencao`);

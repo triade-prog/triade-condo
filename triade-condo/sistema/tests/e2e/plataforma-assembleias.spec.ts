@@ -123,6 +123,8 @@ test.describe("Assembleias", () => {
     await page.goto(`${PLATAFORMA}/a/F9NW-3HJK-5MPQ`);
     await expect(page.getByRole("heading", { name: "Assembleia da fachada" })).toBeVisible();
     await expect(page.getByText("Residencial Ipê · Torre A · 102 · Rafael Dias")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Quando e onde" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Indicar o procurador" })).toHaveCount(0);
     await conferir(page);
     await page.getByLabel("Outra pessoa, por procuração").check();
     await page.getByRole("button", { name: "Indicar o procurador" }).click();
@@ -133,14 +135,19 @@ test.describe("Assembleias", () => {
     await conferir(page);
 
     await page.goto(`${PLATAFORMA}/a/K7QM-3XPA-9TRE`);
-    await expect(page.getByText(/Em andamento · presença registrada às/)).toBeVisible();
+    await expect(page.getByText("Em andamento", { exact: true })).toBeVisible();
+    await expect(page.getByText(/^Presença registrada às/)).toBeVisible();
     await expect(page.getByRole("link", { name: "Entrar na videochamada" })).toBeVisible();
-    await expect(page.getByText("Item 2 de 3 · votação aberta")).toBeVisible();
-    await expect(page.getByText("Voto registrado: Sim. Dá para trocar enquanto o item está aberto.")).toBeVisible();
+    // A pauta inteira num cartão (decisão C.1).
+    await expect(page.getByRole("heading", { name: "Pauta" })).toBeVisible();
+    await expect(page.getByText("Votação aberta", { exact: true })).toBeVisible();
+    await expect(page.getByText("Voto registrado: Sim")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Trocar o voto" })).toHaveCount(0);
     await page.getByLabel("Abstenção").check();
     await page.getByRole("button", { name: "Trocar o voto" }).click();
-    await expect(page.getByText("Voto registrado: Abstenção. Dá para trocar enquanto o item está aberto.")).toBeVisible();
-    await expect(page.getByText(/1\. Aprovar as contas de 2025: aprovado/)).toBeVisible();
+    await expect(page.getByText("Voto registrado: Abstenção")).toBeVisible();
+    await expect(page.getByText("Decidido: aprovado")).toBeVisible();
+    await expect(page.getByText("Aprovar as contas de 2025")).toBeVisible();
     await conferir(page);
 
     await page.goto(`${PLATAFORMA}/a/ZZZZ-ZZZZ-ZZZZ`);

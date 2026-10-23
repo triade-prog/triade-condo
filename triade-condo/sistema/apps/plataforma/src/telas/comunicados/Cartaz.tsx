@@ -1,8 +1,10 @@
 "use client";
 // Cartaz do mural (design "Mural online e e-mail", tela 2): folha A4 com o nome do condomínio, o
-// QR e o endereço, para o elevador e o hall (CD-12).
+// QR e o endereço, para o elevador e o hall (CD-12). O topo de prévia e a folha A4 são os mesmos
+// dos outros impressos (decisão D.1, 23/10/2026).
 
-import { Aviso, Botao, Carregando, ErroCarregar, Marca } from "@triade/ui";
+import Link from "next/link";
+import { Aviso, Carregando, classeBotao, ErroCarregar, FolhaA4, Icone, Logo, PreviaImpressao } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
 import type { PlanoComunicacao } from "../tipos.ts";
 import { enderecoMural, QrCode } from "./QrCode.tsx";
@@ -14,22 +16,47 @@ export function Cartaz() {
   if (plano.estado === "erro") return <main className="mx-auto max-w-3xl p-8"><ErroCarregar erro={plano.erro} texto={plano.texto} tentarDeNovo={plano.recarregar} /></main>;
   const codigo = plano.dados.mural.codigo;
   const link = codigo ? enderecoMural(codigo) : null;
+  const ligado = plano.dados.mural.ligado;
+  const nome = cond.estado === "pronto" ? cond.dados.nome : "condomínio";
   return (
-    <main className="mx-auto grid max-w-[21cm] gap-6 bg-superficie p-8 print:max-w-none print:p-0">
-      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <p className="text-sm text-tinta-suave">Imprima em folha A4 em pé e cole no elevador e no hall.</p>
-        <Botao onClick={() => window.print()} disabled={!link || !plano.dados.mural.ligado}>Imprimir</Botao>
-      </div>
-      {!plano.dados.mural.ligado ? <Aviso tom="atencao" className="print:hidden">O mural está desligado. Ligue em Configurações › Mural e e-mail antes de imprimir.</Aviso> : null}
+    <PreviaImpressao titulo="Cartaz do mural" apoio="Folha A4 em pé · cole no elevador e no hall" voltar="/configuracoes/mural" podeImprimir={Boolean(link && ligado)}
+      aviso={!ligado ? (
+        <Aviso tom="atencao" titulo="O mural está desligado">
+          O cartaz leva os moradores ao mural. Ligue antes de imprimir.
+          <span className="mt-2 block"><Link href="/configuracoes/mural" className={classeBotao("contorno", "", "m")}><Icone nome="ajuste" />Ir para Configurações › Mural e e-mail</Link></span>
+        </Aviso>
+      ) : !link ? <Aviso tom="info">O link aparece ao ligar o mural.</Aviso> : null}
+      legenda={link && ligado ? "Como sai na impressão" : undefined}>
       {link ? (
-        <section className="grid justify-items-center gap-5 rounded-2xl border border-linha p-10 text-center print:border-0">
-          <Marca sistema="Mural online" />
-          <h1 className="text-[34px] leading-tight font-semibold">Mural do {cond.estado === "pronto" ? cond.dados.nome : "condomínio"}</h1>
-          <QrCode texto={link} rotulo="QR do mural online" className="h-72 w-72" />
-          <p className="max-w-md text-lg">Aponte a câmera do celular. Os avisos do condomínio, sem app e sem senha.</p>
-          <p className="font-mono text-base break-all">{link}</p>
-        </section>
-      ) : <Aviso tom="info">O link aparece ao ligar o mural.</Aviso>}
-    </main>
+        <FolhaA4 rotulo="Cartaz do mural" className="p-[1cm]">
+          <div className="flex flex-1 flex-col items-center justify-center gap-7 rounded-[18px] border border-linha p-[1.4cm] text-center">
+            <span className="h-1.5 self-stretch rounded-full bg-linear-to-r from-laranja-200 to-laranja-500" aria-hidden="true" />
+            <span className="grid justify-items-center gap-1">
+              <Logo className="h-12 w-auto" />
+              <small className="text-[11px] font-semibold tracking-[.16em] text-tinta-suave uppercase">Mural online</small>
+            </span>
+            <h2 className="text-[44px] leading-[1.15] font-medium">Mural do<br />{nome}</h2>
+            <QrCode texto={link} rotulo="QR do mural online" className="h-[7.8cm] w-[7.8cm]" />
+            <p className="max-w-[13cm] text-[22px] leading-normal">Aponte a câmera do celular. Os avisos do condomínio, sem app e sem senha.</p>
+            <span className="grid gap-0.5">
+              <span className="text-base text-tinta-suave">ou digite</span>
+              <EnderecoSemQuebra link={link} />
+            </span>
+          </div>
+        </FolhaA4>
+      ) : null}
+    </PreviaImpressao>
+  );
+}
+
+/** O endereço só quebra antes do código, nunca no meio dele. */
+function EnderecoSemQuebra({ link }: { link: string }) {
+  const corte = link.lastIndexOf("/") + 1;
+  const sem = link.replace(/^https?:\/\//, "");
+  const inicio = sem.slice(0, sem.length - (link.length - corte));
+  return (
+    <span className="font-mono text-xl font-semibold">
+      <span className="whitespace-nowrap">{inicio}</span><wbr /><span className="whitespace-nowrap">{link.slice(corte)}</span>
+    </span>
   );
 }

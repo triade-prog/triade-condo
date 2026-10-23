@@ -9,14 +9,14 @@
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { codigoDaEtiquetaLida, conferirAntesDeEnviar, IMPEDIMENTOS_PRESTADOR, TIPOS_MANUTENCAO, type ImpedimentoPrestador } from "@triade/domain";
-import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoTexto, Carregando, camposComErro, chamarApi, Icone, textoDoErro, type ErroApi } from "@triade/ui";
+import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoTexto, Carregando, camposComErro, chamarApi, Icone, Selo, textoDoErro, type ErroApi, type NomeIcone } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import { subir } from "../pedidos/Arquivos.tsx";
 import type { PrestadorPublico } from "../tipos.ts";
 import { Cartao, TelaPublica } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: PrestadorPublico };
-type Modo = "servico" | "chegada" | "impedimento" | "terminei" | "recusar";
+type Modo = "chegada" | "impedimento" | "terminei" | "recusar";
 const RODAPE = "Link só para este serviço. Não precisa de conta.";
 const ENCERRADO: Record<NonNullable<PrestadorPublico["motivo"]>, string> = {
   CANCELADO: "O condomínio cancelou este link. Se o serviço continua, peça um link novo.",
@@ -26,11 +26,13 @@ const ENCERRADO: Record<NonNullable<PrestadorPublico["motivo"]>, string> = {
   REPASSADO: "O condomínio passou o serviço para outro prestador. Se quiser conversar, fale com o condomínio.",
 };
 
+const PASSOS = ["Confirmar", "Chegar", "Contar", "Pronto"] as const;
+
 export function Prestador() {
   const { codigo } = useParams<{ codigo: string }>();
   const base = `/v1/publico/p/${encodeURIComponent(codigo)}`;
   const [carga, setCarga] = useState<Carga>({ estado: "carregando" });
-  const [modo, setModo] = useState<Modo>("servico");
+  const [modo, setModo] = useState<Modo | null>(null);
   const [recado, setRecado] = useState<string | null>(null);
   const [falha, setFalha] = useState<string | null>(null);
 
@@ -51,65 +53,199 @@ export function Prestador() {
   const p = carga.dados;
   if (p.encerrado) return tela(<Aviso tom="info" titulo="Este link não vale mais">{ENCERRADO[p.motivo ?? "VENCIDO"]}</Aviso>);
 
-  const pronto = (texto: string) => { setRecado(texto); setModo("servico"); carregar(); };
-  const voltar = <button type="button" onClick={() => setModo("servico")} className="justify-self-start text-sm font-medium text-violeta-600 hover:underline">Voltar ao serviço</button>;
+  // Um passo por vez: o que já foi mandado diz em qual o prestador está.
+  const registros = p.registros ?? [];
+  const chegada = registros.find((r) => r.tipo === "CHEGOU");
+  const terminou = registros.some((r) => r.tipo === "TERMINOU");
+  const passo = modo === "recusar" ? 1 : modo === "chegada" ? 2 : modo === "terminei" ? 3
+    : terminou ? 4 : chegada ? 3 : p.resposta && p.resposta !== "RECUSOU" ? 2 : 1;
+  const pronto = (texto: string | null) => { setRecado(texto); setModo(null); carregar(); };
+  const confirmouSemHora = p.resposta === "CONFIRMOU" && !registros.some((r) => r.tipo === "CONFIRMOU");
+  const abrir = (m: Modo) => { setRecado(null); setFalha(null); setModo(m); };
+  const voltar = <button type="button" onClick={() => setModo(null)} className="justify-self-start text-sm font-medium text-violeta-600 hover:underline">Voltar ao serviço</button>;
+  const barra = <BarraDosPassos atual={passo} />;
 
-  if (modo === "chegada") return tela(<>{voltar}<Chegada base={base} aoRegistrar={pronto} /></>);
-  if (modo === "impedimento") return tela(<>{voltar}<Impedimento base={base} aoEnviar={() => pronto("Enviado. O condomínio foi avisado e vai combinar o próximo passo com você.")} /></>);
-  if (modo === "recusar") return tela(<>{voltar}<Recusar base={base} aoEnviar={() => pronto("Resposta enviada. O condomínio foi avisado.")} /></>);
-  if (modo === "terminei") return tela(<>{voltar}<Terminei base={base} aoEnviar={() => pronto("Enviado. O condomínio confere o que foi feito e conclui a manutenção.")} /></>);
+  if (modo === "chegada") return tela(<>{barra}{voltar}<Chegada base={base} aoRegistrar={() => pronto(null)} /></>);
+  if (modo === "impedimento") return tela(<>{barra}{voltar}<Impedimento base={base} aoEnviar={() => pronto("Enviado. O condomínio foi avisado e vai combinar o próximo passo com você.")} /></>);
+  if (modo === "recusar") return tela(<>{barra}{voltar}<Recusar base={base} aoEnviar={() => pronto("Resposta enviada. O condomínio foi avisado.")} /></>);
 
-  const chegada = p.registros?.find((r) => r.tipo === "CHEGOU");
   async function confirmar() {
     setFalha(null);
     const r = await chamarApi(`${base}/confirmar`, { corpo: {} });
     if (!r.ok) return setFalha(textoDoErro(r.erro));
-    pronto("Obrigado. O condomínio sabe que você vai fazer o serviço.");
+    pronto(null);
   }
+  const recadoOk = recado ? <Aviso tom="ok">{recado}</Aviso> : null;
+
+  if (passo === 1) {
+    return tela(
+      <>
+        {barra}
+        {p.resposta !== "RECUSOU" ? recadoOk : null}
+        <Servico base={base} p={p} />
+        {p.resposta === "RECUSOU" ? (
+          <Aviso tom="info">Você disse que não pode atender. O condomínio foi avisado.</Aviso>
+        ) : (
+          <Cartao className="gap-3">
+            {p.responderAte ? (
+              <>
+                <p className="flex items-center gap-2 text-[15px] font-semibold"><Icone nome="relogio" />Confirme até {diaHora(p.responderAte)}</p>
+                <p className="t-apoio text-sm">Sem resposta até lá, o condomínio passa o serviço para outro prestador.</p>
+              </>
+            ) : null}
+            <Botao className="w-full" onClick={() => void confirmar()}><Icone nome="check" />Confirmo que vou fazer</Botao>
+            {falha ? <p className="text-sm text-erro" role="alert">{falha}</p> : null}
+            <Botao variante="discreto" className="justify-self-center" onClick={() => abrir("recusar")}><Icone nome="fechar" />Não posso atender</Botao>
+          </Cartao>
+        )}
+      </>,
+    );
+  }
+
+  if (passo === 2) {
+    return tela(
+      <>
+        {barra}
+        {recadoOk ?? (p.resposta === "CONFIRMOU" ? (
+          <Aviso tom="ok" titulo="Você confirmou que vai fazer">Obrigado. O condomínio sabe que você vai fazer o serviço.</Aviso>
+        ) : null)}
+        <Servico base={base} p={p} resumido />
+        <Cartao className="gap-3">
+          <p className="t-apoio text-sm">Ao chegar, aponte a câmera para a etiqueta do local. Ela prova que você esteve lá, sem usar a localização do celular.</p>
+          <Botao className="w-full" onClick={() => abrir("chegada")}><Icone nome="pin" />Cheguei</Botao>
+          <span className="flex flex-wrap justify-between gap-2">
+            <Botao variante="discreto" onClick={() => abrir("impedimento")}><Icone nome="alerta" />Não consegui fazer</Botao>
+            <Botao variante="discreto" onClick={() => abrir("terminei")}><Icone nome="check" />Já terminei</Botao>
+          </span>
+        </Cartao>
+      </>,
+    );
+  }
+
+  if (passo === 3) {
+    return tela(
+      <>
+        {barra}
+        {modo === "terminei" ? voltar : null}
+        {recadoOk}
+        {chegada ? (
+          <Aviso tom="ok" titulo={`Chegada registrada ${diaHora(chegada.em)}`}>
+            {chegada.confirmado ? `Confirmada pela etiqueta ${chegada.etiqueta ?? "do local"}.`
+              : chegada.etiqueta ? `A etiqueta ${chegada.etiqueta} é de outro local, então a chegada fica informada por você.` : "Informada por você."}
+          </Aviso>
+        ) : null}
+        <Terminei base={base} aoEnviar={() => pronto(null)} />
+        {!terminou ? <Botao variante="discreto" className="justify-self-center" onClick={() => abrir("impedimento")}><Icone nome="alerta" />Não consegui fazer</Botao> : null}
+      </>,
+    );
+  }
+
   return tela(
     <>
-      {recado ? <Aviso tom="ok">{recado}</Aviso> : null}
+      {barra}
+      <Aviso tom="ok" titulo="Enviado. Obrigado!">O condomínio confere o que foi feito e conclui a manutenção. Se precisar, ele fala com você.</Aviso>
+      <Servico base={base} p={p} resumido />
       <Cartao>
-        {p.tipo ? (
-          <span className="justify-self-start rounded-full bg-neutro-fundo px-2.5 py-0.5 text-xs font-medium text-tinta-suave">
-            {TIPOS_MANUTENCAO[p.tipo]}{p.pedido ? <> · pedido <span className="font-mono">{p.pedido}</span></> : null}
-          </span>
-        ) : null}
-        <h2 className="text-xl font-medium">{p.titulo}</h2>
-        <p className="text-[15px] whitespace-pre-line">{p.oQueFazer}</p>
-        <dl className="grid gap-2 text-[15px]">
-          <div><dt className="text-[13px] text-tinta-suave">Local</dt><dd>{p.local}</dd></div>
-          {p.quando ? <div><dt className="text-[13px] text-tinta-suave">Quando</dt><dd>{p.quando}</dd></div> : null}
-          {p.comoEntrar ? <div><dt className="text-[13px] text-tinta-suave">Como entrar</dt><dd className="whitespace-pre-line">{p.comoEntrar}</dd></div> : null}
-        </dl>
-        <ArquivosDoServico base={base} arquivos={p.arquivos ?? []} />
-        {p.expiraEm ? <p className="text-[13px] text-tinta-suave">Este link vale até {diaHora(p.expiraEm)}.</p> : null}
-      </Cartao>
-      {chegada ? (
-        <Aviso tom="ok" titulo={`Chegada registrada ${diaHora(chegada.em)}`}>
-          {chegada.confirmado ? `Confirmada pela etiqueta ${chegada.etiqueta ?? "do local"}.` : "Informada por você."}
-        </Aviso>
-      ) : null}
-      {!p.resposta && !chegada ? (
-        <div className="grid gap-2">
-          {p.responderAte ? (
-            <p className="text-[15px]">Confirme até <span className="font-medium">{diaHora(p.responderAte)}</span>. Sem resposta, o condomínio passa o serviço para outro prestador.</p>
+        <h2 className="t-titulo-cartao flex items-center gap-2"><Icone nome="lista" />O que você mandou</h2>
+        <ul className="grid">
+          {/* A confirmação não tem registro com hora: entra como a primeira linha, sem hora. */}
+          {confirmouSemHora ? (
+            <li className="flex gap-3 py-2.5">
+              <span className="ladrilho h-8 w-8" data-tom="ok" aria-hidden="true"><Icone nome="check" /></span>
+              <span className="self-center text-sm font-semibold">Confirmou que vai fazer</span>
+            </li>
           ) : null}
-          <Botao onClick={() => void confirmar()}><Icone nome="check" />Confirmo que vou fazer</Botao>
-          <Botao variante="contorno" onClick={() => { setRecado(null); setFalha(null); setModo("recusar"); }}><Icone nome="fechar" />Não posso atender</Botao>
-          {falha ? <p className="text-sm text-erro" role="alert">{falha}</p> : null}
-        </div>
-      ) : p.resposta === "CONFIRMOU" && !chegada && !recado ? (
-        <Aviso tom="ok">Você confirmou que vai fazer este serviço.</Aviso>
-      ) : p.resposta === "RECUSOU" ? (
-        <Aviso tom="info">Você disse que não pode atender. O condomínio foi avisado.</Aviso>
+          {[...registros].reverse().map((r, i) => <LinhaDoRegistro key={`${r.tipo}-${r.em}-${i}`} r={r} primeira={i === 0 && !confirmouSemHora} />)}
+        </ul>
+      </Cartao>
+      {registros.length < 20 ? (
+        <Cartao className="gap-3">
+          <p className="t-apoio text-sm">Esqueceu alguma coisa ou apareceu um problema depois?</p>
+          <Botao variante="contorno" className="w-full" onClick={() => abrir("terminei")}><Icone nome="mais" />Mandar mais uma coisa</Botao>
+        </Cartao>
       ) : null}
-      <div className="grid gap-2">
-        <Botao variante={!p.resposta && !chegada ? "contorno" : "primario"} onClick={() => { setRecado(null); setModo("chegada"); }}><Icone nome="pin" />Cheguei</Botao>
-        <Botao variante="contorno" onClick={() => { setRecado(null); setModo("impedimento"); }}><Icone nome="alerta" />Não consegui fazer</Botao>
-        <Botao variante="contorno" onClick={() => { setRecado(null); setModo("terminei"); }}><Icone nome="check" />Terminei</Botao>
-      </div>
     </>,
+  );
+}
+
+/** A barra dos quatro passos, com o nome de cada um embaixo. */
+function BarraDosPassos({ atual }: { atual: number }) {
+  return (
+    <section className="grid gap-2 rounded-2xl border border-linha bg-superficie px-4 py-3.5">
+      <span className="text-xs font-semibold text-tinta-suave">Passo {atual} de 4</span>
+      <div className="passos" role="progressbar" aria-label="Passos do serviço" aria-valuemin={1} aria-valuemax={4} aria-valuenow={atual}
+        aria-valuetext={`Passo ${atual} de 4: ${PASSOS[atual - 1]}`}>
+        {PASSOS.map((t, i) => <span key={t} data-feito={i < atual ? "" : undefined} />)}
+      </div>
+      <ol className="flex gap-1.5 text-[11px]" aria-hidden="true">
+        {PASSOS.map((t, i) => (
+          <li key={t} className={`flex flex-1 items-center gap-0.5 ${i + 1 === atual ? "font-bold text-tinta" : i + 1 < atual ? "text-violeta-700" : "text-tinta-suave"}`}>
+            {i + 1 < atual ? <Icone nome="check" className="h-3 w-3" /> : null}{t}
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/** O serviço: inteiro no primeiro passo; depois, resumido numa linha que abre o resto. */
+function Servico({ base, p, resumido = false }: { base: string; p: PrestadorPublico; resumido?: boolean }) {
+  const detalhes = (
+    <>
+      <p className="text-[15px] whitespace-pre-line">{p.oQueFazer}</p>
+      <dl className="grid grid-cols-2 gap-3 text-[15px]">
+        <div><dt className="text-[13px] text-tinta-suave">Local</dt><dd>{p.local}</dd></div>
+        {p.quando ? <div><dt className="text-[13px] text-tinta-suave">Quando</dt><dd>{p.quando}</dd></div> : null}
+        {p.comoEntrar ? <div className="col-span-2"><dt className="text-[13px] text-tinta-suave">Como entrar</dt><dd className="whitespace-pre-line">{p.comoEntrar}</dd></div> : null}
+      </dl>
+      <ArquivosDoServico base={base} arquivos={p.arquivos ?? []} />
+      {p.expiraEm ? <p className="text-[13px] text-tinta-suave">Este link vale até {diaHora(p.expiraEm)}.</p> : null}
+    </>
+  );
+  const tipo = p.tipo ? (
+    <span className="justify-self-start">
+      <Selo tom="neutro">{TIPOS_MANUTENCAO[p.tipo]}{p.pedido ? <> · pedido <span className="font-mono">{p.pedido}</span></> : null}</Selo>
+    </span>
+  ) : null;
+  if (!resumido) {
+    return <Cartao>{tipo}<h2 className="text-xl font-medium">{p.titulo}</h2>{detalhes}</Cartao>;
+  }
+  return (
+    <details className="group rounded-2xl border border-linha bg-superficie p-3.5 shadow-s1">
+      <summary className="flex cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden">
+        <span className="ladrilho h-10 w-10" data-tom="violeta" aria-hidden="true"><Icone nome="ferramenta" /></span>
+        <span className="grid min-w-0 flex-1 gap-0.5">
+          <span className="text-[15px] font-semibold">{p.titulo}</span>
+          <span className="t-apoio">{[p.local, p.quando].filter(Boolean).join(" · ")}</span>
+        </span>
+        <span className="text-tinta-suave transition-transform group-open:rotate-180"><Icone nome="baixo" /></span>
+        <span className="sr-only">Ver o serviço inteiro</span>
+      </summary>
+      <div className="mt-3 grid gap-2">{tipo}{detalhes}</div>
+    </details>
+  );
+}
+
+const REGISTRO: Record<NonNullable<PrestadorPublico["registros"]>[number]["tipo"], { icone: NomeIcone; tom: string; texto: string }> = {
+  CONFIRMOU: { icone: "check", tom: "ok", texto: "Confirmou" },
+  RECUSOU: { icone: "fechar", tom: "neutro", texto: "Disse que não pode atender" },
+  CHEGOU: { icone: "pin", tom: "ok", texto: "Chegou" },
+  IMPEDIMENTO: { icone: "alerta", tom: "atencao", texto: "Contou que não conseguiu fazer" },
+  TERMINOU: { icone: "ferramenta", tom: "violeta", texto: "Terminou" },
+};
+
+/** Uma linha do que o prestador mandou, do mais antigo ao mais novo. */
+function LinhaDoRegistro({ r, primeira }: { r: NonNullable<PrestadorPublico["registros"]>[number]; primeira: boolean }) {
+  const d = REGISTRO[r.tipo];
+  const apoio = r.tipo === "CHEGOU" ? (r.confirmado ? `confirmado pela etiqueta ${r.etiqueta ?? "do local"}` : "informado por você") : null;
+  return (
+    <li className={`flex gap-3 py-2.5 ${primeira ? "" : "border-t border-linha"}`}>
+      <span className="ladrilho h-8 w-8" data-tom={d.tom} aria-hidden="true"><Icone nome={d.icone} /></span>
+      <span className="grid flex-1 gap-0.5">
+        <span className="text-sm font-semibold">{d.texto} {diaHora(r.em)}</span>
+        {apoio ? <span className="t-apoio">{apoio}</span> : null}
+      </span>
+    </li>
   );
 }
 
@@ -163,26 +299,23 @@ function ArquivosDoServico({ base, arquivos }: { base: string; arquivos: { id: s
 }
 
 /** Chegada (MP-08): a câmera lê a etiqueta do local; sem câmera ou sem etiqueta, a chegada fica informada. */
-function Chegada({ base, aoRegistrar }: { base: string; aoRegistrar: (texto: string) => void }) {
+function Chegada({ base, aoRegistrar }: { base: string; aoRegistrar: () => void }) {
   const video = useRef<HTMLVideoElement>(null);
   const [situacao, setSituacao] = useState<"abrindo" | "lendo" | "sem-camera" | "enviando">("abrindo");
   const [aviso, setAviso] = useState<string | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const enviando = useRef(false);
+  const depois = useRef(aoRegistrar);
+  useEffect(() => { depois.current = aoRegistrar; });
 
   const registrar = useCallback(async (etiqueta: string | null) => {
     if (enviando.current) return;
     enviando.current = true;
     setSituacao("enviando");
-    const r = await chamarApi<{ confirmado: boolean; em: string; etiqueta?: { rotulo: string; local: string } }>(`${base}/chegada`, { corpo: { etiqueta } });
+    const r = await chamarApi(`${base}/chegada`, { corpo: { etiqueta } });
     if (!r.ok) { enviando.current = false; setSituacao("lendo"); return setErro(r.erro); }
-    const d = r.dados;
-    aoRegistrar(d.confirmado
-      ? `Chegada registrada, confirmada pela etiqueta ${d.etiqueta?.rotulo ?? ""}, ${d.etiqueta?.local ?? ""}.`
-      : d.etiqueta
-        ? `Chegada registrada. A etiqueta ${d.etiqueta.rotulo} é de outro local (${d.etiqueta.local}), então a chegada fica informada por você.`
-        : "Chegada registrada, informada por você.");
-  }, [base, aoRegistrar]);
+    depois.current();
+  }, [base]);
 
   useEffect(() => {
     let vivo = true;
@@ -260,9 +393,11 @@ function Chegada({ base, aoRegistrar }: { base: string; aoRegistrar: (texto: str
 
 type Foto = { chave: string; nome: string; id?: string; estado: "enviando" | "pronta" | "recusada"; motivo?: string };
 
-/** Fotos do prestador: cada uma sobe ao armazenamento e passa pela conferência antes de valer. */
+/** Fotos do prestador, no modelo de anexar: cada uma sobe ao armazenamento e passa pela conferência antes de valer. */
 function Fotos({ base, fotos, aoMudar }: { base: string; fotos: Foto[]; aoMudar: (f: (atual: Foto[]) => Foto[]) => void }) {
-  async function escolher(lista: FileList | null) {
+  const escolher = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
+  async function incluir(lista: FileList | null) {
     const arquivos = Array.from(lista ?? []).slice(0, Math.max(0, 10 - fotos.length));
     for (const [i, arquivo] of arquivos.entries()) {
       const chave = `${Date.now()}-${i}`;
@@ -282,27 +417,47 @@ function Fotos({ base, fotos, aoMudar }: { base: string; fotos: Foto[]; aoMudar:
       else fim({ estado: "recusada", motivo: conferida?.ok ? conferida.dados.motivo : "A foto não chegou. Tente de novo." });
     }
   }
+  const cheio = fotos.length >= 10;
+  const mudou = (e: React.ChangeEvent<HTMLInputElement>) => { void incluir(e.target.files); e.target.value = ""; };
   return (
-    <div className="grid gap-2">
-      <label className="grid gap-1 text-sm font-medium">
-        Fotos <span className="font-normal text-tinta-suave">(opcional)</span>
-        <span className="flex items-center gap-2 rounded-xl border border-contorno bg-superficie px-3 py-2.5 text-[15px] font-normal">
-          <Icone nome="camera" />{fotos.length ? `${fotos.filter((f) => f.estado === "pronta").length} de ${fotos.length} prontas` : "Tirar ou escolher foto"}
-          <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" disabled={fotos.length >= 10}
-            onChange={(e) => { void escolher(e.target.files); e.target.value = ""; }} />
+    <fieldset className="grid gap-2">
+      <legend className="mb-1.5 text-[13px] font-medium">Fotos <span className="font-normal text-tinta-suave">(opcional)</span></legend>
+      <div className="anexar">
+        <span className="quadro" aria-hidden="true"><Icone nome="camera" /></span>
+        <span className="grid flex-1 gap-0.5">
+          <span className="text-sm font-semibold">Fotos do serviço</span>
+          <span className="t-apoio">JPG, PNG ou WEBP · até 10 fotos · a localização da foto é apagada</span>
         </span>
-      </label>
+        <span className="acoes">
+          <Botao variante="contorno" tamanho="m" className="md:hidden" disabled={cheio} onClick={() => camera.current?.click()}><Icone nome="camera" />Tirar foto</Botao>
+          <Botao variante="contorno" tamanho="m" disabled={cheio} onClick={() => escolher.current?.click()}><Icone nome="clipe" />Escolher fotos</Botao>
+        </span>
+        <input ref={escolher} type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" tabIndex={-1} aria-hidden="true" onChange={mudou} />
+        <input ref={camera} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={mudou} />
+      </div>
       {fotos.length ? (
-        <ul className="grid gap-1 text-[13px]">
+        <ul className="grid gap-2" aria-label="Fotos escolhidas">
           {fotos.map((f) => (
-            <li key={f.chave} className={f.estado === "recusada" ? "text-erro" : "text-tinta-suave"}>
-              {f.nome}: {f.estado === "enviando" ? "enviando…" : f.estado === "pronta" ? "pronta" : f.motivo}
+            <li key={f.chave} className="arquivo" data-problema={f.estado === "recusada" ? "" : undefined}>
+              <span className="flex items-center gap-3">
+                <span className="ladrilho" data-tom={f.estado === "pronta" ? "ok" : undefined} aria-hidden="true"><Icone nome="camera" /></span>
+                <span className="grid min-w-0 flex-1 [overflow-wrap:anywhere]">
+                  <span className="text-sm font-medium">{f.nome}</span>
+                  {f.estado === "recusada" ? <span className="t-apoio text-atencao">{f.motivo}</span>
+                    : f.estado === "pronta" ? <span className="flex items-center gap-1 text-xs text-ok"><Icone nome="check" className="h-3.5 w-3.5" />Pronta</span>
+                      : <span className="t-apoio">Enviando…</span>}
+                </span>
+                {f.estado !== "enviando" ? (
+                  <Botao variante="discreto" tamanho="m" soIcone aria-label={`Tirar ${f.nome} da lista`} onClick={() => aoMudar((a) => a.filter((x) => x.chave !== f.chave))}>
+                    <Icone nome="fechar" />
+                  </Botao>
+                ) : null}
+              </span>
             </li>
           ))}
         </ul>
       ) : null}
-      <span className="text-xs text-tinta-suave">Até 10. A localização das fotos é apagada.</span>
-    </div>
+    </fieldset>
   );
 }
 
@@ -341,7 +496,7 @@ function Impedimento({ base, aoEnviar }: { base: string; aoEnviar: () => void })
         <CampoAreaTexto id="im-texto" rotulo="Conte em poucas palavras" required rows={3} maxLength={2000} value={texto} onChange={(e) => setTexto(e.target.value)}
           erro={comErro.includes("texto") ? "Conte o que aconteceu (de 3 a 2.000 caracteres)." : null} />
         <Fotos base={base} fotos={fotos} aoMudar={setFotos} />
-        <Botao type="submit" className="justify-self-start" disabled={enviando || fotos.some((f) => f.estado === "enviando")}>{enviando ? "Enviando…" : "Enviar"}</Botao>
+        <Botao type="submit" className="w-full" disabled={enviando || fotos.some((f) => f.estado === "enviando")}><Icone nome="enviar" />{enviando ? "Enviando…" : "Enviar"}</Botao>
       </Cartao>
     </form>
   );
@@ -364,8 +519,8 @@ function Terminei({ base, aoEnviar }: { base: string; aoEnviar: () => void }) {
   }
   return (
     <form onSubmit={enviar} noValidate className="grid gap-3">
-      <Cartao>
-        <h2 className="text-lg font-medium">Terminei</h2>
+      <Cartao className="gap-4">
+        <h2 className="text-lg font-medium">Conte o que foi feito</h2>
         {erro && !comErro.length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <CampoAreaTexto id="te-texto" rotulo="O que foi feito" required rows={4} maxLength={2000} value={v.texto} onChange={(e) => setV({ ...v, texto: e.target.value })}
           erro={comErro.includes("texto") ? "Conte o que foi feito (de 3 a 2.000 caracteres)." : null} />
@@ -384,7 +539,7 @@ function Terminei({ base, aoEnviar }: { base: string; aoEnviar: () => void }) {
         <Fotos base={base} fotos={fotos} aoMudar={setFotos} />
         <CampoTexto id="te-quem" rotulo="Quem fez" required maxLength={120} value={v.quemFez} onChange={(e) => setV({ ...v, quemFez: e.target.value })}
           erro={comErro.includes("quemFez") ? "Diga quem fez o serviço." : null} />
-        <Botao type="submit" className="justify-self-start" disabled={enviando || fotos.some((f) => f.estado === "enviando")}>{enviando ? "Enviando…" : "Enviar"}</Botao>
+        <Botao type="submit" className="w-full" disabled={enviando || fotos.some((f) => f.estado === "enviando")}><Icone nome="enviar" />{enviando ? "Enviando…" : "Enviar"}</Botao>
       </Cartao>
     </form>
   );
