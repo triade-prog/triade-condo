@@ -1,0 +1,73 @@
+---
+import Base from "../../layouts/Base.astro";
+import Olho from "../../components/Olho.astro";
+import FaixaFinal from "../../components/FaixaFinal.astro";
+// Guia do síndico (NG-11), primeiro texto: aprovado pela Carolina em 23/10/2026.
+// Funciona só com o WhatsApp e uma planilha; a TRÍADE aparece só no fim.
+const modelos = [
+  { rotulo: "Mensagem fixada no grupo", texto: "Pedidos, reclamações e autorizações vão para o WhatsApp do condomínio, no privado. Cada pedido recebe um número e uma data para você ter notícia. Este grupo fica para avisos e conversa." },
+  { rotulo: "Ao registrar", texto: "Registrei o seu pedido como 2026-0412. Quem está cuidando é o Carlos. Você terá notícia até sexta, 12h." },
+  { rotulo: "Quando ainda não resolveu", texto: "Notícia do pedido 2026-0412: o prestador vem segunda de manhã. Nova notícia até segunda, 18h." },
+  { rotulo: "Ao concluir", texto: "Pedido 2026-0412 concluído: [o que foi feito], por [quem fez]. Se o problema voltar, responda esta mensagem com o número do pedido." },
+];
+---
+<Base titulo="Organizar os pedidos sem virar refém do grupo" atual="/guia" descricao="Quatro passos para separar conversa de pedido no condomínio, com o WhatsApp e uma planilha: número, responsável, data de notícia e conclusão com explicação.">
+<article class="wrap secao pilha texto-guia" style="--gap:16px;max-width:780px">
+  <Olho>Guia do síndico</Olho>
+  <h1 class="titulo-texto">Organizar os pedidos sem virar refém do grupo</h1>
+  <p class="suave">Leitura de 5 minutos. Funciona com o WhatsApp do condomínio e uma planilha.</p>
+
+  <p>O grupo de WhatsApp do prédio é ótimo para avisar que a água vai faltar e péssimo para cuidar de um vazamento. No mesmo dia, a reclamação da garagem divide espaço com bom-dia, figurinha, cachorro perdido e discussão sobre barulho. Quem viu primeiro talvez resolva. Quem não viu pergunta de novo uma semana depois, agora mais irritado.</p>
+  <p>O problema não é o WhatsApp. É tratar conversa e pedido como se fossem a mesma coisa. Conversa pode se perder. Pedido não.</p>
+  <p>Este texto mostra um jeito simples de separar as duas coisas, com o que você já tem: o WhatsApp do condomínio e uma planilha. São quatro passos.</p>
+
+  <h2>1. Separe conversa de pedido</h2>
+  <p>Combine com o prédio uma regra só: <b>pedido vai para o WhatsApp do condomínio, no privado. O grupo fica para conversa e avisos.</b></p>
+  <p>Pedido é tudo o que precisa de alguém para acontecer: um conserto, uma reclamação, uma dúvida sobre boleto, uma autorização de mudança. Se a mensagem pede uma ação, é pedido.</p>
+  <p>Para a regra pegar:</p>
+  <ul>
+    <li>Fixe uma mensagem no grupo explicando para onde vão os pedidos e por quê.</li>
+    <li>Quando um pedido cair no grupo, responda ali mesmo com educação: "Recebi. Vou registrar e te respondo no privado." Depois, cumpra.</li>
+    <li>Não discuta o pedido no grupo. A resposta vai para quem pediu.</li>
+  </ul>
+  <p>Nas primeiras semanas os pedidos vão continuar caindo no grupo. Isso é normal. O que muda o hábito é o morador perceber que, no privado, ele recebe resposta.</p>
+
+  <h2>2. Dê um número a cada pedido</h2>
+  <p>Todo pedido que chega ganha um número e uma linha na planilha. Pode ser simples: ano e sequência, como 2026-0412.</p>
+  <p>O número resolve três coisas:</p>
+  <ul>
+    <li><b>O morador sabe que foi registrado.</b> "Anotei" some da memória. "Pedido 2026-0412" fica.</li>
+    <li><b>Ninguém precisa recontar a história.</b> Quando o morador volta, ele cita o número e você acha o caso em segundos.</li>
+    <li><b>Pedidos repetidos aparecem.</b> Se o vazamento da vaga 12 ganhou três números em dois meses, o problema não é o vazamento, é o conserto.</li>
+  </ul>
+  <p>Responda logo que registrar, mesmo que ainda não saiba a solução: "Registrei o seu pedido como 2026-0412."</p>
+
+  <h2>3. Um responsável e uma data para dar notícia</h2>
+  <p>Cada pedido precisa de um nome ao lado: quem está cuidando. Pode ser você, o subsíndico, o zelador ou a secretária. Pedido sem nome é pedido de ninguém.</p>
+  <p>E aqui está o ponto que mais muda a relação com os moradores: <b>combine uma data para dar notícia, não para resolver.</b></p>
+  <p>Você nem sempre sabe quando o encanador vem. Mas sempre sabe quando vai dar a próxima notícia. "Você terá notícia até sexta, 12h" é uma promessa que depende só de você. Na sexta, se o conserto ainda não aconteceu, a notícia é essa: "O prestador vem segunda de manhã. Nova notícia até segunda, 18h."</p>
+  <p>O morador irritado quase nunca está bravo com a demora. Ele está bravo com o silêncio.</p>
+  <p>Uma vez por dia, olhe na planilha a coluna da data de notícia. O que vence hoje recebe mensagem hoje.</p>
+
+  <h2>4. Feche com explicação</h2>
+  <p>Pedido só termina quando o morador fica sabendo como terminou. Antes de marcar como concluído, mande uma mensagem curta com três coisas: o que foi feito, quem fez e se precisa de mais alguma coisa.</p>
+  <p>"Pedido 2026-0412 concluído. A Hidráulica Souza trocou o registro da garagem na segunda. Se voltar a vazar, responda esta mensagem com o número do pedido."</p>
+  <p>Na planilha, anote a data e uma linha sobre a solução. Daqui a um ano, quando o vazamento voltar ou quando outro síndico assumir, essa linha vale mais do que qualquer conversa no grupo.</p>
+
+  <h2>Para copiar e usar</h2>
+  <p><b>A planilha.</b> Uma linha por pedido, com estas colunas:</p>
+  <div class="tabela-rola" tabindex="0" role="region" aria-label="Exemplo da planilha de pedidos">
+    <table>
+      <thead><tr><th scope="col">Número</th><th scope="col">Data</th><th scope="col">Unidade</th><th scope="col">Pedido</th><th scope="col">Responsável</th><th scope="col">Notícia até</th><th scope="col">Situação</th><th scope="col">Como terminou</th></tr></thead>
+      <tbody><tr><td>2026-0412</td><td>22/10</td><td>302</td><td>Vazamento na garagem, vaga 12</td><td>Carlos</td><td>sex 23/10, 12h</td><td>Em andamento</td><td></td></tr></tbody>
+    </table>
+  </div>
+  {modelos.map((m) => <><p><b>{m.rotulo}:</b></p><blockquote>{m.texto}</blockquote></>)}
+
+  <h2>Quando a planilha começa a pesar</h2>
+  <p>Com 20 ou 30 pedidos abertos, a planilha ainda dá conta. O que pesa é o resto: copiar cada mensagem do WhatsApp, lembrar de olhar as datas de notícia e escrever a mesma resposta várias vezes por semana.</p>
+  <p>É esse trabalho que a TRÍADE faz sozinha. O morador continua escrevendo no WhatsApp do condomínio, o pedido já chega com número, e você define no painel quem cuida e quando o morador terá notícia. Quando a data vence, o sistema avisa. Mas os quatro passos valem com ou sem sistema. Comece pela regra do passo 1 e pela planilha, hoje mesmo.</p>
+  <p><a href="/guia">Voltar ao Guia do síndico</a></p>
+</article>
+<FaixaFinal />
+</Base>

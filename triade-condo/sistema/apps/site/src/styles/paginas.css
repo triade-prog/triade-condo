@@ -858,3 +858,16 @@ h2, .titulo-g { font-size: var(--t-58); font-weight: 600; }
 .palco-fixo { top: 150px; }
 .demo-chips { display: flex; flex-wrap: wrap; gap: var(--e-2); list-style: none; margin: 0; padding: 0; }
 .demo-chips li { font-size: var(--t-14); font-weight: 600; padding: 6px 14px; border-radius: var(--raio-pilula); background: var(--violeta-50); color: var(--violeta-700); border: 1px solid #e6d9fb; }
+
+/* Guia do síndico: texto corrido, com a planilha de exemplo que rola de lado no celular */
+.texto-guia h2 { font-size: var(--t-24); margin-top: var(--e-5); }
+.texto-guia p, .texto-guia li { font-size: var(--t-18); line-height: 1.65; }
+.texto-guia ul { display: flex; flex-direction: column; gap: var(--e-2); padding-left: var(--e-5); list-style: disc; }
+.texto-guia li::marker { color: var(--violeta-600); }
+.texto-guia blockquote { margin: 0; padding: var(--e-3) var(--e-4); border-left: 4px solid var(--violeta-600); background: var(--violeta-50); border-radius: 0 var(--raio-p) var(--raio-p) 0; font-size: var(--t-16); line-height: 1.6; }
+.tabela-rola { overflow-x: auto; border: 1px solid var(--linha); border-radius: var(--raio-p); }
+.tabela-rola table { border-collapse: collapse; min-width: 720px; width: 100%; font-size: var(--t-14); }
+.tabela-rola th, .tabela-rola td { text-align: left; padding: var(--e-2) var(--e-3); border-bottom: 1px solid var(--linha); }
+.tabela-rola th { background: var(--violeta-50); font-weight: 700; }
+.guia-cartao h2 a { color: inherit; text-decoration: none; }
+.guia-cartao h2 a:hover { color: var(--violeta-600); }
