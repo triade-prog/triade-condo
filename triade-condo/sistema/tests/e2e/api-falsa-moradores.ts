@@ -4,7 +4,8 @@
 // Garagens e veículos (F3.8; MU-06, MU-11): vagas, veículos e a busca da lista de unidades, com a
 // placa achada com ou sem hífen (pgTAP 028). Família, pets, aniversário, histórico e
 // aniversariantes (F3.9, F3.10; pgTAP 036): o mês de hoje é sempre novembro, para a tela não
-// depender da data.
+// depender da data. Link de cadastro e a fila do que chega por ele (F3.10; MU-09; pgTAP 037): o
+// código é sempre o mesmo, e a recusa apaga os dados como no banco.
 import type { Route } from "@playwright/test";
 
 interface Bloco { id: string; nome: string; ordem: number; ativo: boolean; versao: number }
@@ -23,6 +24,17 @@ interface Contato {
 }
 interface Familiar { id: string; unidadeId: string; nome: string; parentesco: string; mora: boolean; aniversario: { dia: number; mes: number } | null; saiu: boolean; versao: number }
 interface Pet { id: string; unidadeId: string; nome: string; especie: string; porte: string | null; raca: string | null; observacao: string | null; saiu: boolean; versao: number }
+interface LinkCadastro {
+  id: string; codigo: string; unidadeId: string | null; pede: string[]; expiraEm: string; criadoEm: string; encerrado: boolean; versao: number;
+}
+interface CadastroLink {
+  id: string; linkId: string; unidadeId: string; chave: string; nome: string | null; telefone: string | null; ligacao: string | null; email: string | null;
+  aniversario: { dia: number; mes: number } | null; familia: { nome: string; parentesco: string; mora: boolean; aniversario?: { dia: number; mes: number } | null }[];
+  pets: { nome: string; especie: string; porte?: string | null; raca?: string | null }[]; veiculos: { placa: string; tipo: string; modelo?: string | null }[];
+  estado: "ENVIADO" | "APROVADO" | "RECUSADO"; enviadoEm: string; corrigidoEm?: string; motivo?: string; explicacao?: string; versao: number;
+}
+/** O código de todo link criado na API falsa. */
+export const CODIGO_LINK = "K7P2-9QXA-M4RT";
 interface Registro { id: number; unidadeId: string; em: string; categoria: string; titulo: string; detalhe?: string; autor: string }
 /** O mês de hoje na API falsa. */
 export const MES_FALSO = 11;
@@ -123,6 +135,8 @@ export function criarMoradores() {
     veiculos: [] as Veiculo[],
     familia: [{ id: novoId(), unidadeId: A102, nome: "Lucas Lima", parentesco: "FILHO", mora: true, aniversario: { dia: 14, mes: 11 }, saiu: false, versao: 1 }] as Familiar[],
     pets: [] as Pet[],
+    links: [] as LinkCadastro[],
+    cadastros: [] as CadastroLink[],
     historico: [
       { id: 3, unidadeId: A102, em: "2026-10-12T11:30:00Z", categoria: "MARCAS", titulo: "Marcada para alugar", autor: "por Ana Souza" },
       { id: 2, unidadeId: A102, em: "2025-03-01T14:00:00Z", categoria: "MUDANCA", titulo: "Mudança registrada", detalhe: "Entrou Joana Lima, saiu Carlos Prado", autor: "por Ana Souza" },
@@ -147,7 +161,7 @@ export function resumoMoradores(m: EstadoMoradores) {
   return {
     unidades: ativas.length,
     semContato: ativas.filter((x) => !m.vinculos.some((v) => v.unidadeId === x.id && v.estado === "CONFIRMADO")).length,
-    aConfirmar: m.vinculos.filter((v) => v.estado === "PENDENTE").length,
+    aConfirmar: m.vinculos.filter((v) => v.estado === "PENDENTE").length + m.cadastros.filter((c) => c.estado === "ENVIADO").length,
     semProprietario: ativas.filter((x) => faltaDono(m, x.id)).length,
   };
 }
@@ -170,7 +184,7 @@ const semResponsavel = (ativos: Vinculo[]) => ativos.length > 0 && !ativos.some(
 
 /** Atende as rotas do passo 3; devolve null quando a rota não é daqui. */
 export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: string, metodo: string, corpo: Record<string, unknown>, pode: (a: string) => boolean) {
-  if (!/^\/v1\/condominio\/(unidades|blocos|moradores|contatos|vinculos-unidade|importacoes|estrutura|busca-unidades|garagens|vagas|veiculos|familiares|pets|aniversariantes)/.test(caminho)) return null;
+  if (!/^\/v1\/condominio\/(unidades|blocos|moradores|contatos|vinculos-unidade|importacoes|estrutura|busca-unidades|garagens|vagas|veiculos|familiares|pets|aniversariantes|links-cadastro|cadastros-link)/.test(caminho)) return null;
   if (!pode("moradores.ver")) return erro(route, 403, "FORBIDDEN");
   const edita = pode("moradores.editar");
   const confirma = pode("moradores.confirmar");
@@ -192,6 +206,7 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     contatoId: v.contatoId ?? undefined, contato: v.contatoId ? contato(v.contatoId).nome ?? undefined : undefined,
     vagaId: v.vagaId ?? undefined, vaga: nomeDaVaga(v.vagaId), versao: v.versao });
   const familia = (unidadeId: string) => m.familia.filter((f) => f.unidadeId === unidadeId && !f.saiu);
+  const doLink = (unidadeId: string) => m.cadastros.filter((c) => c.unidadeId === unidadeId && c.estado === "ENVIADO");
   const pets = (unidadeId: string) => m.pets.filter((p) => p.unidadeId === unidadeId && !p.saiu);
   const aniversariantes = (unidadeId: string, mes: number) => [
     ...ativos(unidadeId).map((v) => ({ tipo: "PESSOA", id: v.contatoId, nome: contato(v.contatoId).nome ?? "", a: contato(v.contatoId).aniversario,
@@ -296,7 +311,8 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
       blocos: m.blocos,
       unidades: lista.map(({ aVendaDesde, paraAlugarDesde, ...x }) => ({ ...x, aVenda: Boolean(aVendaDesde), paraAlugar: Boolean(paraAlugarDesde),
         confirmados: ativos(x.id).filter((v) => v.estado === "CONFIRMADO").length,
-        pendentes: ativos(x.id).filter((v) => v.estado === "PENDENTE").length,
+        pendentes: ativos(x.id).filter((v) => v.estado === "PENDENTE").length + doLink(x.id).length,
+        cadastrosLink: doLink(x.id).length,
         temProprietario: ativos(x.id).some((v) => v.proprietario),
         semProprietario: x.ativa && faltaDono(m, x.id),
         principal: (() => { const p = ativos(x.id).find((v) => v.principal); return p ? contato(p.contatoId).nome : null; })(),
@@ -512,7 +528,8 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     const url = new URL(route.request().url());
     const busca = (url.searchParams.get("busca") ?? "").toLowerCase();
     const estado = url.searchParams.get("estado");
-    const itens = m.vinculos.filter((v) => v.estado !== "ENCERRADO" && (!estado || v.estado === estado
+    const so = url.searchParams.get("unidade");
+    const itens = m.vinculos.filter((v) => v.estado !== "ENCERRADO" && (!so || v.unidadeId === so) && (!estado || v.estado === estado
       || (estado === "SEM_EMAIL" && contato(v.contatoId).emailSituacao !== "CONFIRMADO")
       || (estado === "SEM_WHATSAPP" && !recebeNoWhatsapp(contato(v.contatoId))))).map((v) => {
       const c = contato(v.contatoId);
@@ -525,7 +542,7 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     const semEmail = new Set(m.vinculos.filter((v) => v.estado !== "ENCERRADO" && contato(v.contatoId).emailSituacao !== "CONFIRMADO").map((v) => v.contatoId)).size;
     const semWhatsapp = new Set(m.vinculos.filter((v) => v.estado !== "ENCERRADO" && !recebeNoWhatsapp(contato(v.contatoId))).map((v) => v.contatoId)).size;
     return route.fulfill({ json: { itens, total: itens.length, pagina: 1, porPagina: 50, aConfirmar: resumoMoradores(m).aConfirmar, semEmail, semWhatsapp,
-      comunicadosWhatsappLigado: m.zap.ligado, podeEditar: edita, podeConfirmar: confirma } });
+      comunicadosWhatsappLigado: m.zap.ligado, podeEditar: edita, podeConfirmar: confirma, ...(so ? { unidade: { id: so, nome: nomeUnidade(unidade(so)!) } } : {}) } });
   }
   // E-mail do contato (CD-13): vira "esperando confirmação"; só a própria pessoa confirma.
   const em = /^\/v1\/condominio\/contatos\/([^/]+)\/email(\/reenviar)?$/.exec(caminho);
@@ -589,6 +606,68 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     Object.assign(v, marcas, { relacao: relacaoDe(marcas), recebeComunicados: corpo.recebeComunicados, versao: v.versao + 1 });
     return route.fulfill({ json: { versao: v.versao } });
   }
+  const linkJson = (l: LinkCadastro) => ({ id: l.id, unidadeId: l.unidadeId ?? undefined, unidade: l.unidadeId ? nomeUnidade(unidade(l.unidadeId)!) : undefined, pede: l.pede,
+    expiraEm: l.expiraEm, criadoEm: l.criadoEm, criadoPor: "Ana Souza", ativo: !l.encerrado, envios: m.cadastros.filter((c) => c.linkId === l.id).length,
+    aConferir: m.cadastros.filter((c) => c.linkId === l.id && c.estado === "ENVIADO").length, versao: l.versao });
+  if (caminho === "/v1/condominio/links-cadastro") {
+    const so = new URL(route.request().url()).searchParams.get("unidade");
+    if (metodo === "GET") {
+      return route.fulfill({ json: { itens: m.links.filter((l) => l.unidadeId === (so ?? null)).map(linkJson), unidade: so ? nomeUnidade(unidade(so)!) : undefined, podeCriar: edita } });
+    }
+    if (![1, 3, 7, 15, 30].includes(Number(corpo.dias))) return erro(route, 400, "VALIDATION_ERROR", { campos: ["dias"] });
+    const l: LinkCadastro = { id: novoId(), codigo: CODIGO_LINK, unidadeId: (corpo.unidadeId as string | null) ?? null, pede: [...new Set(corpo.pede as string[])],
+      expiraEm: new Date(Date.now() + Number(corpo.dias) * 86_400_000).toISOString(), criadoEm: new Date().toISOString(), encerrado: false, versao: 1 };
+    m.links.push(l);
+    if (l.unidadeId) registrar(l.unidadeId, "PESSOAS", "Link de cadastro criado");
+    return route.fulfill({ status: 201, json: { ...linkJson(l), codigo: l.codigo } });
+  }
+  const enc = /^\/v1\/condominio\/links-cadastro\/([^/]+)\/encerrar$/.exec(caminho);
+  if (enc) {
+    const l = m.links.find((x) => x.id === enc[1]);
+    if (!l) return erro(route, 404, "NOT_FOUND");
+    const f = conflito(l, corpo.versao); if (f) return f;
+    Object.assign(l, { encerrado: true, versao: l.versao + 1 });
+    return route.fulfill({ json: { id: l.id, versao: l.versao } });
+  }
+  if (caminho === "/v1/condominio/cadastros-link") {
+    const so = new URL(route.request().url()).searchParams.get("unidade");
+    const itens = m.cadastros.filter((c) => c.estado === "ENVIADO" && (!so || c.unidadeId === so)).map((c) => {
+      const l = m.links.find((x) => x.id === c.linkId)!;
+      const { chave: _c, ...resto } = c;
+      return { ...resto, unidade: nomeUnidade(unidade(c.unidadeId)!), linkAtivo: !l.encerrado, linkExpiraEm: l.expiraEm };
+    });
+    return route.fulfill({ json: { itens, podeConfirmar: confirma } });
+  }
+  const cl = /^\/v1\/condominio\/cadastros-link\/([^/]+)\/(aprovar|recusar)$/.exec(caminho);
+  if (cl) {
+    if (!confirma) return erro(route, 403, "FORBIDDEN");
+    const c = m.cadastros.find((x) => x.id === cl[1]);
+    if (!c) return erro(route, 404, "NOT_FOUND");
+    const f = conflito(c, corpo.versao); if (f) return f;
+    if (c.estado !== "ENVIADO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "JA_CONFERIDO" });
+    if (cl[2] === "recusar") {
+      if (corpo.motivo === "OUTRO" && !String(corpo.explicacao ?? "").trim()) return erro(route, 400, "VALIDATION_ERROR", { campos: ["explicacao"] });
+      Object.assign(c, { estado: "RECUSADO", motivo: corpo.motivo, explicacao: String(corpo.explicacao ?? "").trim() || undefined, nome: null, telefone: null, email: null,
+        ligacao: null, aniversario: null, familia: [], pets: [], veiculos: [], versao: c.versao + 1 });
+      registrar(c.unidadeId, "PESSOAS", "Cadastro pelo link recusado", "os dados foram apagados");
+      return route.fulfill({ json: { id: c.id, versao: c.versao } });
+    }
+    const tel = normalizar(corpo.telefone);
+    if (!tel) return erro(route, 400, "VALIDATION_ERROR", { campos: ["telefone"] });
+    if (!corpo.ligacao) return erro(route, 400, "VALIDATION_ERROR", { campos: ["ligacao"] });
+    const nome = String(corpo.nome).trim();
+    const novo: Contato = { id: novoId(), nome, telefone: tel, versao: 1, ...(corpo.email ? { email: String(corpo.email), emailSituacao: "PENDENTE" as const } : {}) };
+    m.contatos.push(novo);
+    const lig = String(corpo.ligacao);
+    const base = MARCAS_DA_RELACAO[lig === "PROPRIETARIO_MORA" || lig === "PROPRIETARIO" ? "PROPRIETARIO" : lig]!;
+    const v = ligar(novo.id, c.unidadeId, { ...base, mora: lig === "PROPRIETARIO" ? false : base.mora, principal: false, parentesco: null, ocupaDesde: null }, true);
+    v.estado = "CONFIRMADO";
+    for (const x of corpo.familia as CadastroLink["familia"]) m.familia.push({ id: novoId(), unidadeId: c.unidadeId, ...x, aniversario: x.aniversario ?? null, saiu: false, versao: 1 });
+    for (const x of corpo.pets as CadastroLink["pets"]) m.pets.push({ id: novoId(), unidadeId: c.unidadeId, ...x, porte: x.porte ?? null, raca: x.raca ?? null, observacao: null, saiu: false, versao: 1 });
+    Object.assign(c, { estado: "APROVADO", versao: c.versao + 1 });
+    registrar(c.unidadeId, "PESSOAS", `${nome}: cadastro pelo link aprovado`);
+    return route.fulfill({ json: { id: c.id, versao: c.versao, contatoId: novo.id, vinculoId: v.id, avisos: [], confirmacaoNaFila: false } });
+  }
   if (caminho === "/v1/condominio/importacoes") {
     const linhas = corpo.linhas as { bloco: string | null; andar: string | null; unidade: string; nome: string; telefone: string; relacao: string;
       mora?: boolean | null; responsavel?: boolean | null; parentesco?: string | null; ocupaDesde?: string | null }[];
@@ -613,4 +692,43 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     return route.fulfill({ status: 201, json: { ...r, semProprietario: resumoMoradores(m).semProprietario } });
   }
   return erro(route, 404, "NOT_FOUND");
+}
+
+/** A página do link de cadastro, sem conta (MU-09): a chave vai no corpo e só ela corrige e vê o resultado. */
+export async function rotasCadastroPublico(route: Route, m: EstadoMoradores, caminho: string, metodo: string, corpo: Record<string, unknown>) {
+  const p = /^\/v1\/publico\/cadastro\/([^/]+)(\/ver)?$/.exec(caminho);
+  if (!p) return null;
+  const l = m.links.find((x) => x.codigo === decodeURIComponent(p[1]!));
+  if (!l) return erro(route, 404, "NOT_FOUND");
+  const nomeUnidade = (id: string) => { const x = m.unidades.find((u) => u.id === id)!; return [m.blocos.find((b) => b.id === x.blocoId)?.nome, x.identificacao].filter(Boolean).join(" · "); };
+  const json = (c?: CadastroLink) => ({
+    condominio: "Residencial Ipê", unidadeId: l.unidadeId ?? undefined, unidade: l.unidadeId ? nomeUnidade(l.unidadeId) : undefined,
+    unidades: l.unidadeId || l.encerrado ? undefined : m.unidades.filter((u) => u.ativa).map((u) => ({ id: u.id, nome: nomeUnidade(u.id) })),
+    pede: l.pede, expiraEm: l.expiraEm, aberto: !l.encerrado,
+    envio: c ? (({ chave: _c, id: _i, linkId: _l, versao: _v, corrigidoEm: _co, ...resto }) => ({ ...resto, unidade: nomeUnidade(c.unidadeId) }))(c) : undefined,
+  });
+  const chave = corpo.chave ? String(corpo.chave) : null;
+  const daChave = chave ? m.cadastros.find((c) => c.linkId === l.id && c.chave === chave) : undefined;
+  if (chave && !daChave) return erro(route, 404, "NOT_FOUND");
+  if (metodo === "GET" || p[2]) return route.fulfill({ json: json(daChave) });
+  if (l.encerrado) return erro(route, 400, "VALIDATION_ERROR", { motivo: "LINK_FECHADO" });
+  if (daChave && daChave.estado !== "ENVIADO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "JA_CONFERIDO" });
+  const telefone = normalizar(corpo.telefone);
+  if (!telefone) return erro(route, 400, "VALIDATION_ERROR", { campos: ["telefone"] });
+  const unidadeId = l.unidadeId ?? (corpo.unidadeId as string | null);
+  if (!unidadeId) return erro(route, 400, "VALIDATION_ERROR", { campos: ["unidadeId"] });
+  const pede = new Set(l.pede);
+  const dados = {
+    unidadeId, nome: String(corpo.nome).trim(), telefone, ligacao: pede.has("LIGACAO") ? (corpo.ligacao as string | null) : null,
+    email: pede.has("EMAIL") ? (corpo.email as string | null) || null : null, aniversario: pede.has("ANIVERSARIO") ? (corpo.aniversario as CadastroLink["aniversario"]) : null,
+    familia: pede.has("FAMILIA") ? (corpo.familia as CadastroLink["familia"]) : [], pets: pede.has("PETS") ? (corpo.pets as CadastroLink["pets"]) : [],
+    veiculos: pede.has("VEICULOS") ? (corpo.veiculos as CadastroLink["veiculos"]) : [],
+  };
+  if (daChave) {
+    Object.assign(daChave, dados, { corrigidoEm: new Date().toISOString(), versao: daChave.versao + 1 });
+    return route.fulfill({ json: json(daChave) });
+  }
+  const novo: CadastroLink = { id: novoId(), linkId: l.id, chave: `chave-do-aparelho-${novoId()}`, ...dados, estado: "ENVIADO", enviadoEm: new Date().toISOString(), versao: 1 };
+  m.cadastros.push(novo);
+  return route.fulfill({ json: { ...json(novo), chave: novo.chave } });
 }

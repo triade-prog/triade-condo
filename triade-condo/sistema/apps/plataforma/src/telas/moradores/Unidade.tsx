@@ -11,6 +11,7 @@
 // topo, as partes em cartões, um só botão principal (Incluir pessoa); Editar unidade e
 // Registrar mudança em Mais ações; Editar, Recusar e Encerrar no menu de cada pessoa. Família,
 // pets e o aniversário (F3.9) e as três últimas mudanças, com Ver tudo no histórico (F3.10).
+// Link de cadastro da unidade em Mais ações (F3.10; MU-09); ?abrir=link abre direto.
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -28,10 +29,11 @@ import { GaragensDaUnidade } from "./Garagens.tsx";
 import { dataDoHistorico } from "./Historico.tsx";
 import { descreverVinculo, LinhaOcupacao } from "./Vinculo.tsx";
 import { EditarContato, EditarUnidade, Encerrar, IncluirContato, RegistrarMudanca } from "./JanelasUnidade.tsx";
+import { JanelaLinkCadastro } from "./LinkCadastro.tsx";
 
 type JanelaAberta =
   | { tipo: "incluir"; relacao?: string }
-  | { tipo: "mudanca" | "unidade" }
+  | { tipo: "mudanca" | "unidade" | "link" }
   | { tipo: "editar" | "encerrar" | "recusar"; contato: ContatoDaUnidade }
   | { tipo: "remover"; anterior: ContatoAnterior };
 
@@ -68,7 +70,7 @@ export function Unidade() {
   const { atualizar } = usePlataforma();
   const carga = useCarregar<UnidadeDetalhe>(id ? `/v1/condominio/unidades/${id}` : null);
   const [recado, setRecado] = useState<Recado>(null);
-  const [janela, setJanela] = useState<JanelaAberta | null>(abrir === "incluir" ? { tipo: "incluir" } : abrir === "mudanca" ? { tipo: "mudanca" } : null);
+  const [janela, setJanela] = useState<JanelaAberta | null>(abrir === "incluir" ? { tipo: "incluir" } : abrir === "mudanca" ? { tipo: "mudanca" } : abrir === "link" ? { tipo: "link" } : null);
   useEffect(() => {
     if (carga.estado === "pronto" && window.location.hash === "#garagens") document.getElementById("garagens")?.scrollIntoView();
   }, [carga.estado]);
@@ -106,6 +108,7 @@ export function Unidade() {
   const mais: ItemMenu[] = d.podeEditar ? [
     { texto: "Editar unidade", icone: "editar", acao: () => setJanela({ tipo: "unidade" }) },
     ...(u.ativa ? [{ texto: "Registrar mudança", icone: "mudanca" as const, acao: () => setJanela({ tipo: "mudanca" }) }] : []),
+    ...(u.ativa ? [{ texto: "Link de cadastro", icone: "link" as const, apoio: "O morador preenche pelo celular", acao: () => setJanela({ tipo: "link" }) }] : []),
   ] : [];
   mais.push({ texto: "Ver o histórico", icone: "relogio", href: `/moradores/historico?id=${u.id}` });
   const familia = d.familia ?? [];
@@ -269,6 +272,7 @@ export function Unidade() {
 
       <IncluirContato aberto={janela?.tipo === "incluir"} unidade={d} relacaoInicial={janela?.tipo === "incluir" ? janela.relacao : undefined} aoFechar={fechar} salvo={salvo} />
       <RegistrarMudanca aberto={janela?.tipo === "mudanca"} unidade={d} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
+      {janela?.tipo === "link" && d.podeEditar ? <JanelaLinkCadastro unidade={{ id: u.id, nome }} aoFechar={fechar} salvo={setRecado} /> : null}
       <EditarUnidade aberto={janela?.tipo === "unidade"} unidade={d} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
       <EditarContato contato={janela?.tipo === "editar" ? janela.contato : null} emailLigado={d.emailLigado} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar}
         responsavel={((r) => (r ? { nome: r.nome, mora: r.mora } : null))(d.contatos.find((c) => c.principal))} />

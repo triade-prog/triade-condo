@@ -5,6 +5,7 @@
 // Cadastrar pessoa; montar o prédio (planilha, divisões, unidades, vagas e a organização) fica
 // num menu. No celular, o Cadastrar pessoa flutua sobre a barra de baixo. Cada botão só aparece
 // para quem pode (CF-03): a pessoa com Cadastrar moradores inclui, mas só o síndico confirma.
+// O link de cadastro do prédio todo (F3.10; MU-09) também fica em Montar o prédio.
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -17,6 +18,7 @@ import { MenuAcoes, nomesDivisao, type ItemMenu } from "./comum.tsx";
 import { AbaGaragens, JanelaVaga } from "./Garagens.tsx";
 import { CadastrarMorador } from "./JanelasUnidade.tsx";
 import { ListaContatos } from "./ListaContatos.tsx";
+import { JanelaLinkCadastro } from "./LinkCadastro.tsx";
 
 type IdAba = "unidades" | "pessoas" | "garagens" | "confirmar";
 
@@ -32,9 +34,13 @@ export function Moradores() {
   const busca = useSearchParams();
   const router = useRouter();
   const doEndereco = busca.get("aba") === "moradores" ? "pessoas" : busca.get("aba");
-  const [aba, setAba] = useState<IdAba>((["pessoas", "garagens", "confirmar"] as const).find((a) => a === doEndereco) ?? "unidades");
+  const abaDoEndereco: IdAba = (["pessoas", "garagens", "confirmar"] as const).find((a) => a === doEndereco) ?? "unidades";
+  const [aba, setAba] = useState<IdAba>(abaDoEndereco);
+  // Um link para a própria tela (Pendentes, no menu da unidade) muda o endereço sem montar de novo.
+  const [abaVista, setAbaVista] = useState(abaDoEndereco);
+  if (abaVista !== abaDoEndereco) { setAbaVista(abaDoEndereco); setAba(abaDoEndereco); }
   const [recado, setRecado] = useState<Recado>(null);
-  const [janela, setJanela] = useState<"bloco" | "unidades" | "estrutura" | "morador" | "vaga" | null>(null);
+  const [janela, setJanela] = useState<"bloco" | "unidades" | "estrutura" | "morador" | "vaga" | "link" | null>(null);
   const [blocoAtual, setBlocoAtual] = useState<string | null>(null);
   const [garagens, setGaragens] = useState(0);
 
@@ -63,6 +69,7 @@ export function Moradores() {
     ...(div.usa ? [{ texto: nova(div.um), icone: "mais" as const, acao: () => setJanela("bloco") }] : []),
     { texto: "Novas unidades", icone: "mais", apoio: "Uma ou várias, pela numeração", acao: () => setJanela("unidades") },
     { texto: "Nova vaga de garagem", icone: "pin", acao: () => setJanela("vaga") },
+    ...(temUnidade ? [{ texto: "Link de cadastro", icone: "link" as const, apoio: "Para mandar no grupo de moradores", acao: () => setJanela("link") }] : []),
     { texto: "Organização do prédio", icone: "ajuste", apoio: `Hoje: ${textoEstrutura(dados.estrutura).toLowerCase()}`, acao: () => setJanela("estrutura") },
   ] : [];
   const cadastrar = <Botao onClick={() => setJanela("morador")}><Icone nome="pessoa-mais" />Cadastrar pessoa</Botao>;
@@ -91,7 +98,8 @@ export function Moradores() {
           ) : aba === "garagens" ? (
             <AbaGaragens salvo={(r) => { setRecado(r); atualizar(); }} />
           ) : (
-            <ListaContatos estado={aba === "confirmar" ? "PENDENTE" : undefined} salvo={salvo} buscaInicial={aba === "pessoas" ? busca.get("busca") ?? "" : ""} />
+            <ListaContatos estado={aba === "confirmar" ? "PENDENTE" : undefined} salvo={salvo} buscaInicial={aba === "pessoas" ? busca.get("busca") ?? "" : ""}
+              unidade={aba === "confirmar" ? busca.get("unidade") ?? undefined : undefined} />
           )}
         </div>
       </Abas>
@@ -100,6 +108,7 @@ export function Moradores() {
       <JanelaEstrutura aberto={janela === "estrutura"} estrutura={dados.estrutura} aoFechar={() => setJanela(null)} salvo={salvo} recarregar={carga.recarregar} />
       <CadastrarMorador aberto={janela === "morador"} dados={dados} aoFechar={() => setJanela(null)} salvo={salvo} />
       <IncluirUnidades aberto={janela === "unidades"} dados={dados} blocoInicial={blocoAtual} aoFechar={() => setJanela(null)} salvo={salvo} />
+      {janela === "link" ? <JanelaLinkCadastro unidade={null} aoFechar={() => setJanela(null)} salvo={setRecado} /> : null}
       <JanelaVaga aberto={janela === "vaga"} vaga={null} unidades={unidadesDaVaga} aoFechar={() => setJanela(null)} recarregar={carga.recarregar}
         salvo={(r) => { setJanela(null); setRecado(r); setGaragens((n) => n + 1); }} />
     </div>

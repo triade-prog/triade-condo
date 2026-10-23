@@ -195,7 +195,7 @@ Deno.test("busca de moradores: só os filtros conhecidos, página como número",
   const m = montar();
   const cookie = await entrar(m);
   await m.pedir("/v1/condominio/moradores?busca=%20lia%20&estado=PENDENTE&pagina=2", { cookie });
-  assertEquals(chamada(m, "plataforma_moradores"), { p_pessoa: ANA, p_condominio: AURORA, p_busca: "lia", p_estado: "PENDENTE", p_pagina: 2 });
+  assertEquals(chamada(m, "plataforma_moradores"), { p_pessoa: ANA, p_condominio: AURORA, p_busca: "lia", p_estado: "PENDENTE", p_pagina: 2, p_unidade: null });
   assertEquals((await erro(await m.pedir("/v1/condominio/moradores?estado=ENCERRADO", { cookie }))).codigo, "VALIDATION_ERROR");
 });
 
