@@ -1,7 +1,10 @@
 "use client";
-// Aba Implantação (PI-04, PI-05, SH-01): o roteiro de 8 etapas com responsável, substituto e
-// situação; as pendências com quem precisa agir e o próximo retorno; e a entrega, ato explícito
-// que passa o cliente a ativo. Tudo aqui é interno: o cliente não vê (PI-06).
+// Parte Implantação da ficha (PI-04, PI-05, SH-01; DC15, telas-modelo console-ficha-implantacao-*,
+// rodada Console de 23/10/2026): a barra de etapas no alto e a próxima etapa em destaque, com o
+// botão dela; as 8 etapas com responsável, substituto e situação; as pendências ao lado, a
+// vencida em vermelho, com quem precisa agir e o próximo retorno; e a entrega, ato explícito que
+// passa o cliente a ativo, na etapa 8 quando tudo estiver pronto. Tudo aqui é interno: o cliente
+// não vê (PI-06).
 
 import { useState, type FormEvent } from "react";
 import {
@@ -18,9 +21,10 @@ import {
 } from "@triade/domain";
 import {
   Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar,
-  FaixaInterna, IconeMarca, Selo, textoDoErro, Vazio, type ErroApi, type Tom,
+  Icone, IconeMarca, Selo, textoDoErro, Vazio, type ErroApi, type Tom,
 } from "@triade/ui";
 import type { AreasComuns, Configuracoes } from "@triade/configuracoes";
+import { AcaoCartao, BarraEtapas, Cartao } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { PropsAba } from "./tipos.ts";
 
@@ -288,11 +292,28 @@ function Entregar({ condominio, nome, dados, aoFechar, aoEntregar }: {
   );
 }
 
+function NumeroEtapa({ e, atual }: { e: Etapa; atual: boolean }) {
+  const feita = e.situacao === "REALIZADA" || e.situacao === "NAO_SE_APLICA";
+  if (feita) {
+    return <span aria-hidden="true" className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[image:var(--grad-acao)] text-superficie"><Icone nome="check" className="h-3.5 w-3.5" /></span>;
+  }
+  return (
+    <span aria-hidden="true" className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[13px] font-semibold ${atual ? "border-2 border-violeta-600 text-violeta-600" : "border border-linha text-tinta-suave"}`}>
+      {e.numero}
+    </span>
+  );
+}
+
+function textoConfiguracao(c: NonNullable<Implantacao["configuracao"]>): string {
+  return `${c.conferidas} de ${c.total} partes conferidas${c.faltando.length ? ` · falta ${c.faltando.map((x) => PARTES_CONFIGURACAO[x].nome).join(", ")}` : ""}`;
+}
+
 export function AbaImplantacao({ ficha, recarregar, avisar, irPara }: PropsAba) {
   const carga = useCarregar<Implantacao>(`/v1/clientes/${ficha.condominio.id}/implantacao`);
   const [etapa, setEtapa] = useState<Etapa | null>(null);
   const [pendencia, setPendencia] = useState<Pendencia | "nova" | null>(null);
   const [entregando, setEntregando] = useState(false);
+  const [legenda, setLegenda] = useState(false);
 
   if (carga.estado === "carregando") return <Carregando rotulo="Abrindo o roteiro…" />;
   if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
@@ -305,96 +326,133 @@ export function AbaImplantacao({ ficha, recarregar, avisar, irPara }: PropsAba) 
   const equipe = d.equipe ?? [];
   const feitas = etapas.filter((e) => e.situacao === "REALIZADA" || e.situacao === "NAO_SE_APLICA").length;
   const abertas = pendencias.filter((p) => !p.resolvidaEm);
+  const entregue = !!d.implantacao?.entregueEm;
+  const proxima = entregue ? undefined : etapas.find((e) => e.situacao !== "REALIZADA" && e.situacao !== "NAO_SE_APLICA");
+  const podeEntregar = !!d.pode?.entregar && (d.entrega?.faltando.length ?? 1) === 0;
   const salvo = () => {
     setEtapa(null);
     setPendencia(null);
     carga.recarregar();
   };
+  const interno = <span className="selo justify-self-start" data-tom="neutro"><Icone nome="cadeado" className="h-3.5 w-3.5" />Interno · o cliente não vê</span>;
+  const abrirConfiguracao = irPara ? <Botao tamanho="m" className="justify-self-start" onClick={() => irPara("configuracao")}><Icone nome="ajuste" />Abrir a configuração</Botao> : null;
 
   return (
-    <div className="grid gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-medium">Roteiro de implantação</h2>
-          <p className="text-sm text-tinta-suave">{feitas} de {etapas.length} etapas · roteiro versão {d.implantacao!.roteiroVersao}</p>
-        </div>
-        {d.pode?.entregar ? <Botao onClick={() => setEntregando(true)} disabled={(d.entrega?.faltando.length ?? 1) > 0}>Entregar ao cliente</Botao> : null}
-      </div>
-      <FaixaInterna>Interno · o cliente não vê</FaixaInterna>
-      {d.implantacao?.entregueEm ? (
-        <Aviso tom="ok" titulo="Implantação entregue">
-          Entregue em {formatarData(d.implantacao.entregueEm)}{d.implantacao.entreguePor ? ` por ${d.implantacao.entreguePor}` : ""}. O roteiro não muda mais.
-        </Aviso>
-      ) : d.entrega && d.entrega.faltando.length > 0 && d.pode?.entregar ? (
-        <Aviso tom="info" titulo="A entrega aparece quando estiver tudo pronto">
-          Falta: {d.entrega.faltando.map((f) => FALTAS_ENTREGA[f]).join("; ")}.
-        </Aviso>
-      ) : null}
-
-      <ol className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
-        {etapas.map((e) => {
-          const detalhe = e.situacao === "REALIZADA"
-            ? [e.responsavel, e.realizadaEm ? `realizada em ${formatarData(e.realizadaEm)}` : null].filter(Boolean).join(" · ")
-            : e.situacao === "NAO_SE_APLICA" ? `Não se aplica: ${e.motivo ?? ""}`
-              : [e.descricao, e.responsavel, e.substituto ? `substituto ${e.substituto}` : null,
-                e.modalidade ? MODALIDADES_APRESENTACAO[e.modalidade] : null, e.quando ? `marcada para ${mostrarDataSemHora(e.quando)}` : null]
-                .filter(Boolean).join(" · ");
-          const podeAbrir = d.pode?.editar && e.chave !== "ENTREGA";
-          return (
-            <li key={e.numero} className="flex flex-wrap items-center gap-3 px-4 py-3">
-              <span aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-full bg-violeta-50 text-sm font-semibold text-violeta-700">{e.numero}</span>
-              <span className="min-w-0 flex-1">
-                {podeAbrir ? (
-                  <button type="button" className="text-left font-medium text-tinta hover:underline" onClick={() => setEtapa(e)}>
-                    <span className="sr-only">Etapa {e.numero}: </span>{e.titulo}
-                  </button>
-                ) : <span className="font-medium"><span className="sr-only">Etapa {e.numero}: </span>{e.titulo}</span>}
-                <span className="block text-xs text-tinta-suave">{detalhe || e.descricao}</span>
-                {e.chave === "CONFIGURACAO" && e.situacao !== "REALIZADA" && d.configuracao ? (
-                  <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                    <Selo tom={d.configuracao.faltando.length ? "andamento" : "ok"}>{d.configuracao.conferidas} de {d.configuracao.total} conferidas</Selo>
-                    {d.configuracao.faltando.length ? (
-                      <span className="text-tinta-suave">Falta conferir: {d.configuracao.faltando.map((x) => PARTES_CONFIGURACAO[x].nome).join(", ")}.</span>
-                    ) : <span className="text-tinta-suave">Tudo conferido: pode marcar como realizada.</span>}
-                    {irPara ? <button type="button" className="font-medium text-violeta-600 hover:underline" onClick={() => irPara("configuracao")}>Abrir a configuração</button> : null}
-                  </span>
-                ) : null}
-              </span>
-              {e.chave === "ENTREGA" && e.situacao !== "REALIZADA" ? null : <Selo tom={TOM_ETAPA[e.situacao]}>{SITUACOES_ETAPA_IMPLANTACAO[e.situacao]}</Selo>}
-            </li>
-          );
-        })}
-      </ol>
-
-      <section aria-labelledby="titulo-pendencias" className="grid gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h3 id="titulo-pendencias" className="font-medium">Pendências</h3>
-          {d.pode?.editar ? <Botao variante="secundario" tamanho="m" onClick={() => setPendencia("nova")}>Nova pendência</Botao> : null}
-        </div>
-        {abertas.length === 0 ? <p className="text-sm text-tinta-suave">Nenhuma pendência aberta.</p> : (
-          <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
-            {abertas.map((p) => (
-              <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-                <span className="min-w-0">
-                  {d.pode?.editar ? (
-                    <button type="button" className="text-left font-medium hover:underline" onClick={() => setPendencia(p)}>{p.texto}</button>
-                  ) : <span className="font-medium">{p.texto}</span>}
-                  <span className="block text-xs text-tinta-suave">
-                    {[p.etapa ? `Etapa ${p.etapa}` : null, COM_QUEM[p.comQuem], p.responsavel].filter(Boolean).join(" · ")}
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,1fr)]">
+      <div className="grid min-w-0 gap-6">
+        <Cartao id="t-roteiro" titulo="Roteiro de implantação" icone="preparar">
+          {interno}
+          <div className="grid gap-2">
+            <p className="flex justify-between gap-3 text-[13px] text-tinta-suave">
+              <span>{feitas} de {etapas.length} etapas</span><span>roteiro versão {d.implantacao!.roteiroVersao}</span>
+            </p>
+            <BarraEtapas feitas={feitas} total={etapas.length} rotulo={`${feitas} de ${etapas.length} etapas feitas`} />
+          </div>
+          {entregue ? (
+            <Aviso tom="ok" titulo="Implantação entregue">
+              Entregue em {formatarData(d.implantacao!.entregueEm!)}{d.implantacao!.entreguePor ? ` por ${d.implantacao!.entreguePor}` : ""}. O roteiro não muda mais.
+            </Aviso>
+          ) : proxima ? (
+            <section aria-labelledby="t-proxima" className="grid gap-3 rounded-[16px] border-2 border-violeta-600 p-4">
+              <p id="t-proxima" className="t-rotulo text-violeta-600">Próxima etapa</p>
+              <div className="flex items-start gap-3">
+                <NumeroEtapa e={proxima} atual />
+                <span className="grid min-w-0 gap-0.5">
+                  <span className="text-[17px] font-medium">{proxima.titulo}</span>
+                  <span className="t-apoio">
+                    {proxima.chave === "CONFIGURACAO" && d.configuracao
+                      ? (d.configuracao.faltando.length ? `${d.configuracao.conferidas} de ${d.configuracao.total} partes conferidas. Falta conferir: ${d.configuracao.faltando.map((x) => PARTES_CONFIGURACAO[x].nome).join(", ")}.`
+                        : "Tudo conferido: pode marcar como realizada.")
+                      : proxima.chave === "ENTREGA" ? (d.entrega?.faltando.length ? `Falta: ${d.entrega.faltando.map((f) => FALTAS_ENTREGA[f]).join("; ")}.` : "Tudo pronto para entregar ao cliente.")
+                        : [proxima.descricao, proxima.responsavel ? `com ${proxima.responsavel}` : null].filter(Boolean).join(" · ")}
                   </span>
                 </span>
-                {p.vencida ? <Selo tom="erro">Venceu em {mostrarDataSemHora(p.proximoRetorno)}</Selo>
-                  : <Selo tom={p.proximoRetorno === hojeEmBrasilia() ? "atencao" : "neutro"}>Retorno {mostrarDataSemHora(p.proximoRetorno)}</Selo>}
+              </div>
+              {proxima.chave === "CONFIGURACAO" ? abrirConfiguracao
+                : proxima.chave === "ENTREGA" ? (podeEntregar ? <Botao tamanho="m" className="justify-self-start" onClick={() => setEntregando(true)}><Icone nome="check" />Entregar ao cliente</Botao> : null)
+                  : d.pode?.editar ? <Botao tamanho="m" variante="contorno" className="justify-self-start" onClick={() => setEtapa(proxima)}><Icone nome="editar" />Abrir a etapa</Botao> : null}
+            </section>
+          ) : null}
+        </Cartao>
+
+        <Cartao id="t-etapas" titulo={`As ${etapas.length} etapas`} icone="lista"
+          acao={<AcaoCartao icone="info" aoClicar={() => setLegenda(true)}>O que é cada etapa</AcaoCartao>}>
+          <ol className="divide-y divide-linha">
+            {etapas.map((e) => {
+              const detalhe = e.situacao === "REALIZADA"
+                ? [e.responsavel, e.realizadaEm ? `realizada em ${formatarData(e.realizadaEm)}` : null].filter(Boolean).join(" · ")
+                : e.situacao === "NAO_SE_APLICA" ? `Não se aplica: ${e.motivo ?? ""}`
+                  : e.chave === "CONFIGURACAO" && d.configuracao ? textoConfiguracao(d.configuracao)
+                    : e.chave === "ENTREGA" ? (podeEntregar ? "Tudo pronto: as etapas 1 a 7, o síndico com conta própria e o pedido de teste concluído."
+                      : "O botão Entregar aparece aqui quando as etapas 1 a 7 estiverem realizadas ou não se aplicarem, o síndico tiver conta própria e o pedido de teste estiver concluído.")
+                      : [e.descricao, e.responsavel, e.substituto ? `substituto ${e.substituto}` : null,
+                        e.modalidade ? MODALIDADES_APRESENTACAO[e.modalidade] : null, e.quando ? `marcada para ${mostrarDataSemHora(e.quando)}` : null]
+                        .filter(Boolean).join(" · ");
+              const podeAbrir = d.pode?.editar && e.chave !== "ENTREGA";
+              return (
+                <li key={e.numero} className="flex items-center gap-3 py-3 first:pt-1 last:pb-0">
+                  <NumeroEtapa e={e} atual={e === proxima} />
+                  <span className="grid min-w-0 flex-1 gap-0.5">
+                    {podeAbrir ? (
+                      <button type="button" className="justify-self-start text-left font-medium text-tinta hover:text-violeta-600 hover:underline" onClick={() => setEtapa(e)}>
+                        <span className="sr-only">Etapa {e.numero}: </span>{e.titulo}
+                      </button>
+                    ) : <span className="font-medium"><span className="sr-only">Etapa {e.numero}: </span>{e.titulo}</span>}
+                    <span className="t-apoio">{detalhe || e.descricao}</span>
+                    {e.chave === "ENTREGA" && podeEntregar && e !== proxima ? (
+                      <Botao tamanho="m" className="mt-1 justify-self-start" onClick={() => setEntregando(true)}><Icone nome="check" />Entregar ao cliente</Botao>
+                    ) : null}
+                  </span>
+                  {e.chave === "ENTREGA" && e.situacao !== "REALIZADA" ? null : <Selo tom={TOM_ETAPA[e.situacao]}>{SITUACOES_ETAPA_IMPLANTACAO[e.situacao]}</Selo>}
+                </li>
+              );
+            })}
+          </ol>
+        </Cartao>
+      </div>
+
+      <Cartao id="t-pendencias" titulo="Pendências" icone="alerta"
+        acao={d.pode?.editar ? <Botao variante="contorno" tamanho="m" onClick={() => setPendencia("nova")}><Icone nome="mais" />Nova pendência</Botao> : undefined}>
+        {abertas.length === 0 ? <p className="t-apoio">Nenhuma pendência aberta.</p> : (
+          <ul className="grid gap-3">
+            {abertas.map((p) => (
+              <li key={p.id} className={`grid gap-2 rounded-[14px] border p-4 ${p.vencida ? "border-erro-borda bg-erro-fundo" : "border-linha"}`}>
+                <span className="flex items-start gap-3">
+                  <Icone nome="relogio" className={`mt-0.5 h-4.5 w-4.5 shrink-0 ${p.vencida ? "text-erro" : "text-tinta-suave"}`} />
+                  <span className="grid min-w-0 gap-0.5">
+                    <span className="font-medium [overflow-wrap:anywhere]">{p.texto}</span>
+                    <span className="t-apoio">
+                      {[p.etapa ? `Etapa ${p.etapa}` : null, p.comQuem === "CLIENTE" ? "com o cliente" : "com a equipe TRÍADE", p.responsavel ? `${p.responsavel} acompanha` : null].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                </span>
+                <span className="flex flex-wrap items-center gap-2 pl-7">
+                  {p.vencida ? <Selo tom="erro">Venceu em {mostrarDataSemHora(p.proximoRetorno).slice(0, 5)}</Selo>
+                    : <Selo tom={p.proximoRetorno === hojeEmBrasilia() ? "atencao" : "neutro"}>Retorno {mostrarDataSemHora(p.proximoRetorno)}</Selo>}
+                  {d.pode?.editar ? (
+                    <Botao variante="contorno" tamanho="m" className="bg-superficie" onClick={() => setPendencia(p)} aria-label={`Resolver: ${p.texto}`}><Icone nome="check" />Resolver</Botao>
+                  ) : null}
+                </span>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </Cartao>
 
-      <p className="text-xs text-tinta-suave">
-        Situação da etapa: preparada, pendente, realizada ou não se aplica (com motivo). O roteiro tem versão: mudar o roteiro não muda as implantações em andamento.
-      </p>
-
+      <Dialogo aberto={legenda} titulo="O que é cada etapa" aoFechar={() => setLegenda(false)}>
+        <dl className="grid gap-3 text-sm">
+          {etapas.map((e) => (
+            <div key={e.numero} className="grid gap-0.5">
+              <dt className="font-medium">{e.numero} · {e.titulo}</dt>
+              {e.descricao ? <dd className="t-apoio">{e.descricao}</dd> : null}
+            </div>
+          ))}
+        </dl>
+        <p className="t-apoio">
+          Situação da etapa: preparada, pendente, realizada ou não se aplica (com motivo). O roteiro tem versão: mudar o roteiro não muda as implantações em andamento.
+        </p>
+        <div className="flex justify-end"><Botao variante="discreto" onClick={() => setLegenda(false)}>Fechar</Botao></div>
+      </Dialogo>
       {etapa ? <EditarEtapa condominio={ficha.condominio.id} etapa={etapa} equipe={equipe} aoFechar={() => setEtapa(null)} aoSalvar={salvo} /> : null}
       {pendencia ? (
         <EditarPendencia condominio={ficha.condominio.id} pendencia={pendencia === "nova" ? null : pendencia} etapas={etapas} equipe={equipe}

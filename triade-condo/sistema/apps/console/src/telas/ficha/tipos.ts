@@ -37,6 +37,8 @@ export interface PropsAba {
   pode: (acao: string) => boolean;
   recarregar: () => void;
   avisar: (r: Recado) => void;
-  /** Leva para outra aba da ficha (a etapa 4 abre a Configuração). */
-  irPara?: (aba: string) => void;
+  /** Leva para outra parte da ficha (a etapa 4 abre a Configuração; uma situação a tratar abre onde se resolve). */
+  irPara?: (parte: string, pedido?: string) => void;
+  /** O que a parte abre ao chegar (por exemplo, "convidar" em Pessoas, vindo da Visão geral). */
+  pedido?: string;
 }

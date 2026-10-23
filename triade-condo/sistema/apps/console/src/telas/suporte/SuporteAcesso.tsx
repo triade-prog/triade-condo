@@ -1,14 +1,17 @@
 "use client";
-// Suporte de acesso (PI-09): quem não consegue entrar. Pedido, verificação e o mesmo acesso de
-// volta, sem ninguém ver senha. A fila mostra os pedidos em andamento e os do último mês.
+// Suporte de acesso (PI-09; DC15, tela-modelo console-suporte-acesso-computador, rodada Console de
+// 23/10/2026): quem não consegue entrar. Pedido, verificação e o mesmo acesso de volta, sem ninguém
+// ver senha. A fila mostra os pedidos em andamento e os do último mês, em abas Abertos e
+// Concluídos; a linha inteira abre o pedido. A regra do e-mail que mudou é um aviso no alto.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import { CANAIS_SUPORTE, formatarDataHora, SITUACOES_SUPORTE_ACESSO, TIPOS_SUPORTE_ACESSO } from "@triade/domain";
+import { CANAIS_SUPORTE, SITUACOES_SUPORTE_ACESSO, TIPOS_SUPORTE_ACESSO } from "@triade/domain";
 import {
-  Aviso, Botao, CampoAreaTexto, CampoSelecao, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar, Selo, textoDoErro, Vazio, type ErroApi, type Tom,
+  Aviso, Botao, CampoAreaTexto, CampoSelecao, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, textoDoErro, Vazio, type ErroApi, type Tom,
 } from "@triade/ui";
+import { AbasLista, CabecaPagina, CaixaLista, CLASSE_LINHA, CLASSE_LINK_LINHA, diaHora, plural } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 
 export interface PedidoAcesso {
@@ -79,35 +82,68 @@ function NovoPedido({ aoFechar }: { aoFechar: () => void }) {
   );
 }
 
+/** Por onde o pedido chegou, numa frase ("pelo WhatsApp da TRÍADE"). */
+export const PELO_CANAL: Record<keyof typeof CANAIS_SUPORTE, string> = {
+  WHATSAPP: "pelo WhatsApp da TRÍADE", EMAIL: "por e-mail", TELEFONE: "por telefone", PRESENCIAL: "presencialmente", OUTRO: "por outro canal",
+};
+
+/** Pedido que ainda pede um passo da equipe ou da administração. */
+export const pedidoAberto = (p: Pick<PedidoAcesso, "situacao">) => p.situacao === "ABERTO" || p.situacao === "DUVIDOSO";
+
+const COLUNAS = "md:grid-cols-[40px_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_20px]";
+
 export function SuporteAcesso() {
   const carga = useCarregar<{ pedidos: PedidoAcesso[] }>("/v1/suporte-acesso");
   const [novo, setNovo] = useState(false);
+  const [aba, setAba] = useState<"abertos" | "concluidos">("abertos");
+  const todos = carga.estado === "pronto" ? carga.dados.pedidos : [];
+  const abertos = todos.filter(pedidoAberto);
+  const visiveis = aba === "abertos" ? abertos : todos.filter((p) => !pedidoAberto(p));
   return (
     <div className="grid gap-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[28px] font-normal tracking-tight">Suporte de acesso</h1>
-          <p className="text-tinta-suave">Quem não consegue entrar: verificar e restabelecer o mesmo acesso.</p>
-        </div>
-        <Botao onClick={() => setNovo(true)}>Novo pedido</Botao>
-      </div>
+      <CabecaPagina titulo="Suporte de acesso" apoio="Quem não consegue entrar: verificar e restabelecer o mesmo acesso."
+        acao={<Botao onClick={() => setNovo(true)}><Icone nome="mais" />Novo pedido</Botao>} />
+      <Aviso tom="info" titulo="E-mail que mudou não se troca aqui">
+        Vira troca de síndico, para o síndico, ou novo convite feito pelo síndico, para a pessoa autorizada.
+      </Aviso>
       {carga.estado === "carregando" ? <Carregando /> : null}
       {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
-      {carga.estado === "pronto" && carga.dados.pedidos.length === 0 ? <Vazio titulo="Nenhum pedido de suporte de acesso">Os pedidos do último mês aparecem aqui.</Vazio> : null}
-      {carga.estado === "pronto" && carga.dados.pedidos.length > 0 ? (
-        <ul className="grid gap-2.5">
-          {carga.dados.pedidos.map((p) => (
-            <li key={p.id} className="grid gap-1 rounded-2xl border border-linha bg-superficie p-4 shadow-s1 sm:grid-cols-[1fr_auto] sm:items-center">
-              <span>
-                <Link href={`/suporte-acesso/${p.condominioId}/${p.id}`} className="font-semibold text-tinta hover:underline">Pedido de {p.pessoa} · {p.condominio}</Link>
-                <span className="block text-sm text-tinta-suave">{TIPOS_SUPORTE_ACESSO[p.tipo]} · {CANAIS_SUPORTE[p.canal]} · {formatarDataHora(p.criadoEm)} · atendido por {p.atendidoPor}</span>
-              </span>
-              <Selo tom={TOM_SUPORTE[p.situacao]}>{SITUACOES_SUPORTE_ACESSO[p.situacao]}</Selo>
-            </li>
-          ))}
-        </ul>
+      {carga.estado === "pronto" ? (
+        <CaixaLista titulo="Pedidos de suporte de acesso" colunas={COLUNAS} cabecalho={visiveis.length ? ["", "Pedido", "Recebido", "Situação", ""] : undefined}
+          abas={<AbasLista rotulo="Filtrar os pedidos" atual={aba} aoMudar={setAba}
+            abas={[{ valor: "abertos", texto: "Abertos", n: abertos.length }, { valor: "concluidos", texto: "Concluídos", n: todos.length - abertos.length }]} />}
+          rodape={visiveis.length ? (
+            <>
+              <span className="t-apoio">{plural(abertos.length, "pedido aberto", "pedidos abertos")}</span>
+              <span className="t-apoio">Cada pedido e cada passo ficam no histórico.</span>
+            </>
+          ) : undefined}>
+          {visiveis.length === 0 ? (
+            <div className="md:p-5">
+              <Vazio titulo={aba === "abertos" ? "Nenhum pedido aberto" : "Nenhum pedido concluído no último mês"} icone="chave">
+                {aba === "abertos" ? "Quando alguém não conseguir entrar, abra o pedido aqui." : "Os pedidos do último mês aparecem aqui."}
+              </Vazio>
+            </div>
+          ) : (
+            <ul className="grid max-md:gap-3 max-md:pt-3">
+              {visiveis.map((p) => (
+                <li key={p.id} className={`${CLASSE_LINHA} ${COLUNAS}`}>
+                  <span className="ladrilho self-start md:self-center" data-tom={p.situacao === "DUVIDOSO" ? "atencao" : "violeta"} aria-hidden="true"><Icone nome="chave" /></span>
+                  <span className="grid min-w-0 justify-items-start gap-1">
+                    <Link href={`/suporte-acesso/${p.condominioId}/${p.id}`} className={CLASSE_LINK_LINHA}>{p.pessoa} · {p.condominio}</Link>
+                    <span className="t-apoio">{TIPOS_SUPORTE_ACESSO[p.tipo]} · {PELO_CANAL[p.canal]}</span>
+                  </span>
+                  <span className="t-apoio min-w-0 max-md:col-span-2 max-md:col-start-2">{diaHora(p.criadoEm)} · com {p.atendidoPor}</span>
+                  <span className="max-md:col-span-2 max-md:col-start-2">
+                    <span className="selo" data-tom={TOM_SUPORTE[p.situacao]}>{SITUACOES_SUPORTE_ACESSO[p.situacao]}</span>
+                  </span>
+                  <Icone nome="dir" className="h-5 w-5 text-tinta-suave max-md:col-start-3 max-md:row-start-1" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </CaixaLista>
       ) : null}
-      <p className="text-xs text-tinta-suave">E-mail que mudou não se troca aqui: vira troca de síndico (síndico) ou novo convite feito pelo síndico (pessoa autorizada). Cada pedido e cada passo ficam no histórico.</p>
       {novo ? <NovoPedido aoFechar={() => setNovo(false)} /> : null}
     </div>
   );

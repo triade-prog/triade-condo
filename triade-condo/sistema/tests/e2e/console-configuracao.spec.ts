@@ -24,9 +24,12 @@ test.describe("Console · configuração na implantação", () => {
     await page.getByRole("tab", { name: "Configuração" }).click();
     const painel = page.getByRole("tabpanel");
     await expect(painel.getByRole("heading", { name: "10 de 11 partes conferidas" })).toBeVisible();
-    await expect(painel).toContainText("Falta conferir: WhatsApp.");
+    await expect(painel).toContainText("falta: WhatsApp");
+    await expect(painel.getByRole("img", { name: "10 de 11 partes conferidas" })).toBeVisible();
+    // Só o que foge da regra ganha selo; a regra está na frase do alto.
+    await expect(painel).toContainText("A TRÍADE monta e o síndico ajusta no app, menos onde diz Só a TRÍADE.");
     await expect(painel.getByRole("listitem").filter({ hasText: "Etapas dos pedidos" })).toContainText("Só a TRÍADE");
-    await expect(painel.getByRole("listitem").filter({ hasText: "Feriados" })).toContainText("TRÍADE monta · síndico ajusta");
+    await expect(painel.getByRole("listitem").filter({ hasText: "Feriados" })).not.toContainText("Só a TRÍADE");
     await expect(painel.getByRole("region", { name: "O que o síndico faz no app" })).toContainText("Ainda não aceito");
     await conferir(page);
 
@@ -58,8 +61,8 @@ test.describe("Console · configuração na implantação", () => {
     await instalarApiFalsa(page);
     await page.goto(`${CONSOLE}/clientes/${IPE}`);
     await page.getByRole("tab", { name: "Implantação" }).click();
-    await expect(page.getByText("10 de 11 conferidas")).toBeVisible();
-    await expect(page.getByText("Falta conferir: WhatsApp.")).toBeVisible();
+    await expect(page.getByText("10 de 11 partes conferidas. Falta conferir: WhatsApp.")).toBeVisible();
+    await expect(page.getByText("10 de 11 partes conferidas · falta WhatsApp")).toBeVisible();
     await conferir(page);
 
     await page.getByRole("button", { name: "Etapa 4: Configuração" }).click();

@@ -1,39 +1,18 @@
 "use client";
-// Moldura do Console TRÍADE (telas-modelo da identidade, DC13): a mesma barra superior branca da
-// Plataforma, com "Console TRÍADE" e o selo laranja "Admin", e a lateral clara com os grupos
-// Clientes, Suporte e Equipe (peça R4: Implantações, Chamados e Suporte de acesso, com o número
-// do que está aberto). Em tela pequena, a lateral abre pelo botão de menu.
+// Moldura do Console TRÍADE no padrão novo (DC15, telas-modelo console-inicio-* e
+// console-menu-celular; rodada Console, decisões B.1 e C.1 de 23/10/2026): a mesma da Plataforma.
+// No alto, a marca com "Console TRÍADE" e o selo laranja "Admin", a busca de clientes e a pessoa,
+// que abre o menu com as funções e Sair. Sem sino: o Agora do Início faz esse papel. No
+// computador, a lateral com o Início e os grupos Clientes, Suporte e Equipe, com o número do
+// que está aberto em laranja; no celular, a barra de baixo com Início, Clientes, Chamados e Mais.
+// Implantações saiu do menu e virou o filtro Em implantação da carteira.
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FUNCOES_CONSOLE } from "@triade/domain";
-import { Botao, Carregando, chamarApi, ErroCarregar, Icone, Iniciais, Logo, type NomeIcone } from "@triade/ui";
+import { Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, Iniciais, Logo, type NomeIcone } from "@triade/ui";
 import { ContextoSessao, useCarregar, type SessaoConsole } from "./sessao.tsx";
-
-function Identidade() {
-  return (
-    <span className="inline-flex flex-col items-start gap-0.5">
-      <Logo />
-      <span className="leading-tight">
-        <span className="flex items-center gap-1.5 text-xs text-tinta-suave">
-          Console TRÍADE<span className="sr-only"> · </span>
-          <span className="rounded-full bg-laranja-500 px-2 py-px text-[10px] font-semibold tracking-wider text-violeta-900 uppercase">Admin</span>
-        </span>
-      </span>
-    </span>
-  );
-}
-
-function ItemMenu({ href, icone, children, atual, numero }: { href: string; icone: NomeIcone; children: ReactNode; atual: boolean; numero?: number }) {
-  return (
-    <Link href={href} aria-current={atual ? "page" : undefined}>
-      <Icone nome={icone} />
-      {children}
-      {numero ? <span className="ml-auto rounded-full bg-violeta-100 px-2 text-xs font-semibold text-violeta-700">{numero}<span className="sr-only"> em aberto</span></span> : null}
-    </Link>
-  );
-}
 
 interface Contagens {
   carteira: number;
@@ -43,13 +22,132 @@ interface Contagens {
   whatsapp?: number;
 }
 
+interface ItemDoMenu {
+  href: string;
+  texto: string;
+  /** Nome curto na barra de baixo do celular. */
+  curto?: string;
+  icone: NomeIcone;
+  grupo: "Clientes" | "Suporte" | "Equipe" | null;
+  atual: (caminho: string) => boolean;
+  ve: (s: SessaoConsole) => boolean;
+  contagem?: (n: Contagens) => number | undefined;
+  /** Fica na barra de baixo do celular. */
+  atalho?: boolean;
+}
+
+const temFuncao = (s: SessaoConsole, ...f: string[]) => s.funcoes.some((x) => f.includes(x));
+const atende = (s: SessaoConsole) => temFuncao(s, "ADMINISTRACAO", "IMPLANTACAO", "SUPORTE");
+
+const ITENS: ItemDoMenu[] = [
+  { href: "/", texto: "Início", icone: "casa", grupo: null, atual: (c) => c === "/", ve: () => true, atalho: true },
+  { href: "/clientes", texto: "Carteira de clientes", curto: "Clientes", icone: "predio", grupo: "Clientes", atual: (c) => c.startsWith("/clientes"), ve: () => true, atalho: true },
+  { href: "/chamados", texto: "Chamados", icone: "balao", grupo: "Suporte", atual: (c) => c.startsWith("/chamados"), ve: atende, contagem: (n) => n.chamados, atalho: true },
+  { href: "/suporte-acesso", texto: "Suporte de acesso", icone: "cadeado", grupo: "Suporte", atual: (c) => c.startsWith("/suporte-acesso"),
+    ve: (s) => temFuncao(s, "ADMINISTRACAO", "SUPORTE"), contagem: (n) => n.suporteAcesso },
+  { href: "/whatsapp", texto: "WhatsApp", icone: "whats", grupo: "Suporte", atual: (c) => c.startsWith("/whatsapp"), ve: atende, contagem: (n) => n.whatsapp },
+  { href: "/equipe", texto: "Pessoas e funções", icone: "pessoas", grupo: "Equipe", atual: (c) => c === "/equipe", ve: (s) => s.acoes.includes("console.equipe.gerenciar") },
+  { href: "/equipe/historico", texto: "Histórico da equipe", icone: "relogio", grupo: "Equipe", atual: (c) => c === "/equipe/historico", ve: (s) => s.acoes.includes("console.historico.equipe") },
+];
+const GRUPOS = ["Clientes", "Suporte", "Equipe"] as const;
+
+function Contagem({ n, nome }: { n?: number; nome: string }) {
+  return n ? <span className="contagem">{n}<span className="sr-only"> {nome}</span></span> : null;
+}
+
+/** O menu inteiro: na lateral do computador e na janela "Mais" do celular. */
+function Menu({ itens, caminho, n, aoIr }: { itens: ItemDoMenu[]; caminho: string; n: Contagens | null; aoIr?: () => void }) {
+  const ligacao = (item: ItemDoMenu) => (
+    <Link key={item.href} href={item.href} aria-current={item.atual(caminho) ? "page" : undefined} onClick={aoIr}>
+      <Icone nome={item.icone} />
+      <span className="flex-1">{item.texto}</span>
+      {n && item.contagem ? <Contagem n={item.contagem(n)} nome="em aberto" /> : null}
+    </Link>
+  );
+  return (
+    <>
+      {itens.filter((i) => i.grupo === null).map(ligacao)}
+      {GRUPOS.map((g) => {
+        const doGrupo = itens.filter((i) => i.grupo === g);
+        if (!doGrupo.length) return null;
+        return (
+          <div key={g} role="group" aria-labelledby={`grupo-${g.toLowerCase()}`} className="grid gap-0.5">
+            <span id={`grupo-${g.toLowerCase()}`} className="grupo">{g}</span>
+            {doGrupo.map(ligacao)}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/** A marca do Console: o logo, "Console TRÍADE" e o selo laranja "Admin". */
+function Identidade() {
+  return (
+    <span className="inline-flex flex-col items-start gap-0.5">
+      <Logo />
+      <span className="flex items-center gap-1.5">
+        <span className="text-[10px] font-medium tracking-widest text-tinta-suave uppercase">Console TRÍADE</span>
+        <span className="sr-only"> · </span>
+        <span className="rounded-full bg-laranja-500 px-1.5 text-[9px] leading-[14px] font-bold tracking-wider text-violeta-900 uppercase">Admin</span>
+      </span>
+    </span>
+  );
+}
+
+/** A pessoa no topo: abre o menu com as funções e Sair. */
+function Conta({ sessao, funcoes, aoSair }: { sessao: SessaoConsole; funcoes: string; aoSair: () => void }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setAberto(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setAberto(false); };
+    document.addEventListener("mousedown", fora);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", fora); document.removeEventListener("keydown", esc); };
+  }, [aberto]);
+  return (
+    <div ref={ref} className="conta">
+      <button type="button" className="pessoa" aria-expanded={aberto} aria-controls="menu-pessoa" onClick={() => setAberto((v) => !v)}>
+        <Iniciais nome={sessao.nome} />
+        <span className="sr-only">{`Conta de ${sessao.nome}, ${funcoes}`}</span>
+        <span className="nome max-lg:hidden" aria-hidden="true">{sessao.nome}<small>{funcoes}</small></span>
+        <Icone nome="baixo" className="h-4 w-4 text-tinta-suave max-lg:hidden" />
+      </button>
+      {aberto ? (
+        <div id="menu-pessoa" className="menu-pessoa">
+          <div className="quem">
+            <span className="t-titulo-cartao">{sessao.nome}</span>
+            <span className="t-apoio">{funcoes} · equipe TRÍADE</span>
+          </div>
+          <Botao variante="discreto" tamanho="m" onClick={aoSair}><Icone nome="sair" />Sair</Botao>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** A busca de clientes: leva à carteira com o que foi escrito. */
+function FormBusca({ className = "", chave, aoBuscar }: { className?: string; chave: string; aoBuscar: (q: string) => void }) {
+  return (
+    <form role="search" action="/clientes" className={`busca ${className}`}
+      onSubmit={(e) => { e.preventDefault(); aoBuscar(String(new FormData(e.currentTarget).get("q") ?? "").trim()); }}>
+      <Icone nome="busca" />
+      <input type="search" name="q" maxLength={60} aria-label="Buscar cliente" placeholder="Buscar cliente pelo nome ou pela cidade" key={chave}
+        className="campo placeholder:text-tinta-suave" />
+    </form>
+  );
+}
+
 export function PainelConsole({ children }: { children: ReactNode }) {
   const sessao = useCarregar<SessaoConsole>("/v1/sessao");
   const caminho = usePathname();
   const contagens = useCarregar<Contagens>(sessao.estado === "pronto" ? `/v1/contagens?v=${caminho}` : null);
   const n = contagens.estado === "pronto" ? contagens.dados : null;
   const router = useRouter();
-  const [menuAberto, setMenuAberto] = useState(false);
+  const [mais, setMais] = useState(false);
+  const [buscando, setBuscando] = useState(false);
 
   async function sair() {
     await chamarApi("/v1/auth/sair", { corpo: {} });
@@ -66,70 +164,53 @@ export function PainelConsole({ children }: { children: ReactNode }) {
   }
 
   const s = sessao.dados;
-  const cuidaDaEquipe = s.acoes.includes("console.equipe.gerenciar");
-  const veHistoricoEquipe = s.acoes.includes("console.historico.equipe");
-  const clientesAtual = caminho === "/" || caminho.startsWith("/clientes");
-  const suporte = s.funcoes.some((f) => f === "ADMINISTRACAO" || f === "SUPORTE");
-  const implantacao = s.funcoes.some((f) => f === "ADMINISTRACAO" || f === "IMPLANTACAO" || f === "SUPORTE");
-  const chamados = s.funcoes.some((f) => f === "ADMINISTRACAO" || f === "IMPLANTACAO" || f === "SUPORTE");
   const funcoes = s.funcoes.map((f) => FUNCOES_CONSOLE[f as keyof typeof FUNCOES_CONSOLE] ?? f).join(", ") || "Sem função";
+  const itens = ITENS.filter((i) => i.ve(s));
+  const atalhos = itens.filter((i) => i.atalho);
+  // O número no Mais soma o que está aberto nas partes que não estão na barra de baixo.
+  const noMais = n ? itens.filter((i) => !i.atalho).reduce((t, i) => t + (i.contagem?.(n) ?? 0), 0) : 0;
+  const buscar = (q: string) => router.push(q ? `/clientes?q=${encodeURIComponent(q)}` : "/clientes");
 
   return (
     <ContextoSessao.Provider value={s}>
       <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-superficie focus:px-3 focus:py-2">
         Ir para o conteúdo
       </a>
-      <header className="flex items-center gap-3 border-b border-linha bg-superficie px-4 py-2.5">
-        <button
-          type="button"
-          className="emblema md:hidden"
-          aria-label="Menu"
-          aria-expanded={menuAberto}
-          aria-controls="menu-console"
-          onClick={() => setMenuAberto((v) => !v)}
-        >
-          <Icone nome="menu" />
-        </button>
-        <Identidade />
-        <div className="ml-auto flex items-center gap-3 text-sm">
-          <span className="flex items-center gap-2">
-            <Iniciais nome={s.nome} />
-            <span className="hidden leading-tight sm:block">
-              <span className="block font-medium">{s.nome}</span>
-              <span className="block text-xs text-tinta-suave">{funcoes}</span>
-            </span>
-            <span className="sr-only sm:hidden">{s.nome} · {funcoes}</span>
-          </span>
-          <Botao variante="discreto" tamanho="m" onClick={sair}>Sair</Botao>
-        </div>
+      <header className="topo print:hidden">
+        <span className="marca"><Identidade /></span>
+        <FormBusca className="max-md:hidden" chave={caminho} aoBuscar={buscar} />
+        <button type="button" className="emblema md:hidden" aria-label="Buscar cliente" onClick={() => setBuscando(true)}><Icone nome="busca" /></button>
+        <Conta sessao={s} funcoes={funcoes} aoSair={() => void sair()} />
       </header>
-      <div className="min-h-[calc(100dvh-63px)] md:grid md:grid-cols-[248px_1fr] md:gap-6 md:p-5">
-        <nav id="menu-console" aria-label="Console" className={`${menuAberto ? "grid" : "hidden"} lateral m-3 md:sticky md:top-5 md:m-0 md:grid md:self-start`}>
-          <p className="grupo">Clientes</p>
-          <ItemMenu href="/" icone="predio" atual={clientesAtual} numero={n?.carteira}>Carteira de clientes</ItemMenu>
-          {implantacao ? <ItemMenu href="/implantacoes" icone="preparar" atual={caminho === "/implantacoes"} numero={n?.implantacoes}>Implantações</ItemMenu> : null}
-          {chamados || suporte ? (
-            <>
-              <hr />
-              <p className="grupo">Suporte</p>
-              {chamados ? <ItemMenu href="/chamados" icone="balao" atual={caminho.startsWith("/chamados")} numero={n?.chamados}>Chamados</ItemMenu> : null}
-              {suporte ? (
-                <ItemMenu href="/suporte-acesso" icone="cadeado" atual={caminho.startsWith("/suporte-acesso")} numero={n?.suporteAcesso}>Suporte de acesso</ItemMenu>
-              ) : null}
-              {chamados ? <ItemMenu href="/whatsapp" icone="whats" atual={caminho.startsWith("/whatsapp")} numero={n?.whatsapp}>WhatsApp</ItemMenu> : null}
-            </>
-          ) : null}
-          {cuidaDaEquipe || veHistoricoEquipe ? (
-            <>
-              <hr />
-              <p className="grupo">Equipe</p>
-              {cuidaDaEquipe ? <ItemMenu href="/equipe" icone="pessoas" atual={caminho === "/equipe"}>Pessoas e funções</ItemMenu> : null}
-              {veHistoricoEquipe ? <ItemMenu href="/equipe/historico" icone="relogio" atual={caminho === "/equipe/historico"}>Histórico da equipe</ItemMenu> : null}
-            </>
-          ) : null}
+      <div className="min-h-[calc(100dvh-63px)] pb-24 md:grid md:grid-cols-[248px_minmax(0,1fr)] md:gap-8 md:p-6 md:pb-6 print:block print:min-h-0 print:p-0">
+        <nav id="menu-console" aria-label="Console" className="lateral max-md:hidden md:sticky md:top-6 md:self-start print:hidden">
+          <Menu itens={itens} caminho={caminho} n={n} />
         </nav>
-        <main id="conteudo" className="min-w-0 px-4 py-6 md:px-2 md:py-2">{children}</main>
+        <main id="conteudo" className="min-w-0 px-4 py-6 md:p-0">{children}</main>
       </div>
+      <nav aria-label="Atalhos" className="barra-baixo print:hidden">
+        {atalhos.map((item) => (
+          <Link key={item.href} href={item.href} aria-current={item.atual(caminho) ? "page" : undefined}>
+            <Icone nome={item.icone} />
+            {item.curto ?? item.texto}
+            {n && item.contagem ? <Contagem n={item.contagem(n)} nome="em aberto" /> : null}
+          </Link>
+        ))}
+        <button type="button" aria-expanded={mais} aria-controls="menu-mais" onClick={() => setMais(true)}>
+          <Icone nome="menu" />Mais
+          <Contagem n={noMais} nome="em aberto nas outras partes" />
+        </button>
+      </nav>
+      <Dialogo aberto={mais} titulo="Menu" aoFechar={() => setMais(false)}>
+        <nav id="menu-mais" aria-label="Console" className="lateral border-0 p-0 shadow-none">
+          <Menu itens={itens} caminho={caminho} n={n} aoIr={() => setMais(false)} />
+        </nav>
+        <div className="flex justify-end"><Botao variante="discreto" onClick={() => setMais(false)}>Fechar</Botao></div>
+      </Dialogo>
+      <Dialogo aberto={buscando} titulo="Buscar cliente" aoFechar={() => setBuscando(false)}>
+        <FormBusca chave={caminho} aoBuscar={(q) => { setBuscando(false); buscar(q); }} />
+        <div className="flex justify-end"><Botao variante="discreto" onClick={() => setBuscando(false)}>Fechar</Botao></div>
+      </Dialogo>
     </ContextoSessao.Provider>
   );
 }

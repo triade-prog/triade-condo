@@ -1,10 +1,12 @@
 "use client";
-// Aba Equipe (PI-10): quem da TRÍADE atende este cliente e com qual função. Só a
-// administração atribui e retira; o cliente nunca fica sem administração.
+// A equipe TRÍADE na parte Pessoas da ficha (PI-10; DC15, tela-modelo console-ficha-pessoas-computador,
+// rodada Console de 23/10/2026): quem da TRÍADE atende este cliente e com qual função. Só a
+// administração atribui e retira; o cliente nunca fica sem administração. É interno.
 
 import { useState, type FormEvent } from "react";
 import { formatarData } from "@triade/domain";
-import { Aviso, Botao, Carregando, CampoSelecao, chamarApi, Dialogo, ErroCarregar, FaixaInterna, textoDoErro, type ErroApi } from "@triade/ui";
+import { Aviso, Botao, Carregando, CampoSelecao, chamarApi, Dialogo, ErroCarregar, Icone, Iniciais, textoDoErro, type ErroApi } from "@triade/ui";
+import { Cartao } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import { nomeFuncao } from "../rotulos.tsx";
 import type { PropsAba } from "./tipos.ts";
@@ -50,7 +52,7 @@ function FormAtribuir({ ficha, aoConcluir }: { ficha: PropsAba["ficha"]; aoConcl
   );
 }
 
-export function AbaEquipe({ ficha, pode, recarregar, avisar }: PropsAba) {
+export function CartaoEquipe({ ficha, pode, recarregar, avisar }: PropsAba) {
   const [atribuindo, setAtribuindo] = useState(false);
   const [retirar, setRetirar] = useState<PropsAba["ficha"]["equipe"][number] | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -66,24 +68,22 @@ export function AbaEquipe({ ficha, pode, recarregar, avisar }: PropsAba) {
   }
 
   return (
-    <div className="grid gap-4">
-      <FaixaInterna>Interno · o cliente não vê como a equipe se organiza</FaixaInterna>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-medium">Equipe do cliente</h2>
-        {podeAtribuir ? <Botao variante="contorno" onClick={() => { setErro(null); setAtribuindo(true); }}>Atribuir pessoa</Botao> : null}
-      </div>
+    <Cartao id="t-equipe" titulo="Equipe TRÍADE neste cliente" icone="pessoas"
+      acao={podeAtribuir ? <Botao variante="contorno" tamanho="m" onClick={() => { setErro(null); setAtribuindo(true); }}><Icone nome="mais" />Atribuir pessoa</Botao> : undefined}>
       {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
-      <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
+      <ul className="divide-y divide-linha">
         {ficha.equipe.map((m) => (
-          <li key={m.vinculoId} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-            <span>
-              <span className="block font-medium">{m.nome}</span>
-              <span className="text-xs text-tinta-suave">{nomeFuncao(m.funcao)} · desde {formatarData(m.desde)}</span>
+          <li key={m.vinculoId} className="flex flex-wrap items-center gap-3 py-2.5 first:pt-0">
+            <Iniciais nome={m.nome} />
+            <span className="grid min-w-0 flex-1 gap-0.5">
+              <span className="font-medium">{m.nome}</span>
+              <span className="t-apoio">{nomeFuncao(m.funcao)} · desde {formatarData(m.desde)}</span>
             </span>
-            {podeAtribuir ? <Botao variante="discreto" onClick={() => setRetirar(m)} aria-label={`Retirar ${m.nome} (${nomeFuncao(m.funcao)})`}>Retirar</Botao> : null}
+            {podeAtribuir ? <Botao variante="discreto" tamanho="m" onClick={() => setRetirar(m)} aria-label={`Retirar ${m.nome} (${nomeFuncao(m.funcao)})`}>Retirar</Botao> : null}
           </li>
         ))}
       </ul>
+      <span className="selo justify-self-start" data-tom="neutro"><Icone nome="cadeado" className="h-3.5 w-3.5" />Interno · o cliente não vê como a equipe se organiza</span>
 
       <Dialogo aberto={atribuindo} titulo="Atribuir pessoa ao cliente" aoFechar={() => setAtribuindo(false)}>
         <FormAtribuir ficha={ficha} aoConcluir={(ok) => {
@@ -98,6 +98,6 @@ export function AbaEquipe({ ficha, pode, recarregar, avisar }: PropsAba) {
           <Botao variante="perigo" onClick={confirmarRetirada}>Retirar</Botao>
         </div>
       </Dialogo>
-    </div>
+    </Cartao>
   );
 }
