@@ -1,6 +1,7 @@
 // API do Console TRÍADE. Só a equipe ativa, sempre com o autenticador (F0.6, PT-08).
 // Passo 1: carteira, ficha, cenário, convite do síndico, notas internas, histórico e equipe.
 // Passo 5: a conexão do WhatsApp de cada cliente (piloto pelo Wafly, DC14).
+// Planos e pagamentos (peças C3 e C4): plano, conjuntos contratados e liberados, cobranças e recebimentos.
 // Quem pode o quê é decidido no banco (funções internas e clientes atribuídos, PI-10); aqui
 // só se valida a entrada e se fala com o Auth para os convites.
 
@@ -45,6 +46,18 @@ import {
   ajusteFusoSchema,
   ajusteParecidosSchema,
   conferirParteSchema,
+  abrirCompetenciaSchema,
+  ajusteCobrancaSchema,
+  conferirRecebimentoSchema,
+  contratarConjuntoSchema,
+  devolverRecebimentoSchema,
+  identificarRecebimentoSchema,
+  liberarConjuntoSchema,
+  planoSchema,
+  recebimentoSchema,
+  suspenderConjuntoSchema,
+  testarConjuntoSchema,
+  valorCobrancaSchema,
 } from "@triade/domain";
 import type { Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -144,7 +157,8 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   sessao.rotas(app);
 
   for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/contagens", "/v1/implantacoes",
-                      "/v1/suporte-acesso", "/v1/chamados", "/v1/whatsapp", "/v1/whatsapp/*"]) app.use(rota, sessao.exigirSessao);
+                      "/v1/suporte-acesso", "/v1/chamados", "/v1/whatsapp", "/v1/whatsapp/*",
+                      "/v1/pagamentos", "/v1/pagamentos/*"]) app.use(rota, sessao.exigirSessao);
   const pessoa = (c: Context<VarsSessao>) => c.get("sessao").pessoaId;
 
   // Quem está no Console: nome, funções e o que pode fazer fora de um cliente.
@@ -518,6 +532,105 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
       };
     }
     return c.json({ area, validoAte: acesso.validoAte, dados });
+  });
+
+  // Plano e conjuntos do cliente (peça C3; PI-03, CF-11, PI-16, PI-19, NG-06).
+  app.get("/v1/clientes/:id/plano", async (c) => c.json(await rpc("console_plano", cliente(c))));
+
+  app.put("/v1/clientes/:id/plano", async (c) => {
+    const d = await lerCorpo(c, planoSchema);
+    return c.json(await rpc("console_salvar_plano", {
+      ...cliente(c), p_versao: d.versao, p_nome: d.nome, p_unidades_de: d.unidadesDe, p_unidades_ate: d.unidadesAte, p_valor: d.valor,
+      p_ciclo: d.ciclo, p_dia_vencimento: d.diaVencimento, p_implantacao_valor: d.implantacaoValor,
+      p_implantacao_sem_cobranca: d.implantacaoSemCobranca, p_implantacao_referencia: d.implantacaoReferencia,
+      p_inicio_competencia: d.inicioCompetencia,
+    }));
+  });
+
+  /** O conjunto da rota: só os quatro que se vendem; a base não tem rota. */
+  function conjunto(c: Context<VarsSessao>) {
+    const codigo = c.req.param("conjunto") ?? "";
+    if (!["AGENDA", "MANUTENCAO", "VIDA", "COMUNICACAO_AMPLIADA"].includes(codigo)) throw new ErroDominio("NOT_FOUND");
+    return { ...cliente(c), p_conjunto: codigo };
+  }
+
+  app.put("/v1/clientes/:id/conjuntos/:conjunto/contrato", async (c) => {
+    const ids = conjunto(c);
+    const d = await lerCorpo(c, contratarConjuntoSchema);
+    return c.json(await rpc("console_contratar_conjunto", {
+      ...ids, p_versao: d.versao, p_contratado: d.contratado, p_referencia: d.referencia ?? null, p_motivo: d.motivo ?? null,
+    }));
+  });
+
+  app.post("/v1/clientes/:id/conjuntos/:conjunto/liberar", async (c) => {
+    const ids = conjunto(c);
+    const d = await lerCorpo(c, liberarConjuntoSchema);
+    return c.json(await rpc("console_liberar_conjunto", { ...ids, p_versao: d.versao, p_referencia: d.referencia, p_motivo: d.motivo }));
+  });
+
+  app.post("/v1/clientes/:id/conjuntos/:conjunto/teste", async (c) => {
+    const ids = conjunto(c);
+    const d = await lerCorpo(c, testarConjuntoSchema);
+    return c.json(await rpc("console_testar_conjunto", { ...ids, p_versao: d.versao, p_ate: d.ate, p_motivo: d.motivo }));
+  });
+
+  app.post("/v1/clientes/:id/conjuntos/:conjunto/suspender", async (c) => {
+    const ids = conjunto(c);
+    const d = await lerCorpo(c, suspenderConjuntoSchema);
+    return c.json(await rpc("console_suspender_conjunto", { ...ids, p_versao: d.versao, p_porque: d.porque, p_motivo: d.motivo }));
+  });
+
+  // Pagamentos dos clientes (peça C4; PI-07, PI-08): só a equipe que pode; nada vai para o cliente.
+  app.get("/v1/pagamentos", async (c) => c.json(await rpc("console_pagamentos", { p_pessoa: pessoa(c) })));
+
+  app.post("/v1/pagamentos/competencias", async (c) => {
+    const d = await lerCorpo(c, abrirCompetenciaSchema);
+    return c.json(await rpc("console_abrir_competencia", { p_pessoa: pessoa(c), p_competencia: d.competencia }));
+  });
+
+  app.post("/v1/pagamentos/recebimentos", async (c) => {
+    const d = await lerCorpo(c, recebimentoSchema);
+    return c.json(await rpc("console_registrar_recebimento", {
+      p_pessoa: pessoa(c), p_condominio: d.condominioId, p_cobranca: d.cobrancaId, p_valor: d.valor, p_recebido_em: d.recebidoEm,
+      p_forma: d.forma, p_referencia: d.referencia,
+    }), 201);
+  });
+
+  app.post("/v1/pagamentos/nao-identificados/:avulso/identificar", async (c) => {
+    const d = await lerCorpo(c, identificarRecebimentoSchema);
+    return c.json(await rpc("console_identificar_recebimento", {
+      p_pessoa: pessoa(c), p_avulso: idDaRota(c, "avulso"), p_condominio: d.condominioId, p_cobranca: d.cobrancaId,
+    }));
+  });
+
+  const recebimento = (c: Context<VarsSessao>) => ({ ...cliente(c), p_id: idDaRota(c, "recebimento") });
+
+  app.post("/v1/clientes/:id/recebimentos/:recebimento/conferir", async (c) => {
+    const ids = recebimento(c);
+    const d = await lerCorpo(c, conferirRecebimentoSchema);
+    return c.json(await rpc("console_conferir_recebimento", { ...ids, p_versao: d.versao }));
+  });
+
+  app.post("/v1/clientes/:id/recebimentos/:recebimento/devolver", async (c) => {
+    const ids = recebimento(c);
+    const d = await lerCorpo(c, devolverRecebimentoSchema);
+    return c.json(await rpc("console_devolver_recebimento", { ...ids, p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  const cobranca = (c: Context<VarsSessao>) => ({ ...cliente(c), p_id: idDaRota(c, "cobranca") });
+
+  app.get("/v1/clientes/:id/cobrancas/:cobranca", async (c) => c.json(await rpc("console_cobranca", cobranca(c))));
+
+  app.post("/v1/clientes/:id/cobrancas/:cobranca/ajustes", async (c) => {
+    const ids = cobranca(c);
+    const d = await lerCorpo(c, ajusteCobrancaSchema);
+    return c.json(await rpc("console_ajustar_cobranca", { ...ids, p_tipo: d.tipo, p_valor: d.valor, p_motivo: d.motivo }), 201);
+  });
+
+  app.put("/v1/clientes/:id/cobrancas/:cobranca/valor", async (c) => {
+    const ids = cobranca(c);
+    const d = await lerCorpo(c, valorCobrancaSchema);
+    return c.json(await rpc("console_definir_valor_cobranca", { ...ids, p_valor: d.valor, p_motivo: d.motivo }));
   });
 
   // Chamados (PI-17, PI-20).

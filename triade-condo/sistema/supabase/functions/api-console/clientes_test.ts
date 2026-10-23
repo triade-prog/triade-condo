@@ -190,7 +190,8 @@ Deno.test("CF-02: quem foi convidado cria a senha pelo link de uso único", asyn
 
 Deno.test("as listas do domínio (cenários, funções, situações, UFs) são as mesmas do banco", async () => {
   const migration = await Deno.readTextFile(new URL("../../migrations/0060_console_clientes.sql", import.meta.url)) +
-    await Deno.readTextFile(new URL("../../migrations/0190_implantacao_suporte.sql", import.meta.url));
+    await Deno.readTextFile(new URL("../../migrations/0190_implantacao_suporte.sql", import.meta.url)) +
+    await Deno.readTextFile(new URL("../../migrations/0291_planos_cobranca.sql", import.meta.url));
   for (const c of Object.keys(CENARIOS)) assert(migration.includes(`('${c}', '`), c);
   for (const f of Object.keys(FUNCOES_CONSOLE)) assert(migration.includes(`('${f}', '`), f);
   for (const s of Object.keys(SITUACOES)) assert(migration.includes(`'${s}'`), s);
