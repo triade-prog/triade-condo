@@ -1,36 +1,39 @@
 "use client";
-// Cadastrar condomínio e escolher o cenário (V-04, V-05, V-06, CF-12). Nasce em implantação,
-// com quem cadastrou atribuído como administração.
+// Cadastrar condomínio e escolher o cenário (V-04, V-05, V-06, CF-12; DC15, tela-modelo
+// console-cadastrar-computador): um cartão só, com nome, cidade e UF; o resto se preenche
+// depois, na Visão geral. Os cenários são cartões de escolha, o escolhido em violeta. Nasce em
+// implantação, com quem cadastrou atribuído como administração.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { CENARIOS, UFS, type Cenario } from "@triade/domain";
-import { Aviso, Botao, CampoSelecao, CampoTexto, camposComErro, chamarApi, classeBotao, textoDoErro, type ErroApi } from "@triade/ui";
+import { Aviso, Botao, CampoSelecao, CampoTexto, camposComErro, chamarApi, classeBotao, Icone, textoDoErro, type ErroApi } from "@triade/ui";
+import { CabecaPagina, Cartao, Voltar } from "./comum.tsx";
 import { useSessao } from "./sessao.tsx";
 
-export const DESCRICAO_CENARIO: Record<Cenario, string> = {
-  SEM_PORTARIA: "Visitas e entregas direto com o morador. Não presume porteiro, zelador nem administradora.",
-  PORTARIA_REMOTA: "Atendimento a distância. Não implica manutenção nem integração com o sistema.",
-  PORTARIA_PRESENCIAL: "Atendente no prédio. Os responsáveis vêm das pessoas cadastradas, não do tipo de portaria.",
+/** O que o cenário quer dizer, e, embaixo, o que ele não presume. */
+export const DESCRICAO_CENARIO: Record<Cenario, [string, string]> = {
+  SEM_PORTARIA: ["Visitas e entregas direto com o morador.", "Não presume porteiro, zelador nem administradora."],
+  PORTARIA_REMOTA: ["Atendimento a distância.", "Não implica manutenção nem integração com o sistema."],
+  PORTARIA_PRESENCIAL: ["Atendente no prédio.", "Os responsáveis vêm das pessoas cadastradas, não do tipo de portaria."],
 };
 
-export function EscolhaCenario({ valor, aoMudar, nome = "cenario" }: { valor: Cenario | ""; aoMudar: (c: Cenario) => void; nome?: string }) {
+export function EscolhaCenario({ valor, aoMudar, nome = "cenario", legenda = true }: { valor: Cenario | ""; aoMudar: (c: Cenario) => void; nome?: string; legenda?: boolean }) {
   return (
     <fieldset className="grid gap-2">
-      <legend className="mb-1 text-[13px] font-medium">Cenário do prédio <span className="font-normal text-tinta-suave">(opcional agora)</span></legend>
-      <div className="grid gap-2 md:grid-cols-3">
-        {(Object.keys(CENARIOS) as Cenario[]).map((c) => (
-          <label key={c} className="grid cursor-pointer gap-1 rounded-2xl border border-linha bg-superficie p-3 has-checked:border-violeta-600 has-checked:bg-violeta-50 has-checked:ring-1 has-checked:ring-violeta-600">
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              <input type="radio" name={nome} value={c} checked={valor === c} onChange={() => aoMudar(c)} className="accent-violeta-600" />
-              {CENARIOS[c]}
-            </span>
-            <span className="text-xs text-tinta-suave">{DESCRICAO_CENARIO[c]}</span>
-          </label>
-        ))}
-      </div>
-      <p className="text-xs text-tinta-suave">Dá para escolher ou trocar depois; trocar não apaga nada.</p>
+      <legend className={legenda ? "mb-1 text-[13px] font-medium" : "sr-only"}>Cenário do prédio{legenda ? <span className="font-normal text-tinta-suave"> (opcional agora)</span> : null}</legend>
+      {(Object.keys(CENARIOS) as Cenario[]).map((c) => (
+        <label key={c} className="flex cursor-pointer items-start gap-3 rounded-[14px] border border-linha bg-superficie px-4 py-3.5 hover:border-violeta-300 has-checked:border-violeta-600 has-checked:bg-violeta-50 has-checked:ring-1 has-checked:ring-violeta-600">
+          <input type="radio" name={nome} value={c} checked={valor === c} onChange={() => aoMudar(c)} className="mt-0.5 h-5 w-5 shrink-0 accent-violeta-600" />
+          <span className="grid gap-0.5">
+            <span className="text-[15px] font-medium">{CENARIOS[c]}</span>
+            <span className="text-sm text-tinta-suave">{DESCRICAO_CENARIO[c][0]}</span>
+            <span className="text-xs text-tinta-suave">{DESCRICAO_CENARIO[c][1]}</span>
+          </span>
+        </label>
+      ))}
+      <p className="text-xs text-tinta-suave">Dá para escolher ou trocar depois, na Visão geral; trocar não apaga nada.</p>
     </fieldset>
   );
 }
@@ -61,26 +64,28 @@ export function NovoCondominio() {
 
   const campos = camposComErro(erro);
   return (
-    <form onSubmit={enviar} className="grid max-w-3xl gap-5" noValidate>
-      <div>
-        <h1 className="text-[28px] font-normal tracking-tight">Cadastrar condomínio</h1>
-        <p className="text-tinta-suave">O resto da ficha pode ser preenchido depois.</p>
-      </div>
-      {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
-      <CampoTexto id="nome" rotulo="Nome do condomínio" required maxLength={120} value={nome} onChange={(e) => setNome(e.target.value)}
-        erro={campos.includes("nome") ? "Escreva o nome do condomínio (2 a 120 caracteres)." : null} />
-      <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
-        <CampoTexto id="cidade" rotulo="Cidade" required maxLength={80} value={cidade} onChange={(e) => setCidade(e.target.value)}
-          erro={campos.includes("cidade") ? "Escreva a cidade." : null} />
-        <CampoSelecao id="uf" rotulo="UF" required value={uf} onChange={(e) => setUf(e.target.value)}
-          opcoes={[{ valor: "", texto: "Escolha" }, ...UFS.map((u) => ({ valor: u, texto: u }))]}
-          erro={campos.includes("uf") ? "Escolha a UF." : null} />
-      </div>
-      <EscolhaCenario valor={cenario} aoMudar={setCenario} />
-      <div className="flex gap-2">
-        <Botao type="submit" disabled={enviando}>{enviando ? "Cadastrando…" : "Cadastrar condomínio"}</Botao>
-        <Link href="/" className={classeBotao("contorno")}>Cancelar</Link>
-      </div>
-    </form>
+    <div className="grid max-w-[640px] gap-5">
+      <Voltar href="/clientes" texto="Voltar à carteira" />
+      <CabecaPagina titulo="Cadastrar condomínio" apoio="O resto da ficha pode ser preenchido depois." />
+      <Cartao id="t-novo" titulo="Condomínio" icone="predio">
+        <form onSubmit={enviar} className="grid gap-4" noValidate>
+          {erro ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
+          <CampoTexto id="nome" rotulo="Nome do condomínio" required maxLength={120} value={nome} onChange={(e) => setNome(e.target.value)}
+            erro={campos.includes("nome") ? "Escreva o nome do condomínio (2 a 120 caracteres)." : null} />
+          <div className="grid gap-4 sm:grid-cols-[1fr_160px]">
+            <CampoTexto id="cidade" rotulo="Cidade" required maxLength={80} value={cidade} onChange={(e) => setCidade(e.target.value)}
+              erro={campos.includes("cidade") ? "Escreva a cidade." : null} />
+            <CampoSelecao id="uf" rotulo="UF" required value={uf} onChange={(e) => setUf(e.target.value)}
+              opcoes={[{ valor: "", texto: "Escolha" }, ...UFS.map((u) => ({ valor: u, texto: u }))]}
+              erro={campos.includes("uf") ? "Escolha a UF." : null} />
+          </div>
+          <EscolhaCenario valor={cenario} aoMudar={setCenario} />
+          <div className="flex flex-wrap items-center justify-end gap-2 max-md:grid">
+            <Link href="/clientes" className={classeBotao("discreto")}>Cancelar</Link>
+            <Botao type="submit" disabled={enviando}><Icone nome="check" />{enviando ? "Cadastrando…" : "Cadastrar condomínio"}</Botao>
+          </div>
+        </form>
+      </Cartao>
+    </div>
   );
 }

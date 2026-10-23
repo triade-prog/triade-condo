@@ -1,10 +1,13 @@
 "use client";
-// Pessoas e funções da equipe (PI-10): só a administração. Convidar com as funções, rever
-// funções e desativar. Sempre sobra alguém com administração.
+// Pessoas e funções da equipe (PI-10; DC15, telas-modelo console-equipe-*, rodada Console de
+// 23/10/2026): só a administração. Convidar com as funções, rever funções e desativar; sempre
+// sobra alguém com administração. A tabela larga virou linhas que cabem na tela (no celular, um
+// cartão por pessoa), com Rever funções e Desativar sempre visíveis. Convidar flutua no celular.
 
 import { useState, type FormEvent } from "react";
-import { FUNCOES_CONSOLE, TEXTO_CONVITE_CONTA_EXISTENTE, TEXTO_CONVITE_ENVIADO, type FuncaoConsole } from "@triade/domain";
-import { Aviso, Botao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Selo, textoDoErro, type ErroApi } from "@triade/ui";
+import { formatarData, FUNCOES_CONSOLE, TEXTO_CONVITE_CONTA_EXISTENTE, TEXTO_CONVITE_ENVIADO, type FuncaoConsole } from "@triade/domain";
+import { Aviso, Botao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Icone, Iniciais, Selo, textoDoErro, type ErroApi } from "@triade/ui";
+import { CabecaPagina, CaixaLista, CLASSE_LINHA, plural } from "./comum.tsx";
 import { useCarregar, useSessao } from "./sessao.tsx";
 
 interface Membro {
@@ -12,7 +15,10 @@ interface Membro {
   nome: string;
   ativa: boolean;
   funcoes: string[];
+  desde?: string;
 }
+
+const COLUNAS = "md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1.2fr)_auto]";
 
 function EscolhaFuncoes({ valor, aoMudar, erro }: { valor: string[]; aoMudar: (f: string[]) => void; erro?: boolean }) {
   return (
@@ -80,53 +86,46 @@ export function Equipe() {
   }
 
   const campos = camposComErro(erro);
+  const botaoConvidar = <Botao onClick={abrirConvite}><Icone nome="mais" />Convidar pessoa</Botao>;
   return (
     <div className="grid gap-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[28px] font-normal tracking-tight">Pessoas e funções</h1>
-          <p className="text-tinta-suave">Cada função só age nos clientes atribuídos.</p>
-        </div>
-        <Botao onClick={abrirConvite}>+ Convidar pessoa</Botao>
-      </div>
-      {recado ? <Aviso tom="ok">{recado}</Aviso> : null}
+      <CabecaPagina titulo="Pessoas e funções" apoio="Cada função só age nos clientes atribuídos." acao={<span className="max-md:hidden">{botaoConvidar}</span>} />
+      {recado ? <Aviso tom="ok" papel="status">{recado}</Aviso> : null}
       {erro && !convidando && !revendo ? <Aviso tom="erro">{textoDoErro(erro)}</Aviso> : null}
       {equipe.estado === "carregando" ? <Carregando /> : null}
       {equipe.estado === "erro" ? <ErroCarregar erro={equipe.erro} texto={equipe.texto} tentarDeNovo={equipe.recarregar} /> : null}
       {equipe.estado === "pronto" ? (
-        <div className="overflow-x-auto rounded-2xl border border-linha bg-superficie">
-          <table className="w-full min-w-[640px] text-sm">
-            <caption className="sr-only">Pessoas da equipe TRÍADE</caption>
-            <thead>
-              <tr className="text-left text-xs text-tinta-suave">
-                <th scope="col" className="px-4 py-3 font-semibold">Pessoa</th>
-                <th scope="col" className="px-4 py-3 font-semibold">Funções</th>
-                <th scope="col" className="px-4 py-3 font-semibold">Situação</th>
-                <th scope="col" className="px-4 py-3 font-semibold"><span className="sr-only">Ações</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {equipe.dados.pessoas.map((m) => (
-                <tr key={m.id} className="border-t border-linha align-top">
-                  <td className="px-4 py-3 font-medium">{m.nome}{m.id === sessao.pessoaId ? <span className="text-xs font-normal text-tinta-suave"> (você)</span> : null}</td>
-                  <td className="px-4 py-3">
-                    <span className="flex flex-wrap gap-1">{m.funcoes.map((f) => <Selo key={f} tom="info">{FUNCOES_CONSOLE[f as FuncaoConsole] ?? f}</Selo>)}</span>
-                  </td>
-                  <td className="px-4 py-3">{m.ativa ? <Selo tom="ok">Ativa</Selo> : <Selo tom="neutro">Desativada</Selo>}</td>
-                  <td className="px-4 py-3 text-right">
-                    {m.ativa ? (
-                      <span className="inline-flex gap-1">
-                        <Botao variante="discreto" onClick={() => abrirRevisao(m)} aria-label={`Rever funções de ${m.nome}`}>Rever funções</Botao>
-                        {m.id !== sessao.pessoaId ? <Botao variante="discreto" onClick={() => { setErro(null); setDesativando(m); }} aria-label={`Desativar ${m.nome}`}>Desativar</Botao> : null}
-                      </span>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <CaixaLista titulo="Pessoas da equipe TRÍADE" colunas={COLUNAS} cabecalho={["", "Pessoa", "Funções e situação", ""]}
+          rodape={(
+            <>
+              <span className="t-apoio">{plural(equipe.dados.pessoas.filter((m) => m.ativa).length, "pessoa na equipe", "pessoas na equipe")}</span>
+              <span className="t-apoio">Quem é desativado deixa de entrar na hora e continua no histórico, com o nome.</span>
+            </>
+          )}>
+          <ul className="grid max-md:gap-3 max-md:pt-3">
+            {equipe.dados.pessoas.map((m) => (
+              <li key={m.id} className={`${CLASSE_LINHA} ${COLUNAS} max-md:grid-cols-[40px_minmax(0,1fr)]`}>
+                <Iniciais nome={m.nome} />
+                <span className="grid min-w-0 gap-0.5">
+                  <span className="font-medium">{m.nome}{m.id === sessao.pessoaId ? <span className="font-normal text-tinta-suave"> (você)</span> : null}</span>
+                  {m.desde ? <span className="t-apoio">desde {formatarData(m.desde)}</span> : null}
+                </span>
+                <span className="flex flex-wrap gap-1.5 max-md:col-start-2">
+                  {m.funcoes.map((f) => <Selo key={f} tom="info">{FUNCOES_CONSOLE[f as FuncaoConsole] ?? f}</Selo>)}
+                  {m.ativa ? <Selo tom="ok">Ativa</Selo> : <Selo tom="neutro">Desativada</Selo>}
+                </span>
+                {m.ativa ? (
+                  <span className="flex flex-wrap gap-2 max-md:col-span-2 md:justify-end">
+                    <Botao variante="contorno" tamanho="m" onClick={() => abrirRevisao(m)} aria-label={`Rever funções de ${m.nome}`}>Rever funções</Botao>
+                    {m.id !== sessao.pessoaId ? <Botao variante="discreto" tamanho="m" onClick={() => { setErro(null); setDesativando(m); }} aria-label={`Desativar ${m.nome}`}>Desativar</Botao> : null}
+                  </span>
+                ) : <span aria-hidden="true" />}
+              </li>
+            ))}
+          </ul>
+        </CaixaLista>
       ) : null}
+      <div className="fixed right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] z-20 md:hidden">{botaoConvidar}</div>
 
       <Dialogo aberto={convidando} titulo="Convidar pessoa para a equipe" aoFechar={() => setConvidando(false)}>
         <form onSubmit={convidar} noValidate className="grid gap-4">

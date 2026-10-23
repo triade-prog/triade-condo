@@ -3,15 +3,15 @@
 // com motivo e prazo (até 72 horas); o síndico aprova ou recusa na Plataforma. Enquanto vale, a
 // pessoa só lê, e cada abertura fica no histórico que o síndico vê.
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import {
   AREAS_EXCEPCIONAIS, descreverAcessoExcepcional, formatarDataHora, PRAZOS_ACESSO_EXCEPCIONAL, SITUACOES_ACESSO_EXCEPCIONAL, type AreaExcepcional,
 } from "@triade/domain";
 import {
-  Aviso, Botao, CampoAreaTexto, CampoSelecao, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar, Selo, textoDoErro, Vazio, type ErroApi, type Tom,
+  Aviso, Botao, CampoAreaTexto, CampoSelecao, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi, type Tom,
 } from "@triade/ui";
+import { CabecaPagina, Voltar } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 
 interface Acesso {
@@ -128,14 +128,9 @@ export function AcessoExcepcional() {
 
   return (
     <div className="grid gap-5">
-      <p className="text-sm"><Link href={`/clientes/${id}`} className="text-violeta-600 hover:underline">Voltar à ficha</Link></p>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-[28px] font-normal tracking-tight">Acesso excepcional</h1>
-          <p className="text-tinta-suave">{nome}. Sem aprovação do síndico, a TRÍADE não vê dados do condomínio fora da ficha.</p>
-        </div>
-        {carga.dados.podePedir && !valendo ? <Botao onClick={() => setPedindo(true)}>Pedir acesso</Botao> : null}
-      </div>
+      <Voltar href={`/clientes/${id}`} texto="Voltar à ficha" />
+      <CabecaPagina titulo="Acesso excepcional" apoio={`${nome}. Sem aprovação do síndico, a TRÍADE não vê dados do condomínio fora da ficha.`}
+        acao={carga.dados.podePedir && !valendo ? <Botao onClick={() => setPedindo(true)}><Icone nome="escudo" />Pedir acesso</Botao> : undefined} />
 
       {valendo ? (
         <section className="grid gap-3 rounded-2xl border border-linha bg-superficie p-4">

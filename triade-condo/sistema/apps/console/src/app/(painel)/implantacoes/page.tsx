@@ -1,8 +1,7 @@
-import type { Metadata } from "next";
-import { Implantacoes } from "@/telas/suporte/Implantacoes";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Implantações" };
-
+// Implantações saiu do menu (decisão C.1 da rodada Console, 23/10/2026): virou o filtro Em
+// implantação da carteira, com a barra de etapas. O endereço antigo leva até ele.
 export default function Pagina() {
-  return <Implantacoes />;
+  redirect("/clientes?filtro=implantacao");
 }

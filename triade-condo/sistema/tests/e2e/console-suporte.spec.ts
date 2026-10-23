@@ -16,7 +16,7 @@ async function conferir(page: Page) {
 }
 
 async function convidarSindica(page: Page) {
-  await page.getByRole("tab", { name: "Síndico" }).click();
+  await page.getByRole("tab", { name: "Pessoas" }).click();
   await page.getByRole("button", { name: "Convidar síndico" }).click();
   const convite = page.getByRole("dialog", { name: "Convidar síndico" });
   await convite.getByLabel("Nome").fill("Ana Souza");
@@ -30,8 +30,10 @@ test.describe("Console · implantação e suporte", () => {
     await instalarApiFalsa(page);
     await page.goto(`${CONSOLE}/clientes/${IPE}`);
     await page.getByRole("tab", { name: "Implantação" }).click();
-    await expect(page.getByText("3 de 8 etapas · roteiro versão 1")).toBeVisible();
-    await expect(page.getByText("Interno · o cliente não vê")).toBeVisible();
+    await expect(page.getByText("3 de 8 etapas", { exact: true })).toBeVisible();
+    await expect(page.getByText("roteiro versão 1", { exact: true })).toBeVisible();
+    await expect(page.getByRole("img", { name: "3 de 8 etapas feitas" })).toBeVisible();
+    await expect(page.getByText("Interno · o cliente não vê").first()).toBeVisible();
     await conferir(page);
 
     await page.getByRole("button", { name: "Etapa 5: Apresentação ao síndico e ao conselho" }).click();
@@ -44,19 +46,22 @@ test.describe("Console · implantação e suporte", () => {
     await conferir(page);
     await j.getByRole("button", { name: "Salvar" }).click();
     await expect(j).toBeHidden();
-    await expect(page.getByText("4 de 8 etapas · roteiro versão 1")).toBeVisible();
+    await expect(page.getByText("4 de 8 etapas", { exact: true })).toBeVisible();
   });
 
   test("PI-05: pendência vencida aparece e é resolvida", async ({ page }) => {
     await instalarApiFalsa(page);
+    // Implantações saiu do menu e virou o filtro da carteira (decisão C.1); o endereço antigo leva a ele.
     await page.goto(`${CONSOLE}/implantacoes`);
-    await expect(page.getByRole("heading", { level: 1, name: "Implantações" })).toBeVisible();
-    await expect(page.getByText("1 pendência vencida")).toBeVisible();
+    await expect(page).toHaveURL(`${CONSOLE}/clientes?filtro=implantacao`);
+    await expect(page.getByRole("heading", { level: 1, name: "Carteira de clientes" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Em implantação 1", pressed: true })).toBeVisible();
+    await expect(page.getByText(/1 pendência vencida/)).toBeVisible();
     await conferir(page);
     await page.getByRole("link", { name: "Residencial Ipê" }).click();
     await page.getByRole("tab", { name: "Implantação" }).click();
     await expect(page.getByText(/Venceu em/)).toBeVisible();
-    await page.getByRole("button", { name: "Síndica enviar a planilha de moradores" }).click();
+    await page.getByRole("button", { name: "Resolver: Síndica enviar a planilha de moradores" }).click();
     const j = page.getByRole("dialog", { name: "Pendência" });
     await j.getByLabel("Como resolveu (opcional)").fill("Planilha recebida");
     await j.getByRole("button", { name: "Marcar resolvida" }).click();
@@ -68,13 +73,15 @@ test.describe("Console · implantação e suporte", () => {
     await page.goto(`${CONSOLE}/clientes/${IPE}`);
     await convidarSindica(page);
     await page.getByRole("tab", { name: "Implantação" }).click();
-    await expect(page.getByRole("button", { name: "Entregar ao cliente" })).toBeDisabled();
-    await expect(page.getByText(/Falta: Etapas 1 a 7/)).toBeVisible();
+    // Entregar só aparece com tudo pronto; antes, a etapa 8 diz o que falta.
+    await expect(page.getByRole("button", { name: "Entregar ao cliente" })).toHaveCount(0);
+    await expect(page.getByText(/O botão Entregar aparece aqui quando as etapas 1 a 7/)).toBeVisible();
     for (const e of estado.suporte.etapas.slice(3, 7)) Object.assign(e, { situacao: "REALIZADA", feito: "Feito." });
     estado.suporte.pedidoTeste = true;
     await page.reload();
     await page.getByRole("tab", { name: "Implantação" }).click();
-    await page.getByRole("button", { name: "Entregar ao cliente" }).click();
+    await expect(page.getByText("Tudo pronto para entregar ao cliente.")).toBeVisible();
+    await page.getByRole("button", { name: "Entregar ao cliente" }).first().click();
     const j = page.getByRole("dialog", { name: "Entregar o Residencial Ipê" });
     await expect(j).toContainText("Pedido de teste 2026-0001 registrado, respondido e concluído pelo síndico");
     await expect(j.getByLabel("Recado de entrega ao síndico")).toHaveValue(/O Residencial Ipê está pronto/);
@@ -112,18 +119,33 @@ test.describe("Console · implantação e suporte", () => {
     await page.goto(`${CONSOLE}/suporte-acesso`);
     await expect(page.getByRole("heading", { level: 1, name: "Suporte de acesso" })).toBeVisible();
     await conferir(page);
-    await page.getByRole("link", { name: "Pedido de Bruna Alves · Residencial Ipê" }).click();
+    await expect(page.getByRole("button", { name: "Abertos 1", pressed: true })).toBeVisible();
+    await page.getByRole("link", { name: "Bruna Alves · Residencial Ipê" }).click();
+    // Dois passos: Verificar e Decidir. Sem as três conferências, o link não sai.
+    await expect(page.getByRole("heading", { level: 1, name: "Pedido de Bruna Alves" })).toBeVisible();
+    await expect(page.getByText("Passo 1 de 2")).toBeVisible();
+    await expect(page.getByText(/Faltam 2 conferências/)).toBeVisible();
+    await conferir(page);
+    await page.getByRole("button", { name: "Continuar para decidir" }).click();
+    await expect(page.getByText("1 de 3 conferências")).toBeVisible();
     await expect(page.getByText("b••••@exemplo.com.br", { exact: false })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Enviar link para criar senha nova" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Enviar link" })).toBeDisabled();
+    await page.getByRole("button", { name: "Rever" }).click();
     // A caixa só fica marcada depois que o banco guarda a verificação.
-    const dados = page.getByLabel("Confirmou dados que só a pessoa sabe, sem a equipe ver a senha");
+    const dados = page.getByLabel("Confirmou dados que só a pessoa sabe");
     await dados.click();
     await expect(dados).toBeChecked();
-    const canal = page.getByLabel("Pedido feito pelo canal já conhecido (o e-mail ou o telefone do cadastro)");
+    const canal = page.getByLabel("Pedido feito pelo canal já conhecido");
     await canal.click();
     await expect(canal).toBeChecked();
+    await expect(page.getByText("As três conferências feitas.")).toBeVisible();
+    await page.getByRole("button", { name: "Continuar para decidir" }).click();
+    await expect(page.getByRole("heading", { name: "Enviar link para criar senha nova" })).toBeVisible();
+    await page.locator("summary", { hasText: "Outras saídas" }).click();
+    await page.getByRole("radio", { name: /Recusar/ }).check();
+    await expect(page.getByRole("button", { name: "Recusar com este motivo" })).toBeDisabled();
     await conferir(page);
-    await page.getByRole("button", { name: "Enviar link para criar senha nova" }).click();
+    await page.getByRole("button", { name: "Enviar link", exact: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Link para criar senha nova enviado" })).toBeVisible();
     expect(estado.suporte.suporte.linksEnviados).toBe(1);
     await expect(page.getByText("Link enviado", { exact: true })).toBeVisible();
@@ -133,12 +155,16 @@ test.describe("Console · implantação e suporte", () => {
     await instalarApiFalsa(page);
     await page.goto(`${CONSOLE}/chamados`);
     await expect(page.getByRole("heading", { level: 1, name: "Chamados" })).toBeVisible();
-    // No celular o menu abre pelo botão.
-    if (await page.getByRole("button", { name: "Menu" }).isVisible()) await page.getByRole("button", { name: "Menu" }).click();
+    // No celular, Chamados é um atalho da barra de baixo; no computador, fica no menu ao lado.
     await expect(page.getByRole("link", { name: "Chamados 1 em aberto" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Abertos 1", pressed: true })).toBeVisible();
+    const linha = page.getByRole("listitem").filter({ hasText: "Fila some depois de filtrar por categoria" });
+    await expect(linha).toContainText("Sem responsável");
     await conferir(page);
     await page.getByRole("link", { name: "Fila some depois de filtrar por categoria" }).click();
     await expect(page).toHaveURL(new RegExp(`/chamados/${IPE}/${CHAMADO}`));
+    await expect(page.getByRole("heading", { level: 1, name: "Fila some depois de filtrar por categoria" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Conversa" })).toContainText("Escolho Limpeza");
     await page.getByLabel("Resposta ao cliente").fill("Obrigado, Bruna. Reproduzi aqui.");
     await page.getByRole("button", { name: "Responder", exact: true }).last().click();
     await expect(page.getByRole("status").filter({ hasText: "Resposta enviada" })).toBeVisible();

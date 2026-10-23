@@ -1,11 +1,13 @@
 "use client";
-// Aba Síndico (CF-02): quem é síndico deste condomínio e o convite. Conta nova recebe o
-// link para criar a senha; quem já tem conta (MU-04) só ganha o acesso. A troca de síndico
-// (CT-01, peça R4) sai daqui, com o registro das trocas já feitas.
+// O síndico na parte Pessoas da ficha (CF-02; DC15, tela-modelo console-ficha-pessoas-computador,
+// rodada Console de 23/10/2026): quem é síndico deste condomínio e o convite, o botão principal
+// enquanto não há síndico. Conta nova recebe o link para criar a senha; quem já tem conta (MU-04)
+// só ganha o acesso. A troca de síndico (CT-01, peça R4) sai daqui, com o registro das trocas.
 
 import { useState, type FormEvent } from "react";
 import { CANAIS_SUPORTE, formatarData, TEXTO_CONVITE_CONTA_EXISTENTE, TEXTO_CONVITE_ENVIADO } from "@triade/domain";
-import { Aviso, Botao, CampoTexto, camposComErro, chamarApi, Dialogo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
+import { Aviso, Botao, CampoTexto, camposComErro, chamarApi, Dialogo, Icone, Iniciais, textoDoErro, type ErroApi } from "@triade/ui";
+import { AcaoCartao, Cartao } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import { TrocaSindico } from "./TrocaSindico.tsx";
 import type { Ficha, PropsAba } from "./tipos.ts";
@@ -25,11 +27,11 @@ function Trocas({ condominio }: { condominio: string }) {
   const carga = useCarregar<{ trocas: Troca[] }>(`/v1/clientes/${condominio}/trocas`);
   if (carga.estado !== "pronto" || carga.dados.trocas.length === 0) return null;
   return (
-    <section aria-labelledby="titulo-trocas" className="grid gap-2">
-      <h3 id="titulo-trocas" className="font-medium">Trocas de síndico</h3>
-      <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie text-sm">
+    <section aria-labelledby="titulo-trocas" className="grid gap-2 border-t border-linha pt-3">
+      <h3 id="titulo-trocas" className="t-rotulo">Trocas de síndico</h3>
+      <ul className="divide-y divide-linha text-sm">
         {carga.dados.trocas.map((t) => (
-          <li key={t.id} className="grid gap-0.5 px-4 py-3">
+          <li key={t.id} className="grid gap-0.5 py-2.5">
             <span><span className="font-medium">{t.anterior}</span> → <span className="font-medium">{t.novo}</span> · {formatarData(t.feitaEm)} por {t.feitaPor}</span>
             <span className="text-xs text-tinta-suave">Pedido de {t.pedidoPor} por {CANAIS_SUPORTE[t.canal] ?? t.canal}. Conferido: {t.conferido.join("; ")}.</span>
           </li>
@@ -39,8 +41,8 @@ function Trocas({ condominio }: { condominio: string }) {
   );
 }
 
-export function AbaSindico({ ficha, pode, recarregar, avisar }: PropsAba) {
-  const [aberto, setAberto] = useState(false);
+export function CartaoSindico({ ficha, pode, recarregar, avisar, pedido }: PropsAba) {
+  const [aberto, setAberto] = useState(pedido === "convidar" && pode("console.sindicos.convidar"));
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -69,23 +71,27 @@ export function AbaSindico({ ficha, pode, recarregar, avisar }: PropsAba) {
   }
 
   const campos = camposComErro(erro);
+  const nenhum = ficha.sindicos.length === 0;
   return (
-    <div className="grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-medium">Síndico</h2>
-        {podeConvidar ? <Botao onClick={abrir}>Convidar síndico</Botao> : null}
-      </div>
-      {ficha.sindicos.length === 0 ? (
-        <Vazio titulo="Nenhum síndico convidado ainda">A implantação só conclui depois do convite. Cada pessoa tem o seu acesso; nada de conta compartilhada.</Vazio>
+    <Cartao id="t-sindico" titulo="Síndico" icone="pessoa"
+      acao={podeConvidar && !nenhum ? <AcaoCartao icone="mais" aoClicar={abrir}>Convidar síndico</AcaoCartao> : undefined}>
+      {nenhum ? (
+        <div className="grid justify-items-start gap-2.5 py-1">
+          <span className="ladrilho h-11 w-11 rounded-xl" data-tom="atencao" aria-hidden="true"><Icone nome="pessoa" /></span>
+          <p className="font-semibold">Nenhum síndico convidado ainda</p>
+          <p className="t-apoio">A implantação só se conclui depois do convite. Cada pessoa tem o seu acesso; nada de conta compartilhada.</p>
+          {podeConvidar ? <Botao tamanho="m" onClick={abrir}><Icone nome="mais" />Convidar síndico</Botao> : null}
+        </div>
       ) : (
-        <ul className="divide-y divide-linha rounded-2xl border border-linha bg-superficie">
+        <ul className="divide-y divide-linha">
           {ficha.sindicos.map((s) => (
-            <li key={s.vinculoId} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-              <span>
+            <li key={s.vinculoId} className="flex flex-wrap items-center gap-3 py-2.5 first:pt-0">
+              <Iniciais nome={s.nome} />
+              <span className="grid min-w-0 flex-1 gap-0.5">
                 <span className="font-medium">{s.nome}</span>
-                <span className="block text-sm text-tinta-suave">Síndico desde {formatarData(s.desde)}</span>
+                <span className="t-apoio">Síndico desde {formatarData(s.desde)}</span>
               </span>
-              {podeTrocar ? <Botao variante="contorno" tamanho="m" onClick={() => setTrocando(s)}>Trocar síndico</Botao> : null}
+              {podeTrocar ? <Botao variante="contorno" tamanho="m" onClick={() => setTrocando(s)}><Icone nome="trocar" />Trocar síndico</Botao> : null}
             </li>
           ))}
         </ul>
@@ -117,6 +123,6 @@ export function AbaSindico({ ficha, pode, recarregar, avisar }: PropsAba) {
           </div>
         </form>
       </Dialogo>
-    </div>
+    </Cartao>
   );
 }
