@@ -608,8 +608,8 @@ b.prot, .prot { white-space: nowrap; }
   .palco-predio .pf-cartao { position: absolute; }
   .palco-predio { padding-block: 24px 40px; }
   .pf-msg { left: -6%; top: 0; width: 230px; }
-  .pf-resp { right: -4%; top: 28%; width: 230px; }
-  .pf-ficha { right: -6%; bottom: 0; width: 270px; }
+  .pf-resp { right: -8%; top: 4%; width: 230px; }
+  .pf-ficha { right: -16%; top: 40%; width: 300px; }
 }
 @media (max-width: 1000px) {
   .palco-predio { display: flex; flex-direction: column; gap: 10px; padding-bottom: 24px; }
