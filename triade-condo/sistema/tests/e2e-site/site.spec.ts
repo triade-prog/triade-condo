@@ -135,10 +135,11 @@ test.describe("Site · guia", () => {
 });
 
 test.describe("Site · rodapé", () => {
-  test("o rodapé traz o WhatsApp, as redes e o endereço", async ({ page }) => {
+  test("o rodapé traz o WhatsApp, o e-mail, as redes e o endereço", async ({ page }) => {
     await page.goto("/");
     const rodape = page.locator("footer");
     await expect(rodape.getByRole("link", { name: /^WhatsApp \+55/ })).toHaveAttribute("href", /^https:\/\/wa\.me\/\d{12,13}/);
+    await expect(rodape.getByRole("link", { name: "suporte@trihub.com.br" })).toHaveAttribute("href", "mailto:suporte@trihub.com.br");
     await expect(rodape.getByRole("link", { name: "Instagram" })).toHaveAttribute("href", "https://www.instagram.com/triadecondo");
     await expect(rodape.getByRole("link", { name: "Facebook" })).toHaveAttribute("href", "https://www.facebook.com/triadecondo");
     await expect(rodape).toContainText("CEP 72006-080");
