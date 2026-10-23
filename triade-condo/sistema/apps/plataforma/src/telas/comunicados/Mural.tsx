@@ -5,7 +5,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Aviso, Botao, Carregando, chamarApi, ErroCarregar } from "@triade/ui";
+import { Aviso, Carregando, chamarApi, ErroCarregar, FolhaA4, Logo, PreviaImpressao } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { ComunicadoDetalhe } from "../tipos.ts";
@@ -35,30 +35,33 @@ export function Mural() {
   const d = carga.dados;
   const c = d.comunicado;
 
+  const publicado = c.estado === "PUBLICADO";
   return (
-    <main className="mx-auto grid max-w-[21cm] gap-6 bg-superficie p-8 print:max-w-none print:p-0">
-      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <p className="text-sm text-tinta-suave">Confira e imprima. Para o mural, use folha A4 em pé.</p>
-        <Botao onClick={() => window.print()} disabled={c.estado !== "PUBLICADO"}>Imprimir</Botao>
-      </div>
-      {c.estado !== "PUBLICADO" ? <Aviso tom="atencao" className="print:hidden">Só o comunicado publicado vai para o mural. Este está {c.estado === "SUBSTITUIDO" ? "trocado por uma versão nova" : "fora de uso"}.</Aviso> : null}
-      <header className="grid gap-1 border-b-2 border-tinta pb-4">
-        <span className="text-sm font-semibold tracking-[.12em] uppercase">{d.condominio}</span>
-        <span className="text-sm text-tinta-suave">Comunicado · {nomeAssunto(c.assunto)}</span>
-      </header>
-      <h1 className="text-[32px] leading-tight font-semibold">{c.titulo}</h1>
-      <div className="text-lg leading-relaxed whitespace-pre-line">{c.texto}</div>
-      {fotos.length ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {fotos.map((f) => <img key={f.id} src={f.url} alt={f.nome} className="max-h-[9cm] w-full rounded-lg object-contain" />)}
-        </div>
-      ) : null}
-      {c.assinatura ? <p className="text-lg">{c.assinatura}</p> : null}
-      <footer className="border-t border-linha pt-3 text-sm text-tinta-suave">
-        Publicado em {c.publicadoEm ? diaHora(c.publicadoEm) : "—"} · versão {c.numero}
-        {c.numero > 1 && c.mudanca ? ` · ${c.mudanca}` : ""}
-      </footer>
-    </main>
+    <PreviaImpressao titulo="Folha do comunicado para o mural" apoio="Confira e imprima · folha A4 em pé" voltar={`/comunicados/comunicado?id=${c.id}`} podeImprimir={publicado}
+      aviso={!publicado ? <Aviso tom="atencao">Só o comunicado publicado vai para o mural. Este está {c.estado === "SUBSTITUIDO" ? "trocado por uma versão nova" : "fora de uso"}.</Aviso> : null}
+      legenda={publicado ? "Como sai na impressão" : undefined}>
+      <FolhaA4 rotulo="Folha do comunicado" className="gap-6 p-[1.4cm]">
+        <header className="flex items-end justify-between gap-4 border-b-2 border-tinta pb-4">
+          <span className="grid gap-1">
+            <span className="text-sm font-bold tracking-[.14em] uppercase">{d.condominio}</span>
+            <span className="text-sm text-tinta-suave">Comunicado · {nomeAssunto(c.assunto)}</span>
+          </span>
+          <Logo className="h-8 w-auto" />
+        </header>
+        <h2 className="text-[38px] leading-tight font-semibold">{c.titulo}</h2>
+        <div className="text-xl leading-relaxed whitespace-pre-line">{c.texto}</div>
+        {fotos.length ? (
+          <div className="grid grid-cols-2 gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {fotos.map((f) => <img key={f.id} src={f.url} alt={f.nome} className="max-h-[9cm] w-full rounded-lg object-contain" />)}
+          </div>
+        ) : null}
+        {c.assinatura ? <p className="text-xl">{c.assinatura}</p> : null}
+        <footer className="mt-auto border-t border-linha pt-3 text-sm text-tinta-suave">
+          Publicado em {c.publicadoEm ? diaHora(c.publicadoEm) : "—"} · versão {c.numero}
+          {c.numero > 1 && c.mudanca ? ` · ${c.mudanca}` : ""}
+        </footer>
+      </FolhaA4>
+    </PreviaImpressao>
   );
 }

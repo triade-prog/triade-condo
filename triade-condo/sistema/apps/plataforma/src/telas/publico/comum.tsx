@@ -41,6 +41,19 @@ export function CabecaPublica({ titulo, subtitulo, icone = "megafone", className
   );
 }
 
+/** Uma opção para escolher (enquete, voto, quem vota): o cartão inteiro marca, e a escolha atual fica realçada. */
+export function Opcao({ nome, valor, marcada, aoMarcar, selo, children }: {
+  nome: string; valor: string | number; marcada: boolean; aoMarcar: () => void; selo?: ReactNode; children: ReactNode;
+}) {
+  return (
+    <label className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-[14px] border px-4 py-3 text-[15px] ${marcada ? "border-violeta-600 bg-violeta-50 font-semibold ring-1 ring-violeta-600" : "border-linha bg-superficie hover:border-violeta-300"}`}>
+      <input type="radio" name={nome} value={valor} checked={marcada} onChange={aoMarcar} className="h-5 w-5 shrink-0 accent-violeta-600" />
+      <span className="flex-1">{children}</span>
+      {selo}
+    </label>
+  );
+}
+
 export const Cartao = ({ children, className = "" }: { children: ReactNode; className?: string }) => (
   <section className={`grid gap-2 rounded-2xl border border-linha bg-superficie p-4 shadow-s1 ${className}`}>{children}</section>
 );

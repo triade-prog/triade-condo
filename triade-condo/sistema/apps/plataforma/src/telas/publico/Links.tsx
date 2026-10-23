@@ -5,12 +5,17 @@
 // pelo WhatsApp (F6.6); quem ainda não recebe por lá vê o botão "Receber pelo WhatsApp".
 
 import { useParams, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { Aviso, Botao, Carregando, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Aviso, Botao, Carregando, chamarApi, Icone, textoDoErro, type ErroApi } from "@triade/ui";
 import type { ComunicadoPublico } from "../tipos.ts";
 import { Cartao, ComunicadoLido, ReceberPeloWhatsapp, TelaPublica } from "./comum.tsx";
 
 const vencido = (e: ErroApi) => textoDoErro(e);
+
+/** "e-mail" sem quebrar no hífen, no fim da linha do celular. */
+function semQuebra(texto: string): ReactNode {
+  return texto.split(/(e-mails?)/).map((t, i) => (i % 2 ? <span key={i} className="whitespace-nowrap">{t}</span> : t));
+}
 
 export function ComunicadoDoLink() {
   const { codigo } = useParams<{ codigo: string }>();
@@ -47,23 +52,23 @@ export function ConfirmarEmail() {
   }
   if (feito) {
     return (
-      <TelaPublica titulo={`Comunicados do ${feito.condominio}`}>
-        <Cartao>
-          <h2 className="font-medium">E-mail confirmado</h2>
-          <p className="text-sm">Pronto{feito.nome ? `, ${feito.nome.split(" ")[0]}` : ""}. Você vai receber os comunicados do {feito.condominio} em {feito.email}.
-            Dá para parar quando quiser, pelo link no fim de cada e-mail.</p>
+      <TelaPublica titulo={`Comunicados do ${feito.condominio}`} icone="email">
+        <Cartao className="gap-3">
+          <h2 className="text-lg font-medium">{semQuebra("E-mail confirmado")}</h2>
+          <p className="text-[15px]">Pronto{feito.nome ? `, ${feito.nome.split(" ")[0]}` : ""}. Você vai receber os comunicados do {feito.condominio} em <span className="[overflow-wrap:anywhere]">{feito.email}</span>.
+            Dá para parar quando quiser, pelo link no fim de cada {semQuebra("e-mail")}.</p>
         </Cartao>
       </TelaPublica>
     );
   }
   return (
-    <TelaPublica titulo="Confirmar o e-mail">
-      <Cartao>
-        <h2 className="font-medium">Receber os comunicados do condomínio por e-mail</h2>
-        <p className="text-sm">A gestão do condomínio cadastrou este e-mail para você receber os comunicados. Se é seu, confirme.</p>
+    <TelaPublica titulo="Confirmar o e-mail" icone="email">
+      <Cartao className="gap-3">
+        <h2 className="text-lg font-medium">{semQuebra("Receber os comunicados do condomínio por e-mail")}</h2>
+        <p className="text-[15px]">{semQuebra("A gestão do condomínio cadastrou este e-mail para você receber os comunicados. Se é seu, confirme.")}</p>
         {erro ? <Aviso tom="atencao">{erro}</Aviso> : null}
-        <Botao className="justify-self-start" disabled={!codigo || estado === "enviando"} onClick={() => void confirmar()}>
-          {estado === "enviando" ? "Confirmando…" : "Confirmar meu e-mail"}
+        <Botao className="w-full" disabled={!codigo || estado === "enviando"} onClick={() => void confirmar()}>
+          <Icone nome="check" />{estado === "enviando" ? "Confirmando…" : "Confirmar meu e-mail"}
         </Botao>
       </Cartao>
     </TelaPublica>
@@ -84,24 +89,24 @@ export function PararEmail() {
     else setErro(x.status === 404 || x.erro.codigo === "VALIDATION_ERROR" ? "Este link venceu. Peça ajuda ao condomínio." : vencido(x.erro));
   }
   return (
-    <TelaPublica titulo={r ? `Comunicados do ${r.condominio}` : "Parar de receber por e-mail"}>
-      <Cartao>
+    <TelaPublica titulo={r ? `Comunicados do ${r.condominio}` : "Parar de receber por e-mail"} icone="email">
+      <Cartao className="gap-3">
         {r?.parou ? (
           <>
-            <h2 className="font-medium">Você não recebe mais e-mails do {r.condominio}</h2>
-            <p className="text-sm">Os avisos continuam no mural e no grupo do prédio.</p>
-            <Botao variante="contorno" className="justify-self-start" disabled={estado === "enviando"} onClick={() => void chamar("voltar")}>Voltar a receber</Botao>
+            <h2 className="text-lg font-medium">{semQuebra(`Você não recebe mais e-mails do ${r.condominio}`)}</h2>
+            <p className="text-[15px]">Os avisos continuam no mural e no grupo do prédio.</p>
+            <Botao variante="contorno" className="w-full" disabled={estado === "enviando"} onClick={() => void chamar("voltar")}>Voltar a receber</Botao>
           </>
         ) : r ? (
           <>
-            <h2 className="font-medium">Você voltou a receber os comunicados por e-mail</h2>
-            <p className="text-sm">Dá para parar quando quiser, pelo link no fim de cada e-mail.</p>
+            <h2 className="text-lg font-medium">{semQuebra("Você voltou a receber os comunicados por e-mail")}</h2>
+            <p className="text-[15px]">{semQuebra("Dá para parar quando quiser, pelo link no fim de cada e-mail.")}</p>
           </>
         ) : (
           <>
-            <h2 className="font-medium">Parar de receber os comunicados por e-mail</h2>
-            <p className="text-sm">Os avisos continuam no mural e no grupo do prédio. Só você consegue voltar a receber, por este mesmo link.</p>
-            <Botao className="justify-self-start" disabled={!codigo || estado === "enviando"} onClick={() => void chamar("parar")}>
+            <h2 className="text-lg font-medium">{semQuebra("Parar de receber os comunicados por e-mail")}</h2>
+            <p className="text-[15px]">Os avisos continuam no mural e no grupo do prédio. Só você consegue voltar a receber, por este mesmo link.</p>
+            <Botao className="w-full" disabled={!codigo || estado === "enviando"} onClick={() => void chamar("parar")}>
               {estado === "enviando" ? "Parando…" : "Parar de receber"}
             </Botao>
           </>
@@ -127,12 +132,12 @@ export function DocumentoDoLink() {
     window.location.href = r.dados.url;
   }
   return (
-    <TelaPublica titulo={aberto ? `${aberto.titulo} · ${aberto.condominio}` : "Documento do condomínio"}>
-      <Cartao>
-        <h2 className="font-medium">{aberto ? `Baixando a versão ${aberto.numero}` : "Documento enviado pelo condomínio"}</h2>
-        <p className="text-sm">O link vale 7 dias e pode ser cancelado pelo condomínio. Depois de baixado, guarde o arquivo com cuidado.</p>
+    <TelaPublica titulo={aberto ? `${aberto.titulo} · ${aberto.condominio}` : "Documento do condomínio"} icone="documento">
+      <Cartao className="gap-3">
+        <h2 className="text-lg font-medium">{aberto ? `Baixando a versão ${aberto.numero}` : "Documento enviado pelo condomínio"}</h2>
+        <p className="text-[15px]">O link vale 7 dias e pode ser cancelado pelo condomínio. Depois de baixado, guarde o arquivo com cuidado.</p>
         {erro ? <Aviso tom="atencao">{erro}</Aviso> : null}
-        <Botao className="justify-self-start" disabled={estado === "abrindo"} onClick={() => void abrir()}>{estado === "abrindo" ? "Abrindo…" : aberto ? "Baixar de novo" : "Abrir o documento"}</Botao>
+        <Botao className="w-full" disabled={estado === "abrindo"} onClick={() => void abrir()}><Icone nome="baixar" />{estado === "abrindo" ? "Abrindo…" : aberto ? "Baixar de novo" : "Abrir o documento"}</Botao>
       </Cartao>
     </TelaPublica>
   );

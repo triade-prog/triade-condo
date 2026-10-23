@@ -498,3 +498,10 @@ body {
   .bt, .chip, .selo, .aviso { border: 1px solid CanvasText; }
   .aviso::before { background: CanvasText; }
 }
+
+/* Impressos (decisão D.1, 23/10/2026): a folha A4 sai no tamanho de verdade, uma por página. */
+@media print {
+  @page { size: A4; margin: 0; }
+  .folha-caixa:has(~ .folha-caixa) { break-after: page; }
+  .folha-a4 { height: 296mm; }
+}

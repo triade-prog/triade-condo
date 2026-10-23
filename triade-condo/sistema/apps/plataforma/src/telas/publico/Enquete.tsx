@@ -6,11 +6,11 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { ESCOPOS_ENQUETE } from "@triade/domain";
-import { Aviso, AvisoErro, Botao, Carregando, chamarApi, textoDoErro, type ErroApi } from "@triade/ui";
+import { Aviso, AvisoErro, Botao, Carregando, chamarApi, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import { Barras, prazoCurto } from "../vida/Enquetes.tsx";
 import type { EnquetePublica } from "../tipos.ts";
-import { Cartao, TelaPublica } from "./comum.tsx";
+import { Cartao, Opcao, TelaPublica } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: EnquetePublica };
 
@@ -21,7 +21,6 @@ export function Enquete() {
   const [escolha, setEscolha] = useState<number | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [registrada, setRegistrada] = useState(false);
 
   useEffect(() => {
     void chamarApi<EnquetePublica>(base).then((r) => {
@@ -44,10 +43,10 @@ export function Enquete() {
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
     setCarga({ estado: "pronto", dados: r.dados });
-    setRegistrada(true);
+    setEscolha(r.dados.escolha ?? escolha);
   }
 
-  const regra = [`Aberta até ${prazoCurto(e.abertaAte)}`, ESCOPOS_ENQUETE[e.por].toLowerCase(), e.secreta ? "secreta" : "não secreta"].join(" · ");
+  const mudou = escolha !== null && escolha !== (e.escolha ?? null);
   return (
     <TelaPublica titulo={`Enquete do ${e.condominio}`} subtitulo={e.para} icone="grafico" rodape={rodape}>
       {!e.aberta ? (
@@ -68,25 +67,29 @@ export function Enquete() {
       ) : (
         <Cartao>
           <form onSubmit={enviar} noValidate className="grid gap-3">
-            <fieldset className="grid gap-2">
-              <legend className="text-xl font-medium">{e.pergunta}</legend>
-              <p className="text-[13px] text-tinta-suave">{regra}</p>
-              {e.opcoes.map((o, i) => (
-                <label key={i} className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-[15px] ${escolha === i + 1 ? "border-violeta-500 bg-violeta-50" : "border-linha"}`}>
-                  <input type="radio" name="opcao" value={i + 1} checked={escolha === i + 1} onChange={() => { setEscolha(i + 1); setRegistrada(false); }} />
-                  {o}
-                </label>
-              ))}
+            <fieldset className="grid gap-3">
+              <legend className="contents"><h2 className="text-xl font-medium">{e.pergunta}</h2></legend>
+              <span className="flex flex-wrap gap-1.5">
+                <Selo tom="info">Aberta até {prazoCurto(e.abertaAte)}</Selo>
+                <Selo tom="neutro">{ESCOPOS_ENQUETE[e.por]}</Selo>
+                <Selo tom="neutro">{e.secreta ? "Secreta" : "Não secreta"}</Selo>
+              </span>
+              <div className="mt-1 grid gap-2">
+                {e.opcoes.map((o, i) => (
+                  <Opcao key={i} nome="opcao" valor={i + 1} marcada={escolha === i + 1} aoMarcar={() => setEscolha(i + 1)}
+                    selo={e.escolha === i + 1 ? <Selo tom="andamento">Sua resposta</Selo> : null}>{o}</Opcao>
+                ))}
+              </div>
             </fieldset>
             {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-            {registrada || e.respondeuEm ? (
-              <Aviso tom="ok">
-                Resposta de {e.para} registrada{e.respondeuEm ? ` em ${diaHora(e.respondeuEm)}` : ""}. Dá para trocar até {prazoCurto(e.abertaAte)} por este link.
+            {/* O botão só aparece quando há o que enviar (decisão B.1). */}
+            {mudou ? (
+              <Botao type="submit" className="w-full" disabled={enviando}><Icone nome="enviar" />{e.respondeuEm ? "Trocar a resposta" : "Enviar resposta"}</Botao>
+            ) : e.respondeuEm ? (
+              <Aviso tom="ok" titulo={`Resposta registrada em ${diaHora(e.respondeuEm)}`}>
+                Dá para trocar até {prazoCurto(e.abertaAte)}, por este link: escolha outra opção e aparece Trocar a resposta.
               </Aviso>
             ) : null}
-            <Botao type="submit" disabled={enviando || !escolha || (registrada && escolha === e.escolha)}>
-              {e.respondeuEm ? "Trocar a resposta" : "Enviar resposta"}
-            </Botao>
           </form>
         </Cartao>
       )}
