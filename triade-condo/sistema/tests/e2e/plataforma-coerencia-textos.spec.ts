@@ -55,7 +55,7 @@ test.describe("Plataforma · coerência das telas, textos", () => {
     await expect(page.getByRole("region", { name: "Contato" })).toContainText("+55 13 99812-4455");
     await conferir(page);
     await page.goto(`${PLATAFORMA}/suporte`);
-    await expect(page.getByRole("button", { name: "+ Abrir chamado", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Abrir chamado", exact: true })).toBeVisible();
     // No prontuário (DC15), Novo item foi para Mais ações.
     await page.goto(`${PLATAFORMA}/documentos/prontuario`);
     await page.getByRole("button", { name: "Mais ações" }).click();

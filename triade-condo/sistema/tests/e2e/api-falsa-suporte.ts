@@ -11,7 +11,7 @@ interface ChamadoFalso {
 }
 interface AcessoFalso {
   id: string; pedidoPor: string; funcoes: string[]; motivo: string; areas: string[]; horas: number; situacao: string; validoAte?: string;
-  leituras: number; criadoEm: string; motivoRecusa?: string;
+  leituras: number; criadoEm: string; motivoRecusa?: string; decididoEm?: string; decididoPor?: string; encerradoEm?: string; encerradoPor?: string;
 }
 export interface EstadoSuporte {
   chamados: ChamadoFalso[];
@@ -40,6 +40,12 @@ export function criarSuporte(): EstadoSuporte {
     acessos: [{
       id: novoId(), pedidoPor: "Diego", funcoes: ["SUPORTE"], motivo: "A síndica relatou que a fila de pedidos some depois de filtrar por categoria.",
       areas: ["PEDIDOS"], horas: 24, situacao: "PEDIDO", leituras: 0, criadoEm: agora(),
+    }, {
+      id: novoId(), pedidoPor: "Diego", funcoes: ["SUPORTE"], motivo: "Conferir a importação da planilha.", areas: ["MORADORES"], horas: 4, situacao: "ENCERRADO",
+      leituras: 2, criadoEm: "2026-10-14T13:00:00Z", decididoEm: "2026-10-14T13:20:00Z", decididoPor: "Ana Souza", encerradoEm: "2026-10-14T14:20:00Z", encerradoPor: "Ana Souza",
+    }, {
+      id: novoId(), pedidoPor: "Paula", funcoes: ["IMPLANTACAO"], motivo: "Revisar o modelo do mural.", areas: ["COMUNICADOS"], horas: 24, situacao: "RECUSADO",
+      leituras: 0, criadoEm: "2026-10-09T13:00:00Z", decididoEm: "2026-10-09T15:00:00Z", decididoPor: "Ana Souza", motivoRecusa: "Pode ver comigo em reunião.",
     }],
   };
 }
@@ -70,9 +76,10 @@ export async function rotasSuporte(route: Route, est: EstadoSuporte, caminho: st
     if (ae[2] === "decidir") {
       if (!corpo.aprovar && String(corpo.motivo ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
       a.situacao = corpo.aprovar ? "APROVADO" : "RECUSADO";
+      a.decididoEm = agora(); a.decididoPor = eu.nome;
       if (corpo.aprovar) a.validoAte = new Date(Date.now() + a.horas * 3600_000).toISOString();
       else a.motivoRecusa = String(corpo.motivo);
-    } else a.situacao = "ENCERRADO";
+    } else { a.situacao = "ENCERRADO"; a.encerradoEm = agora(); a.encerradoPor = eu.nome; }
     return route.fulfill({ json: a });
   }
 

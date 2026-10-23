@@ -18,7 +18,7 @@ import { linhaContrato, linhasManutencao, vazioManutencao } from "./manutencao/C
 import { linhaDocumento, linhasComunicados } from "./comunicados/CartaoComunicados.tsx";
 import { CartaoMural } from "./comunicados/CartaoMural.tsx";
 import { documentoNoProntuario, itensVencendo, linhaItem, linhasProntuario, MAXIMO_VENCIMENTOS, maisVencimentos } from "./memoria/CartaoMemoria.tsx";
-import { CartaoAcessoExcepcional } from "./suporte/CartaoAcessoExcepcional.tsx";
+import { useAcessoNoInicio } from "./suporte/AcessoTriade.tsx";
 import { linhasVida, temVida } from "./vida/CartaoVida.tsx";
 import { useCelular } from "./celular.ts";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
@@ -26,8 +26,8 @@ import type { Configuracoes, MesFechado, Prontuario } from "./tipos.ts";
 
 const ONDE: Record<string, { href: string; texto: string; acao: string }> = {
   SEM_HORARIO_ATENDIMENTO: { href: "/configuracoes/horarios", texto: "Definir", acao: "config.editar" },
-  SEM_RESPONSAVEL: { href: "/pessoas?aba=atendimento", texto: "Escolher", acao: "atendimento.responsaveis" },
-  SEM_RESPONSAVEL_PADRAO: { href: "/pessoas?aba=atendimento", texto: "Escolher", acao: "atendimento.responsaveis" },
+  SEM_RESPONSAVEL: { href: "/pessoas", texto: "Escolher", acao: "atendimento.responsaveis" },
+  SEM_RESPONSAVEL_PADRAO: { href: "/pessoas", texto: "Escolher", acao: "atendimento.responsaveis" },
 };
 
 function plural(n: number, um: string, varios: string): string {
@@ -52,12 +52,14 @@ function linhasMoradores(resumo: NonNullable<ReturnType<typeof usePlataforma>["p
 const HOJE = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "numeric", month: "long" });
 const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
 
-/** Agora (F7.1, AT-08, TR-11): o que pede atenção agora, cada linha levando à fila filtrada. */
+/** Agora (F7.1, AT-08, TR-11): o que pede atenção agora, cada linha levando à fila filtrada. O pedido
+ * de acesso da TRÍADE e o acesso valendo vêm primeiro, com Decidir e Encerrar (PI-11, decisão D.1). */
 function Agora({ resumo, decisoes, paradaDias }: {
   resumo: NonNullable<ReturnType<typeof usePlataforma>["painel"]["pedidos"]>;
   decisoes: ReturnType<typeof usePlataforma>["painel"]["decisoes"];
   paradaDias: number | null;
 }) {
+  const acesso = useAcessoNoInicio();
   const maisAntigaDias = decisoes?.maisAntigaDias ?? null;
   type Linha = { selo: string | null; tom: Tom; icone: NomeIcone; tomIcone: Tom | "violeta"; texto: string; href: string; botao: string; iconeBotao?: NomeIcone; ajuda: string | null };
   const linhas: Linha[] = [
@@ -86,13 +88,15 @@ function Agora({ resumo, decisoes, paradaDias }: {
   ];
   return (
     <CartaoInicio titulo="Agora" icone="sino" href="/pedidos">
-      {linhas.length ? (
-        <LinhasInicio linhas={linhas.map((l) => ({ chave: l.href + l.texto, icone: l.icone, tom: l.tomIcone, titulo: l.texto, detalhe: l.ajuda ?? undefined,
-          selo: l.selo ? { texto: l.selo, tom: l.tom } : undefined, href: l.href, botao: l.botao, iconeBotao: l.iconeBotao }))} />
+      {acesso.erro}
+      {linhas.length || acesso.linhas.length ? (
+        <LinhasInicio linhas={[...acesso.linhas, ...linhas.map((l) => ({ chave: l.href + l.texto, icone: l.icone, tom: l.tomIcone, titulo: l.texto, detalhe: l.ajuda ?? undefined,
+          selo: l.selo ? { texto: l.selo, tom: l.tom } : undefined, href: l.href, botao: l.botao, iconeBotao: l.iconeBotao }))]} />
       ) : (
         <p className="flex items-center gap-2"><IconeMarca marca="ok" className="h-4 w-4 text-ok" />Nada pedindo atenção agora.</p>
       )}
       <p className="t-apoio border-t border-linha pt-3">{plural(resumo.ativos, "pedido ativo", "pedidos ativos")}</p>
+      {acesso.janela}
     </CartaoInicio>
   );
 }
@@ -214,9 +218,6 @@ export function Inicio() {
           ) : null}
         </div>
       </section>
-      {painel.acessosExcepcionais && (painel.acessosExcepcionais.pedidos.length || painel.acessosExcepcionais.valendo) ? (
-        <CartaoAcessoExcepcional pedidos={painel.acessosExcepcionais.pedidos} valendo={painel.acessosExcepcionais.valendo} />
-      ) : null}
       {painel.pedidos ? <Agora resumo={painel.pedidos} decisoes={painel.decisoes} paradaDias={config.estado === "pronto" ? config.dados.avisos.pendenciaDias : null} /> : null}
       {pode("agenda.ver") || (temVencimentos && !celular) ? (
         <div className="grid items-start gap-5 lg:grid-cols-2">

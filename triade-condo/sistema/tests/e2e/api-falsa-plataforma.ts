@@ -20,6 +20,32 @@ import { classificadosAAprovar, classificadosDoMural, criarClassificados, rotasC
 import { avisarNoRegistro, avisosDoPedido, criarAvisoRegistro, rotasAvisoRegistro, type ContextoAviso } from "./api-falsa-aviso-registro";
 import { avisosDecisoes, criarDecisoes, detalheDecisoes, marcarAvisosDecisoes, resumoDecisoes, rotasDecisoes, semearDecisoes } from "./api-falsa-decisoes";
 
+/** As 22 permissões do banco (permissoes), na ordem de @triade/domain. */
+const PERMISSOES = {
+  ACOMPANHAR: "Acompanhar",
+  RESPONDER: "Responder",
+  ATUALIZAR: "Atualizar",
+  CONCLUIR: "Concluir",
+  PUBLICAR: "Publicar",
+  CONFIGURAR: "Configurar",
+  APROVAR: "Aprovar",
+  CADASTRAR: "Cadastrar moradores",
+  VER_AGENDA: "Ver a agenda",
+  AGENDA: "Cuidar da agenda",
+  VER_MANUTENCAO: "Ver a manutenção",
+  MANUTENCAO: "Cuidar da manutenção",
+  VER_COMUNICADOS: "Ver comunicados e documentos",
+  DOCUMENTOS: "Cuidar dos documentos",
+  VER_RESERVAS: "Ver as reservas",
+  RESERVAS: "Cuidar das reservas",
+  VER_ENQUETES: "Ver as enquetes",
+  ENQUETES: "Cuidar das enquetes",
+  VER_ASSEMBLEIAS: "Ver as assembleias",
+  ASSEMBLEIAS: "Cuidar das assembleias",
+  VER_CLASSIFICADOS: "Ver os classificados",
+  CLASSIFICADOS: "Cuidar dos classificados",
+} as const;
+
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 export const JATOBA = "3e0f6c31-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
 const ANA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
@@ -354,10 +380,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (caminho === "/v1/condominio/pessoas" && metodo === "GET") {
       return route.fulfill({ json: {
         pessoas: estado.pessoas, responsavelPadrao: estado.responsavelPadrao, versao: c.versao, pendencias: pendencias(),
-        permissoesDisponiveis: [
-          { codigo: "CONFIGURAR", nome: "Configurar", descricao: "Mudar horários, feriados, categorias, prioridades, etapas, modelos de resposta e prazos." },
-          { codigo: "CADASTRAR", nome: "Cadastrar moradores", descricao: "Incluir e corrigir unidades e contatos. O que a pessoa inclui fica a confirmar pelo síndico." },
-        ],
+        // As 22 do banco, como a API devolve (as que têm o que fazer em permissao_acoes).
+        permissoesDisponiveis: Object.entries(PERMISSOES).map(([codigo, nome]) => ({ codigo, nome, descricao: nome })),
       } });
     }
     if (caminho === "/v1/condominio/pessoas" && metodo === "POST") {

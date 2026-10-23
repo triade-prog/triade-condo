@@ -6,6 +6,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa, V_ANA, V_BRUNA } from "./api-falsa-plataforma";
 import { abrirArea } from "./inicio";
 import { salvarPagina } from "./configuracoes";
+import { maisAcoes } from "./registro";
 
 const PLATAFORMA = "http://localhost:3000";
 
@@ -166,40 +167,79 @@ test.describe("Plataforma do síndico · passo 2", () => {
     await expect(page.getByRole("row", { name: /Regra geral/ })).toContainText("16 h de atendimento");
   });
 
-  test("V-09, CF-03 e CF-05: autorizar pessoa, escolher quem atende e revogar a padrão com substituto", async ({ page }) => {
+  test("V-09, CF-03 e CF-05: autorizar pessoa por área, atender na ficha e revogar a padrão com substituto", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page);
     await page.goto(PLATAFORMA);
     await menuPara(page, "Pessoas e acesso");
-    await expect(page.getByRole("row", { name: /Ana Souza/ })).toContainText("Todas");
-    await expect(page.getByRole("row", { name: /Bruna/ })).toContainText("Configurar");
-    await page.getByRole("button", { name: "+ Autorizar pessoa" }).click();
+    // Uma lista só (A.1): o acesso numa frase, e a linha abre a ficha.
+    await expect(page.getByRole("listitem").filter({ hasText: "Ana Souza" })).toContainText("Todas as permissões");
+    await expect(page.getByRole("listitem").filter({ hasText: "Bruna" })).toContainText("Cuida das configurações · cadastra moradores");
+    await expect(page.getByRole("tab", { name: "Quem atende" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Autorizar pessoa" }).click();
     const convite = page.getByRole("dialog", { name: "Autorizar pessoa" });
     await convite.getByLabel("Nome").fill("Caio");
     await convite.getByLabel("E-mail").fill("caio@exemplo.invalid");
     await convite.getByLabel("Cargo").fill("Subsíndico");
-    await expect(convite.getByText("O cargo não dá permissão.")).toBeVisible();
+    await expect(convite.getByText("O cargo é só um nome: não dá permissão.")).toBeVisible();
+    // No celular, o convite vai em dois passos.
+    const continuar = convite.getByRole("button", { name: "Continuar" });
+    if (await continuar.isVisible()) await continuar.click();
+    // B.1: uma escolha por área; marcar dar retorno já marca ver os pedidos.
+    await convite.getByRole("group", { name: "Agenda" }).getByRole("button", { name: "Cuida", exact: true }).click();
+    await convite.getByLabel("Dar retorno ao morador").check();
+    await expect(convite.getByLabel("Ver os pedidos e o andamento")).toBeChecked();
+    await expect(convite.getByRole("status")).toContainText("Cuida dos pedidos (sem atualizar nem concluir) e da agenda");
     await conferir(page);
     await convite.getByRole("button", { name: "Enviar convite" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Convite enviado" })).toBeVisible();
-    await expect(page.getByRole("row", { name: /Caio/ })).toContainText("Só vê");
+    await expect(page.getByRole("listitem").filter({ hasText: "Caio" })).toContainText("Cuida dos pedidos (sem atualizar nem concluir) e da agenda");
     expect(estado.convites).toEqual(["caio@exemplo.invalid"]);
+    expect([...estado.pessoas.find((p) => p.nome === "Caio")!.permissoes].sort()).toEqual(["ACOMPANHAR", "AGENDA", "RESPONDER"]);
 
-    await page.getByRole("tab", { name: "Quem atende" }).click();
-    await page.getByLabel("Ana Souza atende os pedidos").check();
-    await page.getByLabel("Bruna atende os pedidos").check();
-    await page.getByLabel("Bruna é o padrão da fila").check();
-    await conferir(page);
-    await page.getByRole("button", { name: "Salvar quem atende" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Quem atende foi salvo." })).toBeVisible();
+    // O atendimento grava na hora, na ficha. Quem passa a atender sem padrão vira o padrão.
+    await page.getByRole("link", { name: "Ana Souza" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Ana Souza" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mudar o acesso" })).toHaveCount(0);
+    await page.getByRole("switch", { name: "Atende os pedidos" }).check();
+    await expect(page.getByRole("status").filter({ hasText: "Ana Souza passa a atender os pedidos." })).toBeVisible();
+    expect(estado.responsavelPadrao).toBe(V_ANA);
+    await page.getByRole("link", { name: "Voltar às pessoas" }).click();
+    await page.getByRole("link", { name: "Bruna" }).click();
+    await page.getByRole("switch", { name: "Atende os pedidos" }).check();
+    await expect(page.getByRole("status").filter({ hasText: "Bruna passa a atender os pedidos." })).toBeVisible();
+    await page.getByRole("button", { name: "Tornar padrão da fila" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Os pedidos novos agora vão para Bruna." })).toBeVisible();
     expect(estado.responsavelPadrao).toBe(V_BRUNA);
+    // A padrão só sai da fila depois de trocar.
+    await expect(page.getByRole("switch", { name: "Disponível" })).toBeDisabled();
+    await conferir(page);
 
-    await page.getByRole("tab", { name: "Pessoas" }).click();
-    await page.getByRole("button", { name: "Revogar o acesso de Bruna" }).click();
+    await maisAcoes(page, "Revogar acesso");
     const revogar = page.getByRole("dialog", { name: "Revogar o acesso de Bruna" });
     await expect(revogar.getByLabel("Bruna é o padrão da fila. Quem assume?")).toHaveValue(V_ANA);
     await revogar.getByRole("button", { name: "Revogar acesso" }).click();
+    await expect(page).toHaveURL(/\/pessoas\?revogada=Bruna$/);
     await expect(page.getByRole("status").filter({ hasText: "Acesso de Bruna revogado" })).toBeVisible();
     expect(estado.responsavelPadrao).toBe(V_ANA);
+  });
+
+  test("B.1: mudar o acesso por área na ficha da pessoa", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page);
+    await page.goto(`${PLATAFORMA}/pessoas/pessoa?id=${V_BRUNA}`);
+    const acesso = page.getByRole("region", { name: "Acesso" });
+    await expect(acesso.getByRole("region", { name: "Gestão" })).toContainText("Muda");
+    await expect(acesso.getByRole("region", { name: "Dia a dia" })).toContainText("Não vê");
+    await page.getByRole("button", { name: "Mudar o acesso" }).click();
+    const janela = page.getByRole("dialog", { name: "Mudar o acesso de Bruna" });
+    await janela.getByRole("group", { name: "Manutenção" }).getByRole("button", { name: "Vê", exact: true }).click();
+    await janela.getByRole("group", { name: "Comunicados e documentos" }).getByRole("button", { name: "Vê", exact: true }).click();
+    await janela.getByLabel("Publicar comunicados").check();
+    await expect(janela.getByRole("status")).toContainText("Cuida das configurações · publica comunicados · cadastra moradores · vê a manutenção, os comunicados e os documentos");
+    await conferir(page);
+    await janela.getByRole("button", { name: "Salvar o acesso" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Acesso de Bruna salvo." })).toBeVisible();
+    expect([...estado.pessoas.find((p) => p.vinculoId === V_BRUNA)!.permissoes].sort()).toEqual(["CADASTRAR", "CONFIGURAR", "PUBLICAR", "VER_COMUNICADOS", "VER_MANUTENCAO"]);
+    await expect(acesso.getByRole("region", { name: "Comunicação" })).toContainText("Publica comunicados; não cuida dos documentos");
   });
 
   test("CF-03: quem só vê não encontra botão de mudar nem pessoas", async ({ page }) => {
