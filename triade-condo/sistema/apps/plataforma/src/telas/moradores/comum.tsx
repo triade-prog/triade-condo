@@ -23,7 +23,11 @@ export interface ItemMenu {
 
 /** Menu de ações: abre sob o botão, fecha com Esc ou clicando fora. Com `texto`, o botão tem
  * palavra (no celular, só o ícone); sem, é o emblema de três pontos. */
-export function MenuAcoes({ rotulo, itens, texto, icone = "pontos" }: { rotulo: string; itens: ItemMenu[]; texto?: string; icone?: NomeIcone }) {
+export function MenuAcoes({ rotulo, itens, texto, icone = "pontos", folha }: {
+  rotulo: string; itens: ItemMenu[]; texto?: string; icone?: NomeIcone;
+  /** No celular, sobe de baixo, com quem é no topo (menu da linha na lista de unidades). */
+  folha?: { titulo: string; apoio?: string };
+}) {
   const [aberto, setAberto] = useState(false);
   const caixa = useRef<HTMLDivElement>(null);
   const base = useId();
@@ -59,7 +63,13 @@ export function MenuAcoes({ rotulo, itens, texto, icone = "pontos" }: { rotulo: 
         <button type="button" className="emblema" aria-label={rotulo} aria-expanded={aberto} onClick={() => setAberto(!aberto)}><Icone nome={icone} /></button>
       )}
       {aberto ? (
-        <div className="menu-pessoa" role="group" aria-label={rotulo}>
+        <div className="menu-pessoa" role="group" aria-label={rotulo} data-folha={folha ? "" : undefined}>
+          {folha ? (
+            <span className="quem md:hidden">
+              <span className="font-semibold">{folha.titulo}</span>
+              {folha.apoio ? <span className="t-apoio">{folha.apoio}</span> : null}
+            </span>
+          ) : null}
           {itens.map((x) => x.href ? (
             <Link key={x.texto} href={x.href} aria-label={x.rotulo} aria-describedby={descricao(x)} className={classe(x)} onClick={() => setAberto(false)}>{conteudo(x)}</Link>
           ) : (

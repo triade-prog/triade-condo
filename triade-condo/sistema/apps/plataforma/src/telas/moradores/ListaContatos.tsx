@@ -9,7 +9,7 @@
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { mostrarTelefone, nomeDaUnidade, SITUACOES_COMUNICADOS_WHATSAPP, SITUACOES_EMAIL } from "@triade/domain";
-import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, Iniciais, textoDoErro, Vazio } from "@triade/ui";
+import { Aviso, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Iniciais, textoDoErro, Vazio } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { useCarregar } from "../sessao.tsx";
 import type { ListaMoradores, MoradorDaLista, Recado } from "../tipos.ts";
@@ -66,12 +66,20 @@ export function ListaContatos({ estado, salvo, buscaInicial = "" }: { estado?: "
   }
 
   const formulario = (
-    <form onSubmit={buscar} role="search" aria-label="Buscar pessoas" className="busca min-w-0 md:max-w-[520px]">
+    <div className="flex items-center gap-3">
+    <form onSubmit={buscar} role="search" aria-label="Buscar pessoas" className="busca min-w-0 flex-1 md:max-w-[520px]">
       <Icone nome="busca" />
       <label htmlFor="m-busca" className="sr-only">Buscar por nome, unidade ou telefone</label>
       <input id="m-busca" className="campo" type="search" placeholder="Buscar por nome, unidade ou telefone" maxLength={60} value={texto}
         onChange={(e) => setTexto(e.target.value)} />
     </form>
+    {/* Os aniversariantes do mês (F3.10; MU-11), de todas as unidades. */}
+    {aConfirmar ? null : (
+      <Link href="/moradores/aniversariantes" className={classeBotao("contorno", "max-md:w-11 max-md:px-0")} aria-label="Aniversariantes do mês">
+        <Icone nome="bolo" /><span className="max-md:sr-only">Aniversariantes</span>
+      </Link>
+    )}
+    </div>
   );
 
   if (carga.estado === "carregando") return <div className="grid gap-4">{formulario}<Carregando rotulo="Carregando as pessoas…" /></div>;

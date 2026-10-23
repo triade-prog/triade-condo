@@ -2,7 +2,9 @@
 // verdade estão testadas no banco (pgTAP 009 e 012) e na API (Deno); aqui só o bastante para a
 // tela. O vínculo guarda as marcações; a relação de antes é calculada delas, como no banco.
 // Garagens e veículos (F3.8; MU-06, MU-11): vagas, veículos e a busca da lista de unidades, com a
-// placa achada com ou sem hífen (pgTAP 028).
+// placa achada com ou sem hífen (pgTAP 028). Família, pets, aniversário, histórico e
+// aniversariantes (F3.9, F3.10; pgTAP 036): o mês de hoje é sempre novembro, para a tela não
+// depender da data.
 import type { Route } from "@playwright/test";
 
 interface Bloco { id: string; nome: string; ordem: number; ativo: boolean; versao: number }
@@ -17,7 +19,15 @@ interface Contato {
   email?: string; emailSituacao?: "PENDENTE" | "CONFIRMADO" | "DEVOLVIDO" | "PAROU"; emailComunicados?: boolean;
   /** Comunicados pelo WhatsApp (F6.6): a escolha do próprio morador. */
   comunicadosWhatsapp?: "ACEITOU" | "RECUSOU" | "PAROU"; comunicadosWhatsappEm?: string; comunicadosWhatsappOrigem?: "PERGUNTA" | "COMANDO";
+  aniversario?: { dia: number; mes: number } | null;
 }
+interface Familiar { id: string; unidadeId: string; nome: string; parentesco: string; mora: boolean; aniversario: { dia: number; mes: number } | null; saiu: boolean; versao: number }
+interface Pet { id: string; unidadeId: string; nome: string; especie: string; porte: string | null; raca: string | null; observacao: string | null; saiu: boolean; versao: number }
+interface Registro { id: number; unidadeId: string; em: string; categoria: string; titulo: string; detalhe?: string; autor: string }
+/** O mês de hoje na API falsa. */
+export const MES_FALSO = 11;
+const PARENTESCOS: Record<string, string> = { CONJUGE: "cônjuge", FILHO: "filho ou filha", PAI_MAE: "pai ou mãe", OUTRO_PARENTE: "outro parente", TRABALHA_NA_CASA: "trabalha na casa" };
+const ESPECIES: Record<string, string> = { CAO: "cão", GATO: "gato", OUTRO: "outro" };
 interface Vaga { id: string; identificacao: string; onde: string | null; coberta: boolean | null; unidadeId: string | null; ativa: boolean; versao: number }
 interface Veiculo {
   id: string; placa: string; tipo: "CARRO" | "MOTO" | "OUTRO"; modelo: string | null; unidadeId: string; contatoId: string | null; vagaId: string | null;
@@ -91,7 +101,7 @@ export function criarMoradores() {
   const pedro: Contato = { ...ct("Pedro Souza", "+5561999990002"), comunicadosWhatsapp: "ACEITOU", comunicadosWhatsappEm: "2026-10-20T23:15:00Z",
     comunicadosWhatsappOrigem: "COMANDO" };
   const joana: Contato = { ...ct("Joana Lima", "+5561988887777"), comunicadosWhatsapp: "RECUSOU", comunicadosWhatsappEm: "2026-10-20T21:00:00Z",
-    comunicadosWhatsappOrigem: "PERGUNTA" };
+    comunicadosWhatsappOrigem: "PERGUNTA", aniversario: { dia: 3, mes: 11 } };
   const paulo = ct("Paulo Lima", "+5561988887777");
   const v = (contato: Contato, unidadeId: string, relacao: string, estado: "PENDENTE" | "CONFIRMADO", principal = false, origem: "PAINEL" | "PLANILHA" = "PAINEL",
     ocupaDesde: string | null = null): Vinculo =>
@@ -111,6 +121,13 @@ export function criarMoradores() {
       { id: novoId(), identificacao: "V-01", onde: "Térreo", coberta: false, unidadeId: null, ativa: true, versao: 1 },
     ] as Vaga[],
     veiculos: [] as Veiculo[],
+    familia: [{ id: novoId(), unidadeId: A102, nome: "Lucas Lima", parentesco: "FILHO", mora: true, aniversario: { dia: 14, mes: 11 }, saiu: false, versao: 1 }] as Familiar[],
+    pets: [] as Pet[],
+    historico: [
+      { id: 3, unidadeId: A102, em: "2026-10-12T11:30:00Z", categoria: "MARCAS", titulo: "Marcada para alugar", autor: "por Ana Souza" },
+      { id: 2, unidadeId: A102, em: "2025-03-01T14:00:00Z", categoria: "MUDANCA", titulo: "Mudança registrada", detalhe: "Entrou Joana Lima, saiu Carlos Prado", autor: "por Ana Souza" },
+      { id: 1, unidadeId: A102, em: "2025-03-01T14:00:00Z", categoria: "PESSOAS", titulo: "Carlos Prado saiu", detalhe: "Inquilino · vínculo encerrado na mudança", autor: "por Ana Souza" },
+    ] as Registro[],
     /** Configurações › WhatsApp › Comunicados pelo WhatsApp (F6.6): começa desligado. */
     zap: { ligado: false, conectado: true, numero: "5561981244000", versao: 1, mudadoEm: null as string | null, mudadoPor: null as string | null },
   };
@@ -153,7 +170,7 @@ const semResponsavel = (ativos: Vinculo[]) => ativos.length > 0 && !ativos.some(
 
 /** Atende as rotas do passo 3; devolve null quando a rota não é daqui. */
 export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: string, metodo: string, corpo: Record<string, unknown>, pode: (a: string) => boolean) {
-  if (!/^\/v1\/condominio\/(unidades|blocos|moradores|contatos|vinculos-unidade|importacoes|estrutura|busca-unidades|garagens|vagas|veiculos)/.test(caminho)) return null;
+  if (!/^\/v1\/condominio\/(unidades|blocos|moradores|contatos|vinculos-unidade|importacoes|estrutura|busca-unidades|garagens|vagas|veiculos|familiares|pets|aniversariantes)/.test(caminho)) return null;
   if (!pode("moradores.ver")) return erro(route, 403, "FORBIDDEN");
   const edita = pode("moradores.editar");
   const confirma = pode("moradores.confirmar");
@@ -174,6 +191,15 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
   const veiculoJson = (v: Veiculo) => ({ id: v.id, placa: mostrarPlaca(v.placa), tipo: v.tipo, modelo: v.modelo ?? undefined, unidadeId: v.unidadeId,
     contatoId: v.contatoId ?? undefined, contato: v.contatoId ? contato(v.contatoId).nome ?? undefined : undefined,
     vagaId: v.vagaId ?? undefined, vaga: nomeDaVaga(v.vagaId), versao: v.versao });
+  const familia = (unidadeId: string) => m.familia.filter((f) => f.unidadeId === unidadeId && !f.saiu);
+  const pets = (unidadeId: string) => m.pets.filter((p) => p.unidadeId === unidadeId && !p.saiu);
+  const aniversariantes = (unidadeId: string, mes: number) => [
+    ...ativos(unidadeId).map((v) => ({ tipo: "PESSOA", id: v.contatoId, nome: contato(v.contatoId).nome ?? "", a: contato(v.contatoId).aniversario,
+      descricao: `${v.relacao === "INQUILINO" ? "Inquilino" : v.relacao === "PROPRIETARIO" ? "Proprietário" : "Familiar"}${v.principal ? " · responsável" : ""}` })),
+    ...familia(unidadeId).map((f) => ({ tipo: "FAMILIA", id: f.id, nome: f.nome, a: f.aniversario, descricao: `Família · ${PARENTESCOS[f.parentesco]}` })),
+  ].filter((x) => x.a?.mes === mes);
+  const registrar = (unidadeId: string, categoria: string, titulo: string, detalhe?: string) =>
+    m.historico.unshift({ id: Math.max(0, ...m.historico.map((h) => h.id)) + 1, unidadeId, em: new Date().toISOString(), categoria, titulo, detalhe, autor: "por Ana Souza" });
   const ligar = (contatoId: string, unidadeId: string, marcas: Marcas, recebe: boolean, origem: "PAINEL" | "PLANILHA" = "PAINEL") => {
     if (marcas.principal) for (const v of ativos(unidadeId)) v.principal = false;
     const v: Vinculo = { id: novoId(), contatoId, unidadeId, relacao: relacaoDe(marcas), ...marcas, recebeComunicados: recebe,
@@ -200,6 +226,7 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
       if (c.nome?.toLowerCase().includes(q.toLowerCase())) achar(v.unidadeId, "NOME", c.nome);
       else if (digitos.length >= 4 && c.telefone?.replace(/\D/g, "").includes(digitos)) achar(v.unidadeId, "TELEFONE", c.nome ?? "");
     }
+    for (const f of m.familia.filter((f) => !f.saiu && f.nome.toLowerCase().includes(q.toLowerCase()))) achar(f.unidadeId, "FAMILIA", f.nome);
     return route.fulfill({ json: [...achados.values()] });
   }
   if (caminho === "/v1/condominio/garagens") {
@@ -277,7 +304,9 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
         ocupacao: ocupacao(ativos(x.id)),
         proprietario: (() => { const p = ativos(x.id).find((v) => v.proprietario); return p ? contato(p.contatoId).nome : null; })(),
         proprietarioNaoMora: naoMora(ativos(x.id)),
-        semResponsavel: x.ativa && semResponsavel(ativos(x.id)) })),
+        semResponsavel: x.ativa && semResponsavel(ativos(x.id)),
+        pets: pets(x.id).length, familia: familia(x.id).length, aniversariantesMes: aniversariantes(x.id, MES_FALSO).length })),
+      mes: MES_FALSO,
       resumo: resumoMoradores(m),
       ocupacao: ((as) => ({
         comMorador: as.filter((x) => ["PROPRIETARIO_MORA", "ALUGADA", "CEDIDA"].includes(ocupacao(ativos(x.id)))).length,
@@ -289,6 +318,64 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
       }))(m.unidades.filter((x) => x.ativa)),
       podeEditar: edita, podeConfirmar: confirma,
     } });
+  }
+  const hi = /^\/v1\/condominio\/unidades\/([^/]+)\/historico$/.exec(caminho);
+  if (hi) {
+    const x = unidade(hi[1]!);
+    if (!x) return erro(route, 404, "NOT_FOUND");
+    const p = new URL(route.request().url()).searchParams;
+    const todos = m.historico.filter((h) => h.unidadeId === x.id && (!p.get("categoria") || h.categoria === p.get("categoria")));
+    const antes = Number(p.get("antes")) || Infinity;
+    const pagina = todos.filter((h) => h.id < antes).slice(0, 2);
+    return route.fulfill({ json: {
+      unidade: nomeUnidade(x), itens: pagina.map(({ unidadeId: _u, ...h }) => h), mais: todos.filter((h) => h.id < antes).length > pagina.length,
+      total: todos.length, desde: todos.length ? todos[todos.length - 1]!.em : null,
+    } });
+  }
+  if (caminho === "/v1/condominio/aniversariantes") {
+    const p = new URL(route.request().url()).searchParams;
+    const mes = Number(p.get("mes")) || MES_FALSO;
+    const so = p.get("unidade");
+    const itens = m.unidades.filter((x) => x.ativa && (!so || x.id === so))
+      .flatMap((x) => aniversariantes(x.id, mes).map(({ a, ...i }) => ({ ...i, dia: a!.dia, unidadeId: x.id, unidade: nomeUnidade(x) })))
+      .sort((a, b) => a.dia - b.dia);
+    return route.fulfill({ json: { mes, mesAtual: MES_FALSO, itens, unidades: m.unidades.filter((x) => x.ativa).map((x) => ({ id: x.id, nome: nomeUnidade(x) })) } });
+  }
+  const fp = /^\/v1\/condominio\/(familiares|pets)(?:\/([^/]+))?(\/retirar)?$/.exec(caminho);
+  if (fp) {
+    const lista: (Familiar | Pet)[] = fp[1] === "pets" ? m.pets : m.familia;
+    const item = fp[2] ? lista.find((x) => x.id === fp[2] && !x.saiu) : undefined;
+    if (fp[2] && !item) return erro(route, 404, "NOT_FOUND");
+    if (item) { const c = conflito(item, corpo.versao); if (c) return c; }
+    const tipo = fp[1] === "pets" ? "Pet" : "Familiar";
+    if (fp[3] && item) {
+      if (corpo.motivo === "ENGANO") {
+        lista.splice(lista.indexOf(item), 1);
+        registrar(item.unidadeId, "FAMILIA_PETS", `${tipo} retirado`, "cadastrado por engano, os dados foram apagados");
+      } else {
+        Object.assign(item, { saiu: true, versao: item.versao + 1 });
+        registrar(item.unidadeId, "FAMILIA_PETS", `${item.nome} saiu`);
+      }
+      return route.fulfill({ json: { ok: true } });
+    }
+    const nome = String(corpo.nome ?? "").trim();
+    if (!nome) return erro(route, 400, "VALIDATION_ERROR", { campos: ["nome"] });
+    const unidadeId = item?.unidadeId ?? String(corpo.unidadeId ?? "");
+    const a = corpo.aniversario as { dia: number; mes: number } | null | undefined;
+    const dados = fp[1] === "pets"
+      ? { nome, especie: String(corpo.especie), porte: (corpo.porte as string | null) ?? null, raca: String(corpo.raca ?? "").trim() || null,
+          observacao: String(corpo.observacao ?? "").trim() || null }
+      : { nome, parentesco: String(corpo.parentesco), mora: corpo.mora !== false, aniversario: a ?? null };
+    if (item) {
+      Object.assign(item, dados, { versao: item.versao + 1 });
+      registrar(unidadeId, "FAMILIA_PETS", `${nome} alterado`);
+      return route.fulfill({ json: { id: item.id, versao: item.versao } });
+    }
+    const novo = { id: novoId(), unidadeId, ...dados, saiu: false, versao: 1 } as Familiar & Pet;
+    lista.push(novo);
+    registrar(unidadeId, "FAMILIA_PETS", `${nome} incluído${fp[1] === "pets" ? "" : " na família"}`,
+      fp[1] === "pets" ? `Pet · ${ESPECIES[String(corpo.especie)]}` : PARENTESCOS[String(corpo.parentesco)]);
+    return route.fulfill({ status: 201, json: { id: novo.id, versao: 1 } });
   }
   const un = /^\/v1\/condominio\/unidades\/([^/]+)(?:\/(contatos|mudanca|situacao))?$/.exec(caminho);
   if (un) {
@@ -305,7 +392,7 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
             outrasUnidades: m.vinculos.filter((o) => o.contatoId === c.id && o.unidadeId !== x.id && o.estado !== "ENCERRADO").map((o) => nomeUnidade(unidade(o.unidadeId)!)),
             email: c.email, emailSituacao: c.emailSituacao, emailComunicados: c.emailComunicados ?? true,
             comunicadosWhatsapp: c.comunicadosWhatsapp ?? "SEM_RESPOSTA", comunicadosWhatsappEm: c.comunicadosWhatsappEm,
-            comunicadosWhatsappOrigem: c.comunicadosWhatsapp === "PAROU" ? undefined : c.comunicadosWhatsappOrigem };
+            comunicadosWhatsappOrigem: c.comunicadosWhatsapp === "PAROU" ? undefined : c.comunicadosWhatsappOrigem, aniversario: c.aniversario ?? undefined };
         }),
         anteriores: m.vinculos.filter((v) => v.unidadeId === x.id && v.estado === "ENCERRADO").map((v) => {
           const c = contato(v.contatoId);
@@ -318,6 +405,9 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
         podeEditar: edita, podeConfirmar: confirma, comunicadosWhatsappLigado: m.zap.ligado,
         vagas: m.vagas.filter((g) => g.unidadeId === x.id && g.ativa).map(vagaJson),
         veiculos: m.veiculos.filter((v) => v.unidadeId === x.id && !v.retirado).map(veiculoJson),
+        familia: familia(x.id).map(({ unidadeId: _u, saiu: _s, aniversario, ...f }) => ({ ...f, aniversario: aniversario ?? undefined, desde: "2026-10-15T19:30:00Z" })),
+        pets: pets(x.id).map(({ unidadeId: _u, saiu: _s, ...p }) => ({ ...p, porte: p.porte ?? undefined, raca: p.raca ?? undefined, observacao: p.observacao ?? undefined, desde: "2026-10-22T12:12:00Z" })),
+        historico: m.historico.filter((h) => h.unidadeId === x.id).slice(0, 3).map(({ unidadeId: _u, ...h }) => h),
       } });
     }
     if (!un[2] && metodo === "PUT") {
@@ -342,7 +432,7 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
         const tel = normalizar(corpo.telefone);
         if (!tel) return erro(route, 400, "VALIDATION_ERROR", { campos: ["telefone"] });
         if (!String(corpo.nome ?? "").trim()) return erro(route, 400, "VALIDATION_ERROR", { campos: ["nome"] });
-        const novo = { id: novoId(), nome: String(corpo.nome).trim(), telefone: tel, versao: 1 };
+        const novo = { id: novoId(), nome: String(corpo.nome).trim(), telefone: tel, versao: 1, aniversario: (corpo.aniversario as Contato["aniversario"]) ?? null };
         m.contatos.push(novo);
         id = novo.id;
       }
@@ -465,6 +555,8 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     const tel = normalizar(corpo.telefone);
     if (!tel) return erro(route, 400, "VALIDATION_ERROR", { campos: ["telefone"] });
     Object.assign(c, { nome: String(corpo.nome).trim(), telefone: tel, versao: c.versao + 1 });
+    // O aniversário muda a versão outra vez, como no banco (0287).
+    if (corpo.aniversario !== undefined) Object.assign(c, { aniversario: corpo.aniversario, versao: c.versao + 1 });
     return route.fulfill({ json: { versao: c.versao, avisos: compartilhado(c) ? ["TELEFONE_COMPARTILHADO"] : [] } });
   }
   if (caminho === "/v1/condominio/vinculos-unidade/confirmar") {

@@ -9,7 +9,8 @@
 // #garagens). Os comunicados pelo WhatsApp de cada contato (F6.6, CD-02): só a situação, sem
 // botão; só o morador muda, pelo WhatsApp. DC15 (telas-modelo moradores-ficha-*): os avisos no
 // topo, as partes em cartões, um só botão principal (Incluir pessoa); Editar unidade e
-// Registrar mudança em Mais ações; Editar, Recusar e Encerrar no menu de cada pessoa.
+// Registrar mudança em Mais ações; Editar, Recusar e Encerrar no menu de cada pessoa. Família,
+// pets e o aniversário (F3.9) e as três últimas mudanças, com Ver tudo no histórico (F3.10).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -22,7 +23,9 @@ import { Janela } from "../Janela.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { ContatoAnterior, ContatoDaUnidade, Recado, UnidadeDetalhe } from "../tipos.ts";
 import { CartaoFicha, LadrilhoUnidade, MenuAcoes, nomeMotivo, SeloEstado, type ItemMenu } from "./comum.tsx";
+import { DiaDoAniversario, FamiliaPetsDaUnidade } from "./FamiliaPets.tsx";
 import { GaragensDaUnidade } from "./Garagens.tsx";
+import { dataDoHistorico } from "./Historico.tsx";
 import { descreverVinculo, LinhaOcupacao } from "./Vinculo.tsx";
 import { EditarContato, EditarUnidade, Encerrar, IncluirContato, RegistrarMudanca } from "./JanelasUnidade.tsx";
 
@@ -104,6 +107,12 @@ export function Unidade() {
     { texto: "Editar unidade", icone: "editar", acao: () => setJanela({ tipo: "unidade" }) },
     ...(u.ativa ? [{ texto: "Registrar mudança", icone: "mudanca" as const, acao: () => setJanela({ tipo: "mudanca" }) }] : []),
   ] : [];
+  mais.push({ texto: "Ver o histórico", icone: "relogio", href: `/moradores/historico?id=${u.id}` });
+  const familia = d.familia ?? [];
+  const pets = d.pets ?? [];
+  const moram = d.contatos.filter((c) => c.mora).length;
+  const daFamilia = familia.filter((f) => f.mora).length;
+  const responsavel = d.contatos.find((c) => c.principal)?.nome ?? null;
   const marcado = { aVenda: Boolean(u.aVendaDesde), paraAlugar: Boolean(u.paraAlugarDesde) };
 
   return (
@@ -118,7 +127,11 @@ export function Unidade() {
               <LinhaOcupacao ocupacao={d.ocupacao} />
               {u.aVendaDesde ? <Selo tom="info">À venda</Selo> : null}
               {u.paraAlugarDesde ? <Selo tom="info">Para alugar</Selo> : null}
-              <span className="t-apoio">Quem fala por esta unidade. Só a pessoa confirmada vale.</span>
+              {pets.length ? <Selo tom="neutro">Com pet</Selo> : null}
+              <span className="t-apoio">
+                {moram || daFamilia ? `${moram === 1 ? "1 mora aqui" : `${moram} moram aqui`}${daFamilia ? ` com ${daFamilia} da família` : ""} · ` : ""}
+                {moram || daFamilia ? "quem fala por esta unidade é a pessoa confirmada" : "Quem fala por esta unidade. Só a pessoa confirmada vale."}
+              </span>
             </div>
           </div>
         </div>
@@ -168,7 +181,7 @@ export function Unidade() {
                     <li key={c.vinculoId} className="flex items-start gap-3 border-t border-linha py-3.5 first:border-t-0 first:pt-1">
                       <Iniciais nome={c.nome} className="h-10 w-10" />
                       <div className="grid min-w-0 flex-1 gap-0.5">
-                        <span className="flex flex-wrap items-center gap-2"><span className="font-semibold">{c.nome}</span><SeloEstado estado={c.estado} /></span>
+                        <span className="flex flex-wrap items-center gap-2"><span className="font-semibold">{c.nome}</span><SeloEstado estado={c.estado} />{c.aniversario ? <DiaDoAniversario a={c.aniversario} /> : null}</span>
                         {marcas ? <span className="t-apoio font-medium">{marcas}</span> : null}
                         <span className="t-apoio">{detalhes(c, d.comunicadosWhatsappLigado === true)}</span>
                         {c.estado === "PENDENTE" && d.podeConfirmar ? (
@@ -187,6 +200,9 @@ export function Unidade() {
               </ul>
             )}
           </CartaoFicha>
+
+          <FamiliaPetsDaUnidade unidadeId={u.id} nomeUnidade={nome} familia={familia} pets={pets} responsavel={responsavel} edita={edita} salvo={salvo}
+            recarregar={carga.recarregar} incluirPessoa={edita ? () => setJanela({ tipo: "incluir" }) : undefined} />
 
           {d.anteriores.length ? (
             <CartaoFicha id="anteriores" titulo="Anteriores" icone="relogio">
@@ -234,6 +250,19 @@ export function Unidade() {
           ) : null}
           <GaragensDaUnidade unidadeId={u.id} nomeUnidade={nome} vagas={d.vagas ?? []} veiculos={d.veiculos ?? []} contatos={d.contatos}
             edita={edita} salvo={salvo} recarregar={carga.recarregar} />
+          <CartaoFicha id="historico" titulo="Histórico da unidade" icone="relogio"
+            acao={<Link href={`/moradores/historico?id=${u.id}`} className="t-texto font-medium text-violeta-600 hover:underline">Ver tudo</Link>}>
+            {d.historico?.length ? (
+              <ul aria-label={`Últimas mudanças de ${nome}`} className="grid">
+                {d.historico.map((h) => (
+                  <li key={h.id} className="grid border-t border-linha py-2.5">
+                    <span className="font-medium">{h.titulo}</span>
+                    <span className="t-apoio">{[dataDoHistorico(h.em), h.detalhe, h.autor].filter(Boolean).join(" · ")}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="border-t border-linha pt-3 t-apoio text-tinta-suave">Nada registrado ainda.</p>}
+          </CartaoFicha>
         </div>
       </div>
       {incluir ? <div className="fixed right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] z-20 md:hidden">{incluir}</div> : null}

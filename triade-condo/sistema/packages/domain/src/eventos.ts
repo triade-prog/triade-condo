@@ -144,6 +144,23 @@ export function descreverEvento(e: EventoHistorico): string {
       return "Contato corrigido";
     case "contato.dados_removidos":
       return "Dados pessoais do contato removidos";
+    // Família e pets da unidade (F3.9): sem o nome no registro geral.
+    case "unidade.familiar_incluido":
+      return "Familiar incluído na unidade";
+    case "unidade.familiar_alterado":
+      return "Familiar alterado";
+    case "unidade.familiar_saiu":
+      return "Familiar saiu da unidade";
+    case "unidade.familiar_apagado":
+      return "Familiar retirado (cadastrado por engano)";
+    case "unidade.pet_incluido":
+      return "Pet incluído na unidade";
+    case "unidade.pet_alterado":
+      return "Pet alterado";
+    case "unidade.pet_saiu":
+      return "Pet saiu da unidade";
+    case "unidade.pet_apagado":
+      return "Pet retirado (cadastrado por engano)";
     case "vinculo_unidade.alterado": {
       const campos = Array.isArray(d.campos) ? d.campos.map((c) => CAMPOS_VINCULO[String(c)] ?? String(c)) : [];
       return campos.length ? `Vínculo alterado: ${campos.join(", ")}` : "Vínculo alterado";

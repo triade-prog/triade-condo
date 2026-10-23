@@ -36,7 +36,7 @@ test.describe("Plataforma do síndico · passo 3b", () => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/moradores/unidade?id=${A102}`);
     await expect(page.getByText("Alugada · 2 moram aqui")).toBeVisible();
-    const joana = linha(page, "Joana Lima");
+    const joana = linha(page.getByRole("list", { name: /^Pessoas de / }), "Joana Lima");
     await expect(joana).toContainText("Responsável · Mora aqui");
     await expect(joana).toContainText("inquilino · desde 01/03/2025");
     await conferir(page);
@@ -51,8 +51,8 @@ test.describe("Plataforma do síndico · passo 3b", () => {
     await conferir(page);
     await janela.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Paulo Lima atualizado." })).toBeVisible();
-    await expect(linha(page, "Paulo Lima")).toContainText("Responsável · Mora aqui");
-    await expect(linha(page, "Joana Lima")).not.toContainText("Responsável");
+    await expect(linha(page.getByRole("list", { name: /^Pessoas de / }), "Paulo Lima")).toContainText("Responsável · Mora aqui");
+    await expect(linha(page.getByRole("list", { name: /^Pessoas de / }), "Joana Lima")).not.toContainText("Responsável");
   });
 
   test("MU-07: a saída não fica antes da entrada; quem saiu fica com o período inteiro", async ({ page }) => {

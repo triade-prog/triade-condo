@@ -130,6 +130,11 @@ import {
   retirarVeiculoSchema,
   vagaSchema,
   veiculoSchema,
+  familiarSchema,
+  petSchema,
+  retirarFamiliaPetSchema,
+  buscaHistoricoSchema,
+  buscaAniversariantesSchema,
   abrirQuedaSchema,
   conciliarQuedaSchema,
   editarQuedaSchema,
@@ -414,7 +419,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json(await rpc("plataforma_incluir_pessoa_unidade", {
       ...quem(c), p_unidade: unidade, p_contato: d.contatoId ?? null, p_nome: d.contatoId ? null : d.nome,
       p_telefone: d.contatoId ? null : d.telefone, p_marcas: d.marcas, p_recebe: d.recebeComunicados,
-      p_proprietario: d.proprietario ?? null,
+      p_proprietario: d.proprietario ?? null, p_aniversario: d.aniversario ?? null,
     }), 201);
   });
 
@@ -457,6 +462,50 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json(await rpc("plataforma_retirar_veiculo", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao }));
   });
 
+  // Família e pets da unidade (F3.9; MU-06): sem telefone, sem acesso, nunca no mural nem no WhatsApp.
+  const salvarFamiliar = async (c: Context<VarsPlataforma>, id: string | null) => {
+    const d = await lerCorpo(c, familiarSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    if (!id && !d.unidadeId) throw new ErroDominio("VALIDATION_ERROR", { campos: ["unidadeId"] });
+    return await rpc<{ id: string; versao: number }>("plataforma_salvar_familiar", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_unidade: id ? null : d.unidadeId, p_nome: d.nome,
+      p_parentesco: d.parentesco, p_mora: d.mora, p_aniversario: d.aniversario ?? {},
+    });
+  };
+  app.post("/v1/condominio/familiares", async (c) => c.json(await salvarFamiliar(c, null), 201));
+  app.put("/v1/condominio/familiares/:id", async (c) => c.json(await salvarFamiliar(c, idDaRota(c, "id"))));
+  const salvarPet = async (c: Context<VarsPlataforma>, id: string | null) => {
+    const d = await lerCorpo(c, petSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    if (!id && !d.unidadeId) throw new ErroDominio("VALIDATION_ERROR", { campos: ["unidadeId"] });
+    return await rpc<{ id: string; versao: number }>("plataforma_salvar_pet", {
+      ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_unidade: id ? null : d.unidadeId, p_nome: d.nome,
+      p_especie: d.especie, p_porte: d.porte, p_raca: d.raca, p_observacao: d.observacao,
+    });
+  };
+  app.post("/v1/condominio/pets", async (c) => c.json(await salvarPet(c, null), 201));
+  app.put("/v1/condominio/pets/:id", async (c) => c.json(await salvarPet(c, idDaRota(c, "id"))));
+  for (const [rota, tipo] of [["familiares", "FAMILIAR"], ["pets", "PET"]] as const) {
+    app.post(`/v1/condominio/${rota}/:id/retirar`, async (c) => {
+      const d = await lerCorpo(c, retirarFamiliaPetSchema);
+      return c.json(await rpc("plataforma_retirar_familia_pet", { ...quem(c), p_tipo: tipo, p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+    });
+  }
+
+  // Histórico da unidade e aniversariantes (F3.10; MU-11). Telefone e placa não saem daqui.
+  app.get("/v1/condominio/unidades/:id/historico", async (c) => {
+    const q = buscaHistoricoSchema.safeParse(c.req.query());
+    if (!q.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(q.error.issues.map((i) => String(i.path[0] ?? "")))] });
+    return c.json(await rpc("plataforma_historico_unidade", {
+      ...quem(c), p_unidade: idDaRota(c, "id"), p_categoria: q.data.categoria ?? null, p_antes: q.data.antes ?? null,
+    }));
+  });
+  app.get("/v1/condominio/aniversariantes", async (c) => {
+    const q = buscaAniversariantesSchema.safeParse(c.req.query());
+    if (!q.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(q.error.issues.map((i) => String(i.path[0] ?? "")))] });
+    return c.json(await rpc("plataforma_aniversariantes", { ...quem(c), p_mes: q.data.mes ?? null, p_unidade: q.data.unidade ?? null }));
+  });
+
   app.get("/v1/condominio/moradores", async (c) => {
     const r = buscaMoradoresSchema.safeParse(c.req.query());
     if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
@@ -466,7 +515,11 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.put("/v1/condominio/contatos/:id", async (c) => {
     const id = idDaRota(c, "id");
     const d = await lerCorpo(c, alterarContatoSchema);
-    return c.json(await rpc("plataforma_alterar_contato", { ...quem(c), p_contato: id, p_versao: d.versao, p_nome: d.nome, p_telefone: d.telefone }));
+    // Aniversário ausente fica como está; null tira ({} no banco).
+    return c.json(await rpc("plataforma_alterar_contato", {
+      ...quem(c), p_contato: id, p_versao: d.versao, p_nome: d.nome, p_telefone: d.telefone,
+      p_aniversario: d.aniversario === undefined ? null : (d.aniversario ?? {}),
+    }));
   });
 
   app.post("/v1/condominio/contatos/:id/remover-dados", async (c) => {

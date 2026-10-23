@@ -120,11 +120,11 @@ test.describe("Plataforma do síndico · passo 3", () => {
     await page.goto(`${PLATAFORMA}/moradores/unidade?id=${A102}`);
     await expect(page.getByRole("heading", { level: 1, name: "Torre A · 102" })).toBeVisible();
     await expect(page.getByRole("status").filter({ hasText: "O telefone de Joana Lima e Paulo Lima também está em outro contato" })).toBeVisible();
-    await expect(linha(page, "Paulo Lima")).toContainText("A confirmar");
+    await expect(linha(page.getByRole("list", { name: /^Pessoas de / }), "Paulo Lima")).toContainText("A confirmar");
     await conferir(page);
     await page.getByRole("button", { name: "Confirmar Paulo Lima" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Paulo Lima confirmado." })).toBeVisible();
-    await expect(linha(page, "Paulo Lima")).toContainText("Confirmado");
+    await expect(linha(page.getByRole("list", { name: /^Pessoas de / }), "Paulo Lima")).toContainText("Confirmado");
 
     await page.getByRole("button", { name: "Incluir pessoa" }).first().click();
     const janela = page.getByRole("dialog", { name: "Incluir pessoa · Torre A · 102" });
@@ -144,7 +144,7 @@ test.describe("Plataforma do síndico · passo 3", () => {
     await noMenu(page, "Ações de Joana Lima", "Editar Joana Lima");
     await page.getByRole("dialog", { name: "Editar Joana Lima" }).getByLabel("Recebe comunicados do condomínio").uncheck();
     await page.getByRole("button", { name: "Salvar" }).click();
-    await expect(linha(page, "Joana Lima")).toContainText("não recebe comunicados");
+    await expect(linha(page.getByRole("list", { name: /^Pessoas de / }), "Joana Lima")).toContainText("não recebe comunicados");
   });
 
   test("MU-01: inquilino com o proprietário do imóvel no cadastro; a unidade sem proprietário vira pendência", async ({ page }) => {
