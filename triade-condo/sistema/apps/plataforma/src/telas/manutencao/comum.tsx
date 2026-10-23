@@ -27,7 +27,7 @@ export function PartesManutencao() {
   const caminho = usePathname();
   const partes = [
     { href: "/manutencao", texto: "Manutenções", icone: "ferramenta", atual: caminho === "/manutencao" || caminho.startsWith("/manutencao/manutencao") },
-    { href: "/manutencao/preventivas", texto: "Preventivas", icone: "trocar", atual: caminho.startsWith("/manutencao/preventivas") },
+    { href: "/manutencao/preventivas", texto: "Preventivas", icone: "calendario", atual: caminho.startsWith("/manutencao/preventivas") },
     { href: "/manutencao/prestadores", texto: "Prestadores", icone: "pessoas", atual: caminho.startsWith("/manutencao/prestador") },
   ] as const;
   return (
@@ -62,7 +62,8 @@ export function Retorno({ m }: { m: ManutencaoResumo }) {
   return <span className="text-[13px] text-tinta-suave">Retorno {diaHora(m.proximoRetorno)}</span>;
 }
 
-const ICONE_TIPO: Record<ManutencaoResumo["tipo"], NomeIcone> = { CORRETIVA: "ferramenta", PREVENTIVA: "trocar", VISTORIA: "olho" };
+/** O ícone de cada tipo; a preventiva é o calendário (DC15, rodada Manutenção). */
+export const ICONE_TIPO: Record<ManutencaoResumo["tipo"], NomeIcone> = { CORRETIVA: "ferramenta", PREVENTIVA: "calendario", VISTORIA: "olho" };
 
 /** A situação num selo só: "Pendente · Aguardando peça", "Planejada · para 25/10", "Atrasada · era em 11/10". */
 function SeloDaLinha({ m }: { m: ManutencaoResumo }) {

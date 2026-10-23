@@ -83,8 +83,8 @@ export function LinkPrestador({ manutencaoId, titulo, versao, recarregarManutenc
   }
 
   return (
-    <section aria-labelledby="t-link-prestador" className="grid content-start gap-3 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1">
-      <h2 id="t-link-prestador" className="text-lg font-medium">Link do prestador</h2>
+    <section aria-labelledby="t-link-prestador" className="grid content-start gap-3 border-t border-linha pt-4">
+      <h3 id="t-link-prestador" className="flex items-center gap-2 text-sm font-semibold"><Icone nome="link" className="h-4 w-4" />Link do prestador</h3>
       {terminou && l?.situacao === "VALE" ? (
         <Aviso tom="ok" titulo={`${l.para} contou o que fez`}>Confira as fotos e o relato. A manutenção só fica concluída quando você concluir.</Aviso>
       ) : null}
@@ -134,7 +134,7 @@ export function LinkPrestador({ manutencaoId, titulo, versao, recarregarManutenc
       {falha ? <p className="text-sm text-erro" role="alert">{falha}</p> : null}
 
       <span className="flex flex-wrap gap-2">
-        {d.pode.mandar ? <Botao variante={l ? "contorno" : "primario"} tamanho="m" onClick={() => setMandar(true)}><Icone nome="enviar" />{l?.situacao === "VALE" ? "Mandar de novo" : "Mandar link"}</Botao> : null}
+        {d.pode.mandar ? <Botao variante="contorno" tamanho="m" onClick={() => setMandar(true)}><Icone nome="enviar" />{l?.situacao === "VALE" ? "Mandar de novo" : "Mandar link"}</Botao> : null}
         {d.pode.naoTrocar ? <Botao variante="contorno" tamanho="m" onClick={() => setNaoTrocar(true)}>Não trocar sozinho</Botao> : null}
         {d.pode.cancelar ? <Botao variante="discreto" tamanho="m" onClick={() => setCancelar(true)}><Icone nome="fechar" />Cancelar link</Botao> : null}
       </span>

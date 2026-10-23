@@ -4,8 +4,16 @@ import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { abrirArea } from "./inicio";
+import { maisAcoes } from "./registro";
 
 const PLATAFORMA = "http://localhost:3000";
+
+const celular = () => test.info().project.name === "celular";
+
+/** No celular a Nova manutenção vai em três passos; no computador é uma tela só. */
+async function seguir(page: Page) {
+  if (celular()) await page.getByRole("dialog", { name: "Nova manutenção" }).getByRole("button", { name: "Continuar" }).click();
+}
 
 async function conferir(page: Page) {
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
@@ -45,12 +53,26 @@ test.describe("Plataforma do síndico · manutenção", () => {
     await page.goto(`${PLATAFORMA}/manutencao`);
     await page.getByRole("button", { name: "Nova manutenção" }).click();
     const j = page.getByRole("dialog", { name: "Nova manutenção" });
-    await j.getByRole("button", { name: "Registrar manutenção" }).click();
+    await j.getByRole("button", { name: celular() ? "Continuar" : "Registrar manutenção" }).click();
     await expect(j.getByText("Diga o que precisa ser feito, de 3 a 120 caracteres.")).toBeVisible();
+    if (celular()) await expect(j.getByRole("progressbar", { name: "Passos da manutenção" })).toHaveAttribute("aria-valuenow", "1");
     await j.getByLabel("O que precisa ser feito").fill("Portão da garagem emperrado");
     await j.getByLabel("Local ou equipamento").fill("Portão da garagem");
     await j.getByLabel("Prioridade").selectOption({ label: "Alta: Afeta várias unidades ou uma área comum importante: vem antes das normais." });
+    await conferir(page);
+    await seguir(page);
     await j.getByLabel("Pedido ligado").selectOption({ label: "2026-0001 · Vazamento no banheiro" });
+    if (celular()) {
+      // O passo feito fica resumido, e Voltar não perde o que já foi preenchido.
+      await expect(j.getByRole("button", { name: /O que e onde.*Portão da garagem emperrado/ })).toBeVisible();
+      await conferir(page);
+      await j.getByRole("button", { name: "Voltar" }).click();
+      await expect(j.getByLabel("O que precisa ser feito")).toHaveValue("Portão da garagem emperrado");
+      await seguir(page);
+      await expect(j.getByLabel("Pedido ligado")).toHaveValue(/.+/);
+    }
+    await seguir(page);
+    await expect(j.getByRole("textbox", { name: /^Detalhes/ })).toBeVisible();
     await conferir(page);
     await j.getByRole("button", { name: "Registrar manutenção" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Portão da garagem emperrado" })).toBeVisible();
@@ -68,10 +90,14 @@ test.describe("Plataforma do síndico · manutenção", () => {
     await page.goto(`${PLATAFORMA}/manutencao`);
     await page.getByRole("link", { name: "Bomba de recalque com ruído" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Bomba de recalque com ruído" })).toBeVisible();
-    await expect(page.getByText("Reserva indicada: Bombas Litoral.")).toBeVisible();
+    const quem = page.getByRole("region", { name: "Quem executa" });
+    await expect(quem).toContainText("HidroPress Bombas");
+    await expect(quem.getByText(/Reserva no cadastro: Bombas Litoral\./)).toBeVisible();
+    await expect(quem.getByRole("link", { name: /Ligar/ })).toHaveAttribute("href", "tel:+5513998124455");
+    await expect(quem.getByRole("region", { name: "Link do prestador" })).toBeVisible();
     await conferir(page);
 
-    await page.getByRole("button", { name: "Pendência" }).click();
+    await maisAcoes(page, "Marcar pendência");
     const p = page.getByRole("dialog", { name: "Marcar como pendente" });
     await p.getByRole("button", { name: "Marcar pendente" }).click();
     await expect(p.getByText("Explique a pendência (de 3 a 300 caracteres).")).toBeVisible();
@@ -79,12 +105,13 @@ test.describe("Plataforma do síndico · manutenção", () => {
     await p.getByLabel("Explique").fill("Rolamento encomendado");
     await p.getByRole("button", { name: "Marcar pendente" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Pendente · Aguardando peça" })).toBeVisible();
-    await page.getByRole("button", { name: "Resolver pendência" }).click();
+    await page.getByRole("button", { name: "Resolver pendência" }).filter({ visible: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Pendência resolvida." })).toBeVisible();
 
-    await page.getByRole("button", { name: "Concluir" }).click();
+    await page.getByRole("button", { name: "Concluir" }).filter({ visible: true }).click();
     const c = page.getByRole("dialog", { name: "Concluir manutenção" });
     await expect(c).toContainText("O pedido 2026-0001 continua aberto");
+    await expect(c.getByText("Anexar a foto do depois")).toBeVisible();
     await c.getByLabel("O que foi feito").fill("Rolamento trocado e as duas bombas testadas em revezamento.");
     await c.getByLabel("Fechar junto a providência aberta").check();
     await conferir(page);
@@ -92,12 +119,27 @@ test.describe("Plataforma do síndico · manutenção", () => {
     await expect(page.getByRole("status").filter({ hasText: "Manutenção concluída." })).toBeVisible();
     await expect(page.getByText("O pedido 2026-0001 continua aberto: dê o retorno ao morador e conclua por lá.")).toBeVisible();
 
-    await page.getByRole("button", { name: "Reabrir" }).click();
+    await expect(page.getByRole("button", { name: "Mais ações" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Reabrir" }).filter({ visible: true }).click();
     const r = page.getByRole("dialog", { name: "Reabrir manutenção" });
     await r.getByLabel("Por que reabrir").fill("Voltou a fazer barulho");
     await r.getByRole("button", { name: "Reabrir" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Manutenção reaberta." })).toBeVisible();
     await expect(page.getByText("Reaberta", { exact: true })).toBeVisible();
+  });
+
+  test("MP-02: repassar a manutenção muda o responsável sem sair da ficha", async ({ page }) => {
+    await instalarApiPlataformaFalsa(page);
+    await page.goto(`${PLATAFORMA}/manutencao`);
+    await page.getByRole("link", { name: "Bomba de recalque com ruído" }).click();
+    const dados = page.getByRole("region", { name: "Dados da manutenção" });
+    await dados.getByRole("button", { name: "Repassar" }).click();
+    const j = page.getByRole("dialog", { name: "Repassar a manutenção" });
+    await j.getByLabel("Responsável").selectOption({ label: "Ana Souza" });
+    await conferir(page);
+    await j.getByRole("button", { name: "Repassar" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Manutenção repassada." })).toBeVisible();
+    await expect(dados).toContainText("Ana Souza");
   });
 
   test("MP-07: a vistoria responde cada item, e o item com problema vira manutenção", async ({ page }) => {
@@ -124,8 +166,12 @@ test.describe("Plataforma do síndico · manutenção", () => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/manutencao/preventivas`);
     await expect(page.getByRole("heading", { level: 1, name: "Preventivas" })).toBeVisible();
-    await expect(page.getByText("a cada 6 meses", { exact: true })).toBeVisible();
+    await expect(page.getByText(/a cada 6 meses/).filter({ visible: true })).toBeVisible();
     await expect(page.getByText("Atrasada")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Abrir a manutenção de Recarga dos extintores" })).toHaveAttribute("href", /\/manutencao\/manutencao\?id=/);
+    // Já existindo preventiva, as sugestões ficam recolhidas.
+    await expect(page.getByRole("region", { name: "Sugestões para começar" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Ver sugestões" }).click();
     const sug = page.getByRole("region", { name: "Sugestões para começar" });
     await expect(sug).not.toContainText("Limpeza dos reservatórios de água");
     await conferir(page);
@@ -142,11 +188,20 @@ test.describe("Plataforma do síndico · manutenção", () => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/manutencao/prestadores`);
     await expect(page.getByRole("region", { name: "Com contrato" })).toContainText("Aqualimp");
-    await expect(page.getByText("Contrato perto do fim")).toBeVisible();
+    await expect(page.getByText("Contrato perto do fim").filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByRole("region", { name: "Por chamado" })).toContainText("reserva: Bombas Litoral");
     await conferir(page);
+    // Os atalhos e a busca filtram a lista na hora.
+    await page.getByRole("button", { name: "Com pendência 1" }).click();
+    await expect(page.getByRole("link", { name: "Impermeabiliza Sul" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Aqualimp" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Com pendência 1" }).click();
+    await page.getByRole("searchbox", { name: "Buscar prestadores" }).fill("limpeza");
+    await expect(page.getByRole("link", { name: "Aqualimp" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "HidroPress Bombas" })).toHaveCount(0);
+    await page.getByRole("searchbox", { name: "Buscar prestadores" }).fill("");
 
-    await page.getByRole("button", { name: "+ Novo prestador" }).click();
+    await page.getByRole("button", { name: "Novo prestador" }).filter({ visible: true }).click();
     const j = page.getByRole("dialog", { name: "Novo prestador" });
     await j.getByLabel("Nome ou empresa").fill("hidropress bombas");
     await j.getByLabel("Serviço").fill("Elétrica");
@@ -160,10 +215,14 @@ test.describe("Plataforma do síndico · manutenção", () => {
     await page.getByRole("link", { name: "HidroPress Bombas" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "HidroPress Bombas" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Manutenções" })).toContainText("Bomba de recalque com ruído");
+    await expect(page.getByRole("region", { name: "Contato" }).getByRole("link", { name: /WhatsApp/ })).toHaveAttribute("href", /wa\.me\/5513998124455/);
     await conferir(page);
-    await page.getByRole("button", { name: "Arquivar" }).click();
+    await maisAcoes(page, "Arquivar");
     await expect(page.getByRole("status").filter({ hasText: "Prestador arquivado." })).toBeVisible();
     await expect(page.getByText("Arquivado", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Ver todas na lista de manutenções" }).click();
+    await expect(page).toHaveURL(/\/manutencao\?prestador=.+&situacao=TODAS/);
+    await expect(page.getByText("Bomba de recalque com ruído")).toBeVisible();
   });
 
   test("MP-02 e CF-09: as etapas da manutenção aparecem nas configurações; quem muda é a TRÍADE", async ({ page }) => {

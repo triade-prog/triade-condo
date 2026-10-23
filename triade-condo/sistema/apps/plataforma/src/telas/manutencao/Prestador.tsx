@@ -1,27 +1,35 @@
 "use client";
-// Ficha do prestador (design "Telas da Manutenção", tela 6; MP-05, MP-09): o contato, como
-// trabalha com o condomínio, a reserva e todas as manutenções que fez no prédio. Arquivar não
-// apaga: o prestador sai das escolhas e continua no histórico.
+// Ficha do prestador (DC15, telas-modelo manutencao-prestador-*; MP-05, MP-09): o contato, com
+// Ligar e Chamar no WhatsApp; como trabalha com o condomínio e a reserva; e as manutenções que fez
+// no prédio, com quantas estão abertas e a lista inteira a um toque, já filtrada. O que falta no
+// cadastro tem Adicionar. Editar é o botão; Arquivar fica em Mais ações e não apaga: o prestador
+// sai das escolhas e continua no histórico.
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { ACORDOS_PRESTADOR, mostrarDataCurta, mostrarTelefone } from "@triade/domain";
-import { Aviso, AvisoErro, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
+import { ACORDOS_PRESTADOR, linkWhatsapp, mostrarDataCurta, mostrarTelefone } from "@triade/domain";
+import { Aviso, AvisoErro, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Iniciais, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
+import { Cartao, Dado, MaisAcoes } from "../Ficha.tsx";
 import { Janela } from "../Janela.tsx";
-import { useCarregar } from "../sessao.tsx";
+import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { ListaPrestadores, PrestadorDetalhe, Recado } from "../tipos.ts";
-import { PartesManutencao, SeloManutencao } from "./comum.tsx";
+import { ICONE_TIPO, SeloManutencao } from "./comum.tsx";
 import { camposPrestador, iniciaisPrestador, salvarPrestador } from "./Prestadores.tsx";
 
 export function Prestador() {
   const id = useSearchParams().get("id");
+  const { painel } = usePlataforma();
   const carga = useCarregar<PrestadorDetalhe>(id ? `/v1/condominio/manutencao/prestadores/${id}` : null);
   const outros = useCarregar<ListaPrestadores>("/v1/condominio/manutencao/prestadores");
   const [editando, setEditando] = useState(false);
   const [recado, setRecado] = useState<Recado>(null);
   const [falha, setFalha] = useState<ErroApi | null>(null);
-  const voltar = <Link href="/manutencao/prestadores" className="text-sm font-medium text-violeta-600 hover:underline">Voltar aos prestadores</Link>;
+  const voltar = (
+    <Link href="/manutencao/prestadores" className="inline-flex items-center gap-1 text-sm font-medium text-violeta-600 hover:underline">
+      <Icone nome="esq" className="h-4 w-4" />Voltar aos prestadores
+    </Link>
+  );
 
   if (!id) return <div className="grid gap-3">{voltar}<Vazio titulo="Prestador não encontrado" /></div>;
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando o prestador…" />;
@@ -36,75 +44,96 @@ export function Prestador() {
     carga.recarregar();
   }
 
+  const podeEditar = pode.editar && !p.arquivado;
+  const editar = () => setEditando(true);
+  const adicionar = podeEditar ? <Botao variante="discreto" tamanho="m" disabled={outros.estado !== "pronto"} onClick={editar}>Adicionar</Botao> : undefined;
+  const falta = (texto = "Não informado") => <span className="text-tinta-suave">{texto}</span>;
+  const abertas = manutencoes.filter((m) => m.estado !== "CONCLUIDA" && m.estado !== "CANCELADA").length;
+  const msg = `Olá${p.contato ? `, ${p.contato}` : ""}. Aqui é do condomínio ${painel.condominio.nome}.`;
+
   return (
-    <div className="grid gap-5">
-      <PartesManutencao />
-      {voltar}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="grid gap-2">
-          <h1 className="text-[28px] font-normal tracking-tight">{p.nome}</h1>
-          <p className="flex flex-wrap items-center gap-2 text-sm">
-            <Selo tom="info">{ACORDOS_PRESTADOR[p.acordo]}</Selo>
-            <span className="text-tinta-suave">{p.servico}</span>
-            {p.arquivado ? <Selo tom="neutro">Arquivado</Selo> : null}
-            {p.contratoVence ? <Selo tom="atencao">Contrato perto do fim</Selo> : null}
-            {p.contratoVencido ? <Selo tom="erro">Contrato vencido</Selo> : null}
-          </p>
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
+      <header className="grid gap-5 rounded-[24px] border border-linha bg-superficie p-6 shadow-s1 max-md:p-5">
+        <div className="flex items-center justify-between gap-3">
+          {voltar}
+          <MaisAcoes itens={podeEditar ? [{ texto: "Arquivar", icone: "sair", acao: () => void arquivar(true), perigo: true }] : []} />
+        </div>
+        <div className="flex items-center gap-5 max-md:gap-4">
+          <Iniciais nome={p.nome} className="h-16 w-16 shrink-0 text-lg max-md:h-14 max-md:w-14" />
+          <div className="grid min-w-0 flex-1 gap-2">
+            <h1 className="t-titulo-ficha [overflow-wrap:anywhere]">{p.nome}</h1>
+            <p className="flex flex-wrap items-center gap-2">
+              <Selo tom="info">{ACORDOS_PRESTADOR[p.acordo]}</Selo>
+              <span className="t-apoio">{p.servico}</span>
+              {p.arquivado ? <Selo tom="neutro">Arquivado</Selo> : null}
+              {p.contratoVence ? <Selo tom="atencao">Contrato perto do fim</Selo> : null}
+              {p.contratoVencido ? <Selo tom="erro">Contrato vencido</Selo> : null}
+            </p>
+          </div>
         </div>
         {pode.editar ? (
           <div className="flex flex-wrap gap-2">
-            {p.arquivado ? <Botao variante="contorno" onClick={() => void arquivar(false)}>Voltar ao cadastro</Botao> : (
-              <>
-                <Botao variante="contorno" disabled={outros.estado !== "pronto"} onClick={() => setEditando(true)}>Editar</Botao>
-                <Botao variante="discreto" onClick={() => void arquivar(true)}>Arquivar</Botao>
-              </>
-            )}
+            {p.arquivado ? <Botao variante="contorno" onClick={() => void arquivar(false)}><Icone nome="retorno" />Voltar ao cadastro</Botao>
+              : <Botao variante="contorno" disabled={outros.estado !== "pronto"} onClick={editar}><Icone nome="editar" />Editar</Botao>}
           </div>
         ) : null}
-      </div>
+      </header>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
       {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={() => { setFalha(null); carga.recarregar(); }} /> : null}
 
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        <div className="grid gap-4">
-          <section aria-labelledby="t-contato" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-            <h2 id="t-contato" className="text-lg font-medium">Contato</h2>
-            <dl className="grid gap-3 text-sm sm:grid-cols-2">
-              <div><dt className="text-xs text-tinta-suave">Pessoa de contato</dt><dd>{p.contato ?? "Não informada"}</dd></div>
-              <div><dt className="text-xs text-tinta-suave">Telefone</dt><dd>{p.telefone ? mostrarTelefone(p.telefone) : "Não informado"}</dd></div>
-              <div><dt className="text-xs text-tinta-suave">E-mail</dt><dd className="[overflow-wrap:anywhere]">{p.email ?? "Não informado"}</dd></div>
-              <div><dt className="text-xs text-tinta-suave">CNPJ ou CPF</dt><dd>{p.documento ?? "Não informado"}</dd></div>
-            </dl>
-            {p.telefone ? <a href={`tel:${p.telefone}`} className={classeBotao("contorno", "justify-self-start", "m")}>Ligar</a> : null}
-          </section>
-          <section aria-labelledby="t-acordo" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-            <h2 id="t-acordo" className="text-lg font-medium">Como trabalha com o condomínio</h2>
-            <dl className="grid gap-3 text-sm sm:grid-cols-2">
-              <div><dt className="text-xs text-tinta-suave">Acordo</dt><dd>{p.acordo === "CONTRATO" ? (p.contratoAte ? `Contrato até ${mostrarDataCurta(p.contratoAte)}` : "Contrato sem data de fim") : "Avulso, por chamado"}</dd></div>
-              <div><dt className="text-xs text-tinta-suave">Desde</dt><dd>{p.desde ? mostrarDataCurta(p.desde) : "Não informado"}</dd></div>
-              <div><dt className="text-xs text-tinta-suave">Reserva</dt><dd>{p.reserva ? <Link href={`/manutencao/prestador?id=${p.reserva.id}`} className="text-violeta-600 hover:underline">{p.reserva.nome}</Link> : "Nenhuma"}</dd></div>
-              {reservaDe.length ? <div><dt className="text-xs text-tinta-suave">É a reserva de</dt><dd>{reservaDe.map((r) => r.nome).join(", ")}</dd></div> : null}
-              {p.observacao ? <div className="sm:col-span-2"><dt className="text-xs text-tinta-suave">Observação</dt><dd className="whitespace-pre-line">{p.observacao}</dd></div> : null}
-            </dl>
-            <p className="text-xs text-tinta-suave">A ligação com cotações e valores chega com Orçamentos e compras. Registrar um prestador não é contratar.</p>
-          </section>
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(340px,1fr)]">
+        <div className="contents lg:grid lg:min-w-0 lg:grid-cols-[minmax(0,1fr)] lg:gap-5">
+          <Cartao id="t-contato" titulo="Contato" icone="telefone" className="max-lg:order-1">
+            {p.telefone ? (
+              <div className="flex flex-wrap gap-2 max-md:grid max-md:grid-cols-2">
+                <a href={`tel:${p.telefone}`} className={classeBotao("contorno", "", "m")}><Icone nome="telefone" />Ligar</a>
+                <a href={linkWhatsapp(p.telefone, msg)} target="_blank" rel="noopener noreferrer" className={classeBotao("contorno", "", "m")}>
+                  <Icone nome="whats" /><span className="md:hidden">WhatsApp</span><span className="max-md:hidden">Chamar no WhatsApp</span>
+                </a>
+              </div>
+            ) : null}
+            <div>
+              <Dado icone="pessoa" nome="Pessoa de contato" acao={p.contato ? undefined : adicionar}>{p.contato ?? falta("Não informada")}</Dado>
+              <Dado icone="telefone" nome="Telefone" acao={p.telefone ? undefined : adicionar}>{p.telefone ? mostrarTelefone(p.telefone) : falta()}</Dado>
+              <Dado icone="email" nome="E-mail" acao={p.email ? undefined : adicionar}><span className="[overflow-wrap:anywhere]">{p.email ?? falta()}</span></Dado>
+              <Dado icone="documento" nome="CNPJ ou CPF" acao={p.documento ? undefined : adicionar}>{p.documento ?? falta()}</Dado>
+            </div>
+          </Cartao>
+          <Cartao id="t-acordo" titulo="Como trabalha com o condomínio" icone="predio" className="max-lg:order-3">
+            <div>
+              <Dado icone="documento" nome="Acordo">{p.acordo === "CONTRATO" ? (p.contratoAte ? `Contrato até ${mostrarDataCurta(p.contratoAte)}` : "Contrato sem data de fim") : "Avulso, por chamado"}</Dado>
+              <Dado icone="calendario" nome="Desde" acao={p.desde ? undefined : adicionar}>{p.desde ? mostrarDataCurta(p.desde) : falta()}</Dado>
+              <Dado icone="trocar" nome="Reserva" acao={p.reserva ? undefined : adicionar}>
+                {p.reserva ? <Link href={`/manutencao/prestador?id=${p.reserva.id}`} className="font-medium text-violeta-600 hover:underline">{p.reserva.nome}</Link> : falta("Nenhuma")}
+              </Dado>
+              {reservaDe.length ? <Dado icone="pessoas" nome="É a reserva de">{reservaDe.map((r) => r.nome).join(", ")}</Dado> : null}
+              {p.observacao ? <Dado icone="editar" nome="Observação"><span className="whitespace-pre-line">{p.observacao}</span></Dado> : null}
+            </div>
+            <p className="t-apoio">Registrar um prestador não é contratar. Se não confirmar um link no prazo, o serviço pode passar para a reserva.</p>
+          </Cartao>
         </div>
-        <section aria-labelledby="t-feitas" className="grid content-start gap-2 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-          <h2 id="t-feitas" className="text-lg font-medium">Manutenções</h2>
-          {manutencoes.length === 0 ? <p className="text-sm text-tinta-suave">Nenhuma manutenção com este prestador ainda.</p> : (
+        <Cartao id="t-feitas" rotulo="Manutenções" icone="ferramenta" className="max-lg:order-2"
+          titulo={<>Manutenções{abertas ? <span className="t-apoio font-normal">· {abertas === 1 ? "1 aberta" : `${abertas} abertas`}</span> : null}</>}>
+          {manutencoes.length === 0 ? <p className="t-apoio">Nenhuma manutenção com este prestador ainda.</p> : (
             <ul className="divide-y divide-linha">
-              {manutencoes.map((m) => (
-                <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
-                  <span className="grid gap-0.5">
+              {manutencoes.slice(0, 5).map((m) => (
+                <li key={m.id} className="flex items-center gap-3 py-3 first:pt-0">
+                  <span className="ladrilho h-8 w-8 rounded-[10px]" aria-hidden="true"><Icone nome={ICONE_TIPO[m.tipo]} className="h-4 w-4" /></span>
+                  <span className="grid min-w-0 flex-1 gap-0.5">
                     <Link href={`/manutencao/manutencao?id=${m.id}`} className="font-medium hover:text-violeta-600 hover:underline">{m.titulo}</Link>
-                    <span className="text-xs text-tinta-suave">{m.local}{m.realizadaEm ? ` · feita em ${mostrarDataCurta(m.realizadaEm)}` : ""}</span>
+                    <span className="t-apoio">{m.local}{m.realizadaEm ? ` · feita em ${mostrarDataCurta(m.realizadaEm)}` : ""}</span>
                   </span>
                   <SeloManutencao estado={m.estado} />
                 </li>
               ))}
             </ul>
           )}
-        </section>
+          {manutencoes.length ? (
+            <Link href={`/manutencao?prestador=${p.id}&situacao=TODAS`} className="inline-flex items-center gap-1 justify-self-start text-sm font-medium text-violeta-600 hover:underline">
+              Ver todas na lista de manutenções<Icone nome="dir" className="h-4 w-4" />
+            </Link>
+          ) : null}
+        </Cartao>
       </div>
 
       {editando && outros.estado === "pronto" ? (
