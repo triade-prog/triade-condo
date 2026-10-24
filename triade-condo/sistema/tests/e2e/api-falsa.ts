@@ -4,6 +4,7 @@
 import type { Page, Route } from "@playwright/test";
 import { criarSuporteConsole, rotasSuporteConsole } from "./api-falsa-console-suporte";
 import { criarPlanosConsole, rotasPlanosConsole } from "./api-falsa-console-planos";
+import { criarPrecosConsole, rotasPrecosConsole } from "./api-falsa-console-precos";
 import { andamentoConfiguracao, criarConfiguracaoConsole, rotasConfiguracaoConsole } from "./api-falsa-console-configuracao";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -26,6 +27,8 @@ export interface Opcoes {
   funcao?: "ADMINISTRACAO" | "IMPLANTACAO";
   /** Etapa que a senha devolve: primeiro acesso (cadastrar autenticador) ou código. */
   etapaSenha?: "CADASTRAR_AUTENTICADOR" | "CODIGO";
+  /** Tabela de preços (0295): a Administração edita; "ver" tira a ação de editar; Implantação não vê. */
+  precos?: "editar" | "ver";
 }
 
 function erro(route: Route, status: number, codigo: string, detalhes?: Record<string, unknown>) {
@@ -34,6 +37,8 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
 
 export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
   const admin = (opcoes.funcao ?? "ADMINISTRACAO") === "ADMINISTRACAO";
+  const podePrecos = { ver: admin, editar: admin && (opcoes.precos ?? "editar") === "editar" };
+  const acoesPrecos = [...(podePrecos.ver ? ["console.precos.ver"] : []), ...(podePrecos.editar ? ["console.precos.editar"] : [])];
   const estado = {
     logado: opcoes.logado ?? true,
     senhasCriadas: 0,
@@ -58,6 +63,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
   const suporte = criarSuporteConsole();
   const configuracao = criarConfiguracaoConsole();
   const planos = criarPlanosConsole(IPE, "Residencial Ipê");
+  const precos = criarPrecosConsole();
   // Modelos de mensagem (F5.4, W-20): globais, com versão e situação.
   const MODELOS_V1: [string, string, string, string, string[], string, string | null][] = [
     ["noticia_pedido", "Notícia do pedido", "MORADOR", "Retorno escrito no pedido, com a conversa fechada", ["protocolo", "condomínio", "texto do retorno", "quem escreveu"],
@@ -211,7 +217,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     if (caminho === "/v1/sessao") {
       return route.fulfill({
         json: admin
-          ? { pessoaId: CAROLINA, nome: "Carolina", funcoes: ["ADMINISTRACAO"], acoes: ["console.condominios.criar", "console.equipe.gerenciar", "console.historico.equipe", "console.pagamentos.ver", "console.pagamentos.registrar"] }
+          ? { pessoaId: CAROLINA, nome: "Carolina", funcoes: ["ADMINISTRACAO"], acoes: ["console.condominios.criar", "console.equipe.gerenciar", "console.historico.equipe", "console.pagamentos.ver", "console.pagamentos.registrar", ...acoesPrecos] }
           : { pessoaId: INES, nome: "Inês", funcoes: ["IMPLANTACAO"], acoes: [] },
       });
     }
@@ -315,6 +321,8 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     if (caminho === "/v1/equipe/historico") {
       return route.fulfill({ json: { eventos: [{ id: 9, ocorridoEm: "2026-10-16T12:30:00Z", autor: { id: CAROLINA, nome: "Carolina" }, acao: "equipe.membro_cadastrado", entidade: "pessoa", dados: { funcoes: ["IMPLANTACAO"] } }] } });
     }
+    const r6 = await rotasPrecosConsole(route, precos, caminho, metodo, corpo, url, podePrecos);
+    if (r6 !== null) return r6;
     const r5 = await rotasPlanosConsole(route, planos, caminho, metodo, corpo, admin);
     if (r5 !== null) return r5;
     if (c && caminho.startsWith(`/v1/clientes/${c.condominio.id}/`)) {
@@ -329,5 +337,5 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     if (r4 !== null) return r4;
     return erro(route, 404, "NOT_FOUND");
   });
-  return Object.assign(estado, { suporte, modelos, configuracao, planos });
+  return Object.assign(estado, { suporte, modelos, configuracao, planos, precos });
 }
