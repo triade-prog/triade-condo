@@ -227,3 +227,5 @@ begin
   v_juntou := plataforma_triar_whatsapp(p_pessoa, p_condominio, p_mensagem, 'PEDIDO', null, (v ->> 'id')::uuid, null);
   return v || jsonb_build_object('juntou', true, 'mensagens', v_juntou -> 'tratadas');
 end $$;
+
+call fechar_acesso();
