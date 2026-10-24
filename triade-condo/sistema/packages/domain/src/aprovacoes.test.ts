@@ -8,6 +8,7 @@ import {
   descreverEventoAprovacao,
   incluirMembroSchema,
   pagarDespesaSchema,
+  reenviarLinkSchema,
   regrasDecisoesSchema,
   respostaConselhoSchema,
   resumoDespesa,
@@ -68,6 +69,11 @@ describe("o voto (V-14)", () => {
     expect(campos(votoSchema.safeParse({ escolha: "RECUSAR", justificativa: "ab" }))).toEqual(["justificativa"]);
     expect(votoSchema.parse({ escolha: "RECUSAR", justificativa: "Já pintamos." }).justificativa).toBe("Já pintamos.");
   });
+  it("reenviar: o link de voto, do substituto ou do aviso", () => {
+    expect(reenviarLinkSchema.parse({ membroId: ID })).toEqual({ membroId: ID, finalidade: null });
+    expect(reenviarLinkSchema.parse({ membroId: ID, finalidade: "SUBSTITUTO" }).finalidade).toBe("SUBSTITUTO");
+    expect(campos(reenviarLinkSchema.safeParse({ membroId: ID, finalidade: "OUTRO" }))).toEqual(["finalidade"]);
+  });
   it("o subsíndico responde com justificativa", () => {
     expect(respostaConselhoSchema.safeParse({ aprovar: true, alternativa: 1 }).success).toBe(false);
     expect(respostaConselhoSchema.parse({ aprovar: false, justificativa: "Falta o laudo." }).alternativa).toBeNull();
@@ -120,7 +126,8 @@ describe("a despesa para aprovar (FC-10)", () => {
     expect(campos(pagarDespesaSchema.safeParse({ versao: 3, pagaEm: "03/11/2026" }))).toEqual(["pagaEm"]);
   });
   it("a alçada só avisa", () => {
-    expect(avisoAlcada(800000, 500000)).toBe("Passa da alçada do conselho (R$ 5.000), escrita nas Regras. É só um aviso: dá para pedir assim mesmo.");
+    expect(avisoAlcada(800000, 500000)).toBe("Chega à alçada do conselho (a partir de R$ 5.000), escrita nas Regras. É só um aviso: dá para pedir assim mesmo.");
+    expect(avisoAlcada(500000, 500000)).not.toBeNull();
     expect(avisoAlcada(400000, 500000)).toBeNull();
     expect(avisoAlcada(400000, null)).toBeNull();
     expect(resumoDespesa({ valor: 800000, fornecedor: { nome: "HidroPress" } })).toBe("R$ 8.000 · HidroPress");

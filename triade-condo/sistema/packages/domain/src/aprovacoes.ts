@@ -76,6 +76,7 @@ export const ESTADOS_LINK_CONSELHO = {
   FECHADA: "A votação fechou",
   PRAZO_ACABOU: "O prazo para votar acabou",
   NAO_VALE: "Este link não vale mais",
+  LINK_VENCIDO: "Este link venceu: o resultado ficou à vista até 7 dias depois do prazo",
 } as const;
 export type EstadoLinkConselho = keyof typeof ESTADOS_LINK_CONSELHO;
 
@@ -85,6 +86,7 @@ export const LINK_NAO_VALE = {
   MANDATO_VENCIDO: "O mandato não está em dia.",
   SAIU_DO_CONSELHO: "Você não é mais do conselho.",
   AUSENCIA_ACABOU: "A ausência do síndico acabou: ele responde.",
+  SUPLENTE_NAO_VOTA: "Você passou a suplente: suplente não vota.",
 } as const;
 
 /** A frase fixa da tela Decisões. */
@@ -171,7 +173,15 @@ export const respostaConselhoSchema = z
     justificativa,
   });
 
-export const reenviarLinkSchema = z.object({ membroId: id });
+/** O link do conselho: de voto, do substituto do síndico ausente ou do aviso da decisão vencida. */
+export const FINALIDADES_LINK_CONSELHO = { VOTO: "Voto", SUBSTITUTO: "Substituto", AVISO: "Aviso da vencida" } as const;
+/** Sem a finalidade, vai o link de voto e, não havendo, o do substituto. */
+export const reenviarLinkSchema = z.object({
+  membroId: id,
+  finalidade: z.enum(chaves(FINALIDADES_LINK_CONSELHO)).nullable().optional().transform((v) => v ?? null),
+});
+/** Pelo WhatsApp, sem poder ver o código (só o síndico e quem cuida do conselho veem). */
+export const AVISO_PECA_O_LINK = "Peça o link ao síndico";
 
 // ---------------------------------------------------------------------------------------
 // Despesas (quadros 418 a 420 e 423).
@@ -263,7 +273,7 @@ export function resumoDespesa(d: { valor: number; fornecedor?: { nome?: string |
 /** O aviso da alçada na criação: só avisa, nunca bloqueia. */
 export function avisoAlcada(valor: number, alcada: number | null | undefined): string | null {
   if (!alcada || valor < alcada) return null;
-  return `Passa da alçada do conselho (${mostrarCusto(alcada)}), escrita nas Regras. É só um aviso: dá para pedir assim mesmo.`;
+  return `Chega à alçada do conselho (a partir de ${mostrarCusto(alcada)}), escrita nas Regras. É só um aviso: dá para pedir assim mesmo.`;
 }
 
 /** Eventos do histórico da despesa e do conselho, como frase curta. */

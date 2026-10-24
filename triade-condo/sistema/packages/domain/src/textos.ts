@@ -311,6 +311,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   JA_PAGA: "Esta despesa já está marcada como paga.",
   NAO_PAGA: "Esta despesa não está marcada como paga.",
   COMPROVANTE_EM_USO: "É o comprovante do pagamento. Desfaça o pagamento antes de tirar.",
+  SUPLENTE_NAO_VOTA: "Suplente não vota. O voto dado antes de passar a suplente continua valendo.",
+  VOTO_PENDENTE: "Ainda tem voto a dar numa votação aberta. Espere a votação fechar para passar a suplente.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

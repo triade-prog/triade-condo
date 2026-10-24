@@ -221,7 +221,7 @@ import { lerCorpo } from "../_shared/validar.ts";
 import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
 import { montarZip, planilhaCsv, type ItemZip } from "../_shared/zip.ts";
 import { rotasEncomendas } from "./encomendas.ts";
-import { rotasAprovacoes, rotasConselhoPublico, type DepsAprovacoes } from "./aprovacoes.ts";
+import { algumPorEmail, rotasAprovacoes, rotasConselhoPublico, type DepsAprovacoes } from "./aprovacoes.ts";
 
 export type VarsPlataforma = { Variables: VarsSessao["Variables"] & { condominioId: string } };
 
@@ -727,13 +727,14 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
         p_outro: d.outroId, p_tipo: d.tipo, p_motivo: d.motivo, p_encerrar: d.encerrar, p_texto: d.texto, p_versao_outro: d.versaoOutro,
       }) },
     // Ao conselho (R5), sem quem decide; o p_modo só vai quando é o conselho, e o pedido a uma
-    // pessoa segue igual. O link pelo e-mail sai na hora.
+    // pessoa segue igual. O link pelo e-mail (o de voto ou, com o síndico ausente, o do
+    // substituto) sai na hora.
     { rota: "/decisoes", metodo: "post", schema: pedirDecisaoSchema, funcao: "plataforma_pedir_decisao",
       args: (d: ReturnType<typeof pedirDecisaoSchema.parse>) => ({
         p_pergunta: d.pergunta, p_porque: d.porque, p_prazo: d.prazo, p_decisor: d.decisorId, p_alternativas: d.alternativas,
         ...(d.modo === "CONSELHO" ? { p_modo: "CONSELHO" } : {}),
       }),
-      depois: (d: ReturnType<typeof pedirDecisaoSchema.parse>) => { if (d.modo === "CONSELHO") esvaziarFila(); } },
+      depois: (_d: unknown, r: unknown) => { if (algumPorEmail(r)) esvaziarFila(); } },
   ];
   for (const a of acoes) {
     app[a.metodo as "put" | "post"](`/v1/condominio/pedidos/:id${a.rota}`, async (c) => {
@@ -742,7 +743,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       // deno-lint-ignore no-explicit-any
       const r = await rpc(a.funcao, { ...quem(c), p_id: id, p_versao: d.versao, ...(a.args as (x: any) => object)(d) });
       // deno-lint-ignore no-explicit-any
-      (a.depois as ((x: any) => void) | undefined)?.(d);
+      (a.depois as ((x: any, r: unknown) => void) | undefined)?.(d, r);
       return c.json(r);
     });
   }
@@ -1836,6 +1837,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   const depsAprovacoes: DepsAprovacoes = {
     banco: deps.banco, armazenamento: deps.armazenamento, esvaziarFila: () => esvaziarFila(), codigoDaRota,
     limitar: async (c) => dentroDoLimite("link", await aparelho(c)),
+    emailDaConta: (pessoaId) => deps.admin.emailDe(pessoaId),
   };
   rotasAprovacoes(app, "/v1/condominio", quem, depsAprovacoes);
   rotasConselhoPublico(app, depsAprovacoes);

@@ -16,6 +16,7 @@ const DESPESA = "9c0d1e2f-3a4b-4c5d-8e6f-a7b8c9d0e1f2";
 const ARQUIVO = "0d1e2f3a-4b5c-4d6e-9f7a-b8c9d0e1f2a3";
 const AUSENCIA = "1e2f3a4b-5c6d-4e7f-8a8b-c9d0e1f2a3b4";
 const CODIGO = "codigo-do-conselheiro-123";
+const GIL = "2f3a4b5c-6d7e-4f8a-9b9c-d0e1f2a3b4c5";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-sindica" };
 
 const MSG: MensagemFila = {
@@ -40,7 +41,12 @@ function montar(opcoes: { correio?: Correio; fila?: MensagemFila[] } = {}) {
     },
     condominio_da_sessao: (a) => sessoes.get(String(a.p_sessao)) ?? null,
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2, link: 3 }),
-    plataforma_pedir_decisao: (a) => ({ versao: Number(a.p_versao) + 1, id: DECISAO, ...(a.p_modo ? { titulares: 3, necessarios: 2, links } : {}) }),
+    plataforma_pedir_decisao: (a) => ({
+      versao: Number(a.p_versao) + 1, id: DECISAO,
+      ...(a.p_modo ? { titulares: 3, necessarios: 2, links }
+        // Pedida à síndica ausente: o link do substituto (sem painel) nasce junto.
+        : { links: a.p_decisor === AUSENCIA ? [{ membroId: MEMBRO, canal: "EMAIL", envio: "EMAIL", finalidade: "SUBSTITUTO" }] : [] }),
+    }),
     plataforma_conselho: () => ({ membros: [], regras: { quorum: "MAIORIA", titularesEmDia: 0, necessarios: 1, podePedir: false } }),
     plataforma_conselho_candidatos: (a) => ({ candidatos: [], busca: a.p_busca }),
     plataforma_incluir_membro: () => ({ id: MEMBRO, versao: 1 }),
@@ -48,7 +54,7 @@ function montar(opcoes: { correio?: Correio; fila?: MensagemFila[] } = {}) {
     plataforma_retirar_membro: (a) => Number(a.p_versao) + 1,
     plataforma_regras_decisoes: () => ({ quorum: "MAIORIA", versao: 4 }),
     plataforma_definir_regras_decisoes: (a) => Number(a.p_versao) + 1,
-    plataforma_marcar_ausencia: () => ({ id: AUSENCIA, versao: 1 }),
+    plataforma_marcar_ausencia: () => ({ id: AUSENCIA, versao: 1, links: [{ membroId: MEMBRO, canal: "EMAIL", envio: "EMAIL", finalidade: "SUBSTITUTO" }] }),
     plataforma_encerrar_ausencia: (a) => Number(a.p_versao) + 1,
     plataforma_votar_decisao: (a) => ({ escolha: a.p_escolha, trocou: false, estado: "AGUARDANDO" }),
     plataforma_votar_despesa: (a) => ({ escolha: a.p_escolha, trocou: false, estado: "APROVADA" }),
@@ -77,7 +83,7 @@ function montar(opcoes: { correio?: Correio; fila?: MensagemFila[] } = {}) {
   const fundo: Promise<unknown>[] = [];
   const guarda = armazenamentoFalso();
   const app = criarApiPlataforma("segredo-de-repasse-de-teste", {
-    banco: db.banco, auth: falso.auth, admin: adminFalso().admin, urlApp: "https://plataforma.exemplo", armazenamento: guarda.armazenamento,
+    banco: db.banco, auth: falso.auth, admin: adminFalso({ "gil@conta.invalid": GIL }).admin, urlApp: "https://plataforma.exemplo", armazenamento: guarda.armazenamento,
     correio: opcoes.correio, urlFuncao: "https://funcao.exemplo/functions/v1/api-plataforma", aoFundo: (p) => fundo.push(p),
   });
   return { pedir: pedido(app, "api-plataforma"), fundo, guarda, ...db };
@@ -119,6 +125,11 @@ Deno.test("V-14: o conselho só com sessão; incluir manda o mandato e o canal",
   const sem = await m.pedir("/v1/condominio/conselho", { corpo: { ...corpo, nome: null }, cookie });
   assertEquals((await erro(sem)).detalhes?.campos, ["nome"]);
   assertEquals(quantas(m, "plataforma_incluir_membro"), 1);
+
+  await m.pedir("/v1/condominio/conselho", { corpo: { ...corpo, nome: null, email: null, pessoaId: GIL }, cookie });
+  assertEquals(chamada(m, "plataforma_incluir_membro")?.p_email, "gil@conta.invalid", "pela conta, sem outro e-mail, vale o da conta");
+  await m.pedir("/v1/condominio/conselho", { corpo: { ...corpo, nome: null, email: "gil@outro.invalid", pessoaId: GIL }, cookie });
+  assertEquals(chamada(m, "plataforma_incluir_membro")?.p_email, "gil@outro.invalid");
   await m.pedir("/v1/condominio/conselho/candidatos?busca=304", { cookie });
   assertEquals(chamada(m, "plataforma_conselho_candidatos")?.p_busca, "304");
 });
@@ -135,7 +146,7 @@ Deno.test("V-14: alterar e retirar levam a versão; retirar pede motivo", async 
 });
 
 Deno.test("V-14: as regras, a alçada em centavos e a ausência do síndico", async () => {
-  const m = montar();
+  const m = montar({ correio: correioFalso().correio });
   const cookie = await entrar(m);
   const regras = { versao: 4, quorum: "MINIMO", minimo: 2, empate: "SINDICO", vencidaAvisa: "CONSELHO", alcada: 500000 };
   assertEquals(await (await m.pedir("/v1/condominio/regras-decisoes", { metodo: "PUT", corpo: regras, cookie })).json(), { versao: 5 });
@@ -146,6 +157,9 @@ Deno.test("V-14: as regras, a alçada em centavos e a ausência do síndico", as
   const r = await m.pedir("/v1/condominio/ausencia", { corpo: { de: "2026-12-01", ate: "2026-12-10", motivo: "Viagem" }, cookie });
   assertEquals(r.status, 201);
   assertEquals(chamada(m, "plataforma_marcar_ausencia"), { ...QUEM, p_de: "2026-12-01", p_ate: "2026-12-10", p_motivo: "Viagem" });
+  assertEquals((await r.json()).links[0].finalidade, "SUBSTITUTO", "os links do substituto voltam para a tela");
+  await Promise.all(m.fundo);
+  assertEquals(quantas(m, "email_pegar_lote"), 1, "o do e-mail sai na hora");
   assertEquals(await (await m.pedir(`/v1/condominio/ausencia/${AUSENCIA}/encerrar`, { corpo: { versao: 1 }, cookie })).json(), { versao: 2 });
 });
 
@@ -157,6 +171,9 @@ Deno.test("V-14: pedir ao conselho manda o modo; o pedido a uma pessoa segue com
   await m.pedir(`/v1/condominio/pedidos/${PEDIDO}/decisoes`, { corpo: { ...base, decisorId: MEMBRO }, cookie });
   assertEquals("p_modo" in chamada(m, "plataforma_pedir_decisao")!, false, "sem o modo, a função antiga (0280) responde igual");
   assertEquals(quantas(m, "email_pegar_lote"), 0);
+  await m.pedir(`/v1/condominio/pedidos/${PEDIDO}/decisoes`, { corpo: { ...base, decisorId: AUSENCIA }, cookie });
+  await Promise.all(m.fundo);
+  assertEquals(quantas(m, "email_pegar_lote"), 1, "a uma pessoa, com o síndico ausente, o link do substituto pelo e-mail sai na hora");
   assertEquals((await erro(await m.pedir(`/v1/condominio/pedidos/${PEDIDO}/decisoes`, { corpo: { ...base, modo: "CONSELHO", decisorId: MEMBRO }, cookie }))).detalhes?.campos,
     ["decisorId"]);
   const r = await (await m.pedir(`/v1/condominio/pedidos/${PEDIDO}/decisoes`, { corpo: { ...base, modo: "CONSELHO" }, cookie })).json();
@@ -176,7 +193,11 @@ Deno.test("V-14: votar pelo painel e reenviar o link", async () => {
   await m.pedir(`/v1/condominio/decisoes/${DECISAO}/voto`, { corpo: { escolha: "2" }, cookie });
   assertEquals(chamada(m, "plataforma_votar_decisao"), { ...QUEM, p_decisao: DECISAO, p_escolha: "2", p_justificativa: null });
   assertEquals((await m.pedir(`/v1/condominio/decisoes/${DECISAO}/reenviar-link`, { corpo: { membroId: MEMBRO }, cookie })).status, 200);
-  assertEquals(chamada(m, "plataforma_reenviar_link_conselho"), { ...QUEM, p_decisao: DECISAO, p_despesa: null, p_membro: MEMBRO });
+  assertEquals(chamada(m, "plataforma_reenviar_link_conselho"), { ...QUEM, p_decisao: DECISAO, p_despesa: null, p_membro: MEMBRO, p_finalidade: null });
+  await m.pedir(`/v1/condominio/decisoes/${DECISAO}/reenviar-link`, { corpo: { membroId: MEMBRO, finalidade: "SUBSTITUTO" }, cookie });
+  assertEquals(chamada(m, "plataforma_reenviar_link_conselho")?.p_finalidade, "SUBSTITUTO", "também o link do substituto e o do aviso");
+  assertEquals((await erro(await m.pedir(`/v1/condominio/decisoes/${DECISAO}/reenviar-link`, { corpo: { membroId: MEMBRO, finalidade: "OUTRO" }, cookie })))
+    .detalhes?.campos, ["finalidade"]);
   await Promise.all(m.fundo);
   assertEquals(c.enviados.length, 1);
   await m.pedir(`/v1/condominio/despesas/${DESPESA}/reenviar-link`, { corpo: { membroId: MEMBRO }, cookie });

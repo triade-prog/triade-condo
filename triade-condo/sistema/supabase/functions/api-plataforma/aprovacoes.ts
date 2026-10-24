@@ -44,10 +44,18 @@ export interface DepsAprovacoes {
   codigoDaRota: (c: Context) => string;
   /** Limite de uso por aparelho das rotas sem conta. */
   limitar: (c: Context) => Promise<void>;
+  /** O e-mail da conta (Auth): quem entra no conselho pela conta e não informa outro recebe nele. */
+  emailDaConta: (pessoaId: string) => Promise<string | null>;
 }
 
 type Link = { envio?: string };
 type ComLinks = { links?: (Link | null)[] } & Link;
+
+/** Algum link do conselho entrou na fila do e-mail (o de voto, o do substituto ou o do aviso). */
+export function algumPorEmail(r: unknown): boolean {
+  const x = (r ?? {}) as ComLinks;
+  return x.envio === "EMAIL" || (Array.isArray(x.links) && x.links.some((l) => l?.envio === "EMAIL"));
+}
 
 export function rotasAprovacoes<E extends Env>(app: Hono<E>, base: string, quem: (c: Context<E>) => Quem, deps: DepsAprovacoes) {
   const rpc = deps.banco.rpc.bind(deps.banco);
@@ -59,7 +67,7 @@ export function rotasAprovacoes<E extends Env>(app: Hono<E>, base: string, quem:
   const id = (c: Context<E>) => ({ ...quem(c), p_id: idDaRota(c, "id") });
   /** Algum link foi pelo e-mail: a fila sai na hora. */
   const mandou = <T extends ComLinks>(r: T): T => {
-    if (r.envio === "EMAIL" || (r.links ?? []).some((l) => l?.envio === "EMAIL")) deps.esvaziarFila();
+    if (algumPorEmail(r)) deps.esvaziarFila();
     return r;
   };
 
@@ -71,8 +79,9 @@ export function rotasAprovacoes<E extends Env>(app: Hono<E>, base: string, quem:
     c.json(await rpc("plataforma_conselho_candidatos", { ...quem(c), p_busca: consulta(c, buscaCandidatosSchema).busca })));
   app.post(`${base}/conselho`, async (c) => {
     const d = await lerCorpo(c, incluirMembroSchema);
+    const email = d.email ?? (d.pessoaId ? await deps.emailDaConta(d.pessoaId) : null);
     return c.json(await rpc("plataforma_incluir_membro", {
-      ...quem(c), p_membro_pessoa: d.pessoaId, p_contato: d.contatoId, p_nome: d.nome, p_celular: d.celular, p_email: d.email,
+      ...quem(c), p_membro_pessoa: d.pessoaId, p_contato: d.contatoId, p_nome: d.nome, p_celular: d.celular, p_email: email,
       p_papel: d.papel, p_inicio: d.mandatoInicio, p_fim: d.mandatoFim, p_canal: d.canal,
     }), 201);
   });
@@ -103,9 +112,9 @@ export function rotasAprovacoes<E extends Env>(app: Hono<E>, base: string, quem:
   // A ausência do síndico: o subsíndico responde no lugar dele; sem painel, recebe o link.
   app.post(`${base}/ausencia`, async (c) => {
     const d = await lerCorpo(c, ausenciaSchema);
-    const r = await rpc<{ id: string; versao: number }>("plataforma_marcar_ausencia", { ...quem(c), p_de: d.de, p_ate: d.ate, p_motivo: d.motivo });
-    deps.esvaziarFila();
-    return c.json(r, 201);
+    // Os links do substituto que nasceram: pelo e-mail saem na hora; pelo WhatsApp, para copiar.
+    const r = await rpc<ComLinks>("plataforma_marcar_ausencia", { ...quem(c), p_de: d.de, p_ate: d.ate, p_motivo: d.motivo });
+    return c.json(mandou(r), 201);
   });
   app.post(`${base}/ausencia/:id/encerrar`, async (c) => {
     const d = await lerCorpo(c, encerrarAusenciaSchema);
@@ -113,7 +122,8 @@ export function rotasAprovacoes<E extends Env>(app: Hono<E>, base: string, quem:
   });
 
   // ---------------------------------------------------------------------------------------
-  // O voto pelo painel e o Reenviar o link (quadro 414), na decisão e na despesa.
+  // O voto pelo painel e o Reenviar o link (quadro 414), na decisão e na despesa: o de voto, o do
+  // substituto e o do aviso. O código para copiar só volta para quem cuida do conselho.
 
   app.post(`${base}/decisoes/:id/voto`, async (c) => {
     const d = await lerCorpo(c, votoSchema);
@@ -122,7 +132,7 @@ export function rotasAprovacoes<E extends Env>(app: Hono<E>, base: string, quem:
   app.post(`${base}/decisoes/:id/reenviar-link`, async (c) => {
     const d = await lerCorpo(c, reenviarLinkSchema);
     return c.json(mandou(await rpc<ComLinks>("plataforma_reenviar_link_conselho", {
-      ...quem(c), p_decisao: idDaRota(c, "id"), p_despesa: null, p_membro: d.membroId,
+      ...quem(c), p_decisao: idDaRota(c, "id"), p_despesa: null, p_membro: d.membroId, p_finalidade: d.finalidade,
     })));
   });
 
@@ -172,7 +182,7 @@ export function rotasAprovacoes<E extends Env>(app: Hono<E>, base: string, quem:
   app.post(`${base}/despesas/:id/reenviar-link`, async (c) => {
     const d = await lerCorpo(c, reenviarLinkSchema);
     return c.json(mandou(await rpc<ComLinks>("plataforma_reenviar_link_conselho", {
-      ...quem(c), p_decisao: null, p_despesa: idDaRota(c, "id"), p_membro: d.membroId,
+      ...quem(c), p_decisao: null, p_despesa: idDaRota(c, "id"), p_membro: d.membroId, p_finalidade: d.finalidade,
     })));
   });
 
