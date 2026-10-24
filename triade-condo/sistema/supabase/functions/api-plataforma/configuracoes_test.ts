@@ -158,12 +158,14 @@ Deno.test("CF-06 (D4.15): a entrada das Configurações numa chamada só; a part
     plataforma_plano_comunicacao: () => ({ assuntos: [] }),
     plataforma_config_whatsapp: () => erroBanco("TC403"),
     plataforma_links_qr: () => ({ etiquetas: [] }),
+    plataforma_ajuda_ia: () => ({ ligadaTriade: false }),
   } });
   const cookie = await entrar(m);
   const r = await m.pedir("/v1/condominio/configuracoes/entrada", { cookie });
   assertEquals(r.status, 200);
   assertEquals(await r.json(), {
     configuracoes: { fuso: "America/Sao_Paulo" }, areas: { areas: [] }, manutencao: { etapas: [] }, plano: { assuntos: [] }, whatsapp: null, links: { etiquetas: [] },
+    ia: { ligadaTriade: false },
   });
   for (const f of ["plataforma_configuracoes", "plataforma_areas_comuns", "plataforma_config_whatsapp", "plataforma_links_qr"]) {
     assertEquals(chamada(m, f), { p_pessoa: ANA, p_condominio: AURORA }, f);

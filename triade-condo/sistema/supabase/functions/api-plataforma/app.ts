@@ -212,6 +212,7 @@ import { avisoAssinado, lerEventoResend, montarEmail, type Correio, type Mensage
 import { ipDaChamada } from "../_shared/repasse.ts";
 import { registrar } from "../_shared/registro.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
+import { criarIa, type DepsIa } from "./rotas_ia.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
@@ -254,6 +255,8 @@ export interface DepsPlataforma extends DepsSessao {
   aoFundo?: (p: Promise<unknown>) => void;
   /** WhatsApp do condomínio (passo 5): o conector e a chave que decifra as credenciais. Sem ele, a fila espera. */
   whatsapp?: { conector: ConectorWhatsapp; chave: CryptoKey };
+  /** Motor de IA (IA-20): os conectores que a função tem agora. Sem a chave, nenhum, e o pedido segue como sempre. */
+  ia?: DepsIa;
 }
 
 const REMETENTE = "nao-responda@t3condo.trihub.com.br";
@@ -310,6 +313,9 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   const rpc = deps.banco.rpc.bind(deps.banco);
   /** Pessoa e condomínio que a sessão validou: vão em toda chamada ao banco. */
   const quem = (c: Context<VarsPlataforma>) => ({ p_pessoa: c.get("sessao").pessoaId, p_condominio: c.get("condominioId") });
+  // Ajuda da IA nos pedidos (IA-17, IA-15, W-06): só sugere e transcreve; nada muda sozinho.
+  const ia = criarIa(deps.banco, deps.ia, deps.armazenamento, noFundo);
+  ia.rotas(app, quem);
   app.get("/v1/condominio", async (c) => {
     const id = c.get("condominioId");
     const condominios = await deps.banco.rpc<CondominioDaPessoa[]>("meus_condominios", { p_pessoa: c.get("sessao").pessoaId });
@@ -330,6 +336,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   const PARTES_DA_ENTRADA = {
     configuracoes: "plataforma_configuracoes", areas: "plataforma_areas_comuns", manutencao: "plataforma_etapas_manutencao",
     plano: "plataforma_plano_comunicacao", whatsapp: "plataforma_config_whatsapp", links: "plataforma_links_qr",
+    ia: "plataforma_ajuda_ia",
   } as const;
   app.get("/v1/condominio/configuracoes/entrada", async (c) => {
     const lidas = await Promise.allSettled(Object.values(PARTES_DA_ENTRADA).map((f) => rpc(f, quem(c))));
@@ -653,10 +660,14 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       ...quem(c), p_unidade: d.unidadeId, p_contato: d.contatoId, p_local: d.local, p_categoria: d.categoriaId, p_prioridade: d.prioridadeId,
       p_assunto: d.assunto, p_descricao: d.descricao, p_privado: d.privado, p_responsavel: d.responsavelId, p_avisar: d.avisar,
     };
-    if (!d.mensagemId) return c.json(await rpc("plataforma_registrar_pedido", { ...args, p_canal: d.canal }), 201);
     // Registrar com as mensagens do WhatsApp (D4.20, decisão A.2): o banco registra com o canal
     // WhatsApp do condomínio e junta a conversa na mesma transação; se um falha, nada fica.
-    return c.json(await rpc("plataforma_registrar_pedido_whatsapp", { ...args, p_mensagem: d.mensagemId }), 201);
+    const r = d.mensagemId
+      ? await rpc<{ id?: string }>("plataforma_registrar_pedido_whatsapp", { ...args, p_mensagem: d.mensagemId })
+      : await rpc<{ id?: string }>("plataforma_registrar_pedido", { ...args, p_canal: d.canal });
+    // A sugestão automática mostrada no registro fica no histórico, usada ou não (IA-15).
+    await ia.noRegistro(quem(c), d.sugestaoId, r?.id);
+    return c.json(r, 201);
   });
 
   // O bloco Quem avisar antes de registrar: as linhas pelas regras, os rascunhos editáveis e a
@@ -2274,6 +2285,11 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       p_condominio: m.condominio, p_mensagem: m.mensagem, p_tamanho: r.ok ? r.bytes.length : null,
       p_motivo: r.ok ? null : motivoMidiaParaMorador(r.motivo),
     });
+    // O áudio guardado vai para a transcrição, se o condomínio usa (W-06). Falhar aqui não muda a mensagem.
+    if (r.ok) {
+      await ia.aposGuardarAudio(m.condominio, m.mensagem, m.tipo, r.bytes)
+        .catch(() => registrar("aviso", { funcao: "api-plataforma", rota: "ia.transcrever", falha: "INICIO" }));
+    }
   }
 
   /** Pega os lotes da fila, manda pelo conector, um por vez, e devolve o resultado de cada envio. */
