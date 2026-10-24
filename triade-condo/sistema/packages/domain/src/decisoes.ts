@@ -72,14 +72,21 @@ export const alternativaSchema = z.object({
   custo: z.number().int().min(0).nullable().optional().transform((v) => v ?? null),
 });
 
-export const pedirDecisaoSchema = z.object({
-  versao,
-  pergunta: z.string().trim().min(3).max(500),
-  porque: opcional(z.string().trim().max(500)).refine((v) => v === null || v.length >= 3, "De 3 a 500 caracteres"),
-  prazo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  decisorId: id,
-  alternativas: z.array(alternativaSchema).min(1).max(5),
-});
+/** Quem decide (R5, quadro 413): uma pessoa com Aprovar (decisorId) ou o conselho, sem decisorId. */
+export const pedirDecisaoSchema = z
+  .object({
+    versao,
+    pergunta: z.string().trim().min(3).max(500),
+    porque: opcional(z.string().trim().max(500)).refine((v) => v === null || v.length >= 3, "De 3 a 500 caracteres"),
+    prazo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    modo: z.enum(["PESSOA", "CONSELHO"]).default("PESSOA"),
+    decisorId: id.nullable().optional().transform((v) => v ?? null),
+    alternativas: z.array(alternativaSchema).min(1).max(5),
+  })
+  .superRefine((d, ctx) => {
+    if (d.modo === "PESSOA" && !d.decisorId) ctx.addIssue({ code: "custom", path: ["decisorId"], message: "Escolha quem decide" });
+    if (d.modo === "CONSELHO" && d.decisorId) ctx.addIssue({ code: "custom", path: ["decisorId"], message: "Pedida ao conselho, não há uma pessoa que decide" });
+  });
 export type PedirDecisao = z.infer<typeof pedirDecisaoSchema>;
 
 export const responderDecisaoSchema = z
@@ -107,9 +114,18 @@ export function descreverEventoDecisao(acao: string, d: Record<string, unknown>)
     case "pedido.decisao_pedida": {
       const n = Number(d.alternativas ?? 0);
       const prazo = d.prazo ? ` · prazo ${mostrarDataSemHora(String(d.prazo))}` : "";
-      return `Decisão pedida ao síndico · ${n === 1 ? "1 alternativa" : `${n} alternativas`}${prazo}`;
+      const quem = d.conselho ? `ao conselho · ${String(d.necessarios ?? "")} de ${String(d.titulares ?? "")} votos decidem` : "ao síndico";
+      return `Decisão pedida ${quem} · ${n === 1 ? "1 alternativa" : `${n} alternativas`}${prazo}`;
     }
     case "pedido.decisao_respondida":
+      if (d.semQuorum) return d.voltou ? "Sem quórum no conselho: voltou para o síndico" : "Sem quórum no conselho: devolvida";
+      if (d.conselho) {
+        const placar = d.votos ? ` (${String(d.votos)} de ${String(d.titulares ?? "")} votos)` : "";
+        return d.aprovada ? `Conselho aprovou a alternativa ${String(d.alternativa ?? "")}${placar}` : `Conselho devolveu sem decidir${placar}`;
+      }
+      if (d.porSubstituto) {
+        return d.aprovada ? `Respondida pelo subsíndico: aprovada a alternativa ${String(d.alternativa ?? "")}` : "Devolvida pelo subsíndico";
+      }
       return d.aprovada ? `Decisão respondida: aprovada a alternativa ${String(d.alternativa ?? "")}` : "Decisão devolvida sem decidir";
     case "pedido.decisao_retirada":
       return `Pedido de decisão retirado${d.motivo ? `. Motivo: ${String(d.motivo)}` : ""}`;
