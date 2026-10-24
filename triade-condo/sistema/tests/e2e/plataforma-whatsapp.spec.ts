@@ -64,7 +64,7 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
     await expect(page.getByText("O interfone do 203 não toca")).toBeVisible();
   });
 
-  test("B.1: registrar pedido com esta mensagem leva o relato e junta as mensagens ao pedido", async ({ page, isMobile }) => {
+  test("B.1: registrar pedido com esta mensagem leva o relato, chega pelo WhatsApp do condomínio e junta as mensagens", async ({ page, isMobile }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(`${PLATAFORMA}/whatsapp`);
     await page.getByRole("button", { name: "Abrir a conversa de +55 61 95555-4444" }).click();
@@ -72,6 +72,10 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
     const j = page.getByRole("dialog", { name: "Registrar pedido" });
     await expect(j.getByText(/Das mensagens de/)).toContainText("+55 61 95555-4444");
     await expect(j.getByText("O morador não recebe o protocolo pelo WhatsApp")).toBeVisible();
+    // Decisão A.2 da área A (23/10/2026): Como chegou é o WhatsApp do condomínio, fixo.
+    await expect(j.getByLabel("Como chegou")).toBeDisabled();
+    await expect(j.getByLabel("Como chegou")).toHaveValue("WHATSAPP");
+    await expect(j.getByText("Vem das mensagens, por isso não muda.", { exact: false })).toBeVisible();
     await conferir(page);
     await j.getByLabel("Unidade", { exact: true }).selectOption({ label: "Torre A · 101" });
     await irAoPasso(j, isMobile, 2);
@@ -81,25 +85,27 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
     await j.getByRole("button", { name: /^Registrar/ }).last().click();
     await expect(j.getByText("Pedido registrado")).toBeVisible();
     await expect(j.getByText("As mensagens estão no pedido")).toBeVisible();
+    await expect(j.getByText("Chegou pelo WhatsApp do condomínio.", { exact: false })).toBeVisible();
     await expect(j.getByRole("button", { name: "Registrar outro" })).toHaveCount(0);
     await conferir(page);
     const novo = estado.pedidos.find((p) => p.assunto === "Portão travado")!;
-    expect(novo.historico[0]!.dados.canal).toBe("MENSAGEM");
+    expect(novo.canal).toBe("WHATSAPP");
+    expect(novo.historico[0]!.dados.canal).toBe("WHATSAPP");
     expect(estado.whatsapp.triagens).toEqual([{ acao: "PEDIDO", pedidoId: novo.id }]);
     await j.getByRole("button", { name: "Abrir o pedido" }).click();
     await expect(page).toHaveURL(new RegExp(`/pedidos/pedido\\?id=${novo.id}`));
   });
 
-  test("B.1: se juntar falhar, o pedido fica e dá para juntar de novo", async ({ page, isMobile }) => {
+  test("A.2: se juntar falhar, nada fica gravado e dá para tentar de novo com o que foi escrito", async ({ page, isMobile }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
-    // A junção vai no mesmo registro (D4.20); aqui ela não acontece, e o pedido fica sem as mensagens.
+    // O banco registra e junta na mesma transação (0289): a primeira tentativa volta com erro e sem pedido.
     let falhar = true;
     await page.route(/\/v1\/condominio\/pedidos$/, (route) => {
       if (route.request().method() !== "POST" || !falhar) return route.fallback();
       falhar = false;
-      const { mensagemId: _, ...resto } = route.request().postDataJSON() as Record<string, unknown>;
-      return route.fallback({ postData: JSON.stringify(resto) });
+      return route.fulfill({ status: 404, json: { erro: { codigo: "NOT_FOUND" } } });
     });
+    const antes = estado.pedidos.length;
     await page.goto(`${PLATAFORMA}/whatsapp`);
     await page.getByRole("button", { name: "Abrir a conversa de +55 61 95555-4444" }).click();
     await page.getByRole("button", { name: "Registrar pedido com esta mensagem" }).click();
@@ -109,11 +115,13 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
     await j.getByLabel("Assunto").fill("Portão travado");
     await irAoPasso(j, isMobile, 3);
     await j.getByRole("button", { name: /^Registrar/ }).last().click();
-    await expect(j.getByText("As mensagens não foram juntadas")).toBeVisible();
+    await expect(j.getByText("Nada foi gravado: o pedido e as mensagens vão juntos.", { exact: false })).toBeVisible();
     await conferir(page);
+    expect(estado.pedidos).toHaveLength(antes);
     expect(estado.whatsapp.aIdentificar).toHaveLength(3);
-    await j.getByRole("button", { name: "Juntar de novo" }).click();
+    await j.getByRole("button", { name: /^Registrar/ }).last().click();
     await expect(j.getByText("As mensagens estão no pedido")).toBeVisible();
+    expect(estado.pedidos).toHaveLength(antes + 1);
     expect(estado.whatsapp.aIdentificar).toHaveLength(2);
   });
 

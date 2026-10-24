@@ -7,7 +7,7 @@ import type {
   EstadoAnuncio, TipoAnuncio, TipoVeiculo, DecisaoQueda, EstadoQueda, AvisoNovoSindico, DestinoAvisoRegistro, MeioAvisoRegistro,
   EstadoDecisao, FiltroDecisao, TipoLigacao, SituacaoLinkRegistro, MotivoForaDoMural,
   Aniversario, CategoriaHistorico, Especie, ParentescoFamiliar, Porte,
-  FamiliarCadastro, LigacaoCadastro, MotivoRecusaCadastro, PedidoLink, PetCadastro, VeiculoCadastro,
+  FamiliarCadastro, LigacaoCadastro, MotivoRecusaCadastro, PedidoLink, PetCadastro, VeiculoCadastro, OrdemPedidos,
 } from "@triade/domain";
 
 
@@ -412,6 +412,8 @@ export interface FilaPedidos {
   total: number;
   pagina: number;
   porPagina: number;
+  /** A ordem guardada na pessoa (0289); a API antiga não manda. */
+  ordem?: OrdemPedidos;
   resumo: ResumoPedidos;
   agora: string;
 }

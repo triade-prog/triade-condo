@@ -163,21 +163,39 @@ Deno.test("os códigos do domínio são os mesmos do banco", async () => {
   assertEquals(lista(/tipo +text not null check \(tipo in \(('FORNECEDOR'[^)]*)\)/), Object.keys(TIPOS_PENDENCIA));
 });
 
-Deno.test("AT-01 (D4.20): registrar com as mensagens do WhatsApp junta a conversa na mesma chamada", async () => {
+Deno.test("AT-01 (D4.20, decisão A.2): registrar com as mensagens do WhatsApp é uma chamada só ao banco", async () => {
   let juntar = true;
-  const m = montar({ plataforma_triar_whatsapp: () => (juntar ? { tratadas: 2 } : erroBanco("TC409")) });
+  const m = montar({
+    plataforma_registrar_pedido_whatsapp: () => (juntar ? { id: PEDIDO, protocolo: "2026-0001", versao: 1, juntou: true } : erroBanco("TC404")),
+  });
   const cookie = await entrar(m);
-  const r = await m.pedir("/v1/condominio/pedidos", { corpo: { ...NOVO, mensagemId: ITEM }, cookie });
+  const { canal: _, ...semCanal } = NOVO;
+  const r = await m.pedir("/v1/condominio/pedidos", { corpo: { ...semCanal, mensagemId: ITEM }, cookie });
   assertEquals(r.status, 201);
   assertEquals((await r.json()).juntou, true);
-  assertEquals(chamada(m, "plataforma_triar_whatsapp"), {
-    p_pessoa: ANA, p_condominio: AURORA, p_mensagem: ITEM, p_acao: "PEDIDO", p_motivo: null, p_pedido: PEDIDO, p_contato: null,
+  assertEquals(chamada(m, "plataforma_registrar_pedido_whatsapp"), {
+    p_pessoa: ANA, p_condominio: AURORA, p_mensagem: ITEM, p_unidade: ITEM, p_contato: null, p_local: null, p_categoria: OUTRO,
+    p_prioridade: OUTRO, p_assunto: "Vazamento no banheiro", p_descricao: "A moradora ligou: mancha no teto.", p_privado: false,
+    p_responsavel: null, p_avisar: null,
   });
+  assertEquals(chamada(m, "plataforma_registrar_pedido"), undefined);
+  assertEquals(chamada(m, "plataforma_triar_whatsapp"), undefined);
   juntar = false;
-  const s = await m.pedir("/v1/condominio/pedidos", { corpo: { ...NOVO, mensagemId: ITEM }, cookie });
-  assertEquals([s.status, (await s.json()).juntou], [201, false]);
+  const s = await m.pedir("/v1/condominio/pedidos", { corpo: { ...semCanal, mensagemId: ITEM }, cookie });
+  assertEquals(s.status, 404);
   const sem = montar();
   const semCookie = await entrar(sem);
+  assertEquals((await erro(await sem.pedir("/v1/condominio/pedidos", { corpo: semCanal, cookie: semCookie }))).detalhes?.campos, ["canal"]);
   assertEquals("juntou" in (await (await sem.pedir("/v1/condominio/pedidos", { corpo: NOVO, cookie: semCookie })).json()), false);
-  assertEquals(chamada(sem, "plataforma_triar_whatsapp"), undefined);
+  assertEquals(chamada(sem, "plataforma_registrar_pedido_whatsapp"), undefined);
+});
+
+Deno.test("AT-02 (D4.2, decisão A.1): a ordem da fila fica guardada na pessoa", async () => {
+  const m = montar({ plataforma_ordem_pedidos: (a) => ({ ordem: a.p_ordem }) });
+  const cookie = await entrar(m);
+  const r = await m.pedir("/v1/condominio/pedidos/ordem", { metodo: "PUT", corpo: { ordem: "RECENTES" }, cookie });
+  assertEquals([r.status, await r.json()], [200, { ordem: "RECENTES" }]);
+  assertEquals(chamada(m, "plataforma_ordem_pedidos"), { p_pessoa: ANA, p_condominio: AURORA, p_ordem: "RECENTES" });
+  const x = await m.pedir("/v1/condominio/pedidos/ordem", { metodo: "PUT", corpo: { ordem: "ALFABETICA" }, cookie });
+  assertEquals((await erro(x)).detalhes?.campos, ["ordem"]);
 });

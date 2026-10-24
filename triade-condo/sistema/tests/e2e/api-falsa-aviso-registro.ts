@@ -45,7 +45,7 @@ export function criarAvisoRegistro(vAna: string): EstadoAvisoRegistro {
 
 const curto = (nome: string) => nome.split(" ")[0]!;
 const CANAL: Record<string, string> = { TELEFONE: "por telefone", PRESENCIAL: "pessoalmente", MENSAGEM: "por mensagem", EMAIL: "por e-mail",
-  OBSERVACAO: "por quem cuida do prédio" };
+  OBSERVACAO: "por quem cuida do prédio", WHATSAPP: "pelo WhatsApp do condomínio" };
 const mascarar = (t: string) => `+${t.slice(1, 3)} ${t.slice(3, 5)} ${t.slice(5, 6)}••••-${t.slice(-4)}`;
 
 /** Nome, telefone (pelos 8 últimos dígitos) ou e-mail de morador no texto (decisão 9). */

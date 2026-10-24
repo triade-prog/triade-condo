@@ -18,6 +18,8 @@ interface Config {
   etapas: { id: string; nome: string; situacao: string; categoriaId: string | null; pausaPrazo: boolean; ativa: boolean }[];
   modelos: { id: string; titulo: string; texto: string; categoriaId: string | null; ativo: boolean }[];
   regrasPedidos: { revisao: boolean; reabertura: boolean };
+  /** A ordem da fila guardada na pessoa (0289). */
+  ordemPedidos?: "ATENCAO" | "RECENTES" | "ANTIGOS";
 }
 interface Pessoa { vinculoId: string; nome: string; responsavel: boolean; disponivel: boolean }
 
@@ -146,7 +148,13 @@ export async function rotasPedidos(route: Route, ped: PedidoFalso[], c: Config, 
     return route.fulfill({ json: m.vinculos.filter((v) => v.unidadeId === ct[1] && v.estado === "CONFIRMADO").map((v) => ({
       contatoId: v.contatoId, nome: m.contatos.find((x) => x.id === v.contatoId)?.nome, relacao: v.relacao, principal: v.principal })) });
   }
+  if (caminho === "/v1/condominio/pedidos/ordem" && metodo === "PUT") {
+    if (!["ATENCAO", "RECENTES", "ANTIGOS"].includes(String(corpo.ordem))) return erro(route, 400, "VALIDATION_ERROR", { campos: ["ordem"] });
+    c.ordemPedidos = corpo.ordem as Config["ordemPedidos"];
+    return route.fulfill({ json: { ordem: c.ordemPedidos } });
+  }
   if (caminho === "/v1/condominio/pedidos" && metodo === "GET") {
+    const ordem = c.ordemPedidos ?? "ATENCAO";
     const q = url.searchParams;
     const sit = q.get("situacao") ?? "ATIVOS";
     const at = q.get("atencao");
@@ -159,7 +167,8 @@ export async function rotasPedidos(route: Route, ped: PedidoFalso[], c: Config, 
       .filter((p) => !q.get("prioridade") || p.prioridadeId === q.get("prioridade"))
       .filter((p) => !q.get("categoria") || p.categoriaId === q.get("categoria"))
       .filter((p) => !busca || p.protocolo.includes(busca) || p.assunto.toLowerCase().includes(busca))
-      .sort((a, b) => Number(vencido(b, c)) - Number(vencido(a, c))
+      .sort((a, b) => (ordem === "RECENTES" ? b.protocolo.localeCompare(a.protocolo) : ordem === "ANTIGOS" ? a.protocolo.localeCompare(b.protocolo) : 0)
+        || Number(vencido(b, c)) - Number(vencido(a, c))
         || (c.prioridades.find((x) => x.id === b.prioridadeId)!.nivel - c.prioridades.find((x) => x.id === a.prioridadeId)!.nivel));
     return route.fulfill({ json: {
       itens: itens.map((p) => {
@@ -174,13 +183,14 @@ export async function rotasPedidos(route: Route, ped: PedidoFalso[], c: Config, 
           previsao: p.previsao, pendencias: p.pendencias.filter((x) => !x.resolvidaEm).length,
         };
       }),
-      total: itens.length, pagina: 1, porPagina: 50, resumo: resumoPedidos(ped, c, eu.vinculo), agora: AGORA,
+      total: itens.length, pagina: 1, porPagina: 50, ordem, resumo: resumoPedidos(ped, c, eu.vinculo), agora: AGORA,
     } });
   }
   if (caminho === "/v1/condominio/pedidos" && metodo === "POST") {
     if (!pode("pedidos.atualizar")) return erro(route, 403, "FORBIDDEN");
     if (String(corpo.assunto ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["assunto"] });
     if (!corpo.unidadeId && !corpo.local) return erro(route, 400, "VALIDATION_ERROR", { campos: ["unidadeId", "local"] });
+    if (!corpo.canal) return erro(route, 400, "VALIDATION_ERROR", { campos: ["canal"] });
     const protocolo = `2026-${String(ped.length + 1).padStart(4, "0")}`;
     const p: PedidoFalso = {
       id: novoId(), protocolo, assunto: String(corpo.assunto), descricao: String(corpo.descricao), canal: String(corpo.canal), privado: corpo.privado === true,

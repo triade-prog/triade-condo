@@ -314,14 +314,19 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       if (!e.configuracoes) return erro(route, 403, "FORBIDDEN");
       return route.fulfill({ json: e });
     }
-    // Registrar com as mensagens do WhatsApp (D4.20): a conversa é juntada na mesma chamada.
+    // Registrar com as mensagens do WhatsApp (D4.20, decisão A.2): o pedido nasce pelo WhatsApp do
+    // condomínio e a conversa é juntada na mesma transação; se juntar falha, o pedido sai de novo.
     if (caminho === "/v1/condominio/pedidos" && metodo === "POST" && corpo.mensagemId) {
       const { mensagemId, ...resto } = corpo;
-      const r = await porDentro(new URL("/api/v1/condominio/pedidos", url), resto);
+      const r = await porDentro(new URL("/api/v1/condominio/pedidos", url), { ...resto, canal: "WHATSAPP" });
       if (r.status >= 300) return route.fulfill(r);
       const juntou = await lerPorDentro(new URL(`/api/v1/condominio/whatsapp/mensagens/${mensagemId}/triar`, url),
         { acao: "PEDIDO", pedidoId: r.json.id, motivo: null, contatoId: null });
-      return route.fulfill({ status: r.status, json: { ...r.json, juntou: Boolean(juntou) } });
+      if (!juntou) {
+        estado.pedidos.splice(estado.pedidos.findIndex((p) => p.id === r.json.id), 1);
+        return erro(route, 404, "NOT_FOUND");
+      }
+      return route.fulfill({ status: r.status, json: { ...r.json, juntou: true } });
     }
     // Concluir com a foto do depois (D4.22): a conclusão já abre o envio de cada foto.
     const concluir = /^\/v1\/condominio\/manutencao\/([^/]+)\/concluir$/.exec(caminho);

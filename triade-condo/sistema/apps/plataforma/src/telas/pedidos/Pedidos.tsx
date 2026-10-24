@@ -3,13 +3,14 @@
 // pede atenção, busca e os outros filtros numa janela. Cada pedido mostra o ícone da categoria (em
 // cinza), o protocolo, o assunto, a prioridade só quando é Alta ou Urgente, onde é, quem cuida (e
 // se aceitou), a situação com a etapa, o próximo retorno e quando foi registrado. Os filtros
-// ficam no endereço, para o Início levar direto ao que importa.
+// ficam no endereço, para o Início levar direto ao que importa. A ordem (Pede atenção primeiro,
+// Mais recentes ou Mais antigos) fica guardada na pessoa e vale em qualquer aparelho (D4.2, A.1).
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
-import { FILTROS_ATENCAO, FILTROS_SITUACAO } from "@triade/domain";
-import { Aviso, Botao, Carregando, CampoSelecao, Dialogo, ErroCarregar, Icone, Selo, Vazio, type NomeIcone, type Tom } from "@triade/ui";
+import { useEffect, useRef, useState } from "react";
+import { FILTROS_ATENCAO, FILTROS_SITUACAO, ORDENS_PEDIDOS, type OrdemPedidos } from "@triade/domain";
+import { Aviso, Botao, Carregando, CampoSelecao, chamarApi, Dialogo, ErroCarregar, Icone, Selo, Vazio, type NomeIcone, type Tom } from "@triade/ui";
 import { useCarregar, useContagens, usePlataforma } from "../sessao.tsx";
 import type { FilaPedidos, OpcoesPedidos, PedidoDaFila, Recado, ResumoPedidos } from "../tipos.ts";
 import { aHora, diaHora, iconeDaCategoria, seloSituacao, SeloPrioridade } from "./comum.tsx";
@@ -85,14 +86,59 @@ function Item({ p, agora }: { p: PedidoDaFila; agora: string }) {
   );
 }
 
-/** Os outros filtros (responsável, prioridade e categoria), numa janela. */
-function JanelaFiltros({ aberto, f, o, aoFechar, aplicar }: {
-  aberto: boolean; f: Filtros; o: OpcoesPedidos; aoFechar: () => void; aplicar: (m: Partial<Filtros>) => void;
+const EXPLICA_ORDEM: Record<OrdemPedidos, string> = {
+  ATENCAO: "Retorno vencido, prioridade e o retorno mais perto",
+  RECENTES: "Os registrados por último no alto",
+  ANTIGOS: "Os que estão há mais tempo esperando no alto",
+};
+
+/** A ordem da fila, no computador: um botão com as três ordens. Fecha com Esc ou clicando fora. */
+function MenuOrdem({ ordem, escolher }: { ordem: OrdemPedidos; escolher: (o: OrdemPedidos) => void }) {
+  const [aberto, setAberto] = useState(false);
+  const caixa = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: MouseEvent) => { if (!caixa.current?.contains(e.target as Node)) setAberto(false); };
+    const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") setAberto(false); };
+    document.addEventListener("mousedown", fora);
+    document.addEventListener("keydown", tecla);
+    return () => { document.removeEventListener("mousedown", fora); document.removeEventListener("keydown", tecla); };
+  }, [aberto]);
+  return (
+    <div ref={caixa} className="relative max-md:hidden">
+      <Botao variante="discreto" aria-expanded={aberto} onClick={() => setAberto(!aberto)}>
+        <Icone nome="trocar" />Ordem: {ORDENS_PEDIDOS[ordem]}
+      </Botao>
+      {aberto ? (
+        <div className="menu-pessoa left-0 right-auto w-[340px]" role="group" aria-label="Ordem da lista">
+          {(Object.keys(ORDENS_PEDIDOS) as OrdemPedidos[]).map((x) => (
+            <button key={x} type="button" className="escolha" aria-current={x === ordem} onClick={() => { setAberto(false); if (x !== ordem) escolher(x); }}>
+              <span className="flex items-center gap-2 font-medium">{x === ordem ? <Icone nome="check" className="h-4 w-4 text-violeta-600" /> : null}{ORDENS_PEDIDOS[x]}</span>
+              <span className="t-apoio">{EXPLICA_ORDEM[x]}</span>
+            </button>
+          ))}
+          <p className="t-apoio border-t border-linha px-2 pt-2">A ordem fica guardada para você e vale no celular e no computador.</p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Os outros filtros (responsável, prioridade e categoria), numa janela. No celular, a ordem também. */
+function JanelaFiltros({ aberto, f, o, ordem, aoFechar, aplicar }: {
+  aberto: boolean; f: Filtros; o: OpcoesPedidos; ordem: OrdemPedidos; aoFechar: () => void;
+  aplicar: (m: Partial<Filtros>, ordem: OrdemPedidos) => void;
 }) {
   const [v, setV] = useState({ responsavel: f.responsavel, prioridade: f.prioridade, categoria: f.categoria });
+  const [ord, setOrd] = useState(ordem);
   return (
     <Dialogo aberto={aberto} titulo="Filtrar pedidos" aoFechar={aoFechar}>
-      <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); aplicar(v); }}>
+      <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); aplicar(v, ord); }}>
+        <div className="md:hidden">
+          <CampoSelecao id="f-ordem" rotulo="Ordem" icone="trocar" value={ord} onChange={(e) => setOrd(e.target.value as OrdemPedidos)}
+            ajuda="Fica guardada para você, no celular e no computador."
+            opcoes={(Object.keys(ORDENS_PEDIDOS) as OrdemPedidos[]).map((x) => ({ valor: x, texto: ORDENS_PEDIDOS[x] }))} />
+        </div>
         <CampoSelecao id="f-responsavel" rotulo="Responsável" icone="pessoa" value={v.responsavel} onChange={(e) => setV({ ...v, responsavel: e.target.value })}
           opcoes={[{ valor: "", texto: "Todos" }, { valor: "EU", texto: "Os meus" }, { valor: "NENHUM", texto: "Sem responsável" },
             ...o.responsaveis.map((x) => ({ valor: x.vinculoId, texto: x.nome }))]} />
@@ -101,7 +147,7 @@ function JanelaFiltros({ aberto, f, o, aoFechar, aplicar }: {
         <CampoSelecao id="f-categoria" rotulo="Categoria" icone="lista" value={v.categoria} onChange={(e) => setV({ ...v, categoria: e.target.value })}
           opcoes={[{ valor: "", texto: "Todas" }, ...o.categorias.map((x) => ({ valor: x.id, texto: x.nome }))]} />
         <div className="flex justify-end gap-2">
-          <Botao variante="discreto" onClick={() => aplicar({ responsavel: "", prioridade: "", categoria: "" })}>Tirar filtros</Botao>
+          <Botao variante="discreto" onClick={() => aplicar({ responsavel: "", prioridade: "", categoria: "" }, ord)}>Tirar filtros</Botao>
           <Botao type="submit">Mostrar pedidos</Botao>
         </div>
       </form>
@@ -142,6 +188,13 @@ export function Pedidos() {
   const [recado, setRecado] = useState<Recado>(null);
   const [filtrandoAberto, setFiltrando] = useState(false);
 
+  const ordem: OrdemPedidos = fila.estado === "pronto" ? fila.dados.ordem ?? "ATENCAO" : "ATENCAO";
+  async function escolherOrdem(nova: OrdemPedidos) {
+    const r = await chamarApi("/v1/condominio/pedidos/ordem", { metodo: "PUT", corpo: { ordem: nova } });
+    if (!r.ok) return setRecado({ tom: "atencao", texto: "Não foi possível mudar a ordem. Tente de novo." });
+    fila.recarregar();
+  }
+
   function mudar(m: Partial<Filtros>) {
     const novo = consulta({ ...f, pagina: 1, ...m });
     router.replace(novo ? `/pedidos?${novo}` : "/pedidos", { scroll: false });
@@ -176,6 +229,7 @@ export function Pedidos() {
         <Botao variante="contorno" aria-label={outros ? `Filtros, ${outros} em uso` : "Filtros"} className="max-md:w-11 max-md:px-0" onClick={() => setFiltrando(true)}>
           <Icone nome="filtro" /><span className="max-md:hidden">Filtros{outros ? ` · ${outros}` : ""}</span>
         </Botao>
+        <MenuOrdem ordem={ordem} escolher={(x) => void escolherOrdem(x)} />
         {filtrando ? <Botao variante="discreto" className="max-md:hidden" onClick={() => router.replace("/pedidos", { scroll: false })}>Limpar filtros</Botao> : null}
       </div>
 
@@ -247,8 +301,8 @@ export function Pedidos() {
 
       {o.pode.registrar ? <div className="fixed right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] z-20 md:hidden">{registrar}</div> : null}
 
-      <JanelaFiltros key={`${filtrandoAberto}`} aberto={filtrandoAberto} f={f} o={o} aoFechar={() => setFiltrando(false)}
-        aplicar={(m) => { setFiltrando(false); mudar(m); }} />
+      <JanelaFiltros key={`${filtrandoAberto}`} aberto={filtrandoAberto} f={f} o={o} ordem={ordem} aoFechar={() => setFiltrando(false)}
+        aplicar={(m, nova) => { setFiltrando(false); if (nova !== ordem) void escolherOrdem(nova); mudar(m); }} />
       <RegistrarPedido aberto={registrando} opcoes={o} aoFechar={() => setRegistrando(false)}
         aoRegistrar={() => { fila.recarregar(); contagens.recarregar(); atualizar(); }}
         registrado={(protocolo, id) => {

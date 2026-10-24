@@ -168,4 +168,31 @@ test.describe("Plataforma do síndico · passo 4", () => {
     await salvarPagina(page);
     await expect(page.getByRole("status").filter({ hasText: "Regras dos pedidos salvas." })).toBeVisible();
   });
+
+  test("AT-02 (D4.2, decisão A.1): a ordem da fila fica guardada para a pessoa", async ({ page, isMobile }) => {
+    const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
+    await page.goto(`${PLATAFORMA}/pedidos`);
+    const fila = page.getByRole("region", { name: "Pedidos encontrados" });
+    const ordem = async () => (await fila.getByRole("link").allInnerTexts()).map((t) => /2026-\d{4}/.exec(t)?.[0]).filter(Boolean);
+    await expect.poll(ordem).toEqual(["2026-0001", "2026-0002", "2026-0003"]);
+    if (isMobile) {
+      await page.getByRole("button", { name: "Filtros" }).click();
+      const j = page.getByRole("dialog", { name: "Filtrar pedidos" });
+      await expect(j.getByLabel("Ordem")).toHaveValue("ATENCAO");
+      await j.getByLabel("Ordem").selectOption("RECENTES");
+      await conferir(page);
+      await j.getByRole("button", { name: "Mostrar pedidos" }).click();
+    } else {
+      await page.getByRole("button", { name: "Ordem: Pede atenção primeiro" }).click();
+      const menu = page.getByRole("group", { name: "Ordem da lista" });
+      await expect(menu.getByText("A ordem fica guardada para você e vale no celular e no computador.")).toBeVisible();
+      await conferir(page);
+      await menu.getByRole("button", { name: /^Mais recentes/ }).click();
+      await expect(page.getByRole("button", { name: "Ordem: Mais recentes" })).toBeVisible();
+    }
+    await expect.poll(ordem).toEqual(["2026-0003", "2026-0002", "2026-0001"]);
+    expect(estado.config.ordemPedidos).toBe("RECENTES");
+    await page.reload();
+    await expect.poll(ordem).toEqual(["2026-0003", "2026-0002", "2026-0001"]);
+  });
 });

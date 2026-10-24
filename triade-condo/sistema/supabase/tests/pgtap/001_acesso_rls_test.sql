@@ -1,6 +1,6 @@
 -- T1 (PT-06) e F0.2: RLS ligado e forçado em tudo, privilégios fechados, só o servidor acessa.
 begin;
-select plan(20);
+select plan(21);
 
 -- A consulta que o teste usa para achar tabela sem RLS (forçado) no esquema public.
 create temp view sem_rls as
@@ -29,6 +29,14 @@ select is(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.prokind = 'f' and has_function_privilege('service_role', p.oid, 'execute') and not p.prosecdef),
   null, 'o service_role só executa as funções da API (security definer)');
+
+-- Toda migration termina com fechar_acesso(): sem ele, a função nova fica com o dono que a criou,
+-- que passa por cima da separação por condomínio.
+select is(
+  (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.prokind = 'f' and pg_get_userbyid(p.proowner) <> 'dominio'
+      and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e')),
+  null, 'toda função é do dono dominio (a migration chamou fechar_acesso)');
 
 -- F0.3: tabela de dado de condomínio usa a política padrão; as outras dizem o porquê.
 select is(
