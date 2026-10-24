@@ -14,7 +14,8 @@
 // 22/10/2026); responder pelo WhatsApp é em Dar retorno ao morador (C.1). Quem
 // foi avisado no registro e o prestador escolhido (F6.4, AT-26). Da F7.4: os pedidos
 // relacionados (AT-18) e a decisão pedida ao síndico, com a pendência que se resolve sozinha
-// quando ele responde (AT-23).
+// quando ele responde (AT-23). Da IA 1: a sugestão automática num cartão tracejado, que espera
+// quem atende confirmar (IA-17, IA-15), e a transcrição do áudio ao lado dele (W-06).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -36,11 +37,12 @@ import { DecisoesNoPedido, PedirDecisao, pendenciaDaDecisao } from "../decisoes/
 import { PedidosRelacionados } from "./Relacionados.tsx";
 import { CartaoAvisosRegistro } from "./AvisosDoRegistro.tsx";
 import { Cartao, Dado, MaisAcoes } from "../Ficha.tsx";
+import { CartaoSugestao, useIaDoPedido } from "./SugestaoIa.tsx";
 
 const MEIO_RETORNO: Record<string, string> = { TELEFONE: "por telefone", PRESENCIAL: "pessoalmente", MENSAGEM: "por mensagem", EMAIL: "por e-mail", OUTRO: "por outro meio", WHATSAPP: "pelo WhatsApp" };
 
 /** Próximo retorno ao morador: o horário grande, quanto falta e a barra do prazo que corre. */
-function CartaoRetorno({ d, mudar }: { d: PedidoDetalhe; mudar?: () => void }) {
+function CartaoRetorno({ d, mudar, comIa }: { d: PedidoDetalhe; mudar?: () => void; comIa?: boolean }) {
   const p = d.pedido;
   const ativo = p.estado === "ABERTO" || p.estado === "EM_ANDAMENTO";
   const ultimo = d.andamentos.filter((a) => a.tipo === "RETORNO").map((a) => a.em).sort().pop();
@@ -72,7 +74,7 @@ function CartaoRetorno({ d, mudar }: { d: PedidoDetalhe; mudar?: () => void }) {
         </>
       ) : <p className="t-apoio">{p.estado === "EM_REVISAO" ? "Em revisão: sem novo retorno combinado." : "Sem prazo configurado."}</p>}
       {p.etapa.pausaPrazo && ativo ? <p className="t-apoio flex items-center gap-1"><IconeMarca marca="pausa" />Prazo pausado nesta etapa.</p> : null}
-      <p className="t-apoio">Compromisso de dar notícia, mesmo sem solução.</p>
+      <p className="t-apoio">Compromisso de dar notícia, mesmo sem solução.{comIa ? " A sugestão e a transcrição não contam como retorno." : ""}</p>
     </section>
   );
 }
@@ -137,6 +139,7 @@ export function Pedido() {
   const opcoes = useCarregar<OpcoesPedidos>("/v1/condominio/pedidos/opcoes");
   const arquivos = useCarregar<ArquivosDoPedido>(id ? `/v1/condominio/pedidos/${id}/arquivos` : null);
   const conversa = useCarregar<ConversaDoPedido>(id ? `/v1/condominio/pedidos/${id}/whatsapp` : null);
+  const ia = useIaDoPedido(id);
   const [recado, setRecado] = useState<Recado>(busca.get("novo") ? { tom: "ok", texto: "Pedido registrado." } : null);
   const [falha, setFalha] = useState<string | null>(null);
   const [acao, setAcao] = useState<AcaoPedido | null>(null);
@@ -164,7 +167,7 @@ export function Pedido() {
   const fechado = p.estado === "ENCERRADO" || p.estado === "CANCELADO";
   const fechar = () => { setAcao(null); setResolver(null); setPedirDecisao(false); };
   const salvo = (texto: string, tom: "ok" | "atencao" = "ok") => {
-    fechar(); setRecado({ tom, texto }); setFalha(null); carga.recarregar(); arquivos.recarregar(); conversa.recarregar(); atualizar();
+    fechar(); setRecado({ tom, texto }); setFalha(null); carga.recarregar(); arquivos.recarregar(); conversa.recarregar(); ia.recarregar(); atualizar();
   };
   const qtdArquivos = arquivos.estado === "pronto" ? arquivos.dados.arquivos.length : 0;
   const abertas = d.pendencias.filter((x) => !x.resolvidaEm);
@@ -261,11 +264,16 @@ export function Pedido() {
       {d.pode.concluir && p.estado === "ENCERRADO" && !d.regras.reabertura
         ? <p className="t-apoio">Este condomínio não reabre pedidos. Se o problema voltou, registre um pedido novo.</p> : null}
       <DecisoesNoPedido d={d} salvo={(t) => salvo(t)} recarregar={carga.recarregar} />
+      {ativo ? (
+        <CartaoSugestao d={d} opcoes={opcoes.dados} ia={ia.dados} preparando={ia.preparando} tentarDeNovo={ia.tentarDeNovo}
+          salvo={(t) => salvo(t)} falhou={(t) => setFalha(t)} />
+      ) : null}
 
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-5">
-          <ConversaWhatsapp pedidoId={p.id} conversa={zap} />
-          {!fechado ? <CartaoRetorno d={d} mudar={d.pode.responder && ativo ? () => setAcao("proximo") : undefined} /> : null}
+          <ConversaWhatsapp pedidoId={p.id} conversa={zap} transcricoes={ia.dados?.transcricoes} recarregarIa={ia.recarregar} />
+          {!fechado ? <CartaoRetorno d={d} mudar={d.pode.responder && ativo ? () => setAcao("proximo") : undefined}
+            comIa={Boolean(ia.dados?.sugestao || Object.keys(ia.dados?.transcricoes ?? {}).length)} /> : null}
 
           {abertas.length ? (
             <section aria-labelledby="t-pendencias" className="grid gap-2">

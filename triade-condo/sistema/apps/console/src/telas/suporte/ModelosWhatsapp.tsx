@@ -64,6 +64,7 @@ const EXEMPLOS: Record<ChaveModelo, string[]> = {
   assembleia_lembrete: ["Residencial Ipê", "assembleia geral ordinária", "sábado, 08/11, às 19:00", "da Torre A · 302", "(link pessoal da unidade)"],
   anuncio_decidido: ["Residencial Ipê", "está no mural até 18/11, com o título \"Vendo bicicleta aro 29\". Quem se interessar fala com você por aqui.", "Ana"],
   link_prestador: ["Residencial Ipê", "AquaFix", "Bomba de recalque com ruído (Casa de bombas)", "21/10, 14:00", "https://condominio.trihub.com.br/p/…"],
+  encomenda_guardada: ["Torre A · 302", "Mercado Livre, 1 volume", "Sala da portaria", "hoje, 14:32", "João (portaria)", "Residencial Ipê"],
 };
 
 /** O texto com as variáveis destacadas e o nome de cada uma. */

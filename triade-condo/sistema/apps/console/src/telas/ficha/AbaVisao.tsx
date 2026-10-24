@@ -9,6 +9,7 @@ import { useState, type FormEvent } from "react";
 import { CENARIOS, mostrarTelefone, SITUACOES, UFS, type Cenario } from "@triade/domain";
 import { Aviso, Botao, CampoSelecao, CampoTexto, camposComErro, chamarApi, Dialogo, Icone, Iniciais, textoDoErro, type ErroApi, type NomeIcone } from "@triade/ui";
 import { AcaoCartao, Cartao, Dado } from "../comum.tsx";
+import { CartaoIa } from "./CartaoIa.tsx";
 import { DESCRICAO_CENARIO, EscolhaCenario } from "../NovoCondominio.tsx";
 import type { Contato, Ficha, PropsAba } from "./tipos.ts";
 
@@ -262,6 +263,7 @@ export function AbaVisao(props: PropsAba) {
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,1fr)]">
       <div className="grid min-w-0 gap-6">
         <Situacoes {...props} abrir={setJanela} />
+        <CartaoIa condominioId={c.id} avisar={(texto) => props.avisar({ tom: "ok", texto })} />
         <Cartao id="t-condominio" titulo="Condomínio" icone="predio"
           acao={edita ? <AcaoCartao icone="editar" rotulo="Editar condomínio" aoClicar={() => setJanela("condominio")}>Editar</AcaoCartao> : undefined}>
           <div>

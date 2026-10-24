@@ -50,6 +50,18 @@ export interface ConectorWhatsapp {
 }
 
 // ---------------------------------------------------------------------------------------
+// Número que não está no WhatsApp (Portaria 1, PA-01): o banco separa "Sem aviso" de "Aviso
+// falhou" pelo começo do motivo (numero_fora_do_whatsapp, 0299). As frases do provedor ainda
+// estão a confirmar com o Wafly; estas cobrem as formas conhecidas em inglês e português.
+
+export const NUMERO_FORA_DO_WHATSAPP =
+  /not (on|in) whats ?app|n[aã]o (est[aá]|existe|tem|possui)[^.]*whats ?app|(number|phone|n[uú]mero)[^.]*(does not|doesn'?t|not|n[aã]o) (exist|registered|existe)|invalid (phone|number|wid)|"exists"\s*:\s*false/i;
+
+export function textoNumeroForaDoWhatsapp(erro: string): string {
+  return `O número não está no WhatsApp (${erro.slice(0, 200)})`;
+}
+
+// ---------------------------------------------------------------------------------------
 // Cifra das credenciais.
 
 function deBase64(v: string): Uint8Array<ArrayBuffer> {
@@ -172,7 +184,8 @@ export function conectorWafly(clientToken: string, buscar: typeof fetch = fetch,
       const j = obj(await r.json().catch(() => null));
       const id = texto(j?.messageId) ?? texto(j?.id);
       if (r.ok && id) return { ok: true, id };
-      return { ok: false, erro: texto(j?.error) ?? texto(j?.message) ?? `O provedor recusou (HTTP ${r.status})`, falha: "PERMANENTE" };
+      const erro = texto(j?.error) ?? texto(j?.message) ?? `O provedor recusou (HTTP ${r.status})`;
+      return { ok: false, erro: NUMERO_FORA_DO_WHATSAPP.test(erro) ? textoNumeroForaDoWhatsapp(erro) : erro, falha: "PERMANENTE" };
     },
     async qrCode(c) {
       await chamar(c, "POST", "connect", {}).catch(() => null);

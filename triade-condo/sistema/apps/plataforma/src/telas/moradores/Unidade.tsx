@@ -11,7 +11,8 @@
 // topo, as partes em cartões, um só botão principal (Incluir pessoa); Editar unidade e
 // Registrar mudança em Mais ações; Editar, Recusar e Encerrar no menu de cada pessoa. Família,
 // pets e o aniversário (F3.9) e as três últimas mudanças, com Ver tudo no histórico (F3.10).
-// Link de cadastro da unidade em Mais ações (F3.10; MU-09); ?abrir=link abre direto.
+// Link de cadastro da unidade em Mais ações (F3.10; MU-09); ?abrir=link abre direto. Para quem
+// vê a portaria, o cartão Encomendas (Portaria 1, PA-01).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -30,6 +31,7 @@ import { dataDoHistorico } from "./Historico.tsx";
 import { descreverVinculo, LinhaOcupacao } from "./Vinculo.tsx";
 import { EditarContato, EditarUnidade, Encerrar, IncluirContato, RegistrarMudanca } from "./JanelasUnidade.tsx";
 import { JanelaLinkCadastro } from "./LinkCadastro.tsx";
+import { CartaoEncomendas } from "../portaria/UnidadePortaria.tsx";
 
 type JanelaAberta =
   | { tipo: "incluir"; relacao?: string }
@@ -67,7 +69,7 @@ export function Unidade() {
   const endereco = useSearchParams();
   const id = endereco.get("id");
   const abrir = endereco.get("abrir");
-  const { atualizar } = usePlataforma();
+  const { atualizar, pode } = usePlataforma();
   const carga = useCarregar<UnidadeDetalhe>(id ? `/v1/condominio/unidades/${id}` : null);
   const [recado, setRecado] = useState<Recado>(null);
   const [janela, setJanela] = useState<JanelaAberta | null>(abrir === "incluir" ? { tipo: "incluir" } : abrir === "mudanca" ? { tipo: "mudanca" } : abrir === "link" ? { tipo: "link" } : null);
@@ -251,6 +253,7 @@ export function Unidade() {
               </p>
             </CartaoFicha>
           ) : null}
+          {pode("portaria.ver") ? <CartaoEncomendas unidadeId={u.id} /> : null}
           <GaragensDaUnidade unidadeId={u.id} nomeUnidade={nome} vagas={d.vagas ?? []} veiculos={d.veiculos ?? []} contatos={d.contatos}
             edita={edita} salvo={salvo} recarregar={carga.recarregar} />
           <CartaoFicha id="historico" titulo="Histórico da unidade" icone="relogio"

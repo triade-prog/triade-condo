@@ -9,18 +9,18 @@ Versão visual e interativa (com busca e filtro por forma): [`mapa.html`](mapa.h
 
 | Parte | Peças | Ideias |
 |---|---|---|
-| Plataforma do síndico | 16 | 204 |
+| Plataforma do síndico | 16 | 202 |
 | Console TRÍADE | 9 | 39 |
-| Base comum | 6 | 37 |
+| Base comum | 6 | 38 |
 | Fora do software | 4 | 34 |
-| **Total** | **35** | **314** |
+| **Total** | **35** | **313** |
 
 ## Mapa mental
 
 ```mermaid
 mindmap
-  root((TRÍADE Condo · 314 ideias))
-    Plataforma do síndico · 204
+  root((TRÍADE Condo · 313 ideias))
+    Plataforma do síndico · 202
       Painel web do síndico
         Início · 4
         Pedidos · 25
@@ -34,10 +34,10 @@ mindmap
         Portaria e encomendas · 10
         Vida em condomínio · 7
         Indicadores e relatórios · 10
-        Memória do prédio · 7
+        Memória do prédio · 6
         Configurações · 19
       WhatsApp do condomínio
-        WhatsApp do morador · 25
+        WhatsApp do morador · 24
       Participação sem conta
         Links e QR · 7
     Console TRÍADE · 39
@@ -50,13 +50,13 @@ mindmap
       Equipe interna · 3
       Saúde e capacidade · 3
       Mensagens e custos · 2
-    Base comum · 37
+    Base comum · 38
       Segurança e acesso · 8
       Dados e histórico · 6
       Motor de mensagens · 8
       Infraestrutura e qualidade · 8
       Princípios do produto · 3
-      Motor de IA · 4
+      Motor de IA · 5
     Fora do software · 34
       Serviços fora do sistema · 3
       Negócio e preço · 19
@@ -73,7 +73,7 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Peça | Códigos |
 |---|---|
 | Início | AT-08; W-11; IA-10; TR-11 |
-| Pedidos | AT-01 a 04, 06, 07, 09, 11 a 15, 17, 18, 20, 26, 27, 31 a 33; IA-03, 04, 12, 13, 19 |
+| Pedidos | AT-01 a 04, 06, 07, 09, 11 a 15, 17, 18, 20, 26, 27, 31 a 33; IA-03, 04, 12, 13, 17 |
 | Decisões e aprovações | V-14; AT-23; IA-08; FC-10 |
 | Moradores e unidades | MU-01, 02, 06 a 11 |
 | Comunicados e documentos | CD-01, 02, 04 a 11, 13 a 15; IA-05 a 07 |
@@ -84,9 +84,9 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Portaria e encomendas | PA-01 a 05, 07 a 11 |
 | Vida em condomínio | AC-01 a 07 |
 | Indicadores e relatórios | TR-01 a 05, 07 a 10; IA-14 |
-| Memória do prédio | MP-12, 14; CT-02 a 04; IA-09, 17 |
+| Memória do prédio | MP-12, 14; CT-02 a 04; IA-09 |
 | Configurações | V-04 a 06, 09; AT-05, 10, 25, 29; CF-01 a 08, 10, 12; NG-21 |
-| WhatsApp do morador | V-07; W-05 a 10, 12, 16, 19, 21, 22; AT-16, 19, 21, 22, 28; CD-03; IA-01, 02, 18, 20; MU-05; FC-04; DR-14 |
+| WhatsApp do morador | V-07; W-05 a 10, 12, 16, 19, 21, 22; AT-16, 19, 21, 22, 28; CD-03; IA-01, 02, 18; MU-05; FC-04; DR-14 |
 | Links e QR | V-11, 12; AT-30; MP-08; OC-03; PA-06; CD-12 |
 
 **Console TRÍADE**
@@ -112,7 +112,7 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Motor de mensagens | W-02, 04, 13 a 15, 17, 18, 20 |
 | Infraestrutura e qualidade | PT-05, 10, 12, 14 a 18 |
 | Princípios do produto | V-01, 08, 17 |
-| Motor de IA | IA-11, 15, 16, 21 |
+| Motor de IA | IA-11, 15, 16, 19, 20 |
 
 **Fora do software**
 
@@ -176,7 +176,7 @@ Todo pedido do morador, do registro até a conclusão explicada, com próximo re
 | IA-04 | Resumo do caso e do histórico para quem assume o pedido | Função |
 | IA-12 | Extrair tarefas das conversas, com responsável e prioridade | Função |
 | IA-13 | Diagnóstico de problema por foto | Função |
-| IA-19 | Classificar o pedido automaticamente a partir da mensagem | Função |
+| IA-17 | Classificar o pedido automaticamente a partir da mensagem | Função |
 | AT-03 | Responsável real por pedido; quem responde pode ser diferente de quem executa | Regra |
 | AT-04 | Prioridades com significado explícito | Regra |
 | AT-06 | Próximo retorno: compromisso de atualizar o morador, separado da previsão de solução (padrão "periodic update" de hel… | Regra |
@@ -376,7 +376,7 @@ Como está o atendimento, em números, e o relatório para a assembleia.
 | TR-04 | Velocidade de reparo e satisfação média como indicadores | Indicador |
 | TR-09 | Health score do condomínio | Indicador |
 
-#### Memória do prédio (7)
+#### Memória do prédio (6)
 
 O que fica com o prédio quando o síndico muda: prontuário, dossiê e histórico.
 
@@ -386,7 +386,6 @@ O que fica com o prédio quando o síndico muda: prontuário, dossiê e históri
 | CT-02 | Dossiê de passagem de bastão: pendências, prestadores, contratos, documentos e histórico entregues ao novo síndico | Função |
 | CT-04 | Exportar todo o histórico do condomínio se ele sair da plataforma | Função |
 | IA-09 | Memória do condomínio: decisões, pendências e combinados recuperados por pergunta | Função |
-| IA-17 | Ler o grupo de WhatsApp do condomínio para alimentar a memória e o resumo diário | Função |
 | MP-14 | Manual de uso e manutenção do prédio acessível | Função |
 | CT-03 | Memória permanente do prédio que não depende de quem é o síndico | Regra |
 
@@ -418,7 +417,7 @@ Ficha do condomínio, pessoas e permissões, horários, categorias, prazos e mod
 
 ### WhatsApp do condomínio
 
-#### WhatsApp do morador (25)
+#### WhatsApp do morador (24)
 
 Tudo o que o morador faz e recebe pelo WhatsApp, sem app e sem senha.
 
@@ -430,8 +429,7 @@ Tudo o que o morador faz e recebe pelo WhatsApp, sem app e sem senha.
 | CD-03 | Morador recebe e consulta documentos vigentes (regimento, convenção, regras) pelo WhatsApp, em texto, resumo ou PDF | Função |
 | DR-14 | Pergunte ao caixa | Função |
 | IA-01 | Responder dúvidas do morador com base só no regimento e nos documentos aprovados, citando documento e versão | Função |
-| IA-18 | Responder moradores dentro do grupo de WhatsApp quando mencionado, segundo regras do síndico | Função |
-| IA-20 | IA conversa com o morador para completar a descrição e pedir foto antes de registrar o pedido | Função |
+| IA-18 | IA conversa com o morador para completar a descrição e pedir foto antes de registrar o pedido | Função |
 | MU-05 | Boas-vindas do novo morador pelo WhatsApp: regras do prédio, como fazer pedidos e confirmação do cadastro | Função |
 | W-05 | Morador envia texto, foto, áudio e documento; tudo fica ligado ao pedido certo | Função |
 | W-06 | Transcrição de áudio | Função |
@@ -648,14 +646,15 @@ O que a TRÍADE Condo é e o que ela nunca faz.
 | V-08 | Síndico: painel web de gestão e avisos de novidades no próprio WhatsApp | Regra |
 | V-17 | O que a TRÍADE não faz: o síndico mantém o cargo, a representação legal e as decisões que lhe cabem; a TRÍADE, inclus… | Regra |
 
-#### Motor de IA (4)
+#### Motor de IA (5)
 
 As regras que toda função de IA segue, nos dois sistemas.
 
 | ID | Ideia | Forma |
 |---|---|---|
 | IA-11 | Agentes especializados: triagem, síndico, operação/manutenção, morador | Função |
-| IA-21 | Ajuda de cada tela, cujo texto também alimenta o assistente que tira dúvidas do síndico | Função |
+| IA-19 | Ajuda de cada tela, cujo texto também alimenta o assistente que tira dúvidas do síndico | Função |
+| IA-20 | Motor de IA com freio: conector que dá para trocar, registro e limite por mês de cada função; na Plataforma, o síndico liga cada função em Configurações › Ajuda da IA; no Console, a chave da TRÍADE fica na ficha do cliente | Função |
 | IA-15 | Regra de ouro vista lá fora: todo texto de IA é rascunho até uma pessoa aprovar | Regra |
 | IA-16 | Observar a política da Meta: bot de atendimento da própria empresa é permitido; IA de uso geral no WhatsApp não | Regra |
 
@@ -733,9 +732,9 @@ Ferramentas do planejamento, guardadas no arquivo.
 
 | Forma | Ideias |
 |---|---|
-| Aba | 18 |
-| Função | 121 |
-| Regra | 79 |
+| Aba | 20 |
+| Função | 123 |
+| Regra | 80 |
 | Aviso | 10 |
 | Configuração | 15 |
 | Indicador | 11 |

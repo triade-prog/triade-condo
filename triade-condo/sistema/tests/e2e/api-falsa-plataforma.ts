@@ -19,9 +19,10 @@ import { criarAssembleias, resumoAssembleia, rotasAssembleiaPublica, rotasAssemb
 import { classificadosAAprovar, classificadosDoMural, criarClassificados, rotasClassificadoPublico, rotasClassificados } from "./api-falsa-classificados";
 import { avisarNoRegistro, avisosDoPedido, criarAvisoRegistro, rotasAvisoRegistro, type ContextoAviso } from "./api-falsa-aviso-registro";
 import { criarRelatorios, rotasArquivoRelatorio, rotasRelatorios } from "./api-falsa-relatorios";
+import { criarPortaria, resumoPortaria, rotasPortaria } from "./api-falsa-portaria";
 import { avisosDecisoes, criarDecisoes, detalheDecisoes, marcarAvisosDecisoes, resumoDecisoes, rotasDecisoes, semearDecisoes } from "./api-falsa-decisoes";
 
-/** As 22 permissões do banco (permissoes), na ordem de @triade/domain. */
+/** As 24 permissões do banco (permissoes), na ordem de @triade/domain. */
 const PERMISSOES = {
   ACOMPANHAR: "Acompanhar",
   RESPONDER: "Responder",
@@ -45,6 +46,8 @@ const PERMISSOES = {
   ASSEMBLEIAS: "Cuidar das assembleias",
   VER_CLASSIFICADOS: "Ver os classificados",
   CLASSIFICADOS: "Cuidar dos classificados",
+  VER_PORTARIA: "Ver a portaria",
+  PORTARIA: "Cuidar da portaria",
 } as const;
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -73,6 +76,8 @@ export interface OpcoesPlataforma {
   comComunicadosWhatsapp?: boolean;
   /** O modo de cada conjunto do plano (0291); sem dizer, tudo completo. */
   conjuntos?: Partial<Record<"AGENDA" | "MANUTENCAO" | "VIDA" | "COMUNICACAO_AMPLIADA", "COMPLETO" | "CONSULTA" | "FORA">>;
+  /** Portaria 1 · Encomendas: a síndica vê e cuida da portaria, com 3 guardadas e 1 entregue. */
+  comPortaria?: boolean;
 }
 
 const CONJUNTOS_PLANO = [
@@ -204,6 +209,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const relatorios = criarRelatorios();
   const whatsapp = criarWhatsapp(estado.pedidos[0]!, cats[0]!.id, pris[1]!.id);
   const avisoRegistro = criarAvisoRegistro(V_ANA);
+  const portaria = criarPortaria();
   const decisoes = criarDecisoes();
   if (opcoes.comDecisoes) semearDecisoes(decisoes, estado.pedidos, V_ANA, estado.config.etapas.find((e) => e.nome === "Concluído")!.id);
   if (!opcoes.comAcessoPedido) suporte.acessos = [];
@@ -219,7 +225,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       "documentos.editar", "documentos.restritos", "documentos.ver", "manutencao.editar", "manutencao.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pedidos.atualizar", "pedidos.concluir",
       "memoria.dossie", "memoria.exportar", "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver",
       "suporte.chamados", "acesso_excepcional.aprovar", "reservas.editar", "reservas.ver",
-      "enquetes.editar", "enquetes.ver", "assembleias.editar", "assembleias.ver", "classificados.editar", "classificados.ver", "decisoes.aprovar"]
+      "enquetes.editar", "enquetes.ver", "assembleias.editar", "assembleias.ver", "classificados.editar", "classificados.ver", "decisoes.aprovar",
+      ...(opcoes.comPortaria ? ["portaria.ver", "portaria.cuidar"] : [])]
     : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados",
       ...(opcoes.secretariaRegistra ? ["pedidos.atualizar"] : [])]
       : ["agenda.ver", "comunicados.ver", "config.ver", "documentos.ver", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"];
@@ -338,7 +345,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (contagens) return contar(route, contagens[1]!, url);
     // A entrada das Configurações numa chamada só (D4.15).
     if (caminho === "/v1/condominio/configuracoes/entrada") {
-      const PARTES = { configuracoes: "configuracoes", areas: "areas-comuns", manutencao: "etapas-manutencao", plano: "plano-comunicacao", whatsapp: "whatsapp/config", links: "links-qr" };
+      const PARTES = { configuracoes: "configuracoes", areas: "areas-comuns", manutencao: "etapas-manutencao", plano: "plano-comunicacao", whatsapp: "whatsapp/config", links: "links-qr",
+        ...(opcoes.comPortaria ? { portaria: "portaria" } : {}) };
       const e: Record<string, unknown> = {};
       for (const [k, p] of Object.entries(PARTES)) e[k] = await lerPorDentro(new URL(`/api/v1/condominio/${p}`, url));
       if (!e.configuracoes) return erro(route, 403, "FORBIDDEN");
@@ -427,6 +435,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
           mesFechado: MES_FECHADO,
         } : {}),
         ...(acoes().includes("manutencao.ver") ? { manutencao: resumoManutencao(manutencao) } : {}),
+        ...(acoes().includes("portaria.ver") ? { portaria: resumoPortaria(portaria) } : {}),
         ...(acoes().includes("comunicados.ver") || acoes().includes("documentos.ver") ? { comunicados: resumoComunicados(comunicados, pode) } : {}),
         ...(acoes().includes("documentos.ver") ? { memoria: { prontuario: resumoProntuario(memoria) } } : {}),
         ...(acoes().includes("acesso_excepcional.aprovar") ? { acessosExcepcionais: resumoAcessos(suporte) } : {}),
@@ -482,6 +491,10 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     const naManutencao = await rotasManutencao(route, manutencao, { pessoas: estado.pessoas, pedidos: estado.pedidos, prioridades: c.prioridades, eu },
       caminho, metodo, corpo, url, pode);
     if (naManutencao !== null) return naManutencao;
+    if (opcoes.comPortaria) {
+      const naPortaria = await rotasPortaria(route, portaria, { eu, condominio: "Residencial Ipê" }, caminho, metodo, corpo, url, pode);
+      if (naPortaria !== null) return naPortaria;
+    }
     const moradores = await rotasMoradores(route, estado.moradores, caminho, metodo, corpo, pode);
     if (moradores !== null) return moradores;
     const noWhatsapp = await rotasWhatsapp(route, whatsapp, caminho, metodo, corpo, pode, eu,

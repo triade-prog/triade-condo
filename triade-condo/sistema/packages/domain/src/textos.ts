@@ -81,6 +81,9 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   NAO_RESPONSAVEL: "Só a pessoa responsável aceita o pedido.",
   PEDIDO_ENCERRADO: "Este pedido está encerrado. Reabra para mudar alguma coisa.",
   PEDIDO_EM_REVISAO: "Este pedido está em revisão. Espere a revisão do síndico.",
+  IA_DESLIGADA_TRIADE: "A TRÍADE desligou a IA deste condomínio. As opções voltam quando ela for ligada de novo.",
+  SUGESTAO_DECIDIDA: "Esta sugestão já foi decidida. Abra o pedido de novo para ver como ficou.",
+  TRANSCRICAO_SEM_FALHA: "Este áudio não precisa de nova tentativa.",
   ETAPA_INCOMPATIVEL: "Esta etapa não combina com a situação ou a categoria do pedido.",
   CONCLUIR_PARA_ENCERRAR: "Para encerrar, use Concluir: a conclusão explica ao morador o que foi feito.",
   PENDENCIA_ABERTA: "Ainda há pendência aberta. Resolva as pendências antes de concluir.",
@@ -269,6 +272,17 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   SEM_VAGA_FUNDADOR: "As vagas de fundador acabaram. Use a tabela cheia ou aumente as vagas na Tabela de preços.",
   VAGAS_OCUPADAS: "Já há mais vagas de fundador ocupadas do que este número. Libere uma vaga antes de diminuir.",
   CONCORRENTE_ARQUIVADO: "Este concorrente está arquivado e não muda mais. Cadastre de novo, se for o caso.",
+  // Portaria 1 · Encomendas (0299).
+  ENCOMENDA_ENTREGUE: "Esta encomenda já foi entregue. Atualize a lista.",
+  LUGAR_FORA_DE_USO: "Este lugar saiu de uso. Escolha outro lugar.",
+  ENCOMENDA_PELA_PORTARIA: "O aviso de encomenda se manda de novo pela Portaria, em Avisar de novo.",
+  NINGUEM_RECEBE: "Ninguém da unidade recebe pelo WhatsApp. Avise por outro meio: interfone, bilhete ou pessoalmente.",
+  AVISO_SAINDO: "O aviso ainda está saindo. Espere um pouco antes de avisar de novo.",
+  NAO_E_DA_UNIDADE: "Esta pessoa não é da unidade. Escolha Outra pessoa e escreva o nome.",
+  LIMITE_FOTOS_ENCOMENDA: "Esta encomenda já tem fotos demais.",
+  LUGAR_REPETIDO: "Já existe um lugar com este nome.",
+  LIMITE_LUGARES: "O prédio já tem 30 lugares em uso. Tire de uso um que não serve mais.",
+  ULTIMO_LUGAR: "O prédio precisa de pelo menos um lugar em uso para guardar as encomendas.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

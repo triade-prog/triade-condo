@@ -9,8 +9,10 @@ export const PAGINAS_CONFIGURACAO = {
   categorias: { nome: "Categorias e prioridades", grupo: "pedidos", apoio: "Como os pedidos se organizam. Renomear não quebra o histórico." },
   respostas: { nome: "Respostas prontas", grupo: "pedidos", apoio: "Textos prontos que aparecem na hora de dar retorno a um pedido." },
   etapas: { nome: "Etapas", grupo: "pedidos", apoio: "Onde o pedido está dentro de aberto, em andamento e encerrado." },
+  ia: { nome: "Ajuda da IA", grupo: "pedidos", apoio: "O que a IA faz nos pedidos deste condomínio, o que ela recebe e quanto já foi usado no mês." },
   areas: { nome: "Áreas comuns", grupo: "predio", apoio: "As áreas que os moradores reservam e as regras de cada uma." },
   manutencao: { nome: "Etapas da manutenção", grupo: "predio", apoio: "Onde a manutenção está dentro de cada situação." },
+  portaria: { nome: "Portaria", grupo: "predio", apoio: "Quem recebe as encomendas no prédio, onde elas ficam e quando lembrar a unidade." },
   comunicados: { nome: "Comunicados", grupo: "comunicacao", apoio: "Os assuntos, o combinado com os moradores e quando nada é enviado." },
   mural: { nome: "Mural e e-mail", grupo: "comunicacao", apoio: "O mural aberto sem conta, o cartaz com QR e o e-mail dos comunicados." },
   whatsapp: { nome: "WhatsApp", grupo: "comunicacao", apoio: "O número do condomínio, as mensagens e quem cuida quando ele cai." },
@@ -21,8 +23,8 @@ export type IdPagina = keyof typeof PAGINAS_CONFIGURACAO;
 
 export const GRUPOS_TAREFA = [
   { id: "atendimento", nome: "Atendimento", apoio: "Quando o condomínio atende e em quanto tempo responde.", paginas: ["horarios", "feriados", "prazos"] },
-  { id: "pedidos", nome: "Pedidos", apoio: "Como os pedidos se organizam e o que se responde.", paginas: ["categorias", "respostas", "etapas"] },
-  { id: "predio", nome: "Prédio", apoio: "As áreas que os moradores reservam e a manutenção.", paginas: ["areas", "manutencao"] },
+  { id: "pedidos", nome: "Pedidos", apoio: "Como os pedidos se organizam e o que se responde.", paginas: ["categorias", "respostas", "etapas", "ia"] },
+  { id: "predio", nome: "Prédio", apoio: "As áreas que os moradores reservam, a manutenção e a portaria.", paginas: ["areas", "manutencao", "portaria"] },
   { id: "comunicacao", nome: "Comunicação", apoio: "O que o morador recebe, por onde e quando.", paginas: ["comunicados", "mural", "whatsapp"] },
   { id: "links", nome: "Links e QR", apoio: "O que abre sem conta, pelo celular de quem aponta a câmera.", paginas: ["etiquetas", "abertos"] },
 ] as const satisfies readonly { id: string; nome: string; apoio: string; paginas: readonly IdPagina[] }[];

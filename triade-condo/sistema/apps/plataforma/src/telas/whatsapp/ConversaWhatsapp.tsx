@@ -13,6 +13,8 @@ import {
   diaDaConversa, ESTADOS_ENVIO_WHATSAPP, formatarDataHora, LIMITE_FORA_DA_JANELA, MIDIAS_WHATSAPP, type EstadoEnvioWhatsapp, type MidiaWhatsapp,
 } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, camposComErro, chamarApi, Dialogo, Icone, Selo, textoDoErro, type ErroApi, type Tom } from "@triade/ui";
+import type { TranscricaoAudio } from "../pedidos/SugestaoIa.tsx";
+import { AudioTranscrito } from "./AudioTranscrito.tsx";
 
 interface MensagemConversa {
   id: string;
@@ -153,7 +155,11 @@ export function FaixaRevisao({ conversa, aoReabrir, salvo }: {
 }
 
 /** A conversa do pedido, logo abaixo do topo da ficha. Só aparece quando há mensagens. */
-export function ConversaWhatsapp({ pedidoId, conversa }: { pedidoId: string; conversa: ConversaDoPedido | null }) {
+export function ConversaWhatsapp({ pedidoId, conversa, transcricoes, recarregarIa }: {
+  pedidoId: string; conversa: ConversaDoPedido | null;
+  /** A transcrição automática de cada áudio (W-06), só no painel. */
+  transcricoes?: Record<string, TranscricaoAudio>; recarregarIa?: () => void;
+}) {
   const [inteira, setInteira] = useState(false);
   if (!conversa?.mensagens.length) return null;
   const todas = [...conversa.mensagens].sort((a, b) => Date.parse(a.em) - Date.parse(b.em));
@@ -186,7 +192,10 @@ export function ConversaWhatsapp({ pedidoId, conversa }: { pedidoId: string; con
             {m.estado === "FALHOU" || m.estado === "DESCONHECIDO" ? <span>{m.motivo}{m.resolvida ? " · resolvida" : ""}</span> : null}
           </>}>
             {m.texto ? <span className="whitespace-pre-line">{m.texto}</span> : null}
-            {m.midia ? (
+            {m.tipo === "AUDIO" && m.midia?.situacao === "LIBERADA" ? (
+              <AudioTranscrito pedidoId={pedidoId} mensagemId={m.id} arquivoId={m.midia.arquivoId} quem={m.lado === "MORADOR" ? (m.autor ?? "quem escreveu") : "o condomínio"}
+                transcricao={transcricoes?.[m.id]} tentarDeNovo={recarregarIa} />
+            ) : m.midia ? (
               m.midia.situacao === "LIBERADA" && m.midia.arquivoId
                 ? <Botao variante="contorno" tamanho="p" className="justify-self-start" onClick={() => void abrirArquivo(m.midia!.arquivoId!)}>Abrir {MIDIAS_WHATSAPP[m.midia.tipo]?.toLowerCase() ?? "arquivo"}</Botao>
                 : <span className="t-apoio text-tinta-suave">

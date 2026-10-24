@@ -9,6 +9,8 @@
 // passos com barra de progresso, e nada do que foi preenchido se perde ao voltar.
 // Do WhatsApp (decisão B.1 de 22/10/2026, quadros 105 a 107 do canvas), o relato vem das
 // mensagens de um número em "A identificar" e, depois de registrar, elas são juntadas ao pedido.
+// Da IA 1: em Como tratar, a sugestão automática de categoria, prioridade e local (IA-17), que só
+// preenche os campos com o toque de quem registra (IA-15).
 
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, chamarApi, camposComErro, Dialogo, Icone, Interruptor, textoDoErro, type ErroApi } from "@triade/ui";
@@ -21,6 +23,7 @@ import { ListaLocais } from "../Locais.tsx";
 import { useCelular } from "../celular.ts";
 import { acompanharRascunhos, BlocoQuemAvisar, contarAvisos, ESCOLHA_INICIAL, faltasNoLink, juntar, paraEnviar, usePrevia, type EscolhaAvisos } from "./QuemAvisar.tsx";
 import { ConfirmacaoRegistro, type Registrado } from "./AvisosDoRegistro.tsx";
+import { BlocoSugestaoRegistro, useSugestaoRegistro } from "./SugestaoRegistro.tsx";
 
 interface ContatoConfirmado { contatoId: string; nome: string; relacao: string; principal: boolean }
 
@@ -104,6 +107,9 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
   }, escolha);
   // Enquanto ninguém edita, os textos do prestador e do comunicado seguem o rascunho mais novo.
   const escolhaVista = acompanharRascunhos(previa, escolha);
+  // A sugestão automática (IA-17): só depois do relato; nada é preenchido sem o toque de quem registra.
+  const sug = useSugestaoRegistro({ assunto: v.assunto, relato: v.descricao, unidadeId: onde === "UNIDADE" ? v.unidadeId || null : null });
+  const [usou, setUsou] = useState<string | null>(null);
   const avisos = contarAvisos(previa, escolhaVista);
 
   useEffect(() => {
@@ -176,6 +182,7 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
       assunto: v.assunto, descricao: v.descricao, privado: v.privado, responsavelId: v.responsavelId || null,
       avisar: paraEnviar(previa, escolhaVista),
       mensagemId: daMensagem?.mensagemId ?? null,
+      sugestaoId: sug.sugestao?.estado === "PRONTA" ? sug.sugestao.id : null,
     } });
     if (!r.ok) {
       setEnviando(false);
@@ -292,6 +299,8 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
           </Parte>
 
           <Parte n={3} passo={passo}>
+            <BlocoSugestaoRegistro sugestao={sug.sugestao} preparando={sug.preparando} usada={usou === sug.sugestao?.id}
+              aoUsar={(s) => { setUsou(s.id); mudar({ categoriaId: s.categoria!.id, prioridadeId: s.prioridade!.id, ...(s.local ? { local: s.local } : {}) }); }} />
             <div className="grid gap-4 sm:grid-cols-2">
               <CampoSelecao id="p-categoria" rotulo="Categoria" icone={iconeDaCategoria(categoria?.nome)} value={v.categoriaId}
                 erro={msg("categoriaId", "Escolha uma categoria ativa.")}
@@ -318,6 +327,9 @@ function Formulario({ opcoes, aoFechar, registrado, aoRegistrar, outro, daMensag
         <div className={`md:sticky md:top-0 md:pt-2 ${passo === 3 ? "max-md:pt-4" : "max-md:hidden"}`}>
           <BlocoQuemAvisar previa={previa} escolha={escolhaVista} mudar={setEscolha} opcoes={opcoes}
             faltas={[...faltas, ...comErro.filter((c) => c === "quando" || c === "comoEntrar")]} />
+          {sug.sugestao?.estado === "PRONTA" ? (
+            <p className="mt-3 flex gap-1.5 t-apoio text-tinta-suave"><Icone nome="info" className="mt-0.5 h-3.5 w-3.5" />A sugestão automática não avisa ninguém e não muda quem fica sabendo.</p>
+          ) : null}
         </div>
       </div>
 

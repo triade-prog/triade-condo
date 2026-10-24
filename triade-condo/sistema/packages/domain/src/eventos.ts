@@ -74,6 +74,17 @@ export function descreverEvento(e: EventoHistorico): string {
       return d.de ? `Cenário trocado: ${nomeDe(CENARIOS, d.de)} → ${nomeDe(CENARIOS, d.para)}` : `Cenário escolhido: ${nomeDe(CENARIOS, d.para)}`;
     case "contrato.alterado":
       return "Referência do contrato alterada";
+    case "ia.chave": {
+      const onde = d.cliente ? ` em ${String(d.cliente)}` : "";
+      return d.ligada ? `IA ligada${onde}` : `IA desligada${onde}${d.motivo ? `. Motivo: ${String(d.motivo)}` : ""}`;
+    }
+    case "ia.ajuste": {
+      const partes = [typeof d.limiteSugestoes === "number" && `${String(d.limiteSugestoes)} sugestões`, typeof d.limiteMinutos === "number" && `${String(d.limiteMinutos)} minutos de transcrição`,
+        d.provedor && `provedor ${String(d.provedor)}`, d.modelo && `modelo ${String(d.modelo)}`].filter(Boolean);
+      return partes.length ? `Limite da IA: ${partes.join(" · ")}` : "Limite da IA salvo sem mudanças";
+    }
+    case "ia.funcoes":
+      return `Ajuda da IA: sugestão ${d.sugerir ? "ligada" : "desligada"} · transcrição ${d.transcrever ? "ligada" : "desligada"}`;
     case "estado.mudou": {
       if (e.entidade === "contatos_unidade") {
         if (d.para === "ENCERRADO") return d.motivo ? `Contato saiu da unidade · ${nomeDe(MOTIVOS_ENCERRAMENTO, d.motivo)}` : "Contato saiu da unidade";

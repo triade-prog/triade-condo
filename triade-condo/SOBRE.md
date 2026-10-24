@@ -200,7 +200,7 @@ O mercado está se consolidando: a NokNox fechou, a Visma comprou a chilena Comu
 | Item | Situação em 16/10/2026 |
 |---|---|
 | Ideia, pesquisa e planejamento | Concluídos e arquivados em `arquivo/` |
-| Lista de ideias | [`IDEIAS.md`](IDEIAS.md), 314 ideias em 22 seções |
+| Lista de ideias | [`IDEIAS.md`](IDEIAS.md), 313 ideias em 22 seções |
 | Protótipos visuais (dados fictícios) | Existem no arquivo, servem de referência |
 | Código do sistema | **Começa agora**, nesta pasta |
 | Clientes | Nenhum ainda |

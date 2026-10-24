@@ -157,7 +157,8 @@ Deno.test("CF-05, MP-01 (0297): revogar leva ao banco quem assume os pedidos e a
 
 Deno.test("as listas do domínio (permissões, fusos, situações, pendências) são as mesmas do banco", async () => {
   const migration = (await Promise.all(["0070_configuracoes_condominio.sql", "0080_moradores_unidades.sql", "0130_agenda.sql", "0140_manutencao.sql",
-    "0150_comunicados_documentos.sql", "0160_mural_email.sql", "0220_vida_reservas.sql", "0230_vida_enquetes.sql", "0240_vida_assembleias.sql", "0250_vida_classificados.sql"]
+    "0150_comunicados_documentos.sql", "0160_mural_email.sql", "0220_vida_reservas.sql", "0230_vida_enquetes.sql", "0240_vida_assembleias.sql", "0250_vida_classificados.sql",
+    "0299_encomendas.sql"]
     .map((f) => Deno.readTextFile(new URL(`../../migrations/${f}`, import.meta.url))))).join("\n");
   for (const p of Object.keys(PERMISSOES)) assert(migration.includes(`('${p}', '`), p);
   for (const f of Object.keys(FUSOS)) assert(migration.includes(`'${f}'`), f);
@@ -173,12 +174,15 @@ Deno.test("CF-06 (D4.15): a entrada das Configurações numa chamada só; a part
     plataforma_plano_comunicacao: () => ({ assuntos: [] }),
     plataforma_config_whatsapp: () => erroBanco("TC403"),
     plataforma_links_qr: () => ({ etiquetas: [] }),
+    plataforma_ajuda_ia: () => ({ ligadaTriade: false }),
   } });
   const cookie = await entrar(m);
   const r = await m.pedir("/v1/condominio/configuracoes/entrada", { cookie });
   assertEquals(r.status, 200);
   assertEquals(await r.json(), {
     configuracoes: { fuso: "America/Sao_Paulo" }, areas: { areas: [] }, manutencao: { etapas: [] }, plano: { assuntos: [] }, whatsapp: null, links: { etiquetas: [] },
+    ia: { ligadaTriade: false },
+    portaria: null,
   });
   for (const f of ["plataforma_configuracoes", "plataforma_areas_comuns", "plataforma_config_whatsapp", "plataforma_links_qr"]) {
     assertEquals(chamada(m, f), { p_pessoa: ANA, p_condominio: AURORA }, f);

@@ -59,6 +59,11 @@ import {
   suspenderConjuntoSchema,
   testarConjuntoSchema,
   valorCobrancaSchema,
+  centavosDeMicros,
+  chaveIaSchema,
+  custoNoLimiteCentavos,
+  limitesIaSchema,
+  PRECOS_IA,
   arquivarConcorrenteSchema,
   CODIGOS_FAIXA,
   concorrenteSchema,
@@ -391,6 +396,36 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json(await rpc("console_conferir_parte", { ...cliente(c), p_parte: d.parte, p_nota: d.nota ?? null }));
   });
   rotasConfiguracao(app, "/v1/clientes/:id/condominio", cliente, deps.banco);
+
+  // IA e custo (IA-20, NG-13, NG-15): o uso e o custo do mês em reais, o custo se usar todo o
+  // limite, a chave que desliga a IA do condomínio e o limite. Só a Administração muda (no banco).
+  interface UsoIa { chamadas: number; custoMicros: number; custoMicrosReais: number; limite: number }
+  const reaisDoUso = (u: UsoIa) => centavosDeMicros(u.custoMicros) + centavosDeMicros(u.custoMicrosReais, "BRL");
+  app.get("/v1/clientes/:id/ia", async (c) => {
+    const r = await rpc<{ sugerir: UsoIa; transcrever: UsoIa } & Record<string, unknown>>("console_ia_cliente", cliente(c));
+    const sugerir = reaisDoUso(r.sugerir);
+    const transcrever = reaisDoUso(r.transcrever);
+    return c.json({
+      ...r,
+      reais: {
+        sugerirCentavos: sugerir, transcreverCentavos: transcrever, totalCentavos: sugerir + transcrever,
+        noLimiteCentavos: custoNoLimiteCentavos(r.sugerir.limite, r.transcrever.limite),
+        tabelaDe: PRECOS_IA.tabelaDe, dolarCentavos: PRECOS_IA.dolarEmCentavos,
+      },
+    });
+  });
+  app.get("/v1/clientes/:id/ia/chamadas", async (c) => c.json({ chamadas: await rpc("console_ia_chamadas", cliente(c)) }));
+  app.put("/v1/clientes/:id/ia/chave", async (c) => {
+    const d = await lerCorpo(c, chaveIaSchema);
+    return c.json(await rpc("console_ia_chave", { ...cliente(c), p_versao: d.versao, p_ligada: d.ligada, p_motivo: d.motivo || null }));
+  });
+  app.put("/v1/clientes/:id/ia/limites", async (c) => {
+    const d = await lerCorpo(c, limitesIaSchema);
+    return c.json(await rpc("console_ia_ajustar", {
+      ...cliente(c), p_versao: d.versao, p_limite_sugestoes: d.limiteSugestoes, p_limite_minutos: d.limiteMinutos,
+      p_provedor: null, p_modelo: null, p_provedor_transcricao: null,
+    }));
+  });
 
   app.put("/v1/clientes/:id/condominio/fuso", async (c) => {
     const d = await lerCorpo(c, ajusteFusoSchema);
