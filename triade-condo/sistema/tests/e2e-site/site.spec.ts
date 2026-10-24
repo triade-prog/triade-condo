@@ -158,6 +158,14 @@ test.describe("Site · preços", () => {
     await expect(faixa).toContainText("Implantação grátis no anual");
     await expect(page.locator("#explica-forma")).toContainText("12 meses pelo preço de 11");
   });
+
+  test("mostra o preço decidido em 24/10: fundadores, franquia a confirmar e nada sem decisão", async ({ page }) => {
+    await page.goto("/precos");
+    await expect(page.locator(".fundadores")).toContainText("Condomínios fundadores: a partir de R$ 129/mês, só no mensal, por 12 meses, vagas limitadas.");
+    await expect(page.locator(".faixa-preco").first()).toContainText("franquia a confirmar na proposta");
+    const texto = await page.locator("main").innerText();
+    expect(texto).not.toMatch(/provisóri|ilimitad|% de desconto/i);
+  });
 });
 
 test.describe("Site · demonstração", () => {

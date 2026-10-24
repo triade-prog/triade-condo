@@ -879,3 +879,7 @@ h2, .titulo-g { font-size: var(--t-58); font-weight: 600; }
   .rodape .wrap { grid-template-columns: minmax(0, 1fr); }
   .rodape .rodape-contato span { flex-basis: 100%; }
 }
+
+/* Preços: linha dos condomínios fundadores (DC16), aparece enquanto houver vagas. */
+.fundadores { font-size: var(--t-16); color: var(--tinta); }
+.fundadores b { color: var(--violeta-600); }

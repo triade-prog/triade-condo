@@ -7,12 +7,10 @@ describe("oferta do site", () => {
     expect(faixas.map((f) => reais(mensalNoAnual(f.mensal)))).toEqual(["R$ 182", "R$ 320", "R$ 503", "R$ 778"]);
   });
 
-  it("as faixas sobem juntas: preço, implantação e franquia", () => {
-    for (let i = 1; i < faixas.length; i++) {
-      expect(faixas[i].mensal).toBeGreaterThan(faixas[i - 1].mensal);
-      expect(faixas[i].implantacao).toBeGreaterThan(faixas[i - 1].implantacao);
-      expect(faixas[i].franquiaComunicados).toBeGreaterThan(faixas[i - 1].franquiaComunicados);
-    }
+  it("os valores são os decididos em 24/10 (DC16): tabela cheia, implantação e fundador", () => {
+    expect(faixas.map((f) => f.mensal)).toEqual([199, 349, 549, 849]);
+    expect(faixas.map((f) => f.implantacao)).toEqual([600, 900, 1400, 2000]);
+    expect(faixas.map((f) => f.fundador)).toEqual([129, 229, 349, 549]);
     expect(opcoesUnidades.at(-1)).toBe("Mais de 400 ou vários prédios");
   });
 });
