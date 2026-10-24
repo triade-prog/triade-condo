@@ -7,6 +7,7 @@ import {
   horariosSchema,
   intervalosSobrepostos,
   mostrarDataSemHora,
+  revogarPessoaSchema,
 } from "./plataforma.ts";
 
 describe("contratos da Plataforma (passo 2)", () => {
@@ -41,5 +42,15 @@ describe("contratos da Plataforma (passo 2)", () => {
     const v = "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9";
     expect(atendimentoSchema.safeParse({ versao: 1, padraoId: v, responsaveis: [{ vinculoId: v, disponivel: true }, { vinculoId: v, disponivel: false }] }).success)
       .toBe(false);
+  });
+});
+
+describe("revogar e quem assume (0297; CF-05, MP-01)", () => {
+  const v = "4b9c1f7e-1a2b-4c3d-8e9f-0a1b2c3d4e5f";
+  it("quem assume os pedidos é um id ou null (fila sem responsável); sem a chave, nada vai", () => {
+    expect(revogarPessoaSchema.parse({ versao: 1 })).toEqual({ versao: 1 });
+    expect(revogarPessoaSchema.parse({ versao: 1, assumePedidosId: null })).toEqual({ versao: 1, assumePedidosId: null });
+    expect(revogarPessoaSchema.safeParse({ versao: 1, assumePedidosId: v, assumeManutencoesId: v }).success).toBe(true);
+    expect(revogarPessoaSchema.safeParse({ versao: 1, assumeManutencoesId: "fulano" }).success).toBe(false);
   });
 });

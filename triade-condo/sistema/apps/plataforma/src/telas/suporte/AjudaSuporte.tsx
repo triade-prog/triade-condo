@@ -2,7 +2,8 @@
 // Ajuda e suporte (DC15, telas-modelo suporte-chamados-* e suporte-abrir-chamado; peça R4; PI-17,
 // PI-20; decisão C.1 de 23/10/2026): os chamados de suporte técnico da plataforma, em abas Abertos
 // e Resolvidos com o número, cada linha inteira abrindo o chamado, e Abrir chamado numa janela,
-// com tipo, área, título, o que aconteceu e até 3 imagens (colar com Ctrl+V ou escolher). Não é
+// com tipo, área, título, o que aconteceu e até 3 imagens (colar com Ctrl+V ou escolher), que vão
+// dentro da primeira mensagem (decisão E.2). Não é
 // reparo do prédio nem emergência. O chamado aberto mora em Chamado.tsx. O pedido de mudança
 // (Mudança de configuração, 0286) nasce do "Pedir mudança" das Configurações, e não daqui.
 
@@ -36,12 +37,13 @@ function AbrirChamado({ aoFechar }: { aoFechar: () => void }) {
     ev.preventDefault();
     setErro(null);
     setEnviando(true);
-    const r = await chamarApi<{ id: string }>("/v1/condominio/chamados", { corpo: { tipo, area, titulo, texto } });
+    const r = await chamarApi<{ id: string; mensagemId: string }>("/v1/condominio/chamados", { corpo: { tipo, area, titulo, texto } });
     if (!r.ok) {
       setEnviando(false);
       return setErro(r.erro);
     }
-    const problemas = imagens.length ? await enviarImagens(r.dados.id, imagens) : [];
+    // As imagens vão na primeira mensagem do chamado (decisão E.2).
+    const problemas = imagens.length ? await enviarImagens(r.dados.id, r.dados.mensagemId, imagens) : [];
     setEnviando(false);
     router.push(`/suporte?id=${r.dados.id}${problemas.length ? "&imagens=falhou" : ""}`);
   }

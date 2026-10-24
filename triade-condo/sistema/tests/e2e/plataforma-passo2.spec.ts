@@ -216,7 +216,10 @@ test.describe("Plataforma do síndico · passo 2", () => {
 
     await maisAcoes(page, "Revogar acesso");
     const revogar = page.getByRole("dialog", { name: "Revogar o acesso de Bruna" });
-    await expect(revogar.getByLabel("Bruna é o padrão da fila. Quem assume?")).toHaveValue(V_ANA);
+    // Bruna tem um pedido e uma manutenção em aberto (decisão E.1): quem assume os pedidos também
+    // passa a ser o padrão da fila.
+    await expect(revogar.getByLabel("Quem assume o pedido de Bruna?")).toHaveValue(V_ANA);
+    await expect(revogar.getByLabel("Quem assume a manutenção de Bruna?")).toHaveValue(V_ANA);
     await revogar.getByRole("button", { name: "Revogar acesso" }).click();
     await expect(page).toHaveURL(/\/pessoas\?revogada=Bruna$/);
     await expect(page.getByRole("status").filter({ hasText: "Acesso de Bruna revogado" })).toBeVisible();

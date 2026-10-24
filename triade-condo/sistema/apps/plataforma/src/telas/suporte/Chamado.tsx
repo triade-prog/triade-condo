@@ -4,17 +4,22 @@
 // quando a TRÍADE espera a resposta, Resolveu como botão principal e, embaixo, a caixa de resposta
 // com o modelo de anexar. Resolvido há até 7 dias reabre ao responder. O chamado de mudança (0286)
 // troca os dados do chamado pelo cartão "Mudança pedida", com a parte, o valor de hoje e o caminho
-// para a Configuração; nele, Resolveu fica com borda, porque quem resolve é a TRÍADE.
+// para a Configuração; nele, Resolveu fica com borda, porque quem resolve é a TRÍADE. Cada imagem
+// fica dentro da mensagem em que foi mandada (decisão E.2; desenhos SU-chamado-imagem-*): Anexar
+// imagem junta a imagem à resposta que está sendo escrita, e ela sai junto, ao Enviar resposta.
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
-import { AREAS_CHAMADO, DIAS_REABRIR_CHAMADO, formatarDataHora, nomeDaParte, PARTES_MUDANCA, TIPOS_CHAMADO } from "@triade/domain";
+import { AREAS_CHAMADO, DIAS_REABRIR_CHAMADO, IMAGENS_CHAMADO, formatarDataHora, nomeDaParte, PARTES_MUDANCA, TIPOS_CHAMADO } from "@triade/domain";
 import { PAGINAS_CONFIGURACAO } from "@triade/configuracoes";
-import { Aviso, AvisoErro, Botao, CampoAreaTexto, camposComErro, Carregando, chamarApi, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
+import {
+  Aviso, AvisoErro, Botao, CampoAreaTexto, camposComErro, Carregando, chamarApi, ErroCarregar, Icone, ImagensDaMensagem, Selo, textoDoErro,
+  useAnexarImagens, type ErroApi,
+} from "@triade/ui";
 import { Cartao, Dado } from "../Ficha.tsx";
 import { useCarregar } from "../sessao.tsx";
 import { Bolha, comDias } from "../whatsapp/ConversaWhatsapp.tsx";
-import { CampoImagens, enviarImagens } from "./imagens.tsx";
+import { enviarImagens } from "./imagens.tsx";
 import { ICONE_TIPO, SeloChamado, type DetalheChamado } from "./comum.tsx";
 
 const hora = (iso: string) => formatarDataHora(iso).slice(-5);
@@ -23,11 +28,13 @@ export function Chamado({ id, falhouImagem }: { id: string; falhouImagem: boolea
   const carga = useCarregar<DetalheChamado>(`/v1/condominio/chamados/${id}`);
   const [texto, setTexto] = useState("");
   const [imagens, setImagens] = useState<File[]>([]);
-  const [anexar, setAnexar] = useState(false);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [recado, setRecado] = useState<{ tom: "ok" | "atencao"; texto: string } | null>(falhouImagem
     ? { tom: "atencao", texto: "O chamado foi aberto, mas alguma imagem não passou na conferência." } : null);
+  const restam = carga.estado !== "pronto" ? 0 : carga.dados.imagensRestantes
+    ?? IMAGENS_CHAMADO.porChamado - carga.dados.mensagens.reduce((n, m) => n + (m.imagens?.length ?? 0), 0);
+  const anexo = useAnexarImagens({ id: "cha-resposta-imagens", imagens, mudar: setImagens, maximo: restam });
   const voltar = (
     <Link href="/suporte" className="inline-flex items-center gap-1 t-texto font-medium text-violeta-600 hover:underline">
       <Icone nome="esq" className="h-4 w-4" />Voltar aos chamados
@@ -42,16 +49,16 @@ export function Chamado({ id, falhouImagem }: { id: string; falhouImagem: boolea
     ev.preventDefault();
     setErro(null);
     setEnviando(true);
-    const r = await chamarApi<{ reaberto: boolean }>(`/v1/condominio/chamados/${id}/responder`, { corpo: { texto } });
+    const r = await chamarApi<{ reaberto: boolean; mensagemId: string }>(`/v1/condominio/chamados/${id}/responder`, { corpo: { texto } });
     if (!r.ok) {
       setEnviando(false);
       return setErro(r.erro);
     }
-    const problemas = imagens.length ? await enviarImagens(id, imagens) : [];
+    // A resposta já foi; as imagens vão ligadas a ela (decisão E.2).
+    const problemas = imagens.length ? await enviarImagens(id, r.dados.mensagemId, imagens) : [];
     setEnviando(false);
     setTexto("");
     setImagens([]);
-    setAnexar(false);
     setRecado(problemas.length ? { tom: "atencao", texto: `Resposta enviada. ${problemas.join(" ")}` }
       : { tom: "ok", texto: r.dados.reaberto ? "Resposta enviada. O chamado voltou a abrir." : "Resposta enviada." });
     carga.recarregar();
@@ -108,30 +115,17 @@ export function Chamado({ id, falhouImagem }: { id: string; falhouImagem: boolea
               <Bolha key={m.id} lado={m.lado === "TRIADE" ? "MORADOR" : "CONDOMINIO"}
                 rodape={<span>{m.autor}{m.lado === "TRIADE" ? " · TRÍADE" : ""} · {hora(m.criadoEm)}</span>}>
                 <p className="whitespace-pre-wrap">{m.texto}</p>
+                <ImagensDaMensagem imagens={m.imagens} abrir={(a) => void abrirImagem(a)} />
               </Bolha>
             ))}
           </ol>
-          {c.arquivos.length ? (
-            <section aria-label="Imagens do chamado" className="grid gap-2 border-t border-linha pt-3">
-              <span className="t-rotulo">Imagens</span>
-              <ul className="flex flex-wrap gap-2">
-                {c.arquivos.map((a) => (
-                  <li key={a.id}>
-                    {a.situacao === "LIBERADO"
-                      ? <Botao variante="contorno" tamanho="m" onClick={() => void abrirImagem(a.id)}><Icone nome="camera" />Abrir {a.nome}</Botao>
-                      : <span className="t-apoio text-erro">{a.nome}: {a.motivoRecusa ?? "não liberada"}</span>}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
           {c.pode.responder ? (
-            <form onSubmit={responder} noValidate className="grid gap-3 rounded-[16px] border border-linha bg-superficie p-4">
+            <form onSubmit={responder} onPaste={c.pode.enviarImagem ? anexo.colar : undefined} noValidate className="grid gap-2.5 rounded-[16px] border border-linha bg-superficie p-4">
               <CampoAreaTexto id="cha-resposta" rotulo="Responder" maxLength={4000} value={texto} onChange={(e) => setTexto(e.target.value)}
                 erro={camposComErro(erro).includes("texto") ? "Escreva a resposta." : null} />
-              {anexar && c.pode.enviarImagem ? <CampoImagens id="cha-resposta-imagens" imagens={imagens} mudar={setImagens} /> : null}
+              {c.pode.enviarImagem ? anexo.lista : null}
               <div className="flex flex-wrap items-center justify-between gap-2">
-                {c.pode.enviarImagem && !anexar ? <Botao variante="discreto" tamanho="m" onClick={() => setAnexar(true)}><Icone nome="clipe" />Anexar imagem</Botao> : <span />}
+                {c.pode.enviarImagem && anexo.anexar ? <span className="flex items-center">{anexo.anexar}</span> : <span />}
                 <Botao type="submit" variante="contorno" tamanho="m" disabled={enviando}><Icone nome="enviar" />{enviando ? "Enviando…" : "Enviar resposta"}</Botao>
               </div>
             </form>

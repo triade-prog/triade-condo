@@ -2,6 +2,7 @@
 // verdade estão testadas no banco (pgTAP 018) e na API (Deno); aqui só o bastante para a tela:
 // etiquetas, a página sem conta da etiqueta e o link do prestador. Com a troca para o prestador
 // reserva (F5.9, MP-09; pgTAP 028): o prazo para confirmar, confirmar ou recusar pelo link e a troca.
+// No Pronto (decisão E.3), cada envio vem inteiro, com o texto, quem fez e as fotos que valem.
 import type { Route } from "@playwright/test";
 import { conferir, conteudoEnviado } from "./api-falsa-arquivos";
 import type { EstadoManutencao } from "./api-falsa-manutencao";
@@ -22,7 +23,7 @@ export interface LinkFalso {
   prazoNoEnvio?: number; reservaNoEnvio?: string; noRegistro?: { pedidoId: string; protocolo: string; meio: "WHATSAPP" | "EMAIL" };
 }
 interface RegistroFalso {
-  id: string; linkId: string; manutencaoId: string; tipo: "CHEGOU" | "IMPEDIMENTO" | "TERMINOU"; confirmado?: boolean; etiqueta?: { rotulo: string; local: string };
+  id: string; linkId: string; manutencaoId: string; tipo: "CHEGOU" | "IMPEDIMENTO" | "TERMINOU" | "CONFIRMOU" | "RECUSOU"; confirmado?: boolean; etiqueta?: { rotulo: string; local: string };
   impedimento?: string; texto?: string; ficouPendente?: boolean; pendenteTexto?: string; quemFez?: string; em: string; fotos: string[];
 }
 export interface EstadoLinks {
@@ -32,7 +33,7 @@ export interface EstadoLinks {
   etiquetas: EtiquetaFalsa[];
   links: LinkFalso[];
   registros: RegistroFalso[];
-  fotos: { id: string; nome: string; tipo: string; linkId: string; situacao: string }[];
+  fotos: { id: string; nome: string; tipo: string; linkId: string; situacao: string; retirada?: boolean }[];
 }
 
 let n = 0;
@@ -99,6 +100,19 @@ const situacaoLink = (l: LinkFalso, m: EstadoManutencao) => {
   return l.expiraEm < agora() ? "VENCIDO" : "VALE";
 };
 
+const fotoQueVale = (est: EstadoLinks, linkId: string, id: string) =>
+  est.fotos.find((f) => f.id === id && f.linkId === linkId && f.situacao === "LIBERADO" && !f.retirada);
+
+/** Os envios do link, do mais novo ao mais antigo, como a API; a confirmação e a recusa são registros, como no banco. */
+function enviosDoLink(est: EstadoLinks, l: LinkFalso) {
+  const envios = est.registros.filter((r) => r.linkId === l.id).map((r) => ({
+    id: r.id, tipo: r.tipo as string, em: r.em, confirmado: r.confirmado, etiqueta: r.etiqueta?.rotulo, impedimento: r.impedimento, texto: r.texto,
+    quemFez: r.quemFez, ficouPendente: r.ficouPendente, pendenteTexto: r.pendenteTexto,
+    fotos: r.fotos.flatMap((id) => { const f = fotoQueVale(est, l.id, id); return f ? [{ id: f.id, nome: f.nome, tipo: f.tipo }] : []; }),
+  }));
+  return envios.sort((a, b) => b.em.localeCompare(a.em));
+}
+
 /** Sem conta: a etiqueta e o link do prestador. */
 export async function rotasLinksPublicas(route: Route, est: EstadoLinks, man: EstadoManutencao, caminho: string, metodo: string,
   corpo: Record<string, unknown>): Promise<unknown> {
@@ -126,8 +140,17 @@ export async function rotasLinksPublicas(route: Route, est: EstadoLinks, man: Es
       condominio: "Residencial Ipê", para: l.para, tipo: m.tipo, titulo: m.titulo, local: m.local, oQueFazer: l.oQueFazer, quando: l.quando ?? undefined,
       comoEntrar: l.comoEntrar ?? undefined, expiraEm: l.expiraEm, arquivos: [], pedido: l.noRegistro?.protocolo,
       responderAte: l.respondidoEm ? undefined : l.responderAte, resposta: l.resposta,
-      registros: est.registros.filter((r) => r.linkId === l.id).map((r) => ({ tipo: r.tipo, confirmado: r.confirmado, em: r.em, etiqueta: r.etiqueta?.rotulo })),
+      respondidoEm: l.respondidoEm,
+      registros: enviosDoLink(est, l),
     } });
+  }
+  // A foto de um envio deste link, liberada e não retirada pelo condomínio (decisão E.3).
+  const ft = /^\/fotos\/([^/]+)$/.exec(resto);
+  if (ft && metodo === "GET") {
+    if (sit !== "VALE") return erro(route, 422, "VALIDATION_ERROR", { motivo: "LINK_ENCERRADO" });
+    const f = fotoQueVale(est, l.id, ft[1]!);
+    if (!f) return erro(route, 404, "NOT_FOUND");
+    return route.fulfill({ json: { url: `/api/v1/armazenamento/${f.id}`, nome: f.nome, tipo: f.tipo } });
   }
   if (sit !== "VALE") return erro(route, 400, "VALIDATION_ERROR", { motivo: "LINK_ENCERRADO" });
   if (resto === "/confirmar" || resto === "/recusar") {
@@ -137,6 +160,9 @@ export async function rotasLinksPublicas(route: Route, est: EstadoLinks, man: Es
     const texto = String(corpo.texto ?? "").trim();
     if (resto === "/recusar" && texto && texto.length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["texto"] });
     Object.assign(l, { respondidoEm: agora(), resposta: resto === "/confirmar" ? "CONFIRMOU" : "RECUSOU" });
+    // Como o banco (0270): a resposta fica guardada como registro do prestador, com a hora.
+    est.registros.unshift({ id: novoId(), linkId: l.id, manutencaoId: m.id, tipo: resto === "/confirmar" ? "CONFIRMOU" : "RECUSOU", texto: texto || undefined,
+      em: l.respondidoEm!, fotos: [] });
     m.historico.unshift({ acao: resto === "/confirmar" ? "manutencao.prestador_confirmou" : "manutencao.prestador_recusou", em: agora(), autor: null, dados: {} });
     if (resto === "/recusar" && l.reservaId) trocarParaReserva(est, man, l, "RECUSOU");
     return route.fulfill({ json: { ok: true, resposta: l.resposta } });
@@ -251,7 +277,8 @@ export async function rotasLinks(route: Route, est: EstadoLinks, man: EstadoManu
         reservaNoEnvio: !ultimo.responderAte && ultimo.reservaNoEnvio ? { id: ultimo.reservaNoEnvio, nome: man.prestadores.find((p) => p.id === ultimo.reservaNoEnvio)!.nome } : undefined,
         noRegistro: ultimo.noRegistro } : undefined,
       reservaDoCadastro: ((r) => (r ? { id: r.id, nome: r.nome } : undefined))(man.prestadores.find((p) => p.id === prestador?.reservaId && !p.arquivado)),
-      registros: est.registros.filter((r) => r.manutencaoId === m.id).map((r) => ({ ...r, fotos: r.fotos.length })),
+      // Na ficha da manutenção, só o que o prestador contou do serviço (a resposta já vem no link).
+      registros: est.registros.filter((r) => r.manutencaoId === m.id && r.tipo !== "CONFIRMOU" && r.tipo !== "RECUSOU").map((r) => ({ ...r, fotos: r.fotos.length })),
       fotos: est.registros.filter((r) => r.manutencaoId === m.id).flatMap((r) => r.fotos.map((f) => ({ id: f, nome: est.fotos.find((x) => x.id === f)?.nome ?? "foto", registroId: r.id, enviadoEm: r.em }))),
       para: prestador ? { nome: prestador.nome, telefone: prestador.telefone ?? undefined, email: prestador.email ?? undefined } : m.executorTexto ? { nome: m.executorTexto } : undefined,
       local: m.local, sugestao: { oQueFazer: `${m.titulo}. Local: ${m.local}.` },

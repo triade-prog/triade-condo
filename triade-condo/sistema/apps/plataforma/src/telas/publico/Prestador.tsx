@@ -4,7 +4,9 @@
 // fazer e conta o que fez, com fotos. Nada muda sozinho na manutenção: o responsável confere.
 // Antes de chegar, confirma que vai fazer ou diz que não pode (MP-09): com reserva no cadastro,
 // sem resposta no prazo ou com a recusa, o serviço passa para a reserva e este link para. Mandado
-// no registro do pedido (F6.7), mostra o número do pedido para o prestador citar se ligar.
+// no registro do pedido (F6.7), mostra o número do pedido para o prestador citar se ligar. No
+// Pronto, cada envio aparece inteiro, na ordem em que foi mandado: o texto, quem fez, as fotos e a
+// hora (decisão E.3; desenho LK-prestador-pronto-envios-celular). Só enquanto o link vale.
 
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
@@ -12,7 +14,7 @@ import { codigoDaEtiquetaLida, conferirAntesDeEnviar, IMPEDIMENTOS_PRESTADOR, TI
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoTexto, Carregando, camposComErro, chamarApi, Icone, Selo, textoDoErro, type ErroApi, type NomeIcone } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import { subir } from "../pedidos/Arquivos.tsx";
-import type { PrestadorPublico } from "../tipos.ts";
+import type { EnvioDoPrestador, PrestadorPublico } from "../tipos.ts";
 import { Cartao, TelaPublica } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: PrestadorPublico };
@@ -60,7 +62,6 @@ export function Prestador() {
   const passo = modo === "recusar" ? 1 : modo === "chegada" ? 2 : modo === "terminei" ? 3
     : terminou ? 4 : chegada ? 3 : p.resposta && p.resposta !== "RECUSOU" ? 2 : 1;
   const pronto = (texto: string | null) => { setRecado(texto); setModo(null); carregar(); };
-  const confirmouSemHora = p.resposta === "CONFIRMOU" && !registros.some((r) => r.tipo === "CONFIRMOU");
   const abrir = (m: Modo) => { setRecado(null); setFalha(null); setModo(m); };
   const voltar = <button type="button" onClick={() => setModo(null)} className="justify-self-start t-texto font-medium text-violeta-600 hover:underline">Voltar ao serviço</button>;
   const barra = <BarraDosPassos atual={passo} />;
@@ -147,15 +148,11 @@ export function Prestador() {
       <Servico base={base} p={p} resumido />
       <Cartao>
         <h2 className="t-titulo-cartao flex items-center gap-2"><Icone nome="lista" />O que você mandou</h2>
-        <ul className="grid">
-          {/* A confirmação não tem registro com hora: entra como a primeira linha, sem hora. */}
-          {confirmouSemHora ? (
-            <li className="flex gap-3 py-2.5">
-              <span className="ladrilho h-8 w-8" data-tom="ok" aria-hidden="true"><Icone nome="check" /></span>
-              <span className="self-center t-titulo-cartao font-semibold">Confirmou que vai fazer</span>
-            </li>
-          ) : null}
-          {[...registros].reverse().map((r, i) => <LinhaDoRegistro key={`${r.tipo}-${r.em}-${i}`} r={r} primeira={i === 0 && !confirmouSemHora} />)}
+        <ul aria-label="O que você mandou" className="grid">
+          {/* A confirmação é um registro do prestador, com a hora, como os outros envios. */}
+          {ordenados(registros).map((r, i) => (
+            <LinhaDoRegistro key={r.id ?? `${r.tipo}-${r.em}-${i}`} base={base} quando={p.quando} r={r} primeira={i === 0} />
+          ))}
         </ul>
       </Cartao>
       {registros.length < 20 ? (
@@ -226,26 +223,77 @@ function Servico({ base, p, resumido = false }: { base: string; p: PrestadorPubl
   );
 }
 
-const REGISTRO: Record<NonNullable<PrestadorPublico["registros"]>[number]["tipo"], { icone: NomeIcone; tom: string; texto: string }> = {
+const REGISTRO: Record<EnvioDoPrestador["tipo"], { icone: NomeIcone; tom: string; texto: string }> = {
   CONFIRMOU: { icone: "check", tom: "ok", texto: "Confirmou" },
   RECUSOU: { icone: "fechar", tom: "neutro", texto: "Disse que não pode atender" },
   CHEGOU: { icone: "pin", tom: "ok", texto: "Chegou" },
-  IMPEDIMENTO: { icone: "alerta", tom: "atencao", texto: "Contou que não conseguiu fazer" },
-  TERMINOU: { icone: "ferramenta", tom: "violeta", texto: "Terminou" },
+  IMPEDIMENTO: { icone: "alerta", tom: "atencao", texto: "Não consegui terminar" },
+  TERMINOU: { icone: "ferramenta", tom: "violeta", texto: "Terminei" },
 };
 
-/** Uma linha do que o prestador mandou, do mais antigo ao mais novo. */
-function LinhaDoRegistro({ r, primeira }: { r: NonNullable<PrestadorPublico["registros"]>[number]; primeira: boolean }) {
+const HORA_BR = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+const DIA_BR = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
+
+/** "hoje, 14:20" no dia de hoje (horário de Brasília); "22/10, 14:20" nos outros. */
+function quandoFoi(iso: string): string {
+  const d = new Date(iso);
+  const dia = DIA_BR.format(d) === DIA_BR.format(new Date()) ? "hoje" : DIA_BR.format(d);
+  return `${dia}, ${HORA_BR.format(d)}`;
+}
+
+/** Do mais antigo ao mais novo: na ordem em que foi mandado. */
+function ordenados(registros: EnvioDoPrestador[]): EnvioDoPrestador[] {
+  return [...registros].sort((a, b) => Date.parse(a.em) - Date.parse(b.em));
+}
+
+/** Um envio do prestador: o que foi, a hora e quem fez; o texto, as fotos e o que ficou para depois. */
+function LinhaDoRegistro({ base, r, quando, primeira }: { base: string; r: EnvioDoPrestador; quando?: string; primeira: boolean }) {
   const d = REGISTRO[r.tipo];
-  const apoio = r.tipo === "CHEGOU" ? (r.confirmado ? `confirmado pela etiqueta ${r.etiqueta ?? "do local"}` : "informado por você") : null;
+  const contou = r.tipo === "IMPEDIMENTO" || r.tipo === "TERMINOU";
+  const titulo = contou ? [d.texto, quandoFoi(r.em), r.quemFez].filter(Boolean).join(" · ") : `${d.texto} ${quandoFoi(r.em)}`;
+  const apoio = r.tipo === "CHEGOU" ? (r.confirmado ? `confirmado pela etiqueta ${r.etiqueta ?? "do local"}` : "informado por você")
+    : r.tipo === "CONFIRMOU" && quando ? `para ${quando.charAt(0).toLowerCase()}${quando.slice(1)}` : null;
   return (
     <li className={`flex gap-3 py-2.5 ${primeira ? "" : "border-t border-linha"}`}>
       <span className="ladrilho h-8 w-8" data-tom={d.tom} aria-hidden="true"><Icone nome={d.icone} /></span>
-      <span className="grid flex-1 gap-0.5">
-        <span className="t-titulo-cartao font-semibold">{d.texto} {diaHora(r.em)}</span>
+      <span className="grid min-w-0 flex-1 gap-0.5">
+        <span className="t-titulo-cartao font-semibold">{titulo}</span>
         {apoio ? <span className="t-apoio">{apoio}</span> : null}
+        {contou && r.texto ? <span className="t-apoio whitespace-pre-line [overflow-wrap:anywhere]">“{r.texto}”</span> : null}
+        <FotosDoEnvio base={base} fotos={r.fotos ?? []} />
+        {r.tipo === "TERMINOU" ? (
+          <span className="mt-1 t-apoio">{r.ficouPendente ? `Ficou para depois: ${r.pendenteTexto ?? "sem detalhe"}` : "Nada ficou para depois"}</span>
+        ) : null}
       </span>
     </li>
+  );
+}
+
+/** As fotos de um envio, em miniatura; cada uma abre a foto numa aba. */
+function FotosDoEnvio({ base, fotos }: { base: string; fotos: { id: string; nome: string }[] }) {
+  const [falha, setFalha] = useState<string | null>(null);
+  if (!fotos.length) return null;
+  async function abrir(id: string) {
+    setFalha(null);
+    const aba = window.open("about:blank", "_blank");
+    const r = await chamarApi<{ url: string }>(`${base}/fotos/${id}`);
+    if (!r.ok) { aba?.close(); return setFalha("Não deu para abrir a foto agora. Tente de novo."); }
+    if (aba) aba.location.href = r.dados.url;
+  }
+  return (
+    <>
+      <ul aria-label="Fotos do envio" className="mt-1 flex flex-wrap gap-1.5">
+        {fotos.map((f, i) => (
+          <li key={f.id}>
+            <button type="button" className="elo-linha ladrilho relative h-14 w-14 rounded-[10px]" data-tom="violeta" onClick={() => void abrir(f.id)}
+              aria-label={`Abrir a foto ${i + 1}, ${f.nome}`}>
+              <Icone nome="camera" />
+            </button>
+          </li>
+        ))}
+      </ul>
+      {falha ? <span className="t-apoio text-erro" role="alert">{falha}</span> : null}
+    </>
   );
 }
 
