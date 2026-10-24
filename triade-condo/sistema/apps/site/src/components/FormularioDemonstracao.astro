@@ -36,6 +36,9 @@ const temWhatsapp = linkWhatsapp() !== null;
         <label class="consentimento"><input type="checkbox" name="consentimento" id="consentimento" required aria-describedby="erro-consentimento" /><span>Autorizo o uso destes dados só para responder a este pedido, como diz a <a href="/privacidade">política de privacidade</a>. Nada de lista de e-mails. <span class="obrigatorio" aria-hidden="true">*</span></span></label>
         <span class="erro-campo" id="erro-consentimento"></span>
       </div>
+      <input type="hidden" name="pagina" value="" />
+      <input type="hidden" name="utm_source" value="" /><input type="hidden" name="utm_medium" value="" /><input type="hidden" name="utm_campaign" value="" />
+      <input type="hidden" name="utm_term" value="" /><input type="hidden" name="utm_content" value="" />
       <div class="robo" aria-hidden="true"><label for="site">Não preencha</label><input id="site" name="site" tabindex="-1" autocomplete="off" /></div>
       <div class="linha-flex"><button type="submit" class="botao primario" id="enviar">Solicitar demonstração</button></div>
       <p id="promessa" class="suave" style="font-size:14px">Ao enviar, você recebe a confirmação aqui mesmo. Respondemos pelo WhatsApp {promessaRetorno}.</p>
@@ -56,6 +59,10 @@ const temWhatsapp = linkWhatsapp() !== null;
   const form = document.getElementById("form-demonstracao");
   const botao = document.getElementById("enviar");
   const erroGeral = document.getElementById("erro-geral");
+  // De onde veio a visita: a página e os utm_* do endereço vão com o pedido para o Comercial.
+  const busca = new URLSearchParams(location.search);
+  form.elements.namedItem("pagina").value = location.pathname;
+  ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].forEach((k) => { form.elements.namedItem(k).value = (busca.get(k) || "").slice(0, 100); });
   const campos = ["nome", "whatsapp", "condominio", "unidades", "consentimento"];
   const mensagens = {
     nome: "Escreva o seu nome.",
@@ -104,7 +111,8 @@ const temWhatsapp = linkWhatsapp() !== null;
     }
     const d = new FormData(form);
     const comUnidades = (u) => (/pr[ée]dios|unidades/.test(u) ? u : `${u} unidades`);
-    const corpo = { nome: d.get("nome"), whatsapp: d.get("whatsapp"), condominio: d.get("condominio"), unidades: d.get("unidades"), consentimento: d.get("consentimento") === "on", site: d.get("site") };
+    const corpo = { nome: d.get("nome"), whatsapp: d.get("whatsapp"), condominio: d.get("condominio"), unidades: d.get("unidades"), consentimento: d.get("consentimento") === "on", site: d.get("site"),
+      pagina: d.get("pagina"), utm: Object.fromEntries(["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].map((k) => [k, d.get(k) || ""]).filter(([, v]) => v)) };
     botao.disabled = true;
     botao.textContent = "Enviando…";
     try {

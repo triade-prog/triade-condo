@@ -3,6 +3,9 @@
 // Passo 5: a conexão do WhatsApp de cada cliente (piloto pelo Wafly, DC14).
 // Planos e pagamentos (peças C3 e C4): plano, conjuntos contratados e liberados, cobranças e recebimentos.
 // Tabela de preços (0295): faixas, parâmetros, concorrentes, histórico e a sugestão do plano.
+// Retenção de dados (0301): o inventário, as rodadas da rotina e o modo (só contando ou apagando).
+// Comercial (0296): interessados, Meu dia, ficha, conversas, cadências, planilha, modelos e a
+// entrada do site, que vem de fora do repasse e se protege com o segredo próprio do site.
 // Quem pode o quê é decidido no banco (funções internas e clientes atribuídos, PI-10); aqui
 // só se valida a entrada e se fala com o Auth para os convites.
 
@@ -70,11 +73,26 @@ import {
   faixaPrecoSchema,
   parametrosPrecoSchema,
   sugestaoPlanoSchema,
+  modoRetencaoSchema,
+  cadenciaAcaoSchema,
+  cadenciaComercialSchema,
+  conversaComercialSchema,
+  entradaSiteSchema,
+  etapaInteressadoSchema,
+  etapaParametrosSchema,
+  ETAPAS_COMERCIAL,
+  fichaInteressadoSchema,
+  importarComercialSchema,
+  mensagemComercialSchema,
+  naoContatarSchema,
+  novoInteressadoSchema,
+  proximoPassoSchema,
 } from "@triade/domain";
 import type { Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { registrar } from "../_shared/registro.ts";
 import { criarApp } from "../_shared/app.ts";
+import { segredoConfere } from "../_shared/repasse.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
@@ -93,7 +111,12 @@ export interface DepsConsole extends DepsSessao {
    * da api-plataforma, onde chegam os avisos do provedor.
    */
   whatsapp?: { conector: ConectorWhatsapp; chave: CryptoKey; urlAvisos: string };
+  /** Segredo que o site manda no pedido de demonstração (CM-01). Sem ele, a entrada fica fechada. */
+  segredoSite?: string;
 }
+
+/** Cabeçalho com o segredo do site na entrada dos pedidos de demonstração. */
+export const CABECALHO_SITE = "x-site-segredo";
 
 /** Área do acesso excepcional na rota (PI-11). */
 const AREAS_ROTA: Record<string, "PEDIDOS" | "MORADORES" | "COMUNICADOS" | "MANUTENCAO"> = {
@@ -158,7 +181,7 @@ function historicoEquipe(l: LinhaHistorico) {
 }
 
 export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) {
-  const app = criarApp<VarsSessao>("api-console", segredo);
+  const app = criarApp<VarsSessao>("api-console", segredo, [/^\/v1\/site\/interessados$/]);
   const sessao = criarSessao(
     { sistema: "console", cookie: COOKIES_CONSOLE.sessao, autenticadorObrigatorio: true, funcaoAcesso: "acesso_console", urlApp: deps.urlApp },
     deps,
@@ -176,7 +199,8 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/contagens", "/v1/implantacoes",
                       "/v1/suporte-acesso", "/v1/chamados", "/v1/whatsapp", "/v1/whatsapp/*",
-                      "/v1/pagamentos", "/v1/pagamentos/*", "/v1/precos", "/v1/precos/*"]) app.use(rota, sessao.exigirSessao);
+                      "/v1/pagamentos", "/v1/pagamentos/*", "/v1/precos", "/v1/precos/*",
+                      "/v1/retencao", "/v1/retencao/*", "/v1/comercial/*"]) app.use(rota, sessao.exigirSessao);
   const pessoa = (c: Context<VarsSessao>) => c.get("sessao").pessoaId;
 
   // Quem está no Console: nome, funções e o que pode fazer fora de um cliente.
@@ -731,6 +755,15 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json(await rpc("console_arquivar_concorrente", { p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_motivo: d.motivo }));
   });
 
+  // Retenção de dados (F0.11; PT-11, PT-03): o inventário dos 32 tipos, as rodadas da rotina e o
+  // modo. A rotina nasce só contando; ligar a exclusão é da Administração (o banco confere).
+  app.get("/v1/retencao", async (c) => c.json(await rpc("console_retencao", { p_pessoa: pessoa(c) })));
+
+  app.put("/v1/retencao/modo", async (c) => {
+    const d = await lerCorpo(c, modoRetencaoSchema);
+    return c.json(await rpc("console_retencao_modo", { p_pessoa: pessoa(c), p_modo: d.modo, p_versao: d.versao }));
+  });
+
   // Chamados (PI-17, PI-20).
   app.get("/v1/chamados", async (c) => {
     const filtro = c.req.query("filtro") ?? "ABERTOS";
@@ -878,6 +911,114 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const cred = await credenciais(c, "DESCONECTAR");
     await noProvedor("desconectar", () => whatsapp().conector.desconectar(cred));
     return c.json(await rpc("console_whatsapp_situacao", { ...cliente(c), p_situacao: "DESCONECTADO", p_aparelho: null, p_motivo: d.motivo }));
+  });
+
+  // ---------------------------------------------------------------------------------------
+  // Comercial (0296). Quem vê e quem edita, o que cada etapa pede e o que junta são decididos no
+  // banco; aqui só se valida a entrada.
+
+  // Pedido de demonstração do site (CM-01): fora do repasse, com o segredo do site e limite
+  // por WhatsApp. O site continua mandando o e-mail como aviso.
+  app.post("/v1/site/interessados", async (c) => {
+    if (!deps.segredoSite || !segredoConfere(c.req.header(CABECALHO_SITE) ?? null, deps.segredoSite)) throw new ErroDominio("FORBIDDEN");
+    const d = await lerCorpo(c, entradaSiteSchema);
+    if (!(await rpc<boolean>("limite_contar", { p_tipo: "site", p_chave: d.whatsapp }))) throw new ErroDominio("RATE_LIMITED");
+    return c.json(await rpc("comercial_entrada_site", { p_dados: d }), 201);
+  });
+
+  const interessado = (c: Context<VarsSessao>) => ({ p_pessoa: pessoa(c), p_id: idDaRota(c, "id") });
+
+  app.get("/v1/comercial/interessados", async (c) =>
+    c.json(await rpc("comercial_lista", { p_pessoa: pessoa(c), p_busca: (c.req.query("q") ?? "").trim().slice(0, 60) || null })));
+
+  app.get("/v1/comercial/meu-dia", async (c) => c.json(await rpc("comercial_meu_dia", { p_pessoa: pessoa(c) })));
+
+  app.post("/v1/comercial/interessados", async (c) => {
+    const d = await lerCorpo(c, novoInteressadoSchema);
+    return c.json(await rpc("comercial_criar", { p_pessoa: pessoa(c), p_dados: d }), 201);
+  });
+
+  app.get("/v1/comercial/interessados/:id", async (c) => c.json(await rpc("comercial_ficha", interessado(c))));
+
+  app.put("/v1/comercial/interessados/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, fichaInteressadoSchema);
+    return c.json(await rpc("comercial_salvar", { ...interessado(c), p_versao: versao, p_dados: d }));
+  });
+
+  app.post("/v1/comercial/interessados/:id/etapa", async (c) => {
+    const d = await lerCorpo(c, etapaInteressadoSchema);
+    return c.json(await rpc("comercial_mudar_etapa", {
+      ...interessado(c), p_versao: d.versao, p_etapa: d.etapa, p_motivo_perda: d.motivoPerda, p_detalhe: d.detalhe, p_vencedor: d.vencedor,
+      p_retomar_em: d.retomarEm,
+    }));
+  });
+
+  app.post("/v1/comercial/interessados/:id/conversas", async (c) => {
+    const d = await lerCorpo(c, conversaComercialSchema);
+    return c.json(await rpc("comercial_registrar_conversa", {
+      ...interessado(c), p_canal: d.canal, p_resumo: d.resumo, p_respondeu: d.respondeu, p_mensagem: d.mensagemId,
+    }), 201);
+  });
+
+  app.put("/v1/comercial/interessados/:id/proximo-passo", async (c) => {
+    const d = await lerCorpo(c, proximoPassoSchema);
+    return c.json(await rpc("comercial_proximo_passo", {
+      ...interessado(c), p_versao: d.versao, p_texto: d.texto, p_data: d.data, p_hora: d.hora, p_responsavel: d.responsavelId,
+    }));
+  });
+
+  app.post("/v1/comercial/interessados/:id/cadencia", async (c) => {
+    const d = await lerCorpo(c, cadenciaAcaoSchema);
+    return c.json(await rpc("comercial_cadencia", { ...interessado(c), p_acao: d.acao, p_resumo: d.resumo }));
+  });
+
+  // Pedido de exclusão (CM-12): só a Administração; o contato entra na lista de não contatar.
+  app.post("/v1/comercial/interessados/:id/excluir", async (c) => c.json(await rpc("comercial_excluir", interessado(c))));
+
+  app.post("/v1/comercial/nao-contatar", async (c) => {
+    const d = await lerCorpo(c, naoContatarSchema);
+    return c.json(await rpc("comercial_nao_contatar", {
+      p_pessoa: pessoa(c), p_whatsapp: d.whatsapp, p_email: d.email, p_cnpj: d.cnpj, p_observacao: d.observacao,
+    }), 201);
+  });
+
+  // Planilha (CM-24): sem confirmar, só confere; com confirmar, grava o lote.
+  app.post("/v1/comercial/importar", async (c) => {
+    const { confirmar, ...d } = await lerCorpo(c, importarComercialSchema);
+    return c.json(await rpc("comercial_importar", { p_pessoa: pessoa(c), p_dados: d, p_confirmar: confirmar }));
+  });
+
+  // Exportar (CM-12): só a Administração, com registro no histórico.
+  app.get("/v1/comercial/exportar", async (c) => c.json(await rpc("comercial_exportar", { p_pessoa: pessoa(c) })));
+
+  app.get("/v1/comercial/modelos", async (c) => c.json(await rpc("comercial_modelos", { p_pessoa: pessoa(c) })));
+
+  async function salvarMensagem(c: Context<VarsSessao>, id: string | null) {
+    const d = await lerCorpo(c, mensagemComercialSchema);
+    return await rpc("comercial_salvar_mensagem", {
+      p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_etapa: d.etapa, p_titulo: d.titulo, p_texto: d.texto, p_ativa: d.ativa,
+    });
+  }
+  app.post("/v1/comercial/mensagens", async (c) => c.json(await salvarMensagem(c, null), 201));
+  app.put("/v1/comercial/mensagens/:id", async (c) => c.json(await salvarMensagem(c, idDaRota(c, "id"))));
+
+  async function salvarCadencia(c: Context<VarsSessao>, id: string | null) {
+    const d = await lerCorpo(c, cadenciaComercialSchema);
+    return await rpc("comercial_salvar_cadencia", {
+      p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_nome: d.nome, p_gatilho: d.gatilho, p_origem: d.origem, p_passos: d.passos,
+      p_termina_sem_resposta: d.terminaSemResposta, p_ativa: d.ativa,
+    });
+  }
+  app.post("/v1/comercial/cadencias", async (c) => c.json(await salvarCadencia(c, null), 201));
+  app.put("/v1/comercial/cadencias/:id", async (c) => c.json(await salvarCadencia(c, idDaRota(c, "id"))));
+
+  app.put("/v1/comercial/etapas/:etapa", async (c) => {
+    const etapa = c.req.param("etapa");
+    if (!(etapa in ETAPAS_COMERCIAL)) throw new ErroDominio("NOT_FOUND");
+    const d = await lerCorpo(c, etapaParametrosSchema);
+    return c.json(await rpc("comercial_salvar_etapa", {
+      p_pessoa: pessoa(c), p_etapa: etapa, p_versao: d.versao, p_probabilidade: d.probabilidade, p_limite_dias: d.limiteDias,
+    }));
   });
 
   return app;

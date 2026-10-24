@@ -214,6 +214,17 @@ call iniciar_equipe('<id da conta no Auth>', 'Nome da pessoa');
 - **Telas.** Em `apps/plataforma/src/telas/portaria`, com as rotas `/portaria` e `/portaria/unidade?id=`, o cartão Encomendas na ficha da unidade e a página `portaria` em `packages/configuracoes`. Os testes ponta a ponta usam `tests/e2e/api-falsa-portaria.ts`.
 - **Testes.** pgTAP `042_encomendas_test.sql`, Deno `api-plataforma/encomendas_test.ts`, Vitest `encomendas.test.ts` e `menu.test.ts` e Playwright `plataforma-portaria.spec.ts`.
 
+## Privacidade e dados · retenção (0301)
+
+- **Catálogo (PT-11).** `retencao_tipos` guarda os 32 tipos de dado pessoal (28 da Plataforma, 4 do Console) com o que guarda, para que, base legal, quem trata, prazo, o que acontece no fim e a situação (`NA_ROTINA`, `FICA` ou `A_FAZER`). O inventário em `../docs/inventario-dados.md` sai dele. Os prazos são da TRÍADE, iguais para todos; mudar um prazo é migration nova.
+- **Rotina.** `aplicar_retencao()` roda às 03:10 de Brasília (pg_cron `aplicar-retencao`), condomínio por condomínio: `retencao_candidatos(data)` acha o que passou do prazo e `retencao_aplicar_item` apaga o dado e mantém a linha, com a data em que apagou. Nasce `CONTANDO` (`retencao_estado`): só conta, até a Administração ligar `APAGANDO` no Console. Cada rodada grava `retencao.rodada` no histórico do condomínio (só totais por tipo, PT-03) e uma linha em `retencao_rodadas`. Dentro da rotina, as travas de imutabilidade de cada tabela não valem (`retencao_ativa()`, que exige `app.retencao` e o papel `dominio`); fora dela, valem como antes.
+- **Arquivos.** O que tem arquivo deixa de ser servido na hora e o caminho vai para `arquivos_a_apagar`; `chamar_retencao_arquivos` (pg_cron `apagar-arquivos-retencao`, de 15 em 15 minutos entre 03:00 e 05:45) chama `/v1/interno/retencao-arquivos`, que apaga do bucket e marca o resultado (até 5 tentativas).
+- **Guardar por obrigação legal.** `guardas_legais` (pedido, manutenção, encomenda ou pessoa; motivo `PROCESSO`, `SINISTRO`, `AUTORIDADE` ou `OUTRO` com detalhe). O que está guardado a rotina pula; tirar a guarda pede motivo.
+- **Dados de uma pessoa (LGPD art. 18).** Busca pelo telefone (com ou sem o nono dígito) ou pelo e-mail, onde a pessoa aparece, a planilha com tudo e a remoção, recusada para quem mora (`CONTATO_COM_UNIDADE`), tem pedido aberto (`CONTATO_COM_PEDIDO_ABERTO`) ou está guardado (`CONTATO_GUARDADO`). Busca, planilha e remoção vão para o histórico sem o telefone e o e-mail. Permissões `privacidade.ver` e `privacidade.cuidar` (síndico); no Console, `console.retencao.ver` e `console.retencao.ligar` (Administração).
+- **Rotas.** `/v1/condominio/privacidade`, `privacidade/dados-pessoa` (POST, para o telefone não ir na URL), `privacidade/dados-pessoa/:id/planilha` e `.../remover`, `privacidade/guardas`, `privacidade/guardas/:id/tirar` e `privacidade/guardas/:entidade/:id`; `/v1/interno/retencao-arquivos`; no Console, `/v1/retencao` e `/v1/retencao/modo`.
+- **Fica para a F0.12.** Arquivos de pedido, manutenção e prestador com 5 anos, prestadores arquivados, a entrada da equipe que saiu, as sessões, os dados do Console e a exclusão do condomínio no fim do contrato.
+- **Testes.** pgTAP `044_retencao_dados_test.sql`, Deno `api-plataforma/privacidade_test.ts` e `api-console/retencao_test.ts`, Vitest `privacidade.test.ts`.
+
 ## Rodar
 
 Requisitos: Node 22, pnpm 10 e PostgreSQL 16 ou 17 com pgTAP (`postgresql-17-pgtap`).

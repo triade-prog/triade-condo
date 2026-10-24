@@ -72,6 +72,19 @@ function datasDeFora(hoje: string, pode: (a: string) => boolean) {
       ? [{ data: somar(hoje, 3), titulo: "Apólice do seguro", fonte: "DOCUMENTO", id: "6b1c2d3e-4f5a-4b6c-8d7e-000000000003", restrito: true }] : []),
     ...(pode("assembleias.ver") ? [{ data: somar(hoje, 4), titulo: "Assembleia geral ordinária", fonte: "ASSEMBLEIA", id: "6b1c2d3e-4f5a-4b6c-8d7e-000000000004",
       horaInicio: "19:00", segundaChamada: "19:30", local: "Salão de festas", estado: "CONVOCADA" }] : []),
+    ...(pode("enquetes.ver") ? enquetesAbertas(hoje).map((e) => ({ ...e, fonte: "ENQUETE" })) : []),
+  ];
+}
+
+/** As enquetes abertas (R7.2): uma que fecha hoje, uma secreta que fecha em 5 dias e uma que fecha bem depois do período. */
+function enquetesAbertas(hoje: string) {
+  return [
+    { id: "6b1c2d3e-4f5a-4b6c-8d7e-000000000007", titulo: "Troca do portão: qual horário de obra?", data: hoje, horaInicio: "23:59",
+      responderam: 31, total: 48, secreta: false, por: "UNIDADE" },
+    { id: "6b1c2d3e-4f5a-4b6c-8d7e-000000000005", titulo: "Qual horário para a academia aos domingos?", data: somar(hoje, 5), horaInicio: "22:30",
+      responderam: 3, total: 5, secreta: true, por: "UNIDADE" },
+    { id: "6b1c2d3e-4f5a-4b6c-8d7e-000000000006", titulo: "Que cor para a pintura da fachada?", data: somar(hoje, 47), horaInicio: "23:59",
+      responderam: 12, total: 48, secreta: false, por: "UNIDADE" },
   ];
 }
 
@@ -156,7 +169,8 @@ export async function rotasAgenda(route: Route, ag: EstadoAgenda, ctx: {
     const lista = ag.compromissos.filter((c) => c.data >= de && c.data <= ate)
       .sort((a, b) => a.data.localeCompare(b.data) || (a.horaInicio ?? "").localeCompare(b.horaInicio ?? ""));
     return route.fulfill({ json: {
-      compromissos: lista.map(json), hoje, pode: { editar: pode("agenda.editar") },
+      compromissos: lista.map(json), hoje, pode: { editar: pode("agenda.editar"), enquetes: pode("enquetes.ver") },
+      enquetesAbertas: ctx.datasDeFora && pode("enquetes.ver") ? enquetesAbertas(hoje) : [],
       datas: [
         ...(pode("config.ver") ? ctx.feriados.filter((f) => f.data >= de && f.data <= ate).map((f) => ({ data: f.data, titulo: f.descricao, fonte: "FERIADO" })) : []),
         ...(ctx.datasDeFora ? datasDeFora(hoje, pode).filter((d) => d.data >= de && d.data <= ate) : []),

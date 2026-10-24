@@ -283,6 +283,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   LUGAR_REPETIDO: "Já existe um lugar com este nome.",
   LIMITE_LUGARES: "O prédio já tem 30 lugares em uso. Tire de uso um que não serve mais.",
   ULTIMO_LUGAR: "O prédio precisa de pelo menos um lugar em uso para guardar as encomendas.",
+<<<<<<< HEAD
   // Decisões e aprovações: o conselho e as despesas (0303).
   CONSELHO_VAZIO: "Ainda não há conselho com titular de mandato em dia. Inclua os membros em Pessoas › Conselho.",
   SEM_QUORUM_POSSIVEL: "Não há titulares em dia para o quórum das Regras. Confira o conselho ou mude o quórum.",
@@ -313,6 +314,26 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   COMPROVANTE_EM_USO: "É o comprovante do pagamento. Desfaça o pagamento antes de tirar.",
   SUPLENTE_NAO_VOTA: "Suplente não vota. O voto dado antes de passar a suplente continua valendo.",
   VOTO_PENDENTE: "Ainda tem voto a dar numa votação aberta. Espere a votação fechar para passar a suplente.",
+=======
+  // Privacidade e dados (0301).
+  JA_GUARDADO: "Este item já está guardado por obrigação legal.",
+  GUARDA_RETIRADA: "A guarda já foi retirada. Atualize a página.",
+  CONTATO_COM_PEDIDO_ABERTO: "Esta pessoa tem pedido aberto. Encerre o pedido antes de remover os dados.",
+  CONTATO_GUARDADO: "Esta pessoa está guardada por obrigação legal. Tire a guarda, com o motivo, antes de remover os dados.",
+  // Comercial (0296).
+  COMERCIAL_SEM_CLIENTE: "A função Comercial não atende cliente. Escolha outra função para atribuir.",
+  NAO_CONTATAR: "Este contato está na lista de não contatar. Ele não entra no funil.",
+  DUPLICADO: "Este contato já é de outro interessado. Abra o interessado que já existe.",
+  FALTA_PARA_ETAPA: "Falta o que a etapa pede. Preencha os campos marcados na ficha e tente de novo.",
+  SEM_OPTIN: "Esta pessoa não aceitou mensagens pelo WhatsApp. Os botões de mensagem pronta ficam desligados; dá para ligar.",
+  SEM_CADENCIA: "Não há cadência em andamento para este interessado.",
+  PARECIDOS_SEM_DECISAO: "Decida juntar ou criar cada linha parecida antes de importar.",
+  ETAPA_FECHADA: "Este interessado já foi fechado. Volte a etapa para um passo aberto antes de marcar o próximo passo.",
+  ANONIMIZADO: "Os dados deste interessado foram apagados. Ficam só os números do funil.",
+  ORIGEM_FIXA: "A primeira origem do interessado não muda.",
+  SO_INSERCAO: "O que foi registrado não se altera nem se apaga. Registre outra conversa para corrigir.",
+  CADENCIA_REPETIDA: "Já há uma cadência ativa para esta etapa e esta origem. Desligue a outra antes.",
+>>>>>>> origin/main
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

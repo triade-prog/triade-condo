@@ -944,8 +944,8 @@ export interface CompromissoAgenda {
 export interface DataDeOutraTela {
   data: string;
   titulo: string;
-  fonte: "FERIADO" | "PREVENTIVA" | "RESERVA" | "CONTRATO" | "DOCUMENTO" | "ASSEMBLEIA";
-  /** Na preventiva, na reserva, no contrato (o prestador), no documento e na assembleia, o id dela. */
+  fonte: "FERIADO" | "PREVENTIVA" | "RESERVA" | "CONTRATO" | "DOCUMENTO" | "ASSEMBLEIA" | "ENQUETE";
+  /** Na preventiva, na reserva, no contrato (o prestador), no documento, na assembleia e na enquete, o id dela. */
   id?: string;
   /** No documento (AG-09): se é restrito. */
   restrito?: boolean;
@@ -957,13 +957,32 @@ export interface DataDeOutraTela {
   horaInicio?: string;
   horaFim?: string;
   quem?: string;
+  /** Na enquete aberta (R7.2), no dia e na hora em que fecha: quantos responderam, de quantos, e se é secreta. */
+  responderam?: number;
+  total?: number;
+  secreta?: boolean;
+  por?: "UNIDADE" | "PESSOA";
+}
+
+/** Uma enquete aberta na faixa do alto da Agenda (R7.2): só contagens, nunca o que se escolheu. */
+export interface EnqueteNaAgenda {
+  id: string;
+  titulo: string;
+  data: string;
+  horaInicio: string;
+  responderam: number;
+  total: number;
+  secreta: boolean;
+  por: "UNIDADE" | "PESSOA";
 }
 
 export interface Agenda {
   compromissos: CompromissoAgenda[];
   datas: DataDeOutraTela[];
+  /** Todas as enquetes abertas, para quem vê as enquetes (R7.2). */
+  enquetesAbertas?: EnqueteNaAgenda[];
   hoje: string;
-  pode: { editar: boolean };
+  pode: { editar: boolean; enquetes?: boolean };
 }
 
 export interface OpcoesAgenda {

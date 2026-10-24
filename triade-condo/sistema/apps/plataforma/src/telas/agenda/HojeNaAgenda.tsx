@@ -1,6 +1,7 @@
 "use client";
 // Hoje na agenda, no início (design "Telas da Agenda", tela 6; AG-03, TR-11): o que está
-// marcado para hoje e uma linha sobre os próximos dias.
+// marcado para hoje, com a enquete que fecha hoje, e uma linha sobre os próximos dias e as
+// enquetes abertas (R7.2).
 
 import { diaDaSemana, somarDias } from "@triade/domain";
 import { Carregando, ErroCarregar } from "@triade/ui";
@@ -31,8 +32,8 @@ function Conteudo({ dados }: { dados: Agenda }) {
   const hoje = dados.hoje;
   const ativos = dados.compromissos.filter((c) => c.estado !== "CANCELADO");
   const deHoje = ativos.filter((c) => c.data === hoje);
-  // As reservas confirmadas e as assembleias de hoje (peça R12, AG-09), entre os compromissos pela hora.
-  const reservas = dados.datas.filter((d) => d.data === hoje && (d.fonte === "RESERVA" || d.fonte === "ASSEMBLEIA"));
+  // As reservas confirmadas, as assembleias e as enquetes que fecham hoje (peça R12, AG-09, R7.2), entre os compromissos pela hora.
+  const reservas = dados.datas.filter((d) => d.data === hoje && (d.fonte === "RESERVA" || d.fonte === "ASSEMBLEIA" || d.fonte === "ENQUETE"));
   const amanha = somarDias(hoje, 1);
   const nAmanha = ativos.filter((c) => c.data === amanha).length;
   const proximo = ativos.find((c) => c.data > amanha);
@@ -41,6 +42,8 @@ function Conteudo({ dados }: { dados: Agenda }) {
     const n = ativos.filter((c) => c.data === proximo.data).length;
     linha.push(`${diaDaSemana(proximo.data).replace(/^./, (x) => x.toUpperCase())}: ${quantos(n)}.`);
   }
+  const abertas = dados.enquetesAbertas?.length ?? 0;
+  if (abertas) linha.push(`Enquetes abertas: ${abertas}.`);
   return (
     <>
       {deHoje.length + reservas.length ? (
