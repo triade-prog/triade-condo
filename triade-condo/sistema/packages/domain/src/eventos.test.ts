@@ -13,6 +13,18 @@ describe("histórico legível (PI-12)", () => {
       .toBe("Funções revistas: Implantação → Suporte");
   });
 
+  it("na equipe, diz de quem o evento fala quando o nome vem (D4.28)", () => {
+    const alvo = { id: "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d", nome: "Inês" };
+    expect(descreverEvento({ acao: "equipe.membro_cadastrado", entidade: "pessoa", dados: { funcoes: ["IMPLANTACAO"] }, alvo }))
+      .toBe("Inês entrou na equipe · Implantação");
+    expect(descreverEvento({ acao: "equipe.membro_desativado", entidade: "pessoa", dados: {}, alvo })).toBe("Inês saiu da equipe");
+    expect(descreverEvento({ acao: "equipe.funcoes_alteradas", entidade: "pessoa", dados: { antes: ["IMPLANTACAO"], depois: ["IMPLANTACAO", "SUPORTE"] }, alvo }))
+      .toBe("Funções de Inês revistas · Implantação → Implantação, Suporte");
+    expect(descreverEvento({ acao: "equipe.membro_cadastrado", entidade: "pessoa", dados: { funcoes: ["SUPORTE"] }, alvo: null }))
+      .toBe("Pessoa cadastrada na equipe · Suporte");
+    expect(descreverEvento({ acao: "equipe.membro_desativado", entidade: "pessoa", dados: {} })).toBe("Pessoa desativada da equipe");
+  });
+
   it("evento desconhecido aparece pelo código, sem quebrar", () => {
     expect(descreverEvento({ acao: "algo.novo", entidade: "x", dados: {} })).toBe("algo.novo");
   });

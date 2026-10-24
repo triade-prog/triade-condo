@@ -259,6 +259,13 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   NAO_A_CONFERIR: "Só se devolve o que ainda está a conferir.",
   VALOR_A_DEFINIR: "Defina o valor da cobrança antes de ajustar.",
   VALOR_DEFINIDO: "O valor já está definido. Para mudar, faça um ajuste com motivo.",
+  // Tabela de preços (0295).
+  FAIXA_SOB_CONSULTA: "Acima de 400 unidades o preço é sob consulta e fica sem valores na tabela.",
+  FUNDADOR_SO_MENSAL: "O preço de fundador é só no ciclo mensal. No anual, use a tabela cheia.",
+  FUNDADOR_SEM_IMPLANTACAO: "O preço de fundador não tem implantação. Marque Implantação sem cobrança ou use a tabela cheia.",
+  SEM_VAGA_FUNDADOR: "As vagas de fundador acabaram. Use a tabela cheia ou aumente as vagas na Tabela de preços.",
+  VAGAS_OCUPADAS: "Já há mais vagas de fundador ocupadas do que este número. Libere uma vaga antes de diminuir.",
+  CONCORRENTE_ARQUIVADO: "Este concorrente está arquivado e não muda mais. Cadastre de novo, se for o caso.",
   // Portaria 1 · Encomendas (0299).
   ENCOMENDA_ENTREGUE: "Esta encomenda já foi entregue. Atualize a lista.",
   LUGAR_FORA_DE_USO: "Este lugar saiu de uso. Escolha outro lugar.",

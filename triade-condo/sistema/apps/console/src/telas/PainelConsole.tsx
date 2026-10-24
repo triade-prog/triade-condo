@@ -3,7 +3,8 @@
 // console-menu-celular; rodada Console, decisões B.1 e C.1 de 23/10/2026): a mesma da Plataforma.
 // No alto, a marca com "Console TRÍADE" e o selo laranja "Admin", a busca de clientes e a pessoa,
 // que abre o menu com as funções e Sair. Sem sino: o Agora do Início faz esse papel. No
-// computador, a lateral com o Início e os grupos Clientes, Financeiro (Pagamentos, 0291), Suporte
+// computador, a lateral com o Início e os grupos Clientes, Financeiro (Pagamentos, 0291, e Tabela
+// de preços, 0295), Suporte
 // e Equipe, com o número do
 // que está aberto em laranja; no celular, a barra de baixo com Início, Clientes, Chamados e Mais.
 // Implantações saiu do menu e virou o filtro Em implantação da carteira.
@@ -45,6 +46,8 @@ const ITENS: ItemDoMenu[] = [
   { href: "/clientes", texto: "Carteira de clientes", curto: "Clientes", icone: "predio", grupo: "Clientes", atual: (c) => c.startsWith("/clientes"), ve: () => true, atalho: true },
   { href: "/pagamentos", texto: "Pagamentos", icone: "dinheiro", grupo: "Financeiro", atual: (c) => c.startsWith("/pagamentos"),
     ve: (s) => s.acoes.includes("console.pagamentos.ver") },
+  { href: "/precos", texto: "Tabela de preços", icone: "etiqueta", grupo: "Financeiro", atual: (c) => c.startsWith("/precos"),
+    ve: (s) => s.acoes.includes("console.precos.ver") },
   { href: "/chamados", texto: "Chamados", icone: "balao", grupo: "Suporte", atual: (c) => c.startsWith("/chamados"), ve: atende, contagem: (n) => n.chamados, atalho: true },
   { href: "/suporte-acesso", texto: "Suporte de acesso", icone: "cadeado", grupo: "Suporte", atual: (c) => c.startsWith("/suporte-acesso"),
     ve: (s) => temFuncao(s, "ADMINISTRACAO", "SUPORTE"), contagem: (n) => n.suporteAcesso },

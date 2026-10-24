@@ -351,6 +351,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | PI-18 | Recuperação administrativa de emergência: suplente designado e códigos de recuperação guardados fora do painel, com uso registrado; cobre a perda do único administrador | [A] |
 | PI-19 | Ao liberar um conjunto, prévia do que o síndico daquele condomínio passará a ter | [A] |
 | PI-20 | **Abrir chamado de suporte** pela plataforma: tipo (dúvida, problema ou sugestão), área do sistema, título, descrição e print ou vídeo, com imagem colada direto (Ctrl+V). A IA revisa o texto antes do envio, para que chegue claro e completo. Segue a separação do PI-17 (SeuCondomínio) | [BR] |
+| PI-21 | **Tabela de preços no Console**: a TRÍADE guarda e ajusta no Console a tabela por faixa de unidades ativas (até 40, 41 a 100, 101 a 200, 201 a 400; acima de 400 sob consulta), com o preço de fundador (só no mensal, 12 meses, vagas limitadas), a tabela cheia e a implantação de cada faixa, os meses pagos no anual e as parcelas da implantação. Só Administração e Financeiro mudam, sempre com motivo e histórico; valor vazio fica "Valor a definir", nunca zero. Na mesma tela, o simulador "Quanto custaria para o prédio" (com os preços públicos dos concorrentes, cadastrados à mão com fonte e data) e as faixas com a implantação explicada, prontas para copiar na proposta. No plano do cliente, "Usar a tabela" preenche faixa, valor e implantação sem gravar; mudar a tabela nunca mexe em quem já tem plano. O síndico não vê nada disso (PI-06). Substitui a regra de que nenhum preço ficava no sistema | [C] [BR] |
 
 ---
 
@@ -500,14 +501,14 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 13. Áreas comuns e vida em condomínio | 7 |
 | 14. Transparência e indicadores | 11 |
 | 15. Continuidade e troca de síndico | 4 |
-| 16. Painel interno TRÍADE | 20 |
+| 16. Painel interno TRÍADE | 21 |
 | 17. Serviços humanos | 11 |
 | 18. Negócio, planos e preço | 21 |
 | 19. Empresa e marca | 8 |
 | 20. Princípios técnicos | 18 |
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
-| **Total** | **312** |
+| **Total** | **313** |
 
 ---
 
@@ -657,6 +658,20 @@ Pedido pela Carolina durante a rodada do novo frontend: ver o mural dentro do pa
 - Mostra o mesmo conteúdo do link do prédio (CD-12): só o que é para todo o condomínio, sem nomes, telefones ou unidades nos avisos.
 - A contagem de aberturas da CD-12 continua contando só quem abre o link; o painel tem leitura própria.
 - Os classificados continuam com o aviso de que o condomínio não vende nem garante nada (AC-05). Uma foto por anúncio, como hoje; mais fotos ficam para depois, porque pedem mudança no banco.
+
+---
+
+## Pedido da Carolina sobre o preço no Console (24/10/2026)
+
+Pedido pela Carolina ao fechar a precificação (decisões D1 a D7 da pesquisa de preço): ajustar o preço dentro do Console e levar para lá os simuladores da pesquisa, "Quanto custaria para o seu prédio" e "Faixas de unidades com implantação explicada". Antes de fechar os valores, ela pediu uma busca web atual dos preços dos concorrentes.
+
+**1 ideia nova:** PI-21 (tabela de preços no Console).
+
+**Como conversa com o que já está decidido:**
+- Troca a regra da R2 (planos e cobrança) de que nenhum preço ficava no sistema: agora a tabela fica no Console, mas o plano de cada cliente continua com o valor dele e só muda à mão (PI-07).
+- Um plano por faixa no lançamento (NG-01 fica para depois): "Usar a tabela" marca todos os conjuntos como contratados.
+- As 3 parcelas da implantação são só informação; a cobrança da implantação continua única (PI-07).
+- O site (EM-04) ainda repete os valores no código dele; ler da tabela fica para depois.
 
 ---
 

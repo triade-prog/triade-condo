@@ -18,7 +18,7 @@ function montar() {
     registrar_acesso: () => 1,
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2 }),
     console_plano: () => ({ conjuntos: [], unidadesAtivas: 0, permissoes: [] }),
-    console_salvar_plano: (a) => ({ nome: a.p_nome, versao: 1 }),
+    console_salvar_plano_tabela: (a) => ({ nome: a.p_nome, versao: 1 }),
     console_contratar_conjunto: () => ({ codigo: "AGENDA", contratado: true }),
     console_liberar_conjunto: () => erroBanco("TC422", { motivo: "NAO_CONTRATADO" }),
     console_testar_conjunto: () => ({ codigo: "VIDA", estado: "TESTE" }),
@@ -64,10 +64,10 @@ Deno.test("NG-01: o plano aceita valor vazio (a definir) e faixa de unidades; nu
   assertEquals((await m.pedir(`${base}/plano`, { cookie })).status, 200);
   assertEquals(chamada(m, "console_plano"), { p_pessoa: CAROLINA, p_condominio: IPE });
   assertEquals((await m.pedir(`${base}/plano`, { cookie, metodo: "PUT", corpo: plano })).status, 200);
-  assertEquals(chamada(m, "console_salvar_plano"), {
+  assertEquals(chamada(m, "console_salvar_plano_tabela"), {
     p_pessoa: CAROLINA, p_condominio: IPE, p_versao: null, p_nome: "Fundador", p_unidades_de: 1, p_unidades_ate: 40, p_valor: null,
     p_ciclo: "MENSAL", p_dia_vencimento: 10, p_implantacao_valor: null, p_implantacao_sem_cobranca: true, p_implantacao_referencia: null,
-    p_inicio_competencia: "2026-11-01",
+    p_inicio_competencia: "2026-11-01", p_tabela: null,
   });
   for (const ruim of [{ valor: 0 }, { valor: 129.9 }, { unidadesDe: 50 }, { diaVencimento: 31 }, { ciclo: "SEMANAL" }]) {
     assertEquals((await erro(await m.pedir(`${base}/plano`, { cookie, metodo: "PUT", corpo: { ...plano, ...ruim } }))).codigo, "VALIDATION_ERROR",

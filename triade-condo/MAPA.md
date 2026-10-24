@@ -10,16 +10,16 @@ Versão visual e interativa (com busca e filtro por forma): [`mapa.html`](mapa.h
 | Parte | Peças | Ideias |
 |---|---|---|
 | Plataforma do síndico | 16 | 202 |
-| Console TRÍADE | 9 | 38 |
+| Console TRÍADE | 9 | 39 |
 | Base comum | 6 | 38 |
 | Fora do software | 4 | 34 |
-| **Total** | **35** | **312** |
+| **Total** | **35** | **313** |
 
 ## Mapa mental
 
 ```mermaid
 mindmap
-  root((TRÍADE Condo · 312 ideias))
+  root((TRÍADE Condo · 313 ideias))
     Plataforma do síndico · 202
       Painel web do síndico
         Início · 4
@@ -40,11 +40,11 @@ mindmap
         WhatsApp do morador · 24
       Participação sem conta
         Links e QR · 7
-    Console TRÍADE · 38
+    Console TRÍADE · 39
       Carteira de clientes · 4
       Implantação · 5
       Planos e liberação · 6
-      Pagamentos dos clientes · 2
+      Pagamentos dos clientes · 3
       Suporte e acessos · 5
       Serviços contratados · 8
       Equipe interna · 3
@@ -96,7 +96,7 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Carteira de clientes | V-10; PI-01, 02, 06 |
 | Implantação | W-01, 03; PI-04, 05; SH-01 |
 | Planos e liberação | CF-11; PI-03, 16, 19; NG-01, 06 |
-| Pagamentos dos clientes | PI-07, 08 |
+| Pagamentos dos clientes | PI-07, 08, 21 |
 | Suporte e acessos | PI-09, 11, 17, 20; CT-01 |
 | Serviços contratados | SH-02 a 06, 09, 10; PI-14 |
 | Equipe interna | PI-10, 12, 18 |
@@ -506,7 +506,7 @@ O que cada cliente contratou e o que está liberado para ele.
 | PI-03 | Recurso só disponível se contratado E liberado; liberação registrada com autor, data e referência | Regra |
 | PI-16 | Suspender um recurso sem perder o histórico | Regra |
 
-#### Pagamentos dos clientes (2)
+#### Pagamentos dos clientes (3)
 
 O que cada cliente pagou à TRÍADE, mês a mês.
 
@@ -514,6 +514,7 @@ O que cada cliente pagou à TRÍADE, mês a mês.
 |---|---|---|
 | PI-07 | Pagamentos dos clientes à TRÍADE: obrigação por competência, recebimentos, conferência, ajustes, parcial; valor desco… | Aba |
 | PI-08 | Atraso de pagamento não bloqueia o cliente automaticamente | Regra |
+| PI-21 | Tabela de preços por faixa no Console, com simulador e Usar a tabela no plano do cliente; mudar a tabela não mexe em plano existente | Aba |
 
 #### Suporte e acessos (5)
 
@@ -731,7 +732,7 @@ Ferramentas do planejamento, guardadas no arquivo.
 
 | Forma | Ideias |
 |---|---|
-| Aba | 19 |
+| Aba | 20 |
 | Função | 123 |
 | Regra | 80 |
 | Aviso | 10 |

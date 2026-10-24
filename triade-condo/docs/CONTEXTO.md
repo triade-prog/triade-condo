@@ -23,7 +23,7 @@ O `arquivo/` **não é base de construção**: o que for útil de lá entra prim
 
 ## Decisões fechadas
 
-As mesmas decisões estão no painel de execução (DC1 a DC15). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
+As mesmas decisões estão no painel de execução (DC1 a DC16). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
 
 - **DC1 · Dois sistemas.** Plataforma do síndico (painel web do síndico, WhatsApp do morador e acessos por link ou QR) e Console TRÍADE (sistema interno da equipe). A Base comum são as regras que os dois seguem por baixo; não é um terceiro sistema.
 - **DC2 · O cliente é o condomínio.** É a unidade que contrata e a unidade de separação dos dados: toda informação pertence a um condomínio e nunca aparece em outro (PT-01). Uma pessoa pode ter vínculo com mais de um condomínio (MU-04), o que atende o síndico profissional.
@@ -58,6 +58,13 @@ As mesmas decisões estão no painel de execução (DC1 a DC15). Mudar qualquer 
   - Ficha sem abas, com o topo do item, o cartão do próximo retorno e o histórico em linha do tempo; lista com abas que contam e "Pede atenção".
   - Uma cor por situação; prioridade só quando Alta ou Urgente.
   - O material visual antigo saiu do repositório (ver `docs/design/LEIA-ME.md`). A construção vem em blocos, cada um com o seu PR (D4).
+- **DC16 · Preço por faixa de unidades (Carolina, 24/10/2026).** Fecha as decisões D1 a D7 da pesquisa de preço (NG-02 a NG-07, NG-15 a NG-17), conferida na web em 24/10/2026.
+  - Cobrança por faixa de unidades ativas (NG-03, NG-16): até 40, 41 a 100, 101 a 200 e 201 a 400; acima de 400 e administradoras, sob consulta.
+  - Agora, preço de condomínio fundador: R$ 129, 229, 349 e 549 por mês, sem implantação, só no mensal, travado por 12 meses e para 5 condomínios no máximo.
+  - Tabela cheia já cadastrada: R$ 199, 349, 549 e 849 por mês, implantação de R$ 600, 900, 1.400 e 2.000 (até 3 vezes no mensal, isenta no anual), anual com 12 meses pelo preço de 11. Passa a valer quando a TRÍADE trocar no Console, depois do WhatsApp oficial e da primeira IA.
+  - Preço aberto no site, "a partir de", com a tabela e a implantação explicada (D3, EM-07). Um plano por faixa, com tudo o que está pronto; os conjuntos viram adicionais depois (D5). Avisos do atendimento pelo WhatsApp incluídos; comunicados pelo WhatsApp com franquia mensal, nada ilimitado (D6). Começo por demonstração e teste assistido, sem teste grátis aberto (D7).
+  - A tabela fica no Console (PI-21, E1 a E4 e F1 a F4): só Administração e Financeiro mudam, com motivo e histórico; "Usar a tabela" preenche o plano do cliente sem gravar e marca todos os conjuntos; mudar a tabela nunca mexe em quem já tem plano. Substitui a regra da R2 de que nenhum preço ficava no sistema.
+  - Pendentes: o desconto de síndico profissional (NG-05, proposto 15% a partir do 2º condomínio) e a franquia exata de comunicados, que sai da planilha de custo (NG-13) quando o WhatsApp oficial estiver no ar.
 
 ## Como as ideias viram código
 

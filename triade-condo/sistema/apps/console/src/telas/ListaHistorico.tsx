@@ -17,6 +17,8 @@ export interface Evento {
   entidade: string;
   dados: Record<string, unknown>;
   interno?: boolean;
+  /** Em quem a mudança caiu (D4.28): o nome entra na frase, "Inês entrou na equipe". */
+  alvo?: { id: string; nome: string } | null;
 }
 
 const PAGINA = 50;
