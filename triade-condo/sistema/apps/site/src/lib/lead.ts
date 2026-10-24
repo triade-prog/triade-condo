@@ -1,6 +1,6 @@
 // Pedido de demonstração: validação, texto do e-mail e envio pelo Resend.
-// Os pedidos vão por e-mail para a equipe comercial (decisão de 22/10/2026: e-mail primeiro;
-// a aba "Interessados" no Console fica para depois e pede ideia nova).
+// Desde a 0296 (CM-01), o pedido também entra como interessado no Comercial do Console, pela rota
+// protegida da api-console. O e-mail continua como aviso; o pedido vale se um dos dois chegou.
 
 import { opcoesUnidades } from "../dados/oferta";
 
@@ -67,6 +67,58 @@ export function emailDoPedido(p: Pedido, recebidoEm: Date) {
     .map(([k, v]) => `<tr><td style="color:#5e5475">${escapar(k)}</td><td><b>${escapar(v)}</b></td></tr>`)
     .join("")}</table><p style="font-family:sans-serif;font-size:14px">Prometemos responder pelo WhatsApp até o fim do próximo dia útil. <a href="https://wa.me/${p.whatsapp}">Abrir a conversa</a>.</p>`;
   return { assunto, texto, html };
+}
+
+/** O texto que a pessoa viu ao marcar a autorização; vai junto para a base legal do interessado. */
+export const TEXTO_CONSENTIMENTO = "Autorizo o uso destes dados só para responder a este pedido, como diz a política de privacidade. Nada de lista de e-mails.";
+
+const CHAVES_UTM = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const;
+
+/** Só os utm_* conhecidos, curtos. Vêm do formulário (campos escondidos) ou do JSON. */
+export function lerUtm(dados: Record<string, unknown>): Partial<Record<(typeof CHAVES_UTM)[number], string>> | null {
+  const fonte = typeof dados.utm === "object" && dados.utm ? (dados.utm as Record<string, unknown>) : dados;
+  const utm: Partial<Record<(typeof CHAVES_UTM)[number], string>> = {};
+  for (const k of CHAVES_UTM) {
+    const v = limpar(fonte[k]).slice(0, 100);
+    if (v) utm[k] = v;
+  }
+  return Object.keys(utm).length ? utm : null;
+}
+
+/** A faixa do Comercial a partir do rótulo curto do formulário. */
+export function faixaDoPedido(unidades: string): string | null {
+  const t = unidades.toLowerCase();
+  if (t.startsWith("até 40")) return "ATE_40";
+  if (t.startsWith("41 a 100")) return "DE_41_A_100";
+  if (t.startsWith("101 a 200")) return "DE_101_A_200";
+  if (t.startsWith("201 a 400")) return "DE_201_A_400";
+  if (t.includes("400")) return "ACIMA_DE_400";
+  return null;
+}
+
+export type EntradaComercial = { ok: true } | { ok: false; motivo: "sem-configuracao" | "falha-envio" };
+
+/** Grava o pedido no Comercial do Console (rota /v1/site/interessados, com o segredo do site). */
+export async function enviarAoComercial(
+  p: Pedido,
+  extra: { utm: ReturnType<typeof lerUtm>; pagina?: string | null },
+  env: { SUPABASE_FUNCTIONS_URL?: string; SITE_SEGREDO?: string },
+  buscar: typeof fetch = fetch,
+): Promise<EntradaComercial> {
+  if (!env.SUPABASE_FUNCTIONS_URL || !env.SITE_SEGREDO) return { ok: false, motivo: "sem-configuracao" };
+  try {
+    const r = await buscar(`${env.SUPABASE_FUNCTIONS_URL.replace(/\/$/, "")}/api-console/v1/site/interessados`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-site-segredo": env.SITE_SEGREDO },
+      body: JSON.stringify({
+        nome: p.nome, whatsapp: p.whatsapp, condominio: p.condominio, faixa: faixaDoPedido(p.unidades), unidadesTexto: p.unidades,
+        consentimento: true, consentimentoTexto: TEXTO_CONSENTIMENTO, pagina: extra.pagina?.slice(0, 200) || null, utm: extra.utm,
+      }),
+    });
+    return r.ok ? { ok: true } : { ok: false, motivo: "falha-envio" };
+  } catch {
+    return { ok: false, motivo: "falha-envio" };
+  }
 }
 
 export type Envio = { ok: true } | { ok: false; motivo: "sem-configuracao" | "falha-envio" };

@@ -13,6 +13,7 @@ import {
   periodoAgendaSchema,
   reagendarCompromissoSchema,
   somarDias,
+  textoFechamento,
   textoVencimento,
 } from "./agenda.ts";
 
@@ -76,6 +77,12 @@ describe("agenda (peça R7)", () => {
     expect(descreverEventoCompromisso("compromisso.reagendado", { de: "2026-10-13", para: "2026-10-20" })).toBe("Reagendado de 13/10/2026 para 20/10/2026");
     expect(descreverEventoCompromisso("estado.mudou", { de: "PLANEJADO", para: "CONFIRMADO" })).toBe("Confirmado");
     expect(descreverEventoCompromisso("estado.mudou", { para: "CANCELADO" })).toBe("Cancelado");
+  });
+
+  it("R7.2: quanto falta para a enquete fechar", () => {
+    expect(textoFechamento("2026-10-24", "2026-10-26")).toBe("Fecha em 2 dias");
+    expect(textoFechamento("2026-10-24", "2026-10-25")).toBe("Fecha amanhã");
+    expect(textoFechamento("2026-10-24", "2026-10-24")).toBe("Fecha hoje");
   });
 
   it("AG-09: quanto falta para vencer o contrato ou o documento", () => {

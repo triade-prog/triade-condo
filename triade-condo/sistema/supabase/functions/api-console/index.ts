@@ -28,6 +28,8 @@ const app = criarApiConsole(Deno.env.get("REPASSE_SEGREDO"), {
   whatsapp: waflyToken && chaveWhatsapp
     ? { conector: conectorWafly(waflyToken), chave: await chaveCredenciais(chaveWhatsapp), urlAvisos: `${url}/functions/v1/api-plataforma` }
     : undefined,
+  // Pedido de demonstração do site (0296, CM-01): sem SITE_SEGREDO, a entrada fica fechada.
+  segredoSite: Deno.env.get("SITE_SEGREDO"),
 });
 
 Deno.serve(app.fetch);

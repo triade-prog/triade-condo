@@ -288,6 +288,19 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   GUARDA_RETIRADA: "A guarda já foi retirada. Atualize a página.",
   CONTATO_COM_PEDIDO_ABERTO: "Esta pessoa tem pedido aberto. Encerre o pedido antes de remover os dados.",
   CONTATO_GUARDADO: "Esta pessoa está guardada por obrigação legal. Tire a guarda, com o motivo, antes de remover os dados.",
+  // Comercial (0296).
+  COMERCIAL_SEM_CLIENTE: "A função Comercial não atende cliente. Escolha outra função para atribuir.",
+  NAO_CONTATAR: "Este contato está na lista de não contatar. Ele não entra no funil.",
+  DUPLICADO: "Este contato já é de outro interessado. Abra o interessado que já existe.",
+  FALTA_PARA_ETAPA: "Falta o que a etapa pede. Preencha os campos marcados na ficha e tente de novo.",
+  SEM_OPTIN: "Esta pessoa não aceitou mensagens pelo WhatsApp. Os botões de mensagem pronta ficam desligados; dá para ligar.",
+  SEM_CADENCIA: "Não há cadência em andamento para este interessado.",
+  PARECIDOS_SEM_DECISAO: "Decida juntar ou criar cada linha parecida antes de importar.",
+  ETAPA_FECHADA: "Este interessado já foi fechado. Volte a etapa para um passo aberto antes de marcar o próximo passo.",
+  ANONIMIZADO: "Os dados deste interessado foram apagados. Ficam só os números do funil.",
+  ORIGEM_FIXA: "A primeira origem do interessado não muda.",
+  SO_INSERCAO: "O que foi registrado não se altera nem se apaga. Registre outra conversa para corrigir.",
+  CADENCIA_REPETIDA: "Já há uma cadência ativa para esta etapa e esta origem. Desligue a outra antes.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
