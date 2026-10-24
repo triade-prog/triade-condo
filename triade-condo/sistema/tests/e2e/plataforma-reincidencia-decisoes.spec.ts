@@ -124,8 +124,10 @@ test.describe("Plataforma · reincidência e decisões", () => {
     const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     await page.goto(`${PLATAFORMA}/pedidos/pedido?id=${estado.pedidos[1]!.id}`);
     await maisAcoes(page, "Pedir decisão");
-    const pedir = page.getByRole("dialog", { name: "Pedir decisão ao síndico" });
-    await expect(pedir.getByLabel("Quem decide")).toContainText("Ana Souza (síndico)");
+    // R5 (quadro 413): o título leva o protocolo e Quem decide virou escolha em cartões; sem conselho, só o síndico.
+    const pedir = page.getByRole("dialog", { name: "Pedir decisão · 2026-0002" });
+    await expect(pedir.getByRole("group", { name: "Quem decide" })).toContainText("Ana Souza (síndico)");
+    await expect(pedir.getByRole("group", { name: "Quem decide" })).not.toContainText("O conselho");
     await expect(pedir.getByLabel("Decidir até")).toHaveValue("2026-10-19");
     await pedir.getByRole("button", { name: "Pedir decisão" }).click();
     await expect(pedir.getByText("Diga o que precisa ser decidido (3 a 500 caracteres).")).toBeVisible();

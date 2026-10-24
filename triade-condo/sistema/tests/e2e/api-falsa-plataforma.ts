@@ -20,7 +20,8 @@ import { classificadosAAprovar, classificadosDoMural, criarClassificados, rotasC
 import { avisarNoRegistro, avisosDoPedido, criarAvisoRegistro, rotasAvisoRegistro, type ContextoAviso } from "./api-falsa-aviso-registro";
 import { criarRelatorios, rotasArquivoRelatorio, rotasRelatorios } from "./api-falsa-relatorios";
 import { criarPortaria, resumoPortaria, rotasPortaria } from "./api-falsa-portaria";
-import { avisosDecisoes, criarDecisoes, detalheDecisoes, marcarAvisosDecisoes, resumoDecisoes, rotasDecisoes, semearDecisoes } from "./api-falsa-decisoes";
+import { avisosDecisoes, criarDecisoes, detalheDecisoes, marcarAvisosDecisoes, resumoDecisoes, rotasDecisoes, semearDecisoes, type Contexto } from "./api-falsa-decisoes";
+import { criarAprovacoes, ganchosAprovacoes, resumoAprovacoes, rotasAprovacoes, rotasConselhoPublico, semearAprovacoes, type ContextoAprovacoes } from "./api-falsa-aprovacoes";
 
 /** As 24 permissões do banco (permissoes), na ordem de @triade/domain. */
 const PERMISSOES = {
@@ -78,6 +79,8 @@ export interface OpcoesPlataforma {
   conjuntos?: Partial<Record<"AGENDA" | "MANUTENCAO" | "VIDA" | "COMUNICACAO_AMPLIADA", "COMPLETO" | "CONSULTA" | "FORA">>;
   /** Portaria 1 · Encomendas: a síndica vê e cuida da portaria, com 3 guardadas e 1 entregue. */
   comPortaria?: boolean;
+  /** R5: o conselho (a Bruna é a subsíndica), uma decisão em votação, as despesas e os links do conselheiro; a síndica vê e edita o conselho e as despesas. */
+  comAprovacoes?: boolean;
 }
 
 const CONJUNTOS_PLANO = [
@@ -212,6 +215,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const portaria = criarPortaria();
   const decisoes = criarDecisoes();
   if (opcoes.comDecisoes) semearDecisoes(decisoes, estado.pedidos, V_ANA, estado.config.etapas.find((e) => e.nome === "Concluído")!.id);
+  const aprovacoes = criarAprovacoes();
+  if (opcoes.comAprovacoes) semearAprovacoes(aprovacoes, decisoes, estado.pedidos, V_ANA, V_BRUNA);
   if (!opcoes.comAcessoPedido) suporte.acessos = [];
   if (opcoes.comAtendimento) {
     for (const p of estado.pessoas) { p.responsavel = true; p.disponivel = true; }
@@ -226,7 +231,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       "memoria.dossie", "memoria.exportar", "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver",
       "suporte.chamados", "acesso_excepcional.aprovar", "reservas.editar", "reservas.ver",
       "enquetes.editar", "enquetes.ver", "assembleias.editar", "assembleias.ver", "classificados.editar", "classificados.ver", "decisoes.aprovar",
-      ...(opcoes.comPortaria ? ["portaria.ver", "portaria.cuidar"] : [])]
+      ...(opcoes.comPortaria ? ["portaria.ver", "portaria.cuidar"] : []),
+      ...(opcoes.comAprovacoes ? ["conselho.ver", "conselho.editar", "despesas.ver", "despesas.registrar"] : [])]
     : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados",
       ...(opcoes.secretariaRegistra ? ["pedidos.atualizar"] : [])]
       : ["agenda.ver", "comunicados.ver", "config.ver", "documentos.ver", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"];
@@ -291,6 +297,13 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     return route.fulfill({ json: n });
   }
 
+  /** O contexto das decisões com os ganchos da R5, quando ela está ligada. */
+  function comAprovacoes(x: Contexto): ContextoAprovacoes {
+    const ctx: ContextoAprovacoes = { ...x, decisoes, vAna: V_ANA, sindico: "Ana Souza" };
+    if (aprovacoes.ligado) ctx.ganchos = ganchosAprovacoes(aprovacoes, ctx);
+    return ctx;
+  }
+
   async function atender(route: Route): Promise<void> {
     const req = route.request();
     const url = new URL(req.url());
@@ -327,6 +340,9 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     const extraMural = () => ({ classificados: classificadosDoMural(classificados) });
     const cadastroPeloLink = await rotasCadastroPublico(route, estado.moradores, caminho, metodo, corpo);
     if (cadastroPeloLink !== null) return cadastroPeloLink;
+    const linkDoConselho = await rotasConselhoPublico(route, aprovacoes, comAprovacoes({ pedidos: estado.pedidos, pessoas: estado.pessoas, etapas: c.etapas,
+      unidade: () => null, eu: { vinculo: "", nome: "" }, pode: () => false, categoria: () => "" }), caminho, metodo, corpo);
+    if (linkDoConselho !== null) return linkDoConselho;
     const publicas = await rotasPublicas(route, comunicados, caminho, metodo, corpo, manualMural, extraMural, estado.moradores.zap);
     if (publicas !== null) return publicas;
     if (!estado.logado) return erro(route, 401, "UNAUTHORIZED");
@@ -419,8 +435,13 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       const u = estado.moradores.unidades.find((x) => x.id === id);
       return u ? [estado.moradores.blocos.find((b) => b.id === u.blocoId)?.nome, u.identificacao].filter(Boolean).join(" · ") : null;
     };
-    const naDecisao = { pedidos: estado.pedidos, pessoas: estado.pessoas, etapas: c.etapas, unidade: nomeUnidade, eu, pode,
-      categoria: (id: string) => c.categorias.find((x) => x.id === id)!.nome };
+    const naDecisao = comAprovacoes({ pedidos: estado.pedidos, pessoas: estado.pessoas, etapas: c.etapas, unidade: nomeUnidade, eu, pode,
+      categoria: (id: string) => c.categorias.find((x) => x.id === id)!.nome });
+    const votaNoConselho = naDecisao.ganchos?.minhaVotacao;
+    const resumoDasDecisoes = () => {
+      const base = resumoDecisoes(decisoes, eu.vinculo, votaNoConselho);
+      return aprovacoes.ligado ? resumoAprovacoes(aprovacoes, naDecisao, base) : base;
+    };
 
     if (caminho === "/v1/condominio/painel") {
       const nome = estado.condominioAtual === JATOBA ? "Edifício Jatobá" : "Residencial Ipê";
@@ -446,7 +467,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
           ...(acoes().includes("assembleias.ver") && resumoAssembleia(assembleias) ? { assembleia: resumoAssembleia(assembleias) } : {}),
           ...(acoes().includes("classificados.ver") && classificadosAAprovar(classificados) ? { classificadosAAprovar: classificadosAAprovar(classificados) } : {}),
         } } : {}),
-        ...(acoes().includes("decisoes.aprovar") ? { decisoes: resumoDecisoes(decisoes, eu.vinculo) } : {}),
+        ...(acoes().includes("decisoes.aprovar") || resumoDasDecisoes().aguardando > 0 ? { decisoes: resumoDasDecisoes() } : {}),
         avisosNaoVistos: naoVistos(estado.avisos, eu.vinculo) + avisosDecisoes(decisoes, naDecisao).filter((a) => !a.vistoEm).length,
       } });
     }
@@ -501,6 +522,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       { categorias: c.categorias, prioridades: c.prioridades, sindica: quem === "SINDICA" },
       (id) => estado.pedidos.find((p) => p.id === id)?.versao ?? null);
     if (noWhatsapp !== null) return noWhatsapp;
+    const nasAprovacoes = await rotasAprovacoes(route, aprovacoes, naDecisao, caminho, metodo, corpo, url);
+    if (nasAprovacoes !== null) return nasAprovacoes;
     // Antes dos pedidos: as rotas da F7.4 dividem o prefixo /pedidos/:id.
     const nasDecisoes = await rotasDecisoes(route, decisoes, naDecisao, caminho, metodo, corpo, url);
     if (nasDecisoes !== null) return nasDecisoes;
@@ -631,5 +654,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     return erro(route, 404, "NOT_FOUND");
   }
   await page.route("**/api/v1/**", atender);
-  return Object.assign(estado, { pedidosPlano, comunicados, links, manutencao, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios });
+  return Object.assign(estado, { pedidosPlano, comunicados, links, manutencao, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios, aprovacoes });
 }
