@@ -20,7 +20,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | V-01 | Plataforma que organiza o atendimento e a rotina do condomínio: todo pedido tem responsável, próximo retorno, andamento e conclusão explicada | [A] [INT] |
 | V-02 | Público inicial: síndico morador de prédio com pouca estrutura, sem administradora; evolução até condomínio grande, com ou sem portaria | [A] [BR] |
 | V-03 | Foco geográfico inicial: Brasília/DF | [A] |
-| V-04 | Cenário 1: prédio simples sem portaria (porta, elevador, apartamentos; visitas e entregas direto com o morador). Não presumir porteiro, zelador, administradora ou prestador fixo | [A] |
+| V-04 | Cenário 1: prédio simples sem portaria (porta, elevador, apartamentos; visitas e entregas direto com o morador). Não presumir porteiro, zelador, administradora ou prestador fixo. Encomendas e Portaria só aparecem no prédio sem portaria se o condomínio indicar uma pessoa cadastrada (zelador ou síndico) com a permissão Cuidar da portaria. Essa pessoa vê só o que ela mesma registra | [A] |
 | V-05 | Cenário 2: portaria remota/virtual (no DF, o STF derrubou em maio/2026 a lei que restringia; mais de 800 condomínios já usam). Portaria remota não implica manutenção nem integração técnica com o sistema | [A] [BR] |
 | V-06 | Cenário 3: portaria presencial com atendente e troca de turnos. Ter portaria não garante zelador, equipe nem revisão; os responsáveis vêm das pessoas cadastradas, não do tipo de portaria | [A] |
 | V-07 | **Morador**: usa só o WhatsApp do condomínio, sem app, portal, login ou senha | [A] [BR] |
@@ -46,7 +46,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | W-03 | **Coexistência**: conectar o número que o condomínio já usa no app WhatsApp Business à API oficial, sem perder o app (Meta). Vale só para número do WhatsApp Business, não para número pessoal comum; sincroniza até 6 meses de histórico | [BR] |
 | W-04 | Usar a API oficial do WhatsApp (direto ou via provedor), nunca conexão por QR Code ou WhatsApp Web; confiabilidade como argumento de venda | [A] [BR] |
 | W-05 | Morador envia texto, foto, áudio e documento; tudo fica ligado ao pedido certo | [A] |
-| W-06 | Transcrição de áudio. Nunca prometer ao morador uma transcrição que ainda não existe | [A] |
+| W-06 | Transcrição de áudio. Nunca prometer ao morador uma transcrição que ainda não existe. A transcrição aparece só no painel, marcada como automática; quando não existe, aparece só o áudio | [A] |
 | W-07 | **WhatsApp Flows**: formulário dentro da conversa para abrir pedido estruturado (unidade, local, categoria, foto) | [BR] |
 | W-08 | Confirmação imediata de recebimento, com número de protocolo e "o que acontece agora" (Fixflo). Diz só que o pedido foi registrado e como funciona o atendimento naquele horário, sem afirmar que alguém já está trabalhando nele; nunca promete atendimento imediato, equipe TRÍADE, socorro ou cobertura ilimitada | [A] [INT] |
 | W-09 | Morador consulta o andamento do próprio pedido a qualquer momento pelo WhatsApp | [A] [INT] |
@@ -126,11 +126,10 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | IA-14 | Relatórios gerados por IA (MeuSíndico.IA) | [BR] |
 | IA-15 | Regra de ouro vista lá fora: todo texto de IA é rascunho até uma pessoa aprovar. A IA não substitui o responsável humano nem conta como atendimento; nunca prometer "atendimento 24h por IA" | [INT] |
 | IA-16 | Observar a política da Meta: bot de atendimento da própria empresa é permitido; IA de uso geral no WhatsApp não | [BR] |
-| IA-17 | Ler o grupo de WhatsApp do condomínio para alimentar a memória e o resumo diário (Seu Síndico IA) | [BR] |
-| IA-18 | Responder moradores dentro do grupo de WhatsApp quando mencionado, segundo regras do síndico (Seu Síndico IA) | [BR] |
-| IA-19 | Classificar o pedido automaticamente a partir da mensagem (gateway de IA, MeuSíndico.IA) | [BR] |
-| IA-20 | IA conversa com o morador para completar a descrição e pedir foto antes de registrar o pedido (Vendoroo) | [INT] |
-| IA-21 | **Ajuda de cada tela**: texto curto sobre o que a tela faz e como usar, aberto por um botão na própria tela. O mesmo texto alimenta o assistente que tira dúvidas do síndico e é atualizado na mesma entrega que muda a tela (SeuCondomínio) | [BR] |
+| IA-17 | Classificar o pedido automaticamente a partir da mensagem (gateway de IA, MeuSíndico.IA) | [BR] |
+| IA-18 | IA conversa com o morador para completar a descrição e pedir foto antes de registrar o pedido (Vendoroo) | [INT] |
+| IA-19 | **Ajuda de cada tela**: texto curto sobre o que a tela faz e como usar, aberto por um botão na própria tela. O mesmo texto alimenta o assistente que tira dúvidas do síndico e é atualizado na mesma entrega que muda a tela (SeuCondomínio) | [BR] |
+| IA-20 | **Motor de IA com freio**: todas as funções de IA passam por um conector que dá para trocar, como o do WhatsApp. Cada chamada fica registrada por condomínio, com função, modelo, tamanho e custo. Cada condomínio tem um limite por mês para cada função, definido pela TRÍADE. Quando o limite acaba, a função para até o mês virar, sem travar o atendimento. A TRÍADE tem uma chave no Console que desliga a IA do condomínio, e só a Administração muda essa chave. O síndico liga ou desliga cada função em Configurações › Ajuda da IA, onde vê o que vai para a IA e o uso do mês, sem valores. Nome e telefone saem do texto antes do envio | [C] |
 
 ---
 
@@ -271,13 +270,13 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 
 | ID | Ideia | Origem |
 |---|---|---|
-| PA-01 | Registro de encomendas com aviso ao morador pelo WhatsApp (MeuVizy, SindIA). Registra quem guardou e quem retirou, para evitar entrega à unidade errada | [A] [BR] |
+| PA-01 | Registro de encomendas com aviso ao morador pelo WhatsApp (MeuVizy, SindIA). Quem registra é uma pessoa cadastrada com conta própria e a permissão Cuidar da portaria; não existe conta do posto nem vizinho de plantão. O registro tem a unidade, de quem veio, os volumes, onde foi guardada e, se quiser, a foto da etiqueta, que fica só no painel e não vai na mensagem. O aviso sai pelo modelo aprovado "Encomenda guardada", assinado pela Nina e com o aviso contra golpes (W-21). O aviso vai ao mesmo tempo a todas as pessoas confirmadas que moram na unidade e têm WhatsApp; o proprietário que não mora lá não recebe. Quem pediu PARAR não recebe. Quando ninguém da unidade pode receber, porque pediu PARAR, não tem contato confirmado ou o número não está no WhatsApp, a encomenda aparece como "Sem aviso". Só a falha de envio aparece como "Aviso falhou". Nos dois casos dá para avisar de novo ou registrar "Avisei por outro meio" (interfone, bilhete ou pessoalmente). Na retirada, fica registrado quem retirou (alguém da unidade ou outra pessoa, pelo nome), com foto opcional, e quem entregou, sem código por mensagem. Depois de alguns dias guardada (7, de saída, configurável), a encomenda vai para o atalho "Guardadas há mais de N dias" e a unidade recebe um lembrete, uma vez só. Registra quem guardou e quem retirou, para evitar entrega à unidade errada | [A] [BR] |
 | PA-02 | Lista de convidados enviada à portaria (MeuVizy) | [BR] |
 | PA-03 | Pedido de acesso de visitante encaminhado à portaria (SindIA) | [BR] |
 | PA-04 | Controle de acesso integrado: reconhecimento facial, QR, biometria, placas (Condomob, Gruvi) | [BR] |
 | PA-05 | Repasse entre turnos de portaria com rastreabilidade | [A] |
 | PA-06 | **Plaquinha QR de chegada**: visitante informa o apartamento e o sistema avisa os contatos da unidade, sem expor dados nem abrir porta. Resposta pública neutra (não confirma presença nem identidade), limites contra abuso, validação do apartamento, alternativa quando o aviso falhar e nenhuma promessa de atendimento imediato | [A] |
-| PA-07 | Avisar a unidade, não só um celular (vários contatos, roteamento simultâneo ou sequencial) | [A] |
+| PA-07 | Avisar a unidade, não só um celular (vários contatos, roteamento simultâneo ou sequencial). Na Portaria 1, todos os contatos da unidade são avisados ao mesmo tempo. O aviso em sequência entra com os visitantes (Portaria 2) | [A] |
 | PA-08 | Receptor sonoro local: interfone coletivo, campainha sem fio por unidade, controlador integrável (Intelbras, Shelly). Avaliação no local antes de escolher; campainha comum não aceita acionamento por software | [A] |
 | PA-09 | Armário de encomendas em locação, com sistema, manutenção e aviso no WhatsApp. Avaliar no local espaço, acesso do entregador, retirada individual, rastreabilidade e exceções; nunca prometer ausência de extravio nem integração que não existe | [A] |
 | PA-10 | Coordenação com a empresa de portaria remota (sem controlar o portão) | [A] |
@@ -489,7 +488,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 1. Visão e pessoas | 17 |
 | 2. Canal WhatsApp | 22 |
 | 3. Atendimento | 33 |
-| 4. Inteligência artificial | 21 |
+| 4. Inteligência artificial | 20 |
 | 5. Comunicados e documentos | 15 |
 | 6. Configuração e ficha | 12 |
 | 7. Moradores e unidades | 11 |
@@ -508,7 +507,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 20. Princípios técnicos | 18 |
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
-| **Total** | **313** |
+| **Total** | **312** |
 
 ---
 
@@ -658,3 +657,27 @@ Pedido pela Carolina durante a rodada do novo frontend: ver o mural dentro do pa
 - Mostra o mesmo conteúdo do link do prédio (CD-12): só o que é para todo o condomínio, sem nomes, telefones ou unidades nos avisos.
 - A contagem de aberturas da CD-12 continua contando só quem abre o link; o painel tem leitura própria.
 - Os classificados continuam com o aviso de que o condomínio não vende nem garante nada (AC-05). Uma foto por anúncio, como hoje; mais fotos ficam para depois, porque pedem mudança no banco.
+
+---
+
+## Plano de IA e portaria (24/10/2026)
+
+Aprovado pela Carolina em 24/10/2026, junto com o plano do motor de IA e da portaria (encomendas). Duas ideias saíram, uma entrou e quatro textos foram ajustados.
+
+**1 ideia nova:** IA-20 (motor de IA com freio: conector que dá para trocar, registro de cada chamada por condomínio, limite por mês para cada função, chave da TRÍADE no Console e escolha do síndico em Configurações › Ajuda da IA).
+
+**Textos ajustados:**
+
+- PA-01 descreve o registro das encomendas: quem registra, o que vai no registro, o aviso pelo modelo "Encomenda guardada" a todas as pessoas confirmadas que moram na unidade, os estados "Sem aviso" e "Aviso falhou", a retirada e o lembrete depois de alguns dias.
+- PA-07 diz que, na Portaria 1, todos os contatos da unidade são avisados ao mesmo tempo, e que o aviso em sequência entra com os visitantes (Portaria 2).
+- V-04 diz que Encomendas e Portaria só aparecem no prédio sem portaria se o condomínio indicar uma pessoa com a permissão Cuidar da portaria, e que essa pessoa vê só o que ela mesma registra.
+- W-06 diz que a transcrição aparece só no painel, marcada como automática, e que sem ela aparece só o áudio.
+
+**Ideias que saíram:**
+
+| Código | Ideia | Motivo |
+|---|---|---|
+| IA-17 | Ler o grupo de WhatsApp do condomínio para alimentar a memória e o resumo diário | A política da Meta proíbe, desde 15/01/2026, IA de uso geral no WhatsApp (IA-16), e o grupo tem mensagens de quem não é cliente nem aceitou o tratamento dos seus dados (decisão D9 do plano de IA e portaria) |
+| IA-18 | Responder moradores dentro do grupo de WhatsApp quando mencionado | Mesmo motivo: a resposta no grupo seria IA de uso geral no WhatsApp e alcançaria pessoas que não são clientes (decisão D9) |
+
+Renumeração para manter a sequência sem buracos: IA-19→IA-17 (classificar o pedido), IA-20→IA-18 (IA completa a descrição), IA-21→IA-19 (ajuda de cada tela). As seções datadas acima são histórico e mantêm os códigos da época.
