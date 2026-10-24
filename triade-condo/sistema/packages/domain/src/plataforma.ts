@@ -27,6 +27,8 @@ export const PERMISSOES = {
   ASSEMBLEIAS: "Cuidar das assembleias",
   VER_CLASSIFICADOS: "Ver os classificados",
   CLASSIFICADOS: "Cuidar dos classificados",
+  VER_PORTARIA: "Ver a portaria",
+  PORTARIA: "Cuidar da portaria",
 } as const;
 export type Permissao = keyof typeof PERMISSOES;
 

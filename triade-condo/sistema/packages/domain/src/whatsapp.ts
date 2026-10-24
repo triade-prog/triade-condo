@@ -46,6 +46,7 @@ export const FINALIDADES_ENVIO = {
   PROTOCOLO: "Protocolo do pedido",
   AVISO_PRESTADOR: "Pedido para o prestador",
   COMUNICADO: "Comunicado",
+  ENCOMENDA: "Encomenda guardada",
 } as const;
 
 /** Avisos que cada pessoa liga no próprio WhatsApp (W-11, F6.3). */
