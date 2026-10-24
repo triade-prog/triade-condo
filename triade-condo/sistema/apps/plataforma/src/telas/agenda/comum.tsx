@@ -1,13 +1,15 @@
 "use client";
 // Peças comuns da agenda (peça R7; DC15, telas-modelo agenda-*): a situação em selo, a cor da
-// origem (compromisso, preventiva, reserva, contrato, documento, assembleia, feriado) sempre com
-// o nome ao lado, e o compromisso como cartão da lista.
+// origem (compromisso, preventiva, reserva, contrato, documento, assembleia, enquete, feriado)
+// sempre com o nome ao lado, o compromisso como cartão da lista e a faixa das enquetes abertas.
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { descreverRepeticao, mostrarDataCurta, SITUACOES_COMPROMISSO, textoVencimento, TIPOS_COMPROMISSO } from "@triade/domain";
+import {
+  descreverRepeticao, diasEntre, mostrarDataCurta, porcentagem, SITUACOES_COMPROMISSO, textoFechamento, textoVencimento, TIPOS_COMPROMISSO,
+} from "@triade/domain";
 import { Icone, Selo, type Tom } from "@triade/ui";
-import type { CompromissoAgenda, ConflitoCompromisso, DataDeOutraTela, SituacaoCompromisso } from "../tipos.ts";
+import type { CompromissoAgenda, ConflitoCompromisso, DataDeOutraTela, EnqueteNaAgenda, SituacaoCompromisso } from "../tipos.ts";
 
 const TOM_SITUACAO: Record<SituacaoCompromisso, Tom> = {
   PLANEJADO: "neutro", A_CONFIRMAR: "atencao", CONFIRMADO: "ok", REALIZADO: "info", CANCELADO: "neutro",
@@ -112,9 +114,25 @@ function LinhaDeFora({ d, hora, fim, titulo, href, selo, detalhe, origem }: {
   );
 }
 
+/** O selo de quanto falta para a enquete fechar: hoje em vermelho, até 3 dias em âmbar (R7.2). */
+function SeloFechamento({ hoje, data }: { hoje: string; data: string }) {
+  const n = diasEntre(hoje, data);
+  return <Selo tom={n <= 0 ? "erro" : n <= 3 ? "atencao" : "neutro"}><Icone nome="relogio" className="h-3.5 w-3.5" />{textoFechamento(hoje, data)}</Selo>;
+}
+
+/** "3 de 5 unidades responderam": só a contagem, também na secreta (R7.2). */
+function quantosDeQuantos(e: { responderam?: number; total?: number; por?: "UNIDADE" | "PESSOA" }): string {
+  return `${e.responderam ?? 0} de ${e.total ?? 0} ${e.por === "PESSOA" ? "pessoas" : "unidades"}`;
+}
+
+function textoResponderam(e: { responderam?: number; total?: number; por?: "UNIDADE" | "PESSOA" }): string {
+  return `${quantosDeQuantos(e)} responderam`;
+}
+
 /**
  * Data de outra tela (AG-09): feriado, preventiva, reserva confirmada, vencimento de contrato e
- * de documento e assembleia convocada. Cada uma leva à tela de origem.
+ * de documento, assembleia convocada e enquete aberta, no dia em que fecha (R7.2). Cada uma leva
+ * à tela de origem.
  */
 export function LinhaDataDeFora({ d, hoje }: { d: DataDeOutraTela; hoje: string }) {
   switch (d.fonte) {
@@ -142,6 +160,13 @@ export function LinhaDataDeFora({ d, hoje }: { d: DataDeOutraTela; hoje: string 
           selo={<Selo tom="andamento">{d.estado === "EM_ANDAMENTO" ? "Em andamento" : "Convocada"}</Selo>}
           detalhe={`Assembleia${d.local ? ` · ${d.local}` : ""}`} origem={{ href: "/vida?aba=assembleias", tela: "Vida em condomínio" }} />
       );
+    case "ENQUETE":
+      return (
+        <LinhaDeFora d={d} hora={d.horaInicio} titulo={`Fecha a enquete: ${d.titulo}`} href={`/vida/enquete?id=${d.id}`}
+          selo={<SeloFechamento hoje={hoje} data={d.data} />}
+          detalhe={`Enquete · ${textoResponderam(d)}${d.secreta ? " · secreta" : ""}`}
+          origem={{ href: "/vida?aba=enquetes", tela: "Vida em condomínio" }} />
+      );
     case "PREVENTIVA":
       return (
         <LinhaDeFora d={d} titulo={d.titulo} detalhe="Preventiva do plano de manutenção"
@@ -159,7 +184,44 @@ export function LinhaDataDeFora({ d, hoje }: { d: DataDeOutraTela; hoje: string 
 export function tituloCurto(d: DataDeOutraTela): string {
   if (d.fonte === "CONTRATO") return `Vence o contrato de ${d.titulo}`;
   if (d.fonte === "DOCUMENTO") return `Vence ${d.titulo}`;
+  if (d.fonte === "ENQUETE") return `Fecha: ${d.titulo}`;
   return d.titulo;
+}
+
+/**
+ * A faixa "Enquetes abertas agora", no alto da Lista (R7.2, decisão A.1): todas as abertas, mesmo
+ * as que fecham depois do período, com o prazo e quantos responderam. Cada uma abre a ficha.
+ */
+export function EnquetesAbertas({ enquetes, hoje }: { enquetes: EnqueteNaAgenda[]; hoje: string }) {
+  return (
+    <section aria-labelledby="ag-enquetes" className="ag-enq">
+      <div className="cab">
+        <span className="ladrilho h-8 w-8 rounded-[10px]" data-tom="violeta" aria-hidden="true"><Icone nome="grafico" className="h-[18px] w-[18px]" /></span>
+        <h2 id="ag-enquetes" className="t-titulo-cartao">Enquetes abertas agora</h2>
+        <span className="quantas"><span aria-hidden="true">{enquetes.length}</span><span className="sr-only">{`${enquetes.length} ${enquetes.length === 1 ? "aberta" : "abertas"}`}</span></span>
+        <Link href="/vida?aba=enquetes" className="ligado ml-auto"><Icone nome="link" className="h-3.5 w-3.5" />Vida em condomínio › Enquetes</Link>
+      </div>
+      <ul>
+        {enquetes.map((e) => (
+          <li key={e.id} className="ag-ev" data-tipo="ENQUETE">
+            <span className="barra" aria-hidden="true" />
+            <span className="textos">
+              <span className="pergunta">
+                <Link href={`/vida/enquete?id=${e.id}`} className="titulo" data-alvo="">{e.titulo}</Link>
+                {e.secreta ? <Selo tom="neutro"><Icone nome="cadeado" className="h-3.5 w-3.5" />Secreta</Selo> : null}
+              </span>
+              <span className="prazo">Fecha {mostrarDataCurta(e.data).slice(0, 5)}, às {e.horaInicio} <SeloFechamento hoje={hoje} data={e.data} /></span>
+              <span className="quanto">
+                <span className="trilha" aria-hidden="true"><span style={{ width: `${porcentagem(e.responderam, e.total)}%` }} /></span>
+                <span><b>{quantosDeQuantos(e)}</b> responderam</span>
+              </span>
+            </span>
+            <Seta />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 /** "Bruna Souza já está em "Vistoria da bomba", das 14:30 às 15:30." */

@@ -425,13 +425,14 @@ body {
 
   /* Agenda (peça R7; DC15, telas-modelo agenda-*): a cor de cada origem numa faixa, sempre com o nome ao lado.
      Compromisso violeta, preventiva jade, reserva petróleo, contrato âmbar, documento rubi,
-     assembleia violeta-claro e feriado cinza. */
+     assembleia violeta-claro, enquete violeta mais claro (as duas são votações) e feriado cinza. */
   [data-tipo="COMPROMISSO"], [data-tipo="REUNIAO"], [data-tipo="VISITA"], [data-tipo="ATIVIDADE"], [data-tipo="LEMBRETE"] { --fx: var(--color-violeta-600); }
   [data-tipo="PREVENTIVA"] { --fx: var(--color-ok); }
   [data-tipo="RESERVA"] { --fx: var(--color-info); }
   [data-tipo="CONTRATO"] { --fx: var(--color-atencao); }
   [data-tipo="DOCUMENTO"] { --fx: var(--color-erro); }
   [data-tipo="ASSEMBLEIA"] { --fx: var(--color-violeta-500); }
+  [data-tipo="ENQUETE"] { --fx: var(--color-violeta-400); }
   [data-tipo="FERIADO"] { --fx: var(--color-contorno); }
   .tp { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--color-tinta-suave); }
   .tp::before { content: ""; width: 8px; height: 8px; border-radius: 3px; background: var(--fx); }
@@ -473,6 +474,27 @@ body {
   .ag-ev .seta { align-self: center; color: var(--color-tinta-suave); }
   .ag-ev[data-tipo="FERIADO"] { background: transparent; border-style: dashed; }
   .ag-ev[data-cancelado] .titulo { text-decoration: line-through; color: var(--color-tinta-suave); }
+  /* Enquetes abertas agora (R7.2): a faixa no alto da Lista, uma linha por enquete com o prazo e quantos responderam. */
+  .ag-enq { border: 1px solid var(--color-linha); border-radius: 18px; background: var(--color-superficie); box-shadow: var(--shadow-s1); }
+  .ag-enq .cab { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--color-linha); }
+  .ag-enq .quantas { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: var(--color-violeta-600); color: #fff; font-size: 12px; font-weight: 600; }
+  .ag-enq .ligado { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; color: var(--color-violeta-600); }
+  .ag-enq .ligado:hover { text-decoration: underline; }
+  .ag-enq ul > li + li { border-top: 1px solid var(--color-linha); }
+  .ag-enq .ag-ev { grid-template-columns: 3px minmax(0, 1fr) auto; border: 0; border-radius: 0; background: transparent; padding: 12px 16px; }
+  .ag-enq .ag-ev [data-alvo]::after { border-radius: 0; }
+  .ag-enq .ag-ev:has([data-alvo]):hover { background: var(--color-violeta-50); }
+  .ag-enq .pergunta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex-basis: 100%; }
+  .ag-enq .prazo { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; flex-basis: 100%; font-size: 13px; color: var(--color-tinta-suave); }
+  .ag-enq .quanto { display: grid; gap: 4px; flex-basis: 100%; font-size: 13px; color: var(--color-tinta-suave); }
+  .ag-enq .quanto b { font-weight: 600; color: var(--color-tinta); }
+  .ag-enq .trilha { display: block; height: 6px; max-width: 420px; border-radius: 999px; background: var(--color-superficie-2); overflow: hidden; }
+  .ag-enq .trilha span { display: block; height: 100%; border-radius: 999px; background: var(--fx); }
+  @media (min-width: 768px) {
+    .ag-enq .textos { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: center; column-gap: 24px; }
+    .ag-enq .pergunta, .ag-enq .prazo { grid-column: 1; }
+    .ag-enq .quanto { grid-column: 2; grid-row: 1 / span 2; }
+  }
   /* Faixa da semana no celular: o dia escolhido no degradê e um ponto onde há o que ver. */
   .ag-faixa { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
   .ag-faixa button { display: grid; justify-items: center; gap: 2px; min-height: 64px; padding: 6px 0; border-radius: 14px; font-size: 12px; color: var(--color-tinta-suave); background: transparent; border: 0; cursor: pointer; }
