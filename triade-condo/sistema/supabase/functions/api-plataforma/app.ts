@@ -219,6 +219,7 @@ import { lerCorpo } from "../_shared/validar.ts";
 import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
 import { montarZip, planilhaCsv, type ItemZip } from "../_shared/zip.ts";
 import { rotasEncomendas } from "./encomendas.ts";
+import { rotasPrivacidade } from "./privacidade.ts";
 
 export type VarsPlataforma = { Variables: VarsSessao["Variables"] & { condominioId: string } };
 
@@ -353,6 +354,17 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
 
   // Portaria 1 · Encomendas (PA-01, PA-07, V-04, CF-12): lista, registro, aviso, entrega e as fotos.
   rotasEncomendas(app, "/v1/condominio", quem, { banco: deps.banco, armazenamento: deps.armazenamentoPortaria });
+
+  // Privacidade e dados (F0.11; PT-11, PT-03, EM-08): o inventário, os dados de uma pessoa, a guarda
+  // legal e a rotina que apaga do armazenamento os arquivos vencidos.
+  rotasPrivacidade(app, "/v1/condominio", quem, {
+    banco: deps.banco,
+    armazenamentos: {
+      pedidos: deps.armazenamento, manutencoes: deps.armazenamentoManutencao, comunicados: deps.armazenamentoComunicados,
+      documentos: deps.armazenamentoDocumentos, exportacoes: deps.armazenamentoExportacoes, suporte: deps.armazenamentoSuporte,
+      relatorios: deps.armazenamentoRelatorios, portaria: deps.armazenamentoPortaria,
+    },
+  });
 
   // Pessoas autorizadas (V-09, CF-02, CF-03, CF-04).
   app.get("/v1/condominio/pessoas", async (c) => c.json(await rpc("plataforma_pessoas", quem(c))));

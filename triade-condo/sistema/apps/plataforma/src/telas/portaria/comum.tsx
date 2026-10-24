@@ -74,11 +74,11 @@ export function resumoEncomenda(e: Pick<Encomenda, "remetente" | "volumes">): st
   return `${e.remetente} · ${textoVolumes(e.volumes)}`;
 }
 
-export type AcaoEncomenda = "entregar" | "outro-meio" | "corrigir" | "etiqueta";
+export type AcaoEncomenda = "entregar" | "outro-meio" | "corrigir" | "etiqueta" | "guardar";
 
 /** O menu de três pontos da linha (Entregar fica à vista, fora do menu). */
-export function MenuEncomenda({ e, podeCuidar, aoEscolher, aoAvisar }: {
-  e: Encomenda; podeCuidar: boolean; aoEscolher: (a: AcaoEncomenda) => void; aoAvisar: () => void;
+export function MenuEncomenda({ e, podeCuidar, podeGuardar, aoEscolher, aoAvisar }: {
+  e: Encomenda; podeCuidar: boolean; podeGuardar?: boolean; aoEscolher: (a: AcaoEncomenda) => void; aoAvisar: () => void;
 }) {
   const itens: ItemMenu[] = [];
   if (podeCuidar && e.estado === "GUARDADA") {
@@ -87,6 +87,8 @@ export function MenuEncomenda({ e, podeCuidar, aoEscolher, aoAvisar }: {
   }
   if (e.fotoEtiqueta) itens.push({ texto: "Ver a foto da etiqueta", icone: "camera", acao: () => aoEscolher("etiqueta") });
   if (podeCuidar && e.estado === "GUARDADA") itens.push({ texto: "Corrigir o registro", icone: "editar", acao: () => aoEscolher("corrigir") });
+  // Guardar por obrigação legal (F0.11, quadro 355): só para quem cuida da privacidade.
+  if (podeGuardar) itens.push({ texto: "Guardar por obrigação legal", icone: "cadeado", apoio: "O prazo não apaga a foto nem os nomes", acao: () => aoEscolher("guardar") });
   return <MenuAcoes rotulo={`Ações da encomenda de ${e.unidade.rotulo}`} itens={itens} />;
 }
 

@@ -5,7 +5,7 @@
 // que abre o menu com as funções e Sair. Sem sino: o Agora do Início faz esse papel. No
 // computador, a lateral com o Início e os grupos Clientes, Financeiro (Pagamentos, 0291, e Tabela
 // de preços, 0295), Suporte
-// e Equipe, com o número do
+// e Equipe, e Sistema (Retenção de dados, F0.11), com o número do
 // que está aberto em laranja; no celular, a barra de baixo com Início, Clientes, Chamados e Mais.
 // Implantações saiu do menu e virou o filtro Em implantação da carteira.
 
@@ -30,7 +30,7 @@ interface ItemDoMenu {
   /** Nome curto na barra de baixo do celular. */
   curto?: string;
   icone: NomeIcone;
-  grupo: "Clientes" | "Financeiro" | "Suporte" | "Equipe" | null;
+  grupo: "Clientes" | "Financeiro" | "Suporte" | "Equipe" | "Sistema" | null;
   atual: (caminho: string) => boolean;
   ve: (s: SessaoConsole) => boolean;
   contagem?: (n: Contagens) => number | undefined;
@@ -54,8 +54,9 @@ const ITENS: ItemDoMenu[] = [
   { href: "/whatsapp", texto: "WhatsApp", icone: "whats", grupo: "Suporte", atual: (c) => c.startsWith("/whatsapp"), ve: atende, contagem: (n) => n.whatsapp },
   { href: "/equipe", texto: "Pessoas e funções", icone: "pessoas", grupo: "Equipe", atual: (c) => c === "/equipe", ve: (s) => s.acoes.includes("console.equipe.gerenciar") },
   { href: "/equipe/historico", texto: "Histórico da equipe", icone: "relogio", grupo: "Equipe", atual: (c) => c === "/equipe/historico", ve: (s) => s.acoes.includes("console.historico.equipe") },
+  { href: "/retencao", texto: "Retenção de dados", icone: "escudo", grupo: "Sistema", atual: (c) => c.startsWith("/retencao"), ve: (s) => s.acoes.includes("console.retencao.ver") },
 ];
-const GRUPOS = ["Clientes", "Financeiro", "Suporte", "Equipe"] as const;
+const GRUPOS = ["Clientes", "Financeiro", "Suporte", "Equipe", "Sistema"] as const;
 
 function Contagem({ n, nome }: { n?: number; nome: string }) {
   return n ? <span className="contagem">{n}<span className="sr-only"> {nome}</span></span> : null;

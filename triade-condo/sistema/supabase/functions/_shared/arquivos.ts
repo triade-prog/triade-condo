@@ -53,7 +53,9 @@ export function armazenamentoSupabase(url: string, chaveServico: string, buscar:
       }), "gravar");
     },
     async apagar(caminho) {
-      await buscar(`${base}/object/${objeto(caminho)}`, { method: "DELETE", headers: auth });
+      const r = await buscar(`${base}/object/${objeto(caminho)}`, { method: "DELETE", headers: auth });
+      // O arquivo que já não existe conta como apagado; falha do armazenamento não.
+      if (!r.ok && r.status !== 400 && r.status !== 404) throw new Error(`Armazenamento respondeu ${r.status} ao apagar`);
     },
     async linkLeitura(caminho, segundos, baixarComo) {
       const r = await exigirOk(await buscar(`${base}/object/sign/${objeto(caminho)}`, {
