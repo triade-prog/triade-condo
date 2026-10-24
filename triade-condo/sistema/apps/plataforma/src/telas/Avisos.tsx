@@ -13,7 +13,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { formatarDataHora, mostrarDataCurta, TIPOS_AVISO } from "@triade/domain";
+import { formatarDataHora, mostrarCusto, mostrarDataCurta, TIPOS_AVISO } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
 import type { AvisoDoPainel, Avisos as ListaAvisos } from "./tipos.ts";
@@ -97,6 +97,30 @@ function detalhe(a: AvisoDoPainel): string {
       return `O prazo para decidir venceu${a.prazo ? ` em ${mostrarDataCurta(a.prazo)}` : ""}.`;
     case "DECISAO_RESPONDIDA":
       return a.estado === "APROVADA" ? "A decisão que você pediu foi aprovada." : a.estado === "DEVOLVIDA" ? "A decisão que você pediu foi devolvida sem decidir." : "A decisão que você pediu foi respondida.";
+    case "DECISAO_VOTO":
+      return `Pediram o seu voto no conselho${a.prazo ? ` até ${mostrarDataCurta(a.prazo)}` : ""}.`;
+    case "DECISAO_VOLTOU":
+      return "O conselho não chegou ao quórum: a decisão voltou para você, com os votos.";
+    case "DESPESA_PEDIDA":
+      return `Pediram a sua aprovação${a.valor ? ` de ${mostrarCusto(a.valor)}` : ""}${a.prazo ? ` até ${mostrarDataCurta(a.prazo)}` : ""}.`;
+    case "DESPESA_VOTO":
+      return `Pediram o seu voto no conselho${a.valor ? ` sobre ${mostrarCusto(a.valor)}` : ""}${a.prazo ? ` até ${mostrarDataCurta(a.prazo)}` : ""}.`;
+    case "DESPESA_VENCIDA":
+      return `O prazo para aprovar venceu${a.prazo ? ` em ${mostrarDataCurta(a.prazo)}` : ""}.`;
+    case "DESPESA_ESCALADA":
+      return "Despesa vencida sem resposta: pela regra, você também foi avisado.";
+    case "DESPESA_RESPONDIDA":
+      return a.estado === "APROVADA" ? "A despesa que você pediu foi aprovada. O pagamento continua fora do sistema." : a.estado === "RECUSADA" ? "A despesa que você pediu foi recusada." : "A despesa que você pediu foi respondida.";
+    case "DESPESA_VOLTOU":
+      return "O conselho não chegou ao quórum: a despesa voltou para você aprovar.";
+    case "MANDATO_VENCENDO":
+      return `O mandato de ${a.nome ?? "um membro do conselho"} vence${a.prazo ? ` em ${mostrarDataCurta(a.prazo)}` : " em breve"}. Renove ou retire em Pessoas › Conselho.`;
+    case "AUSENCIA_INICIO":
+      return a.texto ?? "A ausência do síndico começou: você responde no lugar dele.";
+    case "AUSENCIA_FIM":
+      return a.texto ?? "A ausência do síndico terminou: o que ficou sem resposta voltou para ele.";
+    default:
+      return a.texto ?? "";
   }
 }
 
@@ -234,8 +258,30 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                 </li>
               );
             }
+            if (a.tipo.startsWith("DESPESA_") || a.tipo === "MANDATO_VENCENDO" || a.tipo.startsWith("AUSENCIA_")) {
+              const despesa = a.tipo.startsWith("DESPESA_");
+              const destino = despesa ? `/decisoes/despesa?id=${a.despesaId}` : "/pessoas?aba=conselho";
+              const rotulo = despesa ? "Despesa" : a.tipo === "MANDATO_VENCENDO" ? "Conselho" : "Ausência";
+              return (
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 t-texto ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Selo tom={a.tipo === "DESPESA_VENCIDA" || a.tipo === "DESPESA_ESCALADA" ? "erro" : a.tipo === "DESPESA_RESPONDIDA" ? "ok" : despesa ? "atencao" : "info"}>{rotulo}</Selo>
+                    {a.vistoEm ? <span className="t-apoio text-tinta-suave">Visto</span> : <span className="t-apoio font-semibold">Sem ver</span>}
+                  </span>
+                  {a.titulo ? <span className="font-semibold">{a.titulo}</span> : null}
+                  <span className="t-apoio text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="flex flex-wrap gap-2">
+                    <Link href={destino} className="font-medium text-violeta-600 hover:underline" onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
+                      {despesa ? "Abrir a despesa" : "Abrir o conselho"}
+                    </Link>
+                    {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso: ${a.titulo ?? rotulo}`}>Marcar como visto</Botao>}
+                  </span>
+                </li>
+              );
+            }
             if (a.tipo.startsWith("DECISAO_")) {
               const aguardando = a.estado === "AGUARDANDO" && a.tipo !== "DECISAO_RESPONDIDA";
+              const semPedido = !a.pedidoId;
               return (
                 <li key={a.id} className={`grid gap-1 rounded-lg border p-3 t-texto ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
                   <span className="flex flex-wrap items-center gap-2">
@@ -245,9 +291,9 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                   <span><strong className="font-semibold">{a.protocolo}</strong> {a.titulo}</span>
                   <span className="t-apoio text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
                   <span className="flex flex-wrap gap-2">
-                    <Link href={aguardando ? "/decisoes?filtro=AGUARDANDO" : `/pedidos/pedido?id=${a.pedidoId}`} className="font-medium text-violeta-600 hover:underline"
+                    <Link href={aguardando || semPedido ? "/decisoes?filtro=AGUARDANDO" : `/pedidos/pedido?id=${a.pedidoId}`} className="font-medium text-violeta-600 hover:underline"
                       onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
-                      {aguardando ? "Decidir" : `Ver pedido ${a.protocolo ?? ""}`.trim()}
+                      {aguardando ? (a.tipo === "DECISAO_VOTO" ? "Votar" : "Decidir") : semPedido ? "Abrir Decisões" : `Ver pedido ${a.protocolo ?? ""}`.trim()}
                     </Link>
                     {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso da decisão do pedido ${a.protocolo}`}>Marcar como visto</Botao>}
                   </span>

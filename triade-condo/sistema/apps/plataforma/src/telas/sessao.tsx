@@ -35,7 +35,7 @@ export interface Painel {
   /** Vida em condomínio, para quem vê as reservas (peça R12): o que espera aprovação. */
   vida?: ResumoVida;
   /** Decisões esperando a resposta da pessoa, para quem pode aprovar (F7.4, AT-23). */
-  decisoes?: { aguardando: number; vencidas: number; maisAntigaDias: number | null };
+  decisoes?: { aguardando: number; vencidas: number; maisAntigaDias: number | null; votos?: number; despesas?: number };
   /** Encomendas guardadas, para quem vê a portaria (Portaria 1, PA-01). */
   portaria?: { guardadas: number; semAviso: number; avisoFalhou: number; antigas: number; dias: number };
 }
