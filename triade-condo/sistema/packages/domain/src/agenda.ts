@@ -48,6 +48,7 @@ export const FONTES_AGENDA = {
   CONTRATO: "Contratos",
   DOCUMENTO: "Documentos",
   ASSEMBLEIA: "Assembleias",
+  ENQUETE: "Enquetes",
 } as const;
 export type FonteAgenda = keyof typeof FONTES_AGENDA;
 
@@ -175,6 +176,13 @@ export function textoVencimento(hoje: string, data: string): string {
   if (n === 1) return "Vence amanhã";
   if (n > 1) return `Vence em ${n} dias`;
   return n === -1 ? "Venceu ontem" : `Venceu há ${-n} dias`;
+}
+
+/** "Fecha em 2 dias", "Fecha amanhã", "Fecha hoje": quanto falta para a enquete fechar (R7.2). */
+export function textoFechamento(hoje: string, data: string): string {
+  const n = diasEntre(hoje, data);
+  if (n <= 0) return "Fecha hoje";
+  return n === 1 ? "Fecha amanhã" : `Fecha em ${n} dias`;
 }
 
 /** O primeiro dia do mês de uma data. */

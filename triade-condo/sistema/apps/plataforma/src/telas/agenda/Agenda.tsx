@@ -1,8 +1,9 @@
 "use client";
 // Agenda do condomínio (peça R7; AG-01 a AG-05, AG-09; DC15, telas-modelo agenda-computador e
 // agenda-celular): em lista, por semana ou no mês, com as datas de outras telas (feriados,
-// preventivas, reservas confirmadas, vencimentos de contratos e documentos e assembleias
-// convocadas), cada origem com a sua cor. "Mostrar" liga e desliga cada origem; o tipo do
+// preventivas, reservas confirmadas, vencimentos de contratos e documentos, assembleias
+// convocadas e enquetes abertas, no dia em que fecham), cada origem com a sua cor. Na Lista, a
+// faixa "Enquetes abertas agora" fica no alto (R7.2). "Mostrar" liga e desliga cada origem; o tipo do
 // compromisso fica em Filtros. No celular, uma faixa com os dias da semana fica no alto, o
 // "Mostrar" vai para Filtros e o "Novo compromisso" flutua sobre a barra de baixo. A vista e a
 // data ficam no endereço; o filtro fica guardado para a pessoa neste aparelho.
@@ -16,7 +17,7 @@ import { Aviso, Botao, Carregando, CampoSelecao, Chip, Dialogo, ErroCarregar, Ic
 import { useCelular } from "../celular.ts";
 import { useCarregar } from "../sessao.tsx";
 import type { Agenda as DadosAgenda, CompromissoAgenda, DataDeOutraTela, OpcoesAgenda, Recado } from "../tipos.ts";
-import { LinhaCompromisso, LinhaDataDeFora, tituloCurto } from "./comum.tsx";
+import { EnquetesAbertas, LinhaCompromisso, LinhaDataDeFora, tituloCurto } from "./comum.tsx";
 import { FormCompromisso } from "./FormCompromisso.tsx";
 
 type Vista = "LISTA" | "SEMANA" | "MES";
@@ -40,7 +41,7 @@ function periodo(vista: Vista, data: string): { de: string; ate: string } {
 
 const FONTES = Object.keys(FONTES_AGENDA) as FonteAgenda[];
 /** A ordem do "Mostrar": o que a gestão marca primeiro, os feriados por último. */
-const ORDEM_MOSTRAR: FonteAgenda[] = ["PREVENTIVA", "RESERVA", "CONTRATO", "DOCUMENTO", "ASSEMBLEIA", "FERIADO"];
+const ORDEM_MOSTRAR: FonteAgenda[] = ["PREVENTIVA", "RESERVA", "CONTRATO", "DOCUMENTO", "ASSEMBLEIA", "ENQUETE", "FERIADO"];
 
 const PADRAO_OCULTAS: FonteAgenda[] = ["FERIADO"];
 /** Quantas origens a pessoa desligou além do que já vem desligado. */
@@ -111,7 +112,10 @@ export function Agenda() {
   const opcoes = useCarregar<OpcoesAgenda>("/v1/condominio/agenda/opcoes");
   const guardado = useSyncExternalStore(assinar, lerGuardado, () => "");
   const [escolhido, setEscolhido] = useState<Filtro | null>(null);
-  const filtro = escolhido ?? interpretar(guardado);
+  const filtroGuardado = escolhido ?? interpretar(guardado);
+  // Enquetes só para quem vê as enquetes (R7.2): sem isso, nem o filtro aparece nem conta como desligado.
+  const veEnquetes = carga.estado === "pronto" && (carga.dados.pode.enquetes ?? false);
+  const filtro = veEnquetes ? filtroGuardado : { ...filtroGuardado, ocultas: filtroGuardado.ocultas.filter((f) => f !== "ENQUETE") };
   const [novo, setNovo] = useState(false);
   const [recado, setRecado] = useState<Recado>(null);
 
@@ -133,6 +137,8 @@ export function Agenda() {
   const alternar = (f: FonteAgenda) =>
     mudarFiltro({ ocultas: filtro.ocultas.includes(f) ? filtro.ocultas.filter((x) => x !== f) : [...filtro.ocultas, f] });
   const dias = porDia(visiveis, datas);
+  const abertas = dados && vista === "LISTA" && veEnquetes && !filtro.ocultas.includes("ENQUETE") && de <= hoje && hoje <= ate
+    ? dados.enquetesAbertas ?? [] : [];
   const podeEditar = (dados?.pode.editar ?? false) && opcoes.estado === "pronto" && opcoes.dados.pode.editar;
 
   const celular = useCelular();
@@ -148,7 +154,7 @@ export function Agenda() {
     <div role="group" aria-label="O que mostrar na agenda" className="flex flex-wrap items-center gap-2">
       <span className="t-apoio mr-1" aria-hidden="true">Mostrar</span>
       <ChipFonte tipo="COMPROMISSO" ativo={filtro.compromissos} aoMudar={() => mudarFiltro({ compromissos: !filtro.compromissos })}>Compromissos</ChipFonte>
-      {ORDEM_MOSTRAR.map((f) => <ChipFonte key={f} tipo={f} ativo={!filtro.ocultas.includes(f)} aoMudar={() => alternar(f)}>{FONTES_AGENDA[f]}</ChipFonte>)}
+      {ORDEM_MOSTRAR.filter((f) => f !== "ENQUETE" || veEnquetes).map((f) => <ChipFonte key={f} tipo={f} ativo={!filtro.ocultas.includes(f)} aoMudar={() => alternar(f)}>{FONTES_AGENDA[f]}</ChipFonte>)}
     </div>
   );
   const botaoFiltros = (
@@ -163,7 +169,7 @@ export function Agenda() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="t-titulo-tela">Agenda</h1>
-          <p className="t-apoio mt-1 max-md:hidden">Reuniões, visitas, preventivas, reservas e vencimentos do condomínio num lugar só.</p>
+          <p className="t-apoio mt-1 max-md:hidden">Reuniões, visitas, preventivas, reservas, vencimentos e votações do condomínio num lugar só.</p>
         </div>
         {podeEditar ? <div className="max-md:hidden">{novoCompromisso}</div> : null}
         {celular ? botaoFiltros : null}
@@ -191,6 +197,7 @@ export function Agenda() {
 
       {carga.estado === "carregando" ? <Carregando rotulo="Carregando a agenda…" /> : null}
       {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
+      {dados && abertas.length ? <EnquetesAbertas enquetes={abertas} hoje={hoje} /> : null}
       {dados && vista === "LISTA" ? <VistaLista dias={dias} hoje={hoje} temFiltro={Boolean(filtro.tipo) || !filtro.compromissos || desligadas(filtro.ocultas) > 0} /> : null}
       {dados && vista === "SEMANA" ? <VistaSemana de={de} dias={dias} hoje={hoje} abrirDia={(d) => ir({ vista: "LISTA", data: d })} /> : null}
       {dados && vista === "MES" ? <VistaMes data={data} dias={dias} hoje={hoje} abrirDia={(d) => ir({ vista: "LISTA", data: d })} /> : null}
@@ -262,8 +269,10 @@ function VistaLista({ dias, hoje, temFiltro }: { dias: Dias; hoje: string; temFi
               </span>
             </div>
             <ul className="grid gap-2">
-              {dia.datas.map((x) => <LinhaDataDeFora key={`f-${x.fonte}-${x.id ?? x.titulo}`} d={x} hoje={hoje} />)}
-              {dia.compromissos.map((c) => <LinhaCompromisso key={c.id} c={c} />)}
+              {/* O dia todo primeiro e o resto pela hora, venha de onde vier (a enquete das 23:59 depois da reunião das 19:00). */}
+              {[...dia.datas.map((x) => ({ hora: x.horaInicio ?? "", item: <LinhaDataDeFora key={`f-${x.fonte}-${x.id ?? x.titulo}`} d={x} hoje={hoje} /> })),
+                ...dia.compromissos.map((c) => ({ hora: c.horaInicio ?? "", item: <LinhaCompromisso key={c.id} c={c} /> }))]
+                .sort((a, b) => a.hora.localeCompare(b.hora)).map((x) => x.item)}
             </ul>
           </section>
         );
