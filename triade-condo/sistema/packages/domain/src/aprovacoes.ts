@@ -139,8 +139,9 @@ export const regrasDecisoesSchema = z
     if (d.quorum === "MINIMO" && d.minimo === null) ctx.addIssue({ code: "custom", path: ["minimo"], message: "Diga quantos votos" });
   });
 
+/** O motivo é opcional (quadro 412); quando vem, de 2 a 200 caracteres, como no banco. */
 export const ausenciaSchema = z
-  .object({ de: data, ate: data, motivo: z.string().trim().min(2).max(200) })
+  .object({ de: data, ate: data, motivo: opcional(z.string().trim().max(200)).refine((v) => v === null || v.length >= 2, "De 2 a 200 caracteres") })
   .superRefine((d, ctx) => {
     if (d.ate < d.de) ctx.addIssue({ code: "custom", path: ["ate"], message: "O fim vem depois do começo" });
   });
@@ -294,3 +295,83 @@ export function descreverEventoAprovacao(acao: string, d: Record<string, unknown
       return null;
   }
 }
+
+// ---------------------------------------------------------------------------------------
+// Frases das telas (quadros 410, 413, 414, 416 e 421).
+
+export interface RegrasConselhoResumo {
+  quorum: QuorumConselho;
+  minimo?: number | null;
+  empate: keyof typeof EMPATES_CONSELHO;
+  titularesEmDia: number;
+  necessarios?: number | null;
+  podePedir: boolean;
+}
+
+const votos = (n: number) => (n === 1 ? "1 voto" : `${n} votos`);
+const titulares = (n: number) => (n === 1 ? "1 titular" : `${n} titulares`);
+
+/** Quantos votos aprovam com n titulares, pela regra (como votos_necessarios no banco); null é sem quórum possível. */
+export function votosQueAprovam(quorum: QuorumConselho, n: number, minimo?: number | null): number | null {
+  if (n < 1) return null;
+  if (quorum === "MAIORIA") return Math.floor(n / 2) + 1;
+  if (quorum === "TODOS") return n;
+  return minimo && minimo <= n ? minimo : null;
+}
+
+/** "Maioria dos titulares: 3 de 4 votos aprovam. Empate ou falta de votos no prazo devolve a decisão ao síndico." */
+export function textoComoDecide(r: RegrasConselhoResumo): string {
+  const nome = { MAIORIA: "Maioria dos titulares", TODOS: "Todos os titulares", MINIMO: "Um número mínimo" }[r.quorum];
+  const empate = r.empate === "SINDICO" ? "Empate ou falta de votos no prazo devolve a decisão ao síndico."
+    : "Empate ou falta de votos no prazo deixa a decisão devolvida.";
+  if (!r.titularesEmDia) return `${nome}. Ainda não há titular com mandato em dia. ${empate}`;
+  if (!r.podePedir || !r.necessarios) {
+    return `${nome}: a regra pede ${votos(r.minimo ?? 0)} e só há ${titulares(r.titularesEmDia)} com mandato em dia. ${empate}`;
+  }
+  return `${nome}: ${r.necessarios} de ${r.titularesEmDia} ${r.titularesEmDia === 1 ? "voto aprova" : "votos aprovam"}. ${empate}`;
+}
+
+/** Em Quem decide (quadro 413): "4 titulares votam; maioria: 3 votos aprovam." */
+export function textoQuemVotaNoConselho(r: RegrasConselhoResumo): string {
+  const regra = { MAIORIA: "maioria", TODOS: "todos", MINIMO: "mínimo" }[r.quorum];
+  return `${titulares(r.titularesEmDia)} ${r.titularesEmDia === 1 ? "vota" : "votam"}; ${regra}: ${votos(r.necessarios ?? 0)} ${r.necessarios === 1 ? "aprova" : "aprovam"}.`;
+}
+
+/** O estado "Sem quórum possível" (quadro 422). */
+export function textoSemQuorum(r: RegrasConselhoResumo): string {
+  const pede = r.quorum === "MINIMO" ? votos(r.minimo ?? 0) : "o quórum";
+  return `Só ${titulares(r.titularesEmDia)} com mandato em dia e a regra pede ${pede}. Ajuste o conselho ou a regra antes de pedir.`;
+}
+
+/** A escolha que mais tem votos e quantos (empate: a de menor número). Sem voto, null. */
+export function lider(contagem: Record<string, number> | undefined): { escolha: string; votos: number } | null {
+  const lista = Object.entries(contagem ?? {}).filter(([, n]) => n > 0)
+    .sort(([a, x], [b, y]) => y - x || a.localeCompare(b, "pt-BR", { numeric: true }));
+  return lista.length ? { escolha: lista[0]![0], votos: lista[0]![1] } : null;
+}
+
+/** O placar do quadro 414: "2 de 3 votos para aprovar a alternativa 2"; "1 de 2 votos para aprovar" (despesa). */
+export function textoPlacar(contagem: Record<string, number> | undefined, necessarios: number): string {
+  const l = lider(contagem);
+  if (!l) return `0 de ${votos(necessarios)} para decidir`;
+  const de = `${l.votos} de ${votos(necessarios)}`;
+  if (l.escolha === "DEVOLVER") return `${de} para devolver`;
+  if (l.escolha === "APROVAR") return `${de} para aprovar`;
+  if (l.escolha === "RECUSAR") return `${de} para recusar`;
+  return `${de} para aprovar a alternativa ${l.escolha}`;
+}
+
+/** "3 de 4 titulares votaram. Falta Lúcia. Se ninguém chegar a 3 votos até 31/10, a decisão volta para Ana Souza decidir." */
+export function textoAndamentoVotacao(v: { votaram: number; titulares: number; necessarios: number; faltam?: string[] },
+                                      prazo: string, empate: keyof typeof EMPATES_CONSELHO, sindico: string | null, item: "decisão" | "despesa" = "decisão"): string {
+  const ddmm = `${prazo.slice(8, 10)}/${prazo.slice(5, 7)}`;
+  const falta = textoFaltam(v.faltam ?? []);
+  const fim = empate === "SINDICO"
+    ? `a ${item} volta para ${sindico ?? "o síndico"} decidir`
+    : item === "despesa" ? "a despesa fica recusada" : "a decisão fica devolvida";
+  return [`${v.votaram} de ${titulares(v.titulares)} ${v.votaram === 1 ? "votou" : "votaram"}.`, falta ? `${falta}.` : null,
+    `Se ninguém chegar a ${votos(v.necessarios)} até ${ddmm}, ${fim}.`].filter(Boolean).join(" ");
+}
+
+/** O link do conselheiro, para copiar quando o WhatsApp não manda (envio COPIAR). */
+export const caminhoLinkConselho = (codigo: string) => `/conselho/${encodeURIComponent(codigo)}`;

@@ -16,6 +16,14 @@ import {
   textoMandato,
   textoVotacao,
   votoSchema,
+  caminhoLinkConselho,
+  lider,
+  textoAndamentoVotacao,
+  textoComoDecide,
+  textoPlacar,
+  textoQuemVotaNoConselho,
+  textoSemQuorum,
+  votosQueAprovam,
 } from "./aprovacoes.ts";
 import { descreverEventoDecisao, pedirDecisaoSchema } from "./decisoes.ts";
 
@@ -41,8 +49,11 @@ describe("o conselho (V-14)", () => {
     expect(campos(regrasDecisoesSchema.safeParse({ ...base, quorum: "MINIMO" }))).toEqual(["minimo"]);
     expect(campos(regrasDecisoesSchema.safeParse({ ...base, alcada: 10.5 }))).toEqual(["alcada"]);
   });
-  it("a ausência: o fim vem depois do começo", () => {
+  it("a ausência: o fim vem depois do começo; o motivo é opcional (quadro 412)", () => {
     expect(campos(ausenciaSchema.safeParse({ de: "2026-12-10", ate: "2026-12-01", motivo: "Viagem" }))).toEqual(["ate"]);
+    expect(ausenciaSchema.parse({ de: "2026-12-01", ate: "2026-12-10" }).motivo).toBeNull();
+    expect(ausenciaSchema.parse({ de: "2026-12-01", ate: "2026-12-10", motivo: "  " }).motivo).toBeNull();
+    expect(campos(ausenciaSchema.safeParse({ de: "2026-12-01", ate: "2026-12-10", motivo: "x" }))).toEqual(["motivo"]);
   });
 });
 
@@ -119,5 +130,38 @@ describe("a despesa para aprovar (FC-10)", () => {
     expect(descreverEventoAprovacao("despesa.paga_fora", { pagaEm: "2026-11-03" })).toBe("Paga fora do sistema em 03/11/2026");
     expect(descreverEventoAprovacao("conselho.voto", { antes: "1" })).toBe("Voto trocado");
     expect(descreverEventoAprovacao("outra.coisa", {})).toBeNull();
+  });
+});
+
+describe("as frases das telas do conselho (quadros 410, 413, 414, 422)", () => {
+  const regras = { quorum: "MAIORIA" as const, empate: "SINDICO" as const, titularesEmDia: 4, necessarios: 3, podePedir: true };
+  it("os votos que aprovam seguem a regra, como no banco", () => {
+    expect([1, 2, 3, 4, 5].map((n) => votosQueAprovam("MAIORIA", n))).toEqual([1, 2, 2, 3, 3]);
+    expect(votosQueAprovam("TODOS", 4)).toBe(4);
+    expect(votosQueAprovam("MINIMO", 4, 2)).toBe(2);
+    expect(votosQueAprovam("MINIMO", 2, 3)).toBeNull();
+    expect(votosQueAprovam("MAIORIA", 0)).toBeNull();
+  });
+  it("como o conselho decide e quem vota", () => {
+    expect(textoComoDecide(regras)).toBe("Maioria dos titulares: 3 de 4 votos aprovam. Empate ou falta de votos no prazo devolve a decisão ao síndico.");
+    expect(textoComoDecide({ ...regras, empate: "DEVOLVIDA", quorum: "TODOS", necessarios: 4 }))
+      .toBe("Todos os titulares: 4 de 4 votos aprovam. Empate ou falta de votos no prazo deixa a decisão devolvida.");
+    expect(textoComoDecide({ ...regras, titularesEmDia: 0, necessarios: null, podePedir: false })).toContain("Ainda não há titular com mandato em dia.");
+    expect(textoQuemVotaNoConselho(regras)).toBe("4 titulares votam; maioria: 3 votos aprovam.");
+    expect(textoSemQuorum({ ...regras, quorum: "MINIMO", minimo: 3, titularesEmDia: 2, necessarios: null, podePedir: false }))
+      .toBe("Só 2 titulares com mandato em dia e a regra pede 3 votos. Ajuste o conselho ou a regra antes de pedir.");
+  });
+  it("o placar e o andamento da votação", () => {
+    expect(lider({ "1": 1, "2": 2 })).toEqual({ escolha: "2", votos: 2 });
+    expect(lider({ "2": 1, "1": 1 })).toEqual({ escolha: "1", votos: 1 });
+    expect(lider({})).toBeNull();
+    expect(textoPlacar({ "2": 2, DEVOLVER: 1 }, 3)).toBe("2 de 3 votos para aprovar a alternativa 2");
+    expect(textoPlacar({ APROVAR: 1 }, 2)).toBe("1 de 2 votos para aprovar");
+    expect(textoPlacar(undefined, 2)).toBe("0 de 2 votos para decidir");
+    expect(textoAndamentoVotacao({ votaram: 3, titulares: 4, necessarios: 3, faltam: ["Lúcia Andrade"] }, "2026-10-31", "SINDICO", "Ana Souza"))
+      .toBe("3 de 4 titulares votaram. Falta Lúcia. Se ninguém chegar a 3 votos até 31/10, a decisão volta para Ana Souza decidir.");
+    expect(textoAndamentoVotacao({ votaram: 1, titulares: 3, necessarios: 2, faltam: [] }, "2026-11-10", "DEVOLVIDA", null, "despesa"))
+      .toBe("1 de 3 titulares votou. Se ninguém chegar a 2 votos até 10/11, a despesa fica recusada.");
+    expect(caminhoLinkConselho("abc_-1")).toBe("/conselho/abc_-1");
   });
 });
