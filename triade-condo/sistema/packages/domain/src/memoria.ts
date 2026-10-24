@@ -46,6 +46,18 @@ export const guardarELigarSchema = z.object({
   versao: versao.nullable().optional(),
   avisarDias: z.number().int().min(0).max(365).default(60),
 });
+/** O arquivo do contrato do prestador (D4.18, decisão D.2): um documento do tipo Contrato em
+ * Documentos, ligado ao prestador. Guardar e ligar numa chamada só; o arquivo sobe depois. */
+export const guardarContratoPrestadorSchema = z.object({
+  versao,
+  documento: documentoSchema.refine((d) => d.tipo === "CONTRATO", { path: ["tipo"], message: "O documento é do tipo Contrato" }),
+});
+/** Ligar um contrato já guardado e, se vier, mudar a data de fim, que vale para os dois. */
+export const ligarContratoPrestadorSchema = z.object({
+  versao,
+  documentoId: id,
+  valeAte: data.nullable().optional().transform((v) => v ?? null),
+});
 export const novoItemProntuarioSchema = z.object({
   nome: z.string().trim().min(3).max(120),
   grupo: z.enum(chaves(GRUPOS_PRONTUARIO)),
@@ -93,7 +105,60 @@ export type FiltroLinhaDoTempo = keyof typeof FILTROS_LINHA_DO_TEMPO;
 export const buscaLinhaDoTempoSchema = z.object({
   filtro: z.enum(chaves(FILTROS_LINHA_DO_TEMPO)).default("TUDO"),
   antes: data.optional(),
+  /** A busca e o período (D4.18, decisão D.3 de 24/10/2026): a busca olha o título e o texto. */
+  busca: z.string().trim().max(60).optional().transform((v) => (v ? v : undefined)),
+  de: data.optional(),
+  ate: data.optional(),
+})
+  .refine((q) => !q.de || !q.ate || q.de <= q.ate, { path: ["ate"], message: "O fim do período vem depois do começo" });
+
+/** Histórico do prontuário (D4.18, decisão D.1): de um item ou de todos, 50 por vez. */
+export const buscaHistoricoProntuarioSchema = z.object({
+  item: id.optional(),
+  antes: z.string().datetime({ offset: true }).optional(),
 });
+/** O que mudou num item do prontuário; VENCEU entra sozinho, pela data de validade. */
+export const ACOES_HISTORICO_PRONTUARIO = {
+  ITEM_CRIADO: "Item criado",
+  LIGAR: "Ligado",
+  DESLIGAR: "Desligado",
+  NAO_SE_APLICA: "Não se aplica",
+  VALE: "Voltou a valer",
+  VENCEU: "Venceu",
+} as const;
+export type AcaoHistoricoProntuario = keyof typeof ACOES_HISTORICO_PRONTUARIO;
+export interface EventoHistoricoProntuario {
+  id: string;
+  quando: string;
+  data: string;
+  acao: AcaoHistoricoProntuario;
+  itemId?: string;
+  item?: string;
+  grupo?: GrupoProntuario;
+  autor?: string;
+  documento?: string;
+  avisarDias?: number;
+  motivo?: string;
+}
+/** A linha do histórico do prontuário: o que mudou no título; o item, o detalhe e quem fez embaixo. */
+export function descreverHistoricoProntuario(e: EventoHistoricoProntuario): { titulo: string; detalhe: string } {
+  const quem = e.acao === "VENCEU" ? "Sozinho, pela data de validade" : e.autor;
+  const juntar = (...p: (string | null | undefined)[]) => p.filter(Boolean).join(" · ");
+  switch (e.acao) {
+    case "LIGAR":
+      return { titulo: `Documento ligado: ${e.documento ?? "documento"}`, detalhe: juntar(e.item, e.avisarDias !== undefined && e.avisarDias !== null ? `avisa ${e.avisarDias} dias antes` : null, quem) };
+    case "DESLIGAR":
+      return { titulo: "Documento desligado", detalhe: juntar(e.item, quem) };
+    case "NAO_SE_APLICA":
+      return { titulo: "Marcado como não se aplica", detalhe: juntar(e.item, e.motivo ? `“${e.motivo}”` : null, quem) };
+    case "VALE":
+      return { titulo: "Voltou a valer", detalhe: juntar(e.item, quem) };
+    case "ITEM_CRIADO":
+      return { titulo: "Item criado", detalhe: juntar(e.item, e.grupo ? GRUPOS_PRONTUARIO[e.grupo] : null, quem) };
+    case "VENCEU":
+      return { titulo: `Venceu: ${e.documento ?? "documento"}`, detalhe: juntar(e.item, quem) };
+  }
+}
 
 /** Manual do prédio (MP-14). */
 export const secaoManualSchema = z.object({

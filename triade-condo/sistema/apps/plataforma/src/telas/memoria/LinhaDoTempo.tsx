@@ -3,14 +3,16 @@
 // frontend, quadros 91 a 94; CT-03): a história do prédio montada sozinha com o que já acontece no
 // sistema e com o que a gestão anota, agrupada por mês. A fonte escolhe-se em Filtros, uma por vez,
 // e fica escrita ao lado do botão. A linha inteira abre a anotação, a manutenção ou o documento.
+// Busca ao lado de Filtros e período em Filtros (D4.18, decisão D.3 de 24/10/2026; quadros 262 e
+// 263): a busca olha o título e o texto, a partir de 3 letras, e marca o pedaço achado.
 // Anotação não se apaga: corrigir guarda a versão anterior e tirar da linha do tempo pede motivo.
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { FILTROS_LINHA_DO_TEMPO, mostrarDataCurta, TIPOS_ANOTACAO, type FiltroLinhaDoTempo, type TipoAnotacao } from "@triade/domain";
 import {
-  AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Icone, Selo,
+  AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Chip, Dialogo, ErroCarregar, Icone, Selo,
   textoDoErro, Vazio, type ErroApi, type NomeIcone,
 } from "@triade/ui";
 import type { PropsAbaMemoria } from "../documentos/DocumentosEMemoria.tsx";
@@ -54,12 +56,82 @@ const mesDe = (d: string) => {
   const t = new Date(`${d.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
-const lerFiltro = (b: URLSearchParams): FiltroLinhaDoTempo => (Object.keys(FILTROS_LINHA_DO_TEMPO) as FiltroLinhaDoTempo[]).find((f) => f === b.get("filtro")) ?? "TUDO";
+const DIA = /^\d{4}-\d{2}-\d{2}$/;
+type FiltrosLinha = { filtro: FiltroLinhaDoTempo; busca: string; de: string; ate: string };
+function lerFiltros(b: URLSearchParams): FiltrosLinha {
+  const v = (k: string) => b.get(k) ?? "";
+  return {
+    filtro: (Object.keys(FILTROS_LINHA_DO_TEMPO) as FiltroLinhaDoTempo[]).find((f) => f === v("filtro")) ?? "TUDO",
+    busca: v("busca").trim().slice(0, 60), de: DIA.test(v("de")) ? v("de") : "", ate: DIA.test(v("ate")) ? v("ate") : "",
+  };
+}
+function consulta(f: FiltrosLinha, comTudo = false): string {
+  const q = new URLSearchParams();
+  if (comTudo || f.filtro !== "TUDO") q.set("filtro", f.filtro);
+  if (f.busca) q.set("busca", f.busca);
+  if (f.de) q.set("de", f.de);
+  if (f.ate) q.set("ate", f.ate);
+  return q.toString();
+}
+
+/** Os atalhos do período da linha do tempo, contados a partir de hoje em Brasília. */
+export function periodosLinha(hoje = hojeEmBrasilia()): { nome: string; de: string; ate: string }[] {
+  const [a, m] = hoje.split("-").map(Number) as [number, number];
+  const fimDoMes = new Date(Date.UTC(a, m, 0)).toISOString().slice(0, 10);
+  const umAno = new Date(Date.UTC(a - 1, m - 1, Number(hoje.slice(8)) + 1)).toISOString().slice(0, 10);
+  return [
+    { nome: "Este mês", de: `${hoje.slice(0, 7)}-01`, ate: fimDoMes },
+    { nome: "Este ano", de: `${a}-01-01`, ate: `${a}-12-31` },
+    { nome: "Últimos 12 meses", de: umAno, ate: hoje },
+  ];
+}
+const br = (d: string) => d.split("-").reverse().join("/");
+/** Como o período aparece ao lado de Filtros: o nome do atalho ou as datas. */
+export function nomePeriodoLinha(de: string, ate: string, hoje = hojeEmBrasilia()): string {
+  const atalho = periodosLinha(hoje).find((p) => p.de === de && p.ate === ate);
+  if (atalho) return atalho.nome;
+  if (de && ate) return `${br(de)} a ${br(ate)}`;
+  return de ? `Desde ${br(de)}` : `Até ${br(ate)}`;
+}
+
+/** Marca, sem diferença de maiúscula, o pedaço achado pela busca. */
+export function marcar(texto: string, busca: string): ReactNode {
+  const b = busca.trim().toLowerCase();
+  if (b.length < 1) return texto;
+  const partes: ReactNode[] = [];
+  let i = 0;
+  for (let j = texto.toLowerCase().indexOf(b); j >= 0; j = texto.toLowerCase().indexOf(b, i)) {
+    partes.push(texto.slice(i, j), <mark key={j} className="rounded-[4px] bg-laranja-100 px-0.5 text-tinta">{texto.slice(j, j + b.length)}</mark>);
+    i = j + b.length;
+  }
+  partes.push(texto.slice(i));
+  return <>{partes.map((p, k) => <Fragment key={k}>{p}</Fragment>)}</>;
+}
+
+/** A busca procura enquanto se digita, a partir de 3 letras; Enter busca na hora. */
+function BuscaLinha({ inicial, aoBuscar }: { inicial: string; aoBuscar: (b: string) => void }) {
+  const [texto, setTexto] = useState(inicial);
+  useEffect(() => {
+    const t = texto.trim();
+    if (t === inicial || (t.length > 0 && t.length < 3)) return;
+    const espera = setTimeout(() => aoBuscar(t), 400);
+    return () => clearTimeout(espera);
+  }, [texto, inicial, aoBuscar]);
+  return (
+    <form role="search" aria-label="Buscar na linha do tempo" className="busca min-w-0 flex-1 md:max-w-[360px]" onSubmit={(e) => { e.preventDefault(); aoBuscar(texto.trim()); }}>
+      <Icone nome="busca" />
+      <label htmlFor="lt-busca" className="sr-only">Buscar na linha do tempo</label>
+      <input id="lt-busca" className="campo" type="search" maxLength={60} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Buscar por uma palavra" />
+    </form>
+  );
+}
 
 export function AbaLinhaDoTempo({ feito, definir }: PropsAbaMemoria) {
   const router = useRouter();
-  const filtro = lerFiltro(useSearchParams());
-  const carga = useCarregar<LinhaDoTempo>(`/v1/condominio/memoria/linha-do-tempo?filtro=${filtro}`);
+  const f = lerFiltros(useSearchParams());
+  const filtro = f.filtro;
+  const api = consulta(f, true);
+  const carga = useCarregar<LinhaDoTempo>(`/v1/condominio/memoria/linha-do-tempo?${api}`);
   const [pagina, setPagina] = useState<{ de: LinhaDoTempo | null; antigos: EventoMemoria[]; proximo: string | null }>({ de: null, antigos: [], proximo: null });
   const [buscando, setBuscando] = useState(false);
   const [anotar, setAnotar] = useState(false);
@@ -73,12 +145,17 @@ export function AbaLinhaDoTempo({ feito, definir }: PropsAbaMemoria) {
   }, [podeAnotar, definir]);
   // Nova carga (outro filtro ou depois de anotar): recomeça do mais novo.
   const { antigos, proximo } = pagina.de === dados ? pagina : { antigos: [], proximo: dados?.maisAntigosAntes ?? null };
-  const ir = (f: FiltroLinhaDoTempo) => router.replace(f === "TUDO" ? "/documentos/linha" : `/documentos/linha?filtro=${f}`, { scroll: false });
+  const ir = (m: Partial<FiltrosLinha>) => {
+    const novo = consulta({ ...f, ...m });
+    router.replace(novo ? `/documentos/linha?${novo}` : "/documentos/linha", { scroll: false });
+  };
+  const periodo = f.de || f.ate ? nomePeriodoLinha(f.de, f.ate) : "";
+  const emUso = (filtro !== "TUDO" ? 1 : 0) + (periodo ? 1 : 0);
 
   async function maisAntigos() {
     if (!proximo) return;
     setBuscando(true);
-    const r = await chamarApi<LinhaDoTempo>(`/v1/condominio/memoria/linha-do-tempo?filtro=${filtro}&antes=${proximo}`);
+    const r = await chamarApi<LinhaDoTempo>(`/v1/condominio/memoria/linha-do-tempo?${api}&antes=${proximo}`);
     setBuscando(false);
     if (r.ok) setPagina({ de: dados, antigos: [...antigos, ...r.dados.eventos], proximo: r.dados.maisAntigosAntes ?? null });
   }
@@ -94,13 +171,21 @@ export function AbaLinhaDoTempo({ feito, definir }: PropsAbaMemoria) {
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Botao variante="contorno" tamanho="m" aria-label={filtro === "TUDO" ? "Filtros" : `Filtros, mostrando ${FILTROS_LINHA_DO_TEMPO[filtro]}`} onClick={() => setFiltrando(true)}>
-          <Icone nome="filtro" />Filtros
+        <BuscaLinha key={f.busca} inicial={f.busca} aoBuscar={(b) => ir({ busca: b })} />
+        <Botao variante="contorno" tamanho="m" aria-label={emUso ? `Filtros, ${emUso} em uso` : "Filtros"} onClick={() => setFiltrando(true)}>
+          <Icone nome="filtro" />{emUso ? `Filtros · ${emUso}` : "Filtros"}
         </Botao>
-        {filtro === "TUDO" ? <span className="t-apoio">Mostrando tudo: anotado, manutenção, documentos, comunicados e pessoas</span> : (
+        {periodo ? <Chip icone="calendario" aoTirar={() => ir({ de: "", ate: "" })} rotuloTirar="Tirar o período">{periodo}</Chip> : null}
+        {filtro === "TUDO" && !f.busca && !periodo ? <span className="t-apoio">Mostrando tudo: anotado, manutenção, documentos, comunicados e pessoas</span> : null}
+        {filtro !== "TUDO" ? (
           <span className="flex items-center gap-2 t-texto"><span className="t-apoio">Mostrando: {FILTROS_LINHA_DO_TEMPO[filtro]}</span>
-            <Botao variante="discreto" tamanho="p" onClick={() => ir("TUDO")}>Limpar</Botao></span>
-        )}
+            <Botao variante="discreto" tamanho="p" onClick={() => ir({ filtro: "TUDO" })}>Limpar</Botao></span>
+        ) : null}
+        {dados && (f.busca || periodo) ? (
+          <span className="t-apoio" role="status">
+            {eventos.length === 1 ? "1 resultado" : `${eventos.length}${proximo ? " ou mais" : ""} resultados`}{f.busca ? ` para “${f.busca}”` : ""}{periodo ? ` · ${periodo.replace(/^./, (l) => l.toLowerCase())}` : ""}
+          </span>
+        ) : null}
       </div>
       {carga.estado === "carregando" ? <Carregando rotulo="Carregando a linha do tempo…" /> : null}
       {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} oQue="a linha do tempo" /> : null}
@@ -108,15 +193,21 @@ export function AbaLinhaDoTempo({ feito, definir }: PropsAbaMemoria) {
         <section aria-label="Linha do tempo" className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
           {eventos.length === 0 ? (
             <div className="md:p-5">
-              <Vazio titulo="Nada aqui ainda" icone="relogio">
-                {filtro === "ANOTADO" ? "Anote decisões, combinados, obras e ocorrências que não passaram por nenhuma tela." : "O que acontece no sistema entra aqui sozinho."}
-              </Vazio>
+              {f.busca || periodo ? (
+                <Vazio titulo="Nada encontrado" icone="busca">
+                  {f.busca ? `Nada com “${f.busca}”` : "Nada"}{periodo ? " neste período" : ""}. Tente outra palavra ou tire o período em Filtros.
+                </Vazio>
+              ) : (
+                <Vazio titulo="Nada aqui ainda" icone="relogio">
+                  {filtro === "ANOTADO" ? "Anote decisões, combinados, obras e ocorrências que não passaram por nenhuma tela." : "O que acontece no sistema entra aqui sozinho."}
+                </Vazio>
+              )}
             </div>
           ) : meses.map((m) => (
             <div key={m.mes}>
               <h2 className="t-rotulo pt-3 pb-2 md:border-t md:border-linha md:bg-fundo md:px-5 md:first:border-t-0">{m.mes}</h2>
               <ol className="grid max-md:gap-2.5">
-                {m.eventos.map((e) => <LinhaEvento key={`${e.fonte}-${e.id}-${e.data}`} e={e} abrir={() => setAberta(e.id)} />)}
+                {m.eventos.map((e) => <LinhaEvento key={`${e.fonte}-${e.id}-${e.data}`} e={e} busca={f.busca} abrir={() => setAberta(e.id)} />)}
               </ol>
             </div>
           ))}
@@ -128,14 +219,14 @@ export function AbaLinhaDoTempo({ feito, definir }: PropsAbaMemoria) {
         </section>
       ) : null}
       <p className="t-apoio">O que tem o selo Anotado foi escrito à mão; o resto vem sozinho de outras partes. Cada um vê aqui só o que já pode ver no resto do sistema.</p>
-      {filtrando ? <FiltrosLinha atual={filtro} aoFechar={() => setFiltrando(false)} aplicar={(f) => { setFiltrando(false); ir(f); }} /> : null}
+      {filtrando ? <JanelaFiltrosLinha f={f} aoFechar={() => setFiltrando(false)} aplicar={(m) => { setFiltrando(false); ir(m); }} /> : null}
       {anotar ? <FormAnotacao aoFechar={() => setAnotar(false)} aoSalvar={mudou} /> : null}
       {aberta ? <AnotacaoAberta id={aberta} aoFechar={() => setAberta(null)} aoMudar={mudou} /> : null}
     </div>
   );
 }
 
-function LinhaEvento({ e, abrir }: { e: EventoMemoria; abrir: () => void }) {
+function LinhaEvento({ e, busca, abrir }: { e: EventoMemoria; busca: string; abrir: () => void }) {
   const anotado = e.fonte === "ANOTADO";
   const link = linkDo(e);
   const classeTitulo = "text-left font-medium text-tinta after:absolute after:inset-0 after:content-[''] hover:text-violeta-600";
@@ -146,9 +237,9 @@ function LinhaEvento({ e, abrir }: { e: EventoMemoria; abrir: () => void }) {
     <li className="relative grid grid-cols-[52px_minmax(0,1fr)_20px] items-center gap-x-4 gap-y-1 px-5 py-3.5 hover:bg-violeta-50/50 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 md:grid-cols-[52px_minmax(0,1fr)_150px_20px] md:border-t md:border-linha md:first:border-t-0">
       <DiaQuadro d={e.data.slice(0, 10)} tom={anotado ? "violeta" : "neutro"} />
       <span className="grid min-w-0 gap-0.5">
-        {anotado ? <button type="button" className={classeTitulo} onClick={abrir}>{e.titulo}</button>
-          : link ? <Link href={link} className={classeTitulo}>{e.titulo}</Link> : <span className="font-medium">{e.titulo}</span>}
-        {apoio ? <span className="t-apoio line-clamp-2">{apoio}</span> : null}
+        {anotado ? <button type="button" className={classeTitulo} onClick={abrir}>{marcar(e.titulo, busca)}</button>
+          : link ? <Link href={link} className={classeTitulo}>{marcar(e.titulo, busca)}</Link> : <span className="font-medium">{marcar(e.titulo, busca)}</span>}
+        {apoio ? <span className="t-apoio line-clamp-2">{marcar(apoio, busca)}</span> : null}
         <span className="pt-1 md:hidden">{anotado ? <Selo tom="andamento">Anotado</Selo> : <Selo tom="neutro">{FONTE[e.fonte]}</Selo>}</span>
       </span>
       <span className="max-md:hidden">{anotado ? <Selo tom="andamento">Anotado</Selo> : <Selo tom="neutro">{FONTE[e.fonte]}</Selo>}</span>
@@ -157,22 +248,37 @@ function LinhaEvento({ e, abrir }: { e: EventoMemoria; abrir: () => void }) {
   );
 }
 
-function FiltrosLinha({ atual, aoFechar, aplicar }: { atual: FiltroLinhaDoTempo; aoFechar: () => void; aplicar: (f: FiltroLinhaDoTempo) => void }) {
-  const [f, setF] = useState(atual);
+function JanelaFiltrosLinha({ f, aoFechar, aplicar }: { f: FiltrosLinha; aoFechar: () => void; aplicar: (m: Partial<FiltrosLinha>) => void }) {
+  const [filtro, setFiltro] = useState(f.filtro);
+  const [de, setDe] = useState(f.de);
+  const [ate, setAte] = useState(f.ate);
+  const invertido = Boolean(de && ate && de > ate);
   return (
-    <Dialogo aberto titulo="Filtros" apoio="Uma fonte por vez. O filtro escolhido aparece ao lado do botão Filtros." fechar aoFechar={aoFechar}>
-      <form onSubmit={(ev) => { ev.preventDefault(); aplicar(f); }} className="grid gap-4">
+    <Dialogo aberto titulo="Filtros" apoio="Uma fonte por vez e, se quiser, um período. O que estiver em uso aparece ao lado do botão Filtros." fechar aoFechar={aoFechar}>
+      <form onSubmit={(ev) => { ev.preventDefault(); if (!invertido) aplicar({ filtro, de, ate }); }} className="grid gap-4">
         <fieldset className="grid gap-2">
-          <legend className="sr-only">Mostrar na linha do tempo</legend>
+          <legend className="mb-1 t-apoio font-medium text-tinta">Fonte</legend>
           {(Object.keys(FILTROS_LINHA_DO_TEMPO) as FiltroLinhaDoTempo[]).map((x) => (
             <label key={x} className="flex items-start gap-3 rounded-[14px] border border-linha px-3.5 py-3 has-[:checked]:border-violeta-600 has-[:checked]:bg-violeta-50">
-              <input type="radio" name="lt-filtro" className="mt-1 h-4.5 w-4.5 accent-violeta-600" checked={f === x} onChange={() => setF(x)} />
+              <input type="radio" name="lt-filtro" className="mt-1 h-4.5 w-4.5 accent-violeta-600" checked={filtro === x} onChange={() => setFiltro(x)} />
               <span className="grid"><span className="font-medium">{FILTROS_LINHA_DO_TEMPO[x]}</span><span className="t-apoio">{EXPLICA_FILTRO[x]}</span></span>
             </label>
           ))}
         </fieldset>
-        <div className="flex flex-wrap justify-end gap-2">
-          <Botao variante="discreto" onClick={() => aplicar("TUDO")}>Limpar</Botao>
+        <fieldset className="grid gap-2.5">
+          <legend className="mb-1 t-apoio font-medium text-tinta">Período</legend>
+          <div className="flex flex-wrap gap-2">
+            {periodosLinha().map((p) => <Chip key={p.nome} ativo={p.de === de && p.ate === ate} onClick={() => { setDe(p.de); setAte(p.ate); }}>{p.nome}</Chip>)}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <CampoTexto id="lt-f-de" rotulo="De" type="date" icone="calendario" value={de} onChange={(e) => setDe(e.target.value)} />
+            <CampoTexto id="lt-f-ate" rotulo="Até" type="date" icone="calendario" value={ate} onChange={(e) => setAte(e.target.value)}
+              erro={invertido ? "O fim do período vem depois do começo" : null} />
+          </div>
+          <p className="t-apoio">Vale a data de cada linha.</p>
+        </fieldset>
+        <div className="flex flex-wrap justify-between gap-2">
+          <Botao variante="discreto" onClick={() => aplicar({ filtro: "TUDO", de: "", ate: "" })}>Limpar</Botao>
           <Botao type="submit">Mostrar</Botao>
         </div>
       </form>

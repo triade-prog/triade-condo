@@ -177,6 +177,23 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const assembleias = criarAssembleias();
   const classificados = criarClassificados();
   const memoria = criarMemoria();
+  manutencao.contratos = {
+    ver: (id) => {
+      const d = comunicados.documentos.find((x) => x.id === id);
+      if (!d || d.arquivado) return null;
+      const v = d.versoes.filter((x) => x.situacao === "LIBERADO").sort((a, b) => b.numero! - a.numero!)[0];
+      return { id: d.id, titulo: d.titulo, restrito: d.restrito, versao: d.versao, arquivo: v?.nome, versaoId: v?.id, numero: v?.numero,
+        enviando: d.versoes.some((x) => x.situacao === "ENVIANDO") };
+    },
+    criar: (titulo, valeAte, restrito) => {
+      const agora = new Date().toISOString();
+      const id = `7e8f9a0b-1c2d-4e3f-8a4b-c0${String(comunicados.documentos.length).padStart(10, "0")}`;
+      comunicados.documentos.push({ id, tipo: "CONTRATO", titulo, descricao: null, restrito, aoMorador: false, valeAte, arquivado: null, criadoEm: agora,
+        versao: 1, versoes: [], historico: [{ acao: "documento.criado", em: agora, autor: "Ana Souza", dados: {} }] });
+      return id;
+    },
+    mudarVale: (id, valeAte) => { const d = comunicados.documentos.find((x) => x.id === id); if (d) { d.valeAte = valeAte; d.versao++; } },
+  };
   memoria.deDocumentos = () => comunicados.documentos.filter((d) => !d.arquivado)
     .map((d) => ({ id: d.id, titulo: d.titulo, tipo: d.tipo, ...(d.valeAte ? { valeAte: d.valeAte } : {}) }));
   const suporte = criarSuporte();

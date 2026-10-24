@@ -19,6 +19,8 @@ export interface EstadoMemoria {
   secoes: SecaoFalsa[];
   dossies: { id: string; geradoEm: string; autor: string }[];
   exportacoes: { id: string; situacao: string; pedidaEm: string; autor: string; prontaEm?: string; expiraEm?: string; vistas: number }[];
+  /** O histórico do prontuário (0294, D.1): cada mudança nos itens, do mais antigo ao mais novo. */
+  historico: { id: string; quando: string; acao: string; itemId: string; autor: string; documento?: string; avisarDias?: number; motivo?: string }[];
   /** Os documentos guardados em Documentos (a parte dos comunicados da API falsa), para ligar aos itens. */
   deDocumentos?: () => DocumentoFalso[];
 }
@@ -68,6 +70,7 @@ export function criarMemoria(): EstadoMemoria {
     ],
     dossies: [],
     exportacoes: [],
+    historico: [],
   };
 }
 
@@ -127,11 +130,33 @@ export async function rotasMemoria(route: Route, est: EstadoMemoria, caminho: st
     if (corpo.acao === "VALE") i.motivo = undefined;
     i.id ??= novoId();
     i.versao = (i.versao ?? 0) + 1;
+    est.historico.push({ id: novoId(), quando: agora(), acao: String(corpo.acao), itemId: i.id, autor: eu.nome,
+      documento: i.documentoId ? docs(est).find((d) => d.id === i.documentoId)?.titulo : undefined,
+      avisarDias: corpo.acao === "LIGAR" ? i.avisarDias : undefined, motivo: i.motivo });
     return route.fulfill({ json: { id: i.id, versao: i.versao } });
+  }
+
+  if (caminho === "/v1/condominio/memoria/prontuario/historico") {
+    const pedido = url.searchParams.get("item");
+    const item = pedido ? est.itens.find((x) => x.id === pedido) : undefined;
+    if (pedido && !item) return erro(route, 404, "NOT_FOUND");
+    const nomeDe = (id: string) => est.itens.find((x) => x.id === id)!;
+    const vencidos = est.itens.filter((i) => i.id && situacao(est, i).situacao === "VENCEU")
+      .map((i) => ({ id: `venceu-${i.id}`, quando: `${situacao(est, i).valeAte}T03:00:00Z`, acao: "VENCEU", itemId: i.id!, autor: undefined as string | undefined,
+        documento: docs(est).find((d) => d.id === i.documentoId)?.titulo }));
+    const eventos = [...est.historico, ...vencidos].filter((e) => !item || e.itemId === item.id)
+      .sort((a, b) => b.quando.localeCompare(a.quando))
+      .map((e) => ({ ...e, data: e.quando.slice(0, 10), item: nomeDe(e.itemId).nome, grupo: nomeDe(e.itemId).grupo }));
+    return route.fulfill({ json: { eventos, item: item ? { id: item.id, nome: item.nome } : undefined,
+      itens: est.itens.filter((i) => i.id).map((i) => ({ id: i.id, nome: i.nome })) } });
   }
 
   if (caminho === "/v1/condominio/memoria/linha-do-tempo") {
     const filtro = url.searchParams.get("filtro") ?? "TUDO";
+    const busca = (url.searchParams.get("busca") ?? "").toLowerCase();
+    const de = url.searchParams.get("de") ?? "";
+    const ate = url.searchParams.get("ate") ?? "";
+    if (de && ate && ate < de) return erro(route, 400, "VALIDATION_ERROR", { campos: ["ate"] });
     const eventos = [
       ...est.anotacoes.filter((a) => !a.retirada).map((a) => ({ fonte: "ANOTADO", categoria: "ANOTADO", id: a.id, data: a.aconteceuEm, titulo: a.titulo, tipo: a.tipo,
         texto: a.texto, autor: a.autor, corrigida: a.versoes.length ? true : undefined, versao: a.versao,
@@ -140,7 +165,10 @@ export async function rotasMemoria(route: Route, est: EstadoMemoria, caminho: st
       { fonte: "PRONTUARIO", categoria: "DOCUMENTOS", id: "p1", data: dia(-16), titulo: "AVCB (Corpo de Bombeiros) venceu", detalhe: "Do prontuário" },
       { fonte: "DOCUMENTO", categoria: "DOCUMENTOS", id: "d1", documentoId: est.documentos[0]!.id, data: "2019-03-12", titulo: "Documento guardado: Convenção" },
       { fonte: "PESSOA", categoria: "PESSOAS", id: "v1", data: "2025-03-01", titulo: "Ana Souza assume a sindicatura", detalhe: "Entrada na Plataforma" },
-    ].filter((e) => filtro === "TUDO" || e.categoria === filtro).sort((a, b) => b.data.localeCompare(a.data));
+    ].filter((e) => filtro === "TUDO" || e.categoria === filtro)
+      .filter((e) => !busca || [e.titulo, e.detalhe, e.texto].some((t) => t?.toLowerCase().includes(busca)))
+      .filter((e) => (!de || e.data >= de) && (!ate || e.data <= ate))
+      .sort((a, b) => b.data.localeCompare(a.data));
     return route.fulfill({ json: { eventos, podeAnotar: editar } });
   }
   if (caminho === "/v1/condominio/memoria/opcoes") {

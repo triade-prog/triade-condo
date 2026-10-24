@@ -15,7 +15,7 @@ type Executor = { tipo: "PRESTADOR" | "EQUIPE" | "TEXTO"; id?: string; nome: str
 interface PrestadorFalso {
   id: string; nome: string; servico: string; contato: string | null; telefone: string | null; email: string | null; documento: string | null;
   acordo: "CONTRATO" | "CHAMADO"; contratoAte: string | null; desde: string | null; reservaId: string | null; observacao: string | null;
-  arquivado: boolean; versao: number;
+  arquivado: boolean; versao: number; contratoDocumentoId?: string;
 }
 interface ManutencaoFalsa {
   id: string; tipo: string; titulo: string; local: string; detalhes: string | null; prioridadeId: string | null; responsavelId: string;
@@ -37,6 +37,12 @@ export interface EstadoManutencao {
   manutencoes: ManutencaoFalsa[];
   preventivas: PreventivaFalsa[];
   etapas: { id: string; nome: string; situacao: string; ordem: number; ativa: boolean; versao: number }[];
+  /** O arquivo do contrato em Documentos (0294, D.2), ligado pela parte dos comunicados da API falsa. */
+  contratos?: {
+    ver: (id: string) => Record<string, unknown> | null;
+    criar: (titulo: string, valeAte: string | null, restrito: boolean) => string;
+    mudarVale: (id: string, valeAte: string | null) => void;
+  };
 }
 
 /** O prédio do Residencial Ipê: a bomba com ruído (ligada ao pedido 2026-0001), a infiltração pendente com retorno vencido e a vistoria da fachada. */
@@ -144,6 +150,8 @@ export async function rotasManutencao(route: Route, est: EstadoManutencao, ctx: 
     pendentes: est.manutencoes.filter((m) => m.prestadorId === p.id && m.estado === "PENDENTE").length,
     contratoVence: p.acordo === "CONTRATO" && !!p.contratoAte && p.contratoAte >= hoje && p.contratoAte <= somar(hoje, 60),
     contratoVencido: p.acordo === "CONTRATO" && !!p.contratoAte && p.contratoAte < hoje, versao: p.versao,
+    contratoDocumento: p.acordo === "CONTRATO" && p.contratoDocumentoId
+      ? (pode("documentos.ver") ? est.contratos?.ver(p.contratoDocumentoId) ?? null : { oculto: true }) : null,
   });
   const hist = (m: ManutencaoFalsa, acao: string, dados: Record<string, unknown>) => m.historico.unshift({ acao, em: new Date().toISOString(), autor: ctx.eu.nome, dados });
 
@@ -203,7 +211,26 @@ export async function rotasManutencao(route: Route, est: EstadoManutencao, ctx: 
     const p = est.prestadores.find((x) => x.id === pid[1]);
     if (!p) return erro(route, 404, "NOT_FOUND");
     return route.fulfill({ json: { prestador: prestadorJson(p), manutencoes: est.manutencoes.filter((m) => m.prestadorId === p.id).map(json),
-      reservaDe: est.prestadores.filter((r) => r.reservaId === p.id).map((r) => ({ id: r.id, nome: r.nome })), pode: { editar: pode("manutencao.editar") } } });
+      reservaDe: est.prestadores.filter((r) => r.reservaId === p.id).map((r) => ({ id: r.id, nome: r.nome })),
+      pode: { editar: pode("manutencao.editar"), contrato: pode("manutencao.editar") && pode("documentos.editar") } } });
+  }
+  const pc = /^\/v1\/condominio\/manutencao\/prestadores\/([^/]+)\/contrato$/.exec(caminho);
+  if (pc) {
+    if (!pode("manutencao.editar") || !pode("documentos.editar")) return erro(route, 403, "FORBIDDEN");
+    const p = est.prestadores.find((x) => x.id === pc[1]);
+    if (!p || !est.contratos) return erro(route, 404, "NOT_FOUND");
+    if (p.acordo !== "CONTRATO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "SEM_CONTRATO" });
+    if (metodo === "POST") {
+      const doc = corpo.documento as { titulo: string; valeAte: string | null; restrito: boolean };
+      const id = est.contratos.criar(doc.titulo, doc.valeAte, doc.restrito);
+      p.contratoDocumentoId = id; p.contratoAte = doc.valeAte ?? p.contratoAte; p.versao++;
+      if (p.contratoAte) est.contratos.mudarVale(id, p.contratoAte);
+      return route.fulfill({ status: 201, json: { id, ligado: true } });
+    }
+    p.contratoDocumentoId = String(corpo.documentoId);
+    if (corpo.valeAte) { p.contratoAte = String(corpo.valeAte); est.contratos.mudarVale(p.contratoDocumentoId, p.contratoAte); }
+    p.versao++;
+    return route.fulfill({ json: { prestador: prestadorJson(p) } });
   }
 
   // Daqui em diante, mudar.

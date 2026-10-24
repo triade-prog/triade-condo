@@ -97,7 +97,9 @@ Deno.test("CT-03: a linha do tempo filtra e a anotação liga a uma coisa só", 
   const m = montar();
   const cookie = await entrar(m);
   await m.pedir("/v1/condominio/memoria/linha-do-tempo?filtro=ANOTADO&antes=2026-01-01", { cookie });
-  assertEquals(chamada(m, "plataforma_linha_do_tempo"), { p_pessoa: ANA, p_condominio: AURORA, p_filtro: "ANOTADO", p_antes: "2026-01-01" });
+  assertEquals(chamada(m, "plataforma_linha_do_tempo"), {
+    p_pessoa: ANA, p_condominio: AURORA, p_filtro: "ANOTADO", p_antes: "2026-01-01", p_busca: null, p_de: null, p_ate: null,
+  });
   assertEquals((await m.pedir("/v1/condominio/memoria/linha-do-tempo?filtro=QUALQUER", { cookie })).status, 400);
   const base = { tipo: "COMBINADO", titulo: "Muro com o lote 12", texto: "Metade cada", aconteceuEm: "2026-10-10" };
   assertEquals((await m.pedir("/v1/condominio/memoria/anotacoes", { cookie, corpo: { ...base, documentoId: DOC, manutencaoId: DOC } })).status, 400);
@@ -181,4 +183,47 @@ Deno.test("MP-12 (D4.18): guardar e ligar numa chamada só; se a ligação falha
   const antes = m.chamadas.filter((x) => x.funcao === "plataforma_salvar_documento").length;
   assertEquals((await m.pedir("/v1/condominio/memoria/prontuario/itens/avcb/documento", { cookie, corpo })).status, 404);
   assertEquals(m.chamadas.filter((x) => x.funcao === "plataforma_salvar_documento").length, antes);
+});
+
+Deno.test("CT-02 (D4.18, decisão D.3): a busca e o período da linha do tempo vão ao banco", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  await m.pedir("/v1/condominio/memoria/linha-do-tempo?busca=%20bomba%20&de=2026-01-01&ate=2026-10-31", { cookie });
+  assertEquals(m.chamadas.filter((x) => x.funcao === "plataforma_linha_do_tempo").at(-1)?.args, {
+    p_pessoa: ANA, p_condominio: AURORA, p_filtro: "TUDO", p_antes: null, p_busca: "bomba", p_de: "2026-01-01", p_ate: "2026-10-31",
+  });
+  const r = await m.pedir("/v1/condominio/memoria/linha-do-tempo?de=2026-10-31&ate=2026-01-01", { cookie });
+  assertEquals([r.status, (await erro(r)).detalhes?.campos], [400, ["ate"]]);
+});
+
+Deno.test("MP-12 (D4.18, decisão D.1): o histórico do prontuário, de um item ou de todos", async () => {
+  const m = montar({ plataforma_historico_prontuario: () => ({ eventos: [], itens: [] }) });
+  const cookie = await entrar(m);
+  assertEquals((await m.pedir(`/v1/condominio/memoria/prontuario/historico?item=${ITEM}&antes=2026-10-01T10:00:00Z`, { cookie })).status, 200);
+  assertEquals(chamada(m, "plataforma_historico_prontuario"), { p_pessoa: ANA, p_condominio: AURORA, p_item: ITEM, p_antes: "2026-10-01T10:00:00Z" });
+  assertEquals((await m.pedir("/v1/condominio/memoria/prontuario/historico?item=AVCB", { cookie })).status, 400);
+});
+
+Deno.test("MP-05 (D4.18, decisão D.2): o contrato do prestador guarda em Documentos e liga numa transação só; o erro volta inteiro", async () => {
+  let falhar = false;
+  const m = montar({
+    plataforma_guardar_contrato_prestador: () => (falhar ? erroBanco("TC409") : { id: DOC, prestador: { id: ITEM } }),
+    plataforma_ligar_contrato_prestador: () => ({ prestador: { id: ITEM } }),
+  });
+  const cookie = await entrar(m);
+  const corpo = { versao: 3, documento: { tipo: "CONTRATO", titulo: "Contrato com a HidroPress", valeAte: "2027-03-15", restrito: true } };
+  const r = await m.pedir(`/v1/condominio/manutencao/prestadores/${ITEM}/contrato`, { cookie, corpo });
+  assertEquals([r.status, await r.json()], [201, { id: DOC, prestador: { id: ITEM }, ligado: true }]);
+  assertEquals(chamada(m, "plataforma_guardar_contrato_prestador"), {
+    p_pessoa: ANA, p_condominio: AURORA, p_id: ITEM, p_versao: 3, p_titulo: "Contrato com a HidroPress", p_descricao: null, p_restrito: true,
+    p_vale_ate: "2027-03-15",
+  });
+  falhar = true;
+  assertEquals((await m.pedir(`/v1/condominio/manutencao/prestadores/${ITEM}/contrato`, { cookie, corpo })).status, 409);
+  const outro = await m.pedir(`/v1/condominio/manutencao/prestadores/${ITEM}/contrato`, { cookie, corpo: { ...corpo, documento: { ...corpo.documento, tipo: "ATA" } } });
+  assertEquals((await erro(outro)).codigo, "VALIDATION_ERROR");
+  await m.pedir(`/v1/condominio/manutencao/prestadores/${ITEM}/contrato`, { cookie, metodo: "PUT", corpo: { versao: 4, documentoId: DOC, valeAte: "2028-03-15" } });
+  assertEquals(m.chamadas.filter((x) => x.funcao === "plataforma_ligar_contrato_prestador").at(-1)?.args, {
+    p_pessoa: ANA, p_condominio: AURORA, p_id: ITEM, p_versao: 4, p_documento: DOC, p_vale_ate: "2028-03-15",
+  });
 });

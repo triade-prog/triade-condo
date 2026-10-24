@@ -8,6 +8,7 @@ import type {
   EstadoDecisao, FiltroDecisao, TipoLigacao, SituacaoLinkRegistro, MotivoForaDoMural,
   Aniversario, CategoriaHistorico, Especie, ParentescoFamiliar, Porte,
   FamiliarCadastro, LigacaoCadastro, MotivoRecusaCadastro, PedidoLink, PetCadastro, VeiculoCadastro, OrdemPedidos,
+  EventoHistoricoProntuario,
 } from "@triade/domain";
 
 
@@ -846,7 +847,13 @@ export interface PrestadorItem {
   contratoVence: boolean;
   contratoVencido: boolean;
   versao: number;
+  /** O arquivo do contrato em Documentos (0294, decisão D.2); oculto para quem não vê documentos. */
+  contratoDocumento?: ContratoDocumento | null;
 }
+
+export type ContratoDocumento =
+  | { oculto: true }
+  | { oculto?: false; id: string; titulo: string; restrito: boolean; versao: number; arquivo?: string; versaoId?: string; numero?: number; enviando?: boolean };
 
 export interface ListaPrestadores {
   itens: PrestadorItem[];
@@ -858,7 +865,7 @@ export interface PrestadorDetalhe {
   prestador: PrestadorItem;
   manutencoes: ManutencaoResumo[];
   reservaDe: { id: string; nome: string }[];
-  pode: { editar: boolean };
+  pode: { editar: boolean; contrato?: boolean };
 }
 
 export interface PreventivaItem {
@@ -1351,6 +1358,13 @@ export interface LinhaDoTempo {
   eventos: EventoMemoria[];
   maisAntigosAntes?: string;
   podeAnotar: boolean;
+}
+
+export interface HistoricoProntuario {
+  eventos: EventoHistoricoProntuario[];
+  maisAntigosAntes?: string;
+  item?: { id: string; nome: string };
+  itens: { id: string; nome: string }[];
 }
 
 export interface OpcoesMemoria {
