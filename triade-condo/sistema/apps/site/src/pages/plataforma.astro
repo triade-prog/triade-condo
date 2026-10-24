@@ -7,7 +7,7 @@ import FaixaFinal from "../components/FaixaFinal.astro";
 import InicioPainel from "../components/InicioPainel.astro";
 import { plataforma } from "../dados/vitrine";
 
-// Telas de exemplo de Comunicação e Operações (dados ilustrativos).
+// Telas de exemplo de Comunicação, Operações e Indicadores (dados ilustrativos).
 const exemplos: Record<string, { titulo: string; linhas: { titulo: string; detalhe: string; tom: string; selo: string }[] }> = {
   comunicacao: { titulo: "Comunicação", linhas: [
     { titulo: "Manutenção da caixa d'água", detalhe: "Comunicado · sáb 25/10", tom: "verde", selo: "Lido por 84%" },
@@ -19,17 +19,25 @@ const exemplos: Record<string, { titulo: string; linhas: { titulo: string; detal
     { titulo: "Extintores", detalhe: "Recarga anual · prontuário", tom: "verde", selo: "Em dia" },
     { titulo: "Hidráulica Souza", detalhe: "Prestador · check-in 09:12 por QR", tom: "violeta", selo: "No prédio" },
   ] },
+  indicadores: { titulo: "Indicadores de outubro", linhas: [
+    { titulo: "Retornos no prazo", detalhe: "33 de 35 retornos ao morador no mês", tom: "verde", selo: "94% no prazo" },
+    { titulo: "Primeiro retorno", detalhe: "Média em horas de atendimento, do registro à primeira notícia", tom: "violeta", selo: "6 h" },
+    { titulo: "Pedidos concluídos", detalhe: "Tempo típico até concluir: 2 dias", tom: "verde", selo: "35 no mês" },
+  ] },
 };
 ---
 <Base titulo="Plataforma" atual="/plataforma" lavanda descricao="Atendimento, comunicação, operações e indicadores do condomínio num painel só. O morador continua no WhatsApp; o síndico acompanha tudo pelo painel.">
-<section class="pag-topo com-imagem">
+<section class="pag-topo com-imagem com-painel">
   <span class="cor-cunha deco-a" aria-hidden="true"></span><span class="cor-cunha deco-b" aria-hidden="true"></span><span class="cor-cunha deco-c" aria-hidden="true"></span>
   <div class="wrap">
     <div class="pag-topo-texto">
       <h1 class="titulo-g">Um painel para o que acontece <Destaque>no prédio</Destaque></h1>
       <p class="lead2">Atendimento, comunicação, operações e indicadores no mesmo lugar. O morador continua no WhatsApp; o síndico acompanha tudo por aqui.</p>
     </div>
-    <img class="pag-topo-img flutuando" src="/piramide-3d-1100.webp" srcset="/piramide-3d-640.webp 640w, /piramide-3d-1100.webp 1100w" sizes="(max-width: 900px) 80vw, 520px" width="1100" height="753" alt="" fetchpriority="high" />
+    <figure class="topo-painel">
+      <InicioPainel perfil="morador" grande />
+      <figcaption><span class="so-pc">Início do painel</span><span class="so-cel">Painel</span> do síndico · Dados ilustrativos</figcaption>
+    </figure>
   </div>
 </section>
 
@@ -47,10 +55,9 @@ const exemplos: Record<string, { titulo: string; linhas: { titulo: string; detal
     </div>
     <div class="modulo-v">
       {bloco.id === "atendimento" && <CenaPedido etapa={2} />}
-      {bloco.id === "indicadores" && <InicioPainel perfil="morador" />}
       {exemplos[bloco.id] && (
         <div class="janela" aria-hidden="true">
-          <BarraPainel />
+          <BarraPainel busca="Buscar pedido" />
           <div style="padding:16px">
             <div class="app-cartao" style="gap:0">
               <div class="app-sub" style="padding-bottom:8px"><h4>{exemplos[bloco.id].titulo}</h4><span class="app-meta">Dados ilustrativos</span></div>

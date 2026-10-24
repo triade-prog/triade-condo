@@ -879,3 +879,142 @@ h2, .titulo-g { font-size: var(--t-58); font-weight: 600; }
   .rodape .wrap { grid-template-columns: minmax(0, 1fr); }
   .rodape .rodape-contato span { flex-basis: 100%; }
 }
+
+/* Preços: linha dos condomínios fundadores (DC16), aparece enquanto houver vagas. */
+.fundadores { font-size: var(--t-16); color: var(--tinta); }
+.fundadores b { color: var(--violeta-600); }
+
+/* B1 (análise externa, rodada B): o prédio cerca de 25% menor e a ficha do pedido maior e legível,
+   letra mínima de 14px. No computador, os balões nos cantos vazios ao lado da ponta do prédio e a ficha
+   logo abaixo dele, sem cobrir a imagem. No celular, a ficha vem logo depois do título e o prédio, menor, embaixo. */
+.pf-cab { display: flex; justify-content: space-between; align-items: baseline; gap: var(--e-3); margin: 0; font-family: var(--mono); font-size: var(--t-14); color: var(--tinta-suave); }
+.pf-cab b { color: var(--violeta-600); font-weight: 600; }
+.pf-ficha .pil { font-size: var(--t-14); }
+.pf-ficha .app-titulo { font-size: var(--t-20); }
+.pf-ficha .app-linha { font-size: var(--t-16); padding-block: var(--e-2); }
+@media (min-width: 1001px) {
+  .palco-predio { padding-block: var(--e-6) 0; }
+  .palco-predio img.predio { width: 75%; margin: 0 auto; display: block; }
+  /* Larguras em fração do palco: os balões e a ficha nunca passam da borda da coluna,
+     então a margem lateral da página (32px) fica livre em qualquer largura a partir de 1001px. */
+  .palco-predio .pf-msg { left: -4%; top: 0; width: 42%; }
+  .palco-predio .pf-resp { right: 0; top: var(--e-2); width: 42%; }
+  .palco-predio .pf-msg small { font-size: var(--t-14); }
+  .palco-predio .pf-ficha { position: relative; right: auto; bottom: auto; width: 84%; max-width: 100%; margin: var(--e-3) 0 0 auto; padding: var(--e-5); }
+}
+@media (max-width: 640px) {
+  /* O topo não fica mais alto que antes: ficha mais justa, prédio a dois terços e a faixa de fatos mais curta */
+  .palco-predio .pf-ficha { order: -1; margin: 0 var(--e-2); padding: var(--e-3) var(--e-4); }
+  .palco-predio .pf-ficha .app-linha { padding-block: var(--e-1); }
+  .palco-predio img.predio { width: 66%; margin: 0 auto calc(-1 * var(--e-5)); }
+  .palco-predio { gap: var(--e-3); }
+  .hero2 .wrap.hero-fatos { padding-block: var(--e-4); }
+}
+
+/* Cenas das etapas legíveis (B2, análise externa de 24/10/2026): letra de 14px no que importa
+   (protocolo, situação, responsável e mensagem do WhatsApp). No computador, o painel aparece em recorte,
+   só a ficha do pedido e o registro novo. O notebook e o celular mantêm o tamanho e a posição de antes;
+   a ficha ocupa a parte da tela que o celular não cobre (o celular cobre só o lado direito, vazio). */
+@media (min-width: 641px) {
+
+  /* Painel em recorte: barra curta, ficha e o registro novo; a fila do mês e os botões saem */
+  .cena .tela-pc { aspect-ratio: 16 / 11; overflow: clip; font-size: var(--t-14); }
+  .cena .tela-pc .app-barra { padding: var(--e-2) var(--e-4); gap: var(--e-3); }
+  .cena .tela-pc .app-barra img { height: 22px; }
+  .cena .tela-pc .app-barra .busca { display: none; }
+  .cena .tela-pc .app-barra .quem { font-size: var(--t-14); }
+  .cena .tela-pc .app-barra .quem i { width: 28px; height: 28px; font-size: var(--t-12); }
+  .cena .pc-corpo { display: block; padding: var(--e-4) 34% var(--e-4) var(--e-4); }
+  .cena .pc-corpo .col { gap: var(--e-3); }
+  .cena .fila, .cena .app-botoes, .cena .tela-pc .pil.cinza { display: none; }
+  .cena .tela-pc .app-cartao { padding: var(--e-4); gap: var(--e-3); border-radius: var(--raio-m); }
+  .cena .tela-pc .pil { font-size: var(--t-14); padding: 0 var(--e-3); line-height: 1.7; }
+  .cena .tela-pc .app-titulo { font-size: var(--t-20); }
+  .cena .tela-pc .app-meta { font-size: var(--t-14); }
+  .cena .tela-pc .anda { gap: var(--e-2); }
+  .cena .tela-pc .anda .app-linha, .cena .tela-pc .anda .app-linha.mudou { font-size: var(--t-14); padding: var(--e-2) var(--e-3); border-radius: var(--raio-p); gap: 0; line-height: 1.35; }
+  .cena .pc-h { font-size: var(--t-12); }
+  .cena .hist li:not(.novo) { display: none; }
+  .cena .hist li, .cena .hist li.novo { display: block; padding: 0 0 0 var(--e-3); font-size: var(--t-14); line-height: 1.45; }
+  .cena .hist li span { display: inline; font-size: var(--t-14); padding: 0; margin-right: var(--e-2); }
+  .cena .hist li small { display: block; font-size: var(--t-14); }
+
+  /* WhatsApp em tamanho de ler */
+  .cena .ios-status { font-size: var(--t-12); }
+  .cena .zap-topo .nm { font-size: var(--t-14); }
+  .cena .zap-topo .nm small { font-size: var(--t-12); }
+  .cena .zap-b { font-size: var(--t-14); line-height: 1.35; padding: var(--e-2) var(--e-3) var(--e-1); border-radius: var(--raio-m); }
+  .cena .zap-b.cond { border-top-left-radius: var(--e-1); }
+  .cena .zap-b.eu { border-top-right-radius: var(--e-1); }
+  .cena .zap-b small, .cena .zap-dia { font-size: var(--t-12); }
+  .cena .zap-pe .campo { font-size: var(--t-12); }
+}
+@media (max-width: 640px) {
+  /* No carrossel, só o tamanho da letra muda: mensagem, protocolo, situação e responsável em 14px */
+  .cena .zap-b { font-size: var(--t-14); }
+  .cena .zap-b small, .cena .zap-dia, .cena .zap-topo .nm small, .cena .zap-pe .campo, .cena .ios-status { font-size: var(--t-12); }
+  .cena .zap-topo .nm { font-size: var(--t-14); }
+  .painel-cel-rot, .passo2 .painel-cel .app-linha span { font-size: var(--t-12); }
+  .painel-cel .mono-d, .painel-cel .pil, .painel-cel .app-linha b { font-size: var(--t-14); }
+  /* O celular ganha largura para a letra maior caber: 60% para o WhatsApp, o resto para o painel */
+  .passo2 .tela-passo .cena, .modulo-v .cena { grid-template-columns: 60% minmax(0, 1fr); }
+  .cena .zap-topo .acoes { display: none; }
+  .cena .zap-corpo { padding-inline: var(--e-2); }
+  .cena .zap-b { max-width: 94%; padding: var(--e-2) var(--e-2) var(--e-1); }
+}
+/* Início do painel (InicioPainel.astro): o que antes era estilo inline, em classes */
+.inicio-corpo { padding: var(--e-4); display: flex; flex-direction: column; gap: var(--e-4); }
+.agora-cartao { gap: 0; }
+.agora-cartao .app-sub { padding-bottom: var(--e-2); }
+.ver-tudo { font-size: var(--t-12); color: var(--violeta-600); font-weight: 500; }
+
+/* Plataforma (B3): no topo, o Início do painel do síndico no lugar da pirâmide; letra mínima de 14px no computador.
+   Variante grande (prop grande): resumo mais baixo e cada item do Agora numa linha só, para o topo ficar abaixo
+   de 600px no computador (era 741px em 1440). No celular, só o cartão Agora com o primeiro item, para o topo não crescer. */
+.pag-topo.com-painel .wrap { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--e-7); padding-block: var(--e-7) var(--e-6); }
+.topo-painel { margin: 0; display: flex; flex-direction: column; gap: var(--e-2); }
+.topo-painel .so-cel { display: none; }
+.topo-painel figcaption { font-family: var(--mono); font-size: var(--t-14); color: var(--tinta-suave); text-align: right; }
+.janela-grande { --sombra-janela-grande: 0 var(--e-5) var(--e-7) calc(-1 * var(--e-5)) color-mix(in srgb, var(--violeta-800) 40%, transparent); box-shadow: var(--sombra-janela-grande); border: 1px solid var(--linha); }
+.janela-grande .app-barra { gap: var(--e-3); padding: var(--e-2) var(--e-4); }
+.janela-grande .app-barra .busca, .janela-grande .app-barra .quem { font-size: var(--t-14); }
+.janela-grande .app-barra .quem i { width: var(--e-6); height: var(--e-6); font-size: var(--t-14); }
+.janela-grande .inicio-corpo { padding: var(--e-4); gap: var(--e-3); }
+.janela-grande .resumo { padding: var(--e-4) var(--e-5); }
+.janela-grande .resumo small { font-size: var(--t-14); letter-spacing: .08em; }
+.janela-grande .resumo b { font-size: var(--t-32); margin-top: 0; }
+.janela-grande .resumo span { font-size: var(--t-14); }
+.janela-grande .agora-cartao { padding: var(--e-3) var(--e-4); }
+.janela-grande .app-sub h4 { font-size: var(--t-16); }
+.janela-grande .ver-tudo { font-size: var(--t-14); }
+.janela-grande .agora-l { gap: var(--e-3); padding-block: var(--e-2); }
+.janela-grande .agora-l .ic { width: var(--e-6); height: var(--e-6); flex-basis: var(--e-6); }
+.janela-grande .agora-l .t { font-size: var(--t-14); font-weight: 600; line-height: 1.35; }
+.janela-grande .agora-l .t small { font-size: var(--t-14); }
+.janela-grande .agora-l .pil, .janela-grande .agora-l .app-bt { font-size: var(--t-14); }
+.janela-grande .agora-l .app-bt { min-height: var(--e-6); }
+@media (min-width: 901px) and (max-width: 1100px) {
+  /* Coluna estreita: selo e botão descem para uma segunda linha, alinhados ao texto, para o texto não espremer */
+  .janela-grande .agora-l { flex-wrap: wrap; row-gap: var(--e-2); }
+  .janela-grande .agora-l .t { flex: 1 1 calc(100% - var(--e-7)); }
+  .janela-grande .agora-l .pil { margin-left: calc(var(--e-6) + var(--e-3)); }
+  .janela-grande .agora-l .app-bt { margin-left: auto; }
+}
+@media (max-width: 1100px) { .pag-topo.com-painel .wrap { gap: var(--e-6); } }
+@media (max-width: 900px) {
+  .pag-topo.com-painel .wrap { grid-template-columns: minmax(0, 1fr); gap: var(--e-5); }
+}
+@media (max-width: 640px) {
+  .pag-topo.com-painel .wrap { gap: var(--e-3); padding-block: var(--e-6); }
+  .topo-painel figcaption { text-align: left; }
+  .janela-grande .app-barra, .janela-grande .resumo, .janela-grande .agora-l ~ .agora-l { display: none; }
+  .janela-grande { --sombra-janela-grande: none; background: transparent; border: 0; overflow: visible; }
+  .janela-grande .inicio-corpo { padding: 0; }
+  .janela-grande .agora-cartao { box-shadow: 0 var(--e-4) var(--e-6) calc(-1 * var(--e-5)) color-mix(in srgb, var(--violeta-800) 30%, transparent); }
+  .janela-grande .agora-l { flex-wrap: wrap; row-gap: var(--e-2); padding-block: var(--e-2) 0; }
+  .janela-grande .agora-l .t { flex: 1 1 calc(100% - var(--e-7)); }
+  .janela-grande .agora-l .pil { margin-left: var(--e-7); }
+  .janela-grande .agora-l .app-bt { margin-left: auto; }
+  .topo-painel .so-pc { display: none; }
+  .topo-painel .so-cel { display: inline; }
+}
