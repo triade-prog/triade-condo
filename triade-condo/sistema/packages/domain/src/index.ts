@@ -23,4 +23,5 @@ export * from "./vida.ts";
 export * from "./configuracao.ts";
 export * from "./mural.ts";
 export * from "./planos.ts";
+export * from "./precos.ts";
 export * from "./relatorio.ts";
