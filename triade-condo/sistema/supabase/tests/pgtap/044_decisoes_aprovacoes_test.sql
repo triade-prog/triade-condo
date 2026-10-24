@@ -5,7 +5,7 @@
 -- responde no lugar dela; as despesas vão para aprovar, com anexos, e são pagas fora do sistema.
 -- O relógio começa numa segunda-feira, 26/10/2026, às 09:00.
 begin;
-select plan(140);
+select plan(170);
 
 create function pg_temp.em(p timestamptz) returns void language sql as $$ select ajustar_relogio(p - now()) $$;
 select pg_temp.em('2026-10-26 09:00:00-03');
@@ -60,6 +60,10 @@ returns jsonb language sql as $$
 create function pg_temp.pedir_sindica(p_prazo date) returns uuid language sql as $$
   select (plataforma_pedir_decisao((select bruna from ids), (select ipe from c), (select p1 from p), pg_temp.vp((select p1 from p)),
           'Trocar a lâmpada da G2', 'Está escuro', p_prazo, (select v_ana from vs), '[{"descricao": "Trocar por LED"}]') ->> 'id')::uuid $$;
+
+-- O link para copiar (WhatsApp): o código só volta para quem cuida do conselho.
+create function pg_temp.link_de(p_decisao uuid, p_membro uuid) returns text language sql as $$
+  select plataforma_reenviar_link_conselho((select ana from ids), (select ipe from c), p_decisao, null, p_membro) ->> 'codigo' $$;
 
 create function pg_temp.dec(p_pessoa uuid, p_id uuid) returns jsonb language sql as $$
   select x from jsonb_array_elements(plataforma_decisoes(p_pessoa, (select ipe from c), 'TODAS') -> 'decisoes') x where x ->> 'id' = p_id::text $$;
@@ -130,7 +134,13 @@ select is((select x ->> 'tipo' from ids, c, d, jsonb_array_elements(plataforma_a
   'DECISAO_VOTO', 'V-14: quem tem painel é avisado no sino para votar');
 select is((select tipo || ' ' || nome_do_vinculo(responsavel_id) from pendencias_pedido, d where id = (select pendencia_id from decisoes_pedido where id = d1)),
   'DECISAO Síndica Ana', 'V-14: a pendência da decisão fica com a síndica');
-create temp table marcos1 as select r -> 'links' -> 2 ->> 'codigo' as codigo from d1;
+select is((select (r -> 'links' -> 2) - 'membroId' - 'decisaoId' from d1),
+  '{"nome": "Marcos Lima", "canal": "WHATSAPP", "finalidade": "VOTO", "envio": "COPIAR", "aviso": "Peça o link ao síndico"}'::jsonb,
+  'V-14: quem só pediu (Atualizar) não recebe o código do link de voto: pede ao síndico');
+select is((select count(*)::int from codigos_sem_conta, links_conselho l, d, m where alvo_id = l.id and l.decisao_id = d1 and l.membro_id = m_marcos), 0,
+  'V-14: e o código nem nasce');
+create temp table marcos1 as select pg_temp.link_de(d1, m_marcos) as codigo from d, m;
+select ok((select codigo is not null from marcos1), 'V-14: a síndica copia o link pelo Reenviar');
 select pg_temp.fila();
 select is((select count(*)::int from emails where finalidade = 'VOTO'), 2, 'V-14: o link vai pelo e-mail para Gil e Lúcia');
 select is((select publico_conselho(pg_temp.codigo_de('lucia@exemplo.com')) ->> 'estado'), 'VOTAR', 'V-14: o link abre a votação, sem conta');
@@ -155,6 +165,8 @@ select is((select estado || ' ' || alternativa_aprovada || ' · ' || justificati
   'APROVADA 1 · Aprovada por 2 de 3 titulares', 'V-14: aprovada pelo conselho, com o placar');
 select ok((select resolvida_em is not null from pendencias_pedido where id = (select pendencia_id from decisoes_pedido, d where decisoes_pedido.id = d1)),
   'V-14: a pendência se resolve sozinha');
+select is((select fechar_decisao_do_conselho(jsonb_populate_record(null::decisoes_pedido, to_jsonb(x) || '{"estado": "AGUARDANDO"}'))
+             from decisoes_pedido x, d where x.id = d1), false, 'V-14: quem chega para fechar depois (a rotina, outro voto) não faz nada');
 select is((select publico_conselho(codigo) ->> 'estado' from marcos1), 'FECHADA', 'V-14: o link de quem não votou mostra que fechou');
 select is((select array_agg(x ->> 'nome' order by x ->> 'nome') from marcos1, jsonb_array_elements(publico_conselho(codigo) -> 'conselho' -> 'votos') x
             where x ? 'escolha'), array['Gil', 'Lúcia Prado'],
@@ -167,7 +179,7 @@ select is(pg_temp.motivo($$ select plataforma_responder_decisao(ana, ipe, d1, pg
 
 -- Troca de voto, link trocado, prazo que acaba e o empate que volta para a síndica.
 create temp table d2r as select pg_temp.pedir('2026-10-30') as r;
-create temp table d2 as select (r ->> 'id')::uuid as d2, r -> 'links' -> 2 ->> 'codigo' as marcos from d2r;
+create temp table d2 as select (r ->> 'id')::uuid as d2, pg_temp.link_de((r ->> 'id')::uuid, m_marcos) as marcos from d2r, m;
 select pg_temp.fila();
 select plataforma_votar_decisao(gil, ipe, d2, '2', null) from ids, c, d2;
 select is((select plataforma_votar_decisao(gil, ipe, d2, '1', null) - 'estado' from ids, c, d2), '{"escolha": "1", "trocou": true}'::jsonb,
@@ -179,6 +191,9 @@ select is(pg_temp.campos($$ select publico_votar_conselho(marcos, 'DEVOLVER', nu
   'V-14: devolver pede justificativa');
 select throws_ok($$ select plataforma_votar_decisao(edu, ipe, d2, '1', null) from ids, c, d2 $$, 'TC401', null,
   'V-14: quem não é do conselho não vota');
+select is((select plataforma_reenviar_link_conselho(bruna, ipe, d2, null, m_marcos) ->> 'aviso' from ids, c, d2, m), 'Peça o link ao síndico',
+  'V-14: quem só pediu reenvia, mas não vê o código do WhatsApp');
+select is((select publico_conselho(marcos) ->> 'estado' from d2), 'VOTAR', 'V-14: e o link que Marcos tem segue valendo');
 create temp table novo as select plataforma_reenviar_link_conselho(ana, ipe, d2, null, m_marcos) as r from ids, c, d2, m;
 select is((select r ->> 'envio' from novo), 'COPIAR', 'V-14: Reenviar o link gera outro para copiar');
 select is((select publico_conselho(marcos) - 'condominio' from d2), '{"estado": "NAO_VALE", "membro": "Marcos Lima", "motivo": "LINK_TROCADO"}'::jsonb,
@@ -279,6 +294,10 @@ select is(pg_temp.campos($$ select plataforma_criar_despesa(bruna, ipe, 'Bomba n
                            from ids, c $$), '["prazo"]'::jsonb, 'FC-10: o prazo vai de hoje a 90 dias');
 select is(pg_temp.campos($$ select plataforma_criar_despesa(bruna, ipe, 'Bomba nova', 800000, null, 'HidroPress', null, null, null, null, 'PESSOA', v_bruna, '2026-11-10')
                            from ids, c, vs $$), '["decisorId"]'::jsonb, 'FC-10: aprova quem tem Aprovar');
+create temp table mt as select (plataforma_registrar_manutencao(ana, ipe, 'CORRETIVA', 'Bomba do poço', 'Casa de bombas', null, normal, v_ana,
+                                                               null, null, null, null, null, null, null) ->> 'id')::uuid as mt from ids, c, cfg, vs;
+select is(pg_temp.campos($$ select plataforma_criar_despesa(bruna, ipe, 'Bomba nova', 800000, null, 'HidroPress', null, null, mt, null, 'CONSELHO', null,
+                                   '2026-11-10') from ids, c, mt $$), '["manutencaoId"]'::jsonb, 'FC-10: só se liga à manutenção que a pessoa vê');
 create temp table x1r as select plataforma_criar_despesa(bruna, ipe, 'Bomba nova do poço', 800000, null, 'HidroPress', '2026-11-20', p1, null, null,
                                                          'CONSELHO', null, '2026-11-10') as r from ids, c, p;
 create temp table x1 as select (r ->> 'id')::uuid as x1 from x1r;
@@ -313,6 +332,10 @@ select is((select (publico_conselho(codigo) -> 'item') - 'anexos' - 'pedidaEm' f
   'FC-10: pelo link, o que é, o valor, o fornecedor e o vencimento');
 select is(pg_temp.campos($$ select publico_votar_conselho(codigo, 'RECUSAR', null) from luc $$), '["justificativa"]'::jsonb, 'FC-10: recusar pede o porquê');
 select is((select publico_votar_conselho(codigo, 'APROVAR', null) ->> 'estado' from luc), 'FECHADA', 'FC-10: dois votos aprovam');
+select throws_ok($$ select publico_conselho_anexo(codigo, (r ->> 'arquivoId')::uuid) from luc, ax $$, 'TC404', null,
+  'FC-10: fechada a votação, o link não entrega mais os anexos');
+select is((select fechar_despesa_do_conselho(jsonb_populate_record(null::despesas_aprovacao, to_jsonb(x) || '{"estado": "AGUARDANDO"}'))
+             from despesas_aprovacao x, x1 where x.id = x1), false, 'FC-10: fechar de novo, ao mesmo tempo, não faz nada');
 select is((select estado || ' · ' || justificativa from despesas_aprovacao, x1 where id = x1), 'APROVADA · Aprovada por 2 de 3 titulares',
   'FC-10: aprovada pelo conselho');
 select is((select x ->> 'tipo' from ids, c, x1, jsonb_array_elements(plataforma_avisos(bruna, ipe) -> 'itens') x where x ->> 'despesaId' = x1::text),
@@ -322,11 +345,16 @@ select is((select x ->> 'tipo' from ids, c, x1, jsonb_array_elements(plataforma_
 create temp table cp as select (plataforma_iniciar_anexo_aprovacao(bruna, ipe, null, x1, 'COMPROVANTE', 'pix.png', 'image/png', 1000) ->> 'arquivoId')::uuid as cp
   from ids, c, x1;
 select plataforma_verificar_anexo_aprovacao(bruna, ipe, cp, true, 900, null) from ids, c, cp;
+select is((select plataforma_despesa(bruna, ipe, x1) -> 'pode' ->> 'anexarComprovante' from ids, c, x1), 'true',
+  'FC-10: aprovada e sem pagamento, junta o comprovante');
+select is(pg_temp.campos($$ select plataforma_pagar_despesa(bruna, ipe, x1, pg_temp.vx(x1), '2026-11-03', (r ->> 'arquivoId')::uuid) from ids, c, x1, ax $$),
+  '["comprovanteId"]'::jsonb, 'FC-10: o orçamento não vale como comprovante');
 select is(pg_temp.campos($$ select plataforma_pagar_despesa(bruna, ipe, x1, pg_temp.vx(x1), '2026-11-04', cp) from ids, c, x1, cp $$), '["pagaEm"]'::jsonb,
   'FC-10: pago até hoje');
 select plataforma_pagar_despesa(bruna, ipe, x1, pg_temp.vx(x1), '2026-11-03', cp) from ids, c, x1, cp;
 select is((select (plataforma_despesa(ana, ipe, x1) -> 'pagamento') - 'registradaEm' from ids, c, x1),
   (select jsonb_build_object('pagaEm', '2026-11-03', 'registradaPor', 'Bruna', 'comprovanteId', cp) from cp), 'FC-10: Paga fora do sistema, com o comprovante');
+select is((select plataforma_despesa(bruna, ipe, x1) -> 'pode' ->> 'anexarComprovante' from ids, c, x1), 'false', 'FC-10: paga, não junta outro');
 select is(pg_temp.motivo($$ select plataforma_tirar_anexo_aprovacao(bruna, ipe, cp, 'Errei o arquivo') from ids, c, cp $$), 'COMPROVANTE_EM_USO',
   'FC-10: o comprovante do pagamento não sai');
 select plataforma_desfazer_pagamento(bruna, ipe, x1, pg_temp.vx(x1)) from ids, c, x1;
@@ -377,11 +405,31 @@ select is((select count(*)::int from decisoes_pedido, d5 where origem_id = d5), 
 
 select pg_temp.em('2026-11-25 09:00:00-03');
 create temp table d6r as select pg_temp.pedir('2026-12-04') as r;
-create temp table d6 as select (r ->> 'id')::uuid as d6, r -> 'links' -> 2 ->> 'codigo' as marcos from d6r;
+create temp table d6 as select (r ->> 'id')::uuid as d6, pg_temp.link_de((r ->> 'id')::uuid, m_marcos) as marcos from d6r, m;
+select pg_temp.fila();
+select is(pg_temp.motivo($$ select plataforma_alterar_membro(ana, ipe, m_marcos, pg_temp.vm(m_marcos), 'SUPLENTE', '2025-12-01', '2026-11-30', 'WHATSAPP',
+                                   '+5561999990304', null) from ids, c, m $$),
+  'VOTO_PENDENTE', 'V-14: quem tem voto a dar numa votação aberta não passa a suplente');
+select publico_votar_conselho(pg_temp.codigo_de('lucia@exemplo.com'), '1', null);
+select plataforma_alterar_membro(ana, ipe, m_lucia, pg_temp.vm(m_lucia), 'SUPLENTE', '2026-01-01', '2027-12-31', 'EMAIL', null, 'lucia@exemplo.com')
+  from ids, c, m;
+select is((select pg_temp.dec((select ana from ids), d6) -> 'conselho' -> 'contagem' from d6), '{"1": 1}'::jsonb,
+  'V-14: quem votou e passou a suplente: o voto fica');
+select is((select pg_temp.dec((select ana from ids), d6) -> 'conselho' -> 'faltam' from d6), '["Gil", "Marcos Lima"]'::jsonb,
+  'V-14: falta quem vota hoje');
+select is(pg_temp.motivo($$ select publico_votar_conselho(pg_temp.codigo_de('lucia@exemplo.com'), '2', null) $$), 'SUPLENTE_NAO_VOTA',
+  'V-14: suplente não troca o voto');
+select is((select publico_conselho(pg_temp.codigo_de('lucia@exemplo.com')) - 'condominio'),
+  '{"estado": "NAO_VALE", "motivo": "SUPLENTE_NAO_VOTA", "membro": "Lúcia Prado"}'::jsonb, 'V-14: o link dela não vale e não mostra o item');
+select plataforma_alterar_membro(ana, ipe, m_lucia, pg_temp.vm(m_lucia), 'CONSELHEIRO', '2026-01-01', '2027-12-31', 'EMAIL', null, 'lucia@exemplo.com')
+  from ids, c, m;
+select is((select publico_conselho(codigo) - 'condominio' from marcos1), '{"estado": "LINK_VENCIDO", "membro": "Marcos Lima"}'::jsonb,
+  'V-14: 7 dias depois do prazo, o link venceu e não mostra mais nada');
 select pg_temp.em('2026-12-01 09:00:00-03');
 select is((select publico_conselho(marcos) ->> 'estado' || ' ' || (publico_conselho(marcos) ->> 'motivo') from d6), 'NAO_VALE MANDATO_VENCIDO',
   'V-14: com o mandato vencido, o link não vale');
 select is(pg_temp.motivo($$ select publico_votar_conselho(marcos, '1', null) from d6 $$), 'MANDATO_VENCIDO', 'V-14: mandato vencido não vota');
+select is((select publico_conselho(marcos) ? 'item' from d6), false, 'V-14: e o link não mostra o item');
 select is((select plataforma_conselho(ana, ipe) -> 'regras' ->> 'titularesEmDia' from ids, c), '2', 'V-14: os titulares em dia agora são 2');
 
 select is(pg_temp.campos($$ select plataforma_marcar_ausencia(ana, ipe, '2026-12-01', '2027-02-15', 'Viagem') from ids, c $$), '["ate"]'::jsonb,
@@ -389,6 +437,9 @@ select is(pg_temp.campos($$ select plataforma_marcar_ausencia(ana, ipe, '2026-12
 create temp table au as select (plataforma_marcar_ausencia(ana, ipe, '2026-12-01', '2026-12-10', 'Viagem de família') ->> 'id')::uuid as au from ids, c;
 select is(pg_temp.motivo($$ select plataforma_marcar_ausencia(ana, ipe, '2026-12-05', '2026-12-08', 'Outra') from ids, c $$), 'JA_HA_AUSENCIA',
   'V-14: uma ausência por vez');
+select throws_ok($$ insert into ausencias_sindico (condominio_id, sindico_id, substituto_id, de, ate, motivo, criada_por)
+                    select condominio_id, sindico_id, substituto_id, de, ate, 'Outra', criada_por from ausencias_sindico, au where id = au $$,
+  '23505', null, 'V-14: o banco garante uma ausência aberta por vez, também com dois pedidos ao mesmo tempo');
 select is((select x ->> 'tipo' from ids, c, jsonb_array_elements(plataforma_avisos(gil, ipe) -> 'itens') x where x ->> 'tipo' = 'AUSENCIA_INICIO'),
   'AUSENCIA_INICIO', 'V-14: o subsíndico é avisado de que responde no lugar da síndica');
 create temp table d7 as select pg_temp.pedir_sindica('2026-12-04') as d7;
@@ -419,24 +470,55 @@ select pg_temp.fila();
 select is((select finalidade from emails where para = 'lucia@exemplo.com' order by ctid desc limit 1), 'AVISO', 'V-14: Lúcia recebe o link para ver');
 select is((select publico_conselho(pg_temp.codigo_de('lucia@exemplo.com')) ->> 'estado'), 'AGUARDANDO', 'V-14: só para ver, sem votar');
 select is(pg_temp.motivo($$ select publico_votar_conselho(pg_temp.codigo_de('lucia@exemplo.com'), '1', null) $$), 'NAO_VOTA', 'V-14: e não vota');
+select is((select plataforma_reenviar_link_conselho(ana, ipe, d8, null, m_lucia, 'AVISO') ->> 'finalidade' from ids, c, d8, m), 'AVISO',
+  'V-14: o link do aviso também se manda de novo');
+select pg_temp.fila();
+create temp table av as select pg_temp.codigo_de('lucia@exemplo.com') as a1,
+  (select envio_email_id from codigos_sem_conta, links_conselho l, d8, m
+    where alvo_id = l.id and l.decisao_id = d8 and l.membro_id = m_lucia and l.finalidade = 'AVISO' and codigos_sem_conta.revogado_em is null) as envio;
+update envios_email set estado = 'NA_FILA' where id = (select envio from av);
+select pg_temp.fila();
+select is((select publico_conselho(a1) ->> 'estado' from av), 'AGUARDANDO', 'V-14: a nova tentativa do e-mail não para o código da que pode ter chegado');
+select email_resultado(ipe, envio, null, 'Caixa não existe', false) from c, av;
+select is((select publico_conselho(a1) ->> 'motivo' || ' ' || (publico_conselho(pg_temp.codigo_de('lucia@exemplo.com')) ->> 'motivo') from av),
+  'LINK_TROCADO LINK_TROCADO', 'V-14: o e-mail que falhou de vez para os códigos que levava');
 
 select is(pg_temp.campos($$ select plataforma_retirar_membro(ana, ipe, m_gil, pg_temp.vm(m_gil), '') from ids, c, m $$), '["motivo"]'::jsonb,
   'V-14: retirar pede motivo');
 select plataforma_retirar_membro(ana, ipe, m_lucia, pg_temp.vm(m_lucia), 'Mudou-se do prédio') from ids, c, m;
-select is((select publico_conselho(pg_temp.codigo_de('lucia@exemplo.com')) ->> 'motivo'), 'LINK_TROCADO', 'V-14: os links de quem sai param');
+select is((select publico_conselho(pg_temp.codigo_de('lucia@exemplo.com')) - 'condominio'),
+  '{"estado": "NAO_VALE", "motivo": "SAIU_DO_CONSELHO", "membro": "Lúcia Prado"}'::jsonb, 'V-14: os links de quem sai param e não mostram nada');
 select is((select count(*)::int from conselho_membros), 4, 'V-14: retirar não apaga');
 
 -- O subsíndico sem painel responde no lugar da síndica pelo link (quadro 416).
 select plataforma_retirar_membro(ana, ipe, m_gil, pg_temp.vm(m_gil), 'Deixou o cargo') from ids, c, m;
 select plataforma_alterar_membro(ana, ipe, m_rui, pg_temp.vm(m_rui), 'SUBSINDICO', '2026-01-01', '2027-12-31', 'WHATSAPP', '61999990001', null) from ids, c, m;
-select plataforma_marcar_ausencia(ana, ipe, '2026-12-05', '2026-12-12', 'Cirurgia') from ids, c;
-create temp table rui as select novo_codigo_conselho(l) as codigo from links_conselho l, d8, m
- where l.decisao_id = d8 and l.membro_id = m_rui and l.finalidade = 'SUBSTITUTO';
+create temp table au2 as select plataforma_marcar_ausencia(ana, ipe, '2026-12-05', '2026-12-12', 'Cirurgia') as r from ids, c;
+create temp table rui0 as select x ->> 'codigo' as codigo from au2, d8, jsonb_array_elements(r -> 'links') x where x ->> 'decisaoId' = d8::text;
+select is((select (x ->> 'finalidade') || ' ' || (x ->> 'envio') || ' ' || (x ? 'codigo') from au2, d8, jsonb_array_elements(r -> 'links') x
+            where x ->> 'decisaoId' = d8::text), 'SUBSTITUTO COPIAR true', 'V-14: marcar a ausência devolve o link do substituto para copiar');
+select is((select (pg_temp.dec((select ana from ids), d8) -> 'links' -> 0) - 'mandadoEm' - 'membroId' from d8),
+  '{"nome": "Rui Alves", "finalidade": "SUBSTITUTO", "canal": "WHATSAPP", "envio": "COPIAR", "podeReenviar": true}'::jsonb,
+  'V-14: a decisão mostra quem tem o link do substituto e que dá para copiar de novo');
+create temp table rui as select plataforma_reenviar_link_conselho(ana, ipe, d8, null, m_rui, 'SUBSTITUTO') ->> 'codigo' as codigo from ids, c, d8, m;
+select is((select publico_conselho(codigo) ->> 'motivo' from rui0), 'LINK_TROCADO', 'V-14: copiar de novo troca o link do substituto');
 select is((select publico_conselho(codigo) ->> 'estado' from rui), 'RESPONDER', 'V-14: o link do substituto responde no lugar da síndica');
 select is(pg_temp.campos($$ select publico_responder_conselho(codigo, true, 1, null) from rui $$), '["justificativa"]'::jsonb,
   'V-14: com justificativa');
 select is((select publico_responder_conselho(codigo, true, 1, 'Pode trocar a lâmpada.') ->> 'estado' from rui), 'FECHADA', 'V-14: respondida pelo link');
 select is((select pg_temp.dec((select ana from ids), d8) ->> 'respondidaPor' from d8), 'Rui Alves', 'V-14: em nome do subsíndico');
+create temp table x6 as select plataforma_criar_despesa(bruna, ipe, 'Conserto do portão', 60000, null, 'Portões Já', null, null, null, null,
+                                                        'PESSOA', v_ana, '2026-12-10') as r from ids, c, vs;
+select is((select (r -> 'links' -> 0) - 'membroId' - 'despesaId' from x6),
+  '{"nome": "Rui Alves", "canal": "WHATSAPP", "finalidade": "SUBSTITUTO", "envio": "COPIAR", "aviso": "Peça o link ao síndico"}'::jsonb,
+  'FC-10: pedida à síndica ausente, nasce o link do substituto; quem pediu não vê o código');
+select is((select plataforma_despesa(ana, ipe, (r ->> 'id')::uuid) -> 'links' -> 0 ->> 'podeReenviar' from ids, c, x6), 'true',
+  'FC-10: a síndica vê o link do substituto e pode copiar');
+
+select pg_temp.em('2026-12-20 09:00:00-03');
+select ok((select plataforma_marcar_ausencia(ana, ipe, '2026-12-20', '2026-12-22', 'Folga') ? 'id' from ids, c),
+  'V-14: a ausência que passou do fim não impede marcar outra');
+select ok((select encerrada_em is not null from ausencias_sindico where de = '2026-12-05'), 'V-14: a que passou do fim fica encerrada');
 
 -- ---------------------------------------------------------------------------------------
 -- Relatório do mês e isolamento entre condomínios.

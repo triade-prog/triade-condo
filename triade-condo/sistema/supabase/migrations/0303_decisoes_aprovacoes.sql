@@ -24,7 +24,9 @@
 -- 5. Link do conselheiro (/conselho/<código>): sem conta, um por membro e por item, vale até o
 --    fim do dia do prazo, e trocar o link para o anterior. O código nasce na hora de mandar e só
 --    o hash fica guardado. Pelo e-mail sai pela fila de sempre; pelo WhatsApp ainda não há
---    modelo aprovado, e a tela mostra o link para copiar.
+--    modelo aprovado, e a tela mostra o link para copiar, só para o síndico e quem cuida do
+--    conselho. O resultado fica à vista até 7 dias depois do prazo; o link que não vale não
+--    mostra nada do item.
 -- 6. Ausência do síndico (ausencias_sindico): até 60 dias; o substituto é o subsíndico em dia.
 --    Enquanto vale, o que foi pedido ao síndico no modo pessoa (decisões e despesas) pode ser
 --    respondido pelo subsíndico, no painel ou pelo link. No fim, o que ele não respondeu fica
@@ -118,10 +120,16 @@ language sql immutable
 set search_path = public
 as $$ select m.papel <> 'SUPLENTE' $$;
 
+-- Vota e conta no quórum só o titular em dia: o suplente não vota, nem o que passou a suplente.
+create function membro_vota(m conselho_membros) returns boolean
+language sql stable
+set search_path = public
+as $$ select membro_titular(m) and membro_em_dia(m) $$;
+
 create function titulares_em_dia() returns integer
 language sql stable
 set search_path = public
-as $$ select count(*)::integer from conselho_membros m where membro_titular(m) and membro_em_dia(m) $$;
+as $$ select count(*)::integer from conselho_membros m where membro_vota(m) $$;
 
 -- Votos que aprovam com n titulares, pela regra do condomínio. Nulo: sem quórum possível.
 create function votos_necessarios(n integer) returns integer
@@ -214,6 +222,7 @@ create table ausencias_sindico (
   check (ate >= de and ate <= de + 60),
   check ((encerrada_em is null) = (encerrada_por is null))
 );
+create unique index ausencias_sindico_uma_aberta on ausencias_sindico (condominio_id) where encerrada_em is null;
 call proteger_tabela_condominio('ausencias_sindico');
 create trigger ausencias_sindico_sem_exclusao before delete on ausencias_sindico for each row execute function somente_insercao();
 
@@ -470,6 +479,9 @@ create trigger links_conselho_regras before update on links_conselho for each ro
 alter table codigos_sem_conta drop constraint codigos_sem_conta_tipo_check;
 alter table codigos_sem_conta add constraint codigos_sem_conta_tipo_check
   check (tipo in ('ETIQUETA', 'PRESTADOR', 'ENQUETE', 'ASSEMBLEIA', 'CADASTRO', 'CONSELHO'));
+-- O envio de e-mail que levou o código do link do conselho.
+alter table codigos_sem_conta add column envio_email_id uuid;
+create index codigos_sem_conta_envio on codigos_sem_conta (envio_email_id) where envio_email_id is not null;
 
 -- Anexos da decisão e da despesa: fatura, nota, orçamento e o comprovante do pagamento. No
 -- bucket privado "pedidos", em condomínio/aprovacoes/item/arquivo.
@@ -602,6 +614,10 @@ begin
   if new.link_conselho_id is distinct from old.link_conselho_id then
     raise exception 'O envio não muda de destino nem de conteúdo' using errcode = 'TC422';
   end if;
+  -- Falhou de vez: o código que este e-mail levaria para (os das tentativas de antes também).
+  if new.estado = 'FALHOU' and old.estado <> 'FALHOU' and new.link_conselho_id is not null then
+    update codigos_sem_conta set revogado_em = app_now() where envio_email_id = new.id and revogado_em is null;
+  end if;
   return new;
 end $$;
 create trigger envios_email_regras_r5 before update on envios_email for each row execute function envios_email_regras_r5();
@@ -657,40 +673,60 @@ begin
   end if;
 end $$;
 
--- O código novo do link: o anterior para na hora (regra 5).
-create function novo_codigo_conselho(l links_conselho) returns text
+-- O código novo do link: o anterior para na hora (regra 5). Ao montar o e-mail (p_trocar
+-- falso), não: o mandar de novo já parou os anteriores, e o código de uma tentativa que pode ter
+-- chegado continua valendo; se o e-mail falha de vez, os códigos dele param (p_envio).
+create function novo_codigo_conselho(l links_conselho, p_trocar boolean default true, p_envio uuid default null) returns text
 language plpgsql
 set search_path = public
 as $$
 declare v_codigo text;
 begin
-  update codigos_sem_conta set revogado_em = app_now() where tipo = 'CONSELHO' and alvo_id = l.id and revogado_em is null;
+  if p_trocar then
+    update codigos_sem_conta set revogado_em = app_now() where tipo = 'CONSELHO' and alvo_id = l.id and revogado_em is null;
+  end if;
   loop
     v_codigo := novo_codigo();
     exit when not exists (select 1 from codigos_sem_conta where hash = hash_codigo(v_codigo));
   end loop;
-  insert into codigos_sem_conta (hash, condominio_id, tipo, alvo_id) values (hash_codigo(v_codigo), l.condominio_id, 'CONSELHO', l.id);
+  insert into codigos_sem_conta (hash, condominio_id, tipo, alvo_id, envio_email_id)
+  values (hash_codigo(v_codigo), l.condominio_id, 'CONSELHO', l.id, p_envio);
   update links_conselho set codigo_em = app_now() where id = l.id;
   return v_codigo;
 end $$;
 
+-- O código do link para copiar só volta para quem cuida do conselho (o síndico ou quem tem
+-- conselho.editar): quem só pediu não vota no lugar de ninguém.
+create function mostra_codigo_conselho(p_pessoa uuid) returns boolean
+language sql stable
+set search_path = public
+as $$ select p_pessoa is not null and (eh_sindico(p_pessoa) or pode(p_pessoa, contexto_condominio(), 'conselho.editar')) $$;
+
 -- Manda o link pelo canal do membro. Pelo e-mail, entra na fila e o código nasce na hora de
 -- montar o e-mail (o de antes para já). Pelo WhatsApp ainda não há modelo aprovado: o código
--- volta para a tela mostrar o link para copiar.
+-- volta para a tela mostrar o link para copiar, só para quem cuida do conselho; para os outros,
+-- o código nem nasce (o de antes segue valendo) e a tela diz para pedir o link ao síndico.
 create function mandar_link_conselho(l links_conselho, p_pessoa uuid) returns jsonb
 language plpgsql
 set search_path = public
 as $$
-declare m conselho_membros;
+declare
+  m conselho_membros;
+  v jsonb;
 begin
   m := exigir_membro(l.membro_id);
-  update envios_email set estado = 'CANCELADO', motivo = 'O link foi mandado de novo' where link_conselho_id = l.id and estado = 'NA_FILA';
+  v := jsonb_strip_nulls(jsonb_build_object('membroId', m.id, 'nome', m.nome, 'canal', m.canal, 'finalidade', l.finalidade,
+                                            'decisaoId', l.decisao_id, 'despesaId', l.despesa_id));
   if m.canal = 'EMAIL' then
+    update envios_email set estado = 'CANCELADO', motivo = 'O link foi mandado de novo' where link_conselho_id = l.id and estado = 'NA_FILA';
     update codigos_sem_conta set revogado_em = app_now() where tipo = 'CONSELHO' and alvo_id = l.id and revogado_em is null;
     insert into envios_email (condominio_id, tipo, link_conselho_id, para, criado_por) values (l.condominio_id, 'CONSELHO', l.id, m.email, p_pessoa);
-    return jsonb_build_object('membroId', m.id, 'nome', m.nome, 'canal', m.canal, 'envio', 'EMAIL');
+    return v || jsonb_build_object('envio', 'EMAIL');
   end if;
-  return jsonb_build_object('membroId', m.id, 'nome', m.nome, 'canal', m.canal, 'envio', 'COPIAR', 'codigo', novo_codigo_conselho(l));
+  if not mostra_codigo_conselho(p_pessoa) then
+    return v || jsonb_build_object('envio', 'COPIAR', 'aviso', 'Peça o link ao síndico');
+  end if;
+  return v || jsonb_build_object('envio', 'COPIAR', 'codigo', novo_codigo_conselho(l));
 end $$;
 
 -- Cria o link do membro para o item, uma vez só. Já existindo, não manda de novo (devolve nulo).
@@ -716,7 +752,7 @@ declare
   m conselho_membros;
   v_links jsonb := '[]'::jsonb;
 begin
-  for m in select * from conselho_membros x where membro_titular(x) and membro_em_dia(x) order by x.papel <> 'SUBSINDICO', lower(x.nome), x.id loop
+  for m in select * from conselho_membros x where membro_vota(x) order by x.papel <> 'SUBSINDICO', lower(x.nome), x.id loop
     insert into votos_conselho (condominio_id, membro_id, decisao_id, despesa_id) values (m.condominio_id, m.id, p_decisao, p_despesa);
     v_links := v_links || jsonb_build_array(criar_link_conselho(m.id, p_decisao, p_despesa, 'VOTO', p_pessoa));
     if membro_com_painel(m) then
@@ -728,8 +764,8 @@ begin
 end $$;
 
 -- O resultado agora (regra 4): a escolha que chegou aos votos necessários, ou se nenhuma
--- escolha consegue mais chegar. Quem está em dia ainda pode votar ou trocar; o voto de quem saiu
--- ou teve o mandato vencido fica como está.
+-- escolha consegue mais chegar. Quem vota hoje (titular em dia) ainda pode votar ou trocar; o
+-- voto de quem saiu, teve o mandato vencido ou passou a suplente fica como está.
 create function apurar_votos(p_decisao uuid, p_despesa uuid, p_necessarios integer, out vencedora text, out votos integer, out impossivel boolean)
 language plpgsql stable
 set search_path = public
@@ -748,10 +784,10 @@ begin
   end if;
   select count(*) into v_elegiveis
     from votos_conselho v join conselho_membros m on m.id = v.membro_id
-   where (v.decisao_id = p_decisao or v.despesa_id = p_despesa) and membro_em_dia(m);
+   where (v.decisao_id = p_decisao or v.despesa_id = p_despesa) and membro_vota(m);
   impossivel := true;
   foreach e in array v_escolhas loop
-    select count(*), count(*) filter (where not membro_em_dia(m)) into v_n, v_fora
+    select count(*), count(*) filter (where not membro_vota(m)) into v_n, v_fora
       from votos_conselho v join conselho_membros m on m.id = v.membro_id
      where (v.decisao_id = p_decisao or v.despesa_id = p_despesa) and v.escolha = e;
     if v_n >= p_necessarios then
@@ -780,7 +816,9 @@ declare
   v_prazo date := least(hoje_no_condominio() + 7, hoje_no_condominio() + 90);
   v_volta boolean;
 begin
-  if d.estado <> 'AGUARDANDO' or d.modo <> 'CONSELHO' then return false; end if;
+  -- Trava e lê de novo: o voto e a rotina podem fechar ao mesmo tempo; quem chega depois sai.
+  select * into d from decisoes_pedido where id = d.id for update;
+  if not found or d.estado <> 'AGUARDANDO' or d.modo <> 'CONSELHO' then return false; end if;
   select * into r from apurar_votos(d.id, null, d.votos_necessarios);
   if r.vencedora is not null then
     v_just := case when r.vencedora = 'DEVOLVER' then 'Devolvida' else 'Aprovada' end || format(' por %s de %s titulares', r.votos, d.titulares);
@@ -844,7 +882,8 @@ declare
   v_sindico uuid;
   v_volta boolean;
 begin
-  if x.estado <> 'AGUARDANDO' or x.modo <> 'CONSELHO' then return false; end if;
+  select * into x from despesas_aprovacao where id = x.id for update;
+  if not found or x.estado <> 'AGUARDANDO' or x.modo <> 'CONSELHO' then return false; end if;
   select * into r from apurar_votos(null, x.id, x.votos_necessarios);
   if r.vencedora is not null then
     v_just := case when r.vencedora = 'APROVAR' then 'Aprovada' else 'Recusada' end || format(' por %s de %s titulares', r.votos, x.titulares);
@@ -913,6 +952,7 @@ begin
   if v_modo <> 'CONSELHO' then perform recusar_motivo('A votação fechou e voltou para o síndico', 'VOLTOU_AO_SINDICO'); end if;
   if v_prazo < hoje_no_condominio() then perform recusar_motivo('O prazo para votar acabou', 'PRAZO_ACABOU'); end if;
   if not membro_em_dia(m) then perform recusar_motivo('O mandato não está em dia: o voto não vale', 'MANDATO_VENCIDO'); end if;
+  if not membro_titular(m) then perform recusar_motivo('Suplente não vota: o voto não vale', 'SUPLENTE_NAO_VOTA'); end if;
   if p_decisao is not null then
     if not (v_escolha = 'DEVOLVER' or exists (select 1 from alternativas_decisao where decisao_id = p_decisao and numero::text = v_escolha)) then
       perform recusar_campos('Escolha uma alternativa ou devolva', 'escolha');
@@ -1019,8 +1059,8 @@ $$;
 
 -- Durante a ausência, o que foi pedido ao síndico vai também para o substituto: o aviso no sino,
 -- se ele tem painel; o link, se não tem (regra 6). Roda ao marcar a ausência, ao pedir e de hora
--- em hora; não repete.
-create function garantir_substituto() returns void
+-- em hora; não repete. Devolve os links que nasceram agora, para a tela mostrar o de copiar.
+create function garantir_substituto() returns jsonb
 language plpgsql
 set search_path = public
 as $$
@@ -1028,23 +1068,25 @@ declare
   a ausencias_sindico;
   m conselho_membros;
   r record;
+  v_links jsonb := '[]'::jsonb;
 begin
   a := ausencia_ativa();
-  if a.id is null then return; end if;
+  if a.id is null then return v_links; end if;
   select * into m from conselho_membros where id = a.substituto_id;
-  if not membro_em_dia(m) then return; end if;
+  if not membro_em_dia(m) then return v_links; end if;
   for r in select id from decisoes_pedido where estado = 'AGUARDANDO' and modo = 'PESSOA' and decisor_id = a.sindico_id loop
     if membro_com_painel(m) then perform avisar_decisao(m.pessoa_id, r.id, 'PEDIDA');
-    else perform criar_link_conselho(m.id, r.id, null, 'SUBSTITUTO', contexto_pessoa()); end if;
+    else v_links := v_links || coalesce(jsonb_build_array(criar_link_conselho(m.id, r.id, null, 'SUBSTITUTO', contexto_pessoa())), '[]'); end if;
   end loop;
   for r in select id from despesas_aprovacao where estado = 'AGUARDANDO' and modo = 'PESSOA' and decisor_id = a.sindico_id loop
     if membro_com_painel(m) then perform avisar_aprovacao(m.pessoa_id, 'DESPESA_PEDIDA', r.id, null, null);
-    else perform criar_link_conselho(m.id, null, r.id, 'SUBSTITUTO', contexto_pessoa()); end if;
+    else v_links := v_links || coalesce(jsonb_build_array(criar_link_conselho(m.id, null, r.id, 'SUBSTITUTO', contexto_pessoa())), '[]'); end if;
   end loop;
   if not a.inicio_avisado then
     perform avisar_aprovacao(m.pessoa_id, 'AUSENCIA_INICIO', null, null, a.id);
     update ausencias_sindico set inicio_avisado = true where id = a.id;
   end if;
+  return (select coalesce(jsonb_agg(x), '[]'::jsonb) from jsonb_array_elements(v_links) x where x <> 'null'::jsonb);
 end $$;
 
 -- A decisão vencida avisa também quem a regra manda (regra 2): pelo sino de quem tem painel e
@@ -1185,7 +1227,7 @@ as $$
                                  or substitui_o_sindico(p_pessoa, x.decisor_id)))
       or (x.modo = 'CONSELHO' and x.prazo >= hoje_no_condominio()
           and exists (select 1 from votos_conselho v join conselho_membros m on m.id = v.membro_id
-                       where v.despesa_id = x.id and m.pessoa_id = p_pessoa and v.escolha is null and membro_em_dia(m))))
+                       where v.despesa_id = x.id and m.pessoa_id = p_pessoa and v.escolha is null and membro_vota(m))))
 $$;
 
 -- ---------------------------------------------------------------------------------------
@@ -1215,7 +1257,7 @@ language sql stable
 set search_path = public
 as $$
   with v as (
-    select x.*, m.nome, m.papel, m.pessoa_id, m.canal as canal_membro, membro_em_dia(m) as em_dia
+    select x.*, m.nome, m.papel, m.pessoa_id, m.canal as canal_membro, membro_em_dia(m) as em_dia, membro_vota(m) as vota
       from votos_conselho x join conselho_membros m on m.id = x.membro_id
      where x.decisao_id = p_decisao or x.despesa_id = p_despesa
   )
@@ -1224,7 +1266,7 @@ as $$
     'votaram', (select count(*) from v where escolha is not null),
     'contagem', case when p_gestao or not p_aguardando then
                   coalesce((select jsonb_object_agg(escolha, n) from (select escolha, count(*) as n from v where escolha is not null group by escolha) c), '{}'::jsonb) end,
-    'faltam', case when p_gestao then (select jsonb_agg(nome order by lower(nome)) from v where escolha is null and em_dia) end,
+    'faltam', case when p_gestao then (select jsonb_agg(nome order by lower(nome)) from v where escolha is null and vota) end,
     'votos', coalesce((
       select jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
                'membroId', v.membro_id, 'nome', v.nome, 'papel', v.papel, 'escolha', v.escolha, 'justificativa', v.justificativa,
@@ -1232,15 +1274,32 @@ as $$
                'link', case when p_gestao then (
                  select jsonb_strip_nulls(jsonb_build_object('canal', v.canal_membro, 'abertoEm', l.aberto_em, 'mandadoEm', l.codigo_em,
                           'envio', coalesce((select e.estado from envios_email e where e.link_conselho_id = l.id order by e.criado_em desc limit 1),
-                                            case when v.canal_membro = 'WHATSAPP' then 'COPIAR' end)))
+                                            case when v.canal_membro = 'WHATSAPP' then 'COPIAR' end),
+                          'podeReenviar', p_aguardando and v.vota and p_prazo >= hoje_no_condominio()))
                    from links_conselho l where l.membro_id = v.membro_id and (l.decisao_id = p_decisao or l.despesa_id = p_despesa)
                                            and l.finalidade = 'VOTO') end))
              order by v.papel <> 'SUBSINDICO', lower(v.nome))
         from v where p_gestao or not p_aguardando or v.pessoa_id = p_pessoa), '[]'::jsonb),
     'eu', (select jsonb_strip_nulls(jsonb_build_object('membroId', v.membro_id, 'escolha', v.escolha, 'justificativa', v.justificativa,
                                                        'votadoEm', v.votado_em,
-                                                       'podeVotar', p_aguardando and v.em_dia and p_prazo >= hoje_no_condominio()))
+                                                       'podeVotar', p_aguardando and v.vota and p_prazo >= hoje_no_condominio()))
              from v where v.pessoa_id = p_pessoa and p_pessoa is not null limit 1)))
+$$;
+
+-- Os links que não são de voto (o do substituto e o do aviso da vencida), para a gestão ver
+-- quem tem e mandar de novo ("Copiar o link do substituto").
+create function links_extras_json(p_decisao uuid, p_despesa uuid, p_aberto boolean) returns jsonb
+language sql stable
+set search_path = public
+as $$
+  select coalesce(jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
+           'membroId', m.id, 'nome', m.nome, 'finalidade', l.finalidade, 'canal', m.canal, 'abertoEm', l.aberto_em, 'mandadoEm', l.codigo_em,
+           'envio', coalesce((select e.estado from envios_email e where e.link_conselho_id = l.id order by e.criado_em desc limit 1),
+                             case when m.canal = 'WHATSAPP' then 'COPIAR' end),
+           'podeReenviar', p_aberto and membro_em_dia(m) and (l.finalidade <> 'SUBSTITUTO' or substituto_vale(l))))
+         order by l.finalidade, lower(m.nome)), '[]'::jsonb)
+    from links_conselho l join conselho_membros m on m.id = l.membro_id
+   where (l.decisao_id = p_decisao or l.despesa_id = p_despesa) and l.finalidade <> 'VOTO' and l.revogado_em is null
 $$;
 
 -- Quem é da gestão da decisão: o síndico, quem aprova, quem pediu e quem atualiza o pedido.
@@ -1284,6 +1343,7 @@ as $$
                     where d.estado = 'AGUARDANDO' and d.modo = 'PESSOA' and a.sindico_id = d.decisor_id and a.encerrada_em is null
                       and hoje_no_condominio() between a.de and a.ate),
     'anexos', anexos_aprovacao_json(array_remove(array[d.id, d.origem_id], null), null, gestao_da_decisao(d, p_pessoa)),
+    'links', case when gestao_da_decisao(d, p_pessoa) and d.modo = 'PESSOA' then links_extras_json(d.id, null, d.estado = 'AGUARDANDO') end,
     'pode', jsonb_build_object(
       'responder', d.estado = 'AGUARDANDO' and d.modo = 'PESSOA'
                    and ((pode(p_pessoa, d.condominio_id, 'decisoes.aprovar')
@@ -1292,7 +1352,7 @@ as $$
                         or substitui_o_sindico(p_pessoa, d.decisor_id)),
       'votar', d.estado = 'AGUARDANDO' and d.modo = 'CONSELHO' and d.prazo >= hoje_no_condominio()
                and exists (select 1 from votos_conselho v join conselho_membros m on m.id = v.membro_id
-                            where v.decisao_id = d.id and m.pessoa_id = p_pessoa and membro_em_dia(m)),
+                            where v.decisao_id = d.id and m.pessoa_id = p_pessoa and membro_vota(m)),
       'reenviar', d.estado = 'AGUARDANDO' and gestao_da_decisao(d, p_pessoa),
       'anexar', d.estado = 'AGUARDANDO'
                 and (d.pedida_por = p_pessoa or exists (select 1 from pedidos p where p.id = d.pedido_id and pode_no_pedido(p_pessoa, p, 'pedidos.atualizar'))),
@@ -1321,7 +1381,7 @@ as $$
                                  or substitui_o_sindico(p_pessoa, d.decisor_id)))
       or (d.modo = 'CONSELHO' and d.prazo >= hoje_no_condominio()
           and exists (select 1 from votos_conselho v join conselho_membros m on m.id = v.membro_id
-                       where v.decisao_id = d.id and m.pessoa_id = p_pessoa and v.escolha is null and membro_em_dia(m))))
+                       where v.decisao_id = d.id and m.pessoa_id = p_pessoa and v.escolha is null and membro_vota(m))))
 $$;
 
 create function ausencia_json() returns jsonb
@@ -1454,8 +1514,7 @@ declare
 begin
   if coalesce(p_modo, 'PESSOA') = 'PESSOA' then
     v_r := pedir_decisao_f303(p_pessoa, p_condominio, p_id, p_versao, p_pergunta, p_porque, p_prazo, p_decisor, p_alternativas);
-    perform garantir_substituto();
-    return v_r;
+    return v_r || jsonb_build_object('links', garantir_substituto());
   end if;
   perform entrar_condominio(p_pessoa, p_condominio, 'pedidos.ver');
   if p_modo <> 'CONSELHO' then perform recusar_campos('Escolha quem decide', 'modo'); end if;
@@ -1542,8 +1601,11 @@ begin
   return registrar_voto(m, p_decisao, null, p_escolha, p_justificativa, 'PAINEL', p_pessoa);
 end $$;
 
--- Reenviar o link (quadro 414): o código troca e o anterior para.
-create function plataforma_reenviar_link_conselho(p_pessoa uuid, p_condominio uuid, p_decisao uuid, p_despesa uuid, p_membro uuid) returns jsonb
+-- Reenviar o link (quadro 414): o código troca e o anterior para. Vale para o link de voto, o
+-- do substituto e o do aviso (p_finalidade; sem ela, o de voto, depois o do substituto).
+create function plataforma_reenviar_link_conselho(p_pessoa uuid, p_condominio uuid, p_decisao uuid, p_despesa uuid, p_membro uuid,
+                                                  p_finalidade text default null)
+returns jsonb
 language plpgsql
 security definer
 set search_path = public
@@ -1569,15 +1631,23 @@ begin
     end if;
     if x.estado <> 'AGUARDANDO' then perform recusar_motivo('Esta despesa já fechou', 'DESPESA_FECHADA'); end if;
   end if;
+  if p_finalidade is not null and p_finalidade not in ('VOTO', 'SUBSTITUTO', 'AVISO') then
+    perform recusar_campos('Diga qual link: de voto, do substituto ou do aviso', 'finalidade');
+  end if;
   select * into l from links_conselho
-   where membro_id = p_membro and (decisao_id = p_decisao or despesa_id = p_despesa) and finalidade in ('VOTO', 'SUBSTITUTO') and revogado_em is null
-   order by finalidade = 'VOTO' desc limit 1;
+   where membro_id = p_membro and (decisao_id = p_decisao or despesa_id = p_despesa) and revogado_em is null
+     and (p_finalidade is null or finalidade = p_finalidade)
+   order by array_position(array['VOTO', 'SUBSTITUTO', 'AVISO'], finalidade) limit 1;
   if not found then raise exception 'Link não encontrado' using errcode = 'TC404'; end if;
   m := exigir_membro(l.membro_id);
   if not membro_em_dia(m) then perform recusar_motivo('O mandato não está em dia: o link não vale', 'MANDATO_VENCIDO'); end if;
+  if l.finalidade = 'VOTO' and not membro_titular(m) then perform recusar_motivo('Suplente não vota', 'SUPLENTE_NAO_VOTA'); end if;
+  if l.finalidade = 'SUBSTITUTO' and not substituto_vale(l) then
+    perform recusar_motivo('A ausência do síndico acabou: ele responde', 'AUSENCIA_ACABOU');
+  end if;
   v_r := mandar_link_conselho(l, p_pessoa);
   perform registrar_historico('conselho.link_reenviado', case when p_decisao is not null then 'decisoes_pedido' else 'despesas_aprovacao' end,
-    coalesce(p_decisao, p_despesa)::text, jsonb_build_object('membro', m.id, 'canal', m.canal));
+    coalesce(p_decisao, p_despesa)::text, jsonb_build_object('membro', m.id, 'canal', m.canal, 'finalidade', l.finalidade));
   return v_r;
 end $$;
 
@@ -1769,6 +1839,14 @@ begin
   if p_papel = 'SUBSINDICO' and m.papel <> 'SUBSINDICO' and exists (select 1 from conselho_membros where papel = 'SUBSINDICO' and retirado_em is null) then
     perform recusar_motivo('Já há um subsíndico: retire ou mude o papel dele antes', 'JA_HA_SUBSINDICO');
   end if;
+  if p_papel = 'SUPLENTE' and m.papel <> 'SUPLENTE'
+     and exists (select 1 from votos_conselho v
+                   left join decisoes_pedido d on d.id = v.decisao_id
+                   left join despesas_aprovacao x on x.id = v.despesa_id
+                  where v.membro_id = m.id and v.escolha is null
+                    and coalesce(d.estado, x.estado) = 'AGUARDANDO' and coalesce(d.modo, x.modo) = 'CONSELHO') then
+    perform recusar_motivo('Ainda tem voto a dar numa votação aberta: espere fechar para passar a suplente', 'VOTO_PENDENTE');
+  end if;
   if m.papel = 'SUBSINDICO' and p_papel <> 'SUBSINDICO'
      and exists (select 1 from ausencias_sindico where substituto_id = m.id and encerrada_em is null and ate >= hoje_no_condominio()) then
     perform recusar_motivo('Ele substitui o síndico numa ausência marcada: encerre a ausência antes', 'SUBSTITUTO_EM_AUSENCIA');
@@ -1892,15 +1970,18 @@ begin
   if s.id is null then
     perform recusar_motivo('Sem subsíndico com mandato em dia, a ausência não pode ser marcada', 'SEM_SUBSINDICO');
   end if;
+  -- Trava as ausências do condomínio: dois pedidos ao mesmo tempo não marcam duas.
+  perform 1 from ausencias_sindico where encerrada_em is null for update;
   if exists (select 1 from ausencias_sindico where encerrada_em is null and ate >= hoje_no_condominio()) then
     perform recusar_motivo('Já há uma ausência marcada: encerre antes de marcar outra', 'JA_HA_AUSENCIA');
   end if;
+  -- A que já passou do fim fica encerrada; só uma fica aberta (ausencias_sindico_uma_aberta).
+  update ausencias_sindico set encerrada_em = app_now(), encerrada_por = p_pessoa where encerrada_em is null;
   insert into ausencias_sindico (condominio_id, sindico_id, substituto_id, de, ate, motivo, criada_por)
   values (p_condominio, v_sindico, s.id, p_de, p_ate, v_motivo, p_pessoa) returning id, versao into v_id, v_versao;
   perform registrar_historico('ausencia.marcada', 'ausencias_sindico', v_id::text, jsonb_build_object(
     'de', p_de, 'ate', p_ate, 'sindico', v_sindico, 'substituto', s.id));
-  perform garantir_substituto();
-  return jsonb_build_object('id', v_id, 'versao', (select versao from ausencias_sindico where id = v_id));
+  return jsonb_build_object('id', v_id, 'links', garantir_substituto(), 'versao', (select versao from ausencias_sindico where id = v_id));
 end $$;
 
 -- Encerrar antes: o que o substituto não respondeu fica com o síndico.
@@ -1970,6 +2051,8 @@ as $$
                      from ausencias_sindico a join conselho_membros m on m.id = a.substituto_id
                     where x.estado = 'AGUARDANDO' and x.modo = 'PESSOA' and a.sindico_id = x.decisor_id and a.encerrada_em is null
                       and hoje_no_condominio() between a.de and a.ate),
+    'links', case when x.modo = 'PESSOA' and (x.pedida_por = p_pessoa or pode(p_pessoa, x.condominio_id, 'despesas.registrar'))
+                  then links_extras_json(null, x.id, x.estado = 'AGUARDANDO') end,
     'pode', jsonb_build_object(
       'responder', x.estado = 'AGUARDANDO' and x.modo = 'PESSOA'
                    and ((pode(p_pessoa, x.condominio_id, 'decisoes.aprovar')
@@ -1978,13 +2061,14 @@ as $$
                         or substitui_o_sindico(p_pessoa, x.decisor_id)),
       'votar', x.estado = 'AGUARDANDO' and x.modo = 'CONSELHO' and x.prazo >= hoje_no_condominio()
                and exists (select 1 from votos_conselho v join conselho_membros m on m.id = v.membro_id
-                            where v.despesa_id = x.id and m.pessoa_id = p_pessoa and membro_em_dia(m)),
+                            where v.despesa_id = x.id and m.pessoa_id = p_pessoa and membro_vota(m)),
       'alterar', x.estado = 'AGUARDANDO' and pode(p_pessoa, x.condominio_id, 'despesas.registrar')
                  and not exists (select 1 from votos_conselho v where v.despesa_id = x.id and v.escolha is not null),
       'retirar', x.estado = 'AGUARDANDO' and (x.pedida_por = p_pessoa or pode(p_pessoa, x.condominio_id, 'despesas.registrar')),
       'reenviar', x.estado = 'AGUARDANDO' and (x.pedida_por = p_pessoa or pode(p_pessoa, x.condominio_id, 'despesas.registrar')),
       'anexar', x.estado = 'AGUARDANDO' and (x.pedida_por = p_pessoa or pode(p_pessoa, x.condominio_id, 'despesas.registrar')),
       'pagar', x.estado = 'APROVADA' and x.paga_em is null and pode(p_pessoa, x.condominio_id, 'despesas.registrar'),
+      'anexarComprovante', x.estado = 'APROVADA' and x.paga_em is null and pode(p_pessoa, x.condominio_id, 'despesas.registrar'),
       'desfazerPagamento', x.paga_em is not null and pode(p_pessoa, x.condominio_id, 'despesas.registrar'))))
 $$;
 
@@ -2066,10 +2150,11 @@ begin
   end if;
   if num_nonnulls(p_pedido, p_manutencao, p_decisao) > 1 then perform recusar_campos('Ligue a uma coisa só', 'ligacao'); end if;
   if p_pedido is not null then perform exigir_pedido(p_pessoa, p_pedido); end if;
-  if p_manutencao is not null and not exists (select 1 from manutencoes where id = p_manutencao) then
+  if p_manutencao is not null and not (pode(p_pessoa, contexto_condominio(), 'manutencao.ver')
+                                       and exists (select 1 from manutencoes where id = p_manutencao)) then
     perform recusar_campos('Manutenção não encontrada', 'manutencaoId');
   end if;
-  if p_decisao is not null and not exists (select 1 from decisoes_pedido where id = p_decisao) then
+  if p_decisao is not null and not exists (select 1 from decisoes_pedido d where d.id = p_decisao and decisao_visivel(d, p_pessoa)) then
     perform recusar_campos('Decisão não encontrada', 'decisaoId');
   end if;
 end $$;
@@ -2118,7 +2203,7 @@ begin
     'prazo', p_prazo, 'valor', p_valor, 'passaAlcada', v_alcada is not null and p_valor >= v_alcada)));
   if p_modo = 'PESSOA' then
     perform avisar_aprovacao(v_decisor_pessoa, 'DESPESA_PEDIDA', v_id, null, null);
-    perform garantir_substituto();
+    v_links := garantir_substituto();
   else
     v_links := abrir_votacao(null, v_id, p_pessoa);
   end if;
@@ -2237,7 +2322,7 @@ begin
   if x.paga_em is not null then perform recusar_motivo('Já está marcada como paga', 'JA_PAGA'); end if;
   if p_paga_em is null or p_paga_em > hoje_no_condominio() then perform recusar_campos('Diga quando foi pago (até hoje)', 'pagaEm'); end if;
   if p_comprovante is not null and not exists (select 1 from arquivos_aprovacao where id = p_comprovante and despesa_id = x.id
-                                                  and situacao = 'LIBERADO' and retirado_em is null) then
+                                                  and parte = 'COMPROVANTE' and situacao = 'LIBERADO' and retirado_em is null) then
     perform recusar_campos('Envie o comprovante antes', 'comprovanteId');
   end if;
   update despesas_aprovacao set paga_em = p_paga_em, paga_registrada_em = app_now(), paga_registrada_por = p_pessoa, comprovante_id = p_comprovante
@@ -2488,8 +2573,10 @@ begin
 end $$;
 
 -- O estado da página: VOTAR, VOTADO (pode trocar até o prazo), RESPONDER (o substituto),
--- AGUARDANDO (o aviso da vencida, só para ver), FECHADA (com o resultado), PRAZO_ACABOU e
--- NAO_VALE (com o motivo: LINK_TROCADO, MANDATO_VENCIDO, SAIU_DO_CONSELHO, AUSENCIA_ACABOU).
+-- AGUARDANDO (o aviso da vencida, só para ver), FECHADA (com o resultado), PRAZO_ACABOU,
+-- NAO_VALE (com o motivo: SAIU_DO_CONSELHO, LINK_TROCADO, MANDATO_VENCIDO, SUPLENTE_NAO_VOTA,
+-- AUSENCIA_ACABOU) e LINK_VENCIDO (fechada ou com o prazo acabado há mais de 7 dias). O link que
+-- não vale e o vencido não mostram nada do item.
 create function conselho_publico_json(l links_conselho, p_trocado boolean) returns jsonb
 language plpgsql stable
 set search_path = public
@@ -2518,14 +2605,16 @@ begin
   select * into v from votos_conselho where membro_id = m.id and (decisao_id = l.decisao_id or despesa_id = l.despesa_id);
   v_fechada := v_estado_item <> 'AGUARDANDO' or (l.finalidade = 'VOTO' and v_modo <> 'CONSELHO')
                or (l.finalidade in ('SUBSTITUTO', 'AVISO') and v_modo <> 'PESSOA');
-  if p_trocado then
+  if m.retirado_em is not null then
+    v_estado := 'NAO_VALE'; v_motivo := 'SAIU_DO_CONSELHO';
+  elsif p_trocado then
     v_estado := 'NAO_VALE'; v_motivo := 'LINK_TROCADO';
   elsif v_fechada then
     v_estado := 'FECHADA';
-  elsif m.retirado_em is not null then
-    v_estado := 'NAO_VALE'; v_motivo := 'SAIU_DO_CONSELHO';
   elsif not membro_em_dia(m) then
     v_estado := 'NAO_VALE'; v_motivo := 'MANDATO_VENCIDO';
+  elsif l.finalidade = 'VOTO' and not membro_titular(m) then
+    v_estado := 'NAO_VALE'; v_motivo := 'SUPLENTE_NAO_VOTA';
   elsif l.finalidade = 'SUBSTITUTO' then
     if substituto_vale(l) then v_estado := 'RESPONDER'; else v_estado := 'NAO_VALE'; v_motivo := 'AUSENCIA_ACABOU'; end if;
   elsif l.finalidade = 'AVISO' then
@@ -2537,9 +2626,11 @@ begin
   else
     v_estado := 'VOTAR';
   end if;
-  if p_trocado then
-    -- O link trocado não mostra mais nada do item.
-    return jsonb_build_object('condominio', nome_do_condominio(), 'estado', v_estado, 'motivo', v_motivo, 'membro', m.nome);
+  -- O resultado fica à vista até 7 dias depois do prazo; depois, o link venceu.
+  if v_estado in ('FECHADA', 'PRAZO_ACABOU') and hoje_no_condominio() > v_prazo + 7 then v_estado := 'LINK_VENCIDO'; end if;
+  if v_estado in ('NAO_VALE', 'LINK_VENCIDO') then
+    -- O link que não vale não mostra mais nada do item.
+    return jsonb_strip_nulls(jsonb_build_object('condominio', nome_do_condominio(), 'estado', v_estado, 'motivo', v_motivo, 'membro', m.nome));
   end if;
   if l.decisao_id is not null then
     v_item := jsonb_strip_nulls(jsonb_build_object(
@@ -2608,10 +2699,10 @@ declare
 begin
   c := entrar_por_codigo(btrim(coalesce(p_codigo, '')), 'CONSELHO');
   l := exigir_link_conselho(c);
-  if c.revogado_em is not null or l.revogado_em is not null then perform recusar_motivo('Este link foi trocado por um novo', 'LINK_TROCADO'); end if;
-  if l.finalidade <> 'VOTO' then perform recusar_motivo('Este link não é de voto', 'NAO_VOTA'); end if;
   m := exigir_membro(l.membro_id);
   if m.retirado_em is not null then perform recusar_motivo('Você não é mais do conselho', 'SAIU_DO_CONSELHO'); end if;
+  if c.revogado_em is not null or l.revogado_em is not null then perform recusar_motivo('Este link foi trocado por um novo', 'LINK_TROCADO'); end if;
+  if l.finalidade <> 'VOTO' then perform recusar_motivo('Este link não é de voto', 'NAO_VOTA'); end if;
   perform registrar_voto(m, l.decisao_id, l.despesa_id, p_escolha, p_justificativa, 'LINK', null);
   return conselho_publico_json(l, false);
 end $$;
@@ -2631,6 +2722,7 @@ declare
 begin
   c := entrar_por_codigo(btrim(coalesce(p_codigo, '')), 'CONSELHO');
   l := exigir_link_conselho(c);
+  if (exigir_membro(l.membro_id)).retirado_em is not null then perform recusar_motivo('Você não é mais do conselho', 'SAIU_DO_CONSELHO'); end if;
   if c.revogado_em is not null or l.revogado_em is not null then perform recusar_motivo('Este link foi trocado por um novo', 'LINK_TROCADO'); end if;
   if l.finalidade <> 'SUBSTITUTO' then perform recusar_motivo('Este link não é para responder no lugar do síndico', 'NAO_RESPONDE'); end if;
   if not membro_em_dia(exigir_membro(l.membro_id)) then perform recusar_motivo('O mandato não está em dia', 'MANDATO_VENCIDO'); end if;
@@ -2657,7 +2749,10 @@ declare
 begin
   c := entrar_por_codigo(btrim(coalesce(p_codigo, '')), 'CONSELHO');
   l := exigir_link_conselho(c);
-  if c.revogado_em is not null or l.revogado_em is not null then raise exception 'Arquivo não encontrado' using errcode = 'TC404'; end if;
+  if conselho_publico_json(l, c.revogado_em is not null or l.revogado_em is not null) ->> 'estado'
+     not in ('VOTAR', 'VOTADO', 'RESPONDER', 'AGUARDANDO') then
+    raise exception 'Arquivo não encontrado' using errcode = 'TC404';
+  end if;
   select * into a from arquivos_aprovacao
    where id = p_arquivo and situacao = 'LIBERADO' and retirado_em is null
      and (despesa_id = l.despesa_id
@@ -2691,6 +2786,7 @@ begin
   select * into x from despesas_aprovacao where id = l.despesa_id;
   v_cancelar := case
     when not membro_em_dia(m) then 'O membro saiu do conselho ou o mandato venceu'
+    when l.finalidade = 'VOTO' and not membro_titular(m) then 'O membro passou a suplente'
     when m.canal <> 'EMAIL' or lower(coalesce(m.email, '')) <> lower(e.para) then 'O contato do membro mudou'
     when coalesce(d.estado, x.estado) <> 'AGUARDANDO' then 'Já foi respondida ou retirada'
     when l.finalidade = 'VOTO' and coalesce(d.modo, x.modo) <> 'CONSELHO' then 'A votação fechou'
@@ -2703,7 +2799,7 @@ begin
     'envio', e.id, 'condominio', e.condominio_id, 'tipo', e.tipo, 'para', e.para,
     'condominioNome', (select nome from condominios where id = e.condominio_id),
     'responderPara', (select email_responder_para from configuracao_condominio), 'nome', nome_curto(m.nome),
-    'codigos', jsonb_build_object('abrir', novo_codigo_conselho(l)),
+    'codigos', jsonb_build_object('abrir', novo_codigo_conselho(l, false, e.id)),
     'conselho', jsonb_strip_nulls(jsonb_build_object(
       'finalidade', l.finalidade, 'item', case when d.id is not null then 'DECISAO' else 'DESPESA' end,
       'titulo', coalesce(d.pergunta, x.descricao), 'valor', case when x.id is not null then reais(x.valor) end,
