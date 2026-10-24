@@ -482,6 +482,46 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 
 ---
 
+## 23. Comercial TRÍADE (interessados, funil, propostas e contrato)
+
+| ID | Ideia | Origem |
+|---|---|---|
+| CM-01 | **Interessados chegam sozinhos do site**: cada pedido de demonstração (EM-04) entra no Console com data, origem, faixa de unidades e a autorização LGPD que a pessoa marcou. O e-mail continua como aviso e não substitui o registro. O mesmo WhatsApp junta no mesmo interessado, sem duplicar. A junção usa o WhatsApp no formato internacional (+55…), o e-mail e o CNPJ; a origem e a campanha do primeiro contato nunca são sobrescritas | [C] |
+| CM-02 | **Outras origens à mão**: WhatsApp comercial, Instagram, indicação (NG-20), construtora (NG-08), evento ou contato direto, com quem trouxe. Captura automática do WhatsApp comercial só quando houver a API oficial. Plataformas de cotação (oHub, CoteiBem) também são origem, com meta de resposta em 24 horas | [C] |
+| CM-03 | **Funil com etapas fixas**: Novo, Em contato, Demonstração marcada, Demonstração feita, Proposta enviada, Negociação, e o fim em Ganho, Perdido (motivo obrigatório) ou Sem resposta. Vista em lista e em quadro; mudar de etapa fica no histórico. Entre Proposta enviada e Ganho fica a etapa **Aprovação no condomínio** (conselho ou assembleia, com data). Cada etapa tem uma probabilidade, que a equipe corrige com os números reais | [C] |
+| CM-04 | **Próximo passo sempre definido**: todo interessado aberto tem responsável, próximo passo e data. A promessa do site ("até o fim do próximo dia útil") é contada no primeiro retorno; atrasados aparecem primeiro e no Início do Console. Meta interna de primeiro retorno em 1 hora útil, contada no painel, sem mudar a promessa do site. Ordem: atrasado, hoje, sem próximo passo, futuro, numa tela "Meu dia" que funciona no celular | [C] |
+| CM-05 | **Histórico de conversas** com o interessado: ligação, mensagem, demonstração e nota interna, com autor e data. Nada se apaga; correção fica como nova anotação | [C] |
+| CM-06 | **Gerador de propostas pela Tabela de preços**: escolhe faixa e ciclo e a proposta vem da tabela do Console (fundador se houver vaga, cheia, ou sob consulta acima de 400 unidades), com implantação e validade. Desconto só com motivo e aprovação da Administração. O texto segue a oferta honesta (EM-07). Os simuladores da tabela abrem daqui, já com a faixa do interessado; não há simulador separado | [C] |
+| CM-07 | **Proposta com versões, link e aceite**: cada mudança cria uma versão e a versão enviada não muda. Vai por link sem conta, que expira e pode ser revogado, e em PDF. O aceite pelo link registra nome, data e versão. Proposta vencida pede refazer com a tabela do dia (como OC-04). O aceite guarda nome, CPF, cargo, data e IP, e o PDF guarda uma impressão digital (hash) que prova que não mudou. A equipe vê quando e quantas vezes a proposta e o contrato foram abertos | [C] |
+| CM-08 | **Ganho vira cliente sem redigitar**: depois do contrato assinado (CM-13), um botão cria o cliente na carteira (PI-01) com os dados do interessado, o plano pela tabela da proposta aceita, ocupa a vaga de fundador se for o caso e abre a implantação (PI-04). A passagem leva também as promessas feitas e quem decide; a primeira cobrança (PI-07) sai da assinatura, não do aceite | [C] |
+| CM-09 | **Uma pessoa, vários condomínios**: síndico profissional ou administradora (NG-05, NG-14) é um contato com várias oportunidades, cada uma com o seu condomínio, etapa e proposta. Para quem traz vários prédios, contrato-quadro com adesão por prédio e desconto por volume definido na Tabela de preços (PI-21) | [C] |
+| CM-10 | **Painel comercial**: quantos em cada etapa, conversão por etapa e por origem, tempo até o primeiro retorno, propostas vencendo, motivos de perda e vagas de fundador restantes, previsão de MRR (valor × probabilidade da etapa), ciclo médio, novo MRR do mês contra a meta mensal (total e por pessoa), atividades por pessoa, taxa de vitória contra cada concorrente e os contadores de parados e sem resposta | [C] |
+| CM-11 | **Função Comercial** nas funções internas (PI-10): vê e trabalha interessados, propostas e contratos. Por padrão não muda plano de cliente ativo, não confirma pagamento, não libera conjunto e não vê pedidos nem dados dos condomínios | [C] |
+| CM-12 | **Dados dos interessados com LGPD**: usados só para responder e negociar, sem lista de e-mails. Interessado perdido sem conversa por 12 meses é anonimizado; pedido de exclusão é atendido e registrado. Notas internas nunca vão na proposta. Formulário do site com o consentimento que já tem; registro à mão e lote importado com legítimo interesse documentado e origem guardada. Opt-in do WhatsApp guardado (data, canal, texto) e lista de "não contatar". Exportação dos dados comerciais só pela Administração, com registro | [C] |
+| CM-13 | **Contrato gerado da proposta aceita**: sai de um modelo revisado por advogado (EM-06), preenchido com as partes (CNPJ do condomínio, síndico e mandato), plano, valores, implantação, ciclo, vigência e aviso de cancelamento, com o termo de tratamento de dados junto. Serviço humano contratado vai em anexo separado. Assinatura eletrônica por serviço externo, com registro de quem, quando e qual versão; o contrato assinado fica na ficha do cliente (PI-02), com versões, e mudar plano ou valor gera aditivo, nunca edita o assinado. No aceite pede CNPJ, ata da eleição com o fim do mandato e, se a convenção exigir, a ata que aprovou. Prazo indeterminado, cancelamento com 30 dias de aviso e sem multa, reajuste anual por índice e preço de fundador garantido por 12 meses, a confirmar com o advogado. Começa com um serviço de assinatura barato por API (Autentique ou ZapSign), escolhido depois de testar | [C] |
+| CM-14 | **Negócio parado**: cada etapa tem um limite de dias sem conversa; passou, o cartão fica âmbar e sobe na lista. Só uma conversa registrada zera o contador; marcar data futura não | [C] |
+| CM-15 | **Modelos de mensagem por etapa**: botão que abre o WhatsApp comercial com o texto pronto e registra a conversa num clique. Sem envio automático; a API oficial fica para quando o volume pagar o custo por mensagem | [C] |
+| CM-16 | **Ficha do prédio no interessado**: unidades, administradora e o app que ela usa, sistema atual e quando acaba a fidelidade dele, data da próxima assembleia ordinária, fim do mandato do síndico, quem decide (quem trouxe, síndico, conselho, assembleia) e o roteiro da visita ao prédio, que alimenta a proposta | [C] |
+| CM-17 | **Objeções e concorrentes**: lista fechada de objeções (vai aumentar a taxa, moradores idosos, já temos app da administradora, a assembleia decide) com resposta pronta para cada uma; cada negócio registra os concorrentes na disputa, o preço deles e quem ganhou | [C] |
+| CM-18 | **Janelas do condomínio**: aviso 30 a 60 dias antes da assembleia ordinária (para entrar no orçamento), perto do fim do mandato e do fim da fidelidade do sistema atual ("janela de troca"). Perdido volta a ser lembrado na troca de síndico, por evento e não por calendário | [C] |
+| CM-19 | **Custo por apartamento**: na proposta e no kit, o valor mensal dividido pelas unidades (R$ por apartamento por mês), com a implantação à parte. Marcado como estimativa, com as premissas guardadas na versão; sem ROI e sem citar o que ainda não existe (EM-07) | [C] |
+| CM-20 | **Kit para o conselho e a assembleia**: sai dos dados do prédio e da proposta: apresentação curta (problema, como funciona pelo WhatsApp, custo por apartamento, piloto, como cancelar), comparativo TRÍADE × sistema atual × concorrente pelos critérios do síndico, proposta em PDF, minuta de texto para a ata e explicação de privacidade para o morador | [C] |
+| CM-21 | **Piloto com critério de sucesso**: prazo de 30 a 60 dias e meta combinada antes (por exemplo, pedidos com prazo cumprido), medida pela própria Plataforma; no fim, vira proposta ou perdido com motivo | [C] |
+| CM-22 | **Parceiros e indicação**: síndico profissional, administradora, construtora ou cliente que indica (NG-08, NG-20); comissão recorrente por prédio ativo calculada no Console e extrato para o parceiro. O pagamento da comissão fica fora do sistema no começo | [C] |
+| CM-23 | **Agendar demonstração por link**: o interessado escolhe um horário livre da equipe, recebe a confirmação e um lembrete; a demonstração entra no funil sozinha | [C] |
+| CM-24 | **Importar planilha e juntar duplicados**: lista de prédios ou contatos entra por planilha-modelo; o Console aponta duplicados por CNPJ, endereço, WhatsApp e e-mail e a pessoa decide juntar. O lote guarda origem e base legal (CM-12) | [C] |
+| CM-25 | **Etapa só avança com o que ela pede**: por exemplo, faixa de unidades antes da proposta, decisor e data da assembleia antes da Aprovação no condomínio. O que falta aparece na ficha | [C] |
+| CM-26 | **Cadência de contato**: sequência de passos com datas por tipo de interessado (por exemplo, dia 0 mensagem, dia 2 ligação, dia 5 mensagem). Gera tarefas no "Meu dia" e para quando a pessoa responde. Não envia nada sozinha; envio automático só com a API oficial do WhatsApp | [C] |
+| CM-27 | **Respostas prontas para questionário e cotação**: LGPD, segurança, suporte, prazo de implantação, como cancelar e como os dados voltam na saída. Revisadas pela Administração e usadas na proposta e no kit | [C] |
+| CM-28 | **Referências e casos**: síndicos clientes que aceitaram ser referência, com contato autorizado, e casos com números medidos na Plataforma. Só números reais (EM-07) | [C] |
+| CM-29 | **Troca de sistema sem dor**: carta-modelo à administradora ou ao sistema anterior pedindo dados e documentos, lista do que falta, planilha-modelo com o mínimo para começar e linha do tempo da troca. Tudo segue para a implantação (PI-04) | [C] |
+| CM-30 | **Renovação e reajuste**: aniversário do contrato, índice e aviso ao síndico antes de aplicar, fim do preço de fundador e aditivo gerado (CM-13). Nada muda sem o aviso enviado | [C] |
+| CM-31 | **Cancelamento e retenção**: motivo de cancelamento em lista própria (separada do motivo de perda), uma tentativa de retenção registrada, devolução dos dados e sinais de risco: síndico novo eleito, uso caindo (PI-13), troca de sistema na pauta da assembleia | [C] |
+| CM-32 | **Expansão**: oportunidade de mais um prédio do mesmo síndico ou administradora, mudança de faixa e reconquista de quem saiu, num funil próprio ligado ao cliente | [C] |
+| CM-33 | **Calculadora de custo por apartamento no site** (EM-04): o síndico digita as unidades e vê o valor por apartamento pela Tabela de preços (CM-19, sem ROI). Se quiser a proposta, deixa o contato e vira interessado com a faixa preenchida | [C] |
+
+---
+
 ## Contagem
 
 | Seção | Ideias |
@@ -508,7 +548,8 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 20. Princípios técnicos | 18 |
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
-| **Total** | **313** |
+| 23. Comercial TRÍADE | 33 |
+| **Total** | **346** |
 
 ---
 
@@ -696,3 +737,29 @@ Aprovado pela Carolina em 24/10/2026, junto com o plano do motor de IA e da port
 | IA-18 | Responder moradores dentro do grupo de WhatsApp quando mencionado | Mesmo motivo: a resposta no grupo seria IA de uso geral no WhatsApp e alcançaria pessoas que não são clientes (decisão D9) |
 
 Renumeração para manter a sequência sem buracos: IA-19→IA-17 (classificar o pedido), IA-20→IA-18 (IA completa a descrição), IA-21→IA-19 (ajuda de cada tela). As seções datadas acima são histórico e mantêm os códigos da época.
+
+---
+
+## Pedido da Carolina sobre o comercial no Console (24/10/2026)
+
+Pedido pela Carolina: um painel comercial dentro do Console, com CRM, gerador de propostas e simulador se couber, onde chegam os interessados e futuros clientes e onde a equipe faz todo o processo comercial. Depois, pediu também o contrato entre a TRÍADE e o condomínio. Proposta aprovada em 24/10/2026 (decisões A.1 a I.1): https://claude.ai/artifact/TqFgANRs8F6wt4sn7tFsBe.
+
+**13 ideias novas:** CM-01 a CM-13, na seção nova 23.
+
+**Como conversa com o que já está decidido:**
+- Fica num grupo próprio "Comercial" no Console; a carteira (PI-01) continua só com quem contratou.
+- O site continua mandando o e-mail (EM-04); passa a gravar também no Console, como combinado na pesquisa do site de 22/10/2026.
+- Não há simulador novo: a proposta e os simuladores usam a Tabela de preços do Console, para existir um só cálculo de preço.
+- O contrato depende do modelo revisado por advogado (EM-06), que fica fora do software.
+- Etapas do funil fixas no começo, sem construtor de fluxos (CF-12).
+
+**Segunda e terceira pesquisas (24/10/2026):** a pedido da Carolina, agentes especialistas pesquisaram CRMs para equipe pequena, propostas e contratos no Brasil, venda para condomínio, CRMs internacionais e CRMs de administradoras (https://claude.ai/artifact/MijZyDZ49LCHwuQdVjSmrc e https://claude.ai/artifact/VHokWAw8uoxkpfsxuApN6W). Aprovadas as decisões J.1 a T.1.
+
+**20 ideias novas:** CM-14 a CM-33. **Ajustes:** CM-01, 02, 03, 04, 07, 08, 09, 10, 12 e 13.
+
+**Decisões que entram nas ideias:**
+- Etapa "Aprovação no condomínio" no funil (J.1); meta interna de 1 hora útil no primeiro retorno (K.1); custo por apartamento como estimativa, sem ROI (L.1).
+- Assinatura começa por serviço barato por API (M.1); prazo indeterminado com 30 dias de aviso, a confirmar com o advogado (N.1).
+- Parceiros com comissão calculada no Console e paga fora dele (O.1); consentimento no site e legítimo interesse documentado no registro à mão (P.1).
+- Renovação, cancelamento e expansão ficam no Comercial (Q.1); cadência só cria tarefas (R.1); calculadora pública no site (S.1); contrato-quadro com desconto por volume na Tabela de preços (T.1).
+- Fica para depois: pontuação automática, rodízio entre vendedores, automações livres, registro automático de e-mail e WhatsApp, IA que resume antes da ligação e demonstração autoguiada.
