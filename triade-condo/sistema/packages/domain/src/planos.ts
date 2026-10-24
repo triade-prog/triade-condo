@@ -3,6 +3,7 @@
 // Nenhum preço mora aqui: o valor do plano é opcional e, vazio, fica "Valor a definir".
 
 import { z } from "zod";
+import { dinheiro, formatar } from "./dinheiro.ts";
 
 /** Os conjuntos (NG-01): a base vem com todo plano; os outros quatro se contratam e liberam inteiros. */
 export const CONJUNTOS = {
@@ -59,6 +60,25 @@ export type SituacaoCobranca = keyof typeof SITUACOES_COBRANCA;
 
 export const ESTADOS_RECEBIMENTO = { A_CONFERIR: "A conferir", CONFERIDO: "Conferido", DEVOLVIDO: "Devolvido" } as const;
 export type EstadoRecebimento = keyof typeof ESTADOS_RECEBIMENTO;
+
+/** Valor em centavos para ler; vazio é "Valor a definir", nunca zero (PI-07). */
+export function mostrarValor(centavos: number | null | undefined): string {
+  return centavos === null || centavos === undefined ? "Valor a definir" : formatar(dinheiro(centavos));
+}
+
+const MESES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+/** "2026-10-01" → "Outubro/2026". */
+export function nomeCompetencia(data: string): string {
+  const [a, m] = data.split("-");
+  return `${MESES[Number(m) - 1] ?? m}/${a}`;
+}
+
+/** O mês seguinte ao dado, no primeiro dia ("2026-12-01" → "2027-01-01"). */
+export function proximaCompetencia(data: string): string {
+  const [a, m] = data.split("-").map(Number) as [number, number];
+  return m === 12 ? `${a + 1}-01-01` : `${a}-${String(m + 1).padStart(2, "0")}-01`;
+}
 
 /** Conjunto ao qual a ação pertence; a base não aparece (sempre liberada). */
 export function conjuntoDaAcao(acao: string): Conjunto | null {

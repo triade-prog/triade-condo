@@ -3,7 +3,8 @@
 // console-menu-celular; rodada Console, decisões B.1 e C.1 de 23/10/2026): a mesma da Plataforma.
 // No alto, a marca com "Console TRÍADE" e o selo laranja "Admin", a busca de clientes e a pessoa,
 // que abre o menu com as funções e Sair. Sem sino: o Agora do Início faz esse papel. No
-// computador, a lateral com o Início e os grupos Clientes, Suporte e Equipe, com o número do
+// computador, a lateral com o Início e os grupos Clientes, Financeiro (Pagamentos, 0291), Suporte
+// e Equipe, com o número do
 // que está aberto em laranja; no celular, a barra de baixo com Início, Clientes, Chamados e Mais.
 // Implantações saiu do menu e virou o filtro Em implantação da carteira.
 
@@ -28,7 +29,7 @@ interface ItemDoMenu {
   /** Nome curto na barra de baixo do celular. */
   curto?: string;
   icone: NomeIcone;
-  grupo: "Clientes" | "Suporte" | "Equipe" | null;
+  grupo: "Clientes" | "Financeiro" | "Suporte" | "Equipe" | null;
   atual: (caminho: string) => boolean;
   ve: (s: SessaoConsole) => boolean;
   contagem?: (n: Contagens) => number | undefined;
@@ -42,6 +43,8 @@ const atende = (s: SessaoConsole) => temFuncao(s, "ADMINISTRACAO", "IMPLANTACAO"
 const ITENS: ItemDoMenu[] = [
   { href: "/", texto: "Início", icone: "casa", grupo: null, atual: (c) => c === "/", ve: () => true, atalho: true },
   { href: "/clientes", texto: "Carteira de clientes", curto: "Clientes", icone: "predio", grupo: "Clientes", atual: (c) => c.startsWith("/clientes"), ve: () => true, atalho: true },
+  { href: "/pagamentos", texto: "Pagamentos", icone: "dinheiro", grupo: "Financeiro", atual: (c) => c.startsWith("/pagamentos"),
+    ve: (s) => s.acoes.includes("console.pagamentos.ver") },
   { href: "/chamados", texto: "Chamados", icone: "balao", grupo: "Suporte", atual: (c) => c.startsWith("/chamados"), ve: atende, contagem: (n) => n.chamados, atalho: true },
   { href: "/suporte-acesso", texto: "Suporte de acesso", icone: "cadeado", grupo: "Suporte", atual: (c) => c.startsWith("/suporte-acesso"),
     ve: (s) => temFuncao(s, "ADMINISTRACAO", "SUPORTE"), contagem: (n) => n.suporteAcesso },
@@ -49,7 +52,7 @@ const ITENS: ItemDoMenu[] = [
   { href: "/equipe", texto: "Pessoas e funções", icone: "pessoas", grupo: "Equipe", atual: (c) => c === "/equipe", ve: (s) => s.acoes.includes("console.equipe.gerenciar") },
   { href: "/equipe/historico", texto: "Histórico da equipe", icone: "relogio", grupo: "Equipe", atual: (c) => c === "/equipe/historico", ve: (s) => s.acoes.includes("console.historico.equipe") },
 ];
-const GRUPOS = ["Clientes", "Suporte", "Equipe"] as const;
+const GRUPOS = ["Clientes", "Financeiro", "Suporte", "Equipe"] as const;
 
 function Contagem({ n, nome }: { n?: number; nome: string }) {
   return n ? <span className="contagem">{n}<span className="sr-only"> {nome}</span></span> : null;

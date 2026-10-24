@@ -3,6 +3,7 @@
 // confere a tela: fluxo, textos, permissões que ela respeita e acessibilidade.
 import type { Page, Route } from "@playwright/test";
 import { criarSuporteConsole, rotasSuporteConsole } from "./api-falsa-console-suporte";
+import { criarPlanosConsole, rotasPlanosConsole } from "./api-falsa-console-planos";
 import { andamentoConfiguracao, criarConfiguracaoConsole, rotasConfiguracaoConsole } from "./api-falsa-console-configuracao";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -15,8 +16,9 @@ const TODAS = [
   "console.sindicos.convidar", "console.notas.ver", "console.notas.escrever", "console.historico.ver", "console.equipe.atribuir",
   "console.implantacao.ver", "console.implantacao.editar", "console.troca.fazer", "console.suporte.acesso", "console.casos_duvidosos",
   "console.chamados.ver", "console.chamados.responder", "console.acesso_excepcional.pedir", "console.whatsapp.ver", "console.whatsapp.conectar",
+  "console.conjuntos.liberar", "console.pagamentos.ver", "console.pagamentos.registrar", "console.pagamentos.conferir", "console.pagamentos.ajustar",
 ];
-const IMPLANTACAO = TODAS.filter((a) => !["console.contrato.editar", "console.equipe.atribuir", "console.suporte.acesso", "console.casos_duvidosos",
+const IMPLANTACAO = TODAS.filter((a) => !a.startsWith("console.pagamentos.") && !["console.contrato.editar", "console.equipe.atribuir", "console.suporte.acesso", "console.casos_duvidosos",
   "console.acesso_excepcional.pedir"].includes(a));
 
 export interface Opcoes {
@@ -55,6 +57,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
   };
   const suporte = criarSuporteConsole();
   const configuracao = criarConfiguracaoConsole();
+  const planos = criarPlanosConsole(IPE, "Residencial Ipê");
   // Modelos de mensagem (F5.4, W-20): globais, com versão e situação.
   const MODELOS_V1: [string, string, string, string, string[], string, string | null][] = [
     ["noticia_pedido", "Notícia do pedido", "MORADOR", "Retorno escrito no pedido, com a conversa fechada", ["protocolo", "condomínio", "texto do retorno", "quem escreveu"],
@@ -208,7 +211,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     if (caminho === "/v1/sessao") {
       return route.fulfill({
         json: admin
-          ? { pessoaId: CAROLINA, nome: "Carolina", funcoes: ["ADMINISTRACAO"], acoes: ["console.condominios.criar", "console.equipe.gerenciar", "console.historico.equipe"] }
+          ? { pessoaId: CAROLINA, nome: "Carolina", funcoes: ["ADMINISTRACAO"], acoes: ["console.condominios.criar", "console.equipe.gerenciar", "console.historico.equipe", "console.pagamentos.ver", "console.pagamentos.registrar"] }
           : { pessoaId: INES, nome: "Inês", funcoes: ["IMPLANTACAO"], acoes: [] },
       });
     }
@@ -312,6 +315,8 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     if (caminho === "/v1/equipe/historico") {
       return route.fulfill({ json: { eventos: [{ id: 9, ocorridoEm: "2026-10-16T12:30:00Z", autor: { id: CAROLINA, nome: "Carolina" }, acao: "equipe.membro_cadastrado", entidade: "pessoa", dados: { funcoes: ["IMPLANTACAO"] } }] } });
     }
+    const r5 = await rotasPlanosConsole(route, planos, caminho, metodo, corpo, admin);
+    if (r5 !== null) return r5;
     if (c && caminho.startsWith(`/v1/clientes/${c.condominio.id}/`)) {
       const naConfiguracao = await rotasConfiguracaoConsole(route, configuracao, caminho.slice(`/v1/clientes/${c.condominio.id}`.length), metodo, corpo,
         { estagio: () => c.cliente.estagio, equipe: admin ? "Carolina" : "Inês" });
@@ -324,5 +329,5 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     if (r4 !== null) return r4;
     return erro(route, 404, "NOT_FOUND");
   });
-  return Object.assign(estado, { suporte, modelos, configuracao });
+  return Object.assign(estado, { suporte, modelos, configuracao, planos });
 }

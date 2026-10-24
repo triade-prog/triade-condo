@@ -24,7 +24,7 @@ export function Configuracoes() {
   const antiga = paginaDe(busca.get("aba"));
   useEffect(() => { if (antiga) router.replace(enderecoConfiguracao(antiga)); }, [antiga, router]);
   if (antiga) return <Carregando />;
-  return <EntradaConfiguracoes ambiente={ambiente} enderecoMeusAvisos="/conta/avisos" />;
+  return <EntradaConfiguracoes ambiente={ambiente} enderecoMeusAvisos="/conta/avisos" enderecoMeuPlano="/configuracoes/meu-plano" />;
 }
 
 export function PaginaDaConfiguracao({ pagina }: { pagina: string }) {

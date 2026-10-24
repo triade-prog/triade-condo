@@ -167,16 +167,42 @@ function resumos(e: Entrada) {
   return r;
 }
 
+/** Gestão: o plano do condomínio, só no app (NG-21, 0291). */
+function CartaoGestao({ endereco }: { endereco: string }) {
+  return (
+    <section aria-labelledby="g-gestao" className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1 md:p-5">
+      <div className="flex items-center gap-3">
+        <span className="ladrilho h-10 w-10 rounded-xl" data-tom="violeta" aria-hidden="true"><Icone nome="camadas" className="h-5 w-5" /></span>
+        <span className="grid">
+          <h2 id="g-gestao" className="t-titulo-secao font-semibold">Gestão</h2>
+          <span className="t-apoio text-tinta-suave">O que está no plano do condomínio.</span>
+        </span>
+      </div>
+      <ul className="mt-1 grid">
+        <li className="border-t border-linha">
+          <Link href={endereco} className="flex min-h-[52px] items-center gap-3 py-2.5 hover:text-violeta-600">
+            <span className="grid min-w-0 flex-1">
+              <span className="t-texto font-medium">Meu plano</span>
+              <span className="t-apoio text-tinta-suave">O plano, os conjuntos e as telas de cada um.</span>
+            </span>
+            <Icone nome="dir" className="h-[18px] w-[18px] shrink-0 text-tinta-suave" />
+          </Link>
+        </li>
+      </ul>
+    </section>
+  );
+}
+
 /** A entrada das Configurações (A.1): 5 grupos por tarefa, o que falta e onde ficaram os avisos de cada pessoa. */
-export function EntradaConfiguracoes({ ambiente, enderecoMeusAvisos }: { ambiente: Ambiente; enderecoMeusAvisos?: string }) {
+export function EntradaConfiguracoes({ ambiente, enderecoMeusAvisos, enderecoMeuPlano }: { ambiente: Ambiente; enderecoMeusAvisos?: string; enderecoMeuPlano?: string }) {
   return (
     <ProvedorConfiguracao ambiente={ambiente}>
-      <Entrada_ enderecoMeusAvisos={enderecoMeusAvisos} />
+      <Entrada_ enderecoMeusAvisos={enderecoMeusAvisos} enderecoMeuPlano={enderecoMeuPlano} />
     </ProvedorConfiguracao>
   );
 }
 
-function Entrada_({ enderecoMeusAvisos }: { enderecoMeusAvisos?: string }) {
+function Entrada_({ enderecoMeusAvisos, enderecoMeuPlano }: { enderecoMeusAvisos?: string; enderecoMeuPlano?: string }) {
   const config = useCarregar<Entrada>(naBase("/configuracoes/entrada"));
   const cab = (
     <div className="grid gap-1">
@@ -186,10 +212,10 @@ function Entrada_({ enderecoMeusAvisos }: { enderecoMeusAvisos?: string }) {
   );
   if (config.estado === "carregando") return <div className="grid gap-5">{cab}<Carregando rotulo="Carregando as configurações…" /></div>;
   if (config.estado === "erro") return <div className="grid gap-5">{cab}<ErroCarregar texto={config.texto} tentarDeNovo={config.recarregar} /></div>;
-  return <EntradaPronta e={config.dados} cab={cab} enderecoMeusAvisos={enderecoMeusAvisos} />;
+  return <EntradaPronta e={config.dados} cab={cab} enderecoMeusAvisos={enderecoMeusAvisos} enderecoMeuPlano={enderecoMeuPlano} />;
 }
 
-function EntradaPronta({ e, cab, enderecoMeusAvisos }: { e: Entrada; cab: ReactNode; enderecoMeusAvisos?: string }) {
+function EntradaPronta({ e, cab, enderecoMeusAvisos, enderecoMeuPlano }: { e: Entrada; cab: ReactNode; enderecoMeusAvisos?: string; enderecoMeuPlano?: string }) {
   const { endereco, onde } = useAmbiente();
   const c = e.configuracoes;
   const resumo = resumos(e);
@@ -238,7 +264,12 @@ function EntradaPronta({ e, cab, enderecoMeusAvisos }: { e: Entrada; cab: ReactN
         </Aviso>
       ) : null}
       <div className="grid items-start gap-4 lg:grid-cols-3 lg:gap-5">
-        {colunas.map((col, i) => <div key={i} className="grid content-start gap-4 lg:gap-5">{col.map(cartao)}</div>)}
+        {colunas.map((col, i) => (
+          <div key={i} className="grid content-start gap-4 lg:gap-5">
+            {col.map(cartao)}
+            {i === colunas.length - 1 && enderecoMeuPlano ? <CartaoGestao endereco={enderecoMeuPlano} /> : null}
+          </div>
+        ))}
       </div>
       {enderecoMeusAvisos ? (
         <p className="t-apoio text-tinta-suave">

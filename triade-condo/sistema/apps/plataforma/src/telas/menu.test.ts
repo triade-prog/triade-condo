@@ -1,7 +1,7 @@
 // Menu da Plataforma (DC15, docs/design/telas-modelo/moldura-*.html): grupos, atalhos do celular
 // e o item aceso em cada tela.
 import { describe, expect, it } from "vitest";
-import { ITENS_MENU, itemDoCaminho } from "./menu.ts";
+import { conjuntoDoCaminho, ITENS_MENU, itemDoCaminho } from "./menu.ts";
 
 describe("menu da Plataforma (DC15)", () => {
   it("o Início e os quatro grupos, na ordem do desenho aprovado", () => {
@@ -33,5 +33,15 @@ describe("menu da Plataforma (DC15)", () => {
     expect(de("/memoria")).toBe("Documentos e memória");
     expect(de("/pedidosx")).toBe(null);
     expect(de("/busca")).toBe(null);
+  });
+
+  it("E.1: cada tela sabe o conjunto do plano a que pertence; a base não tem conjunto", () => {
+    expect(conjuntoDoCaminho("/agenda/compromisso")).toBe("AGENDA");
+    expect(conjuntoDoCaminho("/manutencao/preventivas")).toBe("MANUTENCAO");
+    expect(conjuntoDoCaminho("/vida/enquete")).toBe("VIDA");
+    expect(conjuntoDoCaminho("/memoria")).toBe("COMUNICACAO_AMPLIADA");
+    expect(conjuntoDoCaminho("/documentos/dossie")).toBe("COMUNICACAO_AMPLIADA");
+    expect(conjuntoDoCaminho("/documentos")).toBeNull();
+    expect(conjuntoDoCaminho("/pedidos")).toBeNull();
   });
 });

@@ -912,7 +912,7 @@ begin
   perform entrar_console(p_pessoa, 'console.pagamentos.registrar');
   select * into a from recebimentos_avulsos where id = p_avulso for update;
   if not found then raise exception 'Recebimento não encontrado' using errcode = 'TC404'; end if;
-  if a.estado <> 'PENDENTE' then perform recusar_motivo('Este recebimento já foi resolvido', 'JA_RESOLVIDO'); end if;
+  if a.estado <> 'PENDENTE' then perform recusar_motivo('Este recebimento já foi resolvido', 'RECEBIMENTO_RESOLVIDO'); end if;
   perform entrar_condominio(p_pessoa, p_condominio, 'console.pagamentos.registrar');
   c := exigir_cobranca(p_cobranca);
   perform definir_transicao('RECEBIMENTO_IDENTIFICADO');
@@ -982,7 +982,7 @@ begin
   c := exigir_cobranca(p_id);
   return cobranca_json(c) || jsonb_build_object(
     'plano', (select nome from planos_cliente where condominio_id = p_condominio),
-    'ajustes', coalesce((select jsonb_agg(jsonb_build_object('id', a.id, 'tipo', a.tipo, 'valor', a.valor_centavos, 'motivo', a.motivo,
+    'listaAjustes', coalesce((select jsonb_agg(jsonb_build_object('id', a.id, 'tipo', a.tipo, 'valor', a.valor_centavos, 'motivo', a.motivo,
                                                              'autor', (select nome from pessoas where id = a.autor_id), 'em', a.criado_em)
                                           order by a.criado_em) from ajustes_cobranca a where a.cobranca_id = c.id), '[]'::jsonb),
     'recebimentos', coalesce((select jsonb_agg(recebimento_json(r) order by r.registrado_em) from recebimentos r where r.cobranca_id = c.id), '[]'::jsonb),

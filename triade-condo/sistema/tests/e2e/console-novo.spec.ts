@@ -54,11 +54,11 @@ test.describe("Console · padrão novo", () => {
     await expect(page.getByRole("listitem").filter({ hasText: "Residencial Ipê" })).toBeVisible();
   });
 
-  test("A.1 e D.1: a ficha em seis partes, os links antigos e Mais ações", async ({ page }) => {
+  test("A.1 e D.1: a ficha em sete partes (com Plano e pagamentos, 0291), os links antigos e Mais ações", async ({ page }) => {
     await instalarApiFalsa(page);
     await page.goto(`${CONSOLE}/clientes/${IPE}?aba=sindico`);
     const partes = page.getByRole("tablist", { name: "Partes da ficha" }).getByRole("tab");
-    await expect(partes).toHaveText(["Visão geral", "Implantação", "Configuração", "Pessoas", "WhatsApp", "Notas e histórico"]);
+    await expect(partes).toHaveText(["Visão geral", "Implantação", "Configuração", "Plano e pagamentos", "Pessoas", "WhatsApp", "Notas e histórico"]);
     await expect(page.getByRole("tab", { name: "Pessoas", selected: true })).toBeVisible();
     await expect(page.getByRole("region", { name: "Equipe TRÍADE neste cliente" })).toContainText("Carolina");
     await conferir(page);
