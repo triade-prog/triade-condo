@@ -584,6 +584,8 @@ export interface DecisaoPedido {
   /** Na ausência do síndico, quem responde no lugar dele. */
   substituto?: { nome: string; ate: string };
   anexos?: AnexoAprovacao[];
+  /** Na decisão pedida a uma pessoa, para a gestão: os links do substituto e do aviso da vencida. */
+  links?: LinkDoItem[];
   pode: { responder: boolean; retirar: boolean; votar?: boolean; reenviar?: boolean; anexar?: boolean };
 }
 
@@ -694,7 +696,23 @@ export interface VotoConselho {
   justificativa?: string;
   votadoEm?: string;
   canal?: "PAINEL" | "LINK";
-  link?: { canal: CanalConselho; envio?: EnvioLink; abertoEm?: string; mandadoEm?: string };
+  link?: { canal: CanalConselho; envio?: EnvioLink; abertoEm?: string; mandadoEm?: string; podeReenviar?: boolean };
+}
+
+/** Para que serve o link do conselho: votar, responder no lugar do síndico ausente ou ver a vencida. */
+export type FinalidadeLink = "VOTO" | "SUBSTITUTO" | "AVISO";
+
+/** O link do substituto ou do aviso, na decisão e na despesa pedidas a uma pessoa (para a gestão). */
+export interface LinkDoItem {
+  membroId: string;
+  nome: string;
+  finalidade: FinalidadeLink;
+  canal: CanalConselho;
+  envio?: EnvioLink;
+  abertoEm?: string;
+  /** Falta enquanto o link de WhatsApp ainda não tem código (pedido por quem não vê o código). */
+  mandadoEm?: string;
+  podeReenviar: boolean;
 }
 
 export interface Votacao {
@@ -707,13 +725,19 @@ export interface Votacao {
   eu?: { membroId: string; escolha?: string; justificativa?: string; votadoEm?: string; podeVotar: boolean };
 }
 
-/** Um link novo, na resposta de pedir ao conselho e de Reenviar o link. O código só vem no COPIAR. */
+/** Um link novo, na resposta de pedir decisão, criar despesa, marcar ausência e Reenviar o link.
+ * O código só vem no COPIAR e para quem cuida do conselho; para os outros vem o aviso. */
 export interface LinkMandado {
   membroId: string;
   nome: string;
   canal: CanalConselho;
   envio: EnvioLink;
+  finalidade?: FinalidadeLink;
+  decisaoId?: string;
+  despesaId?: string;
   codigo?: string;
+  /** "Peça o link ao síndico": quem pediu não vê o código, e ele nem nasce. */
+  aviso?: string;
 }
 
 export interface AnexoAprovacao {
@@ -754,7 +778,11 @@ export interface Despesa {
   retiradaMotivo?: string;
   pagamento?: { pagaEm: string; registradaEm: string; registradaPor?: string; comprovanteId?: string };
   substituto?: { nome: string; ate: string };
-  pode: { votar: boolean; anexar: boolean; alterar: boolean; retirar: boolean; reenviar: boolean; responder: boolean; pagar: boolean; desfazerPagamento: boolean };
+  /** Na despesa a uma pessoa, para quem pediu ou registra despesas: os links do substituto e do aviso. */
+  links?: LinkDoItem[];
+  /** anexar: documentos enquanto espera; anexarComprovante: na aprovada, antes do Paga fora. */
+  pode: { votar: boolean; anexar: boolean; alterar: boolean; retirar: boolean; reenviar: boolean; responder: boolean; pagar: boolean;
+    anexarComprovante?: boolean; desfazerPagamento: boolean };
 }
 
 /** A ficha: os anexos vêm em lista (na lista de despesas, só quantos). */

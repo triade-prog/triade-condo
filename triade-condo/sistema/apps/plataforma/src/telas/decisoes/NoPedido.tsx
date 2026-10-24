@@ -167,8 +167,11 @@ function FormPedir({ d, aoFechar, salvo, recarregar }: { d: PedidoDetalhe; aoFec
       return salvo(`Decisão pedida ao conselho, para votar até ${diaDoPrazo(prazo)}. ${recadoDosLinks(links)} O pedido ganhou a pendência Decisão.`, links);
     }
     const quem = decisores.find((x) => x.vinculoId === decisor);
-    salvo(quem?.eu ? "Decisão registrada para você responder. O pedido ganhou a pendência Decisão."
-      : `Decisão pedida a ${quem?.nome ?? "quem decide"}, com aviso no sino. O pedido ganhou a pendência Decisão.`, []);
+    // Com o síndico ausente e o substituto sem painel, vem o link do substituto.
+    const links = r.dados.links ?? [];
+    const doSubstituto = links.length ? ` O síndico está ausente: ${recadoDosLinks(links)}` : "";
+    salvo(quem?.eu ? `Decisão registrada para você responder. O pedido ganhou a pendência Decisão.${doSubstituto}`
+      : `Decisão pedida a ${quem?.nome ?? "quem decide"}, com aviso no sino. O pedido ganhou a pendência Decisão.${doSubstituto}`, links);
   }
 
   return (

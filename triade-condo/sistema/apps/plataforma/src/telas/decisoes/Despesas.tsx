@@ -189,7 +189,7 @@ function FormDespesa({ o, aoFechar, criada }: { o: OpcoesDespesa; aoFechar: () =
     const links = r.dados.links ?? [];
     const pessoa = o.decisores.find((x) => x.vinculoId === quem);
     const pedido = deConselho ? `Despesa pedida ao conselho, para votar até ${diaDoPrazo(prazo)}. ${recadoDosLinks(links)}`
-      : pessoa?.eu ? "Despesa registrada para você aprovar." : `Despesa pedida a ${pessoa?.nome ?? "quem aprova"}, com aviso no sino.`;
+      : `${pessoa?.eu ? "Despesa registrada para você aprovar." : `Despesa pedida a ${pessoa?.nome ?? "quem aprova"}, com aviso no sino.`}${links.length ? ` O síndico está ausente: ${recadoDosLinks(links)}` : ""}`;
     criada([pedido, anexos].filter(Boolean).join(" "), links);
   }
 

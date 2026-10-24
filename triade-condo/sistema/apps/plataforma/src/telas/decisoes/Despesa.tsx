@@ -11,12 +11,12 @@ import { descreverEventoAprovacao, mostrarCusto, textoFaltam } from "@triade/dom
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Carregando, chamarApi, classeBotao, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
-import type { DespesaDetalhe, LinkMandado, Recado, VotoConselho } from "../tipos.ts";
+import type { DespesaDetalhe, FinalidadeLink, LinkMandado, Recado } from "../tipos.ts";
 import { dia, diaHora } from "../pedidos/comum.tsx";
 import { diaDoPrazo } from "./comum.tsx";
 import { JanelaAnexar, ListaAnexos } from "./anexos.tsx";
 import { linhaDespesa, situacaoDespesa } from "./Despesas.tsx";
-import { BarraQuorum, LinksMandados, ListaVotos, Placar, reenviarLink, VotarNoPainel } from "./votacao.tsx";
+import { BarraQuorum, LinksDoItem, LinksMandados, ListaVotos, Placar, recadoDoReenvio, reenviarLink, VotarNoPainel } from "./votacao.tsx";
 
 /** "3 aprovam · 1 recusa", da contagem do conselho. */
 export function textoVotosDespesa(c: Record<string, number> | undefined): string {
@@ -54,12 +54,11 @@ export function FichaDespesa() {
   const aguardando = d.estado === "AGUARDANDO";
   const aprovada = d.estado === "APROVADA" || d.estado === "PAGA";
 
-  async function reenviar(x: VotoConselho) {
-    const r = await reenviarLink("despesas", d.id, x.membroId);
+  async function reenviar(membroId: string, finalidade: FinalidadeLink = "VOTO") {
+    const r = await reenviarLink("despesas", d.id, membroId, finalidade);
     if (!r.ok) return depois(`Não deu para reenviar o link: ${textoDoErro(r.erro)}`, "atencao");
     if (r.dados.envio === "COPIAR") setLinks([r.dados]);
-    depois(r.dados.envio === "COPIAR" ? `Link novo para ${r.dados.nome}. O anterior parou de valer. Copie e mande pelo WhatsApp.`
-      : `Link novo mandado pelo e-mail para ${r.dados.nome}. O anterior parou de valer.`);
+    depois(recadoDoReenvio(r.dados));
   }
 
   const quemAprova = v ? textoVotosDespesa(v.contagem) : d.decisor ? (d.decisor.eu ? "Você" : d.decisor.nome) : "—";
@@ -94,7 +93,7 @@ export function FichaDespesa() {
               </div>
             ))}
           </dl>
-          {d.passaAlcada && d.alcada && aguardando ? <Aviso tom="atencao">Passa da alçada do conselho ({mostrarCusto(d.alcada)}), escrita nas Regras. É só um aviso.</Aviso> : null}
+          {d.passaAlcada && d.alcada && aguardando ? <Aviso tom="atencao">Chega à alçada do conselho (a partir de {mostrarCusto(d.alcada)}), escrita nas Regras. É só um aviso.</Aviso> : null}
           {d.substituto && aguardando ? <p className="t-apoio">Síndico ausente até {diaDoPrazo(d.substituto.ate)}: {d.substituto.nome}, o subsíndico, responde no lugar.</p> : null}
           {d.voltouAoSindicoEm && aguardando ? <Aviso tom="atencao" titulo="Voltou para o síndico">O conselho não chegou ao quórum até {diaDoPrazo(d.prazo)}. Os votos ficam abaixo.</Aviso> : null}
           {v ? (
@@ -103,11 +102,12 @@ export function FichaDespesa() {
               <Placar contagem={v.contagem} necessarios={v.necessarios} />
               <BarraQuorum votos={v.contagem?.APROVAR ?? 0} titulares={v.titulares} necessarios={v.necessarios} />
               {aguardando && !d.voltouAoSindicoEm && v.faltam !== undefined ? <p className="t-apoio">{[`${v.votaram} de ${v.titulares} titulares votaram.`, textoFaltam(v.faltam) ? `${textoFaltam(v.faltam)}.` : null, `O prazo para votar vai até ${diaDoPrazo(d.prazo)}.`].filter(Boolean).join(" ")}</p> : null}
-              {v.votos.length ? <ListaVotos v={v} reenviar={aguardando && d.pode.reenviar ? (x) => void reenviar(x) : undefined} /> : null}
+              {v.votos.length ? <ListaVotos v={v} reenviar={aguardando && d.pode.reenviar ? (x) => void reenviar(x.membroId) : undefined} /> : null}
             </section>
           ) : null}
           {d.justificativa && !aguardando ? <p className="t-texto">{d.estado === "RECUSADA" ? "Recusada" : "Aprovada"}{d.respondidaPor ? ` por ${d.respondidaPor}` : ""}{d.respondidaEm ? ` em ${diaHora(d.respondidaEm)}` : ""}: “{d.justificativa}”</p> : null}
           {d.retiradaMotivo ? <p className="t-texto">Retirada: {d.retiradaMotivo}</p> : null}
+          {d.links?.length ? <LinksDoItem links={d.links} nivel="h2" reenviar={(l) => void reenviar(l.membroId, l.finalidade)} /> : null}
           <ListaAnexos anexos={d.anexos} anexar={d.pode.anexar ? () => setAnexar("DOCUMENTO") : undefined} />
           <section className="grid">
             <h2 className="t-rotulo pb-1">Histórico</h2>
@@ -222,7 +222,7 @@ function DepoisDeAprovada({ d, depois, anexar }: { d: DespesaDetalhe; depois: (t
               opcoes={[{ valor: "", texto: "Sem comprovante" }, ...comprovantes.map((a) => ({ valor: a.id, texto: a.nome }))]}
               erro={comErro.includes("comprovanteId") ? "Escolha um comprovante liberado desta despesa." : null} />
           ) : <p className="t-apoio">Nenhum comprovante anexado. É opcional.</p>}
-          {d.pode.anexar ? <Botao variante="contorno" tamanho="m" className="justify-self-start" onClick={anexar}><Icone nome="clipe" />Anexar o comprovante</Botao> : null}
+          {d.pode.anexarComprovante ? <Botao variante="contorno" tamanho="m" className="justify-self-start" onClick={anexar}><Icone nome="clipe" />Anexar o comprovante</Botao> : null}
           <Botao type="submit" disabled={enviando}><Icone nome="check" />Marcar Paga fora do sistema</Botao>
         </form>
       ) : <p className="t-texto">Quem gerencia as despesas marca o pagamento feito fora do sistema.</p>}

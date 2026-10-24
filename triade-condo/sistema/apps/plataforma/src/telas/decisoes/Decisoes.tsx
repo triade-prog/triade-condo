@@ -13,11 +13,11 @@ import { useCallback, useEffect, useState } from "react";
 import { FILTROS_DECISAO, lider, resumoAlternativas, textoAndamentoVotacao, type FiltroDecisao } from "@triade/domain";
 import { Abas, Aviso, Botao, Carregando, classeBotao, ErroCarregar, Icone, Selo, textoDoErro, Vazio } from "@triade/ui";
 import { useCarregar, useContagens, usePlataforma } from "../sessao.tsx";
-import type { AusenciaSindico, DecisaoPedido, LinkMandado, ListaDecisoes, Recado, Votacao, VotoConselho } from "../tipos.ts";
+import type { AusenciaSindico, DecisaoPedido, FinalidadeLink, LinkMandado, ListaDecisoes, Recado, Votacao } from "../tipos.ts";
 import { dia } from "../pedidos/comum.tsx";
 import { diaDoPrazo, ListaAlternativas, ResponderDecisao, resumoResposta, RetirarDecisao, SeloDecisao } from "./comum.tsx";
 import { AbaDespesas } from "./Despesas.tsx";
-import { AlternativasComVotos, BarraQuorum, FraseAdvogado, LinksMandados, ListaVotos, Placar, reenviarLink, VotarNoPainel } from "./votacao.tsx";
+import { AlternativasComVotos, BarraQuorum, FraseAdvogado, LinksDoItem, LinksMandados, ListaVotos, Placar, recadoDoReenvio, reenviarLink, VotarNoPainel } from "./votacao.tsx";
 import { ListaAnexos } from "./anexos.tsx";
 
 /** "Respondidas" diz melhor o que entra: as aprovadas, as devolvidas e as retiradas. */
@@ -36,8 +36,9 @@ export function textoDaOrigem(v: Votacao): string {
 const linhaDoPedido = (x: DecisaoPedido) => (x.pedido ? <>Pedido <span className="t-codigo">{x.pedido.protocolo}</span> · {x.pedido.assunto} · </> : null);
 
 /** A decisão que espera: a pergunta, o porquê, as alternativas e o "Decidir". */
-function CartaoAguardando({ x, hoje, principal, decidir, avisa, abrirRetirar }: {
+function CartaoAguardando({ x, hoje, principal, decidir, avisa, abrirRetirar, reenviar }: {
   x: DecisaoPedido; hoje: string; principal: boolean; decidir: () => void; avisa?: string; abrirRetirar: () => void;
+  reenviar: (membroId: string, finalidade: FinalidadeLink) => void;
 }) {
   return (
     <li className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1 max-md:p-4">
@@ -68,6 +69,7 @@ function CartaoAguardando({ x, hoje, principal, decidir, avisa, abrirRetirar }: 
         </details>
       ) : null}
       {x.anexos?.length ? <ListaAnexos anexos={x.anexos} /> : null}
+      {x.links?.length ? <LinksDoItem links={x.links} reenviar={(l) => reenviar(l.membroId, l.finalidade)} /> : null}
       <span className="flex flex-wrap items-center gap-2 pt-1 max-md:flex-col max-md:items-stretch">
         {x.pode.responder ? (
           <Botao variante={principal ? "primario" : "secundario"} aria-label={`Decidir: ${x.pergunta}`} onClick={decidir}><Icone nome="check" />Decidir</Botao>
@@ -86,12 +88,12 @@ function CartaoAguardando({ x, hoje, principal, decidir, avisa, abrirRetirar }: 
 /** A decisão em votação no conselho (quadros 414 e 415). */
 function CartaoVotacao({ x, empate, sindico, votar, reenviar, retirar }: {
   x: DecisaoPedido & { conselho: Votacao }; empate: "SINDICO" | "DEVOLVIDA"; sindico: string | null;
-  votar: () => void; reenviar: (v: VotoConselho) => void; retirar: () => void;
+  votar: () => void; reenviar: (membroId: string) => void; retirar: () => void;
 }) {
   const v = x.conselho;
   const gestao = v.faltam !== undefined;
   const l = lider(v.contagem);
-  const semLink = v.votos.filter((y) => !y.escolha && y.emDia !== false && y.link);
+  const semLink = v.votos.filter((y) => !y.escolha && y.emDia !== false && y.link && y.link.podeReenviar !== false);
   return (
     <li className="grid gap-4 rounded-[18px] border border-linha bg-superficie p-6 shadow-s1 max-md:p-4">
       <div className="flex items-start gap-3">
@@ -126,7 +128,7 @@ function CartaoVotacao({ x, empate, sindico, votar, reenviar, retirar }: {
       <span className="flex flex-wrap items-center gap-2 max-md:flex-col max-md:items-stretch">
         {x.pode.votar ? <Botao onClick={votar} aria-label={`${v.eu?.escolha ? "Trocar meu voto" : "Votar"}: ${x.pergunta}`}><Icone nome="check" />{v.eu?.escolha ? "Trocar meu voto" : "Votar"}</Botao> : null}
         {x.pode.reenviar ? semLink.map((y) => (
-          <Botao key={y.membroId} variante="secundario" onClick={() => reenviar(y)}><Icone nome="enviar" />Reenviar o link para {y.nome.split(" ")[0]}</Botao>
+          <Botao key={y.membroId} variante="secundario" onClick={() => reenviar(y.membroId)}><Icone nome="enviar" />Reenviar o link para {y.nome.split(" ")[0]}</Botao>
         )) : null}
         {x.pode.retirar ? <Botao variante="discreto" onClick={retirar}><Icone nome="fechar" />Retirar o pedido</Botao> : null}
         {x.pedido ? (
@@ -179,7 +181,7 @@ export function Decisoes() {
   const router = useRouter();
   const aba: Aba = busca.get("aba") === "despesas" ? "despesas" : "pedidos";
   const aprova = pode("decisoes.aprovar");
-  const vota = (painel.decisoes?.votos ?? 0) > 0 || (painel.decisoes?.despesas ?? 0) > 0;
+  const vota = (painel.decisoes?.votos ?? 0) > 0 || (painel.decisoes?.despesas ?? 0) > 0 || (painel.decisoes?.votando ?? 0) > 0;
   const [despesasNaApi, setDespesasNaApi] = useState(false);
   const veDespesas = pode("despesas.ver") || pode("despesas.registrar") || despesasNaApi || (painel.decisoes?.despesas ?? 0) > 0;
   const podeVer = aprova || pode("pedidos.atualizar") || veDespesas || vota;
@@ -224,7 +226,7 @@ function DosPedidos({ recado, contar }: { recado: (r: Recado) => void; contar: (
   const busca = useSearchParams();
   const router = useRouter();
   const aprova = pode("decisoes.aprovar");
-  const vota = (painel.decisoes?.votos ?? 0) > 0;
+  const vota = (painel.decisoes?.votos ?? 0) > 0 || (painel.decisoes?.votando ?? 0) > 0;
   const filtro = (Object.keys(FILTROS_DECISAO) as FiltroDecisao[]).find((f) => f === busca.get("filtro")) ?? (aprova || vota ? "AGUARDANDO" : "TODAS");
   const carga = useCarregar<ListaDecisoes>(`/v1/condominio/decisoes?filtro=${filtro}`);
   const [responder, setResponder] = useState<DecisaoPedido | null>(null);
@@ -268,12 +270,11 @@ function DosPedidos({ recado, contar }: { recado: (r: Recado) => void; contar: (
   const depois = (t: string) => { recado({ tom: "ok", texto: t }); carga.recarregar(); respondidas.recarregar(); contagens.recarregar(); atualizar(); };
   const sindico = dados.ausencia?.sindico ?? (painel.funcoes.includes("SINDICO") ? painel.pessoa.nome : null);
 
-  async function reenviar(x: DecisaoPedido, v: VotoConselho) {
-    const r = await reenviarLink("decisoes", x.id, v.membroId);
+  async function reenviar(x: DecisaoPedido, membroId: string, finalidade: FinalidadeLink = "VOTO") {
+    const r = await reenviarLink("decisoes", x.id, membroId, finalidade);
     if (!r.ok) return recado({ tom: "atencao", texto: `Não deu para reenviar o link: ${textoDoErro(r.erro)}` });
     if (r.dados.envio === "COPIAR") setLinks([r.dados]);
-    depois(r.dados.envio === "COPIAR" ? `Link novo para ${r.dados.nome}. O anterior parou de valer. Copie e mande pelo WhatsApp.`
-      : `Link novo mandado pelo e-mail para ${r.dados.nome}. O anterior parou de valer.`);
+    depois(recadoDoReenvio(r.dados));
   }
 
   return (
@@ -288,9 +289,10 @@ function DosPedidos({ recado, contar }: { recado: (r: Recado) => void; contar: (
         <ul className="grid gap-3">
           {lista.map((x) => x.estado === "AGUARDANDO" && x.modo === "CONSELHO" && x.conselho
             ? <CartaoVotacao key={x.id} x={x as DecisaoPedido & { conselho: Votacao }} empate={regra?.empate ?? "SINDICO"} sindico={sindico}
-              votar={() => setVotar(x)} reenviar={(v) => void reenviar(x, v)} retirar={() => setRetirar(x)} />
+              votar={() => setVotar(x)} reenviar={(m) => void reenviar(x, m)} retirar={() => setRetirar(x)} />
             : x.estado === "AGUARDANDO"
-              ? <CartaoAguardando key={x.id} x={x} hoje={hoje} principal={x.id === primeira} decidir={() => setResponder(x)} avisa={avisa} abrirRetirar={() => setRetirar(x)} />
+              ? <CartaoAguardando key={x.id} x={x} hoje={hoje} principal={x.id === primeira} decidir={() => setResponder(x)} avisa={avisa} abrirRetirar={() => setRetirar(x)}
+                reenviar={(m, f) => void reenviar(x, m, f)} />
               : <LinhaRespondida key={x.id} x={x} hoje={hoje} nivel="h2" />)}
         </ul>
       )}

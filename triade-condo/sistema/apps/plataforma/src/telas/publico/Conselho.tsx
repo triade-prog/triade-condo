@@ -70,7 +70,12 @@ export function ConselhoLink() {
       {recado ? <Aviso tom="ok">{recado}</Aviso> : null}
       {c.estado === "NAO_VALE" ? (
         <Mini icone="fechar" tom="erro" titulo={ESTADOS_LINK_CONSELHO.NAO_VALE}>
-          {c.motivo ? `${LINK_NAO_VALE[c.motivo]} ` : ""}Se você é do conselho, peça um novo ao síndico.
+          {c.motivo ? `${LINK_NAO_VALE[c.motivo]} ` : ""}
+          {c.motivo === "SAIU_DO_CONSELHO" || c.motivo === "SUPLENTE_NAO_VOTA" ? "Se acha que é engano, fale com o síndico." : "Se você é do conselho, peça um novo ao síndico."}
+        </Mini>
+      ) : c.estado === "LINK_VENCIDO" ? (
+        <Mini icone="relogio" tom="neutro" titulo="Este link venceu">
+          O resultado fica à vista pelo link até 7 dias depois do prazo. Para saber como ficou, fale com o síndico.
         </Mini>
       ) : c.estado === "PRAZO_ACABOU" ? (
         <Mini icone="relogio" tom="atencao" titulo="O prazo acabou">

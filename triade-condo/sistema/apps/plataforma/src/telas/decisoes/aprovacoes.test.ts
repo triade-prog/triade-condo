@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { ConselhoPublico, Despesa } from "../tipos.ts";
 import { linhaDespesa, situacaoDespesa } from "./Despesas.tsx";
 import { textoVotosDespesa } from "./Despesa.tsx";
-import { recadoDosLinks } from "./votacao.tsx";
+import { recadoDoReenvio, recadoDosLinks } from "./votacao.tsx";
 import { avisoMandato, votaPor } from "../pessoas/Conselho.tsx";
 import { textoResultado } from "../publico/Conselho.tsx";
 import { textoDecisoesAguardando } from "../Inicio.tsx";
@@ -68,6 +68,21 @@ describe("conselho (quadros 410 a 412)", () => {
   it("o recado depois de pedir ao conselho separa o e-mail do WhatsApp", () => {
     expect(recadoDosLinks([{ membroId: "1", nome: "João", envio: "EMAIL" }, { membroId: "2", nome: "Marta", envio: "COPIAR", codigo: "x" }] as never))
       .toBe("Link mandado pelo e-mail para João. Falta mandar pelo WhatsApp para Marta: copie o link na janela.");
+  });
+});
+
+describe("os links do substituto e de quem não vê o código", () => {
+  it("o recado diz de quem o link fica com o síndico", () => {
+    expect(recadoDosLinks([{ membroId: "1", nome: "Marta", canal: "WHATSAPP", envio: "COPIAR", aviso: "Peça o link ao síndico" }] as never))
+      .toBe("Peça o link ao síndico de Marta pelo WhatsApp.");
+  });
+  it("o Reenviar: do substituto para copiar, pelo e-mail, ou com o aviso", () => {
+    expect(recadoDoReenvio({ membroId: "1", nome: "Bruna", canal: "WHATSAPP", envio: "COPIAR", finalidade: "SUBSTITUTO", codigo: "x" }))
+      .toBe("Link do substituto novo para Bruna. O anterior parou de valer. Copie e mande pelo WhatsApp.");
+    expect(recadoDoReenvio({ membroId: "1", nome: "João", canal: "EMAIL", envio: "EMAIL", finalidade: "VOTO" }))
+      .toBe("Link novo mandado pelo e-mail para João. O anterior parou de valer.");
+    expect(recadoDoReenvio({ membroId: "1", nome: "Marta Reis", canal: "WHATSAPP", envio: "COPIAR", aviso: "Peça o link ao síndico" }))
+      .toBe("Peça o link ao síndico: o link de Marta Reis pelo WhatsApp só sai com ele. O que Marta já tinha continua valendo.");
   });
 });
 

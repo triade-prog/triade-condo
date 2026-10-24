@@ -146,11 +146,7 @@ function Moldura({ sessao, painel, modos, aoTrocar, children }: { sessao: Sessao
   const itens = ITENS_MENU.filter((i) => i.ve(pode, painel));
   const daTela = itemDoCaminho(caminho);
   const escolhido = daTela && itens.includes(daTela) ? daTela : null;
-  // A tela já aberta continua aberta quando o acesso vinha só do que esperava a pessoa (quem
-  // vota em Decisões sem a permissão Aprovar): depois do último voto, o resultado fica à vista.
-  const [aberta, setAberta] = useState<string | null>(null);
-  if (escolhido && aberta !== caminho) setAberta(caminho);
-  const semAcesso = daTela && !escolhido && !daTela.semGuarda && aberta !== caminho ? daTela : null;
+  const semAcesso = daTela && !escolhido && !daTela.semGuarda ? daTela : null;
   const conjunto = conjuntoDoCaminho(caminho);
   const modo = conjunto ? modos[conjunto] : undefined;
   const atalhos = atalhosDoCelular(itens);

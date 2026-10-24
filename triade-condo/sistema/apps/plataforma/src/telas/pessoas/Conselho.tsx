@@ -13,9 +13,10 @@ import {
 } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
-import type { AusenciaSindico, CandidatoConselho, Conselho, MembroConselho, Recado } from "../tipos.ts";
+import type { AusenciaSindico, CandidatoConselho, Conselho, LinkMandado, MembroConselho, Recado } from "../tipos.ts";
 import { diaDoPrazo } from "../decisoes/comum.tsx";
 import { Escolha } from "../decisoes/Despesas.tsx";
+import { LinksMandados, recadoDosLinks } from "../decisoes/votacao.tsx";
 import type { Moldura } from "./Pessoas.tsx";
 
 const COLUNAS = "md:grid-cols-[40px_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.1fr)_10rem_18px]";
@@ -50,6 +51,7 @@ export function AbaConselho({ moldura, contar }: { moldura: Moldura; contar: (n:
   const [alterar, setAlterar] = useState<{ m: MembroConselho; renovar: boolean } | null>(null);
   const [retirar, setRetirar] = useState<MembroConselho | null>(null);
   const [ausencia, setAusencia] = useState(false);
+  const [links, setLinks] = useState<LinkMandado[] | null>(null);
   const [encerrar, setEncerrar] = useState<AusenciaSindico | null>(null);
   const pronto = carga.estado === "pronto" ? carga.dados : null;
   useEffect(() => { if (pronto) contar(pronto.membros.length); }, [pronto, contar]);
@@ -172,7 +174,9 @@ export function AbaConselho({ moldura, contar }: { moldura: Moldura; contar: (n:
           if (res.ok) { const nome = retirar?.nome; setRetirar(null); salvo(`${nome} saiu do conselho. Fica no histórico.`); }
           return res;
         }} />
-      <MarcarAusencia aberto={ausencia} c={c} aoFechar={() => setAusencia(false)} salvo={(t) => { setAusencia(false); salvo(t); }} />
+      <MarcarAusencia aberto={ausencia} c={c} aoFechar={() => setAusencia(false)}
+        salvo={(t, l) => { setAusencia(false); salvo(t); if (l.some((x) => x.envio === "COPIAR")) setLinks(l); }} />
+      <LinksMandados links={links} aoFechar={() => setLinks(null)} />
       <EncerrarAusencia a={encerrar} aoFechar={() => setEncerrar(null)} salvo={(t) => { setEncerrar(null); salvo(t); }} />
     </div>
   );
@@ -414,7 +418,7 @@ function FormAlterar({ m, renovar, hoje, aoFechar, recarregar, salvo }: {
 }
 
 /** Ausência do síndico (quadro 412). */
-function MarcarAusencia({ aberto, c, aoFechar, salvo }: { aberto: boolean; c: Conselho; aoFechar: () => void; salvo: (t: string) => void }) {
+function MarcarAusencia({ aberto, c, aoFechar, salvo }: { aberto: boolean; c: Conselho; aoFechar: () => void; salvo: (t: string, links: LinkMandado[]) => void }) {
   return (
     <Dialogo aberto={aberto} titulo="Ausência do síndico" aoFechar={aoFechar} fechar media apoio={c.sindico ? `${c.sindico} · síndico` : undefined}>
       {aberto ? <FormAusencia c={c} aoFechar={aoFechar} salvo={salvo} /> : null}
@@ -422,7 +426,7 @@ function MarcarAusencia({ aberto, c, aoFechar, salvo }: { aberto: boolean; c: Co
   );
 }
 
-function FormAusencia({ c, aoFechar, salvo }: { c: Conselho; aoFechar: () => void; salvo: (t: string) => void }) {
+function FormAusencia({ c, aoFechar, salvo }: { c: Conselho; aoFechar: () => void; salvo: (t: string, links: LinkMandado[]) => void }) {
   const sub = c.subsindico?.nome ?? "o subsíndico";
   const primeiro = sub.split(" ")[0];
   const [de, setDe] = useState(c.hoje);
@@ -436,10 +440,12 @@ function FormAusencia({ c, aoFechar, salvo }: { c: Conselho; aoFechar: () => voi
     ev.preventDefault();
     setErro(null);
     setEnviando(true);
-    const r = await chamarApi("/v1/condominio/ausencia", { corpo: { de, ate, motivo: motivo.trim() || null } });
+    const r = await chamarApi<{ id: string; versao: number; links?: LinkMandado[] }>("/v1/condominio/ausencia", { corpo: { de, ate, motivo: motivo.trim() || null } });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
-    salvo(`Ausência marcada de ${diaDoPrazo(de)} a ${diaDoPrazo(ate)}. ${sub} responde no lugar do síndico e foi avisado.`);
+    // Sem painel, o substituto recebe um link para cada item que espera o síndico.
+    const links = r.dados.links ?? [];
+    salvo(`Ausência marcada de ${diaDoPrazo(de)} a ${diaDoPrazo(ate)}. ${sub} responde no lugar do síndico e foi avisado.${links.length ? ` ${recadoDosLinks(links)}` : ""}`, links);
   }
   return (
     <form onSubmit={enviar} noValidate className="grid gap-4">
