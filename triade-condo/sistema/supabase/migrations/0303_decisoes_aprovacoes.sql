@@ -1450,7 +1450,15 @@ as $$
   select jsonb_build_object('aguardando', count(*), 'vencidas', count(*) filter (where prazo < hoje_no_condominio()),
                             'maisAntigaDias', hoje_no_condominio()
                               - min((pedida_em at time zone coalesce((select fuso from configuracao_condominio), 'America/Sao_Paulo'))::date),
-                            'votos', count(*) filter (where modo = 'CONSELHO'), 'despesas', count(*) filter (where despesa))
+                            'votos', count(*) filter (where modo = 'CONSELHO'), 'despesas', count(*) filter (where despesa),
+                            -- As votações abertas em que a pessoa vota, já tendo votado ou não: quem só vota
+                            -- segue vendo Decisões para trocar o voto até fechar.
+                            'votando', (select count(*) from decisoes_pedido d
+                                         where d.modo = 'CONSELHO' and d.estado = 'AGUARDANDO' and d.prazo >= hoje_no_condominio()
+                                           and eh_votante(p_pessoa, d.id, null))
+                                     + (select count(*) from despesas_aprovacao x
+                                         where x.modo = 'CONSELHO' and x.estado = 'AGUARDANDO' and x.voltou_ao_sindico_em is null
+                                           and x.prazo >= hoje_no_condominio() and eh_votante(p_pessoa, null, x.id)))
     from fila
 $$;
 
@@ -1469,7 +1477,7 @@ begin
   v := painel_f303(p_pessoa, p_condominio);
   if not v ? 'decisoes' then
     r := resumo_decisoes(p_pessoa);
-    if (r ->> 'aguardando')::integer > 0 then v := v || jsonb_build_object('decisoes', r); end if;
+    if (r ->> 'aguardando')::integer > 0 or (r ->> 'votando')::integer > 0 then v := v || jsonb_build_object('decisoes', r); end if;
   end if;
   return v;
 end $$;
