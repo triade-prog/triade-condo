@@ -50,6 +50,9 @@ export const GRUPOS_ACESSO: { grupo: string; areas: AreaAcesso[] }[] = [
       ver: "VER_AGENDA", cuidar: "AGENDA", rotulos: { nao: "Não vê", ver: "Vê", cuidar: "Cuida" }, frase: { cuidar: "da agenda", ver: "a agenda" } },
     { tipo: "nivel", id: "manutencao", nome: "Manutenção", icone: "ferramenta", ajuda: "Cuida: registra manutenções, preventivas, vistorias e prestadores.",
       ver: "VER_MANUTENCAO", cuidar: "MANUTENCAO", rotulos: { nao: "Não vê", ver: "Vê", cuidar: "Cuida" }, frase: { cuidar: "da manutenção", ver: "a manutenção" } },
+    { tipo: "nivel", id: "portaria", nome: "Portaria", icone: "caixa",
+      ajuda: "Cuida: registra e entrega encomendas e avisa por outro meio. Vê só o nome das pessoas de cada unidade, sem telefone. Vê: só acompanha.",
+      ver: "VER_PORTARIA", cuidar: "PORTARIA", rotulos: { nao: "Não vê", ver: "Vê", cuidar: "Cuida" }, frase: { cuidar: "da portaria", ver: "a portaria" } },
   ] },
   { grupo: "Comunicação", areas: [
     { tipo: "caixas", id: "comunicados", nome: "Comunicados e documentos", icone: "megafone", ajuda: "Vê os comunicados e os documentos, menos os restritos.",
