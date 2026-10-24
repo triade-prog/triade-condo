@@ -1037,7 +1037,10 @@ begin
                           and fa.acao in ('console.condominios.criar', 'console.equipe.gerenciar', 'console.historico.equipe',
                                           'console.pagamentos.ver', 'console.pagamentos.registrar',
                                           'console.precos.ver', 'console.precos.editar',
-                                          'console.retencao.ver', 'console.retencao.ligar')), '[]'::jsonb))
+                                          'console.retencao.ver', 'console.retencao.ligar',
+                                          -- As do Comercial (0296), para que a ordem de aplicar não tire nada do menu.
+                                          'console.comercial.ver', 'console.comercial.editar', 'console.comercial.modelos',
+                                          'console.comercial.exportar', 'console.comercial.excluir')), '[]'::jsonb))
     into v from pessoas p where p.id = p_pessoa;
   return v;
 end $$;
