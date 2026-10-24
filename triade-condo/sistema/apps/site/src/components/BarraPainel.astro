@@ -1,4 +1,6 @@
 ---
-// Barra do topo do painel do síndico, como no sistema.
+// Barra do topo do painel do síndico, como no sistema. busca: texto da caixa de busca, mais curto onde a barra é estreita.
+interface Props { busca?: string; }
+const { busca = "Buscar pedido, unidade ou pessoa" } = Astro.props;
 ---
-<div class="app-barra"><img src="/logo-triade-240.webp" alt="" width="70" height="22" /><span class="busca">Buscar pedido, unidade ou pessoa</span><span class="quem"><i>CA</i>Carlos · Síndico</span></div>
+<div class="app-barra"><img src="/logo-triade-240.webp" alt="" width="70" height="22" /><span class="busca">{busca}</span><span class="quem"><i>CA</i>Carlos · Síndico</span></div>

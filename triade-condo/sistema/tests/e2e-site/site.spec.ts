@@ -63,7 +63,9 @@ test.describe("Site · como funciona", () => {
     await page.locator(".passo2").nth(3).evaluate((el) => el.scrollIntoView({ block: "center" }));
     await expect(palco).toHaveAttribute("data-etapa", "4");
     await expect(palco.locator(".c4 .zap-b.novo")).toHaveText(/5\. Obrigada!/);
-    await expect(palco.locator(".c4 .pil").first()).toBeVisible();
+    // No recorte do painel fica só o selo da situação (B2): a categoria e a fila do mês saem.
+    await expect(palco.locator(".c4 .tela-pc .app-pilulas .pil.verde")).toBeVisible();
+    await expect(palco.locator(".c4 .tela-pc .app-pilulas .pil.verde")).toHaveText("Concluído");
     await expect(palco.locator(".c1")).toBeHidden();
   });
 
