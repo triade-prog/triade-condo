@@ -48,7 +48,7 @@ test.describe("Documentos e memória", () => {
     await expect(page).toHaveURL(/\/documentos\/prontuario$/);
     await page.goto(`${PLATAFORMA}/comunicados/documentos?filtro=CONTRATOS`);
     await expect(page).toHaveURL(/\/documentos\?filtro=CONTRATOS$/);
-    await expect(page.getByRole("heading", { name: "Dos prestadores · só para ler" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dos prestadores" })).toBeVisible();
   });
 
   test("MP-12: os atalhos filtram o prontuário e a linha inteira abre o item", async ({ page }) => {

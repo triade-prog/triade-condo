@@ -3,7 +3,7 @@
 // Ligar e Chamar no WhatsApp; como trabalha com o condomínio e a reserva; e as manutenções que fez
 // no prédio, com quantas estão abertas e a lista inteira a um toque, já filtrada. O que falta no
 // cadastro tem Adicionar. Editar é o botão; Arquivar fica em Mais ações e não apaga: o prestador
-// sai das escolhas e continua no histórico.
+// sai das escolhas e continua no histórico. Com contrato, o arquivo fica em Documentos (D.2, 0294).
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -15,6 +15,7 @@ import { Janela } from "../Janela.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { ListaPrestadores, PrestadorDetalhe, Recado } from "../tipos.ts";
 import { ICONE_TIPO, SeloManutencao } from "./comum.tsx";
+import { LinhaArquivoContrato } from "./ContratoPrestador.tsx";
 import { camposPrestador, iniciaisPrestador, salvarPrestador } from "./Prestadores.tsx";
 
 export function Prestador() {
@@ -102,6 +103,8 @@ export function Prestador() {
           <Cartao id="t-acordo" titulo="Como trabalha com o condomínio" icone="predio" className="max-lg:order-3">
             <div>
               <Dado icone="documento" nome="Acordo">{p.acordo === "CONTRATO" ? (p.contratoAte ? `Contrato até ${mostrarDataCurta(p.contratoAte)}` : "Contrato sem data de fim") : "Avulso, por chamado"}</Dado>
+              <LinhaArquivoContrato p={p} pode={Boolean(pode.contrato)}
+                aoMudar={(texto, tom = "ok") => { setRecado({ tom, texto }); carga.recarregar(); }} />
               <Dado icone="calendario" nome="Desde" acao={p.desde ? undefined : adicionar}>{p.desde ? mostrarDataCurta(p.desde) : falta()}</Dado>
               <Dado icone="trocar" nome="Reserva" acao={p.reserva ? undefined : adicionar}>
                 {p.reserva ? <Link href={`/manutencao/prestador?id=${p.reserva.id}`} className="font-medium text-violeta-600 hover:underline">{p.reserva.nome}</Link> : falta("Nenhuma")}

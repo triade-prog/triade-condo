@@ -131,7 +131,11 @@ export function AbaProntuario({ feito, definir }: PropsAbaMemoria) {
   useEffect(() => {
     definir({
       principal: editar && primeiroQueFalta ? { texto: "Enviar o que falta", icone: "enviar", aoClicar: () => abrir(primeiroQueFalta, "enviar") } : null,
-      mais: editar ? [{ texto: "Novo item", icone: "mais", apoio: "Um documento que o prédio precisa e não está na lista", acao: () => setNovo(true) }] : [],
+      mais: [
+        ...(editar ? [{ texto: "Novo item", icone: "mais" as const, apoio: "Um documento que o prédio precisa e não está na lista", acao: () => setNovo(true) }] : []),
+        // Histórico do prontuário (D4.18, decisão D.1): o que mudou em cada item, só para ler.
+        { texto: "Histórico do prontuário", icone: "relogio", apoio: "O que foi ligado, desligado e o que venceu", href: "/documentos/historico" },
+      ],
     });
     // abrir muda a cada render; o que importa é qual item falta primeiro.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -307,6 +311,7 @@ function ItemAberto({ item, p, modo, setModo, ligarInicial, aoFechar, aoMudar, r
     ...(item.situacao === "NAO_SE_APLICA" ? [] : [{ texto: "Não se aplica a este prédio", icone: "fechar" as const, acao: () => setModo("nao") }]),
     ...(docId && principal ? [{ texto: "Abrir o documento", icone: "documento" as const, href: `/documentos/documento?id=${docId}` }] : []),
   ] : [];
+  if (item.id) mais.push({ texto: "Ver o histórico do item", icone: "relogio", href: `/documentos/historico?item=${item.id}` });
 
   return (
     <Dialogo aberto media titulo={item.nome} apoio={`Item do prontuário · ${grupo}`} fechar aoFechar={aoFechar}>
@@ -357,7 +362,7 @@ function ItemAberto({ item, p, modo, setModo, ligarInicial, aoFechar, aoMudar, r
 const QUEM_VE = { MORADOR: "Vai ao morador", GESTAO: "Só quem cuida do condomínio", RESTRITO: "Só quem cuida dos documentos" } as const;
 type QuemVe = keyof typeof QUEM_VE;
 
-function CampoArquivo({ arquivo, setArquivo, problema, desligado, rotulo }: {
+export function CampoArquivo({ arquivo, setArquivo, problema, desligado, rotulo }: {
   arquivo: File | null; setArquivo: (f: File | null) => void; problema: string | null; desligado: boolean; rotulo: string;
 }) {
   return (

@@ -169,16 +169,18 @@ function Busca({ inicial, aoBuscar }: { inicial: string; aoBuscar: (b: string) =
   );
 }
 
-/** O contrato de um prestador, só para ler: abre a ficha do prestador (D.1). */
+/** O contrato de um prestador: abre a ficha do prestador (D.1), com o nome do arquivo quando há (D.2 de 24/10/2026, 0294). */
 function LinhaContrato({ p, hoje }: { p: PrestadorItem; hoje: string }) {
   const texto = p.contratoAte ? descreverValidade(p.contratoAte, hoje) : null;
   const frase = texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : "Sem data de fim";
+  const c = p.contratoDocumento;
+  const arquivo = c && !c.oculto ? c.arquivo ?? "sem arquivo ainda" : null;
   return (
     <li className={`relative grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-5 py-3 hover:bg-violeta-50/50 max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4 max-md:shadow-s1 ${COLUNAS} md:border-t md:border-linha md:first:border-t-0`}>
       <span className="ladrilho h-11 w-11 self-start rounded-xl md:self-center" data-tom="violeta" aria-hidden="true"><Icone nome="ferramenta" /></span>
       <div className="grid min-w-0 gap-0.5">
         <Link href={`/manutencao/prestador?id=${p.id}`} className="font-medium text-tinta after:absolute after:inset-0 after:content-[''] hover:text-violeta-600">Contrato com {p.nome}</Link>
-        <span className="t-apoio">{p.servico}</span>
+        <span className="t-apoio [overflow-wrap:anywhere]">{p.servico}{arquivo ? ` · ${arquivo}` : ""}</span>
         <span className="flex flex-wrap items-center gap-2 pt-1 md:hidden"><Selo tom="andamento">Do prestador</Selo>{p.contratoVencido || p.contratoVence ? <Selo tom={p.contratoVencido ? "erro" : "atencao"}>{frase}</Selo> : null}</span>
       </div>
       <span className="justify-self-start max-md:hidden"><Selo tom="andamento">Do prestador</Selo></span>
@@ -232,11 +234,14 @@ export function Documentos({ definir }: PropsAbaMemoria) {
   const doPrestador = prestadores.estado === "pronto"
     ? prestadores.dados.itens.filter((p) => p.acordo === "CONTRATO" && !p.arquivado && (!f.busca || p.nome.toLowerCase().includes(f.busca.toLowerCase())))
     : [];
+  // O documento ligado a um prestador aparece uma vez só, na linha do prestador.
+  const ligados = new Set(doPrestador.flatMap((p) => (p.contratoDocumento && !p.contratoDocumento.oculto ? [p.contratoDocumento.id] : [])));
+  const guardados = contratos ? itens.filter((d) => !ligados.has(d.id)) : itens;
   const atalhos = f.aba === "VIGOR" ? (Object.keys(ATENCAO) as Atencao[]).map((a) => ({ a, n: base.filter(NA_ATENCAO[a]).length })).filter((x) => x.n > 0 || x.a === f.atencao) : [];
   const outros = [f.tipo, f.quem].filter(Boolean).length;
   const filtrando = Boolean(outros || f.atencao || f.busca);
   const novoDoc = <Botao onClick={() => setNovo(true)}><Icone nome="mais" />Novo documento</Botao>;
-  const conta = (a: Aba) => (f.aba === a && dados && !f.busca && (a !== "VIGOR" || !f.tipo) ? { n: dados.total + (a === "CONTRATOS" ? doPrestador.length : 0) } : {});
+  const conta = (a: Aba) => (f.aba === a && dados && !f.busca && (a !== "VIGOR" || !f.tipo) ? { n: dados.total + (a === "CONTRATOS" ? doPrestador.length - ligados.size : 0) } : {});
   const abas: { id: Aba; texto: string; n?: number }[] = [
     { id: "VIGOR", texto: "Em vigor", ...conta("VIGOR") },
     { id: "CONTRATOS", texto: "Contratos", ...(contratos && prestadores.estado === "carregando" ? {} : conta("CONTRATOS")) },
@@ -287,16 +292,16 @@ export function Documentos({ definir }: PropsAbaMemoria) {
         {dados && contratos ? (
           <>
             <h3 className="t-rotulo px-5 py-3 max-md:px-0">Guardados em Documentos</h3>
-            {itens.length ? (
-              <><Cabeca /><ul aria-label="Contratos guardados em Documentos" className="grid max-md:gap-3">{itens.map((d) => <LinhaDocumento key={d.id} d={d} hoje={hoje} />)}</ul></>
+            {guardados.length ? (
+              <><Cabeca /><ul aria-label="Contratos guardados em Documentos" className="grid max-md:gap-3">{guardados.map((d) => <LinhaDocumento key={d.id} d={d} hoje={hoje} />)}</ul></>
             ) : (
               <p className="t-apoio px-5 pb-4 max-md:px-0">Nenhum documento do tipo contrato{f.busca ? " com esta busca" : ""}. Contrato de administração ou de portaria entra por Novo documento, com o tipo Contrato.</p>
             )}
             {pode("manutencao.ver") ? (
               <>
                 <div className="flex flex-wrap items-baseline justify-between gap-2 border-t border-linha px-5 py-3 max-md:px-0">
-                  <h3 className="t-rotulo">Dos prestadores · só para ler</h3>
-                  <span className="t-apoio">Vêm da ficha de cada prestador, na Manutenção</span>
+                  <h3 className="t-rotulo">Dos prestadores</h3>
+                  <span className="t-apoio">O arquivo fica em Documentos, ligado à ficha de cada prestador</span>
                 </div>
                 {prestadores.estado === "carregando" ? <div className="p-5"><Carregando linhas={2} rotulo="Carregando os contratos dos prestadores…" /></div> : null}
                 {prestadores.estado === "erro" ? <div className="p-5"><ErroCarregar erro={prestadores.erro} texto={prestadores.texto} tentarDeNovo={prestadores.recarregar} oQue="os contratos dos prestadores" /></div> : null}
@@ -305,7 +310,7 @@ export function Documentos({ definir }: PropsAbaMemoria) {
                     <><Cabeca quem="De onde vem" /><ul aria-label="Contratos dos prestadores" className="grid max-md:gap-3">{doPrestador.map((p) => <LinhaContrato key={p.id} p={p} hoje={hoje} />)}</ul></>
                   ) : <p className="t-apoio px-5 pb-4 max-md:px-0">Nenhum prestador com contrato{f.busca ? " com esta busca" : ""}.</p>
                 ) : null}
-                <p className="t-apoio py-4 md:border-t md:border-linha md:px-5">Para mudar o contrato de um prestador, abra a ficha dele: a data de fim fica com o prestador, para não haver duas cópias.</p>
+                <p className="t-apoio py-4 md:border-t md:border-linha md:px-5">Para enviar o contrato ou a versão nova, abra a ficha do prestador. A data de fim é a mesma no prestador e no documento.</p>
               </>
             ) : null}
           </>
