@@ -56,8 +56,8 @@ export function ListaAnexos({ anexos, anexar, rotulo = "Anexos" }: { anexos: Ane
                 </span>
               ) : (
                 <Botao variante="discreto" className="w-full justify-start rounded-xl border border-linha bg-fundo text-tinta"
-                  onClick={() => void abrirAnexo(a.id).then(setFalha)} aria-label={`Abrir ${a.nome}`}>
-                  <Icone nome="clipe" /><span className="min-w-0 flex-1 truncate text-left">{a.nome}</span>
+                  onClick={() => void abrirAnexo(a.id).then(setFalha)}>
+                  <Icone nome="clipe" /><span className="min-w-0 flex-1 truncate text-left"><span className="sr-only">Abrir </span>{a.nome}</span>
                   <span className="t-apoio">{a.parte === "COMPROVANTE" ? "Comprovante" : a.tipo === "application/pdf" ? "PDF" : "Foto"} · {mostrarTamanho(a.tamanho)}</span>
                 </Botao>
               )}

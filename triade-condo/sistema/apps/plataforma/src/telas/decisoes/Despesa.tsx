@@ -142,7 +142,7 @@ export function FichaDespesa() {
               <p className="t-apoio">{d.estado === "RECUSADA" ? "Para pedir de novo, registre uma nova despesa com o que faltou." : "Nada mais acontece com ela; fica no histórico."}</p>
             </>
           )}
-          {d.comunicado && pode("comunicados.escrever") ? (
+          {d.comunicado && pode("comunicados.publicar") ? (
             <>
               <p className="t-apoio">A despesa decidida vai para a Linha do tempo e para o relatório do mês, em Decisões do mês. Os moradores só veem se você publicar.</p>
               <Link href={`/comunicados/escrever?titulo=${encodeURIComponent(d.comunicado.titulo)}&texto=${encodeURIComponent(d.comunicado.texto)}`} className={classeBotao("secundario")}>

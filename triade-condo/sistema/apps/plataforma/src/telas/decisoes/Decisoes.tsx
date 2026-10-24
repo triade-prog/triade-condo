@@ -266,7 +266,7 @@ function DosPedidos({ recado, contar }: { recado: (r: Recado) => void; contar: (
   const recentes = filtro === "AGUARDANDO" && respondidas.estado === "pronto"
     ? [...respondidas.dados.decisoes].sort((a, b) => (b.respondidaEm ?? "").localeCompare(a.respondidaEm ?? "")).slice(0, 3) : [];
   const depois = (t: string) => { recado({ tom: "ok", texto: t }); carga.recarregar(); respondidas.recarregar(); contagens.recarregar(); atualizar(); };
-  const sindico = dados.ausencia?.sindico ?? lista.find((x) => x.decisor && x.modo !== "CONSELHO")?.decisor?.nome ?? null;
+  const sindico = dados.ausencia?.sindico ?? (painel.funcoes.includes("SINDICO") ? painel.pessoa.nome : null);
 
   async function reenviar(x: DecisaoPedido, v: VotoConselho) {
     const r = await reenviarLink("decisoes", x.id, v.membroId);

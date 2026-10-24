@@ -130,8 +130,8 @@ function Item({ c, codigo, solto }: { c: ConselhoPublico; codigo: string; solto?
         <section className="grid gap-2">
           <h3 className="t-rotulo">Anexos</h3>
           {i.anexos.map((a) => (
-            <Botao key={a.id} variante="discreto" className="w-full justify-start rounded-xl border border-linha bg-fundo text-tinta" onClick={() => void abrir(a.id)} aria-label={`Abrir ${a.nome}`}>
-              <Icone nome="clipe" /><span className="min-w-0 flex-1 truncate text-left">{a.nome}</span><span className="t-apoio">{a.tipo === "application/pdf" ? "PDF" : "Foto"}</span>
+            <Botao key={a.id} variante="discreto" className="w-full justify-start rounded-xl border border-linha bg-fundo text-tinta" onClick={() => void abrir(a.id)}>
+              <Icone nome="clipe" /><span className="min-w-0 flex-1 truncate text-left"><span className="sr-only">Abrir </span>{a.nome}</span><span className="t-apoio">{a.tipo === "application/pdf" ? "PDF" : "Foto"}</span>
             </Botao>
           ))}
           {falha ? <p className="t-texto text-erro" role="alert">{falha}</p> : null}

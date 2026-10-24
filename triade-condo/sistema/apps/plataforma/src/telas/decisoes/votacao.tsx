@@ -186,7 +186,7 @@ export function LinksMandados({ links, aoFechar }: { links: LinkMandado[] | null
             <li key={l.membroId} className="grid gap-2 rounded-[14px] border border-linha p-3">
               <span className="t-texto font-medium">{l.nome}</span>
               <span className="t-codigo break-all" aria-label={`Link de ${l.nome}`}>{enderecoDoLink(l.codigo!)}</span>
-              <Botao variante="contorno" tamanho="m" className="justify-self-start" onClick={() => void copiar(l)} aria-label={`Copiar o link de ${l.nome}`}>
+              <Botao variante="contorno" tamanho="m" className="justify-self-start" onClick={() => void copiar(l)} aria-label={copiado === l.membroId ? `Copiado: link de ${l.nome}` : `Copiar o link de ${l.nome}`}>
                 <Icone nome="copiar" />{copiado === l.membroId ? "Copiado" : "Copiar o link"}
               </Botao>
             </li>

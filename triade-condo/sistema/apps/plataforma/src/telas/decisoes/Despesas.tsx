@@ -92,7 +92,7 @@ export function AbaDespesas({ recado, contar }: { recado: (r: Recado) => void; c
               const s = situacaoDespesa(d);
               return (
                 <li key={d.id} className="border-t border-linha first:border-t-0 md:first:border-t">
-                  <Link href={`/decisoes/despesa?id=${d.id}`} aria-label={`Abrir a despesa ${d.descricao}`}
+                  <Link href={`/decisoes/despesa?id=${d.id}`}
                     className="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-5 py-3.5 hover:bg-fundo max-md:px-4 md:grid-cols-[40px_minmax(0,1.6fr)_8rem_minmax(0,1fr)_18px]">
                     <span className="ladrilho max-md:hidden" data-tom="violeta" aria-hidden="true"><Icone nome="dinheiro" /></span>
                     <span className="grid min-w-0 gap-0.5 max-md:col-span-2 max-md:col-start-1 max-md:row-start-2">
