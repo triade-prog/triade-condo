@@ -972,7 +972,8 @@ begin
   perform fechar_pendencia_da_decisao(d, p_pessoa,
     case when p_aprovar then 'Aprovada a alternativa ' || p_alternativa else 'Devolvida sem decidir' end || ' (substituto)');
   perform registrar_historico('pedido.decisao_respondida', 'pedidos', d.pedido_id::text, jsonb_strip_nulls(jsonb_build_object(
-    'decisao', d.id, 'aprovada', p_aprovar, 'alternativa', case when p_aprovar then p_alternativa end, 'substituto', p_membro)));
+    'decisao', d.id, 'aprovada', p_aprovar, 'alternativa', case when p_aprovar then p_alternativa end, 'porSubstituto', true,
+    'substituto', p_membro)));
   perform avisar_decisao(d.pedida_por, d.id, 'RESPONDIDA');
   perform avisar_decisao(pessoa_do_vinculo(d.decisor_id), d.id, 'RESPONDIDA');
   return v_versao;
@@ -1885,7 +1886,7 @@ begin
   if p_ate is null or p_ate < p_de or p_ate > p_de + 60 then perform recusar_campos('A ausência vai até 60 dias', 'ate'); end if;
   if length(v_motivo) not between 2 and 200 then perform recusar_campos('Motivo de 2 a 200 caracteres', 'motivo'); end if;
   v_sindico := vinculo_do_sindico();
-  if v_sindico is null then perform recusar_motivo('O condomínio está sem síndico no painel', 'SEM_SINDICO'); end if;
+  if v_sindico is null then perform recusar_motivo('O condomínio está sem síndico no painel', 'AUSENCIA_SEM_SINDICO'); end if;
   s := subsindico_em_dia();
   if s.id is null then
     perform recusar_motivo('Sem subsíndico com mandato em dia, a ausência não pode ser marcada', 'SEM_SUBSINDICO');
