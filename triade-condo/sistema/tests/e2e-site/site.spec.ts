@@ -63,7 +63,9 @@ test.describe("Site · como funciona", () => {
     await page.locator(".passo2").nth(3).evaluate((el) => el.scrollIntoView({ block: "center" }));
     await expect(palco).toHaveAttribute("data-etapa", "4");
     await expect(palco.locator(".c4 .zap-b.novo")).toHaveText(/5\. Obrigada!/);
-    await expect(palco.locator(".c4 .pil").first()).toBeVisible();
+    // No recorte do painel fica só o selo da situação (B2): a categoria e a fila do mês saem.
+    await expect(palco.locator(".c4 .tela-pc .app-pilulas .pil.verde")).toBeVisible();
+    await expect(palco.locator(".c4 .tela-pc .app-pilulas .pil.verde")).toHaveText("Concluído");
     await expect(palco.locator(".c1")).toBeHidden();
   });
 
@@ -157,6 +159,14 @@ test.describe("Site · preços", () => {
     await expect(faixa).toContainText("R$ 182");
     await expect(faixa).toContainText("Implantação grátis no anual");
     await expect(page.locator("#explica-forma")).toContainText("12 meses pelo preço de 11");
+  });
+
+  test("mostra o preço decidido em 24/10: fundadores, franquia a confirmar e nada sem decisão", async ({ page }) => {
+    await page.goto("/precos");
+    await expect(page.locator(".fundadores")).toContainText("Condomínios fundadores: a partir de R$ 129/mês, só no mensal, por 12 meses, vagas limitadas.");
+    await expect(page.locator(".faixa-preco").first()).toContainText("franquia a confirmar na proposta");
+    const texto = await page.locator("main").innerText();
+    expect(texto).not.toMatch(/provisóri|ilimitad|% de desconto/i);
   });
 });
 

@@ -3,7 +3,7 @@
 // e, no cartão, o que muda de fato entre as faixas (preço, franquia e implantação). As funções são as mesmas.
 import Destaque from "./Destaque.astro";
 import { tamanhos } from "../dados/vitrine";
-import { faixas, inteiro, reais } from "../dados/oferta";
+import { faixas, reais } from "../dados/oferta";
 const faixaDe = (id: string) => faixas.find((f) => f.id === id) ?? faixas[faixas.length - 1];
 ---
 <section class="wrap secao2 solucoes ancora" id="tamanhos">
@@ -21,7 +21,7 @@ const faixaDe = (id: string) => faixas.find((f) => f.id === id) ?? faixas[faixas
       <div class="app-cartao tam-cartao">
         <span class="pc-h2">O que muda nesta faixa</span>
         <div class="app-linha"><span>Mensalidade</span><b>{reais(faixaDe(t.id).mensal)} por mês</b></div>
-        <div class="app-linha"><span>Comunicados por WhatsApp no mês</span><b>{inteiro(faixaDe(t.id).franquiaComunicados)}</b></div>
+        <div class="app-linha"><span>Comunicados por WhatsApp</span><b>Franquia na proposta</b></div>
         <div class="app-linha"><span>Implantação, uma vez</span><b>{reais(faixaDe(t.id).implantacao)}</b></div>
         <p class="app-meta">{t.id === "mais-200" ? "Valores de 201 a 400 unidades; acima disso, sob consulta. " : ""}As funções são as mesmas em todas as faixas.</p>
       </div>
