@@ -212,6 +212,7 @@ export function AbaGaragens({ salvo }: { salvo: Salvo }) {
   const [janela, setJanela] = useState<{ tipo: "vaga"; vaga: Vaga | null } | { tipo: "uso"; vaga: Vaga } | null>(null);
   const [deQuem, setDeQuem] = useState<DeQuem>("");
   const [texto, setTexto] = useState("");
+  const [soSemVaga, setSoSemVaga] = useState(false);
   if (carga.estado === "carregando") return <Carregando rotulo="Carregando as garagens…" />;
   if (carga.estado === "erro") return <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const d = carga.dados;
@@ -225,10 +226,12 @@ export function AbaGaragens({ salvo }: { salvo: Salvo }) {
     { valor: "", texto: "Todas as vagas", n: r.vagas }, { valor: "unidades", texto: "De unidades", n: r.deUnidades }, { valor: "condominio", texto: "Do condomínio", n: r.doCondominio },
     { valor: "veiculos", texto: "Veículos", n: r.veiculos },
   ];
-  // A vista só de veículos (D4.7): os que estão numa vaga, com a vaga e a unidade. O veículo sem
-  // vaga aparece na ficha da unidade; a lista das garagens ainda não traz quais são.
-  const veiculos = d.vagas.flatMap((v) => v.veiculos.map((x) => ({ ...x, vaga: v.identificacao, unidade: v.unidade, unidadeId: v.unidadeId })))
-    .filter((x) => !q || [x.placa, x.vaga, x.unidade ?? "", x.modelo ?? ""].some((t) => t.toLowerCase().replace(/[^0-9a-z]/g, "").includes(q)))
+  // A vista só de veículos (D4.7): todos os veículos em uso, com a vaga e a unidade; os sem vaga
+  // ficam na mesma lista, com Sem vaga no lugar da vaga, e o atalho mostra só esses (decisão B.2).
+  const naVaga = d.vagas.flatMap((v) => v.veiculos.map((x) => ({ ...x, vaga: v.identificacao as string | undefined, unidade: v.unidade, unidadeId: v.unidadeId })));
+  const semVaga = (d.semVaga ?? []).map((x) => ({ id: x.id, placa: x.placa, tipo: x.tipo, modelo: x.modelo, vaga: undefined, unidade: x.unidade as string | undefined, unidadeId: x.unidadeId as string | undefined }));
+  const veiculos = [...(soSemVaga ? [] : naVaga), ...semVaga]
+    .filter((x) => !q || [x.placa, x.vaga ?? "", x.unidade ?? "", x.modelo ?? ""].some((t) => t.toLowerCase().replace(/[^0-9a-z]/g, "").includes(q)))
     .sort((a, b) => a.placa.localeCompare(b.placa));
   const nova = d.podeEditar ? <Botao variante="contorno" onClick={() => setJanela({ tipo: "vaga", vaga: null })}><Icone nome="mais" />Nova vaga de garagem</Botao> : undefined;
 
@@ -257,8 +260,16 @@ export function AbaGaragens({ salvo }: { salvo: Salvo }) {
               );
             })}
           </nav>
+          {deQuem === "veiculos" && r.semVaga ? (
+            <div role="group" aria-label="Mostrar só" className="flex items-center gap-2 py-3 md:border-b md:border-linha md:bg-fundo md:px-5">
+              <span className="t-apoio shrink-0 max-md:hidden">Mostrar só</span>
+              <button type="button" aria-pressed={soSemVaga} data-tom="neutro" className="chip-atencao" onClick={() => setSoSemVaga((x) => !x)}>
+                Sem vaga <b>{r.semVaga}</b>
+              </button>
+            </div>
+          ) : null}
           {deQuem === "veiculos" ? (
-            veiculos.length === 0 ? <div className="md:p-5"><Vazio titulo="Nenhum veículo encontrado" icone="busca">{q ? "Confira a busca: placa, vaga, unidade ou modelo." : "Nenhum veículo está numa vaga ainda."}</Vazio></div> : (
+            veiculos.length === 0 ? <div className="md:p-5"><Vazio titulo="Nenhum veículo encontrado" icone="busca">{q ? "Confira a busca: placa, vaga, unidade ou modelo." : "Nenhum veículo cadastrado ainda. Os veículos entram na ficha de cada unidade."}</Vazio></div> : (
               <>
                 <div aria-hidden="true" className={`hidden gap-4 border-b border-linha bg-fundo px-5 py-2.5 md:grid ${COLUNAS}`}>
                   <span /><span className="t-rotulo">Veículo</span><span className="t-rotulo">Unidade</span><span className="t-rotulo">Vaga</span><span />
@@ -274,12 +285,11 @@ export function AbaGaragens({ salvo }: { salvo: Salvo }) {
                       <span className="t-texto max-md:col-start-2">
                         {x.unidadeId ? <Link href={`/moradores/unidade?id=${x.unidadeId}`} className="hover:text-violeta-600 hover:underline">{x.unidade}</Link> : <span className="text-tinta-suave">Do condomínio</span>}
                       </span>
-                      <span className="t-texto max-md:col-start-2">Vaga <span className="t-codigo">{x.vaga}</span></span>
+                      <span className="t-texto max-md:col-start-2">{x.vaga ? <>Vaga <span className="t-codigo">{x.vaga}</span></> : <span className="text-tinta-suave">Sem vaga</span>}</span>
                       <span />
                     </li>
                   ))}
                 </ul>
-                {r.semVaga ? <p className="t-apoio px-5 pt-3 max-md:px-0">{r.semVaga === 1 ? "1 veículo está sem vaga e aparece só na ficha da unidade." : `${r.semVaga} veículos estão sem vaga e aparecem só na ficha da unidade.`}</p> : null}
               </>
             )
           ) : lista.length === 0 ? <div className="md:p-5"><Vazio titulo="Nenhuma vaga encontrada" icone="busca">Confira a busca: vaga, unidade ou placa.</Vazio></div> : (

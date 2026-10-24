@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { descreverEvento } from "./eventos.ts";
 import {
+  ABAS_LIGACAO,
   alterarContatoSchema,
   aniversarioSchema,
   buscaAniversariantesSchema,
   buscaHistoricoSchema,
+  buscaMoradoresSchema,
   diasDoMes,
   ETIQUETAS_UNIDADE,
   etiquetasDoTexto,
@@ -195,5 +197,13 @@ describe("moradores e unidades (passo 3)", () => {
     expect((Object.keys(ETIQUETAS_UNIDADE) as EtiquetaUnidade[]).filter((e) => temEtiqueta(u, e))).toEqual(["PARA_ALUGAR", "A_CONFIRMAR", "COM_PET"]);
     expect(buscaHistoricoSchema.safeParse({ categoria: "FAMILIA_PETS", antes: "120" }).data).toEqual({ categoria: "FAMILIA_PETS", antes: 120 });
     expect(buscaAniversariantesSchema.safeParse({ mes: "13" }).success).toBe(false);
+  });
+});
+
+describe("as abas da lista de pessoas (decisão B.1)", () => {
+  it("MU-02: Proprietários, Inquilinos e Moram, nessa ordem; outra ligação é recusada", () => {
+    expect(Object.values(ABAS_LIGACAO)).toEqual(["Proprietários", "Inquilinos", "Moram"]);
+    expect(buscaMoradoresSchema.parse({ ligacao: "MORAM", estado: "SEM_EMAIL" })).toEqual({ ligacao: "MORAM", estado: "SEM_EMAIL", pagina: 1 });
+    expect(buscaMoradoresSchema.safeParse({ ligacao: "SINDICOS" }).success).toBe(false);
   });
 });

@@ -527,6 +527,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     if (!r.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(r.error.issues.map((i) => String(i.path[0] ?? "")))] });
     return c.json(await rpc("plataforma_moradores", {
       ...quem(c), p_busca: r.data.busca ?? null, p_estado: r.data.estado ?? null, p_pagina: r.data.pagina, p_unidade: r.data.unidade ?? null,
+      p_ligacao: r.data.ligacao ?? null,
     }));
   });
 
