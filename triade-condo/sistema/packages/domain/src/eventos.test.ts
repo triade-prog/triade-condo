@@ -43,3 +43,15 @@ describe("eventos do passo 2", () => {
     expect(descreverEvento({ acao: "categoria.criada", entidade: "categoria", dados: {} })).toBe("Categoria criada");
   });
 });
+
+describe("repasse ao revogar (0297; CF-05, MP-01)", () => {
+  it("diz o que passou para quem assumiu, sem nomes", () => {
+    expect(descreverEvento({ acao: "pessoa.repasse", entidade: "vinculo", dados: {
+      pedidos: { para: "x", quantidade: 2 }, manutencoes: { para: "y", quantidade: 1, preventivas: 1 } } }))
+      .toBe("Repasse ao revogar · 2 pedidos passaram para quem assumiu · 1 manutenção e 1 preventiva com quem assumiu");
+    expect(descreverEvento({ acao: "pessoa.repasse", entidade: "vinculo", dados: { pedidos: { para: null, quantidade: 1 } } }))
+      .toBe("Repasse ao revogar · 1 pedido ficou na fila sem responsável");
+    expect(descreverEvento({ acao: "pessoa.repasse", entidade: "vinculo", dados: { pedidos: { para: null, quantidade: 0 } } }))
+      .toBe("Repasse ao revogar · nada em aberto");
+  });
+});

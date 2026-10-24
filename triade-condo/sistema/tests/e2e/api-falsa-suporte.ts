@@ -1,6 +1,8 @@
 // Parte de Ajuda e suporte da API falsa da Plataforma (peça R4; PI-11, PI-17, PI-20). As regras de
 // verdade estão testadas no banco (pgTAP 020) e na API (Deno); aqui só o bastante para a tela:
-// chamados com imagem colada e o pedido de acesso excepcional da TRÍADE.
+// chamados com imagem colada e o pedido de acesso excepcional da TRÍADE. A imagem fica na mensagem
+// em que foi mandada (decisão E.2): até 3 por mensagem e 10 por chamado, só na própria mensagem
+// do cliente, recém-enviada.
 import type { Route } from "@playwright/test";
 import { conferir, conteudoEnviado } from "./api-falsa-arquivos";
 
@@ -8,7 +10,7 @@ interface ChamadoFalso {
   id: string; numero: number; tipo: string; area: string; titulo: string; situacao: string; abertoPor: string; criadoEm: string; resolvidoEm?: string;
   parte?: string; hoje?: string;
   mensagens: { id: string; lado: "CLIENTE" | "TRIADE"; autor: string; texto: string; criadoEm: string }[];
-  arquivos: { id: string; nome: string; tipo: string; situacao: string; motivoRecusa?: string }[];
+  arquivos: { id: string; nome: string; tipo: string; situacao: string; motivoRecusa?: string; mensagemId: string }[];
 }
 interface AcessoFalso {
   id: string; pedidoPor: string; funcoes: string[]; motivo: string; areas: string[]; horas: number; situacao: string; validoAte?: string;
@@ -64,6 +66,11 @@ export function resumoAcessos(est: EstadoSuporte) {
   };
 }
 
+/** Cada mensagem com as imagens conferidas que foram com ela. */
+const comImagens = (c: ChamadoFalso) => c.mensagens.map((m) => ({
+  ...m, imagens: c.arquivos.filter((a) => a.mensagemId === m.id && a.situacao === "LIBERADO").map((a) => ({ id: a.id, nome: a.nome, tipo: a.tipo })),
+}));
+
 const resumo = (c: ChamadoFalso) => ({
   id: c.id, numero: c.numero, tipo: c.tipo, area: c.area, titulo: c.titulo, situacao: c.situacao, abertoPor: c.abertoPor, criadoEm: c.criadoEm,
   imagens: c.arquivos.filter((a) => a.situacao === "LIBERADO").length, resolvidoEm: c.resolvidoEm, parte: c.parte, hoje: c.hoje,
@@ -104,7 +111,7 @@ export async function rotasSuporte(route: Route, est: EstadoSuporte, caminho: st
       mensagens: [{ id: novoId(), lado: "CLIENTE", autor: eu.nome, texto: String(corpo.texto).trim(), criadoEm: agora() }],
     };
     est.chamados.unshift(c);
-    return route.fulfill({ status: 201, json: { id: c.id, numero: c.numero } });
+    return route.fulfill({ status: 201, json: { id: c.id, numero: c.numero, mensagemId: c.mensagens[0]!.id } });
   }
   // Pedir mudança (0286): um pedido aberto por parte; o título sai do nome da parte.
   if (caminho === "/v1/condominio/chamados/mudancas" && metodo === "GET") {
@@ -122,7 +129,7 @@ export async function rotasSuporte(route: Route, est: EstadoSuporte, caminho: st
       mensagens: [{ id: novoId(), lado: "CLIENTE", autor: eu.nome, texto: String(corpo.texto).trim(), criadoEm: agora() }],
     };
     est.chamados.unshift(c);
-    return route.fulfill({ status: 201, json: { id: c.id, numero: c.numero } });
+    return route.fulfill({ status: 201, json: { id: c.id, numero: c.numero, mensagemId: c.mensagens[0]!.id } });
   }
   const m = /^\/v1\/condominio\/chamados\/([^/]+)(\/.*)?$/.exec(caminho);
   const c = m ? est.chamados.find((x) => x.id === m[1]) : undefined;
@@ -130,14 +137,16 @@ export async function rotasSuporte(route: Route, est: EstadoSuporte, caminho: st
   const resto = m![2] ?? "";
   if (resto === "") {
     const fechado = c.situacao === "RESOLVIDO" && Date.now() - Date.parse(c.resolvidoEm!) > 7 * 86400_000;
-    return route.fulfill({ json: { ...resumo(c), mensagens: c.mensagens, arquivos: c.arquivos.filter((a) => a.situacao !== "ENVIANDO"),
-      pode: { responder: !fechado, resolver: c.situacao !== "RESOLVIDO", enviarImagem: c.situacao !== "RESOLVIDO" && c.abertoPor === eu.nome } } });
+    const imagensRestantes = 10 - c.arquivos.filter((a) => a.situacao !== "NAO_LIBERADO").length;
+    return route.fulfill({ json: { ...resumo(c), mensagens: comImagens(c), arquivos: c.arquivos.filter((a) => a.situacao !== "ENVIANDO"), imagensRestantes,
+      pode: { responder: !fechado, resolver: c.situacao !== "RESOLVIDO", enviarImagem: !fechado && imagensRestantes > 0 } } });
   }
   if (resto === "/responder") {
     const reaberto = c.situacao === "RESOLVIDO";
-    c.mensagens.push({ id: novoId(), lado: "CLIENTE", autor: eu.nome, texto: String(corpo.texto), criadoEm: agora() });
+    const mensagemId = novoId();
+    c.mensagens.push({ id: mensagemId, lado: "CLIENTE", autor: eu.nome, texto: String(corpo.texto), criadoEm: agora() });
     if (reaberto || c.situacao === "ESPERANDO_CLIENTE") { c.situacao = "ANDAMENTO"; c.resolvidoEm = undefined; }
-    return route.fulfill({ status: 201, json: { reaberto } });
+    return route.fulfill({ status: 201, json: { reaberto, mensagemId } });
   }
   if (resto === "/resolver") {
     c.situacao = "RESOLVIDO";
@@ -145,9 +154,17 @@ export async function rotasSuporte(route: Route, est: EstadoSuporte, caminho: st
     return route.fulfill({ json: { situacao: "RESOLVIDO" } });
   }
   if (resto === "/imagens" && metodo === "POST") {
-    if (c.arquivos.filter((a) => a.situacao !== "NAO_LIBERADO").length >= 3) return erro(route, 422, "VALIDATION_ERROR", { motivo: "LIMITE_IMAGENS" });
+    // Só na própria mensagem do cliente, recém-enviada (15 minutos); 3 por mensagem e 10 por chamado.
+    if (!corpo.mensagemId) return erro(route, 400, "VALIDATION_ERROR", { campos: ["mensagemId"] });
+    const msg = c.mensagens.find((x) => x.id === corpo.mensagemId);
+    if (!msg) return erro(route, 404, "NOT_FOUND");
+    if (msg.lado !== "CLIENTE" || msg.autor !== eu.nome) return erro(route, 422, "VALIDATION_ERROR", { motivo: "MENSAGEM_DE_OUTRO" });
+    if (Date.now() - Date.parse(msg.criadoEm) > 15 * 60_000) return erro(route, 422, "VALIDATION_ERROR", { motivo: "MENSAGEM_ANTIGA" });
+    const valendo = c.arquivos.filter((a) => a.situacao !== "NAO_LIBERADO");
+    if (valendo.filter((a) => a.mensagemId === msg.id).length >= 3) return erro(route, 422, "VALIDATION_ERROR", { motivo: "LIMITE_IMAGENS_MENSAGEM" });
+    if (valendo.length >= 10) return erro(route, 422, "VALIDATION_ERROR", { motivo: "LIMITE_IMAGENS" });
     const id = novoId();
-    c.arquivos.push({ id, nome: String(corpo.nome), tipo: String(corpo.tipo), situacao: "ENVIANDO" });
+    c.arquivos.push({ id, nome: String(corpo.nome), tipo: String(corpo.tipo), situacao: "ENVIANDO", mensagemId: msg.id });
     return route.fulfill({ status: 201, json: { arquivoId: id, envio: { url: `/api/v1/armazenamento/${id}`, metodo: "PUT", tipo: corpo.tipo } } });
   }
   const im = /^\/imagens\/([^/]+)\/(verificar|link)$/.exec(resto);

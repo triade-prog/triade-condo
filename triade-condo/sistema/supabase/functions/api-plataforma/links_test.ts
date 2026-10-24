@@ -3,7 +3,7 @@
 // foto do prestador passa pela mesma conferência dos pedidos.
 import { assertEquals } from "@std/assert";
 import { criarApiPlataforma } from "./app.ts";
-import { adminFalso, armazenamentoFalso, authFalso, bancoFalso, cookieDe, erro, limitesFalsos, pedido } from "../_shared/teste_util.ts";
+import { adminFalso, armazenamentoFalso, authFalso, bancoFalso, cookieDe, erro, erroBanco, limitesFalsos, pedido } from "../_shared/teste_util.ts";
 
 const ANA = "2d9e5b2a-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
 const AURORA = "3e0f6c3b-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
@@ -14,6 +14,7 @@ const FOTO = "9c0d1e2f-3a4b-4c5d-8e6f-a7b8c9d0e1f2";
 const CODIGO_ETIQUETA = "R7TW-2KHM-9QXF";
 const CODIGO = "Zm9vYmFyYmF6cXV4LWNvZGlnby1kZS10ZXN0ZQ";
 const CAMINHO = `${AURORA}/${MANUTENCAO}/prestador/${FOTO}`;
+const CODIGO_ENCERRADO = "ZW5jZXJyYWRvLWVuY2VycmFkby1lbmNlcnJhZG8tdGVzdGU";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-sindica" };
 const JPG = new Uint8Array([0xff, 0xd8, 0xff, 0xdb, 0x00, 0x04, 0x00, 0x00, 0xff, 0xda, 0x00, 0x02, 0xff, 0xd9]);
 
@@ -46,6 +47,9 @@ function montar() {
     publico_prestador_verificar_foto: (a) => ({ situacao: a.p_liberado ? "LIBERADO" : "NAO_LIBERADO" }),
     publico_prestador_impedimento: () => ({ ok: true }),
     publico_prestador_terminei: () => ({ ok: true }),
+    publico_prestador_foto: (a) =>
+      a.p_codigo === CODIGO_ENCERRADO ? erroBanco("TC422", { motivo: "LINK_ENCERRADO" })
+      : a.p_arquivo === FOTO ? { caminho: CAMINHO, nome: "depois.jpg", tipo: "image/jpeg" } : erroBanco("TC404"),
   });
   const manutencao = armazenamentoFalso();
   const app = criarApiPlataforma("segredo-de-repasse-de-teste", {
@@ -144,4 +148,17 @@ Deno.test("V-11: a foto do prestador passa pela conferência; o que não é foto
   const ruim = await (await m.pedir(`${base}/${FOTO}/verificar`, { corpo: {} })).json();
   assertEquals(ruim.situacao, "NAO_LIBERADO");
   assertEquals(m.manutencao.apagados, [CAMINHO]);
+});
+
+Deno.test("V-11 (0297): a foto que o prestador mandou abre pela página, só a do link e só enquanto vale", async () => {
+  const m = montar();
+  const r = await m.pedir(`/v1/publico/p/${CODIGO}/fotos/${FOTO}`);
+  assertEquals(r.status, 200);
+  assertEquals(await r.json(), { url: `https://armazenamento.exemplo/ler/${CAMINHO}?token=t`, nome: "depois.jpg", tipo: "image/jpeg" });
+  assertEquals(chamada(m, "publico_prestador_foto"), { p_codigo: CODIGO, p_arquivo: FOTO });
+  assertEquals(m.manutencao.links.at(-1)?.segundos, 300);
+  assertEquals((await m.pedir(`/v1/publico/p/${CODIGO}/fotos/${LINK}`)).status, 404);
+  assertEquals((await m.pedir(`/v1/publico/p/${CODIGO}/fotos/nao-e-id`)).status, 404);
+  const fechado = await erro(await m.pedir(`/v1/publico/p/${CODIGO_ENCERRADO}/fotos/${FOTO}`));
+  assertEquals(fechado.detalhes?.motivo, "LINK_ENCERRADO");
 });

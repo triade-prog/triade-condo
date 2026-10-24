@@ -140,6 +140,21 @@ Deno.test("CF-05: revogar a padrão leva o substituto ao banco", async () => {
   });
 });
 
+Deno.test("CF-05, MP-01 (0297): revogar leva ao banco quem assume os pedidos e as manutenções", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  const url = `/v1/condominio/pessoas/${ITEM}/revogar`;
+  assertEquals((await m.pedir(url, { corpo: { versao: 2, assumePedidosId: OUTRO, assumeManutencoesId: ANA }, cookie })).status, 200);
+  assertEquals(chamada(m, "plataforma_revogar_pessoa"), {
+    p_pessoa: ANA, p_condominio: AURORA, p_vinculo: ITEM, p_versao: 2, p_substituto: null, p_deixar_pendente: false,
+    p_assume: { pedidos: OUTRO, manutencoes: ANA },
+  });
+  // null deixa os pedidos na fila sem responsável; a chave que não veio não vai.
+  assertEquals((await m.pedir(url, { corpo: { versao: 2, assumePedidosId: null }, cookie })).status, 200);
+  assertEquals(m.chamadas.findLast((c) => c.funcao === "plataforma_revogar_pessoa")?.args.p_assume, { pedidos: null });
+  assertEquals((await erro(await m.pedir(url, { corpo: { versao: 2, assumePedidosId: "fulano" }, cookie }))).detalhes?.campos, ["assumePedidosId"]);
+});
+
 Deno.test("as listas do domínio (permissões, fusos, situações, pendências) são as mesmas do banco", async () => {
   const migration = (await Promise.all(["0070_configuracoes_condominio.sql", "0080_moradores_unidades.sql", "0130_agenda.sql", "0140_manutencao.sql",
     "0150_comunicados_documentos.sql", "0160_mural_email.sql", "0220_vida_reservas.sql", "0230_vida_enquetes.sql", "0240_vida_assembleias.sql", "0250_vida_classificados.sql",

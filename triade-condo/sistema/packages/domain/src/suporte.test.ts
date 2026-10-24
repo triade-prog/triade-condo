@@ -6,6 +6,8 @@ import {
   descreverAcessoExcepcional,
   descreverEvento,
   etapaImplantacaoSchema,
+  IMAGENS_CHAMADO,
+  iniciarImagemChamadoSchema,
   mascararEmail,
   nomeDaParte,
   PARTES_MUDANCA,
@@ -98,5 +100,17 @@ describe("chamados (PI-17, PI-20)", () => {
       "A TRÍADE abriu Pedidos pelo acesso excepcional",
     );
     expect(descreverEvento({ acao: "implantacao.etapa", entidade: "implantacao", dados: { etapa: 4, para: "REALIZADA" } })).toBe("Etapa 4: Realizada");
+  });
+});
+
+describe("imagem dentro da mensagem do chamado (0297; PI-20)", () => {
+  it("a imagem sobe ligada à mensagem; sem ela, recusa", () => {
+    const base = { nome: "print.png", tipo: "image/png", tamanho: 100 };
+    expect(iniciarImagemChamadoSchema.safeParse({ ...base, mensagemId: ID }).success).toBe(true);
+    expect(iniciarImagemChamadoSchema.safeParse(base).success).toBe(false);
+    expect(iniciarImagemChamadoSchema.safeParse({ ...base, mensagemId: "mensagem" }).success).toBe(false);
+  });
+  it("até 3 por mensagem, 10 por chamado, na mensagem dos últimos 15 minutos", () => {
+    expect([IMAGENS_CHAMADO.maximo, IMAGENS_CHAMADO.porChamado, IMAGENS_CHAMADO.minutosMensagem]).toEqual([3, 10, 15]);
   });
 });

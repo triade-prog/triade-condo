@@ -165,7 +165,7 @@ test.describe("Links e QR", () => {
     await expect(page.getByText("O condomínio confere o que foi feito e conclui a manutenção.", { exact: false })).toBeVisible();
     await expect(passos).toHaveAttribute("aria-valuenow", "4");
     await expect(page.getByText(/^Chegou /)).toBeVisible();
-    await expect(page.getByText(/^Terminou /)).toBeVisible();
+    await expect(page.getByText(/^Terminei · .* · Márcio$/)).toBeVisible();
     await expect(page.getByRole("button", { name: "Mandar mais uma coisa" })).toBeVisible();
     await conferir(page);
     await page.reload();

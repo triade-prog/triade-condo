@@ -382,8 +382,14 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/pessoas/:vinculo/revogar", async (c) => {
     const vinculo = idDaRota(c, "vinculo");
     const d = await lerCorpo(c, revogarPessoaSchema);
+    // Quem assume (0297; CF-05, MP-01): só vai ao banco o que a tela disse; "assumePedidosId: null"
+    // deixa os pedidos na fila sem responsável, e sem a chave vale o responsável padrão.
+    const assume: Record<string, string | null> = {};
+    if ("assumePedidosId" in d) assume.pedidos = d.assumePedidosId ?? null;
+    if ("assumeManutencoesId" in d) assume.manutencoes = d.assumeManutencoesId ?? null;
     await rpc("plataforma_revogar_pessoa", {
       ...quem(c), p_vinculo: vinculo, p_versao: d.versao, p_substituto: d.substitutoId ?? null, p_deixar_pendente: d.deixarPendente ?? false,
+      ...(Object.keys(assume).length ? { p_assume: assume } : {}),
     });
     return c.json({ ok: true });
   });
@@ -1948,6 +1954,14 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     });
     return c.json(await linkPublico(armazenamentoManutencao(), a));
   });
+  // As fotos que o próprio prestador mandou (0297; V-11): liberadas e não retiradas, só enquanto o link vale.
+  app.get("/v1/publico/p/:codigo/fotos/:arquivo", async (c) => {
+    const codigo = await prestador(c);
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("publico_prestador_foto", {
+      p_codigo: codigo, p_arquivo: idDaRota(c, "arquivo"),
+    });
+    return c.json(await linkPublico(armazenamentoManutencao(), a));
+  });
   // Confirmar ou dizer que não pode atender (MP-09): recusar passa o serviço para a reserva.
   app.post("/v1/publico/p/:codigo/confirmar", async (c) =>
     c.json(await rpc("publico_prestador_confirmar", { p_codigo: await prestador(c) })));
@@ -2143,8 +2157,9 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     (deps.aoFundo ?? (() => {}))(p);
   }
 
-  // Ajuda e suporte (peça R4; PI-17, PI-20): chamados de suporte técnico com até 3 imagens,
-  // com as regras das fotos dos pedidos.
+  // Ajuda e suporte (peça R4; PI-17, PI-20): chamados de suporte técnico com as regras das fotos
+  // dos pedidos. Desde a 0297 a imagem vai na mensagem: abrir, responder e pedir mudança devolvem
+  // mensagemId; até 3 imagens por mensagem e 10 por chamado.
   app.get("/v1/condominio/chamados", async (c) => c.json(await rpc("plataforma_chamados", quem(c))));
 
   app.post("/v1/condominio/chamados", async (c) => {
@@ -2194,7 +2209,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const id = idDaRota(c, "id");
     const d = await lerCorpo(c, iniciarImagemChamadoSchema);
     const r = await rpc<{ arquivoId: string; caminho: string; tipo: string }>("plataforma_iniciar_arquivo_chamado", {
-      ...quem(c), p_id: id, p_nome: d.nome, p_tipo: d.tipo, p_tamanho: d.tamanho,
+      ...quem(c), p_id: id, p_mensagem: d.mensagemId, p_nome: d.nome, p_tipo: d.tipo, p_tamanho: d.tamanho,
     });
     return c.json({ arquivoId: r.arquivoId, envio: { url: await suporte().linkEnvio(r.caminho), metodo: "PUT", tipo: r.tipo } }, 201);
   });

@@ -114,6 +114,9 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
   return route.fulfill({ status, json: { erro: detalhes ? { codigo, detalhes } : { codigo } } });
 }
 
+const PEDIDO_ABERTO = ["ABERTO", "EM_ANDAMENTO", "EM_REVISAO"];
+const MANUTENCAO_FECHADA = ["CONCLUIDA", "CANCELADA"];
+
 let n = 0;
 const novoId = () => `9a0b1c2d-3e4f-4a5b-8c6d-${String(++n).padStart(12, "0")}`;
 
@@ -160,6 +163,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     ],
     responsavelPadrao: null as string | null,
     convites: [] as string[],
+    revogacoes: [] as { vinculoId: string; assumePedidosId?: string | null; assumeManutencoesId?: string | null }[],
     moradores: criarMoradores(),
     pedidos: [] as ReturnType<typeof criarPedidos>,
     avisos: [] as ReturnType<typeof criarAvisos>,
@@ -234,6 +238,15 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     else if (!resp.some((x) => x.vinculoId === estado.responsavelPadrao && x.disponivel)) p.push("SEM_RESPONSAVEL_PADRAO");
     return p;
   };
+  // O que está em aberto com a pessoa (decisão E.1): pedidos e manutenções ou preventivas dela.
+  const emAberto = (vinculo: string) => ({
+    pedidos: estado.pedidos.filter((x) => x.responsavelId === vinculo && PEDIDO_ABERTO.includes(x.estado)).length,
+    manutencoes: manutencao.manutencoes.filter((x) => x.responsavelId === vinculo && !MANUTENCAO_FECHADA.includes(x.estado)).length
+      + manutencao.preventivas.filter((x) => x.ativa && x.responsavelId === vinculo).length,
+  });
+  // Quem vê a manutenção pode assumir as manutenções de quem sai (o síndico pode tudo).
+  const cuidaManutencao = (p: { funcao: string; permissoes: string[] }) =>
+    p.funcao === "SINDICO" || p.permissoes.includes("MANUTENCAO") || p.permissoes.includes("VER_MANUTENCAO");
   const versaoErrada = (route: Route, item: { versao: number }, corpo: Record<string, unknown>) =>
     corpo.versao !== item.versao ? erro(route, 409, "VERSION_CONFLICT", { versao: item.versao, atual: item }) : null;
   const nomeRepetido = (lista: { nome: string; ativa: boolean; id: string }[], nome: string, id?: string) =>
@@ -552,7 +565,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     }
     if (caminho === "/v1/condominio/pessoas" && metodo === "GET") {
       return route.fulfill({ json: {
-        pessoas: estado.pessoas, responsavelPadrao: estado.responsavelPadrao, versao: c.versao, pendencias: pendencias(),
+        pessoas: estado.pessoas.map((p) => ({ ...p, emAberto: emAberto(p.vinculoId), cuidaManutencao: cuidaManutencao(p) })), responsavelPadrao: estado.responsavelPadrao, versao: c.versao, pendencias: pendencias(),
         // As 22 do banco, como a API devolve (as que têm o que fazer em permissao_acoes).
         permissoesDisponiveis: Object.entries(PERMISSOES).map(([codigo, nome]) => ({ codigo, nome, descricao: nome })),
       } });
@@ -570,10 +583,33 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       if (!p || p.funcao !== "AUTORIZADO") return erro(route, 404, "NOT_FOUND");
       const conflito = versaoErrada(route, p, corpo); if (conflito) return conflito;
       if (pv[2]) {
-        if (estado.responsavelPadrao === p.vinculoId) {
-          if (!corpo.substitutoId && !corpo.deixarPendente) return erro(route, 400, "VALIDATION_ERROR", { motivo: "SUBSTITUTO_NECESSARIO" });
-          estado.responsavelPadrao = (corpo.substitutoId as string) ?? null;
+        // Quem assume (decisão E.1): os pedidos, só quem atende e está disponível (ou a fila sem
+        // responsável, com null); as manutenções e preventivas, só quem cuida da manutenção.
+        const aberto = emAberto(p.vinculoId);
+        const assumePedidos = corpo.assumePedidosId as string | null | undefined;
+        const assumeManutencoes = corpo.assumeManutencoesId as string | null | undefined;
+        // Como o banco: tudo é conferido antes de mudar qualquer coisa.
+        const eraPadrao = estado.responsavelPadrao === p.vinculoId;
+        if (eraPadrao && !corpo.substitutoId && !corpo.deixarPendente) return erro(route, 400, "VALIDATION_ERROR", { motivo: "SUBSTITUTO_NECESSARIO" });
+        if (assumePedidos && !estado.pessoas.some((x) => x.vinculoId === assumePedidos && x !== p && x.responsavel && x.disponivel)) {
+          return erro(route, 422, "VALIDATION_ERROR", { motivo: "ASSUME_PEDIDOS_INVALIDO" });
         }
+        if (aberto.manutencoes && !assumeManutencoes) return erro(route, 422, "VALIDATION_ERROR", { motivo: "MANUTENCOES_SEM_RESPONSAVEL" });
+        if (assumeManutencoes && !estado.pessoas.some((x) => x.vinculoId === assumeManutencoes && x !== p && cuidaManutencao(x))) {
+          return erro(route, 422, "VALIDATION_ERROR", { motivo: "ASSUME_MANUTENCOES_INVALIDO" });
+        }
+        if (eraPadrao) estado.responsavelPadrao = (corpo.substitutoId as string) ?? null;
+        // Sem assumePedidosId, os pedidos vão para o responsável padrão (se estiver disponível); senão, ficam sem responsável.
+        const padrao = estado.pessoas.find((x) => x.vinculoId === estado.responsavelPadrao && x !== p && x.responsavel && x.disponivel);
+        const destinoPedidos = assumePedidos !== undefined ? assumePedidos : padrao?.vinculoId ?? null;
+        for (const x of estado.pedidos.filter((y) => y.responsavelId === p.vinculoId && PEDIDO_ABERTO.includes(y.estado))) {
+          x.responsavelId = destinoPedidos; x.aceitoEm = null;
+        }
+        if (assumeManutencoes) {
+          for (const m of manutencao.manutencoes.filter((y) => y.responsavelId === p.vinculoId && !MANUTENCAO_FECHADA.includes(y.estado))) m.responsavelId = assumeManutencoes;
+          for (const x of manutencao.preventivas.filter((y) => y.ativa && y.responsavelId === p.vinculoId)) x.responsavelId = assumeManutencoes;
+        }
+        estado.revogacoes.push({ vinculoId: p.vinculoId, assumePedidosId: assumePedidos, assumeManutencoesId: assumeManutencoes });
         estado.pessoas = estado.pessoas.filter((x) => x !== p);
         return route.fulfill({ json: { ok: true } });
       }
@@ -595,5 +631,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     return erro(route, 404, "NOT_FOUND");
   }
   await page.route("**/api/v1/**", atender);
-  return Object.assign(estado, { pedidosPlano, comunicados, links, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios });
+  return Object.assign(estado, { pedidosPlano, comunicados, links, manutencao, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios });
 }

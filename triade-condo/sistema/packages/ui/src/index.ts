@@ -8,3 +8,6 @@ export { Abas, type Aba } from "./Abas.tsx";
 export { Icone, NOMES_ICONES, type NomeIcone } from "./Icone.tsx";
 export { TelaAcesso } from "./TelaAcesso.tsx";
 export { FolhaA4, PreviaImpressao } from "./Impressos.tsx";
+export {
+  enviarImagensDaMensagem, imagemAceita, ImagensDaMensagem, useAnexarImagens, type ImagemDaMensagem,
+} from "./ImagensMensagem.tsx";

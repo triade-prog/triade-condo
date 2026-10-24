@@ -140,6 +140,8 @@ export function descreverEvento(e: EventoHistorico): string {
       return `Permissões revistas: ${listaDePermissoes(d.antes)} → ${listaDePermissoes(d.depois)}`;
     case "pessoa.revogada":
       return d.pendente ? "Acesso revogado · responsável padrão ficou pendente" : "Acesso revogado";
+    case "pessoa.repasse":
+      return descreverRepasse(d);
     case "atendimento.alterado":
       return "Responsáveis pelo atendimento alterados";
     case "estrutura.alterada":
@@ -222,4 +224,24 @@ export function mostrarTelefone(e164: string | null | undefined): string {
   if (!e164) return "";
   const m = /^\+55(\d{2})(\d{4,5})(\d{4})$/.exec(e164);
   return m ? `+55 ${m[1]} ${m[2]}-${m[3]}` : e164;
+}
+
+/** O que passou para quem assumiu ao revogar o acesso (0297; CF-05, MP-01). Sem nomes: o histórico guarda só ids. */
+function descreverRepasse(d: Record<string, unknown>): string {
+  const n = (v: unknown) => Number(v ?? 0);
+  const plural = (q: number, um: string, varios: string) => `${q} ${q === 1 ? um : varios}`;
+  const partes: string[] = [];
+  const p = d.pedidos as { para?: string | null; quantidade?: number } | undefined;
+  if (p && n(p.quantidade) > 0) {
+    partes.push(p.para
+      ? `${plural(n(p.quantidade), "pedido passou", "pedidos passaram")} para quem assumiu`
+      : `${plural(n(p.quantidade), "pedido ficou", "pedidos ficaram")} na fila sem responsável`);
+  }
+  const m = d.manutencoes as { quantidade?: number; preventivas?: number } | undefined;
+  if (m && n(m.quantidade) + n(m.preventivas) > 0) {
+    const itens = [n(m.quantidade) ? plural(n(m.quantidade), "manutenção", "manutenções") : null,
+      n(m.preventivas) ? plural(n(m.preventivas), "preventiva", "preventivas") : null].filter(Boolean);
+    partes.push(`${itens.join(" e ")} com quem assumiu`);
+  }
+  return partes.length ? `Repasse ao revogar · ${partes.join(" · ")}` : "Repasse ao revogar · nada em aberto";
 }

@@ -1,13 +1,14 @@
 "use client";
 // As janelas de Pessoas e acesso (DC15, telas-modelo pessoas-mudar-acesso, pessoas-autorizar-* e
 // pessoas-revogar; V-09, CF-03, CF-05, CF-12): o acesso escolhido por área (decisão B.1), Autorizar
-// pessoa em duas partes (no celular, dois passos), Revogar com quem assume a fila e a troca do
-// padrão da fila. O atendimento grava na hora; a lista inteira vai junto, com a versão.
+// pessoa em duas partes (no celular, dois passos), Revogar com quem assume os pedidos e as
+// manutenções em aberto (decisão E.1) e a troca do padrão da fila. O atendimento grava na hora; a
+// lista inteira vai junto, com a versão.
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { TEXTO_CONVITE_CONTA_EXISTENTE, TEXTO_CONVITE_ENVIADO } from "@triade/domain";
+import { formatarData, TEXTO_CONVITE_CONTA_EXISTENTE, TEXTO_CONVITE_ENVIADO } from "@triade/domain";
 import {
-  AvisoErro, Botao, CampoSelecao, CampoTexto, camposComErro, chamarApi, Dialogo, Icone, textoDoErro, type ErroApi, type Resposta,
+  Aviso, AvisoErro, Botao, CampoSelecao, CampoTexto, camposComErro, chamarApi, Dialogo, Icone, textoDoErro, type ErroApi, type Resposta,
 } from "@triade/ui";
 import { Caixa, Escolha } from "../moradores/comum.tsx";
 import { useCelular } from "../celular.ts";
@@ -221,36 +222,107 @@ export function Autorizar({ dados, aoFechar, salvo }: { dados: Pessoas; aoFechar
   );
 }
 
+/** Recusas que dizem que a contagem do que está em aberto ficou velha. */
+const MOTIVOS_EM_ABERTO_MUDOU = ["MANUTENCOES_SEM_RESPONSAVEL", "ASSUME_PEDIDOS_INVALIDO", "ASSUME_MANUTENCOES_INVALIDO"];
+
+const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
+
+/** Quem cuida da manutenção pode assumir as manutenções e preventivas de quem sai (o banco diz; o síndico pode tudo). */
+export function cuidaDaManutencao(p: PessoaDoCondominio): boolean {
+  return p.cuidaManutencao ?? (p.funcao === "SINDICO" || p.permissoes.includes("MANUTENCAO") || p.permissoes.includes("VER_MANUTENCAO"));
+}
+
+/**
+ * Revogar o acesso (DC15, telas-modelo pessoas-revogar-assume; decisão E.1 de 24/10/2026): quem
+ * assume os pedidos em aberto da pessoa (só quem atende e está disponível, com o padrão da fila
+ * escolhido de saída, ou a fila sem responsável) e quem assume as manutenções e preventivas que ela
+ * acompanha (só quem cuida da manutenção). Só pergunta o que existe; sem nada em aberto, a janela é
+ * a de antes. Se a pessoa é o padrão da fila, quem assume os pedidos também passa a receber os novos.
+ */
 export function Revogar({ dados, pessoa, aoFechar, salvo, recarregar }: {
   dados: Pessoas; pessoa: PessoaDoCondominio; aoFechar: () => void; salvo: (r: Recado) => void; recarregar: () => void;
 }) {
   const ehPadrao = dados.responsavelPadrao === pessoa.vinculoId;
+  const pedidos = pessoa.emAberto?.pedidos ?? 0;
+  const manutencoes = pessoa.emAberto?.manutencoes ?? 0;
   const candidatos = dados.pessoas.filter((p) => p.vinculoId !== pessoa.vinculoId && p.responsavel && p.disponivel);
-  const [escolha, setEscolha] = useState(candidatos[0]?.vinculoId ?? "PENDENTE");
+  const padrao = candidatos.find((p) => p.vinculoId === dados.responsavelPadrao);
+  const daManutencao = dados.pessoas.filter((p) => p.vinculoId !== pessoa.vinculoId && cuidaDaManutencao(p));
+  const sindico = daManutencao.find((p) => p.funcao === "SINDICO");
+  // A escolha vale enquanto a pessoa continua na lista; se a lista mudar (recarregada), volta ao padrão.
+  const [escolhida, setEscolha] = useState<string | null>(null);
+  const escolha = escolhida === "PENDENTE" || candidatos.some((c) => c.vinculoId === escolhida) ? escolhida!
+    : padrao?.vinculoId ?? candidatos[0]?.vinculoId ?? "PENDENTE";
+  const [manutencaoEscolhida, setManutencao] = useState<string | null>(null);
+  const manutencao = daManutencao.some((p) => p.vinculoId === manutencaoEscolhida) ? manutencaoEscolhida!
+    : daManutencao.find((p) => p.vinculoId === dados.responsavelPadrao)?.vinculoId ?? sindico?.vinculoId ?? daManutencao[0]?.vinculoId ?? "";
   const [erro, setErro] = useState<ErroApi | null>(null);
+  const [atualizada, setAtualizada] = useState(false);
+  const [enviando, setEnviando] = useState(false);
 
   async function revogar(ev: FormEvent) {
     ev.preventDefault();
-    const corpo = { versao: pessoa.versao, ...(ehPadrao ? (escolha === "PENDENTE" ? { deixarPendente: true } : { substitutoId: escolha }) : {}) };
+    setErro(null);
+    setEnviando(true);
+    const fila = escolha === "PENDENTE" ? null : escolha;
+    const corpo = {
+      versao: pessoa.versao,
+      ...(ehPadrao ? (fila ? { substitutoId: fila } : { deixarPendente: true }) : {}),
+      ...(pedidos ? { assumePedidosId: fila } : {}),
+      ...(manutencoes ? { assumeManutencoesId: manutencao || null } : {}),
+    };
     const r = await chamarApi(`/v1/condominio/pessoas/${pessoa.vinculoId}/revogar`, { corpo });
-    if (!r.ok) return setErro(r.erro);
+    setEnviando(false);
+    if (!r.ok) {
+      setErro(r.erro);
+      // O que estava em aberto mudou desde que a ficha abriu: a lista vem de novo e a janela passa a
+      // perguntar o que falta, sem fechar.
+      const atrasada = MOTIVOS_EM_ABERTO_MUDOU.includes(String(r.erro.detalhes?.motivo ?? ""));
+      setAtualizada(atrasada);
+      if (atrasada) recarregar();
+      return;
+    }
     aoFechar();
     salvo({ tom: "ok", texto: `Acesso de ${pessoa.nome} revogado. O que foi feito com este acesso continua no histórico, com o nome de quem fez.` });
   }
 
+  const emAberto = [pedidos ? plural(pedidos, "pedido", "pedidos") : null, manutencoes ? plural(manutencoes, "manutenção", "manutenções") : null].filter(Boolean);
+  const apoio = [pessoa.cargo, `desde ${formatarData(pessoa.desde)}`, emAberto.length ? `responsável por ${emAberto.join(" e ")} em aberto` : null]
+    .filter(Boolean).join(" · ");
+  const opcaoPadrao = (c: PessoaDoCondominio) => ({ valor: c.vinculoId, texto: c.vinculoId === dados.responsavelPadrao ? `${c.nome} (responsável padrão)` : c.nome });
+  const opcaoManutencao = (c: PessoaDoCondominio) => ({ valor: c.vinculoId, texto: c.nome });
   return (
-    <Dialogo aberto fechar titulo={`Revogar o acesso de ${pessoa.nome}`} apoio={pessoa.cargo ?? undefined} aoFechar={aoFechar}>
+    <Dialogo aberto media fechar titulo={`Revogar o acesso de ${pessoa.nome}`} apoio={apoio} aoFechar={aoFechar}>
       <form onSubmit={revogar} className="grid gap-4">
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={() => { aoFechar(); recarregar(); }} /> : null}
-        {ehPadrao ? (
+        {erro && atualizada ? (
+          <Aviso tom="info" papel="status">
+            Carregamos de novo o que está em aberto com {pessoa.nome}. Confira quem assume e revogue de novo.
+            <span className="mt-2 block"><Botao variante="secundario" tamanho="m" onClick={recarregar}>Carregar de novo</Botao></span>
+          </Aviso>
+        ) : null}
+        {pedidos ? (
+          <CampoSelecao id="v-pedidos" rotulo={pedidos === 1 ? `Quem assume o pedido de ${pessoa.nome}?` : `Quem assume os ${pedidos} pedidos de ${pessoa.nome}?`}
+            icone="pessoa" value={escolha} onChange={(e) => setEscolha(e.target.value)}
+            ajuda={`Só aparece quem atende os pedidos. Se preferir, escolha Deixar na fila sem responsável.${ehPadrao ? " Quem você escolher também passa a receber os pedidos novos." : ""}`}
+            opcoes={[...candidatos.map(opcaoPadrao), { valor: "PENDENTE", texto: "Deixar na fila sem responsável" }]} />
+        ) : ehPadrao ? (
           <CampoSelecao id="v-substituto" rotulo={`${pessoa.nome} é o padrão da fila. Quem assume?`} value={escolha} onChange={(e) => setEscolha(e.target.value)}
             ajuda="Os pedidos novos passam a cair para quem você escolher."
             opcoes={[...candidatos.map((c) => ({ valor: c.vinculoId, texto: c.nome })), { valor: "PENDENTE", texto: "Ninguém por enquanto (o Início mostra a pendência)" }]} />
         ) : null}
-        <p>{pessoa.nome} para de entrar na hora. O que foi feito com este acesso continua no histórico, com o nome de quem fez. Para voltar, é preciso autorizar de novo.</p>
-        <div className="flex justify-end gap-2">
+        {manutencoes ? (
+          <CampoSelecao id="v-manutencoes" rotulo={manutencoes === 1 ? `Quem assume a manutenção de ${pessoa.nome}?` : `Quem assume as ${manutencoes} manutenções de ${pessoa.nome}?`}
+            icone="pessoa" value={manutencao} onChange={(e) => setManutencao(e.target.value)}
+            ajuda={`${manutencoes === 1 ? "A manutenção ou preventiva que a pessoa acompanha passa" : "As manutenções e preventivas que a pessoa acompanha passam"} para quem você escolher. Só aparece quem cuida da manutenção.`}
+            opcoes={daManutencao.map(opcaoManutencao)} />
+        ) : null}
+        <Aviso tom="atencao" titulo={`${pessoa.nome} para de entrar na hora`}>
+          O que foi feito com este acesso continua no histórico, com o nome de quem fez. Para voltar, é preciso autorizar de novo.
+        </Aviso>
+        <div className="flex justify-end gap-2 max-md:grid">
           <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
-          <Botao type="submit" variante="perigo"><Icone nome="sair" />Revogar acesso</Botao>
+          <Botao type="submit" variante="perigo" disabled={enviando}><Icone nome="sair" />{enviando ? "Revogando…" : "Revogar acesso"}</Botao>
         </div>
       </form>
     </Dialogo>

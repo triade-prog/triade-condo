@@ -9,6 +9,7 @@ const AURORA = "3e0f6c3b-8a4d-4f5e-8b1c-4d5e6f7a8b9c";
 const CHAMADO = "4f1a7d4c-9b5e-4a6f-9c2d-5e6f7a8b9c0d";
 const IMAGEM = "5a6b7c8d-9e0f-4a1b-8c2d-3e4f5a6b7c8d";
 const ACESSO = "6f7a8b9c-0d1e-4f2a-b3c4-d5e6f7a8b9c0";
+const MENSAGEM = "7a8b9c0d-1e2f-4a3b-8c4d-e5f6a7b8c9d0";
 const ENTRAR = { email: "ana@exemplo.invalid", senha: "senha-da-sindica" };
 
 function pngComTexto(): Uint8Array {
@@ -46,11 +47,11 @@ function montar() {
     condominio_da_sessao: (a) => sessoes.get(String(a.p_sessao)) ?? null,
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2 }),
     plataforma_chamados: () => ({ itens: [], todos: true }),
-    plataforma_abrir_chamado: () => ({ id: CHAMADO, numero: 1 }),
-    plataforma_pedir_mudanca: () => ({ id: CHAMADO, numero: 3 }),
+    plataforma_abrir_chamado: () => ({ id: CHAMADO, numero: 1, mensagemId: MENSAGEM }),
+    plataforma_pedir_mudanca: () => ({ id: CHAMADO, numero: 3, mensagemId: MENSAGEM }),
     plataforma_mudancas_pedidas: () => [{ parte: "FUSO", id: CHAMADO, numero: 3, situacao: "NOVO", abertoPor: "Ana", ver: true }],
     plataforma_chamado: () => ({ id: CHAMADO, mensagens: [] }),
-    plataforma_responder_chamado: () => ({ reaberto: false }),
+    plataforma_responder_chamado: () => ({ reaberto: false, mensagemId: MENSAGEM }),
     plataforma_resolver_chamado: () => ({ situacao: "RESOLVIDO" }),
     plataforma_iniciar_arquivo_chamado: () => ({ arquivoId: IMAGEM, caminho, tipo: "image/png" }),
     plataforma_arquivo_chamado_a_verificar: () => ({ caminho, tipo: "image/png" }),
@@ -81,11 +82,15 @@ Deno.test("PI-20: chamado pede sessão, tipo e área; o condomínio vem da sess�
   const cookie = await entrar(m);
   const base = { tipo: "PROBLEMA", area: "PEDIDOS", titulo: "Fila some", texto: "Escolho a categoria e some." };
   assertEquals((await erro(await m.pedir("/v1/condominio/chamados", { cookie, corpo: { ...base, tipo: "RECLAMACAO" } }))).codigo, "VALIDATION_ERROR");
-  assertEquals((await m.pedir("/v1/condominio/chamados", { cookie, corpo: base })).status, 201);
+  const aberto = await m.pedir("/v1/condominio/chamados", { cookie, corpo: base });
+  assertEquals(aberto.status, 201);
+  assertEquals(await aberto.json(), { id: CHAMADO, numero: 1, mensagemId: MENSAGEM }, "abrir devolve a mensagem (0297)");
   assertEquals(chamada(m, "plataforma_abrir_chamado"), {
     p_pessoa: ANA, p_condominio: AURORA, p_tipo: "PROBLEMA", p_area: "PEDIDOS", p_titulo: "Fila some", p_texto: "Escolho a categoria e some.",
   });
-  assertEquals((await m.pedir(`/v1/condominio/chamados/${CHAMADO}/responder`, { cookie, corpo: { texto: "Voltou." } })).status, 201);
+  const resposta = await m.pedir(`/v1/condominio/chamados/${CHAMADO}/responder`, { cookie, corpo: { texto: "Voltou." } });
+  assertEquals(resposta.status, 201);
+  assertEquals(await resposta.json(), { reaberto: false, mensagemId: MENSAGEM }, "responder devolve a mensagem (0297)");
   assertEquals((await m.pedir(`/v1/condominio/chamados/${CHAMADO}/resolver`, { cookie, corpo: {} })).status, 200);
   assertEquals((await m.pedir("/v1/condominio/chamados/nao-e-id", { cookie })).status, 404);
 });
@@ -111,10 +116,22 @@ Deno.test("PI-04: Pedir mudança leva a parte e o valor de hoje; o título sai d
 Deno.test("PT-07: a imagem do chamado perde o texto escondido antes de liberar", async () => {
   const m = montar();
   const cookie = await entrar(m);
-  const r = await m.pedir(`/v1/condominio/chamados/${CHAMADO}/imagens`, { cookie, corpo: { nome: "print.png", tipo: "image/png", tamanho: 100 } });
+  const r = await m.pedir(`/v1/condominio/chamados/${CHAMADO}/imagens`, {
+    cookie, corpo: { mensagemId: MENSAGEM, nome: "print.png", tipo: "image/png", tamanho: 100 },
+  });
   assertEquals(r.status, 201);
   assert((await r.json()).envio.url.includes(m.caminho));
-  assertEquals((await m.pedir(`/v1/condominio/chamados/${CHAMADO}/imagens`, { cookie, corpo: { nome: "x.pdf", tipo: "application/pdf", tamanho: 100 } })).status, 400);
+  assertEquals(chamada(m, "plataforma_iniciar_arquivo_chamado"), {
+    p_pessoa: ANA, p_condominio: AURORA, p_id: CHAMADO, p_mensagem: MENSAGEM, p_nome: "print.png", p_tipo: "image/png", p_tamanho: 100,
+  });
+  assertEquals((await m.pedir(`/v1/condominio/chamados/${CHAMADO}/imagens`, {
+    cookie, corpo: { mensagemId: MENSAGEM, nome: "x.pdf", tipo: "application/pdf", tamanho: 100 },
+  })).status, 400);
+  // Desde a 0297 a imagem vai na mensagem: sem mensagemId, nada sobe.
+  const semMensagem = await erro(await m.pedir(`/v1/condominio/chamados/${CHAMADO}/imagens`, {
+    cookie, corpo: { nome: "print.png", tipo: "image/png", tamanho: 100 },
+  }));
+  assertEquals(semMensagem.detalhes?.campos, ["mensagemId"]);
   m.suporte.objetos.set(m.caminho, pngComTexto());
   const v = await m.pedir(`/v1/condominio/chamados/${CHAMADO}/imagens/${IMAGEM}/verificar`, { cookie, corpo: {} });
   assertEquals((await v.json()).situacao, "LIBERADO");
