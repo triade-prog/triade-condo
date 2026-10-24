@@ -200,6 +200,8 @@ export const registrarPedidoSchema = z
     avisar: avisarRegistroSchema.nullable().optional().transform((v) => v ?? null),
     /** A mensagem do WhatsApp de onde o pedido nasceu: a conversa é juntada ao pedido na mesma chamada (D4.20). */
     mensagemId: id.nullable().optional().transform((v) => v ?? null),
+    /** A sugestão automática mostrada no registro (IA-15): fica no histórico, usada ou não. */
+    sugestaoId: id.nullable().optional().transform((v) => v ?? null),
   })
   .superRefine((d, ctx) => {
     if (!d.unidadeId && !d.local) {
@@ -380,6 +382,19 @@ export function descreverEventoPedido(acao: string, d: Record<string, unknown>):
       return comMotivo(d.de ? `Repassado: ${String(d.deNome ?? "")} → ${String(d.paraNome ?? "")}` : `Responsável: ${String(d.paraNome ?? "")}`);
     case "pedido.aceito":
       return "Responsável aceitou o pedido";
+    case "pedido.sugestao_pronta":
+      return "Sugestão automática pronta · espera quem atende confirmar";
+    case "pedido.sugestao_usada":
+      return ["Usou a sugestão automática", d.categoria, d.prioridade, d.local].filter(Boolean).map(String).join(" · ");
+    case "pedido.sugestao_recusada": {
+      if (d.dispensou) return `Dispensou a sugestão automática · a sugestão era ${String(d.categoria ?? "")}`;
+      const e = (d.escolhida ?? {}) as Record<string, unknown>;
+      const escolhido = e.categoria && e.categoria !== d.categoria ? e.categoria : e.prioridade && e.prioridade !== d.prioridade ? e.prioridade : e.local;
+      const sugerido = escolhido === e.categoria ? d.categoria : escolhido === e.prioridade ? d.prioridade : d.local;
+      return `Escolheu ${String(escolhido ?? "outra opção")} · a sugestão era ${String(sugerido ?? d.categoria ?? "")}`;
+    }
+    case "pedido.audio_transcrito":
+      return "Áudio transcrito automaticamente · só no painel · não conta como retorno";
     case "pedido.retorno_registrado":
       return `Retorno ao morador ${nomeDe(MEIOS_RETORNO_EXIBICAO, d.meio).toLowerCase()} · próximo retorno ${quando(d.para)}`;
     case "pedido.nota":

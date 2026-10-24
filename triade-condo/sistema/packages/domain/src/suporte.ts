@@ -206,6 +206,7 @@ export const PARTES_MUDANCA = {
   ANEXAR: { nome: "Mensagens seguintes do WhatsApp", pagina: "whatsapp" },
   ETAPAS_PEDIDOS: { nome: "Etapas dos pedidos", pagina: "etapas" },
   ETAPAS_MANUTENCAO: { nome: "Etapas da manutenção", pagina: "manutencao" },
+  LIMITE_IA: { nome: "Limite da Ajuda da IA", pagina: "ia" },
 } as const;
 export type ParteMudanca = keyof typeof PARTES_MUDANCA;
 

@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
+import { resumoAjudaIa } from "@triade/domain";
 import { Aviso, Carregando, ErroCarregar, Icone, Selo, type NomeIcone } from "@triade/ui";
 import { assinatura, ProvedorConfiguracao, useAmbiente, useCarregar, naBase, type Ambiente } from "./contexto.tsx";
 import { SeloTriade, type Tecnica } from "./tecnica.tsx";
@@ -23,6 +24,7 @@ import { AbaComunicados, AbaMural } from "./AbaComunicados.tsx";
 import { AbaLinksQr } from "./AbaLinksQr.tsx";
 import { AbaWhatsapp } from "./AbaWhatsapp.tsx";
 import { AbaAreasComuns } from "./AbaAreasComuns.tsx";
+import { AbaIa, type AjudaIa } from "./AbaIa.tsx";
 import type { Conexao } from "./conexao.tsx";
 
 export interface PropsAba {
@@ -120,6 +122,7 @@ function Pagina_({ pagina, aoVoltar }: { pagina: IdPagina; aoVoltar?: () => void
         {pagina === "whatsapp" ? <AbaWhatsapp aoSalvar={salvo} tecnica={props.tecnica} /> : null}
         {pagina === "etiquetas" ? <AbaLinksQr {...props} parte="etiquetas" /> : null}
         {pagina === "abertos" ? <AbaLinksQr {...props} parte="abertos" /> : null}
+        {pagina === "ia" ? <AbaIa /> : null}
       </PaginaSalvavel>
     </div>
   );
@@ -132,7 +135,7 @@ const hora = (h: string) => h.replace(/^0(\d)/, "$1").replace(":00", "h").replac
 /** O que a entrada lê numa chamada só (D4.15); a parte que a pessoa não pode ver vem null. */
 type Entrada = {
   configuracoes: Config; areas: AreasComuns | null; manutencao: { etapas: { ativa: boolean }[] } | null;
-  plano: PlanoComunicacao | null; whatsapp: { conexao: Conexao } | null; links: LinksQr | null;
+  plano: PlanoComunicacao | null; whatsapp: { conexao: Conexao } | null; links: LinksQr | null; ia?: AjudaIa | null;
 };
 
 /** O resumo de cada página na entrada. */
@@ -162,6 +165,7 @@ function resumos(e: Entrada) {
       const fora = d.etiquetas.length - uso;
       return d.etiquetas.length ? `${uso} em uso${fora ? ` · ${plural(fora, "desativada", "desativadas")}` : ""}` : "Nenhuma etiqueta ainda";
     }),
+    ia: pronto(e.ia ?? null, resumoAjudaIa),
     abertos: pronto(e.links, (d) => `Mural ${d.mural.ligado ? "ligado" : "desligado"} · ${plural(d.prestador.validos, "link de prestador", "links de prestador")}`),
   };
   return r;
