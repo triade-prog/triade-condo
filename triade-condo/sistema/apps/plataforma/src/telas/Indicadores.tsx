@@ -7,16 +7,19 @@
 // de cálculo de cada parte fica atrás de um "Como se calcula". Sem nenhum caso no período, a tela diz
 // "sem dados", nunca zero. Da F7.4 (TR-01): a reincidência no período, com onde o problema volta (AT-18),
 // e as decisões aguardando o síndico (AT-23). Sem botão principal: é tela de ler.
+// Relatório do mês (TR-02, TR-10; quadro 230, decisão A.1 de 23/10/2026): um botão de contorno leva
+// aos relatórios e, enquanto o mês que fechou não tem relatório, um cartão chama para montar.
 
 import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  mostrarDuracao, mostrarHoras, mostrarPorcentagem, PERIODOS_INDICADORES, PERMISSOES, textoDoPeriodo, type PeriodoIndicadores,
+  mostrarDuracao, mostrarHoras, mostrarPorcentagem, PERIODOS_INDICADORES, PERMISSOES, textoDoPeriodo, tituloDoMes, type PeriodoIndicadores,
 } from "@triade/domain";
-import { Carregando, ErroCarregar, Icone, Iniciais, SemPermissao, Selo, Trilho, type NomeIcone, type Tom } from "@triade/ui";
+import { Carregando, classeBotao, ErroCarregar, Icone, Iniciais, SemPermissao, Selo, Trilho, type NomeIcone, type Tom } from "@triade/ui";
 import { iconeDaCategoria } from "./pedidos/comum.tsx";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
+import type { ListaRelatorios } from "./relatorios/comum.tsx";
 import type { Indicadores as Dados } from "./tipos.ts";
 
 const ANTERIOR: Record<PeriodoIndicadores, string> = {
@@ -401,13 +404,28 @@ export function Indicadores() {
   const router = useRouter();
   const periodo = (Object.keys(PERIODOS_INDICADORES) as PeriodoIndicadores[]).find((p) => p === busca.get("periodo")) ?? "ESTE_MES";
   const carga = useCarregar<Dados>(pode("pedidos.ver") ? `/v1/condominio/indicadores?periodo=${periodo}` : null);
+  const relatorios = useCarregar<ListaRelatorios>(pode("pedidos.ver") ? "/v1/condominio/relatorios" : null);
+  const semRelatorio = relatorios.estado === "pronto" && !relatorios.dados.mesFechadoGerado ? relatorios.dados.mesFechado : null;
 
   const cabecalho = (
-    <div className="grid gap-1">
-      <h1 className="t-titulo-tela font-normal tracking-tight">Indicadores</h1>
-      <p className="t-apoio">Como o condomínio está respondendo aos moradores. Tudo sai do histórico dos pedidos.</p>
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="grid gap-1">
+        <h1 className="t-titulo-tela font-normal tracking-tight">Indicadores</h1>
+        <p className="t-apoio">Como o condomínio está respondendo aos moradores. Tudo sai do histórico dos pedidos.</p>
+      </div>
+      {pode("pedidos.ver") ? <Link href="/indicadores/relatorios" className={classeBotao("contorno")}><Icone nome="documento" />Relatório do mês</Link> : null}
     </div>
   );
+  const chamada = semRelatorio ? (
+    <section aria-labelledby="t-chamada-relatorio" className="flex flex-wrap items-center gap-4 rounded-[18px] border border-violeta-200 bg-violeta-50 p-5 max-md:p-4">
+      <span className="ladrilho h-10 w-10 rounded-xl" data-tom="violeta" aria-hidden="true"><Icone nome="documento" className="h-5 w-5" /></span>
+      <span className="grid min-w-0 flex-1 gap-0.5">
+        <h2 id="t-chamada-relatorio" className="t-titulo-cartao">{tituloDoMes(semRelatorio).split(" ")[0]} fechou e ainda não tem relatório</h2>
+        <span className="t-apoio">Os números do mês, o seu texto e os anexos num PDF só, para a assembleia ou o conselho.</span>
+      </span>
+      <Link href={`/indicadores/relatorios/montar?mes=${semRelatorio}`} className={classeBotao("primario", "", "m")}>Montar o relatório<Icone nome="dir" /></Link>
+    </section>
+  ) : null;
   if (!pode("pedidos.ver")) return <SemPermissao tela="Indicadores" permissao={PERMISSOES.ACOMPANHAR} />;
   if (carga.estado === "carregando") return <div className="grid gap-4">{cabecalho}<Carregando rotulo="Calculando os indicadores…" /></div>;
   if (carga.estado === "erro") return <div className="grid gap-4">{cabecalho}<ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
@@ -416,6 +434,7 @@ export function Indicadores() {
   return (
     <div className="grid gap-6">
       {cabecalho}
+      {chamada}
       <Agora d={carga.dados} podeDecidir={podeDecidir} />
       <NoPeriodo d={carga.dados} periodo={periodo} podeDecidir={podeDecidir}
         trocar={(p) => router.replace(`/indicadores?periodo=${p}`, { scroll: false })} />
