@@ -5,7 +5,7 @@
 -- responde no lugar dela; as despesas vão para aprovar, com anexos, e são pagas fora do sistema.
 -- O relógio começa numa segunda-feira, 26/10/2026, às 09:00.
 begin;
-select plan(139);
+select plan(140);
 
 create function pg_temp.em(p timestamptz) returns void language sql as $$ select ajustar_relogio(p - now()) $$;
 select pg_temp.em('2026-10-26 09:00:00-03');
@@ -139,6 +139,8 @@ select is((select publico_conselho(pg_temp.codigo_de('lucia@exemplo.com')) -> 'i
   'V-14: o link não mostra o pedido nem quem o registrou');
 
 select plataforma_votar_decisao(gil, ipe, d1, '1', null) from ids, c, d;
+select is((select jsonb_array_length(plataforma_decisoes(gil, ipe, 'AGUARDANDO') -> 'decisoes') from ids, c), 1,
+  'V-14: depois de votar, segue em Aguardando para trocar o voto até fechar');
 select is((select (r -> 'conselho') - 'votos' - 'faltam' from (select pg_temp.dec((select ana from ids), d1) as r from d) y),
   '{"titulares": 3, "necessarios": 2, "votaram": 1, "contagem": {"1": 1}}'::jsonb, 'V-14: a gestão vê os votos na hora: 1 de 2');
 select is((select r -> 'conselho' -> 'faltam' from (select pg_temp.dec((select ana from ids), d1) as r from d) y),

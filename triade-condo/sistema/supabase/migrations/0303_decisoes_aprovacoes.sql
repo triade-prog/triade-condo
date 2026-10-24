@@ -1336,9 +1336,9 @@ as $$
    order by a.de limit 1
 $$;
 
--- A tela Decisões (0280). AGUARDANDO: o que espera a minha resposta e, para o síndico e quem
--- pediu, o que está em votação no conselho. DECIDIDAS e TODAS: o que eu pedi, respondo ou voto; o
--- síndico vê todas.
+-- A tela Decisões (0280). AGUARDANDO: o que espera a minha resposta e, para o síndico, quem
+-- pediu e quem vota (já tendo votado, para trocar), o que está em votação no conselho.
+-- DECIDIDAS e TODAS: o que eu pedi, respondo ou voto; o síndico vê todas.
 create or replace function plataforma_decisoes(p_pessoa uuid, p_condominio uuid, p_filtro text) returns jsonb
 language plpgsql
 security definer
@@ -1359,7 +1359,8 @@ begin
        where decisao_visivel(d, p_pessoa)
          and case v_filtro
                when 'AGUARDANDO' then decisao_espera(d, p_pessoa)
-                                      or (d.estado = 'AGUARDANDO' and d.modo = 'CONSELHO' and (v_sindico or d.pedida_por = p_pessoa))
+                                      or (d.estado = 'AGUARDANDO' and d.modo = 'CONSELHO'
+                                          and (v_sindico or d.pedida_por = p_pessoa or eh_votante(p_pessoa, d.id, null)))
                when 'DECIDIDAS' then d.estado in ('APROVADA', 'DEVOLVIDA')
                else true end
          and (v_filtro = 'AGUARDANDO' or v_sindico or d.pedida_por = p_pessoa or eh_votante(p_pessoa, d.id, null)
