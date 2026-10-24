@@ -453,8 +453,14 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
     const f = url.searchParams.get("filtro") ?? "EM_USO";
     const at = url.searchParams.get("atencao");
     const parado = (c: ComunicadoFalso) => c.estado === "RASCUNHO" && Date.parse(c.atualizadoEm) < Date.now() - 3 * 86400_000;
+    // O período (D4.9, decisão C.1): o dia que a aba mostra, em Brasília; o fim antes do começo volta com o campo.
+    const de = url.searchParams.get("de"), ate = url.searchParams.get("ate");
+    if (de && ate && de > ate) return erro(route, 400, "VALIDATION_ERROR", { campos: ["ate"] });
+    const diaNaAba = (c: ComunicadoFalso) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(
+      (c.estado === "PUBLICADO" ? c.publicadoEm : c.estado === "PROGRAMADO" ? c.programadoPara : c.estado === "ARQUIVADO" ? c.arquivamento?.em : null) ?? c.atualizadoEm));
     const itens = est.comunicados.filter((c) => (f === "EM_USO" ? ["RASCUNHO", "PROGRAMADO", "PUBLICADO"].includes(c.estado) : c.estado === f)
-      && (at !== "RASCUNHOS_PARADOS" || parado(c)) && (at !== "PROGRAMADOS_HOJE" || c.estado === "PROGRAMADO"));
+      && (at !== "RASCUNHOS_PARADOS" || parado(c)) && (at !== "PROGRAMADOS_HOJE" || c.estado === "PROGRAMADO")
+      && (!de || diaNaAba(c) >= de) && (!ate || diaNaAba(c) <= ate));
     return route.fulfill({ json: { itens: itens.map(json), total: itens.length, pagina: 1,
       atalhos: { rascunhosParados: est.comunicados.filter(parado).length, programadosHoje: est.comunicados.filter((c) => c.estado === "PROGRAMADO").length },
       pode: { publicar: pode("comunicados.publicar") } } });

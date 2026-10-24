@@ -200,6 +200,8 @@ export interface Veiculo {
 
 export interface Garagens {
   vagas: Vaga[];
+  /** Os veículos que não estão numa vaga, com a unidade (decisão B.2). */
+  semVaga?: (Veiculo & { unidade: string })[];
   resumo: { vagas: number; deUnidades: number; doCondominio: number; veiculos: number; semVaga: number };
   unidades: { id: string; nome: string }[];
   podeEditar: boolean;
@@ -223,6 +225,8 @@ export interface MoradorDaLista {
   bloco: string | null;
   relacao: string;
   principal: boolean;
+  /** Se mora na unidade (0292); antes dela, não vem. */
+  mora?: boolean;
   estado: "PENDENTE" | "CONFIRMADO";
   origem: "PAINEL" | "PLANILHA";
   versao: number;
@@ -236,6 +240,9 @@ export interface ListaMoradores {
   pagina: number;
   porPagina: number;
   aConfirmar: number;
+  /** A aba escolhida e o número de cada uma, já com a busca e o atalho (decisão B.1). */
+  ligacao?: "PROPRIETARIOS" | "INQUILINOS" | "MORAM";
+  ligacoes?: { todas: number; proprietarios: number; inquilinos: number; moram: number };
   /** Contatos sem e-mail confirmado (CD-13). */
   semEmail?: number;
   /** Contatos que não recebem comunicado pelo WhatsApp (F6.6). */
@@ -1533,7 +1540,18 @@ export interface ListaEnquetes {
   enquetes: EnqueteTela[];
   canais: { whatsapp: boolean; email: boolean; mural: boolean };
   unidades: number;
+  /** Pessoas com vínculo confirmado (enquete por pessoa). */
+  pessoas?: number;
+  /** Quem não tem WhatsApp ou não tem e-mail para receber o link (0293, decisão C.2). */
+  semCanal?: { unidades: SemCanalEnquete[]; pessoas: SemCanalEnquete[] };
   pode: { editar: boolean };
+}
+
+export interface SemCanalEnquete {
+  id: string;
+  nome: string;
+  whatsapp: boolean;
+  email: boolean;
 }
 
 export interface ConviteEnquete {

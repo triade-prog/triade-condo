@@ -273,7 +273,12 @@ Deno.test("AC-05: a aba Classificados publica, recusa e tira do mural; a foto ab
     { id: ANUNCIO, estado: "NO_MURAL", versao: 2 });
   assertEquals(chamada(m, "plataforma_publicar_classificado"), {
     p_pessoa: ANA, p_condominio: AURORA, p_id: ANUNCIO, p_versao: 1, p_titulo: "Vendo bicicleta", p_valor_centavos: 90000,
+    p_tipo: null,
   });
+  // O tipo muda na revisão (D4.11, área C): vai ao banco; tipo desconhecido volta com o campo.
+  await m.pedir(`${base}/publicar`, { corpo: { versao: 1, titulo: "Doo berço", tipo: "DOO" }, cookie });
+  assertEquals(m.chamadas.filter((c) => c.funcao === "plataforma_publicar_classificado").at(-1)?.args.p_tipo, "DOO");
+  assertEquals((await erro(await m.pedir(`${base}/publicar`, { corpo: { versao: 1, titulo: "Doo berço", tipo: "TROCO" }, cookie }))).detalhes?.campos, ["tipo"]);
   assertEquals((await erro(await m.pedir(`${base}/recusar`, { corpo: { versao: 1, motivo: "" }, cookie }))).detalhes?.campos, ["motivo"]);
   await m.pedir(`${base}/recusar`, { corpo: { versao: 1, motivo: "Serviço de fora do prédio" }, cookie });
   assertEquals(chamada(m, "plataforma_recusar_classificado")?.p_motivo, "Serviço de fora do prédio");

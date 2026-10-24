@@ -9,7 +9,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { nomeDaUnidade } from "@triade/domain";
+import { ABAS_LIGACAO, nomeDaUnidade, type AbaLigacao } from "@triade/domain";
 import { Abas, Aviso, Botao, Carregando, ErroCarregar, Icone } from "@triade/ui";
 import { assinatura, useCarregar, usePlataforma } from "../sessao.tsx";
 import type { Recado, Unidades } from "../tipos.ts";
@@ -24,6 +24,7 @@ type IdAba = "unidades" | "pessoas" | "garagens" | "confirmar";
 
 /** Filtros que o Início abre pelo endereço. */
 const FILTROS_DO_ENDERECO = ["sem-contato", "sem-proprietario"] as const;
+const LIGACOES_DO_ENDERECO = Object.keys(ABAS_LIGACAO) as AbaLigacao[];
 
 /** "Nova torre", "Novo bloco". */
 const nova = (um: string) => `${["Torre", "Quadra"].includes(um) ? "Nova" : "Novo"} ${um.toLowerCase()}`;
@@ -99,6 +100,7 @@ export function Moradores() {
             <AbaGaragens salvo={(r) => { setRecado(r); atualizar(); }} />
           ) : (
             <ListaContatos estado={aba === "confirmar" ? "PENDENTE" : undefined} salvo={salvo} buscaInicial={aba === "pessoas" ? busca.get("busca") ?? "" : ""}
+              ligacaoInicial={aba === "pessoas" ? LIGACOES_DO_ENDERECO.find((l) => l === busca.get("ligacao")) ?? null : null}
               unidade={aba === "confirmar" ? busca.get("unidade") ?? undefined : undefined} />
           )}
         </div>

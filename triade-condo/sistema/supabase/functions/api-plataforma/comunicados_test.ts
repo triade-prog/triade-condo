@@ -80,8 +80,15 @@ Deno.test("CD-01: a lista só com sessão, com os filtros conferidos", async () 
   assertEquals((await m.pedir("/v1/condominio/comunicados?filtro=RASCUNHO&atencao=RASCUNHOS_PARADOS", { cookie })).status, 200);
   assertEquals(chamada(m, "plataforma_comunicados"), {
     p_pessoa: ANA, p_condominio: AURORA, p_filtro: "RASCUNHO", p_assunto: null, p_atencao: "RASCUNHOS_PARADOS", p_busca: null, p_pagina: 1,
+    p_de: null, p_ate: null,
   });
   assertEquals((await erro(await m.pedir("/v1/condominio/comunicados?filtro=QUALQUER", { cookie }))).detalhes?.campos, ["filtro"]);
+  // O período (D4.9, decisão C.1): De e Até vão ao banco; o fim antes do começo volta com o campo.
+  await m.pedir("/v1/condominio/comunicados?filtro=PUBLICADO&de=2026-10-01&ate=2026-10-31", { cookie });
+  const ultima = m.chamadas.filter((c) => c.funcao === "plataforma_comunicados").at(-1)?.args;
+  assertEquals([ultima?.p_de, ultima?.p_ate], ["2026-10-01", "2026-10-31"]);
+  assertEquals((await erro(await m.pedir("/v1/condominio/comunicados?de=2026-10-31&ate=2026-10-01", { cookie }))).detalhes?.campos, ["ate"]);
+  assertEquals((await erro(await m.pedir("/v1/condominio/comunicados?de=31/10/2026", { cookie }))).detalhes?.campos, ["de"]);
   assertEquals((await m.pedir(`/v1/condominio/comunicados/${COMUNICADO}`, { cookie })).status, 200);
   assertEquals((await m.pedir("/v1/condominio/comunicados/x", { cookie })).status, 404);
   assertEquals((await (await m.pedir("/v1/condominio/comunicados/opcoes", { cookie })).json()).assuntos, ["AVISO"]);

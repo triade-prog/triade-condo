@@ -195,7 +195,7 @@ Deno.test("busca de moradores: só os filtros conhecidos, página como número",
   const m = montar();
   const cookie = await entrar(m);
   await m.pedir("/v1/condominio/moradores?busca=%20lia%20&estado=PENDENTE&pagina=2", { cookie });
-  assertEquals(chamada(m, "plataforma_moradores"), { p_pessoa: ANA, p_condominio: AURORA, p_busca: "lia", p_estado: "PENDENTE", p_pagina: 2, p_unidade: null });
+  assertEquals(chamada(m, "plataforma_moradores"), { p_pessoa: ANA, p_condominio: AURORA, p_busca: "lia", p_estado: "PENDENTE", p_pagina: 2, p_unidade: null, p_ligacao: null });
   assertEquals((await erro(await m.pedir("/v1/condominio/moradores?estado=ENCERRADO", { cookie }))).codigo, "VALIDATION_ERROR");
 });
 
@@ -224,4 +224,16 @@ Deno.test("MU-11: as marcas de venda e aluguel vão juntas ao banco", async () =
   assertEquals(chamada(m, "plataforma_marcar_unidade"), { p_pessoa: ANA, p_condominio: AURORA, p_id: ITEM, p_versao: 3, p_a_venda: true, p_para_alugar: false });
   const ruim = await m.pedir(`/v1/condominio/unidades/${ITEM}/situacao`, { corpo: { versao: 3, aVenda: true }, cookie });
   assertEquals(await erro(ruim), { codigo: "VALIDATION_ERROR", detalhes: { campos: ["paraAlugar"] } });
+});
+
+Deno.test("MU-02 (decisão B.1): a aba Proprietários, Inquilinos ou Moram vai ao banco; outra é recusada antes", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  assertEquals((await m.pedir("/v1/condominio/moradores?ligacao=MORAM&estado=SEM_EMAIL&busca=Lima", { cookie })).status, 200);
+  const a = chamada(m, "plataforma_moradores")!;
+  assertEquals([a.p_ligacao, a.p_estado, a.p_busca, a.p_unidade], ["MORAM", "SEM_EMAIL", "Lima", null]);
+  assertEquals((await erro(await m.pedir("/v1/condominio/moradores?ligacao=SINDICOS", { cookie }))).detalhes?.campos, ["ligacao"]);
+  m.chamadas.length = 0;
+  await m.pedir("/v1/condominio/moradores", { cookie });
+  assertEquals(chamada(m, "plataforma_moradores")?.p_ligacao, null);
 });

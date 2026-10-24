@@ -148,4 +148,11 @@ describe("classificados (AC-05)", () => {
     expect(recusarAnuncioSchema.safeParse({ versao: 1, motivo: "" }).success).toBe(false);
     expect(tirarAnuncioSchema.parse({ versao: 2, motivo: "  " })).toEqual({ versao: 2, motivo: null });
   });
+
+  it("AC-05 (área C): a revisão pode mudar o tipo do anúncio, só para os tipos conhecidos", () => {
+    expect(publicarAnuncioSchema.parse({ versao: 1, titulo: "Doo berço", tipo: "DOO" }).tipo).toBe("DOO");
+    expect(publicarAnuncioSchema.parse({ versao: 1, titulo: "Doo berço" }).tipo).toBeUndefined();
+    expect(publicarAnuncioSchema.safeParse({ versao: 1, titulo: "Doo berço", tipo: "TROCO" }).success).toBe(false);
+  });
 });
+

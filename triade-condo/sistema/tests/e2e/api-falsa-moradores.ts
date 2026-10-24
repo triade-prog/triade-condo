@@ -251,6 +251,10 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
       vagas: [...m.vagas].sort((a, b) => Number(b.ativa) - Number(a.ativa) || chave(a.identificacao).localeCompare(chave(b.identificacao))).map(vagaJson),
       resumo: { vagas: ativas.length, deUnidades: ativas.filter((g) => g.unidadeId).length, doCondominio: ativas.filter((g) => !g.unidadeId).length,
         veiculos: emUso.length, semVaga: emUso.filter((v) => !v.vagaId).length },
+      // Os veículos sem vaga, em ordem de placa (0292, decisão B.2).
+      semVaga: emUso.filter((v) => !v.vagaId).sort((a, b) => a.placa.localeCompare(b.placa)).map((v) => ({
+        id: v.id, placa: mostrarPlaca(v.placa), tipo: v.tipo, ...(v.modelo ? { modelo: v.modelo } : {}), unidadeId: v.unidadeId,
+        unidade: nomeUnidade(unidade(v.unidadeId)!), versao: v.versao })),
       unidades: m.unidades.filter((x) => x.ativa).map((x) => ({ id: x.id, nome: nomeUnidade(x) })),
       podeEditar: edita,
     } });
@@ -529,19 +533,25 @@ export async function rotasMoradores(route: Route, m: EstadoMoradores, caminho: 
     const busca = (url.searchParams.get("busca") ?? "").toLowerCase();
     const estado = url.searchParams.get("estado");
     const so = url.searchParams.get("unidade");
-    const itens = m.vinculos.filter((v) => v.estado !== "ENCERRADO" && (!so || v.unidadeId === so) && (!estado || v.estado === estado
+    const ligacao = url.searchParams.get("ligacao");
+    if (ligacao && !["PROPRIETARIOS", "INQUILINOS", "MORAM"].includes(ligacao)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["ligacao"] });
+    const naAba = (v: Vinculo, l: string | null) => !l || (l === "PROPRIETARIOS" && v.proprietario) || (l === "INQUILINOS" && v.ligacao === "INQUILINO") || (l === "MORAM" && v.mora);
+    const base = m.vinculos.filter((v) => v.estado !== "ENCERRADO" && (!so || v.unidadeId === so) && (!estado || v.estado === estado
       || (estado === "SEM_EMAIL" && contato(v.contatoId).emailSituacao !== "CONFIRMADO")
       || (estado === "SEM_WHATSAPP" && !recebeNoWhatsapp(contato(v.contatoId))))).map((v) => {
       const c = contato(v.contatoId);
       const x = unidade(v.unidadeId)!;
       return { vinculoId: v.id, contatoId: c.id, nome: c.nome!, telefone: c.telefone!, unidadeId: x.id, unidade: x.identificacao,
         andar: x.andar, bloco: m.blocos.find((b) => b.id === x.blocoId)?.nome ?? null, relacao: v.relacao, principal: v.principal, estado: v.estado, origem: v.origem, versao: v.versao,
-        emailSituacao: c.emailSituacao, comunicadosWhatsapp: c.comunicadosWhatsapp ?? "SEM_RESPOSTA" };
+        mora: v.mora, emailSituacao: c.emailSituacao, comunicadosWhatsapp: c.comunicadosWhatsapp ?? "SEM_RESPOSTA", v };
     }).filter((i) => !busca || i.nome.toLowerCase().includes(busca) || i.unidade.toLowerCase().startsWith(busca) || (i.bloco ?? "").toLowerCase().includes(busca)
       || (busca.replace(/\D/g, "").length >= 4 && i.telefone.includes(busca.replace(/\D/g, ""))));
+    const ligacoes = { todas: base.length, proprietarios: base.filter((i) => naAba(i.v, "PROPRIETARIOS")).length,
+      inquilinos: base.filter((i) => naAba(i.v, "INQUILINOS")).length, moram: base.filter((i) => naAba(i.v, "MORAM")).length };
+    const itens = base.filter((i) => naAba(i.v, ligacao)).map(({ v: _v, ...i }) => i);
     const semEmail = new Set(m.vinculos.filter((v) => v.estado !== "ENCERRADO" && contato(v.contatoId).emailSituacao !== "CONFIRMADO").map((v) => v.contatoId)).size;
     const semWhatsapp = new Set(m.vinculos.filter((v) => v.estado !== "ENCERRADO" && !recebeNoWhatsapp(contato(v.contatoId))).map((v) => v.contatoId)).size;
-    return route.fulfill({ json: { itens, total: itens.length, pagina: 1, porPagina: 50, aConfirmar: resumoMoradores(m).aConfirmar, semEmail, semWhatsapp,
+    return route.fulfill({ json: { itens, total: itens.length, pagina: 1, porPagina: 50, ligacoes, ...(ligacao ? { ligacao } : {}), aConfirmar: resumoMoradores(m).aConfirmar, semEmail, semWhatsapp,
       comunicadosWhatsappLigado: m.zap.ligado, podeEditar: edita, podeConfirmar: confirma, ...(so ? { unidade: { id: so, nome: nomeUnidade(unidade(so)!) } } : {}) } });
   }
   // E-mail do contato (CD-13): vira "esperando confirmação"; só a própria pessoa confirma.

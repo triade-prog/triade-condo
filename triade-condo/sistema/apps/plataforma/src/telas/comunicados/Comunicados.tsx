@@ -4,12 +4,15 @@
 // em Filtros, numa janela. A linha inteira abre o comunicado, com um selo de situação e data. Cada
 // correção é uma versão nova; arquivado vai para a sua aba e nada é apagado. Os filtros ficam no
 // endereço, para o Início levar direto ao que importa. A aba "No mural" abre o mural ao vivo (CD-15).
+// O período (D4.9, decisão C.1 de 24/10/2026, quadros 260 e 261) vale a data que cada aba mostra; os
+// atalhos preenchem De e Até, e o período escolhido fica ao lado de Filtros, com o x para tirar.
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ASSUNTOS_COMUNICADO, ATALHOS_COMUNICADO } from "@triade/domain";
-import { Botao, Carregando, CampoSelecao, classeBotao, Dialogo, ErroCarregar, Icone, Vazio, type NomeIcone } from "@triade/ui";
+import { Botao, Carregando, CampoSelecao, CampoTexto, Chip, classeBotao, Dialogo, ErroCarregar, Icone, Vazio, type NomeIcone } from "@triade/ui";
+import { hojeEmBrasilia } from "../moradores/comum.tsx";
 import { useCarregar, useContagens } from "../sessao.tsx";
 import type { ListaComunicados } from "../tipos.ts";
 import { CabecaComunicados, LinhaComunicado } from "./comum.tsx";
@@ -28,7 +31,28 @@ const VAZIO: Record<Aba, { titulo: string; texto: string }> = {
   ARQUIVADO: { titulo: "Nenhum comunicado arquivado", texto: "Arquivado sai das outras abas e fica guardado aqui, com o texto e as versões." },
 };
 
-type Filtros = { aba: Aba; assunto: string; atencao: string; busca: string; pagina: number };
+type Filtros = { aba: Aba; assunto: string; atencao: string; busca: string; de: string; ate: string; pagina: number };
+
+const DIA = /^\d{4}-\d{2}-\d{2}$/;
+/** Os atalhos do período, contados a partir de hoje em Brasília. */
+export function periodosComunicado(hoje = hojeEmBrasilia()): { nome: string; de: string; ate: string }[] {
+  const [a, m] = hoje.split("-").map(Number) as [number, number];
+  const fimDoMes = new Date(Date.UTC(a, m, 0)).toISOString().slice(0, 10);
+  const trinta = new Date(Date.parse(`${hoje}T12:00:00Z`) - 29 * 86400_000).toISOString().slice(0, 10);
+  return [
+    { nome: "Últimos 30 dias", de: trinta, ate: hoje },
+    { nome: "Este mês", de: `${hoje.slice(0, 7)}-01`, ate: fimDoMes },
+    { nome: "Este ano", de: `${a}-01-01`, ate: `${a}-12-31` },
+  ];
+}
+const br = (d: string) => d.split("-").reverse().join("/");
+/** Como o período aparece ao lado de Filtros: o nome do atalho ou as datas. */
+export function nomePeriodo(de: string, ate: string, hoje = hojeEmBrasilia()): string {
+  const atalho = periodosComunicado(hoje).find((p) => p.de === de && p.ate === ate);
+  if (atalho) return atalho.nome;
+  if (de && ate) return `${br(de)} a ${br(ate)}`;
+  return de ? `Desde ${br(de)}` : `Até ${br(ate)}`;
+}
 
 function lerFiltros(b: URLSearchParams): Filtros {
   const v = (k: string) => b.get(k) ?? "";
@@ -37,6 +61,7 @@ function lerFiltros(b: URLSearchParams): Filtros {
     aba: v("filtro") in ABAS ? (v("filtro") as Aba) : ABA_DO_ATALHO[atencao] ?? "PUBLICADO",
     assunto: v("assunto") in ASSUNTOS_COMUNICADO ? v("assunto") : "",
     atencao, busca: v("busca"), pagina: Math.max(1, Number(v("pagina")) || 1),
+    de: DIA.test(v("de")) ? v("de") : "", ate: DIA.test(v("ate")) ? v("ate") : "",
   };
 }
 
@@ -46,6 +71,8 @@ function consulta(f: Filtros): string {
   if (f.assunto) q.set("assunto", f.assunto);
   if (f.atencao) q.set("atencao", f.atencao);
   if (f.busca) q.set("busca", f.busca);
+  if (f.de) q.set("de", f.de);
+  if (f.ate) q.set("ate", f.ate);
   if (f.pagina > 1) q.set("pagina", String(f.pagina));
   return q.toString();
 }
@@ -64,13 +91,31 @@ function Busca({ inicial, aoBuscar }: { inicial: string; aoBuscar: (b: string) =
 
 function JanelaFiltros({ aberto, f, aoFechar, aplicar }: { aberto: boolean; f: Filtros; aoFechar: () => void; aplicar: (m: Partial<Filtros>) => void }) {
   const [assunto, setAssunto] = useState(f.assunto);
+  const [de, setDe] = useState(f.de);
+  const [ate, setAte] = useState(f.ate);
+  const invertido = Boolean(de && ate && de > ate);
   return (
-    <Dialogo aberto={aberto} titulo="Filtrar comunicados" aoFechar={aoFechar}>
-      <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); aplicar({ assunto }); }}>
+    <Dialogo aberto={aberto} titulo="Filtrar comunicados" apoio="Assunto e período valem em todas as abas. Os atalhos preenchem as datas; dá para mudar à mão." aoFechar={aoFechar}>
+      <form className="grid gap-4" onSubmit={(e) => { e.preventDefault(); if (!invertido) aplicar({ assunto, de, ate }); }}>
         <CampoSelecao id="cm-f-assunto" rotulo="Assunto" icone="lista" value={assunto} onChange={(e) => setAssunto(e.target.value)}
           opcoes={[{ valor: "", texto: "Todos os assuntos" }, ...Object.entries(ASSUNTOS_COMUNICADO).map(([valor, texto]) => ({ valor, texto }))]} />
-        <div className="flex justify-end gap-2">
-          <Botao variante="discreto" onClick={() => aplicar({ assunto: "" })}>Tirar filtros</Botao>
+        <fieldset className="grid gap-2.5">
+          <legend className="mb-1 t-apoio font-medium text-tinta">Período</legend>
+          <div className="flex flex-wrap gap-2">
+            {periodosComunicado().map((p) => {
+              const escolhido = p.de === de && p.ate === ate;
+              return <Chip key={p.nome} ativo={escolhido} onClick={() => { setDe(p.de); setAte(p.ate); }}>{p.nome}</Chip>;
+            })}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <CampoTexto id="cm-f-de" rotulo="De" type="date" icone="calendario" value={de} onChange={(e) => setDe(e.target.value)} />
+            <CampoTexto id="cm-f-ate" rotulo="Até" type="date" icone="calendario" value={ate} onChange={(e) => setAte(e.target.value)}
+              erro={invertido ? "O fim do período vem depois do começo" : null} />
+          </div>
+          <p className="t-apoio">Vale a data que aparece na aba: publicado em, programado para, editado em ou arquivado em.</p>
+        </fieldset>
+        <div className="flex justify-between gap-2">
+          <Botao variante="discreto" onClick={() => aplicar({ assunto: "", de: "", ate: "" })}>Tirar filtros</Botao>
           <Botao type="submit">Mostrar comunicados</Botao>
         </div>
       </form>
@@ -95,7 +140,9 @@ export function Comunicados() {
   };
   const dados = lista.estado === "pronto" ? lista.dados : null;
   const podePublicar = Boolean(dados?.pode.publicar);
-  const filtrando = Boolean(f.assunto || f.atencao || f.busca);
+  const filtrando = Boolean(f.assunto || f.atencao || f.busca || f.de || f.ate);
+  const emUso = (f.assunto ? 1 : 0) + (f.de || f.ate ? 1 : 0);
+  const limpar = { assunto: "", atencao: "", busca: "", de: "", ate: "" };
   const escrever = <Link href="/comunicados/escrever" className={classeBotao("primario")}><Icone nome="mais" />Escrever comunicado</Link>;
   const contaAtalho: Record<string, number> = dados ? { RASCUNHOS_PARADOS: dados.atalhos.rascunhosParados, PROGRAMADOS_HOJE: dados.atalhos.programadosHoje } : {};
   const atalhos = Object.entries(ATALHOS_COMUNICADO).filter(([codigo]) => (contaAtalho[codigo] ?? 0) > 0 || f.atencao === codigo);
@@ -112,10 +159,11 @@ export function Comunicados() {
 
       <div className="flex items-center gap-3">
         <Busca key={f.busca} inicial={f.busca} aoBuscar={(b) => ir({ busca: b })} />
-        <Botao variante="contorno" aria-label={f.assunto ? "Filtros, 1 em uso" : "Filtros"} className="max-md:w-11 max-md:px-0" onClick={() => setFiltrando(true)}>
-          <Icone nome="filtro" /><span className="max-md:hidden">Filtros{f.assunto ? " · 1" : ""}</span>
+        <Botao variante="contorno" aria-label={emUso ? `Filtros, ${emUso} em uso` : "Filtros"} className="max-md:w-11 max-md:px-0" onClick={() => setFiltrando(true)}>
+          <Icone nome="filtro" /><span className="max-md:hidden">Filtros{emUso ? ` · ${emUso}` : ""}</span>
         </Botao>
-        {filtrando ? <Botao variante="discreto" className="max-md:hidden" onClick={() => ir({ assunto: "", atencao: "", busca: "" })}>Limpar filtros</Botao> : null}
+        {f.de || f.ate ? <Chip icone="calendario" className="max-md:hidden" aoTirar={() => ir({ de: "", ate: "" })} rotuloTirar="Tirar o período">{nomePeriodo(f.de, f.ate)}</Chip> : null}
+        {filtrando ? <Botao variante="discreto" className="max-md:hidden" onClick={() => ir(limpar)}>Limpar filtros</Botao> : null}
       </div>
 
       <section aria-labelledby="t-lista" className="overflow-hidden md:rounded-[18px] md:border md:border-linha md:bg-superficie md:shadow-s1">
@@ -152,7 +200,7 @@ export function Comunicados() {
           dados.itens.length === 0 ? (
             <div className="md:p-5">
               {filtrando ? <Vazio titulo="Nenhum comunicado com estes filtros" icone="filtro"
-                acao={<Botao variante="contorno" onClick={() => ir({ assunto: "", atencao: "", busca: "" })}>Limpar filtros</Botao>} />
+                acao={<Botao variante="contorno" onClick={() => ir(limpar)}>Limpar filtros</Botao>} />
                 : <Vazio titulo={VAZIO[f.aba].titulo} icone="megafone" acao={podePublicar && f.aba === "PUBLICADO" ? escrever : undefined}>{VAZIO[f.aba].texto}</Vazio>}
             </div>
           ) : (
@@ -160,7 +208,7 @@ export function Comunicados() {
               <CabecaComunicados />
               <ul aria-label="Comunicados" className="grid max-md:gap-3">{dados.itens.map((c) => <LinhaComunicado key={c.id} c={c} />)}</ul>
               <div className="flex flex-wrap items-center justify-between gap-2 py-4 md:border-t md:border-linha md:px-5">
-                <span className="t-apoio">{dados.total === 1 ? "1 comunicado" : `${dados.total} comunicados`}</span>
+                <span className="t-apoio">{dados.total === 1 ? "1 comunicado" : `${dados.total} comunicados`}{f.de || f.ate ? ` · ${nomePeriodo(f.de, f.ate).replace(/^./, (l) => l.toLowerCase())}` : ""}</span>
                 {dados.total > 30 ? (
                   <span className="flex gap-2">
                     <Botao variante="contorno" tamanho="m" disabled={f.pagina <= 1} onClick={() => ir({ pagina: f.pagina - 1 })}><Icone nome="esq" />Anteriores</Botao>

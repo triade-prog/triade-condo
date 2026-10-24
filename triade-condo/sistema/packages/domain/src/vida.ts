@@ -240,6 +240,8 @@ export const publicarAnuncioSchema = z.object({
   versao,
   titulo: z.string().trim().min(3).max(80),
   valorCentavos: opcional(z.number().int().min(1).max(100000000)),
+  /** O tipo pode mudar na revisão (D4.11, área C de 24/10/2026); sem ele, fica o que o morador escolheu. */
+  tipo: z.enum(chaves(TIPOS_ANUNCIO)).optional(),
 });
 export const recusarAnuncioSchema = z.object({ versao, motivo: z.string().trim().min(3).max(500) });
 export const tirarAnuncioSchema = z.object({ versao, motivo: texto(500) });

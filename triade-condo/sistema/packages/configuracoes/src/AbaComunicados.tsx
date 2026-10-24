@@ -17,7 +17,7 @@ import type { PropsAba } from "./Configuracoes.tsx";
 import { MuralEmail } from "./MuralEmail.tsx";
 
 /** Página Comunicados: o plano, no app os comunicados pelo WhatsApp (na mesma barra de salvar) e,
- * ao lado, as páginas da mesma área (D4.15). */
+ * ao lado, as páginas da mesma área (D4.15), com quantas vezes o mural foi aberto em 7 dias. */
 export function AbaComunicados(_props: PropsAba) {
   const { onde, endereco } = useAmbiente();
   const carga = useCarregar<PlanoComunicacao>(naBase("/plano-comunicacao"));
@@ -26,7 +26,9 @@ export function AbaComunicados(_props: PropsAba) {
   if (carga.estado === "erro") return <ErroCarregar texto={carga.texto} tentarDeNovo={carga.recarregar} />;
   const p = carga.dados;
   const vizinhas = endereco ? [
-    { id: "mural" as const, nome: "Mural e e-mail", resumo: `Mural ${p.mural.ligado ? "ligado" : "desligado"} · e-mail ${p.email.ligado ? "ligado" : "desligado"}` },
+    { id: "mural" as const, nome: "Mural e e-mail", resumo: p.mural.ligado
+      ? `Mural ligado · aberto ${p.mural.aberturas === 1 ? "1 vez" : `${p.mural.aberturas} vezes`} em 7 dias`
+      : `Mural desligado · e-mail ${p.email.ligado ? "ligado" : "desligado"}` },
     ...(zap.estado === "pronto" ? [{ id: "whatsapp" as const, nome: "WhatsApp", resumo: SITUACAO_WHATSAPP[zap.dados.conexao.situacao] + (zap.dados.conexao.oficial === false ? " · conexão de teste" : "") }] : []),
   ] : [];
   return (

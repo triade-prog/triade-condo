@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   aoMoradorPadrao,
+  buscaComunicadosSchema,
   descreverAlcance,
   descreverEventoComunicado,
   descreverEventoDocumento,
@@ -111,5 +112,12 @@ describe("documentos (peça R1)", () => {
   it("CF-03: as permissões novas aparecem para o síndico dar", () => {
     expect(PERMISSOES.VER_COMUNICADOS).toBe("Ver comunicados e documentos");
     expect(PERMISSOES.DOCUMENTOS).toBe("Cuidar dos documentos");
+  });
+
+  it("CD-01 (decisão C.1): o período nos Filtros tem De e Até, e o fim não vem antes do começo", () => {
+    expect(buscaComunicadosSchema.parse({ de: "2026-10-01", ate: "2026-10-31" })).toMatchObject({ de: "2026-10-01", ate: "2026-10-31", pagina: 1 });
+    expect(buscaComunicadosSchema.safeParse({ de: "2026-10-01" }).success).toBe(true);
+    expect(buscaComunicadosSchema.safeParse({ de: "2026-10-31", ate: "2026-10-01" }).error?.issues[0]?.path).toEqual(["ate"]);
+    expect(buscaComunicadosSchema.safeParse({ de: "01/10/2026" }).success).toBe(false);
   });
 });

@@ -3,12 +3,13 @@
 // vida-classificados e vida-revisar-anuncio; AC-05, CD-12): os anúncios que os moradores mandam
 // com ANUNCIAR no WhatsApp, em abas, A aprovar primeiro. Revisar abre a janela com o texto como
 // chegou: publicar escolhe o título e o valor que aparecem no mural, por 30 dias; recusar pede
-// motivo. Tirar do mural pode levar um. A decisão vai ao morador pelo WhatsApp.
+// motivo. Tirar do mural pode levar um. A decisão vai ao morador pelo WhatsApp. O tipo também se
+// muda na revisão (D4.11, área C de 24/10/2026), e a troca fica no histórico.
 
 import { useState, type FormEvent } from "react";
-import { centavosDoTexto, ESTADOS_ANUNCIO, filtroDoAnuncio, FILTROS_ANUNCIO, reais, TIPOS_ANUNCIO, type EstadoAnuncio, type FiltroAnuncio } from "@triade/domain";
+import { centavosDoTexto, ESTADOS_ANUNCIO, filtroDoAnuncio, FILTROS_ANUNCIO, reais, TIPOS_ANUNCIO, type EstadoAnuncio, type FiltroAnuncio, type TipoAnuncio } from "@triade/domain";
 import {
-  AvisoErro, Botao, CampoAreaTexto, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio,
+  AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio,
   type ErroApi, type Tom,
 } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
@@ -126,11 +127,12 @@ function FotoAnuncio({ id, titulo }: { id: string; titulo: string }) {
   );
 }
 
-/** Revisar (DC15, tela-modelo vida-revisar-anuncio): o texto como chegou, o título e o valor do
- * mural, e as duas saídas: Publicar no mural ou Recusar, com o motivo. */
+/** Revisar (DC15, tela-modelo vida-revisar-anuncio): o texto como chegou, o título, o tipo e o valor
+ * do mural, e as duas saídas: Publicar no mural ou Recusar, com o motivo. */
 function Revisar({ a, aoFechar }: { a: AnuncioTela; aoFechar: (texto?: string) => void }) {
   const [titulo, setTitulo] = useState(a.tituloSugerido);
   const [valor, setValor] = useState(valorNoCampo(a.valorSugerido));
+  const [tipo, setTipo] = useState<TipoAnuncio>(a.tipo);
   const [recusando, setRecusando] = useState(false);
   const [motivo, setMotivo] = useState("");
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -145,7 +147,7 @@ function Revisar({ a, aoFechar }: { a: AnuncioTela; aoFechar: (texto?: string) =
     setValorRuim(centavos === undefined);
     if (centavos === undefined) return;
     setEnviando(true);
-    const res = await chamarApi<AnuncioTela>(`/v1/condominio/classificados/${a.id}/publicar`, { corpo: { versao: a.versao, titulo, valorCentavos: centavos } });
+    const res = await chamarApi<AnuncioTela>(`/v1/condominio/classificados/${a.id}/publicar`, { corpo: { versao: a.versao, titulo, valorCentavos: centavos, tipo } });
     setEnviando(false);
     if (!res.ok) return setErro(res.erro);
     aoFechar(`Anúncio publicado no mural até ${res.dados.noMuralAte ? diaMes(res.dados.noMuralAte) : "daqui a 30 dias"}. Quem anunciou recebe o aviso pelo WhatsApp.`);
@@ -188,7 +190,10 @@ function Revisar({ a, aoFechar }: { a: AnuncioTela; aoFechar: (texto?: string) =
           <CampoTexto id="cl-titulo" rotulo="Título no mural" maxLength={80} required value={titulo} onChange={(e) => setTitulo(e.target.value)}
             erro={comErro.includes("titulo") ? "Escreva o título, de 3 a 80 letras" : null} ajuda="Curto, como o morador escreveria. O texto vai inteiro abaixo dele." />
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid content-start gap-1.5 t-texto"><span className="t-apoio font-medium">Tipo</span><span className="flex min-h-11 items-center">{TIPOS_ANUNCIO[a.tipo]}</span></div>
+            <CampoSelecao id="cl-tipo" rotulo="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value as TipoAnuncio)}
+              erro={comErro.includes("tipo") ? "Escolha um dos tipos" : null}
+              ajuda={tipo !== a.tipo ? `O morador escolheu ${TIPOS_ANUNCIO[a.tipo]}.` : undefined}
+              opcoes={Object.entries(TIPOS_ANUNCIO).map(([valor, texto]) => ({ valor, texto }))} />
             <CampoTexto id="cl-valor" rotulo="Valor" opcional inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)}
               erro={valorRuim || comErro.includes("valorCentavos") ? "Escreva o valor como 900 ou 1.150,50" : null} ajuda="Em reais. Vazio na doação ou sem preço." />
           </div>

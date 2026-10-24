@@ -7,10 +7,13 @@
 // pelo WhatsApp do condomínio (F6.6). No celular, cada pessoa é um cartão. O que chegou pelo link de
 // cadastro (F3.10; MU-09) entra na mesma aba, com o selo Pelo link e Conferir; Veio de separa o
 // link da planilha, e Pendentes, no menu da unidade, abre a aba já com a unidade escolhida.
+// As abas Proprietários, Inquilinos e Moram (decisão B.1 da fase D com banco) filtram pela ligação
+// no banco, com o número de cada uma já contando a busca e o atalho; a aba fica no endereço.
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { mostrarTelefone, nomeDaUnidade, SITUACOES_COMUNICADOS_WHATSAPP, SITUACOES_EMAIL } from "@triade/domain";
+import { ABAS_LIGACAO, mostrarTelefone, nomeDaUnidade, SITUACOES_COMUNICADOS_WHATSAPP, SITUACOES_EMAIL, type AbaLigacao } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Iniciais, textoDoErro, Vazio } from "@triade/ui";
 import { Janela } from "../Janela.tsx";
 import { useCarregar } from "../sessao.tsx";
@@ -23,12 +26,15 @@ const COLUNAS_CONFIRMAR = "md:grid-cols-[24px_40px_minmax(0,1.6fr)_170px_minmax(
 const COLUNAS_LINK = "md:grid-cols-[40px_minmax(0,1.6fr)_170px_minmax(0,1fr)_104px]";
 
 function detalhe(i: MoradorDaLista, whatsappLigado: boolean): string {
-  return [nomeRelacao(i.relacao), i.principal ? "responsável" : null, i.origem === "PLANILHA" ? "veio da planilha" : null,
+  return [nomeRelacao(i.relacao), i.relacao === "MORADOR" || i.mora === undefined ? null : i.mora ? "mora" : "não mora", i.principal ? "responsável" : null, i.origem === "PLANILHA" ? "veio da planilha" : null,
     i.emailSituacao ? SITUACOES_EMAIL[i.emailSituacao].toLowerCase() : null,
     whatsappLigado && i.comunicadosWhatsapp ? `WhatsApp: ${SITUACOES_COMUNICADOS_WHATSAPP[i.comunicadosWhatsapp]}` : null].filter(Boolean).join(" · ");
 }
 
-export function ListaContatos({ estado, salvo, buscaInicial = "", unidade }: { estado?: "PENDENTE"; salvo: (r: Recado) => void; buscaInicial?: string; unidade?: string }) {
+export function ListaContatos({ estado, salvo, buscaInicial = "", unidade, ligacaoInicial = null }: {
+  estado?: "PENDENTE"; salvo: (r: Recado) => void; buscaInicial?: string; unidade?: string; ligacaoInicial?: AbaLigacao | null;
+}) {
+  const router = useRouter();
   const [texto, setTexto] = useState(buscaInicial);
   const [busca, setBusca] = useState(buscaInicial);
   const [pagina, setPagina] = useState(1);
@@ -41,8 +47,9 @@ export function ListaContatos({ estado, salvo, buscaInicial = "", unidade }: { e
   const [conferir, setConferir] = useState<{ c: CadastroLink; recusar: boolean } | null>(null);
   const filtro = estado ?? sem ?? undefined;
   const aConfirmar = estado === "PENDENTE";
+  const [ligacao, setLigacao] = useState<AbaLigacao | null>(aConfirmar ? null : ligacaoInicial);
   const daUnidade = aConfirmar && unidade ? unidade : undefined;
-  const qs = new URLSearchParams({ pagina: String(pagina), ...(busca ? { busca } : {}), ...(filtro ? { estado: filtro } : {}), ...(daUnidade ? { unidade: daUnidade } : {}) });
+  const qs = new URLSearchParams({ pagina: String(pagina), ...(busca ? { busca } : {}), ...(filtro ? { estado: filtro } : {}), ...(daUnidade ? { unidade: daUnidade } : {}), ...(ligacao ? { ligacao } : {}) });
   const carga = useCarregar<ListaMoradores>(`/v1/condominio/moradores?${qs}`);
   const fila = useCarregar<FilaCadastros>(aConfirmar ? `/v1/condominio/cadastros-link${daUnidade ? `?unidade=${daUnidade}` : ""}` : null);
 
@@ -112,6 +119,19 @@ export function ListaContatos({ estado, salvo, buscaInicial = "", unidade }: { e
   const mostraLink = aConfirmar && veio !== "PLANILHA" ? doLink : [];
   const itens = veio === "LINK" ? [] : d.itens;
   const pronto = (r: Recado) => { setConferir(null); fila.recarregar(); salvo(r); };
+  const abas: { valor: AbaLigacao | null; texto: string; n?: number }[] = [
+    { valor: null, texto: "Todas", n: d.ligacoes?.todas },
+    ...(Object.keys(ABAS_LIGACAO) as AbaLigacao[]).map((l) => ({ valor: l, texto: ABAS_LIGACAO[l], n: d.ligacoes?.[({ PROPRIETARIOS: "proprietarios", INQUILINOS: "inquilinos", MORAM: "moram" } as const)[l]] })),
+  ];
+  const escolherLigacao = (l: AbaLigacao | null) => {
+    setLigacao(l);
+    setPagina(1);
+    router.replace(`/moradores?aba=pessoas${l ? `&ligacao=${l}` : ""}`, { scroll: false });
+  };
+  const contagem = (n: number) => ligacao === "PROPRIETARIOS" ? (n === 1 ? "1 proprietário" : `${n} proprietários`)
+    : ligacao === "INQUILINOS" ? (n === 1 ? "1 inquilino" : `${n} inquilinos`)
+    : ligacao === "MORAM" ? (n === 1 ? "1 pessoa mora" : `${n} pessoas moram`)
+    : n === 1 ? "1 contato" : `${n} contatos`;
 
   return (
     <div className="grid gap-4">
@@ -145,6 +165,19 @@ export function ListaContatos({ estado, salvo, buscaInicial = "", unidade }: { e
             ) : null}
           </div>
         ) : null}
+        {!aConfirmar ? (
+          <nav aria-label="Ligação com a unidade" className="flex gap-1 overflow-x-auto border-b border-linha md:px-3">
+            {abas.map((a) => {
+              const atual = ligacao === a.valor;
+              return (
+                <button key={a.valor ?? "todas"} type="button" aria-pressed={atual} onClick={() => escolherLigacao(a.valor)}
+                  className={`-mb-px flex min-h-12 shrink-0 items-center gap-2 border-b-2 px-3 t-texto font-medium whitespace-nowrap ${atual ? "border-violeta-600 text-violeta-600" : "border-transparent text-tinta-suave hover:text-tinta"}`}>
+                  {a.texto}{a.n !== undefined ? <span className={`contagem ml-0 ${atual ? "bg-violeta-600 text-superficie" : "bg-superficie-2 text-tinta-suave"}`}>{a.n}</span> : null}
+                </button>
+              );
+            })}
+          </nav>
+        ) : null}
         {!aConfirmar && atalhos.length ? (
           <div role="group" aria-label="O que pede atenção" className="flex items-center gap-2 overflow-x-auto py-3 md:border-b md:border-linha md:bg-fundo md:px-5">
             <span className="t-apoio shrink-0 max-md:hidden">Pede atenção</span>
@@ -159,8 +192,8 @@ export function ListaContatos({ estado, salvo, buscaInicial = "", unidade }: { e
 
         {itens.length === 0 && mostraLink.length === 0 ? (
           <div className="md:p-5">
-            <Vazio titulo={busca ? "Ninguém encontrado" : aConfirmar ? "Nenhum contato esperando confirmação" : "Nenhuma pessoa cadastrada"} icone={busca ? "busca" : aConfirmar ? "check" : "pessoas"}>
-              {busca ? "Confira a busca: nome, unidade ou parte do telefone." : aConfirmar ? "O que vier da planilha ou pelo link de cadastro aparece aqui para você conferir." : "Inclua pessoas pela ficha de cada unidade ou importe a planilha."}
+            <Vazio titulo={busca || ligacao ? "Ninguém encontrado" : aConfirmar ? "Nenhum contato esperando confirmação" : "Nenhuma pessoa cadastrada"} icone={busca ? "busca" : aConfirmar ? "check" : "pessoas"}>
+              {ligacao && !busca ? `Ninguém em ${ABAS_LIGACAO[ligacao]}${sem ? " com esse atalho" : ""}. A aba Todas mostra todo mundo.` : busca ? "Confira a busca: nome, unidade ou parte do telefone." : aConfirmar ? "O que vier da planilha ou pelo link de cadastro aparece aqui para você conferir." : "Inclua pessoas pela ficha de cada unidade ou importe a planilha."}
             </Vazio>
           </div>
         ) : (
@@ -237,7 +270,7 @@ export function ListaContatos({ estado, salvo, buscaInicial = "", unidade }: { e
               ))}
             </ul>
             <div className="flex flex-wrap items-center justify-between gap-2 py-4 md:border-t md:border-linha md:px-5">
-              <span className="t-apoio">{((n) => (n === 1 ? "1 contato" : `${n} contatos`))(itens.length ? d.total + mostraLink.length : mostraLink.length || d.total)}{aConfirmar ? " a confirmar" : ""}</span>
+              <span className="t-apoio">{contagem(itens.length ? d.total + mostraLink.length : mostraLink.length || d.total)}{aConfirmar ? " a confirmar" : ""}</span>
               {aConfirmar ? <span className="t-apoio">Recusar fica no menu de cada pessoa e pede confirmação.</span> : <span className="t-apoio">Quem saiu fica no histórico da unidade.</span>}
               {paginas > 1 ? (
                 <nav aria-label="Páginas" className="flex items-center gap-2">

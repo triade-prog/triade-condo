@@ -292,7 +292,13 @@ export const buscaMoradoresSchema = z.object({
   pagina: z.coerce.number().int().min(1).max(1000).default(1),
   /** Só uma unidade: o "Pendentes" do menu da linha (F3.10). */
   unidade: id.optional(),
+  /** A aba da lista de pessoas (decisão B.1 da fase D com banco). */
+  ligacao: z.enum(["PROPRIETARIOS", "INQUILINOS", "MORAM"]).optional(),
 });
+
+/** As abas da lista de pessoas: Moram junta quem mora, seja qual for a ligação (MU-02). */
+export const ABAS_LIGACAO = { PROPRIETARIOS: "Proprietários", INQUILINOS: "Inquilinos", MORAM: "Moram" } as const;
+export type AbaLigacao = keyof typeof ABAS_LIGACAO;
 
 /** Situação do e-mail do contato (CD-13). */
 export const SITUACOES_EMAIL = {
