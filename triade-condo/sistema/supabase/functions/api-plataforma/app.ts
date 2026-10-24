@@ -917,6 +917,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
         const q = consulta(c, buscaComunicadosSchema);
         return c.json(await contar(["PUBLICADO", "PROGRAMADO", "RASCUNHO", "ARQUIVADO"], async (s) => total(await rpc("plataforma_comunicados", {
           ...quem(c), p_filtro: s, p_assunto: q.assunto ?? null, p_atencao: q.atencao ?? null, p_busca: q.busca ?? null, p_pagina: 1,
+          p_de: q.de ?? null, p_ate: q.ate ?? null,
         }))));
       }
       case "decisoes":
@@ -1009,7 +1010,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/classificados/:id/publicar", async (c) => {
     const id = idDaRota(c, "id");
     const d = await lerCorpo(c, publicarAnuncioSchema);
-    const r = await rpc("plataforma_publicar_classificado", { ...quem(c), p_id: id, p_versao: d.versao, p_titulo: d.titulo, p_valor_centavos: d.valorCentavos });
+    const r = await rpc("plataforma_publicar_classificado", { ...quem(c), p_id: id, p_versao: d.versao, p_titulo: d.titulo, p_valor_centavos: d.valorCentavos, p_tipo: d.tipo ?? null });
     noFundo(processarFilaWhatsapp);
     return c.json(r);
   });
@@ -1566,7 +1567,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const q = r.data;
     return c.json(await rpc("plataforma_comunicados", {
       ...quem(c), p_filtro: q.filtro ?? null, p_assunto: q.assunto ?? null, p_atencao: q.atencao ?? null, p_busca: q.busca ?? null,
-      p_pagina: q.pagina,
+      p_pagina: q.pagina, p_de: q.de ?? null, p_ate: q.ate ?? null,
     }));
   });
 

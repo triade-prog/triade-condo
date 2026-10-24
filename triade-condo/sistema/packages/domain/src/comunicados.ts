@@ -183,8 +183,12 @@ export const buscaComunicadosSchema = z.object({
   assunto: z.enum(chaves(ASSUNTOS_COMUNICADO)).optional(),
   atencao: z.enum(chaves(ATALHOS_COMUNICADO)).optional(),
   busca: z.string().trim().max(60).optional(),
+  /** O período (D4.9, decisão C.1 de 24/10/2026): vale a data de cada aba, no dia do condomínio. */
+  de: data.optional(),
+  ate: data.optional(),
   pagina: z.coerce.number().int().min(1).max(1000).default(1),
-});
+})
+  .refine((q) => !q.de || !q.ate || q.de <= q.ate, { path: ["ate"], message: "O fim do período vem depois do começo" });
 
 export const enviarArquivoComunicadoSchema = z.object({
   nome: z.string().trim().min(1).max(200),

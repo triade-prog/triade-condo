@@ -565,5 +565,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     return erro(route, 404, "NOT_FOUND");
   }
   await page.route("**/api/v1/**", atender);
-  return Object.assign(estado, { pedidosPlano, links, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios });
+  return Object.assign(estado, { pedidosPlano, comunicados, links, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios });
 }

@@ -74,7 +74,13 @@ export async function rotasEnquetes(route: Route, v: EstadoEnquetes, caminho: st
   if (caminho === "/v1/condominio/enquetes" && metodo === "GET") {
     return route.fulfill({ json: {
       enquetes: [...v.enquetes].sort((a, b) => Number(aberta(b)) - Number(aberta(a)) || b.criadoEm.localeCompare(a.criadoEm)).map(enqueteJson),
-      canais: { whatsapp: true, email: false, mural: true }, unidades: 5, pode: { editar: pode("enquetes.editar") },
+      canais: { whatsapp: true, email: false, mural: true }, unidades: 5, pessoas: 7,
+      // Quem não tem WhatsApp ou e-mail para o link (0293, decisão C.2).
+      semCanal: {
+        unidades: [{ id: "u-a101", nome: "Torre A · 101", whatsapp: true, email: false }, { id: "u-b104", nome: "Torre B · 104", whatsapp: false, email: false }],
+        pessoas: [{ id: "c-rui", nome: "Rui Lima", whatsapp: false, email: true }],
+      },
+      pode: { editar: pode("enquetes.editar") },
     } });
   }
   if (!pode("enquetes.editar") && metodo !== "GET") return erro(route, 403, "FORBIDDEN");

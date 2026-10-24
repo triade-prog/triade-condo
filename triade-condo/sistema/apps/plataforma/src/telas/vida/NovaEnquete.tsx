@@ -2,16 +2,17 @@
 // Nova enquete (design "Vida em condomínio", tela 4; DC15, tela-modelo vida-nova-enquete; decisão
 // D.1 de 22/10/2026; AC-03): uma página. No computador, 2 partes numeradas (a pergunta; quem
 // responde e por onde chega) com quem vai receber ao lado e o rodapé fixo; no celular, 2 passos
-// com Continuar e Voltar. Enviada, não muda: encerra-se e cria-se outra.
+// com Continuar e Voltar. Enviada, não muda: encerra-se e cria-se outra. Antes de enviar, Quem vai
+// receber diz quantos ficam sem o link pelos canais marcados e quais são (D4.11, decisão C.2 de 24/10/2026).
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { CANAIS_ENQUETE, type CanalEnquete, type EscopoEnquete } from "@triade/domain";
-import { AvisoErro, Botao, CampoTexto, Carregando, camposComErro, chamarApi, ErroCarregar, Icone, textoDoErro, type ErroApi, type NomeIcone } from "@triade/ui";
+import { Aviso, AvisoErro, Botao, CampoTexto, Carregando, camposComErro, chamarApi, ErroCarregar, Icone, textoDoErro, type ErroApi, type NomeIcone } from "@triade/ui";
 import { useCelular } from "../celular.ts";
 import { CartaoFicha, Escolha } from "../moradores/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
-import type { ListaEnquetes } from "../tipos.ts";
+import type { ListaEnquetes, SemCanalEnquete } from "../tipos.ts";
 import { Voltar } from "./comum.tsx";
 
 type Passo = 1 | 2;
@@ -24,6 +25,17 @@ function prazoPadrao(): string {
   const d = new Date(Date.now() + 7 * 86400_000);
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T23:59`;
+}
+
+/** Quem não recebe o link por nenhum dos canais marcados que mandam link (WhatsApp e e-mail). */
+export function semLink(lista: SemCanalEnquete[], canais: CanalEnquete[]): SemCanalEnquete[] {
+  const whats = canais.includes("WHATSAPP"), email = canais.includes("EMAIL");
+  return lista.filter((x) => !(whats && x.whatsapp) && !(email && x.email));
+}
+
+/** "Torre A · 102, Torre A · 103 e mais 4". */
+function alguns(nomes: string[]): string {
+  return nomes.length <= 3 ? nomes.join(", ") : `${nomes.slice(0, 3).join(", ")} e mais ${nomes.length - 3}`;
 }
 
 function Parte({ n, passo, children }: { n: Passo; passo: Passo; children: ReactNode }) {
@@ -139,14 +151,28 @@ function Formulario({ l, voltar }: { l: ListaEnquetes; voltar: ReactNode }) {
     </>
   );
 
+  const lista = (por === "UNIDADE" ? l.semCanal?.unidades : l.semCanal?.pessoas) ?? [];
+  const total = por === "UNIDADE" ? l.unidades : l.pessoas ?? 0;
+  const uma = por === "UNIDADE" ? "unidade" : "pessoa";
+  const varias = por === "UNIDADE" ? "unidades" : "pessoas";
+  const n = (k: number) => `${k} ${k === 1 ? uma : varias}`;
+  const comLink = canais.filter((c) => c !== "MURAL");
+  const sem = l.semCanal ? semLink(lista, canais) : [];
+  const porCanal: Partial<Record<CanalEnquete, string>> = l.semCanal ? {
+    WHATSAPP: n(total - lista.filter((x) => !x.whatsapp).length),
+    EMAIL: n(total - lista.filter((x) => !x.email).length),
+    MURAL: "todos",
+  } : {};
+  const faltam = comLink.length === 2 ? "sem WhatsApp nem e-mail" : comLink[0] === "WHATSAPP" ? "sem WhatsApp" : "sem e-mail";
+
   const quemRecebe = (
     <CartaoFicha id="quem" titulo="Quem vai receber" icone="pessoas">
       <div className="grid gap-1">
-        {por === "UNIDADE" ? (
-          <p className="flex items-baseline gap-2.5"><span className="text-[40px] leading-none font-semibold tracking-tight" aria-hidden="true">{l.unidades}</span>
-            <span className="t-texto">{l.unidades === 1 ? "unidade recebe o link" : "unidades recebem o link"}<span className="sr-only">: {l.unidades}</span></span></p>
+        {por === "UNIDADE" || l.pessoas !== undefined ? (
+          <p className="flex items-baseline gap-2.5"><span className="text-[40px] leading-none font-semibold tracking-tight" aria-hidden="true">{total}</span>
+            <span className="t-texto">{total === 1 ? `${uma} recebe o link` : `${varias} recebem o link`}<span className="sr-only">: {total}</span></span></p>
         ) : <p className="t-texto">Cada pessoa com vínculo confirmado recebe o seu link.</p>}
-        <p className="t-apoio">{por === "UNIDADE" ? "Uma resposta por unidade." : "Uma resposta por pessoa."} Quem não tem WhatsApp nem e-mail recebe o link copiado na ficha da enquete.</p>
+        <p className="t-apoio">{por === "UNIDADE" ? "Uma resposta por unidade." : "Uma resposta por pessoa."}{l.semCanal ? "" : " Quem não tem WhatsApp nem e-mail recebe o link copiado na ficha da enquete."}</p>
       </div>
       <ul className="grid t-texto" aria-label="Canais">
         {(Object.keys(CANAIS_ENQUETE) as CanalEnquete[]).map((c) => {
@@ -154,11 +180,18 @@ function Formulario({ l, voltar }: { l: ListaEnquetes; voltar: ReactNode }) {
           return (
             <li key={c} className="flex items-center justify-between gap-3 border-t border-linha py-2.5">
               <span className="flex items-center gap-2.5"><span className="ladrilho h-7 w-7 rounded-[9px]" data-tom={vai ? "ok" : "neutro"} aria-hidden="true"><Icone nome={ICONE_CANAL[c]} className="h-3.5 w-3.5" /></span>{CANAIS_ENQUETE[c]}</span>
-              <span className={`font-semibold ${vai ? "" : "text-tinta-suave"}`}>{!disponivel[c] ? "desligado" : vai ? "vai" : "não vai"}</span>
+              <span className={`font-semibold ${vai ? "" : "text-tinta-suave"}`}>{!disponivel[c] ? "desligado" : vai ? porCanal[c] ?? "vai" : "não vai"}</span>
             </li>
           );
         })}
       </ul>
+      {l.semCanal && total > 0 ? (
+        !comLink.length ? (
+          <Aviso tom="atencao" titulo="Só pelo mural, ninguém recebe o link próprio">Copie o link de cada {uma} na ficha da enquete.</Aviso>
+        ) : sem.length ? (
+          <Aviso tom="atencao" titulo={`${n(sem.length)} ${faltam}`}>{alguns(sem.map((x) => x.nome))}. Copie o link {sem.length === 1 ? "dela" : "de cada uma"} na ficha da enquete.</Aviso>
+        ) : <p className="t-apoio">Todas as {varias} recebem o link por {comLink.length === 2 ? "WhatsApp ou e-mail" : comLink[0] === "WHATSAPP" ? "WhatsApp" : "e-mail"}.</p>
+      ) : null}
     </CartaoFicha>
   );
 

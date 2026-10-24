@@ -1540,7 +1540,18 @@ export interface ListaEnquetes {
   enquetes: EnqueteTela[];
   canais: { whatsapp: boolean; email: boolean; mural: boolean };
   unidades: number;
+  /** Pessoas com vínculo confirmado (enquete por pessoa). */
+  pessoas?: number;
+  /** Quem não tem WhatsApp ou não tem e-mail para receber o link (0293, decisão C.2). */
+  semCanal?: { unidades: SemCanalEnquete[]; pessoas: SemCanalEnquete[] };
   pode: { editar: boolean };
+}
+
+export interface SemCanalEnquete {
+  id: string;
+  nome: string;
+  whatsapp: boolean;
+  email: boolean;
 }
 
 export interface ConviteEnquete {

@@ -71,6 +71,8 @@ export async function rotasClassificados(route: Route, v: EstadoClassificados, c
   if (corpo.versao !== a.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: a.versao });
   if (m[2] === "publicar") {
     if (String(corpo.titulo ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["titulo"] });
+    if (corpo.tipo !== undefined && !["VENDO", "DOO", "PROCURO", "SERVICO"].includes(String(corpo.tipo))) return erro(route, 400, "VALIDATION_ERROR", { campos: ["tipo"] });
+    if (corpo.tipo) a.tipo = corpo.tipo as typeof a.tipo;
     Object.assign(a, { estado: "NO_MURAL", titulo: String(corpo.titulo).trim(), valorCentavos: (corpo.valorCentavos as number | null) ?? undefined, noMuralAte: dia(30) });
   } else if (m[2] === "recusar") {
     if (String(corpo.motivo ?? "").trim().length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
