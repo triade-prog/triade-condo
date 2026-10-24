@@ -10,7 +10,8 @@ export function SeloEstagio({ estagio }: { estagio: string }) {
 }
 
 export function SeloSituacao({ situacao }: { situacao: string }) {
-  return <Selo tom="atencao">{SITUACOES[situacao as keyof typeof SITUACOES] ?? situacao}</Selo>;
+  // O teste perto do fim é aviso de agenda, não problema: vai em petróleo (quadro 242).
+  return <Selo tom={situacao === "TESTE_TERMINANDO" ? "info" : "atencao"}>{SITUACOES[situacao as keyof typeof SITUACOES] ?? situacao}</Selo>;
 }
 
 export function nomeFuncao(f: string): string {

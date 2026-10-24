@@ -18,6 +18,7 @@ import { criarEnquetes, resumoEnquetes, rotasEnquetePublica, rotasEnquetes } fro
 import { criarAssembleias, resumoAssembleia, rotasAssembleiaPublica, rotasAssembleias } from "./api-falsa-assembleias";
 import { classificadosAAprovar, classificadosDoMural, criarClassificados, rotasClassificadoPublico, rotasClassificados } from "./api-falsa-classificados";
 import { avisarNoRegistro, avisosDoPedido, criarAvisoRegistro, rotasAvisoRegistro, type ContextoAviso } from "./api-falsa-aviso-registro";
+import { criarRelatorios, rotasArquivoRelatorio, rotasRelatorios } from "./api-falsa-relatorios";
 import { avisosDecisoes, criarDecisoes, detalheDecisoes, marcarAvisosDecisoes, resumoDecisoes, rotasDecisoes, semearDecisoes } from "./api-falsa-decisoes";
 
 /** As 22 permissões do banco (permissoes), na ordem de @triade/domain. */
@@ -70,6 +71,38 @@ export interface OpcoesPlataforma {
   comDecisoes?: boolean;
   /** Comunicados pelo WhatsApp ligados (F6.6): a Marina e o Pedro aceitaram, a Joana disse não; a mensagem ao Pedro falhou. */
   comComunicadosWhatsapp?: boolean;
+  /** O modo de cada conjunto do plano (0291); sem dizer, tudo completo. */
+  conjuntos?: Partial<Record<"AGENDA" | "MANUTENCAO" | "VIDA" | "COMUNICACAO_AMPLIADA", "COMPLETO" | "CONSULTA" | "FORA">>;
+}
+
+const CONJUNTOS_PLANO = [
+  ["ATENDIMENTO", "Atendimento", "Pedidos, comunicados, moradores e o mural.", ["Pedidos", "Comunicados", "Moradores"]],
+  ["AGENDA", "Agenda", "Prazos, vencimentos e feriados num só lugar.", ["Agenda", "Prazos e vencimentos"]],
+  ["MANUTENCAO", "Manutenção", "Fichas, preventivas e prestadores.", ["Manutenção", "Preventivas", "Prestadores"]],
+  ["VIDA", "Vida em condomínio", "Reservas, enquetes, assembleias e classificados.", ["Reservas", "Enquetes", "Assembleias", "Classificados"]],
+  ["COMUNICACAO_AMPLIADA", "Comunicação ampliada", "Memória do condomínio e dossiê.", ["Memória", "Dossiê de transição"]],
+] as const;
+
+/** Meu plano (NG-21) e os modos dos conjuntos (0291): sem valores; o pedido vira um chamado. */
+function rotasMeuPlano(route: Route, caminho: string, metodo: string, corpo: Record<string, unknown>,
+  modos: Record<string, string>, podeVer: boolean, pedidos: { conjunto: string; pedido: string }[]) {
+  const modo = (c: string) => c === "ATENDIMENTO" ? "COMPLETO" : modos[c] ?? "COMPLETO";
+  if (caminho === "/v1/condominio/conjuntos") return route.fulfill({ json: Object.fromEntries(CONJUNTOS_PLANO.map(([c]) => [c, modo(c)])) });
+  if (!podeVer) return erro(route, 403, "FORBIDDEN");
+  if (caminho === "/v1/condominio/plano" && metodo === "GET") {
+    return route.fulfill({ json: {
+      plano: { nome: "Essencial", unidadesAte: 60, desde: "2026-09-01T12:00:00Z" }, unidadesAtivas: 42, podePedir: true,
+      conjuntos: CONJUNTOS_PLANO.map(([codigo, nome, resumo, telas]) => ({ codigo, nome, resumo, telas: [...telas], base: codigo === "ATENDIMENTO", modo: modo(codigo),
+        situacao: codigo === "ATENDIMENTO" ? "BASE" : modo(codigo) === "COMPLETO" ? "LIBERADO" : modo(codigo) === "CONSULTA" ? "SUSPENSO" : "FORA",
+        ...(modo(codigo) === "CONSULTA" ? { suspensoEm: "2026-10-20T12:00:00Z" } : {}) })),
+    } });
+  }
+  if (caminho === "/v1/condominio/plano/pedidos" && metodo === "POST") {
+    if (modo(String(corpo.conjunto)) === "COMPLETO") return erro(route, 422, "VALIDATION_ERROR", { motivo: "JA_NO_PLANO" });
+    pedidos.push({ conjunto: String(corpo.conjunto), pedido: String(corpo.pedido) });
+    return route.fulfill({ status: 201, json: { id: novoId(), numero: 40 + pedidos.length } });
+  }
+  return erro(route, 404, "NOT_FOUND");
 }
 
 function erro(route: Route, status: number, codigo: string, detalhes?: Record<string, unknown>) {
@@ -147,6 +180,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   memoria.deDocumentos = () => comunicados.documentos.filter((d) => !d.arquivado)
     .map((d) => ({ id: d.id, titulo: d.titulo, tipo: d.tipo, ...(d.valeAte ? { valeAte: d.valeAte } : {}) }));
   const suporte = criarSuporte();
+  const relatorios = criarRelatorios();
   const whatsapp = criarWhatsapp(estado.pedidos[0]!, cats[0]!.id, pris[1]!.id);
   const avisoRegistro = criarAvisoRegistro(V_ANA);
   const decisoes = criarDecisoes();
@@ -156,6 +190,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     for (const p of estado.pessoas) { p.responsavel = true; p.disponivel = true; }
     estado.responsavelPadrao = V_ANA;
   }
+  const pedidosPlano: { conjunto: string; pedido: string }[] = [];
   const eu = quem === "SINDICA" ? { vinculo: V_ANA, nome: "Ana Souza" } : quem === "SECRETARIA" ? { vinculo: V_BRUNA, nome: "Bruna" } : { vinculo: "caio", nome: "Caio" };
 
   const acoes = () => quem === "SINDICA"
@@ -227,6 +262,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     // O "armazenamento" recebe o arquivo em binário: atende antes de ler o corpo como JSON.
     const armazenamento = await rotasArmazenamento(route, caminho, metodo);
     if (armazenamento !== null) return armazenamento;
+    const arquivoRelatorio = await rotasArquivoRelatorio(route, caminho);
+    if (arquivoRelatorio !== null) return arquivoRelatorio;
     const corpo = (req.postDataJSON() ?? {}) as Record<string, unknown>;
     const c = estado.config;
 
@@ -332,6 +369,9 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
         funcoes: [quem === "SINDICA" ? "SINDICO" : "AUTORIZADO"] } });
     }
     const pode = (a: string) => acoes().includes(a);
+    if (caminho === "/v1/condominio/conjuntos" || caminho === "/v1/condominio/plano" || caminho.startsWith("/v1/condominio/plano/")) {
+      return rotasMeuPlano(route, caminho, metodo, corpo, opcoes.conjuntos ?? {}, pode("config.ver"), pedidosPlano);
+    }
     // O mural no painel (CD-15): sem contar abertura.
     if (caminho === "/v1/condominio/mural" && metodo === "GET") {
       if (!pode("comunicados.ver")) return erro(route, 403, "FORBIDDEN");
@@ -396,6 +436,9 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (noSuporte !== null) return noSuporte;
     const naMemoria = await rotasMemoria(route, memoria, caminho, metodo, corpo, url, pode, eu);
     if (naMemoria !== null) return naMemoria;
+    const nosRelatorios = await rotasRelatorios(route, relatorios, caminho, metodo, corpo, url, pode, eu,
+      () => comunicados.documentos.filter((d) => !d.restrito || pode("documentos.restritos")));
+    if (nosRelatorios !== null) return nosRelatorios;
     const nasEnquetes = await rotasEnquetes(route, enquetes, caminho, metodo, corpo, pode, eu);
     if (nasEnquetes !== null) return nasEnquetes;
     const nasAssembleias = await rotasAssembleias(route, assembleias, caminho, metodo, corpo, pode, eu);
@@ -522,5 +565,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     return erro(route, 404, "NOT_FOUND");
   }
   await page.route("**/api/v1/**", atender);
-  return Object.assign(estado, { links, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes });
+  return Object.assign(estado, { pedidosPlano, links, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios });
 }

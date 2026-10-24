@@ -13,9 +13,52 @@ begin
   return v_id;
 end $$;
 
+-- Nos testes, todo condomínio já vem com os conjuntos contratados e liberados (0291), como os
+-- clientes anteriores aos planos, para que cada teste veja só a sua funcionalidade. O teste dos
+-- planos desliga isso com set_config('teste.conjuntos_so_base', 'on', true). O contexto de quem
+-- chamou volta como estava.
+create function teste.liberar_conjuntos(p_condominio uuid) returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_chaves text[] := array['app.pessoa_id', 'app.condominio_id', 'app.equipe', 'app.equipe_funcoes',
+                           'app.transicao_evento', 'app.transicao_motivo', 'app.transicao_sistema'];
+  v_antes text[] := '{}';
+  i integer;
+begin
+  if current_setting('teste.conjuntos_so_base', true) = 'on' then return; end if;
+  for i in 1 .. array_length(v_chaves, 1) loop v_antes := v_antes || coalesce(current_setting(v_chaves[i], true), ''); end loop;
+  perform public.entrar_como_sistema(p_condominio);
+  perform public.definir_transicao('PLANOS_CRIADOS', 'Condomínio de teste', true);
+  insert into public.conjuntos_cliente (condominio_id, conjunto, estado, contratado, contrato_referencia, contratado_em,
+                                        liberado_em, liberacao_referencia, liberacao_motivo, ja_liberado)
+  select p_condominio, c.codigo, 'LIBERADO', true, 'Teste', now(), now(), 'Teste', 'Condomínio de teste', true
+    from public.conjuntos c where not c.base
+  on conflict (condominio_id, conjunto) do update
+    set estado = 'LIBERADO', contratado = true, contrato_referencia = 'Teste', liberado_em = now(),
+        liberacao_referencia = 'Teste', liberacao_motivo = 'Condomínio de teste', ja_liberado = true;
+  for i in 1 .. array_length(v_chaves, 1) loop perform set_config(v_chaves[i], v_antes[i], true); end loop;
+end $$;
+
+create function teste.liberar_conjuntos_do_cliente() returns trigger
+language plpgsql
+security definer
+as $$ begin perform teste.liberar_conjuntos(new.condominio_id); return new; end $$;
+create trigger teste_liberar_conjuntos after insert on public.clientes
+  for each row execute function teste.liberar_conjuntos_do_cliente();
+
 create function teste.condominio(p_nome text) returns uuid
-language sql
-as $$ insert into public.condominios (nome) values (p_nome) returning id $$;
+language plpgsql
+as $$
+declare v_id uuid;
+begin
+  insert into public.condominios (nome) values (p_nome) returning id into v_id;
+  perform teste.liberar_conjuntos(v_id);
+  return v_id;
+end $$;
+
 
 create function teste.vincular(p_pessoa uuid, p_condominio uuid, p_funcao text default 'SINDICO') returns uuid
 language sql

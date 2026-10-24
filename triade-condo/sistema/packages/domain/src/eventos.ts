@@ -4,6 +4,7 @@
 import { CENARIOS, ESTAGIOS, FUNCOES_CONSOLE } from "./console.ts";
 import { AGRUPAMENTOS, descreverEventoGaragem, MOTIVOS_ENCERRAMENTO } from "./moradores.ts";
 import { FUSOS, mostrarDataSemHora, PERMISSOES, TIPOS_HORARIO } from "./plataforma.ts";
+import { descreverEventoRelatorio } from "./relatorio.ts";
 import { descreverEventoSuporte } from "./suporte.ts";
 import { descreverEventoQueda } from "./whatsapp.ts";
 
@@ -176,7 +177,7 @@ export function descreverEvento(e: EventoHistorico): string {
     case "moradores.importados":
       return `Planilha importada: ${String(d.vinculos)} contatos a confirmar`;
     default:
-      return descreverEventoSuporte(e.acao, d) ?? descreverEventoGaragem(e.acao, d) ?? descreverEventoQueda(e.acao, d) ?? e.acao;
+      return descreverEventoSuporte(e.acao, d) ?? descreverEventoGaragem(e.acao, d) ?? descreverEventoQueda(e.acao, d) ?? descreverEventoRelatorio(e.acao, d) ?? e.acao;
   }
 }
 

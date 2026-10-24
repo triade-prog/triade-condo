@@ -35,6 +35,10 @@ export const SITUACOES = {
   SEM_CONTATO: "Sem contato na ficha",
   SEM_CONTRATO: "Sem referência do contrato",
   PENDENCIA_VENCIDA: "Pendência de implantação vencida",
+  CONJUNTO_A_LIBERAR: "Conjunto contratado a liberar",
+  TESTE_TERMINANDO: "Teste de conjunto terminando",
+  PLANO_SEM_VALOR: "Plano com valor a definir",
+  PAGAMENTO_EM_ATRASO: "Pagamento em atraso",
 } as const;
 export type Situacao = keyof typeof SITUACOES;
 
