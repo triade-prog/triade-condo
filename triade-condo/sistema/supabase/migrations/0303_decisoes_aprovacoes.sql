@@ -2919,4 +2919,12 @@ begin
   end if;
 end $$;
 
+-- ---------------------------------------------------------------------------------------
+-- Inventário de dados (F0.11, PT-11): o conselho e as decisões e despesas entram no catálogo.
+-- A rotina ainda não apaga o contato de quem saiu do conselho (F0.12).
+
+insert into retencao_tipos (numero, codigo, sistema, grupo, nome, o_que, para_que, base, quem, prazo, no_fim, situacao) values
+ (33, 'CONSELHO', 'PLATAFORMA', 'Pessoas', 'Conselho e subsíndico', 'Nome, papel, mandato, telefone ou e-mail', 'Decidir e votar pelo condomínio', 'Legítimo interesse', 'Condomínio; TRÍADE opera', '90 dias depois de sair do conselho', 'Contato apagado; nome e votos ficam', 'A_FAZER'),
+ (34, 'APROVACAO', 'PLATAFORMA', 'Documentos e memória', 'Decisões e despesas para aprovar', 'Pergunta, valor, fornecedor, votos, fatura', 'Provar a decisão', 'Legítimo interesse; obrigação legal', 'Condomínio; TRÍADE opera', 'Enquanto o condomínio for cliente', 'Ficam', 'FICA');
+
 call fechar_acesso();

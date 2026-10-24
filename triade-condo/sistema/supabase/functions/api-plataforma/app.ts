@@ -221,11 +221,8 @@ import { lerCorpo } from "../_shared/validar.ts";
 import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
 import { montarZip, planilhaCsv, type ItemZip } from "../_shared/zip.ts";
 import { rotasEncomendas } from "./encomendas.ts";
-<<<<<<< HEAD
 import { algumPorEmail, rotasAprovacoes, rotasConselhoPublico, type DepsAprovacoes } from "./aprovacoes.ts";
-=======
 import { rotasPrivacidade } from "./privacidade.ts";
->>>>>>> origin/main
 
 export type VarsPlataforma = { Variables: VarsSessao["Variables"] & { condominioId: string } };
 

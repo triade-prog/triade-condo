@@ -283,7 +283,6 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   LUGAR_REPETIDO: "Já existe um lugar com este nome.",
   LIMITE_LUGARES: "O prédio já tem 30 lugares em uso. Tire de uso um que não serve mais.",
   ULTIMO_LUGAR: "O prédio precisa de pelo menos um lugar em uso para guardar as encomendas.",
-<<<<<<< HEAD
   // Decisões e aprovações: o conselho e as despesas (0303).
   CONSELHO_VAZIO: "Ainda não há conselho com titular de mandato em dia. Inclua os membros em Pessoas › Conselho.",
   SEM_QUORUM_POSSIVEL: "Não há titulares em dia para o quórum das Regras. Confira o conselho ou mude o quórum.",
@@ -314,7 +313,6 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   COMPROVANTE_EM_USO: "É o comprovante do pagamento. Desfaça o pagamento antes de tirar.",
   SUPLENTE_NAO_VOTA: "Suplente não vota. O voto dado antes de passar a suplente continua valendo.",
   VOTO_PENDENTE: "Ainda tem voto a dar numa votação aberta. Espere a votação fechar para passar a suplente.",
-=======
   // Privacidade e dados (0301).
   JA_GUARDADO: "Este item já está guardado por obrigação legal.",
   GUARDA_RETIRADA: "A guarda já foi retirada. Atualize a página.",
@@ -333,7 +331,6 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   ORIGEM_FIXA: "A primeira origem do interessado não muda.",
   SO_INSERCAO: "O que foi registrado não se altera nem se apaga. Registre outra conversa para corrigir.",
   CADENCIA_REPETIDA: "Já há uma cadência ativa para esta etapa e esta origem. Desligue a outra antes.",
->>>>>>> origin/main
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
