@@ -36,6 +36,8 @@ export function criarPlanosConsole(condominio: string, cliente: string) {
     avulsos: [] as Json[],
     ajustes: [] as Json[],
     historico: [{ acao: "cobranca.aberta", em: "2026-09-01T12:00:00Z", autor: "Carolina", dados: {} }] as Json[],
+    /** O corpo do último PUT do plano, para o teste conferir o que foi enviado. */
+    ultimoPlano: undefined as Json | undefined,
   };
 }
 
@@ -68,9 +70,20 @@ export async function rotasPlanosConsole(route: Route, p: PlanosConsole, caminho
   }
   if (caminho === `${base}/plano` && metodo === "PUT") {
     if (String(corpo.nome ?? "").trim().length < 2) return erro(route, 400, "VALIDATION_ERROR", { campos: ["nome"] });
-    p.plano = { ...p.plano, ...corpo, desde: p.plano?.desde ?? new Date().toISOString(), versao: Number(p.plano?.versao ?? 0) + 1 };
+    const { tabela, ...resto } = corpo;
+    p.ultimoPlano = corpo;
+    if (tabela === "FUNDADOR" && corpo.ciclo === "ANUAL") return erro(route, 400, "VALIDATION_ERROR", { motivo: "FUNDADOR_SO_MENSAL" });
+    p.plano = { ...p.plano, ...resto, desde: p.plano?.desde ?? new Date().toISOString(), versao: Number(p.plano?.versao ?? 0) + 1 };
     if (corpo.valor === null) delete p.plano.valor;
-    return route.fulfill({ json: { versao: p.plano.versao } });
+    // A origem do valor (0295): a tabela de fundador, a cheia ou nada, quando foi à mão.
+    if (tabela === "FUNDADOR" || tabela === "CHEIA") p.plano.tabelaOrigem = tabela;
+    else delete p.plano.tabelaOrigem;
+    if (tabela === "FUNDADOR") {
+      const [a, m] = String(corpo.inicioCompetencia).split("-").map(Number) as [number, number];
+      const t = a * 12 + (m - 1) + 11;
+      p.plano.fundadorAte = `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, "0")}-01`;
+    } else delete p.plano.fundadorAte;
+    return route.fulfill({ json: { plano: p.plano } });
   }
   const cj = new RegExp(`^${base}/conjuntos/([A-Z_]+)/(contrato|liberar|teste|suspender)$`).exec(caminho);
   if (cj) {

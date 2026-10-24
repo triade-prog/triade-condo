@@ -1,6 +1,7 @@
 // Planos e cobrança dos clientes (peças C3 e C4; PI-03, PI-07, PI-08, PI-16, PI-19, CF-11,
 // NG-01, NG-21). Os mesmos valores estão no banco (0291_planos_cobranca.sql).
-// Nenhum preço mora aqui: o valor do plano é opcional e, vazio, fica "Valor a definir".
+// O valor do plano é opcional e, vazio, fica "Valor a definir". A tabela de preços (0295) mora
+// em precos.ts; o plano só guarda os valores e de qual tabela veio.
 
 import { z } from "zod";
 import { dinheiro, formatar } from "./dinheiro.ts";
@@ -97,7 +98,7 @@ const centavosOpcional = centavos.optional().nullable().transform((v) => v ?? nu
 const data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const conjuntoVendido = z.enum(["AGENDA", "MANUTENCAO", "VIDA", "COMUNICACAO_AMPLIADA"]);
 
-/** Plano do cliente: faixa de unidades e valor opcional (os preços ainda estão em decisão). */
+/** Plano do cliente: faixa de unidades, valor opcional e de qual tabela veio (0295; vazio é manual). */
 export const planoSchema = z
   .object({
     versao: versao.optional().nullable().transform((v) => v ?? null),
@@ -111,6 +112,11 @@ export const planoSchema = z
     implantacaoSemCobranca: z.boolean(),
     implantacaoReferencia: z.string().trim().max(120).optional().nullable().transform((v) => (v ? v : null)),
     inicioCompetencia: data,
+    tabela: z.enum(["FUNDADOR", "CHEIA", "MANUAL"]).optional().nullable().transform((v) => v ?? null),
+  })
+  .refine((p) => p.tabela !== "FUNDADOR" || p.ciclo === "MENSAL", {
+    message: "O preço de fundador é só no ciclo mensal",
+    path: ["tabela"],
   })
   .refine((p) => p.unidadesDe === null || p.unidadesAte === null || p.unidadesDe <= p.unidadesAte, {
     message: "A faixa de unidades não fecha",
