@@ -30,7 +30,7 @@ interface ItemDoMenu {
   /** Nome curto na barra de baixo do celular. */
   curto?: string;
   icone: NomeIcone;
-  grupo: "Clientes" | "Financeiro" | "Suporte" | "Equipe" | "Sistema" | null;
+  grupo: "Clientes" | "Comercial" | "Financeiro" | "Suporte" | "Equipe" | "Sistema" | null;
   atual: (caminho: string) => boolean;
   ve: (s: SessaoConsole) => boolean;
   contagem?: (n: Contagens) => number | undefined;
@@ -44,6 +44,10 @@ const atende = (s: SessaoConsole) => temFuncao(s, "ADMINISTRACAO", "IMPLANTACAO"
 const ITENS: ItemDoMenu[] = [
   { href: "/", texto: "Início", icone: "casa", grupo: null, atual: (c) => c === "/", ve: () => true, atalho: true },
   { href: "/clientes", texto: "Carteira de clientes", curto: "Clientes", icone: "predio", grupo: "Clientes", atual: (c) => c.startsWith("/clientes"), ve: () => true, atalho: true },
+  { href: "/comercial", texto: "Interessados", icone: "pessoas", grupo: "Comercial", atual: (c) => c === "/comercial" || /^\/comercial\/(?!modelos)/.test(c),
+    ve: (s) => s.acoes.includes("console.comercial.ver") },
+  { href: "/comercial/modelos", texto: "Modelos do Comercial", curto: "Modelos", icone: "documento", grupo: "Comercial", atual: (c) => c.startsWith("/comercial/modelos"),
+    ve: (s) => s.acoes.includes("console.comercial.ver") },
   { href: "/pagamentos", texto: "Pagamentos", icone: "dinheiro", grupo: "Financeiro", atual: (c) => c.startsWith("/pagamentos"),
     ve: (s) => s.acoes.includes("console.pagamentos.ver") },
   { href: "/precos", texto: "Tabela de preços", icone: "etiqueta", grupo: "Financeiro", atual: (c) => c.startsWith("/precos"),
@@ -56,7 +60,7 @@ const ITENS: ItemDoMenu[] = [
   { href: "/equipe/historico", texto: "Histórico da equipe", icone: "relogio", grupo: "Equipe", atual: (c) => c === "/equipe/historico", ve: (s) => s.acoes.includes("console.historico.equipe") },
   { href: "/retencao", texto: "Retenção de dados", icone: "escudo", grupo: "Sistema", atual: (c) => c.startsWith("/retencao"), ve: (s) => s.acoes.includes("console.retencao.ver") },
 ];
-const GRUPOS = ["Clientes", "Financeiro", "Suporte", "Equipe", "Sistema"] as const;
+const GRUPOS = ["Clientes", "Comercial", "Financeiro", "Suporte", "Equipe", "Sistema"] as const;
 
 function Contagem({ n, nome }: { n?: number; nome: string }) {
   return n ? <span className="contagem">{n}<span className="sr-only"> {nome}</span></span> : null;

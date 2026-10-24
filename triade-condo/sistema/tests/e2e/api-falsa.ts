@@ -6,6 +6,7 @@ import { criarSuporteConsole, rotasSuporteConsole } from "./api-falsa-console-su
 import { criarPlanosConsole, rotasPlanosConsole } from "./api-falsa-console-planos";
 import { criarPrecosConsole, rotasPrecosConsole } from "./api-falsa-console-precos";
 import { criarRetencaoConsole, rotasRetencaoConsole } from "./api-falsa-console-retencao";
+import { criarComercialConsole, rotasComercialConsole } from "./api-falsa-console-comercial";
 import { andamentoConfiguracao, criarConfiguracaoConsole, rotasConfiguracaoConsole } from "./api-falsa-console-configuracao";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -66,6 +67,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
   const planos = criarPlanosConsole(IPE, "Residencial Ipê");
   const precos = criarPrecosConsole();
   const retencao = criarRetencaoConsole();
+  const comercial = criarComercialConsole();
   // Modelos de mensagem (F5.4, W-20): globais, com versão e situação.
   const MODELOS_V1: [string, string, string, string, string[], string, string | null][] = [
     ["noticia_pedido", "Notícia do pedido", "MORADOR", "Retorno escrito no pedido, com a conversa fechada", ["protocolo", "condomínio", "texto do retorno", "quem escreveu"],
@@ -220,7 +222,8 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
       return route.fulfill({
         json: admin
           ? { pessoaId: CAROLINA, nome: "Carolina", funcoes: ["ADMINISTRACAO"], acoes: ["console.condominios.criar", "console.equipe.gerenciar", "console.historico.equipe", "console.pagamentos.ver", "console.pagamentos.registrar", ...acoesPrecos,
-              "console.retencao.ver", "console.retencao.ligar"] }
+              "console.retencao.ver", "console.retencao.ligar", "console.comercial.ver", "console.comercial.editar", "console.comercial.modelos",
+              "console.comercial.exportar", "console.comercial.excluir"] }
           : { pessoaId: INES, nome: "Inês", funcoes: ["IMPLANTACAO"], acoes: [] },
       });
     }
@@ -325,6 +328,8 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
       return route.fulfill({ json: { eventos: [{ id: 9, ocorridoEm: "2026-10-16T12:30:00Z", autor: { id: CAROLINA, nome: "Carolina" }, acao: "equipe.membro_cadastrado", entidade: "pessoa", dados: { funcoes: ["IMPLANTACAO"] },
         alvo: { id: INES, nome: "Inês" } }] } });
     }
+    const r8 = await rotasComercialConsole(route, comercial, caminho, metodo, corpo, admin);
+    if (r8 !== null) return r8;
     const r7 = await rotasRetencaoConsole(route, retencao, caminho, metodo, corpo, admin);
     if (r7 !== null) return r7;
     const r6 = await rotasPrecosConsole(route, precos, caminho, metodo, corpo, url, podePrecos);
@@ -345,5 +350,5 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     if (r4 !== null) return r4;
     return erro(route, 404, "NOT_FOUND");
   });
-  return Object.assign(estado, { suporte, modelos, configuracao, planos, precos, retencao });
+  return Object.assign(estado, { suporte, modelos, configuracao, planos, precos, retencao, comercial });
 }

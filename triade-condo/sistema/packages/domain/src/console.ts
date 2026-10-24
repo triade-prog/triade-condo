@@ -9,6 +9,7 @@ export const FUNCOES_CONSOLE = {
   IMPLANTACAO: "Implantação",
   FINANCEIRO: "Financeiro",
   SUPORTE: "Suporte",
+  COMERCIAL: "Comercial",
 } as const;
 export type FuncaoConsole = keyof typeof FUNCOES_CONSOLE;
 
@@ -107,7 +108,7 @@ export const convidarPessoaSchema = z.object({
 
 export const notaSchema = z.object({ texto: z.string().trim().min(1).max(2000) });
 
-const funcoes = z.array(z.enum(chaves(FUNCOES_CONSOLE))).min(1).max(4);
+const funcoes = z.array(z.enum(chaves(FUNCOES_CONSOLE))).min(1).max(5);
 
 export const cadastrarMembroSchema = convidarPessoaSchema.extend({ funcoes });
 
@@ -115,7 +116,8 @@ export const funcoesSchema = z.object({ funcoes });
 
 export const atribuirSchema = z.object({
   pessoaId: z.string().uuid(),
-  funcao: z.enum(chaves(FUNCOES_CONSOLE)),
+  // O Comercial não atende cliente (0296, CM-11).
+  funcao: z.enum(["ADMINISTRACAO", "IMPLANTACAO", "FINANCEIRO", "SUPORTE"]),
 });
 
 export const versaoSchema = z.object({ versao });

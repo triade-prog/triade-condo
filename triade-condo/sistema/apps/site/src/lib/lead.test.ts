@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { emailDoPedido, enviarPedido, mascararWhatsapp, normalizarWhatsapp, validarPedido } from "./lead";
+import { emailDoPedido, enviarAoComercial, enviarPedido, faixaDoPedido, lerUtm, mascararWhatsapp, normalizarWhatsapp, validarPedido } from "./lead";
 
 const valido = { nome: "  Carlos   Lima ", whatsapp: "(61) 99999-0412", condominio: "Residencial Ipê, Brasília", unidades: "41 a 100", consentimento: true };
 
@@ -57,5 +57,30 @@ describe("pedido de demonstração", () => {
     expect(corpo.to).toEqual(["a@exemplo", "b@exemplo"]);
     buscar.mockResolvedValueOnce(new Response("{}", { status: 500 }));
     expect(await enviarPedido(pedido, env, new Date(), buscar)).toEqual({ ok: false, motivo: "falha-envio" });
+  });
+
+  it("leva a faixa e só os utm_* conhecidos para o Comercial", () => {
+    expect(faixaDoPedido("Até 40")).toBe("ATE_40");
+    expect(faixaDoPedido("201 a 400")).toBe("DE_201_A_400");
+    expect(faixaDoPedido("Mais de 400 ou vários prédios")).toBe("ACIMA_DE_400");
+    expect(lerUtm({ utm_source: " instagram ", utm_medium: "", outro: "x" })).toEqual({ utm_source: "instagram" });
+    expect(lerUtm({ utm: { utm_campaign: "fundador" } })).toEqual({ utm_campaign: "fundador" });
+    expect(lerUtm({})).toBeNull();
+  });
+
+  it("grava no Comercial com o segredo do site e não finge sem configuração", async () => {
+    const buscar = vi.fn().mockResolvedValue(new Response("{}", { status: 201 }));
+    const pedido = { nome: "Ana", whatsapp: "5561999990412", condominio: "Ipê", unidades: "41 a 100" };
+    expect(await enviarAoComercial(pedido, { utm: null }, {}, buscar)).toEqual({ ok: false, motivo: "sem-configuracao" });
+    expect(buscar).not.toHaveBeenCalled();
+    const env = { SUPABASE_FUNCTIONS_URL: "https://ref.supabase.co/functions/v1/", SITE_SEGREDO: "segredo" };
+    expect(await enviarAoComercial(pedido, { utm: { utm_source: "google" }, pagina: "/demonstracao" }, env, buscar)).toEqual({ ok: true });
+    const [url, opcoes] = buscar.mock.calls[0];
+    expect(url).toBe("https://ref.supabase.co/functions/v1/api-console/v1/site/interessados");
+    expect(opcoes.headers["x-site-segredo"]).toBe("segredo");
+    const corpo = JSON.parse(opcoes.body);
+    expect(corpo).toMatchObject({ whatsapp: "5561999990412", faixa: "DE_41_A_100", consentimento: true, pagina: "/demonstracao", utm: { utm_source: "google" } });
+    buscar.mockRejectedValueOnce(new Error("rede"));
+    expect(await enviarAoComercial(pedido, { utm: null }, env, buscar)).toEqual({ ok: false, motivo: "falha-envio" });
   });
 });
