@@ -197,6 +197,7 @@ import {
   motivoReservaSchema,
   registrarReservaSchema,
   semanaAreaSchema,
+  pedirConjuntoSchema,
 } from "@triade/domain";
 import { verificarArquivo, verificarMidia, type Armazenamento } from "../_shared/arquivos.ts";
 import {
@@ -2090,6 +2091,16 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/chamados", async (c) => {
     const d = await lerCorpo(c, abrirChamadoSchema);
     return c.json(await rpc("plataforma_abrir_chamado", { ...quem(c), p_tipo: d.tipo, p_area: d.area, p_titulo: d.titulo, p_texto: d.texto }), 201);
+  });
+
+  // Meu plano (0291; NG-21, decisões E e F): o plano e os conjuntos, sem valores; o menu lê o modo
+  // de cada conjunto para pôr o cadeado; pedir para testar ou contratar vira um chamado.
+  app.get("/v1/condominio/plano", async (c) => c.json(await rpc("plataforma_meu_plano", quem(c))));
+  app.get("/v1/condominio/conjuntos", async (c) => c.json(await rpc("plataforma_conjuntos", quem(c))));
+
+  app.post("/v1/condominio/plano/pedidos", async (c) => {
+    const d = await lerCorpo(c, pedirConjuntoSchema);
+    return c.json(await rpc("plataforma_pedir_conjunto", { ...quem(c), p_conjunto: d.conjunto, p_pedido: d.pedido, p_texto: d.texto }), 201);
   });
 
   // Pedir mudança à TRÍADE (0286; PI-04, CF-09): o chamado de mudança, com a parte e o valor de

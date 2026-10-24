@@ -2,7 +2,7 @@
 // e quatro grupos por tarefa. Cada item diz quem vê, quando está escolhido, a contagem do que
 // pede atenção e, para quem não vê, qual permissão falta (o estado "sem permissão").
 
-import { PERMISSOES } from "@triade/domain";
+import { PERMISSOES, type Conjunto } from "@triade/domain";
 import type { NomeIcone } from "@triade/ui";
 import type { Painel } from "./sessao.tsx";
 
@@ -25,6 +25,8 @@ export interface ItemDoMenu {
   semGuarda?: boolean;
   /** Fica na barra de baixo do celular. */
   atalho?: boolean;
+  /** O conjunto do plano a que o item pertence (0291): fora do plano, aparece com cadeado. */
+  conjunto?: Conjunto;
 }
 
 const conta = (n: number | undefined, nome: string) => (n ? { n, nome } : null);
@@ -37,9 +39,9 @@ export const ITENS_MENU: ItemDoMenu[] = [
   { href: "/decisoes", texto: "Decisões", icone: "decisao", grupo: "Dia a dia", ve: (p) => p("decisoes.aprovar") || p("pedidos.atualizar"), caminhos: ["/decisoes"],
     contagem: (d) => conta(d.decisoes?.aguardando, "aguardando você"), permissao: PERMISSOES.APROVAR },
   { href: "/agenda", texto: "Agenda", icone: "calendario", grupo: "Dia a dia", ve: (p) => p("agenda.ver"), caminhos: ["/agenda"],
-    permissao: PERMISSOES.VER_AGENDA, atalho: true },
+    permissao: PERMISSOES.VER_AGENDA, atalho: true, conjunto: "AGENDA" },
   { href: "/manutencao", texto: "Manutenção", icone: "ferramenta", grupo: "Dia a dia", ve: (p) => p("manutencao.ver"), caminhos: ["/manutencao"],
-    contagem: (d) => conta(d.manutencao?.retornoVencido, "com retorno vencido"), permissao: PERMISSOES.VER_MANUTENCAO },
+    contagem: (d) => conta(d.manutencao?.retornoVencido, "com retorno vencido"), permissao: PERMISSOES.VER_MANUTENCAO, conjunto: "MANUTENCAO" },
 
   { href: "/comunicados", texto: "Comunicados", icone: "megafone", grupo: "Comunicação", ve: (p) => p("comunicados.ver"), caminhos: ["/comunicados"],
     permissao: PERMISSOES.VER_COMUNICADOS },
@@ -47,7 +49,7 @@ export const ITENS_MENU: ItemDoMenu[] = [
     caminhos: ["/whatsapp"], contagem: (d) => conta(d.whatsapp ? d.whatsapp.aIdentificar + d.whatsapp.falhas : 0, "para ver"), semGuarda: true, atalho: true },
   { href: "/vida", texto: "Vida em condomínio", icone: "convivio", grupo: "Comunicação",
     ve: (p) => p("reservas.ver") || p("enquetes.ver") || p("assembleias.ver") || p("classificados.ver"), caminhos: ["/vida"],
-    contagem: (d) => conta((d.vida?.reservasAAprovar ?? 0) + (d.vida?.classificadosAAprovar ?? 0), "a aprovar"), permissao: PERMISSOES.VER_RESERVAS },
+    contagem: (d) => conta((d.vida?.reservasAAprovar ?? 0) + (d.vida?.classificadosAAprovar ?? 0), "a aprovar"), permissao: PERMISSOES.VER_RESERVAS, conjunto: "VIDA" },
 
   { href: "/moradores", texto: "Moradores e unidades", icone: "predio", grupo: "Prédio e pessoas", ve: (p) => p("moradores.ver"), caminhos: ["/moradores"],
     permissao: PERMISSOES.CADASTRAR },
@@ -75,4 +77,14 @@ export function itemDoCaminho(caminho: string): ItemDoMenu | null {
     }
   }
   return melhor?.item ?? null;
+}
+
+/**
+ * O conjunto da tela aberta (0291, decisão E.1): as telas de Agenda, Manutenção e Vida em
+ * condomínio, e o dossiê e a exportação da memória, que são da Comunicação ampliada.
+ */
+export function conjuntoDoCaminho(caminho: string): Conjunto | null {
+  const dentro = (c: string) => caminho === c || caminho.startsWith(`${c}/`);
+  if (dentro("/memoria") || dentro("/documentos/dossie")) return "COMUNICACAO_AMPLIADA";
+  return itemDoCaminho(caminho)?.conjunto ?? null;
 }

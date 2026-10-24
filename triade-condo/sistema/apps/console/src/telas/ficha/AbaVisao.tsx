@@ -207,6 +207,10 @@ const SOLUCAO: Record<string, { icone: NomeIcone; frase: string; botao: string; 
   SEM_NUMERO_WHATSAPP: { icone: "whats", frase: "O número próprio do condomínio, para os moradores falarem pelo WhatsApp.", botao: "Informar", iconeBotao: "editar" },
   SEM_CONTATO: { icone: "telefone", frase: "Ninguém na ficha para a TRÍADE falar no condomínio.", botao: "Adicionar", iconeBotao: "mais" },
   PENDENCIA_VENCIDA: { icone: "relogio", frase: "Uma pendência da implantação passou do dia de retorno.", botao: "Ver", iconeBotao: "olho" },
+  CONJUNTO_A_LIBERAR: { icone: "camadas", frase: "Um conjunto está no contrato e ainda não foi liberado.", botao: "Ver", iconeBotao: "olho" },
+  TESTE_TERMINANDO: { icone: "relogio", frase: "Um teste de conjunto termina nos próximos dias.", botao: "Ver", iconeBotao: "olho" },
+  PLANO_SEM_VALOR: { icone: "dinheiro", frase: "Sem valor, as cobranças ficam como Valor a definir.", botao: "Ver", iconeBotao: "olho" },
+  PAGAMENTO_EM_ATRASO: { icone: "dinheiro", frase: "Só um aviso: o atraso não bloqueia o condomínio.", botao: "Ver", iconeBotao: "olho" },
 };
 
 function Situacoes(props: PropsAba & { abrir: (j: Janela) => void }) {
@@ -218,6 +222,10 @@ function Situacoes(props: PropsAba & { abrir: (j: Janela) => void }) {
     SEM_NUMERO_WHATSAPP: pode("console.ficha.editar") ? () => abrir("condominio") : null,
     SEM_CONTATO: pode("console.ficha.editar") ? () => abrir("contatos") : null,
     PENDENCIA_VENCIDA: () => irPara?.("implantacao"),
+    CONJUNTO_A_LIBERAR: () => irPara?.("plano"),
+    TESTE_TERMINANDO: () => irPara?.("plano"),
+    PLANO_SEM_VALOR: () => irPara?.("plano"),
+    PAGAMENTO_EM_ATRASO: () => irPara?.("plano"),
   };
   if (!ficha.situacoes.length) return null;
   return (

@@ -1,10 +1,10 @@
 "use client";
 // Ficha do cliente no Console (DC15, telas-modelo console-ficha-*; rodada Console, decisões A.1 e
-// D.1 de 23/10/2026): o cabeçalho com o estágio, o cenário e quem atende, e as 6 partes Visão
-// geral, Implantação, Configuração, Pessoas, WhatsApp e Notas e histórico. Síndico e Equipe
-// viraram Pessoas; Notas internas e Histórico viraram uma linha do tempo só. Acesso excepcional e
-// Resumo para o síndico ficam em Mais ações. Os endereços antigos (?aba=ficha, sindico, equipe,
-// historico) caem na parte nova que os contém.
+// D.1 de 23/10/2026): o cabeçalho com o estágio, o cenário e quem atende, e as 7 partes Visão
+// geral, Implantação, Configuração, Plano e pagamentos (0291, decisão A.1), Pessoas, WhatsApp e
+// Notas e histórico. Síndico e Equipe viraram Pessoas; Notas internas e Histórico viraram uma
+// linha do tempo só. Acesso excepcional e Resumo para o síndico ficam em Mais ações. Os endereços
+// antigos (?aba=ficha, sindico, equipe, historico) caem na parte nova que os contém.
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
@@ -20,12 +20,14 @@ import { AbaConfiguracao } from "./AbaConfiguracao.tsx";
 import { AbaPessoas } from "./AbaPessoas.tsx";
 import { AbaNotas } from "./AbaNotas.tsx";
 import { AbaWhatsapp } from "./AbaWhatsapp.tsx";
+import { AbaPlano } from "./AbaPlano.tsx";
 import type { Ficha, PropsAba, Recado } from "./tipos.ts";
 
 const PARTES = [
   { id: "visao", texto: "Visão geral" },
   { id: "implantacao", texto: "Implantação" },
   { id: "configuracao", texto: "Configuração" },
+  { id: "plano", texto: "Plano e pagamentos" },
   { id: "pessoas", texto: "Pessoas" },
   { id: "whatsapp", texto: "WhatsApp" },
   { id: "notas", texto: "Notas e histórico" },
@@ -142,6 +144,7 @@ export function FichaCliente() {
         {parte === "visao" ? <AbaVisao {...props} /> : null}
         {parte === "implantacao" ? <AbaImplantacao {...props} /> : null}
         {parte === "configuracao" ? <AbaConfiguracao {...props} /> : null}
+        {parte === "plano" ? <AbaPlano {...props} /> : null}
         {parte === "pessoas" ? <AbaPessoas {...props} /> : null}
         {parte === "notas" ? <AbaNotas {...props} /> : null}
         {parte === "whatsapp" ? (props.pode("console.whatsapp.ver") ? <AbaWhatsapp {...props} /> : <p className="t-apoio">Sua função não vê o WhatsApp deste cliente.</p>) : null}

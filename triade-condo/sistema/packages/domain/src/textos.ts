@@ -237,6 +237,22 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   LIGACAO_DESFEITA: "Esta ligação já foi desfeita. Atualize a página.",
   DECISAO_FECHADA: "Esta decisão já foi respondida ou retirada. Atualize a página.",
   PENDENCIA_DE_DECISAO: "Esta pendência se resolve quando o síndico responde à decisão.",
+  // Planos e cobrança (0291).
+  CONJUNTO_FORA_DO_PLANO: "Esta parte não está no plano do condomínio. Veja em Configurações, Meu plano.",
+  CONJUNTO_SUSPENSO: "Esta parte está suspensa: dá para ver e exportar o que já existe, mas não criar nada novo.",
+  CONJUNTO_BASE: "O atendimento vem com todo plano e não se libera à parte.",
+  NAO_CONTRATADO: "Só se libera o que está contratado. Para mostrar antes, libere para teste.",
+  JA_LIBERADO: "Este conjunto já está liberado.",
+  JA_EM_TESTE: "Este conjunto já está em teste.",
+  NAO_LIBERADO: "Este conjunto não está liberado.",
+  JA_NO_PLANO: "Esta parte já está no plano do condomínio.",
+  REFERENCIA_REPETIDA: "Esta referência já foi registrada em outro recebimento.",
+  RECEBIMENTO_RESOLVIDO: "Este recebimento já foi resolvido por outra pessoa.",
+  JA_CONFIRMADO: "Este recebimento já foi confirmado.",
+  DEVOLVIDO: "Este recebimento foi devolvido e não conta mais.",
+  NAO_A_CONFERIR: "Só se devolve o que ainda está a conferir.",
+  VALOR_A_DEFINIR: "Defina o valor da cobrança antes de ajustar.",
+  VALOR_DEFINIDO: "O valor já está definido. Para mudar, faça um ajuste com motivo.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
