@@ -114,6 +114,7 @@ interface LinhaHistorico {
   entidade_id: string | null;
   dados: Record<string, unknown>;
   interno?: boolean;
+  alvo_nome?: string | null;
 }
 
 
@@ -137,6 +138,11 @@ function historico(l: LinhaHistorico) {
     dados: l.dados,
     ...(l.interno === undefined ? {} : { interno: l.interno }),
   };
+}
+
+// Na equipe, o evento diz de quem fala: o nome atual da pessoa, lido na hora pelo banco (D4.28).
+function historicoEquipe(l: LinhaHistorico) {
+  return { ...historico(l), alvo: l.alvo_nome && l.entidade_id ? { id: l.entidade_id, nome: l.alvo_nome } : null };
 }
 
 export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) {
@@ -308,7 +314,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   app.get("/v1/equipe/historico", async (c) => {
     const linhas = await rpc<LinhaHistorico[]>("console_historico_equipe", { p_pessoa: pessoa(c), ...paginacao(c) });
-    return c.json({ eventos: linhas.map(historico) });
+    return c.json({ eventos: linhas.map(historicoEquipe) });
   });
 
 

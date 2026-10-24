@@ -13,7 +13,7 @@ import { Carregando, CampoTexto, classeBotao, ErroCarregar, Icone, Vazio } from 
 import { AbasLista, BarraEtapas, CabecaPagina, CaixaLista, CLASSE_LINHA, CLASSE_LINK_LINHA, plural } from "./comum.tsx";
 import { SeloEstagio, SeloSituacao } from "./rotulos.tsx";
 import { useCarregar, useSessao } from "./sessao.tsx";
-import { atendeClientes, type ClienteCarteira, type ItemImplantacao } from "./tipos.ts";
+import { atendeClientes, partesConferidas, type ClienteCarteira, type ItemImplantacao } from "./tipos.ts";
 
 const FILTROS = [
   { valor: "todos", texto: "Todos", aceita: () => true },
@@ -35,7 +35,7 @@ function Implantacao({ c, i }: { c: ClienteCarteira; i?: ItemImplantacao }) {
     <span className="grid gap-1.5">
       <span className="t-texto">Implantação · {i.feitas} de {i.etapas}</span>
       <BarraEtapas feitas={i.feitas} total={i.etapas} rotulo={`${i.feitas} de ${i.etapas} etapas feitas`} />
-      <span className="t-apoio">{i.proxima ? `Próxima: ${i.proxima.titulo}` : "Falta a entrega"}{i.vencidas ? ` · ${plural(i.vencidas, "pendência vencida", "pendências vencidas")}` : ""}</span>
+      <span className="t-apoio">{i.proxima ? `Próxima: ${i.proxima.titulo}${partesConferidas(i)}` : "Falta a entrega"}{i.vencidas ? ` · ${plural(i.vencidas, "pendência vencida", "pendências vencidas")}` : ""}</span>
     </span>
   );
 }
