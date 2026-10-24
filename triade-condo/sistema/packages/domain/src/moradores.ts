@@ -672,6 +672,7 @@ export const CATEGORIAS_HISTORICO = {
   MARCAS: "Marcas",
   VEICULOS: "Veículos",
   FAMILIA_PETS: "Família e pets",
+  ENCOMENDAS: "Encomendas",
 } as const;
 export type CategoriaHistorico = keyof typeof CATEGORIAS_HISTORICO;
 export const buscaHistoricoSchema = z.object({

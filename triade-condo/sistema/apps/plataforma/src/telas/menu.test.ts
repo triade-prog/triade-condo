@@ -1,13 +1,13 @@
 // Menu da Plataforma (DC15, docs/design/telas-modelo/moldura-*.html): grupos, atalhos do celular
 // e o item aceso em cada tela.
 import { describe, expect, it } from "vitest";
-import { conjuntoDoCaminho, ITENS_MENU, itemDoCaminho } from "./menu.ts";
+import { atalhosDoCelular, conjuntoDoCaminho, ITENS_MENU, itemDoCaminho } from "./menu.ts";
 
 describe("menu da Plataforma (DC15)", () => {
   it("o Início e os quatro grupos, na ordem do desenho aprovado", () => {
     expect(ITENS_MENU.map((i) => `${i.grupo ?? "-"}: ${i.texto}`)).toEqual([
       "-: Início",
-      "Dia a dia: Pedidos", "Dia a dia: Decisões", "Dia a dia: Agenda", "Dia a dia: Manutenção",
+      "Dia a dia: Pedidos", "Dia a dia: Decisões", "Dia a dia: Agenda", "Dia a dia: Manutenção", "Dia a dia: Portaria",
       "Comunicação: Comunicados", "Comunicação: WhatsApp", "Comunicação: Vida em condomínio",
       "Prédio e pessoas: Moradores e unidades", "Prédio e pessoas: Documentos e memória", "Prédio e pessoas: Indicadores",
       "Gestão: Configurações", "Gestão: Pessoas e acesso", "Gestão: Ajuda e suporte",
@@ -15,7 +15,14 @@ describe("menu da Plataforma (DC15)", () => {
   });
 
   it("a barra de baixo do celular tem Início, Pedidos, Agenda e WhatsApp (e o Mais)", () => {
-    expect(ITENS_MENU.filter((i) => i.atalho).map((i) => i.texto)).toEqual(["Início", "Pedidos", "Agenda", "WhatsApp"]);
+    expect(ITENS_MENU.filter((i) => i.atalho === true).map((i) => i.texto)).toEqual(["Início", "Pedidos", "Agenda", "WhatsApp"]);
+  });
+
+  it("PA-01: quem só cuida da portaria tem Início e Portaria na barra de baixo; o síndico continua com os quatro", () => {
+    const de = (textos: string[]) => atalhosDoCelular(ITENS_MENU.filter((i) => textos.includes(i.texto))).map((i) => i.texto);
+    expect(de(["Início", "Portaria", "Configurações"])).toEqual(["Início", "Portaria"]);
+    expect(de(["Início", "Pedidos", "Agenda", "Portaria", "WhatsApp"])).toEqual(["Início", "Pedidos", "Agenda", "WhatsApp"]);
+    expect(itemDoCaminho("/portaria/unidade")?.texto).toBe("Portaria");
   });
 
   it("cada tela acende o item certo, o caminho mais comprido ganha", () => {

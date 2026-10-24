@@ -218,6 +218,7 @@ import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao
 import { lerCorpo } from "../_shared/validar.ts";
 import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
 import { montarZip, planilhaCsv, type ItemZip } from "../_shared/zip.ts";
+import { rotasEncomendas } from "./encomendas.ts";
 
 export type VarsPlataforma = { Variables: VarsSessao["Variables"] & { condominioId: string } };
 
@@ -242,6 +243,8 @@ export interface DepsPlataforma extends DepsSessao {
   armazenamentoExportacoes?: Armazenamento;
   /** Anexos enviados para o relatório do mês (TR-10). */
   armazenamentoRelatorios?: Armazenamento;
+  /** Fotos da etiqueta e da retirada das encomendas (Portaria 1, PA-01). */
+  armazenamentoPortaria?: Armazenamento;
   /** Imagens dos chamados de suporte (peça R4, PI-20). */
   armazenamentoSuporte?: Armazenamento;
   /** E-mail dos comunicados e documentos (CD-13, CD-14). Sem correio, a fila espera. */
@@ -337,6 +340,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     configuracoes: "plataforma_configuracoes", areas: "plataforma_areas_comuns", manutencao: "plataforma_etapas_manutencao",
     plano: "plataforma_plano_comunicacao", whatsapp: "plataforma_config_whatsapp", links: "plataforma_links_qr",
     ia: "plataforma_ajuda_ia",
+    portaria: "plataforma_portaria",
   } as const;
   app.get("/v1/condominio/configuracoes/entrada", async (c) => {
     const lidas = await Promise.allSettled(Object.values(PARTES_DA_ENTRADA).map((f) => rpc(f, quem(c))));
@@ -346,6 +350,9 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       return [k, l.status === "fulfilled" ? l.value : null];
     })));
   });
+
+  // Portaria 1 · Encomendas (PA-01, PA-07, V-04, CF-12): lista, registro, aviso, entrega e as fotos.
+  rotasEncomendas(app, "/v1/condominio", quem, { banco: deps.banco, armazenamento: deps.armazenamentoPortaria });
 
   // Pessoas autorizadas (V-09, CF-02, CF-03, CF-04).
   app.get("/v1/condominio/pessoas", async (c) => c.json(await rpc("plataforma_pessoas", quem(c))));
@@ -937,6 +944,12 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       case "decisoes":
         return c.json(await contar(["DECIDIDAS", "TODAS"], async (s) =>
           ((await rpc<{ decisoes?: unknown[] }>("plataforma_decisoes", { ...quem(c), p_filtro: s })).decisoes ?? []).length));
+      case "encomendas": {
+        const r = await rpc<{ contagens?: Record<string, number> }>("plataforma_encomendas", {
+          ...quem(c), p_aba: "GUARDADAS", p_atalho: null, p_busca: c.req.query("busca")?.trim().slice(0, 60) || null, p_pagina: 1,
+        });
+        return c.json(r.contagens ?? {});
+      }
       case "reservas": {
         const q = consulta(c, filtroReservasSchema);
         return c.json(await contar(["A_APROVAR", "PROXIMAS", "TODAS"], async (s) =>

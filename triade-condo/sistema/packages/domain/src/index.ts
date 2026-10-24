@@ -25,3 +25,4 @@ export * from "./mural.ts";
 export * from "./planos.ts";
 export * from "./relatorio.ts";
 export * from "./ia.ts";
+export * from "./encomendas.ts";

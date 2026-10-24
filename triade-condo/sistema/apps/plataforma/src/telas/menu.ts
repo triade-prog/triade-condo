@@ -23,8 +23,8 @@ export interface ItemDoMenu {
   permissao?: string;
   /** Some sem dizer "sem permissão": o item depende de algo que não é permissão. */
   semGuarda?: boolean;
-  /** Fica na barra de baixo do celular. */
-  atalho?: boolean;
+  /** Fica na barra de baixo do celular; "se-couber", só quando a pessoa tem menos de quatro atalhos fixos. */
+  atalho?: boolean | "se-couber";
   /** O conjunto do plano a que o item pertence (0291): fora do plano, aparece com cadeado. */
   conjunto?: Conjunto;
 }
@@ -42,6 +42,9 @@ export const ITENS_MENU: ItemDoMenu[] = [
     permissao: PERMISSOES.VER_AGENDA, atalho: true, conjunto: "AGENDA" },
   { href: "/manutencao", texto: "Manutenção", icone: "ferramenta", grupo: "Dia a dia", ve: (p) => p("manutencao.ver"), caminhos: ["/manutencao"],
     contagem: (d) => conta(d.manutencao?.retornoVencido, "com retorno vencido"), permissao: PERMISSOES.VER_MANUTENCAO, conjunto: "MANUTENCAO" },
+  { href: "/portaria", texto: "Portaria", icone: "caixa", grupo: "Dia a dia", ve: (p) => p("portaria.ver"), caminhos: ["/portaria"],
+    contagem: (d) => conta(d.portaria ? d.portaria.semAviso + d.portaria.avisoFalhou : 0, "sem aviso ou com o aviso que falhou"),
+    permissao: PERMISSOES.VER_PORTARIA, atalho: "se-couber" },
 
   { href: "/comunicados", texto: "Comunicados", icone: "megafone", grupo: "Comunicação", ve: (p) => p("comunicados.ver"), caminhos: ["/comunicados"],
     permissao: PERMISSOES.VER_COMUNICADOS },
@@ -64,6 +67,12 @@ export const ITENS_MENU: ItemDoMenu[] = [
 ];
 
 export const GRUPOS_MENU: GrupoMenu[] = ["Dia a dia", "Comunicação", "Prédio e pessoas", "Gestão"];
+
+/** Os atalhos da barra de baixo: os fixos e, se couber, os que entram quando sobra lugar. */
+export function atalhosDoCelular(itens: ItemDoMenu[]): ItemDoMenu[] {
+  const fixos = itens.filter((i) => i.atalho === true).length;
+  return itens.filter((i) => i.atalho === true || (i.atalho === "se-couber" && fixos < 4));
+}
 
 /** O item da tela aberta: o caminho mais comprido que casar. O Início só casa com "/". */
 export function itemDoCaminho(caminho: string): ItemDoMenu | null {

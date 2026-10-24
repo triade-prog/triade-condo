@@ -13,7 +13,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FUNCOES_PLATAFORMA } from "@triade/domain";
 import { Aviso, Botao, Carregando, classeBotao, chamarApi, DestinosDosEstados, Dialogo, ErroCarregar, Icone, Iniciais, Marca, SemPermissao, textoDoErro, type ErroApi } from "@triade/ui";
 import { SinoAvisos } from "./Avisos.tsx";
-import { conjuntoDoCaminho, GRUPOS_MENU, itemDoCaminho, ITENS_MENU, type ItemDoMenu } from "./menu.ts";
+import { atalhosDoCelular, conjuntoDoCaminho, GRUPOS_MENU, itemDoCaminho, ITENS_MENU, type ItemDoMenu } from "./menu.ts";
 import { AvisoSuspenso, ForaDoPlano, type ModosConjunto } from "./plano/MeuPlano.tsx";
 import { Contexto, useCarregar, type CondominioDaPessoa, type Painel } from "./sessao.tsx";
 
@@ -149,7 +149,7 @@ function Moldura({ sessao, painel, modos, aoTrocar, children }: { sessao: Sessao
   const semAcesso = daTela && !escolhido && !daTela.semGuarda ? daTela : null;
   const conjunto = conjuntoDoCaminho(caminho);
   const modo = conjunto ? modos[conjunto] : undefined;
-  const atalhos = itens.filter((i) => i.atalho);
+  const atalhos = atalhosDoCelular(itens);
   const buscar = pode("pedidos.ver") || pode("moradores.ver");
   const destinos = {
     inicio: "/", suporte: pode("suporte.chamados") ? "/suporte" : undefined, Ligacao: LigacaoDoApp,

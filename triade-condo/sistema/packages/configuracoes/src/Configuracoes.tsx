@@ -20,6 +20,7 @@ import { AbaCategorias } from "./AbaCategorias.tsx";
 import { AbaEtapas } from "./AbaEtapas.tsx";
 import { AbaPrazos, EXEMPLO_PRAZO } from "./AbaPrazos.tsx";
 import { AbaManutencao } from "./AbaManutencao.tsx";
+import { AbaPortaria, resumoPortaria, type Portaria } from "./AbaPortaria.tsx";
 import { AbaComunicados, AbaMural } from "./AbaComunicados.tsx";
 import { AbaLinksQr } from "./AbaLinksQr.tsx";
 import { AbaWhatsapp } from "./AbaWhatsapp.tsx";
@@ -47,6 +48,7 @@ const COMO: Partial<Record<IdPagina, string>> = {
   categorias: "Renomear não quebra o histórico. Desativar tira a categoria dos pedidos novos; os que já têm continuam com ela, no histórico e nos indicadores.",
   areas: "Só pessoas com vínculo confirmado em Moradores e unidades reservam. Área inativa não aparece para ninguém.",
   comunicados: "O plano fica à vista de quem escreve comunicados. No horário sem envio, nada sai por e-mail nem pelo WhatsApp: programar nesse horário mostra um aviso.",
+  portaria: "Só registra e entrega quem tem conta própria e a permissão Cuidar da portaria; cada registro guarda o nome de quem fez. O aviso sai pelo modelo Encomenda guardada a quem mora na unidade e tem WhatsApp, e quem pediu PARAR não recebe. O texto da Portaria, no menu e nas telas vazias, segue o cenário do prédio.",
   whatsapp: "A conexão do número fica com a TRÍADE. Aqui o condomínio escolhe o que o morador recebe fora do horário, como o pedido chega e quem cuida quando o número cai.",
 };
 
@@ -117,6 +119,7 @@ function Pagina_({ pagina, aoVoltar }: { pagina: IdPagina; aoVoltar?: () => void
         {pagina === "etapas" ? <AbaEtapas {...props} parte="etapas" /> : null}
         {pagina === "areas" ? <AbaAreasComuns {...props} /> : null}
         {pagina === "manutencao" ? <AbaManutencao {...props} /> : null}
+        {pagina === "portaria" ? <AbaPortaria {...props} /> : null}
         {pagina === "comunicados" ? <AbaComunicados {...props} /> : null}
         {pagina === "mural" ? <AbaMural {...props} /> : null}
         {pagina === "whatsapp" ? <AbaWhatsapp aoSalvar={salvo} tecnica={props.tecnica} /> : null}
@@ -135,7 +138,7 @@ const hora = (h: string) => h.replace(/^0(\d)/, "$1").replace(":00", "h").replac
 /** O que a entrada lê numa chamada só (D4.15); a parte que a pessoa não pode ver vem null. */
 type Entrada = {
   configuracoes: Config; areas: AreasComuns | null; manutencao: { etapas: { ativa: boolean }[] } | null;
-  plano: PlanoComunicacao | null; whatsapp: { conexao: Conexao } | null; links: LinksQr | null; ia?: AjudaIa | null;
+  plano: PlanoComunicacao | null; whatsapp: { conexao: Conexao } | null; links: LinksQr | null; ia?: AjudaIa | null; portaria?: Portaria | null;
 };
 
 /** O resumo de cada página na entrada. */
@@ -157,6 +160,7 @@ function resumos(e: Entrada) {
     etapas: plural(c.etapas.filter((e) => e.ativa).length, "etapa", "etapas"),
     areas: pronto(e.areas, (d) => `${plural(d.areas.length, "área", "áreas")} · ${plural(d.areas.filter((a) => a.ativa).length, "ativa", "ativas")}`),
     manutencao: pronto(e.manutencao, (d) => plural(d.etapas.filter((e) => e.ativa).length, "etapa", "etapas")),
+    portaria: pronto(e.portaria ?? null, resumoPortaria),
     comunicados: pronto(e.plano, (d) => `${plural(d.assuntos.length, "assunto", "assuntos")} · sem envio das ${hora(d.silencioInicio)} às ${hora(d.silencioFim)}`),
     mural: pronto(e.plano, (d) => `Mural ${d.mural.ligado ? "ligado" : "desligado"} · e-mail ${d.email.ligado ? "ligado" : "desligado"}`),
     whatsapp: pronto(e.whatsapp, (d) => SITUACAO_ZAP[d.conexao.situacao] + (d.conexao.oficial === false ? " · conexão de teste" : "")),

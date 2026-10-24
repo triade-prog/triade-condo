@@ -36,6 +36,8 @@ export interface Painel {
   vida?: ResumoVida;
   /** Decisões esperando a resposta da pessoa, para quem pode aprovar (F7.4, AT-23). */
   decisoes?: { aguardando: number; vencidas: number; maisAntigaDias: number | null };
+  /** Encomendas guardadas, para quem vê a portaria (Portaria 1, PA-01). */
+  portaria?: { guardadas: number; semAviso: number; avisoFalhou: number; antigas: number; dias: number };
 }
 
 export interface CondominioDaPessoa {

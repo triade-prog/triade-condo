@@ -259,6 +259,17 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   NAO_A_CONFERIR: "Só se devolve o que ainda está a conferir.",
   VALOR_A_DEFINIR: "Defina o valor da cobrança antes de ajustar.",
   VALOR_DEFINIDO: "O valor já está definido. Para mudar, faça um ajuste com motivo.",
+  // Portaria 1 · Encomendas (0299).
+  ENCOMENDA_ENTREGUE: "Esta encomenda já foi entregue. Atualize a lista.",
+  LUGAR_FORA_DE_USO: "Este lugar saiu de uso. Escolha outro lugar.",
+  ENCOMENDA_PELA_PORTARIA: "O aviso de encomenda se manda de novo pela Portaria, em Avisar de novo.",
+  NINGUEM_RECEBE: "Ninguém da unidade recebe pelo WhatsApp. Avise por outro meio: interfone, bilhete ou pessoalmente.",
+  AVISO_SAINDO: "O aviso ainda está saindo. Espere um pouco antes de avisar de novo.",
+  NAO_E_DA_UNIDADE: "Esta pessoa não é da unidade. Escolha Outra pessoa e escreva o nome.",
+  LIMITE_FOTOS_ENCOMENDA: "Esta encomenda já tem fotos demais.",
+  LUGAR_REPETIDO: "Já existe um lugar com este nome.",
+  LIMITE_LUGARES: "O prédio já tem 30 lugares em uso. Tire de uso um que não serve mais.",
+  ULTIMO_LUGAR: "O prédio precisa de pelo menos um lugar em uso para guardar as encomendas.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */
