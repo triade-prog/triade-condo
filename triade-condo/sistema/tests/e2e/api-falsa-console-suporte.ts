@@ -89,11 +89,18 @@ export async function rotasSuporteConsole(route: Route, est: EstadoSuporteConsol
       suporteAcesso: ["ABERTO", "DUVIDOSO"].includes(est.suporte.situacao) ? 1 : 0, whatsapp: est.whatsappDesconectados } });
   }
   if (caminho === "/v1/implantacoes") {
+    // D4.28: a vencida mais antiga e, na etapa 4, quantas partes da configuração estão conferidas.
+    const vencidas = est.pendencias.filter((p) => !p.resolvidaEm && p.vencida).sort((a, b) => a.proximoRetorno.localeCompare(b.proximoRetorno));
+    const v = vencidas[0];
+    const proxima = est.etapas.find((e) => e.situacao !== "REALIZADA" && e.situacao !== "NAO_SE_APLICA");
+    const conf = cliente?.configuracao?.();
     return route.fulfill({ json: { implantacoes: est.entregue ? [] : [{
       condominioId: est.suporte.condominioId, nome: "Residencial Ipê", iniciada: true, etapas: 8,
       feitas: est.etapas.filter((e) => e.situacao === "REALIZADA" || e.situacao === "NAO_SE_APLICA").length,
-      proxima: est.etapas.find((e) => e.situacao !== "REALIZADA" && e.situacao !== "NAO_SE_APLICA"),
-      pendencias: est.pendencias.filter((p) => !p.resolvidaEm).length, vencidas: est.pendencias.filter((p) => !p.resolvidaEm && p.vencida).length,
+      proxima,
+      pendencias: est.pendencias.filter((p) => !p.resolvidaEm).length, vencidas: vencidas.length,
+      vencida: v ? { id: v.id, texto: v.texto, comQuem: v.comQuem, responsavel: v.responsavel || null, etapa: v.etapa ?? null, proximoRetorno: v.proximoRetorno } : null,
+      configuracao: proxima?.chave === "CONFIGURACAO" && conf ? { conferidas: conf.conferidas, total: conf.total } : null,
     }] } });
   }
   if (caminho === "/v1/suporte-acesso") return route.fulfill({ json: { pedidos: [est.suporte] } });

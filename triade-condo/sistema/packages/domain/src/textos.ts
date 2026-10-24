@@ -186,6 +186,9 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   NAO_E_VISTORIA: "A lista do que olhar é só da vistoria.",
   NOME_EM_USO: "Já existe um prestador ativo com este nome.",
   PRESTADOR_ARQUIVADO: "Este prestador está arquivado. Volte-o ao cadastro para mudar alguma coisa.",
+  SEM_CONTRATO: "Só prestador com contrato tem o arquivo do contrato. Mude o acordo em Editar.",
+  CONTRATO_DE_OUTRO: "Este documento já é o contrato de outro prestador.",
+  CONTRATO_RESTRITO: "O contrato deste prestador é restrito. Quem cuida dos documentos restritos envia a versão nova.",
   PREVENTIVA_ABERTA: "A manutenção desta data já está aberta. Conclua ou cancele antes de mudar a data.",
   PROVIDENCIA_FEITA: "Esta providência já foi feita.",
   // Aviso de pedido registrado (F6.4).

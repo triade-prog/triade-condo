@@ -156,6 +156,9 @@ import {
   termineiSchema,
   anotacaoSchema,
   buscaLinhaDoTempoSchema,
+  buscaHistoricoProntuarioSchema,
+  guardarContratoPrestadorSchema,
+  ligarContratoPrestadorSchema,
   CHAVE_PRONTUARIO,
   itemProntuarioSchema,
   guardarELigarSchema,
@@ -1164,6 +1167,24 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   };
   app.post("/v1/condominio/manutencao/prestadores", async (c) => c.json(await salvarPrestador(c, null), 201));
   app.put("/v1/condominio/manutencao/prestadores/:id", async (c) => c.json(await salvarPrestador(c, idDaRota(c, "id"))));
+  // O arquivo do contrato (D4.18, decisão D.2): guarda em Documentos, do tipo Contrato, e liga ao
+  // prestador, nessa ordem; o arquivo sobe depois, como versão 1. Se a ligação falha, o documento fica
+  // guardado e a resposta diz que não ligou, como no prontuário.
+  app.post("/v1/condominio/manutencao/prestadores/:id/contrato", async (c) => {
+    const d = await lerCorpo(c, guardarContratoPrestadorSchema);
+    // Guarda e liga numa transação só: se não der para ligar, nada fica guardado.
+    const r = await rpc<{ id: string }>("plataforma_guardar_contrato_prestador", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_titulo: d.documento.titulo, p_descricao: d.documento.descricao,
+      p_restrito: d.documento.restrito, p_vale_ate: d.documento.valeAte,
+    });
+    return c.json({ ...r, ligado: true }, 201);
+  });
+  app.put("/v1/condominio/manutencao/prestadores/:id/contrato", async (c) => {
+    const d = await lerCorpo(c, ligarContratoPrestadorSchema);
+    return c.json(await rpc("plataforma_ligar_contrato_prestador", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_documento: d.documentoId, p_vale_ate: d.valeAte,
+    }));
+  });
   app.post("/v1/condominio/manutencao/prestadores/:id/arquivar", async (c) => {
     const d = await lerCorpo(c, arquivarPrestadorSchema);
     return c.json(await rpc("plataforma_arquivar_prestador", { ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_arquivar: d.arquivar }));
@@ -1371,6 +1392,12 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   // ---------------------------------------------------------------------------------------
   // Memória do prédio (peça R10; MP-12, MP-14, CT-02, CT-03, CT-04).
   app.get("/v1/condominio/memoria/prontuario", async (c) => c.json(await rpc("plataforma_prontuario", quem(c))));
+  // Histórico do prontuário (D4.18, decisão D.1): de todos os itens ou de um, 50 por vez.
+  app.get("/v1/condominio/memoria/prontuario/historico", async (c) => {
+    const r = buscaHistoricoProntuarioSchema.safeParse({ item: c.req.query("item") || undefined, antes: c.req.query("antes") || undefined });
+    if (!r.success) throw invalido(r);
+    return c.json(await rpc("plataforma_historico_prontuario", { ...quem(c), p_item: r.data.item ?? null, p_antes: r.data.antes ?? null }));
+  });
   app.post("/v1/condominio/memoria/prontuario/itens", async (c) => {
     const d = await lerCorpo(c, novoItemProntuarioSchema);
     return c.json(await rpc("plataforma_item_prontuario", {
@@ -1415,9 +1442,12 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   });
 
   app.get("/v1/condominio/memoria/linha-do-tempo", async (c) => {
-    const r = buscaLinhaDoTempoSchema.safeParse({ filtro: c.req.query("filtro") || undefined, antes: c.req.query("antes") || undefined });
+    const q = (n: string) => c.req.query(n) || undefined;
+    const r = buscaLinhaDoTempoSchema.safeParse({ filtro: q("filtro"), antes: q("antes"), busca: q("busca"), de: q("de"), ate: q("ate") });
     if (!r.success) throw invalido(r);
-    return c.json(await rpc("plataforma_linha_do_tempo", { ...quem(c), p_filtro: r.data.filtro, p_antes: r.data.antes ?? null }));
+    return c.json(await rpc("plataforma_linha_do_tempo", {
+      ...quem(c), p_filtro: r.data.filtro, p_antes: r.data.antes ?? null, p_busca: r.data.busca ?? null, p_de: r.data.de ?? null, p_ate: r.data.ate ?? null,
+    }));
   });
   app.get("/v1/condominio/memoria/opcoes", async (c) => c.json(await rpc("plataforma_opcoes_memoria", quem(c))));
   app.get("/v1/condominio/memoria/anotacoes/:id", async (c) => c.json(await rpc("plataforma_anotacao", { ...quem(c), p_id: idDaRota(c, "id") })));
