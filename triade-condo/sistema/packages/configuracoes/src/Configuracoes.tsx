@@ -12,7 +12,7 @@ import { Aviso, Carregando, ErroCarregar, Icone, Selo, type NomeIcone } from "@t
 import { assinatura, ProvedorConfiguracao, useAmbiente, useCarregar, naBase, type Ambiente } from "./contexto.tsx";
 import { SeloTriade, type Tecnica } from "./tecnica.tsx";
 import type { AreasComuns, Configuracoes as Config, LinksQr, PlanoComunicacao, Recado } from "./tipos.ts";
-import { GRUPOS_TAREFA, grupoDaPagina, PAGINAS_CONFIGURACAO, PAGINAS_DA_TRIADE, type IdGrupo, type IdPagina } from "./paginas.ts";
+import { GRUPOS_TAREFA, grupoDaPagina, PAGINAS_CONFIGURACAO, PAGINAS_DA_TRIADE, PAGINAS_SO_DO_APP, type IdGrupo, type IdPagina } from "./paginas.ts";
 import { PaginaSalvavel } from "./salvar.tsx";
 import { AbaHorarios, resumoHorario } from "./AbaHorarios.tsx";
 import { AbaFeriados } from "./AbaFeriados.tsx";
@@ -26,6 +26,7 @@ import { AbaLinksQr } from "./AbaLinksQr.tsx";
 import { AbaWhatsapp } from "./AbaWhatsapp.tsx";
 import { AbaAreasComuns } from "./AbaAreasComuns.tsx";
 import { AbaIa, type AjudaIa } from "./AbaIa.tsx";
+import { AbaDecisoes } from "./AbaDecisoes.tsx";
 import type { Conexao } from "./conexao.tsx";
 
 export interface PropsAba {
@@ -49,6 +50,7 @@ const COMO: Partial<Record<IdPagina, string>> = {
   areas: "Só pessoas com vínculo confirmado em Moradores e unidades reservam. Área inativa não aparece para ninguém.",
   comunicados: "O plano fica à vista de quem escreve comunicados. No horário sem envio, nada sai por e-mail nem pelo WhatsApp: programar nesse horário mostra um aviso.",
   portaria: "Só registra e entrega quem tem conta própria e a permissão Cuidar da portaria; cada registro guarda o nome de quem fez. O aviso sai pelo modelo Encomenda guardada a quem mora na unidade e tem WhatsApp, e quem pediu PARAR não recebe. O texto da Portaria, no menu e nas telas vazias, segue o cenário do prédio.",
+  decisoes: "Só os titulares com mandato em dia votam. O pedido ao conselho guarda o quórum do momento em que foi feito: mudar a regra vale para os próximos. A alçada só avisa; quem decide continua sendo quem você escolher.",
   whatsapp: "A conexão do número fica com a TRÍADE. Aqui o condomínio escolhe o que o morador recebe fora do horário, como o pedido chega e quem cuida quando o número cai.",
 };
 
@@ -126,6 +128,7 @@ function Pagina_({ pagina, aoVoltar }: { pagina: IdPagina; aoVoltar?: () => void
         {pagina === "etiquetas" ? <AbaLinksQr {...props} parte="etiquetas" /> : null}
         {pagina === "abertos" ? <AbaLinksQr {...props} parte="abertos" /> : null}
         {pagina === "ia" ? <AbaIa /> : null}
+        {pagina === "decisoes" ? <AbaDecisoes /> : null}
       </PaginaSalvavel>
     </div>
   );
@@ -170,6 +173,7 @@ function resumos(e: Entrada) {
       return d.etiquetas.length ? `${uso} em uso${fora ? ` · ${plural(fora, "desativada", "desativadas")}` : ""}` : "Nenhuma etiqueta ainda";
     }),
     ia: pronto(e.ia ?? null, resumoAjudaIa),
+    decisoes: "Quórum do conselho, empate, decisão vencida e alçada",
     abertos: pronto(e.links, (d) => `Mural ${d.mural.ligado ? "ligado" : "desligado"} · ${plural(d.prestador.validos, "link de prestador", "links de prestador")}`),
   };
   return r;
@@ -243,7 +247,7 @@ function EntradaPronta({ e, cab, enderecoMeusAvisos, enderecoMeuPlano }: { e: En
           </span>
         </div>
         <ul className="mt-1 grid">
-          {g.paginas.map((p) => {
+          {g.paginas.filter((p) => onde === "app" || !PAGINAS_SO_DO_APP.includes(p)).map((p) => {
             const triade = PAGINAS_DA_TRIADE.includes(p) && onde === "app";
             return (
               <li key={p} className="border-t border-linha">

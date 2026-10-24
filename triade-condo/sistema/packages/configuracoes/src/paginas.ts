@@ -10,6 +10,10 @@ export const PAGINAS_CONFIGURACAO = {
   respostas: { nome: "Respostas prontas", grupo: "pedidos", apoio: "Textos prontos que aparecem na hora de dar retorno a um pedido." },
   etapas: { nome: "Etapas", grupo: "pedidos", apoio: "Onde o pedido está dentro de aberto, em andamento e encerrado." },
   ia: { nome: "Ajuda da IA", grupo: "pedidos", apoio: "O que a IA faz nos pedidos deste condomínio, o que ela recebe e quanto já foi usado no mês." },
+  decisoes: {
+    nome: "Decisões e conselho", grupo: "pedidos",
+    apoio: "Regras do condomínio. Quem decide continua sendo o condomínio: estas regras só organizam o que a convenção e a assembleia já dizem.",
+  },
   areas: { nome: "Áreas comuns", grupo: "predio", apoio: "As áreas que os moradores reservam e as regras de cada uma." },
   manutencao: { nome: "Etapas da manutenção", grupo: "predio", apoio: "Onde a manutenção está dentro de cada situação." },
   portaria: { nome: "Portaria", grupo: "predio", apoio: "Quem recebe as encomendas no prédio, onde elas ficam e quando lembrar a unidade." },
@@ -23,7 +27,7 @@ export type IdPagina = keyof typeof PAGINAS_CONFIGURACAO;
 
 export const GRUPOS_TAREFA = [
   { id: "atendimento", nome: "Atendimento", apoio: "Quando o condomínio atende e em quanto tempo responde.", paginas: ["horarios", "feriados", "prazos"] },
-  { id: "pedidos", nome: "Pedidos", apoio: "Como os pedidos se organizam e o que se responde.", paginas: ["categorias", "respostas", "etapas", "ia"] },
+  { id: "pedidos", nome: "Pedidos", apoio: "Como os pedidos se organizam e o que se responde.", paginas: ["categorias", "respostas", "etapas", "ia", "decisoes"] },
   { id: "predio", nome: "Prédio", apoio: "As áreas que os moradores reservam, a manutenção e a portaria.", paginas: ["areas", "manutencao", "portaria"] },
   { id: "comunicacao", nome: "Comunicação", apoio: "O que o morador recebe, por onde e quando.", paginas: ["comunicados", "mural", "whatsapp"] },
   { id: "links", nome: "Links e QR", apoio: "O que abre sem conta, pelo celular de quem aponta a câmera.", paginas: ["etiquetas", "abertos"] },
@@ -32,6 +36,9 @@ export type IdGrupo = (typeof GRUPOS_TAREFA)[number]["id"];
 
 /** As páginas que são inteiras da TRÍADE (CF-09): no app, só leitura. */
 export const PAGINAS_DA_TRIADE: readonly IdPagina[] = ["etapas", "manutencao"];
+
+/** As páginas que só existem no app do condomínio: o Console não as abre (R5, regras do conselho). */
+export const PAGINAS_SO_DO_APP: readonly IdPagina[] = ["decisoes"];
 
 /** As abas antigas: "regras" foi para Prazos e avisos; "links", para Etiquetas por local. */
 const DAS_ABAS: Record<string, IdPagina> = {
