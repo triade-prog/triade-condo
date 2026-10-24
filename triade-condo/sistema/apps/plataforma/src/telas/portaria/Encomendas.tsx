@@ -18,6 +18,7 @@ import {
   type AcaoEncomenda, type Encomenda, type OpcoesEncomenda,
 } from "./comum.tsx";
 import { RegistrarEncomenda } from "./Registrar.tsx";
+import { JanelaGuardar } from "../privacidade/comum.tsx";
 
 interface ListaEncomendas {
   itens: Encomenda[];
@@ -43,7 +44,7 @@ function consulta(f: Filtros): string {
   return q.toString();
 }
 
-function Linha({ e, podeCuidar, abrir, avisar }: { e: Encomenda; podeCuidar: boolean; abrir: (a: AcaoEncomenda) => void; avisar: () => void }) {
+function Linha({ e, podeCuidar, podeGuardar, abrir, avisar }: { e: Encomenda; podeCuidar: boolean; podeGuardar: boolean; abrir: (a: AcaoEncomenda) => void; avisar: () => void }) {
   const guardada = e.estado === "GUARDADA";
   const entregar = guardada && podeCuidar ? (
     <Botao variante="contorno" tamanho="m" aria-label={`Entregar a encomenda de ${e.unidade.rotulo}`} onClick={() => abrir("entregar")}><Icone nome="check" />Entregar</Botao>
@@ -77,13 +78,13 @@ function Linha({ e, podeCuidar, abrir, avisar }: { e: Encomenda; podeCuidar: boo
         <span>{e.lugar?.nome}</span>
         {guardada ? desde : retirada}
         <SeloAviso e={e} />
-        <span className="flex items-center justify-end gap-1">{entregar}<MenuEncomenda e={e} podeCuidar={podeCuidar} aoEscolher={abrir} aoAvisar={avisar} /></span>
+        <span className="flex items-center justify-end gap-1">{entregar}<MenuEncomenda e={e} podeCuidar={podeCuidar} podeGuardar={podeGuardar} aoEscolher={abrir} aoAvisar={avisar} /></span>
       </div>
       {/* Celular: o cartão. */}
       <div className="grid gap-2 md:hidden">
         <div className="flex items-start justify-between gap-2">
           {unidade}
-          <MenuEncomenda e={e} podeCuidar={podeCuidar} aoEscolher={abrir} aoAvisar={avisar} />
+          <MenuEncomenda e={e} podeCuidar={podeCuidar} podeGuardar={podeGuardar} aoEscolher={abrir} aoAvisar={avisar} />
         </div>
         <span className="t-apoio">{e.lugar?.nome} · {guardada ? quemGuardou(e) : `retirou ${e.retirou?.nome ?? ""}`}</span>
         <div className="flex flex-wrap items-end justify-between gap-2">
@@ -98,7 +99,7 @@ function Linha({ e, podeCuidar, abrir, avisar }: { e: Encomenda; podeCuidar: boo
 export function Encomendas() {
   const router = useRouter();
   const endereco = useSearchParams();
-  const { painel, atualizar } = usePlataforma();
+  const { painel, atualizar, pode } = usePlataforma();
   const f: Filtros = {
     aba: endereco.get("aba") === "ENTREGUES" ? "ENTREGUES" : "GUARDADAS",
     atalho: (endereco.get("atalho") ?? "") in ATALHOS_ENCOMENDAS ? (endereco.get("atalho") as AtalhoEncomendas) : "",
@@ -113,6 +114,7 @@ export function Encomendas() {
   const [aberta, setAberta] = useState<{ e: Encomenda; acao: AcaoEncomenda } | null>(null);
   const [recado, setRecado] = useState<Recado>(null);
   const [texto, setTexto] = useState(f.busca);
+  const [guardando, setGuardando] = useState<Encomenda | null>(null);
 
   const ir = (m: Partial<Filtros>) => {
     const novo = consulta({ ...f, pagina: 1, ...m });
@@ -126,7 +128,8 @@ export function Encomendas() {
   const limpar = () => { setTexto(""); ir({ busca: "", atalho: "" }); };
   const registrar = podeCuidar ? <Botao onClick={() => setRegistrando(true)}><Icone nome="caixa" />Registrar encomenda</Botao> : null;
   const abrir = (e: Encomenda) => (a: AcaoEncomenda) => {
-    if (a === "etiqueta") void abrirEtiqueta(e).then((erro) => { if (erro) setRecado({ tom: "atencao", texto: erro }); });
+    if (a === "guardar") setGuardando(e);
+    else if (a === "etiqueta") void abrirEtiqueta(e).then((erro) => { if (erro) setRecado({ tom: "atencao", texto: erro }); });
     else setAberta({ e, acao: a });
   };
   const avisar = (e: Encomenda) => () => void avisarDeNovo(e).then((r) => depois(r.texto, r.tom));
@@ -205,7 +208,7 @@ export function Encomendas() {
                 <span className="t-rotulo">{f.aba === "GUARDADAS" ? "Quem guardou, desde" : "Quem retirou"}</span><span className="t-rotulo">Aviso à unidade</span><span className="w-36" />
               </div>
               <ul className="grid max-md:gap-3">
-                {dados.itens.map((e) => <Linha key={e.id} e={e} podeCuidar={podeCuidar} abrir={abrir(e)} avisar={avisar(e)} />)}
+                {dados.itens.map((e) => <Linha key={e.id} e={e} podeCuidar={podeCuidar} podeGuardar={pode("privacidade.cuidar")} abrir={abrir(e)} avisar={avisar(e)} />)}
               </ul>
               <div className="flex flex-wrap items-center justify-between gap-2 py-4 md:border-t md:border-linha md:px-5">
                 <span className="t-apoio">
@@ -237,6 +240,11 @@ export function Encomendas() {
       {registrando && o ? (
         <RegistrarEncomenda opcoes={o} aoFechar={() => setRegistrando(false)} registrada={() => { lista.recarregar(); atualizar(); }}
           verGuardadas={() => { setRegistrando(false); ir({ aba: "GUARDADAS", atalho: "", busca: "" }); }} />
+      ) : null}
+      {guardando ? (
+        <JanelaGuardar entidade="ENCOMENDA" alvoId={guardando.id} titulo={`Guardar a encomenda de ${guardando.unidade.rotulo}`}
+          apoio={`${resumoEncomenda(guardando)} · guardada ${quando(guardando.guardadaEm)}`} aoFechar={() => setGuardando(null)}
+          aoGuardar={() => { setGuardando(null); setRecado({ tom: "ok", texto: `A encomenda de ${guardando.unidade.rotulo} está guardada por obrigação legal. Ela aparece em Configurações › Privacidade e dados.` }); }} />
       ) : null}
       <JanelasEncomenda aberta={aberta} opcoes={o} eu={painel.pessoa.nome} aoFechar={() => setAberta(null)} salvo={(t) => depois(t)} />
     </div>

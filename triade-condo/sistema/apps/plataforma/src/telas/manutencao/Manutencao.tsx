@@ -18,6 +18,7 @@ import {
 import { Aviso, AvisoErro, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Iniciais, Selo, textoDoErro, Vazio, type ErroApi, type NomeIcone, type Resposta } from "@triade/ui";
 import { Janela, type Campo, type Valores } from "../Janela.tsx";
 import { Cartao, Dado, MaisAcoes } from "../Ficha.tsx";
+import { useGuardaNaFicha } from "../privacidade/comum.tsx";
 import { EscolherArquivos, resumoEnvio, type ItemEnvio } from "../pedidos/Arquivos.tsx";
 import { deDataHoraLocal, diaHora, faltaPara, opcoesDe, paraDataHoraLocal } from "../pedidos/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
@@ -204,6 +205,9 @@ export function Manutencao() {
   const [recado, setRecado] = useState<Recado>(null);
   const [falha, setFalha] = useState<ErroApi | null>(null);
   const [fotoDepois, setFotoDepois] = useState<ItemEnvio[]>([]);
+  const pronta = carga.estado === "pronto" ? carga.dados.manutencao : null;
+  // Guardar por obrigação legal (F0.11, quadro 355): em Mais ações, com o selo no alto.
+  const guarda = useGuardaNaFicha("MANUTENCAO", id, { titulo: "Guardar a manutenção", apoio: pronta ? `${pronta.titulo} · ${pronta.local}` : undefined });
   const voltar = (
     <Link href="/manutencao" className="inline-flex items-center gap-1 t-texto font-medium text-violeta-600 hover:underline">
       <Icone nome="esq" className="h-4 w-4" />Voltar às manutenções
@@ -387,14 +391,15 @@ export function Manutencao() {
     : d.pode.editar && m.estado === "EM_ANDAMENTO" ? { texto: "Concluir", icone: "check", acao: () => setAcao({ tipo: "concluir" }) }
       : d.pode.editar && m.estado === "PENDENTE" ? { texto: "Resolver pendência", icone: "check", acao: () => void situacao("EM_ANDAMENTO", "Pendência resolvida.") }
         : d.pode.reabrir ? { texto: "Reabrir", icone: "trocar", acao: () => setAcao({ tipo: "reabrir" }) } : null;
-  const mais = editar ? [
+  const mais: { texto: string; icone: NomeIcone; acao: () => void; perigo?: boolean }[] = editar ? [
     { texto: "Editar", icone: "editar" as NomeIcone, acao: () => setAcao({ tipo: "editar" }) },
     ...(m.estado !== "PENDENTE" ? [{ texto: "Marcar pendência", icone: "relogio" as NomeIcone, acao: () => setAcao({ tipo: "pendencia" }) }] : []),
     ...(m.estado === "PENDENTE" ? [{ texto: "Concluir", icone: "check" as NomeIcone, acao: () => setAcao({ tipo: "concluir" }) }] : []),
     ...(d.pode.marcarVisita ? [{ texto: "Marcar visita", icone: "calendario" as NomeIcone, acao: () => setAcao({ tipo: "visita" }) }] : []),
     ...(m.estado === "EM_ANDAMENTO" ? [{ texto: "Voltar a planejada", icone: "trocar" as NomeIcone, acao: () => void situacao("PLANEJADA", "Manutenção voltou a planejada.") }] : []),
-    { texto: "Cancelar manutenção", icone: "fechar" as NomeIcone, acao: () => setAcao({ tipo: "cancelar" }), perigo: true },
   ] : [];
+  if (guarda.item) mais.push(guarda.item);
+  if (editar) mais.push({ texto: "Cancelar manutenção", icone: "fechar" as NomeIcone, acao: () => setAcao({ tipo: "cancelar" }), perigo: true });
   const mudar = (tipo: "etapa" | "previsao" | "repassar", texto: string) => <Botao variante="discreto" tamanho="m" onClick={() => setAcao({ tipo })}>{texto}</Botao>;
   const prioridadeAlta = m.prioridade && /^(alta|urgente)/i.test(m.prioridade.nome);
 
@@ -519,6 +524,7 @@ export function Manutencao() {
                 {SITUACOES_MANUTENCAO[m.estado]}{m.etapa && !encerrada ? ` · ${m.etapa.nome}` : ""}
               </Selo>
               {m.atrasada ? <Selo tom="erro">Atrasada</Selo> : null}
+              {guarda.selo}
             </p>
             <h1 className="t-titulo-ficha [overflow-wrap:anywhere]">{m.titulo}</h1>
             <p className="t-apoio">{m.local} · registrada em {diaHora(m.criadoEm).replace(" ", ", ")}{m.registradaPor ? ` por ${m.registradaPor}` : " pela preventiva"}</p>
@@ -528,6 +534,7 @@ export function Manutencao() {
       </header>
 
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
+      {guarda.aviso}
       {falha ? <AvisoErro erro={falha} texto={textoDoErro(falha)} recarregar={() => { setFalha(null); carga.recarregar(); }} /> : null}
       {m.pendencia ? <Aviso tom="atencao" titulo={`Pendente · ${nomePendencia(m.pendencia.tipo)}`} papel="status">{m.pendencia.motivo} Desde {diaHora(m.pendencia.desde).replace(" ", ", ")}.</Aviso> : null}
       {m.conclusao ? (
@@ -575,6 +582,7 @@ export function Manutencao() {
       {o ? <FormManutencao aberto={acao?.tipo === "editar"} manutencao={m} opcoes={o} aoFechar={fechar} recarregar={carga.recarregar}
         salvo={(_, texto) => salvo(texto)} /> : null}
       {acao?.tipo === "visita" ? <MarcarVisita manutencaoId={m.id} aoFechar={fechar} salvo={salvo} /> : null}
+      {guarda.janelas}
     </div>
   );
 }

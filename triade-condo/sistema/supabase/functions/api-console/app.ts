@@ -3,6 +3,7 @@
 // Passo 5: a conexão do WhatsApp de cada cliente (piloto pelo Wafly, DC14).
 // Planos e pagamentos (peças C3 e C4): plano, conjuntos contratados e liberados, cobranças e recebimentos.
 // Tabela de preços (0295): faixas, parâmetros, concorrentes, histórico e a sugestão do plano.
+// Retenção de dados (0301): o inventário, as rodadas da rotina e o modo (só contando ou apagando).
 // Quem pode o quê é decidido no banco (funções internas e clientes atribuídos, PI-10); aqui
 // só se valida a entrada e se fala com o Auth para os convites.
 
@@ -70,6 +71,7 @@ import {
   faixaPrecoSchema,
   parametrosPrecoSchema,
   sugestaoPlanoSchema,
+  modoRetencaoSchema,
 } from "@triade/domain";
 import type { Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -176,7 +178,8 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/contagens", "/v1/implantacoes",
                       "/v1/suporte-acesso", "/v1/chamados", "/v1/whatsapp", "/v1/whatsapp/*",
-                      "/v1/pagamentos", "/v1/pagamentos/*", "/v1/precos", "/v1/precos/*"]) app.use(rota, sessao.exigirSessao);
+                      "/v1/pagamentos", "/v1/pagamentos/*", "/v1/precos", "/v1/precos/*",
+                      "/v1/retencao", "/v1/retencao/*"]) app.use(rota, sessao.exigirSessao);
   const pessoa = (c: Context<VarsSessao>) => c.get("sessao").pessoaId;
 
   // Quem está no Console: nome, funções e o que pode fazer fora de um cliente.
@@ -729,6 +732,15 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const id = idDaRota(c, "concorrente");
     const d = await lerCorpo(c, arquivarConcorrenteSchema);
     return c.json(await rpc("console_arquivar_concorrente", { p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  // Retenção de dados (F0.11; PT-11, PT-03): o inventário dos 32 tipos, as rodadas da rotina e o
+  // modo. A rotina nasce só contando; ligar a exclusão é da Administração (o banco confere).
+  app.get("/v1/retencao", async (c) => c.json(await rpc("console_retencao", { p_pessoa: pessoa(c) })));
+
+  app.put("/v1/retencao/modo", async (c) => {
+    const d = await lerCorpo(c, modoRetencaoSchema);
+    return c.json(await rpc("console_retencao_modo", { p_pessoa: pessoa(c), p_modo: d.modo, p_versao: d.versao }));
   });
 
   // Chamados (PI-17, PI-20).

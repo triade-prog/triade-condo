@@ -20,6 +20,7 @@ import { classificadosAAprovar, classificadosDoMural, criarClassificados, rotasC
 import { avisarNoRegistro, avisosDoPedido, criarAvisoRegistro, rotasAvisoRegistro, type ContextoAviso } from "./api-falsa-aviso-registro";
 import { criarRelatorios, rotasArquivoRelatorio, rotasRelatorios } from "./api-falsa-relatorios";
 import { criarPortaria, resumoPortaria, rotasPortaria } from "./api-falsa-portaria";
+import { criarPrivacidade, rotasPrivacidade } from "./api-falsa-privacidade";
 import { avisosDecisoes, criarDecisoes, detalheDecisoes, marcarAvisosDecisoes, resumoDecisoes, rotasDecisoes, semearDecisoes } from "./api-falsa-decisoes";
 
 /** As 24 permissões do banco (permissoes), na ordem de @triade/domain. */
@@ -78,6 +79,8 @@ export interface OpcoesPlataforma {
   conjuntos?: Partial<Record<"AGENDA" | "MANUTENCAO" | "VIDA" | "COMUNICACAO_AMPLIADA", "COMPLETO" | "CONSULTA" | "FORA">>;
   /** Portaria 1 · Encomendas: a síndica vê e cuida da portaria, com 3 guardadas e 1 entregue. */
   comPortaria?: boolean;
+  /** Privacidade e dados (F0.11): a síndica vê e cuida (privacidade.ver e privacidade.cuidar). */
+  comPrivacidade?: boolean;
 }
 
 const CONJUNTOS_PLANO = [
@@ -210,6 +213,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const whatsapp = criarWhatsapp(estado.pedidos[0]!, cats[0]!.id, pris[1]!.id);
   const avisoRegistro = criarAvisoRegistro(V_ANA);
   const portaria = criarPortaria();
+  const privacidade = criarPrivacidade();
   const decisoes = criarDecisoes();
   if (opcoes.comDecisoes) semearDecisoes(decisoes, estado.pedidos, V_ANA, estado.config.etapas.find((e) => e.nome === "Concluído")!.id);
   if (!opcoes.comAcessoPedido) suporte.acessos = [];
@@ -226,7 +230,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       "memoria.dossie", "memoria.exportar", "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver",
       "suporte.chamados", "acesso_excepcional.aprovar", "reservas.editar", "reservas.ver",
       "enquetes.editar", "enquetes.ver", "assembleias.editar", "assembleias.ver", "classificados.editar", "classificados.ver", "decisoes.aprovar",
-      ...(opcoes.comPortaria ? ["portaria.ver", "portaria.cuidar"] : [])]
+      ...(opcoes.comPortaria ? ["portaria.ver", "portaria.cuidar"] : []),
+      ...(opcoes.comPrivacidade ? ["privacidade.ver", "privacidade.cuidar"] : [])]
     : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados",
       ...(opcoes.secretariaRegistra ? ["pedidos.atualizar"] : [])]
       : ["agenda.ver", "comunicados.ver", "config.ver", "documentos.ver", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"];
@@ -491,6 +496,9 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     const naManutencao = await rotasManutencao(route, manutencao, { pessoas: estado.pessoas, pedidos: estado.pedidos, prioridades: c.prioridades, eu },
       caminho, metodo, corpo, url, pode);
     if (naManutencao !== null) return naManutencao;
+    const naPrivacidade = await rotasPrivacidade(route, privacidade, caminho, metodo, corpo, pode,
+      { eu: eu.nome, pedido: (id) => estado.pedidos.find((x) => x.id === id) });
+    if (naPrivacidade !== null) return naPrivacidade;
     if (opcoes.comPortaria) {
       const naPortaria = await rotasPortaria(route, portaria, { eu, condominio: "Residencial Ipê" }, caminho, metodo, corpo, url, pode);
       if (naPortaria !== null) return naPortaria;
@@ -631,5 +639,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     return erro(route, 404, "NOT_FOUND");
   }
   await page.route("**/api/v1/**", atender);
-  return Object.assign(estado, { pedidosPlano, comunicados, links, manutencao, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios });
+  return Object.assign(estado, { privacidade, pedidosPlano, comunicados, links, manutencao, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios });
 }
