@@ -28,6 +28,11 @@ export interface PessoaDoCondominio {
   versao: number;
   responsavel: boolean;
   disponivel: boolean;
+  /** O que está em aberto com a pessoa (decisão E.1): os pedidos de que ela é a responsável e as
+   * manutenções e preventivas que ela acompanha. Na revogação, a janela só pergunta o que existe. */
+  emAberto?: { pedidos: number; manutencoes: number };
+  /** Vê a manutenção: pode assumir as manutenções e preventivas de quem sai. */
+  cuidaManutencao?: boolean;
 }
 
 export interface Pessoas {
@@ -1248,7 +1253,25 @@ export interface PrestadorPublico {
   comoEntrar?: string;
   expiraEm?: string;
   arquivos?: { id: string; nome: string; tipo: string }[];
-  registros?: { tipo: "CHEGOU" | "IMPEDIMENTO" | "TERMINOU" | "CONFIRMOU" | "RECUSOU"; confirmado?: boolean; em: string; etiqueta?: string }[];
+  /** Quando o prestador respondeu (confirmou, recusou ou chegou sem confirmar). */
+  respondidoEm?: string;
+  /** Cada envio, na ordem em que foi mandado (decisão E.3): enquanto o link vale. */
+  registros?: EnvioDoPrestador[];
+}
+
+/** Um envio do prestador pelo link: o texto, quem fez e as fotos que valem (decisão E.3). */
+export interface EnvioDoPrestador {
+  id?: string;
+  tipo: "CHEGOU" | "IMPEDIMENTO" | "TERMINOU" | "CONFIRMOU" | "RECUSOU";
+  em: string;
+  confirmado?: boolean;
+  etiqueta?: string;
+  impedimento?: "SEM_ACESSO" | "FALTA_PECA" | "OUTRO_SERVICO" | "OUTRO";
+  texto?: string;
+  quemFez?: string;
+  ficouPendente?: boolean;
+  pendenteTexto?: string;
+  fotos?: { id: string; nome: string; tipo: string }[];
 }
 
 // ---------------------------------------------------------------------------------------

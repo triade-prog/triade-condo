@@ -79,7 +79,7 @@ export const plataforma: { id: string; titulo: string; itens: { titulo: string; 
 /** Para quem é: cada perfil com a frase, os pontos e quem aparece no Início do painel. */
 export const perfis: { id: "morador" | "profissional" | "conselho" | "portaria"; nome: string; frase: string; itens: string[] }[] = [
   { id: "morador", nome: "Síndico morador", frase: "Para de responder o grupo à meia-noite.", itens: ["O pedido chega com protocolo e você responde quando der, com prazo combinado.", "A secretária ou o subsíndico podem atender por você.", "Na troca de mandato, os pedidos e documentos continuam no prédio."] },
-  { id: "profissional", nome: "Síndico profissional", frase: "Vários prédios, cada um com a sua história.", itens: ["Um painel por condomínio, com o WhatsApp de cada prédio.", "Prazos vencidos de todos os prédios aparecem primeiro.", "Desconto a partir do segundo condomínio."] },
+  { id: "profissional", nome: "Síndico profissional", frase: "Vários prédios, cada um com a sua história.", itens: ["Um painel por condomínio, com o WhatsApp de cada prédio.", "Prazos vencidos de todos os prédios aparecem primeiro.", "Cada prédio no preço da sua faixa de unidades."] },
   { id: "conselho", nome: "Conselho", frase: "Acompanha sem precisar cobrar no grupo.", itens: ["Vê pedidos, prazos e indicadores com o acesso que o síndico liberar.", "Decisões pedidas pelo síndico chegam com o contexto do caso.", "Na assembleia, os números saem do painel, não da memória."] },
   { id: "portaria", nome: "Portaria e zeladoria", frase: "Registra na hora o que vê no prédio.", itens: ["Abre o pedido pelo painel, com foto.", "Entra na mesma fila do síndico, com responsável e prazo.", "Ninguém precisa repassar recado."] },
 ];

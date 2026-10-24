@@ -2,8 +2,10 @@
 // O Início do painel (Resumo do dia e a lista Agora), como o sistema mostra a cada perfil.
 import BarraPainel from "./BarraPainel.astro";
 import { protocolo } from "../dados/vitrine";
-interface Props { perfil: "morador" | "profissional" | "conselho" | "portaria"; }
-const { perfil } = Astro.props;
+// grande: versão legível (letra mínima de 14px no computador) e mais baixa, usada no topo da página Plataforma;
+// troca o texto da busca por um curto, que cabe inteiro na barra. Os estilos ficam em paginas.css (.janela-grande).
+interface Props { perfil: "morador" | "profissional" | "conselho" | "portaria"; grande?: boolean; }
+const { perfil, grande = false } = Astro.props;
 const nome = { morador: "Carlos", profissional: "Marina", conselho: "Rita", portaria: "Jorge" }[perfil];
 type Tom = "vermelho" | "ambar" | "violeta" | "verde";
 const icones: Record<Tom, { fundo: string; cor: string; svg: string }> = {
@@ -31,12 +33,12 @@ const agora: Record<Props["perfil"], { tom: Tom; titulo: string; detalhe: string
   ],
 };
 ---
-<div class="janela" aria-hidden="true">
-  <BarraPainel />
-  <div style="padding:16px;display:flex;flex-direction:column;gap:16px">
+<div class:list={["janela", grande && "janela-grande"]} aria-hidden="true">
+  <BarraPainel busca={grande ? "Buscar pedido" : undefined} />
+  <div class="inicio-corpo">
     <div class="resumo"><span class="o1"></span><span class="o2"></span><span class="tr"></span><small>Sexta-feira, 23 de outubro</small><b>Bom dia, {nome}</b><span>Residencial Ipê · Brasília</span></div>
-    <div class="app-cartao" style="gap:0">
-      <div class="app-sub" style="padding-bottom:8px"><h4>Agora</h4><span style="font-size:12px;color:var(--violeta-600);font-weight:500">Ver tudo</span></div>
+    <div class="app-cartao agora-cartao">
+      <div class="app-sub"><h4>Agora</h4><span class="ver-tudo">Ver tudo</span></div>
       {agora[perfil].map((a) => (
         <div class="agora-l">
           <span class="ic" style={`background:${icones[a.tom].fundo};color:${icones[a.tom].cor}`}><svg viewBox="0 0 24 24" set:html={icones[a.tom].svg} /></span>

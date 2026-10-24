@@ -49,7 +49,8 @@ test.describe("Plataforma · Ajuda e suporte", () => {
     await conferir(page);
     await janela.getByRole("button", { name: "Abrir chamado" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Fila some depois de filtrar por categoria" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Abrir print.png" })).toBeVisible();
+    // A imagem fica dentro da mensagem em que foi mandada (decisão E.2).
+    await expect(page.getByRole("list", { name: "Conversa" }).getByRole("button", { name: "print.png Foto conferida · abrir" })).toBeVisible();
     expect(estado.suporte.chamados[0]!.arquivos[0]!.situacao).toBe("LIBERADO");
     // A conversa em bolhas e a faixa quando a TRÍADE espera a resposta.
     await expect(page.getByRole("list", { name: "Conversa" })).toContainText("Escolho a categoria Limpeza");

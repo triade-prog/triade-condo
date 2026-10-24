@@ -19,9 +19,10 @@ import { criarAssembleias, resumoAssembleia, rotasAssembleiaPublica, rotasAssemb
 import { classificadosAAprovar, classificadosDoMural, criarClassificados, rotasClassificadoPublico, rotasClassificados } from "./api-falsa-classificados";
 import { avisarNoRegistro, avisosDoPedido, criarAvisoRegistro, rotasAvisoRegistro, type ContextoAviso } from "./api-falsa-aviso-registro";
 import { criarRelatorios, rotasArquivoRelatorio, rotasRelatorios } from "./api-falsa-relatorios";
+import { criarPortaria, resumoPortaria, rotasPortaria } from "./api-falsa-portaria";
 import { avisosDecisoes, criarDecisoes, detalheDecisoes, marcarAvisosDecisoes, resumoDecisoes, rotasDecisoes, semearDecisoes } from "./api-falsa-decisoes";
 
-/** As 22 permissões do banco (permissoes), na ordem de @triade/domain. */
+/** As 24 permissões do banco (permissoes), na ordem de @triade/domain. */
 const PERMISSOES = {
   ACOMPANHAR: "Acompanhar",
   RESPONDER: "Responder",
@@ -45,6 +46,8 @@ const PERMISSOES = {
   ASSEMBLEIAS: "Cuidar das assembleias",
   VER_CLASSIFICADOS: "Ver os classificados",
   CLASSIFICADOS: "Cuidar dos classificados",
+  VER_PORTARIA: "Ver a portaria",
+  PORTARIA: "Cuidar da portaria",
 } as const;
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -73,6 +76,8 @@ export interface OpcoesPlataforma {
   comComunicadosWhatsapp?: boolean;
   /** O modo de cada conjunto do plano (0291); sem dizer, tudo completo. */
   conjuntos?: Partial<Record<"AGENDA" | "MANUTENCAO" | "VIDA" | "COMUNICACAO_AMPLIADA", "COMPLETO" | "CONSULTA" | "FORA">>;
+  /** Portaria 1 · Encomendas: a síndica vê e cuida da portaria, com 3 guardadas e 1 entregue. */
+  comPortaria?: boolean;
 }
 
 const CONJUNTOS_PLANO = [
@@ -108,6 +113,9 @@ function rotasMeuPlano(route: Route, caminho: string, metodo: string, corpo: Rec
 function erro(route: Route, status: number, codigo: string, detalhes?: Record<string, unknown>) {
   return route.fulfill({ status, json: { erro: detalhes ? { codigo, detalhes } : { codigo } } });
 }
+
+const PEDIDO_ABERTO = ["ABERTO", "EM_ANDAMENTO", "EM_REVISAO"];
+const MANUTENCAO_FECHADA = ["CONCLUIDA", "CANCELADA"];
 
 let n = 0;
 const novoId = () => `9a0b1c2d-3e4f-4a5b-8c6d-${String(++n).padStart(12, "0")}`;
@@ -155,6 +163,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     ],
     responsavelPadrao: null as string | null,
     convites: [] as string[],
+    revogacoes: [] as { vinculoId: string; assumePedidosId?: string | null; assumeManutencoesId?: string | null }[],
     moradores: criarMoradores(),
     pedidos: [] as ReturnType<typeof criarPedidos>,
     avisos: [] as ReturnType<typeof criarAvisos>,
@@ -200,6 +209,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   const relatorios = criarRelatorios();
   const whatsapp = criarWhatsapp(estado.pedidos[0]!, cats[0]!.id, pris[1]!.id);
   const avisoRegistro = criarAvisoRegistro(V_ANA);
+  const portaria = criarPortaria();
   const decisoes = criarDecisoes();
   if (opcoes.comDecisoes) semearDecisoes(decisoes, estado.pedidos, V_ANA, estado.config.etapas.find((e) => e.nome === "Concluído")!.id);
   if (!opcoes.comAcessoPedido) suporte.acessos = [];
@@ -215,7 +225,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       "documentos.editar", "documentos.restritos", "documentos.ver", "manutencao.editar", "manutencao.ver", "moradores.confirmar", "moradores.editar", "moradores.ver", "pedidos.atualizar", "pedidos.concluir",
       "memoria.dossie", "memoria.exportar", "pedidos.responder", "pedidos.revisar", "pedidos.ver", "pessoas.autorizar", "pessoas.ver", "plataforma.painel.ver",
       "suporte.chamados", "acesso_excepcional.aprovar", "reservas.editar", "reservas.ver",
-      "enquetes.editar", "enquetes.ver", "assembleias.editar", "assembleias.ver", "classificados.editar", "classificados.ver", "decisoes.aprovar"]
+      "enquetes.editar", "enquetes.ver", "assembleias.editar", "assembleias.ver", "classificados.editar", "classificados.ver", "decisoes.aprovar",
+      ...(opcoes.comPortaria ? ["portaria.ver", "portaria.cuidar"] : [])]
     : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados",
       ...(opcoes.secretariaRegistra ? ["pedidos.atualizar"] : [])]
       : ["agenda.ver", "comunicados.ver", "config.ver", "documentos.ver", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados"];
@@ -227,6 +238,15 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     else if (!resp.some((x) => x.vinculoId === estado.responsavelPadrao && x.disponivel)) p.push("SEM_RESPONSAVEL_PADRAO");
     return p;
   };
+  // O que está em aberto com a pessoa (decisão E.1): pedidos e manutenções ou preventivas dela.
+  const emAberto = (vinculo: string) => ({
+    pedidos: estado.pedidos.filter((x) => x.responsavelId === vinculo && PEDIDO_ABERTO.includes(x.estado)).length,
+    manutencoes: manutencao.manutencoes.filter((x) => x.responsavelId === vinculo && !MANUTENCAO_FECHADA.includes(x.estado)).length
+      + manutencao.preventivas.filter((x) => x.ativa && x.responsavelId === vinculo).length,
+  });
+  // Quem vê a manutenção pode assumir as manutenções de quem sai (o síndico pode tudo).
+  const cuidaManutencao = (p: { funcao: string; permissoes: string[] }) =>
+    p.funcao === "SINDICO" || p.permissoes.includes("MANUTENCAO") || p.permissoes.includes("VER_MANUTENCAO");
   const versaoErrada = (route: Route, item: { versao: number }, corpo: Record<string, unknown>) =>
     corpo.versao !== item.versao ? erro(route, 409, "VERSION_CONFLICT", { versao: item.versao, atual: item }) : null;
   const nomeRepetido = (lista: { nome: string; ativa: boolean; id: string }[], nome: string, id?: string) =>
@@ -325,7 +345,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (contagens) return contar(route, contagens[1]!, url);
     // A entrada das Configurações numa chamada só (D4.15).
     if (caminho === "/v1/condominio/configuracoes/entrada") {
-      const PARTES = { configuracoes: "configuracoes", areas: "areas-comuns", manutencao: "etapas-manutencao", plano: "plano-comunicacao", whatsapp: "whatsapp/config", links: "links-qr" };
+      const PARTES = { configuracoes: "configuracoes", areas: "areas-comuns", manutencao: "etapas-manutencao", plano: "plano-comunicacao", whatsapp: "whatsapp/config", links: "links-qr",
+        ...(opcoes.comPortaria ? { portaria: "portaria" } : {}) };
       const e: Record<string, unknown> = {};
       for (const [k, p] of Object.entries(PARTES)) e[k] = await lerPorDentro(new URL(`/api/v1/condominio/${p}`, url));
       if (!e.configuracoes) return erro(route, 403, "FORBIDDEN");
@@ -414,6 +435,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
           mesFechado: MES_FECHADO,
         } : {}),
         ...(acoes().includes("manutencao.ver") ? { manutencao: resumoManutencao(manutencao) } : {}),
+        ...(acoes().includes("portaria.ver") ? { portaria: resumoPortaria(portaria) } : {}),
         ...(acoes().includes("comunicados.ver") || acoes().includes("documentos.ver") ? { comunicados: resumoComunicados(comunicados, pode) } : {}),
         ...(acoes().includes("documentos.ver") ? { memoria: { prontuario: resumoProntuario(memoria) } } : {}),
         ...(acoes().includes("acesso_excepcional.aprovar") ? { acessosExcepcionais: resumoAcessos(suporte) } : {}),
@@ -469,6 +491,10 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     const naManutencao = await rotasManutencao(route, manutencao, { pessoas: estado.pessoas, pedidos: estado.pedidos, prioridades: c.prioridades, eu },
       caminho, metodo, corpo, url, pode);
     if (naManutencao !== null) return naManutencao;
+    if (opcoes.comPortaria) {
+      const naPortaria = await rotasPortaria(route, portaria, { eu, condominio: "Residencial Ipê" }, caminho, metodo, corpo, url, pode);
+      if (naPortaria !== null) return naPortaria;
+    }
     const moradores = await rotasMoradores(route, estado.moradores, caminho, metodo, corpo, pode);
     if (moradores !== null) return moradores;
     const noWhatsapp = await rotasWhatsapp(route, whatsapp, caminho, metodo, corpo, pode, eu,
@@ -539,7 +565,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     }
     if (caminho === "/v1/condominio/pessoas" && metodo === "GET") {
       return route.fulfill({ json: {
-        pessoas: estado.pessoas, responsavelPadrao: estado.responsavelPadrao, versao: c.versao, pendencias: pendencias(),
+        pessoas: estado.pessoas.map((p) => ({ ...p, emAberto: emAberto(p.vinculoId), cuidaManutencao: cuidaManutencao(p) })), responsavelPadrao: estado.responsavelPadrao, versao: c.versao, pendencias: pendencias(),
         // As 22 do banco, como a API devolve (as que têm o que fazer em permissao_acoes).
         permissoesDisponiveis: Object.entries(PERMISSOES).map(([codigo, nome]) => ({ codigo, nome, descricao: nome })),
       } });
@@ -557,10 +583,33 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       if (!p || p.funcao !== "AUTORIZADO") return erro(route, 404, "NOT_FOUND");
       const conflito = versaoErrada(route, p, corpo); if (conflito) return conflito;
       if (pv[2]) {
-        if (estado.responsavelPadrao === p.vinculoId) {
-          if (!corpo.substitutoId && !corpo.deixarPendente) return erro(route, 400, "VALIDATION_ERROR", { motivo: "SUBSTITUTO_NECESSARIO" });
-          estado.responsavelPadrao = (corpo.substitutoId as string) ?? null;
+        // Quem assume (decisão E.1): os pedidos, só quem atende e está disponível (ou a fila sem
+        // responsável, com null); as manutenções e preventivas, só quem cuida da manutenção.
+        const aberto = emAberto(p.vinculoId);
+        const assumePedidos = corpo.assumePedidosId as string | null | undefined;
+        const assumeManutencoes = corpo.assumeManutencoesId as string | null | undefined;
+        // Como o banco: tudo é conferido antes de mudar qualquer coisa.
+        const eraPadrao = estado.responsavelPadrao === p.vinculoId;
+        if (eraPadrao && !corpo.substitutoId && !corpo.deixarPendente) return erro(route, 400, "VALIDATION_ERROR", { motivo: "SUBSTITUTO_NECESSARIO" });
+        if (assumePedidos && !estado.pessoas.some((x) => x.vinculoId === assumePedidos && x !== p && x.responsavel && x.disponivel)) {
+          return erro(route, 422, "VALIDATION_ERROR", { motivo: "ASSUME_PEDIDOS_INVALIDO" });
         }
+        if (aberto.manutencoes && !assumeManutencoes) return erro(route, 422, "VALIDATION_ERROR", { motivo: "MANUTENCOES_SEM_RESPONSAVEL" });
+        if (assumeManutencoes && !estado.pessoas.some((x) => x.vinculoId === assumeManutencoes && x !== p && cuidaManutencao(x))) {
+          return erro(route, 422, "VALIDATION_ERROR", { motivo: "ASSUME_MANUTENCOES_INVALIDO" });
+        }
+        if (eraPadrao) estado.responsavelPadrao = (corpo.substitutoId as string) ?? null;
+        // Sem assumePedidosId, os pedidos vão para o responsável padrão (se estiver disponível); senão, ficam sem responsável.
+        const padrao = estado.pessoas.find((x) => x.vinculoId === estado.responsavelPadrao && x !== p && x.responsavel && x.disponivel);
+        const destinoPedidos = assumePedidos !== undefined ? assumePedidos : padrao?.vinculoId ?? null;
+        for (const x of estado.pedidos.filter((y) => y.responsavelId === p.vinculoId && PEDIDO_ABERTO.includes(y.estado))) {
+          x.responsavelId = destinoPedidos; x.aceitoEm = null;
+        }
+        if (assumeManutencoes) {
+          for (const m of manutencao.manutencoes.filter((y) => y.responsavelId === p.vinculoId && !MANUTENCAO_FECHADA.includes(y.estado))) m.responsavelId = assumeManutencoes;
+          for (const x of manutencao.preventivas.filter((y) => y.ativa && y.responsavelId === p.vinculoId)) x.responsavelId = assumeManutencoes;
+        }
+        estado.revogacoes.push({ vinculoId: p.vinculoId, assumePedidosId: assumePedidos, assumeManutencoesId: assumeManutencoes });
         estado.pessoas = estado.pessoas.filter((x) => x !== p);
         return route.fulfill({ json: { ok: true } });
       }
@@ -582,5 +631,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     return erro(route, 404, "NOT_FOUND");
   }
   await page.route("**/api/v1/**", atender);
-  return Object.assign(estado, { pedidosPlano, comunicados, links, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios });
+  return Object.assign(estado, { pedidosPlano, comunicados, links, manutencao, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios });
 }

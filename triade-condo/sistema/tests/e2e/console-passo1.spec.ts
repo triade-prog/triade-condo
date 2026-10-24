@@ -184,9 +184,9 @@ test.describe("Console TRÍADE · passo 1", () => {
     await semErroDeAcessibilidade(page);
     await page.keyboard.press("Escape");
     await page.goto(`${CONSOLE}/equipe/historico`);
-    await expect(page.getByText("Pessoa cadastrada na equipe · Implantação.")).toBeVisible();
+    await expect(page.getByText("Inês entrou na equipe · Implantação.")).toBeVisible();
     await page.getByRole("group", { name: "Mostrar" }).getByRole("button", { name: "Funções" }).click();
-    await expect(page.getByText("Pessoa cadastrada na equipe · Implantação.")).toHaveCount(0);
+    await expect(page.getByText("Inês entrou na equipe · Implantação.")).toHaveCount(0);
     await semErroDeAcessibilidade(page);
   });
 

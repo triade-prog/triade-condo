@@ -12,6 +12,8 @@ export interface EventoHistorico {
   acao: string;
   entidade: string;
   dados: Record<string, unknown>;
+  /** De quem o evento fala, quando é uma pessoa (histórico da equipe); o nome é o atual. */
+  alvo?: { id: string; nome: string } | null;
 }
 
 const CAMPOS_FICHA: Record<string, string> = {
@@ -72,6 +74,17 @@ export function descreverEvento(e: EventoHistorico): string {
       return d.de ? `Cenário trocado: ${nomeDe(CENARIOS, d.de)} → ${nomeDe(CENARIOS, d.para)}` : `Cenário escolhido: ${nomeDe(CENARIOS, d.para)}`;
     case "contrato.alterado":
       return "Referência do contrato alterada";
+    case "ia.chave": {
+      const onde = d.cliente ? ` em ${String(d.cliente)}` : "";
+      return d.ligada ? `IA ligada${onde}` : `IA desligada${onde}${d.motivo ? `. Motivo: ${String(d.motivo)}` : ""}`;
+    }
+    case "ia.ajuste": {
+      const partes = [typeof d.limiteSugestoes === "number" && `${String(d.limiteSugestoes)} sugestões`, typeof d.limiteMinutos === "number" && `${String(d.limiteMinutos)} minutos de transcrição`,
+        d.provedor && `provedor ${String(d.provedor)}`, d.modelo && `modelo ${String(d.modelo)}`].filter(Boolean);
+      return partes.length ? `Limite da IA: ${partes.join(" · ")}` : "Limite da IA salvo sem mudanças";
+    }
+    case "ia.funcoes":
+      return `Ajuda da IA: sugestão ${d.sugerir ? "ligada" : "desligada"} · transcrição ${d.transcrever ? "ligada" : "desligada"}`;
     case "estado.mudou": {
       if (e.entidade === "contatos_unidade") {
         if (d.para === "ENCERRADO") return d.motivo ? `Contato saiu da unidade · ${nomeDe(MOTIVOS_ENCERRAMENTO, d.motivo)}` : "Contato saiu da unidade";
@@ -90,11 +103,15 @@ export function descreverEvento(e: EventoHistorico): string {
     case "equipe.atribuicao_retirada":
       return "Atribuição retirada";
     case "equipe.membro_cadastrado":
-      return `Pessoa cadastrada na equipe · ${listaDeFuncoes(d.funcoes)}`;
+      return e.alvo?.nome
+        ? `${e.alvo.nome} entrou na equipe · ${listaDeFuncoes(d.funcoes)}`
+        : `Pessoa cadastrada na equipe · ${listaDeFuncoes(d.funcoes)}`;
     case "equipe.funcoes_alteradas":
-      return `Funções revistas: ${listaDeFuncoes(d.antes)} → ${listaDeFuncoes(d.depois)}`;
+      return e.alvo?.nome
+        ? `Funções de ${e.alvo.nome} revistas · ${listaDeFuncoes(d.antes)} → ${listaDeFuncoes(d.depois)}`
+        : `Funções revistas: ${listaDeFuncoes(d.antes)} → ${listaDeFuncoes(d.depois)}`;
     case "equipe.membro_desativado":
-      return "Pessoa desativada da equipe";
+      return e.alvo?.nome ? `${e.alvo.nome} saiu da equipe` : "Pessoa desativada da equipe";
     case "fuso.alterado":
       return `Fuso: ${nomeDe(FUSOS, d.de)} → ${nomeDe(FUSOS, d.para)}`;
     case "horarios.alterados":
@@ -123,6 +140,8 @@ export function descreverEvento(e: EventoHistorico): string {
       return `Permissões revistas: ${listaDePermissoes(d.antes)} → ${listaDePermissoes(d.depois)}`;
     case "pessoa.revogada":
       return d.pendente ? "Acesso revogado · responsável padrão ficou pendente" : "Acesso revogado";
+    case "pessoa.repasse":
+      return descreverRepasse(d);
     case "atendimento.alterado":
       return "Responsáveis pelo atendimento alterados";
     case "estrutura.alterada":
@@ -205,4 +224,24 @@ export function mostrarTelefone(e164: string | null | undefined): string {
   if (!e164) return "";
   const m = /^\+55(\d{2})(\d{4,5})(\d{4})$/.exec(e164);
   return m ? `+55 ${m[1]} ${m[2]}-${m[3]}` : e164;
+}
+
+/** O que passou para quem assumiu ao revogar o acesso (0297; CF-05, MP-01). Sem nomes: o histórico guarda só ids. */
+function descreverRepasse(d: Record<string, unknown>): string {
+  const n = (v: unknown) => Number(v ?? 0);
+  const plural = (q: number, um: string, varios: string) => `${q} ${q === 1 ? um : varios}`;
+  const partes: string[] = [];
+  const p = d.pedidos as { para?: string | null; quantidade?: number } | undefined;
+  if (p && n(p.quantidade) > 0) {
+    partes.push(p.para
+      ? `${plural(n(p.quantidade), "pedido passou", "pedidos passaram")} para quem assumiu`
+      : `${plural(n(p.quantidade), "pedido ficou", "pedidos ficaram")} na fila sem responsável`);
+  }
+  const m = d.manutencoes as { quantidade?: number; preventivas?: number } | undefined;
+  if (m && n(m.quantidade) + n(m.preventivas) > 0) {
+    const itens = [n(m.quantidade) ? plural(n(m.quantidade), "manutenção", "manutenções") : null,
+      n(m.preventivas) ? plural(n(m.preventivas), "preventiva", "preventivas") : null].filter(Boolean);
+    partes.push(`${itens.join(" e ")} com quem assumiu`);
+  }
+  return partes.length ? `Repasse ao revogar · ${partes.join(" · ")}` : "Repasse ao revogar · nada em aberto";
 }

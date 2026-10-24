@@ -8,7 +8,8 @@ import Link from "next/link";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { PARTES_MUDANCA, rotuloSituacaoChamadoCliente, type ParteMudanca } from "@triade/domain";
 import {
-  AvisoErro, Botao, CampoAreaTexto, camposComErro, chamarApi, Dialogo, Icone, Selo, textoDoErro, type ErroApi, type Resposta,
+  Aviso, AvisoErro, Botao, CampoAreaTexto, camposComErro, chamarApi, Dialogo, enviarImagensDaMensagem, Icone, Selo, textoDoErro, useAnexarImagens,
+  type ErroApi, type Resposta,
 } from "@triade/ui";
 import { useAmbiente, useCarregar } from "./contexto.tsx";
 import { Escolha } from "./comum.tsx";
@@ -59,17 +60,20 @@ interface MudancaPedida { parte: string; id: string; numero: number; situacao: s
  * No app, o "Pedir mudança à TRÍADE" (item 8, decisões A.1 e B.1 de 23/10/2026): abre uma janela
  * ali mesmo, com a parte e o valor de hoje, e vira um chamado de Mudança de configuração. Com um
  * pedido aberto para a parte, mostra "Mudança pedida", a situação e "Ver chamado", em vez de
- * oferecer pedir de novo.
+ * oferecer pedir de novo. A imagem vai junto com o pedido, dentro da primeira mensagem (decisão E.2).
  */
 export function PedirMudanca({ parte, valor }: { parte: ParteMudanca; valor: string }) {
   const { onde } = useAmbiente();
   const pedidas = useCarregar<{ itens: MudancaPedida[] }>(onde === "app" ? "/v1/condominio/chamados/mudancas" : null);
   const [aberta, setAberta] = useState(false);
+  const [falhou, setFalhou] = useState<string | null>(null);
   if (onde !== "app") return null;
   const pedida = pedidas.estado === "pronto" ? pedidas.dados.itens.find((m) => m.parte === parte) : undefined;
+  const aviso = falhou ? <Aviso tom="atencao" className="basis-full">A mudança foi pedida, mas alguma imagem não foi junto. {falhou}</Aviso> : null;
   if (pedida) {
     return (
       <span className="flex flex-wrap items-center gap-2">
+        {aviso}
         <Selo tom="andamento"><Icone nome="trocar" className="h-3.5 w-3.5" />Mudança pedida</Selo>
         <Selo tom={pedida.situacao === "ESPERANDO_CLIENTE" ? "atencao" : "info"}>{rotuloSituacaoChamadoCliente(pedida.situacao)}</Selo>
         {pedida.ver
@@ -85,13 +89,20 @@ export function PedirMudanca({ parte, valor }: { parte: ParteMudanca; valor: str
       <Botao variante="discreto" tamanho="m" onClick={() => setAberta(true)} disabled={pedidas.estado === "carregando"}>
         <Icone nome="trocar" />Pedir mudança
       </Botao>
-      {aberta ? <JanelaPedirMudanca parte={parte} valor={valor} aoFechar={() => setAberta(false)} aoPedir={() => { setAberta(false); pedidas.recarregar(); }} /> : null}
+      {aberta ? (
+        <JanelaPedirMudanca parte={parte} valor={valor} aoFechar={() => setAberta(false)}
+          aoPedir={(problemas) => { setAberta(false); setFalhou(problemas.length ? problemas.join(" ") : null); pedidas.recarregar(); }} />
+      ) : null}
     </>
   );
 }
 
-function JanelaPedirMudanca({ parte, valor, aoFechar, aoPedir }: { parte: ParteMudanca; valor: string; aoFechar: () => void; aoPedir: () => void }) {
+function JanelaPedirMudanca({ parte, valor, aoFechar, aoPedir }: {
+  parte: ParteMudanca; valor: string; aoFechar: () => void; aoPedir: (problemas: string[]) => void;
+}) {
   const [texto, setTexto] = useState("");
+  const [imagens, setImagens] = useState<File[]>([]);
+  const anexo = useAnexarImagens({ id: `mudar-${parte}-imagens`, imagens, mudar: setImagens, maximo: 3, oQue: "pedido" });
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
 
@@ -99,16 +110,21 @@ function JanelaPedirMudanca({ parte, valor, aoFechar, aoPedir }: { parte: ParteM
     ev.preventDefault();
     setErro(null);
     setEnviando(true);
-    const r = await chamarApi("/v1/condominio/chamados/mudanca", { corpo: { parte, hoje: valor, texto } });
+    const r = await chamarApi<{ id: string; mensagemId: string }>("/v1/condominio/chamados/mudanca", { corpo: { parte, hoje: valor, texto } });
+    if (!r.ok) {
+      setEnviando(false);
+      return setErro(r.erro);
+    }
+    const problemas = imagens.length
+      ? await enviarImagensDaMensagem(`/v1/condominio/chamados/${r.dados.id}/imagens`, r.dados.mensagemId, imagens) : [];
     setEnviando(false);
-    if (!r.ok) return setErro(r.erro);
-    aoPedir();
+    aoPedir(problemas);
   }
 
   const fixo = "flex min-h-11 items-center rounded-xl border border-linha bg-fundo px-3.5 py-2.5 t-texto";
   return (
     <Dialogo aberto media fechar titulo="Pedir mudança à TRÍADE" apoio="A parte e o valor de hoje já vêm preenchidos." aoFechar={aoFechar}>
-      <form onSubmit={pedir} noValidate className="grid gap-4">
+      <form onSubmit={pedir} onPaste={anexo.colar} noValidate className="grid gap-4">
         {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
         <dl className="grid gap-3 sm:grid-cols-2">
           <div className="grid gap-1"><dt className="t-apoio font-medium">Parte</dt><dd className={fixo}>{PARTES_MUDANCA[parte].nome}</dd></div>
@@ -117,6 +133,8 @@ function JanelaPedirMudanca({ parte, valor, aoFechar, aoPedir }: { parte: ParteM
         <CampoAreaTexto id={`mudar-${parte}`} rotulo="O que precisa e por quê" required maxLength={4000} value={texto} onChange={(e) => setTexto(e.target.value)}
           ajuda="A TRÍADE responde em dias úteis, das 9h às 18h, e pode pedir mais detalhes."
           erro={camposComErro(erro).includes("texto") ? "Diga o que precisa e por quê." : null} />
+        {anexo.lista}
+        {anexo.anexar ? <span className="flex items-center justify-self-start">{anexo.anexar}</span> : null}
         <p className="t-apoio text-tinta-suave">Vai como chamado de Mudança de configuração. Acompanhe aqui ou em Ajuda e suporte.</p>
         <div className="sticky -bottom-6 -mx-6 -mb-6 flex flex-wrap items-center justify-end gap-2 rounded-b-[24px] border-t border-linha bg-superficie px-6 py-4 max-md:grid max-md:rounded-none">
           <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>

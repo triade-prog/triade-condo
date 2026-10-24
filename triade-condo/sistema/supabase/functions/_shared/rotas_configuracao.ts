@@ -5,6 +5,7 @@
 
 import type { Context, Env, Hono } from "hono";
 import {
+  ajudaIaSchema,
   areaSchema,
   avisoNovoSchema,
   categoriaSchema,
@@ -190,5 +191,13 @@ export function rotasConfiguracao<E extends Env>(
   app.put(`${prefixo}/whatsapp/config/quedas`, async (c) => {
     const d = await lerCorpo(c, responsavelQuedasSchema);
     return c.json(await rpc("plataforma_quedas_responsavel", { ...quem(c), p_versao: d.versao, p_responsavel: d.pessoaId }));
+  });
+
+  // Ajuda da IA (IA-19, IA-20): o que está ligado e o uso do mês, sem valores. Ligar e desligar
+  // cada função é com o condomínio; com a chave da TRÍADE desligada, as duas ficam travadas.
+  app.get(`${prefixo}/ia`, async (c) => c.json(await rpc("plataforma_ajuda_ia", quem(c))));
+  app.put(`${prefixo}/ia`, async (c) => {
+    const d = await lerCorpo(c, ajudaIaSchema);
+    return c.json({ versao: await rpc<number>("plataforma_definir_ajuda_ia", { ...quem(c), p_versao: d.versao, p_sugerir: d.sugerir, p_transcrever: d.transcrever }) });
   });
 }

@@ -27,6 +27,8 @@ export const PERMISSOES = {
   ASSEMBLEIAS: "Cuidar das assembleias",
   VER_CLASSIFICADOS: "Ver os classificados",
   CLASSIFICADOS: "Cuidar dos classificados",
+  VER_PORTARIA: "Ver a portaria",
+  PORTARIA: "Cuidar da portaria",
 } as const;
 export type Permissao = keyof typeof PERMISSOES;
 
@@ -170,6 +172,11 @@ export const revogarPessoaSchema = z.object({
   versao,
   substitutoId: id.nullable().optional(),
   deixarPendente: z.boolean().optional(),
+  // Quem assume (0297; CF-05, MP-01). Pedidos: ausente = vão para o responsável padrão, como antes;
+  // null = ficam na fila sem responsável. Manutenções: obrigatório quando a pessoa tem manutenção
+  // em aberto ou preventiva ativa (emAberto.manutencoes > 0).
+  assumePedidosId: id.nullable().optional(),
+  assumeManutencoesId: id.nullable().optional(),
 });
 
 export const atendimentoSchema = z.object({

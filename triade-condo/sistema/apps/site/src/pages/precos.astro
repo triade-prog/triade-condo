@@ -2,7 +2,7 @@
 import Base from "../layouts/Base.astro";
 import Destaque from "../components/Destaque.astro";
 import FaixaFinal from "../components/FaixaFinal.astro";
-import { aDefinir, armazenamentoGb, descontoSindicoProfissional, faixas, inteiro, mensalNoAnual, precosProvisorios, reais } from "../dados/oferta";
+import { aDefinir, armazenamentoGb, faixas, franquiaComunicados, fundadores, mensalNoAnual, precosProvisorios, reais } from "../dados/oferta";
 
 const textoMensal = "Mensal: sem fidelidade, cancela quando quiser, sem multa. A implantação é paga uma vez, em até 3 parcelas.";
 const textoAnual = "Anual: 12 meses pelo preço de 11 pagando à vista, ou 12 parcelas sem desconto. Nos dois casos a implantação é grátis.";
@@ -48,12 +48,13 @@ const perguntas = [
         <b class="rot">{f.rotulo}</b>
         <div><span class="valor3" data-mensal={reais(f.mensal)} data-anual={reais(mensalNoAnual(f.mensal))}>{reais(f.mensal)}</span><span class="suave"> por mês</span></div>
         <span class="suave" data-mensal={`Implantação de ${reais(f.implantacao)}, uma vez, em até 3x`} data-anual="Implantação grátis no anual">Implantação de {reais(f.implantacao)}, uma vez, em até 3x</span>
-        <span class="suave">{inteiro(f.franquiaComunicados)} comunicados por WhatsApp no mês</span>
+        <span class="suave">Comunicados por WhatsApp: franquia {franquiaComunicados}</span>
         <a href="#pedir" class:list={["botao", f.destaque ? "branco" : "claro"]}>Solicitar demonstração</a>
       </li>
     ))}
   </ul>
-  <p class="suave" style="font-size:14px;margin-top:24px">{precosProvisorios && "Valores provisórios: podem mudar até a assinatura. "}Acima de 400 unidades ou vários prédios: <a href="#pedir">fale com a gente</a>. Síndico profissional tem {descontoSindicoProfissional}% de desconto a partir do segundo condomínio.</p>
+  {fundadores.vagasAbertas && <p class="fundadores" style="margin-top:24px"><b>Condomínios fundadores:</b> a partir de {reais(faixas[0].fundador)}/mês, só no mensal, por {fundadores.meses} meses, vagas limitadas.</p>}
+  <p class="suave" style="font-size:14px;margin-top:16px">{precosProvisorios && "Valores provisórios: podem mudar até a assinatura. "}Acima de 400 unidades, vários prédios ou administradoras: <a href="#pedir">fale com a gente</a>.</p>
 </section>
 
 <section class="wrap" style="padding-block:var(--secao-ritmo-curto) 0">

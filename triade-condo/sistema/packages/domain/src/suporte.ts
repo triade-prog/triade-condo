@@ -206,6 +206,8 @@ export const PARTES_MUDANCA = {
   ANEXAR: { nome: "Mensagens seguintes do WhatsApp", pagina: "whatsapp" },
   ETAPAS_PEDIDOS: { nome: "Etapas dos pedidos", pagina: "etapas" },
   ETAPAS_MANUTENCAO: { nome: "Etapas da manutenção", pagina: "manutencao" },
+  LIMITE_IA: { nome: "Limite da Ajuda da IA", pagina: "ia" },
+  CENARIO_PORTARIA: { nome: "Cenário da portaria", pagina: "portaria" },
 } as const;
 export type ParteMudanca = keyof typeof PARTES_MUDANCA;
 
@@ -248,8 +250,17 @@ export const FILTROS_CHAMADO = {
   TODOS: "Todos",
 } as const;
 
-/** Imagens do chamado: as regras das fotos dos pedidos, até 3. */
-export const IMAGENS_CHAMADO = { maximo: 3, tamanho: 10 * 1024 * 1024, tipos: ["image/jpeg", "image/png", "image/webp"] } as const;
+/**
+ * Imagens do chamado (0297; PI-20): as regras das fotos dos pedidos, até 3 por mensagem (`maximo`) e
+ * 10 por chamado, só na própria mensagem enviada há no máximo 15 minutos.
+ */
+export const IMAGENS_CHAMADO = {
+  maximo: 3,
+  porChamado: 10,
+  minutosMensagem: 15,
+  tamanho: 10 * 1024 * 1024,
+  tipos: ["image/jpeg", "image/png", "image/webp"],
+} as const;
 export const DIAS_REABRIR_CHAMADO = 7;
 
 export const abrirChamadoSchema = z.object({
@@ -277,6 +288,7 @@ export const atualizarChamadoSchema = z.object({
 });
 
 export const iniciarImagemChamadoSchema = z.object({
+  mensagemId: id,
   nome: z.string().trim().min(1).max(200),
   tipo: z.enum(IMAGENS_CHAMADO.tipos),
   tamanho: z.number().int().min(1).max(IMAGENS_CHAMADO.tamanho),

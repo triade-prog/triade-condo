@@ -212,11 +212,13 @@ import { avisoAssinado, lerEventoResend, montarEmail, type Correio, type Mensage
 import { ipDaChamada } from "../_shared/repasse.ts";
 import { registrar } from "../_shared/registro.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
+import { criarIa, type DepsIa } from "./rotas_ia.ts";
 import { criarApp } from "../_shared/app.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
 import { montarZip, planilhaCsv, type ItemZip } from "../_shared/zip.ts";
+import { rotasEncomendas } from "./encomendas.ts";
 
 export type VarsPlataforma = { Variables: VarsSessao["Variables"] & { condominioId: string } };
 
@@ -241,6 +243,8 @@ export interface DepsPlataforma extends DepsSessao {
   armazenamentoExportacoes?: Armazenamento;
   /** Anexos enviados para o relatório do mês (TR-10). */
   armazenamentoRelatorios?: Armazenamento;
+  /** Fotos da etiqueta e da retirada das encomendas (Portaria 1, PA-01). */
+  armazenamentoPortaria?: Armazenamento;
   /** Imagens dos chamados de suporte (peça R4, PI-20). */
   armazenamentoSuporte?: Armazenamento;
   /** E-mail dos comunicados e documentos (CD-13, CD-14). Sem correio, a fila espera. */
@@ -254,6 +258,8 @@ export interface DepsPlataforma extends DepsSessao {
   aoFundo?: (p: Promise<unknown>) => void;
   /** WhatsApp do condomínio (passo 5): o conector e a chave que decifra as credenciais. Sem ele, a fila espera. */
   whatsapp?: { conector: ConectorWhatsapp; chave: CryptoKey };
+  /** Motor de IA (IA-20): os conectores que a função tem agora. Sem a chave, nenhum, e o pedido segue como sempre. */
+  ia?: DepsIa;
 }
 
 const REMETENTE = "nao-responda@t3condo.trihub.com.br";
@@ -310,6 +316,9 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   const rpc = deps.banco.rpc.bind(deps.banco);
   /** Pessoa e condomínio que a sessão validou: vão em toda chamada ao banco. */
   const quem = (c: Context<VarsPlataforma>) => ({ p_pessoa: c.get("sessao").pessoaId, p_condominio: c.get("condominioId") });
+  // Ajuda da IA nos pedidos (IA-17, IA-15, W-06): só sugere e transcreve; nada muda sozinho.
+  const ia = criarIa(deps.banco, deps.ia, deps.armazenamento, noFundo);
+  ia.rotas(app, quem);
   app.get("/v1/condominio", async (c) => {
     const id = c.get("condominioId");
     const condominios = await deps.banco.rpc<CondominioDaPessoa[]>("meus_condominios", { p_pessoa: c.get("sessao").pessoaId });
@@ -330,6 +339,8 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   const PARTES_DA_ENTRADA = {
     configuracoes: "plataforma_configuracoes", areas: "plataforma_areas_comuns", manutencao: "plataforma_etapas_manutencao",
     plano: "plataforma_plano_comunicacao", whatsapp: "plataforma_config_whatsapp", links: "plataforma_links_qr",
+    ia: "plataforma_ajuda_ia",
+    portaria: "plataforma_portaria",
   } as const;
   app.get("/v1/condominio/configuracoes/entrada", async (c) => {
     const lidas = await Promise.allSettled(Object.values(PARTES_DA_ENTRADA).map((f) => rpc(f, quem(c))));
@@ -339,6 +350,9 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       return [k, l.status === "fulfilled" ? l.value : null];
     })));
   });
+
+  // Portaria 1 · Encomendas (PA-01, PA-07, V-04, CF-12): lista, registro, aviso, entrega e as fotos.
+  rotasEncomendas(app, "/v1/condominio", quem, { banco: deps.banco, armazenamento: deps.armazenamentoPortaria });
 
   // Pessoas autorizadas (V-09, CF-02, CF-03, CF-04).
   app.get("/v1/condominio/pessoas", async (c) => c.json(await rpc("plataforma_pessoas", quem(c))));
@@ -368,8 +382,14 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/pessoas/:vinculo/revogar", async (c) => {
     const vinculo = idDaRota(c, "vinculo");
     const d = await lerCorpo(c, revogarPessoaSchema);
+    // Quem assume (0297; CF-05, MP-01): só vai ao banco o que a tela disse; "assumePedidosId: null"
+    // deixa os pedidos na fila sem responsável, e sem a chave vale o responsável padrão.
+    const assume: Record<string, string | null> = {};
+    if ("assumePedidosId" in d) assume.pedidos = d.assumePedidosId ?? null;
+    if ("assumeManutencoesId" in d) assume.manutencoes = d.assumeManutencoesId ?? null;
     await rpc("plataforma_revogar_pessoa", {
       ...quem(c), p_vinculo: vinculo, p_versao: d.versao, p_substituto: d.substitutoId ?? null, p_deixar_pendente: d.deixarPendente ?? false,
+      ...(Object.keys(assume).length ? { p_assume: assume } : {}),
     });
     return c.json({ ok: true });
   });
@@ -653,10 +673,14 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       ...quem(c), p_unidade: d.unidadeId, p_contato: d.contatoId, p_local: d.local, p_categoria: d.categoriaId, p_prioridade: d.prioridadeId,
       p_assunto: d.assunto, p_descricao: d.descricao, p_privado: d.privado, p_responsavel: d.responsavelId, p_avisar: d.avisar,
     };
-    if (!d.mensagemId) return c.json(await rpc("plataforma_registrar_pedido", { ...args, p_canal: d.canal }), 201);
     // Registrar com as mensagens do WhatsApp (D4.20, decisão A.2): o banco registra com o canal
     // WhatsApp do condomínio e junta a conversa na mesma transação; se um falha, nada fica.
-    return c.json(await rpc("plataforma_registrar_pedido_whatsapp", { ...args, p_mensagem: d.mensagemId }), 201);
+    const r = d.mensagemId
+      ? await rpc<{ id?: string }>("plataforma_registrar_pedido_whatsapp", { ...args, p_mensagem: d.mensagemId })
+      : await rpc<{ id?: string }>("plataforma_registrar_pedido", { ...args, p_canal: d.canal });
+    // A sugestão automática mostrada no registro fica no histórico, usada ou não (IA-15).
+    await ia.noRegistro(quem(c), d.sugestaoId, r?.id);
+    return c.json(r, 201);
   });
 
   // O bloco Quem avisar antes de registrar: as linhas pelas regras, os rascunhos editáveis e a
@@ -926,6 +950,12 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       case "decisoes":
         return c.json(await contar(["DECIDIDAS", "TODAS"], async (s) =>
           ((await rpc<{ decisoes?: unknown[] }>("plataforma_decisoes", { ...quem(c), p_filtro: s })).decisoes ?? []).length));
+      case "encomendas": {
+        const r = await rpc<{ contagens?: Record<string, number> }>("plataforma_encomendas", {
+          ...quem(c), p_aba: "GUARDADAS", p_atalho: null, p_busca: c.req.query("busca")?.trim().slice(0, 60) || null, p_pagina: 1,
+        });
+        return c.json(r.contagens ?? {});
+      }
       case "reservas": {
         const q = consulta(c, filtroReservasSchema);
         return c.json(await contar(["A_APROVAR", "PROXIMAS", "TODAS"], async (s) =>
@@ -1924,6 +1954,14 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     });
     return c.json(await linkPublico(armazenamentoManutencao(), a));
   });
+  // As fotos que o próprio prestador mandou (0297; V-11): liberadas e não retiradas, só enquanto o link vale.
+  app.get("/v1/publico/p/:codigo/fotos/:arquivo", async (c) => {
+    const codigo = await prestador(c);
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("publico_prestador_foto", {
+      p_codigo: codigo, p_arquivo: idDaRota(c, "arquivo"),
+    });
+    return c.json(await linkPublico(armazenamentoManutencao(), a));
+  });
   // Confirmar ou dizer que não pode atender (MP-09): recusar passa o serviço para a reserva.
   app.post("/v1/publico/p/:codigo/confirmar", async (c) =>
     c.json(await rpc("publico_prestador_confirmar", { p_codigo: await prestador(c) })));
@@ -2119,8 +2157,9 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     (deps.aoFundo ?? (() => {}))(p);
   }
 
-  // Ajuda e suporte (peça R4; PI-17, PI-20): chamados de suporte técnico com até 3 imagens,
-  // com as regras das fotos dos pedidos.
+  // Ajuda e suporte (peça R4; PI-17, PI-20): chamados de suporte técnico com as regras das fotos
+  // dos pedidos. Desde a 0297 a imagem vai na mensagem: abrir, responder e pedir mudança devolvem
+  // mensagemId; até 3 imagens por mensagem e 10 por chamado.
   app.get("/v1/condominio/chamados", async (c) => c.json(await rpc("plataforma_chamados", quem(c))));
 
   app.post("/v1/condominio/chamados", async (c) => {
@@ -2170,7 +2209,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const id = idDaRota(c, "id");
     const d = await lerCorpo(c, iniciarImagemChamadoSchema);
     const r = await rpc<{ arquivoId: string; caminho: string; tipo: string }>("plataforma_iniciar_arquivo_chamado", {
-      ...quem(c), p_id: id, p_nome: d.nome, p_tipo: d.tipo, p_tamanho: d.tamanho,
+      ...quem(c), p_id: id, p_mensagem: d.mensagemId, p_nome: d.nome, p_tipo: d.tipo, p_tamanho: d.tamanho,
     });
     return c.json({ arquivoId: r.arquivoId, envio: { url: await suporte().linkEnvio(r.caminho), metodo: "PUT", tipo: r.tipo } }, 201);
   });
@@ -2274,6 +2313,11 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       p_condominio: m.condominio, p_mensagem: m.mensagem, p_tamanho: r.ok ? r.bytes.length : null,
       p_motivo: r.ok ? null : motivoMidiaParaMorador(r.motivo),
     });
+    // O áudio guardado vai para a transcrição, se o condomínio usa (W-06). Falhar aqui não muda a mensagem.
+    if (r.ok) {
+      await ia.aposGuardarAudio(m.condominio, m.mensagem, m.tipo, r.bytes)
+        .catch(() => registrar("aviso", { funcao: "api-plataforma", rota: "ia.transcrever", falha: "INICIO" }));
+    }
   }
 
   /** Pega os lotes da fila, manda pelo conector, um por vez, e devolve o resultado de cada envio. */

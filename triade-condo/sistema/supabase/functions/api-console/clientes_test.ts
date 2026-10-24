@@ -179,6 +179,38 @@ Deno.test("PI-10: equipe nova recebe o convite para o Console, depois de o banco
   assertEquals(sem.enviados, []);
 });
 
+Deno.test("PI-12: o histórico da equipe diz de quem o evento fala, com o nome que o banco leu na hora", async () => {
+  const OLGA = "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d";
+  const linha = { ocorrido_em: "2026-10-24T13:00:00Z", autor_id: CAROLINA, autor_nome: "Carolina", dados: {} };
+  const m = montar({
+    handlers: {
+      console_historico_equipe: () => [
+        { ...linha, id: 3, acao: "equipe.membro_desativado", entidade: "pessoa", entidade_id: OLGA, alvo_nome: "Olga Lima" },
+        { ...linha, id: 2, acao: "equipe.membro_cadastrado", entidade: "pessoa", entidade_id: OLGA, alvo_nome: null },
+        { ...linha, id: 1, acao: "equipe.atribuida", entidade: "vinculo", entidade_id: IPE, alvo_nome: null },
+      ],
+    },
+  });
+  const { eventos } = await (await m.pedir("/v1/equipe/historico?limite=10", { cookie: await entrar(m) })).json();
+  assertEquals(eventos[0], {
+    id: 3, ocorridoEm: "2026-10-24T13:00:00Z", autor: { id: CAROLINA, nome: "Carolina" }, acao: "equipe.membro_desativado",
+    entidade: "pessoa", entidadeId: OLGA, dados: {}, alvo: { id: OLGA, nome: "Olga Lima" },
+  });
+  assertEquals(eventos.map((e: { alvo: unknown }) => e.alvo), [{ id: OLGA, nome: "Olga Lima" }, null, null]);
+  assertEquals(m.chamadas.find((c) => c.funcao === "console_historico_equipe")?.args, { p_pessoa: CAROLINA, p_antes: null, p_limite: 10 });
+});
+
+Deno.test("D4.28: a lista de Implantações passa a vencida e a configuração como o banco mandou", async () => {
+  const item = {
+    condominioId: IPE, nome: "Residencial Ipê", iniciada: true, vencidas: 1,
+    vencida: { id: "5e6f7a8b-9c0d-4e1f-a2b3-c4d5e6f7a8b9", texto: "Síndica enviar a planilha", comQuem: "CLIENTE", responsavel: "Inês", etapa: 6,
+               proximoRetorno: "2026-10-21" },
+    configuracao: { conferidas: 2, total: 11 },
+  };
+  const m = montar({ handlers: { console_implantacoes: () => [item] } });
+  assertEquals(await (await m.pedir("/v1/implantacoes", { cookie: await entrar(m) })).json(), { implantacoes: [item] });
+});
+
 Deno.test("CF-02: quem foi convidado cria a senha pelo link de uso único", async () => {
   const m = montar();
   const r = await m.pedir("/v1/auth/criar-senha", { corpo: { tokenHash: TOKEN_CONVITE, novaSenha: "senha-nova-bem-forte" } });

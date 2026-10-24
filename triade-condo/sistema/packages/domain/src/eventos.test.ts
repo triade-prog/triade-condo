@@ -13,6 +13,18 @@ describe("histórico legível (PI-12)", () => {
       .toBe("Funções revistas: Implantação → Suporte");
   });
 
+  it("na equipe, diz de quem o evento fala quando o nome vem (D4.28)", () => {
+    const alvo = { id: "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d", nome: "Inês" };
+    expect(descreverEvento({ acao: "equipe.membro_cadastrado", entidade: "pessoa", dados: { funcoes: ["IMPLANTACAO"] }, alvo }))
+      .toBe("Inês entrou na equipe · Implantação");
+    expect(descreverEvento({ acao: "equipe.membro_desativado", entidade: "pessoa", dados: {}, alvo })).toBe("Inês saiu da equipe");
+    expect(descreverEvento({ acao: "equipe.funcoes_alteradas", entidade: "pessoa", dados: { antes: ["IMPLANTACAO"], depois: ["IMPLANTACAO", "SUPORTE"] }, alvo }))
+      .toBe("Funções de Inês revistas · Implantação → Implantação, Suporte");
+    expect(descreverEvento({ acao: "equipe.membro_cadastrado", entidade: "pessoa", dados: { funcoes: ["SUPORTE"] }, alvo: null }))
+      .toBe("Pessoa cadastrada na equipe · Suporte");
+    expect(descreverEvento({ acao: "equipe.membro_desativado", entidade: "pessoa", dados: {} })).toBe("Pessoa desativada da equipe");
+  });
+
   it("evento desconhecido aparece pelo código, sem quebrar", () => {
     expect(descreverEvento({ acao: "algo.novo", entidade: "x", dados: {} })).toBe("algo.novo");
   });
@@ -29,5 +41,17 @@ describe("eventos do passo 2", () => {
     expect(descreverEvento({ acao: "pessoa.alterada", entidade: "vinculo", dados: { antes: ["CONFIGURAR"], depois: [] } }))
       .toBe("Permissões revistas: Configurar → só ver");
     expect(descreverEvento({ acao: "categoria.criada", entidade: "categoria", dados: {} })).toBe("Categoria criada");
+  });
+});
+
+describe("repasse ao revogar (0297; CF-05, MP-01)", () => {
+  it("diz o que passou para quem assumiu, sem nomes", () => {
+    expect(descreverEvento({ acao: "pessoa.repasse", entidade: "vinculo", dados: {
+      pedidos: { para: "x", quantidade: 2 }, manutencoes: { para: "y", quantidade: 1, preventivas: 1 } } }))
+      .toBe("Repasse ao revogar · 2 pedidos passaram para quem assumiu · 1 manutenção e 1 preventiva com quem assumiu");
+    expect(descreverEvento({ acao: "pessoa.repasse", entidade: "vinculo", dados: { pedidos: { para: null, quantidade: 1 } } }))
+      .toBe("Repasse ao revogar · 1 pedido ficou na fila sem responsável");
+    expect(descreverEvento({ acao: "pessoa.repasse", entidade: "vinculo", dados: { pedidos: { para: null, quantidade: 0 } } }))
+      .toBe("Repasse ao revogar · nada em aberto");
   });
 });

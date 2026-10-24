@@ -1,5 +1,5 @@
 // Planos e pagamentos no Console (PI-03, CF-11, PI-07, PI-08, PI-16, PI-19, NG-06; quadros 241 a
-// 252, aprovados em 23/10/2026) com a API falsa: contratado e liberado separados, liberar com a
+// 252, aprovados em 23/10/2026; "Usar a tabela" de preços, 0295, quadro 272) com a API falsa: contratado e liberado separados, liberar com a
 // prévia do que o síndico passa a ter, teste com data, suspender sem perder o histórico, a
 // cobrança por competência com recebimento a conferir e o atraso que só avisa. Cada tela passa no
 // axe e não usa emoji.
@@ -108,6 +108,100 @@ test.describe("Console · planos e pagamentos", () => {
     await conferir(page);
   });
 
+  test("Usar a tabela preenche o plano sem gravar; trocar o ciclo busca de novo; o PUT leva a tabela", async ({ page }) => {
+    const estado = await instalarApiFalsa(page);
+    await page.goto(`${CONSOLE}/clientes/${IPE}`);
+    await page.getByRole("tab", { name: "Plano e pagamentos" }).click();
+    await page.getByRole("button", { name: "Editar o plano" }).click();
+    const j = page.getByRole("dialog", { name: "Plano do cliente" });
+    const caixa = j.getByRole("region", { name: "Pela tabela" });
+    await expect(caixa).toContainText("Pela tabela: 42 unidades ativas, faixa 41 a 100");
+    await expect(caixa).toContainText("Fundador R$ 229,00 por mês, implantação sem custo. Fundador até Agosto/2027. Este seria o 3º fundador de 5.");
+    await expect(j.getByText("Não há tabela de preço fixa.")).toHaveCount(0);
+    await expect(j).toContainText("Mudar o plano vale para as competências que ainda não foram abertas; as já abertas se corrigem por ajuste, com motivo.");
+    await expect(j).toContainText("Fundador é só mensal.");
+    await conferir(page);
+
+    await caixa.getByRole("button", { name: "Usar a tabela" }).click();
+    await expect(j.getByLabel("Nome do plano")).toHaveValue("Fundador");
+    await expect(j.getByLabel("Faixa de unidades, de")).toHaveValue("41");
+    await expect(j.locator("#pl-ate")).toHaveValue("100");
+    await expect(j.getByLabel("Valor por mês")).toHaveValue("229,00");
+    await expect(j.getByLabel("Implantação sem cobrança")).toBeChecked();
+    await expect(j.getByLabel("Preço de fundador até")).toHaveValue("Agosto/2027");
+    expect(estado.planos.plano!.nome).toBe("Essencial");
+    expect(estado.planos.ultimoPlano).toBeUndefined();
+    await conferir(page);
+
+    await j.getByText("Anual", { exact: true }).click();
+    await expect(j.getByLabel("Valor por ano")).toHaveValue("3839,00");
+    await expect(j.getByLabel("Nome do plano")).toHaveValue("Tabela cheia");
+    await expect(j).toContainText("a tabela sugere 11 vezes o mês (41 a 100: R$ 3.839,00 por ano)");
+    await expect(j.getByLabel("Preço de fundador até")).toHaveCount(0);
+    expect(estado.precos.sugestoes).toContain("ANUAL 2026-09-01");
+    await expect(j.getByText("O preço de fundador é só no mensal. No anual vale a tabela cheia, com a implantação isenta.")).toBeVisible();
+    await j.getByText("Mensal", { exact: true }).click();
+    await expect(j.getByLabel("Valor por mês")).toHaveValue("229,00");
+    await expect(j.getByLabel("Nome do plano")).toHaveValue("Fundador");
+
+    await j.getByRole("button", { name: "Salvar o plano" }).click();
+    await expect(status(page, "Plano salvo.")).toBeVisible();
+    expect(estado.planos.ultimoPlano).toMatchObject({ tabela: "FUNDADOR", nome: "Fundador", valor: 22900, ciclo: "MENSAL", unidadesDe: 41, unidadesAte: 100, implantacaoSemCobranca: true });
+  });
+
+  test("Sem vaga de fundador a tabela sugere a cheia e avisa; valor mexido à mão vai como MANUAL", async ({ page }) => {
+    const estado = await instalarApiFalsa(page);
+    estado.precos.vagasUsadas = 5;
+    await page.goto(`${CONSOLE}/clientes/${IPE}`);
+    await page.getByRole("tab", { name: "Plano e pagamentos" }).click();
+    await page.getByRole("button", { name: "Editar o plano" }).click();
+    const j = page.getByRole("dialog", { name: "Plano do cliente" });
+    await expect(j.getByText("As vagas de fundador acabaram. Vale a tabela cheia.")).toBeVisible();
+    await expect(j.getByRole("region", { name: "Pela tabela" })).toContainText("Tabela cheia R$ 349,00 por mês, implantação R$ 900,00.");
+    await j.getByRole("button", { name: "Usar a tabela" }).click();
+    await expect(j.getByLabel("Valor por mês")).toHaveValue("349,00");
+    await expect(j.getByLabel("Implantação sem cobrança")).not.toBeChecked();
+    await expect(j.getByLabel("Implantação, valor")).toHaveValue("900,00");
+    await j.getByLabel("Valor por mês").fill("320,00");
+    await conferir(page);
+    await j.getByRole("button", { name: "Salvar o plano" }).click();
+    await expect(status(page, "Plano salvo.")).toBeVisible();
+    expect(estado.planos.ultimoPlano).toMatchObject({ tabela: "MANUAL", valor: 32000, implantacaoValor: 90000, implantacaoSemCobranca: false });
+  });
+
+  test("Acima de 400 unidades a tabela fica sob consulta e preenche Valor a definir", async ({ page }) => {
+    const estado = await instalarApiFalsa(page);
+    estado.precos.unidadesAtivas = 450;
+    await page.goto(`${CONSOLE}/clientes/${IPE}`);
+    await page.getByRole("tab", { name: "Plano e pagamentos" }).click();
+    await page.getByRole("button", { name: "Editar o plano" }).click();
+    const j = page.getByRole("dialog", { name: "Plano do cliente" });
+    const caixa = j.getByRole("region", { name: "Pela tabela" });
+    await expect(caixa).toContainText("Pela tabela: 450 unidades ativas, faixa acima de 400");
+    await expect(caixa).toContainText("Acima de 400 unidades, sob consulta: preenche Valor a definir.");
+    await expect(j.getByText("Acima de 400 unidades o preço é sob consulta. Escreva o plano à mão.")).toBeVisible();
+    await caixa.getByRole("button", { name: "Usar a tabela" }).click();
+    await expect(j.getByLabel("Valor por mês")).toHaveValue("");
+    await expect(j.locator("#pl-ate")).toHaveValue("");
+    await conferir(page);
+    await j.getByRole("button", { name: "Salvar o plano" }).click();
+    await expect(status(page, "Plano salvo.")).toBeVisible();
+    expect(estado.planos.ultimoPlano).toMatchObject({ tabela: "MANUAL", valor: null, unidadesDe: 401, unidadesAte: null });
+  });
+
+  test("Sem unidades ativas a tabela não sugere faixa", async ({ page }) => {
+    const estado = await instalarApiFalsa(page);
+    estado.precos.unidadesAtivas = 0;
+    await page.goto(`${CONSOLE}/clientes/${IPE}`);
+    await page.getByRole("tab", { name: "Plano e pagamentos" }).click();
+    await page.getByRole("button", { name: "Editar o plano" }).click();
+    const j = page.getByRole("dialog", { name: "Plano do cliente" });
+    await expect(j.getByRole("region", { name: "Pela tabela" })).toContainText("Pela tabela: 0 unidades ativas");
+    await expect(j.getByText("O condomínio ainda não tem unidades ativas.")).toBeVisible();
+    await expect(j.getByRole("button", { name: "Usar a tabela" })).toBeDisabled();
+    await conferir(page);
+  });
+
   test("Implantação não vê Pagamentos no menu nem os valores na ficha", async ({ page }) => {
     await instalarApiFalsa(page, { funcao: "IMPLANTACAO" });
     await page.goto(`${CONSOLE}/clientes/${IPE}`);
@@ -115,5 +209,6 @@ test.describe("Console · planos e pagamentos", () => {
     await expect(page.getByRole("list", { name: "Conjuntos do cliente" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Pagamentos" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Ver todos" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Tabela de preços" })).toHaveCount(0);
   });
 });
