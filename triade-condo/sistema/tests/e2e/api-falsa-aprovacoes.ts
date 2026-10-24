@@ -24,7 +24,9 @@ interface Membro {
 }
 interface Voto { escolha: string; justificativa?: string; em: string; canal: "PAINEL" | "LINK" }
 interface Votacao { titulares: string[]; necessarios: number; votos: Record<string, Voto> }
-interface Link { codigo: string; membroId: string; tipo: "DECISAO" | "DESPESA"; itemId: string; finalidade: "VOTO" | "SUBSTITUTO" | "AVISO"; valido: boolean; abertoEm?: string }
+type Finalidade = "VOTO" | "SUBSTITUTO" | "AVISO";
+/** Sem código: pedido por quem não vê o código; o link ainda não nasceu e aparece como "Ainda sem link para copiar". */
+interface Link { codigo?: string; membroId: string; tipo: "DECISAO" | "DESPESA"; itemId: string; finalidade: Finalidade; valido: boolean; abertoEm?: string; mandadoEm?: string }
 interface Anexo { id: string; nome: string; tipo: string; parte: "DOCUMENTO" | "COMPROVANTE"; tamanho: number; situacao: string; enviadoEm: string; enviadoPor: string }
 interface Despesa {
   id: string; versao: number; estado: "AGUARDANDO" | "APROVADA" | "RECUSADA" | "RETIRADA" | "PAGA"; modo: "PESSOA" | "CONSELHO";
@@ -120,6 +122,8 @@ export function semearAprovacoes(a: EstadoAprovacoes, decisoes: EstadoDecisoes, 
   a.votacoes[elevador.id] = { titulares, necessarios: 3, votos: { [marta!.id]: { escolha: "APROVAR", em: depois(-10), canal: "LINK" } } };
 }
 
+const AVISO_PECA_O_LINK = "Peça o link ao síndico";
+
 export interface ContextoAprovacoes extends Contexto {
   decisoes: EstadoDecisoes;
   vAna: string;
@@ -128,6 +132,8 @@ export interface ContextoAprovacoes extends Contexto {
 
 const emDia = (m: Membro) => !m.retiradoEm && m.inicio <= HOJE && m.fim >= HOJE;
 const titular = (m: Membro) => m.papel !== "SUPLENTE";
+/** Vota hoje: titular em dia (quem passou a suplente depois de aberta a votação não vota mais). */
+const vota = (m: Membro) => titular(m) && emDia(m);
 const ativos = (a: EstadoAprovacoes) => a.membros.filter((m) => !m.retiradoEm);
 const titularesEmDia = (a: EstadoAprovacoes) => ativos(a).filter((m) => titular(m) && emDia(m));
 function necessarios(a: EstadoAprovacoes, n = titularesEmDia(a).length): number | null {
@@ -178,21 +184,58 @@ function votacaoJson(a: EstadoAprovacoes, v: Votacao, x: Contexto, gestao: boole
     const link = [...a.links].reverse().find((l) => l.membroId === m.id && l.valido && v === a.votacoes[l.itemId]);
     return { membroId: m.id, nome: m.nome, papel: m.papel, emDia: emDia(m), ...(m.id === eu?.id ? { eu: true } : {}),
       ...(voto ? { escolha: voto.escolha, ...(voto.justificativa ? { justificativa: voto.justificativa } : {}), votadoEm: voto.em, canal: voto.canal } : {}),
-      ...(link || m.vinculo ? { link: { canal: m.canal, envio: m.canal === "WHATSAPP" ? "COPIAR" : "ENVIADO", ...(link?.abertoEm ? { abertoEm: link.abertoEm } : {}) } } : {}) };
+      ...(link || m.vinculo ? { link: { canal: m.canal, envio: m.canal === "WHATSAPP" ? "COPIAR" : "ENVIADO", ...(link?.abertoEm ? { abertoEm: link.abertoEm } : {}),
+        ...(link?.mandadoEm ? { mandadoEm: link.mandadoEm } : {}), podeReenviar: aberta && vota(m) } } : {}) };
   });
   const meu = eu ? v.votos[eu.id] : undefined;
   return { titulares: v.titulares.length, necessarios: v.necessarios, votaram: Object.keys(v.votos).length,
-    ...(ver ? { contagem: contagem(v) } : {}), ...(gestao ? { faltam: membros.filter((m) => !v.votos[m.id] && emDia(m)).map((m) => m.nome) } : {}), votos,
+    ...(ver ? { contagem: contagem(v) } : {}), ...(gestao ? { faltam: membros.filter((m) => !v.votos[m.id] && vota(m)).map((m) => m.nome) } : {}), votos,
     ...(eu && v.titulares.includes(eu.id) ? { eu: { membroId: eu.id, ...(meu ? { escolha: meu.escolha, justificativa: meu.justificativa, votadoEm: meu.em } : {}),
-      podeVotar: aberta && emDia(eu) } } : {}) };
+      podeVotar: aberta && vota(eu) } } : {}) };
 }
 
-/** Novo link para o membro: o anterior do mesmo item para de valer. */
-function novoLink(a: EstadoAprovacoes, m: Membro, tipo: Link["tipo"], itemId: string) {
-  for (const l of a.links) if (l.membroId === m.id && l.itemId === itemId) l.valido = false;
+/** O síndico e quem cuida do conselho veem o código para copiar; os outros recebem o aviso. */
+const veCodigo = (x: ContextoAprovacoes) => x.pode("conselho.editar") || x.eu.vinculo === x.vAna;
+
+/** Novo link para o membro: o anterior do mesmo item e da mesma finalidade para de valer. Pelo
+ * WhatsApp, para quem não vê o código, o código nem nasce e o que o membro tinha continua valendo. */
+function novoLink(a: EstadoAprovacoes, x: ContextoAprovacoes, m: Membro, tipo: Link["tipo"], itemId: string, finalidade: Finalidade = "VOTO") {
+  const item = tipo === "DECISAO" ? { decisaoId: itemId } : { despesaId: itemId };
+  const base = { membroId: m.id, nome: m.nome, canal: m.canal, finalidade, ...item };
+  if (m.canal === "WHATSAPP" && !veCodigo(x)) {
+    if (!a.links.some((l) => l.membroId === m.id && l.itemId === itemId && l.finalidade === finalidade && l.valido)) {
+      a.links.push({ membroId: m.id, tipo, itemId, finalidade, valido: true });
+    }
+    return { ...base, envio: "COPIAR", aviso: AVISO_PECA_O_LINK };
+  }
+  for (const l of a.links) if (l.membroId === m.id && l.itemId === itemId && l.finalidade === finalidade) l.valido = false;
   const codigo = `link-${novoId()}`;
-  a.links.push({ codigo, membroId: m.id, tipo, itemId, finalidade: "VOTO", valido: true });
-  return { membroId: m.id, nome: m.nome, canal: m.canal, envio: m.canal === "WHATSAPP" ? "COPIAR" : "EMAIL", ...(m.canal === "WHATSAPP" ? { codigo } : {}) };
+  a.links.push({ codigo, membroId: m.id, tipo, itemId, finalidade, valido: true, mandadoEm: AGORA });
+  return { ...base, envio: m.canal === "WHATSAPP" ? "COPIAR" : "EMAIL", ...(m.canal === "WHATSAPP" ? { codigo } : {}) };
+}
+
+/** O subsíndico responde no lugar do síndico ausente: sem painel, recebe o link do substituto. */
+function linksDoSubstituto(a: EstadoAprovacoes, x: ContextoAprovacoes, tipo: Link["tipo"], itemId: string, decisorId: string | undefined) {
+  const s = subsindico(a);
+  const aus = ausenciaAtiva(a);
+  if (!aus || aus.de > HOJE || !s || s.vinculo || decisorId !== x.vAna || !emDia(s)) return [];
+  return [novoLink(a, x, s, tipo, itemId, "SUBSTITUTO")];
+}
+
+/** Os links do substituto e do aviso da vencida, na decisão e na despesa pedidas a uma pessoa. */
+function linksDoItem(a: EstadoAprovacoes, itemId: string, aberta: boolean) {
+  const vistos = new Set<string>();
+  return [...a.links].reverse().filter((l) => l.itemId === itemId && l.finalidade !== "VOTO" && l.valido).filter((l) => {
+    const k = `${l.membroId}-${l.finalidade}`;
+    if (vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  }).map((l) => {
+    const m = a.membros.find((y) => y.id === l.membroId)!;
+    return { membroId: m.id, nome: m.nome, finalidade: l.finalidade, canal: m.canal, envio: m.canal === "WHATSAPP" ? "COPIAR" : "ENVIADO",
+      ...(l.abertoEm ? { abertoEm: l.abertoEm } : {}), ...(l.mandadoEm ? { mandadoEm: l.mandadoEm } : {}),
+      podeReenviar: aberta && emDia(m) && (l.finalidade !== "SUBSTITUTO" || !!ausenciaAtiva(a)) };
+  });
 }
 
 /** Fecha a votação quando uma escolha chega ao quórum ou quando todos votaram sem chegar. */
@@ -251,22 +294,28 @@ export function ganchosAprovacoes(a: EstadoAprovacoes, x: ContextoAprovacoes): G
         ...(d.voltouAoSindico ? { voltouAoSindico: d.voltouAoSindico } : {}),
         ...(aus?.ativa && d.decisorId === x.vAna && aberta ? { substituto: { nome: aus.substituto, ate: aus.ate } } : {}),
         ...(a.anexosDecisao[d.id]?.length ? { anexos: a.anexosDecisao[d.id] } : {}),
+        ...(d.modo !== "CONSELHO" && gestao() ? { links: linksDoItem(a, d.id, aberta) } : {}),
         ...(d.modo === "CONSELHO" ? { pode: {
           responder: false, retirar: aberta && (d.pedidaPor === x.eu.nome || x.pode("pedidos.atualizar")),
-          votar: aberta && !!eu && emDia(eu) && !!v?.titulares.includes(eu.id), reenviar: aberta && gestao(), anexar: aberta && gestao() } } : {}),
+          votar: aberta && !!eu && vota(eu) && !!v?.titulares.includes(eu.id), reenviar: aberta && gestao(), anexar: aberta && gestao() } } : {}),
       };
     },
     minhaVotacao: (d) => {
       const eu = euMembro(a, x);
-      return d.modo === "CONSELHO" && !!eu && emDia(eu) && !!a.votacoes[d.id]?.titulares.includes(eu.id) && !a.votacoes[d.id]?.votos[eu.id];
+      return d.modo === "CONSELHO" && !!eu && vota(eu) && !!a.votacoes[d.id]?.titulares.includes(eu.id) && !a.votacoes[d.id]?.votos[eu.id];
     },
+    votante: (d) => {
+      const eu = euMembro(a, x);
+      return d.modo === "CONSELHO" && d.estado === "AGUARDANDO" && !!eu && !!a.votacoes[d.id]?.titulares.includes(eu.id);
+    },
+    pedirAPessoa: (d) => ({ links: linksDoSubstituto(a, x, "DECISAO", d.id, d.decisorId) }),
     pedirAoConselho: (d) => {
       const tit = titularesEmDia(a);
       if (!tit.length) return { motivo: "CONSELHO_VAZIO" };
       const nec = necessarios(a);
       if (!nec) return { motivo: "SEM_QUORUM_POSSIVEL" };
       a.votacoes[d.id] = { titulares: tit.map((m) => m.id), necessarios: nec, votos: {} };
-      return { titulares: tit.length, necessarios: nec, links: tit.filter((m) => !m.vinculo).map((m) => novoLink(a, m, "DECISAO", d.id)) };
+      return { titulares: tit.length, necessarios: nec, links: tit.filter((m) => !m.vinculo).map((m) => novoLink(a, x, m, "DECISAO", d.id)) };
     },
     lista: () => ({ conselho: regrasResumo(a), ausencia: ausenciaJson(a, x.sindico), despesasAguardando: despesasDe(a, x).length,
       pode: { aprovar: x.pode("decisoes.aprovar"), despesas: x.pode("despesas.ver") || despesasDe(a, x).length > 0 } }),
@@ -278,13 +327,18 @@ export function ganchosAprovacoes(a: EstadoAprovacoes, x: ContextoAprovacoes): G
 function despesasDe(a: EstadoAprovacoes, x: Contexto) {
   const eu = euMembro(a, x);
   return a.despesas.filter((d) => d.estado === "AGUARDANDO" && (d.modo === "PESSOA" || d.voltouAoSindicoEm ? d.decisorId === x.eu.vinculo
-    : !!eu && emDia(eu) && !!a.votacoes[d.id]?.titulares.includes(eu.id) && !a.votacoes[d.id]?.votos[eu.id]));
+    : !!eu && vota(eu) && !!a.votacoes[d.id]?.titulares.includes(eu.id) && !a.votacoes[d.id]?.votos[eu.id]));
 }
 
 /** O resumo do Início e do menu (resumo_decisoes): votos e despesas entram em aguardando. */
 export function resumoAprovacoes(a: EstadoAprovacoes, x: ContextoAprovacoes, base: { aguardando: number; vencidas: number; maisAntigaDias: number | null; votos?: number }) {
   const despesas = despesasDe(a, x).length;
-  return { ...base, aguardando: base.aguardando + despesas, despesas, votos: base.votos ?? 0 };
+  // As votações abertas em que a pessoa vota, já tendo votado ou não: Decisões segue no menu para trocar o voto.
+  const eu = euMembro(a, x);
+  const votando = !eu ? 0 : [...x.decisoes.decisoes.filter((d) => d.modo === "CONSELHO" && d.estado === "AGUARDANDO" && d.prazo >= HOJE),
+    ...a.despesas.filter((d) => d.modo === "CONSELHO" && d.estado === "AGUARDANDO" && !d.voltouAoSindicoEm && d.prazo >= HOJE)]
+    .filter((d) => a.votacoes[d.id]?.titulares.includes(eu.id)).length;
+  return { ...base, aguardando: base.aguardando + despesas, despesas, votos: base.votos ?? 0, votando };
 }
 
 function despesaJson(a: EstadoAprovacoes, d: Despesa, x: ContextoAprovacoes, ficha: boolean) {
@@ -308,14 +362,16 @@ function despesaJson(a: EstadoAprovacoes, d: Despesa, x: ContextoAprovacoes, fic
     ...(d.justificativa ? { justificativa: d.justificativa } : {}), ...(d.retiradaMotivo ? { retiradaMotivo: d.retiradaMotivo } : {}),
     ...(d.pagamento ? { pagamento: d.pagamento } : {}),
     ...(aus?.ativa && aberta && d.decisorId === x.vAna ? { substituto: { nome: aus.substituto, ate: aus.ate } } : {}),
+    ...(d.modo === "PESSOA" && (gestao || d.pedidaPor === x.eu.nome) ? { links: linksDoItem(a, d.id, aberta) } : {}),
     anexos: ficha ? d.anexos : d.anexos.length,
     ...(ficha ? { historico: d.historico } : {}),
     ...(ficha && gestao && decididaOuPaga ? { comunicado: {
       titulo: `Despesa ${d.estado === "RECUSADA" ? "recusada" : "aprovada"}: ${d.descricao}`,
       texto: `${d.descricao}, de ${d.fornecedor.nome}, no valor combinado, foi ${d.estado === "RECUSADA" ? "recusada" : "aprovada"}. O pagamento é feito fora do sistema.` } } : {}),
     pode: {
-      votar: aberta && conselhoAberto && !!eu && emDia(eu) && !!v?.titulares.includes(eu.id),
-      anexar: d.estado !== "RETIRADA" && d.estado !== "RECUSADA" && gestao,
+      votar: aberta && conselhoAberto && !!eu && vota(eu) && !!v?.titulares.includes(eu.id),
+      anexar: aberta && gestao,
+      anexarComprovante: d.estado === "APROVADA" && !d.pagamento && gestao,
       alterar: aberta && gestao && !(v && Object.keys(v.votos).length),
       retirar: aberta && (gestao || d.pedidaPor === x.eu.nome),
       reenviar: aberta && conselhoAberto && gestao,
@@ -336,22 +392,27 @@ export async function rotasConselhoPublico(route: Route, a: EstadoAprovacoes, x:
   corpo: Record<string, unknown>): Promise<void | null> {
   const r = /^\/v1\/publico\/conselho\/([^/]+)(?:\/(voto|resposta|arquivos\/([^/]+)))?$/.exec(caminho);
   if (!r) return null;
-  const l = a.links.find((y) => y.codigo === decodeURIComponent(r[1]!));
+  const l = a.links.find((y) => !!y.codigo && y.codigo === decodeURIComponent(r[1]!));
   if (!l || !a.ligado) return erro(route, 404, "NOT_FOUND");
   const m = a.membros.find((y) => y.id === l.membroId)!;
   const decisao = l.tipo === "DECISAO" ? x.decisoes.decisoes.find((y) => y.id === l.itemId) : undefined;
   const despesa = l.tipo === "DESPESA" ? a.despesas.find((y) => y.id === l.itemId) : undefined;
   const v = a.votacoes[l.itemId];
-  const motivo = !l.valido ? "LINK_TROCADO" : m.retiradoEm ? "SAIU_DO_CONSELHO" : !emDia(m) ? "MANDATO_VENCIDO" : null;
+  // Na ordem em que o banco confere.
+  const motivo = m.retiradoEm ? "SAIU_DO_CONSELHO" : !l.valido ? "LINK_TROCADO" : !emDia(m) ? "MANDATO_VENCIDO"
+    : l.finalidade === "VOTO" && !titular(m) ? "SUPLENTE_NAO_VOTA" : l.finalidade === "SUBSTITUTO" && !ausenciaAtiva(a) ? "AUSENCIA_ACABOU" : null;
   const item = decisao ?? despesa!;
   const fechada = item.estado !== "AGUARDANDO" || (despesa && !!despesa.voltouAoSindicoEm);
   const json = () => {
-    if (motivo === "LINK_TROCADO") return { condominio: "Residencial Ipê", estado: "NAO_VALE", motivo, membro: m.nome };
-    const meu = v?.votos[m.id];
     const prazo = item.prazo;
-    const estado = motivo ? "NAO_VALE" : fechada ? "FECHADA" : prazo < HOJE ? "PRAZO_ACABOU" : meu ? "VOTADO" : "VOTAR";
+    // Que não vale e vencido: só o nome do condomínio, o estado e o membro, sem nada do item.
+    if (motivo) return { condominio: "Residencial Ipê", estado: "NAO_VALE", motivo, membro: m.nome };
+    if ((fechada || prazo < HOJE) && prazo < somarDias(HOJE, -7)) return { condominio: "Residencial Ipê", estado: "LINK_VENCIDO", membro: m.nome };
+    const meu = v?.votos[m.id];
+    const estado = fechada ? "FECHADA" : prazo < HOJE ? "PRAZO_ACABOU" : l.finalidade === "SUBSTITUTO" ? "RESPONDER" : l.finalidade === "AVISO" ? "AGUARDANDO"
+      : meu ? "VOTADO" : "VOTAR";
     return {
-      condominio: "Residencial Ipê", finalidade: l.finalidade, estado, ...(motivo ? { motivo } : {}), prazo, hoje: HOJE, membro: { nome: m.nome, papel: m.papel },
+      condominio: "Residencial Ipê", finalidade: l.finalidade, estado, prazo, hoje: HOJE, membro: { nome: m.nome, papel: m.papel },
       item: decisao ? {
         tipo: "DECISAO", pergunta: decisao.pergunta, ...(decisao.porque ? { porque: decisao.porque } : {}), alternativas: decisao.alternativas, pedidaPor: decisao.pedidaPor,
         pedidaEm: decisao.pedidaEm, anexos: a.anexosDecisao[decisao.id] ?? [],
@@ -378,6 +439,7 @@ export async function rotasConselhoPublico(route: Route, a: EstadoAprovacoes, x:
   }
   if (r[2] === "voto" && metodo === "POST") {
     if (motivo) return erro(route, 400, "VALIDATION_ERROR", { motivo });
+    if (l.finalidade !== "VOTO" || !v) return erro(route, 400, "VALIDATION_ERROR", { motivo: "NAO_VOTA" });
     if (fechada) return erro(route, 400, "VALIDATION_ERROR", { motivo: "VOTACAO_FECHADA" });
     if (item.prazo < HOJE) return erro(route, 400, "VALIDATION_ERROR", { motivo: "PRAZO_ACABOU" });
     const escolha = String(corpo.escolha ?? "");
@@ -463,6 +525,12 @@ export async function rotasAprovacoes(route: Route, a: EstadoAprovacoes, x: Cont
     const falha = conferirMembro(texto("papel"), texto("mandatoInicio"), texto("mandatoFim"), texto("canal"), celular, texto("email"), false, m);
     if (Array.isArray(falha)) return erro(route, 400, "VALIDATION_ERROR", { campos: falha });
     if (falha) return erro(route, 400, "VALIDATION_ERROR", { motivo: falha });
+    // Não passa a suplente quem ainda tem voto a dar numa votação aberta.
+    const abertas = [...x.decisoes.decisoes.filter((d) => d.modo === "CONSELHO" && d.estado === "AGUARDANDO"),
+      ...a.despesas.filter((d) => d.modo === "CONSELHO" && d.estado === "AGUARDANDO" && !d.voltouAoSindicoEm)];
+    if (texto("papel") === "SUPLENTE" && m.papel !== "SUPLENTE" && abertas.some((d) => a.votacoes[d.id]?.titulares.includes(m.id) && !a.votacoes[d.id]?.votos[m.id])) {
+      return erro(route, 400, "VALIDATION_ERROR", { motivo: "VOTO_PENDENTE" });
+    }
     Object.assign(m, { papel: texto("papel"), inicio: texto("mandatoInicio"), fim: texto("mandatoFim"), canal: texto("canal"), celular: celular || undefined,
       email: texto("email") || undefined, versao: m.versao + 1 });
     return route.fulfill({ json: { versao: m.versao } });
@@ -494,7 +562,12 @@ export async function rotasAprovacoes(route: Route, a: EstadoAprovacoes, x: Cont
     if (!de || de < HOJE) return erro(route, 400, "VALIDATION_ERROR", { campos: ["de"] });
     if (!ate || ate < de || ate > somarDias(de, 60)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["ate"] });
     a.ausencia = { id: novoId(), versao: 2, de, ate, motivo: texto("motivo") || null, encerrada: false };
-    return route.fulfill({ status: 201, json: { id: a.ausencia.id, versao: 2 } });
+    // Sem painel, o subsíndico recebe um link do substituto para cada item que espera o síndico.
+    const links = [
+      ...x.decisoes.decisoes.filter((d) => d.estado === "AGUARDANDO" && d.modo !== "CONSELHO").flatMap((d) => linksDoSubstituto(a, x, "DECISAO", d.id, d.decisorId)),
+      ...a.despesas.filter((d) => d.estado === "AGUARDANDO" && (d.modo === "PESSOA" || !!d.voltouAoSindicoEm)).flatMap((d) => linksDoSubstituto(a, x, "DESPESA", d.id, d.decisorId)),
+    ];
+    return route.fulfill({ status: 201, json: { id: a.ausencia.id, versao: 2, links } });
   }
   const enc = /^\/v1\/condominio\/ausencia\/([^/]+)\/encerrar$/.exec(caminho);
   if (enc && metodo === "POST") {
@@ -513,22 +586,31 @@ export async function rotasAprovacoes(route: Route, a: EstadoAprovacoes, x: Cont
     const tipo = vr[1] === "decisoes" ? "DECISAO" : "DESPESA";
     const item = tipo === "DECISAO" ? x.decisoes.decisoes.find((y) => y.id === vr[2]) : a.despesas.find((y) => y.id === vr[2]);
     const v = a.votacoes[vr[2]!];
-    if (!item || !v) return erro(route, 404, "NOT_FOUND");
+    if (!item || (!v && vr[3] === "voto")) return erro(route, 404, "NOT_FOUND");
     anota();
     if (item.estado !== "AGUARDANDO") return erro(route, 400, "VALIDATION_ERROR", { motivo: tipo === "DECISAO" ? "DECISAO_FECHADA" : "DESPESA_FECHADA" });
     if (vr[3] === "reenviar-link") {
-      const m = a.membros.find((y) => y.id === corpo.membroId && v.titulares.includes(y.id));
+      const pedida = corpo.finalidade as Finalidade | null | undefined;
+      if (pedida && !["VOTO", "SUBSTITUTO", "AVISO"].includes(pedida)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["finalidade"] });
+      const m = a.membros.find((y) => y.id === corpo.membroId && !y.retiradoEm);
       if (!m) return erro(route, 400, "VALIDATION_ERROR", { campos: ["membroId"] });
+      const finalidade: Finalidade = pedida ?? (v?.titulares.includes(m.id) ? "VOTO" : "SUBSTITUTO");
       if (!emDia(m)) return erro(route, 400, "VALIDATION_ERROR", { motivo: "MANDATO_VENCIDO" });
-      return route.fulfill({ json: novoLink(a, m, tipo, item.id) });
+      if (finalidade === "VOTO") {
+        if (!v?.titulares.includes(m.id)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["membroId"] });
+        if (!titular(m)) return erro(route, 400, "VALIDATION_ERROR", { motivo: "SUPLENTE_NAO_VOTA" });
+      }
+      if (finalidade === "SUBSTITUTO" && !ausenciaAtiva(a)) return erro(route, 400, "VALIDATION_ERROR", { motivo: "AUSENCIA_ACABOU" });
+      return route.fulfill({ json: novoLink(a, x, m, tipo, item.id, finalidade) });
     }
     const eu = euMembro(a, x);
-    if (!eu || !v.titulares.includes(eu.id)) return erro(route, 403, "FORBIDDEN");
+    if (!eu || !v!.titulares.includes(eu.id)) return erro(route, 403, "FORBIDDEN");
+    if (!titular(eu)) return erro(route, 400, "VALIDATION_ERROR", { motivo: "SUPLENTE_NAO_VOTA" });
     const escolha = texto("escolha");
     if (!escolha) return erro(route, 400, "VALIDATION_ERROR", { campos: ["escolha"] });
     if ((escolha === "DEVOLVER" || escolha === "RECUSAR") && texto("justificativa").length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["justificativa"] });
-    const trocou = !!v.votos[eu.id];
-    v.votos[eu.id] = { escolha, ...(texto("justificativa") ? { justificativa: texto("justificativa") } : {}), em: AGORA, canal: "PAINEL" };
+    const trocou = !!v!.votos[eu.id];
+    v!.votos[eu.id] = { escolha, ...(texto("justificativa") ? { justificativa: texto("justificativa") } : {}), em: AGORA, canal: "PAINEL" };
     if (tipo === "DESPESA") (item as Despesa).historico.unshift({ em: AGORA, acao: "conselho.voto", quem: eu.nome, dados: { escolha, ...(trocou ? { antes: true } : {}) } });
     apurar(a, x, tipo, item.id);
     return route.fulfill({ json: { estado: item.estado, trocou, escolha } });
@@ -537,8 +619,13 @@ export async function rotasAprovacoes(route: Route, a: EstadoAprovacoes, x: Cont
   // Anexos da decisão e da despesa.
   const an = /^\/v1\/condominio\/(decisoes|despesas)\/([^/]+)\/anexos$/.exec(caminho);
   if (an && metodo === "POST") {
-    const lista = an[1] === "despesas" ? a.despesas.find((y) => y.id === an[2])?.anexos : (a.anexosDecisao[an[2]!] ??= []);
+    const despesa = an[1] === "despesas" ? a.despesas.find((y) => y.id === an[2]) : undefined;
+    const lista = an[1] === "despesas" ? despesa?.anexos : (a.anexosDecisao[an[2]!] ??= []);
     if (!lista) return erro(route, 404, "NOT_FOUND");
+    anota();
+    // O documento entra enquanto espera; o comprovante, só na despesa aprovada e ainda sem pagamento.
+    if (corpo.parte === "COMPROVANTE" && (!despesa || despesa.estado !== "APROVADA" || despesa.pagamento)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["parte"] });
+    if (corpo.parte !== "COMPROVANTE" && despesa && despesa.estado !== "AGUARDANDO") return erro(route, 400, "VALIDATION_ERROR", { campos: ["item"] });
     if (!["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(String(corpo.tipo))) return erro(route, 400, "VALIDATION_ERROR", { motivo: "TIPO_NAO_ACEITO" });
     const id = novoId();
     lista.push({ id, nome: String(corpo.nome), tipo: String(corpo.tipo), parte: corpo.parte === "COMPROVANTE" ? "COMPROVANTE" : "DOCUMENTO", tamanho: Number(corpo.tamanho),
@@ -599,13 +686,13 @@ export async function rotasAprovacoes(route: Route, a: EstadoAprovacoes, x: Cont
       if (!tit.length) return erro(route, 400, "VALIDATION_ERROR", { motivo: "CONSELHO_VAZIO" });
       if (!nec) return erro(route, 400, "VALIDATION_ERROR", { motivo: "SEM_QUORUM_POSSIVEL" });
       a.votacoes[d.id] = { titulares: tit.map((m) => m.id), necessarios: nec, votos: {} };
-      links = tit.filter((m) => !m.vinculo).map((m) => novoLink(a, m, "DESPESA", d.id));
-    }
+      links = tit.filter((m) => !m.vinculo).map((m) => novoLink(a, x, m, "DESPESA", d.id));
+    } else links = linksDoSubstituto(a, x, "DESPESA", d.id, d.decisorId);
     d.historico.push({ em: AGORA, acao: "despesa.pedida", quem: x.eu.nome, dados: { modo, ...(a.votacoes[d.id] ? { titulares: a.votacoes[d.id]!.titulares.length,
       necessarios: a.votacoes[d.id]!.necessarios } : {}) } });
     a.despesas.unshift(d);
     const passa = !!a.regras.alcada && d.valor >= a.regras.alcada;
-    return route.fulfill({ status: 201, json: { id: d.id, versao: 1, ...(a.regras.alcada ? { alcada: a.regras.alcada } : {}), passaAlcada: passa, ...(modo === "CONSELHO" ? { links } : {}) } });
+    return route.fulfill({ status: 201, json: { id: d.id, versao: 1, ...(a.regras.alcada ? { alcada: a.regras.alcada } : {}), passaAlcada: passa, links } });
   }
   const dp = /^\/v1\/condominio\/despesas\/([^/]+)(?:\/(responder|retirar|pagar|desfazer-pagamento))?$/.exec(caminho);
   if (dp) {

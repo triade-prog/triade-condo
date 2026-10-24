@@ -209,6 +209,131 @@ test.describe("Plataforma · decisões e aprovações (R5)", () => {
     await expect(recado(page, "Voto registrado. Dá para trocar até o prazo.")).toBeVisible();
     await expect(page.getByRole("button", { name: "Trocar meu voto" })).toBeVisible();
     await conferir(page);
+    // Sem nada mais esperando, quem só vota segue vendo a votação para trocar o voto até fechar.
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Trocar meu voto" })).toBeVisible();
+    await expect(page.getByText("Você não tem a permissão", { exact: false })).toHaveCount(0);
+  });
+
+  test("V-14: quem só vota, depois do voto, segue em Aguardando e troca o voto até fechar", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page, { comAprovacoes: true, quem: "SECRETARIA" });
+    const bruna = estado.aprovacoes.membros.find((m) => m.nome === "Bruna")!;
+    const elevador = estado.aprovacoes.despesas.find((d) => d.descricao === "Conta de reparo do elevador")!;
+    estado.aprovacoes.votacoes[elevador.id]!.votos[bruna.id] = { escolha: "APROVAR", em: "2026-10-16T15:00:00.000Z", canal: "PAINEL" };
+    await page.goto(`${PLATAFORMA}/decisoes`);
+    const cartao = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: VOTACAO }) });
+    await cartao.getByRole("button", { name: `Votar: ${VOTACAO}` }).click();
+    const votar = page.getByRole("dialog", { name: "Votar" });
+    await votar.getByRole("radio", { name: /2 · Trocar só o motor/ }).check();
+    await votar.getByRole("button", { name: "Enviar meu voto" }).click();
+    await expect(recado(page, "Voto registrado.")).toBeVisible();
+    await page.reload();
+    await expect(page.getByText("Você não tem a permissão", { exact: false })).toHaveCount(0);
+    await expect(cartao.getByRole("button", { name: `Trocar meu voto: ${VOTACAO}` })).toBeVisible();
+    await conferir(page);
+    await cartao.getByRole("button", { name: `Trocar meu voto: ${VOTACAO}` }).click();
+    await votar.getByRole("radio", { name: /1 · Trocar o portão inteiro/ }).check();
+    await votar.getByRole("button", { name: "Trocar meu voto" }).click();
+    await expect(recado(page, "Voto trocado.")).toBeVisible();
+    expect(estado.aprovacoes.votacoes[estado.decisoes.decisoes.find((d) => d.pergunta === VOTACAO)!.id]!.votos[bruna.id]!.escolha).toBe("1");
+  });
+
+  test("V-14: suplente não vota: quem tem voto a dar não passa a suplente; o link de quem passou para de valer", async ({ page }) => {
+    await instalarApiPlataformaFalsa(page, { comAprovacoes: true });
+    await page.goto(`${PLATAFORMA}/pessoas?aba=conselho`);
+    const membros = page.getByRole("region", { name: "Membros do conselho" });
+    await membros.getByRole("button", { name: "Lúcia Andrade" }).click();
+    await page.getByRole("dialog", { name: "Lúcia Andrade" }).getByRole("button", { name: "Alterar" }).click();
+    const alterar = page.getByRole("dialog", { name: "Alterar membro do conselho" });
+    await alterar.getByLabel("Papel").selectOption("SUPLENTE");
+    await alterar.getByRole("button", { name: "Salvar" }).click();
+    await expect(alterar.getByText("Ainda tem voto a dar numa votação aberta. Espere a votação fechar para passar a suplente.")).toBeVisible();
+    await conferir(page);
+    await alterar.getByRole("button", { name: "Cancelar" }).click();
+
+    await membros.getByRole("button", { name: "Marta Reis" }).click();
+    await page.getByRole("dialog", { name: "Marta Reis" }).getByRole("button", { name: "Alterar" }).click();
+    await alterar.getByLabel("Papel").selectOption("SUPLENTE");
+    await alterar.getByRole("button", { name: "Salvar" }).click();
+    await expect(recado(page, "Marta Reis: dados do conselho salvos.")).toBeVisible();
+    await expect(membros.getByRole("listitem").filter({ hasText: "Marta Reis" })).toContainText("Suplente");
+
+    await page.goto(`${PLATAFORMA}/conselho/link-marta-voto`);
+    await expect(page.getByRole("heading", { name: "Este link não vale mais" })).toBeVisible();
+    await expect(page.getByText("Você passou a suplente: suplente não vota. Se acha que é engano, fale com o síndico.")).toBeVisible();
+    await expect(page.getByText(VOTACAO)).toHaveCount(0);
+    await conferir(page);
+  });
+
+  test("V-14: quem só atualiza pede ao conselho e o link do WhatsApp fica com o síndico", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page, { comAprovacoes: true, quem: "SECRETARIA", secretariaRegistra: true });
+    await page.goto(`${PLATAFORMA}/pedidos/pedido?id=${estado.pedidos[1]!.id}`);
+    await maisAcoes(page, "Pedir decisão");
+    const pedir = page.getByRole("dialog", { name: "Pedir decisão · 2026-0002" });
+    await pedir.getByRole("group", { name: "Quem decide" }).getByRole("radio", { name: /O conselho/ }).check();
+    await pedir.getByLabel("O que precisa ser decidido").fill("Qual empresa faz a impermeabilização da laje");
+    await pedir.getByLabel("Alternativa 1").fill("Remendo no trecho rachado");
+    await pedir.getByRole("button", { name: "Pedir ao conselho" }).click();
+    const links = page.getByRole("dialog", { name: "Mande o link pelo WhatsApp" });
+    await expect(links).toContainText("o link para copiar só aparece para o síndico e para quem cuida do conselho");
+    await expect(links.getByRole("listitem").filter({ hasText: "Marta Reis" })).toContainText("Peça o link ao síndico. Se Marta já tinha um link, ele continua valendo.");
+    await expect(links.getByRole("button", { name: /Copiar o link/ })).toHaveCount(0);
+    await expect(links.getByText(/\/conselho\//)).toHaveCount(0);
+    await conferir(page);
+    await links.getByRole("button", { name: "Pronto" }).click();
+    await expect(recado(page, "Peça o link ao síndico de Marta Reis, Lúcia Andrade pelo WhatsApp.")).toBeVisible();
+    const nova = estado.decisoes.decisoes.at(-1)!;
+    const peloZap = estado.aprovacoes.membros.filter((m) => m.canal === "WHATSAPP").map((m) => m.id);
+    expect(estado.aprovacoes.links.filter((l) => l.itemId === nova.id && peloZap.includes(l.membroId) && l.codigo)).toHaveLength(0);
+  });
+
+  test("V-14: com a síndica ausente e o subsíndico sem painel, sai o link do substituto para copiar", async ({ page }) => {
+    await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    const estado = await instalarApiPlataformaFalsa(page, { comAprovacoes: true });
+    const bruna = estado.aprovacoes.membros.find((m) => m.nome === "Bruna")!;
+    Object.assign(bruna, { vinculo: undefined, canal: "WHATSAPP", celular: "+5561999990101" });
+    await page.goto(`${PLATAFORMA}/pessoas?aba=conselho`);
+    await page.getByRole("region", { name: "Ausência do síndico" }).getByRole("button", { name: "Marcar ausência" }).click();
+    const ausencia = page.getByRole("dialog", { name: "Ausência do síndico" });
+    await ausencia.getByLabel("Até").fill("2026-10-30");
+    await ausencia.getByRole("button", { name: "Marcar ausência" }).click();
+    const links = page.getByRole("dialog", { name: "Mande o link pelo WhatsApp" });
+    await expect(links.getByText("Bruna · link do substituto").first()).toBeVisible();
+    await conferir(page);
+    await links.getByRole("button", { name: "Pronto" }).click();
+    await expect(recado(page, "Ausência marcada de 16/10 a 30/10. Bruna responde no lugar do síndico e foi avisado.")).toBeVisible();
+
+    // Pedida à síndica durante a ausência: o link do substituto sai na hora.
+    await page.goto(`${PLATAFORMA}/pedidos/pedido?id=${estado.pedidos[1]!.id}`);
+    await maisAcoes(page, "Pedir decisão");
+    const pedir = page.getByRole("dialog", { name: "Pedir decisão · 2026-0002" });
+    await pedir.getByRole("group", { name: "Quem decide" }).getByRole("radio", { name: /Ana Souza \(síndico\)/ }).check();
+    await pedir.getByLabel("O que precisa ser decidido").fill("Trocar a fechadura do portão social");
+    await pedir.getByLabel("Alternativa 1").fill("Fechadura eletrônica");
+    await pedir.getByRole("button", { name: "Pedir decisão" }).click();
+    await expect(page.getByRole("dialog", { name: "Mande o link pelo WhatsApp" }).getByText("Bruna · link do substituto")).toBeVisible();
+    await page.getByRole("dialog", { name: "Mande o link pelo WhatsApp" }).getByRole("button", { name: "Pronto" }).click();
+
+    // Na Decisões e na ficha da despesa, o Copiar o link do substituto gera um código novo.
+    await page.goto(`${PLATAFORMA}/decisoes?filtro=TODAS`);
+    const cartao = page.getByRole("listitem").filter({ has: page.getByRole("heading", { name: "Trocar a fechadura do portão social" }) });
+    await expect(cartao).toContainText("Bruna · link do substituto");
+    await conferir(page);
+    await cartao.getByRole("button", { name: "Copiar o link do substituto" }).click();
+    await expect(page.getByRole("dialog", { name: "Mande o link pelo WhatsApp" }).getByLabel("Link de Bruna", { exact: true })).toContainText("/conselho/link-");
+    await page.getByRole("dialog", { name: "Mande o link pelo WhatsApp" }).getByRole("button", { name: "Pronto" }).click();
+    await expect(recado(page, "Link do substituto novo para Bruna. O anterior parou de valer. Copie e mande pelo WhatsApp.")).toBeVisible();
+    expect([...estado.aprovacoes.enviados].reverse().find((e) => /reenviar-link$/.test(e.caminho))?.corpo).toMatchObject({ membroId: bruna.id, finalidade: "SUBSTITUTO" });
+
+    await page.goto(`${PLATAFORMA}/decisoes?aba=despesas`);
+    await page.getByRole("link", { name: "Compra de lâmpadas LED das garagens" }).click();
+    await expect(page.getByRole("heading", { name: "Links pelo conselho" })).toBeVisible();
+    await expect(page.getByText("Bruna · link do substituto")).toBeVisible();
+    await conferir(page);
+    await page.getByRole("button", { name: "Copiar o link do substituto" }).click();
+    const dialogo = page.getByRole("dialog", { name: "Mande o link pelo WhatsApp" });
+    await dialogo.getByRole("button", { name: "Copiar o link de Bruna" }).click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^http:\/\/localhost:3000\/conselho\/link-/);
   });
 
   test("V-14: o link do conselheiro sem conta: votar, trocar, fechado, prazo acabou, vencido, trocado e inválido", async ({ page }) => {
@@ -253,6 +378,20 @@ test.describe("Plataforma · decisões e aprovações (R5)", () => {
     await expect(page.getByText("Um link novo foi mandado e este parou.", { exact: false })).toBeVisible();
     await expect(page.getByText(VOTACAO)).toHaveCount(0);
 
+    // Fechada há mais de 7 dias: o link venceu e não mostra nada do item.
+    estado.decisoes.decisoes.find((d) => d.pergunta === "Pintura do hall: qual cor")!.prazo = "2026-10-01";
+    await page.goto(`${PLATAFORMA}/conselho/link-joao-fechada`);
+    await expect(page.getByRole("heading", { name: "Este link venceu" })).toBeVisible();
+    await expect(page.getByText("Pintura do hall")).toHaveCount(0);
+    await conferir(page);
+
+    // Quem saiu do conselho: o link diz que não é mais do conselho.
+    estado.aprovacoes.membros.find((m) => m.nome === "João Pedro Alves")!.retiradoEm = "2026-10-16T12:00:00.000Z";
+    await page.goto(`${PLATAFORMA}/conselho/link-joao-voto`);
+    await expect(page.getByText("Você não é mais do conselho. Se acha que é engano, fale com o síndico.")).toBeVisible();
+    await expect(page.getByText(VOTACAO)).toHaveCount(0);
+    estado.aprovacoes.membros.find((m) => m.nome === "João Pedro Alves")!.retiradoEm = undefined;
+
     await page.goto(`${PLATAFORMA}/conselho/nao-existe`);
     await expect(page.getByText("Este link não existe. Confira o endereço ou peça um novo ao síndico.")).toBeVisible();
 
@@ -284,7 +423,7 @@ test.describe("Plataforma · decisões e aprovações (R5)", () => {
     await nova.locator('input[type="file"]').first().setInputFiles(PDF);
     await expect(nova.getByRole("group", { name: "Quem aprova" })).toContainText("4 titulares votam; maioria: 3 votos aprovam.");
     await nova.getByRole("radio", { name: /Ana Souza \(você\)/ }).check();
-    await expect(nova.getByText("Passa da alçada do conselho (R$ 3.000), escrita nas Regras. É só um aviso: dá para pedir assim mesmo.")).toBeVisible();
+    await expect(nova.getByText("Chega à alçada do conselho (a partir de R$ 3.000), escrita nas Regras. É só um aviso: dá para pedir assim mesmo.")).toBeVisible();
     await expect(nova.getByRole("textbox", { name: "Responder até" })).toHaveValue("2026-10-23");
     await conferir(page);
     await nova.getByRole("button", { name: "Pedir aprovação" }).click();
@@ -304,13 +443,17 @@ test.describe("Plataforma · decisões e aprovações (R5)", () => {
 
     // Paga fora do sistema, com o comprovante (quadro 420).
     await expect(page.getByRole("heading", { name: "Depois de aprovada" })).toBeVisible();
+    // Aprovada: documento novo não entra mais; o comprovante, sim, e só ele vale para o Paga fora.
+    await expect(page.getByRole("button", { name: /^Anexar( outro)?$/ })).toHaveCount(0);
     await page.getByRole("button", { name: "Anexar o comprovante" }).click();
     const anexar = page.getByRole("dialog", { name: "Anexar o comprovante" });
     await anexar.locator('input[type="file"]').first().setInputFiles({ ...PDF, name: "Comprovante do Pix.pdf" });
     await anexar.getByRole("button", { name: "Enviar 1 arquivo" }).click();
     await expect(recado(page, "1 anexo liberado.")).toBeVisible();
     await page.getByLabel("Pago em").fill("2026-10-15");
-    await page.getByRole("combobox", { name: /Comprovante/ }).selectOption({ label: "Comprovante do Pix.pdf" });
+    const comprovante = page.getByRole("combobox", { name: /Comprovante/ });
+    await expect(comprovante.locator("option")).toHaveText(["Sem comprovante", "Comprovante do Pix.pdf"]);
+    await comprovante.selectOption({ label: "Comprovante do Pix.pdf" });
     await conferir(page);
     await page.getByRole("button", { name: "Marcar Paga fora do sistema" }).click();
     await expect(recado(page, "Marcada como paga fora do sistema em 15/10.")).toBeVisible();

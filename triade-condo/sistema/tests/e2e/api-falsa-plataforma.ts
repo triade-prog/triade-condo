@@ -467,7 +467,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
           ...(acoes().includes("assembleias.ver") && resumoAssembleia(assembleias) ? { assembleia: resumoAssembleia(assembleias) } : {}),
           ...(acoes().includes("classificados.ver") && classificadosAAprovar(classificados) ? { classificadosAAprovar: classificadosAAprovar(classificados) } : {}),
         } } : {}),
-        ...(acoes().includes("decisoes.aprovar") || resumoDasDecisoes().aguardando > 0 ? { decisoes: resumoDasDecisoes() } : {}),
+        ...(acoes().includes("decisoes.aprovar") || resumoDasDecisoes().aguardando > 0 || ((resumoDasDecisoes() as { votando?: number }).votando ?? 0) > 0
+          ? { decisoes: resumoDasDecisoes() } : {}),
         avisosNaoVistos: naoVistos(estado.avisos, eu.vinculo) + avisosDecisoes(decisoes, naDecisao).filter((a) => !a.vistoEm).length,
       } });
     }

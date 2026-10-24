@@ -87,6 +87,10 @@ export interface GanchosDecisoes {
   decisao: (d: DecisaoFalsa) => Record<string, unknown>;
   /** A decisão espera o voto de quem está entrando. */
   minhaVotacao: (d: DecisaoFalsa) => boolean;
+  /** Quem está entrando vota nesta votação aberta, já tendo votado ou não (segue em Aguardando para trocar). */
+  votante: (d: DecisaoFalsa) => boolean;
+  /** O pedido a uma pessoa: com o síndico ausente e o substituto sem painel, o link do substituto. */
+  pedirAPessoa: (d: DecisaoFalsa) => { links: unknown[] };
   /** Abre a votação; devolve os links ou o motivo da recusa. */
   pedirAoConselho: (d: DecisaoFalsa) => { titulares: number; necessarios: number; links: unknown[] } | { motivo: string };
   /** Campos de topo da lista (conselho, ausência, despesas). */
@@ -253,11 +257,12 @@ export async function rotasDecisoes(route: Route, estado: EstadoDecisoes, x: Con
     const votacao = aoConselho ? x.ganchos?.pedirAoConselho(d) : undefined;
     if (votacao && "motivo" in votacao) { p.pendencias.pop(); return erro(route, 400, "VALIDATION_ERROR", { motivo: votacao.motivo }); }
     estado.decisoes.push(d);
+    const daPessoa = !aoConselho && x.ganchos ? x.ganchos.pedirAPessoa(d) : undefined;
     hist(p, "pedido.pendencia_aberta", { tipo: "DECISAO" });
     hist(p, "pedido.decisao_pedida", { alternativas: d.alternativas.length, prazo, ...(votacao ? { conselho: true, titulares: votacao.titulares, necessarios: votacao.necessarios } : {}) });
     if (d.decisorId !== x.eu.vinculo) estado.avisos.push({ id: novoId(), para: d.decisorId, decisaoId: d.id, tipo: "PEDIDA", criadoEm: AGORA, vistoEm: null });
     p.versao++;
-    return route.fulfill({ json: { versao: p.versao, id: d.id, ...(votacao ?? {}) } });
+    return route.fulfill({ json: { versao: p.versao, id: d.id, ...(votacao ?? {}), ...(daPessoa ?? {}) } });
   }
 
   if (caminho === "/v1/condominio/decisoes" && metodo === "GET") {
@@ -265,7 +270,7 @@ export async function rotasDecisoes(route: Route, estado: EstadoDecisoes, x: Con
     const filtro = url.searchParams.get("filtro") ?? "AGUARDANDO";
     if (!["AGUARDANDO", "DECIDIDAS", "TODAS"].includes(filtro)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["filtro"] });
     const minha = (d: DecisaoFalsa) => d.estado === "AGUARDANDO" && (d.decisorId === x.eu.vinculo || !!x.ganchos?.minhaVotacao(d));
-    const lista = estado.decisoes.filter((d) => filtro === "AGUARDANDO" ? minha(d)
+    const lista = estado.decisoes.filter((d) => filtro === "AGUARDANDO" ? minha(d) || !!x.ganchos?.votante(d)
       : filtro === "DECIDIDAS" ? ["APROVADA", "DEVOLVIDA"].includes(d.estado) : true)
       .sort((a, b) => Number(a.estado !== "AGUARDANDO") - Number(b.estado !== "AGUARDANDO") || a.prazo.localeCompare(b.prazo));
     return route.fulfill({ json: {
