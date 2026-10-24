@@ -33,6 +33,7 @@ const app = criarApiPlataforma(Deno.env.get("REPASSE_SEGREDO"), {
   armazenamentoDocumentos: armazenamentoSupabase(url, chaveServico, fetch, "documentos"),
   armazenamentoExportacoes: armazenamentoSupabase(url, chaveServico, fetch, "exportacoes"),
   armazenamentoSuporte: armazenamentoSupabase(url, chaveServico, fetch, "suporte"),
+  armazenamentoRelatorios: armazenamentoSupabase(url, chaveServico, fetch, "relatorios"),
   // E-mail (CD-13, CD-14): sem RESEND_API_KEY, a fila só espera.
   correio: Deno.env.get("RESEND_API_KEY") ? correioResend(Deno.env.get("RESEND_API_KEY")!) : undefined,
   remetente: Deno.env.get("EMAIL_REMETENTE") || undefined,

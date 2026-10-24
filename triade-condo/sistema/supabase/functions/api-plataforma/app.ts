@@ -12,6 +12,7 @@
 // segredo do condomínio no caminho e a fila de envio. Peça R12: Vida em condomínio (áreas comuns
 // e reservas; AC-01, AC-06, AC-07), com as enquetes e o link pessoal de cada unidade (AC-03), e as assembleias com o link pessoal de cada unidade (AC-02).
 // F7.4: pedidos relacionados (AT-18) e decisões pedidas ao síndico (AT-23), com os dois indicadores.
+// Relatório do mês para a assembleia (TR-02, TR-05, TR-08, TR-10): prévia, anexos, gerar e abrir.
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
 
@@ -19,6 +20,10 @@ import type { Context, MiddlewareHandler } from "hono";
 import type { z } from "zod";
 import {
   abrirChamadoSchema,
+  gerarRelatorioSchema,
+  iniciarAnexoRelatorioSchema,
+  previaRelatorioSchema,
+  relatorioBaixadoSchema,
   decidirAcessoExcepcionalSchema,
   iniciarImagemChamadoSchema,
   pedirMudancaSchema,
@@ -230,6 +235,8 @@ export interface DepsPlataforma extends DepsSessao {
   armazenamentoDocumentos?: Armazenamento;
   /** Pacotes da exportação (peça R10, CT-04). */
   armazenamentoExportacoes?: Armazenamento;
+  /** Anexos enviados para o relatório do mês (TR-10). */
+  armazenamentoRelatorios?: Armazenamento;
   /** Imagens dos chamados de suporte (peça R4, PI-20). */
   armazenamentoSuporte?: Armazenamento;
   /** E-mail dos comunicados e documentos (CD-13, CD-14). Sem correio, a fila espera. */
@@ -1485,6 +1492,59 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const x = await rpc<{ caminho: string; arquivo: string }>("plataforma_baixar_exportacao", { ...quem(c), p_id: idDaRota(c, "id"), p_numero: numero });
     const url = await guarda(deps.armazenamentoExportacoes).linkLeitura(x.caminho, VALIDADE_LINK_ARQUIVO_S, x.arquivo);
     return c.json({ url, arquivo: x.arquivo, expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString() });
+  });
+
+  // ---------------------------------------------------------------------------------------
+  // Relatório do mês para a assembleia (TR-02, TR-05, TR-08, TR-10). O banco calcula, confere a
+  // permissão de cada parte e de cada anexo (C.1) e congela o retrato (B.1); aqui ficam o
+  // armazenamento dos anexos e os links de 5 minutos com que o navegador monta o PDF (D.1).
+  app.get("/v1/condominio/relatorios", async (c) => c.json(await rpc("plataforma_relatorios", quem(c))));
+  app.get("/v1/condominio/relatorios/previa", async (c) => {
+    const r = previaRelatorioSchema.safeParse(c.req.query());
+    if (!r.success) throw invalido(r);
+    return c.json(await rpc("plataforma_previa_relatorio", { ...quem(c), p_mes: r.data.mes }));
+  });
+  app.post("/v1/condominio/relatorios", async (c) => {
+    const d = await lerCorpo(c, gerarRelatorioSchema);
+    return c.json(await rpc("plataforma_gerar_relatorio", {
+      ...quem(c), p_mes: d.mes, p_partes: d.partes, p_resumo: d.resumo, p_palavra: d.palavra, p_anexos: d.anexos,
+      p_guardar_modelo: d.guardarModelo,
+    }), 201);
+  });
+  app.post("/v1/condominio/relatorios/anexos", async (c) => {
+    const d = await lerCorpo(c, iniciarAnexoRelatorioSchema);
+    const r = await rpc<{ arquivoId: string; caminho: string; tipo: string }>("plataforma_iniciar_anexo_relatorio", {
+      ...quem(c), p_nome: d.nome, p_tipo: d.tipo, p_tamanho: d.tamanho,
+    });
+    return c.json({ arquivoId: r.arquivoId, envio: { url: await guarda(deps.armazenamentoRelatorios).linkEnvio(r.caminho), metodo: "PUT", tipo: r.tipo } }, 201);
+  });
+  app.post("/v1/condominio/relatorios/anexos/:arquivo/verificar", async (c) => {
+    const ids = { ...quem(c), p_arquivo: idDaRota(c, "arquivo") };
+    const g = guarda(deps.armazenamentoRelatorios);
+    const a = await rpc<{ caminho: string; tipo: string }>("plataforma_anexo_relatorio_a_verificar", ids);
+    const bytes = await g.ler(a.caminho);
+    const r = bytes ? verificarArquivo(bytes, a.tipo as TipoArquivo) : { ok: false as const, motivo: "O arquivo não chegou. Envie de novo." };
+    if (r.ok) {
+      await g.gravar(a.caminho, r.bytes, a.tipo);
+      return c.json(await rpc("plataforma_verificar_anexo_relatorio", { ...ids, p_liberado: true, p_tamanho: r.bytes.length, p_motivo: null }));
+    }
+    if (bytes) await g.apagar(a.caminho);
+    const fim = await rpc<{ situacao: string }>("plataforma_verificar_anexo_relatorio", { ...ids, p_liberado: false, p_tamanho: null, p_motivo: r.motivo });
+    return c.json({ ...fim, motivo: r.motivo });
+  });
+  app.get("/v1/condominio/relatorios/:id", async (c) => c.json(await rpc("plataforma_relatorio", { ...quem(c), p_id: idDaRota(c, "id") })));
+  app.get("/v1/condominio/relatorios/:id/anexos/:ordem/link", async (c) => {
+    const ordem = Number(c.req.param("ordem"));
+    if (!Number.isInteger(ordem) || ordem < 1 || ordem > 10) throw new ErroDominio("NOT_FOUND");
+    const a = await rpc<{ armazenamento: "relatorios" | "documentos"; caminho: string; nome: string; tipo: string }>("plataforma_abrir_anexo_relatorio", {
+      ...quem(c), p_id: idDaRota(c, "id"), p_ordem: ordem,
+    });
+    return c.json(await linkArquivo(guarda(a.armazenamento === "documentos" ? deps.armazenamentoDocumentos : deps.armazenamentoRelatorios), a, false));
+  });
+  app.post("/v1/condominio/relatorios/:id/baixado", async (c) => {
+    const d = await lerCorpo(c, relatorioBaixadoSchema);
+    await rpc("plataforma_relatorio_baixado", { ...quem(c), p_id: idDaRota(c, "id"), p_formato: d.formato });
+    return c.json({ ok: true });
   });
 
   app.get("/v1/condominio/comunicados/opcoes", async (c) => c.json(await rpc("plataforma_comunicado_opcoes", quem(c))));

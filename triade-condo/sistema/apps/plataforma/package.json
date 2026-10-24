@@ -9,12 +9,14 @@
     "typecheck": "next typegen && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "1.1.1",
     "@triade/configuracoes": "workspace:*",
     "@triade/domain": "workspace:*",
     "@triade/servidor": "workspace:*",
     "@triade/ui": "workspace:*",
     "jsqr": "1.4.0",
     "next": "^16.3.6",
+    "pdf-lib": "1.17.1",
     "qrcode-generator": "1.4.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

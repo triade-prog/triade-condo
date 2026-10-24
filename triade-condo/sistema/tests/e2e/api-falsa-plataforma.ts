@@ -18,6 +18,7 @@ import { criarEnquetes, resumoEnquetes, rotasEnquetePublica, rotasEnquetes } fro
 import { criarAssembleias, resumoAssembleia, rotasAssembleiaPublica, rotasAssembleias } from "./api-falsa-assembleias";
 import { classificadosAAprovar, classificadosDoMural, criarClassificados, rotasClassificadoPublico, rotasClassificados } from "./api-falsa-classificados";
 import { avisarNoRegistro, avisosDoPedido, criarAvisoRegistro, rotasAvisoRegistro, type ContextoAviso } from "./api-falsa-aviso-registro";
+import { criarRelatorios, rotasArquivoRelatorio, rotasRelatorios } from "./api-falsa-relatorios";
 import { avisosDecisoes, criarDecisoes, detalheDecisoes, marcarAvisosDecisoes, resumoDecisoes, rotasDecisoes, semearDecisoes } from "./api-falsa-decisoes";
 
 /** As 22 permissões do banco (permissoes), na ordem de @triade/domain. */
@@ -179,6 +180,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   memoria.deDocumentos = () => comunicados.documentos.filter((d) => !d.arquivado)
     .map((d) => ({ id: d.id, titulo: d.titulo, tipo: d.tipo, ...(d.valeAte ? { valeAte: d.valeAte } : {}) }));
   const suporte = criarSuporte();
+  const relatorios = criarRelatorios();
   const whatsapp = criarWhatsapp(estado.pedidos[0]!, cats[0]!.id, pris[1]!.id);
   const avisoRegistro = criarAvisoRegistro(V_ANA);
   const decisoes = criarDecisoes();
@@ -260,6 +262,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     // O "armazenamento" recebe o arquivo em binário: atende antes de ler o corpo como JSON.
     const armazenamento = await rotasArmazenamento(route, caminho, metodo);
     if (armazenamento !== null) return armazenamento;
+    const arquivoRelatorio = await rotasArquivoRelatorio(route, caminho);
+    if (arquivoRelatorio !== null) return arquivoRelatorio;
     const corpo = (req.postDataJSON() ?? {}) as Record<string, unknown>;
     const c = estado.config;
 
@@ -427,6 +431,9 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (noSuporte !== null) return noSuporte;
     const naMemoria = await rotasMemoria(route, memoria, caminho, metodo, corpo, url, pode, eu);
     if (naMemoria !== null) return naMemoria;
+    const nosRelatorios = await rotasRelatorios(route, relatorios, caminho, metodo, corpo, url, pode, eu,
+      () => comunicados.documentos.filter((d) => !d.restrito || pode("documentos.restritos")));
+    if (nosRelatorios !== null) return nosRelatorios;
     const nasEnquetes = await rotasEnquetes(route, enquetes, caminho, metodo, corpo, pode, eu);
     if (nasEnquetes !== null) return nasEnquetes;
     const nasAssembleias = await rotasAssembleias(route, assembleias, caminho, metodo, corpo, pode, eu);
@@ -553,5 +560,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     return erro(route, 404, "NOT_FOUND");
   }
   await page.route("**/api/v1/**", atender);
-  return Object.assign(estado, { pedidosPlano, links, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes });
+  return Object.assign(estado, { pedidosPlano, links, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios });
 }
