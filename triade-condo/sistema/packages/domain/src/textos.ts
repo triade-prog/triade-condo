@@ -283,6 +283,11 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   LUGAR_REPETIDO: "Já existe um lugar com este nome.",
   LIMITE_LUGARES: "O prédio já tem 30 lugares em uso. Tire de uso um que não serve mais.",
   ULTIMO_LUGAR: "O prédio precisa de pelo menos um lugar em uso para guardar as encomendas.",
+  // Privacidade e dados (0301).
+  JA_GUARDADO: "Este item já está guardado por obrigação legal.",
+  GUARDA_RETIRADA: "A guarda já foi retirada. Atualize a página.",
+  CONTATO_COM_PEDIDO_ABERTO: "Esta pessoa tem pedido aberto. Encerre o pedido antes de remover os dados.",
+  CONTATO_GUARDADO: "Esta pessoa está guardada por obrigação legal. Tire a guarda, com o motivo, antes de remover os dados.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

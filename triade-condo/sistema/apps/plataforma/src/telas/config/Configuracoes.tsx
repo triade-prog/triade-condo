@@ -19,12 +19,14 @@ function useAmbienteApp(): Ambiente {
 
 export function Configuracoes() {
   const ambiente = useAmbienteApp();
+  const { pode } = usePlataforma();
   const busca = useSearchParams();
   const router = useRouter();
   const antiga = paginaDe(busca.get("aba"));
   useEffect(() => { if (antiga) router.replace(enderecoConfiguracao(antiga)); }, [antiga, router]);
   if (antiga) return <Carregando />;
-  return <EntradaConfiguracoes ambiente={ambiente} enderecoMeusAvisos="/conta/avisos" enderecoMeuPlano="/configuracoes/meu-plano" />;
+  return <EntradaConfiguracoes ambiente={ambiente} enderecoMeusAvisos="/conta/avisos" enderecoMeuPlano="/configuracoes/meu-plano"
+    enderecoPrivacidade={pode("privacidade.ver") ? "/configuracoes/privacidade" : undefined} />;
 }
 
 export function PaginaDaConfiguracao({ pagina }: { pagina: string }) {

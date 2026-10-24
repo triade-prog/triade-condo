@@ -38,6 +38,7 @@ import { PedidosRelacionados } from "./Relacionados.tsx";
 import { CartaoAvisosRegistro } from "./AvisosDoRegistro.tsx";
 import { Cartao, Dado, MaisAcoes } from "../Ficha.tsx";
 import { CartaoSugestao, useIaDoPedido } from "./SugestaoIa.tsx";
+import { useGuardaNaFicha } from "../privacidade/comum.tsx";
 
 const MEIO_RETORNO: Record<string, string> = { TELEFONE: "por telefone", PRESENCIAL: "pessoalmente", MENSAGEM: "por mensagem", EMAIL: "por e-mail", OUTRO: "por outro meio", WHATSAPP: "pelo WhatsApp" };
 
@@ -140,6 +141,11 @@ export function Pedido() {
   const arquivos = useCarregar<ArquivosDoPedido>(id ? `/v1/condominio/pedidos/${id}/arquivos` : null);
   const conversa = useCarregar<ConversaDoPedido>(id ? `/v1/condominio/pedidos/${id}/whatsapp` : null);
   const ia = useIaDoPedido(id);
+  const pronto = carga.estado === "pronto" ? carga.dados.pedido : null;
+  // Guardar por obrigação legal (F0.11, quadro 355): em Mais ações, com o selo no alto.
+  const guarda = useGuardaNaFicha("PEDIDO", id, pronto
+    ? { titulo: `Guardar o pedido ${pronto.protocolo}`, apoio: `${pronto.assunto} · ${pronto.encerradoEm ? `encerrado em ${diaHora(pronto.encerradoEm)}` : `aberto em ${diaHora(pronto.abertoEm)}`}` }
+    : { titulo: "Guardar o pedido" });
   const [recado, setRecado] = useState<Recado>(busca.get("novo") ? { tom: "ok", texto: "Pedido registrado." } : null);
   const [falha, setFalha] = useState<string | null>(null);
   const [acao, setAcao] = useState<AcaoPedido | null>(null);
@@ -203,6 +209,7 @@ export function Pedido() {
     ...(d.pode.atualizar && ativo ? [{ texto: "Abrir pendência", icone: "alerta" as NomeIcone, acao: () => setAcao("pendencia") }] : []),
     ...(d.pode.pedirDecisao && ativo ? [{ texto: "Pedir decisão", icone: "decisao" as NomeIcone, acao: () => setPedirDecisao(true) }] : []),
     ...(d.pode.atualizar && ativo ? [{ texto: "Editar", icone: "editar" as NomeIcone, acao: () => setAcao("editar") }] : []),
+    ...(guarda.item ? [guarda.item] : []),
     ...(d.pode.concluir && ativo ? [{ texto: "Cancelar pedido", icone: "fechar" as NomeIcone, acao: () => setAcao("cancelar"), perigo: true }] : []),
   ];
 
@@ -231,6 +238,7 @@ export function Pedido() {
               <span className="selo inline-flex items-center gap-1" data-tom="neutro"><Icone nome={iconeDaCategoria(p.categoria.nome)} className="h-3.5 w-3.5" />{p.categoria.nome}</span>
               <SeloEstadoPedido estado={p.estado} etapa={ativo ? p.etapa.nome : null} />
               {p.privado ? <Selo tom="neutro">Privado</Selo> : null}
+              {guarda.selo}
             </p>
             <h1 className="t-titulo-ficha [overflow-wrap:anywhere]"><span className="sr-only">{p.protocolo} · </span>{p.assunto}</h1>
             <p className="t-texto whitespace-pre-line text-tinta-suave">{p.descricao}</p>
@@ -247,6 +255,7 @@ export function Pedido() {
 
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
       {falha ? <Aviso tom="erro">{falha}</Aviso> : null}
+      {guarda.aviso}
       <FaixaRevisao conversa={zap} aoReabrir={reabrir ? () => setAcao("reabrir") : undefined} salvo={(texto) => salvo(texto)} />
       {p.retornoVencido && ativo ? (
         <FaixaPrazo pedidoId={p.id} agora={d.agora} versao={p.versao} semResponsavel={!p.responsavel}
@@ -405,6 +414,7 @@ export function Pedido() {
 
       <JanelasPedido acao={acao} resolver={resolver} d={d} opcoes={opcoes.dados} whatsapp={zap} aoFechar={fechar} salvo={salvo} recarregar={carga.recarregar} />
       <PedirDecisao aberto={pedirDecisao} d={d} aoFechar={() => setPedirDecisao(false)} salvo={(t) => salvo(t)} recarregar={carga.recarregar} />
+      {guarda.janelas}
     </div>
   );
 }
