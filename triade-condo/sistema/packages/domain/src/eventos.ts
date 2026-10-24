@@ -12,6 +12,8 @@ export interface EventoHistorico {
   acao: string;
   entidade: string;
   dados: Record<string, unknown>;
+  /** De quem o evento fala, quando é uma pessoa (histórico da equipe); o nome é o atual. */
+  alvo?: { id: string; nome: string } | null;
 }
 
 const CAMPOS_FICHA: Record<string, string> = {
@@ -90,11 +92,15 @@ export function descreverEvento(e: EventoHistorico): string {
     case "equipe.atribuicao_retirada":
       return "Atribuição retirada";
     case "equipe.membro_cadastrado":
-      return `Pessoa cadastrada na equipe · ${listaDeFuncoes(d.funcoes)}`;
+      return e.alvo?.nome
+        ? `${e.alvo.nome} entrou na equipe · ${listaDeFuncoes(d.funcoes)}`
+        : `Pessoa cadastrada na equipe · ${listaDeFuncoes(d.funcoes)}`;
     case "equipe.funcoes_alteradas":
-      return `Funções revistas: ${listaDeFuncoes(d.antes)} → ${listaDeFuncoes(d.depois)}`;
+      return e.alvo?.nome
+        ? `Funções de ${e.alvo.nome} revistas · ${listaDeFuncoes(d.antes)} → ${listaDeFuncoes(d.depois)}`
+        : `Funções revistas: ${listaDeFuncoes(d.antes)} → ${listaDeFuncoes(d.depois)}`;
     case "equipe.membro_desativado":
-      return "Pessoa desativada da equipe";
+      return e.alvo?.nome ? `${e.alvo.nome} saiu da equipe` : "Pessoa desativada da equipe";
     case "fuso.alterado":
       return `Fuso: ${nomeDe(FUSOS, d.de)} → ${nomeDe(FUSOS, d.para)}`;
     case "horarios.alterados":

@@ -313,7 +313,8 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     }
     if (caminho === "/v1/equipe" && metodo === "POST") return route.fulfill({ status: 201, json: { pessoaId: crypto.randomUUID(), contaNova: true } });
     if (caminho === "/v1/equipe/historico") {
-      return route.fulfill({ json: { eventos: [{ id: 9, ocorridoEm: "2026-10-16T12:30:00Z", autor: { id: CAROLINA, nome: "Carolina" }, acao: "equipe.membro_cadastrado", entidade: "pessoa", dados: { funcoes: ["IMPLANTACAO"] } }] } });
+      return route.fulfill({ json: { eventos: [{ id: 9, ocorridoEm: "2026-10-16T12:30:00Z", autor: { id: CAROLINA, nome: "Carolina" }, acao: "equipe.membro_cadastrado", entidade: "pessoa", dados: { funcoes: ["IMPLANTACAO"] },
+        alvo: { id: INES, nome: "Inês" } }] } });
     }
     const r5 = await rotasPlanosConsole(route, planos, caminho, metodo, corpo, admin);
     if (r5 !== null) return r5;
@@ -322,9 +323,11 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
         { estagio: () => c.cliente.estagio, equipe: admin ? "Carolina" : "Inês" });
       if (naConfiguracao !== null) return naConfiguracao;
     }
-    const r4 = await rotasSuporteConsole(route, suporte, caminho, metodo, corpo, c ? {
-      id: c.condominio.id, nome: c.condominio.nome, sindicos: c.sindicos, estagio: () => c.cliente.estagio,
-      ativar: () => { c.cliente.estagio = "ATIVO"; }, configuracao: () => andamentoConfiguracao(configuracao),
+    // A lista de implantações (D4.28) também mostra as partes conferidas do Ipê.
+    const ci = c ?? (caminho === "/v1/implantacoes" ? estado.clientes.find((x) => x.condominio.id === suporte.suporte.condominioId) : undefined);
+    const r4 = await rotasSuporteConsole(route, suporte, caminho, metodo, corpo, ci ? {
+      id: ci.condominio.id, nome: ci.condominio.nome, sindicos: ci.sindicos, estagio: () => ci.cliente.estagio,
+      ativar: () => { ci.cliente.estagio = "ATIVO"; }, configuracao: () => andamentoConfiguracao(configuracao),
     } : undefined, url);
     if (r4 !== null) return r4;
     return erro(route, 404, "NOT_FOUND");

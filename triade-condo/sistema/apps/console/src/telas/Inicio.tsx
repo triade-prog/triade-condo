@@ -17,7 +17,7 @@ import { SeloSituacao } from "./rotulos.tsx";
 import { useCarregar, useSessao, type Carga } from "./sessao.tsx";
 import { TOM_CHAMADO, type ResumoChamado } from "./suporte/Chamados.tsx";
 import { TOM_SUPORTE, type PedidoAcesso } from "./suporte/SuporteAcesso.tsx";
-import { atendeClientes, cuidaDoAcesso, type ClienteCarteira, type ItemImplantacao, type NumeroWhatsapp } from "./tipos.ts";
+import { atendeClientes, cuidaDoAcesso, partesConferidas, type ClienteCarteira, type ItemImplantacao, type NumeroWhatsapp } from "./tipos.ts";
 
 const HOJE = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "numeric", month: "long" });
 const HOJE_CURTO = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "short", day: "2-digit", month: "2-digit" });
@@ -54,6 +54,13 @@ function Assumir({ chamado, aoErro }: { chamado: ResumoChamado; aoErro: (e: Erro
       <Icone nome="pessoa" /><span className="max-md:sr-only">Assumir</span>
     </Botao>
   );
+}
+
+/** "Com o cliente: <texto> · <cliente> · venceu em 22/10", ou "Com a equipe · <responsável>: …", e " · e mais N" quando há outras. */
+function textoVencida(i: ItemImplantacao, total: number): string {
+  const v = i.vencida!;
+  const comQuem = v.comQuem === "CLIENTE" ? "Com o cliente" : v.responsavel ? `Com a equipe · ${v.responsavel}` : "Com a equipe";
+  return `${comQuem}: ${[v.texto, i.nome, `venceu em ${diaMes(v.proximoRetorno)}`, total > 1 ? `e mais ${total - 1}` : null].filter(Boolean).join(" · ")}`;
 }
 
 type ComRecarregar<T> = Carga<T> & { recarregar: () => void };
@@ -107,12 +114,18 @@ function Agora({ implantacoes }: { implantacoes: ComRecarregar<{ implantacoes: I
     const comVencida = implantacoes.dados.implantacoes.filter((i) => i.vencidas > 0);
     const total = comVencida.reduce((t, i) => t + i.vencidas, 0);
     const i = comVencida[0];
+    // A mais antiga de todas (D4.28): com quem está, o que é, de qual cliente e quando venceu.
+    const maisAntiga = comVencida.filter((x) => x.vencida)
+      .sort((a, b) => a.vencida!.proximoRetorno.localeCompare(b.vencida!.proximoRetorno) || a.nome.localeCompare(b.nome))[0];
+    // O Ver leva ao cliente da frase; sem o texto novo, à lista quando há mais de um.
+    const destino = maisAntiga ?? (comVencida.length === 1 ? i : undefined);
     if (i) {
       linhas.push({
         chave: "pendencias", icone: "relogio", tom: "erro", titulo: plural(total, "pendência de implantação vencida", "pendências de implantação vencidas"),
-        detalhe: comVencida.length === 1 ? [i.nome, i.proximoRetorno ? `venceu em ${diaMes(i.proximoRetorno)}` : null].filter(Boolean).join(" · ") : comVencida.map((x) => x.nome).join(", "),
+        detalhe: maisAntiga ? textoVencida(maisAntiga, total)
+          : comVencida.length === 1 ? [i.nome, i.proximoRetorno ? `venceu em ${diaMes(i.proximoRetorno)}` : null].filter(Boolean).join(" · ") : comVencida.map((x) => x.nome).join(", "),
         selo: { texto: "Vencida", tom: "erro" },
-        acao: <LinkAcao href={comVencida.length === 1 ? `/clientes/${i.condominioId}?aba=implantacao` : "/clientes?filtro=implantacao"} icone="olho">Ver</LinkAcao>,
+        acao: <LinkAcao href={destino ? `/clientes/${destino.condominioId}?aba=implantacao` : "/clientes?filtro=implantacao"} icone="olho">Ver</LinkAcao>,
       });
     }
   }
@@ -183,7 +196,7 @@ function Implantacoes({ carga }: { carga: ComRecarregar<{ implantacoes: ItemImpl
               </span>
               <BarraEtapas feitas={i.feitas} total={i.etapas} rotulo={`${i.feitas} de ${i.etapas} etapas feitas`} />
               <span className="t-apoio">
-                {i.proxima ? `Próxima: ${i.proxima.numero} · ${i.proxima.titulo}${i.proxima.responsavel ? ` · com ${i.proxima.responsavel}` : ""}` : "Todas as etapas feitas: falta a entrega"}
+                {i.proxima ? `Próxima: ${i.proxima.numero} · ${i.proxima.titulo}${partesConferidas(i)}${i.proxima.responsavel ? ` · com ${i.proxima.responsavel}` : ""}` : "Todas as etapas feitas: falta a entrega"}
                 {i.vencidas ? ` · ${plural(i.vencidas, "pendência vencida", "pendências vencidas")}` : ""}
               </span>
             </li>
