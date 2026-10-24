@@ -2,6 +2,7 @@
 // Passo 1: carteira, ficha, cenário, convite do síndico, notas internas, histórico e equipe.
 // Passo 5: a conexão do WhatsApp de cada cliente (piloto pelo Wafly, DC14).
 // Planos e pagamentos (peças C3 e C4): plano, conjuntos contratados e liberados, cobranças e recebimentos.
+// Tabela de preços (0295): faixas, parâmetros, concorrentes, histórico e a sugestão do plano.
 // Quem pode o quê é decidido no banco (funções internas e clientes atribuídos, PI-10); aqui
 // só se valida a entrada e se fala com o Auth para os convites.
 
@@ -58,6 +59,12 @@ import {
   suspenderConjuntoSchema,
   testarConjuntoSchema,
   valorCobrancaSchema,
+  arquivarConcorrenteSchema,
+  CODIGOS_FAIXA,
+  concorrenteSchema,
+  faixaPrecoSchema,
+  parametrosPrecoSchema,
+  sugestaoPlanoSchema,
 } from "@triade/domain";
 import type { Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -164,7 +171,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   for (const rota of ["/v1/sessao", "/v1/clientes", "/v1/clientes/*", "/v1/equipe", "/v1/equipe/*", "/v1/contagens", "/v1/implantacoes",
                       "/v1/suporte-acesso", "/v1/chamados", "/v1/whatsapp", "/v1/whatsapp/*",
-                      "/v1/pagamentos", "/v1/pagamentos/*"]) app.use(rota, sessao.exigirSessao);
+                      "/v1/pagamentos", "/v1/pagamentos/*", "/v1/precos", "/v1/precos/*"]) app.use(rota, sessao.exigirSessao);
   const pessoa = (c: Context<VarsSessao>) => c.get("sessao").pessoaId;
 
   // Quem está no Console: nome, funções e o que pode fazer fora de um cliente.
@@ -543,14 +550,22 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   // Plano e conjuntos do cliente (peça C3; PI-03, CF-11, PI-16, PI-19, NG-06).
   app.get("/v1/clientes/:id/plano", async (c) => c.json(await rpc("console_plano", cliente(c))));
 
+  // Salvar diz de qual tabela o plano veio (0295): FUNDADOR, CHEIA ou MANUAL (vazio é manual).
   app.put("/v1/clientes/:id/plano", async (c) => {
     const d = await lerCorpo(c, planoSchema);
-    return c.json(await rpc("console_salvar_plano", {
+    return c.json(await rpc("console_salvar_plano_tabela", {
       ...cliente(c), p_versao: d.versao, p_nome: d.nome, p_unidades_de: d.unidadesDe, p_unidades_ate: d.unidadesAte, p_valor: d.valor,
       p_ciclo: d.ciclo, p_dia_vencimento: d.diaVencimento, p_implantacao_valor: d.implantacaoValor,
       p_implantacao_sem_cobranca: d.implantacaoSemCobranca, p_implantacao_referencia: d.implantacaoReferencia,
-      p_inicio_competencia: d.inicioCompetencia,
+      p_inicio_competencia: d.inicioCompetencia, p_tabela: d.tabela,
     }));
+  });
+
+  // "Usar a tabela" (0295): a sugestão do plano pelas unidades ativas. Não grava nada.
+  app.get("/v1/clientes/:id/plano/sugestao", async (c) => {
+    const q = sugestaoPlanoSchema.safeParse({ ciclo: c.req.query("ciclo") || undefined, inicio: c.req.query("inicio") || undefined });
+    if (!q.success) throw new ErroDominio("VALIDATION_ERROR", { campos: [...new Set(q.error.issues.map((i) => String(i.path[0] ?? "")))] });
+    return c.json(await rpc("console_sugestao_plano", { ...cliente(c), p_ciclo: q.data.ciclo, p_inicio: q.data.inicio }));
   });
 
   /** O conjunto da rota: só os quatro que se vendem; a base não tem rota. */
@@ -637,6 +652,48 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const ids = cobranca(c);
     const d = await lerCorpo(c, valorCobrancaSchema);
     return c.json(await rpc("console_definir_valor_cobranca", { ...ids, p_valor: d.valor, p_motivo: d.motivo }));
+  });
+
+  // Tabela de preços (0295): só Administração e Financeiro (o banco confere); toda escrita com
+  // motivo, no histórico dos preços. Mudar a tabela não mexe em plano que já existe.
+  app.get("/v1/precos", async (c) => c.json(await rpc("console_tabela_precos", { p_pessoa: pessoa(c) })));
+
+  app.get("/v1/precos/historico", async (c) => c.json(await rpc("console_historico_precos", { p_pessoa: pessoa(c), ...paginacao(c) })));
+
+  app.put("/v1/precos/faixas/:codigo", async (c) => {
+    const codigo = c.req.param("codigo") ?? "";
+    if (!(CODIGOS_FAIXA as string[]).includes(codigo)) throw new ErroDominio("NOT_FOUND");
+    const d = await lerCorpo(c, faixaPrecoSchema);
+    return c.json(await rpc("console_salvar_faixa_preco", {
+      p_pessoa: pessoa(c), p_codigo: codigo, p_versao: d.versao, p_fundador: d.fundador, p_cheia: d.cheia, p_implantacao: d.implantacao,
+      p_motivo: d.motivo,
+    }));
+  });
+
+  app.put("/v1/precos/parametros", async (c) => {
+    const d = await lerCorpo(c, parametrosPrecoSchema);
+    return c.json(await rpc("console_salvar_parametros_preco", {
+      p_pessoa: pessoa(c), p_versao: d.versao, p_meses_pagos_anual: d.mesesPagosAnual, p_parcelas_implantacao: d.parcelasImplantacao,
+      p_vagas_fundador: d.vagasFundador, p_tabela_em_uso: d.tabelaEmUso, p_motivo: d.motivo,
+    }));
+  });
+
+  async function salvarConcorrente(c: Context<VarsSessao>, id: string | null) {
+    const d = await lerCorpo(c, concorrenteSchema);
+    if (id && !d.versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("console_salvar_concorrente", {
+      p_pessoa: pessoa(c), p_id: id, p_versao: id ? d.versao : null, p_nome: d.nome, p_plano: d.plano, p_modelo: d.modelo,
+      p_valor: d.valor, p_a_partir_de: d.aPartirDe, p_faixas: d.faixas, p_por_unidade: d.porUnidade, p_minimo: d.minimo,
+      p_fonte: d.fonte, p_conferido: d.conferido, p_lido_em: d.lidoEm, p_observacao: d.observacao, p_motivo: d.motivo,
+    });
+  }
+  app.post("/v1/precos/concorrentes", async (c) => c.json(await salvarConcorrente(c, null), 201));
+  app.put("/v1/precos/concorrentes/:concorrente", async (c) => c.json(await salvarConcorrente(c, idDaRota(c, "concorrente"))));
+
+  app.post("/v1/precos/concorrentes/:concorrente/arquivar", async (c) => {
+    const id = idDaRota(c, "concorrente");
+    const d = await lerCorpo(c, arquivarConcorrenteSchema);
+    return c.json(await rpc("console_arquivar_concorrente", { p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_motivo: d.motivo }));
   });
 
   // Chamados (PI-17, PI-20).

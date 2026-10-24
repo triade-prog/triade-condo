@@ -1,19 +1,20 @@
 "use client";
 // Plano e pagamentos na ficha do cliente (decisão A.1; quadros 241, 243 a 246): os conjuntos com
-// contratado e liberado separados (PI-03, CF-11), o plano sem preço fixo e as últimas cobranças.
+// contratado e liberado separados (PI-03, CF-11), o plano com "Usar a tabela" de preços (0295) e
+// as últimas cobranças.
 // Liberar, testar e suspender pedem motivo e ficam registrados; quem pode cada coisa vem da ficha.
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import {
-  CICLOS_PLANO, formatarData, MOTIVOS_SUSPENSAO, mostrarDataSemHora, mostrarValor, nomeCompetencia, SITUACOES_COBRANCA, type CicloPlano, type MotivoSuspensao,
+  AVISOS_SUGESTAO, CICLOS_PLANO, formatarData, MOTIVOS_SUSPENSAO, mostrarDataSemHora, mostrarValor, nomeCompetencia, SITUACOES_COBRANCA, type CicloPlano, type MotivoSuspensao,
 } from "@triade/domain";
-import { Aviso, Botao, Carregando, CampoAreaTexto, CampoTexto, chamarApi, camposComErro, Dialogo, ErroCarregar, Icone, Selo, type ErroApi } from "@triade/ui";
+import { Aviso, Botao, Carregando, CampoAreaTexto, CampoTexto, chamarApi, camposComErro, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
 import { AcaoCartao, Cartao } from "../comum.tsx";
-import { useCarregar } from "../sessao.tsx";
+import { useCarregar, useSessao } from "../sessao.tsx";
 import {
-  campoDosCentavos, centavosDoCampo, EscolhaBotoes, ErroJanela, hojeBrasilia, ICONE_CONJUNTO, RodapeJanela, SelosConjunto, somarDias, testeAcabou, TOM_COBRANCA,
-  type Cobranca, type ConjuntoCliente, type PlanoDaFicha,
+  campoDosCentavos, centavosDoCampo, EscolhaBotoes, ErroJanela, hojeBrasilia, ICONE_CONJUNTO, lerSugestao, NOMES_TABELA, nomeFaixa, RodapeJanela, ROTAS_PRECOS,
+  SelosConjunto, somarDias, testeAcabou, TOM_COBRANCA, type Cobranca, type ConjuntoCliente, type OrigemPlano, type PlanoDaFicha, type SugestaoPlano,
 } from "../planos/comum.tsx";
 import type { PropsAba } from "./tipos.ts";
 
@@ -324,19 +325,69 @@ function JanelaContrato(p: PropsJanela & { c: ConjuntoCliente; contratar: boolea
   );
 }
 
-/** O plano do cliente: faixa, valor que pode ficar vazio, ciclo, vencimento e implantação. */
+/** A frase da caixa "Pela tabela": o que a tabela sugere, a vaga de fundador e até quando vale. */
+function fraseSugestao(s: SugestaoPlano): string {
+  if (!s.faixa) return "";
+  if (s.sobConsulta) return "Acima de 400 unidades, sob consulta: preenche Valor a definir.";
+  const anual = s.ciclo === "ANUAL";
+  const impl = s.implantacaoSemCobranca ? (anual ? "implantação isenta" : "implantação sem custo") : `implantação ${mostrarValor(s.implantacao)}`;
+  const base = `${s.tabela ? NOMES_TABELA[s.tabela] : s.nome} ${mostrarValor(s.valor)} por ${anual ? "ano" : "mês"}, ${impl}.`;
+  if (!s.fundador || s.tabela !== "FUNDADOR") return base;
+  const ate = s.fundador.ate ? ` Fundador até ${nomeCompetencia(s.fundador.ate)}.` : "";
+  const vaga = s.fundador.posicao ? ` Este ${s.fundador.jaOcupa ? "é" : "seria"} o ${s.fundador.posicao}º fundador de ${s.fundador.vagas}.` : "";
+  return `${base}${ate}${vaga}`;
+}
+
+const minuscula = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
+
+/** O plano do cliente: faixa, valor que pode ficar vazio, ciclo, vencimento e implantação. Com a
+ * tabela de preços (0295), "Usar a tabela" preenche os campos sem gravar; nada muda até Salvar. */
 function JanelaPlano(p: PropsJanela & { plano?: PlanoDaFicha["plano"]; unidadesAtivas: number }) {
   const pl = p.plano && "ciclo" in p.plano ? p.plano : undefined;
+  const veTabela = useSessao().acoes.includes("console.precos.ver");
   const [f, setF] = useState({
     nome: p.plano?.nome ?? "", de: pl?.unidadesDe?.toString() ?? "", ate: pl?.unidadesAte?.toString() ?? "", valor: campoDosCentavos(pl?.valor),
     ciclo: (pl?.ciclo ?? "MENSAL") as CicloPlano, dia: String(pl?.diaVencimento ?? 10), impl: campoDosCentavos(pl?.implantacaoValor),
     semCobranca: pl?.implantacaoSemCobranca ?? true, implRef: pl?.implantacaoReferencia ?? "", inicio: (pl?.inicioCompetencia ?? `${hojeBrasilia().slice(0, 7)}-01`).slice(0, 7),
   });
+  const [tabela, setTabela] = useState<OrigemPlano>(pl?.tabelaOrigem ?? "MANUAL");
+  // A sugestão usada: com ela, trocar o ciclo busca de novo. Mexer à mão num valor solta a tabela.
+  const [usada, setUsada] = useState<SugestaoPlano | null>(null);
+  const [erroTabela, setErroTabela] = useState<string | null>(null);
+  const inicio = /^\d{4}-\d{2}$/.test(f.inicio) ? `${f.inicio}-01` : undefined;
+  const carga = useCarregar<Record<string, unknown>>(veTabela ? ROTAS_PRECOS.sugestao(p.condominio, f.ciclo, inicio) : null);
+  const sugestao = carga.estado === "pronto" ? lerSugestao(carga.dados) : null;
   const [local, setLocal] = useState<Record<string, string>>({});
   const { erro, enviando, enviar } = useEnviar(p);
   const campos = camposComErro(erro);
   const muda = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
+  const mudaValor = (k: "de" | "ate" | "valor" | "impl") => (e: { target: { value: string } }) => { setF((x) => ({ ...x, [k]: e.target.value })); setTabela("MANUAL"); setUsada(null); };
   const erroDe = (k: string, texto: string) => local[k] ?? (campos.includes(k) ? texto : null);
+
+  function aplicar(s: SugestaoPlano) {
+    setF((x) => ({
+      ...x, nome: s.nome || x.nome, de: String(s.unidadesDe ?? s.faixa?.unidadesDe ?? ""), ate: (s.unidadesAte ?? (s.unidadesDe === undefined ? s.faixa?.unidadesAte : undefined))?.toString() ?? "",
+      valor: campoDosCentavos(s.valor), ciclo: s.ciclo,
+      semCobranca: s.implantacaoSemCobranca, impl: s.implantacaoSemCobranca ? "" : campoDosCentavos(s.implantacao),
+    }));
+    setTabela(s.sobConsulta || !s.tabela ? "MANUAL" : s.tabela);
+    setUsada(s);
+    setLocal({});
+    setErroTabela(null);
+  }
+
+  async function mudarCiclo(ciclo: CicloPlano) {
+    setF((x) => ({ ...x, ciclo }));
+    if (!usada) {
+      // Sem a sugestão aberta, o valor não acompanha o ciclo novo (o mensal viraria o anual):
+      // deixa de ser o da tabela e vai como manual.
+      if (ciclo !== f.ciclo && tabela !== "MANUAL") setTabela("MANUAL");
+      return;
+    }
+    const r = await chamarApi<Record<string, unknown>>(ROTAS_PRECOS.sugestao(p.condominio, ciclo, inicio));
+    if (!r.ok) { setErroTabela(textoDoErro(r.erro)); setUsada(null); setTabela("MANUAL"); return; }
+    aplicar(lerSugestao(r.dados));
+  }
 
   function salvar(ev: FormEvent) {
     ev.preventDefault();
@@ -351,44 +402,77 @@ function JanelaPlano(p: PropsJanela & { plano?: PlanoDaFicha["plano"]; unidadesA
     void enviar("/plano", {
       versao: pl?.versao ?? null, nome: f.nome, unidadesDe: inteiro(f.de), unidadesAte: inteiro(f.ate), valor: valor.centavos, ciclo: f.ciclo,
       diaVencimento: Number(f.dia), implantacaoValor: impl.centavos, implantacaoSemCobranca: f.semCobranca, implantacaoReferencia: f.implRef,
-      inicioCompetencia: `${f.inicio}-01`,
+      inicioCompetencia: `${f.inicio}-01`, tabela,
     }, "Plano salvo.", "PUT");
   }
+
+  const anualSugerido = sugestao?.faixa && sugestao.ciclo === "ANUAL" && sugestao.valor !== undefined ? ` (${nomeFaixa(sugestao.faixa)}: ${mostrarValor(sugestao.valor)} por ano)` : "";
+  const fundadorAte = tabela === "FUNDADOR" ? (usada ? usada.fundador?.ate : pl?.fundadorAte) : undefined;
+  const mesesAnual = sugestao?.mesesPagosAnual ?? usada?.mesesPagosAnual;
 
   return (
     <Dialogo aberto media titulo="Plano do cliente" apoio="Interno. Só a Administração muda o plano e o contrato." aoFechar={p.aoFechar}>
       <form className="grid gap-4" onSubmit={salvar} noValidate>
         {erro && !campos.length ? <ErroJanela erro={erro} recarregar={p.recarregar} /> : null}
+        {veTabela ? (
+          <section aria-label="Pela tabela" className="grid gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-violeta-200 bg-violeta-100 px-4 py-3.5">
+              <span className="grid min-w-0 flex-1 gap-0.5">
+                <span className="t-texto font-semibold">
+                  {sugestao?.faixa ? `Pela tabela: ${sugestao.unidadesAtivas} unidades ativas, faixa ${minuscula(nomeFaixa(sugestao.faixa))}` : sugestao ? `Pela tabela: ${sugestao.unidadesAtivas} unidades ativas` : "Pela tabela"}
+                </span>
+                <span className="t-apoio">
+                  {carga.estado === "carregando" ? "Lendo a tabela de preços…" : carga.estado === "erro" ? `Não deu para ler a tabela: ${carga.texto}` : sugestao ? fraseSugestao(sugestao) : ""}
+                </span>
+              </span>
+              <Botao variante="contorno" disabled={!sugestao?.faixa} onClick={() => sugestao && aplicar(sugestao)}><Icone nome="etiqueta" />Usar a tabela</Botao>
+            </div>
+            {sugestao?.avisos.filter((a) => a in AVISOS_SUGESTAO).map((a) => (
+              <Aviso key={a} tom={a === "SEM_VAGA_FUNDADOR" || a === "FUNDADOR_SO_MENSAL" ? "atencao" : "info"}>{AVISOS_SUGESTAO[a]}</Aviso>
+            ))}
+            {erroTabela ? <Aviso tom="erro" papel="alert">{erroTabela}</Aviso> : null}
+          </section>
+        ) : null}
         <div className="grid gap-3 sm:grid-cols-2">
           <CampoTexto id="pl-nome" rotulo="Nome do plano" value={f.nome} onChange={muda("nome")} maxLength={60} ajuda="O síndico vê este nome em Meu plano."
             erro={erroDe("nome", "Diga o nome do plano.")} />
           <CampoTexto id="pl-ativas" rotulo="Unidades ativas hoje" value={String(p.unidadesAtivas)} readOnly ajuda="Só unidades cadastradas e ativas." />
-          <CampoTexto id="pl-de" rotulo="Faixa de unidades, de" inputMode="numeric" value={f.de} onChange={muda("de")} opcional
+          <CampoTexto id="pl-de" rotulo="Faixa de unidades, de" inputMode="numeric" value={f.de} onChange={mudaValor("de")} opcional
             erro={erroDe("unidadesDe", "A faixa de unidades não fecha.")} />
-          <CampoTexto id="pl-ate" rotulo="até" inputMode="numeric" value={f.ate} onChange={muda("ate")} opcional ajuda="Vazio quando não há limite."
+          <CampoTexto id="pl-ate" rotulo="até" inputMode="numeric" value={f.ate} onChange={mudaValor("ate")} opcional ajuda="Vazio quando não há limite."
             erro={erroDe("unidadesAte", "A faixa de unidades não fecha.")} />
-          <CampoTexto id="pl-valor" rotulo={f.ciclo === "ANUAL" ? "Valor por ano" : "Valor por mês"} inputMode="decimal" value={f.valor} onChange={muda("valor")} opcional
-            ajuda="Vazio fica Valor a definir. Não há tabela de preço fixa." erro={erroDe("valor", "Use um valor maior que zero ou deixe vazio.")} />
+          <CampoTexto id="pl-valor" rotulo={f.ciclo === "ANUAL" ? "Valor por ano" : "Valor por mês"} inputMode="decimal" value={f.valor} onChange={mudaValor("valor")} opcional
+            ajuda="No anual vira Valor por ano. Vazio fica Valor a definir." erro={erroDe("valor", "Use um valor maior que zero ou deixe vazio.")} />
           <CampoTexto id="pl-dia" rotulo="Dia do vencimento" inputMode="numeric" value={f.dia} onChange={muda("dia")}
             erro={erroDe("diaVencimento", "Do dia 1 ao 28.")} />
         </div>
-        <EscolhaBotoes nome="ciclo" legenda="Ciclo" valor={f.ciclo} aoMudar={(v) => setF((x) => ({ ...x, ciclo: v }))}
+        <EscolhaBotoes nome="ciclo" legenda="Ciclo" valor={f.ciclo} aoMudar={(v) => void mudarCiclo(v)}
           opcoes={(Object.keys(CICLOS_PLANO) as CicloPlano[]).map((v) => ({ valor: v, texto: CICLOS_PLANO[v] }))}
-          ajuda="No anual, uma cobrança por ano, no mês em que o plano começa." />
+          ajuda={veTabela
+            ? `Fundador é só mensal. Na tabela cheia anual, a tabela sugere ${mesesAnual ?? 11} vezes o mês${anualSugerido} e a implantação isenta. No anual, uma cobrança por ano, no mês em que o plano começa.`
+            : "No anual, uma cobrança por ano, no mês em que o plano começa."} />
         <label className="flex min-h-11 cursor-pointer items-center gap-3">
-          <input type="checkbox" checked={f.semCobranca} onChange={(e) => setF((x) => ({ ...x, semCobranca: e.target.checked }))} className="h-5 w-5 accent-violeta-600" />
+          <input type="checkbox" checked={f.semCobranca} onChange={(e) => { setF((x) => ({ ...x, semCobranca: e.target.checked })); setTabela("MANUAL"); setUsada(null); }}
+            className="h-5 w-5 accent-violeta-600" />
           <span className="t-texto">Implantação sem cobrança</span>
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           {f.semCobranca ? null : (
-            <CampoTexto id="pl-impl" rotulo="Implantação, valor" inputMode="decimal" value={f.impl} onChange={muda("impl")}
-              erro={erroDe("implantacaoValor", "Use um valor maior que zero.")} />
+            <CampoTexto id="pl-impl" rotulo="Implantação, valor" inputMode="decimal" value={f.impl} onChange={mudaValor("impl")}
+              ajuda="Vazio fica Valor a definir." erro={erroDe("implantacaoValor", "Use um valor maior que zero.")} />
           )}
           <CampoTexto id="pl-implref" rotulo="Referência do serviço" value={f.implRef} onChange={muda("implRef")} maxLength={120} opcional />
           <CampoTexto id="pl-inicio" type="month" rotulo="Começa na competência" value={f.inicio} onChange={muda("inicio")}
             erro={erroDe("inicioCompetencia", "Diga a competência em que o plano começa.")} />
+          {fundadorAte ? (
+            <CampoTexto id="pl-fundador-ate" rotulo="Preço de fundador até" value={nomeCompetencia(fundadorAte)} readOnly
+              ajuda="Nada é cobrado nem enviado ao cliente pelo sistema." />
+          ) : null}
         </div>
-        <p className="t-apoio text-tinta-suave">Mudar o plano vale para as competências que ainda não foram abertas. As já abertas se corrigem por ajuste, com motivo.</p>
+        <p className="t-apoio text-tinta-suave">
+          {veTabela ? "“Usar a tabela” só preenche os campos; nada muda até Salvar. Você pode ajustar qualquer valor antes. Mudar a tabela depois não mexe neste plano. Acima de 400 unidades, preenche Valor a definir. " : ""}
+          Mudar o plano vale para as competências que ainda não foram abertas; as já abertas se corrigem por ajuste, com motivo.
+        </p>
         <RodapeJanela aoFechar={p.aoFechar} enviando={enviando} texto="Salvar o plano" />
       </form>
     </Dialogo>
