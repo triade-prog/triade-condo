@@ -54,7 +54,10 @@ export function criarSuporteConsole() {
       id: CHAMADO, condominioId: IPE, condominio: "Residencial Ipê", numero: 1, tipo: "PROBLEMA", area: "PEDIDOS", titulo: "Fila some depois de filtrar por categoria",
       situacao: "NOVO", abertoPor: "Bruna Alves", imagens: 0, atualizadoEm: agora(), versao: 1, responsavelId: undefined as string | undefined,
       responsavel: undefined as string | undefined,
-      mensagens: [{ id: novoId(), lado: "CLIENTE", interna: false, autor: "Bruna Alves", texto: "Escolho Limpeza e a lista fica vazia.", criadoEm: agora() }],
+      // A imagem fica na mensagem em que foi mandada (decisão E.2).
+      mensagens: [{ id: novoId(), lado: "CLIENTE", interna: false, autor: "Bruna Alves", texto: "Escolho Limpeza e a lista fica vazia.", criadoEm: agora(),
+        imagens: [] as { id: string; nome: string; tipo: string }[] }] as
+        { id: string; lado: string; interna: boolean; autor: string; texto: string; criadoEm: string; imagens?: { id: string; nome: string; tipo: string }[] }[],
     },
     // Pedido de mudança (0286): só entra na fila quando o teste liga.
     mudanca: null as null | {
@@ -208,6 +211,8 @@ export async function rotasSuporteConsole(route: Route, est: EstadoSuporteConsol
     Object.assign(est.chamado, { situacao: corpo.situacao, responsavelId: corpo.responsavelId ?? undefined, responsavel: nomeDe(corpo.responsavelId as string), versao: est.chamado.versao + 1 });
     return route.fulfill({ json: { versao: est.chamado.versao } });
   }
+  const im = /^\/chamados\/[^/]+\/imagens\/([^/]+)\/link$/.exec(resto);
+  if (im && metodo === "GET") return route.fulfill({ json: { url: `/api/v1/armazenamento/${im[1]}`, tipo: "image/png" } });
   if (resto === `/chamados/${CHAMADO}/responder`) {
     const c = est.chamado;
     c.mensagens.push({ id: novoId(), lado: "TRIADE", interna: Boolean(corpo.interna), autor: "Carolina", texto: String(corpo.texto), criadoEm: agora() });

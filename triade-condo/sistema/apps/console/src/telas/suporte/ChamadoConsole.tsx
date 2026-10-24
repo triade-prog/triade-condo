@@ -5,14 +5,16 @@
 // quem e Assumir vão para o cartão Atendimento, ao lado (no celular, fechado no alto). Do
 // chamado dá para pedir o acesso excepcional (PI-11). O chamado de mudança (0286, decisão C.1)
 // mostra antes do Atendimento o cartão "Mudança pedida", com a parte, o valor de hoje e o caminho
-// para a Configuração do cliente, onde a mudança é feita.
+// para a Configuração do cliente, onde a mudança é feita. As imagens que o cliente mandou ficam
+// dentro da mensagem em que foram (decisão E.2); daqui só se vê, a TRÍADE ainda não anexa.
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { AREAS_CHAMADO, formatarData, formatarDataHora, nomeDaParte, SITUACOES_CHAMADO, TIPOS_CHAMADO } from "@triade/domain";
 import {
-  Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, textoDoErro, type ErroApi,
+  Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, ImagensDaMensagem, textoDoErro,
+  type ErroApi, type ImagemDaMensagem,
 } from "@triade/ui";
 import { Cartao, diaHora, useCelular, Voltar } from "../comum.tsx";
 import { useCarregar, useSessao } from "../sessao.tsx";
@@ -26,27 +28,20 @@ interface Mensagem {
   autor: string;
   texto: string;
   criadoEm: string;
+  /** As imagens que foram com a mensagem (decisão E.2), só as conferidas. */
+  imagens?: ImagemDaMensagem[];
 }
 
 interface DetalheChamado extends ResumoChamado {
   mensagens: Mensagem[];
-  arquivos: { id: string; nome: string; situacao: string }[];
   equipe: { pessoaId: string; nome: string }[];
   pode: { responder: boolean; notaInterna: boolean; atualizar: boolean; pedirAcesso: boolean };
-}
-
-function Imagem({ base, id, nome }: { base: string; id: string; nome: string }) {
-  async function abrir() {
-    const r = await chamarApi<{ url: string }>(`${base}/imagens/${id}/link`);
-    if (r.ok) window.open(r.dados.url, "_blank", "noopener");
-  }
-  return <Botao variante="contorno" tamanho="m" onClick={abrir}><Icone nome="camera" />Abrir {nome}</Botao>;
 }
 
 const hora = (iso: string) => formatarDataHora(iso).slice(-5);
 
 /** A conversa em bolhas, com o dia antes da primeira mensagem de cada dia. */
-function Conversa({ mensagens, condominio }: { mensagens: Mensagem[]; condominio?: string }) {
+function Conversa({ mensagens, condominio, abrir }: { mensagens: Mensagem[]; condominio?: string; abrir: (id: string) => void }) {
   const linhas: ReactNode[] = [];
   let dia = "";
   for (const m of mensagens) {
@@ -60,6 +55,7 @@ function Conversa({ mensagens, condominio }: { mensagens: Mensagem[]; condominio
         : triade ? "justify-self-end rounded-[16px_4px_16px_16px] border-violeta-200 bg-violeta-50" : "justify-self-start rounded-[4px_16px_16px_16px] border-linha bg-superficie-2"}`}>
         {m.interna ? <span className="selo justify-self-start" data-tom="neutro"><Icone nome="cadeado" className="h-3.5 w-3.5" />Nota interna · o cliente não vê</span> : null}
         <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">{m.texto}</p>
+        <ImagensDaMensagem imagens={m.imagens} abrir={abrir} />
         <span className="t-apoio text-tinta-suave">{m.autor}{triade ? " · TRÍADE" : condominio ? ` · ${condominio}` : ""} · {hora(m.criadoEm)}</span>
       </li>,
     );
@@ -84,6 +80,11 @@ export function ChamadoConsole() {
   const c = carga.dados;
   const primeira = c.mensagens[0];
   const souDaEquipe = c.equipe.some((p) => p.pessoaId === sessao.pessoaId);
+
+  async function abrirImagem(id: string) {
+    const r = await chamarApi<{ url: string }>(`${base}/imagens/${id}/link`);
+    if (r.ok) window.open(r.dados.url, "_blank", "noopener");
+  }
 
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
@@ -179,15 +180,7 @@ export function ChamadoConsole() {
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Cartao id="t-conversa" titulo="Conversa" icone="balao">
-          <Conversa mensagens={c.mensagens} condominio={c.condominio} />
-          {c.arquivos.filter((a) => a.situacao === "LIBERADO").length ? (
-            <section aria-label="Imagens do chamado" className="grid gap-2 border-t border-linha pt-3">
-              <span className="t-rotulo">Imagens</span>
-              <div className="flex flex-wrap gap-2">
-                {c.arquivos.filter((a) => a.situacao === "LIBERADO").map((a) => <Imagem key={a.id} base={base} id={a.id} nome={a.nome} />)}
-              </div>
-            </section>
-          ) : null}
+          <Conversa mensagens={c.mensagens} condominio={c.condominio} abrir={(id) => void abrirImagem(id)} />
           {c.pode.notaInterna ? (
             <form onSubmit={enviar} noValidate className="grid gap-3 rounded-[16px] border border-linha bg-superficie p-4">
               <div role="group" aria-label="Tipo de mensagem" className="trilho justify-self-start">

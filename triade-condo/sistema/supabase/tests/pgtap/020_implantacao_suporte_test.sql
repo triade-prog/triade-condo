@@ -286,18 +286,20 @@ select ajustar_relogio('8 days');
 select is(pg_temp.motivo($$ select plataforma_responder_chamado(gil, ipe, ch_gil, 'Voltou de novo.') from ids, c, ch $$), 'CHAMADO_FECHADO',
   'PI-20: depois de 7 dias, abre-se outro');
 
--- Imagens do chamado (PT-07): só quem abriu, até 3.
-select is(pg_temp.motivo($$ select plataforma_iniciar_arquivo_chamado(ana, ipe, ch_ana, 'erro.pdf', 'application/pdf', 1000) from ids, c, ch $$),
+-- Imagens do chamado (PT-07): na própria mensagem recém-enviada, até 3 por mensagem (0297).
+create temp table mch as select (plataforma_responder_chamado(ana, ipe, ch_ana, 'Segue o print da tela.') ->> 'mensagemId')::uuid as m_ana
+  from ids, c, ch;
+select is(pg_temp.motivo($$ select plataforma_iniciar_arquivo_chamado(ana, ipe, ch_ana, m_ana, 'erro.pdf', 'application/pdf', 1000) from ids, c, ch, mch $$),
   'SO_IMAGEM', 'PI-20: só imagens');
-select is(pg_temp.motivo($$ select plataforma_iniciar_arquivo_chamado(ana, ipe, ch_ana, 'print.png', 'image/png', 10485761) from ids, c, ch $$),
+select is(pg_temp.motivo($$ select plataforma_iniciar_arquivo_chamado(ana, ipe, ch_ana, m_ana, 'print.png', 'image/png', 10485761) from ids, c, ch, mch $$),
   'ARQUIVO_GRANDE', 'PT-07: até 10 MB');
 create temp table ar as select
-  (plataforma_iniciar_arquivo_chamado(ana, ipe, ch_ana, 'print1.png', 'image/png', 1000) ->> 'arquivoId')::uuid as ar1,
-  (plataforma_iniciar_arquivo_chamado(ana, ipe, ch_ana, 'print2.png', 'image/png', 1000) ->> 'arquivoId')::uuid as ar2,
-  (plataforma_iniciar_arquivo_chamado(ana, ipe, ch_ana, 'print3.png', 'image/png', 1000) ->> 'arquivoId')::uuid as ar3
-  from ids, c, ch;
-select is(pg_temp.motivo($$ select plataforma_iniciar_arquivo_chamado(ana, ipe, ch_ana, 'print4.png', 'image/png', 1000) from ids, c, ch $$),
-  'LIMITE_IMAGENS', 'PI-20: até 3 imagens');
+  (plataforma_iniciar_arquivo_chamado(ana, ipe, ch_ana, m_ana, 'print1.png', 'image/png', 1000) ->> 'arquivoId')::uuid as ar1,
+  (plataforma_iniciar_arquivo_chamado(ana, ipe, ch_ana, m_ana, 'print2.png', 'image/png', 1000) ->> 'arquivoId')::uuid as ar2,
+  (plataforma_iniciar_arquivo_chamado(ana, ipe, ch_ana, m_ana, 'print3.png', 'image/png', 1000) ->> 'arquivoId')::uuid as ar3
+  from ids, c, ch, mch;
+select is(pg_temp.motivo($$ select plataforma_iniciar_arquivo_chamado(ana, ipe, ch_ana, m_ana, 'print4.png', 'image/png', 1000) from ids, c, ch, mch $$),
+  'LIMITE_IMAGENS_MENSAGEM', 'PI-20: até 3 imagens por mensagem');
 select is((select caminho from arquivos_chamado, ar where id = ar1), (select ipe || '/' || ch_ana || '/' || ar1 from c, ch, ar),
   'o caminho no armazenamento começa pelo condomínio');
 select is(pg_temp.motivo($$ select plataforma_abrir_arquivo_chamado(ana, ipe, ch_ana, ar1) from ids, c, ch, ar $$), 'ARQUIVO_NAO_LIBERADO',
@@ -305,8 +307,8 @@ select is(pg_temp.motivo($$ select plataforma_abrir_arquivo_chamado(ana, ipe, ch
 select plataforma_verificar_arquivo_chamado(ana, ipe, ch_ana, ar1, true, 990, null) from ids, c, ch, ar;
 select is((select console_abrir_arquivo_chamado(sup, ipe, ch_ana, ar1) ->> 'nome' from ids, c, ch, ar), 'print1.png',
   'PI-20: a equipe abre a imagem do chamado');
-select throws_ok($$ select plataforma_iniciar_arquivo_chamado(gil, ipe, ch_ana, 'x.png', 'image/png', 10) from ids, c, ch $$, 'TC404', null,
-  'PI-20: só quem abriu junta imagem');
+select throws_ok($$ select plataforma_iniciar_arquivo_chamado(gil, ipe, ch_ana, m_ana, 'x.png', 'image/png', 10) from ids, c, ch, mch $$, 'TC404', null,
+  'PI-20: quem não vê o chamado não junta imagem');
 
 -- Troca de síndico (CT-01).
 insert into auth.users (id, email) select gen_random_uuid(), 'marcos@exemplo.invalid';

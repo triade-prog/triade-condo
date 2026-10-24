@@ -1,27 +1,15 @@
 "use client";
 // As imagens do chamado (PI-20): o modelo de anexar, com Ctrl+V na caixa ou o botão Escolher
-// imagens, e o envio uma a uma, com a verificação que tira a localização da foto.
+// imagens, e o envio uma a uma, ligado à mensagem (decisão E.2), com a verificação que tira a
+// localização da foto.
 
 import { useState, type ClipboardEvent } from "react";
 import { IMAGENS_CHAMADO } from "@triade/domain";
-import { chamarApi, classeBotao, Icone, textoDoErro } from "@triade/ui";
-import { subir } from "../pedidos/Arquivos.tsx";
+import { classeBotao, enviarImagensDaMensagem, Icone } from "@triade/ui";
 
-/** Sobe as imagens uma a uma e pede a verificação (tira a localização). */
-export async function enviarImagens(chamado: string, imagens: File[]): Promise<string[]> {
-  const problemas: string[] = [];
-  for (const f of imagens) {
-    const base = `/v1/condominio/chamados/${chamado}/imagens`;
-    const inicio = await chamarApi<{ arquivoId: string; envio: { url: string; tipo: string } }>(base, {
-      corpo: { nome: f.name || "imagem-colada.png", tipo: f.type, tamanho: f.size },
-    });
-    if (!inicio.ok) { problemas.push(textoDoErro(inicio.erro)); continue; }
-    await subir(inicio.dados.envio.url, f, inicio.dados.envio.tipo, () => {});
-    const fim = await chamarApi<{ situacao: string; motivo?: string }>(`${base}/${inicio.dados.arquivoId}/verificar`, { corpo: {} });
-    if (!fim.ok) problemas.push(textoDoErro(fim.erro));
-    else if (fim.dados.situacao !== "LIBERADO") problemas.push(fim.dados.motivo ?? "A imagem não foi liberada.");
-  }
-  return problemas;
+/** Sobe as imagens ligadas à mensagem recém-enviada (decisão E.2): o chamado e o mensagemId. */
+export function enviarImagens(chamado: string, mensagemId: string, imagens: File[]): Promise<string[]> {
+  return enviarImagensDaMensagem(`/v1/condominio/chamados/${chamado}/imagens`, mensagemId, imagens);
 }
 
 /** As imagens no modelo de anexar: cola com Ctrl+V na caixa ou escolhe pelo botão. */

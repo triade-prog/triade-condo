@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { rotuloSituacaoChamadoCliente, type AREAS_CHAMADO, type AreaExcepcional, type TIPOS_CHAMADO } from "@triade/domain";
-import { Icone, Selo, type NomeIcone, type Tom } from "@triade/ui";
+import { Icone, Selo, type ImagemDaMensagem, type NomeIcone, type Tom } from "@triade/ui";
 import { usePlataforma } from "../sessao.tsx";
 
 export interface Chamado {
@@ -27,8 +27,11 @@ export interface Chamado {
 }
 
 export interface DetalheChamado extends Chamado {
-  mensagens: { id: string; lado: "CLIENTE" | "TRIADE"; autor: string; texto: string; criadoEm: string }[];
-  arquivos: { id: string; nome: string; situacao: string; motivoRecusa?: string }[];
+  /** Cada mensagem traz as imagens que foram com ela (decisão E.2): só as conferidas. */
+  mensagens: { id: string; lado: "CLIENTE" | "TRIADE"; autor: string; texto: string; criadoEm: string; imagens?: ImagemDaMensagem[] }[];
+  arquivos?: { id: string; nome: string; situacao: string; motivoRecusa?: string }[];
+  /** Quantas imagens ainda cabem no chamado (até 10; as recusadas não contam). */
+  imagensRestantes?: number;
   pode: { responder: boolean; resolver: boolean; enviarImagem: boolean };
 }
 
