@@ -10,16 +10,16 @@ Versão visual e interativa (com busca e filtro por forma): [`mapa.html`](mapa.h
 | Parte | Peças | Ideias |
 |---|---|---|
 | Plataforma do síndico | 16 | 204 |
-| Console TRÍADE | 9 | 38 |
+| Console TRÍADE | 10 | 51 |
 | Base comum | 6 | 37 |
 | Fora do software | 4 | 34 |
-| **Total** | **35** | **313** |
+| **Total** | **36** | **326** |
 
 ## Mapa mental
 
 ```mermaid
 mindmap
-  root((TRÍADE Condo · 313 ideias))
+  root((TRÍADE Condo · 326 ideias))
     Plataforma do síndico · 204
       Painel web do síndico
         Início · 4
@@ -40,7 +40,7 @@ mindmap
         WhatsApp do morador · 25
       Participação sem conta
         Links e QR · 7
-    Console TRÍADE · 38
+    Console TRÍADE · 51
       Carteira de clientes · 4
       Implantação · 5
       Planos e liberação · 6
@@ -50,6 +50,7 @@ mindmap
       Equipe interna · 3
       Saúde e capacidade · 3
       Mensagens e custos · 2
+      Comercial · 13
     Base comum · 37
       Segurança e acesso · 8
       Dados e histórico · 6
@@ -102,6 +103,7 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Equipe interna | PI-10, 12, 18 |
 | Saúde e capacidade | PI-13, 15; TR-06 |
 | Mensagens e custos | NG-13, 15 |
+| Comercial | CM-01 a 13 |
 
 **Base comum**
 
@@ -572,6 +574,26 @@ Quanto custa operar cada condomínio, a começar pelo WhatsApp.
 |---|---|---|
 | NG-15 | Planejar custo das mensagens: cobrança por mensagem desde 01/10/2026; comunicados podem cair na categoria marketing,… | Regra |
 | NG-13 | Planilha de custo por condomínio: mensagens, provedor, hospedagem, horas de implantação | Indicador |
+
+#### Comercial (13)
+
+Interessados, funil, propostas e contrato, até o condomínio virar cliente.
+
+| ID | Ideia | Forma |
+|---|---|---|
+| CM-01 | Interessados chegam sozinhos do site, com origem, faixa de unidades e autorização LGPD; o e-mail continua como aviso | Aba |
+| CM-02 | Outras origens registradas à mão: WhatsApp comercial, Instagram, indicação, construtora, evento | Função |
+| CM-03 | Funil com etapas fixas, em lista e em quadro; perdido pede motivo | Aba |
+| CM-04 | Todo interessado aberto tem responsável, próximo passo e data; o primeiro retorno conta a promessa do site | Regra |
+| CM-05 | Histórico de conversas com o interessado, com autor e data; nada se apaga | Função |
+| CM-06 | Gerador de propostas pela Tabela de preços do Console, com os simuladores; desconto só com motivo e aprovação | Função |
+| CM-07 | Proposta com versões, link sem conta com aceite e PDF; vencida pede refazer | Função |
+| CM-08 | Ganho vira cliente sem redigitar: carteira, plano pela tabela, vaga de fundador e implantação | Função |
+| CM-09 | Uma pessoa com vários condomínios, cada um com a sua oportunidade | Regra |
+| CM-10 | Painel comercial: etapas, conversão, tempo até o primeiro retorno, perdas e vagas de fundador | Indicador |
+| CM-11 | Função Comercial nas funções internas, sem mexer em plano ativo, pagamento ou liberação | Regra |
+| CM-12 | Dados dos interessados com LGPD: só para responder, anonimizar perdidos após 12 meses, exclusão registrada | Regra |
+| CM-13 | Contrato gerado da proposta aceita, do modelo revisado por advogado, assinado eletronicamente e guardado na ficha | Função |
 
 ---
 

@@ -482,6 +482,26 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 
 ---
 
+## 23. Comercial TRÍADE (interessados, funil, propostas e contrato)
+
+| ID | Ideia | Origem |
+|---|---|---|
+| CM-01 | **Interessados chegam sozinhos do site**: cada pedido de demonstração (EM-04) entra no Console com data, origem, faixa de unidades e a autorização LGPD que a pessoa marcou. O e-mail continua como aviso e não substitui o registro. O mesmo WhatsApp junta no mesmo interessado, sem duplicar | [C] |
+| CM-02 | **Outras origens à mão**: WhatsApp comercial, Instagram, indicação (NG-20), construtora (NG-08), evento ou contato direto, com quem trouxe. Captura automática do WhatsApp comercial só quando houver a API oficial | [C] |
+| CM-03 | **Funil com etapas fixas**: Novo, Em contato, Demonstração marcada, Demonstração feita, Proposta enviada, Negociação, e o fim em Ganho, Perdido (motivo obrigatório) ou Sem resposta. Vista em lista e em quadro; mudar de etapa fica no histórico | [C] |
+| CM-04 | **Próximo passo sempre definido**: todo interessado aberto tem responsável, próximo passo e data. A promessa do site ("até o fim do próximo dia útil") é contada no primeiro retorno; atrasados aparecem primeiro e no Início do Console | [C] |
+| CM-05 | **Histórico de conversas** com o interessado: ligação, mensagem, demonstração e nota interna, com autor e data. Nada se apaga; correção fica como nova anotação | [C] |
+| CM-06 | **Gerador de propostas pela Tabela de preços**: escolhe faixa e ciclo e a proposta vem da tabela do Console (fundador se houver vaga, cheia, ou sob consulta acima de 400 unidades), com implantação e validade. Desconto só com motivo e aprovação da Administração. O texto segue a oferta honesta (EM-07). Os simuladores da tabela abrem daqui, já com a faixa do interessado; não há simulador separado | [C] |
+| CM-07 | **Proposta com versões, link e aceite**: cada mudança cria uma versão e a versão enviada não muda. Vai por link sem conta, que expira e pode ser revogado, e em PDF. O aceite pelo link registra nome, data e versão. Proposta vencida pede refazer com a tabela do dia (como OC-04) | [C] |
+| CM-08 | **Ganho vira cliente sem redigitar**: depois do contrato assinado (CM-13), um botão cria o cliente na carteira (PI-01) com os dados do interessado, o plano pela tabela da proposta aceita, ocupa a vaga de fundador se for o caso e abre a implantação (PI-04) | [C] |
+| CM-09 | **Uma pessoa, vários condomínios**: síndico profissional ou administradora (NG-05, NG-14) é um contato com várias oportunidades, cada uma com o seu condomínio, etapa e proposta | [C] |
+| CM-10 | **Painel comercial**: quantos em cada etapa, conversão por etapa e por origem, tempo até o primeiro retorno, propostas vencendo, motivos de perda e vagas de fundador restantes | [C] |
+| CM-11 | **Função Comercial** nas funções internas (PI-10): vê e trabalha interessados, propostas e contratos. Por padrão não muda plano de cliente ativo, não confirma pagamento, não libera conjunto e não vê pedidos nem dados dos condomínios | [C] |
+| CM-12 | **Dados dos interessados com LGPD**: usados só para responder e negociar, sem lista de e-mails. Interessado perdido sem conversa por 12 meses é anonimizado; pedido de exclusão é atendido e registrado. Notas internas nunca vão na proposta | [C] |
+| CM-13 | **Contrato gerado da proposta aceita**: sai de um modelo revisado por advogado (EM-06), preenchido com as partes (CNPJ do condomínio, síndico e mandato), plano, valores, implantação, ciclo, vigência e aviso de cancelamento, com o termo de tratamento de dados junto. Serviço humano contratado vai em anexo separado. Assinatura eletrônica por serviço externo, com registro de quem, quando e qual versão; o contrato assinado fica na ficha do cliente (PI-02), com versões, e mudar plano ou valor gera aditivo, nunca edita o assinado | [C] |
+
+---
+
 ## Contagem
 
 | Seção | Ideias |
@@ -508,7 +528,8 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 20. Princípios técnicos | 18 |
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
-| **Total** | **313** |
+| 23. Comercial TRÍADE | 13 |
+| **Total** | **326** |
 
 ---
 
@@ -658,3 +679,19 @@ Pedido pela Carolina durante a rodada do novo frontend: ver o mural dentro do pa
 - Mostra o mesmo conteúdo do link do prédio (CD-12): só o que é para todo o condomínio, sem nomes, telefones ou unidades nos avisos.
 - A contagem de aberturas da CD-12 continua contando só quem abre o link; o painel tem leitura própria.
 - Os classificados continuam com o aviso de que o condomínio não vende nem garante nada (AC-05). Uma foto por anúncio, como hoje; mais fotos ficam para depois, porque pedem mudança no banco.
+
+---
+
+## Pedido da Carolina sobre o comercial no Console (24/10/2026)
+
+Pedido pela Carolina: um painel comercial dentro do Console, com CRM, gerador de propostas e simulador se couber, onde chegam os interessados e futuros clientes e onde a equipe faz todo o processo comercial. Depois, pediu também o contrato entre a TRÍADE e o condomínio. Proposta aprovada em 24/10/2026 (decisões A.1 a I.1): https://claude.ai/artifact/TqFgANRs8F6wt4sn7tFsBe.
+
+**13 ideias novas:** CM-01 a CM-13, na seção nova 23.
+
+**Como conversa com o que já está decidido:**
+- Fica num grupo próprio "Comercial" no Console; a carteira (PI-01) continua só com quem contratou.
+- O site continua mandando o e-mail (EM-04); passa a gravar também no Console, como combinado na pesquisa do site de 22/10/2026.
+- Não há simulador novo: a proposta e os simuladores usam a Tabela de preços do Console, para existir um só cálculo de preço.
+- O contrato depende do modelo revisado por advogado (EM-06), que fica fora do software.
+- Etapas do funil fixas no começo, sem construtor de fluxos (CF-12).
+
