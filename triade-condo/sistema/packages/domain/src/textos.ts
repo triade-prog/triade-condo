@@ -301,6 +301,26 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   ORIGEM_FIXA: "A primeira origem do interessado não muda.",
   SO_INSERCAO: "O que foi registrado não se altera nem se apaga. Registre outra conversa para corrigir.",
   CADENCIA_REPETIDA: "Já há uma cadência ativa para esta etapa e esta origem. Desligue a outra antes.",
+  // Propostas do Comercial (0304).
+  INTERESSADO_FECHADO: "Este interessado já foi fechado. Volte a etapa para um passo aberto antes de fazer a proposta.",
+  PROPOSTA_EXISTE: "Este interessado já tem proposta. Abra a proposta e faça uma versão nova.",
+  PROPOSTA_SEM_VALOR: "A faixa ainda não tem valor na Tabela de preços. Peça à Administração para definir o valor antes de enviar.",
+  SEM_DESCONTO: "Esta versão não tem desconto para aprovar.",
+  DESCONTO_JA_PEDIDO: "O desconto desta versão já foi pedido ou respondido. Atualize a página.",
+  DESCONTO_NAO_PEDIDO: "Este desconto não está aguardando resposta. Atualize a página.",
+  DESCONTO_SEM_APROVACAO: "Proposta com desconto só sai depois que a Administração aprovar. Peça a aprovação ou tire o desconto.",
+  VERSAO_ENVIADA: "A versão enviada não muda. Faça uma versão nova.",
+  PROPOSTA_ACEITA: "Esta proposta já foi aceita. O próximo é o contrato.",
+  SEM_LINK: "Esta versão não tem link aberto.",
+  SEM_VERSAO_ENVIADA: "O kit sai da versão enviada. Envie a proposta antes de montar o kit.",
+  REFERENCIA_RETIRADA: "O síndico retirou a autorização. Para voltar a usar, registre uma referência nova com a autorização.",
+  AUTORIZACAO_FIXA: "A data da autorização não muda. Registre uma referência nova se o síndico autorizou de novo.",
+  LINK_FIXO: "O link não se altera; só pode ser revogado.",
+  ACEITE_FIXO: "O aceite registrado não se altera.",
+  // O link da proposta, para quem recebeu (quadros 328 e 329).
+  PROPOSTA_VENCIDA: "Esta proposta venceu. Fale com a TRÍADE pelo WhatsApp comercial para receber uma nova, com a tabela do dia.",
+  PROPOSTA_JA_ACEITA: "Esta proposta já foi aceita. Em breve você recebe o contrato para assinar.",
+  PROPOSTA_INDISPONIVEL: "Esta proposta não pode mais ser aceita. Fale com a TRÍADE pelo WhatsApp comercial.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

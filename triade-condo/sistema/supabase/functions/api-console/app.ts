@@ -6,6 +6,8 @@
 // Retenção de dados (0301): o inventário, as rodadas da rotina e o modo (só contando ou apagando).
 // Comercial (0296): interessados, Meu dia, ficha, conversas, cadências, planilha, modelos e a
 // entrada do site, que vem de fora do repasse e se protege com o segredo próprio do site.
+// Propostas (0304): sugestão pela tabela, versões, desconto, envio, link sem conta com aceite,
+// kit para o conselho, respostas prontas e referências.
 // Quem pode o quê é decidido no banco (funções internas e clientes atribuídos, PI-10); aqui
 // só se valida a entrada e se fala com o Auth para os convites.
 
@@ -87,12 +89,26 @@ import {
   naoContatarSchema,
   novoInteressadoSchema,
   proximoPassoSchema,
+  ABAS_PROPOSTAS,
+  aceitePropostaSchema,
+  acaoVersaoSchema,
+  novaPropostaSchema,
+  recusarDescontoSchema,
+  recusarPropostaSchema,
+  referenciaComercialSchema,
+  respostaComercialSchema,
+  responderDescontoSchema,
+  retirarReferenciaSchema,
+  revogarLinkSchema,
+  salvarVersaoSchema,
+  sugestaoPropostaSchema,
 } from "@triade/domain";
 import type { Armazenamento } from "../_shared/arquivos.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { registrar } from "../_shared/registro.ts";
 import { criarApp } from "../_shared/app.ts";
-import { segredoConfere } from "../_shared/repasse.ts";
+import { ipDaChamada, segredoConfere } from "../_shared/repasse.ts";
+import { sha256Hex } from "../_shared/cripto.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
@@ -117,6 +133,10 @@ export interface DepsConsole extends DepsSessao {
 
 /** Cabeçalho com o segredo do site na entrada dos pedidos de demonstração. */
 export const CABECALHO_SITE = "x-site-segredo";
+
+/** Código do link da proposta (32 bytes em base64url, 0304). */
+const CODIGO_PROPOSTA = /^[A-Za-z0-9_-]{20,64}$/;
+const UUID_ROTA = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Área do acesso excepcional na rota (PI-11). */
 const AREAS_ROTA: Record<string, "PEDIDOS" | "MORADORES" | "COMUNICADOS" | "MANUTENCAO"> = {
@@ -1019,6 +1039,146 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json(await rpc("comercial_salvar_etapa", {
       p_pessoa: pessoa(c), p_etapa: etapa, p_versao: d.versao, p_probabilidade: d.probabilidade, p_limite_dias: d.limiteDias,
     }));
+  });
+
+  // ---------------------------------------------------------------------------------------
+  // Propostas (0304, R17.3). O preço sai da Tabela de preços no banco; quem pode aprovar
+  // desconto, o que trava o envio e o que a versão enviada guarda também.
+
+  const idsVersao = (c: Context<VarsSessao>) => ({ p_pessoa: pessoa(c), p_proposta: idDaRota(c, "id"), p_id: idDaRota(c, "versaoId") });
+  const dadosVersao = (d: { unidades: number | null; ciclo: string; tabela: string | null; valorManual: number | null; valorManualMotivo: string | null;
+                            implantacaoManual: number | null; desconto: number | null; descontoMotivo: string | null; respostas: string[];
+                            referencias: string[]; notaInterna: string | null; validadeDias: number | null }) => ({
+    unidades: d.unidades, ciclo: d.ciclo, tabela: d.tabela, valorManual: d.valorManual, valorManualMotivo: d.valorManualMotivo,
+    implantacaoManual: d.implantacaoManual, desconto: d.desconto, descontoMotivo: d.descontoMotivo, respostas: d.respostas,
+    referencias: d.referencias, notaInterna: d.notaInterna, validadeDias: d.validadeDias,
+  });
+
+  app.get("/v1/comercial/propostas", async (c) => {
+    const aba = c.req.query("aba") || null;
+    if (aba !== null && !(aba in ABAS_PROPOSTAS)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["aba"] });
+    const interessadoId = c.req.query("interessado") || null;
+    if (interessadoId !== null && !UUID_ROTA.test(interessadoId)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["interessado"] });
+    return c.json(await rpc("comercial_propostas", { p_pessoa: pessoa(c), p_aba: aba, p_interessado: interessadoId }));
+  });
+
+  // Sugestão pela Tabela de preços (CM-06, H.1): não grava nada.
+  app.post("/v1/comercial/propostas/sugestao", async (c) => {
+    const d = await lerCorpo(c, sugestaoPropostaSchema);
+    return c.json(await rpc("comercial_sugestao_proposta", {
+      p_pessoa: pessoa(c), p_interessado: d.interessadoId, p_unidades: d.unidades, p_ciclo: d.ciclo, p_tabela: d.tabela,
+      p_valor_manual: d.valorManual, p_implantacao_manual: d.implantacaoManual, p_desconto: d.desconto,
+    }));
+  });
+
+  app.post("/v1/comercial/propostas", async (c) => {
+    const d = await lerCorpo(c, novaPropostaSchema);
+    return c.json(await rpc("comercial_criar_proposta", { p_pessoa: pessoa(c), p_interessado: d.interessadoId, p_dados: dadosVersao(d) }), 201);
+  });
+
+  app.get("/v1/comercial/propostas/:id", async (c) => c.json(await rpc("comercial_proposta", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") })));
+
+  // Kit para o conselho (CM-20): da versão enviada; nada interno.
+  app.get("/v1/comercial/propostas/:id/kit", async (c) => c.json(await rpc("comercial_kit", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") })));
+
+  // Versão nova (CM-07): a versão da proposta; a em andamento fica substituída.
+  app.post("/v1/comercial/propostas/:id/versoes", async (c) => {
+    const d = await lerCorpo(c, salvarVersaoSchema);
+    return c.json(await rpc("comercial_nova_versao", {
+      p_pessoa: pessoa(c), p_proposta: idDaRota(c, "id"), p_versao: d.versao, p_dados: dadosVersao(d),
+    }), 201);
+  });
+
+  // Salvar o rascunho: a versão da linha da versão.
+  app.put("/v1/comercial/propostas/:id/versoes/:versaoId", async (c) => {
+    const d = await lerCorpo(c, salvarVersaoSchema);
+    return c.json(await rpc("comercial_salvar_versao", { ...idsVersao(c), p_versao: d.versao, p_dados: dadosVersao(d) }));
+  });
+
+  // Desconto (F.1): o Comercial pede; aprovar e recusar só a Administração (decidido no banco).
+  app.post("/v1/comercial/propostas/:id/versoes/:versaoId/desconto/pedir", async (c) => {
+    const d = await lerCorpo(c, acaoVersaoSchema);
+    return c.json(await rpc("comercial_pedir_desconto", { ...idsVersao(c), p_versao: d.versao }));
+  });
+  app.post("/v1/comercial/propostas/:id/versoes/:versaoId/desconto/aprovar", async (c) => {
+    const d = await lerCorpo(c, responderDescontoSchema);
+    return c.json(await rpc("comercial_responder_desconto", { ...idsVersao(c), p_versao: d.versao, p_aprovar: true, p_resposta: d.resposta }));
+  });
+  app.post("/v1/comercial/propostas/:id/versoes/:versaoId/desconto/recusar", async (c) => {
+    const d = await lerCorpo(c, recusarDescontoSchema);
+    return c.json(await rpc("comercial_responder_desconto", { ...idsVersao(c), p_versao: d.versao, p_aprovar: false, p_resposta: d.resposta }));
+  });
+
+  // Enviar: devolve o código do link uma vez só (o banco guarda só o resumo).
+  app.post("/v1/comercial/propostas/:id/versoes/:versaoId/enviar", async (c) => {
+    const d = await lerCorpo(c, acaoVersaoSchema);
+    return c.json(await rpc("comercial_enviar_proposta", { ...idsVersao(c), p_versao: d.versao }));
+  });
+  app.post("/v1/comercial/propostas/:id/versoes/:versaoId/link", async (c) =>
+    c.json(await rpc("comercial_novo_link", idsVersao(c)), 201));
+  app.post("/v1/comercial/propostas/:id/versoes/:versaoId/revogar", async (c) => {
+    const d = await lerCorpo(c, revogarLinkSchema);
+    return c.json(await rpc("comercial_revogar_link", { ...idsVersao(c), p_motivo: d.motivo }));
+  });
+  app.post("/v1/comercial/propostas/:id/versoes/:versaoId/recusada", async (c) => {
+    const d = await lerCorpo(c, recusarPropostaSchema);
+    return c.json(await rpc("comercial_recusar_proposta", { ...idsVersao(c), p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  // Respostas prontas (CM-27) e referências (CM-28): o Comercial lê; só a Administração muda.
+  app.get("/v1/comercial/respostas", async (c) => c.json(await rpc("comercial_respostas", { p_pessoa: pessoa(c) })));
+  async function salvarResposta(c: Context<VarsSessao>, id: string | null) {
+    const d = await lerCorpo(c, respostaComercialSchema);
+    return await rpc("comercial_salvar_resposta", {
+      p_pessoa: pessoa(c), p_id: id, p_versao: d.versao, p_tema: d.tema, p_titulo: d.titulo, p_texto: d.texto, p_revisada: d.revisada, p_ativa: d.ativa,
+    });
+  }
+  app.post("/v1/comercial/respostas", async (c) => c.json(await salvarResposta(c, null), 201));
+  app.put("/v1/comercial/respostas/:id", async (c) => c.json(await salvarResposta(c, idDaRota(c, "id"))));
+
+  app.get("/v1/comercial/referencias", async (c) => c.json(await rpc("comercial_referencias", { p_pessoa: pessoa(c) })));
+  async function salvarReferencia(c: Context<VarsSessao>, id: string | null) {
+    const { versao, ...d } = await lerCorpo(c, referenciaComercialSchema);
+    return await rpc("comercial_salvar_referencia", { p_pessoa: pessoa(c), p_id: id, p_versao: versao, p_dados: d });
+  }
+  app.post("/v1/comercial/referencias", async (c) => c.json(await salvarReferencia(c, null), 201));
+  app.put("/v1/comercial/referencias/:id", async (c) => c.json(await salvarReferencia(c, idDaRota(c, "id"))));
+  app.post("/v1/comercial/referencias/:id/retirar", async (c) => {
+    const d = await lerCorpo(c, retirarReferenciaSchema);
+    return c.json(await rpc("comercial_retirar_referencia", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  // O link da proposta (E.1, quadros 328 e 329): sem sessão, pelo repasse do Console (/o/[codigo]).
+  // O código é a chave; cada aparelho (resumo do IP) tem limite de uso, como o mural.
+  const aparelho = (c: Context) => sha256Hex(`proposta|${ipDaChamada(c.req.raw.headers) ?? "sem-ip"}`);
+  const codigoProposta = (c: Context) => {
+    const v = c.req.param("codigo");
+    if (!v || !CODIGO_PROPOSTA.test(v)) throw new ErroDominio("NOT_FOUND");
+    return v;
+  };
+  async function dentroDoLimite(tipo: string, chave: string) {
+    if (!(await rpc<boolean>("limite_contar", { p_tipo: tipo, p_chave: chave }))) throw new ErroDominio("RATE_LIMITED");
+  }
+
+  app.get("/v1/publico/propostas/:codigo", async (c) => {
+    const codigo = codigoProposta(c);
+    const a = await aparelho(c);
+    await dentroDoLimite("proposta", a);
+    return c.json(await rpc("publico_proposta", { p_codigo: codigo, p_aparelho: a }));
+  });
+  app.get("/v1/publico/propostas/:codigo/kit", async (c) => {
+    const codigo = codigoProposta(c);
+    await dentroDoLimite("proposta", await aparelho(c));
+    return c.json(await rpc("publico_kit_proposta", { p_codigo: codigo }));
+  });
+  app.post("/v1/publico/propostas/:codigo/aceite", async (c) => {
+    const codigo = codigoProposta(c);
+    const a = await aparelho(c);
+    await dentroDoLimite("aceite", a);
+    const d = await lerCorpo(c, aceitePropostaSchema);
+    return c.json(await rpc("publico_aceitar_proposta", {
+      p_codigo: codigo, p_dados: { nome: d.nome, cpf: d.cpf, cargo: d.cargo, concordo: d.concordo }, p_ip: ipDaChamada(c.req.raw.headers), p_aparelho: a,
+    }), 201);
   });
 
   return app;
