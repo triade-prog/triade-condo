@@ -70,7 +70,7 @@ create function pg_temp.registrar(p_unidade uuid, p_de text, p_quem uuid default
 create function pg_temp.aviso(p uuid) returns text language sql as $$
   select aviso || coalesce('/' || aviso_motivo, '') from encomendas where id = p $$;
 create function pg_temp.envios(p uuid) returns text language sql as $$
-  select coalesce(string_agg(ct.nome || ':' || w.estado, ', ' order by ct.nome, w.criado_em), '-')
+  select coalesce(string_agg(ct.nome || ':' || w.estado, ', ' order by ct.nome, w.estado), '-')
     from envios_whatsapp w join contatos ct on ct.id = w.contato_id where w.encomenda_id = p $$;
 create function pg_temp.lista(p_quem uuid, p_aba text, p_atalho text default null) returns jsonb language sql as $$
   select plataforma_encomendas(p_quem, agua, p_aba, p_atalho, null, 1) from c $$;

@@ -74,7 +74,7 @@ export const GRUPOS_ACESSO: { grupo: string; areas: AreaAcesso[] }[] = [
       cuidar: "CADASTRAR", rotulos: { nao: "Não vê", cuidar: "Cadastra" }, frase: { cuidar: "cadastra moradores" } },
   ] },
   { grupo: "Gestão", areas: [
-    { tipo: "nivel", id: "configuracoes", nome: "Configurações", icone: "ajuste", ajuda: "Todo mundo vê. Muda: horários, categorias, prioridades, etapas, respostas e prazos.",
+    { tipo: "nivel", id: "configuracoes", nome: "Configurações", icone: "ajuste", ajuda: "Todo mundo vê. Muda: horários, categorias, prioridades, etapas, respostas, prazos e a portaria.",
       cuidar: "CONFIGURAR", rotulos: { nao: "Só vê", cuidar: "Muda" }, frase: { cuidar: "das configurações" } },
   ] },
 ];

@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { CENARIOS, SITUACOES_MODELO, type Cenario, type SituacaoModelo } from "@triade/domain";
-import { AvisoErro, Botao, CampoTexto, Carregando, chamarApi, ErroCarregar, Icone, Iniciais, Selo, textoDoErro, type ErroApi } from "@triade/ui";
+import { AvisoErro, Botao, CampoTexto, Carregando, chamarApi, ErroCarregar, Icone, Iniciais, Interruptor, Selo, textoDoErro, type ErroApi } from "@triade/ui";
 import { Caixa, ParteNumerada } from "./comum.tsx";
 import { useAmbiente, useCarregar, naBase } from "./contexto.tsx";
 import { Janela, type Campo, type Valores } from "./Janela.tsx";
@@ -91,7 +91,7 @@ function Formulario({ p, recarregar, salvo }: { p: Portaria; recarregar: () => v
   const iniciaisLugar: Valores = { nome: edicao?.item?.nome ?? "", ativo: edicao?.item?.ativo ?? true };
 
   return (
-    <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
       <div className="grid gap-5">
         {erro ? <AvisoErro erro={erro} texto={erro.codigo === "VALIDATION_ERROR" && !diasOk ? "Lembrar depois de 1 a 60 dias." : textoDoErro(erro)} recarregar={recarregar} /> : null}
 
@@ -160,7 +160,7 @@ function Formulario({ p, recarregar, salvo }: { p: Portaria; recarregar: () => v
                 <span className="pb-2.5 t-texto">dias guardada</span>
               </div>
               <p className="t-apoio text-tinta-suave">Depois disso a encomenda entra no atalho Guardadas há mais de {diasOk ? dias : p.lembreteDias} dias, na lista da portaria.</p>
-              <Caixa id="portaria-lembrete" rotulo="Mandar um lembrete à unidade" marcada={v.lembreteLigado} aoMudar={(x) => setV({ ...v, lembreteLigado: x })}
+              <Interruptor id="portaria-lembrete" rotulo="Mandar um lembrete à unidade" marcado={v.lembreteLigado} aoMudar={(x) => setV({ ...v, lembreteLigado: x })}
                 ajuda="Uma vez só, pelo mesmo modelo Encomenda guardada, com a data em que chegou. Quem pediu PARAR não recebe." />
             </>
           ) : (
@@ -171,24 +171,6 @@ function Formulario({ p, recarregar, salvo }: { p: Portaria; recarregar: () => v
           )}
         </ParteNumerada>
 
-        <section aria-labelledby="t-cenario" className="grid gap-3 rounded-[18px] border border-linha bg-superficie-2 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="flex flex-wrap items-center gap-2"><h2 id="t-cenario" className="t-titulo-secao font-medium">O cenário do prédio</h2><SeloTriade /></span>
-            <PedirMudanca parte="CENARIO_PORTARIA" valor={p.cenario ? CENARIOS[p.cenario] : "Sem cenário"} />
-          </div>
-          <ul className="grid gap-2">
-            {ORDEM_CENARIOS.map((c) => (
-              <li key={c} className={`grid gap-0.5 rounded-2xl border px-4 py-3 ${c === p.cenario ? "border-violeta-300 bg-superficie" : "border-linha"}`}>
-                <span className="flex flex-wrap items-center gap-2">
-                  <span className="t-texto font-medium">{CENARIOS[c].replace("Prédio sem portaria", "Sem portaria")}</span>
-                  {c === p.cenario ? <Selo tom="info">Este prédio</Selo> : null}
-                </span>
-                <span className="t-apoio text-tinta-suave">{TEXTO_CENARIO[c]}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="t-apoio text-tinta-suave">Definido na implantação. O texto da Portaria, no menu e nas telas vazias, segue o cenário.</p>
-        </section>
       </div>
 
       <section aria-labelledby="t-mesma-area-portaria" className="grid gap-1 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1 lg:sticky lg:top-6">
@@ -214,6 +196,24 @@ function Formulario({ p, recarregar, salvo }: { p: Portaria; recarregar: () => v
         </ul>
       </section>
 
+      <section aria-labelledby="t-cenario" className="grid gap-3 rounded-[18px] border border-linha bg-superficie-2 p-5 lg:col-span-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="flex flex-wrap items-center gap-2"><h2 id="t-cenario" className="t-titulo-secao font-medium">O cenário do prédio</h2><SeloTriade /></span>
+          <PedirMudanca parte="CENARIO_PORTARIA" valor={p.cenario ? CENARIOS[p.cenario] : "Sem cenário"} />
+        </div>
+        <ul className="grid gap-2 md:grid-cols-3">
+          {ORDEM_CENARIOS.map((c) => (
+            <li key={c} className={`grid content-start gap-0.5 rounded-2xl border px-4 py-3 ${c === p.cenario ? "border-violeta-300 bg-superficie" : "border-linha"}`}>
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="t-texto font-medium">{CENARIOS[c].replace("Prédio sem portaria", "Sem portaria")}</span>
+                {c === p.cenario ? <Selo tom="info">Este prédio</Selo> : null}
+              </span>
+              <span className="t-apoio text-tinta-suave">{TEXTO_CENARIO[c]}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="t-apoio text-tinta-suave">Definido na implantação. O texto da Portaria, no menu e nas telas vazias, segue o cenário.</p>
+      </section>
       {edicao ? (
         <Janela aberto titulo={edicao.item ? "Editar lugar" : "Incluir lugar"} textoBotao="Salvar lugar"
           campos={camposLugar} iniciais={iniciaisLugar} aoFechar={() => setEdicao(null)} recarregar={recarregar}
