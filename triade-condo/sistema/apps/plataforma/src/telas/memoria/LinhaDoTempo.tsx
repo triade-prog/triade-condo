@@ -25,12 +25,13 @@ import { DiaQuadro } from "../vida/comum.tsx";
 /** De onde vem cada linha, no selo. */
 const FONTE: Record<EventoMemoria["fonte"], string> = {
   ANOTADO: "Anotado", MANUTENCAO: "Manutenção", DOCUMENTO: "Documentos", PRONTUARIO: "Documentos", COMUNICADO: "Comunicados", PESSOA: "Pessoas", ASSEMBLEIA: "Assembleia",
+  DESPESA: "Despesas",
 };
 const EXPLICA_FILTRO: Record<FiltroLinhaDoTempo, string> = {
   TUDO: "Tudo o que aconteceu",
   ANOTADO: "Decisões, combinados, obras e ocorrências anotados à mão",
   MANUTENCAO: "Manutenções concluídas",
-  DOCUMENTOS: "Documentos guardados e itens do prontuário que venceram",
+  DOCUMENTOS: "Documentos guardados, itens do prontuário que venceram e despesas decididas",
   COMUNICADOS: "Comunicados publicados",
   PESSOAS: "Quem entrou e quem saiu da gestão",
 };
@@ -49,6 +50,7 @@ function linkDo(e: EventoMemoria): string | null {
   if (e.fonte === "PRONTUARIO") return `/documentos/prontuario?item=${e.id}`;
   if (e.fonte === "COMUNICADO") return `/comunicados/comunicado?id=${e.id}`;
   if (e.fonte === "ASSEMBLEIA") return `/vida/assembleia?id=${e.id}`;
+  if (e.fonte === "DESPESA") return `/decisoes/despesa?id=${e.id}`;
   return null;
 }
 

@@ -3,6 +3,7 @@
 // daqui, iguais na folha da tela, no PDF e na planilha: o que aparece num aparece nos outros.
 
 import { z } from "zod";
+import { mostrarCusto } from "./decisoes.ts";
 import { mostrarDuracao, mostrarPorcentagem, nomeDoMes } from "./prazos.ts";
 
 /** As partes, na ordem em que saem no relatório. */
@@ -11,7 +12,7 @@ export const PARTES_RELATORIO = {
   ATENDIMENTO: { titulo: "Atendimento do mês", apoio: "Registrados, concluídos, reabertos, retornos no prazo e primeiro retorno, com o mês anterior ao lado." },
   CATEGORIA: { titulo: "Por categoria", apoio: "Registrados, concluídos, tempo médio de fechamento e retornos no prazo de cada categoria." },
   TORRE: { titulo: "Por bloco ou torre", apoio: "Os mesmos números por bloco, mais uma linha para áreas comuns e pedidos sem unidade." },
-  DECISOES: { titulo: "Decisões do síndico", apoio: "Pedidas, decididas, tempo típico até a resposta e as que ficaram aguardando." },
+  DECISOES: { titulo: "Decisões do síndico", apoio: "Pedidas, decididas, tempo típico até a resposta e as que ficaram aguardando; as que o conselho fechou e as despesas para aprovar." },
   REINCIDENCIA: { titulo: "Reincidência", apoio: "Quantos pedidos voltaram e onde o problema volta." },
   PALAVRA: { titulo: "Palavra do síndico", apoio: "Texto livre, escrito por quem monta." },
 } as const;
@@ -76,6 +77,14 @@ export interface LinhaGrupo {
   noPrazo: number;
   porcentagem: number | null;
 }
+/** As despesas para aprovar do mês (R5, FC-10); o valor aprovado em centavos. */
+export interface DespesasMes {
+  pedidas: number;
+  aprovadas: number;
+  recusadas: number;
+  valorAprovado: number;
+  aguardandoNoFim: number;
+}
 export interface DecisoesMes {
   pedidas: number;
   decididas: number;
@@ -83,6 +92,9 @@ export interface DecisoesMes {
   devolvidas: number;
   medianaHoras: number | null;
   aguardandoNoFim: number;
+  /** Decisões e despesas que o conselho fechou no mês, pelos votos (R5, V-14). Relatórios antigos não têm. */
+  peloConselho?: number;
+  despesas?: DespesasMes;
 }
 export interface ReincidenciaMes {
   pedidos: number;
@@ -224,6 +236,13 @@ export function tabelaDecisoes(n: NumerosRelatorio): Tabela | null {
       ["Decididas", d.devolvidas ? `${d.decididas} (${d.devolvidas} ${d.devolvidas === 1 ? "devolvida" : "devolvidas"})` : String(d.decididas)],
       ["Tempo típico até a resposta", tempo(d.medianaHoras)],
       [`Aguardando em ${dia}/${m}/${a}`, String(d.aguardandoNoFim)],
+      ...(d.peloConselho !== undefined ? [["Fechadas pelo conselho, com os votos", String(d.peloConselho)]] : []),
+      ...(d.despesas ? [
+        ["Despesas pedidas para aprovar", String(d.despesas.pedidas)],
+        ["Despesas aprovadas", d.despesas.aprovadas ? `${d.despesas.aprovadas} · ${mostrarCusto(d.despesas.valorAprovado)}` : "0"],
+        ["Despesas recusadas", String(d.despesas.recusadas)],
+        [`Despesas aguardando em ${dia}/${m}/${a}`, String(d.despesas.aguardandoNoFim)],
+      ] : []),
     ],
   };
 }

@@ -1,5 +1,5 @@
 // E-mail dos comunicados, documentos, convites de enquete e de assembleia (CD-13, CD-14, AC-02, AC-03) e do pedido registrado
-// (protocolo a quem pediu e aviso ao prestador, AT-26). O banco monta a fila e diz o que vai em
+// (protocolo a quem pediu e aviso ao prestador, AT-26) e do link do conselheiro (V-14, peça R5). O banco monta a fila e diz o que vai em
 // cada e-mail; aqui o e-mail ganha forma (HTML e texto), sai pelo Resend e os avisos do provedor
 // (entregue, devolvido, spam) são conferidos pela assinatura antes de voltar ao banco.
 
@@ -9,7 +9,7 @@ import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
 export interface MensagemFila {
   envio: string;
   condominio: string;
-  tipo: "COMUNICADO" | "CONFIRMACAO" | "DOCUMENTO" | "ENQUETE" | "ASSEMBLEIA" | "PROTOCOLO" | "PRESTADOR";
+  tipo: "COMUNICADO" | "CONFIRMACAO" | "DOCUMENTO" | "ENQUETE" | "ASSEMBLEIA" | "PROTOCOLO" | "PRESTADOR" | "CONSELHO";
   para: string;
   condominioNome: string;
   responderPara?: string;
@@ -34,6 +34,18 @@ export interface MensagemFila {
   pedido?: {
     protocolo: string; prioridade?: string; assunto?: string; unidade?: string; canal?: string; atendimento?: string; texto?: string;
     link?: string; responderAte?: string; titulo?: string;
+  };
+  /** O link do membro do conselho (peça R5): votar, responder no lugar do síndico ausente ou só ver a vencida. */
+  conselho?: {
+    finalidade: "VOTO" | "SUBSTITUTO" | "AVISO";
+    item: "DECISAO" | "DESPESA";
+    titulo: string;
+    /** Já formatado ("R$ 8.000,00"), só na despesa. */
+    valor?: string;
+    /** Já formatado ("30/10/2026"). */
+    prazo: string;
+    papel?: string;
+    pedidaPor?: string;
   };
 }
 
@@ -198,6 +210,33 @@ export function montarEmail(m: MensagemFila, e: EnderecosEmail): EmailPronto {
         "List-Unsubscribe": `<${e.urlFuncao.replace(/\/$/, "")}/v1/email/parar/${m.codigos.parar ?? ""}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
       },
+    };
+  }
+
+  if (m.tipo === "CONSELHO" && m.conselho) {
+    // V-14: o link pessoal, sem conta, que vale até o fim do dia do prazo.
+    const k = m.conselho;
+    const url = `${app}/conselho/${encodeURIComponent(m.codigos.abrir ?? "")}`;
+    const ola = m.nome ? `Olá, ${m.nome}.` : "Olá.";
+    const oque = k.item === "DESPESA" ? `a despesa ${k.titulo}${k.valor ? `, de ${k.valor}` : ""}` : `a decisão: ${k.titulo}`;
+    const pedido = k.pedidaPor ? ` ${k.pedidaPor} pediu.` : "";
+    const linha = k.finalidade === "VOTO"
+      ? `O conselho do ${m.condominioNome} vota ${oque}.${pedido} Vote até ${k.prazo}.`
+      : k.finalidade === "SUBSTITUTO"
+        ? `O síndico está ausente e você, como ${(k.papel ?? "subsíndico").toLowerCase()}, responde no lugar dele ${oque}.${pedido} O prazo é ${k.prazo}.`
+        : `Venceu em ${k.prazo} sem resposta ${oque}. As regras do condomínio pedem que o conselho saiba.`;
+    const rotulo = k.finalidade === "VOTO" ? "Abrir e votar" : k.finalidade === "SUBSTITUTO" ? "Abrir e responder" : "Ver";
+    const nota = k.finalidade === "AVISO"
+      ? "O link é só seu e não precisa de conta. Não repasse."
+      : `O link é só seu, vale até o fim do dia ${k.prazo} e não precisa de conta. Não repasse.${k.finalidade === "VOTO" ? " Dá para trocar o voto até o prazo." : ""}`;
+    const assunto = k.finalidade === "VOTO" ? "Seu voto" : k.finalidade === "SUBSTITUTO" ? "Responder no lugar do síndico" : "Venceu sem resposta";
+    return {
+      ...base,
+      assunto: `[${m.condominioNome}] ${assunto}: ${k.titulo}`,
+      html: pagina(m.condominioNome,
+        `<p style="margin:0 0 14px">${esc(ola)}</p><p style="margin:0 0 14px">${esc(linha)}</p>${botao(rotulo, url)}<p style="margin:0 0 14px">${esc(nota)}</p>`,
+        [esc(AVISO_GOLPE)]),
+      texto: `${ola}\n\n${linha}\n\n${rotulo}: ${url}\n\n${nota}\n\n${AVISO_GOLPE}`,
     };
   }
 

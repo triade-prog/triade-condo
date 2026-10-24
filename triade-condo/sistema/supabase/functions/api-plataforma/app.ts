@@ -12,6 +12,8 @@
 // segredo do condomínio no caminho e a fila de envio. Peça R12: Vida em condomínio (áreas comuns
 // e reservas; AC-01, AC-06, AC-07), com as enquetes e o link pessoal de cada unidade (AC-03), e as assembleias com o link pessoal de cada unidade (AC-02).
 // F7.4: pedidos relacionados (AT-18) e decisões pedidas ao síndico (AT-23), com os dois indicadores.
+// Peça R5: o conselho e o subsíndico (V-14), com o voto pelo painel e pelo link sem conta, e a
+// despesa para aprovar (FC-10), em aprovacoes.ts.
 // Relatório do mês para a assembleia (TR-02, TR-05, TR-08, TR-10): prévia, anexos, gerar e abrir.
 // Quem pode o quê é
 // decidido no banco (vínculo e permissões individuais, CF-03); aqui só se valida a entrada.
@@ -219,6 +221,7 @@ import { lerCorpo } from "../_shared/validar.ts";
 import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
 import { montarZip, planilhaCsv, type ItemZip } from "../_shared/zip.ts";
 import { rotasEncomendas } from "./encomendas.ts";
+import { algumPorEmail, rotasAprovacoes, rotasConselhoPublico, type DepsAprovacoes } from "./aprovacoes.ts";
 import { rotasPrivacidade } from "./privacidade.ts";
 
 export type VarsPlataforma = { Variables: VarsSessao["Variables"] & { condominioId: string } };
@@ -735,17 +738,25 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       args: (d: ReturnType<typeof ligarPedidosSchema.parse>) => ({
         p_outro: d.outroId, p_tipo: d.tipo, p_motivo: d.motivo, p_encerrar: d.encerrar, p_texto: d.texto, p_versao_outro: d.versaoOutro,
       }) },
+    // Ao conselho (R5), sem quem decide; o p_modo só vai quando é o conselho, e o pedido a uma
+    // pessoa segue igual. O link pelo e-mail (o de voto ou, com o síndico ausente, o do
+    // substituto) sai na hora.
     { rota: "/decisoes", metodo: "post", schema: pedirDecisaoSchema, funcao: "plataforma_pedir_decisao",
       args: (d: ReturnType<typeof pedirDecisaoSchema.parse>) => ({
         p_pergunta: d.pergunta, p_porque: d.porque, p_prazo: d.prazo, p_decisor: d.decisorId, p_alternativas: d.alternativas,
-      }) },
+        ...(d.modo === "CONSELHO" ? { p_modo: "CONSELHO" } : {}),
+      }),
+      depois: (_d: unknown, r: unknown) => { if (algumPorEmail(r)) esvaziarFila(); } },
   ];
   for (const a of acoes) {
     app[a.metodo as "put" | "post"](`/v1/condominio/pedidos/:id${a.rota}`, async (c) => {
       const id = idDaRota(c, "id");
       const d = await lerCorpo(c, a.schema as Parameters<typeof lerCorpo>[1]) as { versao: number };
       // deno-lint-ignore no-explicit-any
-      return c.json(await rpc(a.funcao, { ...quem(c), p_id: id, p_versao: d.versao, ...(a.args as (x: any) => object)(d) }));
+      const r = await rpc(a.funcao, { ...quem(c), p_id: id, p_versao: d.versao, ...(a.args as (x: any) => object)(d) });
+      // deno-lint-ignore no-explicit-any
+      (a.depois as ((x: any, r: unknown) => void) | undefined)?.(d, r);
+      return c.json(r);
     });
   }
 
@@ -1833,6 +1844,15 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     nome: x.nome,
     tipo: x.tipo,
   });
+
+  // Peça R5: o conselho, as regras, a ausência, o voto, as despesas e o link do conselheiro.
+  const depsAprovacoes: DepsAprovacoes = {
+    banco: deps.banco, armazenamento: deps.armazenamento, esvaziarFila: () => esvaziarFila(), codigoDaRota,
+    limitar: async (c) => dentroDoLimite("link", await aparelho(c)),
+    emailDaConta: (pessoaId) => deps.admin.emailDe(pessoaId),
+  };
+  rotasAprovacoes(app, "/v1/condominio", quem, depsAprovacoes);
+  rotasConselhoPublico(app, depsAprovacoes);
 
   app.get("/v1/publico/mural/:codigo", async (c) => {
     const codigo = codigoDaRota(c);

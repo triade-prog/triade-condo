@@ -27,5 +27,6 @@ export * from "./precos.ts";
 export * from "./relatorio.ts";
 export * from "./ia.ts";
 export * from "./encomendas.ts";
+export * from "./aprovacoes.ts";
 export * from "./privacidade.ts";
 export * from "./comercial.ts";

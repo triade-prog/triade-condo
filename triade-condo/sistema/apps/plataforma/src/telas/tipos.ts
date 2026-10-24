@@ -9,6 +9,7 @@ import type {
   Aniversario, CategoriaHistorico, Especie, ParentescoFamiliar, Porte,
   FamiliarCadastro, LigacaoCadastro, MotivoRecusaCadastro, PedidoLink, PetCadastro, VeiculoCadastro, OrdemPedidos,
   EventoHistoricoProntuario,
+  CanalConselho, EstadoDespesa, EstadoLinkConselho, FiltroDespesa, LINK_NAO_VALE, ModoDecisao, PapelConselho, QuorumConselho,
 } from "@triade/domain";
 
 
@@ -305,7 +306,9 @@ export interface AvisoDoPainel {
     | "RESERVA_A_APROVAR" | "RESERVA_CANCELADA"
     | "PRESTADOR_CONFIRMOU" | "PRESTADOR_RECUSOU" | "WHATSAPP_QUEDA" | "WHATSAPP_QUEDA_VOLTOU"
     | "TROCA_TROCOU" | "TROCA_MANDAR_LINK" | "TROCA_NAO_TROCOU" | "TROCA_RESERVA_SEM_RESPOSTA" | "TROCA_SEM_RESPOSTA"
-    | "DECISAO_PEDIDA" | "DECISAO_VENCIDA" | "DECISAO_RESPONDIDA";
+    | "DECISAO_PEDIDA" | "DECISAO_VENCIDA" | "DECISAO_RESPONDIDA" | "DECISAO_VOTO" | "DECISAO_VOLTOU"
+    | "DESPESA_PEDIDA" | "DESPESA_VENCIDA" | "DESPESA_RESPONDIDA" | "DESPESA_VOTO" | "DESPESA_ESCALADA" | "DESPESA_VOLTOU"
+    | "MANDATO_VENCENDO" | "AUSENCIA_INICIO" | "AUSENCIA_FIM";
   pedidoId?: string;
   protocolo?: string;
   assunto?: string | null;
@@ -334,7 +337,12 @@ export interface AvisoDoPainel {
   /** Nos avisos das decisões (F7.4, AT-23): o título é a pergunta; prazo e situação de agora. */
   decisaoId?: string;
   prazo?: string;
-  estado?: EstadoDecisao;
+  estado?: EstadoDecisao | EstadoDespesa | "PAGA";
+  /** Nos avisos das despesas, do mandato e da ausência (R5). */
+  despesaId?: string;
+  valor?: number;
+  membroId?: string;
+  ausenciaId?: string;
   criadoEm: string;
   vistoEm: string | null;
 }
@@ -499,6 +507,8 @@ export interface PedidoDetalhe {
   decisoes?: DecisaoPedido[];
   /** Quem pode decidir: o síndico e quem tem a permissão Aprovar. */
   decisores?: { vinculoId: string; nome: string; sindico: boolean; eu: boolean }[];
+  /** O conselho em Quem decide (R5, quadro 413): só para quem pode pedir decisão. */
+  conselho?: RegrasConselho;
   pode: {
     responder: boolean; atualizar: boolean; concluir: boolean; revisar: boolean; aceitar: boolean; repassar: boolean; ligar?: boolean; pedirDecisao?: boolean;
   };
@@ -541,17 +551,20 @@ export interface AlternativaDecisao {
   moeda?: string;
 }
 
-/** Decisão pedida ao síndico (AT-23). Campos vazios não vêm. */
+/** Decisão pedida ao síndico (AT-23) ou ao conselho (R5, V-14). Campos vazios não vêm. */
 export interface DecisaoPedido {
   id: string;
   versao: number;
   estado: EstadoDecisao;
+  /** Sem modo: a decisão de antes da R5, pedida a uma pessoa. */
+  modo?: ModoDecisao;
   pendenciaId: string;
   pergunta: string;
   porque?: string;
   prazo: string;
   vencida: boolean;
-  decisor: { vinculoId: string; nome: string; eu: boolean };
+  /** Quem decide; no modo CONSELHO não vem. */
+  decisor?: { vinculoId: string; nome: string; eu: boolean };
   pedidaEm: string;
   pedidaPor?: string;
   respondidaEm?: string;
@@ -560,8 +573,20 @@ export interface DecisaoPedido {
   justificativa?: string;
   retiradaMotivo?: string;
   alternativas: AlternativaDecisao[];
-  pedido: { id: string; protocolo: string; assunto: string; estado: EstadoPedido };
-  pode: { responder: boolean; retirar: boolean };
+  /** Some quando a pessoa vota sem ver o pedido. */
+  pedido?: { id: string; protocolo: string; assunto: string; estado: EstadoPedido };
+  /** A votação do conselho, na decisão pedida ao conselho. */
+  conselho?: Votacao;
+  /** A decisão de que esta nasceu, quando o conselho empatou e ela voltou ao síndico. */
+  origem?: { id: string; justificativa?: string; conselho: Votacao };
+  /** O id da decisão nova, quando esta voltou ao síndico. */
+  voltouAoSindico?: string;
+  /** Na ausência do síndico, quem responde no lugar dele. */
+  substituto?: { nome: string; ate: string };
+  anexos?: AnexoAprovacao[];
+  /** Na decisão pedida a uma pessoa, para a gestão: os links do substituto e do aviso da vencida. */
+  links?: LinkDoItem[];
+  pode: { responder: boolean; retirar: boolean; votar?: boolean; reenviar?: boolean; anexar?: boolean };
 }
 
 export interface ListaDecisoes {
@@ -570,7 +595,248 @@ export interface ListaDecisoes {
   filtro: FiltroDecisao;
   /** Hoje no fuso do condomínio, para o prazo. */
   hoje: string;
-  pode: { aprovar: boolean };
+  pode: { aprovar: boolean; despesas?: boolean };
+  /** R5: as regras do conselho, a ausência marcada e quantas despesas esperam a pessoa. */
+  conselho?: RegrasConselho;
+  ausencia?: AusenciaSindico | null;
+  despesasAguardando?: number;
+}
+
+// ---------------------------------------------------------------------------------------
+// Decisões e aprovações (R5): o conselho, a votação, a ausência e as despesas.
+
+/** O resumo das regras (conselho_quorum_json). */
+export interface RegrasConselho {
+  titularesEmDia: number;
+  necessarios?: number;
+  podePedir: boolean;
+  quorum: QuorumConselho;
+  minimo?: number;
+  empate: "SINDICO" | "DEVOLVIDA";
+  vencidaAvisa: "NINGUEM" | "SUBSINDICO" | "CONSELHO";
+  alcada?: number;
+}
+
+export interface MembroConselho {
+  id: string;
+  versao: number;
+  nome: string;
+  papel: PapelConselho;
+  titular: boolean;
+  vota: boolean;
+  emDia: boolean;
+  mandatoInicio: string;
+  mandatoFim: string;
+  mandatoVencendo: boolean;
+  canal: CanalConselho;
+  painel: boolean;
+  pessoaId?: string;
+  contatoId?: string;
+  unidade?: string;
+  /** Completos só para quem gerencia. */
+  celular?: string;
+  email?: string;
+  celularMascarado?: string;
+  emailMascarado?: string;
+  incluidoEm: string;
+  retiradoEm?: string;
+  retiradoMotivo?: string;
+}
+
+export interface AusenciaSindico {
+  id: string;
+  versao: number;
+  de: string;
+  ate: string;
+  ativa: boolean;
+  motivo?: string | null;
+  sindico?: string;
+  substituto: string;
+  substitutoId: string;
+}
+
+export interface Conselho {
+  hoje: string;
+  pode: { gerenciar: boolean; marcarAusencia: boolean };
+  regras: RegrasConselho;
+  membros: MembroConselho[];
+  retirados?: MembroConselho[];
+  sindico?: string;
+  subsindico?: { id: string; nome: string };
+  ausencia?: AusenciaSindico | null;
+}
+
+export interface CandidatoConselho {
+  id: string;
+  tipo: "PESSOA" | "CONTATO";
+  nome: string;
+  detalhe?: string;
+  celularMascarado?: string;
+  emailMascarado?: string;
+}
+
+export interface RegrasDecisoes extends RegrasConselho {
+  versao: number;
+  pode: { editar: boolean };
+  sindico?: string;
+  subsindico?: string;
+}
+
+/** Como o link chegou: e-mail (fila) ou COPIAR (WhatsApp sem modelo aprovado). */
+export type EnvioLink = "NA_FILA" | "ENVIANDO" | "ENVIADO" | "FALHOU" | "COPIAR" | "EMAIL";
+
+export interface VotoConselho {
+  membroId: string;
+  nome: string;
+  papel: PapelConselho;
+  emDia?: boolean;
+  eu?: boolean;
+  /** O número da alternativa, DEVOLVER, APROVAR ou RECUSAR; sem escolha, ainda não votou. */
+  escolha?: string;
+  justificativa?: string;
+  votadoEm?: string;
+  canal?: "PAINEL" | "LINK";
+  link?: { canal: CanalConselho; envio?: EnvioLink; abertoEm?: string; mandadoEm?: string; podeReenviar?: boolean };
+}
+
+/** Para que serve o link do conselho: votar, responder no lugar do síndico ausente ou ver a vencida. */
+export type FinalidadeLink = "VOTO" | "SUBSTITUTO" | "AVISO";
+
+/** O link do substituto ou do aviso, na decisão e na despesa pedidas a uma pessoa (para a gestão). */
+export interface LinkDoItem {
+  membroId: string;
+  nome: string;
+  finalidade: FinalidadeLink;
+  canal: CanalConselho;
+  envio?: EnvioLink;
+  abertoEm?: string;
+  /** Falta enquanto o link de WhatsApp ainda não tem código (pedido por quem não vê o código). */
+  mandadoEm?: string;
+  podeReenviar: boolean;
+}
+
+export interface Votacao {
+  titulares: number;
+  necessarios: number;
+  votaram: number;
+  contagem?: Record<string, number>;
+  faltam?: string[];
+  votos: VotoConselho[];
+  eu?: { membroId: string; escolha?: string; justificativa?: string; votadoEm?: string; podeVotar: boolean };
+}
+
+/** Um link novo, na resposta de pedir decisão, criar despesa, marcar ausência e Reenviar o link.
+ * O código só vem no COPIAR e para quem cuida do conselho; para os outros vem o aviso. */
+export interface LinkMandado {
+  membroId: string;
+  nome: string;
+  canal: CanalConselho;
+  envio: EnvioLink;
+  finalidade?: FinalidadeLink;
+  decisaoId?: string;
+  despesaId?: string;
+  codigo?: string;
+  /** "Peça o link ao síndico": quem pediu não vê o código, e ele nem nasce. */
+  aviso?: string;
+}
+
+export interface AnexoAprovacao {
+  id: string;
+  nome: string;
+  tipo: string;
+  parte: "DOCUMENTO" | "COMPROVANTE";
+  tamanho: number;
+  situacao?: "ENVIANDO" | "LIBERADO" | "NAO_LIBERADO";
+  motivoRecusa?: string;
+  enviadoEm?: string;
+  enviadoPor?: string;
+}
+
+export interface Despesa {
+  id: string;
+  versao: number;
+  estado: EstadoDespesa | "PAGA";
+  modo: ModoDecisao;
+  descricao: string;
+  valor: number;
+  moeda: string;
+  fornecedor: { prestadorId?: string; nome?: string };
+  vencimento?: string;
+  prazo: string;
+  vencida: boolean;
+  ligacao?: { tipo: "PEDIDO" | "MANUTENCAO" | "DECISAO"; id: string; rotulo: string };
+  decisor?: { vinculoId: string; nome: string; eu: boolean };
+  conselho?: Votacao;
+  voltouAoSindicoEm?: string;
+  alcada?: number;
+  passaAlcada: boolean;
+  pedidaEm: string;
+  pedidaPor?: string;
+  respondidaEm?: string;
+  respondidaPor?: string;
+  justificativa?: string;
+  retiradaMotivo?: string;
+  pagamento?: { pagaEm: string; registradaEm: string; registradaPor?: string; comprovanteId?: string };
+  substituto?: { nome: string; ate: string };
+  /** Na despesa a uma pessoa, para quem pediu ou registra despesas: os links do substituto e do aviso. */
+  links?: LinkDoItem[];
+  /** anexar: documentos enquanto espera; anexarComprovante: na aprovada, antes do Paga fora. */
+  pode: { votar: boolean; anexar: boolean; alterar: boolean; retirar: boolean; reenviar: boolean; responder: boolean; pagar: boolean;
+    anexarComprovante?: boolean; desfazerPagamento: boolean };
+}
+
+/** A ficha: os anexos vêm em lista (na lista de despesas, só quantos). */
+export interface DespesaDetalhe extends Omit<Despesa, "anexos"> {
+  anexos: AnexoAprovacao[];
+  historico?: { em: string; acao: string; quem?: string; membro?: string; dados: Record<string, unknown> }[];
+  comunicado?: { titulo: string; texto: string };
+}
+
+export interface ListaDespesas {
+  hoje: string;
+  filtro: FiltroDespesa;
+  alcada?: number | null;
+  pode: { registrar: boolean };
+  contagem: { AGUARDANDO: number; APROVADAS: number; RECUSADAS: number };
+  aguardandoEu: number;
+  despesas: (Despesa & { anexos?: number })[];
+}
+
+export interface OpcoesDespesa {
+  hoje: string;
+  ausencia: AusenciaSindico | null;
+  conselho: RegrasConselho;
+  decisores: { vinculoId: string; nome: string; sindico: boolean; eu: boolean }[];
+  prestadores: { id: string; nome: string; servico?: string }[];
+}
+
+/** A página do link do conselheiro (/conselho/<código>). */
+export interface ConselhoPublico {
+  condominio: string;
+  estado: EstadoLinkConselho;
+  motivo?: keyof typeof LINK_NAO_VALE;
+  finalidade?: "VOTO" | "SUBSTITUTO" | "AVISO";
+  /** No link trocado, só o nome. */
+  membro: { nome: string; papel: PapelConselho } | string;
+  prazo?: string;
+  hoje?: string;
+  item?: {
+    tipo: "DECISAO" | "DESPESA";
+    pergunta?: string;
+    porque?: string;
+    alternativas?: AlternativaDecisao[];
+    descricao?: string;
+    valor?: number;
+    moeda?: string;
+    fornecedor?: string;
+    vencimento?: string;
+    pedidaPor?: string;
+    pedidaEm?: string;
+    anexos: AnexoAprovacao[];
+    resultado?: { estado: string; alternativaAprovada?: number; justificativa?: string; voltouAoSindico?: boolean };
+  };
+  meuVoto?: { escolha: string; justificativa?: string; votadoEm: string };
+  conselho?: Votacao;
 }
 
 // Aviso de pedido registrado (F6.4, AT-26).
@@ -1378,7 +1644,7 @@ export interface Prontuario {
 }
 
 export interface EventoMemoria {
-  fonte: "ANOTADO" | "MANUTENCAO" | "DOCUMENTO" | "PRONTUARIO" | "COMUNICADO" | "PESSOA" | "ASSEMBLEIA";
+  fonte: "ANOTADO" | "MANUTENCAO" | "DOCUMENTO" | "PRONTUARIO" | "COMUNICADO" | "PESSOA" | "ASSEMBLEIA" | "DESPESA";
   categoria: string;
   id: string;
   data: string;

@@ -56,7 +56,8 @@ function numeros(mes: string, podeDecidir: boolean) {
     torres: setembro
       ? [LINHA("A", "Torre A", 21, 19, 30, 20, 17), LINHA("B", "Torre B", 18, 16, 40, 17, 15), LINHA("AREAS_COMUNS", "Áreas comuns e sem unidade", 6, 6, 12, 6, 5)]
       : [LINHA("AREAS_COMUNS", "Áreas comuns e sem unidade", 0, 0, null, 0, 0)],
-    ...(podeDecidir ? { decisoes: { pedidas: 6, decididas: 5, aprovadas: 4, devolvidas: 1, medianaHoras: setembro ? 20 : null, aguardandoNoFim: 1 } } : {}),
+    ...(podeDecidir ? { decisoes: { pedidas: 6, decididas: 5, aprovadas: 4, devolvidas: 1, medianaHoras: setembro ? 20 : null, aguardandoNoFim: 1,
+      ...(setembro ? { peloConselho: 2, despesas: { pedidas: 3, aprovadas: 2, recusadas: 1, valorAprovado: 920000, aguardandoNoFim: 0 } } : {}) } } : {}),
     reincidencia: { pedidos: setembro ? 45 : 0, reincidencias: setembro ? 3 : 0, porcentagem: setembro ? 7 : null,
       ondeVolta: setembro ? [{ onde: "Garagem G1", categoria: "Manutenção", vezes: 2 }] : [] },
   };
