@@ -10,16 +10,16 @@ Versão visual e interativa (com busca e filtro por forma): [`mapa.html`](mapa.h
 | Parte | Peças | Ideias |
 |---|---|---|
 | Plataforma do síndico | 16 | 202 |
-| Console TRÍADE | 9 | 39 |
+| Console TRÍADE | 10 | 72 |
 | Base comum | 6 | 38 |
 | Fora do software | 4 | 34 |
-| **Total** | **35** | **313** |
+| **Total** | **36** | **346** |
 
 ## Mapa mental
 
 ```mermaid
 mindmap
-  root((TRÍADE Condo · 313 ideias))
+  root((TRÍADE Condo · 346 ideias))
     Plataforma do síndico · 202
       Painel web do síndico
         Início · 4
@@ -40,7 +40,7 @@ mindmap
         WhatsApp do morador · 24
       Participação sem conta
         Links e QR · 7
-    Console TRÍADE · 39
+    Console TRÍADE · 72
       Carteira de clientes · 4
       Implantação · 5
       Planos e liberação · 6
@@ -50,6 +50,7 @@ mindmap
       Equipe interna · 3
       Saúde e capacidade · 3
       Mensagens e custos · 2
+      Comercial · 33
     Base comum · 38
       Segurança e acesso · 8
       Dados e histórico · 6
@@ -102,6 +103,7 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Equipe interna | PI-10, 12, 18 |
 | Saúde e capacidade | PI-13, 15; TR-06 |
 | Mensagens e custos | NG-13, 15 |
+| Comercial | CM-01 a 33 |
 
 **Base comum**
 
@@ -571,6 +573,46 @@ Quanto custa operar cada condomínio, a começar pelo WhatsApp.
 |---|---|---|
 | NG-15 | Planejar custo das mensagens: cobrança por mensagem desde 01/10/2026; comunicados podem cair na categoria marketing,… | Regra |
 | NG-13 | Planilha de custo por condomínio: mensagens, provedor, hospedagem, horas de implantação | Indicador |
+
+#### Comercial (33)
+
+Interessados, funil, propostas e contrato, até o condomínio virar cliente.
+
+| ID | Ideia | Forma |
+|---|---|---|
+| CM-01 | Interessados chegam sozinhos do site, com origem, faixa de unidades e autorização LGPD; o e-mail continua como aviso | Aba |
+| CM-02 | Outras origens registradas à mão: WhatsApp comercial, Instagram, indicação, construtora, evento | Função |
+| CM-03 | Funil com etapas fixas, com Aprovação no condomínio e probabilidade por etapa, em lista e em quadro; perdido pede motivo | Aba |
+| CM-04 | Todo interessado aberto tem responsável, próximo passo e data, no "Meu dia"; meta de primeiro retorno em 1 hora útil | Regra |
+| CM-05 | Histórico de conversas com o interessado, com autor e data; nada se apaga | Função |
+| CM-06 | Gerador de propostas pela Tabela de preços do Console, com os simuladores; desconto só com motivo e aprovação | Função |
+| CM-07 | Proposta com versões, link sem conta com aceite e PDF, aviso de abertura; vencida pede refazer | Função |
+| CM-08 | Ganho vira cliente sem redigitar: carteira, plano pela tabela, vaga de fundador e implantação | Função |
+| CM-09 | Uma pessoa com vários condomínios, cada um com a sua oportunidade | Regra |
+| CM-10 | Painel comercial: etapas, conversão, primeiro retorno, perdas, vagas de fundador, previsão e meta de MRR | Indicador |
+| CM-11 | Função Comercial nas funções internas, sem mexer em plano ativo, pagamento ou liberação | Regra |
+| CM-12 | Dados dos interessados com LGPD: só para responder, anonimizar perdidos após 12 meses, exclusão registrada | Regra |
+| CM-13 | Contrato gerado da proposta aceita, do modelo revisado por advogado, assinado eletronicamente e guardado na ficha | Função |
+| CM-14 | Negócio parado: limite de dias sem conversa por etapa; só conversa registrada zera | Aviso |
+| CM-15 | Modelos de mensagem por etapa que abrem o WhatsApp comercial e registram a conversa | Função |
+| CM-16 | Ficha do prédio: administradora, sistema atual e fidelidade, assembleia, mandato, quem decide, visita | Função |
+| CM-17 | Objeções com resposta pronta e concorrentes na disputa, com preço e resultado | Função |
+| CM-18 | Janelas do condomínio: assembleia ordinária, fim do mandato, fim da fidelidade e troca de síndico | Aviso |
+| CM-19 | Custo por apartamento na proposta e no kit, como estimativa e sem ROI | Função |
+| CM-20 | Kit para o conselho e a assembleia, com comparativo, proposta, minuta para a ata e privacidade | Função |
+| CM-21 | Piloto de 30 a 60 dias com meta combinada antes, medida pela Plataforma | Função |
+| CM-22 | Parceiros e indicação, com comissão por prédio ativo calculada no Console e extrato | Aba |
+| CM-23 | Agendar demonstração por link, com confirmação, lembrete e entrada no funil | Função |
+| CM-24 | Importar planilha e juntar duplicados por CNPJ, endereço, WhatsApp e e-mail | Função |
+| CM-25 | Etapa só avança com os campos que ela pede; o que falta aparece na ficha | Regra |
+| CM-26 | Cadência de contato que cria tarefas e para quando a pessoa responde; não envia sozinha | Função |
+| CM-27 | Respostas prontas para questionário e cotação, revisadas pela Administração | Função |
+| CM-28 | Referências de clientes e casos com números reais medidos na Plataforma | Função |
+| CM-29 | Troca de sistema: carta à empresa anterior, lista do que falta, planilha-modelo e linha do tempo | Função |
+| CM-30 | Renovação e reajuste com aviso antes de aplicar e aditivo gerado | Aviso |
+| CM-31 | Cancelamento e retenção, com motivo próprio, tentativa registrada e sinais de risco | Função |
+| CM-32 | Expansão: mais um prédio, mudança de faixa e reconquista, num funil próprio | Aba |
+| CM-33 | Calculadora de custo por apartamento no site, que vira interessado ao pedir proposta | Função |
 
 ---
 

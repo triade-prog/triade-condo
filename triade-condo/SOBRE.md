@@ -109,7 +109,7 @@ Em volta desse fluxo: comunicados e documentos do prédio entregues pelo WhatsAp
 - **Comunicados e documentos:** regimento, regras e avisos publicados pelo síndico e consultados pelo morador no WhatsApp, com versão vigente (seção 5).
 - **Transparência do dinheiro:** recibo mensal do condômino, antes e depois das obras, mural de conquistas, bateria do fundo de reserva, economias geradas, retrospectiva anual, orçamento participativo (seção 22 do IDEIAS).
 - **Ficha por condomínio:** pessoas, permissões individuais, horários, mensagem fora do expediente (seção 6).
-- **Painel interno TRÍADE:** carteira de clientes, implantação, recursos liberados, pagamentos, suporte de acesso (seção 16).
+- **Painel interno TRÍADE:** carteira de clientes, implantação, recursos liberados, pagamentos, suporte de acesso (seção 16), e o comercial com interessados, propostas e contrato (seção 23).
 - **Evoluções possíveis:**
   - agenda;
   - coordenação de manutenção e prontuário digital do prédio;
@@ -200,7 +200,7 @@ O mercado está se consolidando: a NokNox fechou, a Visma comprou a chilena Comu
 | Item | Situação em 16/10/2026 |
 |---|---|
 | Ideia, pesquisa e planejamento | Concluídos e arquivados em `arquivo/` |
-| Lista de ideias | [`IDEIAS.md`](IDEIAS.md), 313 ideias em 22 seções |
+| Lista de ideias | [`IDEIAS.md`](IDEIAS.md), 346 ideias em 23 seções |
 | Protótipos visuais (dados fictícios) | Existem no arquivo, servem de referência |
 | Código do sistema | **Começa agora**, nesta pasta |
 | Clientes | Nenhum ainda |
