@@ -215,7 +215,7 @@ select pg_temp.em('2027-03-18 10:00:00-03');
 select verificar_decisoes();
 select is((select x ->> 'tipo' from ids, c, d2, jsonb_array_elements(plataforma_avisos(gil, ipe) -> 'itens') x
             where x ->> 'decisaoId' = d2::text order by x ->> 'criadoEm' desc limit 1), 'DECISAO_VENCIDA', 'AT-23: o prazo vencido avisa quem decide');
-select is((select plataforma_painel(gil, ipe) -> 'decisoes' from ids, c), '{"aguardando": 1, "vencidas": 1, "maisAntigaDias": 2}'::jsonb,
+select is((select plataforma_painel(gil, ipe) -> 'decisoes' from ids, c), '{"aguardando": 1, "vencidas": 1, "maisAntigaDias": 2, "votos": 0, "despesas": 0}'::jsonb,
   'AT-08: o Início de quem decide mostra o que espera e o que venceu');
 select is((select plataforma_painel(bruna, ipe) ? 'decisoes' from ids, c), false, 'CF-03: a linha das decisões é só de quem aprova');
 select pg_temp.em('2027-03-18 12:00:00-03');
