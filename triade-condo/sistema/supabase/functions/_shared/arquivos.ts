@@ -17,12 +17,12 @@ export interface Armazenamento {
 
 /**
  * Um bucket privado por parte do sistema: "pedidos" (passo 4b), "manutencoes" (peça R6),
- * "comunicados" e "documentos" (peça R1) e "exportacoes" (peça R10). O caminho é sempre
+ * "comunicados" e "documentos" (peça R1), "exportacoes" (peça R10) e "relatorios" (TR-10). O caminho é sempre
  * condomínio/registro/arquivo; a foto mandada pelo prestador no link (peça R13) fica em
  * condomínio/manutenção/prestador/arquivo.
  */
 export function armazenamentoSupabase(url: string, chaveServico: string, buscar: typeof fetch = fetch,
-  bucket: "pedidos" | "manutencoes" | "comunicados" | "documentos" | "exportacoes" | "suporte" = "pedidos"): Armazenamento {
+  bucket: "pedidos" | "manutencoes" | "comunicados" | "documentos" | "exportacoes" | "suporte" | "relatorios" = "pedidos"): Armazenamento {
   const base = `${url.replace(/\/$/, "")}/storage/v1`;
   const auth = { apikey: chaveServico, authorization: `Bearer ${chaveServico}` };
   const objeto = (caminho: string) => {
