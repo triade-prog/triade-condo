@@ -297,6 +297,10 @@ export function descreverEventoAprovacao(acao: string, d: Record<string, unknown
       return d.antes ? "Voto trocado" : "Voto registrado";
     case "conselho.link_reenviado":
       return "Link reenviado";
+    case "conselho.whatsapp_parou":
+      return "Pediu PARAR: não recebe mais o link pelo WhatsApp";
+    case "conselho.whatsapp_voltou":
+      return "Mandou VOLTAR: recebe de novo o link pelo WhatsApp";
     case "aprovacao.anexo_enviado":
       return `Anexo enviado${d.arquivoNome ? `: ${String(d.arquivoNome)}` : ""}`;
     case "aprovacao.anexo_tirado":
@@ -382,6 +386,15 @@ export function textoAndamentoVotacao(v: { votaram: number; titulares: number; n
   return [`${v.votaram} de ${titulares(v.titulares)} ${v.votaram === 1 ? "votou" : "votaram"}.`, falta ? `${falta}.` : null,
     `Se ninguém chegar a ${votos(v.necessarios)} até ${ddmm}, ${fim}.`].filter(Boolean).join(" ");
 }
+
+/** Por que o link não foi pelo WhatsApp e ficou para copiar (semWhatsapp, 0305). */
+export const MOTIVOS_SEM_WHATSAPP_CONSELHO = {
+  WHATSAPP_DESLIGADO: "O WhatsApp do condomínio não está conectado.",
+  SEM_MODELO: "A mensagem do conselho ainda não está aprovada neste número.",
+  SEM_NUMERO: "O celular do membro não é um número de WhatsApp.",
+  PAROU: "Este número pediu PARAR no WhatsApp do condomínio.",
+} as const;
+export type MotivoSemWhatsappConselho = keyof typeof MOTIVOS_SEM_WHATSAPP_CONSELHO;
 
 /** O link do conselheiro, para copiar quando o WhatsApp não manda (envio COPIAR). */
 export const caminhoLinkConselho = (codigo: string) => `/conselho/${encodeURIComponent(codigo)}`;

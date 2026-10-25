@@ -136,6 +136,7 @@ describe("a despesa para aprovar (FC-10)", () => {
     expect(descreverEventoAprovacao("despesa.pedida", { modo: "CONSELHO", titulares: 3, necessarios: 2 })).toBe("Pedida ao conselho · 2 de 3 votos aprovam");
     expect(descreverEventoAprovacao("despesa.paga_fora", { pagaEm: "2026-11-03" })).toBe("Paga fora do sistema em 03/11/2026");
     expect(descreverEventoAprovacao("conselho.voto", { antes: "1" })).toBe("Voto trocado");
+    expect(descreverEventoAprovacao("conselho.whatsapp_parou", {})).toBe("Pediu PARAR: não recebe mais o link pelo WhatsApp");
     expect(descreverEventoAprovacao("outra.coisa", {})).toBeNull();
   });
 });

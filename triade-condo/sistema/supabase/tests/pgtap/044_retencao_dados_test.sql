@@ -75,7 +75,7 @@ select is((select string_agg(sistema || ':' || n, ', ' order by sistema) from (s
   'CONSOLE:4, PLATAFORMA:30', 'PT-11: 30 tipos na Plataforma e 4 no Console');
 select is((select array_agg(numero order by numero) from retencao_tipos), (select array_agg(n) from generate_series(1, 34) n),
   'PT-11: numerados de 1 a 34, sem buraco');
-select is((select count(*)::integer from retencao_tipos where situacao = 'NA_ROTINA'), 17, 'PT-11: 17 tipos já com a rotina aplicando o prazo');
+select is((select count(*)::integer from retencao_tipos where situacao = 'NA_ROTINA'), 18, 'PT-11: 18 tipos já com a rotina aplicando o prazo (o conselho entrou na 0305)');
 select is((select count(*)::integer from retencao_tipos t
             where t.situacao = 'NA_ROTINA' and t.codigo <> 'TRANSCRICAO'
               and position('''' || t.codigo || '''' in pg_get_functiondef('retencao_candidatos'::regproc)) = 0), 0,

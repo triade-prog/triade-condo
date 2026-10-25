@@ -18,7 +18,7 @@ interface Modelo {
   chave: ChaveModelo;
   numero: number;
   titulo: string;
-  para: "MORADOR" | "EQUIPE" | "PRESTADOR";
+  para: "MORADOR" | "EQUIPE" | "PRESTADOR" | "CONSELHO";
   uso: string;
   variaveis: string[];
   corpo: string;
@@ -48,7 +48,7 @@ export const TOM_MODELO: Record<SituacaoModelo, Tom> = {
 };
 
 /** Exemplo de cada modelo, para ver como chega. */
-const PARA_MODELO: Record<Modelo["para"], string> = { MORADOR: "Morador", EQUIPE: "Equipe", PRESTADOR: "Prestador" };
+const PARA_MODELO: Record<Modelo["para"], string> = { MORADOR: "Morador", EQUIPE: "Equipe", PRESTADOR: "Prestador", CONSELHO: "Conselho" };
 
 const EXEMPLOS: Record<ChaveModelo, string[]> = {
   noticia_pedido: ["2026-0142", "Residencial Ipê", "O eletricista vem amanhã de manhã para trocar o reator.", "Ana"],
