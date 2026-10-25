@@ -2,11 +2,13 @@
 // 338 e 345) com a API falsa: começar e encerrar o piloto na ficha, o piloto no kit do conselho sem
 // com quem foi combinado, o Virar cliente que só liga com as duas assinaturas conferidas, a troca de
 // sistema com a carta, o que falta e a planilha-modelo, e a oportunidade nova do mesmo contato.
+// O contrato pelo gov.br (quadros 440 a 444) tem o seu próprio teste (console-comercial-contrato).
 // Cada tela passa no axe, não usa emoji e não vaza para o lado.
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiFalsa } from "./api-falsa";
 import { CERRADO, CODIGO_IPE, INDICADO, INES, PROPOSTA_IPE } from "./api-falsa-console-comercial";
+import { contratoAssinado } from "./api-falsa-console-contrato";
 
 const CONSOLE = "http://localhost:3001";
 
@@ -78,13 +80,15 @@ test.describe("Console · Comercial · cliente (R17.4)", () => {
   test("Virar cliente: desligado sem as duas assinaturas; com o contrato assinado, diz o que cria e pede quem cuida da implantação", async ({ page }) => {
     const api = await instalarApiFalsa(page);
     await page.goto(`${CONSOLE}/comercial/${INDICADO}`);
-    const sem = page.getByRole("region", { name: "Virar cliente" });
+    const sem = page.getByRole("region", { name: "Contrato" });
     await expect(sem.getByRole("button", { name: "Virar cliente" })).toBeDisabled();
     await expect(sem.getByText("Libera quando as duas assinaturas estiverem conferidas.")).toBeVisible();
     await conferir(page);
 
+    contratoAssinado(api.comercial, CERRADO);
     await page.goto(`${CONSOLE}/comercial/${CERRADO}`);
-    await page.getByRole("region", { name: "Virar cliente" }).getByRole("button", { name: "Virar cliente" }).click();
+    await expect(page.getByRole("region", { name: "Contrato" }).getByText("Assinado pelos dois", { exact: true })).toBeVisible();
+    await page.getByRole("region", { name: "Contrato" }).getByRole("button", { name: "Virar cliente" }).click();
     const janela = page.getByRole("dialog", { name: "Virar cliente" });
     if (test.info().project.name !== "celular") await expect(janela.getByText("Residencial Cerrado · proposta v1 aceita · contrato assinado pelos dois.")).toBeVisible();
     const lista = janela.getByRole("list", { name: "O que vai ser criado" });
@@ -105,9 +109,10 @@ test.describe("Console · Comercial · cliente (R17.4)", () => {
   });
 
   test("O Comercial vê o Virar cliente desligado e não começa o piloto", async ({ page }) => {
-    await instalarApiFalsa(page, { funcao: "COMERCIAL" });
+    const api = await instalarApiFalsa(page, { funcao: "COMERCIAL" });
+    contratoAssinado(api.comercial, CERRADO);
     await page.goto(`${CONSOLE}/comercial/${CERRADO}`);
-    const cartao = page.getByRole("region", { name: "Virar cliente" });
+    const cartao = page.getByRole("region", { name: "Contrato" });
     await expect(cartao.getByRole("button", { name: "Virar cliente" })).toBeDisabled();
     await expect(cartao.getByText("Só a Administração cria o cliente.")).toBeVisible();
     await expect(page.getByRole("region", { name: "Piloto" }).getByText("Só a Administração começa o piloto.")).toBeVisible();

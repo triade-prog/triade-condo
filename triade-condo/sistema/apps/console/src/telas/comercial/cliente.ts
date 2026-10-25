@@ -74,7 +74,8 @@ export interface Troca {
   naImplantacao?: boolean;
   linhaDoTempo: PassoTroca[];
 }
-export interface RespostaTroca { troca?: Troca | null; itensPadrao: ItemTroca[]; sistemaAtual?: string; administradora?: string; podeEditar: boolean }
+/** Com restrito (virou cliente e quem lê é do Comercial, CM-11), a troca vem só com o id: seguiu para a implantação. */
+export interface RespostaTroca { troca?: Troca | null; itensPadrao: ItemTroca[]; sistemaAtual?: string; administradora?: string; podeEditar: boolean; restrito?: boolean }
 
 export interface Oportunidade { id: string; condominio: string; cidade?: string; uf?: string; unidades?: number; etapa: EtapaComercial; virouCliente?: boolean; criadoEm: string }
 

@@ -71,13 +71,17 @@ export function TrocaSistema() {
           <p className="t-apoio">Do contrato assinado até o prédio usando. Tudo aqui segue para a implantação.</p>
         </div>
         <div className="flex flex-wrap gap-2 max-md:grid max-md:w-full">
-          <Botao variante="contorno" onClick={baixarPlanilha}><Icone nome="baixar" />Baixar a planilha-modelo</Botao>
-          {t && d.podeEditar ? <Botao onClick={() => setJanela("carta")}><Icone nome="documento" />Mandar a carta para a síndica</Botao> : null}
+          {d.restrito ? null : <Botao variante="contorno" onClick={baixarPlanilha}><Icone nome="baixar" />Baixar a planilha-modelo</Botao>}
+          {t && d.podeEditar && !d.restrito ? <Botao onClick={() => setJanela("carta")}><Icone nome="documento" />Mandar a carta para a síndica</Botao> : null}
         </div>
       </div>
       {aviso ? <Aviso tom={aviso.tom} papel={aviso.tom === "erro" ? "alert" : "status"}>{aviso.texto}</Aviso> : null}
 
-      {!t ? (
+      {d.restrito ? (
+        <Vazio titulo="A troca de sistema seguiu para a implantação" icone="trocar">
+          Depois de virar cliente, o Comercial deixa de ver os dados do condomínio. O que faltava receber virou pendência da implantação.
+        </Vazio>
+      ) : !t ? (
         <Vazio titulo="A troca de sistema ainda não começou" icone="trocar"
           acao={d.podeEditar ? <Botao onClick={() => setJanela("editar")}><Icone nome="mais" />Começar a troca de sistema</Botao> : undefined}>
           {d.podeEditar

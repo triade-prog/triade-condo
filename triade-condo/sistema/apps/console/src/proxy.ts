@@ -1,11 +1,17 @@
 // Proxy (antigo middleware): gera um nonce por requisição e grava a CSP e os cabeçalhos de
 // segurança (F0.8). O nonce exige renderização dinâmica das páginas.
 import { NextResponse, type NextRequest } from "next/server";
-import { cabecalhosSeguranca, gerarNonce, montarCsp } from "@triade/servidor/cabecalhos";
+import { cabecalhosSeguranca, gerarNonce, montarCsp, origemArmazenamento } from "@triade/servidor/cabecalhos";
 
 export function proxy(request: NextRequest) {
   const nonce = gerarNonce();
-  const csp = montarCsp({ nonce, dev: process.env.NODE_ENV === "development" });
+  // Os PDFs do contrato (0308, quadros 440 a 442) vão direto ao armazenamento privado, por links
+  // assinados que a API gera, como as fotos e documentos da Plataforma (PT-07).
+  const csp = montarCsp({
+    nonce,
+    dev: process.env.NODE_ENV === "development",
+    armazenamento: origemArmazenamento(process.env.SUPABASE_FUNCTIONS_URL),
+  });
 
   const headers = new Headers(request.headers);
   headers.set("x-nonce", nonce);

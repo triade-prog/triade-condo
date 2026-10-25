@@ -6,6 +6,7 @@
 // que a equipe confirmou de cada sistema. As regras de verdade estão no banco (pgTAP 045 e 046) e
 // na API (Deno); aqui se confere a tela.
 import type { Route } from "@playwright/test";
+import { CODIGO_CERRADO, criarContratos, rotasContrato, situacaoDoContrato } from "./api-falsa-console-contrato";
 
 type Json = Record<string, unknown>;
 
@@ -15,7 +16,7 @@ export const INDICADO = "7a1b2c3d-0000-4000-8000-0000000000a2";
 export const LAGO = "7a1b2c3d-0000-4000-8000-0000000000a3";
 export const PROPOSTA_IPE = "8b2c3d4e-0000-4000-8000-0000000000b1";
 export const PROPOSTA_LAGO = "8b2c3d4e-0000-4000-8000-0000000000b2";
-/** R17.4 (0308): o Residencial Cerrado tem a proposta aceita e o contrato assinado pelos dois. */
+/** R17.4 (0308): o Residencial Cerrado tem a proposta aceita; o contrato sai pelo gov.br (api-falsa-console-contrato.ts). */
 export const CERRADO = "7a1b2c3d-0000-4000-8000-0000000000a4";
 export const PROPOSTA_CERRADO = "8b2c3d4e-0000-4000-8000-0000000000b3";
 /** Da equipe com a função Implantação (a mesma Inês da api-falsa). */
@@ -66,7 +67,7 @@ export function criarComercialConsole() {
       base(CERRADO, {
         condominio: "Residencial Cerrado", cidade: "Brasília", uf: "DF", faixa: "DE_41_A_100", unidades: 64, pessoa: "Lúcia Prado", whatsapp: "5561977776666",
         whatsappMascarado: "(61) 9 ••••-6666", origem: "INDICACAO", etapa: "APROVACAO", probabilidade: 85, temWhatsapp: true, responsavel: CAROLINA,
-        tarefa: { situacao: "FUTURO" }, atencao: false, contratoSituacao: "ASSINADO",
+        tarefa: { situacao: "FUTURO" }, atencao: false,
         baseLegal: { tipo: "LEGITIMO_INTERESSE", texto: "A pessoa procurou a TRÍADE ou aceitou o contato.", em: agora.toISOString() },
         optin: { em: agora.toISOString(), canal: "WHATSAPP", texto: "Aceitou receber mensagens pelo WhatsApp comercial" },
         predio: { administradora: "Contábil Norte", sistemaAtual: "App da Contábil Norte", decisor: "Lúcia", decisaoEm: somarDias(hoje, 5) },
@@ -87,6 +88,8 @@ export function criarComercialConsole() {
     /** Os fatos do comparativo (0307): só do prédio (o padrão) ou informação pública; a fonte é só da equipe. */
     fatos: [] as Json[],
     ...criarPropostas(hoje),
+    /** O contrato pelo gov.br (0308): modelo, documentos, contratos, envios e arquivos. */
+    contrato: criarContratos(hoje),
   };
 }
 
@@ -158,7 +161,8 @@ function criarPropostas(hoje: string) {
     ] as Json[],
     /** Código do link → a versão. Só o resumo fica no banco de verdade; aqui, o código. */
     links: { [CODIGO_IPE]: { propostaId: PROPOSTA_IPE, versaoId: "8b2c3d4e-0000-4000-8000-0000000000e1" },
-             [CODIGO_VENCIDO]: { propostaId: PROPOSTA_LAGO, versaoId: "8b2c3d4e-0000-4000-8000-0000000000e2" } } as Record<string, { propostaId: string; versaoId: string }>,
+             [CODIGO_VENCIDO]: { propostaId: PROPOSTA_LAGO, versaoId: "8b2c3d4e-0000-4000-8000-0000000000e2" },
+             [CODIGO_CERRADO]: { propostaId: PROPOSTA_CERRADO, versaoId: "8b2c3d4e-0000-4000-8000-0000000000e3" } } as Record<string, { propostaId: string; versaoId: string }>,
     vagas: { total: 5, ocupadas: 2 },
     hoje,
   };
@@ -181,6 +185,8 @@ export async function rotasComercialConsole(route: Route, p: ComercialConsole, c
   if (!pode.ver) return erro(route, 403, "FORBIDDEN");
   if (metodo !== "GET") p.pedidos.push({ caminho, corpo });
   if (/^\/v1\/comercial\/(propostas|respostas|referencias|fatos)/.test(caminho)) return rotasPropostas(route, p, caminho, metodo, corpo, pode, url);
+  const contrato = await rotasContrato(route, p, caminho, metodo, corpo, pode, url);
+  if (contrato !== null) return contrato;
   if (metodo !== "GET" && !pode.editar) return erro(route, 403, "FORBIDDEN");
   const equipe = [CAROLINA];
   if (caminho === "/v1/comercial/interessados" && metodo === "GET") {
@@ -210,7 +216,7 @@ export async function rotasComercialConsole(route: Route, p: ComercialConsole, c
     const oportunidades = p.interessados.filter((x) => x.id !== i.id && String(x.contatoDe ?? x.id) === grupo)
       .map((x) => ({ id: x.id, condominio: x.condominio, cidade: x.cidade, uf: x.uf, unidades: x.unidades, etapa: x.etapa, virouCliente: !!x.virouClienteEm, criadoEm: x.criadoEm }));
     const piloto = [...p.pilotos].reverse().find((x) => x.interessadoId === i.id);
-    return route.fulfill({ json: { ...i, contatoDe: grupo, oportunidades, ...(piloto ? { piloto: semInternos(piloto) } : {}), mensagens: p.mensagens.filter((x) => x.etapa === i.etapa), objecoesLista: [
+    return route.fulfill({ json: { ...i, contatoDe: grupo, oportunidades, contratoSituacao: situacaoDoContrato(p, i.id), ...(piloto ? { piloto: semInternos(piloto) } : {}), mensagens: p.mensagens.filter((x) => x.etapa === i.etapa), objecoesLista: [
       { codigo: "PRECO", texto: "Achou caro", resposta: "Mostre o preço por unidade." }], etapasLista: ETAPAS, equipe, podeEditar: pode.editar, podeExcluir: pode.modelos } });
   }
   if (i && m![2] === "/criterios" && metodo === "PUT") {
@@ -779,7 +785,7 @@ async function rotasClienteR174(route: Route, p: ComercialConsole, i: Json, rest
     if (!pode.cliente) return erro(route, 403, "FORBIDDEN");
     if (corpo.versao !== i.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: i.versao });
     if (i.virouClienteEm) return erro(route, 400, "VALIDATION_ERROR", { motivo: "VIROU_CLIENTE" });
-    if (i.contratoSituacao !== "ASSINADO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "CONTRATO_SEM_ASSINATURAS" });
+    if (situacaoDoContrato(p, i.id) !== "ASSINADO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "CONTRATO_SEM_ASSINATURAS" });
     if (corpo.responsavelImplantacaoId !== INES) return erro(route, 400, "VALIDATION_ERROR", { campos: ["responsavelImplantacaoId"] });
     const predio = i.predio as Json;
     const falta = [...(!predio.decisor ? ["decisor"] : []), ...(!predio.decisaoEm ? ["decisaoEm"] : [])];

@@ -5,18 +5,19 @@
 // marcou na visita e o problema do prédio (0307), que alimentam o kit para o conselho. ?etapa=X chega do quadro quando falta algo para a
 // etapa; ?juntado=1 chega do Novo interessado quando o contato já existia. O cartão Proposta leva à
 // proposta do interessado ou abre a nova (R17.3, quadro 325). Da R17.4 (0308): o piloto com
-// critério de sucesso (quadro 338, CM-21), o Virar cliente que só liga com as duas assinaturas
-// conferidas (quadro 331, CM-08), a troca de sistema (quadro 345, CM-29) e os outros condomínios do
+// critério de sucesso (quadro 338, CM-21), o contrato pelo gov.br (quadro 440, CM-13) com o Virar
+// cliente que só liga com as duas assinaturas conferidas (quadro 331, CM-08), a troca de sistema (quadro 345, CM-29) e os outros condomínios do
 // mesmo contato com a oportunidade nova (CM-09).
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { ETAPAS_ABERTAS, formatarWhatsapp, SITUACOES_PILOTO, linkWhatsappComercial, mostrarDataSemHora, MOTIVOS_PERDA, PAPEIS_CONTATO, preencherMensagem, type EtapaComercial } from "@triade/domain";
+import { ETAPAS_ABERTAS, formatarWhatsapp, SITUACOES_CONTRATO, SITUACOES_PILOTO, linkWhatsappComercial, mostrarDataSemHora, MOTIVOS_PERDA, PAPEIS_CONTATO, preencherMensagem, type EtapaComercial } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
 import { Cartao, Dado, diaHora, LinhaDoTempo, MenuAcoes, plural, Voltar, type ItemMenu, type PassoTempo } from "../comum.tsx";
 import { useCarregar, useSessao } from "../sessao.tsx";
 import { ROTAS_CLIENTE, TELAS_CLIENTE, textoMedida, textoMeta, textoPrazo, textoRecebidos, TOM_PILOTO, type ClienteCriado, type RespostaPiloto, type RespostaTroca } from "./cliente.ts";
+import { TELAS_CONTRATO } from "./contrato.ts";
 import { JanelaEncerrarPiloto, JanelaNovaOportunidade, JanelaPiloto, JanelaVirarCliente, textoFaltaGanho } from "./janelasCliente.tsx";
 import { iconeCanal, nomeCanal, nomeEtapa, nomeFaixa, nomeOrigem, quandoCurto, ROTAS_COMERCIAL, SeloEtapa, SelosAtencao, textoTarefa, TOM_SITUACAO } from "./comum.tsx";
 import { JanelaConfirmar, JanelaConversa, JanelaFicha, JanelaPerdido, JanelaProximoPasso } from "./janelas.tsx";
@@ -107,9 +108,11 @@ function CartaoProposta({ f }: { f: Ficha }) {
 }
 
 /** Virar cliente (quadro 331, CM-08): o botão só liga com as duas assinaturas conferidas. */
-function CartaoVirarCliente({ f, abrir, criado }: { f: Ficha; abrir: () => void; criado: ClienteCriado | null }) {
+/** O contrato pelo gov.br (quadro 440, CM-13) e o Virar cliente (quadro 331, CM-08), que só liga com as duas assinaturas conferidas. */
+function CartaoContrato({ f, abrir, criado }: { f: Ficha; abrir: () => void; criado: ClienteCriado | null }) {
   const sessao = useSessao();
   const pode = sessao.acoes.includes("console.comercial.cliente") && sessao.acoes.includes("console.condominios.criar");
+  const abrirContrato = (texto: string) => <Link href={TELAS_CONTRATO.contrato(f.id)} className={classeBotao("contorno", "justify-self-start")}><Icone nome="documento" />{texto}</Link>;
   if (f.virouClienteEm || criado) {
     return (
       <Cartao id="ficha-cliente" titulo="Virou cliente" icone="predio">
@@ -118,13 +121,19 @@ function CartaoVirarCliente({ f, abrir, criado }: { f: Ficha; abrir: () => void;
       </Cartao>
     );
   }
-  const assinado = f.contratoSituacao === "ASSINADO";
+  const s = f.contratoSituacao;
+  const assinado = s === "ASSINADO";
   return (
-    <Cartao id="ficha-cliente" titulo="Virar cliente" icone="predio">
-      <p className="t-apoio">Cria o cliente na carteira, o plano, a implantação e a troca de sistema de uma vez, sem digitar de novo.</p>
-      <Botao variante="contorno" className="justify-self-start" disabled={!assinado || !pode} onClick={abrir} aria-describedby="ficha-cliente-aviso">
-        <Icone nome="predio" />Virar cliente
-      </Botao>
+    <Cartao id="ficha-cliente" titulo="Contrato" icone="documento" acao={s ? <Selo tom={assinado ? "ok" : "atencao"}>{SITUACOES_CONTRATO[s]}</Selo> : undefined}>
+      <p className="t-apoio">
+        {s ? "Cada parte assina o mesmo PDF pelo gov.br: primeiro o condomínio, depois a TRÍADE." : "Sai da proposta aceita e do modelo revisado por advogado, com o CNPJ e a ata que o síndico envia pelo link."}
+      </p>
+      <div className="flex flex-wrap gap-2 max-md:grid">
+        {abrirContrato(s ? "Abrir o contrato" : "Preparar o contrato")}
+        <Botao variante="contorno" disabled={!assinado || !pode} onClick={abrir} aria-describedby="ficha-cliente-aviso">
+          <Icone nome="predio" />Virar cliente
+        </Botao>
+      </div>
       <p id="ficha-cliente-aviso" className="t-apoio">
         {!assinado ? "Libera quando as duas assinaturas estiverem conferidas." : !pode ? "Contrato assinado pelos dois. Só a Administração cria o cliente." : "Contrato assinado pelos dois."}
       </p>
@@ -179,12 +188,14 @@ function CartaoTroca({ f }: { f: Ficha }) {
     <Cartao id="ficha-troca" titulo="Troca de sistema" icone="trocar">
       {carga.estado === "carregando" ? <Carregando linhas={1} /> : null}
       {carga.estado === "erro" ? <p className="t-apoio">{carga.texto}</p> : null}
-      {t ? (
+      {carga.estado === "pronto" && carga.dados.restrito ? (
+        <p className="t-apoio">Seguiu para a implantação: o que faltava receber virou pendência do cliente.</p>
+      ) : t ? (
         <p className="t-texto">{`Da ${t.empresaAnterior} em ${t.dataTroca.split("-").reverse().join("/")} · ${textoRecebidos(t.itens)} · carta ${t.cartaEnviadaEm ? "mandada" : "ainda não mandada"}`}</p>
       ) : carga.estado === "pronto" ? (
         <p className="t-apoio">Carta à empresa anterior, o que falta receber, a planilha-modelo e a linha do tempo. Ao virar cliente, tudo segue para a implantação.</p>
       ) : null}
-      {carga.estado === "pronto" && (t || carga.dados.podeEditar) ? (
+      {carga.estado === "pronto" && !carga.dados.restrito && (t || carga.dados.podeEditar) ? (
         <Link href={TELAS_CLIENTE.troca(f.id)} className={classeBotao("contorno", "justify-self-start")}><Icone nome="trocar" />{t ? "Abrir a troca de sistema" : "Preparar a troca de sistema"}</Link>
       ) : null}
     </Cartao>
@@ -369,7 +380,7 @@ export function FichaInteressado() {
             </Cartao>
           ) : null}
           {!f.anonimizado ? <CartaoProposta f={f} /> : null}
-          {!f.anonimizado && (!fechado || f.etapa === "GANHO") ? <CartaoVirarCliente f={f} criado={criado} abrir={() => setJanela({ tipo: "virarCliente" })} /> : null}
+          {!f.anonimizado && (!fechado || f.etapa === "GANHO") ? <CartaoContrato f={f} criado={criado} abrir={() => setJanela({ tipo: "virarCliente" })} /> : null}
           {!f.anonimizado ? (
             <CartaoPiloto key={`piloto-${vez}`} f={f} abrir={() => setJanela({ tipo: "piloto" })}
               encerrar={(piloto, podePerder) => setJanela({ tipo: "encerrarPiloto", piloto, podePerder })} />

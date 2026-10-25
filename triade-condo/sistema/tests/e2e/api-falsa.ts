@@ -7,6 +7,7 @@ import { criarPlanosConsole, rotasPlanosConsole } from "./api-falsa-console-plan
 import { criarPrecosConsole, rotasPrecosConsole } from "./api-falsa-console-precos";
 import { criarRetencaoConsole, rotasRetencaoConsole } from "./api-falsa-console-retencao";
 import { criarComercialConsole, rotasComercialConsole, rotasPublicasPropostas } from "./api-falsa-console-comercial";
+import { rotasArquivoComercial, rotasPublicasContrato } from "./api-falsa-console-contrato";
 import { andamentoConfiguracao, criarConfiguracaoConsole, rotasConfiguracaoConsole } from "./api-falsa-console-configuracao";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -192,6 +193,9 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     const url = new URL(req.url());
     const caminho = url.pathname.replace(/^\/api/, "");
     const metodo = req.method();
+    // O "armazenamento" do Comercial (0308) recebe o PDF em binário: atende antes de ler o corpo como JSON.
+    const arquivo = await rotasArquivoComercial(route, comercial, caminho, metodo);
+    if (arquivo !== null) return arquivo;
     const corpo = req.postData() ? JSON.parse(req.postData()!) : {};
 
     if (caminho === "/v1/auth/entrar") {
@@ -222,6 +226,8 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     // O link da proposta (0304) abre sem sessão.
     const publico = await rotasPublicasPropostas(route, comercial, caminho, metodo, corpo);
     if (publico !== null) return publico;
+    const publicoContrato = await rotasPublicasContrato(route, comercial, caminho, metodo, corpo);
+    if (publicoContrato !== null) return publicoContrato;
 
     if (!estado.logado) return erro(route, 401, "UNAUTHORIZED");
 
