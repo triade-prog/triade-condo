@@ -129,7 +129,7 @@ import {
   virarClienteSchema,
 } from "@triade/domain";
 import { type Armazenamento, verificarArquivo } from "../_shared/arquivos.ts";
-import { conferirAssinatura, gerarPdfContrato, type RetratoContrato, sha256Bytes } from "./contrato.ts";
+import { type ConferenciaAssinatura, conferirAssinatura, gerarPdfContrato, type RetratoContrato, sha256Bytes } from "./contrato.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { registrar } from "../_shared/registro.ts";
 import { criarApp } from "../_shared/app.ts";
@@ -1210,6 +1210,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     tipo: a.tipo,
     expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString(),
   });
+  type EnvioAVerificar = { caminho: string; baseCaminho: string | null; baseSha256: string; baseTamanho: number };
   const envioPut = async (r: { caminho: string; tipo: string }) => ({ url: await contratos().linkEnvio(r.caminho), metodo: "PUT", tipo: r.tipo });
   const dadosDocumento = (d: { tipo: string; nome: string; tamanho: number; cnpj: string | null; mandatoAte: string | null }) =>
     ({ tipo: d.tipo, nome: d.nome, tamanho: d.tamanho, cnpj: d.cnpj, mandatoAte: d.mandatoAte });
@@ -1224,9 +1225,19 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return { ...(fim as Record<string, unknown>), motivoTexto: r.motivo };
   }
 
-  /** Confere o PDF assinado contra a base; o que vem sem assinatura nova é apagado. */
-  async function verificarEnvio(a: { caminho: string; baseTamanho: number }, gravar: (resultado: unknown) => Promise<{ apagarArquivo?: boolean }>) {
-    const resultado = await conferirAssinatura(await contratos().ler(a.caminho), a.baseTamanho);
+  /**
+   * Confere o PDF assinado contra a base que o banco aponta (o PDF gerado ou o arquivo conferido do
+   * condomínio), lida do armazenamento e conferida pelo resumo; o que vem sem assinatura nova é apagado.
+   */
+  async function verificarEnvio(a: EnvioAVerificar, gravar: (resultado: unknown) => Promise<{ apagarArquivo?: boolean }>) {
+    let resultado: ConferenciaAssinatura;
+    if (!a.baseCaminho) {
+      resultado = { valido: false, motivo: "O contrato mudou. Baixe o novo, assine pelo gov.br e envie de novo." };
+    } else {
+      const base = await contratos().ler(a.baseCaminho);
+      if (!base || base.length !== a.baseTamanho || (await sha256Bytes(base)) !== a.baseSha256) throw new ErroDominio("INTERNAL_ERROR");
+      resultado = await conferirAssinatura(await contratos().ler(a.caminho), base);
+    }
     const fim = await gravar(resultado);
     if (fim.apagarArquivo) await contratos().apagar(a.caminho);
     return fim;
@@ -1304,7 +1315,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   });
   app.post("/v1/comercial/envios/:id/verificar", async (c) => {
     const ids = { p_pessoa: pessoa(c), p_envio: idDaRota(c, "id") };
-    const a = await rpc<{ caminho: string; baseTamanho: number }>("comercial_envio_a_verificar", ids);
+    const a = await rpc<EnvioAVerificar>("comercial_envio_a_verificar", ids);
     return c.json(await verificarEnvio(a, (resultado) => rpc("comercial_verificar_envio", { ...ids, p_resultado: resultado })));
   });
   // Conferir no validador (quadro 442): as três marcas são obrigatórias.
@@ -1448,7 +1459,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const codigo = codigoProposta(c);
     const id = idDaRota(c, "id");
     await dentroDoLimite("contrato", await aparelho(c));
-    const a = await rpc<{ caminho: string; baseTamanho: number }>("publico_envio_a_verificar", { p_codigo: codigo, p_id: id });
+    const a = await rpc<EnvioAVerificar>("publico_envio_a_verificar", { p_codigo: codigo, p_id: id });
     return c.json(await verificarEnvio(a, (resultado) => rpc("publico_verificar_envio", { p_codigo: codigo, p_id: id, p_resultado: resultado })));
   });
 

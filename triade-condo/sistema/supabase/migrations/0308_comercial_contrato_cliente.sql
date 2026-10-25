@@ -7,11 +7,15 @@
 -- 1. Assinatura pelo gov.br (assinador.iti.br), sem API. Cada parte assina o mesmo PDF, nesta ordem:
 --    primeiro o condomínio, depois a TRÍADE sobre o arquivo que o condomínio já assinou e que a
 --    equipe conferiu. O PDF final é o envio da TRÍADE, com as duas assinaturas.
--- 2. O servidor (api-console) confere sozinho cada PDF enviado: se tem assinatura (dicionário /Sig
---    com /ByteRange, mais assinaturas que a base) e se os primeiros N bytes têm o sha256 da base
---    (o PDF gerado, para o condomínio; o arquivo conferido do condomínio, para a TRÍADE). Sem
---    assinatura: recusado na hora e o arquivo é apagado. Com assinatura sobre outro conteúdo (o
---    assinador regravou ou trocou página): guardado, não conta, e pede de novo (quadro 444).
+-- 2. O servidor (api-console) confere sozinho cada PDF enviado contra a base (o PDF gerado, para o
+--    condomínio; o arquivo conferido do condomínio, para a TRÍADE), que lê do armazenamento: se tem
+--    assinatura nova (um dicionário /Sig de verdade, com o /ByteRange cobrindo além da base), se os
+--    primeiros N bytes têm o sha256 da base e se a parte acrescentada só traz a assinatura (o campo,
+--    o widget pequeno, o AcroForm, o catálogo e a página mudando só as /Annots; o conteúdo e os
+--    recursos de cada página iguais aos da base; o /ByteRange cobrindo o arquivo inteiro). Sem
+--    assinatura nova: recusado na hora e o arquivo é apagado. Com assinatura sobre outro conteúdo (o
+--    assinador regravou, trocou página ou acrescentou outra coisa): guardado, não conta, e pede de
+--    novo (quadro 444).
 -- 3. A equipe confere no validar.iti.gov.br as três marcas obrigatórias do quadro 442 (assinatura
 --    válida, quem assinou é a pessoa do aceite, data depois da geração). Fica quem conferiu, quando,
 --    o nome e o CPF mascarado de quem assinou, ou o motivo da recusa.
@@ -37,10 +41,34 @@
 -- 10. Vários condomínios (CM-09): uma oportunidade nova com o mesmo contato, cada uma com o seu
 --    condomínio, etapa e proposta. O contrato-quadro com desconto por volume fica pendente.
 -- 11. LGPD: documentos e PDFs entram no catálogo de retenção (35 e 36). Anonimizar quem não virou
---    cliente apaga os arquivos; de quem virou cliente fica o contrato assinado pelo prazo legal. O CPF
---    conferido fica só mascarado.
+--    cliente apaga os arquivos (também os do contrato assinado e os envios conferidos) e os contatos
+--    e o CNPJ do condomínio do piloto; de quem virou cliente fica o contrato assinado pelo prazo
+--    legal. O CPF conferido fica só mascarado, e o CPF de quem representa o condomínio sai mascarado
+--    em toda leitura (inteiro só no PDF).
+-- 12. Revisão independente do 3f3902a (25/10/2026), antes de aplicar:
+--    - virar cliente depois de um piloto perdido reaproveita o condomínio (Piloto encerrado →
+--      Implantação); começar um segundo piloto do mesmo interessado é recusado;
+--    - a primeira cobrança segue o contrato: a implantação em N parcelas mensais (cobrancas.parcela;
+--      o índice único de uma implantação por cliente vira um por parcela) e a competência e o
+--      vencimento a partir da data de início do contrato;
+--    - depois de virar cliente, o Comercial não vê mais os dados do condomínio no contrato, na troca
+--      e no piloto (a Administração continua vendo);
+--    - documento conferido depois do contrato assinado ou de virar cliente é recusado; um só
+--      recebido de cada tipo; o interessado é travado na conferência;
+--    - fechar (perdido, sem resposta) ou anonimizar o interessado encerra o piloto e leva o
+--      condomínio a Piloto encerrado (feito pela Administração do condomínio, marcado como do
+--      sistema, porque a carteira só muda com alguém da equipe no condomínio); anonimizar tira os
+--      contatos e o CNPJ do condomínio do piloto que não virou cliente;
+--    - anonimizar apaga também os envios conferidos de um contrato que não virou cliente (ou que
+--      ainda aguarda a TRÍADE) e manda à fila todos os arquivos, mesmo os de linhas já apagadas;
+--    - até contrato_envios_abertos_max (3) envios em aberto por interessado; uma rotina diária
+--      (comercial_limpar_envios_abertos, 3h47) recusa os que ficaram enviando mais de um dia e manda
+--      os arquivos para a fila de apagar;
+--    - a conferência e o recusar travam sempre o contrato antes do envio (como gerar de novo);
+--    - o CPF de quem representa sai mascarado em toda leitura; inteiro só no retrato do PDF.
 --
--- Nada aqui apaga linha nem remove função (o conector do Supabase trava nesses comandos).
+-- Nada aqui apaga linha nem remove função (o conector do Supabase trava nesses comandos). Sai só o
+-- índice cobrancas_implantacao_unica (0291), trocado pelo de uma implantação por parcela.
 
 -- ---------------------------------------------------------------------------------------
 -- Quem pode o quê, parâmetros, catálogo de retenção e o armazenamento.
@@ -52,7 +80,8 @@ insert into funcao_acoes (funcao, acao) values
 insert into configuracoes (chave, valor, descricao) values
   ('contrato_link_dias', '60', 'Dias depois do aceite em que o link da proposta recebe os documentos e o contrato'),
   ('limite_contrato_max', '20', 'Envios de arquivo pelo link da proposta pelo mesmo aparelho dentro da janela'),
-  ('limite_contrato_janela_minutos', '60', 'Janela dos envios de arquivo pelo link da proposta');
+  ('limite_contrato_janela_minutos', '60', 'Janela dos envios de arquivo pelo link da proposta'),
+  ('contrato_envios_abertos_max', '3', 'Envios de arquivo em aberto (enviando, nas 2 horas do link de envio) por interessado');
 
 insert into retencao_tipos (numero, codigo, sistema, grupo, nome, o_que, para_que, base, quem, prazo, no_fim, situacao) values
  (35, 'COMERCIAL_ARQUIVO', 'CONSOLE', 'Console TRÍADE', 'Documentos e contratos do Comercial', 'CNPJ, ata, contrato gerado e PDFs assinados',
@@ -121,6 +150,17 @@ create function comercial_cpf_mascarado(p text) returns text
 language sql immutable
 set search_path = public
 as $$ select case when p ~ '^[0-9]{11}$' then '***.' || substr(p, 4, 3) || '.' || substr(p, 7, 3) || '-**' end $$;
+
+-- Os campos do contrato para ler (tela e ficha): o CPF de quem representa sai mascarado; inteiro só
+-- no retrato que monta o PDF.
+create function comercial_campos_leitura(p jsonb) returns jsonb
+language sql immutable
+set search_path = public
+as $$
+  select case when p ? 'cpf_representante'
+              then p || jsonb_build_object('cpf_representante', comercial_cpf_mascarado(regexp_replace(p ->> 'cpf_representante', '[^0-9]', '', 'g')))
+              else p end
+$$;
 
 -- Centavos em reais, como o contrato escreve: R$ 1.234,56.
 create function comercial_reais(p bigint) returns text
@@ -244,6 +284,13 @@ begin
 end $$;
 create trigger interessados_contato_fixo before update of contato_de, condominio_id, virou_cliente_em on interessados
   for each row execute function interessados_contato_fixo();
+
+-- Depois de virar cliente, o Comercial deixa de ver os dados do condomínio (CM-11); a
+-- Administração, que atende o cliente, continua vendo.
+create function comercial_ve_cliente(i interessados) returns boolean
+language sql stable
+set search_path = public
+as $$ select i.virou_cliente_em is null or pode_global('console.comercial.cliente') $$;
 
 -- Entrar num cliente para mexer na carteira: a Administração que ainda não o atende passa a atender
 -- (o piloto pode ter sido aberto por outra pessoa). Só depois de conferida a ação global.
@@ -635,6 +682,8 @@ create table documentos_aceite (
   check ((situacao = 'APAGADO') = (apagado_em is not null) or (situacao = 'RECEBIDO' and apagado_em is null))
 );
 create index documentos_aceite_interessado on documentos_aceite (interessado_id, tipo, enviado_em desc);
+-- Um só recebido de cada tipo (duas conferências ao mesmo tempo não deixam dois).
+create unique index documentos_aceite_um_recebido on documentos_aceite (interessado_id, tipo) where situacao = 'RECEBIDO';
 call proteger_tabela_comercial('documentos_aceite', 'console.comercial.editar',
   'Documentos enviados depois do aceite (CNPJ e atas), pelo link ou pela equipe; o arquivo fica no bucket comercial');
 create trigger documentos_aceite_sem_exclusao before delete on documentos_aceite for each row execute function somente_insercao();
@@ -711,6 +760,22 @@ as $$
    where v.id = a.versao_id
 $$;
 
+-- Envios em aberto (o link de envio do armazenamento vale 2 horas): até contrato_envios_abertos_max
+-- por interessado, somando documentos e PDFs assinados, para ninguém encher o armazenamento.
+create function comercial_exigir_envios_abertos(p_interessado uuid) returns void
+language plpgsql
+set search_path = public
+as $$
+begin
+  if (select count(*) from documentos_aceite where interessado_id = p_interessado and situacao = 'ENVIANDO'
+                                              and enviado_em > app_now() - interval '2 hours')
+     + (select count(*) from envios_contrato where interessado_id = p_interessado and situacao = 'ENVIANDO'
+                                              and enviado_em > app_now() - interval '2 hours')
+     >= configuracao_int('contrato_envios_abertos_max') then
+    perform recusar_motivo('Há envios em aberto; termine os que começou ou espere duas horas', 'ENVIOS_EM_ABERTO');
+  end if;
+end $$;
+
 -- Começar o envio: grava o pedido e devolve o caminho; o navegador manda o arquivo direto ao
 -- armazenamento e a API confere o conteúdo antes de valer.
 create function comercial_documento_iniciar(i interessados, a aceites_proposta, p_dados jsonb, p_pelo_link boolean, p_ip text, p_pessoa uuid)
@@ -733,9 +798,11 @@ begin
   if v_tipo = 'CNPJ' and not cnpj_valido(v_cnpj) then perform recusar_campos('CNPJ inválido', 'cnpj'); end if;
   if v_tipo = 'ATA_ELEICAO' and v_mandato is null then perform recusar_campos('Diga até quando vai o mandato', 'mandatoAte'); end if;
   if v_tipo = 'ATA_ELEICAO' and v_mandato < comercial_hoje() then perform recusar_campos('O mandato informado já acabou; envie a ata da eleição atual', 'mandatoAte'); end if;
+  if i.virou_cliente_em is not null then perform recusar_motivo('Este interessado já virou cliente', 'VIROU_CLIENTE'); end if;
   if exists (select 1 from contratos_comercial where interessado_id = i.id and situacao = 'ASSINADO') then
     perform recusar_motivo('O contrato já foi assinado pelos dois', 'CONTRATO_ASSINADO');
   end if;
+  perform comercial_exigir_envios_abertos(i.id);
   insert into documentos_aceite (id, interessado_id, aceite_id, tipo, nome, caminho, cnpj, mandato_ate, pelo_link, ip, enviado_por)
   values (v_id, i.id, a.id, v_tipo, v_nome, v_caminho, case when v_tipo = 'CNPJ' then v_cnpj end, case when v_tipo = 'ATA_ELEICAO' then v_mandato end,
           p_pelo_link, case when p_pelo_link and length(p_ip) between 3 and 45 then p_ip end, p_pessoa);
@@ -743,7 +810,9 @@ begin
 end $$;
 
 -- A API conferiu o conteúdo: recebido (o anterior do mesmo tipo fica substituído e o arquivo dele
--- vai para a fila de apagar) ou recusado com o motivo.
+-- vai para a fila de apagar) ou recusado com o motivo. Quem chama já travou o interessado e o
+-- documento, nessa ordem. Depois do contrato assinado ou de virar cliente, nada substitui o
+-- documento que o contrato usou: o envio é recusado e o arquivo vai para a fila de apagar.
 create function comercial_documento_verificado(d documentos_aceite, p_liberado boolean, p_tamanho bigint, p_sha256 text, p_motivo text)
 returns jsonb
 language plpgsql
@@ -751,9 +820,22 @@ set search_path = public
 as $$
 declare
   r record;
+  i interessados;
   v_nomes jsonb := '{"CNPJ": "Cartão do CNPJ", "ATA_ELEICAO": "Ata da eleição", "ATA_APROVACAO": "Ata de aprovação"}';
+  v_tarde text;
 begin
   if d.situacao <> 'ENVIANDO' then perform recusar_motivo('Este envio já foi conferido', 'ENVIO_CONFERIDO'); end if;
+  select * into i from interessados where id = d.interessado_id;
+  v_tarde := case when i.anonimizado_em is not null then 'Os dados deste interessado foram apagados; o documento não foi guardado.'
+                  when i.virou_cliente_em is not null then 'O condomínio já é cliente; o documento não foi guardado.'
+                  when exists (select 1 from contratos_comercial where interessado_id = i.id and situacao = 'ASSINADO')
+                    then 'O contrato já foi assinado pelos dois; o documento não foi guardado.' end;
+  if v_tarde is not null then
+    update documentos_aceite set situacao = 'RECUSADO', motivo_recusa = v_tarde where id = d.id returning * into d;
+    perform enfileirar_arquivo('comercial', d.caminho, 'COMERCIAL_SUBSTITUIDO');
+    perform comercial_historico('comercial.documento', 'documento_aceite', d.id::text, jsonb_build_object('tipo', d.tipo, 'situacao', d.situacao));
+    return documento_aceite_json(d, false);
+  end if;
   if p_liberado then
     if coalesce(p_sha256, '') !~ '^[0-9a-f]{64}$' or p_tamanho is null or p_tamanho not between 1 and 10485760 then
       perform recusar_campos('Conferência sem o resumo ou o tamanho', 'sha256', 'tamanho');
@@ -982,7 +1064,7 @@ as $$
     'finalDisponivel', c.situacao = 'ASSINADO'))
   || case when p_interno then jsonb_strip_nulls(jsonb_build_object(
        'versao', c.versao, 'pdfSha256', c.pdf_sha256, 'pdfTamanho', c.pdf_tamanho, 'geradoPor', comercial_pessoa_json(c.gerado_por),
-       'campos', c.dados -> 'campos', 'substituidoEm', c.substituido_em, 'substituidoMotivo', c.substituido_motivo,
+       'campos', comercial_campos_leitura(c.dados -> 'campos'), 'substituidoEm', c.substituido_em, 'substituidoMotivo', c.substituido_motivo,
        'substituidoPor', comercial_pessoa_json(c.substituido_por), 'anonimizado', c.anonimizado_em is not null))
           else '{}'::jsonb end
 $$;
@@ -1036,7 +1118,10 @@ begin
     'modelo', jsonb_build_object('numero', m.numero, 'advogado', m.advogado_nome, 'oab', m.advogado_oab, 'revisadoEm', m.revisado_em),
     'proposta', jsonb_build_object('numero', v.numero, 'hash', v.hash, 'aceitaEm', a.aceito_em),
     'geradoEm', to_char(app_now() at time zone 'America/Sao_Paulo', 'YYYY-MM-DD"T"HH24:MI:SS"-03:00"'),
-    'dataInicio', p_data_inicio);
+    'dataInicio', p_data_inicio,
+    -- As parcelas da implantação que o contrato promete (virar cliente cobra assim).
+    'implantacaoParcelas', case when v.implantacao_sem_custo or v.implantacao_centavos is null then null
+                                else coalesce(v.implantacao_parcelas, pp.parcelas_implantacao) end);
 end $$;
 
 -- O que impede gerar, na ordem em que a tela mostra (quadros 336 e 444).
@@ -1174,15 +1259,32 @@ begin
   if p_parte = 'TRIADE' then
     select * into e_base from envios_contrato where contrato_id = c.id and parte = 'CONDOMINIO' and situacao = 'CONFERIDO';
   end if;
+  perform comercial_exigir_envios_abertos(c.interessado_id);
   insert into envios_contrato (id, contrato_id, interessado_id, parte, nome, caminho, pelo_link, ip, enviado_por, base_sha256, base_tamanho, base_assinaturas)
   values (v_id, c.id, c.interessado_id, p_parte, v_nome, v_caminho, p_pelo_link, case when p_pelo_link and length(p_ip) between 3 and 45 then p_ip end,
           p_pessoa, coalesce(e_base.sha256, c.pdf_sha256), coalesce(e_base.tamanho, c.pdf_tamanho), coalesce(e_base.assinaturas, 0));
   return jsonb_build_object('envioId', v_id, 'caminho', v_caminho, 'tipo', 'application/pdf');
 end $$;
 
+-- A base que a API lê para conferir o envio: o PDF gerado (condomínio) ou o envio conferido do
+-- condomínio (TRÍADE), com o resumo e o tamanho que o banco guardou. Sem base (o contrato foi gerado
+-- de novo), a API manda o envio como inválido e a conferência o dá por substituído.
+create function comercial_envio_base(e envios_contrato) returns jsonb
+language sql stable
+set search_path = public
+as $$
+  select jsonb_build_object('caminho', e.caminho, 'tipo', 'application/pdf', 'baseTamanho', e.base_tamanho, 'baseSha256', e.base_sha256,
+    'baseCaminho', case e.parte
+      when 'CONDOMINIO' then (select c.caminho from contratos_comercial c where c.id = e.contrato_id and c.pdf_sha256 = e.base_sha256)
+      else (select x.caminho from envios_contrato x where x.contrato_id = e.contrato_id and x.parte = 'CONDOMINIO' and x.situacao = 'CONFERIDO'
+                                                     and x.sha256 = e.base_sha256 and x.apagado_em is null) end)
+$$;
+
 -- A conferência automática feita pela API: {valido, motivo, sha256, tamanho, assinaturas,
--- prefixoSha256}. Sem assinatura nova: recusado na hora (a API apaga o arquivo). Assinado sobre
--- outro conteúdo: guardado, não conta. Senão, fica para a equipe conferir.
+-- assinaturaNova, soAssinatura, prefixoSha256}. Sem assinatura nova (um /Sig de verdade que cobre
+-- além da base): recusado na hora (a API apaga o arquivo). Assinado sobre outro conteúdo (o começo
+-- não é a base, ou a parte acrescentada traz mais que a assinatura, ou falta a resposta): guardado,
+-- não conta. Senão, fica para a equipe conferir. Quem chama já travou o contrato e o envio, nessa ordem.
 create function comercial_envio_verificado(e envios_contrato, p_res jsonb) returns jsonb
 language plpgsql
 set search_path = public
@@ -1191,6 +1293,8 @@ declare
   c contratos_comercial;
   v_valido boolean := coalesce((p_res ->> 'valido')::boolean, false);
   v_assinaturas bigint := comercial_inteiro(p_res, 'assinaturas');
+  v_nova boolean := coalesce((p_res ->> 'assinaturaNova')::boolean, false);
+  v_so boolean := coalesce((p_res ->> 'soAssinatura')::boolean, false);
   v_tamanho bigint := comercial_inteiro(p_res, 'tamanho');
   v_sha text := p_res ->> 'sha256';
   v_prefixo text := p_res ->> 'prefixoSha256';
@@ -1209,12 +1313,12 @@ begin
   if v_valido and (v_sha is null or v_sha !~ '^[0-9a-f]{64}$' or v_tamanho is null or v_tamanho not between 1 and 10485760 or v_assinaturas is null) then
     perform recusar_campos('Conferência incompleta', 'sha256', 'tamanho', 'assinaturas');
   end if;
-  v_gerado := v_valido and v_tamanho > e.base_tamanho and v_prefixo = e.base_sha256;
+  v_gerado := coalesce(v_valido and v_tamanho > e.base_tamanho and v_prefixo = e.base_sha256 and v_so, false);
   if not v_valido then
     v_situacao := 'RECUSADO_NA_HORA';
     v_motivo := 'ARQUIVO_INVALIDO';
     v_texto := left(coalesce(nullif(btrim(p_res ->> 'motivo'), ''), 'O arquivo não é um PDF que dá para conferir.'), 300);
-  elsif v_assinaturas <= e.base_assinaturas then
+  elsif not v_nova or v_assinaturas <= e.base_assinaturas then
     v_situacao := 'RECUSADO_NA_HORA';
     v_motivo := 'SEM_ASSINATURA';
     v_texto := 'O PDF enviado não tem assinatura digital nova. Assine pelo gov.br e envie o arquivo que ele devolver.';
@@ -1244,6 +1348,23 @@ begin
   return envio_contrato_json(e, false) || jsonb_build_object('apagarArquivo', v_situacao = 'RECUSADO_NA_HORA');
 end $$;
 
+-- O envio, com o contrato travado antes (gerar de novo trava o contrato e depois os envios; travar
+-- na outra ordem dava impasse).
+create function comercial_travar_envio(p_envio uuid, p_interessado uuid, p_pelo_link boolean) returns envios_contrato
+language plpgsql
+set search_path = public
+as $$
+declare e envios_contrato;
+begin
+  perform 1 from contratos_comercial
+   where id = (select contrato_id from envios_contrato where id = p_envio and (p_interessado is null or interessado_id = p_interessado))
+     for update;
+  select * into e from envios_contrato where id = p_envio and (p_interessado is null or interessado_id = p_interessado)
+                                         and (not p_pelo_link or pelo_link) for update;
+  if not found then raise exception 'Envio não encontrado' using errcode = 'TC404'; end if;
+  return e;
+end $$;
+
 -- ---------------------------------------------------------------------------------------
 -- Contrato no Console (quadros 440 e 442).
 
@@ -1263,6 +1384,16 @@ begin
   a := comercial_aceite_do_interessado(i.id);
   c := comercial_contrato_vigente(i.id);
   v_motivo := comercial_motivo_sem_gerar(i);
+  if not comercial_ve_cliente(i) then
+    -- Virou cliente: o contrato fica na ficha do cliente; o Comercial vê só que foi assinado.
+    return jsonb_strip_nulls(jsonb_build_object(
+      'interessado', jsonb_build_object('id', i.id, 'versao', i.versao, 'condominio', i.condominio, 'etapa', i.etapa),
+      'documentos', '[]'::jsonb, 'faltam', '[]'::jsonb, 'envios', '[]'::jsonb, 'anteriores', '[]'::jsonb,
+      'contrato', case when c.id is not null then jsonb_strip_nulls(jsonb_build_object('id', c.id, 'numero', c.numero, 'situacao', c.situacao,
+                                                                                         'assinadoEm', c.assinado_em)) end,
+      'podeGerar', false, 'motivoSemGerar', v_motivo, 'podeConferir', false, 'podeAssinar', false, 'podeVirarCliente', false,
+      'virouClienteEm', i.virou_cliente_em, 'restrito', true));
+  end if;
   return jsonb_strip_nulls(jsonb_build_object(
     'interessado', jsonb_build_object('id', i.id, 'versao', i.versao, 'condominio', i.condominio, 'etapa', i.etapa),
     'aceite', case when a.id is not null then jsonb_strip_nulls(jsonb_build_object(
@@ -1377,6 +1508,8 @@ as $$
 declare d documentos_aceite;
 begin
   perform entrar_console(p_pessoa, 'console.comercial.editar');
+  -- O interessado antes do documento (a mesma ordem de gerar o contrato).
+  perform 1 from interessados where id = (select interessado_id from documentos_aceite where id = p_id) for update;
   select * into d from documentos_aceite where id = p_id for update;
   if not found then raise exception 'Documento não encontrado' using errcode = 'TC404'; end if;
   return comercial_documento_verificado(d, p_liberado, p_tamanho, p_sha256, p_motivo);
@@ -1456,7 +1589,7 @@ begin
   perform entrar_console(p_pessoa, 'console.comercial.editar');
   e := comercial_buscar_envio(p_envio);
   if e.situacao <> 'ENVIANDO' then perform recusar_motivo('Este envio já foi conferido', 'ENVIO_CONFERIDO'); end if;
-  return jsonb_build_object('caminho', e.caminho, 'tipo', 'application/pdf', 'baseTamanho', e.base_tamanho);
+  return comercial_envio_base(e);
 end $$;
 
 create function comercial_verificar_envio(p_pessoa uuid, p_envio uuid, p_resultado jsonb) returns jsonb
@@ -1467,8 +1600,7 @@ as $$
 declare e envios_contrato;
 begin
   perform entrar_console(p_pessoa, 'console.comercial.editar');
-  select * into e from envios_contrato where id = p_envio for update;
-  if not found then raise exception 'Envio não encontrado' using errcode = 'TC404'; end if;
+  e := comercial_travar_envio(p_envio, null, false);
   return comercial_envio_verificado(e, p_resultado);
 end $$;
 
@@ -1490,8 +1622,7 @@ declare
   v_obs text := comercial_texto(p_dados, 'observacao');
 begin
   perform entrar_console(p_pessoa, 'console.comercial.editar');
-  select * into e from envios_contrato where id = p_envio for update;
-  if not found then raise exception 'Envio não encontrado' using errcode = 'TC404'; end if;
+  e := comercial_travar_envio(p_envio, null, false);
   if e.versao <> p_versao then perform conflito_versao('envios_contrato', p_envio); end if;
   if e.situacao <> 'A_CONFERIR' then
     perform recusar_motivo('Só o envio que passou na conferência automática é conferido', 'ENVIO_NAO_CONFERIVEL');
@@ -1541,8 +1672,7 @@ as $$
 declare e envios_contrato;
 begin
   perform entrar_console(p_pessoa, 'console.comercial.editar');
-  select * into e from envios_contrato where id = p_envio for update;
-  if not found then raise exception 'Envio não encontrado' using errcode = 'TC404'; end if;
+  e := comercial_travar_envio(p_envio, null, false);
   if e.versao <> p_versao then perform conflito_versao('envios_contrato', p_envio); end if;
   if e.situacao not in ('A_CONFERIR', 'NAO_E_O_GERADO') then
     perform recusar_motivo('Só o envio que ainda não conta pode ser recusado', 'ENVIO_NAO_CONFERIVEL');
@@ -1586,10 +1716,12 @@ as $$
 begin
   if new.anonimizado_em is not null and old.anonimizado_em is null then
     perform comercial_revogar_links_interessado(new.id, 'Dados apagados (LGPD)', null);
+    perform comercial_fechar_piloto(new.id, 'Dados apagados (LGPD)');
   elsif new.etapa is distinct from old.etapa and new.etapa = 'GANHO' then
     perform comercial_revogar_links_sem_aceite(new.id, 'Interessado fechado', new.alterado_por);
   elsif new.etapa is distinct from old.etapa and not comercial_aberta(new.etapa) then
     perform comercial_revogar_links_interessado(new.id, 'Interessado fechado', new.alterado_por);
+    perform comercial_fechar_piloto(new.id, 'Interessado fechado sem virar cliente');
   end if;
   return null;
 end $$;
@@ -1677,6 +1809,8 @@ declare
   d documentos_aceite;
 begin
   a := publico_aceite_do_link(p_codigo);
+  -- O interessado antes do documento (a mesma ordem de gerar o contrato).
+  perform 1 from interessados where id = (comercial_interessado_do_aceite(a)).id for update;
   select * into d from documentos_aceite where id = p_id and interessado_id = (comercial_interessado_do_aceite(a)).id and pelo_link for update;
   if not found then raise exception 'Documento não encontrado' using errcode = 'TC404'; end if;
   return d;
@@ -1766,14 +1900,10 @@ create function publico_envio_do_link(p_codigo text, p_id uuid) returns envios_c
 language plpgsql
 set search_path = public
 as $$
-declare
-  a aceites_proposta;
-  e envios_contrato;
+declare a aceites_proposta;
 begin
   a := publico_aceite_do_link(p_codigo);
-  select * into e from envios_contrato where id = p_id and interessado_id = (comercial_interessado_do_aceite(a)).id and pelo_link for update;
-  if not found then raise exception 'Envio não encontrado' using errcode = 'TC404'; end if;
-  return e;
+  return comercial_travar_envio(p_id, (comercial_interessado_do_aceite(a)).id, true);
 end $$;
 
 create function publico_envio_a_verificar(p_codigo text, p_id uuid) returns jsonb
@@ -1781,14 +1911,18 @@ language plpgsql
 security definer
 set search_path = public
 as $$
-declare e envios_contrato;
+declare
+  e envios_contrato;
+  v jsonb;
 begin
   perform limpar_contexto();
   perform set_config('app.comercial_sistema', 'on', true);
   e := publico_envio_do_link(p_codigo, p_id);
   if e.situacao <> 'ENVIANDO' then perform recusar_motivo('Este envio já foi conferido', 'ENVIO_CONFERIDO'); end if;
+  -- A base é lida ainda como o sistema (sem ele, a RLS esconde o contrato do link).
+  v := comercial_envio_base(e);
   perform set_config('app.comercial_sistema', '', true);
-  return jsonb_build_object('caminho', e.caminho, 'tipo', 'application/pdf', 'baseTamanho', e.base_tamanho);
+  return v;
 end $$;
 
 create function publico_verificar_envio(p_codigo text, p_id uuid, p_resultado jsonb) returns jsonb
@@ -1908,6 +2042,13 @@ begin
   perform entrar_console(p_pessoa, 'console.comercial.ver');
   i := comercial_buscar(p_interessado);
   select * into t from trocas_sistema where interessado_id = i.id;
+  if not comercial_ve_cliente(i) then
+    -- Virou cliente: a troca segue na implantação; o Comercial vê só que ela existe.
+    return jsonb_strip_nulls(jsonb_build_object(
+      'troca', case when t.id is not null then jsonb_build_object('id', t.id, 'naImplantacao', true) end,
+      'itensPadrao', troca_itens_padrao(), 'sistemaAtual', i.sistema_atual, 'administradora', i.administradora,
+      'podeEditar', false, 'restrito', true));
+  end if;
   return jsonb_strip_nulls(jsonb_build_object(
     'troca', case when t.id is not null then troca_sistema_json(t) end,
     'itensPadrao', troca_itens_padrao(),
@@ -2105,6 +2246,12 @@ begin
   if exists (select 1 from pilotos_comercial where interessado_id = i.id and situacao in ('EM_ANDAMENTO', 'VIROU_PROPOSTA')) then
     perform recusar_motivo('Este interessado já tem um piloto', 'PILOTO_EXISTE');
   end if;
+  -- Um piloto por interessado: o condomínio do piloto perdido continua na carteira (Piloto
+  -- encerrado) e é ele que vira cliente se o contrato sair.
+  if i.condominio_id is not null then
+    perform recusar_motivo('Este interessado já teve um piloto; o condomínio continua na carteira como Piloto encerrado e vira cliente com o contrato',
+                           'PILOTO_JA_FEITO');
+  end if;
   if v_prazo is null or v_prazo not in (30, 45, 60) then perform recusar_campos('O prazo é de 30, 45 ou 60 dias', 'prazoDias'); end if;
   if v_comeca is null or v_comeca < comercial_hoje() or v_comeca > comercial_hoje() + 60 then
     perform recusar_campos('O piloto começa de hoje a 60 dias', 'comecaEm');
@@ -2149,13 +2296,20 @@ security definer
 set search_path = public
 as $$
 declare
+  i interessados;
   p pilotos_comercial;
   v_medida jsonb;
 begin
   perform entrar_console(p_pessoa, 'console.comercial.ver');
-  perform comercial_buscar(p_interessado);
+  i := comercial_buscar(p_interessado);
   p := comercial_piloto_atual(p_interessado);
-  if p.id is null then return jsonb_build_object('piloto', null, 'podeComecar', pode_global('console.comercial.cliente')); end if;
+  if p.id is null then
+    return jsonb_build_object('piloto', null, 'podeComecar', pode_global('console.comercial.cliente') and i.condominio_id is null);
+  end if;
+  if not comercial_ve_cliente(i) then
+    -- Virou cliente: a medida vem da operação do condomínio, que o Comercial não vê mais.
+    return jsonb_build_object('piloto', piloto_comercial_json(p, false) - 'resultado', 'podeEncerrar', false, 'podeComecar', false, 'restrito', true);
+  end if;
   if p.situacao = 'EM_ANDAMENTO' then
     v_medida := comercial_piloto_medir(p);
     perform definir_pessoa(p_pessoa);
@@ -2163,6 +2317,69 @@ begin
   return jsonb_build_object('piloto', piloto_comercial_json(p, true) || jsonb_strip_nulls(jsonb_build_object('medida', v_medida)),
                             'podeEncerrar', pode_global('console.comercial.editar') and p.situacao = 'EM_ANDAMENTO',
                             'podeComecar', false);
+end $$;
+
+-- O interessado fechou (perdido, sem resposta) ou foi anonimizado sem virar cliente: o piloto aberto
+-- termina como perdido e o condomínio vai a Piloto encerrado (antes ficava Em piloto, sem cobrança,
+-- para sempre). Vale também para o piloto que já virou proposta. Chamado pelo gatilho do
+-- interessado. A carteira é da equipe (RLS e histórico interno pedem alguém da equipe no
+-- condomínio): a mudança é feita pela Administração do condomínio (quem fechou, se for da
+-- Administração; senão quem começou o piloto; senão quem atende o cliente), marcada como do sistema
+-- e com o motivo. O contexto volta ao de quem chamou.
+create function comercial_fechar_piloto(p_interessado uuid, p_motivo text) returns void
+language plpgsql
+set search_path = public
+as $$
+declare
+  i interessados;
+  p pilotos_comercial;
+  v_pessoa uuid := contexto_pessoa();
+  v_antes text := coalesce(current_setting('app.comercial_sistema', true), '');
+  v_candidatos uuid[];
+  v_adm uuid;
+  v_mudou integer := 0;
+  v_entrou boolean := false;
+begin
+  select * into i from interessados where id = p_interessado;
+  if i.condominio_id is null or i.virou_cliente_em is not null then return; end if;
+  perform set_config('app.comercial_sistema', 'on', true);
+  for p in update pilotos_comercial
+              set situacao = 'PERDIDO', encerrado_em = coalesce(encerrado_em, app_now()), encerrado_por = coalesce(encerrado_por, v_pessoa),
+                  motivo_perda = case when i.motivo_perda is not null then i.motivo_perda when i.etapa = 'SEM_RESPOSTA' then 'NAO_RESPONDEU' else 'OUTRO' end
+            where interessado_id = i.id and situacao in ('EM_ANDAMENTO', 'VIROU_PROPOSTA')
+            returning * loop
+    perform comercial_historico('comercial.piloto', 'piloto_comercial', p.id::text,
+      jsonb_build_object('situacao', p.situacao, 'motivoPerda', p.motivo_perda, 'porque', p_motivo));
+  end loop;
+  perform entrar_como_sistema(i.condominio_id);
+  select array_agg(x.id order by x.ordem, x.desde) into v_candidatos from (
+    select v_pessoa as id, 0 as ordem, null::timestamptz as desde
+    union all select criado_por, 1, criado_em from pilotos_comercial where interessado_id = i.id
+    union all select pessoa_id, 2, criado_em from vinculos where condominio_id = i.condominio_id and funcao = 'ADMINISTRACAO' and revogado_em is null) x
+   where x.id is not null;
+  foreach v_adm in array coalesce(v_candidatos, '{}') loop
+    begin
+      perform comercial_entrar_cliente(v_adm, i.condominio_id, 'console.estagio.mudar');
+      v_entrou := true;
+    exception when sqlstate 'TC401' or sqlstate 'TC422' then
+      -- Não é (mais) da Administração: tenta o próximo.
+      perform entrar_como_sistema(i.condominio_id);
+    end;
+    exit when v_entrou;
+  end loop;
+  if v_entrou then
+    perform definir_transicao('PILOTO_ENCERRADO', p_motivo, true);
+    update clientes set estado = 'PILOTO_ENCERRADO' where condominio_id = i.condominio_id and estado = 'PILOTO';
+    get diagnostics v_mudou = row_count;
+  end if;
+  if v_pessoa is not null then perform definir_pessoa(v_pessoa); else perform entrar_como_sistema(null); end if;
+  if v_mudou > 0 then
+    perform comercial_inserir_conversa(i.id, 'NOTA', 'Piloto encerrado: o condomínio ficou na carteira como Piloto encerrado.', false, null, null);
+  elsif not v_entrou then
+    perform comercial_inserir_conversa(i.id, 'NOTA',
+      'Piloto encerrado, mas ninguém da Administração atende o condomínio: passe-o a Piloto encerrado na carteira.', false, null, null);
+  end if;
+  perform set_config('app.comercial_sistema', v_antes, true);
 end $$;
 
 -- Terminar o piloto: vira proposta (o condomínio fica em piloto até virar cliente) ou perdido com
@@ -2203,6 +2420,10 @@ begin
   perform registrar_historico_interno('comercial.piloto', 'piloto_comercial', p.id::text,
     jsonb_strip_nulls(jsonb_build_object('situacao', p.situacao, 'motivoPerda', p.motivo_perda)));
   if v_resultado = 'PERDIDO' then
+    perform comercial_entrar_cliente(p_pessoa, p.condominio_id, 'console.estagio.mudar');
+    perform definir_transicao('PILOTO_ENCERRADO', 'Piloto terminou sem fechar');
+    update clientes set estado = 'PILOTO_ENCERRADO' where condominio_id = p.condominio_id and estado = 'PILOTO';
+    perform definir_pessoa(p_pessoa);
     if i.anonimizado_em is null and comercial_aberta(i.etapa) then
       update interessados set etapa = 'PERDIDO', etapa_desde = app_now(), motivo_perda = v_motivo, perda_detalhe = v_detalhe,
              proximo_passo = null, proximo_passo_data = null, proximo_passo_hora = null, alterado_em = app_now(), alterado_por = p_pessoa
@@ -2212,12 +2433,94 @@ begin
       perform registrar_historico_interno('comercial.etapa', 'interessado', i.id::text,
         jsonb_build_object('de', i.etapa, 'para', 'PERDIDO', 'motivoPerda', v_motivo));
     end if;
-    perform comercial_entrar_cliente(p_pessoa, p.condominio_id, 'console.estagio.mudar');
-    perform definir_transicao('PILOTO_ENCERRADO', 'Piloto terminou sem fechar');
-    update clientes set estado = 'PILOTO_ENCERRADO' where condominio_id = p.condominio_id and estado = 'PILOTO';
-    perform definir_pessoa(p_pessoa);
   end if;
   return piloto_comercial_json(p, true);
+end $$;
+
+-- ---------------------------------------------------------------------------------------
+-- A implantação em parcelas (revisão do 3f3902a): o contrato diz "R$ X em N parcelas" e a cobrança
+-- segue. Cada parcela é uma cobrança de implantação, mês a mês a partir da primeira competência do
+-- plano; o índice de uma implantação por cliente vira um por parcela (o índice sai, nenhuma linha).
+
+alter table cobrancas add column parcela smallint not null default 1 check (parcela between 1 and 24);
+drop index cobrancas_implantacao_unica;
+create unique index cobrancas_implantacao_parcela_unica on cobrancas (condominio_id, parcela) where tipo = 'IMPLANTACAO';
+
+create function cobrancas_parcela_fixa() returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if new.parcela is distinct from old.parcela then
+    raise exception 'A cobrança não se edita; corrija por ajuste, com motivo' using errcode = 'TC422';
+  end if;
+  return new;
+end $$;
+create trigger cobrancas_parcela_fixa before update of parcela on cobrancas for each row execute function cobrancas_parcela_fixa();
+
+-- Mesmo corpo da 0291; a implantação com valor vira as suas parcelas (app.implantacao_parcelas, que
+-- só virar cliente usa; sem ele, uma parcela como antes), a última com o resto da divisão.
+create or replace function console_salvar_plano(p_pessoa uuid, p_condominio uuid, p_versao integer, p_nome text, p_unidades_de integer,
+                                                p_unidades_ate integer, p_valor bigint, p_ciclo text, p_dia_vencimento integer,
+                                                p_implantacao_valor bigint, p_implantacao_sem_cobranca boolean, p_implantacao_referencia text,
+                                                p_inicio_competencia date)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  pl planos_cliente;
+  v_versao integer;
+  v_parcelas integer := coalesce(nullif(current_setting('app.implantacao_parcelas', true), '')::integer, 1);
+  k integer;
+begin
+  perform entrar_condominio(p_pessoa, p_condominio, 'console.contrato.editar');
+  if p_inicio_competencia is null then perform recusar_campos('Diga a competência em que o plano começa', 'inicioCompetencia'); end if;
+  if coalesce(length(btrim(p_nome)), 0) not between 2 and 60 then perform recusar_campos('Diga o nome do plano', 'nome'); end if;
+  if p_unidades_de < 0 or p_unidades_ate < 1 or p_unidades_de > p_unidades_ate then
+    perform recusar_campos('A faixa de unidades não fecha', 'unidadesDe', 'unidadesAte');
+  end if;
+  -- Sem valor é "Valor a definir", nunca zero (os preços ainda estão em decisão).
+  if p_valor <= 0 then perform recusar_campos('Deixe vazio para "Valor a definir"', 'valor'); end if;
+  if p_ciclo is not null and p_ciclo not in ('MENSAL', 'ANUAL') then perform recusar_campos('Escolha o ciclo', 'ciclo'); end if;
+  if p_dia_vencimento not between 1 and 28 then perform recusar_campos('O vencimento vai do dia 1 ao 28', 'diaVencimento'); end if;
+  if p_implantacao_valor <= 0 then perform recusar_campos('Deixe vazio quando não houver valor', 'implantacaoValor'); end if;
+  select * into pl from planos_cliente where condominio_id = p_condominio;
+    if pl.id is null then
+      insert into planos_cliente (condominio_id, nome, unidades_de, unidades_ate, valor_centavos, ciclo, dia_vencimento,
+                                  implantacao_centavos, implantacao_sem_cobranca, implantacao_referencia, inicio_competencia)
+      values (p_condominio, btrim(p_nome), p_unidades_de, p_unidades_ate, p_valor, coalesce(p_ciclo, 'MENSAL'), coalesce(p_dia_vencimento, 10),
+              p_implantacao_valor, coalesce(p_implantacao_sem_cobranca, false), nullif(btrim(p_implantacao_referencia), ''),
+              date_trunc('month', p_inicio_competencia)::date)
+      returning * into pl;
+    else
+      update planos_cliente
+         set nome = btrim(p_nome), unidades_de = p_unidades_de, unidades_ate = p_unidades_ate, valor_centavos = p_valor,
+             ciclo = coalesce(p_ciclo, 'MENSAL'), dia_vencimento = coalesce(p_dia_vencimento, 10), implantacao_centavos = p_implantacao_valor,
+             implantacao_sem_cobranca = coalesce(p_implantacao_sem_cobranca, false),
+             implantacao_referencia = nullif(btrim(p_implantacao_referencia), ''),
+             inicio_competencia = date_trunc('month', p_inicio_competencia)::date
+       where id = pl.id and versao = p_versao
+      returning versao into v_versao;
+      if v_versao is null then perform conflito_versao('planos_cliente', pl.id); end if;
+      select * into pl from planos_cliente where id = pl.id;
+    end if;
+  -- A implantação com valor vira a sua cobrança (ou as suas parcelas), com a referência do serviço (PI-07).
+  if pl.implantacao_centavos is not null and not exists (select 1 from cobrancas where condominio_id = p_condominio and tipo = 'IMPLANTACAO') then
+    if v_parcelas not between 1 and 24 or pl.implantacao_centavos < v_parcelas then v_parcelas := 1; end if;
+    for k in 1 .. v_parcelas loop
+      insert into cobrancas (condominio_id, tipo, referencia, valor_centavos, vence_em, criada_por, parcela)
+      values (p_condominio, 'IMPLANTACAO',
+              left(coalesce(pl.implantacao_referencia, 'Implantação'), 110) || case when v_parcelas > 1 then format(' (%s/%s)', k, v_parcelas) else '' end,
+              case when k < v_parcelas then pl.implantacao_centavos / v_parcelas
+                   else pl.implantacao_centavos - (v_parcelas - 1) * (pl.implantacao_centavos / v_parcelas) end,
+              (pl.inicio_competencia + make_interval(months => k - 1))::date + (pl.dia_vencimento - 1), p_pessoa, k);
+    end loop;
+  end if;
+  perform registrar_historico_interno('plano.salvo', 'plano', pl.id::text,
+                                      jsonb_build_object('ciclo', pl.ciclo, 'comValor', pl.valor_centavos is not null));
+  return plano_json(pl);
 end $$;
 
 -- ---------------------------------------------------------------------------------------
@@ -2262,6 +2565,10 @@ declare
   v_plano jsonb;
   v_pendencias integer := 0;
   v_hoje date := comercial_hoje();
+  v_do_piloto boolean;
+  pp parametros_preco;
+  v_inicio date;
+  v_comp date;
 begin
   perform entrar_console(p_pessoa, 'console.comercial.cliente');
   select * into i from interessados where id = p_interessado for update;
@@ -2297,9 +2604,10 @@ begin
     perform registrar_historico_interno('comercial.etapa', 'interessado', i.id::text, jsonb_build_object('de', i.etapa, 'para', 'GANHO'));
   end if;
 
-  -- A carteira: o condomínio do piloto ou um novo.
-  if pl.id is not null then
-    v_cond := pl.condominio_id;
+  -- A carteira: o condomínio do piloto (aberto, virou proposta ou perdido e retomado) ou um novo.
+  v_do_piloto := pl.id is not null or i.condominio_id is not null;
+  if v_do_piloto then
+    v_cond := coalesce(pl.condominio_id, i.condominio_id);
     perform comercial_entrar_cliente(p_pessoa, v_cond, 'console.contrato.editar');
     perform definir_transicao('PILOTO_VIROU_CLIENTE', 'Contrato assinado pelos dois');
     update clientes set estado = 'IMPLANTACAO', referencia_contrato = v_ref where condominio_id = v_cond;
@@ -2325,15 +2633,22 @@ begin
   end if;
   perform comercial_atribuir_implantacao(v_resp, p_pessoa);
 
-  -- O plano pela versão aceita (a vaga de fundador é ocupada pelo gatilho do plano). Começa na
-  -- competência da data de início do contrato.
+  -- O plano pela versão aceita (a vaga de fundador é ocupada pelo gatilho do plano). A primeira
+  -- competência é a que tem o vencimento (dia 10) na data de início do contrato ou depois; a
+  -- implantação sai nas parcelas do contrato, mês a mês a partir dela.
+  v_inicio := (c.dados ->> 'dataInicio')::date;
+  v_comp := date_trunc('month', v_inicio)::date;
+  if v_comp + 9 < v_inicio then v_comp := (v_comp + interval '1 month')::date; end if;
+  select * into pp from parametros_preco;
+  perform set_config('app.implantacao_parcelas', coalesce((c.dados ->> 'implantacaoParcelas')::integer, v.implantacao_parcelas, pp.parcelas_implantacao, 1)::text, true);
   v_plano := console_salvar_plano_tabela(p_pessoa, v_cond, null,
     left(case v.tabela when 'FUNDADOR' then 'Fundador, ' when 'CHEIA' then 'Tabela cheia, ' else 'Sob consulta, ' end || lower(f.nome), 60),
     f.unidades_de, f.unidades_ate, case when v.ciclo = 'ANUAL' then v.anual_centavos else v.mensal_centavos end, v.ciclo, 10,
     -- O fundador não tem implantação (0295, decisão B).
     case when v.implantacao_sem_custo or v.tabela = 'FUNDADOR' then null else v.implantacao_centavos end,
     v.implantacao_sem_custo or v.implantacao_centavos is null or v.tabela = 'FUNDADOR',
-    format('Implantação · contrato nº %s', c.numero), date_trunc('month', (c.dados ->> 'dataInicio')::date)::date, v.tabela);
+    format('Implantação · contrato nº %s', c.numero), v_comp, v.tabela);
+  perform set_config('app.implantacao_parcelas', '', true);
 
   -- A implantação com quem cuida dela.
   imp := implantacao_do_cliente();
@@ -2373,9 +2688,9 @@ begin
   update interessados set condominio_id = v_cond, virou_cliente_em = app_now(), alterado_em = app_now(), alterado_por = p_pessoa where id = i.id;
   perform comercial_inserir_conversa(i.id, 'NOTA', 'Virou cliente: carteira, plano e implantação abertos.', false, null, null);
   perform registrar_historico_interno('comercial.virou_cliente', 'interessado', i.id::text,
-    jsonb_strip_nulls(jsonb_build_object('contrato', c.numero, 'piloto', pl.id is not null, 'pendencias', v_pendencias)));
+    jsonb_strip_nulls(jsonb_build_object('contrato', c.numero, 'piloto', v_do_piloto, 'pendencias', v_pendencias)));
   return jsonb_build_object('condominioId', v_cond, 'implantacaoId', imp.id, 'plano', v_plano, 'pendencias', v_pendencias,
-                            'doPiloto', pl.id is not null, 'etapa', 'GANHO');
+                            'doPiloto', v_do_piloto, 'etapa', 'GANHO');
 end $$;
 
 -- ---------------------------------------------------------------------------------------
@@ -2401,7 +2716,7 @@ begin
   select * into e from envios_contrato where contrato_id = c.id and parte = 'TRIADE' and situacao = 'CONFERIDO';
   v := jsonb_build_object('contrato', jsonb_strip_nulls(jsonb_build_object(
     'numero', c.numero, 'hash', c.hash, 'pdfSha256', e.sha256, 'assinadoEm', c.assinado_em, 'dataInicio', c.dados ->> 'dataInicio',
-    'modelo', c.dados -> 'modelo', 'campos', c.dados -> 'campos', 'temTermo', true,
+    'modelo', c.dados -> 'modelo', 'campos', comercial_campos_leitura(c.dados -> 'campos'), 'temTermo', true,
     'assinaturas', coalesce((select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('parte', x.parte, 'assinanteNome', x.assinante_nome,
                                                                                   'cpfMascarado', x.cpf_mascarado, 'conferidoEm', x.conferido_em))
                                               order by x.parte)
@@ -2502,7 +2817,8 @@ begin
   || jsonb_strip_nulls(jsonb_build_object(
     'contatoDe', comercial_grupo(i),
     'oportunidades', comercial_oportunidades_json(i),
-    'piloto', case when pl.id is not null then piloto_comercial_json(pl, true) end,
+    'piloto', case when pl.id is null then null when comercial_ve_cliente(i) then piloto_comercial_json(pl, true)
+                   else piloto_comercial_json(pl, false) - 'resultado' end,
     'contratoSituacao', (comercial_contrato_vigente(i.id)).situacao,
     'virouClienteEm', i.virou_cliente_em));
 end $$;
@@ -2511,6 +2827,8 @@ end $$;
 -- LGPD (CM-12). A anonimização apaga também os documentos, o contrato e os envios (e os arquivos,
 -- pela fila da retenção). De quem virou cliente, o contrato assinado, os dois envios conferidos e
 -- os documentos recebidos ficam pelo prazo legal (tipo 36). Mesmo corpo da 0307, com o que é da 0308.
+-- Os arquivos vão para a fila mesmo quando a linha já estava apagada (a fila ignora o repetido), e
+-- o condomínio do piloto que não virou cliente perde os contatos e o CNPJ.
 
 create or replace function comercial_anonimizar(p_id uuid, p_resumo text) returns void
 language plpgsql
@@ -2519,10 +2837,12 @@ as $$
 declare
   v_cliente boolean;
   v_assinado uuid;
+  v_cond uuid;
+  v_pessoa uuid := contexto_pessoa();
   r record;
 begin
   perform set_config('app.comercial_sistema', 'on', true);
-  select virou_cliente_em is not null into v_cliente from interessados where id = p_id;
+  select virou_cliente_em is not null, condominio_id into v_cliente, v_cond from interessados where id = p_id;
   select id into v_assinado from contratos_comercial where interessado_id = p_id and situacao = 'ASSINADO' and coalesce(v_cliente, false);
   update interessados set nome_contato = null, papel_contato = null, whatsapp = null, email = null, cnpj = null, endereco = null,
          optin_em = null, optin_canal = null, optin_texto = null, observacao = null, perda_detalhe = null, decisor = null, visita_nota = null,
@@ -2548,29 +2868,81 @@ begin
     from propostas_comercial p
    where p.id = v.proposta_id and p.interessado_id = p_id and v.nota_interna is not null;
   -- Documentos do aceite: os recebidos de quem virou cliente ficam; o resto some.
-  for r in update documentos_aceite set situacao = 'APAGADO', apagado_em = app_now(), nome = null, cnpj = null, mandato_ate = null, ip = null,
-                                        motivo_recusa = null
-            where interessado_id = p_id and apagado_em is null and not (v_assinado is not null and situacao = 'RECEBIDO')
-            returning caminho loop
+  update documentos_aceite set situacao = 'APAGADO', apagado_em = app_now(), nome = null, cnpj = null, mandato_ate = null, ip = null,
+                               motivo_recusa = null
+   where interessado_id = p_id and apagado_em is null and not (v_assinado is not null and situacao = 'RECEBIDO');
+  for r in select caminho from documentos_aceite
+            where interessado_id = p_id and caminho is not null and not (v_assinado is not null and situacao = 'RECEBIDO') loop
     perform enfileirar_arquivo('comercial', r.caminho, 'COMERCIAL_ANONIMIZADO');
   end loop;
   -- Contratos: o assinado de quem virou cliente fica; os outros perdem o retrato e o PDF.
-  for r in update contratos_comercial set dados = jsonb_build_object('anonimizado', true, 'numero', numero), anonimizado_em = app_now()
-            where interessado_id = p_id and anonimizado_em is null and id is distinct from v_assinado
-            returning caminho loop
+  update contratos_comercial set dados = jsonb_build_object('anonimizado', true, 'numero', numero), anonimizado_em = app_now()
+   where interessado_id = p_id and anonimizado_em is null and id is distinct from v_assinado;
+  for r in select caminho from contratos_comercial
+            where interessado_id = p_id and caminho is not null and id is distinct from v_assinado loop
     perform enfileirar_arquivo('comercial', r.caminho, 'COMERCIAL_ANONIMIZADO');
   end loop;
-  -- Envios: os dois conferidos do contrato assinado ficam; dos outros, o arquivo e quem assinou somem.
-  for r in update envios_contrato set apagado_em = app_now(), nome = null, ip = null, assinante_nome = null, cpf_mascarado = null, observacao = null,
-                                      recusa_motivo = null
-            where interessado_id = p_id and apagado_em is null and not (contrato_id = v_assinado and situacao = 'CONFERIDO')
-            returning caminho loop
+  -- Envios: os dois conferidos do contrato assinado de quem virou cliente ficam; dos outros (também
+  -- os conferidos de um contrato que não chegou a virar cliente), o arquivo e quem assinou somem.
+  update envios_contrato set apagado_em = coalesce(apagado_em, app_now()), nome = null, ip = null, assinante_nome = null, cpf_mascarado = null,
+                             observacao = null, recusa_motivo = null
+   where interessado_id = p_id and not (v_assinado is not null and contrato_id = v_assinado and situacao = 'CONFERIDO')
+     and (apagado_em is null or num_nonnulls(nome, ip, assinante_nome, cpf_mascarado, observacao, recusa_motivo) > 0);
+  for r in select caminho from envios_contrato
+            where interessado_id = p_id and caminho is not null
+              and not (v_assinado is not null and contrato_id = v_assinado and situacao = 'CONFERIDO') loop
     perform enfileirar_arquivo('comercial', r.caminho, 'COMERCIAL_ANONIMIZADO');
   end loop;
+  -- O condomínio do piloto que não virou cliente (o piloto já foi encerrado pelo gatilho do
+  -- interessado): ficam o nome e o endereço na carteira, sem contatos nem CNPJ.
+  if v_cond is not null and not coalesce(v_cliente, false) then
+    perform entrar_como_sistema(v_cond);
+    update condominios set contatos = '[]'::jsonb, cnpj = null where id = v_cond and (contatos <> '[]'::jsonb or cnpj is not null);
+    if v_pessoa is not null then perform definir_pessoa(v_pessoa); else perform entrar_como_sistema(null); end if;
+  end if;
   update trocas_sistema set carta = 'Carta apagada (LGPD).' where interessado_id = p_id;
   update pilotos_comercial set combinado_com = null, detalhe = null where interessado_id = p_id;
   perform comercial_revogar_links_interessado(p_id, 'Dados apagados (LGPD)', null);
   perform set_config('app.comercial_sistema', '', true);
+end $$;
+
+-- Envios que nunca terminaram (revisão do 3f3902a): o navegador pediu o caminho e o arquivo não foi
+-- conferido. Passado um dia (o link de envio vale duas horas), o pedido é recusado e o arquivo, se
+-- chegou, vai para a fila da retenção. Roda todo dia, antes da anonimização e da retenção.
+create function comercial_limpar_envios_abertos() returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  r record;
+  v_total integer := 0;
+begin
+  perform set_config('app.comercial_sistema', 'on', true);
+  for r in update documentos_aceite set situacao = 'RECUSADO', motivo_recusa = 'O arquivo não foi conferido a tempo; envie de novo.'
+            where situacao = 'ENVIANDO' and enviado_em < app_now() - interval '1 day'
+            returning caminho loop
+    perform enfileirar_arquivo('comercial', r.caminho, 'COMERCIAL_ABANDONADO');
+    v_total := v_total + 1;
+  end loop;
+  for r in update envios_contrato set situacao = 'RECUSADO_NA_HORA', motivo_auto = 'ARQUIVO_INVALIDO',
+                                      motivo_texto = 'O arquivo não foi conferido a tempo; envie de novo.',
+                                      conferido_auto_em = app_now(), apagado_em = app_now()
+            where situacao = 'ENVIANDO' and enviado_em < app_now() - interval '1 day'
+            returning caminho loop
+    perform enfileirar_arquivo('comercial', r.caminho, 'COMERCIAL_ABANDONADO');
+    v_total := v_total + 1;
+  end loop;
+  perform set_config('app.comercial_sistema', '', true);
+  return v_total;
+end $$;
+
+do $$
+begin
+  create extension if not exists pg_cron;
+  perform cron.schedule('limpar-envios-comercial', '47 3 * * *', 'select public.comercial_limpar_envios_abertos()');
+exception when others then
+  raise notice 'pg_cron indisponível: agende comercial_limpar_envios_abertos() de outro jeito (%).', sqlerrm;
 end $$;
 
 -- Pedido de exclusão (0296): a pessoa pediu, então somem todas as oportunidades do mesmo contato

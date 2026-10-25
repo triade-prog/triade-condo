@@ -1,12 +1,20 @@
 // Contrato pelo gov.br (0308): o PDF montado no servidor, sempre igual para o mesmo retrato e com a
-// impressão digital em cada folha; a conferência automática do PDF assinado com três PDFs de teste
-// (assinado por atualização incremental, sem assinatura e regravado); e as rotas da equipe e do link
-// do síndico, que levam a pessoa da sessão, validam a entrada (só PDF, até 10 MB) e apagam o que vem
-// sem assinatura.
+// impressão digital em cada folha; a conferência automática do PDF assinado com PDFs de teste
+// (assinado por atualização incremental como o assinador faz, sem assinatura, regravado e as burlas
+// da revisão do 3f3902a); e as rotas da equipe e do link do síndico, que levam a pessoa da sessão,
+// validam a entrada (só PDF, até 10 MB) e apagam o que vem sem assinatura.
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
-import { PDFDocument } from "pdf-lib";
+import { PDFArray, PDFDict, PDFDocument, type PDFPage, PDFName, PDFRef } from "pdf-lib";
 import { criarApiConsole } from "./app.ts";
-import { conferirAssinatura, contarAssinaturas, gerarPdfContrato, type RetratoContrato, sha256Bytes } from "./contrato.ts";
+import { conferirAssinatura, gerarPdfContrato, type RetratoContrato, sha256Bytes } from "./contrato.ts";
+import {
+  PDF_BURLA_REAL,
+  PDF_FINAL_REAL,
+  PDF_XREF_FLUXO_REAL,
+  TAMANHO_BASE_REAL,
+  TAMANHO_BASE_XREF_FLUXO_REAL,
+  TAMANHO_CONDOMINIO_REAL,
+} from "./contrato_pdfs_teste.ts";
 import {
   adminFalso,
   armazenamentoFalso,
@@ -57,10 +65,89 @@ const juntar = (...partes: Uint8Array[]) => {
   }
   return saida;
 };
-/** O que o assinador do gov.br acrescenta no fim: o dicionário /Sig com o /ByteRange (atualização incremental). */
-const assinatura = (n: number) =>
-  texto.encode(`\n${9000 + n} 0 obj\n<< /Type /Sig /Filter /Adobe.PPKLite /SubFilter /ETSI.CAdES.detached /ByteRange [0 1000 3000 500] ` +
-    `/Contents <3082> /M (D:20261025100000-03'00') >>\nendobj\nxref\n0 0\ntrailer\n<< >>\nstartxref\n0\n%%EOF\n`);
+interface OpcoesAssinar {
+  /** O retângulo do desenho da assinatura na página 1. */
+  rect?: number[];
+  /** O subtipo da anotação acrescentada (Widget no assinador). */
+  subtipo?: string;
+  /** Objetos a mais na mesma atualização (as burlas). */
+  extras?: (novo: () => number, d: { doc: PDFDocument; pagina: PDFPage }) => { n: number; corpo: string }[];
+  /** Mexe na página redefinida além das /Annots. */
+  mudarPagina?: (pagina: PDFDict, novo: () => number) => void;
+  /** Entradas "f" (apagar) no índice. */
+  livres?: number[];
+  /** Define o widget de novo, fora do índice (o índice aponta para o primeiro). */
+  repetirWidget?: string;
+  /** O que vem depois da assinatura (uma atualização a mais). */
+  depois?: string;
+}
+
+/**
+ * Assina como o assinador do gov.br: uma atualização incremental com a página 1 ganhando o widget nas
+ * /Annots, o catálogo com o AcroForm, o campo-widget de assinatura com o desenho, e o /Sig com o
+ * /ByteRange cobrindo o arquivo inteiro e o /Contents (PKCS#7 de mentira) no buraco.
+ */
+async function assinarIncremental(base: Uint8Array, op: OpcoesAssinar = {}): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(base, { updateMetadata: false });
+  const ctx = doc.context;
+  let proximo = ctx.largestObjectNumber + 1;
+  const novo = () => proximo++;
+  const raiz = ctx.trailerInfo.Root as PDFRef;
+  const pagina = doc.getPages()[0]!;
+  const sigN = novo(), widgetN = novo(), desenhoN = novo();
+  const formAntes = doc.catalog.get(PDFName.of("AcroForm"));
+  const formN = formAntes instanceof PDFRef ? formAntes.objectNumber : novo();
+  const camposAntes = doc.catalog.lookupMaybe(PDFName.of("AcroForm"), PDFDict)?.lookupMaybe(PDFName.of("Fields"), PDFArray)?.asArray() ?? [];
+  const anotacoesAntes = pagina.node.lookupMaybe(PDFName.of("Annots"), PDFArray)?.asArray() ?? [];
+  const extras = op.extras?.(novo, { doc, pagina }) ?? [];
+  const pg = pagina.node.clone(ctx);
+  pg.set(PDFName.of("Annots"), ctx.obj([...anotacoesAntes, PDFRef.of(widgetN)]));
+  op.mudarPagina?.(pg, novo);
+  const cat = doc.catalog.clone(ctx);
+  cat.set(PDFName.of("AcroForm"), PDFRef.of(formN));
+  const desenho = "q 0.2 g BT /F1 8 Tf 4 30 Td (Documento assinado digitalmente) Tj ET Q";
+  const contents = "3082" + "a5".repeat(1500);
+  const partes = [
+    ...extras,
+    { n: pagina.ref.objectNumber, corpo: pg.toString() },
+    { n: raiz.objectNumber, corpo: cat.toString() },
+    { n: formN, corpo: `<< /Fields [${[...camposAntes.map(String), `${widgetN} 0 R`].join(" ")}] /SigFlags 3 >>` },
+    { n: widgetN, corpo: `<< /Type /Annot /Subtype /${op.subtipo ?? "Widget"} /FT /Sig /T (Assinatura ${widgetN}) /V ${sigN} 0 R /F 132 ` +
+        `/P ${pagina.ref} /Rect [${(op.rect ?? [400, 40, 560, 90]).join(" ")}] /AP << /N ${desenhoN} 0 R >> >>` },
+    { n: desenhoN, corpo: `<< /Type /XObject /Subtype /Form /BBox [0 0 160 50] /Length ${desenho.length} >>\nstream\n${desenho}\nendstream` },
+    { n: sigN, corpo: `<< /Type /Sig /Filter /Adobe.PPKLite /SubFilter /ETSI.CAdES.detached /ByteRange [0 AAAAAAAAAA BBBBBBBBBB CCCCCCCCCC] ` +
+        `/Contents <${contents}> /M (D:20261025100000-03'00') /Name (Lucia Prado) >>` },
+  ];
+  let s = "\n";
+  const posicoes: [number, number][] = [];
+  for (const p of partes) {
+    posicoes.push([p.n, base.length + s.length]);
+    s += `${p.n} 0 obj\n${p.corpo}\nendobj\n`;
+  }
+  if (op.repetirWidget) s += `${widgetN} 0 obj\n${op.repetirWidget}\nendobj\n`;
+  const indice = base.length + s.length;
+  const marcas = [...new TextDecoder("latin1").decode(base).matchAll(/startxref\s+(\d+)/g)];
+  const anterior = marcas[marcas.length - 1]![1];
+  s += "xref\n0 1\n0000000000 65535 f \n" + posicoes.map(([n, o]) => `${n} 1\n${String(o).padStart(10, "0")} 00000 n \n`).join("") +
+    (op.livres ?? []).map((n) => `${n} 1\n0000000000 00001 f \n`).join("");
+  const info = ctx.trailerInfo.Info;
+  s += `trailer\n<< /Size ${proximo} /Root ${raiz} ${info ? `/Info ${info} ` : ""}/Prev ${anterior} >>\nstartxref\n${indice}\n%%EOF\n`;
+  const a = base.length + s.indexOf(`<${contents}>`);
+  const b = a + contents.length + 2;
+  const c = base.length + s.length - b;
+  const pad = (x: number) => String(x).padStart(10, "0");
+  s = s.replace("AAAAAAAAAA", pad(a)).replace("BBBBBBBBBB", pad(b)).replace("CCCCCCCCCC", pad(c));
+  return juntar(base, texto.encode(s), texto.encode(op.depois ?? ""));
+}
+
+/** A referência do primeiro fluxo de conteúdo da página. */
+function conteudoDaPagina(pagina: PDFPage): PDFRef {
+  const bruto = pagina.node.get(PDFName.of("Contents"));
+  return (bruto instanceof PDFRef ? bruto : (bruto as PDFArray).get(0)) as PDFRef;
+}
+
+const BASE = await gerarPdfContrato(RETRATO, HASH);
+const BASE_SHA = await sha256Bytes(BASE);
 
 /** Os textos escritos nas folhas (os fluxos de conteúdo vêm comprimidos). */
 async function textosDasFolhas(pdf: Uint8Array): Promise<string[]> {
@@ -96,38 +183,119 @@ Deno.test("0308: o PDF do contrato sai sempre igual, com a impressão digital em
   assert(folhas.some((f) => f.includes("Termo de tratamento de dados")));
   assert(folhas.join("\n").includes("IPCA -> todo ano"), "o que a fonte não escreve é trocado, sem falhar");
   // Passa na conferência de PDF de sempre (sem conteúdo ativo).
-  assertEquals((await conferirAssinatura(pdf, pdf.length)).valido, true);
+  assertEquals((await conferirAssinatura(pdf, pdf)).valido, true);
 });
 
-Deno.test("0308: a conferência automática com os três PDFs de teste", async () => {
-  const base = await gerarPdfContrato(RETRATO, HASH);
-  const baseSha = await sha256Bytes(base);
-
-  // 1. Assinado pelo condomínio por atualização incremental: uma assinatura, o começo é a base.
-  const condominio = juntar(base, assinatura(1));
-  const c1 = await conferirAssinatura(condominio, base.length);
-  assertEquals([c1.valido, c1.assinaturas, c1.prefixoSha256, c1.tamanho], [true, 1, baseSha, condominio.length]);
+Deno.test("0308: a conferência automática com os PDFs de teste", async () => {
+  // 1. Assinado pelo condomínio por atualização incremental: uma assinatura nova, só ela, o começo é a base.
+  const condominio = await assinarIncremental(BASE);
+  const c1 = await conferirAssinatura(condominio, BASE);
+  assertEquals([c1.valido, c1.assinaturas, c1.assinaturaNova, c1.soAssinatura, c1.prefixoSha256, c1.tamanho],
+    [true, 1, true, true, BASE_SHA, condominio.length], c1.detalhe);
   assertEquals(c1.sha256, await sha256Bytes(condominio));
   // A TRÍADE assina sobre o arquivo do condomínio: duas assinaturas, o começo é o do condomínio.
-  const c2 = await conferirAssinatura(juntar(condominio, assinatura(2)), condominio.length);
-  assertEquals([c2.assinaturas, c2.prefixoSha256], [2, c1.sha256]);
+  const final = await assinarIncremental(condominio);
+  const c2 = await conferirAssinatura(final, condominio);
+  assertEquals([c2.assinaturas, c2.assinaturaNova, c2.soAssinatura, c2.prefixoSha256], [2, true, true, c1.sha256], c2.detalhe);
+  // O arquivo do condomínio não serve de assinatura da TRÍADE (nada novo sobre a base dela).
+  assertEquals((await conferirAssinatura(condominio, condominio)).assinaturaNova, false);
 
-  // 2. Sem assinatura: zero (o banco recusa na hora). Um /ByteRange solto não é assinatura.
-  assertEquals((await conferirAssinatura(base, base.length)).assinaturas, 0);
-  const solto = juntar(base, texto.encode("\n% /ByteRange [0 1 2 3]\n%%EOF\n"));
-  assertEquals(contarAssinaturas(solto), 0);
+  // 2. Sem assinatura: nada novo (o banco recusa na hora).
+  const sem = await conferirAssinatura(BASE, BASE);
+  assertEquals([sem.assinaturas, sem.assinaturaNova, sem.soAssinatura], [0, false, false]);
 
-  // 3. Regravado pelo assinador (load e save) e assinado: tem assinatura, mas o começo não é a base.
-  const regravado = juntar(await (await PDFDocument.load(base)).save({ useObjectStreams: true }), assinatura(1));
-  const c3 = await conferirAssinatura(regravado, base.length);
-  assertEquals(c3.assinaturas, 1);
-  assertNotEquals(c3.prefixoSha256, baseSha);
+  // 3. Regravado pelo assinador (load e save) e assinado: tem assinatura nova, mas o começo não é a base.
+  const regravado = await assinarIncremental(await (await PDFDocument.load(BASE)).save({ useObjectStreams: true }));
+  const c3 = await conferirAssinatura(regravado, BASE);
+  assertEquals([c3.assinaturas, c3.assinaturaNova, c3.soAssinatura, c3.detalhe], [1, true, false, "o começo do arquivo não é a base"]);
+  assertNotEquals(c3.prefixoSha256, BASE_SHA);
 
   // Arquivo que não é PDF, PDF com script e arquivo que não chegou: inválidos.
-  assertEquals((await conferirAssinatura(texto.encode("não é PDF"), 10)).valido, false);
-  assertEquals((await conferirAssinatura(juntar(base, texto.encode("\n<< /JavaScript (x) >>\n%%EOF\n")), base.length)).valido, false);
-  assertEquals((await conferirAssinatura(null, base.length)).motivo, "O arquivo não chegou. Envie de novo.");
+  assertEquals((await conferirAssinatura(texto.encode("não é PDF"), BASE)).valido, false);
+  assertEquals((await conferirAssinatura(juntar(BASE, texto.encode("\n<< /JavaScript (x) >>\n%%EOF\n")), BASE)).valido, false);
+  assertEquals((await conferirAssinatura(null, BASE)).motivo, "O arquivo não chegou. Envie de novo.");
 });
+
+Deno.test("0308: as duas burlas da revisão não passam (assinatura num comentário e conteúdo trocado)", async () => {
+  // 1. Sem assinatura nenhuma: só um comentário com as palavras. Não é assinatura (o banco recusa na hora).
+  const comentario = juntar(BASE, texto.encode("\n% /Type /Sig /ByteRange [ 0 0 0 0 ]\n%%EOF\n"));
+  const r1 = await conferirAssinatura(comentario, BASE);
+  assertEquals([r1.valido, r1.assinaturas, r1.assinaturaNova, r1.soAssinatura], [true, 0, false, false]);
+  // Nem um /Sig de verdade que não cobre nada além da base.
+  const curto = juntar(BASE, texto.encode("\n9000 0 obj\n<< /Type /Sig /ByteRange [0 10 20 30] /Contents <3082> >>\nendobj\n%%EOF\n"));
+  assertEquals((await conferirAssinatura(curto, BASE)).assinaturaNova, false);
+
+  // 2. Atualização incremental que troca o conteúdo da página 1 (objeto novo com o mesmo número) e
+  // depois assina certinho: a assinatura é nova, mas não é só a assinatura (o banco guarda sem contar).
+  const trocaConteudo = await assinarIncremental(BASE, {
+    extras: (_novo, { pagina }) => {
+      const fluxo = "BT /F1 12 Tf 56 700 Td (Mensalidade: R$ 1,00 por mes) Tj ET";
+      return [{ n: conteudoDaPagina(pagina).objectNumber, corpo: `<< /Length ${fluxo.length} >>\nstream\n${fluxo}\nendstream` }];
+    },
+  });
+  const r2 = await conferirAssinatura(trocaConteudo, BASE);
+  assertEquals([r2.valido, r2.assinaturaNova, r2.soAssinatura, r2.detalhe], [true, true, false, "o PDF muda um objeto do contrato"]);
+  // A mesma burla como a revisão montou (sem índice): também não passa.
+  const daRevisao = juntar(BASE, texto.encode("\n4 0 obj\n<< /Length 44 >>\nstream\nBT /F1 12 Tf 56 700 Td (R$ 1,00 por mes) Tj ET\nendstream\n" +
+    "endobj\n<< /Type /Sig /ByteRange [0 1 2 3] /Contents <00> >>\n%%EOF\n"));
+  const r3 = await conferirAssinatura(daRevisao, BASE);
+  assertEquals([r3.assinaturaNova, r3.soAssinatura], [false, false]);
+});
+
+Deno.test("0308: a conferência com PDFs de um assinador de verdade (pyHanko, PAdES)", async () => {
+  const bytes = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const final = bytes(PDF_FINAL_REAL);
+  const base = final.subarray(0, TAMANHO_BASE_REAL);
+  const condominio = final.subarray(0, TAMANHO_CONDOMINIO_REAL);
+  const c1 = await conferirAssinatura(condominio, base);
+  assertEquals([c1.valido, c1.assinaturas, c1.assinaturaNova, c1.soAssinatura], [true, 1, true, true], c1.detalhe);
+  const c2 = await conferirAssinatura(final, condominio);
+  assertEquals([c2.valido, c2.assinaturas, c2.assinaturaNova, c2.soAssinatura], [true, 2, true, true], c2.detalhe);
+  assertEquals(c2.prefixoSha256, await sha256Bytes(condominio));
+  // A burla assinada de verdade: a assinatura é válida, mas a página 1 não é a do contrato.
+  const burla = await conferirAssinatura(bytes(PDF_BURLA_REAL), base);
+  assertEquals([burla.assinaturaNova, burla.soAssinatura, burla.detalhe], [true, false, "a página 1 mudou"]);
+  assertEquals(burla.prefixoSha256, await sha256Bytes(base), "o começo é a base: só a leitura da parte acrescentada pega");
+  // Base com índice em fluxo (/Type /XRef): o assinador grava o índice acrescentado também em fluxo.
+  const xs = bytes(PDF_XREF_FLUXO_REAL);
+  const c3 = await conferirAssinatura(xs, xs.subarray(0, TAMANHO_BASE_XREF_FLUXO_REAL));
+  assertEquals([c3.assinaturas, c3.assinaturaNova, c3.soAssinatura], [1, true, true], c3.detalhe);
+});
+
+Deno.test("0308: a parte acrescentada só pode trazer a assinatura", async () => {
+  const motivo = async (op: OpcoesAssinar) => {
+    const r = await conferirAssinatura(await assinarIncremental(BASE, op), BASE);
+    assertEquals(r.assinaturaNova, true);
+    assertEquals(r.soAssinatura, false);
+    return r.detalhe;
+  };
+  // A página aponta para outro conteúdo.
+  let outro = 0;
+  assertEquals(await motivo({
+    extras: (novo) => {
+      outro = novo();
+      return [{ n: outro, corpo: "<< /Length 2 >>\nstream\nq \nendstream" }];
+    },
+    mudarPagina: (pg) => pg.set(PDFName.of("Contents"), PDFRef.of(outro)),
+  }), "a página 1 mudou");
+  // A página ganha uma anotação que desenha por cima (FreeText) em vez do widget de assinatura.
+  assertEquals(await motivo({ subtipo: "FreeText" }), "a página 1 ganhou uma anotação que não é a assinatura");
+  // O desenho da assinatura cobre a página.
+  assertEquals(await motivo({ rect: [0, 0, 595, 842] }), "o desenho da assinatura cobre a página");
+  // O índice apaga um objeto do contrato.
+  assertEquals(await motivo({ livres: [3] }), "o índice acrescentado apaga um objeto");
+  // O widget definido duas vezes: o leitor segue o índice (o primeiro, FreeText), o pdf-lib leria o segundo.
+  assertEquals(await motivo({
+    subtipo: "FreeText",
+    repetirWidget: "<< /Type /Annot /Subtype /Widget /FT /Sig /Rect [400 40 560 90] >>",
+  }), "objeto acrescentado fora do índice");
+  // Algo depois da assinatura: ela não cobre o arquivo inteiro.
+  const depois = await conferirAssinatura(await assinarIncremental(BASE, { depois: "1 0 obj\n<< >>\nendobj\n%%EOF\n" }), BASE);
+  assertEquals([depois.assinaturaNova, depois.soAssinatura], [true, false]);
+});
+
+/** A base que o banco aponta para a conferência: o PDF gerado, com o resumo e o tamanho. */
+const baseDoEnvio = { baseCaminho: CAMINHO_CONTRATO, baseSha256: BASE_SHA, baseTamanho: BASE.length };
 
 function montar() {
   const falso = authFalso([{ id: CAROLINA, email: ENTRAR.email, senha: ENTRAR.senha }]);
@@ -148,7 +316,7 @@ function montar() {
     comercial_iniciar_envio: (a) => ((a.p_dados as { parte: string }).parte === "TRIADE"
       ? { envioId: ENVIO, caminho: CAMINHO_ENVIO, tipo: "application/pdf" }
       : erroBanco("TC422", { motivo: "ORDEM_DAS_ASSINATURAS" })),
-    comercial_envio_a_verificar: () => ({ caminho: CAMINHO_ENVIO, tipo: "application/pdf", baseTamanho: 100 }),
+    comercial_envio_a_verificar: () => ({ caminho: CAMINHO_ENVIO, tipo: "application/pdf", ...baseDoEnvio }),
     comercial_verificar_envio: (a) => ({ situacao: "A_CONFERIR", apagarArquivo: false, resultado: a.p_resultado }),
     comercial_conferir_envio: () => ({ id: ENVIO, situacao: "CONFERIDO" }),
     comercial_recusar_envio: () => ({ id: ENVIO, situacao: "RECUSADO" }),
@@ -166,10 +334,10 @@ function montar() {
     publico_abrir_contrato: (a) => (a.p_final ? erroBanco("TC422", { motivo: "SEM_PDF_FINAL" })
                                              : { caminho: CAMINHO_CONTRATO, nome: "contrato-2.pdf", tipo: "application/pdf" }),
     publico_iniciar_envio: () => ({ envioId: ENVIO, caminho: CAMINHO_ENVIO, tipo: "application/pdf" }),
-    publico_envio_a_verificar: () => ({ caminho: CAMINHO_ENVIO, tipo: "application/pdf", baseTamanho: 100 }),
+    publico_envio_a_verificar: () => ({ caminho: CAMINHO_ENVIO, tipo: "application/pdf", ...baseDoEnvio }),
     publico_verificar_envio: (a) => {
-      const r = a.p_resultado as { valido: boolean; assinaturas?: number };
-      const naHora = !r.valido || (r.assinaturas ?? 0) === 0;
+      const r = a.p_resultado as { valido: boolean; assinaturaNova?: boolean };
+      const naHora = !r.valido || !r.assinaturaNova;
       return { situacao: naHora ? "RECUSADO_NA_HORA" : "A_CONFERIR", apagarArquivo: naHora };
     },
   });
@@ -177,6 +345,7 @@ function montar() {
     banco: db.banco, auth: falso.auth, admin: adminFalso().admin, urlApp: "https://console.exemplo", urlPlataforma: "https://plataforma.exemplo",
     armazenamentoContrato: arm.armazenamento,
   });
+  arm.objetos.set(CAMINHO_CONTRATO, BASE);
   return { pedir: pedido(app, "api-console"), arm, ...db };
 }
 
@@ -253,12 +422,17 @@ Deno.test("0308: a TRÍADE envia, a API confere e a equipe marca as três confer
   assertEquals(chamada(m, "comercial_iniciar_envio"), { p_pessoa: CAROLINA, p_contrato: CONTRATO, p_dados: { parte: "TRIADE", nome: "final.pdf", tamanho: 5000 } });
   assertEquals((await erro(await m.pedir(`/v1/comercial/contratos/${CONTRATO}/envios`, { cookie, corpo: { parte: "CONDOMINIO", nome: "a.pdf", tamanho: 5 } })))
     .detalhes?.motivo, "ORDEM_DAS_ASSINATURAS");
-  const base = new Uint8Array(100).fill(37);
-  const assinado = juntar(base, assinatura(1), assinatura(2));
-  m.arm.objetos.set(CAMINHO_ENVIO, juntar(texto.encode("%PDF-1.7\n"), assinado));
+  const assinado = await assinarIncremental(BASE);
+  m.arm.objetos.set(CAMINHO_ENVIO, assinado);
   await m.pedir(`/v1/comercial/envios/${ENVIO}/verificar`, { cookie, corpo: {} });
   const res = chamada(m, "comercial_verificar_envio")!.p_resultado as Record<string, unknown>;
-  assertEquals([res.valido, res.assinaturas, res.prefixoSha256], [true, 2, await sha256Bytes(juntar(texto.encode("%PDF-1.7\n"), assinado).subarray(0, 100))]);
+  assertEquals([res.valido, res.assinaturas, res.assinaturaNova, res.soAssinatura, res.prefixoSha256], [true, 1, true, true, BASE_SHA]);
+  // A base guardada que não bate com o resumo do banco: erro, nada é gravado.
+  m.arm.objetos.set(CAMINHO_CONTRATO, juntar(BASE, texto.encode("\n")));
+  const antes = m.chamadas.filter((c) => c.funcao === "comercial_verificar_envio").length;
+  assertEquals((await erro(await m.pedir(`/v1/comercial/envios/${ENVIO}/verificar`, { cookie, corpo: {} }))).codigo, "INTERNAL_ERROR");
+  assertEquals(m.chamadas.filter((c) => c.funcao === "comercial_verificar_envio").length, antes);
+  m.arm.objetos.set(CAMINHO_CONTRATO, BASE);
 
   const marcas = await erro(await m.pedir(`/v1/comercial/envios/${ENVIO}/conferir`, { cookie, corpo: { versao: 2, assinaturaValida: true, cpf: "111.444.777-35" } }));
   assertEquals(marcas.detalhes?.campos, ["pessoaConfere", "dataConfere"]);
@@ -323,13 +497,12 @@ Deno.test("0308: o link do síndico manda os documentos e o PDF assinado, com li
   assert(baixar.url.includes("download=contrato-2.pdf"));
 
   // O PDF sem assinatura é recusado na hora e apagado.
-  const base = await gerarPdfContrato(RETRATO, HASH);
-  assertEquals((await m.pedir(`/v1/publico/propostas/${CODIGO}/contrato/assinado`, { corpo: { nome: "a.pdf", tamanho: base.length } })).status, 201);
-  m.arm.objetos.set(CAMINHO_ENVIO, base);
+  assertEquals((await m.pedir(`/v1/publico/propostas/${CODIGO}/contrato/assinado`, { corpo: { nome: "a.pdf", tamanho: BASE.length } })).status, 201);
+  m.arm.objetos.set(CAMINHO_ENVIO, BASE);
   const sem = await (await m.pedir(`/v1/publico/propostas/${CODIGO}/contrato/assinado/${ENVIO}/verificar`, { corpo: {} })).json();
   assertEquals(sem.situacao, "RECUSADO_NA_HORA");
   assertEquals(m.arm.apagados, [CAMINHO_ENVIO]);
-  m.arm.objetos.set(CAMINHO_ENVIO, juntar(base, assinatura(1)));
+  m.arm.objetos.set(CAMINHO_ENVIO, await assinarIncremental(BASE));
   const com = await (await m.pedir(`/v1/publico/propostas/${CODIGO}/contrato/assinado/${ENVIO}/verificar`, { corpo: {} })).json();
   assertEquals(com.situacao, "A_CONFERIR");
   assertEquals(m.arm.apagados.length, 1, "o assinado fica guardado");

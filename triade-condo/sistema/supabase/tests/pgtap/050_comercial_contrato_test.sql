@@ -61,7 +61,8 @@ begin
 end $$;
 create function pg_temp.ev(p uuid) returns integer language sql as $$ select versao from envios_contrato where id = p $$;
 create function pg_temp.res(p_sha text, p_tamanho integer, p_assinaturas integer, p_prefixo text) returns jsonb language sql as $$
-  select jsonb_build_object('valido', true, 'sha256', p_sha, 'tamanho', p_tamanho, 'assinaturas', p_assinaturas, 'prefixoSha256', p_prefixo) $$;
+  select jsonb_build_object('valido', true, 'sha256', p_sha, 'tamanho', p_tamanho, 'assinaturas', p_assinaturas, 'prefixoSha256', p_prefixo,
+                            'assinaturaNova', true, 'soAssinatura', true) $$;
 create function pg_temp.marcas(p_cpf text default null) returns jsonb language sql as $$
   select jsonb_strip_nulls(jsonb_build_object('assinaturaValida', true, 'pessoaConfere', true, 'dataConfere', true, 'cpf', p_cpf)) $$;
 

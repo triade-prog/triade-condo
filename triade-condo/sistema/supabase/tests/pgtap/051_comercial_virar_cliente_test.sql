@@ -62,11 +62,11 @@ begin
   c := pg_temp.gerado(p_interessado, p_codigo);
   e := (publico_iniciar_envio(p_codigo, '{"nome": "a.pdf", "tamanho": 5500}', null) ->> 'envioId')::uuid;
   perform publico_verificar_envio(p_codigo, e, jsonb_build_object('valido', true, 'sha256', pg_temp.sha(e::text), 'tamanho', 5500, 'assinaturas', 1,
-                                                                 'prefixoSha256', pg_temp.sha(c::text)));
+                                                                 'prefixoSha256', pg_temp.sha(c::text), 'assinaturaNova', true, 'soAssinatura', true));
   perform comercial_conferir_envio((select com from ids), e, 2, '{"assinaturaValida": true, "pessoaConfere": true, "dataConfere": true}');
   t := (comercial_iniciar_envio((select adm from ids), c, '{"parte": "TRIADE", "nome": "f.pdf", "tamanho": 6000}') ->> 'envioId')::uuid;
   perform comercial_verificar_envio((select adm from ids), t, jsonb_build_object('valido', true, 'sha256', pg_temp.sha(t::text), 'tamanho', 6000,
-                                                                                'assinaturas', 2, 'prefixoSha256', pg_temp.sha(e::text)));
+                                                                                'assinaturas', 2, 'prefixoSha256', pg_temp.sha(e::text), 'assinaturaNova', true, 'soAssinatura', true));
   perform comercial_conferir_envio((select com from ids), t, 2, '{"assinaturaValida": true, "pessoaConfere": true, "dataConfere": true, "cpf": "11144477735"}');
   return c;
 end $$;

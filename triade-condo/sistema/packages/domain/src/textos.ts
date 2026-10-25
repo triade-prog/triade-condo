@@ -382,6 +382,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   VIROU_CLIENTE: "Este interessado já virou cliente. O contrato e o resto ficam na ficha do cliente.",
   INTERESSADO_FIXO: "O contato, o condomínio e a data de virar cliente não mudam.",
   PILOTO_EXISTE: "Este interessado já tem um piloto. Termine o piloto antes de começar outro.",
+  PILOTO_JA_FEITO: "Este interessado já fez um piloto, que terminou. Siga pela proposta: virar cliente usa o mesmo condomínio.",
+  ENVIOS_EM_ABERTO: "Há envios de arquivo em aberto. Termine os que começou ou espere duas horas para enviar de novo.",
   PILOTO_ENCERRADO: "Este piloto já terminou.",
   PILOTO_PELO_COMERCIAL: "O piloto começa e termina pelo Comercial: vira cliente ou perdido.",
   NAO_COMECOU: "O piloto ainda não começou; a medida aparece a partir do primeiro dia.",
