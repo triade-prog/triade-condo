@@ -6,7 +6,7 @@
 
 import {
   CRITERIOS_SINDICO, mostrarDataSemHora, mostrarValor, OFERTA_INCLUIDO, OFERTA_PLANEJADO, SITUACOES_PROPOSTA, TEMAS_RESPOSTA, TEXTO_A_CONFIRMAR, TEXTO_COMPARATIVO,
-  TEXTO_CUSTO_APARTAMENTO, TEXTO_PLANEJADO, type AbaProposta, type CriterioSindico, type EscopoReferencia, type EtapaComercial, type SituacaoDesconto,
+  TEXTO_CUSTO_APARTAMENTO, TEXTO_PLANEJADO, type AbaProposta, type CriterioSindico, type EscopoFato, type EscopoReferencia, type EtapaComercial, type SituacaoDesconto,
   type SituacaoProposta, type TemaResposta,
 } from "@triade/domain";
 
@@ -216,6 +216,8 @@ export interface LinhaComparativo {
 /** O fato por trás de uma célula, só no kit do Console: a fonte e quem registrou não vão para o link. */
 export interface FatoComparativo {
   id: string; versao: number; sistema: string; criterio: CriterioSindico; texto: string; fonte: string; confirmadoEm: string; por?: PessoaRef; em?: string;
+  /** PREDIO: só deste prédio (o padrão). PUBLICO: informação pública do concorrente, vale em todo prédio. */
+  escopo?: EscopoFato;
 }
 
 export interface Kit {
@@ -675,10 +677,13 @@ export function documentoKit(k: Kit, pecas: PecaKit[]): Documento {
   };
 }
 
-/** A mensagem do WhatsApp com o link da proposta (o envio é pela pessoa, no WhatsApp comercial). */
-export function mensagemDoLink(pessoa: string | undefined, condominio: string, endereco: string, kit = false): string {
+/**
+ * A mensagem do WhatsApp com o link da proposta (o envio é pela pessoa, no WhatsApp comercial).
+ * A do kit só cita o comparativo quando ele tem linhas (o síndico marcou critérios).
+ */
+export function mensagemDoLink(pessoa: string | undefined, condominio: string, endereco: string, kit = false, comComparativo = false): string {
   const nome = pessoa?.trim().split(/\s+/)[0];
   return kit
-    ? `Oi${nome ? `, ${nome}` : ""}! Para levar ao conselho do ${condominio}: no link da proposta tem o kit com o comparativo e o texto para a ata. ${endereco}`
+    ? `Oi${nome ? `, ${nome}` : ""}! Para levar ao conselho do ${condominio}: no link da proposta tem o kit com ${comComparativo ? "o comparativo e " : ""}o texto para a ata. ${endereco}`
     : `Oi${nome ? `, ${nome}` : ""}! Segue a proposta da TRÍADE Condo para o ${condominio}: ${endereco}`;
 }

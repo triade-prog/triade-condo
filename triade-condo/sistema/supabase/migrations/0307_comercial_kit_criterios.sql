@@ -11,9 +11,13 @@
 --    confirmar. O custo por apartamento do concorrente também vem da Tabela de preços quando o
 --    preço foi conferido lá (como na 0304).
 -- 3. Fatos do comparativo: a equipe registra o fato confirmado por sistema e critério, com a fonte
---    e a data. O fato vale para todo interessado que tem aquele sistema (o nome é comparado sem
---    acento nem espaço); o do critério "outro" é só do prédio dele. A fonte, quem registrou e quando
---    ficam só para a equipe: o link e o kit levam só o texto (CM-12).
+--    e a data. Por padrão o fato vale só para o prédio em que foi registrado: cancelamento, custo
+--    e fidelidade do sistema atual são do contrato de cada prédio, e nada de um prédio pode sair no
+--    link de outro (CM-12). Vale para todo prédio só quando a equipe marca que é informação pública
+--    do concorrente (site ou tabela pública), e nunca na coluna do sistema atual. O fato do
+--    critério "outro" guarda o texto do outro e só vale enquanto a ficha tiver o mesmo texto. O
+--    nome do sistema é comparado sem acento nem espaço. A fonte, quem registrou e quando ficam só
+--    para a equipe: o link e o kit levam só o texto. A anonimização apaga e retira os fatos do prédio.
 -- 4. O kit (Console e link) traz o problema do prédio para a apresentação curta e o mesmo
 --    comparativo nos dois. O piloto da apresentação continua fora: depende do piloto com critério
 --    de sucesso (CM-21, R17.4).
@@ -31,7 +35,7 @@ set search_path = public
 as $$
   select '[
     {"codigo": "PEDIDO_COM_PRAZO", "titulo": "Todo pedido com responsável e prazo", "triade": "Sim: todo pedido tem responsável, prazo e conclusão explicada"},
-    {"codigo": "SEM_BAIXAR_APP", "titulo": "Morador usa sem baixar app", "triade": "Sim: comunicados, documentos e mural do prédio abrem por link, sem baixar app; o WhatsApp oficial ainda é planejado"},
+    {"codigo": "SEM_BAIXAR_APP", "titulo": "Morador usa sem baixar app", "triade": "Sim: comunicados e mural do prédio abrem por link, sem baixar app; documentos vão por link que expira em 7 dias, quando o condomínio envia; o WhatsApp oficial ainda é planejado"},
     {"codigo": "HISTORICO_PASSA", "titulo": "Histórico que passa para o próximo síndico", "triade": "Sim: o histórico fica com o prédio e passa ao próximo síndico com o dossiê de passagem de bastão"},
     {"codigo": "CUSTO_APARTAMENTO", "titulo": "Custo por apartamento por mês"},
     {"codigo": "COMO_CANCELAR", "titulo": "Como cancelar", "triade": "A TRÍADE propõe aviso de 30 dias, sem multa; vale o que estiver no contrato assinado"},
@@ -86,8 +90,13 @@ create table fatos_comparativo (
   -- O nome sem acento, espaço nem pontuação: "App da Contábil Norte" e "app da contabil norte" são o mesmo.
   sistema_chave  text not null,
   criterio       text not null check (comercial_criterio_valido(criterio)),
-  -- Só no critério "outro", que é do prédio: o fato vale só para aquele interessado.
+  -- PREDIO (o padrão): vale só para o interessado em que foi registrado. PUBLICO: informação pública
+  -- do concorrente (site, tabela pública), vale para todo prédio, só na coluna dos concorrentes.
+  escopo         text not null default 'PREDIO' check (escopo in ('PREDIO', 'PUBLICO')),
   interessado_id uuid references interessados (id),
+  -- Só no critério "outro": o texto do outro da ficha, sem acento nem espaço, de quando o fato foi
+  -- registrado. A ficha mudou o texto: o fato não casa mais com a linha.
+  outro_chave    text,
   texto          text not null check (length(btrim(texto)) between 2 and 200),
   -- De onde a equipe confirmou (site, contrato, conversa com eles). Só a equipe vê.
   fonte          text not null check (length(btrim(fonte)) between 3 and 200),
@@ -99,22 +108,27 @@ create table fatos_comparativo (
   alterado_em    timestamptz,
   alterado_por   uuid references pessoas (id),
   versao         integer not null default 1,
-  check ((criterio = 'OUTRO') = (interessado_id is not null))
+  check ((escopo = 'PREDIO') = (interessado_id is not null)),
+  check (criterio <> 'OUTRO' or escopo = 'PREDIO'),
+  check ((criterio = 'OUTRO') = (outro_chave is not null))
 );
-create unique index fatos_comparativo_um on fatos_comparativo (sistema_chave, criterio) where interessado_id is null and retirado_em is null;
-create unique index fatos_comparativo_outro on fatos_comparativo (interessado_id, sistema_chave) where interessado_id is not null and retirado_em is null;
+create unique index fatos_comparativo_publico on fatos_comparativo (sistema_chave, criterio) where escopo = 'PUBLICO' and retirado_em is null;
+create unique index fatos_comparativo_predio on fatos_comparativo (interessado_id, sistema_chave, criterio, coalesce(outro_chave, ''))
+  where escopo = 'PREDIO' and retirado_em is null;
 call proteger_tabela_comercial('fatos_comparativo', 'console.comercial.editar',
   'Fatos que a equipe confirmou sobre o sistema atual e os concorrentes, para o comparativo do kit (CM-20)');
 create trigger fatos_comparativo_sem_exclusao before delete on fatos_comparativo for each row execute function somente_insercao();
 
--- O sistema e o critério não mudam; o fato retirado não volta (registre outro).
+-- O sistema, o critério e o escopo não mudam; o fato retirado não volta (registre outro). Só a
+-- anonimização (LGPD), que roda com comercial_sistema(), sobrescreve e retira o fato do prédio.
 create function fatos_comparativo_regras() returns trigger
 language plpgsql
 set search_path = public
 as $$
 begin
-  if (new.sistema, new.sistema_chave, new.criterio, new.interessado_id, new.criado_em, new.criado_por)
-     is distinct from (old.sistema, old.sistema_chave, old.criterio, old.interessado_id, old.criado_em, old.criado_por) then
+  if comercial_sistema() then return new; end if;
+  if (new.sistema, new.sistema_chave, new.criterio, new.escopo, new.interessado_id, new.outro_chave, new.criado_em, new.criado_por)
+     is distinct from (old.sistema, old.sistema_chave, old.criterio, old.escopo, old.interessado_id, old.outro_chave, old.criado_em, old.criado_por) then
     raise exception 'O sistema e o critério do fato não mudam' using errcode = 'TC422', detail = '{"motivo":"FATO_FIXO"}';
   end if;
   if old.retirado_em is not null then
@@ -263,7 +277,7 @@ as $$
 declare v_versao integer;
 begin
   perform entrar_console(p_pessoa, 'console.comercial.editar');
-  perform comercial_buscar(p_id);
+  if (comercial_buscar(p_id)).anonimizado_em is not null then perform recusar_motivo('Interessado anonimizado não muda', 'ANONIMIZADO'); end if;
   update interessados set criterios = coalesce(p_criterios, '{}'), criterio_outro = p_outro, problema = p_problema,
                           alterado_em = app_now(), alterado_por = p_pessoa
    where id = p_id and versao = p_versao
@@ -285,10 +299,13 @@ as $$
 declare
   v_sistema     text := comercial_texto(p_dados, 'sistema');
   v_criterio    text := comercial_texto(p_dados, 'criterio');
+  v_escopo      text := coalesce(comercial_texto(p_dados, 'escopo'), 'PREDIO');
   v_texto       text := comercial_texto(p_dados, 'texto');
   v_fonte       text := comercial_texto(p_dados, 'fonte');
   v_confirmado  date := coalesce(nullif(p_dados ->> 'confirmadoEm', '')::date, comercial_hoje());
-  v_interessado uuid;
+  v_interessado uuid := nullif(p_dados ->> 'interessadoId', '')::uuid;
+  v_outro       text;
+  i             interessados;
   f             fatos_comparativo;
   v_id          uuid;
   v_versao      integer;
@@ -301,6 +318,9 @@ begin
     select * into f from fatos_comparativo where id = p_id;
     if not found then raise exception 'Fato não encontrado' using errcode = 'TC404'; end if;
     if f.retirado_em is not null then perform recusar_motivo('Fato retirado não muda; registre outro', 'FATO_RETIRADO'); end if;
+    if f.interessado_id is not null and (comercial_buscar(f.interessado_id)).anonimizado_em is not null then
+      perform recusar_motivo('Interessado anonimizado não muda', 'ANONIMIZADO');
+    end if;
     update fatos_comparativo set texto = v_texto, fonte = v_fonte, confirmado_em = v_confirmado, alterado_em = app_now(), alterado_por = p_pessoa
      where id = p_id and versao = p_versao
     returning id, versao into v_id, v_versao;
@@ -308,24 +328,36 @@ begin
   else
     if coalesce(length(v_sistema), 0) not between 2 and 120 then perform recusar_campos('Diga de qual sistema é o fato', 'sistema'); end if;
     if v_criterio is null or not comercial_criterio_valido(v_criterio) then perform recusar_campos('Escolha o critério da lista', 'criterio'); end if;
+    if v_escopo not in ('PREDIO', 'PUBLICO') then perform recusar_campos('Escolha se vale só para este prédio ou para todos', 'escopo'); end if;
+    -- O fato nasce no kit de um prédio: o interessado diz de onde veio e, no padrão, onde vale.
+    if v_interessado is null then perform recusar_campos('Diga de qual prédio é o fato', 'interessadoId'); end if;
+    i := comercial_buscar(v_interessado);
+    if i.anonimizado_em is not null then perform recusar_motivo('Interessado anonimizado não muda', 'ANONIMIZADO'); end if;
     if v_criterio = 'OUTRO' then
-      v_interessado := nullif(p_dados ->> 'interessadoId', '')::uuid;
-      if v_interessado is null then perform recusar_campos('O critério outro é do prédio: diga qual', 'interessadoId'); end if;
-      perform comercial_buscar(v_interessado);
+      if v_escopo = 'PUBLICO' then perform recusar_campos('O outro critério é só deste prédio', 'escopo'); end if;
+      if i.criterio_outro is null then perform recusar_campos('O prédio não tem o outro critério marcado', 'criterio'); end if;
+      v_outro := comercial_normalizar(i.criterio_outro);
     end if;
-    select * into f from fatos_comparativo x
-     where x.retirado_em is null and x.sistema_chave = comercial_normalizar(v_sistema) and x.criterio = v_criterio
-       and x.interessado_id is not distinct from v_interessado;
-    if f.id is not null then
+    -- O sistema atual é o contrato do prédio: o fato dele nunca vale para outro prédio.
+    if v_escopo = 'PUBLICO' and comercial_normalizar(v_sistema) = comercial_normalizar(i.sistema_atual) then
+      perform recusar_campos('O sistema atual do prédio é do contrato dele: o fato fica só deste prédio', 'escopo');
+    end if;
+    begin
+      insert into fatos_comparativo (sistema, sistema_chave, criterio, escopo, interessado_id, outro_chave, texto, fonte, confirmado_em, criado_por)
+      values (v_sistema, comercial_normalizar(v_sistema), v_criterio, v_escopo, case when v_escopo = 'PREDIO' then v_interessado end, v_outro,
+              v_texto, v_fonte, v_confirmado, p_pessoa)
+      returning id, versao into v_id, v_versao;
+    exception when unique_violation then
+      -- Já existe (também quando duas pessoas registram ao mesmo tempo): mude o que existe.
+      select x.id into v_id from fatos_comparativo x
+       where x.retirado_em is null and x.sistema_chave = comercial_normalizar(v_sistema) and x.criterio = v_criterio and x.escopo = v_escopo
+         and (v_escopo = 'PUBLICO' or (x.interessado_id = v_interessado and coalesce(x.outro_chave, '') = coalesce(v_outro, '')));
       raise exception 'Já há um fato confirmado para este sistema e critério' using errcode = 'TC422',
-        detail = jsonb_build_object('motivo', 'FATO_EXISTE', 'fatoId', f.id)::text;
-    end if;
-    insert into fatos_comparativo (sistema, sistema_chave, criterio, interessado_id, texto, fonte, confirmado_em, criado_por)
-    values (v_sistema, comercial_normalizar(v_sistema), v_criterio, v_interessado, v_texto, v_fonte, v_confirmado, p_pessoa)
-    returning id, versao into v_id, v_versao;
+        detail = jsonb_build_object('motivo', 'FATO_EXISTE', 'fatoId', v_id)::text;
+    end;
   end if;
   perform registrar_historico_interno('comercial.fato', 'fato_comparativo', v_id::text,
-    jsonb_build_object('sistema', coalesce(f.sistema, v_sistema), 'criterio', coalesce(f.criterio, v_criterio)));
+    jsonb_build_object('sistema', coalesce(f.sistema, v_sistema), 'criterio', coalesce(f.criterio, v_criterio), 'escopo', coalesce(f.escopo, v_escopo)));
   return jsonb_build_object('id', v_id, 'versao', v_versao);
 end $$;
 
@@ -379,16 +411,29 @@ as $$
          || case when v.implantacao_sem_custo then ', sem custo de implantação' else ', implantação à parte' end
 $$;
 
+-- O fato que vale numa célula: o do prédio (no "outro", com o mesmo texto da ficha) e, só na
+-- coluna de um concorrente, o público. O do prédio vale mais.
+create function comercial_fato_da_celula(i interessados, p_criterio text, p_sistema text, p_tipo text) returns setof fatos_comparativo
+language sql stable
+set search_path = public
+as $$
+  select f.* from fatos_comparativo f
+   where f.retirado_em is null and f.sistema_chave = comercial_normalizar(p_sistema) and f.criterio = p_criterio
+     and ((f.escopo = 'PREDIO' and f.interessado_id = i.id
+           and (p_criterio <> 'OUTRO' or f.outro_chave = comercial_normalizar(i.criterio_outro)))
+          or (f.escopo = 'PUBLICO' and p_tipo = 'CONCORRENTE'))
+   order by (f.escopo = 'PREDIO') desc
+   limit 1
+$$;
+
 -- Uma célula: o fato confirmado pela equipe; no custo, o preço conferido na Tabela de preços;
 -- senão, a confirmar.
-create function comercial_valor_comparativo(i interessados, v versoes_proposta, p_criterio text, p_sistema text) returns jsonb
+create function comercial_valor_comparativo(i interessados, v versoes_proposta, p_criterio text, p_sistema text, p_tipo text) returns jsonb
 language sql stable
 set search_path = public
 as $$
   select coalesce(
-    (select jsonb_build_object('confirmado', true, 'texto', f.texto) from fatos_comparativo f
-      where f.retirado_em is null and f.sistema_chave = comercial_normalizar(p_sistema) and f.criterio = p_criterio
-        and f.interessado_id is not distinct from case when p_criterio = 'OUTRO' then i.id end),
+    (select jsonb_build_object('confirmado', true, 'texto', f.texto) from comercial_fato_da_celula(i, p_criterio, p_sistema, p_tipo) f),
     case when p_criterio = 'CUSTO_APARTAMENTO' then
       (select jsonb_build_object('confirmado', true, 'texto', string_agg(
                 case when x.a_partir_de then 'a partir de ' else '' end || reais(greatest(round(x.preco::numeric / v.unidades), 1)::bigint::centavos)
@@ -404,7 +449,7 @@ language sql stable
 set search_path = public
 as $$
   with col as (
-    select c ->> 'nome' as nome, n from jsonb_array_elements(comercial_colunas_comparativo(i)) with ordinality x(c, n)
+    select c ->> 'nome' as nome, c ->> 'tipo' as tipo, n from jsonb_array_elements(comercial_colunas_comparativo(i)) with ordinality x(c, n)
   ), crit as (
     select c ->> 'codigo' as codigo, c ->> 'titulo' as titulo, c ->> 'triade' as triade, n
       from jsonb_array_elements(comercial_criterios()) with ordinality x(c, n) where c ->> 'codigo' = any (i.criterios)
@@ -415,24 +460,23 @@ as $$
         'criterio', k.codigo,
         'titulo', case when k.codigo = 'OUTRO' then coalesce(i.criterio_outro, k.titulo) else k.titulo end,
         'triade', case when k.codigo = 'CUSTO_APARTAMENTO' then comercial_custo_triade(v) else k.triade end,
-        'valores', (select coalesce(jsonb_agg(comercial_valor_comparativo(i, v, k.codigo, col.nome) order by col.n), '[]'::jsonb) from col))
+        'valores', (select coalesce(jsonb_agg(comercial_valor_comparativo(i, v, k.codigo, col.nome, col.tipo) order by col.n), '[]'::jsonb) from col))
       order by k.n) from crit k), '[]'::jsonb))
 $$;
 
--- Os fatos por trás do comparativo, para a equipe mudar ou retirar (só no Console: a fonte e
--- quem registrou não vão para o link).
+-- Os fatos que valem nas células do kit, para a equipe mudar ou retirar (só no Console: a fonte
+-- e quem registrou não vão para o link).
 create function comercial_fatos_do_kit(i interessados) returns jsonb
 language sql stable
 set search_path = public
 as $$
   select coalesce(jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
-      'id', f.id, 'versao', f.versao, 'sistema', f.sistema, 'criterio', f.criterio, 'texto', f.texto, 'fonte', f.fonte,
+      'id', f.id, 'versao', f.versao, 'sistema', f.sistema, 'criterio', f.criterio, 'escopo', f.escopo, 'texto', f.texto, 'fonte', f.fonte,
       'confirmadoEm', f.confirmado_em, 'por', comercial_pessoa_json(coalesce(f.alterado_por, f.criado_por)), 'em', coalesce(f.alterado_em, f.criado_em)))
       order by f.criado_em), '[]'::jsonb)
-    from fatos_comparativo f
-   where f.retirado_em is null and f.criterio = any (i.criterios)
-     and f.interessado_id is not distinct from case when f.criterio = 'OUTRO' then i.id end
-     and f.sistema_chave in (select comercial_normalizar(c ->> 'nome') from jsonb_array_elements(comercial_colunas_comparativo(i)) c)
+    from unnest(i.criterios) k(codigo),
+         jsonb_array_elements(comercial_colunas_comparativo(i)) c,
+         lateral comercial_fato_da_celula(i, k.codigo, c ->> 'nome', c ->> 'tipo') f
 $$;
 
 -- 4. O kit (Console e link): o mesmo da 0304, com o problema e os critérios no prédio e as
@@ -459,9 +503,10 @@ as $$
                                                                        and comercial_normalizar(pc.nome) = comercial_normalizar(c ->> 'nome')),
             'planos', (select coalesce(jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
                   'plano', pc.plano, 'modelo', pc.modelo, 'preco', comercial_preco_concorrente(pc, v.unidades), 'aPartirDe', pc.a_partir_de,
+                  -- De onde a equipe leu o preço (fonte e data) fica só na Tabela de preços (CM-12).
                   'porApartamento', case when comercial_preco_concorrente(pc, v.unidades) is not null
-                                         then greatest(round(comercial_preco_concorrente(pc, v.unidades)::numeric / v.unidades), 1)::bigint end,
-                  'fonte', pc.fonte, 'lidoEm', pc.lido_em)) order by pc.plano nulls first), '[]'::jsonb)
+                                         then greatest(round(comercial_preco_concorrente(pc, v.unidades)::numeric / v.unidades), 1)::bigint end))
+                  order by pc.plano nulls first), '[]'::jsonb)
                 from precos_concorrentes pc where pc.arquivado_em is null and pc.conferido
                                               and comercial_normalizar(pc.nome) = comercial_normalizar(c ->> 'nome'))) order by o), '[]'::jsonb)
          from jsonb_array_elements(i.concorrentes) with ordinality x(c, o))))
@@ -496,7 +541,8 @@ end $$;
 
 -- ---------------------------------------------------------------------------------------
 -- LGPD (CM-12): a anonimização apaga também o problema do prédio e o texto do outro critério
--- (podem citar pessoas). Mesmo corpo da 0306, com os dois campos.
+-- (podem citar pessoas) e sobrescreve e retira os fatos do prédio (o texto e a fonte podem citar
+-- o síndico ou o contrato). Mesmo corpo da 0306, com o que é da 0307.
 
 create or replace function comercial_anonimizar(p_id uuid, p_resumo text) returns void
 language plpgsql
@@ -513,6 +559,9 @@ begin
          anonimizado_em = app_now()
    where id = p_id;
   update conversas_comercial set resumo = p_resumo where interessado_id = p_id;
+  update fatos_comparativo set texto = 'Dado apagado (LGPD)', fonte = 'Dado apagado (LGPD)',
+         outro_chave = case when outro_chave is not null then 'apagado' end, retirado_em = coalesce(retirado_em, app_now())
+   where interessado_id = p_id and escopo = 'PREDIO';
   update aceites_proposta a set nome = null, cpf = null, ip = null, aparelho = null, anonimizado_em = app_now()
     from versoes_proposta v join propostas_comercial p on p.id = v.proposta_id
    where a.versao_id = v.id and p.interessado_id = p_id and a.anonimizado_em is null;

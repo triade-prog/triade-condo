@@ -164,6 +164,7 @@ test.describe("Console · Propostas", () => {
     await page.getByRole("button", { name: "Escolher critérios" }).click();
     const criterios = page.getByRole("dialog", { name: "Escolher critérios" });
     await expect(criterios.getByRole("checkbox", { name: "Como cancelar" })).toBeChecked();
+    await expect(criterios.getByText("Vai para o síndico e o conselho no kit; não escreva nota interna.", { exact: false })).toBeVisible();
     await criterios.locator("label", { hasText: "Todo pedido com responsável e prazo" }).click();
     await expect(criterios.getByRole("checkbox", { name: "Todo pedido com responsável e prazo" })).toBeChecked();
     await conferir(page);
@@ -174,9 +175,19 @@ test.describe("Console · Propostas", () => {
     const salvo = api.comercial.pedidos.find((x) => x.caminho.endsWith(`/interessados/${INDICADO}/criterios`));
     expect(salvo?.corpo).toMatchObject({ versao: 1, criterios: ["PEDIDO_COM_PRAZO", "CUSTO_APARTAMENTO", "COMO_CANCELAR"] });
 
-    // O fato confirmado de um concorrente num critério: o texto vai para a célula; a fonte, não.
+    // O sistema atual é do contrato do prédio: o fato fica só aqui, sem a escolha de valer para todos.
+    await page.getByRole("button", { name: "Registrar o fato: Planilha e WhatsApp, Como cancelar" }).click();
+    const doAtual = page.getByRole("dialog", { name: "Registrar o fato confirmado" });
+    await expect(doAtual.getByText("O sistema atual é do contrato deste prédio: o fato fica só aqui.")).toBeVisible();
+    await expect(doAtual.getByRole("radio")).toHaveCount(0);
+    await doAtual.getByRole("button", { name: "Cancelar" }).click();
+    await expect(doAtual).toHaveCount(0);
+
+    // O fato confirmado de um concorrente num critério: só deste prédio por padrão; o texto vai para a célula, a fonte não.
     await page.getByRole("button", { name: "Registrar o fato: Outro App, Como cancelar" }).click();
     const fato = page.getByRole("dialog", { name: "Registrar o fato confirmado" });
+    await expect(fato.getByRole("radio", { name: "Só deste prédio" })).toBeChecked();
+    await expect(fato.getByRole("radio", { name: "Todo prédio (informação pública)" })).not.toBeChecked();
     await fato.getByLabel("O que a equipe confirmou").fill("Fidelidade de 12 meses, com multa");
     await fato.getByLabel("Onde confirmou").fill("FONTE-SO-DA-EQUIPE: contrato que o síndico mostrou");
     await conferir(page);
@@ -186,6 +197,8 @@ test.describe("Console · Propostas", () => {
     await expect(cancelar).toContainText("Fidelidade de 12 meses, com multa");
     await expect(comparativo).not.toContainText("FONTE-SO-DA-EQUIPE");
     await expect(page.getByRole("button", { name: "Mudar o fato: Outro App, Como cancelar" })).toBeVisible();
+    expect(api.comercial.pedidos.find((x) => x.caminho === "/v1/comercial/fatos")?.corpo).toMatchObject({ sistema: "Outro App", criterio: "COMO_CANCELAR", interessadoId: INDICADO,
+      escopo: "PREDIO" });
     await conferir(page);
 
     const baixa = page.waitForEvent("download");
@@ -206,8 +219,11 @@ test.describe("Console · Propostas", () => {
     expect((await baixa).suggestedFilename()).toMatch(/\.pdf$/);
 
     // O kit pelo link traz o mesmo comparativo do Console, sem a fonte nem as notas da equipe (CM-12).
-    api.comercial.fatos.push({ id: "bb5f6071-0000-4000-8000-000000000001", sistema: "CondoApp", criterio: "COMO_CANCELAR", interessadoId: null,
+    api.comercial.fatos.push({ id: "bb5f6071-0000-4000-8000-000000000001", sistema: "CondoApp", criterio: "COMO_CANCELAR", escopo: "PREDIO", interessadoId: INDICADO,
       texto: "Aviso de 60 dias", fonte: "FONTE-SO-DA-EQUIPE", confirmadoEm: "2026-10-20", versao: 1 });
+    // O contrato de outro prédio com o mesmo sistema não vaza neste link.
+    api.comercial.fatos.push({ id: "bb5f6071-0000-4000-8000-000000000002", sistema: "Planilha e WhatsApp", criterio: "CUSTO_APARTAMENTO", escopo: "PREDIO", interessadoId: SITE,
+      texto: "CONTRATO-DO-JATOBA", fonte: "Boleto do Jatobá", confirmadoEm: "2026-10-20", versao: 1 });
     const kit = page.waitForResponse((r) => r.url().includes(`/v1/publico/propostas/${CODIGO_IPE}/kit`));
     const baixaKit = page.waitForEvent("download");
     await page.getByRole("button", { name: "Baixar o kit do conselho" }).click();
@@ -217,6 +233,8 @@ test.describe("Console · Propostas", () => {
     expect(corpoKit.comparativo.linhas[1].valores[1]).toEqual({ confirmado: true, texto: "Aviso de 60 dias" });
     expect(corpoKit.predio.problema).toBe("Pedidos de manutenção somem no grupo do WhatsApp");
     expect(JSON.stringify(corpoKit)).not.toContain("FONTE-SO-DA-EQUIPE");
+    expect(JSON.stringify(corpoKit)).not.toContain("CONTRATO-DO-JATOBA");
+    expect(JSON.stringify(corpoKit.comparativo.concorrentes)).not.toMatch(/"fonte"|"lidoEm"/);
     expect(corpoKit).not.toHaveProperty("fatos");
     expect(corpoKit).not.toHaveProperty("interessado");
 

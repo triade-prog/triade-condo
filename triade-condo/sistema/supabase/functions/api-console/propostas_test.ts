@@ -283,12 +283,16 @@ Deno.test("0307: Escolher critérios grava na ficha do prédio; a ficha sem os c
 Deno.test("0307: a equipe registra, muda e retira o fato confirmado, com a fonte", async () => {
   const m = montar();
   const cookie = await entrar(m);
-  const fato = { sistema: "App da Contábil Norte", criterio: "COMO_CANCELAR", texto: "Só junto com a administradora", fonte: "Contrato que o síndico mostrou" };
+  const fato = { sistema: "App da Contábil Norte", criterio: "COMO_CANCELAR", interessadoId: CERRADO, texto: "Só junto com a administradora",
+                 fonte: "Contrato que o síndico mostrou" };
   assertEquals((await m.pedir("/v1/comercial/fatos", { cookie, corpo: fato })).status, 201);
   assertEquals(chamada(m, "comercial_salvar_fato"), {
-    p_pessoa: CAROLINA, p_id: null, p_versao: null, p_dados: { ...fato, interessadoId: null, confirmadoEm: null },
-  });
-  for (const [ruim, campo] of [[{ texto: "x" }, "texto"], [{ fonte: "" }, "fonte"], [{ criterio: "PRECO" }, "criterio"], [{ confirmadoEm: "21/10/2026" }, "confirmadoEm"]] as const) {
+    p_pessoa: CAROLINA, p_id: null, p_versao: null, p_dados: { ...fato, escopo: null, confirmadoEm: null },
+  }, "sem escopo, o banco grava só para este prédio");
+  await m.pedir("/v1/comercial/fatos", { cookie, corpo: { ...fato, sistema: "HabitaOne", escopo: "PUBLICO" } });
+  assertEquals((chamada(m, "comercial_salvar_fato")?.p_dados as Record<string, unknown>).escopo, "PUBLICO", "informação pública vai para o banco conferir");
+  for (const [ruim, campo] of [[{ texto: "x" }, "texto"], [{ fonte: "" }, "fonte"], [{ criterio: "PRECO" }, "criterio"], [{ confirmadoEm: "21/10/2026" }, "confirmadoEm"],
+                                [{ escopo: "TODOS" }, "escopo"]] as const) {
     const e = await erro(await m.pedir("/v1/comercial/fatos", { cookie, corpo: { ...fato, ...ruim } }));
     assertEquals([e.codigo, e.detalhes?.campos], ["VALIDATION_ERROR", [campo]], JSON.stringify(ruim));
   }

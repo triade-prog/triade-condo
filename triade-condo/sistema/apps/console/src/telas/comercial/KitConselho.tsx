@@ -33,7 +33,7 @@ export function KitConselho() {
   const [fazendo, setFazendo] = useState<"pdf" | "link" | null>(null);
   const [aviso, setAviso] = useState<{ tom: "ok" | "erro"; texto: string } | null>(null);
   const [mensagem, setMensagem] = useState<string | null>(null);
-  const [janela, setJanela] = useState<{ tipo: "criterios" } | { tipo: "fato"; criterio: CriterioSindico; titulo: string; sistema: string } | null>(null);
+  const [janela, setJanela] = useState<{ tipo: "criterios" } | { tipo: "fato"; criterio: CriterioSindico; titulo: string; sistema: string; coluna: string } | null>(null);
 
   const voltar = <Voltar href={TELAS_PROPOSTAS.lista(id)} texto={f?.interessado.condominio ?? "Voltar à proposta"} />;
   if (kit.estado === "carregando") return <div className="grid gap-4">{voltar}<Carregando rotulo="Montando o kit…" /></div>;
@@ -76,7 +76,8 @@ export function KitConselho() {
     const r = await chamarApi<{ link: { codigo: string } }>(ROTAS_PROPOSTAS.acao(id, k.versaoId, "link"), { corpo: {} });
     setFazendo(null);
     if (!r.ok) return setAviso({ tom: "erro", texto: textoDoErro(r.erro) });
-    setMensagem(mensagemDoLink(f?.interessado.pessoa, k.predio.condominio, enderecoDoLink(window.location.origin, r.dados.link.codigo), true));
+    setMensagem(mensagemDoLink(f?.interessado.pessoa, k.predio.condominio, enderecoDoLink(window.location.origin, r.dados.link.codigo), true,
+      (k.comparativo.linhas?.length ?? 0) > 0));
   }
 
   return (
@@ -150,7 +151,7 @@ export function KitConselho() {
                             {edita ? (
                               <Botao variante="discreto" tamanho="m" className="mt-1"
                                 aria-label={`${fato ? "Mudar" : "Registrar"} o fato: ${c.nome}, ${l.titulo}`}
-                                onClick={() => setJanela({ tipo: "fato", criterio: l.criterio, titulo: l.titulo, sistema: c.nome })}>
+                                onClick={() => setJanela({ tipo: "fato", criterio: l.criterio, titulo: l.titulo, sistema: c.nome, coluna: c.tipo })}>
                                 <Icone nome={fato ? "editar" : "mais"} className="h-4 w-4" />{fato ? "Mudar" : "Registrar"}
                               </Botao>
                             ) : null}
@@ -185,7 +186,7 @@ export function KitConselho() {
           aoFechar={() => setJanela(null)} feito={() => pronto("Critérios salvos na ficha do prédio.")} />
       ) : null}
       {janela?.tipo === "fato" && k.interessado ? (
-        <JanelaFato sistema={janela.sistema} criterio={janela.criterio} nomeCriterio={janela.titulo} interessadoId={k.interessado.id}
+        <JanelaFato sistema={janela.sistema} sistemaAtual={janela.coluna === "SISTEMA_ATUAL"} criterio={janela.criterio} nomeCriterio={janela.titulo} interessadoId={k.interessado.id}
           fato={fatoDaCelula(k, janela.criterio, janela.sistema)} aoFechar={() => setJanela(null)} feito={pronto} />
       ) : null}
       {mensagem ? (

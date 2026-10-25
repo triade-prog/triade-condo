@@ -1,11 +1,12 @@
 "use client";
 // O kit pelos critérios do síndico (0307, quadros 322 e 337): os campos dos critérios e do problema
 // do prédio (na ficha e no "Escolher critérios" do kit) e a janela do fato confirmado, em que a
-// equipe registra, muda ou retira o que sabe do sistema atual ou de um concorrente num critério.
-// A fonte fica só para a equipe; o link e o PDF levam só o texto (CM-12).
+// equipe registra, muda ou retira o que sabe do sistema atual ou de um concorrente num critério,
+// só para este prédio ou, quando é informação pública do concorrente, para todo prédio. A fonte
+// fica só para a equipe; o link e o PDF levam só o texto (CM-12).
 
 import { useState, type FormEvent } from "react";
-import { CRITERIOS_SINDICO, type CriterioSindico } from "@triade/domain";
+import { CRITERIOS_SINDICO, ESCOPOS_FATO, type CriterioSindico, type EscopoFato } from "@triade/domain";
 import { Botao, CampoAreaTexto, CampoTexto, camposComErro, chamarApi, Dialogo, Icone, type ErroApi } from "@triade/ui";
 import { ErroJanela, RodapeJanela } from "../planos/comum.tsx";
 import { ROTAS_PROPOSTAS, type FatoComparativo } from "./propostas.ts";
@@ -44,7 +45,7 @@ export function CamposCriterios({ id, valor, aoMudar, campos = [] }: {
       ) : null}
       <CampoAreaTexto id={`${id}-problema`} rotulo="O problema do prédio" opcional maxLength={300} value={valor.problema}
         onChange={(e) => aoMudar({ ...valor, problema: e.target.value })} placeholder="Portaria sem registro e vazamentos que se repetem"
-        ajuda="Em texto curto, como o síndico contou. Abre a apresentação do kit." erro={campos.includes("problema") ? "Até 300 letras." : undefined} />
+        ajuda="Vai para o síndico e o conselho no kit; não escreva nota interna. Em texto curto, como o síndico contou." erro={campos.includes("problema") ? "Até 300 letras." : undefined} />
     </div>
   );
 }
@@ -84,12 +85,17 @@ export function JanelaCriterios({ interessado, inicial, aoFechar, feito }: {
 }
 
 /**
- * O fato confirmado de um sistema num critério (0307). Vale para todo prédio que tem o mesmo
- * sistema; no critério "outro", só para este prédio. Retirar volta a célula para "a confirmar".
+ * O fato confirmado de um sistema num critério (0307). Por padrão vale só para este prédio (o
+ * contrato do sistema atual é de cada prédio, CM-12); todo prédio só quando é informação pública
+ * do concorrente, nunca na coluna do sistema atual nem no critério "outro". Retirar volta a
+ * célula para "a confirmar".
  */
-export function JanelaFato({ sistema, criterio, nomeCriterio, interessadoId, fato, aoFechar, feito }: {
-  sistema: string; criterio: CriterioSindico; nomeCriterio: string; interessadoId: string; fato?: FatoComparativo; aoFechar: () => void; feito: (texto: string) => void;
+export function JanelaFato({ sistema, sistemaAtual, criterio, nomeCriterio, interessadoId, fato, aoFechar, feito }: {
+  sistema: string; sistemaAtual: boolean; criterio: CriterioSindico; nomeCriterio: string; interessadoId: string; fato?: FatoComparativo; aoFechar: () => void;
+  feito: (texto: string) => void;
 }) {
+  const podePublico = !sistemaAtual && criterio !== "OUTRO";
+  const [escopo, setEscopo] = useState<EscopoFato>(fato?.escopo ?? "PREDIO");
   const [texto, setTexto] = useState(fato?.texto ?? "");
   const [fonte, setFonte] = useState(fato?.fonte ?? "");
   const [confirmadoEm, setConfirmadoEm] = useState(fato?.confirmadoEm ?? hojeBrasilia());
@@ -106,7 +112,7 @@ export function JanelaFato({ sistema, criterio, nomeCriterio, interessadoId, fat
     const corpo = { texto: texto.trim(), fonte: fonte.trim(), confirmadoEm: confirmadoEm || null };
     const r = fato
       ? await chamarApi(ROTAS_PROPOSTAS.fatos(fato.id), { metodo: "PUT", corpo: { ...corpo, versao: fato.versao } })
-      : await chamarApi(ROTAS_PROPOSTAS.fatos(), { corpo: { ...corpo, sistema, criterio, interessadoId: criterio === "OUTRO" ? interessadoId : null } });
+      : await chamarApi(ROTAS_PROPOSTAS.fatos(), { corpo: { ...corpo, sistema, criterio, interessadoId, escopo: podePublico ? escopo : "PREDIO" } });
     setEnviando(null);
     if (!r.ok) return setErro(r.erro);
     feito(`Fato de ${sistema} salvo no comparativo.`);
@@ -136,7 +142,25 @@ export function JanelaFato({ sistema, criterio, nomeCriterio, interessadoId, fat
           placeholder="Site deles, contrato que o síndico mostrou" ajuda="Só a equipe vê." erro={campos.includes("fonte") ? "Diga onde confirmou." : undefined} />
         <CampoTexto id="fato-data" rotulo="Confirmado em" type="date" max={hojeBrasilia()} value={confirmadoEm} onChange={(e) => setConfirmadoEm(e.target.value)}
           erro={campos.includes("confirmadoEm") ? "A data não pode ser futura." : undefined} />
-        <p className="t-apoio">{criterio === "OUTRO" ? "Este critério é só deste prédio: o fato fica só aqui." : `Vale para todo prédio que tem ${sistema} na ficha.`}</p>
+        {fato ? (
+          <p className="t-apoio">{escopo === "PUBLICO" ? `Informação pública: vale para todo prédio que compara com ${sistema}.` : "Vale só para este prédio."}</p>
+        ) : podePublico ? (
+          <fieldset className="grid gap-2">
+            <legend className="mb-1 t-apoio font-medium">Onde vale</legend>
+            <div className="flex flex-wrap gap-2">
+              {(Object.entries(ESCOPOS_FATO) as [EscopoFato, string][]).map(([e, texto]) => (
+                <label key={e} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-linha px-4 has-checked:border-violeta-600 has-checked:bg-violeta-50 has-checked:font-semibold has-checked:text-violeta-700">
+                  <input type="radio" className="sr-only" name="fato-escopo" checked={escopo === e} onChange={() => setEscopo(e)} />
+                  {escopo === e ? <Icone nome="check" className="h-4 w-4" /> : null}
+                  {texto}
+                </label>
+              ))}
+            </div>
+            <span className="t-apoio">Todo prédio só para o que está no site ou na tabela pública deles. Contrato e conversa com o síndico ficam só aqui.</span>
+          </fieldset>
+        ) : (
+          <p className="t-apoio">{sistemaAtual ? "O sistema atual é do contrato deste prédio: o fato fica só aqui." : "Este critério é só deste prédio: o fato fica só aqui."}</p>
+        )}
         {erro && !campos.length ? <ErroJanela erro={erro} /> : null}
         {fato ? (
           <Botao variante="discreto" className="justify-self-start" disabled={!!enviando} onClick={() => void retirar()}>

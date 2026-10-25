@@ -16,7 +16,7 @@ import {
   TEXTO_ACEITE,
 } from "./propostas.ts";
 import { TEXTOS_MOTIVO } from "./textos.ts";
-import { CRITERIOS_SINDICO, criteriosInteressadoSchema, fatoComparativoSchema, fichaInteressadoSchema } from "./comercial.ts";
+import { CRITERIOS_SINDICO, criteriosInteressadoSchema, ESCOPOS_FATO, fatoComparativoSchema, fichaInteressadoSchema } from "./comercial.ts";
 
 const SQL = ["0304_comercial_propostas.sql", "0306_comercial_propostas_ajustes.sql", "0307_comercial_kit_criterios.sql"]
   .map((f) => readFileSync(new URL(`../../../supabase/migrations/${f}`, import.meta.url), "utf8"))
@@ -116,7 +116,15 @@ describe("kit pelos critérios do síndico (0307)", () => {
 
   it("o fato confirmado pede o texto e a fonte", () => {
     const ok = fatoComparativoSchema.parse({ sistema: "HabitaOne", criterio: "COMO_CANCELAR", texto: "Multa de 3 meses", fonte: "Contrato deles" });
-    expect([ok.versao, ok.interessadoId, ok.confirmadoEm]).toEqual([null, null, null]);
+    expect([ok.versao, ok.interessadoId, ok.confirmadoEm, ok.escopo]).toEqual([null, null, null, null]);
     expect(fatoComparativoSchema.safeParse({ sistema: "HabitaOne", criterio: "COMO_CANCELAR", texto: "Multa" }).error?.issues.map((i) => i.path[0])).toEqual(["fonte"]);
+    expect(fatoComparativoSchema.parse({ texto: "Multa de 3 meses", fonte: "Site deles", escopo: "PUBLICO" }).escopo).toBe("PUBLICO");
+    expect(fatoComparativoSchema.safeParse({ texto: "Multa de 3 meses", fonte: "Site deles", escopo: "TODOS" }).error?.issues.map((i) => i.path[0])).toEqual(["escopo"]);
+  });
+
+  it("o escopo do fato é o mesmo do banco: só do prédio por padrão, ou informação pública", () => {
+    expect(Object.keys(ESCOPOS_FATO)).toEqual(["PREDIO", "PUBLICO"]);
+    expect(SQL).toContain("escopo         text not null default 'PREDIO' check (escopo in ('PREDIO', 'PUBLICO'))");
+    expect(ESCOPOS_FATO.PREDIO).toBe("Só deste prédio");
   });
 });

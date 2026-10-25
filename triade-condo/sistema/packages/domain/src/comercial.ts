@@ -283,11 +283,23 @@ export const criteriosInteressadoSchema = z
   })
   .refine((d) => !d.criterios.includes("OUTRO") || d.criterioOutro, { message: "Diga qual é o outro critério", path: ["criterioOutro"] });
 
+/**
+ * Onde vale o fato do comparativo (0307): por padrão, só no prédio em que foi registrado (o
+ * contrato do sistema atual é de cada prédio, CM-12); todo prédio só para informação pública do
+ * concorrente (site, tabela pública), nunca na coluna do sistema atual nem no critério "outro".
+ */
+export const ESCOPOS_FATO = {
+  PREDIO: "Só deste prédio",
+  PUBLICO: "Todo prédio (informação pública)",
+} as const;
+export type EscopoFato = keyof typeof ESCOPOS_FATO;
+
 /** O fato que a equipe confirmou sobre o sistema atual ou um concorrente, por critério (0307). */
 export const fatoComparativoSchema = z.object({
   versao: versao.optional().nullable().transform((v) => v ?? null),
   sistema: z.string().trim().min(2).max(120).optional().nullable().transform((v) => v ?? null),
   criterio: z.enum(chaves(CRITERIOS_SINDICO)).optional().nullable().transform((v) => v ?? null),
+  escopo: z.enum(chaves(ESCOPOS_FATO)).optional().nullable().transform((v) => v ?? null),
   interessadoId: uuidOpcional,
   texto: z.string().trim().min(2).max(200),
   fonte: z.string().trim().min(3).max(200),

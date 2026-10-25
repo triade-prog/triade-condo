@@ -7,7 +7,7 @@ import { PDFDocument } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import { montarPdf } from "./pdf.ts";
 import {
-  aprovacaoDaVersao, conteudoDaVersao, conteudoDoLink, depoisDoEnvio, documentoKit, documentoProposta, enderecoDoLink, fatoDaCelula, linhasDoPreco, nomeCriterio,
+  aprovacaoDaVersao, conteudoDaVersao, conteudoDoLink, depoisDoEnvio, documentoKit, documentoProposta, enderecoDoLink, fatoDaCelula, linhasDoPreco, mensagemDoLink, nomeCriterio,
   pecasDisponiveis, resumoVersao, slug,
   tabelaComparativo, rotulosAprovacao, textoAberturas, textoAprovacao, textoAta, textoDesconto, textoImpressao, textoNoAno, textoSituacao, type ItemListaProposta, type Kit, type PropostaPublica,
   type VersaoProposta,
@@ -166,6 +166,13 @@ describe("kit para o conselho (CM-20)", () => {
     const sem = { ...KIT, comparativo: { ...KIT.comparativo, linhas: [] } };
     expect(pecasDisponiveis(sem).COMPARATIVO).toMatch(/Escolher critérios/);
     expect(tabelaComparativo(sem).linhas).toEqual([]);
+  });
+
+  it("a mensagem do kit só cita o comparativo quando ele tem linhas", () => {
+    expect(mensagemDoLink("João Reis", "Residencial Cerrado", "https://x/o/abc", true, true)).toContain("o kit com o comparativo e o texto para a ata");
+    const sem = mensagemDoLink("João Reis", "Residencial Cerrado", "https://x/o/abc", true, false);
+    expect(sem).toContain("o kit com o texto para a ata");
+    expect(sem).not.toContain("comparativo");
   });
 
   it("o fato da célula é achado pelo nome do sistema sem acento nem espaço", () => {
