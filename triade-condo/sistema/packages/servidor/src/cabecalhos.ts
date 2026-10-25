@@ -55,12 +55,14 @@ export function montarCsp({ nonce, dev = false, armazenamento }: OpcoesCsp): str
 }
 
 /** Cabeçalhos fixos (sem a CSP), aplicados em todas as respostas dos dois apps. */
-export function cabecalhosSeguranca(_app: App, caminho = "/"): Record<string, string> {
+export function cabecalhosSeguranca(app: App, caminho = "/"): Record<string, string> {
   return {
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
     "X-Content-Type-Options": "nosniff",
-    // Os links de redefinir senha e de convite levam o token na URL: nada de referrer ali.
-    "Referrer-Policy": caminho.startsWith("/redefinir") || caminho.startsWith("/convite") ? "no-referrer" : "strict-origin-when-cross-origin",
+    // Os links de redefinir senha, de convite e da proposta do Comercial (/o, no Console) levam o
+    // token na URL: nada de referrer ali.
+    "Referrer-Policy": caminho.startsWith("/redefinir") || caminho.startsWith("/convite") || (app === "console" && caminho.startsWith("/o/"))
+      ? "no-referrer" : "strict-origin-when-cross-origin",
     // A câmera só no link do prestador, para ler a etiqueta do local (MP-08).
     "Permissions-Policy": `camera=${caminho.startsWith("/p/") ? "(self)" : "()"}, microphone=(), geolocation=(), browsing-topics=(), payment=()`,
     "Cross-Origin-Opener-Policy": "same-origin",

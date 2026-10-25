@@ -2,17 +2,19 @@
 // Ficha do interessado (quadros 323 e 324, aprovados em 24/10/2026): a barra das etapas, as
 // mensagens prontas da etapa, as conversas, o próximo passo, a cadência, o prédio, as objeções e os
 // concorrentes e o contato com a base legal. ?etapa=X chega do quadro quando falta algo para a
-// etapa; ?juntado=1 chega do Novo interessado quando o contato já existia.
+// etapa; ?juntado=1 chega do Novo interessado quando o contato já existia. O cartão Proposta leva à
+// proposta do interessado ou abre a nova (R17.3, quadro 325).
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { ETAPAS_ABERTAS, formatarWhatsapp, linkWhatsappComercial, mostrarDataSemHora, MOTIVOS_PERDA, PAPEIS_CONTATO, preencherMensagem, type EtapaComercial } from "@triade/domain";
-import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
+import { Aviso, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
 import { Cartao, Dado, diaHora, LinhaDoTempo, MenuAcoes, plural, Voltar, type ItemMenu, type PassoTempo } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import { iconeCanal, nomeCanal, nomeEtapa, nomeFaixa, nomeOrigem, quandoCurto, ROTAS_COMERCIAL, SeloEtapa, SelosAtencao, textoTarefa, TOM_SITUACAO } from "./comum.tsx";
 import { JanelaConfirmar, JanelaConversa, JanelaFicha, JanelaPerdido, JanelaProximoPasso } from "./janelas.tsx";
+import { ROTAS_PROPOSTAS, resumoVersao, TELAS_PROPOSTAS, textoAberturas, textoSituacao, TOM_SITUACAO_PROPOSTA, type ListaPropostas } from "./propostas.ts";
 import type { FichaInteressado as Ficha } from "./tipos.ts";
 
 type Janela =
@@ -64,6 +66,34 @@ function Conversas({ f }: { f: Ficha }) {
   itens.sort((a, b) => (ordem.get(a.chave)! < ordem.get(b.chave)! ? 1 : -1));
   if (!itens.length) return <Vazio titulo="Nenhuma conversa ainda" icone="balao">Registre a primeira conversa depois de falar com a pessoa.</Vazio>;
   return <LinhaDoTempo itens={itens} rotulo="Conversas e mudanças de etapa" />;
+}
+
+/** O atalho para a proposta (CM-06, CM-07): a que existe, com a situação, ou a nova. */
+function CartaoProposta({ f }: { f: Ficha }) {
+  const carga = useCarregar<ListaPropostas>(ROTAS_PROPOSTAS.lista(null, f.id));
+  const p = carga.estado === "pronto" ? carga.dados.propostas[0] : undefined;
+  const aberto = ETAPAS_ABERTAS.includes(f.etapa) && !f.anonimizado && !f.naoContatar;
+  return (
+    <Cartao id="ficha-proposta" titulo="Proposta" icone="documento">
+      {carga.estado === "carregando" ? <Carregando linhas={1} /> : null}
+      {carga.estado === "erro" ? <p className="t-apoio">{carga.texto}</p> : null}
+      {p ? (
+        <>
+          <p className="flex flex-wrap items-center gap-2"><Selo tom={TOM_SITUACAO_PROPOSTA[p.atual.situacao]}>{textoSituacao(p.atual.numero, p.atual.situacao)}</Selo>
+            <span className="t-apoio">{resumoVersao(p.atual)}</span></p>
+          {p.atual.situacao === "ENVIADA" ? <p className="t-apoio">{textoAberturas(p.aberturas)}</p> : null}
+          <Link href={TELAS_PROPOSTAS.lista(p.id)} className={classeBotao("contorno", "justify-self-start")}><Icone nome="documento" />Abrir a proposta</Link>
+        </>
+      ) : carga.estado === "pronto" ? (
+        <>
+          <p className="t-apoio">Ainda sem proposta. Os valores vêm da Tabela de preços, com as unidades da ficha do prédio.</p>
+          {carga.dados.podeEditar && aberto ? (
+            <Link href={TELAS_PROPOSTAS.nova(f.id)} className={classeBotao("contorno", "justify-self-start")}><Icone nome="mais" />Fazer proposta</Link>
+          ) : null}
+        </>
+      ) : null}
+    </Cartao>
+  );
 }
 
 function Cadencia({ f, agir }: { f: Ficha; agir: (acao: "FEITO" | "PARAR") => void }) {
@@ -217,6 +247,7 @@ export function FichaInteressado() {
               {f.primeiraRespostaEm ? <p className="t-apoio">{`Primeiro retorno feito em ${diaHora(f.primeiraRespostaEm)}.`}</p> : null}
             </Cartao>
           ) : null}
+          {!f.anonimizado ? <CartaoProposta f={f} /> : null}
           {f.perda ? (
             <Cartao id="ficha-4" titulo="Por que não fechou" icone="fechar">
               <Dado icone="alerta" nome="Motivo">{MOTIVOS_PERDA[f.perda.motivo]}</Dado>

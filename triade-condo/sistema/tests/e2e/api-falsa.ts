@@ -6,7 +6,7 @@ import { criarSuporteConsole, rotasSuporteConsole } from "./api-falsa-console-su
 import { criarPlanosConsole, rotasPlanosConsole } from "./api-falsa-console-planos";
 import { criarPrecosConsole, rotasPrecosConsole } from "./api-falsa-console-precos";
 import { criarRetencaoConsole, rotasRetencaoConsole } from "./api-falsa-console-retencao";
-import { criarComercialConsole, rotasComercialConsole } from "./api-falsa-console-comercial";
+import { criarComercialConsole, rotasComercialConsole, rotasPublicasPropostas } from "./api-falsa-console-comercial";
 import { andamentoConfiguracao, criarConfiguracaoConsole, rotasConfiguracaoConsole } from "./api-falsa-console-configuracao";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -26,7 +26,8 @@ const IMPLANTACAO = TODAS.filter((a) => !a.startsWith("console.pagamentos.") && 
 
 export interface Opcoes {
   logado?: boolean;
-  funcao?: "ADMINISTRACAO" | "IMPLANTACAO";
+  /** COMERCIAL: a Bianca, que vê e mexe no Comercial, mas não aprova desconto nem muda modelos. */
+  funcao?: "ADMINISTRACAO" | "IMPLANTACAO" | "COMERCIAL";
   /** Etapa que a senha devolve: primeiro acesso (cadastrar autenticador) ou código. */
   etapaSenha?: "CADASTRAR_AUTENTICADOR" | "CODIGO";
   /** Tabela de preços (0295): a Administração edita; "ver" tira a ação de editar; Implantação não vê. */
@@ -39,6 +40,8 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
 
 export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
   const admin = (opcoes.funcao ?? "ADMINISTRACAO") === "ADMINISTRACAO";
+  const comercialSo = opcoes.funcao === "COMERCIAL";
+  const podeComercial = { ver: admin || comercialSo, editar: admin || comercialSo, desconto: admin, modelos: admin };
   const podePrecos = { ver: admin, editar: admin && (opcoes.precos ?? "editar") === "editar" };
   const acoesPrecos = [...(podePrecos.ver ? ["console.precos.ver"] : []), ...(podePrecos.editar ? ["console.precos.editar"] : [])];
   const estado = {
@@ -216,14 +219,19 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
       return route.fulfill({ json: { ok: true } });
     }
 
+    // O link da proposta (0304) abre sem sessão.
+    const publico = await rotasPublicasPropostas(route, comercial, caminho, metodo, corpo);
+    if (publico !== null) return publico;
+
     if (!estado.logado) return erro(route, 401, "UNAUTHORIZED");
 
     if (caminho === "/v1/sessao") {
       return route.fulfill({
         json: admin
           ? { pessoaId: CAROLINA, nome: "Carolina", funcoes: ["ADMINISTRACAO"], acoes: ["console.condominios.criar", "console.equipe.gerenciar", "console.historico.equipe", "console.pagamentos.ver", "console.pagamentos.registrar", ...acoesPrecos,
-              "console.retencao.ver", "console.retencao.ligar", "console.comercial.ver", "console.comercial.editar", "console.comercial.modelos",
+              "console.retencao.ver", "console.retencao.ligar", "console.comercial.ver", "console.comercial.editar", "console.comercial.desconto", "console.comercial.modelos",
               "console.comercial.exportar", "console.comercial.excluir"] }
+          : comercialSo ? { pessoaId: "2d9e5b20-0000-4000-8000-00000000bb01", nome: "Bianca", funcoes: ["COMERCIAL"], acoes: ["console.comercial.ver", "console.comercial.editar"] }
           : { pessoaId: INES, nome: "Inês", funcoes: ["IMPLANTACAO"], acoes: [] },
       });
     }
@@ -328,7 +336,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
       return route.fulfill({ json: { eventos: [{ id: 9, ocorridoEm: "2026-10-16T12:30:00Z", autor: { id: CAROLINA, nome: "Carolina" }, acao: "equipe.membro_cadastrado", entidade: "pessoa", dados: { funcoes: ["IMPLANTACAO"] },
         alvo: { id: INES, nome: "Inês" } }] } });
     }
-    const r8 = await rotasComercialConsole(route, comercial, caminho, metodo, corpo, admin);
+    const r8 = await rotasComercialConsole(route, comercial, caminho, metodo, corpo, podeComercial, url);
     if (r8 !== null) return r8;
     const r7 = await rotasRetencaoConsole(route, retencao, caminho, metodo, corpo, admin);
     if (r7 !== null) return r7;
