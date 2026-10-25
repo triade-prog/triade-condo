@@ -1,0 +1,93 @@
+---
+// Telas de exemplo da página Plataforma (aprovadas pela Carolina em 25/10/2026): Comunicados,
+// Manutenção e Indicadores, no padrão do painel (menu, nomes e datas reais). Dados ilustrativos.
+import { icones as ic } from "../dados/icones";
+interface Props { id: "comunicacao" | "operacoes" | "indicadores"; }
+const { id } = Astro.props;
+const menu = [
+  ["Dia a dia", [["casa", "Início"], ["pedido", "Pedidos"], ["voto", "Decisões"], ["agenda", "Agenda"], ["chave", "Manutenção"]]],
+  ["Comunicação", [["megafone", "Comunicados"], ["mural", "WhatsApp"], ["equipe", "Vida em condomínio"]]],
+  ["Prédio e pessoas", [["casa", "Moradores e unidades"], ["pasta", "Documentos e memória"], ["grafico", "Indicadores"]]],
+] as const;
+const dias = Array.from({ length: 31 }, (_, i) => i + 1);
+---
+{id === "comunicacao" && (<>
+<div class="tm-ap">
+        <div class="tm-ap-top"><img src="/logo-triade-240.webp" alt="" /><span class="tm-bs">Buscar pedido, unidade ou pessoa</span><span class="tm-qm"><i>CA</i>Carlos · Síndico</span></div>
+        <div class="tm-ap-in">
+          <div class="tm-ap-menu">{menu.map(([g, it]) => <><h6>{g}</h6>{it.map(([n, t]) => <span class:list={[t === "Comunicados" && "tm-at"]}><svg viewBox="0 0 24 24" set:html={ic[n]} />{t}</span>)}</>)}</div>
+          <div class="tm-ap-c">
+            <div class="tm-ap-h"><div><h5>Comunicados</h5><p>O que foi avisado, para quem e quantos abriram.</p></div><span class="tm-bt tm-p">+ Escrever comunicado</span></div>
+            <div class="tm-abas"><span class="tm-at">Publicados</span><span>Programados</span><span>Rascunhos</span><span>No mural</span></div>
+            <div class="tm-com">
+              <div class="tm-cx tm-com-lista">
+                <div class="tm-ln tm-at"><span class="tm-t"><b>Limpeza da caixa d'água</b><small>sáb 24/10 · todo o prédio</small></span></div>
+                <div class="tm-ln"><span class="tm-t"><b>Assembleia ordinária</b><small>qui 22/10 · convite</small></span></div>
+                <div class="tm-ln"><span class="tm-t"><b>Novo horário da piscina</b><small>seg 19/10 · todo o prédio</small></span></div>
+                <div class="tm-ln"><span class="tm-t"><b>Obra no bloco B</b><small>qua 14/10 · bloco B</small></span></div>
+              </div>
+              <div class="tm-cx tm-com-d">
+                <div style="display:flex;gap:6px"><span class="tm-pl tm-violeta">Manutenção</span><span class="tm-pl tm-verde">Publicado</span></div>
+                <h6>Limpeza da caixa d'água</h6>
+                <span class="tm-mono2">sáb 24/10/2026 · 09:14 · por Carlos</span>
+                <p style="margin:0;color:var(--tinta-suave)">Na terça, 27/10, das 8h às 14h, a água pode faltar. Deixe uma reserva em casa.</p>
+                <div class="tm-abriu"><small style="color:var(--tinta-suave)">Abriram o link</small><span class="tm-n">42 de 58 unidades</span><span class="tm-barra"><i></i></span><small style="color:#8a80a0">Pelo WhatsApp do condomínio, e-mail e mural</small></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tm-cx tm-flut">
+        <h6>Regimento interno</h6>
+        <div class="tm-ln tm-at"><span class="tm-t"><b>Versão 3 (em vigor)</b><small>aprovada em 22/10/2026</small></span></div>
+        <div class="tm-ln"><span class="tm-t"><b>Versão 2</b><small>15/03/2025</small></span></div>
+        <div class="tm-ln"><span class="tm-t"><b>Versão 1</b><small>02/02/2023</small></span></div>
+      </div>
+</>)}
+{id === "operacoes" && (<>
+<div class="tm-ap">
+        <div class="tm-ap-top"><img src="/logo-triade-240.webp" alt="" /><span class="tm-bs">Buscar pedido, unidade ou pessoa</span><span class="tm-qm"><i>CA</i>Carlos · Síndico</span></div>
+        <div class="tm-ap-c">
+          <div class="tm-ap-h"><div><h5>Manutenção</h5><p>Preventivas, vistorias e prestadores do condomínio.</p></div><span class="tm-bt tm-p">+ Nova manutenção</span></div>
+          <div class="tm-grade2">
+            <div class="tm-cx tm-tabela-op">
+              <div class="tm-ln"><svg class="tm-i" viewBox="0 0 24 24" set:html={ic.chave} /><span class="tm-t"><b>Bombas de recalque</b><small>Casa de máquinas · preventiva mensal</small></span><span class="tm-col-x" style="font-size:11.5px">TecnoÁgua</span><span class="tm-pl tm-ambar">Vence hoje</span></div>
+              <div class="tm-ln"><svg class="tm-i" viewBox="0 0 24 24" set:html={ic.chave} /><span class="tm-t"><b>Extintores</b><small>Áreas comuns · recarga anual</small></span><span class="tm-col-x" style="font-size:11.5px">Segurimax</span><span class="tm-pl tm-verde">Em dia</span></div>
+              <div class="tm-ln"><svg class="tm-i" viewBox="0 0 24 24" set:html={ic.equipe} /><span class="tm-t"><b>Hidráulica Souza</b><small>Prestador · check-in 09:12 por QR</small></span><span class="tm-col-x" style="font-size:11.5px">Garagem</span><span class="tm-pl tm-violeta">No prédio</span></div>
+              <div class="tm-ln"><svg class="tm-i" viewBox="0 0 24 24" set:html={ic.chave} /><span class="tm-t"><b>Elevadores</b><small>Torre A · vistoria mensal</small></span><span class="tm-col-x" style="font-size:11.5px">Atlas</span><span class="tm-pl tm-cinza">Ter 3/11</span></div>
+            </div>
+            <div class="tm-cx tm-cal">
+              <div class="tm-cal-h"><span>Outubro 2026</span><span style="color:#8a80a0">‹ ›</span></div>
+              <div class="tm-cal-g">
+                {["D","S","T","Q","Q","S","S"].map((d) => <span class="tm-d">{d}</span>)}
+                {[27, 28, 29, 30].map((d) => <span class="tm-f">{d}</span>)}
+                {dias.map((d) => <span class:list={[d === 25 && "tm-hj", [7, 14, 21, 27].includes(d) && "tm-m"]} style={d === 27 ? "--c:#0d6e8c" : d === 14 ? "--c:#95560a" : undefined}>{d}</span>)}
+              </div>
+            </div>
+          </div>
+          <div class="tm-cx tm-fic">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:15px">Bombas de recalque</b><span class="tm-pl tm-ambar">Vence hoje</span></div>
+              <dl><dt>O que fazer</dt><dd>Conferir funcionamento, ruído e pressão de trabalho.</dd><dt>Quem executa</dt><dd>TecnoÁgua · (61) 98765-4321</dd><dt>Próxima</dt><dd>dom 25/10/2026</dd></dl>
+            </div>
+            <div class="tm-obs"><b>Ao concluir</b>Registrar a pressão e anexar a foto do depois.<span class="tm-anexo"><svg class="tm-i" viewBox="0 0 24 24" set:html={ic.doc} />Anexar foto ou laudo</span></div>
+          </div>
+        </div>
+      </div>
+</>)}
+{id === "indicadores" && (<>
+<div class="tm-ap">
+        <div class="tm-ap-top"><img src="/logo-triade-240.webp" alt="" /><span class="tm-bs">Buscar pedido, unidade ou pessoa</span><span class="tm-qm"><i>CA</i>Carlos · Síndico</span></div>
+        <div class="tm-ap-c">
+          <div class="tm-ap-h"><div><h5>Indicadores</h5><p>Outubro de 2026 · comparado a setembro</p></div><span class="tm-bt tm-s">Outubro ▾</span></div>
+          <div class="tm-ind">
+            <div class="tm-cx tm-kpi"><small>Retornos no prazo</small><b>94%</b><span>+6 pontos</span></div>
+            <div class="tm-cx tm-kpi"><small>Primeiro retorno</small><b>6 h</b><span>2 h mais rápido</span></div>
+            <div class="tm-cx tm-kpi"><small>Concluídos</small><b>35</b><span>Nota média 4,7</span></div>
+          </div>
+          <div class="tm-cx tm-cat"><h6>Pedidos por categoria</h6>
+            {[["Manutenção", 14], ["Barulho", 8], ["Limpeza", 6], ["Garagem", 4], ["Outros", 3]].map(([n, v]) => <div class="tm-r"><span>{n}</span><span><i style={`width:${(v as number) / 14 * 100}%`}></i></span><em>{v}</em></div>)}
+          </div>
+        </div>
+      </div>
+</>)}

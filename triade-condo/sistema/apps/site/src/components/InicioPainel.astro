@@ -36,7 +36,7 @@ const agora: Record<Props["perfil"], { tom: Tom; titulo: string; detalhe: string
 <div class:list={["janela", grande && "janela-grande"]} aria-hidden="true">
   <BarraPainel busca={grande ? "Buscar pedido" : undefined} />
   <div class="inicio-corpo">
-    <div class="resumo"><span class="o1"></span><span class="o2"></span><span class="tr"></span><small>Sexta-feira, 23 de outubro</small><b>Bom dia, {nome}</b><span>Residencial Ipê · Brasília</span></div>
+    <div class="resumo"><small>Sexta-feira, 23 de outubro</small><b>Bom dia, {nome}</b><span>Residencial Ipê · Brasília</span></div>
     <div class="app-cartao agora-cartao">
       <div class="app-sub"><h4>Agora</h4><span class="ver-tudo">Ver tudo</span></div>
       {agora[perfil].map((a) => (
