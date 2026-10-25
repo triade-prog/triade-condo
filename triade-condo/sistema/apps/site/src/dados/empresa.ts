@@ -10,6 +10,12 @@ export const whatsappComercial = digitos(ler("PUBLIC_WHATSAPP_COMERCIAL")) || "5
 export const razaoSocial = ler("PUBLIC_RAZAO_SOCIAL").trim();
 export const cnpj = ler("PUBLIC_CNPJ").trim();
 
+/**
+ * O link de agendamento da equipe (CM-23, R17.6b), o /a/[codigo] que o Comercial copia na Agenda do
+ * Console. Só https; sem o valor, a página de demonstração não mostra o link.
+ */
+export const linkAgenda = ((v: string) => (/^https:\/\/[^\s"'<>]+\/a\/[a-z2-9]{12}$/.test(v) ? v : null))(ler("PUBLIC_LINK_AGENDA").trim());
+
 export const cidade = "Brasília, DF";
 export const horarioAtendimento = "dias úteis, das 9h às 18h";
 export const promessaRetorno = "até o fim do próximo dia útil";

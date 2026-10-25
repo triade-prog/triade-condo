@@ -2,7 +2,7 @@
 import Base from "../layouts/Base.astro";
 import Olho from "../components/Olho.astro";
 import FormularioDemonstracao from "../components/FormularioDemonstracao.astro";
-import { cidade, duracaoDemonstracao, horarioAtendimento, linkWhatsapp, promessaRetorno, whatsappLegivel } from "../dados/empresa";
+import { cidade, duracaoDemonstracao, horarioAtendimento, linkAgenda, linkWhatsapp, promessaRetorno, whatsappLegivel } from "../dados/empresa";
 const zap = linkWhatsapp("Olá! Quero conhecer a TRÍADE Condo.");
 ---
 <Base titulo="Solicitar demonstração" atual="/demonstracao" descricao={`Peça uma demonstração da TRÍADE Condo com um pedido do seu prédio. Quatro campos; respondemos pelo WhatsApp ${promessaRetorno}.`}>
@@ -30,6 +30,7 @@ const zap = linkWhatsapp("Olá! Quero conhecer a TRÍADE Condo.");
       </ol>
     </div>
     <div class="cartao pilha" style="--gap:12px;background:var(--violeta-50);border-color:#e6d9fb">
+      {linkAgenda && <p style="font-size:16px">Prefere marcar agora? <a href={linkAgenda} id="link-agenda"><b>Escolha o horário na agenda</b></a> e receba a confirmação por e-mail.</p>}
       {zap && <p style="font-size:16px">Prefere falar direto? O WhatsApp comercial é <a href={zap}><b>{whatsappLegivel()}</b></a>, em {horarioAtendimento}.</p>}
       <p class="suave" style="font-size:14px">A demonstração é feita pela TRÍADE, de {cidade}, por videochamada ou na reunião do condomínio. Hoje atendemos o Distrito Federal e o entorno; outras cidades, sob consulta.</p>
     </div>

@@ -4,6 +4,7 @@
 import { armazenamentoSupabase } from "../_shared/arquivos.ts";
 import { adminGoTrue, authGoTrue } from "../_shared/auth.ts";
 import { bancoPostgrest } from "../_shared/banco.ts";
+import { correioResend } from "../_shared/email.ts";
 import { chaveCredenciais, conectorWafly } from "../_shared/whatsapp.ts";
 import { criarApiConsole } from "./app.ts";
 
@@ -32,6 +33,10 @@ const app = criarApiConsole(Deno.env.get("REPASSE_SEGREDO"), {
     : undefined,
   // Pedido de demonstração do site (0296, CM-01): sem SITE_SEGREDO, a entrada fica fechada.
   segredoSite: Deno.env.get("SITE_SEGREDO"),
+  // Confirmação e lembrete da demonstração (0310): sem RESEND_API_KEY, a fila registra "sem chave".
+  correio: Deno.env.get("RESEND_API_KEY") ? correioResend(Deno.env.get("RESEND_API_KEY")!) : undefined,
+  remetenteComercial: Deno.env.get("EMAIL_REMETENTE_COMERCIAL") || undefined,
+  responderComercial: Deno.env.get("EMAIL_COMERCIAL") || undefined,
 });
 
 Deno.serve(app.fetch);

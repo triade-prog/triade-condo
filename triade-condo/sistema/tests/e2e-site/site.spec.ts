@@ -217,6 +217,19 @@ test.describe("Site · demonstração", () => {
     await expect(page.getByRole("button", { name: "Solicitar demonstração" })).toBeEnabled();
   });
 
+  test("R17.6b: o link de agendamento fica no cartão ao lado do formulário, com o mesmo desenho", async ({ page }) => {
+    await page.goto("/demonstracao");
+    const link = page.getByRole("link", { name: "Escolha o horário na agenda" });
+    await expect(link).toHaveAttribute("href", "https://console.exemplo.com.br/a/abcdefgh2345");
+    await expect(page.getByText("Prefere marcar agora?")).toBeVisible();
+    const cartao = page.locator(".cartao").filter({ has: link });
+    await expect(cartao.getByText("Prefere falar direto? O WhatsApp comercial é")).toBeVisible();
+    // As mesmas fontes e cores do cartão: o link é como o do WhatsApp ao lado.
+    const estilo = (l: typeof link) => l.evaluate((el) => { const s = getComputedStyle(el); return [s.fontFamily, s.color].join(" | "); });
+    expect(await estilo(link)).toBe(await estilo(cartao.getByRole("link", { name: /\+55 61 9 0000-0000/ })));
+    await semErroDeAcessibilidade(page);
+  });
+
   test("a API recusa pedido incompleto", async ({ request }) => {
     const r = await request.post("/api/demonstracao", { data: { nome: "C" } });
     expect(r.status()).toBe(422);

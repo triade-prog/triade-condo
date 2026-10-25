@@ -6,13 +6,15 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 import {
-  CAMPOS_ETAPA, CANAIS_REGISTRAVEIS, FAIXAS_PRECO, faixaDoSite, MOTIVOS_PERDA, normalizarWhatsappBr, ORIGENS_COMERCIAL, ORIGENS_MANUAIS, PAPEIS_CONTATO,
-  type CodigoFaixa, type MotivoPerda,
+  CAMPOS_ETAPA, CANAIS_REGISTRAVEIS, FAIXAS_PRECO, faixaDoSite, lerTaxaCondominio, MOTIVOS_PERDA, normalizarWhatsappBr, ORIGENS_COMERCIAL, ORIGENS_MANUAIS,
+  PAPEIS_CONTATO, taxaParaCampo, TEXTO_AJUDA_TAXA, type CodigoFaixa, type MotivoPerda,
 } from "@triade/domain";
 import { Aviso, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, Dialogo, Icone, Interruptor, type ErroApi } from "@triade/ui";
 import { EscolhaBotoes, ErroJanela, RodapeJanela } from "../planos/comum.tsx";
 import { plural } from "../comum.tsx";
+import { useCarregar } from "../sessao.tsx";
 import { nomeCanal, ROTAS_COMERCIAL } from "./comum.tsx";
+import { ROTAS_PARCEIROS, type TelaParceiros } from "./parceiros.ts";
 import { CamposCriterios, type EscolhaCriterios } from "./janelasKit.tsx";
 import type { FichaInteressado, Interessado, Pessoa } from "./tipos.ts";
 
@@ -28,8 +30,11 @@ function erroDe(campos: string[], nome: string, texto: string): string | undefin
 
 /** Novo interessado à mão (quadro 325, CM-02). Mesmo WhatsApp, e-mail ou CNPJ junta no que já existe. */
 export function JanelaNovoInteressado({ equipe, aoFechar, feito }: { equipe: Pessoa[]; aoFechar: () => void; feito: (id: string, juntado: boolean) => void }) {
-  const [f, setF] = useState({ pessoa: "", whatsapp: "", email: "", condominio: "", cidade: "", uf: "", faixa: "", responsavelId: "", origem: "", origemDetalhe: "" });
+  const [f, setF] = useState({ pessoa: "", whatsapp: "", email: "", condominio: "", cidade: "", uf: "", faixa: "", responsavelId: "", origem: "", origemDetalhe: "", parceiroId: "" });
   const [aceito, setAceito] = useState(false);
+  // Origem Parceiro: escolher o parceiro cadastrado faz a indicação (0310, CM-22).
+  const parceiros = useCarregar<TelaParceiros>(f.origem === "PARCEIRO" ? ROTAS_PARCEIROS.lista() : null);
+  const ativos = parceiros.estado === "pronto" ? parceiros.dados.parceiros.filter((p) => p.ativo) : [];
   const [optin, setOptin] = useState(false);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -42,6 +47,7 @@ export function JanelaNovoInteressado({ equipe, aoFechar, feito }: { equipe: Pes
     const r = await chamarApi<{ id: string; juntado: boolean }>(ROTAS_COMERCIAL.lista, {
       corpo: {
         ...f, faixa: f.faixa || null, responsavelId: f.responsavelId || null, uf: f.uf || null, origem: f.origem || null, contatoAceito: aceito,
+        parceiroId: f.origem === "PARCEIRO" && f.parceiroId ? f.parceiroId : null,
         optinTexto: optin ? TEXTO_OPTIN : null,
       },
     });
@@ -71,8 +77,13 @@ export function JanelaNovoInteressado({ equipe, aoFechar, feito }: { equipe: Pes
         <EscolhaBotoes nome="novo-origem" legenda="Por onde chegou" valor={f.origem || null} aoMudar={(v) => setF((x) => ({ ...x, origem: v }))}
           opcoes={ORIGENS_MANUAIS.map((o) => ({ valor: o, texto: ORIGENS_COMERCIAL[o] }))}
           ajuda={campos.includes("origem") ? <span className="text-erro">Escolha por onde a pessoa chegou.</span> : undefined} />
-        <CampoTexto id="novo-detalhe" rotulo={f.origem === "COTACAO" ? "Qual plataforma de cotação" : "Quem indicou ou observação"} opcional maxLength={200}
-          value={f.origemDetalhe} onChange={muda("origemDetalhe")} ajuda={f.origem === "COTACAO" ? "Cotação tem 24 horas para o primeiro retorno." : undefined} />
+        {f.origem === "PARCEIRO" && ativos.length ? (
+          <CampoSelecao id="novo-parceiro" rotulo="Parceiro" opcional value={f.parceiroId} onChange={muda("parceiroId")}
+            opcoes={comVazio("Parceiro sem cadastro", ativos.map((p) => ({ valor: p.id, texto: p.nome })))}
+            ajuda="Com o parceiro escolhido, vira indicação: a comissão nasce quando o prédio virar cliente." />
+        ) : null}
+        {f.origem === "PARCEIRO" && f.parceiroId ? null : <CampoTexto id="novo-detalhe" rotulo={f.origem === "COTACAO" ? "Qual plataforma de cotação" : "Quem indicou ou observação"} opcional maxLength={200}
+          value={f.origemDetalhe} onChange={muda("origemDetalhe")} ajuda={f.origem === "COTACAO" ? "Cotação tem 24 horas para o primeiro retorno." : undefined} />}
         <Interruptor id="novo-aceito" rotulo="A pessoa procurou a TRÍADE ou aceitou o contato" ajuda={TEXTO_CONTATO} marcado={aceito} aoMudar={setAceito} />
         {campos.includes("contatoAceito") ? <span className="t-apoio text-erro">Sem isso o interessado não entra.</span> : null}
         <Interruptor id="novo-optin" rotulo="Aceitou receber mensagens pelo WhatsApp"
@@ -229,7 +240,9 @@ export function JanelaFicha({ i, marcar = [], aoFechar, feito }: { i: FichaInter
     responsavelId: i.responsavel?.id ?? "", administradora: p.administradora ?? "", sistemaAtual: p.sistemaAtual ?? "", fidelidadeAte: p.fidelidadeAte ?? "",
     assembleiaOrdinaria: p.assembleiaOrdinaria ?? "", mandatoAte: p.mandatoAte ?? "", decisor: p.decisor ?? "", decisaoEm: p.decisaoEm ?? "",
     visitaEm: p.visitaEm ?? "", visitaNota: p.visitaNota ?? "", demonstracaoEm: paraLocal(p.demonstracaoEm), observacao: i.observacao ?? "",
+    taxa: taxaParaCampo(p.taxaCondominioMedia),
   });
+  const [erroTaxa, setErroTaxa] = useState<string | undefined>();
   const [appAdm, setAppAdm] = useState(!!p.appAdministradora);
   const [optin, setOptin] = useState(!!i.optin);
   const [objecoes, setObjecoes] = useState<string[]>(i.objecoes);
@@ -244,11 +257,16 @@ export function JanelaFicha({ i, marcar = [], aoFechar, feito }: { i: FichaInter
   async function salvar(ev: FormEvent) {
     ev.preventDefault();
     const unidades = f.unidades.trim() ? Number(f.unidades) : null;
+    // A taxa média de condomínio (DC17): opcional; vazio tira.
+    const taxa = lerTaxaCondominio(f.taxa);
+    setErroTaxa(taxa.erro ?? undefined);
+    if (taxa.erro) return;
+    const { taxa: _campoTaxa, ...resto } = f;
     setEnviando(true);
     const r = await chamarApi(ROTAS_COMERCIAL.interessado(i.id), {
       metodo: "PUT",
       corpo: {
-        versao: i.versao, ...f, papel: f.papel || null, faixa: f.faixa || null, unidades, responsavelId: f.responsavelId || null, uf: f.uf || null,
+        versao: i.versao, ...resto, taxaCondominioMedia: taxa.taxa, papel: f.papel || null, faixa: f.faixa || null, unidades, responsavelId: f.responsavelId || null, uf: f.uf || null,
         appAdministradora: f.administradora ? appAdm : null, demonstracaoEm: deLocal(f.demonstracaoEm), objecoes,
         criterios: criterios.criterios, criterioOutro: criterios.criterios.includes("OUTRO") ? criterios.criterioOutro.trim() || null : null,
         problema: criterios.problema.trim() || null,
@@ -292,6 +310,8 @@ export function JanelaFicha({ i, marcar = [], aoFechar, feito }: { i: FichaInter
           <CampoSelecao id="ficha-faixa" rotulo="Faixa de unidades" opcional value={f.faixa} onChange={muda("faixa")} opcoes={comVazio("Ainda não sei", FAIXAS)} erro={pede("faixa")} />
           <CampoTexto id="ficha-unidades" rotulo="Unidades informadas" opcional inputMode="numeric" maxLength={5} value={f.unidades} onChange={muda("unidades")}
             erro={erroDe(campos, "unidades", "Só o número de unidades.")} />
+          <CampoTexto id="ficha-taxa" rotulo="Taxa média de condomínio (R$ por mês)" opcional inputMode="decimal" maxLength={12} placeholder="650,00" value={f.taxa}
+            onChange={muda("taxa")} ajuda={TEXTO_AJUDA_TAXA} erro={erroTaxa ?? erroDe(campos, "taxaCondominioMedia", "A taxa vai de R$ 0,01 a R$ 20.000.")} />
           <CampoTexto id="ficha-administradora" rotulo="Administradora" opcional maxLength={120} value={f.administradora} onChange={muda("administradora")} />
           {f.administradora ? <Interruptor id="ficha-app-adm" rotulo="A administradora tem app próprio" marcado={appAdm} aoMudar={setAppAdm} /> : null}
           <CampoTexto id="ficha-sistema" rotulo="Sistema atual" opcional maxLength={120} value={f.sistemaAtual} onChange={muda("sistemaAtual")} placeholder="Planilha e grupo de WhatsApp" />

@@ -7,6 +7,7 @@ import { criarPlanosConsole, rotasPlanosConsole } from "./api-falsa-console-plan
 import { criarPrecosConsole, rotasPrecosConsole } from "./api-falsa-console-precos";
 import { criarRetencaoConsole, rotasRetencaoConsole } from "./api-falsa-console-retencao";
 import { criarComercialConsole, rotasComercialConsole, rotasPublicasPropostas } from "./api-falsa-console-comercial";
+import { rotasPublicasAgenda } from "./api-falsa-console-parceiros";
 import { rotasArquivoComercial, rotasPublicasContrato } from "./api-falsa-console-contrato";
 import { andamentoConfiguracao, criarConfiguracaoConsole, rotasConfiguracaoConsole } from "./api-falsa-console-configuracao";
 
@@ -44,7 +45,7 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
 export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
   const admin = (opcoes.funcao ?? "ADMINISTRACAO") === "ADMINISTRACAO";
   const comercialSo = opcoes.funcao === "COMERCIAL";
-  const podeComercial = { ver: admin || comercialSo, editar: admin || comercialSo, desconto: admin, modelos: admin, cliente: admin, assinar: admin, meta: admin };
+  const podeComercial = { ver: admin || comercialSo, editar: admin || comercialSo, desconto: admin, modelos: admin, cliente: admin, assinar: admin, meta: admin, comissao: admin };
   const podePrecos = { ver: admin, editar: admin && (opcoes.precos ?? "editar") === "editar" };
   const acoesPrecos = [...(podePrecos.ver ? ["console.precos.ver"] : []), ...(podePrecos.editar ? ["console.precos.editar"] : [])];
   const estado = {
@@ -231,6 +232,9 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     if (publico !== null) return publico;
     const publicoContrato = await rotasPublicasContrato(route, comercial, caminho, metodo, corpo);
     if (publicoContrato !== null) return publicoContrato;
+    // O link de agendamento (0310) também abre sem sessão.
+    const publicoAgenda = await rotasPublicasAgenda(route, comercial, caminho, metodo, corpo);
+    if (publicoAgenda !== null) return publicoAgenda;
 
     if (!estado.logado) return erro(route, 401, "UNAUTHORIZED");
 
@@ -239,7 +243,8 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
         json: admin
           ? { pessoaId: CAROLINA, nome: "Carolina", funcoes: ["ADMINISTRACAO"], acoes: ["console.condominios.criar", "console.equipe.gerenciar", "console.historico.equipe", "console.pagamentos.ver", "console.pagamentos.registrar", ...acoesPrecos,
               "console.retencao.ver", "console.retencao.ligar", "console.comercial.ver", "console.comercial.editar", "console.comercial.desconto", "console.comercial.modelos",
-              "console.comercial.exportar", "console.comercial.excluir", "console.comercial.cliente", "console.comercial.assinar", "console.comercial.meta"] }
+              "console.comercial.exportar", "console.comercial.excluir", "console.comercial.cliente", "console.comercial.assinar", "console.comercial.meta",
+              "console.comercial.comissao"] }
           : comercialSo ? { pessoaId: "2d9e5b20-0000-4000-8000-00000000bb01", nome: "Bianca", funcoes: ["COMERCIAL"], acoes: ["console.comercial.ver", "console.comercial.editar"] }
           : { pessoaId: INES, nome: "Inês", funcoes: ["IMPLANTACAO"], acoes: [] },
       });

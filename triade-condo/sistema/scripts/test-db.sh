@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sobe um Postgres temporário, aplica as migrations em ordem, roda os testes pgTAP e o teste
-# de edição simultânea, do fato do comparativo registrado duas vezes e da ordem das travas do contrato,
+# de edição simultânea, do fato do comparativo registrado duas vezes, da ordem das travas do contrato e da demonstração,
 # com conexões de verdade.
 # Uso: bash scripts/test-db.sh   (precisa de PostgreSQL 16+ com pgTAP e pg_prove)
 set -euo pipefail
@@ -38,3 +38,9 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/fato-simultaneo.s
 
 # Conferir um envio enquanto o contrato é gerado de novo (0308): a mesma ordem de travas, sem impasse.
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/contrato-envio-simultaneo.sh"
+
+# Dois agendamentos pelo link no mesmo horário (0310): um marca, o outro recebe HORARIO_OCUPADO.
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/agendamento-simultaneo.sh"
+
+# Registrar como foi e remarcar enquanto o interessado é apagado (0310, r6): a mesma ordem de travas.
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/demonstracao-anonimizar-simultaneo.sh"

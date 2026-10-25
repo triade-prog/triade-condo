@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import type { CodigoFaixa } from "./precos.ts";
+import { taxaCondominioSchema } from "./taxa_condominio.ts";
 
 /** Etapas fixas do funil (CM-03, J.1). As três últimas fecham o interessado. */
 export const ETAPAS_COMERCIAL = {
@@ -148,13 +149,23 @@ export function faixaDoSite(texto: string): CodigoFaixa | null {
   return null;
 }
 
-/** Troca os campos entre colchetes da mensagem pronta (CM-15). Campo sem valor fica como está. */
-export function preencherMensagem(texto: string, campos: { nome?: string | null; condominio?: string | null; pessoa?: string | null }): string {
+/** O campo do link de agendamento nas mensagens prontas (CM-23, R17.6b). */
+export const CAMPO_LINK_AGENDA = "[link de agendamento]";
+
+/**
+ * Troca os campos entre colchetes da mensagem pronta (CM-15). Campo sem valor fica como está.
+ * [link de agendamento] vira o link /a/[codigo] de quem atende (ou o da equipe), que a ficha traz.
+ */
+export function preencherMensagem(
+  texto: string,
+  campos: { nome?: string | null; condominio?: string | null; pessoa?: string | null; linkAgenda?: string | null },
+): string {
   const primeiro = (s?: string | null) => (s ? s.trim().split(/\s+/)[0] ?? s : s);
   return texto
     .replaceAll("[nome]", primeiro(campos.nome) || "[nome]")
     .replaceAll("[condominio]", campos.condominio?.trim() || "[condominio]")
-    .replaceAll("[pessoa]", primeiro(campos.pessoa) || "[pessoa]");
+    .replaceAll("[pessoa]", primeiro(campos.pessoa) || "[pessoa]")
+    .replaceAll(CAMPO_LINK_AGENDA, campos.linkAgenda?.trim() || CAMPO_LINK_AGENDA);
 }
 
 /** Link do WhatsApp com o texto pronto. Nada sai sozinho: a pessoa da equipe aperta enviar. */
@@ -203,9 +214,8 @@ const uf = z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/).optional().nullab
 const faixa = z.enum(["ATE_40", "DE_41_A_100", "DE_101_A_200", "DE_201_A_400", "ACIMA_DE_400"]).optional().nullable().transform((v) => v ?? null);
 const unidades = z.number().int().min(1).max(20000).optional().nullable().transform((v) => v ?? null);
 
-/** Novo interessado à mão (quadro 325, CM-02). */
-export const novoInteressadoSchema = z
-  .object({
+/** O contato e o prédio de quem entra à mão: o novo interessado e a indicação do parceiro. */
+const camposNovoInteressado = {
     pessoa: textoOpcional(80),
     papel: z.enum(chaves(PAPEIS_CONTATO)).optional().nullable().transform((v) => v ?? null),
     whatsapp,
@@ -217,11 +227,27 @@ export const novoInteressadoSchema = z
     faixa,
     unidades,
     responsavelId: uuidOpcional,
-    origem: z.enum(ORIGENS_MANUAIS),
-    origemDetalhe: textoOpcional(200),
     contatoAceito: z.literal(true),
     optinTexto: textoOpcional(500),
+};
+
+/**
+ * Novo interessado à mão (quadro 325, CM-02). Com a origem Parceiro e o parceiro escolhido, vira
+ * indicação (0310, CM-22): o vínculo com o parceiro nasce aqui e não muda.
+ */
+export const novoInteressadoSchema = z
+  .object({
+    ...camposNovoInteressado,
+    origem: z.enum(ORIGENS_MANUAIS),
+    origemDetalhe: textoOpcional(200),
+    parceiroId: uuidOpcional,
   })
+  .refine((d) => d.whatsapp || d.email, { message: "Informe o WhatsApp ou o e-mail", path: ["whatsapp"] })
+  .refine((d) => !d.parceiroId || d.origem === "PARCEIRO", { message: "O parceiro só entra com a origem Parceiro", path: ["parceiroId"] });
+
+/** A indicação pela tela de Parceiros (quadro 339): a origem é Parceiro, com o nome dele. */
+export const indicacaoParceiroSchema = z
+  .object(camposNovoInteressado)
   .refine((d) => d.whatsapp || d.email, { message: "Informe o WhatsApp ou o e-mail", path: ["whatsapp"] });
 
 const concorrente = z
@@ -271,6 +297,8 @@ export const fichaInteressadoSchema = z.object({
   criterios: criterios.optional(),
   criterioOutro: textoSeVier(120),
   problema: textoSeVier(300),
+  // A taxa média de condomínio (0310, DC17): só muda quando a tela manda; vazio tira.
+  taxaCondominioMedia: taxaCondominioSchema.nullable().optional(),
 });
 
 /** "Escolher critérios" do kit (quadro 337): os critérios, o outro e o problema do prédio. */
@@ -402,6 +430,10 @@ export const entradaSiteSchema = z.object({
   condominio: z.string().trim().min(2).max(120),
   faixa,
   unidadesTexto: textoOpcional(60),
+  // A calculadora (0310, CM-33): o pedido de proposta com as unidades e a taxa informada (DC17).
+  pedido: z.enum(["DEMONSTRACAO", "PROPOSTA"]).optional().default("DEMONSTRACAO"),
+  unidades,
+  taxaCondominio: taxaCondominioSchema.optional().nullable().transform((v) => v ?? null),
   consentimento: z.literal(true),
   consentimentoTexto: textoOpcional(500),
   pagina: textoOpcional(200),

@@ -331,6 +331,15 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   ORIGEM_FIXA: "A primeira origem do interessado não muda.",
   SO_INSERCAO: "O que foi registrado não se altera nem se apaga. Registre outra conversa para corrigir.",
   CADENCIA_REPETIDA: "Já há uma cadência ativa para esta etapa e esta origem. Desligue a outra antes.",
+  // Parceiros e agenda do Comercial (0310).
+  PARCEIRO_INATIVO: "Este parceiro está inativo. Ative o parceiro antes de registrar a indicação.",
+  PAGAMENTO_REGISTRADO: "O pagamento deste mês já foi registrado e não muda. Atualize a página.",
+  COMISSAO_ENCERRADA: "Este prédio já está sem comissão. Atualize a página.",
+  HORARIO_OCUPADO: "Este horário acabou de ser ocupado. Escolha outro.",
+  DEMONSTRACAO_MARCADA: "Já existe uma demonstração marcada. Para mudar o horário, remarque a que existe.",
+  DEMONSTRACAO_FUTURA: "A demonstração ainda não começou.",
+  DEMONSTRACAO_ENCERRADA: "Esta demonstração já foi encerrada.",
+  REMARCACOES: "Esta demonstração já foi remarcada muitas vezes. Cancele e marque outra.",
   // Propostas do Comercial (0304).
   INTERESSADO_FECHADO: "Este interessado já foi fechado. Volte a etapa para um passo aberto antes de fazer a proposta.",
   PROPOSTA_EXISTE: "Este interessado já tem proposta. Abra a proposta e faça uma versão nova.",
