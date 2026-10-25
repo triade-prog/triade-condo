@@ -221,7 +221,7 @@ import { lerCorpo } from "../_shared/validar.ts";
 import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
 import { montarZip, planilhaCsv, type ItemZip } from "../_shared/zip.ts";
 import { rotasEncomendas } from "./encomendas.ts";
-import { algumPorEmail, rotasAprovacoes, rotasConselhoPublico, type DepsAprovacoes } from "./aprovacoes.ts";
+import { algumPorEmail, algumPorWhatsapp, rotasAprovacoes, rotasConselhoPublico, type DepsAprovacoes } from "./aprovacoes.ts";
 import { rotasPrivacidade } from "./privacidade.ts";
 
 export type VarsPlataforma = { Variables: VarsSessao["Variables"] & { condominioId: string } };
@@ -746,7 +746,10 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
         p_pergunta: d.pergunta, p_porque: d.porque, p_prazo: d.prazo, p_decisor: d.decisorId, p_alternativas: d.alternativas,
         ...(d.modo === "CONSELHO" ? { p_modo: "CONSELHO" } : {}),
       }),
-      depois: (_d: unknown, r: unknown) => { if (algumPorEmail(r)) esvaziarFila(); } },
+      depois: (_d: unknown, r: unknown) => {
+        if (algumPorEmail(r)) esvaziarFila();
+        if (algumPorWhatsapp(r)) noFundo(processarFilaWhatsapp);
+      } },
   ];
   for (const a of acoes) {
     app[a.metodo as "put" | "post"](`/v1/condominio/pedidos/:id${a.rota}`, async (c) => {
@@ -1847,7 +1850,8 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
 
   // Peça R5: o conselho, as regras, a ausência, o voto, as despesas e o link do conselheiro.
   const depsAprovacoes: DepsAprovacoes = {
-    banco: deps.banco, armazenamento: deps.armazenamento, esvaziarFila: () => esvaziarFila(), codigoDaRota,
+    banco: deps.banco, armazenamento: deps.armazenamento, esvaziarFila: () => esvaziarFila(),
+    esvaziarWhatsapp: () => noFundo(processarFilaWhatsapp), codigoDaRota,
     limitar: async (c) => dentroDoLimite("link", await aparelho(c)),
     emailDaConta: (pessoaId) => deps.admin.emailDe(pessoaId),
   };
