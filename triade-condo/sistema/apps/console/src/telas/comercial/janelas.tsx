@@ -117,7 +117,7 @@ export function JanelaPerdido({ i, aoFechar, feito }: { i: FichaInteressado; aoF
           ajuda="Lista dos concorrentes da ficha; alimenta a taxa de vitória por concorrente." />
         <CampoAreaTexto id="perdido-detalhe" rotulo="O que aconteceu" opcional maxLength={500} value={detalhe} onChange={(e) => setDetalhe(e.target.value)} />
         <CampoTexto id="perdido-retomar" rotulo="Voltar a falar em" opcional type="date" value={retomar} onChange={(e) => setRetomar(e.target.value)}
-          ajuda="Opcional. A data fica na ficha para retomar a conversa." />
+          ajuda="Opcional. Nesta data o interessado volta ao Início. Também volta quando alguém registrar o síndico novo ou a fidelidade do sistema atual estiver acabando." />
         <p className="t-apoio">Perdido continua consultável. Depois de 12 meses sem conversa, nome e WhatsApp são apagados e ficam só os números do funil.</p>
         {erro && !semMotivo ? <ErroJanela erro={erro} /> : null}
         <RodapeJanela aoFechar={aoFechar} enviando={enviando} texto="Marcar como perdido" icone="fechar" perigo />

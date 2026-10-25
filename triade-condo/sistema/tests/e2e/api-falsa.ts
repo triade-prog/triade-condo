@@ -33,6 +33,8 @@ export interface Opcoes {
   etapaSenha?: "CADASTRAR_AUTENTICADOR" | "CODIGO";
   /** Tabela de preços (0295): a Administração edita; "ver" tira a ação de editar; Implantação não vê. */
   precos?: "editar" | "ver";
+  /** Comercial (0309): nada pede atenção, e o cartão Comercial some do Início. */
+  comercialSemAtencao?: boolean;
 }
 
 function erro(route: Route, status: number, codigo: string, detalhes?: Record<string, unknown>) {
@@ -42,7 +44,7 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
 export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
   const admin = (opcoes.funcao ?? "ADMINISTRACAO") === "ADMINISTRACAO";
   const comercialSo = opcoes.funcao === "COMERCIAL";
-  const podeComercial = { ver: admin || comercialSo, editar: admin || comercialSo, desconto: admin, modelos: admin, cliente: admin, assinar: admin };
+  const podeComercial = { ver: admin || comercialSo, editar: admin || comercialSo, desconto: admin, modelos: admin, cliente: admin, assinar: admin, meta: admin };
   const podePrecos = { ver: admin, editar: admin && (opcoes.precos ?? "editar") === "editar" };
   const acoesPrecos = [...(podePrecos.ver ? ["console.precos.ver"] : []), ...(podePrecos.editar ? ["console.precos.editar"] : [])];
   const estado = {
@@ -72,6 +74,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
   const precos = criarPrecosConsole();
   const retencao = criarRetencaoConsole();
   const comercial = criarComercialConsole();
+  comercial.painel.semAtencao = opcoes.comercialSemAtencao ?? false;
   // Modelos de mensagem (F5.4, W-20): globais, com versão e situação.
   const MODELOS_V1: [string, string, string, string, string[], string, string | null][] = [
     ["noticia_pedido", "Notícia do pedido", "MORADOR", "Retorno escrito no pedido, com a conversa fechada", ["protocolo", "condomínio", "texto do retorno", "quem escreveu"],
@@ -236,7 +239,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
         json: admin
           ? { pessoaId: CAROLINA, nome: "Carolina", funcoes: ["ADMINISTRACAO"], acoes: ["console.condominios.criar", "console.equipe.gerenciar", "console.historico.equipe", "console.pagamentos.ver", "console.pagamentos.registrar", ...acoesPrecos,
               "console.retencao.ver", "console.retencao.ligar", "console.comercial.ver", "console.comercial.editar", "console.comercial.desconto", "console.comercial.modelos",
-              "console.comercial.exportar", "console.comercial.excluir", "console.comercial.cliente", "console.comercial.assinar"] }
+              "console.comercial.exportar", "console.comercial.excluir", "console.comercial.cliente", "console.comercial.assinar", "console.comercial.meta"] }
           : comercialSo ? { pessoaId: "2d9e5b20-0000-4000-8000-00000000bb01", nome: "Bianca", funcoes: ["COMERCIAL"], acoes: ["console.comercial.ver", "console.comercial.editar"] }
           : { pessoaId: INES, nome: "Inês", funcoes: ["IMPLANTACAO"], acoes: [] },
       });

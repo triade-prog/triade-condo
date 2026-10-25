@@ -387,6 +387,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   PILOTO_ENCERRADO: "Este piloto já terminou.",
   PILOTO_PELO_COMERCIAL: "O piloto começa e termina pelo Comercial: vira cliente ou perdido.",
   NAO_COMECOU: "O piloto ainda não começou; a medida aparece a partir do primeiro dia.",
+  // Painel comercial e janelas (0309).
+  META_MES_PASSADO: "A meta de um mês que já passou não muda. Escolha o mês atual ou um dos próximos.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

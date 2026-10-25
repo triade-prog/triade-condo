@@ -96,6 +96,11 @@ import {
   naoContatarSchema,
   novoInteressadoSchema,
   proximoPassoSchema,
+  diaDoMes,
+  mesComercialSchema,
+  metaComercialSchema,
+  sindicoNovoSchema,
+  tratarJanelaSchema,
   ABAS_PROPOSTAS,
   aceitePropostaSchema,
   acaoVersaoSchema,
@@ -1023,6 +1028,33 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   // Pedido de exclusão (CM-12): só a Administração; o contato entra na lista de não contatar.
   app.post("/v1/comercial/interessados/:id/excluir", async (c) => c.json(await rpc("comercial_excluir", interessado(c))));
+
+  // Janelas do condomínio (CM-18, 0309): assembleia, mandato, fidelidade, voltar a falar e síndico novo.
+  app.get("/v1/comercial/interessados/:id/janelas", async (c) => c.json(await rpc("comercial_janelas_ficha", interessado(c))));
+  app.post("/v1/comercial/interessados/:id/janelas/tratar", async (c) => {
+    const d = await lerCorpo(c, tratarJanelaSchema);
+    return c.json(await rpc("comercial_tratar_janela", { ...interessado(c), p_tipo: d.tipo, p_data: d.data }));
+  });
+  app.post("/v1/comercial/interessados/:id/sindico-novo", async (c) => {
+    const d = await lerCorpo(c, sindicoNovoSchema);
+    return c.json(await rpc("comercial_sindico_novo", { ...interessado(c), p_versao: d.versao, p_desde: d.desde, p_mandato_ate: d.mandatoAte }));
+  });
+
+  // Painel comercial (CM-10, 0309): só números; a meta do mês só a Administração muda.
+  app.get("/v1/comercial/painel", async (c) => {
+    const mes = c.req.query("mes") || null;
+    if (mes !== null && !mesComercialSchema.safeParse(mes).success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["mes"] });
+    return c.json(await rpc("comercial_painel", { p_pessoa: pessoa(c), p_mes: mes === null ? null : diaDoMes(mes) }));
+  });
+  app.put("/v1/comercial/painel/meta", async (c) => {
+    const d = await lerCorpo(c, metaComercialSchema);
+    return c.json(await rpc("comercial_salvar_meta", {
+      p_pessoa: pessoa(c), p_mes: diaDoMes(d.mes), p_versao: d.versao, p_total: d.total, p_por_pessoa: d.porPessoa,
+    }));
+  });
+
+  // O cartão do Comercial no Início do Console (CM-04, CM-18).
+  app.get("/v1/comercial/inicio", async (c) => c.json(await rpc("comercial_inicio", { p_pessoa: pessoa(c) })));
 
   app.post("/v1/comercial/nao-contatar", async (c) => {
     const d = await lerCorpo(c, naoContatarSchema);

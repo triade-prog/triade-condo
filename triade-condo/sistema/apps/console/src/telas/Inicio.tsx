@@ -5,7 +5,8 @@
 // responsável, pedido de acesso para verificar, pendência de implantação vencida e número de
 // WhatsApp sem credenciais ou caído), cada linha com o próximo passo; e, embaixo, as implantações
 // em andamento com a barra de etapas e os clientes com situações a tratar (PI-01, PI-05, PI-09,
-// PI-20, W-01).
+// PI-20, W-01). Para o Comercial e a Administração, o cartão Comercial (quadro 335, 0309; CM-04,
+// CM-18), que some quando nada pede atenção.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,6 +14,7 @@ import { useState, type ReactNode } from "react";
 import { mostrarDataSemHora, mostrarTelefone, SITUACOES_CHAMADO, TIPOS_SUPORTE_ACESSO } from "@triade/domain";
 import { AvisoErro, Botao, Carregando, classeBotao, ErroCarregar, FotoFaixa, Icone, IconeMarca, Selo, textoDoErro, chamarApi, type ErroApi, type NomeIcone } from "@triade/ui";
 import { BarraEtapas, LinhasAgora, plural, diaHora, type LinhaAgora } from "./comum.tsx";
+import { CartaoComercial } from "./comercial/CartaoComercial.tsx";
 import { SeloSituacao } from "./rotulos.tsx";
 import { useCarregar, useSessao, type Carga } from "./sessao.tsx";
 import { TOM_CHAMADO, type ResumoChamado } from "./suporte/Chamados.tsx";
@@ -260,6 +262,7 @@ export function Inicio() {
       </section>
       <Agora implantacoes={implantacoes} />
       <div className="grid items-start gap-5 lg:grid-cols-2">
+        {sessao.acoes.includes("console.comercial.ver") ? <CartaoComercial /> : null}
         {atende ? <Implantacoes carga={implantacoes} /> : null}
         <ATratar carga={clientes} />
       </div>
