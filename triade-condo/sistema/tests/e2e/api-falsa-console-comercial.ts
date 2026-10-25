@@ -4,9 +4,10 @@
 // que só a Administração aprova, o envio com o link, o kit, as respostas prontas, as referências e
 // as rotas públicas do link com o aceite; e o kit pelos critérios do síndico (0307), com os fatos
 // que a equipe confirmou de cada sistema. As regras de verdade estão no banco (pgTAP 045 e 046) e
-// na API (Deno); aqui se confere a tela.
+// na API (Deno); aqui se confere a tela. O painel e as janelas (0309) ficam em api-falsa-console-painel.ts.
 import type { Route } from "@playwright/test";
 import { CODIGO_CERRADO, criarContratos, rotasContrato, situacaoDoContrato } from "./api-falsa-console-contrato";
+import { criarPainel, rotasPainel } from "./api-falsa-console-painel";
 
 type Json = Record<string, unknown>;
 
@@ -90,6 +91,8 @@ export function criarComercialConsole() {
     ...criarPropostas(hoje),
     /** O contrato pelo gov.br (0308): modelo, documentos, contratos, envios e arquivos. */
     contrato: criarContratos(hoje),
+    /** O painel, a meta, as janelas e o cartão do Início (0309, api-falsa-console-painel.ts). */
+    painel: criarPainel(hoje),
   };
 }
 
@@ -178,7 +181,7 @@ const LISTA = ["id", "versao", "condominio", "cidade", "uf", "faixa", "pessoa", 
 const resumo = (i: Json) => Object.fromEntries(LISTA.filter((k) => i[k] !== undefined).map((k) => [k, i[k]]));
 
 /** O que a pessoa pode no Comercial: a Administração tudo; o Comercial sem aprovar desconto e sem mudar modelos. */
-export interface PodeComercial { ver: boolean; editar: boolean; desconto: boolean; modelos: boolean; cliente?: boolean; assinar?: boolean }
+export interface PodeComercial { ver: boolean; editar: boolean; desconto: boolean; modelos: boolean; cliente?: boolean; assinar?: boolean; meta?: boolean }
 
 export async function rotasComercialConsole(route: Route, p: ComercialConsole, caminho: string, metodo: string, corpo: Json, pode: PodeComercial, url: URL) {
   if (!caminho.startsWith("/v1/comercial")) return null;
@@ -187,6 +190,8 @@ export async function rotasComercialConsole(route: Route, p: ComercialConsole, c
   if (/^\/v1\/comercial\/(propostas|respostas|referencias|fatos)/.test(caminho)) return rotasPropostas(route, p, caminho, metodo, corpo, pode, url);
   const contrato = await rotasContrato(route, p, caminho, metodo, corpo, pode, url);
   if (contrato !== null) return contrato;
+  const painel = await rotasPainel(route, p, caminho, metodo, corpo, pode, url);
+  if (painel !== null) return painel;
   if (metodo !== "GET" && !pode.editar) return erro(route, 403, "FORBIDDEN");
   const equipe = [CAROLINA];
   if (caminho === "/v1/comercial/interessados" && metodo === "GET") {

@@ -8,7 +8,7 @@
 // e Equipe, e Sistema (Retenção de dados, F0.11), com o número do
 // que está aberto em laranja; no celular, a barra de baixo com Início, Clientes, Chamados e Mais.
 // Implantações saiu do menu e virou o filtro Em implantação da carteira. No Comercial, Interessados,
-// Propostas (0304) e Modelos.
+// Propostas (0304), Painel comercial (0309) e Modelos.
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -45,7 +45,9 @@ const atende = (s: SessaoConsole) => temFuncao(s, "ADMINISTRACAO", "IMPLANTACAO"
 const ITENS: ItemDoMenu[] = [
   { href: "/", texto: "Início", icone: "casa", grupo: null, atual: (c) => c === "/", ve: () => true, atalho: true },
   { href: "/clientes", texto: "Carteira de clientes", curto: "Clientes", icone: "predio", grupo: "Clientes", atual: (c) => c.startsWith("/clientes"), ve: () => true, atalho: true },
-  { href: "/comercial", texto: "Interessados", icone: "pessoas", grupo: "Comercial", atual: (c) => c === "/comercial" || /^\/comercial\/(?!modelos|propostas)/.test(c),
+  { href: "/comercial", texto: "Interessados", icone: "pessoas", grupo: "Comercial", atual: (c) => c === "/comercial" || /^\/comercial\/(?!modelos|propostas|painel)/.test(c),
+    ve: (s) => s.acoes.includes("console.comercial.ver") },
+  { href: "/comercial/painel", texto: "Painel comercial", curto: "Painel", icone: "grafico", grupo: "Comercial", atual: (c) => c.startsWith("/comercial/painel"),
     ve: (s) => s.acoes.includes("console.comercial.ver") },
   { href: "/comercial/propostas", texto: "Propostas", icone: "documento", grupo: "Comercial", atual: (c) => c.startsWith("/comercial/propostas"),
     ve: (s) => s.acoes.includes("console.comercial.ver") },

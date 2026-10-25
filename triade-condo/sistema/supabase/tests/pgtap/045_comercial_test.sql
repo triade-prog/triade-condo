@@ -32,8 +32,8 @@ select is((select array_agg(acao order by acao) from funcao_acoes where funcao =
   array['console.comercial.editar', 'console.comercial.ver'], 'o Comercial só vê e edita o Comercial');
 select is((select array_agg(acao order by acao) from funcao_acoes where funcao = 'ADMINISTRACAO' and acao like 'console.comercial.%'),
   array['console.comercial.assinar', 'console.comercial.cliente', 'console.comercial.desconto', 'console.comercial.editar', 'console.comercial.excluir',
-        'console.comercial.exportar', 'console.comercial.modelos', 'console.comercial.ver'],
-  'a Administração também exporta, apaga a pedido, muda os modelos, aprova desconto (0304), assina pela TRÍADE e vira cliente (0308)');
+        'console.comercial.exportar', 'console.comercial.meta', 'console.comercial.modelos', 'console.comercial.ver'],
+  'a Administração também exporta, apaga a pedido, muda os modelos, aprova desconto (0304), assina pela TRÍADE e vira cliente (0308) e põe a meta do mês (0309)');
 select is((select console_sessao(com) -> 'acoes' from ids), '["console.comercial.editar", "console.comercial.ver"]'::jsonb,
   'a sessão do Comercial traz as ações do menu');
 select ok((select console_sessao(adm) -> 'acoes' ? 'console.comercial.modelos' from ids), 'a sessão da Administração traz os modelos');

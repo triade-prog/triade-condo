@@ -7,7 +7,7 @@
 // proposta do interessado ou abre a nova (R17.3, quadro 325). Da R17.4 (0308): o piloto com
 // critério de sucesso (quadro 338, CM-21), o contrato pelo gov.br (quadro 440, CM-13) com o Virar
 // cliente que só liga com as duas assinaturas conferidas (quadro 331, CM-08), a troca de sistema (quadro 345, CM-29) e os outros condomínios do
-// mesmo contato com a oportunidade nova (CM-09).
+// mesmo contato com a oportunidade nova (CM-09). Da R17.5 (0309): as janelas do condomínio (CM-18), com o síndico novo.
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -21,6 +21,7 @@ import { TELAS_CONTRATO } from "./contrato.ts";
 import { JanelaEncerrarPiloto, JanelaNovaOportunidade, JanelaPiloto, JanelaVirarCliente, textoFaltaGanho } from "./janelasCliente.tsx";
 import { iconeCanal, nomeCanal, nomeEtapa, nomeFaixa, nomeOrigem, quandoCurto, ROTAS_COMERCIAL, SeloEtapa, SelosAtencao, textoTarefa, TOM_SITUACAO } from "./comum.tsx";
 import { JanelaConfirmar, JanelaConversa, JanelaFicha, JanelaPerdido, JanelaProximoPasso } from "./janelas.tsx";
+import { CartaoJanelas } from "./JanelasCondominio.tsx";
 import { nomeCriterio, ROTAS_PROPOSTAS, resumoVersao, TELAS_PROPOSTAS, textoAberturas, textoSituacao, TOM_SITUACAO_PROPOSTA, type ListaPropostas } from "./propostas.ts";
 import type { FichaInteressado as Ficha } from "./tipos.ts";
 
@@ -392,6 +393,9 @@ export function FichaInteressado() {
               {f.perda.detalhe ? <Dado icone="balao" nome="O que aconteceu">{f.perda.detalhe}</Dado> : null}
               {f.perda.retomarEm ? <Dado icone="calendario" nome="Voltar a falar em">{data(f.perda.retomarEm)}</Dado> : null}
             </Cartao>
+          ) : null}
+          {!f.anonimizado && !f.virouClienteEm && f.etapa !== "GANHO" ? (
+            <CartaoJanelas key={`janelas-${vez}`} id={f.id} condominio={f.condominio} aoMudar={(t) => pronto(t)} />
           ) : null}
           <Cartao id="ficha-5" titulo="Cadência" icone="relogio"><Cadencia f={f} agir={(a) => void cadencia(a)} /></Cartao>
           <Cartao id="ficha-6" titulo="Prédio" icone="predio"

@@ -412,3 +412,63 @@ export const entradaSiteSchema = z.object({
     .transform((v) => v ?? null),
 });
 export type EntradaSite = z.infer<typeof entradaSiteSchema>;
+
+// Painel comercial, janelas do condomínio e o cartão do Início (0309, R17.5; CM-10, CM-18, CM-04).
+
+/** Mês do painel, como a rota recebe ("2026-10"). */
+export const mesComercialSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+
+/** Meta mensal de novo MRR, total e por pessoa (só a Administração). Sem meta no mês, sem versão. */
+export const metaComercialSchema = z
+  .object({
+    mes: mesComercialSchema,
+    versao: versao.optional().nullable().transform((v) => v ?? null),
+    total: z.number().int().min(1).max(100_000_000_000),
+    porPessoa: z
+      // O mesmo limite do banco (metas_por_pessoa_validas: até 11 dígitos; o id em minúsculas).
+      .array(z.object({ pessoaId: z.string().uuid().transform((v) => v.toLowerCase()), centavos: z.number().int().min(1).max(99_999_999_999) }))
+      .max(30)
+      .default([]),
+  })
+  .refine((d) => new Set(d.porPessoa.map((p) => p.pessoaId)).size === d.porPessoa.length, { path: ["porPessoa"], message: "Cada pessoa uma vez" });
+export type MetaComercial = z.infer<typeof metaComercialSchema>;
+
+/** Tipos de janela (CM-18). As três primeiras saem das datas da ficha. */
+export const TIPOS_JANELA = {
+  ASSEMBLEIA: "Assembleia ordinária",
+  MANDATO: "Fim do mandato do síndico",
+  FIDELIDADE: "Fim da fidelidade do sistema atual",
+  RETOMAR: "Voltar a falar",
+  SINDICO_NOVO: "Síndico novo",
+} as const;
+export type TipoJanela = keyof typeof TIPOS_JANELA;
+
+export const SITUACOES_JANELA = { PROXIMA: "Ainda não abriu", ABERTA: "Aberta", PASSOU: "Passou" } as const;
+export type SituacaoJanela = keyof typeof SITUACOES_JANELA;
+
+/** Por que o interessado aparece no cartão do Início, na ordem em que aparece. */
+export const MOTIVOS_INICIO_COMERCIAL = {
+  PRIMEIRO_RETORNO: "Primeiro retorno: meta passou",
+  ATRASADO: "Atrasado",
+  PARADO: "Parado",
+  JANELA: "Janela",
+} as const;
+export type MotivoInicioComercial = keyof typeof MOTIVOS_INICIO_COMERCIAL;
+
+export const tratarJanelaSchema = z.object({ tipo: z.enum(Object.keys(TIPOS_JANELA) as [TipoJanela, ...TipoJanela[]]), data });
+
+export const sindicoNovoSchema = z
+  .object({ versao, desde: dataOpcional, mandatoAte: dataOpcional })
+  .refine((d) => !d.desde || !d.mandatoAte || d.mandatoAte > d.desde, { path: ["mandatoAte"], message: "O mandato novo acaba depois do começo" });
+export type SindicoNovo = z.infer<typeof sindicoNovoSchema>;
+
+/** Primeiro dia do mês ("2026-10" → "2026-10-01"), como o banco recebe. */
+export function diaDoMes(mes: string): string {
+  return `${mes}-01`;
+}
+
+/** Percentual inteiro de uma parte sobre o todo; sem todo, nulo (o painel mostra "—"). */
+export function percentual(parte: number, todo: number): number | null {
+  if (!todo) return null;
+  return Math.round((parte / todo) * 100);
+}
