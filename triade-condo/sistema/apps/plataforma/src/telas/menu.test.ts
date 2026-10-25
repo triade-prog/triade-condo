@@ -14,6 +14,14 @@ describe("menu da Plataforma (DC15)", () => {
     ]);
   });
 
+  it("V-14: quem só vota vê Decisões enquanto vota numa votação aberta, mesmo já tendo votado", () => {
+    const decisoes = ITENS_MENU.find((i) => i.texto === "Decisões")!;
+    const nada = () => false;
+    const painel = (d: object) => ({ decisoes: { aguardando: 0, vencidas: 0, maisAntigaDias: null, ...d } }) as never;
+    expect(decisoes.ve(nada, painel({ votando: 1 }))).toBe(true);
+    expect(decisoes.ve(nada, painel({ votando: 0 }))).toBe(false);
+  });
+
   it("a barra de baixo do celular tem Início, Pedidos, Agenda e WhatsApp (e o Mais)", () => {
     expect(ITENS_MENU.filter((i) => i.atalho === true).map((i) => i.texto)).toEqual(["Início", "Pedidos", "Agenda", "WhatsApp"]);
   });

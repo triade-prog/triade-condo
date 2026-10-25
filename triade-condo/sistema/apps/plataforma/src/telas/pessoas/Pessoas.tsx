@@ -4,17 +4,19 @@
 // numa frase o que a pessoa pode fazer e como atende os pedidos, e a linha inteira abre a ficha,
 // onde ficam o acesso e o atendimento. No alto, para quem vão os pedidos novos, com Trocar. No
 // celular, cartões, e Autorizar pessoa flutua. Só o síndico mexe aqui.
+// R5 (V-14; quadro 410): para quem vê o conselho, as abas Pessoas e acesso e Conselho.
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, type ReactNode } from "react";
 import { formatarData, FUNCOES_PLATAFORMA } from "@triade/domain";
-import { Aviso, Botao, Carregando, ErroCarregar, Icone, Iniciais, Selo } from "@triade/ui";
+import { Abas, Aviso, Botao, Carregando, ErroCarregar, Icone, Iniciais, Selo } from "@triade/ui";
 import { Cartao } from "../Ficha.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { PessoaDoCondominio, Pessoas as DadosPessoas, Recado } from "../tipos.ts";
 import { fraseDoAcesso } from "./acesso.ts";
 import { Autorizar, TrocarPadrao } from "./janelas.tsx";
+import { AbaConselho } from "./Conselho.tsx";
 
 /** Como a pessoa atende os pedidos, num selo. */
 export function SeloAtendimento({ p, padrao }: { p: PessoaDoCondominio; padrao: string | null }) {
@@ -52,7 +54,27 @@ function Fila({ dados, aoTrocar }: { dados: DadosPessoas; aoTrocar: () => void }
 
 const COLUNAS = "md:grid-cols-[40px_minmax(0,1fr)_minmax(0,1.5fr)_11rem_20px]";
 
+type AbaPessoas = "pessoas" | "conselho";
+export type Moldura = (corpo: ReactNode) => ReactNode;
+
+/** Com o conselho (R5): as duas abas; sem a permissão de ver o conselho, só a lista, como antes. */
 export function Pessoas() {
+  const { pode } = usePlataforma();
+  const busca = useSearchParams();
+  const router = useRouter();
+  const [nConselho, setNConselho] = useState<number | undefined>(undefined);
+  if (!pode("conselho.ver")) return <ListaDePessoas />;
+  const aba: AbaPessoas = busca.get("aba") === "conselho" ? "conselho" : "pessoas";
+  const moldura: Moldura = (corpo) => (
+    <Abas abas={[{ id: "pessoas", texto: "Pessoas e acesso" }, { id: "conselho", texto: "Conselho", contagem: nConselho }]} atual={aba} rotulo="Partes de Pessoas"
+      aoMudar={(id) => router.replace(id === "conselho" ? "/pessoas?aba=conselho" : "/pessoas", { scroll: false })}>
+      <div className="grid gap-5 pt-4">{corpo}</div>
+    </Abas>
+  );
+  return aba === "conselho" ? <AbaConselho moldura={moldura} contar={setNConselho} /> : <ListaDePessoas moldura={moldura} />;
+}
+
+function ListaDePessoas({ moldura = (c) => c }: { moldura?: Moldura }) {
   const { pode, atualizar } = usePlataforma();
   const carga = useCarregar<DadosPessoas>("/v1/condominio/pessoas");
   const revogada = useSearchParams().get("revogada");
@@ -68,8 +90,8 @@ export function Pessoas() {
       <p className="t-apoio mt-1">Quem entra na Plataforma deste condomínio e o que cada um pode fazer. Cada pessoa tem o seu acesso; nada de conta compartilhada.</p>
     </div>
   );
-  if (carga.estado === "carregando") return <div className="grid gap-5">{titulo}<Carregando rotulo="Carregando as pessoas…" /></div>;
-  if (carga.estado === "erro") return <div className="grid gap-5">{titulo}<ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
+  if (carga.estado === "carregando") return <div className="grid gap-5">{titulo}{moldura(<Carregando rotulo="Carregando as pessoas…" />)}</div>;
+  if (carga.estado === "erro") return <div className="grid gap-5">{titulo}{moldura(<ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} />)}</div>;
   const dados = carga.dados;
   const autorizar = pode("pessoas.autorizar") ? <Botao onClick={() => setJanela("autorizar")}><Icone nome="pessoa-mais" />Autorizar pessoa</Botao> : null;
 
@@ -79,6 +101,7 @@ export function Pessoas() {
         {titulo}
         {autorizar ? <div className="max-md:hidden">{autorizar}</div> : null}
       </div>
+      {moldura(<>
       {recado ? <Aviso tom={recado.tom}>{recado.texto}</Aviso> : null}
       {pode("atendimento.responsaveis") ? <Fila dados={dados} aoTrocar={() => setJanela("padrao")} /> : null}
 
@@ -108,6 +131,7 @@ export function Pessoas() {
           <span className="t-apoio">Quem é revogado sai da lista e continua no histórico, com o nome.</span>
         </div>
       </section>
+      </>)}
 
       {autorizar ? <div className="fixed right-4 bottom-[calc(76px+env(safe-area-inset-bottom))] z-20 md:hidden">{autorizar}</div> : null}
       {janela === "autorizar" ? <Autorizar dados={dados} aoFechar={fechar} salvo={salvo} /> : null}

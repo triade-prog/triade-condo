@@ -12,16 +12,18 @@ const HOJE = diaDe(AGORA);
 let n = 0;
 const novoId = () => `8f9a0b1c-2d3e-4f4a-9b5c-${String(++n).padStart(12, "0")}`;
 
-interface Pendencia { id: string; tipo: string; motivo: string; responsavelId: string; abertaEm: string; abertaPor: string; resolvidaEm: string | null; resolvidaPor: string | null; resolucao: string | null }
-interface PedidoFalso {
+export interface Pendencia { id: string; tipo: string; motivo: string; responsavelId: string; abertaEm: string; abertaPor: string; resolvidaEm: string | null; resolvidaPor: string | null; resolucao: string | null }
+export interface PedidoFalso {
   id: string; protocolo: string; assunto: string; estado: string; local: string | null; versao: number; unidadeId: string | null; categoriaId: string;
   etapaId: string; abertoEm: string; encerradoEm: string | null; proximoRetorno: string | null; privado: boolean; pendencias: Pendencia[];
   conclusoes: object[];
   historico: { acao: string; em: string; autor: string | null; dados: Record<string, unknown> }[];
 }
-interface Pessoa { vinculoId: string; nome: string; funcao: string }
-interface Alternativa { numero: number; descricao: string; detalhe?: string; custo?: number; moeda?: string }
-interface DecisaoFalsa {
+export interface Pessoa { vinculoId: string; nome: string; funcao: string }
+export interface Alternativa { numero: number; descricao: string; detalhe?: string; custo?: number; moeda?: string }
+export interface DecisaoFalsa {
+  /** R5: a pedida ao conselho não tem decisorId (fica vazio); a que voltou ao síndico guarda de onde veio. */
+  modo?: "PESSOA" | "CONSELHO"; origemId?: string; voltouAoSindico?: string;
   id: string; versao: number; estado: string; pedidoId: string; pendenciaId: string; pergunta: string; porque?: string; prazo: string; decisorId: string;
   pedidaEm: string; pedidaPor: string; respondidaEm?: string; respondidaPor?: string; alternativaAprovada?: number; justificativa?: string; retiradaMotivo?: string;
   alternativas: Alternativa[];
@@ -79,7 +81,25 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
   return route.fulfill({ status, json: { erro: detalhes ? { codigo, detalhes } : { codigo } } });
 }
 
-interface Contexto {
+/** O que a R5 (api-falsa-aprovacoes) junta às decisões: o conselho, os votos e a ausência. */
+export interface GanchosDecisoes {
+  /** Campos a mais (e o que muda) no JSON da decisão. */
+  decisao: (d: DecisaoFalsa) => Record<string, unknown>;
+  /** A decisão espera o voto de quem está entrando. */
+  minhaVotacao: (d: DecisaoFalsa) => boolean;
+  /** Quem está entrando vota nesta votação aberta, já tendo votado ou não (segue em Aguardando para trocar). */
+  votante: (d: DecisaoFalsa) => boolean;
+  /** O pedido a uma pessoa: com o síndico ausente e o substituto sem painel, o link do substituto. */
+  pedirAPessoa: (d: DecisaoFalsa) => { links: unknown[] };
+  /** Abre a votação; devolve os links ou o motivo da recusa. */
+  pedirAoConselho: (d: DecisaoFalsa) => { titulares: number; necessarios: number; links: unknown[] } | { motivo: string };
+  /** Campos de topo da lista (conselho, ausência, despesas). */
+  lista: () => Record<string, unknown>;
+  /** As regras resumidas, no pedido, para Quem decide. */
+  regras: () => Record<string, unknown>;
+}
+
+export interface Contexto {
   pedidos: PedidoFalso[];
   pessoas: Pessoa[];
   etapas: { id: string; nome: string; situacao: string }[];
@@ -87,6 +107,7 @@ interface Contexto {
   unidade: (id: string | null) => string | null;
   eu: { vinculo: string; nome: string };
   pode: (a: string) => boolean;
+  ganchos?: GanchosDecisoes;
 }
 
 /** O que a F7.4 junta ao pedido: ligados, parecidos, decisões, quem decide e o que a pessoa pode. */
@@ -113,6 +134,7 @@ export function detalheDecisoes(estado: EstadoDecisoes, x: Contexto, p: PedidoFa
     decisoes: estado.decisoes.filter((d) => d.pedidoId === p.id).sort((a, b) => b.pedidaEm.localeCompare(a.pedidaEm)).map((d) => decisaoJson(d, x)),
     decisores: atualizar && ativo(p) ? decisores(x) : [],
     pode: { ligar: atualizar && p.estado !== "CANCELADO", pedirDecisao: atualizar && ativo(p) },
+    ...(x.ganchos ? { conselho: x.ganchos.regras() } : {}),
   };
 }
 
@@ -120,7 +142,7 @@ function decisores(x: Contexto) {
   return x.pessoas.filter((p) => p.funcao === "SINDICO").map((p) => ({ vinculoId: p.vinculoId, nome: p.nome, sindico: true, eu: p.vinculoId === x.eu.vinculo }));
 }
 
-function decisaoJson(d: DecisaoFalsa, x: Contexto) {
+export function decisaoJson(d: DecisaoFalsa, x: Contexto) {
   const p = x.pedidos.find((y) => y.id === d.pedidoId)!;
   const eu = d.decisorId === x.eu.vinculo;
   const sindico = x.pessoas.find((y) => y.vinculoId === x.eu.vinculo)?.funcao === "SINDICO";
@@ -134,20 +156,22 @@ function decisaoJson(d: DecisaoFalsa, x: Contexto) {
     alternativas: d.alternativas, pedido: { id: p.id, protocolo: p.protocolo, assunto: p.assunto, estado: p.estado },
     pode: { responder: d.estado === "AGUARDANDO" && x.pode("decisoes.aprovar") && (eu || sindico),
       retirar: d.estado === "AGUARDANDO" && (d.pedidaPor === x.eu.nome || x.pode("pedidos.atualizar")) },
+    ...(x.ganchos ? x.ganchos.decisao(d) : {}),
   };
 }
 
 /** Resumo do Início e do menu, para quem pode aprovar (decisão 10). */
-export function resumoDecisoes(estado: EstadoDecisoes, eu: string) {
-  const minhas = estado.decisoes.filter((d) => d.estado === "AGUARDANDO" && d.decisorId === eu);
+export function resumoDecisoes(estado: EstadoDecisoes, eu: string, votacao?: (d: DecisaoFalsa) => boolean) {
+  const minhas = estado.decisoes.filter((d) => d.estado === "AGUARDANDO" && (d.decisorId === eu || !!votacao?.(d)));
   const maisAntiga = minhas.map((d) => d.pedidaEm).sort()[0];
   return { aguardando: minhas.length, vencidas: minhas.filter((d) => d.prazo < HOJE).length,
-    maisAntigaDias: maisAntiga ? Math.round((Date.parse(`${HOJE}T00:00:00Z`) - Date.parse(`${diaDe(maisAntiga)}T00:00:00Z`)) / DIA) : null };
+    maisAntigaDias: maisAntiga ? Math.round((Date.parse(`${HOJE}T00:00:00Z`) - Date.parse(`${diaDe(maisAntiga)}T00:00:00Z`)) / DIA) : null,
+    ...(votacao ? { votos: minhas.filter((d) => votacao(d)).length } : {}) };
 }
 
 /** Os avisos das decisões no sino (decisão 9). */
 export function avisosDecisoes(estado: EstadoDecisoes, x: Contexto) {
-  return estado.avisos.filter((a) => a.para === x.eu.vinculo).map((a) => {
+  return estado.avisos.filter((a) => a.para === x.eu.vinculo && estado.decisoes.some((d) => d.id === a.decisaoId)).map((a) => {
     const d = estado.decisoes.find((y) => y.id === a.decisaoId)!;
     const p = x.pedidos.find((y) => y.id === d.pedidoId)!;
     return { id: a.id, tipo: `DECISAO_${a.tipo}`, decisaoId: d.id, pedidoId: p.id, protocolo: p.protocolo, titulo: d.pergunta, prazo: d.prazo, estado: d.estado,
@@ -219,33 +243,40 @@ export async function rotasDecisoes(route: Route, estado: EstadoDecisoes, x: Con
     if (!prazo || prazo < HOJE) return erro(route, 400, "VALIDATION_ERROR", { campos: ["prazo"] });
     const alternativas = (corpo.alternativas as { descricao: string; detalhe: string | null; custo: number | null }[]) ?? [];
     if (!alternativas.length || alternativas.some((a) => a.descricao.trim().length < 3)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["alternativas"] });
-    const pendencia = { id: novoId(), tipo: "DECISAO", motivo: texto("pergunta").slice(0, 300), responsavelId: String(corpo.decisorId), abertaEm: AGORA,
+    const aoConselho = corpo.modo === "CONSELHO";
+    if (!aoConselho && !corpo.decisorId) return erro(route, 400, "VALIDATION_ERROR", { campos: ["decisorId"] });
+    const pendencia = { id: novoId(), tipo: "DECISAO", motivo: texto("pergunta").slice(0, 300), responsavelId: aoConselho ? "" : String(corpo.decisorId), abertaEm: AGORA,
       abertaPor: x.eu.nome, resolvidaEm: null, resolvidaPor: null, resolucao: null };
     p.pendencias.push(pendencia);
     const d: DecisaoFalsa = {
       id: novoId(), versao: 1, estado: "AGUARDANDO", pedidoId: p.id, pendenciaId: pendencia.id, pergunta: texto("pergunta"), ...(texto("porque") ? { porque: texto("porque") } : {}),
-      prazo, decisorId: String(corpo.decisorId), pedidaEm: AGORA, pedidaPor: x.eu.nome,
+      prazo, decisorId: aoConselho ? "" : String(corpo.decisorId), pedidaEm: AGORA, pedidaPor: x.eu.nome, ...(aoConselho ? { modo: "CONSELHO" as const } : {}),
       alternativas: alternativas.map((a, i) => ({ numero: i + 1, descricao: a.descricao, ...(a.detalhe ? { detalhe: a.detalhe } : {}),
         ...(a.custo !== null ? { custo: a.custo, moeda: "BRL" } : {}) })),
     };
+    const votacao = aoConselho ? x.ganchos?.pedirAoConselho(d) : undefined;
+    if (votacao && "motivo" in votacao) { p.pendencias.pop(); return erro(route, 400, "VALIDATION_ERROR", { motivo: votacao.motivo }); }
     estado.decisoes.push(d);
+    const daPessoa = !aoConselho && x.ganchos ? x.ganchos.pedirAPessoa(d) : undefined;
     hist(p, "pedido.pendencia_aberta", { tipo: "DECISAO" });
-    hist(p, "pedido.decisao_pedida", { alternativas: d.alternativas.length, prazo });
+    hist(p, "pedido.decisao_pedida", { alternativas: d.alternativas.length, prazo, ...(votacao ? { conselho: true, titulares: votacao.titulares, necessarios: votacao.necessarios } : {}) });
     if (d.decisorId !== x.eu.vinculo) estado.avisos.push({ id: novoId(), para: d.decisorId, decisaoId: d.id, tipo: "PEDIDA", criadoEm: AGORA, vistoEm: null });
     p.versao++;
-    return route.fulfill({ json: { versao: p.versao, id: d.id } });
+    return route.fulfill({ json: { versao: p.versao, id: d.id, ...(votacao ?? {}), ...(daPessoa ?? {}) } });
   }
 
   if (caminho === "/v1/condominio/decisoes" && metodo === "GET") {
     if (!x.pode("pedidos.ver")) return erro(route, 403, "FORBIDDEN");
     const filtro = url.searchParams.get("filtro") ?? "AGUARDANDO";
     if (!["AGUARDANDO", "DECIDIDAS", "TODAS"].includes(filtro)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["filtro"] });
-    const lista = estado.decisoes.filter((d) => filtro === "AGUARDANDO" ? d.estado === "AGUARDANDO" && d.decisorId === x.eu.vinculo
+    const minha = (d: DecisaoFalsa) => d.estado === "AGUARDANDO" && (d.decisorId === x.eu.vinculo || !!x.ganchos?.minhaVotacao(d));
+    const lista = estado.decisoes.filter((d) => filtro === "AGUARDANDO" ? minha(d) || !!x.ganchos?.votante(d)
       : filtro === "DECIDIDAS" ? ["APROVADA", "DEVOLVIDA"].includes(d.estado) : true)
       .sort((a, b) => Number(a.estado !== "AGUARDANDO") - Number(b.estado !== "AGUARDANDO") || a.prazo.localeCompare(b.prazo));
     return route.fulfill({ json: {
       decisoes: lista.map((d) => decisaoJson(d, x)), filtro, hoje: HOJE, pode: { aprovar: x.pode("decisoes.aprovar") },
-      aguardandoEu: estado.decisoes.filter((d) => d.estado === "AGUARDANDO" && d.decisorId === x.eu.vinculo).length,
+      aguardandoEu: estado.decisoes.filter(minha).length,
+      ...(x.ganchos ? x.ganchos.lista() : {}),
     } });
   }
 

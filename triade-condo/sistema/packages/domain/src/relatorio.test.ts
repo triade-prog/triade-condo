@@ -51,6 +51,21 @@ describe("relatório do mês (TR-02, TR-05, TR-08, TR-10)", () => {
     expect(descreverEvento({ acao: "relatorio.baixado", dados: { mes: "2026-09", formato: "CSV" } } as never)).toBe("Relatório de setembro de 2026 baixado em planilha");
   });
 
+  it("R5: as decisões do mês contam o que o conselho fechou e as despesas para aprovar", () => {
+    const base = { pedidas: 6, decididas: 5, aprovadas: 4, devolvidas: 1, medianaHoras: 30, aguardandoNoFim: 1 };
+    const [antiga] = tabelasDoRelatorio(R(["DECISOES"], { ...N, decisoes: base }));
+    expect(antiga!.tabela.linhas.map((l) => l[0])).toEqual(["Pedidas", "Decididas", "Tempo típico até a resposta", "Aguardando em 30/09/2026"]);
+    const [nova] = tabelasDoRelatorio(R(["DECISOES"], { ...N, decisoes: { ...base, peloConselho: 2,
+      despesas: { pedidas: 4, aprovadas: 2, recusadas: 1, valorAprovado: 920000, aguardandoNoFim: 0 } } }));
+    expect(nova!.tabela.linhas.slice(4)).toEqual([
+      ["Fechadas pelo conselho, com os votos", "2"],
+      ["Despesas pedidas para aprovar", "4"],
+      ["Despesas aprovadas", "2 · R$ 9.200"],
+      ["Despesas recusadas", "1"],
+      ["Despesas aguardando em 30/09/2026", "0"],
+    ]);
+  });
+
   it("TR-10: anexo é documento ou arquivo, até 10; só JPG, PNG e PDF de até 10 MB; texto vazio vira nulo", () => {
     const ok = gerarRelatorioSchema.parse({ mes: "2026-09", partes: ["RESUMO"], resumo: "  Texto.  ", palavra: "   ", anexos: [{ arquivoId: ARQ }] });
     expect(ok).toMatchObject({ resumo: "Texto.", palavra: null, guardarModelo: false });

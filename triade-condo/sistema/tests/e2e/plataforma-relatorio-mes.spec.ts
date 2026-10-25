@@ -56,6 +56,9 @@ test.describe("Plataforma · relatório do mês", () => {
     await expect(folha.getByRole("table", { name: "Por categoria" })).toContainText("Tempo médio de fechamento");
     await expect(folha.getByRole("table", { name: "Por bloco ou torre" })).toContainText("Áreas comuns e sem unidade");
     await expect(folha.getByRole("table", { name: "Decisões do síndico" })).toContainText("5 (1 devolvida)");
+    // R5: as fechadas pelo conselho e as despesas entram na mesma tabela, com o valor aprovado.
+    await expect(folha.getByRole("table", { name: "Decisões do síndico" })).toContainText("Fechadas pelo conselho, com os votos");
+    await expect(folha.getByRole("table", { name: "Decisões do síndico" })).toContainText("2 · R$ 9.200");
     await expect(folha).toContainText("Obrigada a todos pela paciência");
     await expect(folha).toContainText("quando o relatório foi gerado");
     await conferir(page);

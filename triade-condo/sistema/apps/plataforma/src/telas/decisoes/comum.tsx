@@ -121,11 +121,11 @@ function FormResponder({ d, aoFechar, salvo, recarregar }: { d: DecisaoPedido; a
 }
 
 const apoioDecidir = (d: DecisaoPedido) =>
-  `Pedida${d.pedidaPor ? ` por ${d.pedidaPor}` : ""} em ${dia(d.pedidaEm)} · decidir até ${diaDoPrazo(d.prazo)} · ${d.pedido.assunto}`;
+  `Pedida${d.pedidaPor ? ` por ${d.pedidaPor}` : ""} em ${dia(d.pedidaEm)} · decidir até ${diaDoPrazo(d.prazo)}${d.pedido ? ` · ${d.pedido.assunto}` : ""}`;
 
 export function ResponderDecisao({ d, aoFechar, salvo, recarregar }: { d: DecisaoPedido | null; aoFechar: () => void; salvo: (t: string) => void; recarregar: () => void }) {
   return (
-    <Dialogo aberto={d !== null} titulo={d ? `Decidir · ${d.pedido.protocolo}` : "Decidir"} aoFechar={aoFechar} fechar
+    <Dialogo aberto={d !== null} titulo={d?.pedido ? `Decidir · ${d.pedido.protocolo}` : "Decidir"} aoFechar={aoFechar} fechar
       apoio={d ? apoioDecidir(d) : undefined} media>
       {d ? <FormResponder key={d.id} d={d} aoFechar={aoFechar} salvo={salvo} recarregar={recarregar} /> : null}
     </Dialogo>
@@ -138,7 +138,7 @@ export function RetirarDecisao({ d, aoFechar, salvo, recarregar }: { d: DecisaoP
     <Janela aberto={d !== null} titulo="Retirar o pedido de decisão" aoFechar={aoFechar} recarregar={recarregar}
       campos={[{ id: "motivo", rotulo: "Por que retirar", tipo: "area", obrigatorio: true, max: 500, erro: "Explique o motivo (3 a 500 caracteres)." }]}
       iniciais={{ motivo: "" }} textoBotao="Retirar"
-      explicacao={d ? `${d.decisor.nome} deixa de ver esta decisão e a pendência do pedido fecha. Tudo fica no histórico.` : undefined}
+      explicacao={d ? `${d.decisor ? `${d.decisor.nome} deixa de ver esta decisão` : "A votação do conselho para e os links param de valer"} e a pendência do pedido fecha. Tudo fica no histórico.` : undefined}
       aoSalvar={async (v) => {
         const r = await chamarApi(`/v1/condominio/decisoes/${d?.id}/retirar`, { corpo: { versao: d?.versao, motivo: String(v.motivo ?? "").trim() } });
         if (r.ok) salvo("Pedido de decisão retirado. A pendência do pedido foi fechada.");

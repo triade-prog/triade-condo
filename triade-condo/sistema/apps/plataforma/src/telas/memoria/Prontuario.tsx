@@ -146,7 +146,7 @@ export function AbaProntuario({ feito, definir }: PropsAbaMemoria) {
   const p = carga.dados;
   const r = p.resumo;
   const hoje = hojeEmBrasilia();
-  const item = p.itens.find((i) => chaveDo(i) === aberto);
+  const item = p.itens.find((i) => chaveDo(i) === aberto) ?? p.itens.find((i) => i.chave === aberto);
   const fechar = () => { setModo("ver"); ir({ item: null }); };
   const mudou = (texto: string, tom: "ok" | "atencao" = "ok") => { setNovo(false); fechar(); carga.recarregar(); feito(texto, tom); };
   const visiveis = ver ? p.itens.filter(NO_VER[ver]) : p.itens;

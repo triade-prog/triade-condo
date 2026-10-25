@@ -2,15 +2,27 @@
 // A decisão dentro do pedido (F7.4; design "Reincidência e decisões", tela 2; AT-23, AT-11): pedir
 // a decisão ao síndico com as alternativas, o prazo e por quê; a faixa enquanto espera; ver,
 // responder ou retirar; e as já respondidas. Depois de enviado, o pedido de decisão não muda.
+// R5 (V-14; quadro 413): "O conselho" em Quem decide, com o quórum; os links que o WhatsApp ainda
+// não manda aparecem para copiar.
 
 import { useState, type FormEvent } from "react";
-import { lerReais } from "@triade/domain";
-import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, Dialogo, Icone, textoDoErro, type ErroApi } from "@triade/ui";
-import type { DecisaoPedido, PedidoDetalhe } from "../tipos.ts";
+import { lerReais, mostrarCusto, textoQuemVotaNoConselho, textoSemQuorum } from "@triade/domain";
+import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoTexto, camposComErro, chamarApi, Dialogo, Icone, textoDoErro, type ErroApi } from "@triade/ui";
+import type { DecisaoPedido, LinkMandado, PedidoDetalhe } from "../tipos.ts";
 import { diaDe, diaHora } from "../pedidos/comum.tsx";
 import { diaDoPrazo, ListaAlternativas, ResponderDecisao, resumoResposta, RetirarDecisao, SeloDecisao } from "./comum.tsx";
+import { Escolha } from "./Despesas.tsx";
+import { LinksMandados, recadoDosLinks } from "./votacao.tsx";
 
 const qtdAlternativas = (n: number) => (n === 1 ? "1 alternativa" : `${n} alternativas`);
+
+/** "Esperando a decisão de Ana", "Esperando a sua decisão" ou "Em votação no conselho". */
+function esperando(x: DecisaoPedido): string {
+  if (x.modo === "CONSELHO" && x.conselho) return `Em votação no conselho (${x.conselho.votaram} de ${x.conselho.titulares} votaram)`;
+  if (!x.decisor) return "Esperando a decisão";
+  return x.decisor.eu ? "Esperando a sua decisão" : `Esperando a decisão de ${x.decisor.nome}`;
+}
+const quemDecide = (x: DecisaoPedido) => (x.modo === "CONSELHO" ? "o conselho" : x.decisor?.nome ?? "—");
 
 interface Props {
   d: PedidoDetalhe;
@@ -38,7 +50,7 @@ export function DecisoesNoPedido({ d, salvo, recarregar }: Props) {
           <span className="quadro"><Icone nome="decisao" /></span>
           <span className="texto">
             <strong className="block font-semibold">
-              {x.decisor.eu ? "Esperando a sua decisão" : `Esperando a decisão de ${x.decisor.nome}`} até {diaDoPrazo(x.prazo)}{x.vencida ? " (prazo vencido)" : ""}
+              {esperando(x)} até {diaDoPrazo(x.prazo)}{x.vencida ? " (prazo vencido)" : ""}
             </strong>
             <span className="block">{x.pergunta} · {qtdAlternativas(x.alternativas.length)} · pedida{x.pedidaPor ? ` por ${x.pedidaPor}` : ""} em {diaHora(x.pedidaEm)}</span>
           </span>
@@ -66,7 +78,7 @@ export function DecisoesNoPedido({ d, salvo, recarregar }: Props) {
       <Dialogo aberto={ver !== null} titulo="Decisão pedida" aoFechar={() => setVer(null)}>
         {ver ? (
           <div className="grid gap-3">
-            <p className="flex flex-wrap items-center gap-2 t-texto"><SeloDecisao d={ver} hoje={hoje} /><span className="text-tinta-suave">quem decide: {ver.decisor.nome}</span></p>
+            <p className="flex flex-wrap items-center gap-2 t-texto"><SeloDecisao d={ver} hoje={hoje} /><span className="text-tinta-suave">quem decide: {quemDecide(ver)}</span></p>
             <p className="t-texto font-medium">{ver.pergunta}</p>
             {ver.porque ? <p className="t-texto">Por que agora: {ver.porque}</p> : null}
             <ListaAlternativas alternativas={ver.alternativas} aprovada={ver.alternativaAprovada} />
@@ -87,6 +99,20 @@ export function DecisoesNoPedido({ d, salvo, recarregar }: Props) {
 }
 
 interface AlternativaEscrita { descricao: string; custo: string; detalhe: string }
+const CONSELHO = "__conselho";
+
+/** "2 alternativas · de R$ 1.800 a R$ 9.400", do que já foi escrito. */
+export function faixaDeCusto(alternativas: { custo: string }[]): string {
+  const custos: number[] = [];
+  for (const a of alternativas) {
+    try { if (a.custo.trim()) custos.push(lerReais(a.custo).centavos); } catch { /* o erro aparece ao enviar */ }
+  }
+  const n = qtdAlternativas(alternativas.length);
+  if (!custos.length) return n;
+  const min = Math.min(...custos);
+  const max = Math.max(...custos);
+  return min === max ? `${n} · ${mostrarCusto(min)}` : `${n} · de ${mostrarCusto(min)} a ${mostrarCusto(max)}`;
+}
 const vazia = (): AlternativaEscrita => ({ descricao: "", custo: "", detalhe: "" });
 
 function somarDias(data: string, n: number): string {
@@ -95,14 +121,15 @@ function somarDias(data: string, n: number): string {
 }
 
 /** Pedir decisão ao síndico (decisões 5 a 8): abre a pendência Decisão para quem decide. */
-function FormPedir({ d, aoFechar, salvo, recarregar }: { d: PedidoDetalhe; aoFechar: () => void; salvo: (t: string) => void; recarregar: () => void }) {
+function FormPedir({ d, aoFechar, salvo, recarregar }: { d: PedidoDetalhe; aoFechar: () => void; salvo: (t: string, links: LinkMandado[]) => void; recarregar: () => void }) {
   const p = d.pedido;
   const decisores = d.decisores ?? [];
+  const conselho = d.conselho;
   const hoje = diaDe(d.agora);
   const [pergunta, setPergunta] = useState("");
   const [alternativas, setAlternativas] = useState<AlternativaEscrita[]>([vazia()]);
   const [prazo, setPrazo] = useState(somarDias(hoje, 3));
-  const [decisor, setDecisor] = useState(decisores[0]?.vinculoId ?? "");
+  const [decisor, setDecisor] = useState(decisores[0]?.vinculoId ?? (conselho?.podePedir ? CONSELHO : ""));
   const [porque, setPorque] = useState("");
   const [custoErrado, setCustoErrado] = useState<number[]>([]);
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -128,20 +155,28 @@ function FormPedir({ d, aoFechar, salvo, recarregar }: { d: PedidoDetalhe; aoFec
     setCustoErrado(errados);
     if (errados.length) return;
     setEnviando(true);
-    const r = await chamarApi(`/v1/condominio/pedidos/${p.id}/decisoes`, {
-      corpo: { versao: p.versao, pergunta: pergunta.trim(), porque: porque.trim() || null, prazo, decisorId: decisor, alternativas: lidas },
+    const aoConselho = decisor === CONSELHO;
+    const r = await chamarApi<{ id: string; links?: LinkMandado[] }>(`/v1/condominio/pedidos/${p.id}/decisoes`, {
+      corpo: { versao: p.versao, pergunta: pergunta.trim(), porque: porque.trim() || null, prazo, alternativas: lidas,
+        ...(aoConselho ? { modo: "CONSELHO" } : { decisorId: decisor }) },
     });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
+    if (aoConselho) {
+      const links = r.dados.links ?? [];
+      return salvo(`Decisão pedida ao conselho, para votar até ${diaDoPrazo(prazo)}. ${recadoDosLinks(links)} O pedido ganhou a pendência Decisão.`, links);
+    }
     const quem = decisores.find((x) => x.vinculoId === decisor);
-    salvo(quem?.eu ? "Decisão registrada para você responder. O pedido ganhou a pendência Decisão."
-      : `Decisão pedida a ${quem?.nome ?? "quem decide"}, com aviso no sino. O pedido ganhou a pendência Decisão.`);
+    // Com o síndico ausente e o substituto sem painel, vem o link do substituto.
+    const links = r.dados.links ?? [];
+    const doSubstituto = links.length ? ` O síndico está ausente: ${recadoDosLinks(links)}` : "";
+    salvo(quem?.eu ? `Decisão registrada para você responder. O pedido ganhou a pendência Decisão.${doSubstituto}`
+      : `Decisão pedida a ${quem?.nome ?? "quem decide"}, com aviso no sino. O pedido ganhou a pendência Decisão.${doSubstituto}`, links);
   }
 
   return (
     <form onSubmit={enviar} noValidate className="grid gap-4">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={() => { aoFechar(); recarregar(); }} /> : null}
-      <p className="t-apoio text-tinta-suave">Pedido {p.protocolo} · {p.assunto}</p>
       <CampoAreaTexto id="dec-pergunta" rotulo="O que precisa ser decidido" required maxLength={500} rows={3} value={pergunta}
         onChange={(e) => setPergunta(e.target.value)} erro={comErro.includes("pergunta") ? "Diga o que precisa ser decidido (3 a 500 caracteres)." : null} />
       <fieldset className="grid gap-3">
@@ -168,40 +203,63 @@ function FormPedir({ d, aoFechar, salvo, recarregar }: { d: PedidoDetalhe; aoFec
           <Botao variante="discreto" tamanho="m" className="justify-self-start" onClick={() => setAlternativas((l) => [...l, vazia()])}>+ Alternativa</Botao>
         ) : null}
       </fieldset>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <CampoTexto id="dec-prazo" rotulo="Decidir até" required type="date" min={hoje} max={somarDias(hoje, 90)} value={prazo}
-          onChange={(e) => setPrazo(e.target.value)} erro={comErro.includes("prazo") ? "O prazo vai de hoje a 90 dias." : null} />
-        <CampoSelecao id="dec-decisor" rotulo="Quem decide" value={decisor} onChange={(e) => setDecisor(e.target.value)}
-          opcoes={decisores.map((x) => ({ valor: x.vinculoId, texto: x.sindico ? `${x.nome} (síndico)` : x.nome }))}
-          erro={comErro.includes("decisorId") ? "Escolha o síndico ou quem tem a permissão Aprovar." : null} />
-      </div>
       <CampoAreaTexto id="dec-porque" rotulo="Por que agora" opcional maxLength={500} rows={2} value={porque}
         onChange={(e) => setPorque(e.target.value)} erro={comErro.includes("porque") ? "De 3 a 500 caracteres." : null} />
+      <fieldset className="grid gap-2">
+        <legend className="mb-1 t-texto font-medium">Quem decide</legend>
+        {decisores.map((x) => (
+          <Escolha key={x.vinculoId} nome="dec-decisor" valor={x.vinculoId} atual={decisor} mudar={setDecisor}
+            texto={x.sindico ? `${x.nome} (síndico)` : x.eu ? `${x.nome} (você)` : x.nome} sub={x.sindico ? "Síndico" : "Tem a permissão Aprovar"} />
+        ))}
+        {conselho?.podePedir ? (
+          <Escolha nome="dec-decisor" valor={CONSELHO} atual={decisor} mudar={setDecisor} texto="O conselho"
+            sub={`${textoQuemVotaNoConselho(conselho)} Prazo para votar até o dia escolhido abaixo.`} />
+        ) : conselho && conselho.titularesEmDia > 0 ? <p className="t-apoio">{textoSemQuorum(conselho)}</p> : null}
+        {comErro.includes("decisorId") ? <p className="t-texto text-erro">Escolha o síndico, quem tem a permissão Aprovar ou o conselho.</p> : null}
+      </fieldset>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <CampoTexto id="dec-prazo" rotulo={decisor === CONSELHO ? "Votar até" : "Decidir até"} required type="date" min={hoje} max={somarDias(hoje, 90)} value={prazo}
+          onChange={(e) => setPrazo(e.target.value)} ajuda="De hoje a 90 dias." erro={comErro.includes("prazo") ? "O prazo vai de hoje a 90 dias." : null} />
+        <p className="t-apoio self-center">{faixaDeCusto(alternativas)}</p>
+      </div>
+      {decisor === CONSELHO ? (
+        <p className="flex items-start gap-2 t-apoio">
+          <Icone nome="info" className="mt-px h-4 w-4 shrink-0" />
+          Cada conselheiro recebe um link pessoal pelo contato do conselho. Quem tem acesso ao painel vota também em Decisões. O conselheiro vê a pergunta, as alternativas e os anexos; não vê nome nem telefone de moradores.
+        </p>
+      ) : null}
       <p className="t-apoio text-tinta-suave">Os orçamentos ficam nos arquivos do pedido. Aprovar não contrata nem paga nada: a contratação continua como o condomínio já faz.</p>
       <div className="flex flex-wrap justify-end gap-2">
         <Botao variante="discreto" onClick={aoFechar}>Cancelar</Botao>
-        <Botao type="submit" disabled={enviando}>{enviando ? "Enviando…" : "Pedir decisão"}</Botao>
+        <Botao type="submit" disabled={enviando}><Icone nome="enviar" />{enviando ? "Enviando…" : decisor === CONSELHO ? "Pedir ao conselho" : "Pedir decisão"}</Botao>
       </div>
     </form>
   );
 }
 
 export function PedirDecisao({ aberto, d, aoFechar, salvo, recarregar }: Props & { aberto: boolean; aoFechar: () => void }) {
+  const [links, setLinks] = useState<LinkMandado[] | null>(null);
   return (
-    <Dialogo aberto={aberto} titulo="Pedir decisão ao síndico" aoFechar={aoFechar}>
-      {aberto ? (
-        (d.decisores ?? []).length
-          ? <FormPedir d={d} aoFechar={aoFechar} salvo={salvo} recarregar={recarregar} />
-          : <><Aviso tom="atencao">Ninguém pode decidir agora: o síndico não tem acesso e ninguém tem a permissão Aprovar.</Aviso>
-            <div className="flex justify-end"><Botao variante="discreto" onClick={aoFechar}>Fechar</Botao></div></>
-      ) : null}
-    </Dialogo>
+    <>
+      <Dialogo aberto={aberto} titulo={`Pedir decisão · ${d.pedido.protocolo}`} aoFechar={aoFechar} apoio={d.pedido.assunto}>
+        {aberto ? (
+          (d.decisores ?? []).length || d.conselho?.podePedir
+            ? <FormPedir d={d} aoFechar={aoFechar} recarregar={recarregar}
+              salvo={(t, l) => { salvo(t); if (l.some((x) => x.envio === "COPIAR")) setLinks(l); }} />
+            : <><Aviso tom="atencao">Ninguém pode decidir agora: o síndico não tem acesso, ninguém tem a permissão Aprovar e não há conselho com mandato em dia.</Aviso>
+              <div className="flex justify-end"><Botao variante="discreto" onClick={aoFechar}>Fechar</Botao></div></>
+        ) : null}
+      </Dialogo>
+      <LinksMandados links={links} aoFechar={() => setLinks(null)} />
+    </>
   );
 }
 
 /** "resolve sozinha quando Ana Souza responder", para a pendência que nasceu da decisão. */
 export function pendenciaDaDecisao(d: PedidoDetalhe, pendenciaId: string): string | null {
   const x = (d.decisoes ?? []).find((y) => y.pendenciaId === pendenciaId && y.estado === "AGUARDANDO");
-  return x ? `resolve sozinha quando ${x.decisor.eu ? "você" : x.decisor.nome} responder` : null;
+  if (!x) return null;
+  if (x.modo === "CONSELHO") return "resolve sozinha quando o conselho fechar a votação";
+  return `resolve sozinha quando ${x.decisor?.eu ? "você" : x.decisor?.nome ?? "quem decide"} responder`;
 }
 

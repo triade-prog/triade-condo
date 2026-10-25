@@ -54,6 +54,13 @@ const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", h
 
 /** Agora (F7.1, AT-08, TR-11): o que pede atenção agora, cada linha levando à fila filtrada. O pedido
  * de acesso da TRÍADE e o acesso valendo vêm primeiro, com Decidir e Encerrar (PI-11, decisão D.1). */
+/** "2 decisões aguardando você"; quando há despesas e votos, eles entram na conta (resumo_decisoes). */
+export function textoDecisoesAguardando(d: { aguardando: number; votos?: number; despesas?: number }): string {
+  const despesas = d.despesas ?? 0;
+  if (despesas && despesas === d.aguardando) return plural(despesas, "despesa aguardando você", "despesas aguardando você");
+  return plural(d.aguardando, "decisão aguardando você", "decisões aguardando você");
+}
+
 function Agora({ resumo, decisoes, paradaDias }: {
   resumo: NonNullable<ReturnType<typeof usePlataforma>["painel"]["pedidos"]>;
   decisoes: ReturnType<typeof usePlataforma>["painel"]["decisoes"];
@@ -72,8 +79,11 @@ function Agora({ resumo, decisoes, paradaDias }: {
       texto: plural(resumo.vencemHoje, "retorno vence hoje", "retornos vencem hoje"), href: "/pedidos?situacao=ATIVOS", botao: "Ver quais",
       ajuda: resumo.proximoHoje ? `O próximo às ${HORA.format(new Date(resumo.proximoHoje))}.` : null }] : []),
     ...(decisoes?.aguardando ? [{ selo: "Para você", tom: "andamento" as const, icone: "decisao" as const, tomIcone: "violeta" as const,
-      texto: plural(decisoes.aguardando, "decisão aguardando você", "decisões aguardando você"), href: "/decisoes?filtro=AGUARDANDO", botao: "Decidir", iconeBotao: "check" as const,
+      texto: textoDecisoesAguardando(decisoes), href: decisoes.despesas && decisoes.despesas === decisoes.aguardando ? "/decisoes?aba=despesas" : "/decisoes?filtro=AGUARDANDO",
+      botao: decisoes.votos && decisoes.votos === decisoes.aguardando ? "Votar" : "Decidir", iconeBotao: "check" as const,
       ajuda: [decisoes.vencidas ? `${decisoes.vencidas} com o prazo vencido` : null,
+        decisoes.votos ? plural(decisoes.votos, "votação do conselho", "votações do conselho") : null,
+        decisoes.despesas ? plural(decisoes.despesas, "despesa para aprovar", "despesas para aprovar") : null,
         maisAntigaDias === null ? null : `a mais antiga foi pedida ${maisAntigaDias === 0 ? "hoje" : maisAntigaDias === 1 ? "há 1 dia" : `há ${maisAntigaDias} dias`}`]
         .filter(Boolean).join("; ").replace(/^./, (x) => x.toUpperCase()) + "." }] : []),
     ...(resumo.meusParaAceitar ? [{ selo: null, tom: "info" as const, icone: "pessoa" as const, tomIcone: "violeta" as const,
