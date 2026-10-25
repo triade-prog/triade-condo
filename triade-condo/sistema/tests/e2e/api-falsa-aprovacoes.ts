@@ -21,18 +21,23 @@ type Papel = "SUBSINDICO" | "CONSELHEIRO" | "CONSELHEIRO_FISCAL" | "SUPLENTE";
 interface Membro {
   id: string; versao: number; nome: string; papel: Papel; canal: "WHATSAPP" | "EMAIL"; celular?: string; email?: string;
   vinculo?: string; contatoId?: string; unidade?: string; inicio: string; fim: string; incluidoEm: string; retiradoEm?: string; retiradoMotivo?: string;
+  /** 0305: o número pediu PARAR; o contato apagado 90 dias depois de sair do conselho. */
+  whatsappParou?: boolean; contatoApagadoEm?: string;
 }
 interface Voto { escolha: string; justificativa?: string; em: string; canal: "PAINEL" | "LINK" }
 interface Votacao { titulares: string[]; necessarios: number; votos: Record<string, Voto> }
 type Finalidade = "VOTO" | "SUBSTITUTO" | "AVISO";
 /** Sem código: pedido por quem não vê o código; o link ainda não nasceu e aparece como "Ainda sem link para copiar". */
-interface Link { codigo?: string; membroId: string; tipo: "DECISAO" | "DESPESA"; itemId: string; finalidade: Finalidade; valido: boolean; abertoEm?: string; mandadoEm?: string }
+interface Link { codigo?: string; membroId: string; tipo: "DECISAO" | "DESPESA"; itemId: string; finalidade: Finalidade; valido: boolean; abertoEm?: string; mandadoEm?: string;
+  /** A situação da mensagem no WhatsApp do condomínio (0305); sem ela, o link é para copiar. */
+  estadoZap?: string }
 interface Anexo { id: string; nome: string; tipo: string; parte: "DOCUMENTO" | "COMPROVANTE"; tamanho: number; situacao: string; enviadoEm: string; enviadoPor: string }
 interface Despesa {
   id: string; versao: number; estado: "AGUARDANDO" | "APROVADA" | "RECUSADA" | "RETIRADA" | "PAGA"; modo: "PESSOA" | "CONSELHO";
   descricao: string; valor: number; fornecedor: { prestadorId?: string; nome: string }; vencimento?: string; prazo: string; decisorId?: string;
   pedidaEm: string; pedidaPor: string; respondidaEm?: string; respondidaPor?: string; justificativa?: string; retiradaMotivo?: string;
   voltouAoSindicoEm?: string; pagamento?: { pagaEm: string; registradaEm: string; registradaPor: string; comprovanteId?: string };
+  ligacao?: { tipo: "PEDIDO" | "MANUTENCAO" | "DECISAO"; id: string; rotulo: string };
   anexos: Anexo[]; historico: { em: string; acao: string; quem?: string; dados: Record<string, unknown> }[];
 }
 interface Ausencia { id: string; versao: number; de: string; ate: string; motivo: string | null; encerrada: boolean }
@@ -48,11 +53,13 @@ export interface EstadoAprovacoes {
   anexosDecisao: Record<string, Anexo[]>;
   /** O que a tela mandou, para o teste conferir. */
   enviados: { caminho: string; corpo: Record<string, unknown> }[];
+  /** R5.3: o WhatsApp do condomínio manda o link sozinho (envio WHATSAPP); sem isso, o link é para copiar (COPIAR, WHATSAPP_DESLIGADO). */
+  whatsappManda: boolean;
 }
 
 export function criarAprovacoes(): EstadoAprovacoes {
   return { ligado: false, regras: { versao: 1, quorum: "MAIORIA", minimo: null, empate: "SINDICO", vencidaAvisa: "NINGUEM", alcada: 300000 },
-    membros: [], ausencia: null, votacoes: {}, links: [], despesas: [], anexosDecisao: {}, enviados: [] };
+    membros: [], ausencia: null, votacoes: {}, links: [], despesas: [], anexosDecisao: {}, enviados: [], whatsappManda: false };
 }
 
 const PRESTADORES = [{ id: "e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b", nome: "Elevadores Planalto", servico: "Elevadores" }];
@@ -128,6 +135,8 @@ export interface ContextoAprovacoes extends Contexto {
   decisoes: EstadoDecisoes;
   vAna: string;
   sindico: string;
+  /** A manutenção pelo id, para a despesa ligada a ela. */
+  manutencao?: (id: string) => { titulo: string; criadoEm: string } | undefined;
 }
 
 const emDia = (m: Membro) => !m.retiradoEm && m.inicio <= HOJE && m.fim >= HOJE;
@@ -163,7 +172,8 @@ function membroJson(m: Membro, gerencia: boolean) {
     mandatoVencendo: vencendo, canal: m.canal, painel: !!m.vinculo, ...(m.vinculo ? { pessoaId: m.vinculo } : {}), ...(m.contatoId ? { contatoId: m.contatoId } : {}),
     ...(m.unidade ? { unidade: m.unidade } : {}), ...(gerencia ? { celular: m.celular, email: m.email } : {}),
     celularMascarado: mascara(m.celular), emailMascarado: mascaraEmail(m.email), incluidoEm: m.incluidoEm,
-    ...(m.retiradoEm ? { retiradoEm: m.retiradoEm, retiradoMotivo: m.retiradoMotivo } : {}) };
+    ...(m.retiradoEm ? { retiradoEm: m.retiradoEm, retiradoMotivo: m.retiradoMotivo } : {}),
+    ...(m.whatsappParou ? { whatsappParou: true } : {}), ...(m.contatoApagadoEm ? { contatoApagadoEm: m.contatoApagadoEm } : {}) };
 }
 
 /** Quem está entrando, se for do conselho. */
@@ -184,7 +194,7 @@ function votacaoJson(a: EstadoAprovacoes, v: Votacao, x: Contexto, gestao: boole
     const link = [...a.links].reverse().find((l) => l.membroId === m.id && l.valido && v === a.votacoes[l.itemId]);
     return { membroId: m.id, nome: m.nome, papel: m.papel, emDia: emDia(m), ...(m.id === eu?.id ? { eu: true } : {}),
       ...(voto ? { escolha: voto.escolha, ...(voto.justificativa ? { justificativa: voto.justificativa } : {}), votadoEm: voto.em, canal: voto.canal } : {}),
-      ...(link || m.vinculo ? { link: { canal: m.canal, envio: m.canal === "WHATSAPP" ? "COPIAR" : "ENVIADO", ...(link?.abertoEm ? { abertoEm: link.abertoEm } : {}),
+      ...(link || m.vinculo ? { link: { canal: m.canal, envio: envioDo(m, link), ...(link?.abertoEm ? { abertoEm: link.abertoEm } : {}),
         ...(link?.mandadoEm ? { mandadoEm: link.mandadoEm } : {}), podeReenviar: aberta && vota(m) } } : {}) };
   });
   const meu = eu ? v.votos[eu.id] : undefined;
@@ -194,6 +204,12 @@ function votacaoJson(a: EstadoAprovacoes, v: Votacao, x: Contexto, gestao: boole
       podeVotar: aberta && vota(eu) } } : {}) };
 }
 
+/** Nas listas, a situação do último envio do link: do e-mail, da mensagem no WhatsApp do condomínio
+ * ou COPIAR quando nada foi para a fila (0305). */
+const envioDo = (m: Membro, l?: Link) => (m.canal === "WHATSAPP" ? l?.estadoZap ?? "COPIAR" : "ENVIADO");
+/** Por que o link não vai pelo WhatsApp do condomínio, ou null quando vai. */
+const semWhatsapp = (a: EstadoAprovacoes, m: Membro) => (m.whatsappParou ? "PAROU" : !a.whatsappManda ? "WHATSAPP_DESLIGADO" : null);
+
 /** O síndico e quem cuida do conselho veem o código para copiar; os outros recebem o aviso. */
 const veCodigo = (x: ContextoAprovacoes) => x.pode("conselho.editar") || x.eu.vinculo === x.vAna;
 
@@ -202,16 +218,20 @@ const veCodigo = (x: ContextoAprovacoes) => x.pode("conselho.editar") || x.eu.vi
 function novoLink(a: EstadoAprovacoes, x: ContextoAprovacoes, m: Membro, tipo: Link["tipo"], itemId: string, finalidade: Finalidade = "VOTO") {
   const item = tipo === "DECISAO" ? { decisaoId: itemId } : { despesaId: itemId };
   const base = { membroId: m.id, nome: m.nome, canal: m.canal, finalidade, ...item };
-  if (m.canal === "WHATSAPP" && !veCodigo(x)) {
+  const sem = m.canal === "WHATSAPP" ? semWhatsapp(a, m) : null;
+  if (m.canal === "WHATSAPP" && !veCodigo(x) && sem) {
     if (!a.links.some((l) => l.membroId === m.id && l.itemId === itemId && l.finalidade === finalidade && l.valido)) {
       a.links.push({ membroId: m.id, tipo, itemId, finalidade, valido: true });
     }
-    return { ...base, envio: "COPIAR", aviso: AVISO_PECA_O_LINK };
+    return { ...base, envio: "COPIAR", semWhatsapp: sem, aviso: AVISO_PECA_O_LINK };
   }
   for (const l of a.links) if (l.membroId === m.id && l.itemId === itemId && l.finalidade === finalidade) l.valido = false;
   const codigo = `link-${novoId()}`;
-  a.links.push({ codigo, membroId: m.id, tipo, itemId, finalidade, valido: true, mandadoEm: AGORA });
-  return { ...base, envio: m.canal === "WHATSAPP" ? "COPIAR" : "EMAIL", ...(m.canal === "WHATSAPP" ? { codigo } : {}) };
+  // Pelo WhatsApp do condomínio, o código nasce para todos e só volta para quem pode vê-lo.
+  const peloZap = m.canal === "WHATSAPP" && !sem;
+  a.links.push({ codigo, membroId: m.id, tipo, itemId, finalidade, valido: true, mandadoEm: AGORA, ...(peloZap ? { estadoZap: "NA_FILA" } : {}) });
+  if (peloZap) return { ...base, envio: "WHATSAPP", estado: "NA_FILA", ...(veCodigo(x) ? { codigo } : {}) };
+  return { ...base, envio: m.canal === "WHATSAPP" ? "COPIAR" : "EMAIL", ...(m.canal === "WHATSAPP" ? { codigo, semWhatsapp: sem } : {}) };
 }
 
 /** O subsíndico responde no lugar do síndico ausente: sem painel, recebe o link do substituto. */
@@ -232,7 +252,7 @@ function linksDoItem(a: EstadoAprovacoes, itemId: string, aberta: boolean) {
     return true;
   }).map((l) => {
     const m = a.membros.find((y) => y.id === l.membroId)!;
-    return { membroId: m.id, nome: m.nome, finalidade: l.finalidade, canal: m.canal, envio: m.canal === "WHATSAPP" ? "COPIAR" : "ENVIADO",
+    return { membroId: m.id, nome: m.nome, finalidade: l.finalidade, canal: m.canal, envio: envioDo(m, l),
       ...(l.abertoEm ? { abertoEm: l.abertoEm } : {}), ...(l.mandadoEm ? { mandadoEm: l.mandadoEm } : {}),
       podeReenviar: aberta && emDia(m) && (l.finalidade !== "SUBSTITUTO" || !!ausenciaAtiva(a)) };
   });
@@ -354,7 +374,7 @@ function despesaJson(a: EstadoAprovacoes, d: Despesa, x: ContextoAprovacoes, fic
     id: d.id, versao: d.versao, estado: d.estado, modo: d.modo, descricao: d.descricao, valor: d.valor, moeda: "BRL", fornecedor: d.fornecedor,
     ...(d.vencimento ? { vencimento: d.vencimento } : {}), prazo: d.prazo, vencida: aberta && d.prazo < HOJE,
     ...(a.regras.alcada ? { alcada: a.regras.alcada } : {}), passaAlcada: !!a.regras.alcada && d.valor >= a.regras.alcada,
-    pedidaEm: d.pedidaEm, pedidaPor: d.pedidaPor,
+    pedidaEm: d.pedidaEm, pedidaPor: d.pedidaPor, ...(d.ligacao ? { ligacao: d.ligacao } : {}),
     ...(decisor ? { decisor: { vinculoId: decisor.vinculoId, nome: decisor.nome, eu: decisor.vinculoId === x.eu.vinculo } } : {}),
     ...(v ? { conselho: votacaoJson(a, v, x, gestao, aberta && conselhoAberto) } : {}),
     ...(d.voltouAoSindicoEm ? { voltouAoSindicoEm: d.voltouAoSindicoEm } : {}),
@@ -382,6 +402,25 @@ function despesaJson(a: EstadoAprovacoes, d: Despesa, x: ContextoAprovacoes, fic
   };
 }
 
+/** A ligação da despesa: uma coisa só (Ligue a uma coisa só), com o rótulo como a API manda. */
+function lerLigacao(x: ContextoAprovacoes, corpo: Record<string, unknown>): { campos: string[] } | { ligacao?: Despesa["ligacao"] } {
+  const dados = ([["PEDIDO", corpo.pedidoId], ["MANUTENCAO", corpo.manutencaoId], ["DECISAO", corpo.decisaoId]] as const).filter(([, v]) => !!v);
+  if (dados.length > 1) return { campos: ["ligacao"] };
+  if (!dados.length) return {};
+  const [tipo, valor] = dados[0]!;
+  const id = String(valor);
+  if (tipo === "PEDIDO") {
+    const p = x.pedidos.find((y) => y.id === id);
+    return p ? { ligacao: { tipo, id, rotulo: `${p.protocolo} · ${p.assunto}` } } : { campos: ["pedidoId"] };
+  }
+  if (tipo === "MANUTENCAO") {
+    const m = x.pode("manutencao.ver") ? x.manutencao?.(id) : undefined;
+    return m ? { ligacao: { tipo, id, rotulo: m.titulo } } : { campos: ["manutencaoId"] };
+  }
+  const d = x.decisoes.decisoes.find((y) => y.id === id);
+  return d ? { ligacao: { tipo, id, rotulo: d.pergunta } } : { campos: ["decisaoId"] };
+}
+
 const FILTRO_DESPESA: Record<string, (d: Despesa) => boolean> = {
   AGUARDANDO: (d) => d.estado === "AGUARDANDO", APROVADAS: (d) => d.estado === "APROVADA" || d.estado === "PAGA",
   RECUSADAS: (d) => d.estado === "RECUSADA", TODAS: () => true,
@@ -402,8 +441,10 @@ export async function rotasConselhoPublico(route: Route, a: EstadoAprovacoes, x:
   const motivo = m.retiradoEm ? "SAIU_DO_CONSELHO" : !l.valido ? "LINK_TROCADO" : !emDia(m) ? "MANDATO_VENCIDO"
     : l.finalidade === "VOTO" && !titular(m) ? "SUPLENTE_NAO_VOTA" : l.finalidade === "SUBSTITUTO" && !ausenciaAtiva(a) ? "AUSENCIA_ACABOU" : null;
   const item = decisao ?? despesa!;
-  const fechada = item.estado !== "AGUARDANDO" || (despesa && !!despesa.voltouAoSindicoEm);
+  // A despesa que voltou ao síndico fecha para o voto; para o substituto, ela continua esperando a resposta.
+  const estaFechada = () => item.estado !== "AGUARDANDO" || (l.finalidade !== "SUBSTITUTO" && !!despesa?.voltouAoSindicoEm);
   const json = () => {
+    const fechada = estaFechada();
     const prazo = item.prazo;
     // Que não vale e vencido: só o nome do condomínio, o estado e o membro, sem nada do item.
     if (motivo) return { condominio: "Residencial Ipê", estado: "NAO_VALE", motivo, membro: m.nome };
@@ -440,7 +481,7 @@ export async function rotasConselhoPublico(route: Route, a: EstadoAprovacoes, x:
   if (r[2] === "voto" && metodo === "POST") {
     if (motivo) return erro(route, 400, "VALIDATION_ERROR", { motivo });
     if (l.finalidade !== "VOTO" || !v) return erro(route, 400, "VALIDATION_ERROR", { motivo: "NAO_VOTA" });
-    if (fechada) return erro(route, 400, "VALIDATION_ERROR", { motivo: "VOTACAO_FECHADA" });
+    if (estaFechada()) return erro(route, 400, "VALIDATION_ERROR", { motivo: "VOTACAO_FECHADA" });
     if (item.prazo < HOJE) return erro(route, 400, "VALIDATION_ERROR", { motivo: "PRAZO_ACABOU" });
     const escolha = String(corpo.escolha ?? "");
     const just = String(corpo.justificativa ?? "").trim();
@@ -448,6 +489,30 @@ export async function rotasConselhoPublico(route: Route, a: EstadoAprovacoes, x:
     if ((escolha === "DEVOLVER" || escolha === "RECUSAR") && just.length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["justificativa"] });
     v!.votos[m.id] = { escolha, ...(just ? { justificativa: just } : {}), em: AGORA, canal: "LINK" };
     apurar(a, x, l.tipo, l.itemId);
+    return route.fulfill({ json: json() });
+  }
+  // O subsíndico responde no lugar do síndico ausente, pelo link do substituto.
+  if (r[2] === "resposta" && metodo === "POST") {
+    a.enviados.push({ caminho: `POST ${caminho}`, corpo });
+    if (motivo) return erro(route, 400, "VALIDATION_ERROR", { motivo });
+    if (l.finalidade !== "SUBSTITUTO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "NAO_RESPONDE" });
+    if (estaFechada()) return erro(route, 400, "VALIDATION_ERROR", { motivo: decisao ? "DECISAO_FECHADA" : "DESPESA_FECHADA" });
+    const aprovar = corpo.aprovar === true;
+    const just = String(corpo.justificativa ?? "").trim();
+    const alternativa = Number(corpo.alternativa);
+    if (decisao && aprovar && !decisao.alternativas.some((y) => y.numero === alternativa)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["alternativa"] });
+    if (just.length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["justificativa"] });
+    if (decisao) {
+      Object.assign(decisao, { estado: aprovar ? "APROVADA" : "DEVOLVIDA", respondidaEm: AGORA, respondidaPor: m.nome, justificativa: just, versao: decisao.versao + 1,
+        ...(aprovar ? { alternativaAprovada: alternativa } : {}) });
+      const p = x.pedidos.find((y) => y.id === decisao.pedidoId);
+      const pend = p?.pendencias.find((y) => y.id === decisao.pendenciaId);
+      if (pend) { pend.resolvidaEm = AGORA; pend.resolvidaPor = m.nome; pend.resolucao = aprovar ? `Aprovada a alternativa ${alternativa}` : "Devolvida"; }
+      p?.historico.push({ acao: "pedido.decisao_respondida", em: AGORA, autor: null, dados: { aprovada: aprovar, alternativa: aprovar ? alternativa : undefined, porSubstituto: true } });
+    } else {
+      Object.assign(despesa!, { estado: aprovar ? "APROVADA" : "RECUSADA", respondidaEm: AGORA, respondidaPor: m.nome, justificativa: just, versao: despesa!.versao + 1 });
+      despesa!.historico.unshift({ em: AGORA, acao: "despesa.respondida", quem: m.nome, dados: { aprovada: aprovar, porSubstituto: true } });
+    }
     return route.fulfill({ json: json() });
   }
   return erro(route, 404, "NOT_FOUND");
@@ -532,7 +597,7 @@ export async function rotasAprovacoes(route: Route, a: EstadoAprovacoes, x: Cont
       return erro(route, 400, "VALIDATION_ERROR", { motivo: "VOTO_PENDENTE" });
     }
     Object.assign(m, { papel: texto("papel"), inicio: texto("mandatoInicio"), fim: texto("mandatoFim"), canal: texto("canal"), celular: celular || undefined,
-      email: texto("email") || undefined, versao: m.versao + 1 });
+      email: texto("email") || undefined, versao: m.versao + 1, contatoApagadoEm: undefined });
     return route.fulfill({ json: { versao: m.versao } });
   }
 
@@ -673,12 +738,14 @@ export async function rotasAprovacoes(route: Route, a: EstadoAprovacoes, x: Cont
     if (!(Number(corpo.valor) > 0)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["valor"] });
     const prestador = PRESTADORES.find((p) => p.id === corpo.prestadorId);
     if (!prestador && texto("fornecedor").length < 2) return erro(route, 400, "VALIDATION_ERROR", { campos: ["fornecedor"] });
+    const lig = lerLigacao(x, corpo);
+    if ("campos" in lig) return erro(route, 400, "VALIDATION_ERROR", { campos: lig.campos });
     if (!texto("prazo") || texto("prazo") < HOJE) return erro(route, 400, "VALIDATION_ERROR", { campos: ["prazo"] });
     const modo = corpo.modo === "CONSELHO" ? "CONSELHO" : "PESSOA";
     if (modo === "PESSOA" && !corpo.decisorId) return erro(route, 400, "VALIDATION_ERROR", { campos: ["decisorId"] });
     const d: Despesa = { id: novoId(), versao: 1, estado: "AGUARDANDO", modo, descricao: texto("descricao"), valor: Number(corpo.valor),
       fornecedor: prestador ? { prestadorId: prestador.id, nome: prestador.nome } : { nome: texto("fornecedor") }, ...(texto("vencimento") ? { vencimento: texto("vencimento") } : {}),
-      prazo: texto("prazo"), ...(modo === "PESSOA" ? { decisorId: String(corpo.decisorId) } : {}), pedidaEm: AGORA, pedidaPor: x.eu.nome, anexos: [], historico: [] };
+      prazo: texto("prazo"), ...(modo === "PESSOA" ? { decisorId: String(corpo.decisorId) } : {}), ...(lig.ligacao ? { ligacao: lig.ligacao } : {}), pedidaEm: AGORA, pedidaPor: x.eu.nome, anexos: [], historico: [] };
     let links: unknown[] = [];
     if (modo === "CONSELHO") {
       const tit = titularesEmDia(a);
@@ -699,6 +766,24 @@ export async function rotasAprovacoes(route: Route, a: EstadoAprovacoes, x: Cont
     const d = a.despesas.find((y) => y.id === dp[1]);
     if (!d) return erro(route, 404, "NOT_FOUND");
     if (!dp[2] && metodo === "GET") return route.fulfill({ json: despesaJson(a, d, x, true) });
+    // Alterar (R5.3): enquanto espera e antes do primeiro voto; sem modo, quem aprova e prazo.
+    if (!dp[2] && metodo === "PUT") {
+      if (!x.pode("despesas.registrar")) return erro(route, 403, "FORBIDDEN");
+      anota();
+      if (corpo.versao !== d.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: d.versao, atual: despesaJson(a, d, x, true) });
+      if (d.estado !== "AGUARDANDO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "DESPESA_FECHADA" });
+      if (Object.keys(a.votacoes[d.id]?.votos ?? {}).length) return erro(route, 400, "VALIDATION_ERROR", { motivo: "DESPESA_COM_VOTO" });
+      if (texto("descricao").length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["descricao"] });
+      if (!(Number(corpo.valor) > 0)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["valor"] });
+      const prestador = PRESTADORES.find((p) => p.id === corpo.prestadorId);
+      if (!prestador && texto("fornecedor").length < 2) return erro(route, 400, "VALIDATION_ERROR", { campos: ["fornecedor"] });
+      const lig = lerLigacao(x, corpo);
+      if ("campos" in lig) return erro(route, 400, "VALIDATION_ERROR", { campos: lig.campos });
+      Object.assign(d, { descricao: texto("descricao"), valor: Number(corpo.valor), vencimento: texto("vencimento") || undefined, ligacao: lig.ligacao,
+        fornecedor: prestador ? { prestadorId: prestador.id, nome: prestador.nome } : { nome: texto("fornecedor") }, versao: d.versao + 1 });
+      d.historico.unshift({ em: AGORA, acao: "despesa.alterada", quem: x.eu.nome, dados: {} });
+      return route.fulfill({ json: { versao: d.versao } });
+    }
     if (metodo !== "POST") return erro(route, 404, "NOT_FOUND");
     anota();
     if (corpo.versao !== d.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: d.versao });

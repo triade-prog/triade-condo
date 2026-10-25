@@ -2,7 +2,7 @@
 // síndico, o voto pelo painel e pelo link sem conta, e a despesa para aprovar (FC-10), com os
 // anexos no bucket privado "pedidos", o mesmo dos arquivos do pedido. Quem pode o quê, o quórum
 // e quando a votação fecha são decididos no banco (0303); aqui só se valida a entrada, se cuida
-// dos anexos e se esvazia a fila quando o link do conselheiro vai pelo e-mail.
+// dos anexos e se esvazia a fila quando o link do conselheiro vai pelo e-mail ou pelo WhatsApp (0305).
 
 import type { Context, Env, Hono } from "hono";
 import {
@@ -40,6 +40,8 @@ export interface DepsAprovacoes {
   armazenamento: Armazenamento;
   /** O link pelo e-mail entrou na fila: manda agora. */
   esvaziarFila: () => void;
+  /** O link pelo WhatsApp entrou na fila: manda agora (a rotina de cada minuto também manda). */
+  esvaziarWhatsapp: () => void;
   /** O código do link sem conta, conferido no formato (fora dele, não encontrado). */
   codigoDaRota: (c: Context) => string;
   /** Limite de uso por aparelho das rotas sem conta. */
@@ -57,6 +59,12 @@ export function algumPorEmail(r: unknown): boolean {
   return x.envio === "EMAIL" || (Array.isArray(x.links) && x.links.some((l) => l?.envio === "EMAIL"));
 }
 
+/** Algum link do conselho entrou na fila do WhatsApp (0305): o código entra só na hora de enviar. */
+export function algumPorWhatsapp(r: unknown): boolean {
+  const x = (r ?? {}) as ComLinks;
+  return x.envio === "WHATSAPP" || (Array.isArray(x.links) && x.links.some((l) => l?.envio === "WHATSAPP"));
+}
+
 export function rotasAprovacoes<E extends Env>(app: Hono<E>, base: string, quem: (c: Context<E>) => Quem, deps: DepsAprovacoes) {
   const rpc = deps.banco.rpc.bind(deps.banco);
   const consulta = <T extends typeof filtroDespesasSchema | typeof buscaCandidatosSchema>(c: Context<E>, schema: T): ReturnType<T["parse"]> => {
@@ -65,9 +73,10 @@ export function rotasAprovacoes<E extends Env>(app: Hono<E>, base: string, quem:
     return r.data as ReturnType<T["parse"]>;
   };
   const id = (c: Context<E>) => ({ ...quem(c), p_id: idDaRota(c, "id") });
-  /** Algum link foi pelo e-mail: a fila sai na hora. */
+  /** Algum link foi pelo e-mail ou pelo WhatsApp: a fila sai na hora. */
   const mandou = <T extends ComLinks>(r: T): T => {
     if (algumPorEmail(r)) deps.esvaziarFila();
+    if (algumPorWhatsapp(r)) deps.esvaziarWhatsapp();
     return r;
   };
 
@@ -112,7 +121,7 @@ export function rotasAprovacoes<E extends Env>(app: Hono<E>, base: string, quem:
   // A ausência do síndico: o subsíndico responde no lugar dele; sem painel, recebe o link.
   app.post(`${base}/ausencia`, async (c) => {
     const d = await lerCorpo(c, ausenciaSchema);
-    // Os links do substituto que nasceram: pelo e-mail saem na hora; pelo WhatsApp, para copiar.
+    // Os links do substituto que nasceram: pelo e-mail e pelo WhatsApp saem na hora; sem WhatsApp, para copiar.
     const r = await rpc<ComLinks>("plataforma_marcar_ausencia", { ...quem(c), p_de: d.de, p_ate: d.ate, p_motivo: d.motivo });
     return c.json(mandou(r), 201);
   });

@@ -16,7 +16,7 @@ import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { AusenciaSindico, CandidatoConselho, Conselho, LinkMandado, MembroConselho, Recado } from "../tipos.ts";
 import { diaDoPrazo } from "../decisoes/comum.tsx";
 import { Escolha } from "../decisoes/Despesas.tsx";
-import { LinksMandados, recadoDosLinks } from "../decisoes/votacao.tsx";
+import { LinksMandados, recadoDosLinks, temLinkParaCopiar } from "../decisoes/votacao.tsx";
 import type { Moldura } from "./Pessoas.tsx";
 
 const COLUNAS = "md:grid-cols-[40px_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.1fr)_10rem_18px]";
@@ -124,6 +124,7 @@ export function AbaConselho({ moldura, contar }: { moldura: Moldura; contar: (n:
                         <span className="t-texto">{PAPEIS_CONSELHO[m.papel]}</span>
                         {m.titular ? <Selo tom="andamento">Titular</Selo> : <Selo tom="neutro">Suplente</Selo>}
                         {aviso ? <Selo tom={aviso.tom}>{aviso.texto}</Selo> : null}
+                        <SelosContato m={m} />
                       </span>
                       <span className="t-apoio md:hidden">{textoMandato(m.mandatoInicio, m.mandatoFim)} · {votaPor(m)}</span>
                     </span>
@@ -134,6 +135,7 @@ export function AbaConselho({ moldura, contar }: { moldura: Moldura; contar: (n:
                     <span className="grid gap-1 max-md:hidden">
                       <span className="t-codigo">{textoMandato(m.mandatoInicio, m.mandatoFim)}</span>
                       {aviso ? <span><Selo tom={aviso.tom}>{aviso.texto}</Selo></span> : null}
+                      <span className="flex flex-wrap gap-1.5"><SelosContato m={m} /></span>
                     </span>
                     <span className="t-apoio max-md:hidden">{votaPor(m)}</span>
                     <Icone nome="dir" className="h-5 w-5 text-tinta-suave max-md:col-start-3 max-md:row-start-1" />
@@ -154,6 +156,7 @@ export function AbaConselho({ moldura, contar }: { moldura: Moldura; contar: (n:
                 <li key={m.id} className="grid gap-0.5 rounded-2xl border border-linha bg-superficie p-3">
                   <span className="font-medium">{m.nome} · {PAPEIS_CONSELHO[m.papel]}</span>
                   <span className="t-apoio">Retirado{m.retiradoEm ? ` em ${diaDoPrazo(m.retiradoEm.slice(0, 10))}` : ""}{m.retiradoMotivo ? `: ${m.retiradoMotivo}` : ""}</span>
+                  {m.contatoApagadoEm ? <span className="t-apoio">{CONTATO_APAGADO}.</span> : null}
                 </li>
               ))}
             </ul>
@@ -175,7 +178,7 @@ export function AbaConselho({ moldura, contar }: { moldura: Moldura; contar: (n:
           return res;
         }} />
       <MarcarAusencia aberto={ausencia} c={c} aoFechar={() => setAusencia(false)}
-        salvo={(t, l) => { setAusencia(false); salvo(t); if (l.some((x) => x.envio === "COPIAR")) setLinks(l); }} />
+        salvo={(t, l) => { setAusencia(false); salvo(t); if (temLinkParaCopiar(l)) setLinks(l); }} />
       <LinksMandados links={links} aoFechar={() => setLinks(null)} />
       <EncerrarAusencia a={encerrar} aoFechar={() => setEncerrar(null)} salvo={(t) => { setEncerrar(null); salvo(t); }} />
     </div>
@@ -223,9 +226,12 @@ function FichaMembro({ m, c, aoFechar, alterar, retirar }: {
                 : `O mandato vai até ${diaDoPrazo(m.mandatoFim)}. Renove quando houver a ata da nova eleição.`}
             </Aviso>
           ) : null}
+          {m.whatsappParou ? <Aviso tom="atencao" titulo="Pediu PARAR">Este número pediu PARAR no WhatsApp do condomínio: o link de {m.nome.split(" ")[0]} fica para copiar e mandar da sua conversa.</Aviso> : null}
+          {m.contatoApagadoEm ? <Aviso tom="info" titulo="Contato apagado">{CONTATO_APAGADO}, em {diaDoPrazo(m.contatoApagadoEm.slice(0, 10))}. Nome, papel, mandato e votos ficam. Para renovar o mandato, escreva o contato de novo.</Aviso> : null}
           <dl className="grid gap-3 sm:grid-cols-2">
             {[["Mandato", textoMandato(m.mandatoInicio, m.mandatoFim)], ["Vota por", votaPor(m)],
-              ["Recebe o link", `${CANAIS_CONSELHO[m.canal]}${m.canal === "WHATSAPP" ? ` · ${m.celular ?? m.celularMascarado ?? "sem celular"}` : ` · ${m.email ?? m.emailMascarado ?? "sem e-mail"}`}`],
+              ["Recebe o link", m.contatoApagadoEm ? `${CANAIS_CONSELHO[m.canal]} · contato apagado`
+                : `${CANAIS_CONSELHO[m.canal]}${m.canal === "WHATSAPP" ? ` · ${m.celular ?? m.celularMascarado ?? "sem celular"}` : ` · ${m.email ?? m.emailMascarado ?? "sem e-mail"}`}`],
               ["Quem é", m.unidade ?? (m.pessoaId ? "Pessoa com acesso ao painel" : m.contatoId ? "Morador cadastrado" : "Só no conselho")]].map(([a, b]) => (
               <div key={a} className="grid gap-0.5">
                 <dt className="t-apoio">{a}</dt>
@@ -247,6 +253,18 @@ function FichaMembro({ m, c, aoFechar, alterar, retirar }: {
   );
 }
 
+const CONTATO_APAGADO = "Contato apagado (saiu do conselho há mais de 90 dias)";
+
+/** Os selos do contato na lista: o número que pediu PARAR e o contato apagado pelo prazo (R5.3). */
+function SelosContato({ m }: { m: Pick<MembroConselho, "whatsappParou" | "contatoApagadoEm"> }) {
+  return (
+    <>
+      {m.whatsappParou ? <Selo tom="atencao">Pediu PARAR no WhatsApp</Selo> : null}
+      {m.contatoApagadoEm ? <Selo tom="neutro">Contato apagado</Selo> : null}
+    </>
+  );
+}
+
 /** Os campos do mandato e do contato, comuns a incluir e alterar. */
 function CamposMandato({ v, mudar, comErro, contatoDaFicha }: {
   v: DadosMandato; mudar: (x: Partial<DadosMandato>) => void; comErro: string[]; contatoDaFicha?: { celular?: string; email?: string };
@@ -265,7 +283,7 @@ function CamposMandato({ v, mudar, comErro, contatoDaFicha }: {
       <fieldset className="grid gap-2">
         <legend className="mb-1 t-apoio font-medium">Como recebe o link para votar</legend>
         <Escolha nome="membro-canal" valor="WHATSAPP" atual={v.canal} mudar={(x) => mudar({ canal: x as CanalConselho })} texto="WhatsApp"
-          sub={contatoDaFicha?.celular ? `${contatoDaFicha.celular}, o celular da ficha` : "O link vai para copiar e mandar da sua conversa, até o WhatsApp do condomínio mandar sozinho"} />
+          sub={contatoDaFicha?.celular ? `${contatoDaFicha.celular}, o celular da ficha` : "O link vai pelo WhatsApp do condomínio; sem ele, fica para copiar e mandar da sua conversa"} />
         <Escolha nome="membro-canal" valor="EMAIL" atual={v.canal} mudar={(x) => mudar({ canal: x as CanalConselho })} texto="E-mail"
           sub={contatoDaFicha?.email ?? "O link chega pelo e-mail"} />
       </fieldset>
@@ -408,6 +426,7 @@ function FormAlterar({ m, renovar, hoje, aoFechar, recarregar, salvo }: {
     <form onSubmit={enviar} noValidate className="grid gap-4">
       {erro && !["papel", "mandatoInicio", "mandatoFim", "celular", "email"].some((x) => comErro.includes(x))
         ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={() => { aoFechar(); recarregar(); }} /> : null}
+      {m.contatoApagadoEm ? <Aviso tom="info">{CONTATO_APAGADO}. Escreva o {m.canal === "WHATSAPP" ? "celular" : "e-mail"} de novo para o link chegar.</Aviso> : null}
       <CamposMandato v={v} mudar={(x) => setV((y) => ({ ...y, ...x }))} comErro={comErro} />
       <div className="flex flex-wrap justify-end gap-2 max-md:flex-col-reverse">
         <Botao variante="contorno" onClick={aoFechar}>Cancelar</Botao>

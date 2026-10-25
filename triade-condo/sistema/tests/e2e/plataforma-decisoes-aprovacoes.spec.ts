@@ -1,6 +1,8 @@
 // R5 · Decisões e aprovações (V-14, FC-10; quadros 410 a 423): o conselho em Pessoas, a ausência
 // do síndico, pedir ao conselho, a votação em Decisões com o quórum e o Reenviar o link, o voto
-// pelo painel, o link do conselheiro sem conta, as despesas de ponta a ponta e as regras. Cada
+// pelo painel, o link do conselheiro sem conta, as despesas de ponta a ponta e as regras; na R5.3,
+// a despesa ligada a uma coisa só, o Alterar antes do primeiro voto, o subsíndico respondendo pelo
+// link na ausência e o link mandado pelo WhatsApp do condomínio. Cada
 // tela passa no axe (WCAG 2.2 AA) no celular e no computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
@@ -496,5 +498,224 @@ test.describe("Plataforma · decisões e aprovações (R5)", () => {
     await page.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByText("Regras das decisões salvas.", { exact: false })).toBeVisible();
     expect(ultimo(estado, /PUT \/v1\/condominio\/regras-decisoes$/)).toMatchObject({ versao: 2, alcada: null });
+  });
+
+  // R5.3 · Ligada a, Alterar a despesa, o subsíndico pelo link na ausência e o link pelo WhatsApp do condomínio.
+
+  test("FC-10: Nova despesa ligada a uma manutenção; Alterar antes do primeiro voto, com a versão nova e o voto que trava", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page, { comAprovacoes: true });
+    await page.goto(`${PLATAFORMA}/decisoes?aba=despesas`);
+    await page.getByRole("button", { name: "Nova despesa para aprovar" }).click();
+    const nova = page.getByRole("dialog", { name: "Nova despesa para aprovar" });
+    await nova.getByLabel("O que é").fill("Conserto da bomba de recalque");
+    await nova.getByLabel("Valor").fill("1.200,00");
+    await nova.getByLabel("Fornecedor").selectOption({ label: "Elevadores Planalto · Elevadores" });
+    await nova.getByRole("searchbox", { name: /Ligada a/ }).fill("bomba");
+    const achados = nova.getByRole("list", { name: "Para ligar" });
+    await expect(achados.getByRole("button", { name: /^Manutenção · Bomba de recalque com ruído · \d\d\/\d\d/ })).toBeVisible();
+    await conferir(page);
+    await achados.getByRole("button", { name: /^Manutenção · Bomba de recalque com ruído/ }).click();
+    await expect(nova.getByRole("group", { name: /Ligada a/ })).toContainText("Manutenção · Bomba de recalque com ruído");
+    await expect(nova.getByRole("searchbox", { name: /Ligada a/ })).toHaveCount(0);
+    await nova.getByRole("radio", { name: /Ana Souza \(você\)/ }).check();
+    await conferir(page);
+    await nova.getByRole("button", { name: "Pedir aprovação" }).click();
+    await expect(recado(page, "Despesa registrada para você aprovar.")).toBeVisible();
+    const bomba = estado.aprovacoes.despesas.find((d) => d.descricao === "Conserto da bomba de recalque")!;
+    expect(ultimo(estado, /POST \/v1\/condominio\/despesas$/)).toMatchObject({ manutencaoId: bomba.ligacao!.id, pedidoId: null, decisaoId: null,
+      prestadorId: "e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b", fornecedor: null, valor: 120000 });
+
+    await page.getByRole("link", { name: "Conserto da bomba de recalque" }).click();
+    await expect(page.getByText("ligada à manutenção", { exact: false })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Bomba de recalque com ruído" })).toHaveAttribute("href", `/manutencao/manutencao?id=${bomba.ligacao!.id}`);
+    await page.getByRole("button", { name: "Alterar a despesa" }).click();
+    const alterar = page.getByRole("dialog", { name: "Alterar a despesa" });
+    await expect(alterar.getByLabel("O que é")).toHaveValue("Conserto da bomba de recalque");
+    await expect(alterar.getByLabel("Valor")).toHaveValue("1.200,00");
+    await expect(alterar.getByLabel("Fornecedor")).toHaveValue("e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b");
+    await expect(alterar.getByRole("group", { name: "Quem aprova" })).toHaveCount(0);
+    await expect(alterar.getByLabel("Responder até")).toHaveCount(0);
+    await conferir(page);
+
+    // Outra pessoa salvou antes: o aviso pede para carregar a versão nova.
+    await alterar.getByLabel("Valor").fill("1.350,00");
+    bomba.versao++;
+    await alterar.getByRole("button", { name: "Salvar" }).click();
+    await expect(alterar.getByText("Outra pessoa alterou este registro enquanto você editava.", { exact: false })).toBeVisible();
+    await alterar.getByRole("button", { name: "Carregar a versão nova" }).click();
+    await expect(alterar).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Alterar a despesa" }).click();
+    await alterar.getByLabel("Valor").fill("1.350,00");
+    await alterar.getByRole("button", { name: /Tirar a ligação/ }).click();
+    await alterar.getByRole("searchbox", { name: /Ligada a/ }).fill("2026-0001");
+    await alterar.getByRole("list", { name: "Para ligar" }).getByRole("button", { name: /^Pedido · 2026-0001 · Vazamento no banheiro/ }).click();
+    await conferir(page);
+    await alterar.getByRole("button", { name: "Salvar" }).click();
+    await expect(recado(page, "Despesa alterada. A mudança fica no histórico.")).toBeVisible();
+    expect(ultimo(estado, /PUT \/v1\/condominio\/despesas\//)).toMatchObject({ versao: 2, valor: 135000, pedidoId: estado.pedidos[0]!.id, manutencaoId: null, decisaoId: null });
+    await expect(page.getByRole("link", { name: "2026-0001 · Vazamento no banheiro" })).toBeVisible();
+    await expect(page.getByText("Ana Souza: Despesa alterada")).toBeVisible();
+
+    // Com voto do conselho, não muda mais: o botão some e a API recusa quem já estava com a janela aberta.
+    const elevador = estado.aprovacoes.despesas.find((d) => d.descricao === "Conta de reparo do elevador")!;
+    const votos = estado.aprovacoes.votacoes[elevador.id]!.votos;
+    const voto = { ...votos };
+    for (const k of Object.keys(votos)) delete votos[k];
+    await page.goto(`${PLATAFORMA}/decisoes/despesa?id=${elevador.id}`);
+    await page.getByRole("button", { name: "Alterar a despesa" }).click();
+    Object.assign(votos, voto);
+    await alterar.getByRole("button", { name: "Salvar" }).click();
+    await expect(alterar.getByText("Já há voto nesta despesa e ela não muda mais. Retire e peça de novo.")).toBeVisible();
+    await alterar.getByRole("button", { name: "Cancelar" }).click();
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: "Conta de reparo do elevador" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Alterar a despesa" })).toHaveCount(0);
+    await expect(page.getByText("Já há voto do conselho: a despesa não muda mais. Para mudar, retire e peça de novo.")).toBeVisible();
+    await conferir(page);
+  });
+
+  test("V-14: na ausência da síndica, a subsíndica sem painel responde pelo link do substituto a despesa e a decisão", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page, { comAprovacoes: true, logado: false });
+    const bruna = estado.aprovacoes.membros.find((m) => m.nome === "Bruna")!;
+    Object.assign(bruna, { vinculo: undefined, canal: "WHATSAPP", celular: "+5561999990101" });
+    estado.aprovacoes.ausencia = { id: "a5e1c1a0-0000-4000-8000-000000000001", versao: 2, de: "2026-10-16", ate: "2026-10-30", motivo: "Viagem", encerrada: false };
+    const lampadas = estado.aprovacoes.despesas.find((d) => d.descricao === "Compra de lâmpadas LED das garagens")!;
+    const votacao = estado.decisoes.decisoes.find((d) => d.pergunta === VOTACAO)!;
+    const fechadura = { ...structuredClone(votacao), id: "d0e1f2a3-b4c5-4d6e-8f7a-000000000201", modo: "PESSOA" as const, decisorId: estado.aprovacoes.despesas[1]!.decisorId!,
+      pergunta: "Trocar a fechadura do portão social", porque: "A chave quebrou dentro da fechadura." };
+    estado.decisoes.decisoes.push(fechadura);
+    estado.aprovacoes.links.push(
+      { codigo: "link-bruna-substituto-despesa", membroId: bruna.id, tipo: "DESPESA", itemId: lampadas.id, finalidade: "SUBSTITUTO", valido: true, mandadoEm: "2026-10-16T12:00:00.000Z" },
+      { codigo: "link-bruna-substituto-decisao", membroId: bruna.id, tipo: "DECISAO", itemId: fechadura.id, finalidade: "SUBSTITUTO", valido: true, mandadoEm: "2026-10-16T12:00:00.000Z" },
+    );
+
+    // A despesa: aprovar ou recusar, com a justificativa.
+    await page.goto(`${PLATAFORMA}/conselho/link-bruna-substituto-despesa`);
+    await expect(page.getByText("Bruna · Subsíndico")).toBeVisible();
+    await expect(page.getByText("Responder até 23/10, 23:59")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Compra de lâmpadas LED das garagens" })).toBeVisible();
+    await expect(page.getByText("O síndico está ausente: você responde no lugar dele.", { exact: false })).toBeVisible();
+    await conferir(page);
+    await page.getByRole("button", { name: "Enviar a resposta" }).click();
+    await expect(page.getByText("Escolha a resposta.")).toBeVisible();
+    await page.getByRole("radio", { name: "Aprovar a despesa" }).check();
+    await page.getByRole("button", { name: "Enviar a resposta" }).click();
+    await expect(page.getByText("Explique a resposta (3 a 1000 caracteres).")).toBeVisible();
+    await page.getByLabel("Justificativa").fill("As garagens estão no escuro");
+    await conferir(page);
+    await page.getByRole("button", { name: "Enviar a resposta" }).click();
+    await expect(recado(page, "Resposta registrada no lugar do síndico. Quem pediu foi avisado.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Despesa fechada" })).toBeVisible();
+    await expect(page.getByText("Despesa aprovada. As garagens estão no escuro.")).toBeVisible();
+    expect(lampadas).toMatchObject({ estado: "APROVADA", respondidaPor: "Bruna", justificativa: "As garagens estão no escuro" });
+    expect(lampadas.historico[0]).toMatchObject({ acao: "despesa.respondida", dados: { aprovada: true, porSubstituto: true } });
+    await conferir(page);
+
+    // A decisão: escolher a alternativa.
+    await page.goto(`${PLATAFORMA}/conselho/link-bruna-substituto-decisao`);
+    await expect(page.getByRole("heading", { name: "Trocar a fechadura do portão social" })).toBeVisible();
+    await expect(page.getByText("A chave quebrou dentro da fechadura.")).toBeVisible();
+    await page.getByRole("radio", { name: /1 · Trocar o portão inteiro/ }).check();
+    await page.getByLabel("Justificativa").fill("Garantia de 2 anos");
+    await conferir(page);
+    await page.getByRole("button", { name: "Enviar a resposta" }).click();
+    await expect(page.getByRole("heading", { name: "Decisão fechada" })).toBeVisible();
+    await expect(page.getByText("Aprovada a alternativa 1 · Trocar o portão inteiro. Garantia de 2 anos.")).toBeVisible();
+    expect(fechadura).toMatchObject({ estado: "APROVADA", alternativaAprovada: 1, respondidaPor: "Bruna" });
+    expect(ultimo(estado, /\/resposta$/)).toEqual({ aprovar: true, alternativa: 1, justificativa: "Garantia de 2 anos" });
+
+    // Encerrada a ausência, o link do substituto para de valer e não mostra nada do item.
+    fechadura.estado = "AGUARDANDO";
+    estado.aprovacoes.ausencia.encerrada = true;
+    await page.goto(`${PLATAFORMA}/conselho/link-bruna-substituto-decisao`);
+    await expect(page.getByRole("heading", { name: "Este link não vale mais" })).toBeVisible();
+    await expect(page.getByText("A ausência do síndico acabou: ele responde. Se você é do conselho, peça um novo ao síndico.")).toBeVisible();
+    await expect(page.getByText("Trocar a fechadura")).toHaveCount(0);
+    await conferir(page);
+  });
+
+  test("V-14: com o WhatsApp do condomínio mandando, o link sai sozinho e a síndica ainda pode copiar", async ({ page }) => {
+    await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    const estado = await instalarApiPlataformaFalsa(page, { comAprovacoes: true });
+    estado.aprovacoes.whatsappManda = true;
+    await page.goto(`${PLATAFORMA}/decisoes?aba=despesas`);
+    await page.getByRole("button", { name: "Nova despesa para aprovar" }).click();
+    const nova = page.getByRole("dialog", { name: "Nova despesa para aprovar" });
+    await nova.getByLabel("O que é").fill("Pintura da guarita");
+    await nova.getByLabel("Valor").fill("2.100,00");
+    await nova.getByLabel("Fornecedor").selectOption({ label: "Outro: escrever só o nome" });
+    await nova.getByLabel("Nome do fornecedor").fill("Cores do Cerrado");
+    await nova.getByRole("radio", { name: /O conselho/ }).check();
+    await nova.getByRole("button", { name: "Pedir aprovação" }).click();
+    await expect(recado(page, "Despesa pedida ao conselho, para votar até 23/10. Link mandado pelo e-mail para João Pedro Alves. Link mandado pelo WhatsApp do condomínio para Marta Reis, Lúcia Andrade.")).toBeVisible();
+    await expect(page.getByRole("dialog", { name: /pelo WhatsApp/ })).toHaveCount(0);
+
+    // Nas listas, envio é a situação da mensagem no WhatsApp do condomínio.
+    const pintura = estado.aprovacoes.despesas.find((d) => d.descricao === "Pintura da guarita")!;
+    const martaId = estado.aprovacoes.membros.find((m) => m.nome === "Marta Reis")!.id;
+    estado.aprovacoes.links.find((l) => l.itemId === pintura.id && l.membroId === martaId)!.estadoZap = "ENTREGUE";
+    await page.getByRole("link", { name: "Pintura da guarita" }).click();
+    const marta = page.getByRole("listitem").filter({ hasText: "Marta Reis" });
+    await expect(marta).toContainText("Pelo WhatsApp: entregue, ainda não aberto");
+    await conferir(page);
+    await marta.getByRole("button", { name: "Reenviar o link para Marta Reis" }).click();
+    const janela = page.getByRole("dialog", { name: "Link mandado pelo WhatsApp" });
+    await expect(janela).toContainText("O WhatsApp do condomínio já mandou o link.");
+    await expect(janela.getByRole("listitem").filter({ hasText: "Marta Reis" })).toContainText("Enviado pelo WhatsApp do condomínio");
+    await conferir(page);
+    await janela.getByRole("button", { name: "Copiar o link de Marta Reis" }).click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^http:\/\/localhost:3000\/conselho\/link-/);
+    await janela.getByRole("button", { name: "Pronto" }).click();
+    await expect(recado(page, "Link novo mandado pelo WhatsApp do condomínio para Marta Reis. O anterior parou de valer.")).toBeVisible();
+  });
+
+  test("V-14: o número que pediu PARAR fica para copiar, com o motivo; o contato apagado pede o contato de novo ao renovar", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page, { comAprovacoes: true });
+    estado.aprovacoes.whatsappManda = true;
+    const marta = estado.aprovacoes.membros.find((m) => m.nome === "Marta Reis")!;
+    marta.whatsappParou = true;
+    const paulo = estado.aprovacoes.membros.find((m) => m.nome === "Paulo Dias")!;
+    Object.assign(paulo, { email: undefined, contatoApagadoEm: "2026-10-12T03:00:00.000Z" });
+
+    await page.goto(`${PLATAFORMA}/pessoas?aba=conselho`);
+    const membros = page.getByRole("region", { name: "Membros do conselho" });
+    await expect(membros.getByRole("listitem").filter({ hasText: "Marta Reis" }).getByText("Pediu PARAR no WhatsApp").filter({ visible: true }).first()).toBeVisible();
+    await expect(membros.getByRole("listitem").filter({ hasText: "Paulo Dias" }).getByText("Contato apagado").filter({ visible: true }).first()).toBeVisible();
+    await conferir(page);
+    await membros.getByRole("button", { name: "Marta Reis" }).click();
+    await expect(page.getByRole("dialog", { name: "Marta Reis" })).toContainText("Este número pediu PARAR no WhatsApp do condomínio: o link de Marta fica para copiar");
+    await page.getByRole("dialog", { name: "Marta Reis" }).getByRole("button", { name: "Fechar" }).first().click();
+
+    await membros.getByRole("button", { name: "Paulo Dias" }).click();
+    const ficha = page.getByRole("dialog", { name: "Paulo Dias" });
+    await expect(ficha).toContainText("Contato apagado (saiu do conselho há mais de 90 dias), em 12/10.");
+    await conferir(page);
+    await ficha.getByRole("button", { name: "Renovar mandato" }).click();
+    const renovar = page.getByRole("dialog", { name: "Renovar mandato" });
+    await expect(renovar).toContainText("Escreva o e-mail de novo para o link chegar.");
+    await renovar.getByRole("button", { name: "Renovar" }).click();
+    await expect(renovar.getByText("Escreva um e-mail válido.")).toBeVisible();
+    await renovar.getByRole("textbox", { name: "E-mail" }).fill("paulo.dias@exemplo.com");
+    await conferir(page);
+    await renovar.getByRole("button", { name: "Renovar" }).click();
+    await expect(recado(page, "Mandato de Paulo Dias renovado")).toBeVisible();
+    expect(paulo).toMatchObject({ email: "paulo.dias@exemplo.com", contatoApagadoEm: undefined });
+
+    // Pedida ao conselho: a Lúcia recebe pelo WhatsApp do condomínio; o link da Marta fica para copiar, com o motivo.
+    await page.goto(`${PLATAFORMA}/pedidos/pedido?id=${estado.pedidos[1]!.id}`);
+    await maisAcoes(page, "Pedir decisão");
+    const pedir = page.getByRole("dialog", { name: "Pedir decisão · 2026-0002" });
+    await pedir.getByRole("group", { name: "Quem decide" }).getByRole("radio", { name: /O conselho/ }).check();
+    await pedir.getByLabel("O que precisa ser decidido").fill("Qual empresa faz a impermeabilização da laje");
+    await pedir.getByLabel("Alternativa 1").fill("Remendo no trecho rachado");
+    await pedir.getByRole("button", { name: "Pedir ao conselho" }).click();
+    const links = page.getByRole("dialog", { name: "Mande o link pelo WhatsApp" });
+    await expect(links).toContainText("O link não saiu pelo WhatsApp do condomínio. Copie o link de cada pessoa");
+    await expect(links.getByRole("listitem").filter({ hasText: "Marta Reis" })).toContainText("Este número pediu PARAR no WhatsApp do condomínio.");
+    await expect(links.getByRole("listitem").filter({ hasText: "Lúcia Andrade" })).toContainText("Enviado pelo WhatsApp do condomínio");
+    await conferir(page);
+    await links.getByRole("button", { name: "Pronto" }).click();
+    await expect(recado(page, "Link mandado pelo WhatsApp do condomínio para Lúcia Andrade. Falta mandar pelo WhatsApp para Marta Reis: copie o link na janela.")).toBeVisible();
   });
 });

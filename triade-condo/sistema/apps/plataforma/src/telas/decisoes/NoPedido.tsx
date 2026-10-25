@@ -12,7 +12,7 @@ import type { DecisaoPedido, LinkMandado, PedidoDetalhe } from "../tipos.ts";
 import { diaDe, diaHora } from "../pedidos/comum.tsx";
 import { diaDoPrazo, ListaAlternativas, ResponderDecisao, resumoResposta, RetirarDecisao, SeloDecisao } from "./comum.tsx";
 import { Escolha } from "./Despesas.tsx";
-import { LinksMandados, recadoDosLinks } from "./votacao.tsx";
+import { LinksMandados, recadoDosLinks, temLinkParaCopiar } from "./votacao.tsx";
 
 const qtdAlternativas = (n: number) => (n === 1 ? "1 alternativa" : `${n} alternativas`);
 
@@ -245,7 +245,7 @@ export function PedirDecisao({ aberto, d, aoFechar, salvo, recarregar }: Props &
         {aberto ? (
           (d.decisores ?? []).length || d.conselho?.podePedir
             ? <FormPedir d={d} aoFechar={aoFechar} recarregar={recarregar}
-              salvo={(t, l) => { salvo(t); if (l.some((x) => x.envio === "COPIAR")) setLinks(l); }} />
+              salvo={(t, l) => { salvo(t); if (temLinkParaCopiar(l)) setLinks(l); }} />
             : <><Aviso tom="atencao">Ninguém pode decidir agora: o síndico não tem acesso, ninguém tem a permissão Aprovar e não há conselho com mandato em dia.</Aviso>
               <div className="flex justify-end"><Botao variante="discreto" onClick={aoFechar}>Fechar</Botao></div></>
         ) : null}

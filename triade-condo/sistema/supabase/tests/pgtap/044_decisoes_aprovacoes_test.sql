@@ -135,7 +135,7 @@ select is((select x ->> 'tipo' from ids, c, d, jsonb_array_elements(plataforma_a
 select is((select tipo || ' ' || nome_do_vinculo(responsavel_id) from pendencias_pedido, d where id = (select pendencia_id from decisoes_pedido where id = d1)),
   'DECISAO Síndica Ana', 'V-14: a pendência da decisão fica com a síndica');
 select is((select (r -> 'links' -> 2) - 'membroId' - 'decisaoId' from d1),
-  '{"nome": "Marcos Lima", "canal": "WHATSAPP", "finalidade": "VOTO", "envio": "COPIAR", "aviso": "Peça o link ao síndico"}'::jsonb,
+  '{"nome": "Marcos Lima", "canal": "WHATSAPP", "finalidade": "VOTO", "envio": "COPIAR", "aviso": "Peça o link ao síndico", "semWhatsapp": "WHATSAPP_DESLIGADO"}'::jsonb,
   'V-14: quem só pediu (Atualizar) não recebe o código do link de voto: pede ao síndico');
 select is((select count(*)::int from codigos_sem_conta, links_conselho l, d, m where alvo_id = l.id and l.decisao_id = d1 and l.membro_id = m_marcos), 0,
   'V-14: e o código nem nasce');
@@ -512,7 +512,7 @@ select is((select pg_temp.dec((select ana from ids), d8) ->> 'respondidaPor' fro
 create temp table x6 as select plataforma_criar_despesa(bruna, ipe, 'Conserto do portão', 60000, null, 'Portões Já', null, null, null, null,
                                                         'PESSOA', v_ana, '2026-12-10') as r from ids, c, vs;
 select is((select (r -> 'links' -> 0) - 'membroId' - 'despesaId' from x6),
-  '{"nome": "Rui Alves", "canal": "WHATSAPP", "finalidade": "SUBSTITUTO", "envio": "COPIAR", "aviso": "Peça o link ao síndico"}'::jsonb,
+  '{"nome": "Rui Alves", "canal": "WHATSAPP", "finalidade": "SUBSTITUTO", "envio": "COPIAR", "aviso": "Peça o link ao síndico", "semWhatsapp": "WHATSAPP_DESLIGADO"}'::jsonb,
   'FC-10: pedida à síndica ausente, nasce o link do substituto; quem pediu não vê o código');
 select is((select plataforma_despesa(ana, ipe, (r ->> 'id')::uuid) -> 'links' -> 0 ->> 'podeReenviar' from ids, c, x6), 'true',
   'FC-10: a síndica vê o link do substituto e pode copiar');

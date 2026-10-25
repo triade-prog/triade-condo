@@ -1,20 +1,21 @@
 "use client";
 // Decisões › Despesas (R5, FC-10; quadros 418, 419 e 423): a conta, a fatura ou o orçamento que
 // precisa do sim do síndico, de quem tem Aprovar ou do conselho. A lista com os filtros, e a
-// janela Nova despesa para aprovar, com o fornecedor, os anexos e quem aprova. Passar da alçada
-// só avisa. Aprovar não paga nada: o pagamento continua fora do sistema.
+// janela Nova despesa para aprovar, com o fornecedor, os anexos, a ligação a uma coisa só (pedido,
+// manutenção ou decisão) e quem aprova; e a janela Alterar a despesa, antes do primeiro voto (R5.3).
+// Passar da alçada só avisa. Aprovar não paga nada: o pagamento continua fora do sistema.
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
-import { avisoAlcada, FILTROS_DESPESA, lerReais, lider, mostrarCusto, textoQuemVotaNoConselho, type FiltroDespesa } from "@triade/domain";
+import { avisoAlcada, dinheiro, FILTROS_DESPESA, formatar, lerReais, lider, mostrarCusto, textoQuemVotaNoConselho, type FiltroDespesa } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, CampoSelecao, CampoTexto, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi, type Tom } from "@triade/ui";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
-import type { Despesa, LinkMandado, ListaDespesas, OpcoesDespesa, Recado } from "../tipos.ts";
+import type { Despesa, DespesaDetalhe, FilaPedidos, LigacaoDespesa, LinkMandado, ListaDecisoes, ListaDespesas, ListaManutencoes, OpcoesDespesa, Recado } from "../tipos.ts";
 import { EscolherArquivos, type ItemEnvio } from "../pedidos/Arquivos.tsx";
 import { diaDoPrazo } from "./comum.tsx";
 import { enviarAnexos, textoDoEnvio } from "./anexos.tsx";
-import { LinksMandados, recadoDosLinks } from "./votacao.tsx";
+import { LinksMandados, recadoDosLinks, temLinkParaCopiar } from "./votacao.tsx";
 
 /** A situação da despesa num selo (quadro 418): "Em votação · 1 de 3", "Aguardando Ana", "Aprovada"… */
 export function situacaoDespesa(d: Pick<Despesa, "estado" | "modo" | "conselho" | "decisor" | "voltouAoSindicoEm" | "pagamento">): { texto: string; tom: Tom } {
@@ -121,7 +122,7 @@ export function AbaDespesas({ recado, contar }: { recado: (r: Recado) => void; c
       <NovaDespesa aberto={nova} aoFechar={() => setNova(false)} criada={(t, l) => {
         setNova(false);
         recado({ tom: "ok", texto: t });
-        if (l.some((x) => x.envio === "COPIAR")) setLinks(l);
+        if (temLinkParaCopiar(l)) setLinks(l);
         carga.recarregar();
         atualizar();
       }} />
@@ -147,15 +148,38 @@ export function NovaDespesa({ aberto, aoFechar, criada }: { aberto: boolean; aoF
   );
 }
 
-const OUTRO = "__outro";
+/** Alterar a despesa (R5.3, quadro 420): enquanto espera e antes do primeiro voto, os mesmos dados da
+ * Nova despesa, sem quem aprova e sem o prazo. A versão mudada por outra pessoa pede para recarregar. */
+export function AlterarDespesa({ d, aberto, aoFechar, alterada, recarregar }: {
+  d: DespesaDetalhe; aberto: boolean; aoFechar: () => void; alterada: (texto: string) => void; recarregar: () => void;
+}) {
+  const opcoes = useCarregar<OpcoesDespesa>(aberto ? "/v1/condominio/despesas/opcoes" : null);
+  return (
+    <Dialogo aberto={aberto} titulo="Alterar a despesa" aoFechar={aoFechar} fechar media apoio="Quem aprova e o prazo ficam como estão">
+      {!aberto ? null : opcoes.estado === "carregando" ? <Carregando rotulo="Carregando…" />
+        : opcoes.estado === "erro" ? <ErroCarregar erro={opcoes.erro} texto={opcoes.texto} tentarDeNovo={opcoes.recarregar} />
+          : <FormDespesa key={d.versao} o={opcoes.dados} atual={d} aoFechar={aoFechar} alterada={alterada} recarregar={recarregar} />}
+    </Dialogo>
+  );
+}
 
-function FormDespesa({ o, aoFechar, criada }: { o: OpcoesDespesa; aoFechar: () => void; criada: (texto: string, links: LinkMandado[]) => void }) {
+const OUTRO = "__outro";
+const CAMPOS_DESPESA = ["descricao", "valor", "vencimento", "fornecedor", "prestadorId", "decisorId", "prazo", "ligacao", "pedidoId", "manutencaoId", "decisaoId"];
+/** 425000 → "4.250,00", como a pessoa escreve no campo. */
+const reaisNoCampo = (centavos: number) => formatar(dinheiro(centavos)).replace(/^R\$\s?/, "");
+
+function FormDespesa({ o, atual, aoFechar, criada, alterada, recarregar }: {
+  o: OpcoesDespesa; atual?: DespesaDetalhe; aoFechar: () => void;
+  criada?: (texto: string, links: LinkMandado[]) => void; alterada?: (texto: string) => void; recarregar?: () => void;
+}) {
   const conselho = o.conselho.podePedir;
-  const [descricao, setDescricao] = useState("");
-  const [valor, setValor] = useState("");
-  const [vencimento, setVencimento] = useState("");
-  const [prestador, setPrestador] = useState(o.prestadores.length ? "" : OUTRO);
-  const [fornecedor, setFornecedor] = useState("");
+  const prestadorAtual = atual?.fornecedor.prestadorId && o.prestadores.some((p) => p.id === atual.fornecedor.prestadorId) ? atual.fornecedor.prestadorId : null;
+  const [descricao, setDescricao] = useState(atual?.descricao ?? "");
+  const [valor, setValor] = useState(atual ? reaisNoCampo(atual.valor) : "");
+  const [vencimento, setVencimento] = useState(atual?.vencimento ?? "");
+  const [prestador, setPrestador] = useState(prestadorAtual ?? (atual || !o.prestadores.length ? OUTRO : ""));
+  const [fornecedor, setFornecedor] = useState(prestadorAtual ? "" : atual?.fornecedor.nome ?? "");
+  const [ligacao, setLigacao] = useState<LigacaoDespesa | null>(atual?.ligacao ?? null);
   const [quem, setQuem] = useState(conselho ? "CONSELHO" : o.decisores[0]?.vinculoId ?? "");
   const [prazo, setPrazo] = useState(somarDias(o.hoje, 7));
   const [itens, setItens] = useState<ItemEnvio[]>([]);
@@ -166,7 +190,7 @@ function FormDespesa({ o, aoFechar, criada }: { o: OpcoesDespesa; aoFechar: () =
   let centavos: number | null = null;
   try { centavos = valor.trim() ? lerReais(valor).centavos : null; } catch { centavos = null; }
   const alcada = centavos !== null ? avisoAlcada(centavos, o.conselho.alcada) : null;
-  const ninguem = !conselho && !o.decisores.length;
+  const ninguem = !atual && !conselho && !o.decisores.length;
 
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
@@ -174,14 +198,20 @@ function FormDespesa({ o, aoFechar, criada }: { o: OpcoesDespesa; aoFechar: () =
     if (centavos === null || centavos <= 0) { setValorErrado(true); return; }
     setValorErrado(false);
     setEnviando(true);
+    const dados = {
+      descricao: descricao.trim(), valor: centavos, vencimento: vencimento || null,
+      prestadorId: prestador && prestador !== OUTRO ? prestador : null, fornecedor: prestador && prestador !== OUTRO ? null : fornecedor.trim() || null,
+      ...ligacaoParaApi(ligacao),
+    };
+    if (atual) {
+      const r = await chamarApi<{ versao: number }>(`/v1/condominio/despesas/${atual.id}`, { metodo: "PUT", corpo: { versao: atual.versao, ...dados } });
+      setEnviando(false);
+      if (!r.ok) return setErro(r.erro);
+      return alterada?.("Despesa alterada. A mudança fica no histórico.");
+    }
     const deConselho = quem === "CONSELHO";
     const r = await chamarApi<{ id: string; versao: number; links?: LinkMandado[] }>("/v1/condominio/despesas", {
-      corpo: {
-        descricao: descricao.trim(), valor: centavos, vencimento: vencimento || null,
-        prestadorId: prestador && prestador !== OUTRO ? prestador : null, fornecedor: prestador && prestador !== OUTRO ? null : fornecedor.trim() || null,
-        pedidoId: null, manutencaoId: null, decisaoId: null,
-        modo: deConselho ? "CONSELHO" : "PESSOA", decisorId: deConselho ? null : quem, prazo,
-      },
+      corpo: { ...dados, modo: deConselho ? "CONSELHO" : "PESSOA", decisorId: deConselho ? null : quem, prazo },
     });
     if (!r.ok) { setEnviando(false); return setErro(r.erro); }
     const anexos = itens.length ? textoDoEnvio(await enviarAnexos({ tipo: "despesas", id: r.dados.id }, "DOCUMENTO", itens)) : "";
@@ -190,7 +220,7 @@ function FormDespesa({ o, aoFechar, criada }: { o: OpcoesDespesa; aoFechar: () =
     const pessoa = o.decisores.find((x) => x.vinculoId === quem);
     const pedido = deConselho ? `Despesa pedida ao conselho, para votar até ${diaDoPrazo(prazo)}. ${recadoDosLinks(links)}`
       : `${pessoa?.eu ? "Despesa registrada para você aprovar." : `Despesa pedida a ${pessoa?.nome ?? "quem aprova"}, com aviso no sino.`}${links.length ? ` O síndico está ausente: ${recadoDosLinks(links)}` : ""}`;
-    criada([pedido, anexos].filter(Boolean).join(" "), links);
+    criada?.([pedido, anexos].filter(Boolean).join(" "), links);
   }
 
   if (ninguem) {
@@ -203,9 +233,9 @@ function FormDespesa({ o, aoFechar, criada }: { o: OpcoesDespesa; aoFechar: () =
   }
   return (
     <form onSubmit={enviar} noValidate className="grid gap-4">
-      {erro && !["descricao", "valor", "fornecedor", "prestadorId", "decisorId", "prazo"].some((c) => comErro.includes(c))
-        ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
-      {o.ausencia?.ativa ? <Aviso tom="info">{o.ausencia.sindico ?? "O síndico"} está ausente até {diaDoPrazo(o.ausencia.ate)}: o que for pedido a ele vai para {o.ausencia.substituto}.</Aviso> : null}
+      {erro && !CAMPOS_DESPESA.some((c) => comErro.includes(c))
+        ? <AvisoErro erro={erro} texto={textoDoErro(erro)} recarregar={recarregar ? () => { aoFechar(); recarregar(); } : undefined} /> : null}
+      {!atual && o.ausencia?.ativa ? <Aviso tom="info">{o.ausencia.sindico ?? "O síndico"} está ausente até {diaDoPrazo(o.ausencia.ate)}: o que for pedido a ele vai para {o.ausencia.substituto}.</Aviso> : null}
       <CampoTexto id="desp-descricao" rotulo="O que é" required maxLength={200} value={descricao} onChange={(e) => setDescricao(e.target.value)}
         erro={comErro.includes("descricao") ? "Diga o que é (3 a 200 caracteres)." : null} />
       <div className="grid gap-3 sm:grid-cols-2">
@@ -225,25 +255,115 @@ function FormDespesa({ o, aoFechar, criada }: { o: OpcoesDespesa; aoFechar: () =
           onChange={(e) => setFornecedor(e.target.value)} ajuda={o.prestadores.length ? undefined : "O nome de quem cobra. Os prestadores cadastrados aparecem aqui."}
           erro={comErro.includes("fornecedor") ? "Diga o fornecedor (2 a 120 caracteres)." : null} />
       ) : null}
-      <EscolherArquivos rotulo="Fatura, nota ou orçamento" opcional itens={itens} aoMudar={setItens} enviando={enviando} />
-      <fieldset className="grid gap-2">
-        <legend className="mb-1 t-apoio font-medium">Quem aprova</legend>
-        {conselho ? <Escolha nome="desp-quem" valor="CONSELHO" atual={quem} mudar={setQuem} texto="O conselho" sub={textoQuemVotaNoConselho(o.conselho)} /> : null}
-        {o.decisores.map((x) => (
-          <Escolha key={x.vinculoId} nome="desp-quem" valor={x.vinculoId} atual={quem} mudar={setQuem}
-            texto={x.eu ? `${x.nome} (você)` : x.nome} sub={x.sindico ? "Síndico" : "Tem a permissão Aprovar"} />
-        ))}
-        {comErro.includes("decisorId") ? <p className="t-texto text-erro">Escolha quem aprova.</p> : null}
-      </fieldset>
+      {atual ? null : <EscolherArquivos rotulo="Fatura, nota ou orçamento" opcional itens={itens} aoMudar={setItens} enviando={enviando} />}
+      <CampoLigacao valor={ligacao} mudar={setLigacao}
+        erro={comErro.includes("ligacao") ? "Ligue a uma coisa só: um pedido, uma manutenção ou uma decisão."
+          : ["pedidoId", "manutencaoId", "decisaoId"].some((c) => comErro.includes(c)) ? "Não deu para ligar a este item: ele não existe mais ou você não o vê. Escolha outro." : null} />
+      {atual ? null : (
+        <fieldset className="grid gap-2">
+          <legend className="mb-1 t-apoio font-medium">Quem aprova</legend>
+          {conselho ? <Escolha nome="desp-quem" valor="CONSELHO" atual={quem} mudar={setQuem} texto="O conselho" sub={textoQuemVotaNoConselho(o.conselho)} /> : null}
+          {o.decisores.map((x) => (
+            <Escolha key={x.vinculoId} nome="desp-quem" valor={x.vinculoId} atual={quem} mudar={setQuem}
+              texto={x.eu ? `${x.nome} (você)` : x.nome} sub={x.sindico ? "Síndico" : "Tem a permissão Aprovar"} />
+          ))}
+          {comErro.includes("decisorId") ? <p className="t-texto text-erro">Escolha quem aprova.</p> : null}
+        </fieldset>
+      )}
       {alcada ? <Aviso tom="atencao">{alcada}</Aviso> : null}
-      <CampoTexto id="desp-prazo" rotulo={quem === "CONSELHO" ? "Votar até" : "Responder até"} required type="date" min={o.hoje} max={somarDias(o.hoje, 90)} value={prazo}
-        onChange={(e) => setPrazo(e.target.value)} erro={comErro.includes("prazo") ? "O prazo vai de hoje a 90 dias." : null} />
-      <p className="t-apoio">Aprovar não paga nada: depois de aprovada, você marca Paga fora do sistema na ficha, com o comprovante.</p>
+      {atual ? <p className="t-apoio">A mudança fica no histórico da despesa, com o seu nome. Só dá para alterar enquanto ninguém votou.</p> : (
+        <>
+          <CampoTexto id="desp-prazo" rotulo={quem === "CONSELHO" ? "Votar até" : "Responder até"} required type="date" min={o.hoje} max={somarDias(o.hoje, 90)} value={prazo}
+            onChange={(e) => setPrazo(e.target.value)} erro={comErro.includes("prazo") ? "O prazo vai de hoje a 90 dias." : null} />
+          <p className="t-apoio">Aprovar não paga nada: depois de aprovada, você marca Paga fora do sistema na ficha, com o comprovante.</p>
+        </>
+      )}
       <div className="flex flex-wrap justify-end gap-2 max-md:flex-col-reverse">
         <Botao variante="contorno" onClick={aoFechar} disabled={enviando}>Cancelar</Botao>
-        <Botao type="submit" disabled={enviando}><Icone nome="enviar" />{enviando ? "Enviando…" : "Pedir aprovação"}</Botao>
+        {atual ? <Botao type="submit" disabled={enviando}><Icone nome="check" />{enviando ? "Salvando…" : "Salvar"}</Botao>
+          : <Botao type="submit" disabled={enviando}><Icone nome="enviar" />{enviando ? "Enviando…" : "Pedir aprovação"}</Botao>}
       </div>
     </form>
+  );
+}
+
+const NOME_LIGACAO: Record<LigacaoDespesa["tipo"], string> = { PEDIDO: "Pedido", MANUTENCAO: "Manutenção", DECISAO: "Decisão" };
+const ICONE_LIGACAO = { PEDIDO: "pedido", MANUTENCAO: "ferramenta", DECISAO: "decisao" } as const;
+
+/** "Manutenção · Elevador social parado · 14/10", como no quadro 419. */
+export const textoLigacao = (l: LigacaoDespesa) => `${NOME_LIGACAO[l.tipo]} · ${l.rotulo}`;
+
+/** A ligação no corpo da API: só um dos três campos (Ligue a uma coisa só). */
+export function ligacaoParaApi(l: LigacaoDespesa | null) {
+  return { pedidoId: l?.tipo === "PEDIDO" ? l.id : null, manutencaoId: l?.tipo === "MANUTENCAO" ? l.id : null, decisaoId: l?.tipo === "DECISAO" ? l.id : null };
+}
+
+/** O que a busca achou, já como ligação: o pedido pelo protocolo e o assunto, a manutenção e a
+ * decisão pelo título e o dia em que nasceram. A decisão não tem busca na API: filtra aqui. */
+export function achadosDaLigacao(termo: string, pedidos?: Pick<FilaPedidos, "itens">, manutencoes?: Pick<ListaManutencoes, "itens">,
+  decisoes?: Pick<ListaDecisoes, "decisoes">): (LigacaoDespesa & { sub?: string })[] {
+  const t = termo.trim().toLocaleLowerCase("pt-BR");
+  const dia = (iso: string) => diaDoPrazo(iso.slice(0, 10));
+  return [
+    ...(pedidos?.itens ?? []).slice(0, 5).map((p) => ({ tipo: "PEDIDO" as const, id: p.id, rotulo: `${p.protocolo} · ${p.assunto}`, sub: p.unidade ?? p.local ?? undefined })),
+    ...(manutencoes?.itens ?? []).slice(0, 5).map((m) => ({ tipo: "MANUTENCAO" as const, id: m.id, rotulo: `${m.titulo} · ${dia(m.criadoEm)}`, sub: m.local })),
+    ...(decisoes?.decisoes ?? []).filter((d) => d.pergunta.toLocaleLowerCase("pt-BR").includes(t) || (d.pedido?.protocolo ?? "").includes(t)).slice(0, 5)
+      .map((d) => ({ tipo: "DECISAO" as const, id: d.id, rotulo: `${d.pergunta} · ${dia(d.pedidaEm)}`, sub: d.pedido ? `${d.pedido.protocolo} · ${d.pedido.assunto}` : undefined })),
+  ];
+}
+
+/** Ligada a (opcional): busca um pedido, uma manutenção ou uma decisão, nas listas que a pessoa vê. */
+function CampoLigacao({ valor, mudar, erro }: { valor: LigacaoDespesa | null; mudar: (l: LigacaoDespesa | null) => void; erro: string | null }) {
+  const { pode } = usePlataforma();
+  const [busca, setBusca] = useState("");
+  const [termo, setTermo] = useState("");
+  useEffect(() => { const t = setTimeout(() => setTermo(busca.trim()), 300); return () => clearTimeout(t); }, [busca]);
+  const procurar = termo.length >= 2 && !valor;
+  const enc = encodeURIComponent(termo);
+  const vePedidos = pode("pedidos.ver");
+  const veManutencao = pode("manutencao.ver");
+  const pedidos = useCarregar<FilaPedidos>(procurar && vePedidos ? `/v1/condominio/pedidos?situacao=TODOS&busca=${enc}` : null);
+  const manutencoes = useCarregar<ListaManutencoes>(procurar && veManutencao ? `/v1/condominio/manutencao?situacao=TODAS&busca=${enc}` : null);
+  const decisoes = useCarregar<ListaDecisoes>(procurar && vePedidos ? "/v1/condominio/decisoes?filtro=TODAS" : null);
+  const carregando = [vePedidos ? pedidos : null, veManutencao ? manutencoes : null, vePedidos ? decisoes : null].some((c) => c?.estado === "carregando");
+  const achados = achadosDaLigacao(termo,
+    pedidos.estado === "pronto" ? pedidos.dados : undefined, manutencoes.estado === "pronto" ? manutencoes.dados : undefined,
+    decisoes.estado === "pronto" ? decisoes.dados : undefined);
+
+  if (valor) {
+    return (
+      <div className="grid gap-1">
+        <span id="desp-ligacao-rotulo" className="t-apoio font-medium">Ligada a <span className="font-normal text-tinta-suave">(opcional)</span></span>
+        <div role="group" aria-labelledby="desp-ligacao-rotulo" className="flex items-center gap-2.5 rounded-xl border border-linha bg-fundo px-3 py-2 t-texto">
+          <Icone nome={ICONE_LIGACAO[valor.tipo]} className="h-4 w-4 shrink-0" />
+          <span className="min-w-0 flex-1">{textoLigacao(valor)}</span>
+          <Botao variante="discreto" tamanho="p" onClick={() => { setBusca(""); mudar(null); }} aria-label={`Tirar a ligação: ${textoLigacao(valor)}`}>
+            <Icone nome="fechar" className="h-4 w-4" />Tirar
+          </Botao>
+        </div>
+        {erro ? <span className="t-apoio text-erro">{erro}</span> : null}
+      </div>
+    );
+  }
+  if (!vePedidos && !veManutencao) return null;
+  return (
+    <div className="grid gap-2">
+      <CampoTexto id="desp-ligacao" rotulo="Ligada a" opcional type="search" icone="busca" maxLength={60} value={busca} onChange={(e) => setBusca(e.target.value)}
+        ajuda="Uma coisa só: o pedido, a manutenção ou a decisão. Busque pelo protocolo, o assunto ou o título." erro={erro} />
+      {!procurar ? null : carregando ? <Carregando linhas={2} rotulo="Buscando…" /> : achados.length ? (
+        <ul aria-label="Para ligar" className="grid max-h-60 gap-2 overflow-y-auto">
+          {achados.map((x) => (
+            <li key={`${x.tipo}-${x.id}`}>
+              <button type="button" onClick={() => mudar({ tipo: x.tipo, id: x.id, rotulo: x.rotulo })}
+                className="flex w-full items-start gap-3 rounded-[14px] border border-linha bg-superficie p-3 text-left t-texto hover:border-violeta-300">
+                <Icone nome={ICONE_LIGACAO[x.tipo]} className="mt-0.5 h-4 w-4 shrink-0 text-violeta-600" />
+                <span className="grid min-w-0 gap-0.5"><span className="font-medium">{textoLigacao(x)}</span>{x.sub ? <span className="t-apoio">{x.sub}</span> : null}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : <p className="t-apoio">Nada encontrado com esse texto.</p>}
+    </div>
   );
 }
 
