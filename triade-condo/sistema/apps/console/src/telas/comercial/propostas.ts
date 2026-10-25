@@ -9,6 +9,7 @@ import {
   TEXTO_CUSTO_APARTAMENTO, TEXTO_PLANEJADO, type AbaProposta, type CriterioSindico, type EscopoFato, type EscopoReferencia, type EtapaComercial, type SituacaoDesconto,
   type SituacaoProposta, type TemaResposta,
 } from "@triade/domain";
+import { linhasPilotoKit, type Piloto } from "./cliente.ts";
 
 export type Ciclo = "MENSAL" | "ANUAL";
 export type TabelaProposta = "FUNDADOR" | "CHEIA" | "MANUAL";
@@ -244,6 +245,8 @@ export interface Kit {
   referencias: ReferenciaNaVersao[];
   oferta?: { incluido: string[]; planejado: string[] };
   respostasDisponiveis?: { id: string; tema: TemaResposta; titulo: string }[];
+  /** O piloto (CM-21, 0308) quando houver e não foi perdido: prazo, meta e resultado; nunca com quem foi combinado. */
+  piloto?: Piloto;
   /** Só no Console: o interessado (para o Escolher critérios) e os fatos com a fonte. */
   interessado?: { id: string; versao: number };
   fatos?: FatoComparativo[];
@@ -636,6 +639,7 @@ export function documentoKit(k: Kit, pecas: PecaKit[]): Documento {
       ...(k.predio.problema ? [["O problema do prédio", k.predio.problema] as [string, string]] : []),
       ...(k.predio.sistemaAtual ? [["Hoje usa", k.predio.sistemaAtual] as [string, string]] : []),
       ["Quanto custa", `${brl(p.mensal)} por mês${p.porApartamento !== undefined ? `, cerca de ${brl(p.porApartamento)} por apartamento (estimativa)` : ""}`],
+      ...(k.piloto ? linhasPilotoKit(k.piloto) : []),
     ] });
     b.push({ tipo: "paragrafo", texto: "O que já funciona:" }, { tipo: "lista", itens: p.incluido });
     b.push({ tipo: "paragrafo", texto: `Ainda planejado: ${p.planejado.join(", ")}. ${TEXTO_PLANEJADO}`, suave: true });

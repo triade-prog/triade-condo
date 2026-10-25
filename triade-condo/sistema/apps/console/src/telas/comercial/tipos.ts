@@ -1,6 +1,7 @@
 // Comercial (0296): o que a api-console devolve para a lista, o Meu dia, a ficha e os modelos.
 
-import type { CanalConversa, CriterioSindico, EtapaComercial, MotivoPerda, OrigemComercial, PapelContato, SituacaoTarefa } from "@triade/domain";
+import type { CanalConversa, SituacaoContrato, CriterioSindico, EtapaComercial, MotivoPerda, OrigemComercial, PapelContato, SituacaoTarefa } from "@triade/domain";
+import type { Oportunidade, Piloto } from "./cliente.ts";
 
 export interface Tarefa {
   situacao: SituacaoTarefa;
@@ -145,6 +146,14 @@ export interface FichaInteressado extends Interessado {
   equipe: Pessoa[];
   podeEditar: boolean;
   podeExcluir: boolean;
+  /** O primeiro interessado do contato (CM-09, 0308): o grupo das oportunidades. */
+  contatoDe?: string;
+  /** As outras oportunidades do mesmo contato, cada uma com a sua etapa. */
+  oportunidades?: Oportunidade[];
+  piloto?: Piloto;
+  /** A situação do contrato vigente: Virar cliente só libera em ASSINADO. */
+  contratoSituacao?: SituacaoContrato;
+  virouClienteEm?: string;
 }
 
 export interface MensagemModelo {

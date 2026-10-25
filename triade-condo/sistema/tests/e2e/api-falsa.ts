@@ -41,7 +41,7 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
 export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
   const admin = (opcoes.funcao ?? "ADMINISTRACAO") === "ADMINISTRACAO";
   const comercialSo = opcoes.funcao === "COMERCIAL";
-  const podeComercial = { ver: admin || comercialSo, editar: admin || comercialSo, desconto: admin, modelos: admin };
+  const podeComercial = { ver: admin || comercialSo, editar: admin || comercialSo, desconto: admin, modelos: admin, cliente: admin, assinar: admin };
   const podePrecos = { ver: admin, editar: admin && (opcoes.precos ?? "editar") === "editar" };
   const acoesPrecos = [...(podePrecos.ver ? ["console.precos.ver"] : []), ...(podePrecos.editar ? ["console.precos.editar"] : [])];
   const estado = {
@@ -230,7 +230,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
         json: admin
           ? { pessoaId: CAROLINA, nome: "Carolina", funcoes: ["ADMINISTRACAO"], acoes: ["console.condominios.criar", "console.equipe.gerenciar", "console.historico.equipe", "console.pagamentos.ver", "console.pagamentos.registrar", ...acoesPrecos,
               "console.retencao.ver", "console.retencao.ligar", "console.comercial.ver", "console.comercial.editar", "console.comercial.desconto", "console.comercial.modelos",
-              "console.comercial.exportar", "console.comercial.excluir"] }
+              "console.comercial.exportar", "console.comercial.excluir", "console.comercial.cliente", "console.comercial.assinar"] }
           : comercialSo ? { pessoaId: "2d9e5b20-0000-4000-8000-00000000bb01", nome: "Bianca", funcoes: ["COMERCIAL"], acoes: ["console.comercial.ver", "console.comercial.editar"] }
           : { pessoaId: INES, nome: "Inês", funcoes: ["IMPLANTACAO"], acoes: [] },
       });
