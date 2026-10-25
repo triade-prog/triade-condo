@@ -1,6 +1,6 @@
 # Inventário de dados pessoais, retenção e exclusão
 
-Entrega F0.11 do painel (ideias PT-11 e PT-03), aprovada pela Carolina em 24/10/2026 (decisões A.1 a E.1 e quadros 350 a 359 do canvas). Este documento é o inventário pedido no checklist de publicação (P7). A fonte é o catálogo `retencao_tipos` da migration `sistema/supabase/migrations/0301_retencao_dados.sql`; as telas Configurações › Privacidade e dados (Plataforma) e Sistema › Retenção de dados (Console) mostram o mesmo catálogo. Se um prazo mudar, muda numa migration nova e neste documento no mesmo commit.
+Entrega F0.11 do painel (ideias PT-11 e PT-03), aprovada pela Carolina em 24/10/2026 (decisões A.1 a E.1 e quadros 350 a 359 do canvas). Este documento é o inventário pedido no checklist de publicação (P7). A fonte é o catálogo `retencao_tipos` da migration `sistema/supabase/migrations/0301_retencao_dados.sql`, com os tipos 33 e 34 acrescentados pela `0303_decisoes_aprovacoes.sql`; as telas Configurações › Privacidade e dados (Plataforma) e Sistema › Retenção de dados (Console) mostram o mesmo catálogo. Se um prazo mudar, muda numa migration nova e neste documento no mesmo commit.
 
 ## Papéis
 
@@ -19,7 +19,7 @@ Entrega F0.11 do painel (ideias PT-11 e PT-03), aprovada pela Carolina em 24/10/
 7. **Dados de uma pessoa (LGPD, art. 18).** O síndico busca pelo telefone (com ou sem o nono dígito) ou pelo e-mail, vê onde a pessoa aparece, baixa tudo numa planilha e remove os dados quando ela não mora mais em nenhuma unidade, não tem pedido aberto e não está guardada. A busca, a planilha e a remoção ficam no histórico, sem o telefone e sem o e-mail.
 8. **Fim do contrato (decisões C.1 e E.1).** 90 dias depois de entregue a exportação, apagam-se todos os dados do condomínio, inclusive o histórico, por uma função só da TRÍADE que deixa registro no Console; o contrato e a cobrança ficam 5 anos. Ainda não há o estado de contrato encerrado no sistema: essa parte é a pendência F0.12 do painel.
 
-## Os 32 tipos de dado
+## Os 34 tipos de dado
 
 
 ### Plataforma do síndico
@@ -54,6 +54,8 @@ Entrega F0.11 do painel (ideias PT-11 e PT-03), aprovada pela Carolina em 24/10/
 | 26 | Links e códigos sem conta | Só o resumo do código | Abrir sem conta | Execução do contrato | Condomínio; TRÍADE opera | 90 dias depois de vencer | Apagados | Na rotina |
 | 27 | Histórico | Quem fez o quê e quando, sem dado pessoal | Nada some em silêncio | Legítimo interesse | Condomínio; TRÍADE opera | Enquanto o condomínio for cliente | Fica | Fica enquanto for cliente |
 | 28 | Relatórios do mês e dossiês | Resumo do que aconteceu | Prestar contas | Execução do contrato | Condomínio; TRÍADE opera | Enquanto o condomínio for cliente | Ficam | Fica enquanto for cliente |
+| 33 | Conselho e subsíndico | Nome, papel, mandato, telefone ou e-mail | Decidir e votar pelo condomínio | Legítimo interesse | Condomínio; TRÍADE opera | 90 dias depois de sair do conselho | Contato apagado; nome e votos ficam | Prazo definido; rotina na F0.12 |
+| 34 | Decisões e despesas para aprovar | Pergunta, valor, fornecedor, votos, fatura | Provar a decisão | Legítimo interesse; obrigação legal | Condomínio; TRÍADE opera | Enquanto o condomínio for cliente | Ficam | Fica enquanto for cliente |
 
 ### Console TRÍADE
 
@@ -64,11 +66,12 @@ Entrega F0.11 do painel (ideias PT-11 e PT-03), aprovada pela Carolina em 24/10/
 | 31 | Notas internas e acessos excepcionais | O que a equipe anotou | Atender o cliente | Legítimo interesse | TRÍADE | Até o fim do contrato | Seguem o fim do contrato | Fica enquanto for cliente |
 | 32 | Comercial | Interessados e propostas | Vender | Legítimo interesse | TRÍADE | 12 meses sem contato | Apagados | Prazo definido; rotina na F0.12 |
 
-Resumo: 17 tipos com a rotina aplicando o prazo, 8 que ficam enquanto o condomínio for cliente e 7 com o prazo definido e a rotina ainda por fazer.
+Resumo: 17 tipos com a rotina aplicando o prazo, 9 que ficam enquanto o condomínio for cliente e 8 com o prazo definido e a rotina ainda por fazer. Os tipos 33 e 34 entraram com a 0303 (Decisões e aprovações, R5), em 24/10/2026.
 
 ## O que fica para a F0.12
 
 - Fotos e arquivos de pedidos, manutenções e prestadores com 5 anos (tipo 9) e prestadores arquivados com 5 anos (tipo 23).
+- O contato de quem saiu do conselho, 90 dias depois (tipo 33, da 0303).
 - A entrada da equipe do condomínio que perdeu o acesso (tipo 1), as sessões sem uso (tipo 2) e a equipe TRÍADE que saiu (tipo 29), que mexem na entrada e pedem cuidado com o login.
 - Clientes, contratos e cobrança com 5 anos (tipo 30) e o comercial (tipo 32, que ainda não existe no sistema).
 - A exclusão do condomínio no fim do contrato (decisões C.1 e E.1), que espera o estado de contrato encerrado.
