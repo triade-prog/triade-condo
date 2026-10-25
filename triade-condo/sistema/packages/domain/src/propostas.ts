@@ -9,7 +9,7 @@ import { z } from "zod";
 /** Situações da versão (quadro 326). */
 export const SITUACOES_PROPOSTA = {
   RASCUNHO: "Rascunho",
-  AGUARDA_DESCONTO: "Aguarda aprovação do desconto",
+  AGUARDA_DESCONTO: "Aguarda aprovação da Administração",
   PRONTA: "Pronta para enviar",
   ENVIADA: "Enviada",
   ACEITA: "Aceita",

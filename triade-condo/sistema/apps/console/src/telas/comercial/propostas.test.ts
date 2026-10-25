@@ -6,8 +6,8 @@ import { PDFDocument } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import { montarPdf } from "./pdf.ts";
 import {
-  conteudoDaVersao, conteudoDoLink, depoisDoEnvio, documentoKit, documentoProposta, enderecoDoLink, linhasDoPreco, pecasDisponiveis, resumoVersao, slug,
-  tabelaComparativo, textoAberturas, textoAta, textoDesconto, textoImpressao, textoNoAno, textoSituacao, type ItemListaProposta, type Kit, type PropostaPublica,
+  aprovacaoDaVersao, conteudoDaVersao, conteudoDoLink, depoisDoEnvio, documentoKit, documentoProposta, enderecoDoLink, linhasDoPreco, pecasDisponiveis, resumoVersao, slug,
+  tabelaComparativo, rotulosAprovacao, textoAberturas, textoAprovacao, textoAta, textoDesconto, textoImpressao, textoNoAno, textoSituacao, type ItemListaProposta, type Kit, type PropostaPublica,
   type VersaoProposta,
 } from "./propostas.ts";
 
@@ -107,7 +107,7 @@ describe("os textos da proposta", () => {
   it("a linha da versão, o selo e as aberturas sem identificar quem abriu (CM-07)", () => {
     expect(resumoVersao(V)).toBe("Mensal · fundador · R$ 206,10 · validade 08/11");
     expect(resumoVersao({ ciclo: "MENSAL", tabela: "CHEIA", mensal: 34900, implantacao: 90000 })).toBe("Mensal · cheia · R$ 349,00 · implantação R$ 900,00");
-    expect(textoSituacao(2, "AGUARDA_DESCONTO")).toBe("v2 · aguarda aprovação do desconto");
+    expect(textoSituacao(2, "AGUARDA_DESCONTO")).toBe("v2 · aguarda aprovação");
     expect(textoAberturas({ total: 0, aparelhos: 0 })).toBe("Ainda não aberta");
     expect(textoAberturas({ total: 4, aparelhos: 3, ultima: "2026-10-23T18:05:00-03:00" })).toBe("Aberta 4 vezes em 3 aparelhos · última 23/10 18:05");
     expect(textoAberturas({ total: 1, aparelhos: 1 })).toBe("Aberta 1 vez em 1 aparelho");
@@ -184,5 +184,20 @@ describe("o PDF montado no navegador", () => {
     expect(pdf.getTitle()).toBe("Kit para o conselho · Residencial Cerrado");
     expect(pdf.getPageCount()).toBeGreaterThanOrEqual(2);
     expect(d.pe).toContain(HASH);
+  });
+  it("sob consulta pede a aprovação da Administração, com o valor digitado (0306)", () => {
+    const manual: VersaoProposta = { ...V, tabela: "MANUAL", mensalTabela: 150000, mensal: 150000, desconto: undefined, situacao: "RASCUNHO",
+      descontoSituacao: "SEM", descontoPedido: undefined, pedeAprovacao: true, valorManualMotivo: "Combinado com a administradora" };
+    const a = aprovacaoDaVersao(manual)!;
+    expect(textoAprovacao(a)).toBe("Valor sob consulta de R$ 1.500,00 por mês");
+    expect(rotulosAprovacao(a).pedir).toBe("Pedir aprovação do valor sob consulta");
+    expect(rotulosAprovacao(a).titulo).toBe("Aprovar valor sob consulta");
+    const comDesconto = aprovacaoDaVersao({ ...manual, mensal: 135000 })!;
+    expect(textoAprovacao(comDesconto)).toBe("Valor sob consulta de R$ 1.500,00 por mês com desconto de 10%");
+    expect(rotulosAprovacao(comDesconto).pedir).toBe("Pedir aprovação do valor e do desconto");
+    // Só desconto: as palavras de antes.
+    expect(textoAprovacao(aprovacaoDaVersao(V)!)).toBe("Desconto de 10%");
+    expect(rotulosAprovacao(aprovacaoDaVersao(V)!).titulo).toBe("Aprovar desconto");
+    expect(aprovacaoDaVersao({ ...V, desconto: undefined, descontoPedido: undefined, mensal: 22900, pedeAprovacao: false })).toBeNull();
   });
 });

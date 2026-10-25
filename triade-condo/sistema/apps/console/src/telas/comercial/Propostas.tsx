@@ -15,8 +15,8 @@ import { useCarregar } from "../sessao.tsx";
 import { ROTAS_COMERCIAL } from "./comum.tsx";
 import { JanelaAprovarDesconto, JanelaEscolherInteressado, JanelaMandarWhatsapp, JanelaMotivo } from "./janelasPropostas.tsx";
 import {
-  conteudoDaVersao, depoisDoEnvio, diaMes, documentoProposta, enderecoDoLink, horaCompleta, mensagemDoLink, percentual, resumoVersao, ROTAS_PROPOSTAS, TELAS_PROPOSTAS,
-  textoAberturas, textoSituacao, TOM_SITUACAO_PROPOSTA, type FichaProposta, type ItemListaProposta, type ListaPropostas, type VersaoProposta,
+  aprovacaoDaVersao, conteudoDaVersao, depoisDoEnvio, diaMes, documentoProposta, enderecoDoLink, horaCompleta, mensagemDoLink, percentual, resumoVersao, ROTAS_PROPOSTAS, TELAS_PROPOSTAS,
+  rotulosAprovacao, textoAberturas, textoAprovacao, textoSituacao, TOM_SITUACAO_PROPOSTA, type FichaProposta, type ItemListaProposta, type ListaPropostas, type VersaoProposta,
 } from "./propostas.ts";
 import type { FichaInteressado } from "./tipos.ts";
 
@@ -27,6 +27,7 @@ const dataCurta = (d?: string) => (d ? d.slice(0, 10).split("-").reverse().join(
 const FEITO: Record<string, string> = {
   salvo: "Rascunho salvo. Confira e envie quando estiver pronto.",
   pedido: "Pedido de desconto enviado à Administração. A proposta sai depois da aprovação.",
+  pedidoValor: "Pedido de aprovação do valor sob consulta enviado à Administração. A proposta sai depois da aprovação.",
 };
 
 function Linha({ p, escolhida }: { p: ItemListaProposta; escolhida: boolean }) {
@@ -135,12 +136,14 @@ function DetalheProposta({ id, aoMudar }: { id: string; aoMudar: () => void }) {
     aoMudar();
   };
   const falhou = (e: ErroApi) => {
-    setAviso({ tom: "erro", texto: textoDoErro(e), pedirDesconto: e.detalhes?.motivo === "DESCONTO_SEM_APROVACAO" });
+    setAviso({ tom: "erro", texto: textoDoErro(e),
+      pedirDesconto: e.detalhes?.motivo === "DESCONTO_SEM_APROVACAO" || e.detalhes?.motivo === "SOB_CONSULTA_SEM_APROVACAO" });
     if (e.codigo === "VERSION_CONFLICT") carga.recarregar();
   };
   const endereco = link && link.versaoId === v.id ? enderecoDoLink(window.location.origin, link.codigo) : null;
-  // Rascunho com o valor abaixo da tabela tem desconto ainda não pedido.
-  const temDesconto = v.tabela !== "MANUAL" && v.mensal !== undefined && v.mensalTabela !== undefined && v.mensal < v.mensalTabela;
+  // O que precisa da Administração antes do envio: desconto, valor sob consulta (0306) ou os dois.
+  const aprovacao = aprovacaoDaVersao(v);
+  const rotulos = rotulosAprovacao(aprovacao ?? { sobConsulta: false });
   const fechada = v.situacao === "ACEITA";
 
   async function acao(nome: string, faz: () => Promise<void>) {
@@ -157,7 +160,7 @@ function DetalheProposta({ id, aoMudar }: { id: string; aoMudar: () => void }) {
   const pedirDesconto = () => acao("pedir", async () => {
     const r = await chamarApi(ROTAS_PROPOSTAS.acao(f.id, v.id, "desconto/pedir"), { corpo: { versao: v.versaoRegistro } });
     if (!r.ok) return falhou(r.erro);
-    pronto("Pedido de desconto enviado à Administração. A proposta sai depois da aprovação.");
+    pronto(rotulos.pedido);
   });
   const linkNovo = () => acao("link", async () => {
     const r = await chamarApi<{ link: { codigo: string; expiraEm: string } }>(ROTAS_PROPOSTAS.acao(f.id, v.id, "link"), { corpo: {} });
@@ -188,7 +191,7 @@ function DetalheProposta({ id, aoMudar }: { id: string; aoMudar: () => void }) {
       {aviso ? (
         <Aviso tom={aviso.tom} papel={aviso.tom === "erro" ? "alert" : "status"}>
           {aviso.texto}
-          {aviso.pedirDesconto && f.podeEditar ? <span className="mt-2 block"><Botao variante="contorno" onClick={() => void pedirDesconto()}>Pedir aprovação do desconto</Botao></span> : null}
+          {aviso.pedirDesconto && f.podeEditar ? <span className="mt-2 block"><Botao variante="contorno" onClick={() => void pedirDesconto()}>{rotulos.pedir}</Botao></span> : null}
         </Aviso>
       ) : null}
       <div className="grid items-start gap-5 lg:grid-cols-2">
@@ -202,18 +205,18 @@ function DetalheProposta({ id, aoMudar }: { id: string; aoMudar: () => void }) {
           {v.situacao === "RASCUNHO" || v.situacao === "PRONTA" ? (
             <>
               {v.descontoSituacao === "RECUSADO" && v.descontoPedido ? (
-                <Aviso tom="atencao" titulo="A Administração recusou o desconto">
-                  {`${v.descontoPedido.resposta ?? ""} Mude ou tire o desconto no rascunho e salve.`.trim()}
+                <Aviso tom="atencao" titulo={rotulos.recusou}>
+                  {`${v.descontoPedido.resposta ?? ""} ${rotulos.mudar}`.trim()}
                 </Aviso>
               ) : null}
               {v.situacao === "PRONTA" && v.descontoSituacao === "APROVADO" ? (
-                <Aviso tom="ok">{`Desconto de ${percentual(v.descontoPedido?.percentual ?? v.desconto ?? 0)} aprovado${v.descontoPedido?.respondidoPor ? ` por ${v.descontoPedido.respondidoPor.nome}` : ""}.${v.descontoPedido?.resposta ? ` ${v.descontoPedido.resposta}` : ""}`}</Aviso>
+                <Aviso tom="ok">{`${aprovacao ? textoAprovacao(aprovacao) : "Desconto"} aprovado${v.descontoPedido?.respondidoPor ? ` por ${v.descontoPedido.respondidoPor.nome}` : ""}.${v.descontoPedido?.resposta ? ` ${v.descontoPedido.resposta}` : ""}`}</Aviso>
               ) : null}
               <p className="t-apoio">{`${resumoVersao(v)}. O link vale ${v.validadeDias ?? 15} dias a partir do envio e pode ser revogado a qualquer hora.`}</p>
               {f.podeEditar ? (
                 <div className="flex flex-wrap gap-2 max-md:grid">
-                  {v.situacao === "RASCUNHO" && temDesconto && v.descontoSituacao !== "RECUSADO"
-                    ? <Botao disabled={!!fazendo} onClick={() => void pedirDesconto()}><Icone nome="enviar" />{fazendo === "pedir" ? "Pedindo…" : "Pedir aprovação do desconto"}</Botao>
+                  {v.situacao === "RASCUNHO" && aprovacao && v.descontoSituacao !== "RECUSADO"
+                    ? <Botao disabled={!!fazendo} onClick={() => void pedirDesconto()}><Icone nome="enviar" />{fazendo === "pedir" ? "Pedindo…" : rotulos.pedir}</Botao>
                     : <Botao disabled={!!fazendo} onClick={() => void enviar()}><Icone nome="enviar" />{fazendo === "enviar" ? "Enviando…" : `Enviar a v${v.numero}`}</Botao>}
                   <Link href={TELAS_PROPOSTAS.editar(f.id, v.id)} className={classeBotao("contorno")}><Icone nome="editar" />Editar o rascunho</Link>
                 </div>
@@ -224,11 +227,11 @@ function DetalheProposta({ id, aoMudar }: { id: string; aoMudar: () => void }) {
           {v.situacao === "AGUARDA_DESCONTO" ? (
             <>
               <Aviso tom="atencao" titulo="Esperando a Administração">
-                {`Desconto de ${percentual(v.descontoPedido?.percentual ?? 0)} pedido${v.descontoPedido?.pedidoPor ? ` por ${v.descontoPedido.pedidoPor.nome}` : ""}`
+                {`${aprovacao ? textoAprovacao(aprovacao) : "Desconto"} pedido${v.descontoPedido?.pedidoPor ? ` por ${v.descontoPedido.pedidoPor.nome}` : ""}`
                   + `${v.descontoPedido?.pedidoEm ? ` em ${diaHora(v.descontoPedido.pedidoEm)}` : ""}. A proposta sai depois da resposta.`}
               </Aviso>
               {f.podeAprovarDesconto
-                ? <Botao className="justify-self-start" onClick={() => setJanela({ tipo: "desconto" })}><Icone nome="check" />Responder ao desconto</Botao>
+                ? <Botao className="justify-self-start" onClick={() => setJanela({ tipo: "desconto" })}><Icone nome="check" />{rotulos.responder}</Botao>
                 : <p className="t-apoio">Só a Administração aprova.</p>}
             </>
           ) : null}
@@ -301,7 +304,10 @@ function DetalheProposta({ id, aoMudar }: { id: string; aoMudar: () => void }) {
           {v.notaInterna ? <p className="t-texto whitespace-pre-wrap">{v.notaInterna}</p> : null}
           {v.descontoPedido ? (
             <p className="t-apoio">
-              {`Desconto de ${percentual(v.descontoPedido.percentual)} pedido: ${v.descontoPedido.motivo}`}
+              {[
+                v.descontoPedido.percentual !== undefined ? `Desconto de ${percentual(v.descontoPedido.percentual)} pedido: ${v.descontoPedido.motivo ?? ""}` : null,
+                v.descontoPedido.sobConsulta && v.descontoPedido.valorManualMotivo ? `Valor sob consulta: ${v.descontoPedido.valorManualMotivo}` : null,
+              ].filter(Boolean).join(" · ")}
               {v.descontoPedido.resposta ? ` · Resposta da Administração: ${v.descontoPedido.resposta}` : ""}
             </p>
           ) : null}

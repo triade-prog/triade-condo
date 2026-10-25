@@ -16,7 +16,7 @@ import { Cartao, Voltar } from "../comum.tsx";
 import { campoDosCentavos, centavosDoCampo } from "../planos/comum.tsx";
 import { useCarregar, useSessao } from "../sessao.tsx";
 import {
-  AVISOS_PROPOSTA, percentual, ROTAS_PROPOSTAS, TELAS_PROPOSTAS, textoImplantacao, textoNoAno, textoVaiJunto, type Ciclo, type FichaProposta, type Sugestao,
+  AVISOS_PROPOSTA, percentual, ROTAS_PROPOSTAS, rotulosAprovacao, TELAS_PROPOSTAS, textoImplantacao, textoNoAno, textoVaiJunto, type Ciclo, type FichaProposta, type Sugestao,
   type VersaoProposta,
 } from "./propostas.ts";
 
@@ -188,6 +188,9 @@ function Gerador({ modo }: { modo: Modo }) {
   const campos = camposComErro(erro);
   const sobConsulta = s.avisos.includes("SOB_CONSULTA") || s.tabela === "MANUAL";
   const temDesconto = typeof desconto === "number";
+  // Desconto ou sob consulta: a proposta só sai depois da Administração (F.1; sob consulta pela 0306).
+  const pedeAprovacao = temDesconto || sobConsulta;
+  const rotulos = rotulosAprovacao({ sobConsulta, desconto: temDesconto ? desconto : undefined });
   const jaTem = modo.tipo === "criar" && s.propostaId ? s.propostaId : null;
   const vagas = s.vagasFundador;
   const semVaga = !!vagas && vagas.livres <= 0;
@@ -258,12 +261,12 @@ function Gerador({ modo }: { modo: Modo }) {
       }
     }
     setEnviando(false);
-    router.push(`${TELAS_PROPOSTAS.lista(propostaId)}&feito=${pedir ? "pedido" : "salvo"}`);
+    router.push(`${TELAS_PROPOSTAS.lista(propostaId)}&feito=${pedir ? (sobConsulta ? "pedidoValor" : "pedido") : "salvo"}`);
   }
 
   const erroCampo = (nome: string, texto: string) => falhaLocal[nome] ?? (campos.includes(nome) ? texto : undefined);
   const avisos = s.avisos.filter((a) => a !== "SEM_UNIDADES" || !f.unidades);
-  const submeter = (ev: FormEvent) => { ev.preventDefault(); void salvar(temDesconto); };
+  const submeter = (ev: FormEvent) => { ev.preventDefault(); void salvar(pedeAprovacao); };
 
   const resumoMensal = () => {
     if (mensalPrevisto === undefined) return <>Valor a definir na Tabela de preços</>;
@@ -348,7 +351,7 @@ function Gerador({ modo }: { modo: Modo }) {
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 <CampoTexto id="np-valor" rotulo="Mensalidade combinada" inputMode="decimal" value={f.valorManual} onChange={(e) => muda({ valorManual: e.target.value })}
-                  ajuda="Acima de 400 unidades a tabela diz sob consulta." erro={erroCampo("valorManual", "Digite o valor combinado, como 1.290,00.")} />
+                  ajuda="Acima de 400 unidades a tabela diz sob consulta. O valor passa pela aprovação da Administração." erro={erroCampo("valorManual", "Digite o valor combinado, como 1.290,00.")} />
                 {f.ciclo === "MENSAL" ? (
                   <CampoTexto id="np-implantacao" rotulo="Implantação" opcional inputMode="decimal" value={f.implantacaoManual} onChange={(e) => muda({ implantacaoManual: e.target.value })}
                     erro={erroCampo("implantacaoManual", "Escreva o valor em reais, como 900,00.")} />
@@ -366,7 +369,7 @@ function Gerador({ modo }: { modo: Modo }) {
               <CampoTexto id="np-desconto-motivo" rotulo="Motivo" maxLength={500} value={f.descontoMotivo} disabled={!temDesconto} onChange={(e) => muda({ descontoMotivo: e.target.value })}
                 ajuda="Vai para a Administração; nunca para o síndico." erro={erroCampo("descontoMotivo", "Diga por que o desconto. Vai só para a Administração.")} />
             </div>
-            <p className="t-apoio">A proposta com desconto só pode ser enviada depois que a Administração aprovar (F.1). Sem desconto, envia direto.</p>
+            <p className="t-apoio">A proposta com desconto ou sob consulta só pode ser enviada depois que a Administração aprovar (F.1). Na tabela e sem desconto, envia direto.</p>
           </Cartao>
 
           <Cartao id="np-junto" titulo="Vai junto" icone="clipe">
@@ -426,9 +429,9 @@ function Gerador({ modo }: { modo: Modo }) {
             <p className="t-apoio">{`A v${modo.base.numero} fica como substituída e o link dela para de abrir.`}</p>
           ) : null}
           <div className="flex flex-wrap gap-2 max-md:grid">
-            {temDesconto ? (
+            {pedeAprovacao ? (
               <>
-                <Botao type="submit" disabled={enviando || !!jaTem}><Icone nome="enviar" />{enviando ? "Salvando…" : "Pedir aprovação do desconto"}</Botao>
+                <Botao type="submit" disabled={enviando || !!jaTem}><Icone nome="enviar" />{enviando ? "Salvando…" : rotulos.pedir}</Botao>
                 <Botao variante="contorno" disabled={enviando || !!jaTem} onClick={() => void salvar(false)}><Icone nome="check" />Salvar rascunho</Botao>
               </>
             ) : (

@@ -273,6 +273,7 @@ function montarVersao(p: ComercialConsole, i: Json, c: Json, extra: Json): Json 
     referencias: refs.map((r) => ({ id: r.id, sindico: r.sindico, condominio: r.condominio, unidades: r.unidades, escopo: r.escopo, whatsapp: r.whatsapp, retirada: false })),
     validadeDias: (c.validadeDias as number | null) ?? 15, notaInterna: c.notaInterna ?? undefined, valorManualMotivo: c.valorManualMotivo ?? undefined,
     descontoSituacao: "SEM", _pct: c.desconto ?? null, _motivo: c.descontoMotivo ?? null, aberturas: { total: 0, aparelhos: 0 },
+    pedeAprovacao: !!c.desconto || s.tabela === "MANUAL",
     criadoEm: new Date().toISOString(), criadoPor: BIANCA, ...extra,
   };
 }
@@ -456,10 +457,11 @@ async function rotasPropostas(route: Route, p: ComercialConsole, caminho: string
   }
   if (acao === "/desconto/pedir") {
     const c = confere(); if (c) return c;
-    if (!v._pct) return erro(route, 400, "VALIDATION_ERROR", { motivo: "SEM_DESCONTO" });
+    if (!v._pct && v.tabela !== "MANUAL") return erro(route, 400, "VALIDATION_ERROR", { motivo: "SEM_DESCONTO" });
     if (v.situacao !== "RASCUNHO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "DESCONTO_JA_PEDIDO" });
     return subir({ situacao: "AGUARDA_DESCONTO", descontoSituacao: "PEDIDO",
-      descontoPedido: { percentual: v._pct, motivo: v._motivo, situacao: "PEDIDO", pedidoEm: new Date().toISOString(), pedidoPor: BIANCA } });
+      descontoPedido: { ...(v._pct ? { percentual: v._pct, motivo: v._motivo } : {}), situacao: "PEDIDO", pedidoEm: new Date().toISOString(), pedidoPor: BIANCA,
+        ...(v.tabela === "MANUAL" ? { sobConsulta: true, valorManual: v.mensalTabela, implantacaoManual: v.implantacao, valorManualMotivo: v.valorManualMotivo } : {}) } });
   }
   if (acao === "/desconto/aprovar" || acao === "/desconto/recusar") {
     if (!pode.desconto) return erro(route, 403, "FORBIDDEN");
@@ -475,6 +477,7 @@ async function rotasPropostas(route: Route, p: ComercialConsole, caminho: string
     const c = confere(); if (c) return c;
     if (!["RASCUNHO", "PRONTA"].includes(String(v.situacao))) return erro(route, 400, "VALIDATION_ERROR", { motivo: "VERSAO_ENVIADA" });
     if (v._pct && v.descontoSituacao !== "APROVADO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "DESCONTO_SEM_APROVACAO" });
+    if (v.tabela === "MANUAL" && v.descontoSituacao !== "APROVADO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "SOB_CONSULTA_SEM_APROVACAO" });
     if (v.mensal === undefined) return erro(route, 400, "VALIDATION_ERROR", { motivo: "PROPOSTA_SEM_VALOR" });
     Object.assign(v, { situacao: "ENVIADA", validoAte: somarDias(p.hoje, Number(v.validadeDias ?? 15)), hash: "e1f0".padEnd(64, String(v.numero)), enviadaEm: new Date().toISOString(),
       enviadaPor: BIANCA, versaoRegistro: Number(v.versaoRegistro) + 1 });

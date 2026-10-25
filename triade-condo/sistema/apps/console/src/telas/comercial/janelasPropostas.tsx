@@ -12,7 +12,9 @@ import { diaHora } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import { ROTAS_COMERCIAL } from "./comum.tsx";
 import { JanelaConversa } from "./janelas.tsx";
-import { NOMES_CICLO, percentual, ROTAS_PROPOSTAS, textoDesconto, textoNoAno, type FichaProposta, type VersaoProposta } from "./propostas.ts";
+import {
+  aprovacaoDaVersao, NOMES_CICLO, ROTAS_PROPOSTAS, rotulosAprovacao, textoAprovacao, textoDesconto, textoNoAno, type FichaProposta, type VersaoProposta,
+} from "./propostas.ts";
 import type { FichaInteressado, ListaComercial } from "./tipos.ts";
 
 const NOMES_TABELA: Record<string, string> = { FUNDADOR: "fundador", CHEIA: "tabela cheia", MANUAL: "sob consulta" };
@@ -27,14 +29,22 @@ function Linha({ nome, children }: { nome: string; children: ReactNode }) {
   );
 }
 
-/** Aprovar desconto (quadro 327, F.1): a proposta só sai depois desta resposta. */
+/**
+ * Aprovar desconto (quadro 327, F.1) ou valor sob consulta (0306): a proposta só sai depois desta
+ * resposta. Sob consulta, a janela mostra o valor digitado, a implantação e de onde veio o valor.
+ */
 export function JanelaAprovarDesconto({ f, v, aoFechar, feito }: { f: FichaProposta; v: VersaoProposta; aoFechar: () => void; feito: (texto: string) => void }) {
   const [resposta, setResposta] = useState("");
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState<"aprovar" | "recusar" | null>(null);
   const campos = camposComErro(erro);
   const pedido = v.descontoPedido;
-  const pct = pedido?.percentual ?? v.desconto ?? 0;
+  const aprovacao = aprovacaoDaVersao(v) ?? { sobConsulta: false };
+  const rotulos = rotulosAprovacao(aprovacao);
+  const pct = pedido?.percentual ?? aprovacao.desconto;
+  const sob = aprovacao.sobConsulta;
+  const valor = pedido?.valorManual ?? v.mensalTabela;
+  const implantacao = pedido?.implantacaoManual ?? v.implantacao;
   const ano = textoNoAno(v, v.mensal);
 
   async function responder(acao: "aprovar" | "recusar") {
@@ -45,19 +55,30 @@ export function JanelaAprovarDesconto({ f, v, aoFechar, feito }: { f: FichaPropo
       { corpo: { versao: v.versaoRegistro, resposta: resposta.trim() || null } });
     setEnviando(null);
     if (!r.ok) return setErro(r.erro);
-    feito(acao === "aprovar" ? `Desconto aprovado. A v${v.numero} está pronta para enviar.` : `Desconto recusado. A v${v.numero} voltou para rascunho.`);
+    feito(acao === "aprovar" ? `${rotulos.aprovado}. A v${v.numero} está pronta para enviar.` : `${rotulos.recusado}. A v${v.numero} voltou para rascunho.`);
   }
 
   const submeter = (ev: FormEvent) => { ev.preventDefault(); void responder("aprovar"); };
 
   return (
-    <Dialogo aberto titulo="Aprovar desconto" aoFechar={aoFechar} media apoio="A proposta só pode ser enviada depois desta resposta (F.1).">
+    <Dialogo aberto titulo={rotulos.titulo} aoFechar={aoFechar} media apoio="A proposta só pode ser enviada depois desta resposta (F.1).">
       <form onSubmit={submeter} className="grid gap-4" noValidate>
         <dl className="grid rounded-[14px] border border-linha px-4 py-1">
           <Linha nome="Proposta">{`${f.interessado.condominio} · v${v.numero} · ${NOMES_CICLO[v.ciclo].toLowerCase()} · ${NOMES_TABELA[v.tabela ?? "CHEIA"]}`}</Linha>
-          <Linha nome="Pedido por">{pedido ? `${pedido.pedidoPor?.nome ?? "Comercial"} (Comercial) · ${diaHora(pedido.pedidoEm)}` : "—"}</Linha>
-          <Linha nome="Desconto">{textoDesconto(pct, v.mensalTabela, v.mensal)}</Linha>
-          <Linha nome="Motivo">{pedido?.motivo ?? "—"}</Linha>
+          <Linha nome="Pedido por">{pedido?.pedidoEm ? `${pedido.pedidoPor?.nome ?? "Comercial"} (Comercial) · ${diaHora(pedido.pedidoEm)}` : "—"}</Linha>
+          {sob ? (
+            <>
+              <Linha nome="Valor digitado">{`${valor !== undefined ? mostrarValor(valor) : "—"} por mês (sob consulta, ${v.unidades ?? "?"} unidades)`}</Linha>
+              <Linha nome="Implantação">{implantacao !== undefined ? mostrarValor(implantacao) : v.implantacaoSemCusto ? "Sem custo" : "A combinar"}</Linha>
+              <Linha nome="De onde veio o valor">{pedido?.valorManualMotivo ?? v.valorManualMotivo ?? "—"}</Linha>
+            </>
+          ) : null}
+          {pct !== undefined ? (
+            <>
+              <Linha nome="Desconto">{textoDesconto(pct, v.mensalTabela, v.mensal)}</Linha>
+              <Linha nome={sob ? "Motivo do desconto" : "Motivo"}>{pedido?.motivo ?? "—"}</Linha>
+            </>
+          ) : null}
           {ano ? <Linha nome="No ano">{ano}</Linha> : null}
           {v.porApartamento !== undefined ? <Linha nome="Por apartamento">{`${mostrarValor(v.porApartamento)} por mês (estimativa)`}</Linha> : null}
         </dl>
@@ -68,10 +89,10 @@ export function JanelaAprovarDesconto({ f, v, aoFechar, feito }: { f: FichaPropo
           <span className="t-apoio">Só a Administração aprova.</span>
           <span className="flex flex-wrap gap-2 max-md:grid">
             <Botao variante="discreto" disabled={!!enviando} onClick={() => void responder("recusar")}><Icone nome="fechar" />{enviando === "recusar" ? "Recusando…" : "Recusar"}</Botao>
-            <Botao type="submit" disabled={!!enviando}><Icone nome="check" />{enviando === "aprovar" ? "Aprovando…" : "Aprovar desconto"}</Botao>
+            <Botao type="submit" disabled={!!enviando}><Icone nome="check" />{enviando === "aprovar" ? "Aprovando…" : rotulos.aprovar}</Botao>
           </span>
         </div>
-        <p className="t-apoio">{`Desconto pedido: ${percentual(pct)}.`}</p>
+        <p className="t-apoio">{`${textoAprovacao(aprovacao)}, pedido para aprovação.`}</p>
       </form>
     </Dialogo>
   );

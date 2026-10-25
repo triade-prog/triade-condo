@@ -84,6 +84,31 @@ test.describe("Console · Propostas", () => {
     expect(api.comercial.pedidos.at(-1)?.corpo).toMatchObject({ nome: "Marta Ribeiro", cpf: "529.982.247-25", cargo: "Síndica", concordo: true });
   });
 
+  test("Sob consulta: o valor digitado passa pela Administração antes do envio (0306)", async ({ page }) => {
+    const api = await instalarApiFalsa(page);
+    await page.goto(`${CONSOLE}/comercial/propostas/nova?interessado=${SITE}`);
+    await expect(page.getByLabel("Unidades ativas")).toHaveValue("72");
+    await page.getByLabel("Unidades ativas").fill("450");
+    await page.getByLabel("Mensalidade combinada").fill("1.500,00");
+    await page.getByLabel("De onde veio o valor").fill("Combinado com a administradora da rede");
+    await page.getByRole("button", { name: "Pedir aprovação do valor sob consulta" }).click();
+    await expect(page).toHaveURL(/feito=pedidoValor/);
+    expect(api.comercial.pedidos.some((x) => /\/desconto\/pedir$/.test(x.caminho))).toBe(true);
+
+    const proposta = page.getByRole("region", { name: "Proposta de Residencial Jatobá" });
+    await expect(proposta.getByText(/Valor sob consulta de R\$ 1\.500,00 por mês pedido/)).toBeVisible();
+    await proposta.getByRole("button", { name: "Responder ao pedido" }).click();
+    const janela = page.getByRole("dialog", { name: "Aprovar valor sob consulta" });
+    await expect(janela).toContainText("R$ 1.500,00 por mês (sob consulta, 450 unidades)");
+    await expect(janela).toContainText("Combinado com a administradora da rede");
+    await conferir(page);
+    await janela.getByRole("button", { name: "Aprovar valor" }).click();
+    await expect(janela).toHaveCount(0);
+    await expect(proposta.getByText(/Valor sob consulta de R\$ 1\.500,00 por mês aprovado/)).toBeVisible();
+    await proposta.getByRole("button", { name: "Enviar a v1" }).click();
+    await expect(proposta.getByLabel("Link da proposta")).toHaveValue(/\/o\/link-novo-/);
+  });
+
   test("O Comercial pede o desconto mas não aprova", async ({ page }) => {
     await instalarApiFalsa(page, { funcao: "COMERCIAL" });
     await page.goto(`${CONSOLE}/comercial/propostas/nova?interessado=${SITE}`);

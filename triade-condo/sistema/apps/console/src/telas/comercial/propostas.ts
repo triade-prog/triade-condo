@@ -105,8 +105,10 @@ export interface Condicoes {
 
 export interface LinkVersao { ativo: boolean; criadoEm: string; expiraEm: string; revogadoEm?: string; revogadoMotivo?: string }
 
+/** O pedido de aprovação à Administração: o desconto, o valor sob consulta (0306) ou os dois. */
 export interface DescontoPedido {
-  percentual: number; motivo: string; situacao: SituacaoDesconto; pedidoEm: string; pedidoPor?: PessoaRef;
+  percentual?: number; motivo?: string; situacao: SituacaoDesconto; pedidoEm?: string; pedidoPor?: PessoaRef;
+  sobConsulta?: boolean; valorManual?: number; implantacaoManual?: number; valorManualMotivo?: string;
   resposta?: string; respondidoEm?: string; respondidoPor?: PessoaRef;
 }
 
@@ -130,6 +132,8 @@ export interface VersaoProposta extends Condicoes {
   hash?: string;
   descontoSituacao?: SituacaoDesconto;
   descontoPedido?: DescontoPedido;
+  /** A versão precisa da Administração antes do envio: tem desconto ou é sob consulta. */
+  pedeAprovacao?: boolean;
   notaInterna?: string;
   valorManualMotivo?: string;
   enviadaEm?: string;
@@ -263,7 +267,7 @@ export function textoAberturas(a?: Aberturas): string {
 /** O selo da situação, com o número da versão: "v2 · enviada". */
 export function textoSituacao(numero: number, s: SituacaoProposta): string {
   const curto: Record<SituacaoProposta, string> = {
-    RASCUNHO: "rascunho", AGUARDA_DESCONTO: "aguarda aprovação do desconto", PRONTA: "pronta para enviar", ENVIADA: "enviada", ACEITA: "aceita",
+    RASCUNHO: "rascunho", AGUARDA_DESCONTO: "aguarda aprovação", PRONTA: "pronta para enviar", ENVIADA: "enviada", ACEITA: "aceita",
     RECUSADA: "recusada", VENCIDA: "vencida", SUBSTITUIDA: "substituída",
   };
   return `v${numero} · ${curto[s]}`;
@@ -282,6 +286,41 @@ export function depoisDoEnvio(p: ItemListaProposta): string {
   if (s === "AGUARDA_DESCONTO") return "Esperando a Administração";
   if (s === "RECUSADA") return "O síndico disse não";
   return "—";
+}
+
+/**
+ * O que a Administração aprova (F.1; sob consulta pela 0306): o desconto, o valor digitado acima
+ * de 400 unidades, ou os dois. A proposta só desconto continua com as palavras de antes.
+ */
+export interface Aprovacao { desconto?: number; sobConsulta: boolean; valor?: number }
+
+export function aprovacaoDaVersao(v: VersaoProposta): Aprovacao | null {
+  const sobConsulta = v.tabela === "MANUAL";
+  const desconto = v.descontoPedido?.percentual ?? v.desconto
+    ?? (v.mensalTabela !== undefined && v.mensal !== undefined && v.mensal < v.mensalTabela ? Math.round((1 - v.mensal / v.mensalTabela) * 10000) / 100 : undefined);
+  const pede = v.pedeAprovacao ?? (sobConsulta || desconto !== undefined);
+  if (!pede) return null;
+  return { desconto, sobConsulta, valor: v.descontoPedido?.valorManual ?? v.mensalTabela };
+}
+
+/** "Desconto de 10%", "Valor sob consulta de R$ 1.500,00 por mês" ou "… com desconto de 10%". */
+export function textoAprovacao(a: Aprovacao): string {
+  if (!a.sobConsulta) return `Desconto de ${percentual(a.desconto ?? 0)}`;
+  const valor = `Valor sob consulta de ${a.valor !== undefined ? brl(a.valor) : "valor a definir"} por mês`;
+  return a.desconto ? `${valor} com desconto de ${percentual(a.desconto)}` : valor;
+}
+
+/** Os rótulos dos botões, da janela e dos avisos da aprovação. */
+export function rotulosAprovacao(a: Aprovacao) {
+  if (!a.sobConsulta) {
+    return { pedir: "Pedir aprovação do desconto", responder: "Responder ao desconto", titulo: "Aprovar desconto", aprovar: "Aprovar desconto",
+      pedido: "Pedido de desconto enviado à Administração. A proposta sai depois da aprovação.", recusou: "A Administração recusou o desconto",
+      mudar: "Mude ou tire o desconto no rascunho e salve.", aprovado: "Desconto aprovado", recusado: "Desconto recusado" };
+  }
+  const oque = a.desconto ? "do valor e do desconto" : "do valor sob consulta";
+  return { pedir: `Pedir aprovação ${oque}`, responder: "Responder ao pedido", titulo: a.desconto ? "Aprovar valor e desconto" : "Aprovar valor sob consulta",
+    aprovar: a.desconto ? "Aprovar valor e desconto" : "Aprovar valor", pedido: `Pedido de aprovação ${oque} enviado à Administração. A proposta sai depois da aprovação.`,
+    recusou: "A Administração recusou o valor", mudar: "Mude o valor ou o desconto no rascunho e salve.", aprovado: "Valor aprovado", recusado: "Valor recusado" };
 }
 
 /** A linha do quadro do desconto: "10% na mensalidade: R$ 229,00 → R$ 206,10 por mês". */

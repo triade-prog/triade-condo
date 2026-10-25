@@ -17,6 +17,8 @@
 --    de conferir a versão do registro (duas pessoas ao mesmo tempo: a segunda recebe 409).
 -- 6. Mudar a implantação digitada derruba a aprovação, como mudar o valor; as premissas usam
 --    centavos (bigint) no lugar de integer.
+-- 7. Sob consulta (acima de 400 unidades, valor digitado) também pede a aprovação da
+--    Administração, pelo mesmo fluxo do desconto. Fica no fim, em parte própria.
 --
 -- Nada aqui apaga linha nem remove função (o conector do Supabase trava nesses comandos).
 
@@ -451,6 +453,235 @@ begin
   update propostas_comercial set alterado_em = v_em where id = v.proposta_id;
   perform set_config('app.comercial_sistema', '', true);
   return jsonb_build_object('situacao', 'ACEITA', 'numero', v.numero, 'nome', v_nome, 'cargo', v_cargo, 'aceitoEm', v_em, 'hash', v.hash);
+end $$;
+
+-- ---------------------------------------------------------------------------------------
+-- 7. Sob consulta também pede a aprovação da Administração (opção recomendada; a decisão final
+-- é da Carolina). O valor digitado acima de 400 unidades segue o mesmo fluxo do desconto:
+-- o Comercial pede, a Administração aprova ou recusa, e a proposta só sai aprovada. Esta parte
+-- fica sozinha no fim da migration e no próprio commit, para sair inteira se a decisão for outra.
+
+-- A trava da tabela: o pedido de aprovação vale também sem desconto quando é sob consulta. Que
+-- a sob consulta só sai aprovada fica no envio (a trava de enviada não muda, para não pegar as
+-- enviadas antes da 0306).
+do $$
+declare r record;
+begin
+  for r in select conname from pg_constraint
+            where conrelid = 'versoes_proposta'::regclass and contype = 'c'
+              and pg_get_constraintdef(oid) = 'CHECK (((desconto_percentual IS NOT NULL) OR (desconto_situacao = ''SEM''::text)))' loop
+    execute format('alter table versoes_proposta drop constraint %I', r.conname);
+  end loop;
+end $$;
+alter table versoes_proposta add constraint versoes_proposta_pedido_aprovacao
+  check (desconto_percentual is not null or tabela = 'MANUAL' or desconto_situacao = 'SEM');
+
+-- O que precisa da Administração: desconto, valor sob consulta, ou os dois.
+create function comercial_pede_aprovacao(v versoes_proposta) returns boolean
+language sql immutable
+set search_path = public
+as $$ select v.desconto_percentual is not null or v.tabela = 'MANUAL' $$;
+
+-- "desconto de 10%", "valor sob consulta de R$ 1.500,00 por mês" ou os dois.
+create function comercial_texto_aprovacao(v versoes_proposta) returns text
+language sql immutable
+set search_path = public
+as $$
+  select concat_ws(' com ',
+    case when v.tabela = 'MANUAL' then 'valor sob consulta de ' || reais(v.mensal_tabela_centavos::centavos) || ' por mês' end,
+    case when v.desconto_percentual is not null then 'desconto de ' || replace(trim_scale(v.desconto_percentual)::text, '.', ',') || '%' end)
+$$;
+
+create or replace function versao_proposta_json(v versoes_proposta) returns jsonb
+language sql stable
+set search_path = public
+as $$
+  select proposta_conteudo(v) || jsonb_strip_nulls(jsonb_build_object(
+    'id', v.id, 'versaoRegistro', v.versao, 'numero', v.numero, 'situacao', proposta_situacao(v), 'hash', v.hash,
+    'respostas', v.respostas,
+    'referencias', (select coalesce(jsonb_agg(jsonb_build_object('id', r.id, 'sindico', r.sindico, 'condominio', r.condominio,
+                                                                 'retirada', r.retirada_em is not null) order by array_position(v.referencias, r.id)), '[]'::jsonb)
+                      from referencias_comercial r where r.id = any (v.referencias)),
+    'pedeAprovacao', comercial_pede_aprovacao(v),
+    'descontoPedido', case when comercial_pede_aprovacao(v) then jsonb_strip_nulls(jsonb_build_object(
+        'percentual', trim_scale(v.desconto_percentual), 'motivo', v.desconto_motivo, 'situacao', v.desconto_situacao,
+        'sobConsulta', v.tabela = 'MANUAL',
+        'valorManual', case when v.tabela = 'MANUAL' then v.mensal_tabela_centavos end,
+        'implantacaoManual', case when v.tabela = 'MANUAL' then v.implantacao_centavos end,
+        'valorManualMotivo', v.valor_manual_motivo,
+        'pedidoEm', v.desconto_pedido_em, 'pedidoPor', comercial_pessoa_json(v.desconto_pedido_por),
+        'resposta', v.desconto_resposta, 'respondidoEm', v.desconto_respondido_em, 'respondidoPor', comercial_pessoa_json(v.desconto_respondido_por))) end,
+    'descontoSituacao', v.desconto_situacao,
+    'valorManualMotivo', v.valor_manual_motivo, 'notaInterna', v.nota_interna,
+    'enviadaEm', v.enviada_em, 'enviadaPor', comercial_pessoa_json(v.enviada_por),
+    'recusa', case when v.recusada_em is not null then jsonb_build_object('em', v.recusada_em, 'motivo', v.recusada_motivo,
+                                                                          'por', comercial_pessoa_json(v.recusada_por)) end,
+    'substituidaEm', v.substituida_em, 'criadoEm', v.criado_em, 'criadoPor', comercial_pessoa_json(v.criado_por), 'alteradoEm', v.alterado_em,
+    'link', (select jsonb_strip_nulls(jsonb_build_object('ativo', l.revogado_em is null and l.expira_em >= app_now(), 'criadoEm', l.criado_em,
+                                                         'expiraEm', l.expira_em, 'revogadoEm', l.revogado_em, 'revogadoMotivo', l.revogado_motivo))
+               from links_proposta l where l.versao_id = v.id order by l.criado_em desc, l.id desc limit 1),
+    'aberturas', proposta_aberturas(v.id),
+    'aceite', (select jsonb_strip_nulls(jsonb_build_object('nome', a.nome, 'cargo', a.cargo, 'em', a.aceito_em, 'ip', a.ip, 'hashVersao', a.hash_versao,
+                                                           'cpfMascarado', case when a.cpf is not null then '•••.' || substr(a.cpf, 4, 3) || '.' || substr(a.cpf, 7, 3) || '-••' end,
+                                                           'anonimizado', a.anonimizado_em is not null))
+                 from aceites_proposta a where a.versao_id = v.id)))
+$$;
+
+-- Salvar: a aprovação continua só se nada que muda o preço mudou (desconto, valor da tabela ou
+-- digitado, ciclo, tabela e implantação), com desconto ou sob consulta.
+create or replace function comercial_salvar_versao(p_pessoa uuid, p_proposta uuid, p_id uuid, p_versao integer, p_dados jsonb) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  p propostas_comercial;
+  v versoes_proposta;
+  n versoes_proposta;
+  v_mantem boolean;
+  v_versao integer;
+begin
+  perform entrar_console(p_pessoa, 'console.comercial.editar');
+  p := comercial_buscar_proposta(p_proposta);
+  v := comercial_travar_versao(p.id, p_id, p_versao);
+  if v.situacao not in ('RASCUNHO', 'AGUARDA_DESCONTO', 'PRONTA') then
+    perform recusar_motivo('A versão enviada não muda; faça uma versão nova', 'VERSAO_ENVIADA');
+  end if;
+  n := comercial_preparar_versao(comercial_buscar(p.interessado_id), p_dados);
+  v_mantem := v.desconto_situacao = 'APROVADO' and comercial_pede_aprovacao(n)
+              and (n.desconto_percentual, n.mensal_tabela_centavos, n.ciclo, n.tabela, n.implantacao_centavos) is not distinct from
+                  (v.desconto_percentual, v.mensal_tabela_centavos, v.ciclo, v.tabela, v.implantacao_centavos);
+  update versoes_proposta set
+    (condominio, cidade, uf, faixa, unidades, ciclo, tabela, mensal_tabela_centavos, mensal_centavos, anual_centavos, meses_pagos_anual, depois_centavos,
+     implantacao_centavos, implantacao_parcelas, implantacao_sem_custo, valor_manual_motivo, desconto_percentual, desconto_motivo, por_apartamento_centavos,
+     premissas, incluido, planejado, respostas, referencias, validade_dias, nota_interna)
+    = (n.condominio, n.cidade, n.uf, n.faixa, n.unidades, n.ciclo, n.tabela, n.mensal_tabela_centavos, n.mensal_centavos, n.anual_centavos, n.meses_pagos_anual,
+       n.depois_centavos, n.implantacao_centavos, n.implantacao_parcelas, n.implantacao_sem_custo, n.valor_manual_motivo, n.desconto_percentual, n.desconto_motivo,
+       n.por_apartamento_centavos, n.premissas, n.incluido, n.planejado, n.respostas, n.referencias, n.validade_dias, n.nota_interna),
+    situacao = case when v_mantem then 'PRONTA' else 'RASCUNHO' end,
+    desconto_situacao = case when v_mantem then 'APROVADO' else 'SEM' end,
+    desconto_pedido_em = case when v_mantem then desconto_pedido_em end,
+    desconto_pedido_por = case when v_mantem then desconto_pedido_por end,
+    desconto_resposta = case when v_mantem then desconto_resposta end,
+    desconto_respondido_em = case when v_mantem then desconto_respondido_em end,
+    desconto_respondido_por = case when v_mantem then desconto_respondido_por end,
+    alterado_em = app_now(), alterado_por = p_pessoa
+   where id = p_id and versao = p_versao
+  returning versao into v_versao;
+  if v_versao is null then perform conflito_versao('versoes_proposta', p_id); end if;
+  return jsonb_build_object('id', p_id, 'versao', v_versao, 'situacao', case when v_mantem then 'PRONTA' else 'RASCUNHO' end);
+end $$;
+
+create or replace function comercial_pedir_desconto(p_pessoa uuid, p_proposta uuid, p_id uuid, p_versao integer) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v versoes_proposta;
+  v_versao integer;
+begin
+  perform entrar_console(p_pessoa, 'console.comercial.editar');
+  v := comercial_travar_versao(p_proposta, p_id, p_versao);
+  if not comercial_pede_aprovacao(v) then perform recusar_motivo('Esta versão não tem desconto nem valor sob consulta', 'SEM_DESCONTO'); end if;
+  if v.situacao <> 'RASCUNHO' then perform recusar_motivo('Só o rascunho pede aprovação', 'DESCONTO_JA_PEDIDO'); end if;
+  if v.mensal_centavos is null then perform recusar_motivo('A faixa ainda não tem valor na tabela', 'PROPOSTA_SEM_VALOR'); end if;
+  update versoes_proposta set situacao = 'AGUARDA_DESCONTO', desconto_situacao = 'PEDIDO', desconto_pedido_em = app_now(), desconto_pedido_por = p_pessoa,
+                              desconto_resposta = null, desconto_respondido_em = null, desconto_respondido_por = null,
+                              alterado_em = app_now(), alterado_por = p_pessoa
+   where id = p_id and versao = p_versao
+  returning versao into v_versao;
+  if v_versao is null then perform conflito_versao('versoes_proposta', p_id); end if;
+  perform registrar_historico_interno('comercial.desconto_pedido', 'proposta', p_proposta::text,
+    jsonb_strip_nulls(jsonb_build_object('versao', v.numero, 'percentual', trim_scale(v.desconto_percentual),
+                                         'sobConsulta', case when v.tabela = 'MANUAL' then v.mensal_tabela_centavos end)));
+  return jsonb_build_object('id', p_id, 'versao', v_versao, 'situacao', 'AGUARDA_DESCONTO');
+end $$;
+
+create or replace function comercial_responder_desconto(p_pessoa uuid, p_proposta uuid, p_id uuid, p_versao integer, p_aprovar boolean, p_resposta text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  p propostas_comercial;
+  v versoes_proposta;
+  v_versao integer;
+  v_situacao text := case when p_aprovar then 'PRONTA' else 'RASCUNHO' end;
+  v_texto text;
+begin
+  perform entrar_console(p_pessoa, 'console.comercial.desconto');
+  p := comercial_buscar_proposta(p_proposta);
+  v := comercial_travar_versao(p.id, p_id, p_versao);
+  if v.situacao <> 'AGUARDA_DESCONTO' then perform recusar_motivo('Este pedido não está aguardando resposta', 'DESCONTO_NAO_PEDIDO'); end if;
+  if not coalesce(p_aprovar, false) and nullif(btrim(p_resposta), '') is null then
+    perform recusar_campos('Diga a quem pediu por que recusou', 'resposta');
+  end if;
+  update versoes_proposta set situacao = v_situacao, desconto_situacao = case when p_aprovar then 'APROVADO' else 'RECUSADO' end,
+                              desconto_resposta = nullif(btrim(p_resposta), ''), desconto_respondido_em = app_now(), desconto_respondido_por = p_pessoa,
+                              alterado_em = app_now(), alterado_por = p_pessoa
+   where id = p_id and versao = p_versao
+  returning versao into v_versao;
+  if v_versao is null then perform conflito_versao('versoes_proposta', p_id); end if;
+  v_texto := comercial_texto_aprovacao(v);
+  perform comercial_inserir_conversa(p.interessado_id, 'NOTA',
+    format('%s na proposta v%s %s pela Administração.%s', upper(left(v_texto, 1)) || substr(v_texto, 2), v.numero,
+           case when p_aprovar then 'aprovado' else 'recusado' end, coalesce(' ' || nullif(btrim(p_resposta), ''), '')), false, null, null);
+  perform registrar_historico_interno(case when p_aprovar then 'comercial.desconto_aprovado' else 'comercial.desconto_recusado' end, 'proposta',
+    p.id::text, jsonb_strip_nulls(jsonb_build_object('versao', v.numero, 'percentual', trim_scale(v.desconto_percentual),
+                                                     'sobConsulta', case when v.tabela = 'MANUAL' then v.mensal_tabela_centavos end)));
+  return jsonb_build_object('id', p_id, 'versao', v_versao, 'situacao', v_situacao);
+end $$;
+
+create or replace function comercial_enviar_proposta(p_pessoa uuid, p_proposta uuid, p_id uuid, p_versao integer) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  p propostas_comercial;
+  i interessados;
+  v versoes_proposta;
+  v_respostas jsonb;
+  v_link jsonb;
+begin
+  perform entrar_console(p_pessoa, 'console.comercial.editar');
+  p := comercial_buscar_proposta(p_proposta);
+  v := comercial_travar_versao(p.id, p_id, p_versao);
+  i := comercial_buscar(p.interessado_id);
+  perform comercial_exigir_aberto(i);
+  if v.situacao not in ('RASCUNHO', 'AGUARDA_DESCONTO', 'PRONTA') then perform recusar_motivo('Esta versão já foi enviada', 'VERSAO_ENVIADA'); end if;
+  if v.desconto_percentual is not null and v.desconto_situacao <> 'APROVADO' then
+    perform recusar_motivo('Proposta com desconto só sai depois da aprovação da Administração', 'DESCONTO_SEM_APROVACAO');
+  end if;
+  if v.tabela = 'MANUAL' and v.desconto_situacao <> 'APROVADO' then
+    perform recusar_motivo('Proposta sob consulta só sai depois da aprovação da Administração', 'SOB_CONSULTA_SEM_APROVACAO');
+  end if;
+  if v.mensal_centavos is null then perform recusar_motivo('A faixa ainda não tem valor na tabela', 'PROPOSTA_SEM_VALOR'); end if;
+  -- As respostas saem com o texto revisado de hoje (a Administração pode ter mudado).
+  v_respostas := comercial_copiar_respostas((select coalesce(jsonb_agg(r -> 'id'), '[]'::jsonb) from jsonb_array_elements(v.respostas) r));
+  perform comercial_exigir_referencias(to_jsonb(v.referencias));
+  update versoes_proposta set respostas = v_respostas, valido_ate = comercial_hoje() + validade_dias, enviada_em = app_now(), enviada_por = p_pessoa,
+                              alterado_em = app_now(), alterado_por = p_pessoa
+   where id = p_id and versao = p_versao
+  returning * into v;
+  if v.id is null then perform conflito_versao('versoes_proposta', p_id); end if;
+  update versoes_proposta set hash = comercial_hash(proposta_conteudo(v)), situacao = 'ENVIADA' where id = p_id returning * into v;
+  v_link := comercial_gerar_link(v, p_pessoa);
+  perform comercial_inserir_conversa(i.id, 'PROPOSTA', format('Proposta v%s enviada por link, válida até %s.', v.numero, to_char(v.valido_ate, 'DD/MM/YYYY')),
+                                     false, null, null);
+  if comercial_ordem_etapa(i.etapa) < comercial_ordem_etapa('PROPOSTA_ENVIADA') then
+    update interessados set etapa = 'PROPOSTA_ENVIADA', etapa_desde = app_now(), faixa = coalesce(faixa, v.faixa), unidades = coalesce(unidades, v.unidades),
+                            alterado_em = app_now(), alterado_por = p_pessoa
+     where id = i.id;
+    insert into etapas_interessado (interessado_id, de, para, criado_por) values (i.id, i.etapa, 'PROPOSTA_ENVIADA', p_pessoa);
+    perform comercial_iniciar_cadencia(i.id);
+  end if;
+  update propostas_comercial set alterado_em = app_now(), alterado_por = p_pessoa where id = p.id;
+  perform registrar_historico_interno('comercial.proposta_enviada', 'proposta', p.id::text, jsonb_build_object('versao', v.numero, 'hash', v.hash));
+  return jsonb_build_object('id', v.id, 'versao', v.versao, 'numero', v.numero, 'situacao', 'ENVIADA', 'validoAte', v.valido_ate, 'hash', v.hash,
+                            'link', v_link);
 end $$;
 
 call fechar_acesso();
