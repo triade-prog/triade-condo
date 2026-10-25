@@ -4,10 +4,13 @@
 // que só a Administração aprova, o envio com o link, o kit, as respostas prontas, as referências e
 // as rotas públicas do link com o aceite; e o kit pelos critérios do síndico (0307), com os fatos
 // que a equipe confirmou de cada sistema. As regras de verdade estão no banco (pgTAP 045 e 046) e
-// na API (Deno); aqui se confere a tela. O painel e as janelas (0309) ficam em api-falsa-console-painel.ts.
+// na API (Deno); aqui se confere a tela. O painel e as janelas (0309) ficam em api-falsa-console-painel.ts;
+// parceiros e agenda (0310) em api-falsa-console-parceiros.ts. A taxa média de condomínio (R17.3c)
+// fica na ficha (predio.taxaCondominioMedia) e nas premissas da versão; o Cerrado tem 650.
 import type { Route } from "@playwright/test";
 import { CODIGO_CERRADO, criarContratos, rotasContrato, situacaoDoContrato } from "./api-falsa-console-contrato";
 import { criarPainel, rotasPainel } from "./api-falsa-console-painel";
+import { criarParceirosAgenda, rotasParceirosAgenda } from "./api-falsa-console-parceiros";
 
 type Json = Record<string, unknown>;
 
@@ -71,7 +74,7 @@ export function criarComercialConsole() {
         tarefa: { situacao: "FUTURO" }, atencao: false,
         baseLegal: { tipo: "LEGITIMO_INTERESSE", texto: "A pessoa procurou a TRÍADE ou aceitou o contato.", em: agora.toISOString() },
         optin: { em: agora.toISOString(), canal: "WHATSAPP", texto: "Aceitou receber mensagens pelo WhatsApp comercial" },
-        predio: { administradora: "Contábil Norte", sistemaAtual: "App da Contábil Norte", decisor: "Lúcia", decisaoEm: somarDias(hoje, 5) },
+        predio: { administradora: "Contábil Norte", sistemaAtual: "App da Contábil Norte", decisor: "Lúcia", decisaoEm: somarDias(hoje, 5), taxaCondominioMedia: 650 },
       }),
     ] as Json[],
     /** Pilotos (CM-21), trocas de sistema (CM-29) e clientes criados (CM-08), por interessado. */
@@ -93,6 +96,8 @@ export function criarComercialConsole() {
     contrato: criarContratos(hoje),
     /** O painel, a meta, as janelas e o cartão do Início (0309, api-falsa-console-painel.ts). */
     painel: criarPainel(hoje),
+    /** Parceiros, comissão e a agenda de demonstrações (0310, api-falsa-console-parceiros.ts). */
+    parceiros: criarParceirosAgenda(hoje),
   };
 }
 
@@ -116,6 +121,14 @@ function somarDias(data: string, dias: number): string {
   const d = new Date(`${data}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + dias);
   return d.toISOString().slice(0, 10);
+}
+
+/** As premissas da versão (comercial_premissas, 0310): com a taxa, a frase a mais no texto. */
+function premissas(mensal: number, unidades: number, porApartamento: number, taxa?: number | null): Json {
+  const r = (c: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(c / 100).replace(/\u00a0/g, " ");
+  const texto = `Estimativa: ${r(mensal)} por mês divididos por ${unidades} unidades dá cerca de ${r(porApartamento)} por apartamento por mês. A implantação é à parte. Não é economia prometida.`;
+  return { estimativa: true, semRoi: true, implantacaoAParte: true, mensal, unidades, porApartamento, texto: taxa ? `${texto} Taxa média de condomínio informada: ${r(taxa * 100)} por mês.` : texto,
+    ...(taxa ? { taxaCondominio: taxa } : {}) };
 }
 
 function criarPropostas(hoje: string) {
@@ -142,7 +155,7 @@ function criarPropostas(hoje: string) {
       { id: PROPOSTA_IPE, interessadoId: INDICADO, versao: 2, criadoEm: agora, versoes: [versao({
         id: "8b2c3d4e-0000-4000-8000-0000000000e1", versaoRegistro: 4, numero: 1, situacao: "ENVIADA", condominio: "Edifício Ipê Amarelo", cidade: "Taguatinga", uf: "DF",
         faixa: "ATE_40", unidades: 32, tabela: "FUNDADOR", mensalTabela: 12900, mensal: 12900, depoisFundador: 19900, fundadorMeses: 12, implantacaoSemCusto: true,
-        porApartamento: 403, validoAte: somarDias(hoje, 10), hash: HASH_IPE, enviadaEm: agora, enviadaPor: BIANCA,
+        porApartamento: 403, validoAte: somarDias(hoje, 10), hash: HASH_IPE, enviadaEm: agora, enviadaPor: BIANCA, premissas: premissas(12900, 32, 403),
         respostas: [{ id: "9c3d4e5f-0000-4000-8000-0000000000c1", tema: "LGPD", titulo: "Quem controla os dados", texto: "O condomínio controla os dados; a TRÍADE trata só para o atendimento." }],
         referencias: [{ id: "aa4e5f60-0000-4000-8000-0000000000d1", sindico: "Paulo Dias", condominio: "Edifício Aroeira", unidades: 64, escopo: "CONTATO", whatsapp: "5561988887777" }],
         notaInterna: "NOTA INTERNA: o síndico quer fechar antes da assembleia",
@@ -158,6 +171,7 @@ function criarPropostas(hoje: string) {
         id: "8b2c3d4e-0000-4000-8000-0000000000e3", versaoRegistro: 6, numero: 1, situacao: "ACEITA", condominio: "Residencial Cerrado", cidade: "Brasília", uf: "DF",
         faixa: "DE_41_A_100", unidades: 64, tabela: "FUNDADOR", mensalTabela: 22900, mensal: 22900, depoisFundador: 32900, fundadorMeses: 12, implantacaoSemCusto: true,
         porApartamento: 358, validoAte: somarDias(hoje, 8), hash: "9f2c".padEnd(64, "b"), enviadaEm: agora, enviadaPor: BIANCA,
+        premissas: premissas(22900, 64, 358, 650),
         aceite: { nome: "Lúcia Prado", cargo: "Síndica", em: agora, ip: "177.10.20.30", cpfMascarado: "•••.982.247-••" },
         link: { ativo: true, criadoEm: agora, expiraEm: `${somarDias(hoje, 9)}T00:00:00-03:00` }, aberturas: { total: 2, aparelhos: 1, ultima: agora },
       })] },
@@ -181,7 +195,7 @@ const LISTA = ["id", "versao", "condominio", "cidade", "uf", "faixa", "pessoa", 
 const resumo = (i: Json) => Object.fromEntries(LISTA.filter((k) => i[k] !== undefined).map((k) => [k, i[k]]));
 
 /** O que a pessoa pode no Comercial: a Administração tudo; o Comercial sem aprovar desconto e sem mudar modelos. */
-export interface PodeComercial { ver: boolean; editar: boolean; desconto: boolean; modelos: boolean; cliente?: boolean; assinar?: boolean; meta?: boolean }
+export interface PodeComercial { ver: boolean; editar: boolean; desconto: boolean; modelos: boolean; cliente?: boolean; assinar?: boolean; meta?: boolean; comissao?: boolean }
 
 export async function rotasComercialConsole(route: Route, p: ComercialConsole, caminho: string, metodo: string, corpo: Json, pode: PodeComercial, url: URL) {
   if (!caminho.startsWith("/v1/comercial")) return null;
@@ -192,6 +206,8 @@ export async function rotasComercialConsole(route: Route, p: ComercialConsole, c
   if (contrato !== null) return contrato;
   const painel = await rotasPainel(route, p, caminho, metodo, corpo, pode, url);
   if (painel !== null) return painel;
+  const parceiros = await rotasParceirosAgenda(route, p, caminho, metodo, corpo, pode, url);
+  if (parceiros !== null) return parceiros;
   if (metodo !== "GET" && !pode.editar) return erro(route, 403, "FORBIDDEN");
   const equipe = [CAROLINA];
   if (caminho === "/v1/comercial/interessados" && metodo === "GET") {
@@ -223,6 +239,15 @@ export async function rotasComercialConsole(route: Route, p: ComercialConsole, c
     const piloto = [...p.pilotos].reverse().find((x) => x.interessadoId === i.id);
     return route.fulfill({ json: { ...i, contatoDe: grupo, oportunidades, contratoSituacao: situacaoDoContrato(p, i.id), ...(piloto ? { piloto: semInternos(piloto) } : {}), mensagens: p.mensagens.filter((x) => x.etapa === i.etapa), objecoesLista: [
       { codigo: "PRECO", texto: "Achou caro", resposta: "Mostre o preço por unidade." }], etapasLista: ETAPAS, equipe, podeEditar: pode.editar, podeExcluir: pode.modelos } });
+  }
+  // "Corrigir a taxa" no kit (R17.3c, quadro 447): grava na ficha; a versão enviada não muda.
+  if (i && m![2] === "/taxa" && metodo === "PUT") {
+    if (corpo.versao !== i.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: i.versao });
+    const t = corpo.taxaCondominio as number | null;
+    if (t !== null && (typeof t !== "number" || t <= 0 || t > 20000)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["taxaCondominio"] });
+    (i.predio as Json).taxaCondominioMedia = t ?? undefined;
+    i.versao = Number(i.versao) + 1;
+    return route.fulfill({ json: { id: i.id, versao: i.versao, ...(t !== null ? { taxaCondominio: t } : {}) } });
   }
   if (i && m![2] === "/criterios" && metodo === "PUT") {
     if (corpo.versao !== i.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: i.versao });
@@ -257,6 +282,7 @@ export async function rotasComercialConsole(route: Route, p: ComercialConsole, c
 // Propostas (0304). A conta do preço imita a sugestão do banco só para a tela ter números.
 
 type Proposta = Json & { id: string; interessadoId: string; versao: number; versoes: Json[] };
+const taxaDaFicha = (i: Json) => ((i.predio ?? {}) as Json).taxaCondominioMedia as number | undefined;
 const semInternos = (o: Json) => Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith("_")));
 const vencida = (v: Json, hoje: string) => v.situacao === "VENCIDA" || (v.situacao === "ENVIADA" && typeof v.validoAte === "string" && v.validoAte < hoje);
 const situacaoDe = (v: Json, hoje: string) => (vencida(v, hoje) ? "VENCIDA" : String(v.situacao));
@@ -275,7 +301,8 @@ function sugerir(p: ComercialConsole, i: Json, c: Json): Json {
   const livres = p.vagas.total - p.vagas.ocupadas;
   const comum = {
     validadeDias: 15, validoAtePrevisto: somarDias(p.hoje, 15), vagasFundador: { ...p.vagas, livres }, tabelaEmUso: "FUNDADOR", oferta: OFERTA,
-    interessado: { id: i.id, condominio: i.condominio, unidades: i.unidades, faixa: i.faixa, pessoa: i.pessoa, etapa: i.etapa }, propostaId: proposta?.id ?? null,
+    interessado: { id: i.id, condominio: i.condominio, unidades: i.unidades, faixa: i.faixa, pessoa: i.pessoa, etapa: i.etapa,
+      ...(taxaDaFicha(i) ? { taxaCondominioMedia: taxaDaFicha(i) } : {}) }, propostaId: proposta?.id ?? null,
     respostas: p.respostas.filter((r) => r.revisada && r.ativa).map((r) => ({ id: r.id, tema: r.tema, titulo: r.titulo })),
     referencias: p.referencias.filter((r) => !r.retirada).map((r) => ({ id: r.id, sindico: r.sindico, condominio: r.condominio, unidades: r.unidades, escopo: r.escopo })),
   };
@@ -316,7 +343,11 @@ function montarVersao(p: ComercialConsole, i: Json, c: Json, extra: Json): Json 
   if (!unidades) campos.push("unidades");
   if (c.desconto && !c.descontoMotivo) campos.push("descontoMotivo");
   if (c.valorManual && !c.valorManualMotivo) campos.push("valorManualMotivo");
+  // A taxa (R17.3c): sem a chave, a da ficha; nula tira; fora de (0, 20.000], recusa.
+  const taxa = "taxaCondominio" in c ? (c.taxaCondominio as number | null) : taxaDaFicha(i) ?? null;
+  if (taxa !== null && (typeof taxa !== "number" || taxa <= 0 || taxa > 20000)) campos.push("taxaCondominio");
   if (campos.length) return { campos };
+  if ("taxaCondominio" in c) (i.predio as Json).taxaCondominioMedia = taxa ?? undefined;
   const s = sugerir(p, i, c);
   const resp = p.respostas.filter((r) => (c.respostas as string[] ?? []).includes(String(r.id)) && r.revisada && r.ativa);
   const refs = p.referencias.filter((r) => (c.referencias as string[] ?? []).includes(String(r.id)) && !r.retirada);
@@ -324,6 +355,7 @@ function montarVersao(p: ComercialConsole, i: Json, c: Json, extra: Json): Json 
     condominio: i.condominio, cidade: i.cidade, uf: i.uf, faixa: (s.faixa as Json | undefined)?.codigo, unidades, ciclo: s.ciclo, tabela: s.tabela, moeda: "BRL",
     mensalTabela: s.mensalTabela, mensal: s.mensal, anual: s.anual, mesesPagos: s.mesesPagos, depoisFundador: s.depoisFundador, fundadorMeses: s.fundadorMeses,
     implantacaoSemCusto: s.implantacaoSemCusto, implantacao: s.implantacao, implantacaoParcelas: s.implantacaoParcelas, porApartamento: s.porApartamento,
+    ...(s.porApartamento && s.mensal ? { premissas: premissas(Number(s.mensal), Number(unidades), Number(s.porApartamento), taxa) } : {}),
     incluido: OFERTA.incluido, planejado: OFERTA.planejado,
     respostas: resp.map((r) => ({ id: r.id, tema: r.tema, titulo: r.titulo, texto: r.texto, revisadaEm: r.revisadaEm })),
     referencias: refs.map((r) => ({ id: r.id, sindico: r.sindico, condominio: r.condominio, unidades: r.unidades, escopo: r.escopo, whatsapp: r.whatsapp, retirada: false })),
@@ -355,7 +387,8 @@ function versaoParaTela(v: Json, hoje: string): Json {
 function propostaPublica(p: ComercialConsole, x: Proposta, v: Json): Json {
   const i = p.interessados.find((y) => y.id === x.interessadoId) ?? {};
   const pegar = ["numero", "condominio", "cidade", "uf", "faixa", "unidades", "ciclo", "tabela", "moeda", "mensalTabela", "mensal", "anual", "mesesPagos", "depoisFundador",
-    "fundadorMeses", "implantacaoSemCusto", "implantacao", "implantacaoParcelas", "porApartamento", "incluido", "planejado", "validadeDias", "validoAte", "hash", "enviadaEm"];
+    "fundadorMeses", "implantacaoSemCusto", "implantacao", "implantacaoParcelas", "porApartamento", "premissas", "incluido", "planejado", "validadeDias", "validoAte", "hash",
+    "enviadaEm"];
   const aceite = v.aceite as Json | undefined;
   return {
     ...Object.fromEntries(pegar.filter((k) => v[k] !== undefined).map((k) => [k, v[k]])), versao: v.numero, situacao: situacaoDe(v, p.hoje),
@@ -434,6 +467,8 @@ function kitDe(p: ComercialConsole, x: Proposta, v: Json): Json {
     },
     respostas: (v.respostas as Json[]).map((r) => ({ tema: r.tema, titulo: r.titulo, texto: r.texto })),
     referencias: pub.referencias, oferta: OFERTA,
+    // A taxa do kit (R17.3c): a da ficha (corrigida no kit ou na versão); sem ela, a da versão enviada.
+    ...(taxaDaFicha(i) ?? (v.premissas as Json | undefined)?.taxaCondominio ? { taxaCondominio: taxaDaFicha(i) ?? (v.premissas as Json).taxaCondominio } : {}),
     respostasDisponiveis: p.respostas.filter((r) => r.revisada && r.ativa).map((r) => ({ id: r.id, tema: r.tema, titulo: r.titulo })),
     ...(pilotoDoKit(p, i.id) ? { piloto: pilotoDoKit(p, i.id) } : {}),
   };
@@ -557,7 +592,8 @@ async function rotasPropostas(route: Route, p: ComercialConsole, caminho: string
   if (!m[2] && !escreve) {
     return route.fulfill({ json: {
       id: x.id, versao: x.versao, criadoEm: x.criadoEm,
-      interessado: { id: i.id, condominio: i.condominio, pessoa: i.pessoa, etapa: i.etapa, unidades: i.unidades, faixa: i.faixa, anonimizado: false, naoContatar: false },
+      interessado: { id: i.id, condominio: i.condominio, pessoa: i.pessoa, etapa: i.etapa, unidades: i.unidades, faixa: i.faixa, anonimizado: false, naoContatar: false,
+        ...(taxaDaFicha(i) ? { taxaCondominioMedia: taxaDaFicha(i) } : {}) },
       versoes: x.versoes.map((v) => versaoParaTela(v, p.hoje)), kitDisponivel: x.versoes.some((v) => ["ENVIADA", "ACEITA"].includes(situacaoDe(v, p.hoje))),
       podeEditar: pode.editar, podeAprovarDesconto: pode.desconto,
     } });

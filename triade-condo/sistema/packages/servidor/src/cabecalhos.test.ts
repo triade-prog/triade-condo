@@ -51,6 +51,7 @@ describe("F0.8: cabeçalhos de segurança e CSP com nonce", () => {
     expect(cabecalhosSeguranca("plataforma", "/redefinir")["Referrer-Policy"]).toBe("no-referrer");
     expect(cabecalhosSeguranca("plataforma", "/")["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
     expect(cabecalhosSeguranca("console", "/o/Xr4abcdefghijklmnopqrstu")["Referrer-Policy"]).toBe("no-referrer");
+    expect(cabecalhosSeguranca("console", "/a/abc23def45gh")["Referrer-Policy"]).toBe("no-referrer");
     expect(cabecalhosSeguranca("console", "/comercial/propostas")["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
   });
 

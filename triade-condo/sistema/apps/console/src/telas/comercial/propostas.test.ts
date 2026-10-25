@@ -7,7 +7,8 @@ import { PDFDocument } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import { montarPdf } from "./pdf.ts";
 import {
-  aprovacaoDaVersao, conteudoDaVersao, conteudoDoLink, depoisDoEnvio, documentoKit, documentoProposta, enderecoDoLink, fatoDaCelula, linhasDoPreco, mensagemDoLink, nomeCriterio,
+  aprovacaoDaVersao, conteudoDaVersao, conteudoDoLink, custoDoKit, depoisDoEnvio, destaqueCusto, documentoKit, documentoProposta, enderecoDoLink, fatoDaCelula, linhasDoPreco,
+  mensagemDoLink, nomeCriterio, taxaDe, textoQuantoCusta, textoTriade,
   pecasDisponiveis, resumoVersao, slug,
   tabelaComparativo, rotulosAprovacao, textoAberturas, textoAprovacao, textoAta, textoDesconto, textoImpressao, textoNoAno, textoSituacao, type ItemListaProposta, type Kit, type PropostaPublica,
   type VersaoProposta,
@@ -242,5 +243,57 @@ describe("o PDF montado no navegador", () => {
     expect(textoAprovacao(aprovacaoDaVersao(V)!)).toBe("Desconto de 10%");
     expect(rotulosAprovacao(aprovacaoDaVersao(V)!).titulo).toBe("Aprovar desconto");
     expect(aprovacaoDaVersao({ ...V, desconto: undefined, descontoPedido: undefined, mensal: 22900, pedeAprovacao: false })).toBeNull();
+  });
+});
+
+// R17.3c (CM-19 e CM-20; DC17, quadros 445 a 447): a taxa média de condomínio fica nas premissas
+// da versão; o link e o kit dizem o peso na taxa; o "menos de R$ 5" só aparece quando é verdade.
+describe("taxa média de condomínio na proposta e no kit (R17.3c)", () => {
+  const comTaxa: VersaoProposta = { ...V, premissas: { ...V.premissas!, taxaCondominio: 650 } };
+
+  it("a taxa vem das premissas (o banco manda numeric, às vezes como texto)", () => {
+    expect(taxaDe(comTaxa.premissas)).toBe(650);
+    expect(taxaDe({ taxaCondominio: "650.00" as unknown as number })).toBe(650);
+    expect(taxaDe(V.premissas)).toBeUndefined();
+    expect(taxaDe(null)).toBeUndefined();
+  });
+
+  it("o link (446): destaque com o peso na taxa e a linha Na taxa de condomínio", () => {
+    const c = conteudoDaVersao(comTaxa);
+    expect(destaqueCusto(c, "que o prédio informou")).toEqual({
+      titulo: "Menos de R$ 5 por apartamento por mês",
+      frase: "R$ 2,86 por apartamento, cerca de 0,4% da taxa média de R$ 650,00 que o prédio informou.",
+    });
+    expect(linhasDoPreco(c)).toContainEqual(["Na taxa de condomínio", "cerca de 0,4% de R$ 650,00"]);
+    const pdf = JSON.stringify(documentoProposta(c));
+    expect(pdf).toContain("Menos de R$ 5 por apartamento por mês");
+    expect(pdf).toContain("cerca de 0,4% de R$ 650,00");
+  });
+
+  it("sem a taxa: o destaque só com o valor; nada de peso na taxa", () => {
+    const c = conteudoDaVersao(V);
+    expect(destaqueCusto(c)?.frase).toBe("R$ 2,86 por apartamento por mês.");
+    expect(linhasDoPreco(c).map((l) => l[0])).not.toContain("Na taxa de condomínio");
+  });
+
+  it("de R$ 5,00 para cima, o destaque não aparece", () => {
+    expect(destaqueCusto({ porApartamento: 500, taxaCondominio: 650 })).toBeNull();
+    expect(destaqueCusto({ porApartamento: 645 })).toBeNull();
+    expect(destaqueCusto({ porApartamento: 499 })?.titulo).toBe("Menos de R$ 5 por apartamento por mês");
+  });
+
+  it("o kit (447): o comparativo e o Quanto custa dizem o peso na taxa; sem taxa, o texto do banco", () => {
+    const k: Kit = { ...KIT, taxaCondominio: 650 };
+    const linha = k.comparativo.linhas!.find((l) => l.criterio === "CUSTO_APARTAMENTO")!;
+    expect(custoDoKit(k)?.percentual).toBe(0.4);
+    expect(textoTriade(k, linha)).toBe("R$ 2,86 (estimativa), cerca de 0,4% da taxa");
+    expect(textoTriade(KIT, linha)).toBe(linha.triade);
+    expect(tabelaComparativo(k).linhas[1]![1]).toBe("R$ 2,86 (estimativa), cerca de 0,4% da taxa");
+    expect(textoQuantoCusta(k)).toBe("R$ 206,10 por mês, cerca de R$ 2,86 por apartamento (estimativa), cerca de 0,4% da taxa média de R$ 650,00");
+    expect(textoQuantoCusta(KIT)).toBe("R$ 206,10 por mês, cerca de R$ 2,86 por apartamento (estimativa)");
+    const pdf = JSON.stringify(documentoKit(k, ["APRESENTACAO", "COMPARATIVO"]));
+    expect(pdf).toContain("Menos de R$ 5 por apartamento por mês");
+    expect(pdf).toContain("cerca de 0,4% da taxa média de R$ 650,00 do Residencial Cerrado.");
+    expect(pdf).not.toMatch(/\bROI\b|economiza/i);
   });
 });

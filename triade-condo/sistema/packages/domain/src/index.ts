@@ -32,3 +32,5 @@ export * from "./privacidade.ts";
 export * from "./comercial.ts";
 export * from "./propostas.ts";
 export * from "./contrato.ts";
+export * from "./taxa_condominio.ts";
+export * from "./parceiros.ts";

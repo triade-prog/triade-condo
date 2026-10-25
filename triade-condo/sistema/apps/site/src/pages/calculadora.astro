@@ -1,0 +1,267 @@
+---
+// Calculadora de custo por apartamento (CM-33, DC17; quadros 448 e 449, no lugar do 348).
+// Roda no servidor: sem JavaScript, o formulário manda as unidades e a taxa pelo endereço e a conta
+// volta desenhada; com JavaScript, a conta muda enquanto a pessoa digita (rota /api/calculadora).
+// O preço vem da Tabela de preços de hoje; sem ROI e sem economia prometida (EM-07).
+import Base from "../layouts/Base.astro";
+import Olho from "../components/Olho.astro";
+import { linkWhatsapp } from "../dados/empresa";
+import { buscarPreco, envServidor, lerEntrada, montarResultado, TEXTO_AJUDA_TAXA_SITE, TEXTO_CONSENTIMENTO_PROPOSTA } from "../lib/calculadora";
+
+export const prerender = false;
+
+const q = Astro.url.searchParams;
+const entrada = lerEntrada(q.get("unidades"), q.get("taxa"));
+const r = entrada.unidades === null ? null : montarResultado(await buscarPreco(entrada.unidades, envServidor()), entrada.taxa);
+const pedido = q.get("pedido");
+const zap = linkWhatsapp("Olá! Usei a calculadora do site e quero a proposta do meu prédio.");
+Astro.response.headers.set("Cache-Control", "no-store");
+---
+<Base titulo="Calculadora por apartamento" atual="/precos" descricao="Quanto a TRÍADE Condo custa por apartamento, pela tabela de hoje. Digite as unidades do prédio e, se quiser, a taxa média de condomínio.">
+
+<section class="faixa-branca" style="border-top:0">
+  <div class="wrap pilha" style="--gap:12px;position:relative;padding-block:var(--e-7) var(--e-5)">
+    <Olho>Calculadora</Olho>
+    <h1 class="titulo-texto" style="max-width:760px">Quanto custa por apartamento?</h1>
+    <p class="suave" style="font-size:var(--t-16);max-width:680px">Digite quantas unidades o prédio tem. O valor vem da tabela de hoje.</p>
+  </div>
+</section>
+
+<section class="wrap lado-a-lado" style="--colunas:minmax(0,7fr) minmax(0,5fr);--gap:48px;padding-block:var(--e-6) var(--secao-ritmo)">
+  <div class="pilha" style="--gap:20px">
+    <form class="cartao formulario pilha" style="--gap:16px" id="form-calculo" method="get" action="/calculadora" novalidate>
+      <div class="campo">
+        <label for="unidades">Unidades do prédio</label>
+        <input id="unidades" name="unidades" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="Por exemplo, 64" value={entrada.campoUnidades}
+          aria-invalid={entrada.erros.unidades ? "true" : "false"} aria-describedby="faixa erro-unidades" />
+        <span class="ajuda" id="faixa" style="font-size:13px">{r ? r.faixaTexto : ""}</span>
+        <span class="erro-campo" id="erro-unidades">{entrada.erros.unidades ?? ""}</span>
+      </div>
+      <div class="campo">
+        <label for="taxa">Taxa média de condomínio (opcional)</label>
+        <input id="taxa" name="taxa" inputmode="decimal" autocomplete="off" maxlength="12" placeholder="R$ 0,00" value={entrada.campoTaxa}
+          aria-invalid={entrada.erros.taxa ? "true" : "false"} aria-describedby="ajuda-taxa erro-taxa" />
+        <span class="ajuda" id="ajuda-taxa">{TEXTO_AJUDA_TAXA_SITE}</span>
+        <span class="erro-campo" id="erro-taxa">{entrada.erros.taxa ?? ""}</span>
+      </div>
+      <div class="linha-flex"><button type="submit" class="botao claro pequeno" id="calcular">Calcular</button></div>
+    </form>
+
+    <div class="pilha" style="--gap:16px" id="resultado" aria-live="polite">
+      <p class="suave" id="vazio" hidden={r !== null}>Digite as unidades para ver o valor por apartamento.</p>
+      <div class="aviso verde destaque-calc" id="destaque" hidden={!r?.destaque}>
+        <div class="pilha" style="--gap:4px"><b id="destaque-titulo">{r?.destaque?.titulo ?? ""}</b><span id="destaque-frase">{r?.destaque?.frase ?? ""}</span></div>
+      </div>
+      <div class="cartao pilha conta" style="--gap:4px" id="conta" hidden={r === null}>
+        <span class="suave" style="font-size:13px">Por apartamento, por mês</span>
+        <span class="valor-ap" id="por-ap">{r ? (r.porApartamento ?? "Sob consulta") : ""}</span>
+        <dl class="linhas-conta">
+          <div id="linha-mensal" hidden={!r?.mensalidade}><dt>Mensalidade do prédio</dt><dd id="mensal">{r?.mensalidade ?? ""}</dd></div>
+          <div id="linha-taxa" hidden={!r?.naTaxa}><dt>Na taxa de condomínio</dt><dd id="na-taxa">{r?.naTaxa ?? ""}</dd></div>
+          <div id="linha-consulta" hidden={!r?.sobConsulta}><dt>Acima de 400 unidades</dt><dd>preço na proposta</dd></div>
+          <div><dt>Implantação</dt><dd>à parte, na proposta</dd></div>
+          <div><dt>Cancelamento</dt><dd>30 dias de aviso, sem multa</dd></div>
+        </dl>
+        <span class="suave" style="font-size:12px;padding-top:6px">Estimativa: mensalidade dividida pelas unidades. Não inclui taxa da administradora nem promete economia.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="pilha" style="--gap:12px" id="pedir-proposta">
+    <div class="cartao formulario" id="caixa-proposta">
+      <div class="alerta-erro" id="erro-proposta" role="alert" hidden={pedido !== "erro-campos" && pedido !== "erro-envio"}>
+        <div>{pedido === "erro-envio" ? <><b>Não conseguimos guardar o seu pedido agora.</b> Tente de novo em alguns minutos{zap ? <>, ou <a href={zap}>fale pelo WhatsApp</a>.</> : "."}</> : <><b>Faltou algum campo.</b> Confira as unidades, o nome, o WhatsApp e a autorização.</>}</div>
+      </div>
+      <form id="form-proposta" class="pilha" style="--gap:16px" method="post" action="/api/proposta" novalidate hidden={pedido === "recebido"}>
+        <h2 style="font-size:18px;margin:0">Quer a proposta do seu prédio?</h2>
+        <div class="campo">
+          <label for="nome">Seu nome</label>
+          <input id="nome" name="nome" required maxlength="80" autocomplete="name" aria-describedby="erro-nome" />
+          <span class="erro-campo" id="erro-nome"></span>
+        </div>
+        <div class="campo">
+          <label for="whatsapp">WhatsApp</label>
+          <input id="whatsapp" name="whatsapp" type="tel" required inputmode="tel" autocomplete="tel" placeholder="(61) 9 0000-0000" aria-describedby="erro-whatsapp" />
+          <span class="erro-campo" id="erro-whatsapp"></span>
+        </div>
+        <div class="campo">
+          <label class="consentimento"><input type="checkbox" name="consentimento" id="consentimento" required aria-describedby="erro-consentimento" /><span>{TEXTO_CONSENTIMENTO_PROPOSTA}</span></label>
+          <span class="erro-campo" id="erro-consentimento"></span>
+        </div>
+        <input type="hidden" name="unidades" id="pedido-unidades" value={entrada.unidades === null ? "" : String(entrada.unidades)} />
+        <input type="hidden" name="taxa" id="pedido-taxa" value={entrada.taxa === null ? "" : entrada.campoTaxa} />
+        <input type="hidden" name="pagina" value="/calculadora" />
+        <input type="hidden" name="utm_source" value="" /><input type="hidden" name="utm_medium" value="" /><input type="hidden" name="utm_campaign" value="" />
+        <input type="hidden" name="utm_term" value="" /><input type="hidden" name="utm_content" value="" />
+        <div class="robo" aria-hidden="true"><label for="site">Não preencha</label><input id="site" name="site" tabindex="-1" autocomplete="off" /></div>
+        <div class="linha-flex"><button type="submit" class="botao primario" id="pedir">Quero a proposta</button></div>
+      </form>
+      <div id="proposta-recebida" class="aviso verde" role="status" tabindex="-1" hidden={pedido !== "recebido"}>
+        <div><b>Pedido recebido.</b> Você recebe o primeiro retorno no próximo dia útil, pelo WhatsApp que informou.</div>
+      </div>
+    </div>
+    <p class="suave" style="font-size:12px" id="nota-proposta">Ao pedir, você vira um interessado com a faixa e a taxa informada já preenchidas e recebe o primeiro retorno no próximo dia útil.</p>
+    <p class="suave" style="font-size:14px">Prefere ver funcionando antes? <a href="/demonstracao">Solicite uma demonstração</a>.</p>
+  </div>
+</section>
+</Base>
+
+<style>
+  .valor-ap { font-size: 34px; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .linhas-conta { margin: 8px 0 0; display: flex; flex-direction: column; }
+  .linhas-conta > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; padding: 10px 0; border-top: 1px solid var(--linha); font-size: 15px; }
+  .linhas-conta > div[hidden] { display: none; }
+  .linhas-conta dt { color: var(--tinta-suave); }
+  .linhas-conta dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .destaque-calc { font-size: 15px; }
+  .destaque-calc b { font-size: 16px; }
+</style>
+
+<script>
+  // Com JavaScript, a conta muda enquanto a pessoa digita; o servidor devolve os mesmos textos.
+  type Resultado = {
+    unidades: number; faixaTexto: string; sobConsulta: boolean; porApartamento: string | null; mensalidade: string | null;
+    destaque: { titulo: string; frase: string } | null; naTaxa: string | null;
+  };
+  const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+  const formCalculo = $<HTMLFormElement>("form-calculo");
+  const unidades = $<HTMLInputElement>("unidades");
+  const taxa = $<HTMLInputElement>("taxa");
+  const pedidoUnidades = $<HTMLInputElement>("pedido-unidades");
+  const pedidoTaxa = $<HTMLInputElement>("pedido-taxa");
+  let espera: ReturnType<typeof setTimeout> | undefined;
+  let ultima = 0;
+
+  const erroCampo = (campo: HTMLInputElement, msg: string | undefined) => {
+    campo.setAttribute("aria-invalid", msg ? "true" : "false");
+    $(`erro-${campo.id}`).textContent = msg ?? "";
+  };
+  const linha = (id: string, texto: string | null) => {
+    $(id).hidden = !texto;
+  };
+
+  function desenhar(r: Resultado | null) {
+    $("vazio").hidden = r !== null;
+    $("conta").hidden = r === null;
+    $("faixa").textContent = r ? r.faixaTexto : "";
+    $("destaque").hidden = !r?.destaque;
+    $("destaque-titulo").textContent = r?.destaque?.titulo ?? "";
+    $("destaque-frase").textContent = r?.destaque?.frase ?? "";
+    if (!r) return;
+    $("por-ap").textContent = r.porApartamento ?? "Sob consulta";
+    $("mensal").textContent = r.mensalidade ?? "";
+    linha("linha-mensal", r.mensalidade);
+    $("na-taxa").textContent = r.naTaxa ?? "";
+    linha("linha-taxa", r.naTaxa);
+    $("linha-consulta").hidden = !r.sobConsulta;
+  }
+
+  async function calcular() {
+    const n = ++ultima;
+    const busca = new URLSearchParams();
+    if (unidades.value.trim()) busca.set("unidades", unidades.value.trim());
+    if (taxa.value.trim()) busca.set("taxa", taxa.value.trim());
+    history.replaceState(null, "", busca.size ? `/calculadora?${busca}` : "/calculadora");
+    try {
+      const resp = await fetch(`/api/calculadora?${busca}`, { headers: { Accept: "application/json" } });
+      const d = (await resp.json()) as { erros: { unidades?: string; taxa?: string }; resultado: Resultado | null };
+      if (n !== ultima) return;
+      erroCampo(unidades, d.erros.unidades);
+      erroCampo(taxa, d.erros.taxa);
+      desenhar(d.resultado);
+      pedidoUnidades.value = d.resultado ? String(d.resultado.unidades) : "";
+      pedidoTaxa.value = d.erros.taxa ? "" : taxa.value.trim();
+    } catch {
+      // Sem conexão: fica a última conta; o botão Calcular ainda manda pelo endereço.
+    }
+  }
+
+  const agendar = () => {
+    clearTimeout(espera);
+    espera = setTimeout(calcular, 300);
+  };
+  unidades.addEventListener("input", agendar);
+  taxa.addEventListener("input", agendar);
+  formCalculo.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    clearTimeout(espera);
+    void calcular();
+  });
+
+  // O pedido de proposta.
+  const form = $<HTMLFormElement>("form-proposta");
+  const botao = $<HTMLButtonElement>("pedir");
+  const erroGeral = $("erro-proposta");
+  const busca = new URLSearchParams(location.search);
+  for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"]) {
+    (form.elements.namedItem(k) as HTMLInputElement).value = (busca.get(k) ?? "").slice(0, 100);
+  }
+  const mensagens: Record<string, string> = {
+    nome: "Escreva o seu nome.",
+    whatsapp: "Falta o WhatsApp, com DDD. Sem ele não conseguimos mandar a proposta.",
+    consentimento: "Marque a autorização para podermos mandar a proposta.",
+  };
+  const campos = ["nome", "whatsapp", "consentimento"];
+  const geral = (html: string) => {
+    erroGeral.innerHTML = html;
+    erroGeral.hidden = !html;
+  };
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    geral("");
+    const d = new FormData(form);
+    const erros: Record<string, string> = {};
+    if (String(d.get("nome") ?? "").trim().length < 2) erros.nome = mensagens.nome;
+    const w = String(d.get("whatsapp") ?? "").replace(/\D/g, "").replace(/^0+/, "");
+    if (!(w.length >= 10 && w.length <= 13)) erros.whatsapp = mensagens.whatsapp;
+    if (!d.get("consentimento")) erros.consentimento = mensagens.consentimento;
+    for (const c of campos) {
+      $(c).setAttribute("aria-invalid", erros[c] ? "true" : "false");
+      $(`erro-${c}`).textContent = erros[c] ?? "";
+    }
+    if (!pedidoUnidades.value) {
+      geral("<div><b>Falta o número de unidades.</b> Digite as unidades do prédio na calculadora.</div>");
+      unidades.focus();
+      return;
+    }
+    const primeiro = campos.find((c) => erros[c]);
+    if (primeiro) {
+      geral(`<div><b>${Object.keys(erros).length === 1 ? "Falta um campo." : "Faltam alguns campos."}</b> ${erros[primeiro]}</div>`);
+      $(primeiro).focus();
+      return;
+    }
+    const corpo = {
+      nome: d.get("nome"), whatsapp: d.get("whatsapp"), consentimento: true, unidades: pedidoUnidades.value, taxa: pedidoTaxa.value, site: d.get("site"),
+      pagina: "/calculadora", utm: Object.fromEntries(["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].map((k) => [k, String(d.get(k) ?? "")]).filter(([, v]) => v)),
+    };
+    botao.disabled = true;
+    botao.textContent = "Enviando…";
+    try {
+      const resp = await fetch(form.action, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+      const res = (await resp.json().catch(() => ({ ok: false }))) as { ok: boolean; erro?: string; erros?: Record<string, string> };
+      if (res.ok) {
+        form.hidden = true;
+        const conf = $("proposta-recebida");
+        conf.hidden = false;
+        conf.focus();
+        return;
+      }
+      if (res.erro === "campos" && res.erros) {
+        for (const c of campos) {
+          $(c).setAttribute("aria-invalid", res.erros[c] ? "true" : "false");
+          $(`erro-${c}`).textContent = res.erros[c] ?? "";
+        }
+        const outro = res.erros.unidades ?? res.erros.taxa;
+        geral(`<div><b>Confira os campos marcados.</b>${outro ? ` ${outro}` : ""}</div>`);
+      } else {
+        geral("<div><b>Não conseguimos guardar o seu pedido agora.</b> Tente de novo em alguns minutos.</div>");
+      }
+    } catch {
+      geral("<div><b>Sem conexão.</b> Confira a internet e tente de novo.</div>");
+    } finally {
+      botao.disabled = false;
+      botao.textContent = "Quero a proposta";
+    }
+  });
+</script>

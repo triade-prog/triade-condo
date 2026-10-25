@@ -12,7 +12,7 @@
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { ETAPAS_ABERTAS, formatarWhatsapp, SITUACOES_CONTRATO, SITUACOES_PILOTO, linkWhatsappComercial, mostrarDataSemHora, MOTIVOS_PERDA, PAPEIS_CONTATO, preencherMensagem, type EtapaComercial } from "@triade/domain";
+import { ETAPAS_ABERTAS, formatarWhatsapp, SITUACOES_CONTRATO, SITUACOES_PILOTO, linkWhatsappComercial, mostrarDataSemHora, MOTIVOS_PERDA, PAPEIS_CONTATO, preencherMensagem, taxaTexto, type EtapaComercial } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
 import { Cartao, Dado, diaHora, LinhaDoTempo, MenuAcoes, plural, Voltar, type ItemMenu, type PassoTempo } from "../comum.tsx";
 import { useCarregar, useSessao } from "../sessao.tsx";
@@ -401,6 +401,7 @@ export function FichaInteressado() {
           <Cartao id="ficha-6" titulo="Prédio" icone="predio"
             acao={f.podeEditar && !f.anonimizado ? <Botao variante="discreto" onClick={() => setJanela({ tipo: "ficha" })}><Icone nome="editar" />Editar</Botao> : undefined}>
             <Dado icone="pessoas" nome="Unidades">{[nomeFaixa(f.faixa), f.unidades ? plural(f.unidades, "unidade", "unidades") : null].filter(Boolean).join(" · ") || "Não informado"}</Dado>
+            {f.predio.taxaCondominioMedia ? <Dado icone="dinheiro" nome="Taxa média de condomínio">{`${taxaTexto(f.predio.taxaCondominioMedia)} por mês`}</Dado> : null}
             <Dado icone="pin" nome="Onde">{[f.endereco, f.cidade, f.uf].filter(Boolean).join(" · ") || "Não informado"}</Dado>
             {f.cnpj ? <Dado icone="documento" nome="CNPJ">{f.cnpj}</Dado> : null}
             <Dado icone="predio" nome="Administradora">{f.predio.administradora ? `${f.predio.administradora}${f.predio.appAdministradora ? " (tem app próprio)" : ""}` : "Não informado"}</Dado>

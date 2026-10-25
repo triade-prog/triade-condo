@@ -5,6 +5,7 @@
 // só há o que a tela precisa para mostrar e conferir a entrada.
 
 import { z } from "zod";
+import { taxaCondominioSchema } from "./taxa_condominio.ts";
 
 /** Situações da versão (quadro 326). */
 export const SITUACOES_PROPOSTA = {
@@ -146,6 +147,8 @@ const camposVersao = {
   referencias: z.array(uuid).max(10).optional().default([]),
   notaInterna: textoOpcional(1000),
   validadeDias: z.number().int().min(1).max(60).optional().nullable().transform((v) => v ?? null),
+  // A taxa média de condomínio (0310, R17.3c): sem o campo, a versão usa a da ficha; vazio tira.
+  taxaCondominio: taxaCondominioSchema.nullable().optional(),
 };
 const regrasVersao = (d: { desconto: number | null; descontoMotivo: string | null; valorManual: number | null; valorManualMotivo: string | null },
                       ctx: z.RefinementCtx) => {
@@ -173,6 +176,9 @@ export const sugestaoPropostaSchema = z.object({
 });
 
 export const acaoVersaoSchema = z.object({ versao });
+
+/** "Corrigir a taxa" no kit (quadro 447): grava na ficha; vale para o kit e a próxima versão. */
+export const taxaKitSchema = z.object({ versao, taxaCondominio: taxaCondominioSchema.nullable() });
 
 /** A resposta da Administração ao desconto (quadro 327). Recusar pede a resposta. */
 export const responderDescontoSchema = z.object({ versao, resposta: textoOpcional(500) });

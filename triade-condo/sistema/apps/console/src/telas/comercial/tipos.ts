@@ -107,6 +107,8 @@ export interface Predio {
   criterioOutro?: string;
   /** O problema do prédio, em texto curto: abre a apresentação do kit. */
   problema?: string;
+  /** A taxa média de condomínio informada, em reais (DC17, 0310): só para mostrar o peso na taxa. */
+  taxaCondominioMedia?: number;
 }
 
 export interface Objecao {

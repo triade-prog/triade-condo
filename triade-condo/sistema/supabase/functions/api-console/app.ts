@@ -13,6 +13,10 @@
 // Contrato pelo gov.br, piloto, virar cliente, troca de sistema e vários condomínios (0308): o
 // modelo de contrato, os documentos do aceite, o PDF montado aqui, a conferência automática do PDF
 // assinado, a conferência da equipe, virar cliente e o link do síndico depois do aceite.
+// Parceiros, comissão, agenda de demonstrações e calculadora do site (0310, R17.6): os parceiros e
+// o extrato, o pagamento registrado, a disponibilidade, os bloqueios, o link de agendamento sem
+// conta (/a/[codigo]), a fila de e-mails da agenda e a calculadora (só o necessário, nunca a tabela
+// inteira). A taxa média de condomínio na versão e no kit (R17.3c).
 // Quem pode o quê é decidido no banco (funções internas e clientes atribuídos, PI-10); aqui
 // só se valida a entrada e se fala com o Auth para os convites.
 
@@ -132,7 +136,24 @@ import {
   trocaSistemaSchema,
   usarModeloContratoSchema,
   virarClienteSchema,
+  agendarDemonstracaoSchema,
+  bloqueioAgendaSchema,
+  calculadoraSiteSchema,
+  demonstracaoFeitaSchema,
+  disponibilidadeSchema,
+  encerrarComissaoSchema,
+  encerrarDemonstracaoSchema,
+  indicacaoParceiroSchema,
+  linkAgendaSchema,
+  marcarDemonstracaoSchema,
+  pagamentoComissaoSchema,
+  parceiroSchema,
+  regraComissaoSchema,
+  remarcarDemonstracaoSchema,
+  taxaKitSchema,
 } from "@triade/domain";
+import type { Correio } from "../_shared/email.ts";
+import { type EmailComercialFila, montarEmailComercial } from "./email_comercial.ts";
 import { type Armazenamento, verificarArquivo } from "../_shared/arquivos.ts";
 import { type ConferenciaAssinatura, conferirAssinatura, gerarPdfContrato, type RetratoContrato, sha256Bytes } from "./contrato.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
@@ -162,10 +183,18 @@ export interface DepsConsole extends DepsSessao {
   segredoSite?: string;
   /** Documentos do aceite, contratos gerados e PDFs assinados (bucket "comercial", 0308). */
   armazenamentoContrato?: Armazenamento;
+  /** Confirmação e lembrete da demonstração (0310) pelo Resend. Sem correio, a fila registra "sem chave". */
+  correio?: Correio;
+  /** Remetente dos e-mails da agenda e para onde a resposta vai (o e-mail do Comercial). */
+  remetenteComercial?: string;
+  responderComercial?: string;
 }
 
 /** Cabeçalho com o segredo do site na entrada dos pedidos de demonstração. */
 export const CABECALHO_SITE = "x-site-segredo";
+
+/** Código do link de agendamento (12 letras e números, 0310). */
+const CODIGO_AGENDA = /^[a-z2-9]{12}$/;
 
 /** Código do link da proposta (32 bytes em base64url, 0304). */
 const CODIGO_PROPOSTA = /^[A-Za-z0-9_-]{20,64}$/;
@@ -234,7 +263,7 @@ function historicoEquipe(l: LinhaHistorico) {
 }
 
 export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) {
-  const app = criarApp<VarsSessao>("api-console", segredo, [/^\/v1\/site\/interessados$/]);
+  const app = criarApp<VarsSessao>("api-console", segredo, [/^\/v1\/site\/interessados$/, /^\/v1\/site\/calculadora$/]);
   const sessao = criarSessao(
     { sistema: "console", cookie: COOKIES_CONSOLE.sessao, autenticadorObrigatorio: true, funcaoAcesso: "acesso_console", urlApp: deps.urlApp },
     deps,
@@ -976,7 +1005,19 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     if (!deps.segredoSite || !segredoConfere(c.req.header(CABECALHO_SITE) ?? null, deps.segredoSite)) throw new ErroDominio("FORBIDDEN");
     const d = await lerCorpo(c, entradaSiteSchema);
     if (!(await rpc<boolean>("limite_contar", { p_tipo: "site", p_chave: d.whatsapp }))) throw new ErroDominio("RATE_LIMITED");
-    return c.json(await rpc("comercial_entrada_site", { p_dados: d }), 201);
+    // A taxa só vai quando informada (o banco aceita de R$ 0,01 a R$ 20.000).
+    const { taxaCondominio, ...resto } = d;
+    return c.json(await rpc("comercial_entrada_site", { p_dados: taxaCondominio === null ? resto : { ...resto, taxaCondominio } }), 201);
+  });
+
+  // A calculadora do site (CM-33, quadros 448 e 449): fora do repasse, com o segredo do site e um
+  // limite para o site inteiro. Só a faixa, a tabela aplicada, a mensalidade e o valor por
+  // apartamento; nunca a tabela inteira, a implantação ou as vagas.
+  app.post("/v1/site/calculadora", async (c) => {
+    if (!deps.segredoSite || !segredoConfere(c.req.header(CABECALHO_SITE) ?? null, deps.segredoSite)) throw new ErroDominio("FORBIDDEN");
+    const d = await lerCorpo(c, calculadoraSiteSchema);
+    if (!(await rpc<boolean>("limite_contar", { p_tipo: "calculadora", p_chave: "site" }))) throw new ErroDominio("RATE_LIMITED");
+    return c.json(await rpc("comercial_calculadora_site", { p_unidades: d.unidades }));
   });
 
   const interessado = (c: Context<VarsSessao>) => ({ p_pessoa: pessoa(c), p_id: idDaRota(c, "id") });
@@ -988,7 +1029,12 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   app.get("/v1/comercial/meu-dia", async (c) => c.json(await rpc("comercial_meu_dia", { p_pessoa: pessoa(c) })));
 
   app.post("/v1/comercial/interessados", async (c) => {
-    const d = await lerCorpo(c, novoInteressadoSchema);
+    const { parceiroId, ...d } = await lerCorpo(c, novoInteressadoSchema);
+    // Origem Parceiro com o parceiro escolhido: é a indicação (0310), com o vínculo que não muda.
+    if (parceiroId) {
+      const { origem: _o, origemDetalhe: _od, ...indicacao } = d;
+      return c.json(await rpc("comercial_indicar", { p_pessoa: pessoa(c), p_parceiro: parceiroId, p_dados: indicacao }), 201);
+    }
     return c.json(await rpc("comercial_criar", { p_pessoa: pessoa(c), p_dados: d }), 201);
   });
 
@@ -1109,10 +1155,12 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   const idsVersao = (c: Context<VarsSessao>) => ({ p_pessoa: pessoa(c), p_proposta: idDaRota(c, "id"), p_id: idDaRota(c, "versaoId") });
   const dadosVersao = (d: { unidades: number | null; ciclo: string; tabela: string | null; valorManual: number | null; valorManualMotivo: string | null;
                             implantacaoManual: number | null; desconto: number | null; descontoMotivo: string | null; respostas: string[];
-                            referencias: string[]; notaInterna: string | null; validadeDias: number | null }) => ({
+                            referencias: string[]; notaInterna: string | null; validadeDias: number | null; taxaCondominio?: number | null }) => ({
     unidades: d.unidades, ciclo: d.ciclo, tabela: d.tabela, valorManual: d.valorManual, valorManualMotivo: d.valorManualMotivo,
     implantacaoManual: d.implantacaoManual, desconto: d.desconto, descontoMotivo: d.descontoMotivo, respostas: d.respostas,
     referencias: d.referencias, notaInterna: d.notaInterna, validadeDias: d.validadeDias,
+    // Sem o campo, a versão usa a taxa da ficha (R17.3c); vazio tira a taxa.
+    ...(d.taxaCondominio === undefined ? {} : { taxaCondominio: d.taxaCondominio }),
   });
 
   app.get("/v1/comercial/propostas", async (c) => {
@@ -1141,6 +1189,13 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   // Kit para o conselho (CM-20): da versão enviada; nada interno.
   app.get("/v1/comercial/propostas/:id/kit", async (c) => c.json(await rpc("comercial_kit", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") })));
+
+  // "Corrigir a taxa" no kit (R17.3c, quadro 447): grava na ficha; vale para o kit e a próxima
+  // versão, nunca para a versão enviada.
+  app.put("/v1/comercial/interessados/:id/taxa", async (c) => {
+    const d = await lerCorpo(c, taxaKitSchema);
+    return c.json(await rpc("comercial_salvar_taxa", { ...interessado(c), p_versao: d.versao, p_taxa: d.taxaCondominio }));
+  });
 
   // Critérios do síndico (0307, CM-16): o "Escolher critérios" do kit grava na ficha do prédio.
   app.put("/v1/comercial/interessados/:id/criterios", async (c) => {
@@ -1400,6 +1455,109 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json(await rpc("comercial_nova_oportunidade", { ...interessado(c), p_dados: d }), 201);
   });
 
+  // ---------------------------------------------------------------------------------------
+  // Parceiros e comissão (0310, CM-22). A regra é da Administração; o pagamento é feito fora do
+  // sistema e só registrado.
+
+  const mesDaConsulta = (c: Context) => {
+    const mes = c.req.query("mes") || null;
+    if (mes !== null && !mesComercialSchema.safeParse(mes).success) throw new ErroDominio("VALIDATION_ERROR", { campos: ["mes"] });
+    return mes === null ? null : diaDoMes(mes);
+  };
+  app.get("/v1/comercial/parceiros", async (c) => c.json(await rpc("comercial_parceiros", { p_pessoa: pessoa(c), p_mes: mesDaConsulta(c) })));
+  async function salvarParceiro(c: Context<VarsSessao>, id: string | null) {
+    const { versao, ...d } = await lerCorpo(c, parceiroSchema);
+    if (id && !versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("comercial_salvar_parceiro", { p_pessoa: pessoa(c), p_id: id, p_versao: versao, p_dados: d });
+  }
+  app.post("/v1/comercial/parceiros", async (c) => c.json(await salvarParceiro(c, null), 201));
+  app.put("/v1/comercial/parceiros/:id", async (c) => c.json(await salvarParceiro(c, idDaRota(c, "id"))));
+  app.post("/v1/comercial/parceiros/:id/indicar", async (c) => {
+    const d = await lerCorpo(c, indicacaoParceiroSchema);
+    return c.json(await rpc("comercial_indicar", { p_pessoa: pessoa(c), p_parceiro: idDaRota(c, "id"), p_dados: d }), 201);
+  });
+  app.get("/v1/comercial/parceiros/:id/extrato", async (c) =>
+    c.json(await rpc("comercial_extrato_parceiro", { p_pessoa: pessoa(c), p_parceiro: idDaRota(c, "id"), p_mes: mesDaConsulta(c) })));
+  app.post("/v1/comercial/parceiros/:id/pagamentos", async (c) => {
+    const d = await lerCorpo(c, pagamentoComissaoSchema);
+    return c.json(await rpc("comercial_registrar_pagamento", {
+      p_pessoa: pessoa(c), p_parceiro: idDaRota(c, "id"), p_mes: diaDoMes(d.mes), p_valor: d.valor, p_pago_em: d.pagoEm, p_observacao: d.observacao,
+    }), 201);
+  });
+  // Apagar o contato do parceiro (LGPD): ficam os valores e a origem "Parceiro (dado apagado)".
+  app.post("/v1/comercial/parceiros/:id/apagar", async (c) =>
+    c.json(await rpc("comercial_apagar_parceiro", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") })));
+  app.put("/v1/comercial/comissao/regra", async (c) => {
+    const d = await lerCorpo(c, regraComissaoSchema);
+    return c.json(await rpc("comercial_salvar_regra_comissao", { p_pessoa: pessoa(c), p_versao: d.versao, p_percentual: d.percentual, p_prazo_meses: d.prazoMeses }));
+  });
+  // "O prédio deixou de ser cliente": sem comissão desde o mês informado.
+  app.post("/v1/comercial/comissoes/:id/encerrar", async (c) => {
+    const d = await lerCorpo(c, encerrarComissaoSchema);
+    return c.json(await rpc("comercial_encerrar_comissao", {
+      p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_desde: diaDoMes(d.desde), p_motivo: d.motivo,
+    }));
+  });
+
+  // ---------------------------------------------------------------------------------------
+  // Agenda de demonstrações (0310, CM-23): a equipe cadastra os horários e os bloqueios; a
+  // demonstração entra no funil sozinha.
+
+  app.get("/v1/comercial/agenda", async (c) => c.json(await rpc("comercial_agenda", { p_pessoa: pessoa(c) })));
+  app.put("/v1/comercial/agenda/disponibilidade/:pessoaId", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, disponibilidadeSchema);
+    return c.json(await rpc("comercial_salvar_disponibilidade", { p_pessoa: pessoa(c), p_de: idDaRota(c, "pessoaId"), p_versao: versao, p_dados: d }));
+  });
+  app.post("/v1/comercial/agenda/bloqueios", async (c) => {
+    const d = await lerCorpo(c, bloqueioAgendaSchema);
+    return c.json(await rpc("comercial_bloquear_agenda", { p_pessoa: pessoa(c), p_de: d.pessoaId, p_inicio: d.de, p_fim: d.ate, p_motivo: d.motivo }), 201);
+  });
+  app.post("/v1/comercial/agenda/bloqueios/:id/cancelar", async (c) =>
+    c.json(await rpc("comercial_desbloquear_agenda", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") })));
+  app.post("/v1/comercial/agenda/links", async (c) => {
+    const d = await lerCorpo(c, linkAgendaSchema);
+    return c.json(await rpc("comercial_link_agenda", { p_pessoa: pessoa(c), p_de: d.pessoaId, p_trocar: d.trocar }));
+  });
+  app.post("/v1/comercial/interessados/:id/demonstracoes", async (c) => {
+    const d = await lerCorpo(c, marcarDemonstracaoSchema);
+    return c.json(await rpc("comercial_marcar_demonstracao", { p_pessoa: pessoa(c), p_interessado: idDaRota(c, "id"), p_dados: d }), 201);
+  });
+  app.post("/v1/comercial/demonstracoes/:id/remarcar", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, remarcarDemonstracaoSchema);
+    return c.json(await rpc("comercial_remarcar_demonstracao", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+  app.post("/v1/comercial/demonstracoes/:id/feita", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, demonstracaoFeitaSchema);
+    return c.json(await rpc("comercial_demonstracao_feita", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+  app.post("/v1/comercial/demonstracoes/:id/encerrar", async (c) => {
+    const d = await lerCorpo(c, encerrarDemonstracaoSchema);
+    return c.json(await rpc("comercial_encerrar_demonstracao", {
+      p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_situacao: d.situacao, p_motivo: d.motivo, p_avisar: d.avisar,
+    }));
+  });
+
+  // O banco chama (pg_cron + pg_net, com o segredo de repasse) quando há e-mail da agenda vencido.
+  // Sem a chave do Resend, o que venceu fica como "sem chave" e a fila não falha.
+  app.post("/v1/interno/fila-comercial", async (c) => {
+    if (!deps.correio) return c.json({ enviados: 0, semChave: await rpc<number>("comercial_emails_sem_chave", {}) });
+    let enviados = 0;
+    for (let lote = 0; lote < 5; lote++) {
+      const msgs = await rpc<EmailComercialFila[]>("comercial_emails_pegar", { p_max: 50 });
+      if (msgs.length === 0) break;
+      const opcoes = { remetente: deps.remetenteComercial, responderPara: deps.responderComercial };
+      const resultados = await deps.correio.enviarLote(msgs.map((m) => montarEmailComercial(m, opcoes)));
+      for (const [i, r] of resultados.entries()) {
+        await rpc("comercial_email_resultado", {
+          p_id: msgs[i]!.id, p_provedor_id: r.ok ? r.id : null, p_erro: r.ok ? null : r.erro, p_tentar_de_novo: r.ok ? false : r.tentarDeNovo,
+        });
+        if (r.ok) enviados++;
+      }
+      if (msgs.length < 50) break;
+    }
+    return c.json({ enviados });
+  });
+
   // Na ficha do cliente: o contrato assinado (com o link do PDF final) e a troca de sistema.
   app.get("/v1/clientes/:id/contrato", async (c) => {
     const r = await rpc<{ contrato: unknown; arquivo?: { caminho: string; nome: string; tipo: string } }>("console_contrato_cliente", {
@@ -1443,6 +1601,25 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json(await rpc("publico_aceitar_proposta", {
       p_codigo: codigo, p_dados: { nome: d.nome, cpf: d.cpf, cargo: d.cargo, concordo: d.concordo }, p_ip: ipDaChamada(c.req.raw.headers), p_aparelho: a,
     }), 201);
+  });
+
+  // O link de agendamento (quadro 340): sem sessão, pelo repasse do Console (/a/[codigo]). Abrir e
+  // agendar têm limite por aparelho; o código é a chave.
+  const codigoAgenda = (c: Context) => {
+    const v = c.req.param("codigo");
+    if (!v || !CODIGO_AGENDA.test(v)) throw new ErroDominio("NOT_FOUND");
+    return v;
+  };
+  app.get("/v1/publico/agenda/:codigo", async (c) => {
+    const codigo = codigoAgenda(c);
+    await dentroDoLimite("agenda", await aparelho(c));
+    return c.json(await rpc("publico_agenda", { p_codigo: codigo }));
+  });
+  app.post("/v1/publico/agenda/:codigo", async (c) => {
+    const codigo = codigoAgenda(c);
+    await dentroDoLimite("agendar", await aparelho(c));
+    const d = await lerCorpo(c, agendarDemonstracaoSchema);
+    return c.json(await rpc("publico_agendar", { p_codigo: codigo, p_dados: d }), 201);
   });
 
   // Depois do aceite (quadro 441): os documentos, o contrato para assinar pelo gov.br e o PDF

@@ -7,23 +7,69 @@
 // critérios" grava na ficha do prédio, com o problema do prédio que abre a apresentação.
 // Com piloto (CM-21, 0308), a apresentação curta e o PDF trazem o prazo, a meta e o resultado.
 // Mandar pelo WhatsApp gera um link novo da proposta (o código só aparece uma vez) e registra a
-// conversa.
+// conversa. "Custo na apresentação" (R17.3c, quadro 447): o destaque "menos de R$ 5" só quando é
+// verdade e a taxa média de condomínio, que se corrige aqui: grava na ficha e vale para o kit e para
+// a próxima versão, nunca para a versão enviada.
 
 import { useParams } from "next/navigation";
-import { useState } from "react";
-import { TEXTO_A_CONFIRMAR, TEXTO_COMPARATIVO, type CriterioSindico } from "@triade/domain";
-import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, textoDoErro, Vazio } from "@triade/ui";
+import { useState, type FormEvent } from "react";
+import {
+  fraseDoDestaque, lerTaxaCondominio, mostrarValor, taxaParaCampo, TEXTO_A_CONFIRMAR, TEXTO_AJUDA_TAXA, TEXTO_COMPARATIVO, TEXTO_MENOS_DE_CINCO, type CriterioSindico,
+} from "@triade/domain";
+import { Aviso, Botao, CampoTexto, Carregando, chamarApi, ErroCarregar, Icone, Selo, textoDoErro, Vazio } from "@triade/ui";
 import { Cartao, Voltar } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import { textoMeta, textoPrazo } from "./cliente.ts";
 import { ROTAS_COMERCIAL } from "./comum.tsx";
 import { JanelaCriterios, JanelaFato } from "./janelasKit.tsx";
 import { JanelaMandarWhatsapp } from "./janelasPropostas.tsx";
+import { DestaqueCusto } from "./LinkProposta.tsx";
 import {
-  documentoKit, enderecoDoLink, fatoDaCelula, mensagemDoLink, ORDEM_PECAS, PECAS_KIT, pecasDisponiveis, ROTAS_PROPOSTAS, subtituloReferencias, TELAS_PROPOSTAS,
+  custoDoKit, documentoKit, enderecoDoLink, fatoDaCelula, textoTriade, mensagemDoLink, ORDEM_PECAS, PECAS_KIT, pecasDisponiveis, ROTAS_PROPOSTAS, subtituloReferencias, TELAS_PROPOSTAS,
   type FichaProposta, type Kit, type PecaKit,
 } from "./propostas.ts";
 import type { FichaInteressado } from "./tipos.ts";
+
+/** "Custo na apresentação" (quadro 447): o destaque, a taxa que se corrige e as unidades da versão. */
+function CustoNaApresentacao({ k, edita, versaoFicha, feito }: { k: Kit; edita: boolean; versaoFicha?: number; feito: (texto: string) => void }) {
+  const custo = custoDoKit(k);
+  const [taxa, setTaxa] = useState(taxaParaCampo(k.taxaCondominio));
+  const [erro, setErro] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  if (!custo) return null;
+  const d = custo.menosDeCinco ? { titulo: TEXTO_MENOS_DE_CINCO, frase: fraseDoDestaque(custo, `do ${k.predio.condominio}`) } : null;
+  const unidades = k.proposta.unidades ?? k.predio.unidades;
+
+  async function salvar(ev: FormEvent) {
+    ev.preventDefault();
+    const lida = lerTaxaCondominio(taxa);
+    if (lida.erro) return setErro(lida.erro);
+    if (!k.interessado || versaoFicha === undefined) return;
+    setErro(null);
+    setEnviando(true);
+    const r = await chamarApi(ROTAS_PROPOSTAS.taxa(k.interessado.id), { metodo: "PUT", corpo: { versao: versaoFicha, taxaCondominio: lida.taxa } });
+    setEnviando(false);
+    if (!r.ok) return setErro(textoDoErro(r.erro));
+    feito(lida.taxa === null ? "Taxa tirada da ficha. O kit mostra só o valor por apartamento." : "Taxa salva na ficha. Vale para o kit e para a próxima versão.");
+  }
+
+  return (
+    <Cartao id="kit-custo" titulo="Custo na apresentação" icone="dinheiro" acao={custo.taxa !== null ? <Selo tom="ok">Taxa informada</Selo> : undefined}>
+      {d ? <DestaqueCusto d={d} /> : <p className="t-texto">{fraseDoDestaque(custo)}</p>}
+      <form onSubmit={salvar} noValidate className="grid gap-4 md:grid-cols-2">
+        <CampoTexto id="kit-taxa" rotulo="Taxa média de condomínio (R$ por mês)" opcional inputMode="decimal" value={taxa} readOnly={!edita}
+          onChange={(e) => setTaxa(e.target.value)} ajuda={TEXTO_AJUDA_TAXA} erro={erro ?? undefined} placeholder="650,00" />
+        <CampoTexto id="kit-unidades" rotulo="Unidades" value={unidades ? String(unidades) : ""} readOnly ajuda={`Da proposta v${k.proposta.numero} enviada.`} />
+        {edita ? (
+          <Botao type="submit" variante="contorno" className="md:justify-self-start" disabled={enviando}><Icone nome="check" />{enviando ? "Salvando…" : "Salvar a taxa"}</Botao>
+        ) : null}
+      </form>
+      <p className="t-apoio">
+        {`Estimativa: a mensalidade de ${mostrarValor(k.proposta.mensal ?? null)} dividida por ${unidades ?? "—"} unidades, com a implantação à parte. Não é economia prometida. Sem a taxa, o kit mostra só o valor por apartamento.`}
+      </p>
+    </Cartao>
+  );
+}
 
 export function KitConselho() {
   const { id } = useParams<{ id: string }>();
@@ -144,7 +190,7 @@ export function KitConselho() {
                   {linhas.map((l) => (
                     <tr key={l.criterio}>
                       <th scope="row" className="border-b border-linha px-3 py-2.5 text-left align-top t-texto font-medium">{l.titulo}</th>
-                      <td className="border-b border-linha px-3 py-2.5 align-top t-texto">{l.triade}</td>
+                      <td className="border-b border-linha px-3 py-2.5 align-top t-texto">{textoTriade(k, l)}</td>
                       {colunas.map((c, n) => {
                         const v = l.valores[n];
                         const fato = fatoDaCelula(k, l.criterio, c.nome);
@@ -175,6 +221,10 @@ export function KitConselho() {
           <p className="t-apoio">{TEXTO_COMPARATIVO}</p>
         </Cartao>
       </div>
+
+      <CustoNaApresentacao key={`${k.taxaCondominio ?? ""}`} k={k} edita={edita}
+        versaoFicha={interessado.estado === "pronto" ? interessado.dados.versao : k.interessado?.versao}
+        feito={(texto) => pronto(texto)} />
 
       {k.predio.sistemaAtual || k.predio.decisaoEm || k.predio.assembleiaOrdinaria ? (
         <p className="t-apoio">

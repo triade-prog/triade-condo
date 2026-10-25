@@ -38,3 +38,6 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/fato-simultaneo.s
 
 # Conferir um envio enquanto o contrato é gerado de novo (0308): a mesma ordem de travas, sem impasse.
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/contrato-envio-simultaneo.sh"
+
+# Dois agendamentos pelo link no mesmo horário (0310): um marca, o outro recebe HORARIO_OCUPADO.
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/agendamento-simultaneo.sh"

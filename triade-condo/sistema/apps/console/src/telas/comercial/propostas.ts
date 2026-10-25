@@ -3,11 +3,14 @@
 // montados a partir dos dados. O preço nunca é calculado aqui: sai da Tabela de preços no banco.
 // O que vai para o síndico (link, PDF e kit) passa por conteudoDaVersao ou conteudoDoLink, que só
 // copiam o que pode sair: nota interna, pedido de desconto e IP do aceite nunca saem (CM-12).
+// A taxa média de condomínio (R17.3c, DC17): o "menos de R$ 5" e o peso na taxa saem de uma regra
+// só do domínio (custoNaTaxa), a mesma do site; a versão guarda a taxa nas premissas.
 
 import {
   CRITERIOS_SINDICO, mostrarDataSemHora, mostrarValor, OFERTA_INCLUIDO, OFERTA_PLANEJADO, SITUACOES_PROPOSTA, TEMAS_RESPOSTA, TEXTO_A_CONFIRMAR, TEXTO_COMPARATIVO,
   TEXTO_CUSTO_APARTAMENTO, TEXTO_PLANEJADO, type AbaProposta, type CriterioSindico, type EscopoFato, type EscopoReferencia, type EtapaComercial, type SituacaoDesconto,
-  type SituacaoProposta, type TemaResposta,
+  type SituacaoProposta, type TemaResposta, custoNaTaxa, fraseDoDestaque, linhaNaTaxa, percentualTexto, taxaTexto, TEXTO_MENOS_DE_CINCO,
+  textoCustoComparativo, type CustoNaTaxa,
 } from "@triade/domain";
 import { linhasPilotoKit, type Piloto } from "./cliente.ts";
 
@@ -34,6 +37,7 @@ export const ROTAS_PROPOSTAS = {
   acao: (id: string, v: string, acao: "desconto/pedir" | "desconto/aprovar" | "desconto/recusar" | "enviar" | "link" | "revogar" | "recusada") =>
     `/v1/comercial/propostas/${id}/versoes/${v}/${acao}`,
   criterios: (interessado: string) => `/v1/comercial/interessados/${interessado}/criterios`,
+  taxa: (interessado: string) => `/v1/comercial/interessados/${interessado}/taxa`,
   fatos: (id?: string) => (id ? `/v1/comercial/fatos/${id}` : "/v1/comercial/fatos"),
   retirarFato: (id: string) => `/v1/comercial/fatos/${id}/retirar`,
   respostas: (id?: string) => (id ? `/v1/comercial/respostas/${id}` : "/v1/comercial/respostas"),
@@ -88,7 +92,11 @@ export interface ReferenciaNaVersao {
   retirada?: boolean; temCaso?: boolean;
 }
 
-export interface Premissas { estimativa: boolean; semRoi: boolean; implantacaoAParte: boolean; mensal: number; unidades: number; porApartamento: number; texto: string }
+export interface Premissas {
+  estimativa: boolean; semRoi: boolean; implantacaoAParte: boolean; mensal: number; unidades: number; porApartamento: number; texto: string;
+  /** A taxa média de condomínio informada, em reais (R17.3c); sem ela, nada de peso na taxa. */
+  taxaCondominio?: number;
+}
 
 /** Os valores e as condições: o mesmo formato na versão (3.4), no link (4.1) e na sugestão (3.2). */
 export interface Condicoes {
@@ -159,6 +167,8 @@ export interface FichaProposta {
   criadoEm: string;
   interessado: {
     id: string; condominio: string; pessoa?: string; etapa: EtapaComercial; unidades?: number; faixa?: string; anonimizado?: boolean; naoContatar?: boolean;
+    /** A taxa da ficha (R17.3c): a versão nova já vem com ela. */
+    taxaCondominioMedia?: number;
   };
   versoes: VersaoProposta[];
   kitDisponivel: boolean;
@@ -173,7 +183,7 @@ export interface Sugestao extends Condicoes {
   validoAtePrevisto?: string;
   vagasFundador?: { total: number; ocupadas: number; livres: number };
   avisos: AvisoProposta[];
-  interessado: { id: string; condominio: string; unidades?: number; faixa?: string; pessoa?: string; etapa: EtapaComercial };
+  interessado: { id: string; condominio: string; unidades?: number; faixa?: string; pessoa?: string; etapa: EtapaComercial; taxaCondominioMedia?: number };
   propostaId?: string | null;
   oferta?: { incluido: string[]; planejado: string[] };
   respostas?: { id: string; tema: TemaResposta; titulo: string }[];
@@ -247,6 +257,8 @@ export interface Kit {
   respostasDisponiveis?: { id: string; tema: TemaResposta; titulo: string }[];
   /** O piloto (CM-21, 0308) quando houver e não foi perdido: prazo, meta e resultado; nunca com quem foi combinado. */
   piloto?: Piloto;
+  /** A taxa do kit (R17.3c): a da ficha (corrigida no kit ou na versão); sem ela, a da versão enviada. */
+  taxaCondominio?: number;
   /** Só no Console: o interessado (para o Escolher critérios) e os fatos com a fonte. */
   interessado?: { id: string; versao: number };
   fatos?: FatoComparativo[];
@@ -380,10 +392,28 @@ export function textoImplantacao(c: Condicoes): string | null {
   return null;
 }
 
-/** As linhas de baixo do preço (quadro 328): por apartamento, no ano, desconto, implantação, preço garantido e validade. */
-export function linhasDoPreco(c: Condicoes & { validoAte?: string }): [string, string][] {
+/** O custo da versão perto da taxa (R17.3c): nulo sem o valor por apartamento. */
+export function custoDaVersao(c: { porApartamento?: number; taxaCondominio?: number }): CustoNaTaxa | null {
+  return c.porApartamento === undefined ? null : custoNaTaxa(c.porApartamento, c.taxaCondominio ?? null);
+}
+
+/**
+ * O destaque "Menos de R$ 5 por apartamento por mês" (quadros 445 a 447): só quando é verdade. A
+ * frase de baixo diz o valor e, com a taxa, o peso nela; `taxaDe` completa a taxa ("que o prédio
+ * informou", "do Edifício Aroeira").
+ */
+export function destaqueCusto(c: { porApartamento?: number; taxaCondominio?: number }, taxaDe?: string): { titulo: string; frase: string } | null {
+  const custo = custoDaVersao(c);
+  return custo?.menosDeCinco ? { titulo: TEXTO_MENOS_DE_CINCO, frase: fraseDoDestaque(custo, taxaDe) } : null;
+}
+
+/** As linhas de baixo do preço (quadro 328): por apartamento, na taxa, no ano, desconto, implantação, preço garantido e validade. */
+export function linhasDoPreco(c: Condicoes & { validoAte?: string; taxaCondominio?: number }): [string, string][] {
   const l: [string, string][] = [];
   if (c.porApartamento !== undefined && c.unidades) l.push(["Por apartamento", `${brl(c.porApartamento)} por mês (estimativa, ${c.unidades} unidades)`]);
+  const naTaxa = custoDaVersao(c);
+  const linhaTaxa = naTaxa ? linhaNaTaxa(naTaxa) : null;
+  if (linhaTaxa && c.unidades) l.push(["Na taxa de condomínio", linhaTaxa]);
   if (c.ciclo === "ANUAL" && c.anual !== undefined) l.push(["No ano", `${brl(c.anual)} (12 por ${c.mesesPagos ?? 11})`]);
   if (c.desconto) l.push(["Desconto", `${percentual(c.desconto)}, aprovado`]);
   const impl = textoImplantacao(c);
@@ -423,6 +453,8 @@ export interface ConteudoSindico extends Condicoes {
   uf?: string;
   aosCuidados?: string;
   premissasTexto?: string;
+  /** A taxa média de condomínio guardada na versão (R17.3c). */
+  taxaCondominio?: number;
   incluido: string[];
   planejado: string[];
   respostas: { tema: TemaResposta; titulo: string; texto: string }[];
@@ -450,12 +482,19 @@ const referenciasDe = (rs?: ReferenciaNaVersao[]) => (rs ?? []).filter((r) => !r
 }));
 const respostasDe = (rs?: RespostaNaVersao[]) => (rs ?? []).filter((r) => r.texto).map((r) => ({ tema: r.tema, titulo: r.titulo, texto: r.texto! }));
 
+/** A taxa das premissas como número (o banco manda numeric; pode vir como texto). */
+export function taxaDe(p?: { taxaCondominio?: number | string } | null): number | undefined {
+  const t = p?.taxaCondominio;
+  const n = typeof t === "string" ? Number(t) : t;
+  return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
 /** A versão vista pela equipe (3.4) → o que o síndico pode ver. Nada interno passa. */
 export function conteudoDaVersao(v: VersaoProposta, aosCuidados?: string): ConteudoSindico {
   return {
     ...condicoesDe(v), ciclo: v.ciclo,
     numero: v.numero, situacao: v.situacao, condominio: v.condominio, cidade: v.cidade, uf: v.uf, aosCuidados,
-    premissasTexto: v.premissas?.texto, incluido: [...(v.incluido ?? OFERTA_INCLUIDO)], planejado: [...(v.planejado ?? OFERTA_PLANEJADO)],
+    premissasTexto: v.premissas?.texto, taxaCondominio: taxaDe(v.premissas), incluido: [...(v.incluido ?? OFERTA_INCLUIDO)], planejado: [...(v.planejado ?? OFERTA_PLANEJADO)],
     respostas: respostasDe(v.respostas), referencias: referenciasDe(v.referencias),
     validoAte: v.validoAte, enviadaEm: v.enviadaEm, hash: v.hash,
     aceite: v.aceite ? { nome: v.aceite.nome, cargo: v.aceite.cargo, em: v.aceite.em } : undefined,
@@ -467,7 +506,7 @@ export function conteudoDoLink(p: PropostaPublica): ConteudoSindico {
   return {
     ...condicoesDe(p), ciclo: p.ciclo,
     numero: p.numero, situacao: p.situacao, condominio: p.condominio, cidade: p.cidade, uf: p.uf, aosCuidados: p.aosCuidados,
-    premissasTexto: p.premissas?.texto, incluido: [...(p.incluido ?? OFERTA_INCLUIDO)], planejado: [...(p.planejado ?? OFERTA_PLANEJADO)],
+    premissasTexto: p.premissas?.texto, taxaCondominio: taxaDe(p.premissas), incluido: [...(p.incluido ?? OFERTA_INCLUIDO)], planejado: [...(p.planejado ?? OFERTA_PLANEJADO)],
     respostas: respostasDe(p.respostas), referencias: referenciasDe(p.referencias),
     validoAte: p.validoAte, enviadaEm: p.enviadaEm, hash: p.hash,
     aceite: p.aceite ? { nome: p.aceite.nome, cargo: p.aceite.cargo, em: p.aceite.em } : undefined,
@@ -509,7 +548,9 @@ export const textoImpressao = (numero: number, hash?: string) =>
   hash ? `Impressão digital da versão v${numero} (SHA-256 do conteúdo): ${hash}` : `Versão v${numero}, ainda não enviada: sem impressão digital.`;
 
 function blocosDaProposta(c: ConteudoSindico): Bloco[] {
+  const d = destaqueCusto(c, "que o prédio informou");
   const b: Bloco[] = [
+    ...(d ? [{ tipo: "paragrafo", texto: d.titulo } as Bloco, { tipo: "paragrafo", texto: d.frase, suave: true } as Bloco] : []),
     { tipo: "destaque", rotulo: tituloPreco(c), valor: `${brl(c.mensal)} por mês`, apoio: c.tabela === "MANUAL" ? "Valor sob consulta, combinado com a equipe." : undefined },
     { tipo: "pares", linhas: linhasDoPreco(c) },
   ];
@@ -598,9 +639,34 @@ export const nomeCriterio = (c: CriterioSindico, outro?: string) => (c === "OUTR
 export function tabelaComparativo(k: Kit): { cabecalho: string[]; linhas: string[][] } {
   const colunas = k.comparativo.colunas ?? [];
   const linhas = (k.comparativo.linhas ?? []).map((l) => [
-    l.titulo, l.triade, ...colunas.map((_, n) => (l.valores[n]?.confirmado && l.valores[n]?.texto ? l.valores[n]!.texto! : TEXTO_A_CONFIRMAR)),
+    l.titulo, textoTriade(k, l), ...colunas.map((_, n) => (l.valores[n]?.confirmado && l.valores[n]?.texto ? l.valores[n]!.texto! : TEXTO_A_CONFIRMAR)),
   ]);
   return { cabecalho: ["Critério do síndico", "TRÍADE", ...colunas.map((c) => c.nome)], linhas };
+}
+
+/** O custo do kit (quadro 447): o valor por apartamento da versão enviada e a taxa do kit. */
+export function custoDoKit(k: Kit): CustoNaTaxa | null {
+  const porAp = k.proposta.porApartamento ?? k.comparativo.triade.porApartamento;
+  return porAp === undefined ? null : custoNaTaxa(porAp, taxaDe(k) ?? null);
+}
+
+/**
+ * A coluna da TRÍADE: o texto fixo do banco; na linha do custo, com a taxa, "R$ 3,58 (estimativa),
+ * cerca de 0,6% da taxa" (quadro 447). Sem a taxa, o texto do banco.
+ */
+export function textoTriade(k: Kit, l: LinhaComparativo): string {
+  if (l.criterio !== "CUSTO_APARTAMENTO") return l.triade;
+  const c = custoDoKit(k);
+  return c ? textoCustoComparativo(c, l.triade) : l.triade;
+}
+
+/** "R$ 229,00 por mês, cerca de R$ 3,58 por apartamento (estimativa), cerca de 0,6% da taxa média de R$ 650,00." */
+export function textoQuantoCusta(k: Kit): string {
+  const p = k.proposta;
+  const c = custoDoKit(k);
+  const ap = p.porApartamento !== undefined ? `, cerca de ${brl(p.porApartamento)} por apartamento (estimativa)` : "";
+  const taxa = c?.percentual !== null && c?.percentual !== undefined && c.taxa !== null ? `, cerca de ${percentualTexto(c.percentual)} da taxa média de ${taxaTexto(c.taxa)}` : "";
+  return `${brl(p.mensal)} por mês${ap}${taxa}`;
 }
 
 /** O fato da equipe por trás da célula, para mudar ou retirar (só no Console). */
@@ -634,11 +700,15 @@ export function documentoKit(k: Kit, pecas: PecaKit[]): Documento {
   if (quer("APRESENTACAO")) {
     const cancelar = respostaDoTema(k, "CANCELAMENTO");
     b.push({ tipo: "secao", texto: PECAS_KIT.APRESENTACAO.titulo });
+    const custo = custoDoKit(k);
+    if (custo?.menosDeCinco) {
+      b.push({ tipo: "paragrafo", texto: TEXTO_MENOS_DE_CINCO }, { tipo: "paragrafo", texto: fraseDoDestaque(custo, `do ${k.predio.condominio}`), suave: true });
+    }
     b.push({ tipo: "pares", linhas: [
       ["Para", [k.predio.condominio, ondeFica(k.predio), k.predio.unidades ? `${k.predio.unidades} unidades` : null].filter(Boolean).join(" · ")],
       ...(k.predio.problema ? [["O problema do prédio", k.predio.problema] as [string, string]] : []),
       ...(k.predio.sistemaAtual ? [["Hoje usa", k.predio.sistemaAtual] as [string, string]] : []),
-      ["Quanto custa", `${brl(p.mensal)} por mês${p.porApartamento !== undefined ? `, cerca de ${brl(p.porApartamento)} por apartamento (estimativa)` : ""}`],
+      ["Quanto custa", textoQuantoCusta(k)],
       ...(k.piloto ? linhasPilotoKit(k.piloto) : []),
     ] });
     b.push({ tipo: "paragrafo", texto: "O que já funciona:" }, { tipo: "lista", itens: p.incluido });

@@ -5,19 +5,24 @@
 // proposta fica sob consulta e o valor é digitado com motivo. O texto do incluído e do planejado
 // vem pronto (EM-07). Desconto pede motivo e a aprovação da Administração antes de enviar (F.1).
 // A nota interna fica só para a equipe (CM-12). Quem vê a Tabela de preços abre o simulador já
-// com as unidades do prédio.
+// com as unidades do prédio. A taxa média de condomínio (R17.3c, quadro 445) vem da ficha, é
+// opcional e fica nas premissas da versão; com ela, o resumo diz o peso na taxa. O destaque "menos
+// de R$ 5" só aparece quando o valor por apartamento é menor que R$ 5,00.
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { custoPorApartamento, mensalComDesconto, mostrarValor, sugestaoPropostaSchema, TEMAS_RESPOSTA, ESCOPOS_REFERENCIA } from "@triade/domain";
+import {
+  custoNaTaxa, custoPorApartamento, lerTaxaCondominio, mensalComDesconto, mostrarValor, resumoPorApartamento, sugestaoPropostaSchema, taxaParaCampo, TEMAS_RESPOSTA,
+  ESCOPOS_REFERENCIA, TEXTO_AJUDA_TAXA, TEXTO_AJUDA_TAXA_FICHA, TEXTO_MENOS_DE_CINCO,
+} from "@triade/domain";
 import { Aviso, Botao, CampoAreaTexto, CampoTexto, camposComErro, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
 import { Cartao, Voltar } from "../comum.tsx";
 import { campoDosCentavos, centavosDoCampo } from "../planos/comum.tsx";
 import { useCarregar, useSessao } from "../sessao.tsx";
 import {
-  AVISOS_PROPOSTA, percentual, ROTAS_PROPOSTAS, rotulosAprovacao, TELAS_PROPOSTAS, textoImplantacao, textoNoAno, textoVaiJunto, type Ciclo, type FichaProposta, type Sugestao,
-  type VersaoProposta,
+  AVISOS_PROPOSTA, percentual, ROTAS_PROPOSTAS, rotulosAprovacao, taxaDe, TELAS_PROPOSTAS, textoImplantacao, textoNoAno, textoVaiJunto, type Ciclo, type FichaProposta,
+  type Sugestao, type VersaoProposta,
 } from "./propostas.ts";
 
 const brl = (c?: number) => mostrarValor(c ?? null);
@@ -61,15 +66,20 @@ interface Formulario {
   referencias: string[];
   notaInterna: string;
   validadeDias: number | null;
+  /** A taxa média de condomínio, como a pessoa digita ("650,00"). Nulo: ainda não veio da ficha. */
+  taxa: string | null;
 }
 
 const vazio: Formulario = {
   unidades: "", ciclo: "MENSAL", tabela: null, desconto: "", descontoMotivo: "", valorManual: "", implantacaoManual: "", valorManualMotivo: "",
-  respostas: [], referencias: [], notaInterna: "", validadeDias: null,
+  respostas: [], referencias: [], notaInterna: "", validadeDias: null, taxa: null,
 };
 
-/** A versão em que a nova se baseia (ou o rascunho que se edita) → o formulário. */
-function formularioDe(v: VersaoProposta): Formulario {
+/**
+ * A versão em que a nova se baseia (ou o rascunho que se edita) → o formulário. A taxa: no rascunho,
+ * a da versão; na versão nova, a da ficha (a mais recente), e sem ela a da versão anterior.
+ */
+function formularioDe(v: VersaoProposta, taxaFicha?: number, editar = false): Formulario {
   const pedido = v.descontoPedido?.percentual ?? v.desconto;
   return {
     unidades: v.unidades ? String(v.unidades) : "", ciclo: v.ciclo, tabela: v.tabela === "MANUAL" ? null : v.tabela ?? null,
@@ -78,6 +88,7 @@ function formularioDe(v: VersaoProposta): Formulario {
     valorManualMotivo: v.valorManualMotivo ?? "",
     respostas: (v.respostas ?? []).map((r) => r.id).filter((x): x is string => !!x), referencias: (v.referencias ?? []).filter((r) => !r.retirada).map((r) => r.id),
     notaInterna: v.notaInterna ?? "", validadeDias: v.validadeDias ?? null,
+    taxa: taxaParaCampo(editar ? taxaDe(v.premissas) : taxaFicha ?? taxaDe(v.premissas)),
   };
 }
 
@@ -133,7 +144,7 @@ function Gerador({ modo }: { modo: Modo }) {
   const router = useRouter();
   const sessao = useSessao();
   const interessadoId = modo.tipo === "criar" ? modo.interessadoId : modo.ficha.interessado.id;
-  const [f, setF] = useState<Formulario>(() => (modo.tipo === "versao" ? formularioDe(modo.base) : vazio));
+  const [f, setF] = useState<Formulario>(() => (modo.tipo === "versao" ? formularioDe(modo.base, modo.ficha.interessado.taxaCondominioMedia, modo.editar) : vazio));
   const [sug, setSug] = useState<Sugestao | null>(null);
   const [erroSug, setErroSug] = useState<ErroApi | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -165,12 +176,17 @@ function Gerador({ modo }: { modo: Modo }) {
         // As unidades da ficha do prédio entram no campo vazio (CM-16).
         const daFicha = r.dados.interessado.unidades;
         if (daFicha) setF((x) => (x.unidades ? x : { ...x, unidades: String(daFicha) }));
+        // A taxa da ficha entra uma vez, na nova proposta (R17.3c).
+        const taxaFicha = r.dados.interessado.taxaCondominioMedia;
+        setF((x) => (x.taxa !== null ? x : { ...x, taxa: taxaParaCampo(taxaFicha) }));
       });
     }, 250);
     return () => { clearTimeout(t); controle.abort(); };
   }, [chaveSug]);
 
   const daFicha = sug?.interessado.unidades;
+  const taxaLida = lerTaxaCondominio(f.taxa ?? "");
+  const taxaDaFicha = modo.tipo === "versao" ? modo.ficha.interessado.taxaCondominioMedia : sug?.interessado.taxaCondominioMedia;
 
   if (!sug) {
     if (erroSug) {
@@ -198,6 +214,7 @@ function Gerador({ modo }: { modo: Modo }) {
   // Enquanto digita, a conta da tela usa as funções do domínio; o valor que vale é o do banco.
   const mensalPrevisto = s.mensalTabela !== undefined ? mensalComDesconto(s.mensalTabela, temDesconto ? desconto : null) : s.mensal;
   const apPrevisto = mensalPrevisto !== undefined && typeof unidades === "number" ? custoPorApartamento(mensalPrevisto, unidades) : s.porApartamento;
+  const custo = apPrevisto !== undefined && apPrevisto !== null ? custoNaTaxa(apPrevisto, taxaLida.erro ? null : taxaLida.taxa) : null;
   const escolhidasResp = (s.respostas ?? []).filter((r) => f.respostas.includes(r.id));
   const escolhidasRef = (s.referencias ?? []).filter((r) => f.referencias.includes(r.id));
   const condominio = s.interessado.condominio;
@@ -213,6 +230,8 @@ function Gerador({ modo }: { modo: Modo }) {
       respostas: f.respostas.filter((id) => (s.respostas ?? []).some((r) => r.id === id)),
       referencias: f.referencias.filter((id) => (s.referencias ?? []).some((r) => r.id === id)),
       notaInterna: f.notaInterna.trim() || null, validadeDias: f.validadeDias,
+      // A taxa vai sempre: o que está no campo é o que a pessoa quer (vazio tira; vale também para a ficha).
+      taxaCondominio: taxaLida.erro ? null : taxaLida.taxa,
     };
   }
 
@@ -224,6 +243,7 @@ function Gerador({ modo }: { modo: Modo }) {
     if (sobConsulta && !("centavos" in valorManual && valorManual.centavos)) falhas.valorManual = "Digite o valor combinado, como 1.290,00.";
     if (sobConsulta && !f.valorManualMotivo.trim()) falhas.valorManualMotivo = "Diga de onde veio o valor.";
     if ("erro" in implantacaoManual) falhas.implantacaoManual = implantacaoManual.erro;
+    if (taxaLida.erro) falhas.taxaCondominio = taxaLida.erro;
     setFalhaLocal(falhas);
     return Object.keys(falhas).length === 0;
   }
@@ -327,6 +347,10 @@ function Gerador({ modo }: { modo: Modo }) {
                 onChange={(e) => muda({ unidades: e.target.value.replace(/\D/g, "") })}
                 ajuda={`${daFicha ? "Informadas pelo síndico na ficha do prédio." : "A ficha não tem as unidades: digite as ativas."}${s.faixa ? ` Faixa: ${s.faixa.nome}.` : ""}`}
                 erro={erroCampo("unidades", "Digite as unidades ativas, de 1 a 20.000.")} />
+              <CampoTexto id="np-taxa" rotulo="Taxa média de condomínio (R$ por mês)" opcional inputMode="decimal" maxLength={12} placeholder="650,00" value={f.taxa ?? ""}
+                onChange={(e) => muda({ taxa: e.target.value })}
+                ajuda={taxaDaFicha !== undefined && taxaParaCampo(taxaDaFicha) === (f.taxa ?? "") ? TEXTO_AJUDA_TAXA_FICHA : TEXTO_AJUDA_TAXA}
+                erro={erroCampo("taxaCondominio", "A taxa vai de R$ 0,01 a R$ 20.000")} />
             </div>
             <fieldset className="grid gap-2">
               <legend className="mb-1 t-apoio font-medium">Ciclo</legend>
@@ -406,6 +430,9 @@ function Gerador({ modo }: { modo: Modo }) {
         <div className="grid min-w-0 content-start gap-4">
           <section aria-labelledby="np-resumo" className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1 max-md:p-4">
             <h2 id="np-resumo" className="t-titulo-cartao">O que vai na proposta</h2>
+            {custo?.menosDeCinco ? (
+              <p className="rounded-[14px] border border-ok/30 bg-ok-fundo px-4 py-2.5 t-texto font-semibold text-ok">{TEXTO_MENOS_DE_CINCO}</p>
+            ) : null}
             <dl className="grid">
               <Linha nome="Mensalidade">{resumoMensal()}</Linha>
               <Linha nome="Implantação">
@@ -417,8 +444,8 @@ function Gerador({ modo }: { modo: Modo }) {
               <Linha nome="O que está incluído">{(s.oferta?.incluido ?? []).join("; ") || "—"}</Linha>
               <Linha nome="Ainda planejado">{`${(s.oferta?.planejado ?? []).join(", ")}. Aparece como planejado, sem data prometida (EM-07).`}</Linha>
               <Linha nome="Por apartamento">
-                {apPrevisto !== undefined && apPrevisto !== null && typeof unidades === "number"
-                  ? <><b>{brl(apPrevisto)}</b>{` por mês com ${unidades} unidades (estimativa; implantação à parte) (CM-19, L.1)`}</>
+                {custo && typeof unidades === "number"
+                  ? <><b>{brl(custo.porApartamento)}</b>{`${resumoPorApartamento(custo, unidades).slice(brl(custo.porApartamento).length)} (estimativa; implantação à parte)`}</>
                   : "Precisa das unidades e do valor"}
               </Linha>
               <Linha nome="Vai junto">{textoVaiJunto(escolhidasResp.map((r) => r.titulo), escolhidasRef.length)}</Linha>
