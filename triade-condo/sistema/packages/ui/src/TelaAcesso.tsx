@@ -1,18 +1,20 @@
 import type { ReactNode } from "react";
 import { Marca } from "./Marca.tsx";
 
-// Telas de acesso (entrar, convite, nova senha): a arte da marca de um lado e o formulário do
-// outro (telas-modelo, DC13). No celular, a arte vira uma faixa no alto. A arte de fundo só
-// aparece aqui, no início, nas telas vazias e na prioridade.
+// Telas de acesso (entrar, convite, nova senha): a foto dos prédios ao entardecer de um lado e o
+// formulário do outro. No celular, a foto vira uma faixa no alto. O arquivo fica em
+// public/marca/entrada-predios.webp de cada aplicação (1034 × 1192); a parte de baixo da foto é
+// violeta liso, e o degradê por cima garante a leitura do título e da frase.
+export const FOTO_ENTRADA = { src: "/marca/entrada-predios.webp", largura: 1034, altura: 1192 } as const;
+
 export function TelaAcesso({ sistema, frase, children }: { sistema: string; frase: string; children: ReactNode }) {
   return (
     <main id="conteudo" className="grid min-h-dvh place-items-center px-4 py-8">
       <div className="grid w-full max-w-[920px] overflow-hidden rounded-3xl border border-linha bg-superficie shadow-s3 md:grid-cols-[1.05fr_1fr]">
-        <div aria-hidden="true" className="relative flex min-h-44 flex-col justify-end overflow-hidden bg-[image:var(--grad-violeta)] p-6 text-white md:min-h-[540px] md:p-9">
-          <span className="absolute -top-28 -right-24 h-[340px] w-[340px] rounded-full border border-white/20" />
-          <span className="absolute -top-48 -right-48 h-[520px] w-[520px] rounded-full border border-white/15" />
-          <span className="absolute top-8 right-16 h-72 w-36 rotate-[26deg] rounded-t-full border border-violeta-200/30 bg-[image:var(--grad-arco)]" />
-          <span className="absolute top-14 right-10 h-56 w-8 rotate-[26deg] rounded-full bg-[image:var(--grad-trilha)] shadow-[inset_0_2px_0_rgb(255_255_255/.33)]" />
+        <div aria-hidden="true" className="relative flex min-h-72 flex-col justify-end overflow-hidden bg-violeta-900 p-6 text-white md:min-h-[540px] md:p-9">
+          {/* eslint-disable-next-line @next/next/no-img-element -- pacote compartilhado, sem next/image */}
+          <img src={FOTO_ENTRADA.src} width={FOTO_ENTRADA.largura} height={FOTO_ENTRADA.altura} alt="" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover object-[50%_12%] md:object-top" />
+          <span className="absolute inset-0 bg-[linear-gradient(180deg,transparent_25%,rgb(24_5_103/.75)_58%,rgb(24_5_103/.94)_100%)] md:bg-[linear-gradient(180deg,transparent_55%,rgb(24_5_103/.6)_78%,rgb(24_5_103/.85)_100%)]" />
           <p className="relative text-3xl leading-tight font-light tracking-tight md:text-[40px]">
             Bom ter você <em className="font-[family-name:var(--font-destaque)] font-normal text-laranja-200 italic">aqui</em>
           </p>

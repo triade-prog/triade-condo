@@ -6,6 +6,8 @@ Este é o padrão visual em vigor das duas aplicações, a Plataforma do síndic
 
 | O quê | Arquivo |
 |---|---|
+| Telas de entrar, convite e nova senha (aprovadas em 25/10/2026): a foto dos prédios ao entardecer no painel da esquerda, com o título e a frase sobre o violeta de baixo; no celular, a foto vira uma faixa no alto com degradê mais forte. Vale para a Plataforma e o Console | `telas-modelo/entrar-computador.png`, `telas-modelo/entrar-celular.png` e a foto em `telas-modelo/entrada-predios.webp` (cópia de `public/marca/entrada-predios.webp` dos dois apps) |
+| Faixa do Início com a foto (aprovada em 25/10/2026): os prédios à direita, o texto no violeta liso da esquerda e o botão centralizado na altura; no celular, a foto cobre a faixa com degradê violeta. Plataforma e Console | `telas-modelo/inicio-faixa-computador.png`, `telas-modelo/inicio-faixa-celular.png` e a foto em `telas-modelo/faixa-predios.webp` (cópia de `public/marca/faixa-predios.webp` dos dois apps) |
 | Cores, fontes e logo (DC13) | `../identidade/sistema.html` e os PNGs do logo em `../identidade/` |
 | Como usar: escala de letra e de espaço, cantos e sombras, regra de cada lugar, botões, ícones, anexar arquivos e arte da marca | `guia-padroes.html` (imagem em `guia-padroes.png`) |
 | Moldura nova: menu em 4 grupos, busca no topo e barra de baixo no celular | `telas-modelo/moldura-computador.html` e `telas-modelo/moldura-celular.html` |
@@ -59,7 +61,7 @@ Cada tela-modelo tem um PNG com o mesmo nome. Os HTML são referência visual ex
 - Ícones só do conjunto oficial (`sistema/packages/ui/src/Icone.tsx`), sempre com palavra junto. Se faltar algum, ele entra primeiro no conjunto.
 - O selo é uma pílula de canto redondo, com a cor da situação no fundo, na borda e na letra, sem a faixa lateral da DC13 (decisão da Carolina em 22/10/2026, para ficar igual às telas-modelo). O aviso continua com a faixa.
 - Uma cor por situação: Aberto em petróleo, Em andamento em violeta, Em revisão em âmbar, Encerrado em jade e Cancelado em cinza. A prioridade só aparece quando é Alta ou Urgente. O ícone da categoria fica sempre em cinza.
-- Arte da marca (anéis, arco e traço laranja) em três tamanhos: cheia nas telas de entrar, faixa no topo do Início e leve nas telas vazias. No máximo uma arte por tela, e ela nunca encosta no texto.
+- Arte da marca em três lugares: a foto dos prédios ao entardecer nas telas de entrar (Plataforma e Console), a mesma foto em formato largo na faixa do Início (Plataforma e Console) e os anéis leves nas telas vazias. No máximo uma arte por tela, e ela nunca encosta no texto.
 - Nenhuma tela usa emoji.
 - Formulário longo no celular vai em passos: barra de progresso no alto, Continuar e Voltar embaixo, os passos feitos resumidos no topo com "Alterar", e nada do que foi preenchido se perde ao voltar. No computador o mesmo formulário fica numa tela só, em partes numeradas.
 - Ação que é de uma linha (editar, recusar, encerrar, tirar de uso) fica no menu de três pontos da linha, e o nome dele diz de quem é ("Ações de Joana Lima"). O que monta a tela (importar, incluir divisões, unidades e vagas) fica num menu no topo, ao lado do único botão principal.
@@ -67,6 +69,8 @@ Cada tela-modelo tem um PNG com o mesmo nome. Os HTML são referência visual ex
 - Toda tela nova é desenhada e aprovada antes do código. As telas que faltam passam ao padrão novo por grupo do menu, em rodadas: Dia a dia, Comunicação, Prédio e pessoas, Gestão e, por fim, as páginas por link e o Console.
 
 ## O que saiu
+
+Em 25/10/2026, com a foto nova das telas de entrar e da faixa do Início, saíram a arte cheia (anéis, arco e traço laranja) e a faixa com anéis e traço, as cores `--grad-arco`, `--grad-violeta`, `--grad-trilha` e `--shadow-trilha`, que só essa arte usava, e os exemplos antigos "Cheia" e "Faixa" do guia.
 
 Em 23/10/2026, com as telas das Unidades, saíram a ficha da unidade antiga (substituída pela nova, com o mesmo nome) e `moradores-confirmar-computador`, substituída por `link-cadastro-pendentes`; a marcação de várias pessoas para confirmar de uma vez saiu junto, como no desenho aprovado.
 
