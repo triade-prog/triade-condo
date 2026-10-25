@@ -30,3 +30,4 @@ export * from "./encomendas.ts";
 export * from "./aprovacoes.ts";
 export * from "./privacidade.ts";
 export * from "./comercial.ts";
+export * from "./propostas.ts";

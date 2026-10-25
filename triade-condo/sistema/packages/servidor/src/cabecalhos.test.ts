@@ -50,6 +50,8 @@ describe("F0.8: cabeçalhos de segurança e CSP com nonce", () => {
   it("o link de redefinir senha não vaza o token pelo referrer", () => {
     expect(cabecalhosSeguranca("plataforma", "/redefinir")["Referrer-Policy"]).toBe("no-referrer");
     expect(cabecalhosSeguranca("plataforma", "/")["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
+    expect(cabecalhosSeguranca("console", "/o/Xr4abcdefghijklmnopqrstu")["Referrer-Policy"]).toBe("no-referrer");
+    expect(cabecalhosSeguranca("console", "/comercial/propostas")["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
   });
 
   it("MP-08: a câmera só no link do prestador, para ler a etiqueta", () => {

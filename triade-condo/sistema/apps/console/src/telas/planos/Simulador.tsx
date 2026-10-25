@@ -115,11 +115,14 @@ function Resumo({ titulo, valor, apoio }: { titulo: string; valor?: number; apoi
 
 type Janela = { tipo: "novo" } | { tipo: "editar"; c: Concorrente } | { tipo: "arquivar"; c: Concorrente } | null;
 
-export function Simulador({ d, edita, avisar, feito, recarregar }: {
+export function Simulador({ d, edita, avisar, feito, recarregar, unidades }: {
   d: TabelaPrecos; edita: boolean; avisar: (r: Recado) => void; feito: (texto: string) => void; recarregar: () => void;
+  /** As unidades do prédio, quando o simulador abre da proposta. */
+  unidades?: number;
 }) {
-  const [n, setN] = useState(100);
-  const [texto, setTexto] = useState("100");
+  const inicial = unidades && unidades >= MINIMO ? Math.min(MAXIMO_CAMPO, Math.trunc(unidades)) : 100;
+  const [n, setN] = useState(inicial);
+  const [texto, setTexto] = useState(String(inicial));
   const [janela, setJanela] = useState<Janela>(null);
   const s = simular(d, n);
   const lista = barras(d, n);
