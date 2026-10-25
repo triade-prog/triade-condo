@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sobe um Postgres temporário, aplica as migrations em ordem, roda os testes pgTAP e o teste
-# de edição simultânea com duas conexões de verdade.
+# de edição simultânea e do fato do comparativo registrado duas vezes, com duas conexões de verdade.
 # Uso: bash scripts/test-db.sh   (precisa de PostgreSQL 16+ com pgTAP e pg_prove)
 set -euo pipefail
 RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
@@ -31,3 +31,6 @@ pg_prove --ext .sql -r "$RAIZ/supabase/tests/pgtap"
 
 # Edição simultânea do mesmo registro com duas conexões (T4, AT-24).
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/edicao-simultanea.sh"
+
+# O mesmo fato do comparativo registrado ao mesmo tempo (0307): FATO_EXISTE, não erro 500.
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/fato-simultaneo.sh"

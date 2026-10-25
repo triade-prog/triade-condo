@@ -74,6 +74,8 @@ export const TEXTO_ACEITE =
   "Ao aceitar, guardamos nome, CPF, cargo, data, o endereço de internet e esta versão, com a impressão digital dela. Aceitar não é contratar: a contratação é o contrato assinado.";
 export const TEXTO_CONCORDO = "Li a proposta e quero seguir. Depois vem o contrato para assinar.";
 export const TEXTO_COMPARATIVO = "Só fatos que a equipe confirmou. O que não se sabe do concorrente fica para confirmar com eles; nada de retorno prometido.";
+/** O que a equipe ainda não confirmou no comparativo do kit (quadro 337). */
+export const TEXTO_A_CONFIRMAR = "a confirmar com eles";
 export const TEXTO_LINK_UMA_VEZ =
   "Copie o link agora: ele só aparece uma vez. Para ver de novo, gere um link novo; o anterior para de abrir.";
 

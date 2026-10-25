@@ -99,6 +99,22 @@ export const CAMPOS_ETAPA: Record<string, string> = {
   motivoPerda: "Por que não fechou",
 };
 
+/**
+ * Critérios que o síndico marca na visita (CM-16, CM-20, quadro 337): lista fechada e curta, na
+ * ordem do comparativo do kit. "Outro" pede o texto. O texto da TRÍADE em cada critério é fixo e
+ * fica no banco (0307, comercial_criterios), com a oferta honesta (EM-07).
+ */
+export const CRITERIOS_SINDICO = {
+  PEDIDO_COM_PRAZO: "Todo pedido com responsável e prazo",
+  SEM_BAIXAR_APP: "Morador usa sem baixar app",
+  HISTORICO_PASSA: "Histórico que passa para o próximo síndico",
+  CUSTO_APARTAMENTO: "Custo por apartamento por mês",
+  COMO_CANCELAR: "Como cancelar",
+  DEVOLUCAO_DADOS: "Devolução dos dados na saída",
+  OUTRO: "Outro",
+} as const;
+export type CriterioSindico = keyof typeof CRITERIOS_SINDICO;
+
 /** Situação da tarefa da vez (CM-04), na ordem da lista. */
 export const SITUACOES_TAREFA = { ATRASADO: "Atrasado", HOJE: "Hoje", SEM_PASSO: "Sem próximo passo", FUTURO: "Em dia", FECHADO: "Fechado" } as const;
 export type SituacaoTarefa = keyof typeof SITUACOES_TAREFA;
@@ -216,6 +232,10 @@ const concorrente = z
   })
   .strict();
 
+/** Texto que, quando não vem, não muda o que está gravado (o banco só troca o campo enviado). */
+const textoSeVier = (max: number) => z.string().trim().max(max).nullable().optional().transform((v) => (v === undefined ? undefined : v || null));
+const criterios = z.array(z.enum(chaves(CRITERIOS_SINDICO))).max(7).transform((v) => [...new Set(v)]);
+
 /** A ficha: contato, prédio, objeções, concorrentes e responsável (CM-16, CM-17). */
 export const fichaInteressadoSchema = z.object({
   versao,
@@ -247,7 +267,45 @@ export const fichaInteressadoSchema = z.object({
   observacao: textoOpcional(1000),
   optinTexto: textoOpcional(500),
   optinCanal: z.enum(["SITE", "WHATSAPP", "LIGACAO", "EMAIL", "PRESENCIAL"]).optional().nullable().transform((v) => v ?? null),
+  // Critérios do síndico e o problema do prédio (0307): só mudam quando a tela manda.
+  criterios: criterios.optional(),
+  criterioOutro: textoSeVier(120),
+  problema: textoSeVier(300),
 });
+
+/** "Escolher critérios" do kit (quadro 337): os critérios, o outro e o problema do prédio. */
+export const criteriosInteressadoSchema = z
+  .object({
+    versao,
+    criterios,
+    criterioOutro: textoOpcional(120),
+    problema: textoOpcional(300),
+  })
+  .refine((d) => !d.criterios.includes("OUTRO") || d.criterioOutro, { message: "Diga qual é o outro critério", path: ["criterioOutro"] });
+
+/**
+ * Onde vale o fato do comparativo (0307): por padrão, só no prédio em que foi registrado (o
+ * contrato do sistema atual é de cada prédio, CM-12); todo prédio só para informação pública do
+ * concorrente (site, tabela pública), nunca na coluna do sistema atual nem no critério "outro".
+ */
+export const ESCOPOS_FATO = {
+  PREDIO: "Só deste prédio",
+  PUBLICO: "Todo prédio (informação pública)",
+} as const;
+export type EscopoFato = keyof typeof ESCOPOS_FATO;
+
+/** O fato que a equipe confirmou sobre o sistema atual ou um concorrente, por critério (0307). */
+export const fatoComparativoSchema = z.object({
+  versao: versao.optional().nullable().transform((v) => v ?? null),
+  sistema: z.string().trim().min(2).max(120).optional().nullable().transform((v) => v ?? null),
+  criterio: z.enum(chaves(CRITERIOS_SINDICO)).optional().nullable().transform((v) => v ?? null),
+  escopo: z.enum(chaves(ESCOPOS_FATO)).optional().nullable().transform((v) => v ?? null),
+  interessadoId: uuidOpcional,
+  texto: z.string().trim().min(2).max(200),
+  fonte: z.string().trim().min(3).max(200),
+  confirmadoEm: dataOpcional,
+});
+export const retirarFatoSchema = z.object({ versao });
 
 /** Mudar a etapa (CM-03); Perdido pede o motivo (quadro 326). */
 export const etapaInteressadoSchema = z

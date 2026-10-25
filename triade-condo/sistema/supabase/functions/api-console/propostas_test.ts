@@ -4,6 +4,7 @@
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import {
   ABAS_PROPOSTAS,
+  CRITERIOS_SINDICO,
   ESCOPOS_REFERENCIA,
   OFERTA_INCLUIDO,
   OFERTA_PLANEJADO,
@@ -21,6 +22,7 @@ const PROPOSTA = "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d";
 const VERSAO = "9c0d1e2f-3a4b-4c5d-9e6f-7a8b9c0d1e2f";
 const LGPD = "1e2f3a4b-5c6d-4e7f-8a9b-0c1d2e3f4a5b";
 const PAULO = "2f3a4b5c-6d7e-4f8a-9b0c-1d2e3f4a5b6c";
+const FATO = "3a4b5c6d-7e8f-4a9b-8c0d-1e2f3a4b5c6d";
 const CODIGO = "Qm9hLXByb3Bvc3RhLWRvLUNlcnJhZG8tY29tLTMyLWJ5dGVz";
 const ENTRAR = { email: "carolina@triade.exemplo", senha: "senha-forte-da-equipe" };
 
@@ -55,6 +57,10 @@ function montar() {
     publico_proposta: (a) => (a.p_codigo === CODIGO ? { mensal: 20610, situacao: "ENVIADA", podeAceitar: true } : erroBanco("TC404")),
     publico_kit_proposta: () => ({ proposta: {}, comparativo: {} }),
     publico_aceitar_proposta: () => ({ situacao: "ACEITA", numero: 1, nome: "Lúcia Prado" }),
+    comercial_salvar: () => ({ id: CERRADO, versao: 4 }),
+    comercial_salvar_criterios: () => ({ id: CERRADO, versao: 5 }),
+    comercial_salvar_fato: (a) => ({ id: a.p_id ?? FATO, versao: a.p_id ? 2 : 1 }),
+    comercial_retirar_fato: () => ({ id: FATO, versao: 3 }),
   });
   const app = criarApiConsole("segredo-de-repasse-de-teste", {
     banco: db.banco, auth: falso.auth, admin: adminFalso().admin, urlApp: "https://console.exemplo", urlPlataforma: "https://plataforma.exemplo",
@@ -238,4 +244,73 @@ Deno.test("0304: as listas e os textos do domínio são os mesmos do banco", asy
   assert(sql.includes(`'${JSON.stringify(OFERTA_INCLUIDO).replaceAll('","', '", "')}'::jsonb`), "o incluído é o mesmo");
   assert(sql.includes(`'${JSON.stringify(OFERTA_PLANEJADO).replaceAll('","', '", "')}'::jsonb`), "o planejado é o mesmo");
   assert(sql.includes("('ADMINISTRACAO', 'console.comercial.desconto')"));
+});
+
+Deno.test("0307: os critérios do síndico e os fatos do comparativo pedem a sessão", async () => {
+  const m = montar();
+  for (const [rota, metodo] of [[`/v1/comercial/interessados/${CERRADO}/criterios`, "PUT"], ["/v1/comercial/fatos", "POST"], [`/v1/comercial/fatos/${FATO}`, "PUT"],
+                                [`/v1/comercial/fatos/${FATO}/retirar`, "POST"]] as const) {
+    assertEquals((await erro(await m.pedir(rota, { metodo, corpo: {} }))).codigo, "UNAUTHORIZED", rota);
+  }
+});
+
+Deno.test("0307: Escolher critérios grava na ficha do prédio; a ficha sem os critérios não os apaga", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  const rota = `/v1/comercial/interessados/${CERRADO}/criterios`;
+  const r = await m.pedir(rota, { cookie, metodo: "PUT",
+    corpo: { versao: 4, criterios: ["COMO_CANCELAR", "OUTRO", "COMO_CANCELAR"], criterioOutro: " Portaria registra encomendas ", problema: "Vazamentos repetidos" } });
+  assertEquals(r.status, 200);
+  assertEquals(chamada(m, "comercial_salvar_criterios"), {
+    p_pessoa: CAROLINA, p_id: CERRADO, p_versao: 4, p_criterios: ["COMO_CANCELAR", "OUTRO"], p_outro: "Portaria registra encomendas", p_problema: "Vazamentos repetidos",
+  });
+  for (const [ruim, campo] of [[{ criterios: ["OUTRO"] }, "criterioOutro"], [{ criterios: ["PRECO_BAIXO"] }, "criterios"],
+                               [{ criterios: [], problema: "x".repeat(301) }, "problema"], [{ criterios: [] , versao: undefined }, "versao"]] as const) {
+    const e = await erro(await m.pedir(rota, { cookie, metodo: "PUT", corpo: { versao: 4, ...ruim } }));
+    assertEquals([e.codigo, e.detalhes?.campos], ["VALIDATION_ERROR", [campo]], JSON.stringify(ruim));
+  }
+  assertEquals((await m.pedir(`/v1/comercial/interessados/nao-e-id/criterios`, { cookie, metodo: "PUT", corpo: { versao: 1, criterios: [] } })).status, 404);
+
+  const ficha = { versao: 3, condominio: "Residencial Cerrado", whatsapp: "61 99999-0412" };
+  await m.pedir(`/v1/comercial/interessados/${CERRADO}`, { cookie, metodo: "PUT", corpo: ficha });
+  const sem = chamada(m, "comercial_salvar")!.p_dados as Record<string, unknown>;
+  assertEquals(["criterios" in sem, "criterioOutro" in sem, "problema" in sem], [false, false, false], "a ficha sem os campos não manda nada para apagar");
+  await m.pedir(`/v1/comercial/interessados/${CERRADO}`, { cookie, metodo: "PUT", corpo: { ...ficha, criterios: ["CUSTO_APARTAMENTO"], criterioOutro: "", problema: null } });
+  const com = chamada(m, "comercial_salvar")!.p_dados as Record<string, unknown>;
+  assertEquals([com.criterios, com.criterioOutro, com.problema], [["CUSTO_APARTAMENTO"], null, null]);
+});
+
+Deno.test("0307: a equipe registra, muda e retira o fato confirmado, com a fonte", async () => {
+  const m = montar();
+  const cookie = await entrar(m);
+  const fato = { sistema: "App da Contábil Norte", criterio: "COMO_CANCELAR", interessadoId: CERRADO, texto: "Só junto com a administradora",
+                 fonte: "Contrato que o síndico mostrou" };
+  assertEquals((await m.pedir("/v1/comercial/fatos", { cookie, corpo: fato })).status, 201);
+  assertEquals(chamada(m, "comercial_salvar_fato"), {
+    p_pessoa: CAROLINA, p_id: null, p_versao: null, p_dados: { ...fato, escopo: null, confirmadoEm: null },
+  }, "sem escopo, o banco grava só para este prédio");
+  await m.pedir("/v1/comercial/fatos", { cookie, corpo: { ...fato, sistema: "HabitaOne", escopo: "PUBLICO" } });
+  assertEquals((chamada(m, "comercial_salvar_fato")?.p_dados as Record<string, unknown>).escopo, "PUBLICO", "informação pública vai para o banco conferir");
+  for (const [ruim, campo] of [[{ texto: "x" }, "texto"], [{ fonte: "" }, "fonte"], [{ criterio: "PRECO" }, "criterio"], [{ confirmadoEm: "21/10/2026" }, "confirmadoEm"],
+                                [{ escopo: "TODOS" }, "escopo"]] as const) {
+    const e = await erro(await m.pedir("/v1/comercial/fatos", { cookie, corpo: { ...fato, ...ruim } }));
+    assertEquals([e.codigo, e.detalhes?.campos], ["VALIDATION_ERROR", [campo]], JSON.stringify(ruim));
+  }
+  assertEquals((await erro(await m.pedir(`/v1/comercial/fatos/${FATO}`, { cookie, metodo: "PUT", corpo: { texto: "Com 60 dias", fonte: "Contrato" } }))).detalhes?.campos,
+    ["versao"], "mudar pede a versão");
+  assertEquals((await m.pedir(`/v1/comercial/fatos/${FATO}`, { cookie, metodo: "PUT", corpo: { versao: 1, texto: "Com 60 dias", fonte: "Contrato" } })).status, 200);
+  assertEquals(chamada(m, "comercial_salvar_fato")?.p_id, FATO);
+  await m.pedir(`/v1/comercial/fatos/${FATO}/retirar`, { cookie, corpo: { versao: 2 } });
+  assertEquals(chamada(m, "comercial_retirar_fato"), { p_pessoa: CAROLINA, p_id: FATO, p_versao: 2 });
+  assertEquals((await m.pedir("/v1/comercial/fatos/nao-e-id/retirar", { cookie, corpo: { versao: 2 } })).status, 404);
+});
+
+Deno.test("0307: a lista dos critérios do domínio é a mesma do banco", async () => {
+  const sql = await Deno.readTextFile(new URL("../../migrations/0307_comercial_kit_criterios.sql", import.meta.url));
+  for (const [codigo, titulo] of Object.entries(CRITERIOS_SINDICO)) {
+    assert(sql.includes(`{"codigo": "${codigo}", "titulo": "${titulo}"`), codigo);
+    assert(sql.includes(`'${codigo}'`), `${codigo} na trava`);
+  }
+  assert(!/\bROI\b|retorno/i.test(sql.slice(sql.indexOf("create function comercial_criterios()"), sql.indexOf("create function comercial_criterio_valido"))),
+    "EM-07: os textos da TRÍADE não prometem retorno");
 });

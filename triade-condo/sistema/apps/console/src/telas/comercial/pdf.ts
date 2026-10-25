@@ -5,6 +5,7 @@
 
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { TEXTO_A_CONFIRMAR } from "@triade/domain";
 import type { Bloco, Documento } from "./propostas.ts";
 
 const A4 = { l: 595.28, a: 841.89 };
@@ -83,7 +84,7 @@ class Folha {
       const topo = this.y;
       quebras.forEach((q, i) => q.forEach((l, k) => {
         const fonte = cab || i === 0 ? this.f.forte : this.f.normal;
-        const c = cab || l === "a confirmar" ? this.c.suave : this.c.tinta;
+        const c = cab || cel[i] === TEXTO_A_CONFIRMAR ? this.c.suave : this.c.tinta;
         this.pagina.drawText(l, { x: xs[i]!, y: topo - 4 - tam - k * tam * 1.35 + 1, size: tam, font: fonte, color: c });
       }));
       this.y = topo - altura;

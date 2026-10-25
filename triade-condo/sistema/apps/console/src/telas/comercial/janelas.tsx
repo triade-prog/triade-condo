@@ -13,6 +13,7 @@ import { Aviso, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, 
 import { EscolhaBotoes, ErroJanela, RodapeJanela } from "../planos/comum.tsx";
 import { plural } from "../comum.tsx";
 import { nomeCanal, ROTAS_COMERCIAL } from "./comum.tsx";
+import { CamposCriterios, type EscolhaCriterios } from "./janelasKit.tsx";
 import type { FichaInteressado, Interessado, Pessoa } from "./tipos.ts";
 
 const FAIXAS = Object.entries(FAIXAS_PRECO).map(([valor, f]) => ({ valor, texto: f.nome }));
@@ -232,6 +233,7 @@ export function JanelaFicha({ i, marcar = [], aoFechar, feito }: { i: FichaInter
   const [appAdm, setAppAdm] = useState(!!p.appAdministradora);
   const [optin, setOptin] = useState(!!i.optin);
   const [objecoes, setObjecoes] = useState<string[]>(i.objecoes);
+  const [criterios, setCriterios] = useState<EscolhaCriterios>({ criterios: p.criterios ?? [], criterioOutro: p.criterioOutro ?? "", problema: p.problema ?? "" });
   const [concorrentes, setConcorrentes] = useState(i.concorrentes.map((c) => ({ nome: c.nome, preco: c.preco ? (c.preco / 100).toFixed(2).replace(".", ",") : "" })));
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -248,6 +250,8 @@ export function JanelaFicha({ i, marcar = [], aoFechar, feito }: { i: FichaInter
       corpo: {
         versao: i.versao, ...f, papel: f.papel || null, faixa: f.faixa || null, unidades, responsavelId: f.responsavelId || null, uf: f.uf || null,
         appAdministradora: f.administradora ? appAdm : null, demonstracaoEm: deLocal(f.demonstracaoEm), objecoes,
+        criterios: criterios.criterios, criterioOutro: criterios.criterios.includes("OUTRO") ? criterios.criterioOutro.trim() || null : null,
+        problema: criterios.problema.trim() || null,
         concorrentes: concorrentes.filter((c) => c.nome.trim()).map((c) => ({
           nome: c.nome.trim(), preco: c.preco.trim() ? Math.round(Number(c.preco.replace(/\./g, "").replace(",", ".")) * 100) || null : null,
         })),
@@ -301,6 +305,10 @@ export function JanelaFicha({ i, marcar = [], aoFechar, feito }: { i: FichaInter
           <CampoTexto id="ficha-visita" rotulo="Visita ao prédio" opcional type="date" value={f.visitaEm} onChange={muda("visitaEm")} />
           <CampoTexto id="ficha-visita-nota" rotulo="O que viu na visita" opcional maxLength={500} value={f.visitaNota} onChange={muda("visitaNota")} className="md:col-span-2" />
         </Secao>
+        <fieldset className="grid gap-3 border-t border-linha pt-4">
+          <legend className="t-titulo-cartao">Critérios do síndico e o problema do prédio</legend>
+          <CamposCriterios id="ficha-criterios" valor={criterios} aoMudar={setCriterios} campos={campos} />
+        </fieldset>
         <fieldset className="grid gap-3 border-t border-linha pt-4">
           <legend className="t-titulo-cartao">Objeções</legend>
           <div className="flex flex-wrap gap-2">

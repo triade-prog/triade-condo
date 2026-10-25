@@ -1,6 +1,6 @@
 // Comercial (0296): o que a api-console devolve para a lista, o Meu dia, a ficha e os modelos.
 
-import type { CanalConversa, EtapaComercial, MotivoPerda, OrigemComercial, PapelContato, SituacaoTarefa } from "@triade/domain";
+import type { CanalConversa, CriterioSindico, EtapaComercial, MotivoPerda, OrigemComercial, PapelContato, SituacaoTarefa } from "@triade/domain";
 
 export interface Tarefa {
   situacao: SituacaoTarefa;
@@ -101,6 +101,11 @@ export interface Predio {
   visitaEm?: string;
   visitaNota?: string;
   demonstracaoEm?: string;
+  /** O que o síndico marcou na visita para comparar (0307), na ordem da lista. */
+  criterios?: CriterioSindico[];
+  criterioOutro?: string;
+  /** O problema do prédio, em texto curto: abre a apresentação do kit. */
+  problema?: string;
 }
 
 export interface Objecao {
