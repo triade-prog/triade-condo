@@ -1,12 +1,14 @@
 // Propostas do Comercial nas telas (R17.3): o que vai para o síndico nunca leva o que é interno
 // (CM-12), os textos do preço, das aberturas e do comparativo saem dos dados (EM-07) e o PDF da
-// proposta e do kit é montado com a impressão digital da versão.
+// proposta e do kit é montado com a impressão digital da versão. O comparativo do kit é pelos
+// critérios do síndico (0307), com o problema do prédio na apresentação.
 import { readFileSync } from "node:fs";
 import { PDFDocument } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 import { montarPdf } from "./pdf.ts";
 import {
-  aprovacaoDaVersao, conteudoDaVersao, conteudoDoLink, depoisDoEnvio, documentoKit, documentoProposta, enderecoDoLink, linhasDoPreco, pecasDisponiveis, resumoVersao, slug,
+  aprovacaoDaVersao, conteudoDaVersao, conteudoDoLink, depoisDoEnvio, documentoKit, documentoProposta, enderecoDoLink, fatoDaCelula, linhasDoPreco, nomeCriterio,
+  pecasDisponiveis, resumoVersao, slug,
   tabelaComparativo, rotulosAprovacao, textoAberturas, textoAprovacao, textoAta, textoDesconto, textoImpressao, textoNoAno, textoSituacao, type ItemListaProposta, type Kit, type PropostaPublica,
   type VersaoProposta,
 } from "./propostas.ts";
@@ -35,13 +37,26 @@ const V: VersaoProposta = {
 const KIT: Kit = {
   propostaId: "p1", versaoId: "v1",
   proposta: { ...conteudoParaLink(), podeAceitar: false },
-  predio: { condominio: "Residencial Cerrado", cidade: "Brasília", uf: "DF", unidades: 72, sistemaAtual: "Planilha e WhatsApp", fidelidadeAte: "2027-03-01", decisaoEm: "2026-12-10" },
+  predio: { condominio: "Residencial Cerrado", cidade: "Brasília", uf: "DF", unidades: 72, sistemaAtual: "Planilha e WhatsApp", fidelidadeAte: "2027-03-01", decisaoEm: "2026-12-10",
+    problema: "Portaria sem registro e 3 vazamentos repetidos", criterios: ["PEDIDO_COM_PRAZO", "CUSTO_APARTAMENTO", "OUTRO"], criterioOutro: "Portaria registra encomendas" },
+  interessado: { id: "i1", versao: 7 },
+  fatos: [{ id: "f9", versao: 1, sistema: "planilha e whatsapp", criterio: "CUSTO_APARTAMENTO", texto: "R$ 0,00", fonte: "FONTE-INTERNA: o síndico contou",
+            confirmadoEm: "2026-10-21" }],
   comparativo: {
     triade: { ciclo: "MENSAL", mensal: 20610, porApartamento: 286, implantacaoSemCusto: true, estimativa: true },
     sistemaAtual: { nome: "Planilha e WhatsApp", fidelidadeAte: "2027-03-01" },
     concorrentes: [
       { nome: "CondoApp", confirmado: true, planos: [{ plano: "Básico", modelo: "POR_UNIDADE", preco: 28800, porApartamento: 400, fonte: "site", lidoEm: "2026-10-01" }] },
       { nome: "Outro App", confirmado: false, planos: [] },
+    ],
+    colunas: [{ nome: "Planilha e WhatsApp", tipo: "SISTEMA_ATUAL" }, { nome: "CondoApp", tipo: "CONCORRENTE" }, { nome: "Outro App", tipo: "CONCORRENTE" }],
+    linhas: [
+      { criterio: "PEDIDO_COM_PRAZO", titulo: "Todo pedido com responsável e prazo", triade: "Sim: todo pedido tem responsável, prazo e conclusão explicada",
+        valores: [{ confirmado: false }, { confirmado: true, texto: "Só abertura de chamado" }, { confirmado: false }] },
+      { criterio: "CUSTO_APARTAMENTO", titulo: "Custo por apartamento por mês", triade: "R$ 2,86 por apartamento por mês (estimativa), sem custo de implantação",
+        valores: [{ confirmado: true, texto: "R$ 0,00" }, { confirmado: true, texto: "R$ 4,00 por apartamento (Básico: R$ 288,00 por mês)" }, { confirmado: false }] },
+      { criterio: "OUTRO", titulo: "Portaria registra encomendas", triade: "A equipe da TRÍADE responde este ponto com o conselho",
+        valores: [{ confirmado: false }, { confirmado: false }, { confirmado: false }] },
     ],
   },
   respostas: [{ tema: "LGPD", titulo: "LGPD", texto: "O condomínio controla os dados." }],
@@ -137,13 +152,34 @@ describe("os textos da proposta", () => {
 });
 
 describe("kit para o conselho (CM-20)", () => {
-  it("o comparativo só mostra o preço do concorrente conferido; o resto fica a confirmar", () => {
+  it("o comparativo tem uma linha por critério do síndico; o que não se confirmou fica a confirmar com eles (0307)", () => {
     const t = tabelaComparativo(KIT);
-    expect(t.cabecalho).toEqual(["Critério", "TRÍADE", "Planilha e WhatsApp", "CondoApp", "Outro App"]);
-    expect(t.linhas[0]).toEqual(["Mensalidade", "R$ 206,10 por mês", "a confirmar", "Básico: R$ 288,00 por mês", "a confirmar"]);
-    expect(t.linhas[1]).toEqual(["Custo por apartamento por mês", "R$ 2,86 (estimativa)", "a confirmar", "R$ 4,00", "a confirmar"]);
-    expect(t.linhas.find((l) => l[0] === "Fidelidade do contrato atual")).toEqual(["Fidelidade do contrato atual", "—", "até 01/03/2027", "—", "—"]);
+    expect(t.cabecalho).toEqual(["Critério do síndico", "TRÍADE", "Planilha e WhatsApp", "CondoApp", "Outro App"]);
+    expect(t.linhas.map((l) => l[0])).toEqual(["Todo pedido com responsável e prazo", "Custo por apartamento por mês", "Portaria registra encomendas"]);
+    expect(t.linhas[0]).toEqual(["Todo pedido com responsável e prazo", "Sim: todo pedido tem responsável, prazo e conclusão explicada", "a confirmar com eles",
+      "Só abertura de chamado", "a confirmar com eles"]);
+    expect(t.linhas[1]![1]).toBe("R$ 2,86 por apartamento por mês (estimativa), sem custo de implantação");
     expect(JSON.stringify(t)).not.toMatch(/retorno|ROI/i);
+  });
+
+  it("sem critérios marcados, o comparativo fica de fora e pede Escolher critérios", () => {
+    const sem = { ...KIT, comparativo: { ...KIT.comparativo, linhas: [] } };
+    expect(pecasDisponiveis(sem).COMPARATIVO).toMatch(/Escolher critérios/);
+    expect(tabelaComparativo(sem).linhas).toEqual([]);
+  });
+
+  it("o fato da célula é achado pelo nome do sistema sem acento nem espaço", () => {
+    expect(fatoDaCelula(KIT, "CUSTO_APARTAMENTO", "Planilha e WhatsApp")?.id).toBe("f9");
+    expect(fatoDaCelula(KIT, "PEDIDO_COM_PRAZO", "Planilha e WhatsApp")).toBeUndefined();
+  });
+
+  it("a apresentação curta abre com o problema do prédio; o PDF não leva a fonte dos fatos (CM-12)", () => {
+    const d = documentoKit(KIT, ["APRESENTACAO", "COMPARATIVO"]);
+    const pares = d.blocos.find((b) => b.tipo === "pares") as { linhas: [string, string][] };
+    expect(pares.linhas[1]).toEqual(["O problema do prédio", "Portaria sem registro e 3 vazamentos repetidos"]);
+    expect(JSON.stringify(d)).not.toContain("FONTE-INTERNA");
+    expect(nomeCriterio("OUTRO", "Portaria registra encomendas")).toBe("Portaria registra encomendas");
+    expect(nomeCriterio("COMO_CANCELAR")).toBe("Como cancelar");
   });
 
   it("as peças que dependem de resposta ou referência ficam de fora quando faltam", () => {

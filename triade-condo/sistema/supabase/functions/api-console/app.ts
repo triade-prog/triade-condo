@@ -8,6 +8,8 @@
 // entrada do site, que vem de fora do repasse e se protege com o segredo próprio do site.
 // Propostas (0304): sugestão pela tabela, versões, desconto, envio, link sem conta com aceite,
 // kit para o conselho, respostas prontas e referências.
+// Kit pelos critérios do síndico (0307): os critérios e o problema na ficha do prédio e os fatos
+// que a equipe confirmou sobre o sistema atual e os concorrentes.
 // Quem pode o quê é decidido no banco (funções internas e clientes atribuídos, PI-10); aqui
 // só se valida a entrada e se fala com o Auth para os convites.
 
@@ -79,10 +81,12 @@ import {
   cadenciaAcaoSchema,
   cadenciaComercialSchema,
   conversaComercialSchema,
+  criteriosInteressadoSchema,
   entradaSiteSchema,
   etapaInteressadoSchema,
   etapaParametrosSchema,
   ETAPAS_COMERCIAL,
+  fatoComparativoSchema,
   fichaInteressadoSchema,
   importarComercialSchema,
   mensagemComercialSchema,
@@ -98,6 +102,7 @@ import {
   referenciaComercialSchema,
   respostaComercialSchema,
   responderDescontoSchema,
+  retirarFatoSchema,
   retirarReferenciaSchema,
   revogarLinkSchema,
   salvarVersaoSchema,
@@ -1080,6 +1085,27 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
 
   // Kit para o conselho (CM-20): da versão enviada; nada interno.
   app.get("/v1/comercial/propostas/:id/kit", async (c) => c.json(await rpc("comercial_kit", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") })));
+
+  // Critérios do síndico (0307, CM-16): o "Escolher critérios" do kit grava na ficha do prédio.
+  app.put("/v1/comercial/interessados/:id/criterios", async (c) => {
+    const d = await lerCorpo(c, criteriosInteressadoSchema);
+    return c.json(await rpc("comercial_salvar_criterios", {
+      ...interessado(c), p_versao: d.versao, p_criterios: d.criterios, p_outro: d.criterioOutro, p_problema: d.problema,
+    }));
+  });
+
+  // Fatos do comparativo (0307): o que a equipe confirmou, por sistema e critério, com a fonte.
+  async function salvarFato(c: Context<VarsSessao>, id: string | null) {
+    const { versao, ...d } = await lerCorpo(c, fatoComparativoSchema);
+    if (id && !versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("comercial_salvar_fato", { p_pessoa: pessoa(c), p_id: id, p_versao: versao, p_dados: d });
+  }
+  app.post("/v1/comercial/fatos", async (c) => c.json(await salvarFato(c, null), 201));
+  app.put("/v1/comercial/fatos/:id", async (c) => c.json(await salvarFato(c, idDaRota(c, "id"))));
+  app.post("/v1/comercial/fatos/:id/retirar", async (c) => {
+    const d = await lerCorpo(c, retirarFatoSchema);
+    return c.json(await rpc("comercial_retirar_fato", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: d.versao }));
+  });
 
   // Versão nova (CM-07): a versão da proposta; a em andamento fica substituída.
   app.post("/v1/comercial/propostas/:id/versoes", async (c) => {

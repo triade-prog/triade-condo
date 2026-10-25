@@ -2,7 +2,8 @@
 // um por indicação sem aceite e um com a proposta vencida), as etapas, a equipe, as mensagens
 // prontas e uma cadência; e as propostas (R17.3): a sugestão pela tabela, as versões, o desconto
 // que só a Administração aprova, o envio com o link, o kit, as respostas prontas, as referências e
-// as rotas públicas do link com o aceite. As regras de verdade estão no banco (pgTAP 045 e 046) e
+// as rotas públicas do link com o aceite; e o kit pelos critérios do síndico (0307), com os fatos
+// que a equipe confirmou de cada sistema. As regras de verdade estão no banco (pgTAP 045 e 046) e
 // na API (Deno); aqui se confere a tela.
 import type { Route } from "@playwright/test";
 
@@ -49,7 +50,8 @@ export function criarComercialConsole() {
         proximoPasso: { texto: "Ligar para marcar a demonstração", data: hoje },
         tarefa: { situacao: "HOJE", tarefa: "PROXIMO_PASSO", quando: hoje }, atencao: false,
         baseLegal: { tipo: "LEGITIMO_INTERESSE", texto: "A pessoa procurou a TRÍADE ou aceitou o contato.", em: agora.toISOString() },
-        predio: { sistemaAtual: "Planilha e WhatsApp", decisaoEm: somarDias(hoje, 20) }, concorrentes: [{ nome: "CondoApp", preco: 28800 }, { nome: "Outro App" }],
+        predio: { sistemaAtual: "Planilha e WhatsApp", decisaoEm: somarDias(hoje, 20), criterios: ["CUSTO_APARTAMENTO", "COMO_CANCELAR"],
+          problema: "Pedidos de manutenção somem no grupo do WhatsApp" }, concorrentes: [{ nome: "CondoApp", preco: 28800 }, { nome: "Outro App" }],
       }),
       base(LAGO, {
         condominio: "Condomínio Lago Sul", cidade: "Brasília", uf: "DF", faixa: "DE_101_A_200", unidades: 150, pessoa: "Rita Gomes", origem: "INSTAGRAM", etapa: "PROPOSTA_ENVIADA",
@@ -65,6 +67,8 @@ export function criarComercialConsole() {
       terminaSemResposta: false, ativa: true, versao: 1, emUso: 1 }] as Json[],
     /** O que a tela mandou, para o teste conferir. */
     pedidos: [] as { caminho: string; corpo: Json }[],
+    /** Os fatos do comparativo (0307): a fonte é só da equipe. */
+    fatos: [] as Json[],
     ...criarPropostas(hoje),
   };
 }
@@ -152,7 +156,7 @@ export async function rotasComercialConsole(route: Route, p: ComercialConsole, c
   if (!caminho.startsWith("/v1/comercial")) return null;
   if (!pode.ver) return erro(route, 403, "FORBIDDEN");
   if (metodo !== "GET") p.pedidos.push({ caminho, corpo });
-  if (/^\/v1\/comercial\/(propostas|respostas|referencias)/.test(caminho)) return rotasPropostas(route, p, caminho, metodo, corpo, pode, url);
+  if (/^\/v1\/comercial\/(propostas|respostas|referencias|fatos)/.test(caminho)) return rotasPropostas(route, p, caminho, metodo, corpo, pode, url);
   if (metodo !== "GET" && !pode.editar) return erro(route, 403, "FORBIDDEN");
   const equipe = [CAROLINA];
   if (caminho === "/v1/comercial/interessados" && metodo === "GET") {
@@ -178,6 +182,16 @@ export async function rotasComercialConsole(route: Route, p: ComercialConsole, c
   if (i && !m![2] && metodo === "GET") {
     return route.fulfill({ json: { ...i, mensagens: p.mensagens.filter((x) => x.etapa === i.etapa), objecoesLista: [
       { codigo: "PRECO", texto: "Achou caro", resposta: "Mostre o preço por unidade." }], etapasLista: ETAPAS, equipe, podeEditar: pode.editar, podeExcluir: pode.modelos } });
+  }
+  if (i && m![2] === "/criterios" && metodo === "PUT") {
+    if (corpo.versao !== i.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: i.versao });
+    const marcados = CRITERIOS.map((c) => c[0]).filter((c) => ((corpo.criterios ?? []) as string[]).includes(c));
+    const outro = String(corpo.criterioOutro ?? "").trim();
+    if (marcados.includes("OUTRO") && outro.length < 2) return erro(route, 400, "VALIDATION_ERROR", { campos: ["criterioOutro"] });
+    if (String(corpo.problema ?? "").length > 300) return erro(route, 400, "VALIDATION_ERROR", { campos: ["problema"] });
+    Object.assign(i.predio as Json, { criterios: marcados, criterioOutro: marcados.includes("OUTRO") ? outro : undefined, problema: String(corpo.problema ?? "").trim() || undefined });
+    i.versao = Number(i.versao) + 1;
+    return route.fulfill({ json: { id: i.id, versao: i.versao } });
   }
   if (i && m![2] === "/etapa") {
     if (corpo.etapa === "DEMO_MARCADA" && !(i.predio as Json).demonstracaoEm) return erro(route, 400, "VALIDATION_ERROR", { motivo: "FALTA_PARA_ETAPA", campos: ["demonstracaoEm"] });
@@ -311,15 +325,56 @@ function propostaPublica(p: ComercialConsole, x: Proposta, v: Json): Json {
   };
 }
 
+/** A lista fechada dos critérios do síndico e o texto fixo da TRÍADE (comercial_criterios, 0307). */
+const CRITERIOS: [string, string, string | null][] = [
+  ["PEDIDO_COM_PRAZO", "Todo pedido com responsável e prazo", "Sim: todo pedido tem responsável, prazo e conclusão explicada"],
+  ["SEM_BAIXAR_APP", "Morador usa sem baixar app", "Sim: comunicados, documentos e mural do prédio abrem por link, sem baixar app; o WhatsApp oficial ainda é planejado"],
+  ["HISTORICO_PASSA", "Histórico que passa para o próximo síndico", "Sim: o histórico fica com o prédio e passa ao próximo síndico com o dossiê de passagem de bastão"],
+  ["CUSTO_APARTAMENTO", "Custo por apartamento por mês", null],
+  ["COMO_CANCELAR", "Como cancelar", "A TRÍADE propõe aviso de 30 dias, sem multa; vale o que estiver no contrato assinado"],
+  ["DEVOLUCAO_DADOS", "Devolução dos dados na saída", "Sim: o síndico exporta todo o histórico do prédio pela Plataforma, quando quiser"],
+  ["OUTRO", "Outro", "A equipe da TRÍADE responde este ponto com o conselho"],
+];
+const chave = (t: unknown) => String(t ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const reais = (c: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(c / 100).replace(/\u00a0/g, " ");
+
+function comparativoPorCriterios(p: ComercialConsole, i: Json, v: Json): Json {
+  const predio = (i.predio ?? {}) as Json;
+  const colunas: Json[] = [];
+  const junta = (nome: unknown, tipo: string) => { if (nome && !colunas.some((c) => chave(c.nome) === chave(nome))) colunas.push({ nome, tipo }); };
+  junta(predio.sistemaAtual, "SISTEMA_ATUAL");
+  for (const c of (i.concorrentes ?? []) as Json[]) junta(c.nome, "CONCORRENTE");
+  const marcados = (predio.criterios ?? []) as string[];
+  const linhas = CRITERIOS.filter(([c]) => marcados.includes(c)).map(([criterio, titulo, triade]) => ({
+    criterio, titulo: criterio === "OUTRO" ? predio.criterioOutro ?? titulo : titulo,
+    triade: triade ?? `${reais(Number(v.porApartamento))} por apartamento por mês (estimativa), ${v.implantacaoSemCusto ? "sem custo de implantação" : "implantação à parte"}`,
+    valores: colunas.map((col) => {
+      const f = p.fatos.find((y) => !y.retiradoEm && y.criterio === criterio && chave(y.sistema) === chave(col.nome) && (criterio !== "OUTRO" || y.interessadoId === i.id));
+      if (f) return { confirmado: true, texto: f.texto };
+      const c = ((i.concorrentes ?? []) as Json[]).find((y) => chave(y.nome) === chave(col.nome));
+      if (criterio === "CUSTO_APARTAMENTO" && c?.preco) {
+        return { confirmado: true, texto: `${reais(Math.round(Number(c.preco) / Number(i.unidades ?? 1)))} por apartamento (Básico: ${reais(Number(c.preco))} por mês)` };
+      }
+      return { confirmado: false };
+    }),
+  }));
+  return { colunas, linhas };
+}
+
 function kitDe(p: ComercialConsole, x: Proposta, v: Json): Json {
   const i = (p.interessados.find((y) => y.id === x.interessadoId) ?? {}) as Json;
   const predio = (i.predio ?? {}) as Json;
   const pub = propostaPublica(p, x, v);
   delete pub.aosCuidados; delete pub.podeAceitar; delete pub.aceite;
+  const sistemas = comparativoPorCriterios(p, i, v).colunas as Json[];
   return {
     propostaId: x.id, versaoId: v.id, proposta: pub,
     predio: { condominio: i.condominio, cidade: i.cidade, uf: i.uf, unidades: i.unidades, ...predio },
+    interessado: { id: i.id, versao: i.versao }, podeEditar: true,
+    fatos: p.fatos.filter((f) => !f.retiradoEm && sistemas.some((c) => chave(c.nome) === chave(f.sistema)) && (f.criterio !== "OUTRO" || f.interessadoId === i.id))
+      .map((f) => ({ id: f.id, versao: f.versao, sistema: f.sistema, criterio: f.criterio, texto: f.texto, fonte: f.fonte, confirmadoEm: f.confirmadoEm })),
     comparativo: {
+      ...comparativoPorCriterios(p, i, v),
       triade: { ciclo: v.ciclo, mensal: v.mensal, porApartamento: v.porApartamento, implantacaoSemCusto: v.implantacaoSemCusto, estimativa: true },
       ...(predio.sistemaAtual ? { sistemaAtual: { nome: predio.sistemaAtual, fidelidadeAte: predio.fidelidadeAte } } : {}),
       concorrentes: ((i.concorrentes ?? []) as Json[]).map((c) => c.preco
@@ -387,6 +442,30 @@ async function rotasPropostas(route: Route, p: ComercialConsole, caminho: string
     return route.fulfill({ status: 201, json: { id, versao: 1 } });
   }
 
+  // Fatos do comparativo (0307): a equipe comercial registra, muda e retira.
+  const mf = /^\/v1\/comercial\/fatos(?:\/([0-9a-f-]{36}))?(\/retirar)?$/.exec(caminho);
+  if (mf) {
+    if (!escreve) return erro(route, 404, "NOT_FOUND");
+    if (!pode.editar) return erro(route, 403, "FORBIDDEN");
+    const atual = mf[1] ? p.fatos.find((f) => f.id === mf[1]) : undefined;
+    if (mf[1] && !atual) return erro(route, 404, "NOT_FOUND");
+    if (atual && corpo.versao !== atual.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: atual.versao });
+    if (atual?.retiradoEm) return erro(route, 400, "VALIDATION_ERROR", { motivo: "FATO_RETIRADO" });
+    if (mf[2]) {
+      Object.assign(atual!, { retiradoEm: new Date().toISOString(), versao: Number(atual!.versao) + 1 });
+      return route.fulfill({ json: { id: atual!.id, versao: atual!.versao } });
+    }
+    const campos = [...(String(corpo.texto ?? "").trim().length < 2 ? ["texto"] : []), ...(String(corpo.fonte ?? "").trim().length < 3 ? ["fonte"] : [])];
+    if (campos.length) return erro(route, 400, "VALIDATION_ERROR", { campos });
+    const dados = { texto: String(corpo.texto).trim(), fonte: String(corpo.fonte).trim(), confirmadoEm: corpo.confirmadoEm ?? p.hoje };
+    if (atual) { Object.assign(atual, dados, { versao: Number(atual.versao) + 1 }); return route.fulfill({ json: { id: atual.id, versao: atual.versao } }); }
+    const igual = p.fatos.find((f) => !f.retiradoEm && f.criterio === corpo.criterio && chave(f.sistema) === chave(corpo.sistema)
+      && (corpo.criterio !== "OUTRO" || f.interessadoId === corpo.interessadoId));
+    if (igual) return erro(route, 400, "VALIDATION_ERROR", { motivo: "FATO_EXISTE", fatoId: igual.id });
+    const id = novoId("bb5f6071");
+    p.fatos.push({ id, sistema: corpo.sistema, criterio: corpo.criterio, interessadoId: corpo.criterio === "OUTRO" ? corpo.interessadoId : null, ...dados, versao: 1 });
+    return route.fulfill({ status: 201, json: { id, versao: 1 } });
+  }
   if (caminho === "/v1/comercial/propostas" && !escreve) {
     const interessado = url.searchParams.get("interessado");
     const itens = p.propostas.map((x) => itemLista(p, x as Proposta));
@@ -522,7 +601,7 @@ export async function rotasPublicasPropostas(route: Route, p: ComercialConsole, 
   }
   if (m[2] === "/kit") {
     const k = kitDe(p, x, v);
-    delete k.propostaId; delete k.versaoId; delete k.respostasDisponiveis;
+    delete k.propostaId; delete k.versaoId; delete k.respostasDisponiveis; delete k.interessado; delete k.fatos; delete k.podeEditar;
     return route.fulfill({ json: k });
   }
   if (m[2] === "/aceite" && metodo === "POST") {

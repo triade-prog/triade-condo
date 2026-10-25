@@ -2,20 +2,23 @@
 // Kit para o conselho e a assembleia (quadro 337, CM-20, CM-19, CM-27 e CM-28): sai da versão
 // enviada, da ficha do prédio, dos concorrentes da ficha e das respostas prontas. A equipe escolhe
 // as peças e baixa um PDF só; o síndico baixa o kit inteiro pelo link da proposta. O comparativo
-// só traz o que a equipe confirmou na Tabela de preços; o resto fica "a confirmar" (EM-07, L.1).
+// (0307) tem uma linha por critério que o síndico marcou: a TRÍADE com texto fixo (EM-07) e, nas
+// outras colunas, o fato que a equipe confirmou; o resto fica "a confirmar com eles". "Escolher
+// critérios" grava na ficha do prédio, com o problema do prédio que abre a apresentação.
 // Mandar pelo WhatsApp gera um link novo da proposta (o código só aparece uma vez) e registra a
 // conversa.
 
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { TEXTO_COMPARATIVO } from "@triade/domain";
+import { TEXTO_A_CONFIRMAR, TEXTO_COMPARATIVO, type CriterioSindico } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, textoDoErro, Vazio } from "@triade/ui";
 import { Cartao, Voltar } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import { ROTAS_COMERCIAL } from "./comum.tsx";
+import { JanelaCriterios, JanelaFato } from "./janelasKit.tsx";
 import { JanelaMandarWhatsapp } from "./janelasPropostas.tsx";
 import {
-  documentoKit, enderecoDoLink, mensagemDoLink, ORDEM_PECAS, PECAS_KIT, pecasDisponiveis, ROTAS_PROPOSTAS, subtituloReferencias, tabelaComparativo, TELAS_PROPOSTAS,
+  documentoKit, enderecoDoLink, fatoDaCelula, mensagemDoLink, ORDEM_PECAS, PECAS_KIT, pecasDisponiveis, ROTAS_PROPOSTAS, subtituloReferencias, TELAS_PROPOSTAS,
   type FichaProposta, type Kit, type PecaKit,
 } from "./propostas.ts";
 import type { FichaInteressado } from "./tipos.ts";
@@ -30,6 +33,7 @@ export function KitConselho() {
   const [fazendo, setFazendo] = useState<"pdf" | "link" | null>(null);
   const [aviso, setAviso] = useState<{ tom: "ok" | "erro"; texto: string } | null>(null);
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [janela, setJanela] = useState<{ tipo: "criterios" } | { tipo: "fato"; criterio: CriterioSindico; titulo: string; sistema: string } | null>(null);
 
   const voltar = <Voltar href={TELAS_PROPOSTAS.lista(id)} texto={f?.interessado.condominio ?? "Voltar à proposta"} />;
   if (kit.estado === "carregando") return <div className="grid gap-4">{voltar}<Carregando rotulo="Montando o kit…" /></div>;
@@ -47,7 +51,10 @@ export function KitConselho() {
   const k = kit.dados;
   const falta = pecasDisponiveis(k);
   const escolhidas = ORDEM_PECAS.filter((p) => !fora.includes(p) && falta[p] === null);
-  const comp = tabelaComparativo(k);
+  const colunas = k.comparativo.colunas ?? [];
+  const linhas = k.comparativo.linhas ?? [];
+  const edita = !!(k.podeEditar ?? f?.podeEditar) && !!k.interessado;
+  const pronto = (texto: string) => { setJanela(null); setAviso({ tom: "ok", texto }); kit.recarregar(); interessado.recarregar(); };
 
   async function pdf() {
     setAviso(null);
@@ -99,7 +106,9 @@ export function KitConselho() {
             {ORDEM_PECAS.map((p) => {
               const motivo = falta[p];
               const apoio = p === "PROPOSTA" ? `A versão enviada (v${k.proposta.numero}), com a impressão digital`
-                : p === "REFERENCIAS" && k.referencias.length ? subtituloReferencias(k.referencias.length) : PECAS_KIT[p].apoio;
+                : p === "REFERENCIAS" && k.referencias.length ? subtituloReferencias(k.referencias.length)
+                : p === "APRESENTACAO" ? (k.predio.problema ? `Abre com o problema do prédio: ${k.predio.problema}` : `${PECAS_KIT[p].apoio}. Sem o problema do prédio: escreva em Escolher critérios.`)
+                : PECAS_KIT[p].apoio;
               return (
                 <label key={p} className={`flex gap-3 border-t border-linha py-3 first:border-t-0 ${motivo ? "cursor-not-allowed" : "cursor-pointer"}`}>
                   <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-violeta-600" checked={!fora.includes(p) && !motivo} disabled={!!motivo}
@@ -114,24 +123,51 @@ export function KitConselho() {
           </fieldset>
         </Cartao>
 
-        <Cartao id="kit-comparativo" titulo="Comparativo" icone="grafico">
-          <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label="Comparativo, role para o lado">
-            <table className="w-full border-collapse">
-              <caption className="sr-only">Comparativo para o conselho</caption>
-              <thead>
-                <tr>{comp.cabecalho.map((c) => <th key={c} scope="col" className="border-b border-linha bg-superficie-2 px-3 py-2.5 text-left t-rotulo font-semibold">{c}</th>)}</tr>
-              </thead>
-              <tbody>
-                {comp.linhas.map((l) => (
-                  <tr key={l[0]}>
-                    {l.map((c, i) => i === 0
-                      ? <th key={i} scope="row" className="border-b border-linha px-3 py-2.5 text-left align-top t-texto font-medium">{c}</th>
-                      : <td key={i} className={`border-b border-linha px-3 py-2.5 align-top t-texto ${c === "a confirmar" ? "text-tinta-suave" : ""}`}>{c}</td>)}
+        <Cartao id="kit-comparativo" titulo="Comparativo" icone="grafico"
+          acao={edita ? <Botao variante="discreto" onClick={() => setJanela({ tipo: "criterios" })}><Icone nome="editar" />Escolher critérios</Botao> : undefined}>
+          {linhas.length ? (
+            <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label="Comparativo, role para o lado">
+              <table className="w-full min-w-[560px] border-collapse">
+                <caption className="sr-only">Comparativo para o conselho</caption>
+                <thead>
+                  <tr>
+                    {["Critério do síndico", "TRÍADE", ...colunas.map((c) => c.nome)].map((c) => (
+                      <th key={c} scope="col" className="border-b border-linha bg-superficie-2 px-3 py-2.5 text-left t-rotulo font-semibold">{c}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {linhas.map((l) => (
+                    <tr key={l.criterio}>
+                      <th scope="row" className="border-b border-linha px-3 py-2.5 text-left align-top t-texto font-medium">{l.titulo}</th>
+                      <td className="border-b border-linha px-3 py-2.5 align-top t-texto">{l.triade}</td>
+                      {colunas.map((c, n) => {
+                        const v = l.valores[n];
+                        const fato = fatoDaCelula(k, l.criterio, c.nome);
+                        return (
+                          <td key={c.nome} className="border-b border-linha px-3 py-2.5 align-top t-texto">
+                            <span className={v?.confirmado ? "" : "text-tinta-suave"}>{v?.confirmado && v.texto ? v.texto : TEXTO_A_CONFIRMAR}</span>
+                            {edita ? (
+                              <Botao variante="discreto" tamanho="m" className="mt-1"
+                                aria-label={`${fato ? "Mudar" : "Registrar"} o fato: ${c.nome}, ${l.titulo}`}
+                                onClick={() => setJanela({ tipo: "fato", criterio: l.criterio, titulo: l.titulo, sistema: c.nome })}>
+                                <Icone nome={fato ? "editar" : "mais"} className="h-4 w-4" />{fato ? "Mudar" : "Registrar"}
+                              </Botao>
+                            ) : null}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <Vazio titulo="Sem critérios do síndico" icone="lista">
+              {edita ? "Marque o que o síndico quer comparar em Escolher critérios: cada critério vira uma linha." : "A equipe do Comercial marca os critérios que o síndico escolheu na visita."}
+            </Vazio>
+          )}
+          {linhas.length && !colunas.length ? <p className="t-apoio">Sem sistema atual nem concorrentes na ficha: o comparativo mostra só a TRÍADE.</p> : null}
           <p className="t-apoio">{TEXTO_COMPARATIVO}</p>
         </Cartao>
       </div>
@@ -143,6 +179,15 @@ export function KitConselho() {
         </p>
       ) : null}
 
+      {janela?.tipo === "criterios" && k.interessado ? (
+        <JanelaCriterios interessado={interessado.estado === "pronto" ? { id: interessado.dados.id, versao: interessado.dados.versao } : k.interessado}
+          inicial={{ criterios: k.predio.criterios ?? [], criterioOutro: k.predio.criterioOutro ?? "", problema: k.predio.problema ?? "" }}
+          aoFechar={() => setJanela(null)} feito={() => pronto("Critérios salvos na ficha do prédio.")} />
+      ) : null}
+      {janela?.tipo === "fato" && k.interessado ? (
+        <JanelaFato sistema={janela.sistema} criterio={janela.criterio} nomeCriterio={janela.titulo} interessadoId={k.interessado.id}
+          fato={fatoDaCelula(k, janela.criterio, janela.sistema)} aoFechar={() => setJanela(null)} feito={pronto} />
+      ) : null}
       {mensagem ? (
         <JanelaMandarWhatsapp interessado={interessado.estado === "pronto" ? interessado.dados : null} texto={mensagem} aoFechar={() => setMensagem(null)}
           feito={() => { setMensagem(null); setAviso({ tom: "ok", texto: "Conversa registrada na ficha." }); }} />

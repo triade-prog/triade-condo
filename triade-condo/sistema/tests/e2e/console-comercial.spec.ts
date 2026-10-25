@@ -93,6 +93,9 @@ test.describe("Console · Comercial", () => {
     await expect(page.getByRole("button", { name: "Abrir no WhatsApp" })).toBeDisabled();
     await expect(page.getByText("Sem o aceite de mensagens pelo WhatsApp")).toBeVisible();
     await expect(page.getByText("Origem: Indicação")).toBeVisible();
+    // Os critérios do síndico e o problema do prédio (0307) ficam no cartão do prédio.
+    await expect(page.getByText("Custo por apartamento por mês · Como cancelar")).toBeVisible();
+    await expect(page.getByText("Pedidos de manutenção somem no grupo do WhatsApp")).toBeVisible();
     await conferir(page);
   });
 

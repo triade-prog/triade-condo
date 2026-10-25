@@ -5,8 +5,9 @@
 // copiam o que pode sair: nota interna, pedido de desconto e IP do aceite nunca saem (CM-12).
 
 import {
-  mostrarDataSemHora, mostrarValor, OFERTA_INCLUIDO, OFERTA_PLANEJADO, SITUACOES_PROPOSTA, TEMAS_RESPOSTA, TEXTO_COMPARATIVO, TEXTO_CUSTO_APARTAMENTO,
-  TEXTO_PLANEJADO, type AbaProposta, type EscopoReferencia, type EtapaComercial, type SituacaoDesconto, type SituacaoProposta, type TemaResposta,
+  CRITERIOS_SINDICO, mostrarDataSemHora, mostrarValor, OFERTA_INCLUIDO, OFERTA_PLANEJADO, SITUACOES_PROPOSTA, TEMAS_RESPOSTA, TEXTO_A_CONFIRMAR, TEXTO_COMPARATIVO,
+  TEXTO_CUSTO_APARTAMENTO, TEXTO_PLANEJADO, type AbaProposta, type CriterioSindico, type EscopoReferencia, type EtapaComercial, type SituacaoDesconto,
+  type SituacaoProposta, type TemaResposta,
 } from "@triade/domain";
 
 export type Ciclo = "MENSAL" | "ANUAL";
@@ -31,6 +32,9 @@ export const ROTAS_PROPOSTAS = {
   versao: (id: string, v: string) => `/v1/comercial/propostas/${id}/versoes/${v}`,
   acao: (id: string, v: string, acao: "desconto/pedir" | "desconto/aprovar" | "desconto/recusar" | "enviar" | "link" | "revogar" | "recusada") =>
     `/v1/comercial/propostas/${id}/versoes/${v}/${acao}`,
+  criterios: (interessado: string) => `/v1/comercial/interessados/${interessado}/criterios`,
+  fatos: (id?: string) => (id ? `/v1/comercial/fatos/${id}` : "/v1/comercial/fatos"),
+  retirarFato: (id: string) => `/v1/comercial/fatos/${id}/retirar`,
   respostas: (id?: string) => (id ? `/v1/comercial/respostas/${id}` : "/v1/comercial/respostas"),
   referencias: (id?: string) => (id ? `/v1/comercial/referencias/${id}` : "/v1/comercial/referencias"),
   retirarReferencia: (id: string) => `/v1/comercial/referencias/${id}/retirar`,
@@ -200,6 +204,20 @@ export interface PropostaPublica extends Condicoes {
 
 export interface PlanoConcorrente { plano?: string; modelo?: string; preco?: number; porApartamento?: number; fonte?: string; lidoEm?: string }
 
+/** Uma linha do comparativo pelos critérios do síndico (0307): a TRÍADE com texto fixo; o resto, o fato confirmado. */
+export interface LinhaComparativo {
+  criterio: CriterioSindico;
+  titulo: string;
+  triade: string;
+  /** Uma por coluna, na ordem de colunas. */
+  valores: { confirmado: boolean; texto?: string }[];
+}
+
+/** O fato por trás de uma célula, só no kit do Console: a fonte e quem registrou não vão para o link. */
+export interface FatoComparativo {
+  id: string; versao: number; sistema: string; criterio: CriterioSindico; texto: string; fonte: string; confirmadoEm: string; por?: PessoaRef; em?: string;
+}
+
 export interface Kit {
   propostaId?: string;
   versaoId?: string;
@@ -207,16 +225,27 @@ export interface Kit {
   predio: {
     condominio: string; cidade?: string; uf?: string; unidades?: number; administradora?: string; appAdministradora?: string | boolean; sistemaAtual?: string;
     fidelidadeAte?: string; assembleiaOrdinaria?: string; mandatoAte?: string; decisaoEm?: string;
+    /** O problema do prédio, em texto curto (0307), para a apresentação. */
+    problema?: string;
+    criterios?: CriterioSindico[];
+    criterioOutro?: string;
   };
   comparativo: {
     triade: { ciclo: Ciclo; mensal?: number; porApartamento?: number; implantacaoSemCusto?: boolean; estimativa?: boolean };
     sistemaAtual?: { nome?: string; fidelidadeAte?: string };
     concorrentes: { nome: string; confirmado: boolean; planos: PlanoConcorrente[] }[];
+    /** As colunas: o sistema atual e os concorrentes da ficha (0307). */
+    colunas?: { nome: string; tipo: "SISTEMA_ATUAL" | "CONCORRENTE" }[];
+    linhas?: LinhaComparativo[];
   };
   respostas: RespostaNaVersao[];
   referencias: ReferenciaNaVersao[];
   oferta?: { incluido: string[]; planejado: string[] };
   respostasDisponiveis?: { id: string; tema: TemaResposta; titulo: string }[];
+  /** Só no Console: o interessado (para o Escolher critérios) e os fatos com a fonte. */
+  interessado?: { id: string; versao: number };
+  fatos?: FatoComparativo[];
+  podeEditar?: boolean;
 }
 
 export interface RespostaPronta {
@@ -523,8 +552,8 @@ export function documentoProposta(c: ConteudoSindico): Documento {
 // Kit para o conselho e a assembleia (CM-20, quadro 337).
 
 export const PECAS_KIT = {
-  APRESENTACAO: { titulo: "Apresentação curta", apoio: "Para quem é, o que já funciona, o que é planejado, quanto custa por apartamento e como cancelar" },
-  COMPARATIVO: { titulo: "Comparativo para o conselho", apoio: "TRÍADE, sistema atual e concorrentes da ficha, só com fatos confirmados" },
+  APRESENTACAO: { titulo: "Apresentação curta", apoio: "O problema do prédio, o que já funciona, o que é planejado, quanto custa por apartamento e como cancelar" },
+  COMPARATIVO: { titulo: "Comparativo para o conselho", apoio: "TRÍADE, sistema atual e concorrentes, pelos critérios que o síndico marcou" },
   PROPOSTA: { titulo: "Proposta em PDF", apoio: "A versão enviada, com a impressão digital" },
   ATA: { titulo: "Minuta de texto para a ata", apoio: "Para a pauta: contratação da plataforma, valor e prazo" },
   PRIVACIDADE: { titulo: "Privacidade para o morador", apoio: "Que dados a plataforma guarda e para quê" },
@@ -539,7 +568,8 @@ const respostaDoTema = (k: Kit, tema: TemaResposta) => k.respostas.find((r) => r
 /** As peças que dá para montar com os dados do kit, e por que as outras não. */
 export function pecasDisponiveis(k: Kit): Record<PecaKit, string | null> {
   return {
-    APRESENTACAO: null, COMPARATIVO: null, PROPOSTA: null, ATA: null,
+    APRESENTACAO: null, PROPOSTA: null, ATA: null,
+    COMPARATIVO: k.comparativo.linhas?.length ? null : "O síndico ainda não tem critérios marcados. Use Escolher critérios.",
     PRIVACIDADE: respostaDoTema(k, "LGPD") ? null : "Precisa da resposta pronta de LGPD revisada e escolhida na proposta.",
     RESPOSTAS: k.respostas.some((r) => r.texto) ? null : "Nenhuma resposta pronta na versão enviada.",
     REFERENCIAS: k.referencias.length ? null : "Nenhuma referência autorizada na versão enviada.",
@@ -551,27 +581,27 @@ export function subtituloReferencias(n: number) {
   return n === 1 ? "1 síndico que aceitou ser contato (CM-28)" : `${n} síndicos que aceitaram ser contato (CM-28)`;
 }
 
-/** A tabela do comparativo: o que não se sabe fica "a confirmar"; nada de retorno prometido (EM-07). */
+/** O título do critério, para a tela: o "outro" vem com o texto da ficha. */
+export const nomeCriterio = (c: CriterioSindico, outro?: string) => (c === "OUTRO" && outro ? outro : CRITERIOS_SINDICO[c] ?? c);
+
+/**
+ * A tabela do comparativo (quadro 337, 0307): uma linha por critério que o síndico marcou. A coluna
+ * da TRÍADE vem com o texto fixo do banco (EM-07); nas outras, o fato que a equipe confirmou, e o
+ * que não se sabe fica "a confirmar com eles". Nada de retorno prometido. A mesma tabela vai para a
+ * tela, para o PDF do Console e para o kit pelo link.
+ */
 export function tabelaComparativo(k: Kit): { cabecalho: string[]; linhas: string[][] } {
-  const t = k.comparativo.triade;
-  const atual = k.comparativo.sistemaAtual?.nome ? k.comparativo.sistemaAtual : undefined;
-  const concs = k.comparativo.concorrentes;
-  const cabecalho = ["Critério", "TRÍADE", ...(atual ? [atual.nome!] : []), ...concs.map((c) => c.nome)];
-  const A = "a confirmar";
-  const precoConc = (c: (typeof concs)[number]) => (c.confirmado && c.planos.length
-    ? c.planos.map((p) => `${p.plano ? `${p.plano}: ` : ""}${p.preco !== undefined ? `${brl(p.preco)} por mês` : A}`).join("; ") : A);
-  const apConc = (c: (typeof concs)[number]) => (c.confirmado && c.planos.some((p) => p.porApartamento !== undefined)
-    ? c.planos.filter((p) => p.porApartamento !== undefined).map((p) => brl(p.porApartamento)).join("; ") : A);
-  const fonteConc = (c: (typeof concs)[number]) => (c.confirmado && c.planos.length
-    ? c.planos.map((p) => [p.fonte, p.lidoEm ? `lido em ${dataCurta(p.lidoEm)}` : null].filter(Boolean).join(", ")).join("; ") || A : A);
-  const linhas: string[][] = [
-    ["Mensalidade", `${brl(t.mensal)} por mês${t.ciclo === "ANUAL" ? " (anual)" : ""}`, ...(atual ? [A] : []), ...concs.map(precoConc)],
-    ["Custo por apartamento por mês", t.porApartamento !== undefined ? `${brl(t.porApartamento)} (estimativa)` : A, ...(atual ? [A] : []), ...concs.map(apConc)],
-    ["Implantação", t.implantacaoSemCusto ? "Sem custo" : (textoImplantacao(k.proposta) ?? A), ...(atual ? [A] : []), ...concs.map(() => A)],
-  ];
-  if (atual) linhas.push(["Fidelidade do contrato atual", "—", atual.fidelidadeAte ? `até ${dataCurta(atual.fidelidadeAte)}` : A, ...concs.map(() => "—")]);
-  if (concs.length) linhas.push(["De onde veio o preço", "Tabela de preços da TRÍADE", ...(atual ? ["—"] : []), ...concs.map(fonteConc)]);
-  return { cabecalho, linhas };
+  const colunas = k.comparativo.colunas ?? [];
+  const linhas = (k.comparativo.linhas ?? []).map((l) => [
+    l.titulo, l.triade, ...colunas.map((_, n) => (l.valores[n]?.confirmado && l.valores[n]?.texto ? l.valores[n]!.texto! : TEXTO_A_CONFIRMAR)),
+  ]);
+  return { cabecalho: ["Critério do síndico", "TRÍADE", ...colunas.map((c) => c.nome)], linhas };
+}
+
+/** O fato da equipe por trás da célula, para mudar ou retirar (só no Console). */
+export function fatoDaCelula(k: Kit, criterio: CriterioSindico, sistema: string): FatoComparativo | undefined {
+  const chave = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return k.fatos?.find((f) => f.criterio === criterio && chave(f.sistema) === chave(sistema));
 }
 
 /** A minuta para a ata: o item da pauta e o texto sugerido, com os valores da versão enviada. */
@@ -601,6 +631,7 @@ export function documentoKit(k: Kit, pecas: PecaKit[]): Documento {
     b.push({ tipo: "secao", texto: PECAS_KIT.APRESENTACAO.titulo });
     b.push({ tipo: "pares", linhas: [
       ["Para", [k.predio.condominio, ondeFica(k.predio), k.predio.unidades ? `${k.predio.unidades} unidades` : null].filter(Boolean).join(" · ")],
+      ...(k.predio.problema ? [["O problema do prédio", k.predio.problema] as [string, string]] : []),
       ...(k.predio.sistemaAtual ? [["Hoje usa", k.predio.sistemaAtual] as [string, string]] : []),
       ["Quanto custa", `${brl(p.mensal)} por mês${p.porApartamento !== undefined ? `, cerca de ${brl(p.porApartamento)} por apartamento (estimativa)` : ""}`],
     ] });

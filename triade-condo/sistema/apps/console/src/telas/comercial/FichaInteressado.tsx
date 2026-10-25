@@ -1,7 +1,8 @@
 "use client";
 // Ficha do interessado (quadros 323 e 324, aprovados em 24/10/2026): a barra das etapas, as
 // mensagens prontas da etapa, as conversas, o próximo passo, a cadência, o prédio, as objeções e os
-// concorrentes e o contato com a base legal. ?etapa=X chega do quadro quando falta algo para a
+// concorrentes e o contato com a base legal. O prédio traz também os critérios que o síndico
+// marcou na visita e o problema do prédio (0307), que alimentam o kit para o conselho. ?etapa=X chega do quadro quando falta algo para a
 // etapa; ?juntado=1 chega do Novo interessado quando o contato já existia. O cartão Proposta leva à
 // proposta do interessado ou abre a nova (R17.3, quadro 325).
 
@@ -14,7 +15,7 @@ import { Cartao, Dado, diaHora, LinhaDoTempo, MenuAcoes, plural, Voltar, type It
 import { useCarregar } from "../sessao.tsx";
 import { iconeCanal, nomeCanal, nomeEtapa, nomeFaixa, nomeOrigem, quandoCurto, ROTAS_COMERCIAL, SeloEtapa, SelosAtencao, textoTarefa, TOM_SITUACAO } from "./comum.tsx";
 import { JanelaConfirmar, JanelaConversa, JanelaFicha, JanelaPerdido, JanelaProximoPasso } from "./janelas.tsx";
-import { ROTAS_PROPOSTAS, resumoVersao, TELAS_PROPOSTAS, textoAberturas, textoSituacao, TOM_SITUACAO_PROPOSTA, type ListaPropostas } from "./propostas.ts";
+import { nomeCriterio, ROTAS_PROPOSTAS, resumoVersao, TELAS_PROPOSTAS, textoAberturas, textoSituacao, TOM_SITUACAO_PROPOSTA, type ListaPropostas } from "./propostas.ts";
 import type { FichaInteressado as Ficha } from "./tipos.ts";
 
 type Janela =
@@ -270,6 +271,11 @@ export function FichaInteressado() {
             {f.predio.mandatoAte ? <Dado icone="calendario" nome="Mandato do síndico até">{data(f.predio.mandatoAte)}</Dado> : null}
             {f.predio.demonstracaoEm ? <Dado icone="calendario" nome="Demonstração">{diaHora(f.predio.demonstracaoEm)}</Dado> : null}
             {f.predio.visitaEm ? <Dado icone="predio" nome="Visita">{`${data(f.predio.visitaEm)}${f.predio.visitaNota ? ` · ${f.predio.visitaNota}` : ""}`}</Dado> : null}
+            <Dado icone="alerta" nome="Problema do prédio">{f.predio.problema ?? "Não informado"}</Dado>
+            <Dado icone="check" nome="Critérios do síndico">
+              {f.predio.criterios?.length ? f.predio.criterios.map((c) => nomeCriterio(c, f.predio.criterioOutro)).join(" · ")
+                : "Nenhum marcado. Eles viram as linhas do comparativo do kit."}
+            </Dado>
             {f.observacao ? <Dado icone="balao" nome="Observação">{f.observacao}</Dado> : null}
           </Cartao>
           <Cartao id="ficha-7" titulo="Objeções e concorrentes" icone="alerta">
