@@ -1,6 +1,7 @@
 // Conteúdo das telas de exemplo e das páginas Plataforma e Soluções (telas aprovadas em 23/10/2026).
 // EM-07: só entra como pronto o que o sistema já faz. Financeiro, portaria, orçamentos, IA,
 // relatório do mês e dossiê ficam de fora até ficarem prontos.
+import type { NomeIcone } from "./icones";
 
 /** Protocolo do pedido de exemplo, no formato do sistema. */
 export const protocolo = "2026-0412";
@@ -49,30 +50,28 @@ export const conversa: Record<Etapa, Mensagem[]> = {
   4: [{ lado: "cond", texto: atualizacao, hora: "sex 11:52" }, { lado: "dia", texto: "Segunda-feira" }, { lado: "cond", texto: "Concluído: trocado o registro da coluna 3. Como foi o atendimento, de 1 a 5?", hora: "10:05" }, { lado: "eu", texto: "5. Obrigada!", hora: "10:20", nova: true }],
 };
 
-/** Página Plataforma: os quatro blocos com o que já está pronto. */
-export const plataforma: { id: string; titulo: string; itens: { titulo: string; texto: string }[] }[] = [
-  { id: "atendimento", titulo: "Atendimento", itens: [
-    { titulo: "Pedidos com protocolo", texto: "Do WhatsApp ao painel, com número e prazo" },
-    { titulo: "Responsável e próximo retorno", texto: "O morador sabe quem cuida e quando terá notícia" },
-    { titulo: "Escalonamento e reabertura", texto: "Prazo vencido sobe; pedido mal resolvido volta" },
-    { titulo: "QR Code por local", texto: "Elevador, garagem e piscina abrem pedido no lugar certo" },
+/** Página Plataforma: as quatro partes (desenho aprovado em 25/10/2026), com o que já está pronto. */
+export const plataforma: { id: "atendimento" | "comunicacao" | "operacoes" | "indicadores"; olho: string; titulo: string; destaque: string; lead: string; itens: { icone: NomeIcone; titulo: string; texto: string }[] }[] = [
+  { id: "atendimento", olho: "Atendimento", titulo: "Do WhatsApp ao pedido", destaque: "acompanhado", lead: "Cada pedido com número, responsável e a data da próxima notícia ao morador.", itens: [
+    { icone: "pedido", titulo: "Pedidos com número", texto: "O morador escreve no WhatsApp do condomínio e recebe o número do pedido na hora." },
+    { icone: "pessoa", titulo: "Responsável e próximo retorno", texto: "O morador sabe quem cuida e quando terá notícia." },
+    { icone: "reabrir", titulo: "Escalonamento e reabertura", texto: "Retorno vencido avisa o síndico; pedido mal resolvido volta com motivo." },
   ] },
-  { id: "comunicacao", titulo: "Comunicação", itens: [
-    { titulo: "Comunicados com leitura", texto: "Para quem precisa ler, com confirmação" },
-    { titulo: "Mural online", texto: "Link e QR Code, sem conta e sem dados pessoais" },
-    { titulo: "Documentos com versões", texto: "Regimento, atas e contratos sempre na versão certa" },
-    { titulo: "Assembleia e votação", texto: "Pauta, convite e resultado registrados" },
+  { id: "comunicacao", olho: "Comunicação", titulo: "Informação que", destaque: "chega aos moradores", lead: "Comunicados, documentos e assembleias no mesmo lugar, e você vê quem abriu.", itens: [
+    { icone: "megafone", titulo: "Comunicados com aberturas", texto: "Pelo WhatsApp, e-mail e mural, com quantas unidades abriram o link." },
+    { icone: "doc", titulo: "Documentos com versões", texto: "Regimento, atas e contratos sempre na versão certa." },
+    { icone: "voto", titulo: "Assembleia e votação", texto: "Pauta, convite e resultado registrados." },
   ] },
-  { id: "operacoes", titulo: "Operações", itens: [
-    { titulo: "Manutenção preventiva", texto: "Plano e calendário pela NBR 5674" },
-    { titulo: "Prontuário do prédio", texto: "Equipamentos, laudos e histórico" },
-    { titulo: "Prestadores", texto: "Check-in por QR e relato da visita por link" },
-    { titulo: "Reservas e agenda", texto: "Áreas comuns com limite e regras" },
+  { id: "operacoes", olho: "Operações", titulo: "A rotina do prédio", destaque: "sob controle", lead: "Manutenções, prestadores e reservas com responsável e prazo.", itens: [
+    { icone: "chave", titulo: "Manutenção preventiva", texto: "Plano e calendário pela NBR 5674, com aviso antes de vencer." },
+    { icone: "pasta", titulo: "Prontuário do prédio", texto: "Equipamentos, laudos e o histórico de cada um." },
+    { icone: "equipe", titulo: "Prestadores", texto: "Check-in por QR Code e relato da visita por link, sem cadastro." },
+    { icone: "agenda", titulo: "Reservas e agenda", texto: "Áreas comuns com limite e regras, na mesma agenda." },
   ] },
-  { id: "indicadores", titulo: "Indicadores", itens: [
-    { titulo: "Agora", texto: "O que vence hoje e o que está parado" },
-    { titulo: "Por período", texto: "Pedidos, prazos e avaliações para a assembleia" },
-    { titulo: "Moradores e unidades", texto: "Vínculo verificado com cada unidade" },
+  { id: "indicadores", olho: "Indicadores", titulo: "Os números do prédio", destaque: "para a assembleia", lead: "O que está aberto hoje e como foi o período, com a base de cada número.", itens: [
+    { icone: "relogio", titulo: "Agora", texto: "O que vence hoje e o que está parado." },
+    { icone: "grafico", titulo: "Por período", texto: "Pedidos, prazos e avaliações, comparados ao período anterior." },
+    { icone: "casa", titulo: "Moradores e unidades", texto: "Vínculo verificado com cada unidade." },
   ] },
 ];
 
@@ -86,7 +85,7 @@ export const perfis: { id: "morador" | "profissional" | "conselho" | "portaria";
 
 /** Soluções por tamanho de condomínio. O destaque do título é a parte em `destaque`. */
 export const tamanhos = [
-  { id: "ate-40", nome: "Até 40 unidades", titulo: "Prédio pequeno, síndico", destaque: "sem tempo a perder", itens: ["Pedidos pelo WhatsApp com protocolo e prazo", "Mural online por link e QR Code", "Comunicados com confirmação de leitura", "Manutenção preventiva com lembretes"] },
+  { id: "ate-40", nome: "Até 40 unidades", titulo: "Prédio pequeno, síndico", destaque: "sem tempo a perder", itens: ["Pedidos pelo WhatsApp com protocolo e prazo", "Mural online por link e QR Code", "Comunicados com as aberturas do link", "Manutenção preventiva com lembretes"] },
   { id: "41-100", nome: "41 a 100 unidades", titulo: "Mais moradores,", destaque: "o mesmo síndico", itens: ["Responsável e próximo retorno em cada pedido", "Escalonamento quando o prazo vence", "Reservas de áreas comuns com limite", "Prestadores com check-in por QR Code"] },
   { id: "101-200", nome: "101 a 200 unidades", titulo: "Uma equipe", destaque: "na mesma fila", itens: ["Acesso por papel para subsíndico, conselho e zeladoria", "QR Code por local para abrir pedidos", "Prontuário do prédio com laudos e equipamentos", "Indicadores por período para a assembleia"] },
   { id: "mais-200", nome: "Mais de 200 unidades", titulo: "Muitos blocos,", destaque: "uma história só", itens: ["Assembleia e votação registradas", "Documentos com versões", "Vários responsáveis por tipo de pedido", "Acima de 400 unidades, valor sob consulta"] },

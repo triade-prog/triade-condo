@@ -1,30 +1,13 @@
 ---
 import Base from "../layouts/Base.astro";
-import BarraPainel from "../components/BarraPainel.astro";
 import CenaPedido from "../components/CenaPedido.astro";
 import Destaque from "../components/Destaque.astro";
 import FaixaFinal from "../components/FaixaFinal.astro";
 import InicioPainel from "../components/InicioPainel.astro";
+import Olho from "../components/Olho.astro";
+import TelaModulo from "../components/TelaModulo.astro";
+import { icones } from "../dados/icones";
 import { plataforma } from "../dados/vitrine";
-
-// Telas de exemplo de Comunicação, Operações e Indicadores (dados ilustrativos).
-const exemplos: Record<string, { titulo: string; linhas: { titulo: string; detalhe: string; tom: string; selo: string }[] }> = {
-  comunicacao: { titulo: "Comunicação", linhas: [
-    { titulo: "Manutenção da caixa d'água", detalhe: "Comunicado · sáb 25/10", tom: "verde", selo: "Lido por 84%" },
-    { titulo: "Assembleia ordinária", detalhe: "Convite · ter 4/11, 19h30", tom: "violeta", selo: "Votação aberta" },
-    { titulo: "Regimento interno", detalhe: "Documento · versão 3", tom: "cinza", selo: "No mural" },
-  ] },
-  operacoes: { titulo: "Operações", linhas: [
-    { titulo: "Bombas de recalque", detalhe: "Preventiva mensal · NBR 5674", tom: "ambar", selo: "Vence hoje" },
-    { titulo: "Extintores", detalhe: "Recarga anual · prontuário", tom: "verde", selo: "Em dia" },
-    { titulo: "Hidráulica Souza", detalhe: "Prestador · check-in 09:12 por QR", tom: "violeta", selo: "No prédio" },
-  ] },
-  indicadores: { titulo: "Indicadores de outubro", linhas: [
-    { titulo: "Retornos no prazo", detalhe: "33 de 35 retornos ao morador no mês", tom: "verde", selo: "94% no prazo" },
-    { titulo: "Primeiro retorno", detalhe: "Média em horas de atendimento, do registro à primeira notícia", tom: "violeta", selo: "6 h" },
-    { titulo: "Pedidos concluídos", detalhe: "Tempo típico até concluir: 2 dias", tom: "verde", selo: "35 no mês" },
-  ] },
-};
 ---
 <Base titulo="Plataforma" atual="/plataforma" lavanda descricao="Atendimento, comunicação, operações e indicadores do condomínio num painel só. O morador continua no WhatsApp; o síndico acompanha tudo pelo painel.">
 <section class="pag-topo com-imagem com-painel">
@@ -41,41 +24,22 @@ const exemplos: Record<string, { titulo: string; linhas: { titulo: string; detal
   </div>
 </section>
 
-<div class="wrap abas-modulos">
-  <div class="abas2" role="tablist" aria-label="Partes da plataforma">
-    {plataforma.map((bloco, i) => <button type="button" role="tab" id={`aba-m-${bloco.id}`} aria-controls={bloco.id} aria-selected={i === 0 ? "true" : "false"} tabindex={i === 0 ? 0 : -1} data-modulo={bloco.id}>{bloco.titulo}</button>)}
-  </div>
-  <p class="suave" style="font-size:14px;margin-top:8px">Telas com dados ilustrativos.</p>
-</div>
 {plataforma.map((bloco, i) => (
-  <section class:list={["wrap modulo ancora", i % 2 === 1 && "inverte", i === 0 && "atual"]} id={bloco.id} aria-labelledby={`titulo-${bloco.id}`}>
-    <div>
-      <h2 class="rotulo-bloco" id={`titulo-${bloco.id}`}>{bloco.titulo}</h2>
-      <ul>{bloco.itens.map((t) => <li><span class="ico-v" aria-hidden="true">✓</span><span><b>{t.titulo}</b><small>{t.texto}</small></span></li>)}</ul>
-    </div>
-    <div class="modulo-v">
-      {bloco.id === "atendimento" && <CenaPedido etapa={2} />}
-      {exemplos[bloco.id] && (
-        <div class="janela" aria-hidden="true">
-          <BarraPainel busca="Buscar pedido" />
-          <div style="padding:16px">
-            <div class="app-cartao" style="gap:0">
-              <div class="app-sub" style="padding-bottom:8px"><h4>{exemplos[bloco.id].titulo}</h4><span class="app-meta">Dados ilustrativos</span></div>
-              {exemplos[bloco.id].linhas.map((l) => <div class="agora-l"><span class="t">{l.titulo}<small>{l.detalhe}</small></span><span class:list={["pil", l.tom]}>{l.selo}</span></div>)}
-            </div>
-          </div>
-        </div>
-      )}
+  <section class:list={["modulo2 ancora", i % 2 === 1 && "inv lav"]} id={bloco.id} aria-labelledby={`titulo-${bloco.id}`}>
+    <div class="wrap">
+      <div class="modulo2-txt">
+        <Olho>{bloco.olho}</Olho>
+        <h2 class="titulo-g" id={`titulo-${bloco.id}`}>{bloco.titulo} <Destaque semTraco quebra>{bloco.destaque}</Destaque></h2>
+        <p class="lead2">{bloco.lead}</p>
+        <ul class="recursos">{bloco.itens.map((t) => <li><span class="lad" aria-hidden="true"><svg viewBox="0 0 24 24" set:html={icones[t.icone]} /></span><span><b>{t.titulo}</b><small>{t.texto}</small></span></li>)}</ul>
+      </div>
+      <div>
+        <div class="modulo2-v" aria-hidden="true">{bloco.id === "atendimento" ? <CenaPedido etapa={2} /> : <TelaModulo id={bloco.id} />}</div>
+        <p class="modulo2-nota">Dados ilustrativos.</p>
+      </div>
     </div>
   </section>
 ))}
 <FaixaFinal />
 </Base>
 
-<script>
-  // No celular, as quatro partes viram abas (uma à vista por vez); no computador, as abas ficam escondidas e tudo aparece.
-  import { ligarAbas } from "../lib/abas";
-  ligarAbas("[data-modulo]", (b) => b.dataset.modulo ?? "", ".modulo");
-  const alvo = document.querySelector<HTMLElement>(`[data-modulo="${location.hash.slice(1)}"]`);
-  if (alvo) { alvo.click(); document.getElementById(alvo.dataset.modulo ?? "")?.scrollIntoView(); }
-</script>
