@@ -7,7 +7,8 @@
 // de preços, 0295), Suporte
 // e Equipe, e Sistema (Retenção de dados, F0.11), com o número do
 // que está aberto em laranja; no celular, a barra de baixo com Início, Clientes, Chamados e Mais.
-// Implantações saiu do menu e virou o filtro Em implantação da carteira.
+// Implantações saiu do menu e virou o filtro Em implantação da carteira. No Comercial, Interessados,
+// Propostas (0304) e Modelos.
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -44,9 +45,11 @@ const atende = (s: SessaoConsole) => temFuncao(s, "ADMINISTRACAO", "IMPLANTACAO"
 const ITENS: ItemDoMenu[] = [
   { href: "/", texto: "Início", icone: "casa", grupo: null, atual: (c) => c === "/", ve: () => true, atalho: true },
   { href: "/clientes", texto: "Carteira de clientes", curto: "Clientes", icone: "predio", grupo: "Clientes", atual: (c) => c.startsWith("/clientes"), ve: () => true, atalho: true },
-  { href: "/comercial", texto: "Interessados", icone: "pessoas", grupo: "Comercial", atual: (c) => c === "/comercial" || /^\/comercial\/(?!modelos)/.test(c),
+  { href: "/comercial", texto: "Interessados", icone: "pessoas", grupo: "Comercial", atual: (c) => c === "/comercial" || /^\/comercial\/(?!modelos|propostas)/.test(c),
     ve: (s) => s.acoes.includes("console.comercial.ver") },
-  { href: "/comercial/modelos", texto: "Modelos do Comercial", curto: "Modelos", icone: "documento", grupo: "Comercial", atual: (c) => c.startsWith("/comercial/modelos"),
+  { href: "/comercial/propostas", texto: "Propostas", icone: "documento", grupo: "Comercial", atual: (c) => c.startsWith("/comercial/propostas"),
+    ve: (s) => s.acoes.includes("console.comercial.ver") },
+  { href: "/comercial/modelos", texto: "Modelos do Comercial", curto: "Modelos", icone: "camadas", grupo: "Comercial", atual: (c) => c.startsWith("/comercial/modelos"),
     ve: (s) => s.acoes.includes("console.comercial.ver") },
   { href: "/pagamentos", texto: "Pagamentos", icone: "dinheiro", grupo: "Financeiro", atual: (c) => c.startsWith("/pagamentos"),
     ve: (s) => s.acoes.includes("console.pagamentos.ver") },

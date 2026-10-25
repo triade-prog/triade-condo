@@ -2,8 +2,10 @@
 // Tabela de preços do Console (0295; quadros 268 a 274, aprovados em 24/10/2026): o que a TRÍADE
 // oferece por faixa de unidades ativas, em quatro partes: a Tabela, Quanto custaria para o prédio,
 // Faixas e implantação e o Histórico. Interno: o síndico não vê. Mudar a tabela pede motivo e não
-// mexe no plano de quem já é cliente; só Administração e Financeiro mudam.
+// mexe no plano de quem já é cliente; só Administração e Financeiro mudam. ?parte=simular&unidades=N
+// abre direto o Quanto custaria com as unidades do prédio (a Nova proposta do Comercial, CM-06).
 
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 import { formatarDataHora, FUNCOES_CONSOLE, mostrarValor } from "@triade/domain";
 import { Abas, Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, SemPermissao, Selo, textoDoErro, Vazio } from "@triade/ui";
@@ -35,7 +37,9 @@ export function TabelaPrecos() {
   const ve = sessao.acoes.includes("console.precos.ver");
   const carga = useCarregar<Record<string, unknown>>(ve ? ROTAS_PRECOS.tabela : null);
   const celular = useCelular();
-  const [parte, setParte] = useState<Parte>("tabela");
+  const busca = useSearchParams();
+  const pedidas = Number.parseInt(busca.get("unidades") ?? "", 10);
+  const [parte, setParte] = useState<Parte>(() => (busca.get("parte") === "simular" ? "simular" : "tabela"));
   const [mudando, setMudando] = useState(false);
   const [recado, setRecado] = useState<Recado | null>(null);
   const [vez, setVez] = useState(0);
@@ -62,7 +66,7 @@ export function TabelaPrecos() {
             <Abas rotulo="Partes da tabela de preços" atual={parte} aoMudar={setParte}
               abas={PARTES.map((p) => ({ id: p.id, texto: celular && p.curto ? p.curto : p.texto }))}>
               {parte === "tabela" ? <ParteTabela d={d} mudar={edita ? mudar("w-full md:hidden") : null} /> : null}
-              {parte === "simular" ? <Simulador d={d} edita={edita} avisar={setRecado} feito={feito} recarregar={carga.recarregar} /> : null}
+              {parte === "simular" ? <Simulador d={d} edita={edita} avisar={setRecado} feito={feito} recarregar={carga.recarregar} unidades={Number.isFinite(pedidas) ? pedidas : undefined} /> : null}
               {parte === "faixas" ? <ParteFaixas d={d} avisar={setRecado} /> : null}
               {parte === "historico" ? <ParteHistorico key={vez} /> : null}
             </Abas>

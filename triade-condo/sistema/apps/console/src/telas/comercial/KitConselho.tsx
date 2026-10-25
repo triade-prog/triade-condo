@@ -1,0 +1,152 @@
+"use client";
+// Kit para o conselho e a assembleia (quadro 337, CM-20, CM-19, CM-27 e CM-28): sai da versão
+// enviada, da ficha do prédio, dos concorrentes da ficha e das respostas prontas. A equipe escolhe
+// as peças e baixa um PDF só; o síndico baixa o kit inteiro pelo link da proposta. O comparativo
+// só traz o que a equipe confirmou na Tabela de preços; o resto fica "a confirmar" (EM-07, L.1).
+// Mandar pelo WhatsApp gera um link novo da proposta (o código só aparece uma vez) e registra a
+// conversa.
+
+import { useParams } from "next/navigation";
+import { useState } from "react";
+import { TEXTO_COMPARATIVO } from "@triade/domain";
+import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, textoDoErro, Vazio } from "@triade/ui";
+import { Cartao, Voltar } from "../comum.tsx";
+import { useCarregar } from "../sessao.tsx";
+import { ROTAS_COMERCIAL } from "./comum.tsx";
+import { JanelaMandarWhatsapp } from "./janelasPropostas.tsx";
+import {
+  documentoKit, enderecoDoLink, mensagemDoLink, ORDEM_PECAS, PECAS_KIT, pecasDisponiveis, ROTAS_PROPOSTAS, subtituloReferencias, tabelaComparativo, TELAS_PROPOSTAS,
+  type FichaProposta, type Kit, type PecaKit,
+} from "./propostas.ts";
+import type { FichaInteressado } from "./tipos.ts";
+
+export function KitConselho() {
+  const { id } = useParams<{ id: string }>();
+  const kit = useCarregar<Kit>(ROTAS_PROPOSTAS.kit(id));
+  const ficha = useCarregar<FichaProposta>(ROTAS_PROPOSTAS.proposta(id));
+  const f = ficha.estado === "pronto" ? ficha.dados : null;
+  const interessado = useCarregar<FichaInteressado>(f ? ROTAS_COMERCIAL.interessado(f.interessado.id) : null);
+  const [fora, setFora] = useState<PecaKit[]>([]);
+  const [fazendo, setFazendo] = useState<"pdf" | "link" | null>(null);
+  const [aviso, setAviso] = useState<{ tom: "ok" | "erro"; texto: string } | null>(null);
+  const [mensagem, setMensagem] = useState<string | null>(null);
+
+  const voltar = <Voltar href={TELAS_PROPOSTAS.lista(id)} texto={f?.interessado.condominio ?? "Voltar à proposta"} />;
+  if (kit.estado === "carregando") return <div className="grid gap-4">{voltar}<Carregando rotulo="Montando o kit…" /></div>;
+  if (kit.estado === "erro") {
+    const semEnvio = kit.erro.detalhes?.motivo === "SEM_VERSAO_ENVIADA";
+    return (
+      <div className="grid gap-4">
+        {voltar}
+        <h1 className="t-titulo-tela">Kit para o conselho</h1>
+        {semEnvio ? <Vazio titulo="Ainda não há versão enviada" icone="documento">{textoDoErro(kit.erro)}</Vazio>
+          : <ErroCarregar erro={kit.erro} texto={kit.texto} tentarDeNovo={kit.recarregar} />}
+      </div>
+    );
+  }
+  const k = kit.dados;
+  const falta = pecasDisponiveis(k);
+  const escolhidas = ORDEM_PECAS.filter((p) => !fora.includes(p) && falta[p] === null);
+  const comp = tabelaComparativo(k);
+
+  async function pdf() {
+    setAviso(null);
+    setFazendo("pdf");
+    try {
+      const { baixarPdf } = await import("./pdf.ts");
+      await baixarPdf(documentoKit(k, escolhidas));
+    } catch {
+      setAviso({ tom: "erro", texto: "Não deu para montar o PDF. Tente de novo." });
+    } finally {
+      setFazendo(null);
+    }
+  }
+
+  async function prepararMensagem() {
+    if (!k.versaoId) return;
+    setAviso(null);
+    setFazendo("link");
+    const r = await chamarApi<{ link: { codigo: string } }>(ROTAS_PROPOSTAS.acao(id, k.versaoId, "link"), { corpo: {} });
+    setFazendo(null);
+    if (!r.ok) return setAviso({ tom: "erro", texto: textoDoErro(r.erro) });
+    setMensagem(mensagemDoLink(f?.interessado.pessoa, k.predio.condominio, enderecoDoLink(window.location.origin, r.dados.link.codigo), true));
+  }
+
+  return (
+    <div className="grid gap-5">
+      {voltar}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="grid gap-1">
+          <h1 className="t-titulo-tela">Kit para o conselho</h1>
+          <p className="t-apoio">Sai dos dados do prédio e da proposta enviada. O síndico baixa pelo link da proposta ou recebe pelo WhatsApp.</p>
+        </div>
+        <div className="flex flex-wrap gap-2 max-md:grid max-md:w-full">
+          <Botao variante="contorno" disabled={fazendo === "pdf" || !escolhidas.length} onClick={() => void pdf()}>
+            <Icone nome="baixar" />{fazendo === "pdf" ? "Montando o PDF…" : "Baixar o kit em PDF"}
+          </Botao>
+          {f?.podeEditar ? (
+            <Botao disabled={fazendo === "link"} onClick={() => void prepararMensagem()}><Icone nome="whats" />{fazendo === "link" ? "Gerando o link…" : "Mandar pelo WhatsApp comercial"}</Botao>
+          ) : null}
+        </div>
+      </div>
+      {aviso ? <Aviso tom={aviso.tom} papel={aviso.tom === "erro" ? "alert" : "status"}>{aviso.texto}</Aviso> : null}
+      {f?.podeEditar ? <p className="t-apoio">Mandar pelo WhatsApp gera um link novo da proposta: o link anterior para de abrir.</p> : null}
+
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
+        <Cartao id="kit-pecas" titulo="O que vai no kit" icone="clipe">
+          <fieldset className="grid">
+            <legend className="sr-only">Peças do kit</legend>
+            {ORDEM_PECAS.map((p) => {
+              const motivo = falta[p];
+              const apoio = p === "PROPOSTA" ? `A versão enviada (v${k.proposta.numero}), com a impressão digital`
+                : p === "REFERENCIAS" && k.referencias.length ? subtituloReferencias(k.referencias.length) : PECAS_KIT[p].apoio;
+              return (
+                <label key={p} className={`flex gap-3 border-t border-linha py-3 first:border-t-0 ${motivo ? "cursor-not-allowed" : "cursor-pointer"}`}>
+                  <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-violeta-600" checked={!fora.includes(p) && !motivo} disabled={!!motivo}
+                    onChange={(e) => setFora((x) => (e.target.checked ? x.filter((y) => y !== p) : [...x, p]))} />
+                  <span className="grid gap-0.5">
+                    <span className="t-texto">{PECAS_KIT[p].titulo}</span>
+                    <span className="t-apoio">{motivo ?? apoio}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </fieldset>
+        </Cartao>
+
+        <Cartao id="kit-comparativo" titulo="Comparativo" icone="grafico">
+          <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label="Comparativo, role para o lado">
+            <table className="w-full border-collapse">
+              <caption className="sr-only">Comparativo para o conselho</caption>
+              <thead>
+                <tr>{comp.cabecalho.map((c) => <th key={c} scope="col" className="border-b border-linha bg-superficie-2 px-3 py-2.5 text-left t-rotulo font-semibold">{c}</th>)}</tr>
+              </thead>
+              <tbody>
+                {comp.linhas.map((l) => (
+                  <tr key={l[0]}>
+                    {l.map((c, i) => i === 0
+                      ? <th key={i} scope="row" className="border-b border-linha px-3 py-2.5 text-left align-top t-texto font-medium">{c}</th>
+                      : <td key={i} className={`border-b border-linha px-3 py-2.5 align-top t-texto ${c === "a confirmar" ? "text-tinta-suave" : ""}`}>{c}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="t-apoio">{TEXTO_COMPARATIVO}</p>
+        </Cartao>
+      </div>
+
+      {k.predio.sistemaAtual || k.predio.decisaoEm || k.predio.assembleiaOrdinaria ? (
+        <p className="t-apoio">
+          {[k.predio.sistemaAtual ? `Hoje usa ${k.predio.sistemaAtual}` : null, k.predio.administradora ? `administradora ${k.predio.administradora}` : null,
+            k.predio.decisaoEm ? `decisão em ${k.predio.decisaoEm.split("-").reverse().join("/")}` : null].filter(Boolean).join(" · ")}
+        </p>
+      ) : null}
+
+      {mensagem ? (
+        <JanelaMandarWhatsapp interessado={interessado.estado === "pronto" ? interessado.dados : null} texto={mensagem} aoFechar={() => setMensagem(null)}
+          feito={() => { setMensagem(null); setAviso({ tom: "ok", texto: "Conversa registrada na ficha." }); }} />
+      ) : null}
+    </div>
+  );
+}
