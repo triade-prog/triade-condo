@@ -43,7 +43,7 @@
 -- renomear a anterior e chamá-la.
 
 -- ---------------------------------------------------------------------------------------
--- Os modelos (regra 1). Textos propostos à Carolina em 25/10/2026: para mudar, mude só aqui.
+-- Os modelos (regra 1). Textos propostos à Carolina em 24/10/2026: para mudar, mude só aqui.
 -- O corpo não começa nem termina com variável (regra da Meta, modelo_corpo_valido): por isso o
 -- "Conselho do {{1}}:" na frente do substituto e do aviso.
 
@@ -60,15 +60,15 @@ insert into modelos_whatsapp (chave, numero, titulo, para, uso, variaveis, corpo
   ('conselho_voto', 1, 'Votação do conselho', 'CONSELHO', 'Decisão ou despesa pedida ao conselho, com o link pessoal do titular',
    '["condomínio", "pergunta", "prazo", "link"]',
    E'Votação do conselho do {{1}}: {{2}}\n\nVote até {{3}} pelo seu link pessoal:\n{{4}}\n\nNina, assistente virtual do {{1}}.',
-   'Para não receber mais avisos, responda PARAR.', 'APROVADO_PILOTO', 'Aprovado pela Carolina em 25/10/2026', app_now()),
+   'Para não receber mais avisos, responda PARAR.', 'APROVADO_PILOTO', 'Aprovado pela Carolina em 24/10/2026', app_now()),
   ('conselho_substituto', 1, 'Substituto do síndico', 'CONSELHO', 'O subsíndico responde no lugar do síndico ausente, pelo link pessoal',
    '["condomínio", "pergunta", "prazo", "link"]',
    E'Conselho do {{1}}: o síndico está ausente e você responde no lugar dele.\n\n{{2}}, até {{3}}:\n{{4}}\n\nNina, assistente virtual do {{1}}.',
-   'Para não receber mais avisos, responda PARAR.', 'APROVADO_PILOTO', 'Aprovado pela Carolina em 25/10/2026', app_now()),
+   'Para não receber mais avisos, responda PARAR.', 'APROVADO_PILOTO', 'Aprovado pela Carolina em 24/10/2026', app_now()),
   ('conselho_aviso', 1, 'Decisão vencida', 'CONSELHO', 'Decisão ou despesa vencida sem resposta, para quem as regras mandam avisar',
    '["condomínio", "pergunta", "prazo", "link"]',
    E'Conselho do {{1}}: a decisão "{{2}}" passou do prazo de {{3}} sem resposta. Veja pelo link:\n{{4}}\n\nNina, assistente virtual do {{1}}.',
-   'Para não receber mais avisos, responda PARAR.', 'APROVADO_PILOTO', 'Aprovado pela Carolina em 25/10/2026', app_now());
+   'Para não receber mais avisos, responda PARAR.', 'APROVADO_PILOTO', 'Aprovado pela Carolina em 24/10/2026', app_now());
 insert into modelos_whatsapp_eventos (modelo_id, situacao, motivo)
 select id, situacao, nota from modelos_whatsapp where chave in ('conselho_voto', 'conselho_substituto', 'conselho_aviso');
 

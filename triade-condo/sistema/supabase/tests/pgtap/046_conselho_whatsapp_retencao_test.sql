@@ -70,7 +70,7 @@ create temp table m as select
 select is((select string_agg(chave || ':' || para || ':' || situacao, ', ' order by chave) from modelos_whatsapp where chave like 'conselho%'),
   'conselho_aviso:CONSELHO:APROVADO_PILOTO, conselho_substituto:CONSELHO:APROVADO_PILOTO, conselho_voto:CONSELHO:APROVADO_PILOTO',
   'W-20: os três modelos do link do conselho, aprovados no piloto, para quem é do conselho');
-select is((select count(*)::int from modelos_whatsapp where chave like 'conselho%' and nota = 'Aprovado pela Carolina em 25/10/2026'
+select is((select count(*)::int from modelos_whatsapp where chave like 'conselho%' and nota = 'Aprovado pela Carolina em 24/10/2026'
             and rodape = 'Para não receber mais avisos, responda PARAR.'), 3, 'W-16: com a nota da aprovação e o rodapé do PARAR');
 select is(celular_whatsapp('61999990005') || ' ' || celular_whatsapp('(61) 99999-0001') || ' ' || celular_whatsapp('+5561999990002')
           || ' ' || coalesce(celular_whatsapp('123'), '-'), '+5561999990005 +5561999990001 +5561999990002 -',
