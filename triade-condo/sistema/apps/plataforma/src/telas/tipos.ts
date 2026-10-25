@@ -682,8 +682,9 @@ export interface RegrasDecisoes extends RegrasConselho {
   subsindico?: string;
 }
 
-/** Como o link chegou: e-mail (fila) ou COPIAR (WhatsApp sem modelo aprovado). */
-export type EnvioLink = "NA_FILA" | "ENVIANDO" | "ENVIADO" | "FALHOU" | "COPIAR" | "EMAIL";
+/** Como o link chegou: e-mail (fila), COPIAR (WhatsApp sem modelo aprovado) ou WHATSAPP (na fila do
+ * WhatsApp do condomínio, R5.3). */
+export type EnvioLink = "NA_FILA" | "ENVIANDO" | "ENVIADO" | "FALHOU" | "COPIAR" | "EMAIL" | "WHATSAPP";
 
 export interface VotoConselho {
   membroId: string;
@@ -726,7 +727,8 @@ export interface Votacao {
 }
 
 /** Um link novo, na resposta de pedir decisão, criar despesa, marcar ausência e Reenviar o link.
- * O código só vem no COPIAR e para quem cuida do conselho; para os outros vem o aviso. */
+ * O código só vem para o síndico e para quem cuida do conselho: no COPIAR, para mandar; no WHATSAPP,
+ * para copiar se precisar. Para os outros, no COPIAR, vem o aviso. */
 export interface LinkMandado {
   membroId: string;
   nome: string;
@@ -752,6 +754,9 @@ export interface AnexoAprovacao {
   enviadoPor?: string;
 }
 
+/** A despesa ligada a uma coisa só: um pedido, uma manutenção ou uma decisão (quadro 419). */
+export interface LigacaoDespesa { tipo: "PEDIDO" | "MANUTENCAO" | "DECISAO"; id: string; rotulo: string }
+
 export interface Despesa {
   id: string;
   versao: number;
@@ -764,7 +769,7 @@ export interface Despesa {
   vencimento?: string;
   prazo: string;
   vencida: boolean;
-  ligacao?: { tipo: "PEDIDO" | "MANUTENCAO" | "DECISAO"; id: string; rotulo: string };
+  ligacao?: LigacaoDespesa;
   decisor?: { vinculoId: string; nome: string; eu: boolean };
   conselho?: Votacao;
   voltouAoSindicoEm?: string;

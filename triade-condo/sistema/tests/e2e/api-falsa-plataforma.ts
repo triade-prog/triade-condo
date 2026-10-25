@@ -304,7 +304,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
 
   /** O contexto das decisões com os ganchos da R5, quando ela está ligada. */
   function comAprovacoes(x: Contexto): ContextoAprovacoes {
-    const ctx: ContextoAprovacoes = { ...x, decisoes, vAna: V_ANA, sindico: "Ana Souza" };
+    const ctx: ContextoAprovacoes = { ...x, decisoes, vAna: V_ANA, sindico: "Ana Souza", manutencao: (id) => manutencao.manutencoes.find((m) => m.id === id) };
     if (aprovacoes.ligado) ctx.ganchos = ganchosAprovacoes(aprovacoes, ctx);
     return ctx;
   }

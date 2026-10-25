@@ -1,8 +1,8 @@
 "use client";
 // A ficha da despesa (R5, FC-10; quadro 420): o valor, os votos ou quem aprova, os anexos e o
-// histórico; responder, votar, reenviar o link e retirar enquanto espera; depois de aprovada, o
-// Paga fora do sistema com a data e o comprovante, e o Publicar como comunicado. O sistema não
-// paga, não recebe e não guarda dado do banco.
+// histórico; responder, votar, reenviar o link, alterar (antes do primeiro voto, R5.3) e retirar
+// enquanto espera; depois de aprovada, o Paga fora do sistema com a data e o comprovante, e o
+// Publicar como comunicado. O sistema não paga, não recebe e não guarda dado do banco.
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -15,8 +15,8 @@ import type { DespesaDetalhe, FinalidadeLink, LinkMandado, Recado } from "../tip
 import { dia, diaHora } from "../pedidos/comum.tsx";
 import { diaDoPrazo } from "./comum.tsx";
 import { JanelaAnexar, ListaAnexos } from "./anexos.tsx";
-import { linhaDespesa, situacaoDespesa } from "./Despesas.tsx";
-import { BarraQuorum, LinksDoItem, LinksMandados, ListaVotos, Placar, recadoDoReenvio, reenviarLink, VotarNoPainel } from "./votacao.tsx";
+import { AlterarDespesa, linhaDespesa, situacaoDespesa } from "./Despesas.tsx";
+import { abreJanelaDoReenvio, BarraQuorum, LinksDoItem, LinksMandados, ListaVotos, Placar, recadoDoReenvio, reenviarLink, VotarNoPainel } from "./votacao.tsx";
 
 /** "3 aprovam · 1 recusa", da contagem do conselho. */
 export function textoVotosDespesa(c: Record<string, number> | undefined): string {
@@ -39,6 +39,7 @@ export function FichaDespesa() {
   const [votar, setVotar] = useState(false);
   const [responder, setResponder] = useState(false);
   const [retirar, setRetirar] = useState(false);
+  const [alterar, setAlterar] = useState(false);
   const [anexar, setAnexar] = useState<"DOCUMENTO" | "COMPROVANTE" | null>(null);
   const [links, setLinks] = useState<LinkMandado[] | null>(null);
 
@@ -57,7 +58,7 @@ export function FichaDespesa() {
   async function reenviar(membroId: string, finalidade: FinalidadeLink = "VOTO") {
     const r = await reenviarLink("despesas", d.id, membroId, finalidade);
     if (!r.ok) return depois(`Não deu para reenviar o link: ${textoDoErro(r.erro)}`, "atencao");
-    if (r.dados.envio === "COPIAR") setLinks([r.dados]);
+    if (abreJanelaDoReenvio(r.dados)) setLinks([r.dados]);
     depois(recadoDoReenvio(r.dados));
   }
 
@@ -131,7 +132,9 @@ export function FichaDespesa() {
               <p className="t-apoio">Aprovar não paga nada: depois de aprovada, quem gerencia marca Paga fora do sistema.</p>
               {d.pode.votar ? <Botao onClick={() => setVotar(true)}><Icone nome="check" />{v?.eu?.escolha ? "Trocar meu voto" : "Votar"}</Botao> : null}
               {d.pode.responder ? <Botao onClick={() => setResponder(true)}><Icone nome="check" />Aprovar ou recusar</Botao> : null}
+              {d.pode.alterar ? <Botao variante={d.pode.votar || d.pode.responder ? "contorno" : "secundario"} onClick={() => setAlterar(true)}><Icone nome="editar" />Alterar a despesa</Botao> : null}
               {d.pode.retirar ? <Botao variante="discreto" onClick={() => setRetirar(true)}><Icone nome="fechar" />Retirar o pedido</Botao> : null}
+              {!d.pode.alterar && d.pode.retirar && v && v.votaram > 0 && !d.voltouAoSindicoEm ? <p className="t-apoio">Já há voto do conselho: a despesa não muda mais. Para mudar, retire e peça de novo.</p> : null}
               {!d.pode.votar && !d.pode.responder ? <p className="t-texto">{v ? "Esperando os votos do conselho." : `Esperando ${d.decisor?.nome ?? "quem aprova"}.`}</p> : null}
             </>
           ) : aprovada ? (
@@ -155,6 +158,7 @@ export function FichaDespesa() {
 
       <VotarNoPainel alvo={votar ? { tipo: "despesas", id: d.id, titulo: d.descricao, prazo: d.prazo, meu: v?.eu?.escolha, minhaJustificativa: v?.eu?.justificativa } : null}
         aoFechar={() => setVotar(false)} votado={(t) => { setVotar(false); depois(t); }} />
+      <AlterarDespesa d={d} aberto={alterar} aoFechar={() => setAlterar(false)} recarregar={carga.recarregar} alterada={(t) => { setAlterar(false); depois(t); }} />
       <ResponderDespesa aberto={responder} d={d} aoFechar={() => setResponder(false)} salvo={(t) => { setResponder(false); depois(t); }} />
       <Janela aberto={retirar} titulo="Retirar o pedido de aprovação" aoFechar={() => setRetirar(false)} recarregar={carga.recarregar}
         campos={[{ id: "motivo", rotulo: "Por que retirar", tipo: "area", obrigatorio: true, max: 500, erro: "Explique o motivo (3 a 500 caracteres)." }]}

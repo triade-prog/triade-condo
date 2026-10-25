@@ -17,7 +17,7 @@ import type { AusenciaSindico, DecisaoPedido, FinalidadeLink, LinkMandado, Lista
 import { dia } from "../pedidos/comum.tsx";
 import { diaDoPrazo, ListaAlternativas, ResponderDecisao, resumoResposta, RetirarDecisao, SeloDecisao } from "./comum.tsx";
 import { AbaDespesas } from "./Despesas.tsx";
-import { AlternativasComVotos, BarraQuorum, FraseAdvogado, LinksDoItem, LinksMandados, ListaVotos, Placar, recadoDoReenvio, reenviarLink, VotarNoPainel } from "./votacao.tsx";
+import { abreJanelaDoReenvio, AlternativasComVotos, BarraQuorum, FraseAdvogado, LinksDoItem, LinksMandados, ListaVotos, Placar, recadoDoReenvio, reenviarLink, VotarNoPainel } from "./votacao.tsx";
 import { ListaAnexos } from "./anexos.tsx";
 
 /** "Respondidas" diz melhor o que entra: as aprovadas, as devolvidas e as retiradas. */
@@ -273,7 +273,7 @@ function DosPedidos({ recado, contar }: { recado: (r: Recado) => void; contar: (
   async function reenviar(x: DecisaoPedido, membroId: string, finalidade: FinalidadeLink = "VOTO") {
     const r = await reenviarLink("decisoes", x.id, membroId, finalidade);
     if (!r.ok) return recado({ tom: "atencao", texto: `Não deu para reenviar o link: ${textoDoErro(r.erro)}` });
-    if (r.dados.envio === "COPIAR") setLinks([r.dados]);
+    if (abreJanelaDoReenvio(r.dados)) setLinks([r.dados]);
     depois(recadoDoReenvio(r.dados));
   }
 

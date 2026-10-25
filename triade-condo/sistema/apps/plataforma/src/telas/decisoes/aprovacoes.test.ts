@@ -2,9 +2,9 @@
 // link do conselheiro, que saem dos dados da API sem pensar de novo a regra.
 import { describe, expect, it } from "vitest";
 import type { ConselhoPublico, Despesa } from "../tipos.ts";
-import { linhaDespesa, situacaoDespesa } from "./Despesas.tsx";
+import { achadosDaLigacao, ligacaoParaApi, linhaDespesa, situacaoDespesa, textoLigacao } from "./Despesas.tsx";
 import { textoVotosDespesa } from "./Despesa.tsx";
-import { recadoDoReenvio, recadoDosLinks } from "./votacao.tsx";
+import { abreJanelaDoReenvio, recadoDoReenvio, recadoDosLinks, temLinkParaCopiar } from "./votacao.tsx";
 import { avisoMandato, votaPor } from "../pessoas/Conselho.tsx";
 import { textoResultado } from "../publico/Conselho.tsx";
 import { textoDecisoesAguardando } from "../Inicio.tsx";
@@ -83,6 +83,36 @@ describe("os links do substituto e de quem não vê o código", () => {
       .toBe("Link novo mandado pelo e-mail para João. O anterior parou de valer.");
     expect(recadoDoReenvio({ membroId: "1", nome: "Marta Reis", canal: "WHATSAPP", envio: "COPIAR", aviso: "Peça o link ao síndico" }))
       .toBe("Peça o link ao síndico: o link de Marta Reis pelo WhatsApp só sai com ele. O que Marta já tinha continua valendo.");
+  });
+});
+
+describe("R5.3: o link pelo WhatsApp do condomínio (envio WHATSAPP)", () => {
+  it("V-14: já foi, como o e-mail; a janela abre só no Reenviar, para quem vê o código", () => {
+    const zap = { membroId: "2", nome: "Marta", canal: "WHATSAPP", envio: "WHATSAPP", codigo: "x" } as const;
+    expect(recadoDosLinks([{ membroId: "1", nome: "João", canal: "EMAIL", envio: "EMAIL" }, zap]))
+      .toBe("Link mandado pelo e-mail para João. Link mandado pelo WhatsApp do condomínio para Marta.");
+    expect(temLinkParaCopiar([zap])).toBe(false);
+    expect(temLinkParaCopiar([{ ...zap, envio: "COPIAR" }])).toBe(true);
+    expect(abreJanelaDoReenvio(zap)).toBe(true);
+    expect(abreJanelaDoReenvio({ ...zap, codigo: undefined })).toBe(false);
+    expect(recadoDoReenvio({ ...zap, finalidade: "SUBSTITUTO" })).toBe("Link do substituto novo mandado pelo WhatsApp do condomínio para Marta. O anterior parou de valer.");
+  });
+});
+
+describe("R5.3: Ligada a, uma coisa só (quadro 419)", () => {
+  it("FC-10: a ligação vai num campo só e aparece com o tipo na frente", () => {
+    expect(ligacaoParaApi(null)).toEqual({ pedidoId: null, manutencaoId: null, decisaoId: null });
+    expect(ligacaoParaApi({ tipo: "MANUTENCAO", id: "m1", rotulo: "Elevador social parado · 14/10" })).toEqual({ pedidoId: null, manutencaoId: "m1", decisaoId: null });
+    expect(textoLigacao({ tipo: "MANUTENCAO", id: "m1", rotulo: "Elevador social parado · 14/10" })).toBe("Manutenção · Elevador social parado · 14/10");
+  });
+  it("FC-10: a busca junta pedidos, manutenções e as decisões que batem com o texto", () => {
+    const achados = achadosDaLigacao("laje",
+      { itens: [{ id: "p1", protocolo: "2026-0001", assunto: "Infiltração na laje", unidade: null, local: "Garagem G2" }] } as never,
+      { itens: [{ id: "m1", titulo: "Impermeabilizar a laje", local: "Cobertura", criadoEm: "2026-10-14T13:00:00Z" }] } as never,
+      { decisoes: [{ id: "d1", pergunta: "Qual conserto fazer na laje", pedidaEm: "2026-10-15T12:00:00Z", pedido: { protocolo: "2026-0001", assunto: "Infiltração" } },
+        { id: "d2", pergunta: "Cor do hall", pedidaEm: "2026-10-15T12:00:00Z" }] } as never);
+    expect(achados.map(textoLigacao)).toEqual(["Pedido · 2026-0001 · Infiltração na laje", "Manutenção · Impermeabilizar a laje · 14/10", "Decisão · Qual conserto fazer na laje · 15/10"]);
+    expect(achados[0]!.sub).toBe("Garagem G2");
   });
 });
 

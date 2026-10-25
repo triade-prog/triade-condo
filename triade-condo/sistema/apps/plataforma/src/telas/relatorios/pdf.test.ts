@@ -39,6 +39,14 @@ describe("PDF do relatório do mês (TR-10)", () => {
     expect(pdf.getTitle()).toBe("Relatório de setembro de 2026 · Residencial Ipê");
   });
 
+  it("R5 (FC-10): as decisões do mês entram com o que o conselho fechou e as despesas para aprovar", async () => {
+    const comDespesas: RelatorioGerado = { ...R, partes: ["DECISOES"], conteudo: { ...R.conteudo, decisoes: {
+      pedidas: 6, decididas: 5, aprovadas: 4, devolvidas: 1, medianaHoras: 30, aguardandoNoFim: 1, peloConselho: 2,
+      despesas: { pedidas: 4, aprovadas: 2, recusadas: 1, valorAprovado: 920000, aguardandoNoFim: 0 } } } };
+    const bytes = await montarPdf(comDespesas, { condominio: "Residencial Ipê", geradoEmTexto: "01/10/2026 às 09:00", fontes: { normal: fonte("400"), forte: fonte("600") }, cores: CORES }, []);
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(1);
+  });
+
   it("um PDF anexado que não abre vira uma linha e o arquivo sai", async () => {
     const bytes = await montarPdf(R, { condominio: "Residencial Ipê", geradoEmTexto: "01/10/2026 às 09:00", fontes: { normal: fonte("400"), forte: fonte("600") }, cores: CORES },
       [{ titulo: "Quebrado", tipo: "application/pdf", bytes: new TextEncoder().encode("não é pdf") }]);

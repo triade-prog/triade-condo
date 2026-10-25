@@ -16,7 +16,7 @@ import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { AusenciaSindico, CandidatoConselho, Conselho, LinkMandado, MembroConselho, Recado } from "../tipos.ts";
 import { diaDoPrazo } from "../decisoes/comum.tsx";
 import { Escolha } from "../decisoes/Despesas.tsx";
-import { LinksMandados, recadoDosLinks } from "../decisoes/votacao.tsx";
+import { LinksMandados, recadoDosLinks, temLinkParaCopiar } from "../decisoes/votacao.tsx";
 import type { Moldura } from "./Pessoas.tsx";
 
 const COLUNAS = "md:grid-cols-[40px_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.1fr)_10rem_18px]";
@@ -175,7 +175,7 @@ export function AbaConselho({ moldura, contar }: { moldura: Moldura; contar: (n:
           return res;
         }} />
       <MarcarAusencia aberto={ausencia} c={c} aoFechar={() => setAusencia(false)}
-        salvo={(t, l) => { setAusencia(false); salvo(t); if (l.some((x) => x.envio === "COPIAR")) setLinks(l); }} />
+        salvo={(t, l) => { setAusencia(false); salvo(t); if (temLinkParaCopiar(l)) setLinks(l); }} />
       <LinksMandados links={links} aoFechar={() => setLinks(null)} />
       <EncerrarAusencia a={encerrar} aoFechar={() => setEncerrar(null)} salvo={(t) => { setEncerrar(null); salvo(t); }} />
     </div>
