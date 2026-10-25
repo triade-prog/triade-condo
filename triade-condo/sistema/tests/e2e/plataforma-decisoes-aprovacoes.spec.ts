@@ -651,9 +651,13 @@ test.describe("Plataforma · decisões e aprovações (R5)", () => {
     await expect(recado(page, "Despesa pedida ao conselho, para votar até 23/10. Link mandado pelo e-mail para João Pedro Alves. Link mandado pelo WhatsApp do condomínio para Marta Reis, Lúcia Andrade.")).toBeVisible();
     await expect(page.getByRole("dialog", { name: /pelo WhatsApp/ })).toHaveCount(0);
 
+    // Nas listas, envio é a situação da mensagem no WhatsApp do condomínio.
+    const pintura = estado.aprovacoes.despesas.find((d) => d.descricao === "Pintura da guarita")!;
+    const martaId = estado.aprovacoes.membros.find((m) => m.nome === "Marta Reis")!.id;
+    estado.aprovacoes.links.find((l) => l.itemId === pintura.id && l.membroId === martaId)!.estadoZap = "ENTREGUE";
     await page.getByRole("link", { name: "Pintura da guarita" }).click();
     const marta = page.getByRole("listitem").filter({ hasText: "Marta Reis" });
-    await expect(marta).toContainText("Link mandado pelo WhatsApp, ainda não aberto");
+    await expect(marta).toContainText("Pelo WhatsApp: entregue, ainda não aberto");
     await conferir(page);
     await marta.getByRole("button", { name: "Reenviar o link para Marta Reis" }).click();
     const janela = page.getByRole("dialog", { name: "Link mandado pelo WhatsApp" });
@@ -664,5 +668,54 @@ test.describe("Plataforma · decisões e aprovações (R5)", () => {
     expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^http:\/\/localhost:3000\/conselho\/link-/);
     await janela.getByRole("button", { name: "Pronto" }).click();
     await expect(recado(page, "Link novo mandado pelo WhatsApp do condomínio para Marta Reis. O anterior parou de valer.")).toBeVisible();
+  });
+
+  test("V-14: o número que pediu PARAR fica para copiar, com o motivo; o contato apagado pede o contato de novo ao renovar", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page, { comAprovacoes: true });
+    estado.aprovacoes.whatsappManda = true;
+    const marta = estado.aprovacoes.membros.find((m) => m.nome === "Marta Reis")!;
+    marta.whatsappParou = true;
+    const paulo = estado.aprovacoes.membros.find((m) => m.nome === "Paulo Dias")!;
+    Object.assign(paulo, { email: undefined, contatoApagadoEm: "2026-10-12T03:00:00.000Z" });
+
+    await page.goto(`${PLATAFORMA}/pessoas?aba=conselho`);
+    const membros = page.getByRole("region", { name: "Membros do conselho" });
+    await expect(membros.getByRole("listitem").filter({ hasText: "Marta Reis" }).getByText("Pediu PARAR no WhatsApp").filter({ visible: true }).first()).toBeVisible();
+    await expect(membros.getByRole("listitem").filter({ hasText: "Paulo Dias" }).getByText("Contato apagado").filter({ visible: true }).first()).toBeVisible();
+    await conferir(page);
+    await membros.getByRole("button", { name: "Marta Reis" }).click();
+    await expect(page.getByRole("dialog", { name: "Marta Reis" })).toContainText("Este número pediu PARAR no WhatsApp do condomínio: o link de Marta fica para copiar");
+    await page.getByRole("dialog", { name: "Marta Reis" }).getByRole("button", { name: "Fechar" }).first().click();
+
+    await membros.getByRole("button", { name: "Paulo Dias" }).click();
+    const ficha = page.getByRole("dialog", { name: "Paulo Dias" });
+    await expect(ficha).toContainText("Contato apagado (saiu do conselho há mais de 90 dias), em 12/10.");
+    await conferir(page);
+    await ficha.getByRole("button", { name: "Renovar mandato" }).click();
+    const renovar = page.getByRole("dialog", { name: "Renovar mandato" });
+    await expect(renovar).toContainText("Escreva o e-mail de novo para o link chegar.");
+    await renovar.getByRole("button", { name: "Renovar" }).click();
+    await expect(renovar.getByText("Escreva um e-mail válido.")).toBeVisible();
+    await renovar.getByRole("textbox", { name: "E-mail" }).fill("paulo.dias@exemplo.com");
+    await conferir(page);
+    await renovar.getByRole("button", { name: "Renovar" }).click();
+    await expect(recado(page, "Mandato de Paulo Dias renovado")).toBeVisible();
+    expect(paulo).toMatchObject({ email: "paulo.dias@exemplo.com", contatoApagadoEm: undefined });
+
+    // Pedida ao conselho: a Lúcia recebe pelo WhatsApp do condomínio; o link da Marta fica para copiar, com o motivo.
+    await page.goto(`${PLATAFORMA}/pedidos/pedido?id=${estado.pedidos[1]!.id}`);
+    await maisAcoes(page, "Pedir decisão");
+    const pedir = page.getByRole("dialog", { name: "Pedir decisão · 2026-0002" });
+    await pedir.getByRole("group", { name: "Quem decide" }).getByRole("radio", { name: /O conselho/ }).check();
+    await pedir.getByLabel("O que precisa ser decidido").fill("Qual empresa faz a impermeabilização da laje");
+    await pedir.getByLabel("Alternativa 1").fill("Remendo no trecho rachado");
+    await pedir.getByRole("button", { name: "Pedir ao conselho" }).click();
+    const links = page.getByRole("dialog", { name: "Mande o link pelo WhatsApp" });
+    await expect(links).toContainText("O link não saiu pelo WhatsApp do condomínio. Copie o link de cada pessoa");
+    await expect(links.getByRole("listitem").filter({ hasText: "Marta Reis" })).toContainText("Este número pediu PARAR no WhatsApp do condomínio.");
+    await expect(links.getByRole("listitem").filter({ hasText: "Lúcia Andrade" })).toContainText("Enviado pelo WhatsApp do condomínio");
+    await conferir(page);
+    await links.getByRole("button", { name: "Pronto" }).click();
+    await expect(recado(page, "Link mandado pelo WhatsApp do condomínio para Lúcia Andrade. Falta mandar pelo WhatsApp para Marta Reis: copie o link na janela.")).toBeVisible();
   });
 });

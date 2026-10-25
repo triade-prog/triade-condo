@@ -7,10 +7,11 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
-import { AVISO_PECA_O_LINK, caminhoLinkConselho, FRASE_ADVOGADO, mostrarCusto, PAPEIS_CONSELHO, textoEscolha, textoPlacar } from "@triade/domain";
+import { AVISO_PECA_O_LINK, caminhoLinkConselho, ESTADOS_ENVIO_WHATSAPP, FRASE_ADVOGADO, MOTIVOS_SEM_WHATSAPP_CONSELHO, mostrarCusto, PAPEIS_CONSELHO, textoEscolha,
+  textoPlacar } from "@triade/domain";
 import { AvisoErro, Botao, CampoAreaTexto, camposComErro, chamarApi, Dialogo, Icone, Iniciais, Selo, textoDoErro, type ErroApi, type Tom } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
-import type { AlternativaDecisao, FinalidadeLink, LinkDoItem, LinkMandado, Votacao, VotoConselho } from "../tipos.ts";
+import type { AlternativaDecisao, EnvioLink, FinalidadeLink, LinkDoItem, LinkMandado, Votacao, VotoConselho } from "../tipos.ts";
 
 /** A barra do quórum: quanto a escolha que lidera já tem e a marca de quantos votos decidem. */
 export function BarraQuorum({ votos, titulares, necessarios }: { votos: number; titulares: number; necessarios: number }) {
@@ -44,10 +45,20 @@ function quandoVotou(v: VotoConselho): string {
   if (v.votadoEm) return `${diaHora(v.votadoEm)}${v.canal === "LINK" ? ", pelo link" : v.canal === "PAINEL" ? ", pelo painel" : ""}`;
   if (v.emDia === false) return "Mandato vencido: não vota";
   if (v.link?.abertoEm) return `Link aberto em ${diaHora(v.link.abertoEm)}`;
-  if (v.link?.envio === "COPIAR") return "Link para mandar pelo WhatsApp";
-  if (v.link?.envio === "FALHOU") return v.link.canal === "WHATSAPP" ? "A mensagem do link não chegou" : "O e-mail do link não chegou";
-  if (v.link?.envio === "WHATSAPP") return "Link mandado pelo WhatsApp, ainda não aberto";
-  return v.link ? "Link mandado, ainda não aberto" : "";
+  if (!v.link) return "";
+  if (copiaDoWhatsapp(v.link)) return "Link para mandar pelo WhatsApp";
+  if (v.link.canal === "WHATSAPP") return v.link.envio === "FALHOU" ? "A mensagem do link não chegou" : `Pelo WhatsApp: ${rotuloEnvioWhatsapp(v.link.envio).toLowerCase()}, ainda não aberto`;
+  if (v.link.envio === "FALHOU") return "O e-mail do link não chegou";
+  return "Link mandado, ainda não aberto";
+}
+
+/** O link de WhatsApp que a pessoa copia e manda: nada foi para a fila do WhatsApp do condomínio (COPIAR). */
+const copiaDoWhatsapp = (l: { canal: string; envio?: EnvioLink }) => l.canal === "WHATSAPP" && (!l.envio || l.envio === "COPIAR");
+
+/** A situação da mensagem do link no WhatsApp do condomínio: "Na fila", "Entregue", "Lida"… */
+export function rotuloEnvioWhatsapp(e?: EnvioLink): string {
+  if (e && e in ESTADOS_ENVIO_WHATSAPP) return ESTADOS_ENVIO_WHATSAPP[e as keyof typeof ESTADOS_ENVIO_WHATSAPP];
+  return e === "WHATSAPP" ? ESTADOS_ENVIO_WHATSAPP.NA_FILA : "Mandada";
 }
 
 /** Os votos, um por linha (quadro 414). Quem ainda não votou tem o Reenviar o link, para a gestão. */
@@ -193,6 +204,8 @@ export function LinksMandados({ links, aoFechar }: { links: LinkMandado[] | null
   const peloWhatsapp = lista.filter((l) => l.envio === "WHATSAPP" && !l.codigo);
   const falta = paraCopiar.some((l) => l.envio === "COPIAR");
   const comCodigo = paraCopiar.some((l) => l.envio === "COPIAR" && l.codigo);
+  const naoSaiu = paraCopiar.some((l) => l.envio === "COPIAR" && l.semWhatsapp)
+    ? "O link não saiu pelo WhatsApp do condomínio" : "O WhatsApp do condomínio ainda não manda este aviso sozinho";
   const chave = (l: LinkMandado) => `${l.membroId}-${l.finalidade ?? ""}-${l.decisaoId ?? l.despesaId ?? ""}`;
   const fechar = () => { setCopiado(null); aoFechar(); };
   return (
@@ -200,13 +213,14 @@ export function LinksMandados({ links, aoFechar }: { links: LinkMandado[] | null
       <div className="grid gap-4">
         <p className="t-texto">
           {!falta ? "O WhatsApp do condomínio já mandou o link. Se a pessoa não achar a mensagem, copie o link e mande da sua conversa com ela: é o mesmo link, pessoal, e vale até o fim do dia do prazo."
-            : comCodigo ? "O WhatsApp do condomínio ainda não manda este aviso sozinho. Copie o link de cada pessoa e mande da sua conversa com ela. O link é pessoal: vale até o fim do dia do prazo."
-              : "O WhatsApp do condomínio ainda não manda este aviso sozinho, e o link para copiar só aparece para o síndico e para quem cuida do conselho."}
+            : comCodigo ? `${naoSaiu}. Copie o link de cada pessoa e mande da sua conversa com ela. O link é pessoal: vale até o fim do dia do prazo.`
+              : `${naoSaiu}, e o link para copiar só aparece para o síndico e para quem cuida do conselho.`}
         </p>
         <ul className="grid gap-3">
           {paraCopiar.map((l) => (
             <li key={chave(l)} className="grid gap-2 rounded-[14px] border border-linha p-3">
               <span className="t-texto font-medium">{l.nome}{l.finalidade && l.finalidade !== "VOTO" ? ` · ${NOME_FINALIDADE[l.finalidade]}` : ""}</span>
+              {l.envio === "COPIAR" && l.semWhatsapp ? <span className="flex items-start gap-1.5 t-apoio"><Icone nome="info" className="mt-px h-4 w-4 shrink-0" />{MOTIVOS_SEM_WHATSAPP_CONSELHO[l.semWhatsapp]}</span> : null}
               {l.envio === "WHATSAPP" ? <span className="flex items-center gap-1.5 t-apoio"><Icone nome="check" className="h-4 w-4 shrink-0 text-ok" />Enviado pelo WhatsApp do condomínio</span> : null}
               {l.codigo ? (
                 <>
@@ -265,11 +279,9 @@ function situacaoDoLink(l: LinkDoItem): string {
   if (l.abertoEm) return `Aberto em ${diaHora(l.abertoEm)}`;
   if (!l.mandadoEm) return l.canal === "WHATSAPP" ? "Ainda sem link para copiar" : "Ainda não mandado";
   if (l.envio === "FALHOU") return l.canal === "WHATSAPP" ? "A mensagem do link não chegou" : "O e-mail do link não chegou";
+  if (l.canal === "WHATSAPP" && !copiaDoWhatsapp(l)) return `Mandado em ${diaHora(l.mandadoEm)} · mensagem ${rotuloEnvioWhatsapp(l.envio).toLowerCase()}, ainda não aberto`;
   return `${copiaDoWhatsapp(l) ? "Gerado" : "Mandado"} em ${diaHora(l.mandadoEm)}, ainda não aberto`;
 }
-
-/** O link de WhatsApp que a pessoa copia e manda (o WhatsApp do condomínio ainda não manda). */
-const copiaDoWhatsapp = (l: Pick<LinkDoItem, "canal" | "envio">) => l.canal === "WHATSAPP" && l.envio !== "WHATSAPP";
 
 /** Os links do substituto e do aviso da vencida, na decisão e na despesa pedidas a uma pessoa: o
  * de WhatsApp para copiar tem o Copiar (gera um código novo); o de e-mail e o que o WhatsApp do
@@ -285,7 +297,7 @@ export function LinksDoItem({ links, reenviar, nivel = "h3" }: { links: LinkDoIt
           <li key={`${l.membroId}-${l.finalidade}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-linha py-2.5">
             <span className="grid min-w-0 flex-1">
               <span className="t-texto font-medium">{l.nome} · {NOME_FINALIDADE[l.finalidade]}</span>
-              <span className="t-apoio">{l.envio === "WHATSAPP" ? "Pelo WhatsApp do condomínio" : l.canal === "WHATSAPP" ? "Pelo WhatsApp" : "Pelo e-mail"} · {situacaoDoLink(l)}</span>
+              <span className="t-apoio">{copiaDoWhatsapp(l) ? "Pelo WhatsApp" : l.canal === "WHATSAPP" ? "Pelo WhatsApp do condomínio" : "Pelo e-mail"} · {situacaoDoLink(l)}</span>
             </span>
             {reenviar && l.podeReenviar ? (
               <Botao variante="contorno" tamanho="m" onClick={() => reenviar(l)}>

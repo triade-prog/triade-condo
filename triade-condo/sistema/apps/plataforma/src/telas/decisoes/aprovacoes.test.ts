@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { ConselhoPublico, Despesa } from "../tipos.ts";
 import { achadosDaLigacao, ligacaoParaApi, linhaDespesa, situacaoDespesa, textoLigacao } from "./Despesas.tsx";
 import { textoVotosDespesa } from "./Despesa.tsx";
-import { abreJanelaDoReenvio, recadoDoReenvio, recadoDosLinks, temLinkParaCopiar } from "./votacao.tsx";
+import { abreJanelaDoReenvio, recadoDoReenvio, recadoDosLinks, rotuloEnvioWhatsapp, temLinkParaCopiar } from "./votacao.tsx";
 import { avisoMandato, votaPor } from "../pessoas/Conselho.tsx";
 import { textoResultado } from "../publico/Conselho.tsx";
 import { textoDecisoesAguardando } from "../Inicio.tsx";
@@ -96,6 +96,12 @@ describe("R5.3: o link pelo WhatsApp do condomínio (envio WHATSAPP)", () => {
     expect(abreJanelaDoReenvio(zap)).toBe(true);
     expect(abreJanelaDoReenvio({ ...zap, codigo: undefined })).toBe(false);
     expect(recadoDoReenvio({ ...zap, finalidade: "SUBSTITUTO" })).toBe("Link do substituto novo mandado pelo WhatsApp do condomínio para Marta. O anterior parou de valer.");
+  });
+  it("V-14: nas listas, envio é a situação da mensagem no WhatsApp do condomínio (0305)", () => {
+    expect(rotuloEnvioWhatsapp("ENTREGUE")).toBe("Entregue");
+    expect(rotuloEnvioWhatsapp("LIDA")).toBe("Lida");
+    expect(rotuloEnvioWhatsapp("WHATSAPP")).toBe("Na fila");
+    expect(rotuloEnvioWhatsapp("DESCONHECIDO")).toBe("Resultado desconhecido");
   });
 });
 

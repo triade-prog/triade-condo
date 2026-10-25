@@ -9,7 +9,7 @@ import type {
   Aniversario, CategoriaHistorico, Especie, ParentescoFamiliar, Porte,
   FamiliarCadastro, LigacaoCadastro, MotivoRecusaCadastro, PedidoLink, PetCadastro, VeiculoCadastro, OrdemPedidos,
   EventoHistoricoProntuario,
-  CanalConselho, EstadoDespesa, EstadoLinkConselho, FiltroDespesa, LINK_NAO_VALE, ModoDecisao, PapelConselho, QuorumConselho,
+  CanalConselho, EstadoDespesa, EstadoLinkConselho, FiltroDespesa, LINK_NAO_VALE, ModoDecisao, MotivoSemWhatsappConselho, PapelConselho, QuorumConselho,
 } from "@triade/domain";
 
 
@@ -641,6 +641,10 @@ export interface MembroConselho {
   incluidoEm: string;
   retiradoEm?: string;
   retiradoMotivo?: string;
+  /** O número pediu PARAR no WhatsApp do condomínio: o link fica para copiar (0305). */
+  whatsappParou?: boolean;
+  /** O celular e o e-mail apagados pelo prazo, 90 dias depois de sair do conselho (0305). */
+  contatoApagadoEm?: string;
 }
 
 export interface AusenciaSindico {
@@ -682,9 +686,11 @@ export interface RegrasDecisoes extends RegrasConselho {
   subsindico?: string;
 }
 
-/** Como o link chegou: e-mail (fila), COPIAR (WhatsApp sem modelo aprovado) ou WHATSAPP (na fila do
- * WhatsApp do condomínio, R5.3). */
-export type EnvioLink = "NA_FILA" | "ENVIANDO" | "ENVIADO" | "FALHOU" | "COPIAR" | "EMAIL" | "WHATSAPP";
+/** Como o link saiu. Na resposta: EMAIL, WHATSAPP (na fila do WhatsApp do condomínio) ou COPIAR.
+ * Nas listas, a situação do último envio, do e-mail (NA_FILA, ENVIANDO, ENVIADO, FALHOU, CANCELADO)
+ * ou do WhatsApp (ESTADOS_ENVIO_WHATSAPP), ou COPIAR quando nada foi para a fila (0305). */
+export type EnvioLink = "NA_FILA" | "ENVIANDO" | "ENVIADO" | "FALHOU" | "CANCELADO" | "COPIAR" | "EMAIL" | "WHATSAPP"
+  | "ENVIADA" | "ENTREGUE" | "LIDA" | "DESCONHECIDO" | "CANCELADA";
 
 export interface VotoConselho {
   membroId: string;
@@ -740,6 +746,10 @@ export interface LinkMandado {
   codigo?: string;
   /** "Peça o link ao síndico": quem pediu não vê o código, e ele nem nasce. */
   aviso?: string;
+  /** No WHATSAPP: a mensagem na fila (NA_FILA). */
+  estado?: string;
+  /** No COPIAR pelo WhatsApp: por que não foi sozinho (MOTIVOS_SEM_WHATSAPP_CONSELHO). */
+  semWhatsapp?: MotivoSemWhatsappConselho;
 }
 
 export interface AnexoAprovacao {

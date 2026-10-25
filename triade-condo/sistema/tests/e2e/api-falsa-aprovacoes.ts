@@ -21,12 +21,16 @@ type Papel = "SUBSINDICO" | "CONSELHEIRO" | "CONSELHEIRO_FISCAL" | "SUPLENTE";
 interface Membro {
   id: string; versao: number; nome: string; papel: Papel; canal: "WHATSAPP" | "EMAIL"; celular?: string; email?: string;
   vinculo?: string; contatoId?: string; unidade?: string; inicio: string; fim: string; incluidoEm: string; retiradoEm?: string; retiradoMotivo?: string;
+  /** 0305: o número pediu PARAR; o contato apagado 90 dias depois de sair do conselho. */
+  whatsappParou?: boolean; contatoApagadoEm?: string;
 }
 interface Voto { escolha: string; justificativa?: string; em: string; canal: "PAINEL" | "LINK" }
 interface Votacao { titulares: string[]; necessarios: number; votos: Record<string, Voto> }
 type Finalidade = "VOTO" | "SUBSTITUTO" | "AVISO";
 /** Sem código: pedido por quem não vê o código; o link ainda não nasceu e aparece como "Ainda sem link para copiar". */
-interface Link { codigo?: string; membroId: string; tipo: "DECISAO" | "DESPESA"; itemId: string; finalidade: Finalidade; valido: boolean; abertoEm?: string; mandadoEm?: string }
+interface Link { codigo?: string; membroId: string; tipo: "DECISAO" | "DESPESA"; itemId: string; finalidade: Finalidade; valido: boolean; abertoEm?: string; mandadoEm?: string;
+  /** A situação da mensagem no WhatsApp do condomínio (0305); sem ela, o link é para copiar. */
+  estadoZap?: string }
 interface Anexo { id: string; nome: string; tipo: string; parte: "DOCUMENTO" | "COMPROVANTE"; tamanho: number; situacao: string; enviadoEm: string; enviadoPor: string }
 interface Despesa {
   id: string; versao: number; estado: "AGUARDANDO" | "APROVADA" | "RECUSADA" | "RETIRADA" | "PAGA"; modo: "PESSOA" | "CONSELHO";
@@ -49,7 +53,7 @@ export interface EstadoAprovacoes {
   anexosDecisao: Record<string, Anexo[]>;
   /** O que a tela mandou, para o teste conferir. */
   enviados: { caminho: string; corpo: Record<string, unknown> }[];
-  /** R5.3: o WhatsApp do condomínio manda o link sozinho (envio WHATSAPP); sem isso, o link é para copiar (COPIAR). */
+  /** R5.3: o WhatsApp do condomínio manda o link sozinho (envio WHATSAPP); sem isso, o link é para copiar (COPIAR, WHATSAPP_DESLIGADO). */
   whatsappManda: boolean;
 }
 
@@ -168,7 +172,8 @@ function membroJson(m: Membro, gerencia: boolean) {
     mandatoVencendo: vencendo, canal: m.canal, painel: !!m.vinculo, ...(m.vinculo ? { pessoaId: m.vinculo } : {}), ...(m.contatoId ? { contatoId: m.contatoId } : {}),
     ...(m.unidade ? { unidade: m.unidade } : {}), ...(gerencia ? { celular: m.celular, email: m.email } : {}),
     celularMascarado: mascara(m.celular), emailMascarado: mascaraEmail(m.email), incluidoEm: m.incluidoEm,
-    ...(m.retiradoEm ? { retiradoEm: m.retiradoEm, retiradoMotivo: m.retiradoMotivo } : {}) };
+    ...(m.retiradoEm ? { retiradoEm: m.retiradoEm, retiradoMotivo: m.retiradoMotivo } : {}),
+    ...(m.whatsappParou ? { whatsappParou: true } : {}), ...(m.contatoApagadoEm ? { contatoApagadoEm: m.contatoApagadoEm } : {}) };
 }
 
 /** Quem está entrando, se for do conselho. */
@@ -189,7 +194,7 @@ function votacaoJson(a: EstadoAprovacoes, v: Votacao, x: Contexto, gestao: boole
     const link = [...a.links].reverse().find((l) => l.membroId === m.id && l.valido && v === a.votacoes[l.itemId]);
     return { membroId: m.id, nome: m.nome, papel: m.papel, emDia: emDia(m), ...(m.id === eu?.id ? { eu: true } : {}),
       ...(voto ? { escolha: voto.escolha, ...(voto.justificativa ? { justificativa: voto.justificativa } : {}), votadoEm: voto.em, canal: voto.canal } : {}),
-      ...(link || m.vinculo ? { link: { canal: m.canal, envio: envioDo(a, m), ...(link?.abertoEm ? { abertoEm: link.abertoEm } : {}),
+      ...(link || m.vinculo ? { link: { canal: m.canal, envio: envioDo(m, link), ...(link?.abertoEm ? { abertoEm: link.abertoEm } : {}),
         ...(link?.mandadoEm ? { mandadoEm: link.mandadoEm } : {}), podeReenviar: aberta && vota(m) } } : {}) };
   });
   const meu = eu ? v.votos[eu.id] : undefined;
@@ -199,8 +204,11 @@ function votacaoJson(a: EstadoAprovacoes, v: Votacao, x: Contexto, gestao: boole
       podeVotar: aberta && vota(eu) } } : {}) };
 }
 
-/** Como o link do membro sai: pelo e-mail, pelo WhatsApp do condomínio (R5.3) ou para copiar. */
-const envioDo = (a: EstadoAprovacoes, m: Membro) => (m.canal === "WHATSAPP" ? (a.whatsappManda ? "WHATSAPP" : "COPIAR") : "ENVIADO");
+/** Nas listas, a situação do último envio do link: do e-mail, da mensagem no WhatsApp do condomínio
+ * ou COPIAR quando nada foi para a fila (0305). */
+const envioDo = (m: Membro, l?: Link) => (m.canal === "WHATSAPP" ? l?.estadoZap ?? "COPIAR" : "ENVIADO");
+/** Por que o link não vai pelo WhatsApp do condomínio, ou null quando vai. */
+const semWhatsapp = (a: EstadoAprovacoes, m: Membro) => (m.whatsappParou ? "PAROU" : !a.whatsappManda ? "WHATSAPP_DESLIGADO" : null);
 
 /** O síndico e quem cuida do conselho veem o código para copiar; os outros recebem o aviso. */
 const veCodigo = (x: ContextoAprovacoes) => x.pode("conselho.editar") || x.eu.vinculo === x.vAna;
@@ -210,18 +218,20 @@ const veCodigo = (x: ContextoAprovacoes) => x.pode("conselho.editar") || x.eu.vi
 function novoLink(a: EstadoAprovacoes, x: ContextoAprovacoes, m: Membro, tipo: Link["tipo"], itemId: string, finalidade: Finalidade = "VOTO") {
   const item = tipo === "DECISAO" ? { decisaoId: itemId } : { despesaId: itemId };
   const base = { membroId: m.id, nome: m.nome, canal: m.canal, finalidade, ...item };
-  if (m.canal === "WHATSAPP" && !veCodigo(x) && !a.whatsappManda) {
+  const sem = m.canal === "WHATSAPP" ? semWhatsapp(a, m) : null;
+  if (m.canal === "WHATSAPP" && !veCodigo(x) && sem) {
     if (!a.links.some((l) => l.membroId === m.id && l.itemId === itemId && l.finalidade === finalidade && l.valido)) {
       a.links.push({ membroId: m.id, tipo, itemId, finalidade, valido: true });
     }
-    return { ...base, envio: "COPIAR", aviso: AVISO_PECA_O_LINK };
+    return { ...base, envio: "COPIAR", semWhatsapp: sem, aviso: AVISO_PECA_O_LINK };
   }
   for (const l of a.links) if (l.membroId === m.id && l.itemId === itemId && l.finalidade === finalidade) l.valido = false;
   const codigo = `link-${novoId()}`;
-  a.links.push({ codigo, membroId: m.id, tipo, itemId, finalidade, valido: true, mandadoEm: AGORA });
   // Pelo WhatsApp do condomínio, o código nasce para todos e só volta para quem pode vê-lo.
-  if (m.canal === "WHATSAPP" && a.whatsappManda) return { ...base, envio: "WHATSAPP", ...(veCodigo(x) ? { codigo } : {}) };
-  return { ...base, envio: m.canal === "WHATSAPP" ? "COPIAR" : "EMAIL", ...(m.canal === "WHATSAPP" ? { codigo } : {}) };
+  const peloZap = m.canal === "WHATSAPP" && !sem;
+  a.links.push({ codigo, membroId: m.id, tipo, itemId, finalidade, valido: true, mandadoEm: AGORA, ...(peloZap ? { estadoZap: "NA_FILA" } : {}) });
+  if (peloZap) return { ...base, envio: "WHATSAPP", estado: "NA_FILA", ...(veCodigo(x) ? { codigo } : {}) };
+  return { ...base, envio: m.canal === "WHATSAPP" ? "COPIAR" : "EMAIL", ...(m.canal === "WHATSAPP" ? { codigo, semWhatsapp: sem } : {}) };
 }
 
 /** O subsíndico responde no lugar do síndico ausente: sem painel, recebe o link do substituto. */
@@ -242,7 +252,7 @@ function linksDoItem(a: EstadoAprovacoes, itemId: string, aberta: boolean) {
     return true;
   }).map((l) => {
     const m = a.membros.find((y) => y.id === l.membroId)!;
-    return { membroId: m.id, nome: m.nome, finalidade: l.finalidade, canal: m.canal, envio: envioDo(a, m),
+    return { membroId: m.id, nome: m.nome, finalidade: l.finalidade, canal: m.canal, envio: envioDo(m, l),
       ...(l.abertoEm ? { abertoEm: l.abertoEm } : {}), ...(l.mandadoEm ? { mandadoEm: l.mandadoEm } : {}),
       podeReenviar: aberta && emDia(m) && (l.finalidade !== "SUBSTITUTO" || !!ausenciaAtiva(a)) };
   });
@@ -587,7 +597,7 @@ export async function rotasAprovacoes(route: Route, a: EstadoAprovacoes, x: Cont
       return erro(route, 400, "VALIDATION_ERROR", { motivo: "VOTO_PENDENTE" });
     }
     Object.assign(m, { papel: texto("papel"), inicio: texto("mandatoInicio"), fim: texto("mandatoFim"), canal: texto("canal"), celular: celular || undefined,
-      email: texto("email") || undefined, versao: m.versao + 1 });
+      email: texto("email") || undefined, versao: m.versao + 1, contatoApagadoEm: undefined });
     return route.fulfill({ json: { versao: m.versao } });
   }
 
