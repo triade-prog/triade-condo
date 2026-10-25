@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Sobe um Postgres temporário, aplica as migrations em ordem, roda os testes pgTAP e o teste
-# de edição simultânea e do fato do comparativo registrado duas vezes, com duas conexões de verdade.
+# de edição simultânea, do fato do comparativo registrado duas vezes e da ordem das travas do contrato,
+# com conexões de verdade.
 # Uso: bash scripts/test-db.sh   (precisa de PostgreSQL 16+ com pgTAP e pg_prove)
 set -euo pipefail
 RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
@@ -34,3 +35,6 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/edicao-simultanea
 
 # O mesmo fato do comparativo registrado ao mesmo tempo (0307): FATO_EXISTE, não erro 500.
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/fato-simultaneo.sh"
+
+# Conferir um envio enquanto o contrato é gerado de novo (0308): a mesma ordem de travas, sem impasse.
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/contrato-envio-simultaneo.sh"

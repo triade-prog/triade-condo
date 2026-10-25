@@ -10,6 +10,9 @@
 // kit para o conselho, respostas prontas e referências.
 // Kit pelos critérios do síndico (0307): os critérios e o problema na ficha do prédio e os fatos
 // que a equipe confirmou sobre o sistema atual e os concorrentes.
+// Contrato pelo gov.br, piloto, virar cliente, troca de sistema e vários condomínios (0308): o
+// modelo de contrato, os documentos do aceite, o PDF montado aqui, a conferência automática do PDF
+// assinado, a conferência da equipe, virar cliente e o link do síndico depois do aceite.
 // Quem pode o quê é decidido no banco (funções internas e clientes atribuídos, PI-10); aqui
 // só se valida a entrada e se fala com o Auth para os convites.
 
@@ -107,8 +110,26 @@ import {
   revogarLinkSchema,
   salvarVersaoSchema,
   sugestaoPropostaSchema,
+  cartaTrocaSchema,
+  conferirEnvioSchema,
+  documentoAceiteSchema,
+  encerrarPilotoSchema,
+  envioContratoPublicoSchema,
+  envioContratoSchema,
+  gerarContratoSchema,
+  iniciarPilotoSchema,
+  modeloContratoSchema,
+  novaOportunidadeSchema,
+  PLANILHA_TROCA,
+  planilhaTrocaCsv,
+  recusarEnvioSchema,
+  TAMANHO_MAXIMO_PDF_CONTRATO,
+  trocaSistemaSchema,
+  usarModeloContratoSchema,
+  virarClienteSchema,
 } from "@triade/domain";
-import type { Armazenamento } from "../_shared/arquivos.ts";
+import { type Armazenamento, verificarArquivo } from "../_shared/arquivos.ts";
+import { type ConferenciaAssinatura, conferirAssinatura, gerarPdfContrato, type RetratoContrato, sha256Bytes } from "./contrato.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { registrar } from "../_shared/registro.ts";
 import { criarApp } from "../_shared/app.ts";
@@ -134,6 +155,8 @@ export interface DepsConsole extends DepsSessao {
   whatsapp?: { conector: ConectorWhatsapp; chave: CryptoKey; urlAvisos: string };
   /** Segredo que o site manda no pedido de demonstração (CM-01). Sem ele, a entrada fica fechada. */
   segredoSite?: string;
+  /** Documentos do aceite, contratos gerados e PDFs assinados (bucket "comercial", 0308). */
+  armazenamentoContrato?: Armazenamento;
 }
 
 /** Cabeçalho com o segredo do site na entrada dos pedidos de demonstração. */
@@ -952,6 +975,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   });
 
   const interessado = (c: Context<VarsSessao>) => ({ p_pessoa: pessoa(c), p_id: idDaRota(c, "id") });
+  const interessadoContrato = (c: Context<VarsSessao>) => ({ p_pessoa: pessoa(c), p_interessado: idDaRota(c, "id") });
 
   app.get("/v1/comercial/interessados", async (c) =>
     c.json(await rpc("comercial_lista", { p_pessoa: pessoa(c), p_busca: (c.req.query("q") ?? "").trim().slice(0, 60) || null })));
@@ -1174,6 +1198,187 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json(await rpc("comercial_retirar_referencia", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
   });
 
+  // ---------------------------------------------------------------------------------------
+  // Contrato pelo gov.br (0308; CM-13, quadros 440 a 444). O banco decide quem pode e a ordem;
+  // aqui ficam o armazenamento, o PDF e a conferência automática do arquivo.
+  const contratos = () => {
+    if (!deps.armazenamentoContrato) throw new ErroDominio("INTERNAL_ERROR");
+    return deps.armazenamentoContrato;
+  };
+  const linkArquivo = async (a: { caminho: string; nome: string; tipo: string }, baixar: boolean) => ({
+    url: await contratos().linkLeitura(a.caminho, VALIDADE_LINK_ARQUIVO_S, baixar ? a.nome : undefined),
+    tipo: a.tipo,
+    expiraEm: new Date(Date.now() + VALIDADE_LINK_ARQUIVO_S * 1000).toISOString(),
+  });
+  type EnvioAVerificar = { caminho: string; baseCaminho: string | null; baseSha256: string; baseTamanho: number };
+  const envioPut = async (r: { caminho: string; tipo: string }) => ({ url: await contratos().linkEnvio(r.caminho), metodo: "PUT", tipo: r.tipo });
+  const dadosDocumento = (d: { tipo: string; nome: string; tamanho: number; cnpj: string | null; mandatoAte: string | null }) =>
+    ({ tipo: d.tipo, nome: d.nome, tamanho: d.tamanho, cnpj: d.cnpj, mandatoAte: d.mandatoAte });
+
+  /** Confere o documento enviado: só PDF, até 10 MB, sem conteúdo ativo. O recusado é apagado. */
+  async function verificarDocumento(caminho: string, gravar: (r: { liberado: boolean; tamanho: number | null; sha256: string | null; motivo: string | null }) => Promise<unknown>) {
+    const bytes = await contratos().ler(caminho);
+    const r = bytes ? verificarArquivo(bytes, "application/pdf", TAMANHO_MAXIMO_PDF_CONTRATO) : { ok: false as const, motivo: "O arquivo não chegou. Envie de novo." };
+    if (r.ok) return await gravar({ liberado: true, tamanho: r.bytes.length, sha256: await sha256Bytes(r.bytes), motivo: null });
+    if (bytes) await contratos().apagar(caminho);
+    const fim = await gravar({ liberado: false, tamanho: null, sha256: null, motivo: r.motivo });
+    return { ...(fim as Record<string, unknown>), motivoTexto: r.motivo };
+  }
+
+  /**
+   * Confere o PDF assinado contra a base que o banco aponta (o PDF gerado ou o arquivo conferido do
+   * condomínio), lida do armazenamento e conferida pelo resumo; o que vem sem assinatura nova é apagado.
+   */
+  async function verificarEnvio(a: EnvioAVerificar, gravar: (resultado: unknown) => Promise<{ apagarArquivo?: boolean }>) {
+    let resultado: ConferenciaAssinatura;
+    if (!a.baseCaminho) {
+      resultado = { valido: false, motivo: "O contrato mudou. Baixe o novo, assine pelo gov.br e envie de novo." };
+    } else {
+      const base = await contratos().ler(a.baseCaminho);
+      if (!base || base.length !== a.baseTamanho || (await sha256Bytes(base)) !== a.baseSha256) throw new ErroDominio("INTERNAL_ERROR");
+      resultado = await conferirAssinatura(await contratos().ler(a.caminho), base);
+    }
+    const fim = await gravar(resultado);
+    if (fim.apagarArquivo) await contratos().apagar(a.caminho);
+    return fim;
+  }
+
+  // Modelos › Contrato (quadro 443): o Comercial vê; só a Administração muda e põe em uso.
+  app.get("/v1/comercial/modelos/contrato", async (c) => c.json(await rpc("comercial_modelos_contrato", { p_pessoa: pessoa(c) })));
+  async function salvarModeloContrato(c: Context<VarsSessao>, id: string | null) {
+    const { versao, ...d } = await lerCorpo(c, modeloContratoSchema);
+    if (id && !versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("comercial_salvar_modelo_contrato", { p_pessoa: pessoa(c), p_id: id, p_versao: versao, p_dados: d });
+  }
+  app.post("/v1/comercial/modelos/contrato", async (c) => c.json(await salvarModeloContrato(c, null), 201));
+  app.put("/v1/comercial/modelos/contrato/:id", async (c) => c.json(await salvarModeloContrato(c, idDaRota(c, "id"))));
+  app.post("/v1/comercial/modelos/contrato/:id/usar", async (c) => {
+    const d = await lerCorpo(c, usarModeloContratoSchema);
+    return c.json(await rpc("comercial_usar_modelo_contrato", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: d.versao }));
+  });
+
+  // O contrato do interessado (quadros 440 e 442): documentos, contrato, envios e o que pode.
+  app.get("/v1/comercial/interessados/:id/contrato", async (c) =>
+    c.json(await rpc("comercial_contrato", { p_pessoa: pessoa(c), p_interessado: idDaRota(c, "id") })));
+
+  // Gerar contrato: o banco grava o retrato; aqui sai o PDF, que é guardado com o sha256.
+  app.post("/v1/comercial/interessados/:id/contrato", async (c) => {
+    const d = await lerCorpo(c, gerarContratoSchema);
+    const arm = contratos();
+    const g = await rpc<{ contratoId: string; hash: string; caminho: string; dados: RetratoContrato }>("comercial_gerar_contrato", {
+      p_pessoa: pessoa(c), p_interessado: idDaRota(c, "id"), p_data_inicio: d.dataInicio, p_motivo: d.motivo,
+    });
+    const pdf = await gerarPdfContrato(g.dados, g.hash);
+    await arm.gravar(g.caminho, pdf, "application/pdf");
+    return c.json(await rpc("comercial_contrato_pronto", {
+      p_pessoa: pessoa(c), p_contrato: g.contratoId, p_sha256: await sha256Bytes(pdf), p_tamanho: pdf.length,
+    }), 201);
+  });
+
+  // Documentos pela equipe (o síndico mandou por outro canal).
+  app.post("/v1/comercial/interessados/:id/documentos", async (c) => {
+    const d = await lerCorpo(c, documentoAceiteSchema);
+    const r = await rpc<{ documentoId: string; caminho: string; tipo: string }>("comercial_iniciar_documento", {
+      p_pessoa: pessoa(c), p_interessado: idDaRota(c, "id"), p_dados: dadosDocumento(d),
+    });
+    return c.json({ documentoId: r.documentoId, envio: await envioPut(r) }, 201);
+  });
+  app.post("/v1/comercial/documentos/:id/verificar", async (c) => {
+    const ids = { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") };
+    const a = await rpc<{ caminho: string }>("comercial_documento_a_verificar", ids);
+    return c.json(await verificarDocumento(a.caminho, (r) => rpc("comercial_verificar_documento", {
+      ...ids, p_liberado: r.liberado, p_tamanho: r.tamanho, p_sha256: r.sha256, p_motivo: r.motivo,
+    })));
+  });
+  app.get("/v1/comercial/documentos/:id/link", async (c) => {
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("comercial_abrir_documento", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") });
+    return c.json(await linkArquivo(a, c.req.query("baixar") === "1"));
+  });
+
+  // O PDF gerado ou um envio, para conferir no validador (link de 5 minutos).
+  app.get("/v1/comercial/contratos/:id/link", async (c) => {
+    const envio = c.req.query("envio") || null;
+    if (envio !== null && !UUID_ROTA.test(envio)) throw new ErroDominio("VALIDATION_ERROR", { campos: ["envio"] });
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("comercial_abrir_contrato", {
+      p_pessoa: pessoa(c), p_contrato: idDaRota(c, "id"), p_envio: envio,
+    });
+    return c.json(await linkArquivo(a, c.req.query("baixar") === "1"));
+  });
+
+  // O PDF assinado pela equipe: a TRÍADE (quem assina por ela) ou o do condomínio que chegou por outro canal.
+  app.post("/v1/comercial/contratos/:id/envios", async (c) => {
+    const d = await lerCorpo(c, envioContratoSchema);
+    const r = await rpc<{ envioId: string; caminho: string; tipo: string }>("comercial_iniciar_envio", {
+      p_pessoa: pessoa(c), p_contrato: idDaRota(c, "id"), p_dados: { parte: d.parte, nome: d.nome, tamanho: d.tamanho },
+    });
+    return c.json({ envioId: r.envioId, envio: await envioPut(r) }, 201);
+  });
+  app.post("/v1/comercial/envios/:id/verificar", async (c) => {
+    const ids = { p_pessoa: pessoa(c), p_envio: idDaRota(c, "id") };
+    const a = await rpc<EnvioAVerificar>("comercial_envio_a_verificar", ids);
+    return c.json(await verificarEnvio(a, (resultado) => rpc("comercial_verificar_envio", { ...ids, p_resultado: resultado })));
+  });
+  // Conferir no validador (quadro 442): as três marcas são obrigatórias.
+  app.post("/v1/comercial/envios/:id/conferir", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, conferirEnvioSchema);
+    return c.json(await rpc("comercial_conferir_envio", { p_pessoa: pessoa(c), p_envio: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+  app.post("/v1/comercial/envios/:id/recusar", async (c) => {
+    const d = await lerCorpo(c, recusarEnvioSchema);
+    return c.json(await rpc("comercial_recusar_envio", { p_pessoa: pessoa(c), p_envio: idDaRota(c, "id"), p_versao: d.versao, p_motivo: d.motivo }));
+  });
+
+  // Virar cliente (CM-08, quadro 333): só com as duas assinaturas conferidas; tudo de uma vez.
+  app.post("/v1/comercial/interessados/:id/virar-cliente", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, virarClienteSchema);
+    return c.json(await rpc("comercial_virar_cliente", { ...interessadoContrato(c), p_versao: versao, p_dados: d }), 201);
+  });
+
+  // Piloto (CM-21, quadro 338).
+  app.get("/v1/comercial/interessados/:id/piloto", async (c) => c.json(await rpc("comercial_piloto", interessadoContrato(c))));
+  app.post("/v1/comercial/interessados/:id/piloto", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, iniciarPilotoSchema);
+    return c.json(await rpc("comercial_iniciar_piloto", { ...interessadoContrato(c), p_versao: versao, p_dados: d }), 201);
+  });
+  app.post("/v1/comercial/pilotos/:id/encerrar", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, encerrarPilotoSchema);
+    return c.json(await rpc("comercial_encerrar_piloto", { p_pessoa: pessoa(c), p_piloto: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+
+  // Troca de sistema (CM-29, quadro 345): carta-modelo, o que falta, planilha-modelo e linha do tempo.
+  app.get("/v1/comercial/interessados/:id/troca", async (c) => c.json(await rpc("comercial_troca", interessadoContrato(c))));
+  app.put("/v1/comercial/interessados/:id/troca", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, trocaSistemaSchema);
+    return c.json(await rpc("comercial_salvar_troca", { ...interessadoContrato(c), p_versao: versao, p_dados: d }));
+  });
+  app.post("/v1/comercial/interessados/:id/troca/carta-enviada", async (c) => {
+    const d = await lerCorpo(c, cartaTrocaSchema);
+    return c.json(await rpc("comercial_carta_troca_enviada", { ...interessadoContrato(c), p_versao: d.versao }));
+  });
+  app.get("/v1/comercial/troca/planilha-modelo", (c) =>
+    c.body(planilhaTrocaCsv(), 200, {
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": `attachment; filename="${PLANILHA_TROCA.arquivo}"`,
+    }));
+
+  // Vários condomínios do mesmo contato (CM-09).
+  app.get("/v1/comercial/interessados/:id/oportunidades", async (c) => c.json(await rpc("comercial_oportunidades", interessado(c))));
+  app.post("/v1/comercial/interessados/:id/oportunidades", async (c) => {
+    const d = await lerCorpo(c, novaOportunidadeSchema);
+    return c.json(await rpc("comercial_nova_oportunidade", { ...interessado(c), p_dados: d }), 201);
+  });
+
+  // Na ficha do cliente: o contrato assinado (com o link do PDF final) e a troca de sistema.
+  app.get("/v1/clientes/:id/contrato", async (c) => {
+    const r = await rpc<{ contrato: unknown; arquivo?: { caminho: string; nome: string; tipo: string } }>("console_contrato_cliente", {
+      p_pessoa: pessoa(c), p_condominio: idDaRota(c, "id"),
+    });
+    if (!r.arquivo) return c.json({ contrato: r.contrato });
+    return c.json({ contrato: r.contrato, pdf: c.req.query("link") === "1" ? await linkArquivo(r.arquivo, c.req.query("baixar") === "1") : undefined });
+  });
+  app.get("/v1/clientes/:id/troca-sistema", async (c) =>
+    c.json(await rpc("console_troca_sistema", { p_pessoa: pessoa(c), p_condominio: idDaRota(c, "id") })));
+
   // O link da proposta (E.1, quadros 328 e 329): sem sessão, pelo repasse do Console (/o/[codigo]).
   // O código é a chave; cada aparelho tem limite de uso, como o mural. O aparelho é o HMAC do IP
   // com o segredo do repasse: sem o segredo, ninguém refaz o resumo a partir de um IP.
@@ -1206,6 +1411,56 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json(await rpc("publico_aceitar_proposta", {
       p_codigo: codigo, p_dados: { nome: d.nome, cpf: d.cpf, cargo: d.cargo, concordo: d.concordo }, p_ip: ipDaChamada(c.req.raw.headers), p_aparelho: a,
     }), 201);
+  });
+
+  // Depois do aceite (quadro 441): os documentos, o contrato para assinar pelo gov.br e o PDF
+  // assinado, pelo mesmo link, até contrato_link_dias depois do aceite. Só PDF, até 10 MB. Cada
+  // aparelho tem limite de envios.
+  app.get("/v1/publico/propostas/:codigo/contrato", async (c) => {
+    const codigo = codigoProposta(c);
+    await dentroDoLimite("proposta", await aparelho(c));
+    return c.json(await rpc("publico_contrato", { p_codigo: codigo }));
+  });
+  app.post("/v1/publico/propostas/:codigo/documentos", async (c) => {
+    const codigo = codigoProposta(c);
+    await dentroDoLimite("contrato", await aparelho(c));
+    const d = await lerCorpo(c, documentoAceiteSchema);
+    const r = await rpc<{ documentoId: string; caminho: string; tipo: string }>("publico_iniciar_documento", {
+      p_codigo: codigo, p_dados: dadosDocumento(d), p_ip: ipDaChamada(c.req.raw.headers),
+    });
+    return c.json({ documentoId: r.documentoId, envio: await envioPut(r) }, 201);
+  });
+  app.post("/v1/publico/propostas/:codigo/documentos/:id/verificar", async (c) => {
+    const codigo = codigoProposta(c);
+    const id = idDaRota(c, "id");
+    await dentroDoLimite("contrato", await aparelho(c));
+    const a = await rpc<{ caminho: string }>("publico_documento_a_verificar", { p_codigo: codigo, p_id: id });
+    return c.json(await verificarDocumento(a.caminho, (r) => rpc("publico_verificar_documento", {
+      p_codigo: codigo, p_id: id, p_liberado: r.liberado, p_tamanho: r.tamanho, p_sha256: r.sha256, p_motivo: r.motivo,
+    })));
+  });
+  // Baixar o contrato para assinar ou, depois das duas assinaturas, o PDF final (?final=1).
+  app.get("/v1/publico/propostas/:codigo/contrato/pdf", async (c) => {
+    const codigo = codigoProposta(c);
+    await dentroDoLimite("proposta", await aparelho(c));
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("publico_abrir_contrato", { p_codigo: codigo, p_final: c.req.query("final") === "1" });
+    return c.json(await linkArquivo(a, true));
+  });
+  app.post("/v1/publico/propostas/:codigo/contrato/assinado", async (c) => {
+    const codigo = codigoProposta(c);
+    await dentroDoLimite("contrato", await aparelho(c));
+    const d = await lerCorpo(c, envioContratoPublicoSchema);
+    const r = await rpc<{ envioId: string; caminho: string; tipo: string }>("publico_iniciar_envio", {
+      p_codigo: codigo, p_dados: { nome: d.nome, tamanho: d.tamanho }, p_ip: ipDaChamada(c.req.raw.headers),
+    });
+    return c.json({ envioId: r.envioId, envio: await envioPut(r) }, 201);
+  });
+  app.post("/v1/publico/propostas/:codigo/contrato/assinado/:id/verificar", async (c) => {
+    const codigo = codigoProposta(c);
+    const id = idDaRota(c, "id");
+    await dentroDoLimite("contrato", await aparelho(c));
+    const a = await rpc<EnvioAVerificar>("publico_envio_a_verificar", { p_codigo: codigo, p_id: id });
+    return c.json(await verificarEnvio(a, (resultado) => rpc("publico_verificar_envio", { p_codigo: codigo, p_id: id, p_resultado: resultado })));
   });
 
   return app;

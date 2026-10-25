@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { conjuntoDaAcao, mostrarValor, nomeCompetencia, planoSchema, proximaCompetencia, recebimentoSchema } from "./planos.ts";
+import { conjuntoDaAcao, mostrarValor, nomeCompetencia, nomeDaCobranca, planoSchema, proximaCompetencia, recebimentoSchema } from "./planos.ts";
 
 const plano = { nome: "Fundador", ciclo: "MENSAL", diaVencimento: 10, implantacaoSemCobranca: true, inicioCompetencia: "2026-11-01" };
 
@@ -27,6 +27,13 @@ describe("planos e cobrança (0291)", () => {
   it("competências por extenso e a seguinte", () => {
     expect(nomeCompetencia("2026-10-01")).toBe("Outubro/2026");
     expect(proximaCompetencia("2026-12-01")).toBe("2027-01-01");
+  });
+
+  it("a implantação em parcelas diz qual é e de quantas; a de uma só e a mensalidade, não", () => {
+    expect(nomeDaCobranca({ tipo: "IMPLANTACAO", parcela: 2, parcelas: 3 })).toBe("Implantação (2/3)");
+    expect(nomeDaCobranca({ tipo: "IMPLANTACAO" })).toBe("Implantação");
+    expect(nomeDaCobranca({ tipo: "IMPLANTACAO", parcela: 1, parcelas: 1 })).toBe("Implantação");
+    expect(nomeDaCobranca({ tipo: "MENSALIDADE", competencia: "2026-12-01" })).toBe("Dezembro/2026");
   });
 
   it("recebimento de um cliente pede a cobrança; sem cliente, não", () => {

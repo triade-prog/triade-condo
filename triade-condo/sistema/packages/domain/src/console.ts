@@ -25,6 +25,9 @@ export type Cenario = keyof typeof CENARIOS;
 export const ESTAGIOS = {
   IMPLANTACAO: "Em implantação",
   ATIVO: "Ativo",
+  // O piloto (CM-21, 0308) começa e termina pelo Comercial; "Mudar estágio" não usa estes dois.
+  PILOTO: "Em piloto",
+  PILOTO_ENCERRADO: "Piloto encerrado",
 } as const;
 export type Estagio = keyof typeof ESTAGIOS;
 
@@ -97,7 +100,7 @@ export const contratoSchema = z.object({ versao, referenciaContrato: textoOpcion
 
 export const estagioSchema = z.object({
   versao,
-  estagio: z.enum(chaves(ESTAGIOS)),
+  estagio: z.enum(["IMPLANTACAO", "ATIVO"]),
   motivo: textoOpcional(300),
 });
 

@@ -6,6 +6,7 @@
 // endereço: nada vai para o armazenamento do navegador, e a página não tem referrer (cabecalhos.ts).
 // Cada abertura conta uma vez (a equipe vê em quantos aparelhos), por isso a leitura é uma só.
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { cpfValido, formatarCpf, linkWhatsappComercial, mostrarValor, TEXTO_ACEITE, TEXTO_CONCORDO, TEXTO_PLANEJADO } from "@triade/domain";
@@ -16,7 +17,7 @@ import {
 } from "./propostas.ts";
 
 /** O WhatsApp comercial da TRÍADE, o mesmo do site (apps/site/src/dados/empresa.ts). */
-const WHATSAPP_COMERCIAL = (process.env.NEXT_PUBLIC_WHATSAPP_COMERCIAL ?? "5511957850073").replace(/\D/g, "");
+export const WHATSAPP_COMERCIAL = (process.env.NEXT_PUBLIC_WHATSAPP_COMERCIAL ?? "5511957850073").replace(/\D/g, "");
 
 type Carga =
   | { estado: "carregando" }
@@ -28,12 +29,12 @@ type Carga =
 
 const dataCurta = (d?: string) => (d ? d.slice(0, 10).split("-").reverse().join("/") : "");
 
-function Pagina({ children }: { children: ReactNode }) {
+export function Pagina({ children, rotulo = "Proposta comercial" }: { children: ReactNode; rotulo?: string }) {
   return (
     <div className="min-h-dvh bg-fundo">
       <header className="flex items-center justify-between gap-3 border-b border-linha bg-superficie px-4 py-3.5">
         <Logo className="h-8 w-auto" />
-        <span className="t-apoio">Proposta comercial</span>
+        <span className="t-apoio">{rotulo}</span>
       </header>
       <main id="conteudo" className="mx-auto grid max-w-2xl gap-3 px-4 pt-4 pb-10 sm:pt-8">
         {children}
@@ -46,14 +47,14 @@ function Pagina({ children }: { children: ReactNode }) {
   );
 }
 
-const Bloco = ({ children, rotulo }: { children: ReactNode; rotulo?: string }) => (
+export const Bloco = ({ children, rotulo }: { children: ReactNode; rotulo?: string }) => (
   <section aria-label={rotulo} className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-4 shadow-s1 sm:p-5">{children}</section>
 );
 
-function Duvida({ texto = "Tenho uma dúvida" }: { texto?: string }) {
+export function Duvida({ texto = "Tenho uma dúvida", mensagem = "Olá! Tenho uma dúvida sobre a proposta da TRÍADE Condo." }: { texto?: string; mensagem?: string }) {
   if (!WHATSAPP_COMERCIAL) return null;
   return (
-    <a href={linkWhatsappComercial(WHATSAPP_COMERCIAL, "Olá! Tenho uma dúvida sobre a proposta da TRÍADE Condo.")} target="_blank" rel="noopener noreferrer"
+    <a href={linkWhatsappComercial(WHATSAPP_COMERCIAL, mensagem)} target="_blank" rel="noopener noreferrer"
       className={classeBotao("discreto", "w-full sm:w-auto")}>
       <Icone nome="whats" />{texto}
     </a>
@@ -164,12 +165,13 @@ function Proposta({ codigo, inicial }: { codigo: string; inicial: PropostaPublic
             <h2 className="t-titulo-cartao">O que acontece agora</h2>
             <ol className="grid list-decimal gap-1.5 pl-5 t-texto">
               <li>Mande o CNPJ e a ata da eleição com o fim do mandato (e a ata que aprovou, se a convenção pedir).</li>
-              <li>Você recebe o contrato para assinar pela internet, com o termo de tratamento de dados.</li>
+              <li>Você assina o contrato pelo gov.br, de graça, com o termo de tratamento de dados no mesmo arquivo.</li>
               <li>Depois de assinado, começamos a implantação e combinamos a data com você.</li>
               <li>A primeira cobrança sai do contrato assinado, na data combinada.</li>
             </ol>
           </Bloco>
           <div className="grid gap-2 sm:flex sm:flex-wrap">
+            <Link href={`/o/${codigo}/contrato`} className={classeBotao("primario", "w-full sm:w-auto")}><Icone nome="enviar" />Enviar o CNPJ e a ata</Link>
             <Botao variante="contorno" className="w-full sm:w-auto" disabled={!!baixando} onClick={() => void baixar("pdf")}>
               <Icone nome="baixar" />{baixando === "pdf" ? "Montando o PDF…" : "Baixar a proposta aceita"}
             </Botao>

@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import {
-  AVISOS_SUGESTAO, CICLOS_PLANO, formatarData, MOTIVOS_SUSPENSAO, mostrarDataSemHora, mostrarValor, nomeCompetencia, SITUACOES_COBRANCA, type CicloPlano, type MotivoSuspensao,
+  AVISOS_SUGESTAO, CICLOS_PLANO, formatarData, MOTIVOS_SUSPENSAO, mostrarDataSemHora, mostrarValor, nomeCompetencia, nomeDaCobranca, SITUACOES_COBRANCA, type CicloPlano, type MotivoSuspensao,
 } from "@triade/domain";
 import { Aviso, Botao, Carregando, CampoAreaTexto, CampoTexto, chamarApi, camposComErro, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
 import { AcaoCartao, Cartao } from "../comum.tsx";
@@ -77,8 +77,9 @@ function Par({ nome, valor, apoio }: { nome: string; valor: string; apoio?: stri
   );
 }
 
+/** "Implantação (k/N)" nas parcelas da implantação; a competência na mensalidade. */
 export function nomeCobranca(c: Cobranca): string {
-  return c.tipo === "IMPLANTACAO" ? "Implantação" : nomeCompetencia(c.competencia!);
+  return nomeDaCobranca(c);
 }
 
 export function SeloCobranca({ c }: { c: Cobranca }) {

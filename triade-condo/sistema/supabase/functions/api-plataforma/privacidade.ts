@@ -20,7 +20,7 @@ import { idDaRota, type Quem } from "../_shared/rotas_configuracao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 
 /** Os buckets privados de onde a rotina apaga arquivos, com o armazenamento de cada um. */
-export type BucketRetencao = "pedidos" | "manutencoes" | "comunicados" | "documentos" | "exportacoes" | "suporte" | "relatorios" | "portaria";
+export type BucketRetencao = "pedidos" | "manutencoes" | "comunicados" | "documentos" | "exportacoes" | "suporte" | "relatorios" | "portaria" | "comercial";
 
 export interface DepsPrivacidade {
   banco: Banco;

@@ -7,6 +7,7 @@ import { criarPlanosConsole, rotasPlanosConsole } from "./api-falsa-console-plan
 import { criarPrecosConsole, rotasPrecosConsole } from "./api-falsa-console-precos";
 import { criarRetencaoConsole, rotasRetencaoConsole } from "./api-falsa-console-retencao";
 import { criarComercialConsole, rotasComercialConsole, rotasPublicasPropostas } from "./api-falsa-console-comercial";
+import { rotasArquivoComercial, rotasPublicasContrato } from "./api-falsa-console-contrato";
 import { andamentoConfiguracao, criarConfiguracaoConsole, rotasConfiguracaoConsole } from "./api-falsa-console-configuracao";
 
 export const IPE = "2d9e5b20-7f3c-4e4d-9a0b-3c4d5e6f7a8b";
@@ -41,7 +42,7 @@ function erro(route: Route, status: number, codigo: string, detalhes?: Record<st
 export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
   const admin = (opcoes.funcao ?? "ADMINISTRACAO") === "ADMINISTRACAO";
   const comercialSo = opcoes.funcao === "COMERCIAL";
-  const podeComercial = { ver: admin || comercialSo, editar: admin || comercialSo, desconto: admin, modelos: admin };
+  const podeComercial = { ver: admin || comercialSo, editar: admin || comercialSo, desconto: admin, modelos: admin, cliente: admin, assinar: admin };
   const podePrecos = { ver: admin, editar: admin && (opcoes.precos ?? "editar") === "editar" };
   const acoesPrecos = [...(podePrecos.ver ? ["console.precos.ver"] : []), ...(podePrecos.editar ? ["console.precos.editar"] : [])];
   const estado = {
@@ -192,6 +193,9 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     const url = new URL(req.url());
     const caminho = url.pathname.replace(/^\/api/, "");
     const metodo = req.method();
+    // O "armazenamento" do Comercial (0308) recebe o PDF em binário: atende antes de ler o corpo como JSON.
+    const arquivo = await rotasArquivoComercial(route, comercial, caminho, metodo);
+    if (arquivo !== null) return arquivo;
     const corpo = req.postData() ? JSON.parse(req.postData()!) : {};
 
     if (caminho === "/v1/auth/entrar") {
@@ -222,6 +226,8 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     // O link da proposta (0304) abre sem sessão.
     const publico = await rotasPublicasPropostas(route, comercial, caminho, metodo, corpo);
     if (publico !== null) return publico;
+    const publicoContrato = await rotasPublicasContrato(route, comercial, caminho, metodo, corpo);
+    if (publicoContrato !== null) return publicoContrato;
 
     if (!estado.logado) return erro(route, 401, "UNAUTHORIZED");
 
@@ -230,7 +236,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
         json: admin
           ? { pessoaId: CAROLINA, nome: "Carolina", funcoes: ["ADMINISTRACAO"], acoes: ["console.condominios.criar", "console.equipe.gerenciar", "console.historico.equipe", "console.pagamentos.ver", "console.pagamentos.registrar", ...acoesPrecos,
               "console.retencao.ver", "console.retencao.ligar", "console.comercial.ver", "console.comercial.editar", "console.comercial.desconto", "console.comercial.modelos",
-              "console.comercial.exportar", "console.comercial.excluir"] }
+              "console.comercial.exportar", "console.comercial.excluir", "console.comercial.cliente", "console.comercial.assinar"] }
           : comercialSo ? { pessoaId: "2d9e5b20-0000-4000-8000-00000000bb01", nome: "Bianca", funcoes: ["COMERCIAL"], acoes: ["console.comercial.ver", "console.comercial.editar"] }
           : { pessoaId: INES, nome: "Inês", funcoes: ["IMPLANTACAO"], acoes: [] },
       });

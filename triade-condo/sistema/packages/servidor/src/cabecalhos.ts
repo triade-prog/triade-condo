@@ -7,9 +7,9 @@ export interface OpcoesCsp {
   nonce: string;
   dev?: boolean;
   /**
-   * Endereço do Supabase (ex.: https://<projeto>.supabase.co). Só a Plataforma passa: o
-   * navegador envia e abre fotos e documentos direto no armazenamento privado, por links
-   * assinados que a API gera (PT-07). Fica liberado só o caminho dos objetos.
+   * Endereço do Supabase (ex.: https://<projeto>.supabase.co). A Plataforma (PT-07) e o Console
+   * (os PDFs do contrato, 0308) passam: o navegador envia e abre os arquivos direto no
+   * armazenamento privado, por links assinados que a API gera. Fica liberado só o caminho dos objetos.
    */
   armazenamento?: string;
 }

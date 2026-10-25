@@ -592,7 +592,7 @@ Interessados, funil, propostas e contrato, até o condomínio virar cliente.
 | CM-10 | Painel comercial: etapas, conversão, primeiro retorno, perdas, vagas de fundador, previsão e meta de MRR | Indicador |
 | CM-11 | Função Comercial nas funções internas, sem mexer em plano ativo, pagamento ou liberação | Regra |
 | CM-12 | Dados dos interessados com LGPD: só para responder, anonimizar perdidos após 12 meses, exclusão registrada | Regra |
-| CM-13 | Contrato gerado da proposta aceita, do modelo revisado por advogado, assinado eletronicamente e guardado na ficha | Função |
+| CM-13 | Contrato gerado da proposta aceita, do modelo revisado por advogado, assinado pelo gov.br e guardado na ficha | Função |
 | CM-14 | Negócio parado: limite de dias sem conversa por etapa; só conversa registrada zera | Aviso |
 | CM-15 | Modelos de mensagem por etapa que abrem o WhatsApp comercial e registram a conversa | Função |
 | CM-16 | Ficha do prédio: administradora, sistema atual e fidelidade, assembleia, mandato, quem decide, visita | Função |

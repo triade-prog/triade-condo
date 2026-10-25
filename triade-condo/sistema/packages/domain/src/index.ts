@@ -31,3 +31,4 @@ export * from "./aprovacoes.ts";
 export * from "./privacidade.ts";
 export * from "./comercial.ts";
 export * from "./propostas.ts";
+export * from "./contrato.ts";

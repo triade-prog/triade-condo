@@ -6,6 +6,7 @@
 // que a equipe confirmou de cada sistema. As regras de verdade estão no banco (pgTAP 045 e 046) e
 // na API (Deno); aqui se confere a tela.
 import type { Route } from "@playwright/test";
+import { CODIGO_CERRADO, criarContratos, rotasContrato, situacaoDoContrato } from "./api-falsa-console-contrato";
 
 type Json = Record<string, unknown>;
 
@@ -15,6 +16,11 @@ export const INDICADO = "7a1b2c3d-0000-4000-8000-0000000000a2";
 export const LAGO = "7a1b2c3d-0000-4000-8000-0000000000a3";
 export const PROPOSTA_IPE = "8b2c3d4e-0000-4000-8000-0000000000b1";
 export const PROPOSTA_LAGO = "8b2c3d4e-0000-4000-8000-0000000000b2";
+/** R17.4 (0308): o Residencial Cerrado tem a proposta aceita; o contrato sai pelo gov.br (api-falsa-console-contrato.ts). */
+export const CERRADO = "7a1b2c3d-0000-4000-8000-0000000000a4";
+export const PROPOSTA_CERRADO = "8b2c3d4e-0000-4000-8000-0000000000b3";
+/** Da equipe com a função Implantação (a mesma Inês da api-falsa). */
+export const INES = "1c8d4a1f-6e2b-4d3c-8f9a-2b3c4d5e6f7a";
 /** Os códigos dos links que já existem: a proposta enviada do Ipê e a vencida do Lago Sul. */
 export const CODIGO_IPE = "codigo-do-link-ipe-amarelo-0123456789";
 export const CODIGO_VENCIDO = "codigo-do-link-lago-sul-vencido-0123";
@@ -58,7 +64,19 @@ export function criarComercialConsole() {
         probabilidade: 60, temWhatsapp: false, tarefa: { situacao: "FUTURO" }, atencao: false,
         baseLegal: { tipo: "CONSENTIMENTO", texto: "Autorizo o uso destes dados só para responder a este pedido.", em: agora.toISOString() },
       }),
+      base(CERRADO, {
+        condominio: "Residencial Cerrado", cidade: "Brasília", uf: "DF", faixa: "DE_41_A_100", unidades: 64, pessoa: "Lúcia Prado", whatsapp: "5561977776666",
+        whatsappMascarado: "(61) 9 ••••-6666", origem: "INDICACAO", etapa: "APROVACAO", probabilidade: 85, temWhatsapp: true, responsavel: CAROLINA,
+        tarefa: { situacao: "FUTURO" }, atencao: false,
+        baseLegal: { tipo: "LEGITIMO_INTERESSE", texto: "A pessoa procurou a TRÍADE ou aceitou o contato.", em: agora.toISOString() },
+        optin: { em: agora.toISOString(), canal: "WHATSAPP", texto: "Aceitou receber mensagens pelo WhatsApp comercial" },
+        predio: { administradora: "Contábil Norte", sistemaAtual: "App da Contábil Norte", decisor: "Lúcia", decisaoEm: somarDias(hoje, 5) },
+      }),
     ] as Json[],
+    /** Pilotos (CM-21), trocas de sistema (CM-29) e clientes criados (CM-08), por interessado. */
+    pilotos: [] as Json[],
+    trocas: {} as Record<string, Json>,
+    clientesCriados: [] as Json[],
     mensagens: [
       { id: "m1", etapa: "NOVO", titulo: "Primeira resposta", texto: "Olá, [nome]! Recebemos o pedido do [condominio].", ativa: true, versao: 1 },
       { id: "m2", etapa: "EM_CONTATO", titulo: "Marcar demonstração", texto: "Oi, [nome], que dia fica bom para a demonstração?", ativa: true, versao: 1 },
@@ -70,6 +88,8 @@ export function criarComercialConsole() {
     /** Os fatos do comparativo (0307): só do prédio (o padrão) ou informação pública; a fonte é só da equipe. */
     fatos: [] as Json[],
     ...criarPropostas(hoje),
+    /** O contrato pelo gov.br (0308): modelo, documentos, contratos, envios e arquivos. */
+    contrato: criarContratos(hoje),
   };
 }
 
@@ -131,10 +151,18 @@ function criarPropostas(hoje: string) {
         porApartamento: 299, validoAte: somarDias(hoje, -7), hash: "77ab".padEnd(64, "0"), enviadaEm: agora, enviadaPor: BIANCA,
         link: { ativo: true, criadoEm: agora, expiraEm: `${somarDias(hoje, -6)}T00:00:00-03:00` }, aberturas: { total: 1, aparelhos: 1, ultima: agora },
       })] },
+      { id: PROPOSTA_CERRADO, interessadoId: CERRADO, versao: 3, criadoEm: agora, versoes: [versao({
+        id: "8b2c3d4e-0000-4000-8000-0000000000e3", versaoRegistro: 6, numero: 1, situacao: "ACEITA", condominio: "Residencial Cerrado", cidade: "Brasília", uf: "DF",
+        faixa: "DE_41_A_100", unidades: 64, tabela: "FUNDADOR", mensalTabela: 22900, mensal: 22900, depoisFundador: 32900, fundadorMeses: 12, implantacaoSemCusto: true,
+        porApartamento: 358, validoAte: somarDias(hoje, 8), hash: "9f2c".padEnd(64, "b"), enviadaEm: agora, enviadaPor: BIANCA,
+        aceite: { nome: "Lúcia Prado", cargo: "Síndica", em: agora, ip: "177.10.20.30", cpfMascarado: "•••.982.247-••" },
+        link: { ativo: true, criadoEm: agora, expiraEm: `${somarDias(hoje, 9)}T00:00:00-03:00` }, aberturas: { total: 2, aparelhos: 1, ultima: agora },
+      })] },
     ] as Json[],
     /** Código do link → a versão. Só o resumo fica no banco de verdade; aqui, o código. */
     links: { [CODIGO_IPE]: { propostaId: PROPOSTA_IPE, versaoId: "8b2c3d4e-0000-4000-8000-0000000000e1" },
-             [CODIGO_VENCIDO]: { propostaId: PROPOSTA_LAGO, versaoId: "8b2c3d4e-0000-4000-8000-0000000000e2" } } as Record<string, { propostaId: string; versaoId: string }>,
+             [CODIGO_VENCIDO]: { propostaId: PROPOSTA_LAGO, versaoId: "8b2c3d4e-0000-4000-8000-0000000000e2" },
+             [CODIGO_CERRADO]: { propostaId: PROPOSTA_CERRADO, versaoId: "8b2c3d4e-0000-4000-8000-0000000000e3" } } as Record<string, { propostaId: string; versaoId: string }>,
     vagas: { total: 5, ocupadas: 2 },
     hoje,
   };
@@ -150,13 +178,15 @@ const LISTA = ["id", "versao", "condominio", "cidade", "uf", "faixa", "pessoa", 
 const resumo = (i: Json) => Object.fromEntries(LISTA.filter((k) => i[k] !== undefined).map((k) => [k, i[k]]));
 
 /** O que a pessoa pode no Comercial: a Administração tudo; o Comercial sem aprovar desconto e sem mudar modelos. */
-export interface PodeComercial { ver: boolean; editar: boolean; desconto: boolean; modelos: boolean }
+export interface PodeComercial { ver: boolean; editar: boolean; desconto: boolean; modelos: boolean; cliente?: boolean; assinar?: boolean }
 
 export async function rotasComercialConsole(route: Route, p: ComercialConsole, caminho: string, metodo: string, corpo: Json, pode: PodeComercial, url: URL) {
   if (!caminho.startsWith("/v1/comercial")) return null;
   if (!pode.ver) return erro(route, 403, "FORBIDDEN");
   if (metodo !== "GET") p.pedidos.push({ caminho, corpo });
   if (/^\/v1\/comercial\/(propostas|respostas|referencias|fatos)/.test(caminho)) return rotasPropostas(route, p, caminho, metodo, corpo, pode, url);
+  const contrato = await rotasContrato(route, p, caminho, metodo, corpo, pode, url);
+  if (contrato !== null) return contrato;
   if (metodo !== "GET" && !pode.editar) return erro(route, 403, "FORBIDDEN");
   const equipe = [CAROLINA];
   if (caminho === "/v1/comercial/interessados" && metodo === "GET") {
@@ -176,11 +206,17 @@ export async function rotasComercialConsole(route: Route, p: ComercialConsole, c
   if (caminho === "/v1/comercial/modelos") {
     return route.fulfill({ json: { mensagens: p.mensagens, cadencias: p.cadencias, objecoes: [], etapas: ETAPAS, podeEditar: pode.modelos } });
   }
+  const mp = /^\/v1\/comercial\/pilotos\/([0-9a-f-]{36})\/encerrar$/.exec(caminho);
+  if (mp) return encerrarPiloto(route, p, mp[1]!, corpo, pode);
   const m = /^\/v1\/comercial\/interessados\/([0-9a-f-]{36})(\/.*)?$/.exec(caminho);
   const i = m ? p.interessados.find((x) => x.id === m[1]) : undefined;
   if (m && !i) return erro(route, 404, "NOT_FOUND");
   if (i && !m![2] && metodo === "GET") {
-    return route.fulfill({ json: { ...i, mensagens: p.mensagens.filter((x) => x.etapa === i.etapa), objecoesLista: [
+    const grupo = String(i.contatoDe ?? i.id);
+    const oportunidades = p.interessados.filter((x) => x.id !== i.id && String(x.contatoDe ?? x.id) === grupo)
+      .map((x) => ({ id: x.id, condominio: x.condominio, cidade: x.cidade, uf: x.uf, unidades: x.unidades, etapa: x.etapa, virouCliente: !!x.virouClienteEm, criadoEm: x.criadoEm }));
+    const piloto = [...p.pilotos].reverse().find((x) => x.interessadoId === i.id);
+    return route.fulfill({ json: { ...i, contatoDe: grupo, oportunidades, contratoSituacao: situacaoDoContrato(p, i.id), ...(piloto ? { piloto: semInternos(piloto) } : {}), mensagens: p.mensagens.filter((x) => x.etapa === i.etapa), objecoesLista: [
       { codigo: "PRECO", texto: "Achou caro", resposta: "Mostre o preço por unidade." }], etapasLista: ETAPAS, equipe, podeEditar: pode.editar, podeExcluir: pode.modelos } });
   }
   if (i && m![2] === "/criterios" && metodo === "PUT") {
@@ -203,6 +239,7 @@ export async function rotasComercialConsole(route: Route, p: ComercialConsole, c
     (i.conversas as Json[]).unshift({ id: crypto.randomUUID(), canal: corpo.canal, resumo: corpo.resumo, respondeu: !!corpo.respondeu, em: new Date().toISOString(), autor: CAROLINA });
     return route.fulfill({ status: 201, json: { id: "x" } });
   }
+  if (i && ROTAS_R174.includes(m![2] ?? "")) return rotasClienteR174(route, p, i, m![2]!, metodo, corpo, pode);
   if (i && m![2] === "/cadencia") {
     const c = i.cadencia as Json;
     c.feitos = Number(c.feitos) + 1;
@@ -393,6 +430,7 @@ function kitDe(p: ComercialConsole, x: Proposta, v: Json): Json {
     respostas: (v.respostas as Json[]).map((r) => ({ tema: r.tema, titulo: r.titulo, texto: r.texto })),
     referencias: pub.referencias, oferta: OFERTA,
     respostasDisponiveis: p.respostas.filter((r) => r.revisada && r.ativa).map((r) => ({ id: r.id, tema: r.tema, titulo: r.titulo })),
+    ...(pilotoDoKit(p, i.id) ? { piloto: pilotoDoKit(p, i.id) } : {}),
   };
 }
 
@@ -637,4 +675,143 @@ export async function rotasPublicasPropostas(route: Route, p: ComercialConsole, 
     return route.fulfill({ status: 201, json: { situacao: "ACEITA", numero: v.numero, nome: corpo.nome, cargo: corpo.cargo, aceitoEm: em, hash: v.hash } });
   }
   return erro(route, 404, "NOT_FOUND");
+}
+
+// ---------------------------------------------------------------------------------------------
+// R17.4 (0308): piloto, troca de sistema, oportunidade nova e virar cliente. A conta imita o
+// banco (pgTAP 051) só para a tela ter números.
+
+const ITENS_PADRAO = ["Lista de unidades e moradores", "Contratos e prestadores", "Atas e convenção", "Pendências abertas com moradores"].map((texto) => ({ texto, recebido: false }));
+const br = (d: string) => d.split("-").reverse().join("/");
+
+function cartaModelo(condominio: string, representante: string | undefined, empresa: string, dataTroca: string, itens: { texto: string; recebido: boolean }[]) {
+  const faltam = itens.filter((x) => !x.recebido).map((x) => `- ${x.texto}`).join("\n") || "- (nada pendente)";
+  return `À ${empresa},\n\nO ${condominio}, representado por ${representante ?? "quem o representa"}, passa a usar a TRÍADE Condo a partir de ${br(dataTroca)} e pede, até ${br(somarDias(dataTroca, -15))}, a entrega dos itens abaixo:\n${faltam}\n\nAtenciosamente,\n\n${representante ?? "[nome de quem assina]"}\n[assinatura]`;
+}
+
+function trocaJson(t: Json): Json {
+  const itens = t.itens as { recebido: boolean }[];
+  const faltam = itens.filter((x) => !x.recebido).length;
+  const d = String(t.dataTroca);
+  return {
+    ...t, faltam,
+    linhaDoTempo: [
+      { chave: "CARTA", quando: "30 dias antes", data: somarDias(d, -30), texto: "Carta à empresa anterior pedindo os dados e documentos", situacao: t.cartaEnviadaEm ? "FEITO" : "PREVISTO" },
+      { chave: "PLANILHA", quando: "15 dias antes", data: somarDias(d, -15), texto: "Planilha-modelo preenchida com o mínimo para começar", situacao: faltam ? "FALTAM" : "FEITO", faltam },
+      { chave: "TROCA", quando: "Dia da troca", data: d, texto: "Comunicado aos moradores e número do WhatsApp do prédio", situacao: "PREVISTO" },
+      { chave: "PRIMEIRA_SEMANA", quando: "1ª semana", data: somarDias(d, 7), texto: "Pendências da implantação com responsável", situacao: "PREVISTO" },
+      { chave: "ACOMPANHAMENTO", quando: "45 dias depois", data: somarDias(d, 45), texto: "Conversa de acompanhamento com o síndico", situacao: "PREVISTO" },
+    ],
+  };
+}
+
+function medida(p: ComercialConsole, x: Json): Json {
+  if (x.meta !== "RETORNOS_NO_PRAZO") return { medido: false, ondeVer: "INDICADORES_PLATAFORMA" };
+  if (String(x.comecaEm) > p.hoje) return { medido: false, motivo: "NAO_COMECOU" };
+  return { medido: true, de: x.comecaEm, ate: p.hoje, retornos: 12, noPrazo: 10, porcentagem: 83.3, meta: x.metaPercentual, atingiu: 83.3 >= Number(x.metaPercentual) };
+}
+
+/** O piloto no kit (CM-20): sem com quem foi combinado, nem o motivo, nem a versão. */
+export function pilotoDoKit(p: ComercialConsole, interessadoId: unknown): Json | undefined {
+  const x = [...p.pilotos].reverse().find((y) => y.interessadoId === interessadoId && y.situacao !== "PERDIDO");
+  if (!x) return undefined;
+  const { id, prazoDias, comecaEm, terminaEm, meta, metaPercentual, situacao, resultado, encerradoEm } = x;
+  return Object.fromEntries(Object.entries({ id, prazoDias, comecaEm, terminaEm, meta, metaPercentual, situacao, resultado, encerradoEm }).filter(([, v]) => v !== undefined));
+}
+
+const ROTAS_R174 = ["/piloto", "/troca", "/troca/carta-enviada", "/oportunidades", "/virar-cliente"];
+
+async function rotasClienteR174(route: Route, p: ComercialConsole, i: Json, resto: string, metodo: string, corpo: Json, pode: PodeComercial) {
+  if (resto === "/piloto" && metodo === "GET") {
+    const x = [...p.pilotos].reverse().find((y) => y.interessadoId === i.id);
+    if (!x) return route.fulfill({ json: { piloto: null, podeComecar: !!pode.cliente } });
+    return route.fulfill({ json: { piloto: { ...semInternos(x), ...(x.situacao === "EM_ANDAMENTO" ? { medida: medida(p, x) } : {}) },
+      podeEncerrar: pode.editar && x.situacao === "EM_ANDAMENTO", podeComecar: false } });
+  }
+  if (resto === "/piloto" && metodo === "POST") {
+    if (!pode.cliente) return erro(route, 403, "FORBIDDEN");
+    if (corpo.versao !== i.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: i.versao });
+    if (p.pilotos.some((y) => y.interessadoId === i.id && ["EM_ANDAMENTO", "VIROU_PROPOSTA"].includes(String(y.situacao)))) return erro(route, 400, "VALIDATION_ERROR", { motivo: "PILOTO_EXISTE" });
+    const campos = [
+      ...(![30, 45, 60].includes(Number(corpo.prazoDias)) ? ["prazoDias"] : []), ...(!corpo.comecaEm || String(corpo.comecaEm) < p.hoje ? ["comecaEm"] : []),
+      ...(!corpo.meta ? ["meta"] : []), ...(String(corpo.combinadoCom ?? "").trim().length < 3 ? ["combinadoCom"] : []), ...(corpo.responsavelImplantacaoId !== INES ? ["responsavelImplantacaoId"] : []),
+    ];
+    if (campos.length) return erro(route, 400, "VALIDATION_ERROR", { campos });
+    const x = { id: novoId("cc607182"), interessadoId: i.id, versao: 1, prazoDias: corpo.prazoDias, comecaEm: corpo.comecaEm, terminaEm: somarDias(String(corpo.comecaEm), Number(corpo.prazoDias)),
+      meta: corpo.meta, metaPercentual: corpo.metaPercentual, combinadoCom: corpo.combinadoCom, situacao: "EM_ANDAMENTO", criadoEm: new Date().toISOString() };
+    p.pilotos.push(x);
+    i.versao = Number(i.versao) + 1;
+    return route.fulfill({ status: 201, json: { ...semInternos(x), condominioId: novoId("dd718293") } });
+  }
+  if (resto === "/troca" && metodo === "GET") {
+    const t = p.trocas[String(i.id)];
+    const predio = i.predio as Json;
+    return route.fulfill({ json: { ...(t ? { troca: trocaJson(t) } : {}), itensPadrao: ITENS_PADRAO, sistemaAtual: predio.sistemaAtual, administradora: predio.administradora,
+      podeEditar: pode.editar && !i.virouClienteEm } });
+  }
+  if (resto === "/troca" && metodo === "PUT") {
+    const atual = p.trocas[String(i.id)];
+    if (atual && corpo.versao !== atual.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: atual.versao });
+    const campos = [...(String(corpo.empresaAnterior ?? "").trim().length < 2 ? ["empresaAnterior"] : []), ...(!corpo.dataTroca ? ["dataTroca"] : [])];
+    if (campos.length) return erro(route, 400, "VALIDATION_ERROR", { campos });
+    const itens = ((corpo.itens as Json[] | null) ?? ITENS_PADRAO).map((x) => ({ texto: String(x.texto), recebido: !!x.recebido }));
+    const carta = corpo.carta ? String(corpo.carta) : cartaModelo(String(i.condominio), "Lúcia Prado", String(corpo.empresaAnterior), String(corpo.dataTroca), itens);
+    const t = { ...(atual ?? { id: novoId("ee8293a4") }), versao: Number(atual?.versao ?? 0) + 1, empresaAnterior: corpo.empresaAnterior, dataTroca: corpo.dataTroca, itens, carta };
+    p.trocas[String(i.id)] = t;
+    return route.fulfill({ json: trocaJson(t) });
+  }
+  if (resto === "/troca/carta-enviada" && metodo === "POST") {
+    const t = p.trocas[String(i.id)];
+    if (!t) return erro(route, 404, "NOT_FOUND");
+    if (corpo.versao !== t.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: t.versao });
+    Object.assign(t, { cartaEnviadaEm: new Date().toISOString(), cartaEnviadaPor: CAROLINA, versao: Number(t.versao) + 1 });
+    return route.fulfill({ json: trocaJson(t) });
+  }
+  if (resto === "/oportunidades" && metodo === "POST") {
+    const grupo = String(i.contatoDe ?? i.id);
+    const nome = String(corpo.condominio ?? "").trim();
+    if (nome.length < 2) return erro(route, 400, "VALIDATION_ERROR", { campos: ["condominio"] });
+    if (p.interessados.some((x) => String(x.contatoDe ?? x.id) === grupo && chave(x.condominio) === chave(nome))) {
+      return erro(route, 400, "VALIDATION_ERROR", { motivo: "DUPLICADO", campos: ["condominio"] });
+    }
+    const id = `7a1b2c3d-0000-4000-8000-${String(900 + p.interessados.length).padStart(12, "0")}`;
+    p.interessados.push({ ...i, id, versao: 1, condominio: nome, cnpj: corpo.cnpj ?? undefined, cidade: corpo.cidade ?? undefined, uf: corpo.uf ?? undefined,
+      faixa: corpo.faixa ?? undefined, unidades: corpo.unidades ?? undefined, etapa: "NOVO", contatoDe: grupo, cadencia: undefined, conversas: [], etapas: [], predio: {},
+      contratoSituacao: undefined, virouClienteEm: undefined, origemDetalhe: `Outro condomínio do mesmo contato (${i.condominio})`, tarefa: { situacao: "SEM_PASSO" } });
+    i.contatoDe = grupo;
+    return route.fulfill({ status: 201, json: { id, contatoDe: grupo } });
+  }
+  if (resto === "/virar-cliente" && metodo === "POST") {
+    if (!pode.cliente) return erro(route, 403, "FORBIDDEN");
+    if (corpo.versao !== i.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: i.versao });
+    if (i.virouClienteEm) return erro(route, 400, "VALIDATION_ERROR", { motivo: "VIROU_CLIENTE" });
+    if (situacaoDoContrato(p, i.id) !== "ASSINADO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "CONTRATO_SEM_ASSINATURAS" });
+    if (corpo.responsavelImplantacaoId !== INES) return erro(route, 400, "VALIDATION_ERROR", { campos: ["responsavelImplantacaoId"] });
+    const predio = i.predio as Json;
+    const falta = [...(!predio.decisor ? ["decisor"] : []), ...(!predio.decisaoEm ? ["decisaoEm"] : [])];
+    if (falta.length) return erro(route, 400, "VALIDATION_ERROR", { motivo: "FALTA_PARA_ETAPA", campos: falta });
+    const t = p.trocas[String(i.id)];
+    const pendencias = t ? (t.itens as Json[]).filter((x) => !x.recebido).length + (t.cartaEnviadaEm ? 0 : 1) + 2 : 0;
+    const pl = p.pilotos.find((y) => y.interessadoId === i.id && ["EM_ANDAMENTO", "VIROU_PROPOSTA"].includes(String(y.situacao)));
+    if (pl) pl.situacao = "VIROU_CLIENTE";
+    Object.assign(i, { etapa: "GANHO", virouClienteEm: new Date().toISOString(), versao: Number(i.versao) + 1 });
+    const r = { condominioId: novoId("ff93a4b5"), implantacaoId: novoId("ab12cd34"), plano: { id: "plano" }, pendencias, doPiloto: !!pl, etapa: "GANHO" };
+    p.clientesCriados.push(r);
+    return route.fulfill({ status: 201, json: r });
+  }
+  return erro(route, 404, "NOT_FOUND");
+}
+
+function encerrarPiloto(route: Route, p: ComercialConsole, id: string, corpo: Json, pode: PodeComercial) {
+  const x = p.pilotos.find((y) => y.id === id);
+  if (!x) return erro(route, 404, "NOT_FOUND");
+  if (corpo.resultado === "PERDIDO" && !pode.cliente) return erro(route, 403, "FORBIDDEN");
+  if (corpo.versao !== x.versao) return erro(route, 409, "VERSION_CONFLICT", { versao: x.versao });
+  if (x.situacao !== "EM_ANDAMENTO") return erro(route, 400, "VALIDATION_ERROR", { motivo: "PILOTO_ENCERRADO" });
+  if (corpo.resultado === "PERDIDO" && !corpo.motivoPerda) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivoPerda"] });
+  Object.assign(x, { situacao: corpo.resultado === "PERDIDO" ? "PERDIDO" : "VIROU_PROPOSTA", resultado: medida(p, x), motivoPerda: corpo.motivoPerda ?? undefined,
+    detalhe: corpo.detalhe ?? undefined, encerradoEm: new Date().toISOString(), versao: Number(x.versao) + 1 });
+  const i = p.interessados.find((y) => y.id === x.interessadoId);
+  if (i && corpo.resultado === "PERDIDO") Object.assign(i, { etapa: "PERDIDO", motivoPerda: corpo.motivoPerda, perda: { motivo: corpo.motivoPerda }, versao: Number(i.versao) + 1 });
+  return route.fulfill({ json: semInternos(x) });
 }

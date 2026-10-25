@@ -5,6 +5,7 @@
 // (0307) tem uma linha por critério que o síndico marcou: a TRÍADE com texto fixo (EM-07) e, nas
 // outras colunas, o fato que a equipe confirmou; o resto fica "a confirmar com eles". "Escolher
 // critérios" grava na ficha do prédio, com o problema do prédio que abre a apresentação.
+// Com piloto (CM-21, 0308), a apresentação curta e o PDF trazem o prazo, a meta e o resultado.
 // Mandar pelo WhatsApp gera um link novo da proposta (o código só aparece uma vez) e registra a
 // conversa.
 
@@ -14,6 +15,7 @@ import { TEXTO_A_CONFIRMAR, TEXTO_COMPARATIVO, type CriterioSindico } from "@tri
 import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, textoDoErro, Vazio } from "@triade/ui";
 import { Cartao, Voltar } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
+import { textoMeta, textoPrazo } from "./cliente.ts";
 import { ROTAS_COMERCIAL } from "./comum.tsx";
 import { JanelaCriterios, JanelaFato } from "./janelasKit.tsx";
 import { JanelaMandarWhatsapp } from "./janelasPropostas.tsx";
@@ -108,7 +110,8 @@ export function KitConselho() {
               const motivo = falta[p];
               const apoio = p === "PROPOSTA" ? `A versão enviada (v${k.proposta.numero}), com a impressão digital`
                 : p === "REFERENCIAS" && k.referencias.length ? subtituloReferencias(k.referencias.length)
-                : p === "APRESENTACAO" ? (k.predio.problema ? `Abre com o problema do prédio: ${k.predio.problema}` : `${PECAS_KIT[p].apoio}. Sem o problema do prédio: escreva em Escolher critérios.`)
+                : p === "APRESENTACAO" ? [k.predio.problema ? `Abre com o problema do prédio: ${k.predio.problema}` : `${PECAS_KIT[p].apoio}. Sem o problema do prédio: escreva em Escolher critérios.`,
+                  k.piloto ? `Com o piloto: ${textoPrazo(k.piloto)}, meta de ${textoMeta(k.piloto.meta, k.piloto.metaPercentual)}.` : null].filter(Boolean).join(" ")
                 : PECAS_KIT[p].apoio;
               return (
                 <label key={p} className={`flex gap-3 border-t border-linha py-3 first:border-t-0 ${motivo ? "cursor-not-allowed" : "cursor-pointer"}`}>
