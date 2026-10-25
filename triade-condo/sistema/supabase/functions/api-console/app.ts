@@ -108,7 +108,7 @@ import type { AdminAuth } from "../_shared/auth.ts";
 import { registrar } from "../_shared/registro.ts";
 import { criarApp } from "../_shared/app.ts";
 import { ipDaChamada, segredoConfere } from "../_shared/repasse.ts";
-import { sha256Hex } from "../_shared/cripto.ts";
+import { hmacHex } from "../_shared/cripto.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
@@ -1149,8 +1149,9 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   });
 
   // O link da proposta (E.1, quadros 328 e 329): sem sessão, pelo repasse do Console (/o/[codigo]).
-  // O código é a chave; cada aparelho (resumo do IP) tem limite de uso, como o mural.
-  const aparelho = (c: Context) => sha256Hex(`proposta|${ipDaChamada(c.req.raw.headers) ?? "sem-ip"}`);
+  // O código é a chave; cada aparelho tem limite de uso, como o mural. O aparelho é o HMAC do IP
+  // com o segredo do repasse: sem o segredo, ninguém refaz o resumo a partir de um IP.
+  const aparelho = (c: Context) => hmacHex(`aparelho-proposta|${segredo ?? ""}`, ipDaChamada(c.req.raw.headers) ?? "sem-ip");
   const codigoProposta = (c: Context) => {
     const v = c.req.param("codigo");
     if (!v || !CODIGO_PROPOSTA.test(v)) throw new ErroDominio("NOT_FOUND");

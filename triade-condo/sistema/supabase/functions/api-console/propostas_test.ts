@@ -12,6 +12,7 @@ import {
   TEMAS_RESPOSTA,
 } from "@triade/domain";
 import { criarApiConsole } from "./app.ts";
+import { hmacHex, sha256Hex } from "../_shared/cripto.ts";
 import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, erroBanco, limitesFalsos, pedido } from "../_shared/teste_util.ts";
 
 const CAROLINA = "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f";
@@ -204,6 +205,10 @@ Deno.test("0304: o link abre sem sessão, com o resumo do aparelho e limite de u
   assertEquals(a.p_codigo, CODIGO);
   assert(/^[0-9a-f]{64}$/.test(String(a.p_aparelho)), "o aparelho vai como resumo");
   assertNotEquals(a.p_aparelho, "200.1.2.3");
+  // 0306: HMAC com o segredo do servidor, não o sha256 do IP (que qualquer um refaz).
+  assertEquals(a.p_aparelho, await hmacHex("aparelho-proposta|segredo-de-repasse-de-teste", "200.1.2.3"));
+  assertNotEquals(a.p_aparelho, await sha256Hex("proposta|200.1.2.3"));
+  assertNotEquals(a.p_aparelho, await sha256Hex("200.1.2.3"));
   assertEquals((await m.pedir("/v1/publico/propostas/curto")).status, 404);
   assertEquals((await m.pedir(`/v1/publico/propostas/${"x".repeat(30)}`)).status, 404);
   assertEquals((await m.pedir(`/v1/publico/propostas/${CODIGO}/kit`)).status, 200);

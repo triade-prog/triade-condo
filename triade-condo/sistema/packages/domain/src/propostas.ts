@@ -71,7 +71,7 @@ export const TEXTO_PLANEJADO = "Ainda planejado, sem data prometida.";
 /** Textos fixos do link e do aceite (quadros 328 e 329). */
 export const TEXTO_CUSTO_APARTAMENTO = "Estimativa: a mensalidade dividida pelas unidades. A implantação é à parte.";
 export const TEXTO_ACEITE =
-  "Ao aceitar, guardamos nome, CPF, cargo, data, o endereço de internet e esta versão, com uma impressão digital do PDF. Aceitar não é contratar: a contratação é o contrato assinado.";
+  "Ao aceitar, guardamos nome, CPF, cargo, data, o endereço de internet e esta versão, com a impressão digital dela. Aceitar não é contratar: a contratação é o contrato assinado.";
 export const TEXTO_CONCORDO = "Li a proposta e quero seguir. Depois vem o contrato para assinar.";
 export const TEXTO_COMPARATIVO = "Só fatos que a equipe confirmou. O que não se sabe do concorrente fica para confirmar com eles; nada de retorno prometido.";
 export const TEXTO_LINK_UMA_VEZ =

@@ -13,10 +13,13 @@ import {
   OFERTA_PLANEJADO,
   referenciaComercialSchema,
   SITUACOES_PROPOSTA,
+  TEXTO_ACEITE,
 } from "./propostas.ts";
 import { TEXTOS_MOTIVO } from "./textos.ts";
 
-const SQL = readFileSync(new URL("../../../supabase/migrations/0304_comercial_propostas.sql", import.meta.url), "utf8");
+const SQL = ["0304_comercial_propostas.sql", "0306_comercial_propostas_ajustes.sql"]
+  .map((f) => readFileSync(new URL(`../../../supabase/migrations/${f}`, import.meta.url), "utf8"))
+  .join("\n");
 
 describe("propostas do Comercial (0304)", () => {
   it("CPF com os dígitos verificadores, com ou sem pontuação", () => {
@@ -56,6 +59,11 @@ describe("propostas do Comercial (0304)", () => {
     expect(dadosVersaoSchema.safeParse({ tabela: "MANUAL" }).success).toBe(false);
   });
 
+  it("o aviso do aceite fala da impressão digital da versão, não do PDF (0306)", () => {
+    expect(TEXTO_ACEITE).toContain("impressão digital dela");
+    expect(TEXTO_ACEITE).not.toContain("PDF");
+  });
+
   it("o aceite: nome, CPF validado, cargo e a confirmação", () => {
     expect(aceitePropostaSchema.parse({ nome: "Lúcia Prado", cpf: "529.982.247-25", cargo: "Síndica", concordo: true }).cpf).toBe("52998224725");
     expect(aceitePropostaSchema.safeParse({ nome: "Lúcia Prado", cpf: "529.982.247-24", cargo: "Síndica", concordo: true }).success).toBe(false);
@@ -74,7 +82,7 @@ describe("propostas do Comercial (0304)", () => {
     expect(SQL).toContain(`'${JSON.stringify(OFERTA_PLANEJADO).replaceAll('","', '", "')}'::jsonb`);
   });
 
-  it("todo motivo que a 0304 manda tem texto na tela", () => {
+  it("todo motivo que a 0304 e a 0306 mandam tem texto na tela", () => {
     const motivos = new Set<string>();
     for (const m of SQL.matchAll(/recusar_motivo\('(?:[^']|'')*',\s*'([A-Z_]+)'\)/g)) motivos.add(m[1]!);
     for (const m of SQL.matchAll(/"motivo":"([A-Z_]+)"/g)) motivos.add(m[1]!);

@@ -347,6 +347,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   AUTORIZACAO_FIXA: "A data da autorização não muda. Registre uma referência nova se o síndico autorizou de novo.",
   LINK_FIXO: "O link não se altera; só pode ser revogado.",
   ACEITE_FIXO: "O aceite registrado não se altera.",
+  ABERTURA_FIXA: "A abertura registrada não se altera.",
   // O link da proposta, para quem recebeu (quadros 328 e 329).
   PROPOSTA_VENCIDA: "Esta proposta venceu. Fale com a TRÍADE pelo WhatsApp comercial para receber uma nova, com a tabela do dia.",
   PROPOSTA_JA_ACEITA: "Esta proposta já foi aceita. Em breve você recebe o contrato para assinar.",
