@@ -6,7 +6,7 @@
 -- quando o interessado fecha, o interessado retomado depois do piloto perdido, a cobrança da
 -- implantação nas parcelas do contrato e o que o Comercial deixa de ver depois de virar cliente.
 begin;
-select plan(56);
+select plan(67);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -164,8 +164,15 @@ select publico_iniciar_documento((select mogno from cod), jsonb_build_object('ti
   from generate_series(3, 4) n;
 select is(pg_temp.motivo($$ select publico_iniciar_documento((select mogno from cod), '{"tipo": "CNPJ", "nome": "c4.pdf", "tamanho": 900, "cnpj": "11222333000181"}', null) $$),
   'ENVIOS_EM_ABERTO', 'com três envios em aberto, o quarto espera');
-select is(pg_temp.motivo($$ select comercial_iniciar_documento((select com from ids), (select mogno from i), '{"tipo": "ATA_ELEICAO", "nome": "a.pdf", "tamanho": 900, "mandatoAte": "2027-12-31"}') $$),
-  'ENVIOS_EM_ABERTO', 'também pela equipe');
+-- O teto do link e o da equipe contam separados (revisão do 717fe30).
+select ok((select comercial_iniciar_documento(com, mogno, '{"tipo": "ATA_ELEICAO", "nome": "e1.pdf", "tamanho": 900, "mandatoAte": "2027-12-31"}') ? 'documentoId' from ids, i),
+  'os três envios abertos pelo link não impedem a equipe de mandar o que recebeu por outro canal');
+select comercial_iniciar_documento(com, mogno, jsonb_build_object('tipo', 'ATA_ELEICAO', 'nome', 'e' || n || '.pdf', 'tamanho', 900, 'mandatoAte', '2027-12-31'))
+  from ids, i, generate_series(2, 3) n;
+select is(pg_temp.motivo($$ select comercial_iniciar_documento((select com from ids), (select mogno from i), '{"tipo": "ATA_ELEICAO", "nome": "e4.pdf", "tamanho": 900, "mandatoAte": "2027-12-31"}') $$),
+  'ENVIOS_EM_ABERTO', 'a equipe tem o seu teto: com três envios dela em aberto, o quarto espera');
+select is(pg_temp.motivo($$ select publico_iniciar_documento((select mogno from cod), '{"tipo": "CNPJ", "nome": "c5.pdf", "tamanho": 900, "cnpj": "11222333000181"}', null) $$),
+  'ENVIOS_EM_ABERTO', 'e o link continua no teto dele');
 select is((select configuracao_int('contrato_envios_abertos_max')), 3, 'o teto fica na configuração');
 
 -- 6. O interessado fecha com o piloto aberto: o piloto termina e o condomínio vai a Piloto encerrado.
@@ -175,16 +182,40 @@ select is((select situacao || ' ' || motivo_perda from pilotos_comercial where i
   'Perdido com o piloto em andamento: o piloto termina perdido, com o motivo do interessado');
 select is((select estado from clientes where condominio_id = (select (pequi ->> 'condominioId')::uuid from pp)), 'PILOTO_ENCERRADO',
   'e o condomínio sai de Em piloto para Piloto encerrado');
+create function pg_temp.encerrou(p_piloto jsonb) returns jsonb language sql as $$
+  select jsonb_agg(jsonb_build_array(h.autor_tipo, h.autor_id = (select adm from ids), h.dados ->> 'motivo') order by h.id) from historico h
+   where h.condominio_id = (p_piloto ->> 'condominioId')::uuid and h.entidade = 'clientes' and h.acao = 'estado.mudou' and h.dados ->> 'para' = 'PILOTO_ENCERRADO' $$;
+create function pg_temp.adms(p_piloto jsonb) returns integer language sql as $$
+  select count(*)::integer from vinculos where condominio_id = (p_piloto ->> 'condominioId')::uuid and funcao = 'ADMINISTRACAO' and revogado_em is null $$;
+select is((select pg_temp.encerrou(pequi) from pp), '[["PESSOA", true, "Interessado fechado sem virar cliente (etapa mudada no Comercial por Bianca)"]]'::jsonb,
+  'quem já é da Administração do condomínio faz a mudança, com o autor real no motivo (revisão do 717fe30)');
+select is((select pg_temp.adms(pequi) from pp), 1, 'e ninguém ganha vínculo com o condomínio (fica só o de quem começou o piloto)');
+select is((select dados ->> 'autorId' = (select com::text from ids) and dados ->> 'origem' = 'COMERCIAL' from historico
+            where entidade = 'piloto_comercial' and entidade_id = (select pequi ->> 'id' from pp) and dados ->> 'porque' is not null), true,
+  'o histórico do piloto guarda quem mudou a etapa');
+create temp table nt as select count(*) as n from conversas_comercial where interessado_id = (select pequi from i) and resumo like 'Piloto encerrado%';
+select comercial_mudar_etapa(com, pequi, pg_temp.iv(pequi), 'SEM_RESPOSTA') from ids, i;
+select is((select jsonb_build_array(jsonb_array_length(pg_temp.encerrou(pequi)), (select motivo_perda from pilotos_comercial where id = (pequi ->> 'id')::uuid)) from pp),
+  '[1, "PRECO"]'::jsonb, 'Perdido para Sem resposta, com o piloto já encerrado, não muda o piloto nem a carteira de novo');
+select is((select count(*) from conversas_comercial where interessado_id = (select pequi from i) and resumo like 'Piloto encerrado%'), (select n from nt),
+  'nem escreve outra nota');
 select comercial_encerrar_piloto(com, (umbu ->> 'id')::uuid, (umbu ->> 'versao')::integer, '{"resultado": "PROPOSTA"}') from ids, pp;
+update vinculos set revogado_em = app_now(), revogado_por = (select adm from ids) where condominio_id = (select (umbu ->> 'condominioId')::uuid from pp) and funcao = 'ADMINISTRACAO';
 select comercial_mudar_etapa(com, umbu, pg_temp.iv(umbu), 'SEM_RESPOSTA') from ids, i;
 select is((select situacao || ' ' || motivo_perda from pilotos_comercial where id = (select (umbu ->> 'id')::uuid from pp)), 'PERDIDO NAO_RESPONDEU',
   'o piloto que virou proposta também termina quando o interessado fica sem resposta');
 select is((select estado from clientes where condominio_id = (select (umbu ->> 'condominioId')::uuid from pp)), 'PILOTO_ENCERRADO', 'e o condomínio a Piloto encerrado');
+select is((select jsonb_build_array(pg_temp.encerrou(umbu), pg_temp.adms(umbu)) from pp),
+  '[[["SISTEMA", null, "Interessado fechado sem virar cliente (etapa mudada no Comercial por Bianca)"]], 0]'::jsonb,
+  'sem ninguém da Administração, a mudança é do sistema, sem pessoa, com o autor real no motivo, e ninguém ganha vínculo');
+select ok(not exists (select 1 from pg_policy where polname like '%piloto_encerrado_pelo_sistema%' and polcmd not in ('r', 'w', 'a')),
+  'a exceção do sistema só lê e muda o cliente e só acrescenta o histórico');
 select ok((select contatos <> '[]'::jsonb and cnpj is not null from condominios where id = (select (caju ->> 'condominioId')::uuid from pp)),
   'o condomínio do piloto do Caju tem os contatos e o CNPJ do interessado');
 select comercial_excluir(adm, caju) from ids, i;
 select is((select situacao from pilotos_comercial where id = (select (caju ->> 'id')::uuid from pp)), 'PERDIDO', 'anonimizar encerra o piloto');
 select is((select estado from clientes where condominio_id = (select (caju ->> 'condominioId')::uuid from pp)), 'PILOTO_ENCERRADO', 'o condomínio vai a Piloto encerrado');
+select is((select pg_temp.encerrou(caju) -> 0 ->> 2 from pp), 'Dados apagados (LGPD) (anonimização)', 'com a anonimização como autora no motivo');
 select is((select jsonb_build_array(contatos, cnpj) from condominios where id = (select (caju ->> 'condominioId')::uuid from pp)), '[[], null]'::jsonb,
   'e perde os contatos e o CNPJ (fica o nome na carteira)');
 
@@ -210,6 +241,9 @@ select is((select array_agg(jsonb_build_array(parcela, valor_centavos::bigint, v
             where condominio_id = (select (r ->> 'condominioId')::uuid from vc) and tipo = 'IMPLANTACAO'),
   array['[1, 30000, "2026-12-10", "Implantação · contrato nº 1 (1/3)"]', '[2, 30000, "2027-01-10", "Implantação · contrato nº 1 (2/3)"]',
         '[3, 30000, "2027-02-10", "Implantação · contrato nº 1 (3/3)"]']::jsonb[], 'a implantação sai nas 3 parcelas do contrato, mês a mês');
+select is((select array_agg(jsonb_build_array(x -> 'parcela', x -> 'parcelas') order by x ->> 'venceEm')
+             from vc, jsonb_array_elements(console_plano((select adm from ids), (r ->> 'condominioId')::uuid) -> 'cobrancas') x),
+  array['[1, 3]', '[2, 3]', '[3, 3]']::jsonb[], 'a tela recebe a parcela e o total de cada parcela da implantação');
 select is((select min(vence_em) >= date '2026-11-15' from cobrancas where condominio_id = (select (r ->> 'condominioId')::uuid from vc)), true,
   'nenhum vencimento antes do início do contrato');
 select throws_ok(format($$ update cobrancas set parcela = 5 where condominio_id = %L and parcela = 3 $$, (select r ->> 'condominioId' from vc)), 'TC422', null,
@@ -248,11 +282,10 @@ select pg_temp.em(app_now() + interval '1 day 1 hour');
 create temp table lim as select comercial_limpar_envios_abertos() as n;
 select ok((select n >= 5 from lim), 'a rotina recusa os envios abertos há mais de um dia');
 select is((select array_agg(situacao || ' ' || coalesce(motivo_recusa, '-') order by enviado_em, nome) from documentos_aceite where interessado_id = (select mogno from i)),
-  array['RECEBIDO -', 'RECUSADO O arquivo não foi conferido a tempo; envie de novo.', 'RECUSADO O arquivo não foi conferido a tempo; envie de novo.',
-        'RECUSADO O arquivo não foi conferido a tempo; envie de novo.', 'RECUSADO O arquivo não foi conferido a tempo; envie de novo.'],
+  array['RECEBIDO -'] || array_fill('RECUSADO O arquivo não foi conferido a tempo; envie de novo.'::text, array[7]),
   'os documentos que nunca foram conferidos ficam recusados; o recebido fica');
 select is((select count(*)::integer from arquivos_a_apagar a join documentos_aceite d on d.caminho = a.caminho
-            where d.interessado_id = (select mogno from i) and a.origem = 'COMERCIAL_ABANDONADO'), 4, 'e os arquivos vão para a fila');
+            where d.interessado_id = (select mogno from i) and a.origem = 'COMERCIAL_ABANDONADO'), 7, 'e os arquivos vão para a fila');
 select is((select situacao || ' ' || motivo_auto from envios_contrato where id = (select id from t)), 'RECUSADO_NA_HORA ARQUIVO_INVALIDO',
   'o envio da TRÍADE que nunca foi conferido também');
 select is((select comercial_limpar_envios_abertos()), 0, 'rodar de novo não acha mais nada');

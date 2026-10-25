@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
-# Ordem das travas do contrato (0308, revisão do 3f3902a): gerar de novo trava o contrato e depois os
-# envios; conferir um envio tem de travar na mesma ordem, senão as duas esperam uma pela outra.
-# Uma conexão segura o contrato (como gerar de novo). A segunda confere um envio desse contrato e
-# fica esperando o contrato SEM ter travado o envio: uma terceira consegue travar o envio na hora.
-# Quando a primeira confirma, a segunda termina e o envio fica para a equipe conferir.
+# Ordem das travas do contrato (0308, revisões do 3f3902a e do 717fe30): gerar de novo trava o
+# interessado, o contrato e depois os envios; conferir um envio tem de travar na mesma ordem, senão
+# as duas esperam uma pela outra.
+# 1. Uma conexão segura o contrato (como gerar de novo). A segunda confere automaticamente um envio
+#    desse contrato e fica esperando o contrato SEM ter travado o envio: uma terceira consegue
+#    travar o envio na hora. Quando a primeira confirma, a segunda termina e o envio fica para a
+#    equipe conferir.
+# 2. Uma conexão segura o interessado (como gerar de novo, no começo). A equipe confere o envio no
+#    validador e espera o interessado SEM ter travado o contrato nem o envio: uma terceira trava os
+#    dois na hora. Quando a primeira confirma, a conferência termina e o contrato espera a TRÍADE.
 set -euo pipefail
 PSQL=("${PSQL_BIN:-psql}" -v ON_ERROR_STOP=1 -q -X -tA)
 DIR="$(mktemp -d)"
@@ -65,6 +70,37 @@ SQL
 )
 wait
 final=$("${PSQL[@]}" -c "select situacao from envios_contrato where id = (select envio from teste.trava_ids)")
+
+# 2. A primeira segura o interessado por 2 segundos.
+"${PSQL[@]}" > "$DIR/primeira2" 2>&1 <<'SQL' &
+begin;
+select 1 from interessados where id = (select i from teste.trava_ids) for update;
+select pg_sleep(2);
+commit;
+SQL
+sleep 0.5
+
+# A equipe confere no validador (espera o interessado).
+"${PSQL[@]}" > "$DIR/segunda2" 2>&1 <<'SQL' &
+select comercial_conferir_envio(com, envio, (select versao from envios_contrato where id = envio),
+                                '{"assinaturaValida": true, "pessoaConfere": true, "dataConfere": true}') -> 'contrato' ->> 'situacao'
+  from teste.trava_ids;
+SQL
+sleep 0.7
+
+# Enquanto a conferência espera o interessado, o contrato e o envio continuam livres.
+terceira2=$("${PSQL[@]}" 2>&1 <<'SQL' || true
+set lock_timeout = '300ms';
+select 'esperando' from pg_stat_activity where wait_event_type = 'Lock' and query like 'select comercial_conferir_envio%';
+begin;
+select 'contrato' from contratos_comercial where id = (select contrato from teste.trava_ids) for update;
+select 'envio' from envios_contrato where id = (select envio from teste.trava_ids) for update;
+commit;
+SQL
+)
+wait
+final2=$("${PSQL[@]}" -c "select e.situacao || ' ' || c.situacao from envios_contrato e join contratos_comercial c on c.id = e.contrato_id
+                           where e.id = (select envio from teste.trava_ids)")
 "${PSQL[@]}" -c "drop table teste.trava_ids" >/dev/null
 
 if [ "$(tr -d '[:space:]' < "$DIR/primeira")" != "1" ] || [ "$terceira" != "livre" ] || [ "$(tr -d '[:space:]' < "$DIR/segunda")" != "A_CONFERIR" ] \
@@ -72,4 +108,9 @@ if [ "$(tr -d '[:space:]' < "$DIR/primeira")" != "1" ] || [ "$terceira" != "livr
   echo "Contrato e envio simultâneos: falhou (primeira: $(cat "$DIR/primeira"); segunda: $(cat "$DIR/segunda"); terceira: $terceira; final: $final)"
   exit 1
 fi
-echo "Contrato e envio simultâneos: ok (conferir espera o contrato antes de travar o envio, na ordem de gerar de novo)"
+if [ "$(tr -d '[:space:]' < "$DIR/primeira2")" != "1" ] || [ "$(echo $terceira2)" != "esperando contrato envio" ] \
+   || [ "$(tr -d '[:space:]' < "$DIR/segunda2")" != "AGUARDA_TRIADE" ] || [ "$final2" != "CONFERIDO AGUARDA_TRIADE" ]; then
+  echo "Conferência e interessado simultâneos: falhou (primeira: $(cat "$DIR/primeira2"); segunda: $(cat "$DIR/segunda2"); terceira: $terceira2; final: $final2)"
+  exit 1
+fi
+echo "Contrato e envio simultâneos: ok (conferir espera o interessado e o contrato antes de travar o envio, na ordem de gerar de novo)"

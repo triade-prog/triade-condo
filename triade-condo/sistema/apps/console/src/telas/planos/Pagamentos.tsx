@@ -153,7 +153,7 @@ function ListaCobrancas({ lista }: { lista: Cobranca[] }) {
         <li key={c.id} className={`${CLASSE_LINHA} ${COLUNAS}`}>
           <span className="ladrilho" data-tom="andamento" aria-hidden="true"><Icone nome="predio" /></span>
           <span className="grid min-w-0"><Link href={`/pagamentos/${c.condominioId}/${c.id}`} className={CLASSE_LINK_LINHA}>{c.cliente}</Link></span>
-          <span className="t-texto max-md:col-start-2">{nomeCobranca(c)} · {c.tipo === "IMPLANTACAO" ? "implantação" : "mensalidade"}</span>
+          <span className="t-texto max-md:col-start-2">{c.tipo === "IMPLANTACAO" ? nomeCobranca(c) : `${nomeCobranca(c)} · mensalidade`}</span>
           <span className="t-texto max-md:col-start-2">{mostrarValor(c.devido)}</span>
           <span className="t-texto max-md:col-start-2">{mostrarValor(c.conferido)}{c.aConferir ? <span className="t-apoio block">+ {mostrarValor(c.aConferir)} a conferir</span> : null}</span>
           <span className="flex flex-wrap gap-1.5 max-md:col-start-2"><SeloCobranca c={c} /></span>

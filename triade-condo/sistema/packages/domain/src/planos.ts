@@ -75,6 +75,13 @@ export function nomeCompetencia(data: string): string {
   return `${MESES[Number(m) - 1] ?? m}/${a}`;
 }
 
+/** O nome da cobrança na tela: a competência da mensalidade ou a implantação, com a parcela quando
+ * a implantação sai em mais de uma ("Implantação (2/3)"; 0308, revisão do 717fe30). */
+export function nomeDaCobranca(c: { tipo: "MENSALIDADE" | "IMPLANTACAO"; competencia?: string; parcela?: number; parcelas?: number }): string {
+  if (c.tipo === "IMPLANTACAO") return c.parcela && c.parcelas && c.parcelas > 1 ? `Implantação (${c.parcela}/${c.parcelas})` : "Implantação";
+  return c.competencia ? nomeCompetencia(c.competencia) : "Mensalidade";
+}
+
 /** O mês seguinte ao dado, no primeiro dia ("2026-12-01" → "2027-01-01"). */
 export function proximaCompetencia(data: string): string {
   const [a, m] = data.split("-").map(Number) as [number, number];

@@ -8,14 +8,21 @@
 // no fim do arquivo o dicionário /Sig com o /ByteRange, o campo de assinatura e o desenho dela, sem
 // mexer no que já estava. Então o PDF assinado começa com os mesmos bytes da base (o PDF gerado,
 // para o condomínio; o arquivo conferido do condomínio, para a TRÍADE), e o sha256 desses primeiros
-// bytes é o da base. A conferência automática (revisão do 3f3902a) lê de fato a parte acrescentada:
-//   - a assinatura nova é um objeto /Sig de verdade, com o /ByteRange cobrindo o arquivo inteiro e
-//     o /Contents no buraco; um "/Sig" num comentário ou num texto não conta;
-//   - a parte acrescentada só traz o que um assinador acrescenta: a assinatura, o campo e o widget,
-//     o AcroForm, o Catalog e a página mudando só as /Annots (e o /Info); nenhum outro objeto da
-//     base muda, nenhum é apagado, e o índice (xref) aponta só para os objetos acrescentados;
+// bytes é o da base. A conferência automática (revisões do 3f3902a e do 717fe30) lê de fato a
+// parte acrescentada:
+//   - a primeira atualização depois da base é a da assinatura nova, um objeto /Sig de verdade com o
+//     /ByteRange cobrindo até o fim dela e o /Contents no buraco; um "/Sig" num comentário não conta,
+//     e nenhuma atualização vem antes dela;
+//   - essa atualização só traz o que um assinador acrescenta: a assinatura, o campo e o widget (com
+//     /V na assinatura nova; o desenho visível em até 8% da folha), o AcroForm, o Catalog e a página
+//     mudando só as /Annots (e o /Info); nenhum outro objeto da base muda, nenhum é apagado, e o
+//     índice (xref) aponta só para os objetos acrescentados;
+//   - depois dela, só validação longa: o /DSS com os /VRI, o catálogo ganhando o /DSS e um carimbo
+//     /DocTimeStamp com widget invisível; a última atualização vai até o fim do arquivo;
 //   - com o pdf-lib, o conteúdo (/Contents), os recursos (/Resources) e as medidas de cada página do
-//     arquivo enviado são os mesmos da base, e todo objeto da base continua igual.
+//     arquivo enviado são os mesmos da base, e todo objeto da base continua igual;
+//   - arquivo com mais de 5000 objetos, ou com fluxo de objetos que abre em mais de 32 MB, nem chega
+//     ao pdf-lib (a conferência de um PDF de 10 MB fica em décimos de segundo).
 // Se o assinador regravar o arquivo ou a parte acrescentada mudar outra coisa, o envio fica
 // guardado sem contar (quadro 444). A validade da assinatura (certificado, CPF, data) a equipe
 // confere no validar.iti.gov.br.
@@ -399,9 +406,76 @@ function lerParteAcrescentada(b: Uint8Array, inicio: number): ParteLida {
 const nomeDe = (v: Valor | undefined) => (v?.t === "nome" ? v.v : undefined);
 const inteiroDe = (v: Valor | undefined) => (v?.t === "num" && v.inteiro ? v.v : undefined);
 
+/** O máximo que um fluxo comprimido pode dar ao abrir (contra a "bomba" de compressão). */
+const LIMITE_INFLADO = 32 * 1024 * 1024;
+
+/** Abre um fluxo Flate; null se passar do limite. */
+async function inflarAte(dados: Uint8Array, limite: number): Promise<Uint8Array | null> {
+  // A entrada vai aos pedaços pequenos: cada pedaço comprimido abre em no máximo ~1 MB, então o
+  // limite vale antes de a memória crescer (com tudo de uma vez, o Deno abre tudo de uma vez).
+  let i0 = 0;
+  const entrada = new ReadableStream<BufferSource>({
+    pull(c) {
+      if (i0 >= dados.length) return c.close();
+      c.enqueue(dados.slice(i0, i0 + 1024));
+      i0 += 1024;
+    },
+  });
+  const leitor = entrada.pipeThrough(new DecompressionStream("deflate")).getReader();
+  const pedacos: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await leitor.read();
+    if (done) break;
+    total += value.length;
+    if (total > limite) {
+      await leitor.cancel().catch(() => {});
+      return null;
+    }
+    pedacos.push(value);
+  }
+  const saida = new Uint8Array(total);
+  let i = 0;
+  for (const p of pedacos) {
+    saida.set(p, i);
+    i += p.length;
+  }
+  return saida;
+}
+
 async function inflar(dados: Uint8Array): Promise<Uint8Array> {
-  const s = new Blob([dados as Uint8Array<ArrayBuffer>]).stream().pipeThrough(new DecompressionStream("deflate"));
-  return new Uint8Array(await new Response(s).arrayBuffer());
+  return (await inflarAte(dados, LIMITE_INFLADO)) ?? falha("índice em fluxo grande demais");
+}
+
+/**
+ * Um contrato assinado tem poucas dezenas de objetos. Antes de entregar o arquivo ao pdf-lib (que lê
+ * tudo de uma vez), conta os objetos, os de dentro dos fluxos de objetos também, e abre esses fluxos
+ * com limite: arquivo com objetos demais ou fluxo que incha demais não é conferido.
+ */
+const LIMITE_OBJETOS = 5000;
+async function pesadoDemais(bytes: Uint8Array): Promise<boolean> {
+  const t = latin1(bytes);
+  let objetos = 0;
+  const cabecalho = /\d+[\0\t\n\f\r ]+\d+[\0\t\n\f\r ]+obj\b/g;
+  while (cabecalho.exec(t)) if (++objetos > LIMITE_OBJETOS) return true;
+  let inflado = 0;
+  for (const m of t.matchAll(/\/Type\s*\/ObjStm\b/g)) {
+    const inicio = t.lastIndexOf("obj", m.index);
+    const fluxo = t.indexOf("stream", m.index);
+    if (fluxo < 0) continue;
+    const n = /\/N\s+(\d+)/.exec(t.slice(Math.max(0, inicio), fluxo));
+    objetos += n ? Number(n[1]) : 0;
+    if (objetos > LIMITE_OBJETOS) return true;
+    let de = fluxo + 6;
+    if (t[de] === "\r") de++;
+    if (t[de] === "\n") de++;
+    const ate = t.indexOf("endstream", de);
+    if (ate < 0) continue;
+    const aberto = await inflarAte(bytes.subarray(de, ate), LIMITE_INFLADO - inflado).catch(() => new Uint8Array());
+    if (aberto === null) return true;
+    inflado += aberto.length;
+  }
+  return false;
 }
 
 /** As entradas de um índice em fluxo (/Type /XRef): Flate e o preditor PNG, como os assinadores gravam. */
@@ -546,11 +620,22 @@ function assinaturasDoPdf(doc: PDFDocument): { ref: PDFRef; faixa: number[] }[] 
   return lista;
 }
 
-const AREA_MAXIMA_DO_DESENHO = 0.25;
+/** O selo do gov.br é pequeno: o desenho visível da assinatura cobre no máximo 8% da folha. */
+const AREA_MAXIMA_DO_DESENHO = 0.08;
 
 /**
  * Confere que a parte acrescentada (de base.length ao fim) é só uma assinatura sobre a base. Devolve
  * o motivo quando não é. Base e arquivo já carregados pelo pdf-lib.
+ *
+ * Regras (revisões do 3f3902a e do 717fe30):
+ *   - a primeira atualização depois da base é a da assinatura nova, e só ela: nenhuma atualização
+ *     antes dela (um campo vazio com desenho próprio, por exemplo);
+ *   - nela, só a assinatura, o campo e o widget (todos com /V na assinatura nova; o desenho visível
+ *     em até 8% da folha), o AcroForm, o catálogo e as páginas mudando só as /Annots;
+ *   - depois dela, só atualizações de validação longa (LTV), que o gov.br pode acrescentar: o /DSS
+ *     com os /VRI, o catálogo ganhando o /DSS, o /Info, e um carimbo de tempo /DocTimeStamp com
+ *     widget invisível (área zero);
+ *   - cada assinatura cobre exatamente até o fim da sua atualização; a última, o arquivo inteiro.
  */
 async function soAssinaturaSobreBase(b: Uint8Array, base: Uint8Array, bd: PDFDocument, sd: PDFDocument): Promise<string | null> {
   // O pdf-lib termina a base em "%%EOF" sem quebra de linha, e o assinador pode emendar o primeiro
@@ -586,6 +671,15 @@ async function soAssinaturaSobreBase(b: Uint8Array, base: Uint8Array, bd: PDFDoc
   const porPosicao = new Map<number, ObjetoLido>();
   for (const o of parte.objetos) porPosicao.set(o.ini, o);
   for (const s of parte.secoes) if (s.fluxo) porPosicao.set(s.fluxo.ini, s.fluxo);
+  // A atualização de cada objeto (os objetos e os índices vêm na ordem do arquivo), sem laço dentro de laço.
+  const secaoDoObjeto = new Map<ObjetoLido, number>();
+  const objetosDaSecao: ObjetoLido[][] = parte.secoes.map(() => []);
+  for (let i = 0, k = 0; i < parte.objetos.length; i++) {
+    const o = parte.objetos[i]!;
+    while (k < parte.secoes.length - 1 && o.ini >= parte.secoes[k]!.ini) k++;
+    secaoDoObjeto.set(o, k);
+    objetosDaSecao[k]!.push(o);
+  }
   for (let k = 0; k < parte.secoes.length; k++) {
     const s = parte.secoes[k]!;
     const de = k === 0 ? fimBase : parte.secoes[k - 1]!.ini + 1;
@@ -603,7 +697,7 @@ async function soAssinaturaSobreBase(b: Uint8Array, base: Uint8Array, bd: PDFDoc
       if (!o || o.n !== e.n || o.g !== e.g || pos < de || pos > s.ini) return "o índice acrescentado aponta para fora dos objetos acrescentados";
       listados.add(pos);
     }
-    for (const o of parte.objetos) {
+    for (const o of objetosDaSecao[k]!) {
       if (o.ini >= de && o.ini < s.ini && !listados.has(o.ini)) return "objeto acrescentado fora do índice";
     }
   }
@@ -652,8 +746,51 @@ async function soAssinaturaSobreBase(b: Uint8Array, base: Uint8Array, bd: PDFDoc
   if (!(raizNova instanceof PDFRef) || chaveRef(raizNova) !== chaveRef(raiz) || sd.context.trailerInfo.Encrypt) return "o PDF troca o catálogo";
 
   const resolverB: Resolver = (r) => bd.context.lookup(r);
-  const resolverS: Resolver = (r) => sd.context.lookup(r);
-  const novo = (r: PDFObject | undefined): r is PDFRef => r instanceof PDFRef && !daBase.has(chaveRef(r)) && ultimos.has(chaveRef(r));
+  const ultimoIndice = parte.secoes.length - 1;
+  const secaoDe = (o: ObjetoLido) => secaoDoObjeto.get(o) ?? ultimoIndice;
+  const ehAssinatura = (o: ObjetoLido) => o.valor.t === "dict" && o.valor.v.has("ByteRange") && o.valor.v.has("Contents");
+
+  // Onde termina a atualização k: depois do "startxref N %%EOF" dela (e das quebras de linha), antes
+  // do que vem na seguinte. A assinatura de cada atualização cobre exatamente até ali.
+  const confereFaixa = (o: ObjetoLido, k: number): string | null => {
+    const d = (o.valor as Extract<Valor, { t: "dict" }>).v;
+    const faixa = d.get("ByteRange");
+    const conteudo = d.get("Contents");
+    const f = faixa?.t === "arr" ? faixa.v.map((x) => inteiroDe(x) ?? -1) : [];
+    if (f.length !== 4 || f[0] !== 0 || conteudo?.t !== "str" || !conteudo.hex) return "a assinatura não tem /ByteRange e /Contents";
+    if (f[1] !== conteudo.ini || f[2] !== conteudo.fim) return "o /ByteRange da assinatura não deixa só o /Contents de fora";
+    if (conteudo.v.length === 0 || conteudo.v[0] !== 0x30 || conteudo.v.every((x) => x === 0)) return "a assinatura está vazia";
+    const fim = f[2]! + f[3]!;
+    const sx = parte.startxrefs[k]!;
+    const seguinte = k < ultimoIndice ? Math.min(parte.secoes[k + 1]!.ini, objetosDaSecao[k + 1]![0]?.ini ?? Infinity) : b.length;
+    const trecho = latin1(b.subarray(sx.pos, seguinte));
+    const m = /^startxref\s+\d+\s*%%EOF/.exec(trecho);
+    if (!m || !/^\s*$/.test(trecho.slice(m[0].length))) return "a atualização da assinatura não termina no %%EOF";
+    if (k === ultimoIndice ? fim !== b.length : fim < sx.pos + m[0].length || fim > seguinte) {
+      return k === ultimoIndice ? "a assinatura não cobre o arquivo inteiro" : "a assinatura não cobre a sua atualização inteira";
+    }
+    return null;
+  };
+
+  // 1. A primeira atualização depois da base traz a assinatura nova (uma só, /Sig, não carimbo).
+  const daPrimeira = objetosDaSecao[0]!;
+  const sigs0 = daPrimeira.filter(ehAssinatura);
+  if (sigs0.length === 0) {
+    return parte.objetos.some(ehAssinatura) ? "há uma atualização antes da assinatura" : "a parte acrescentada não tem assinatura";
+  }
+  if (sigs0.length > 1) return "o PDF ganhou mais de uma assinatura";
+  const sig0 = sigs0[0]!;
+  const tipoSig0 = nomeDe((sig0.valor as Extract<Valor, { t: "dict" }>).v.get("Type"));
+  if (tipoSig0 !== undefined && tipoSig0 !== "Sig") return "a primeira atualização depois da base não é uma assinatura";
+  const faixaRuim = confereFaixa(sig0, 0);
+  if (faixaRuim) return faixaRuim;
+  const faixa0 = (sig0.valor as Extract<Valor, { t: "dict" }>).v.get("ByteRange") as Extract<Valor, { t: "arr" }>;
+  const fim0 = inteiroDe(faixa0.v[2])! + inteiroDe(faixa0.v[3])!;
+  const sd0 = ultimoIndice === 0 ? sd : await PDFDocument.load(b.subarray(0, fim0), { updateMetadata: false });
+  const resolver0: Resolver = (r) => sd0.context.lookup(r);
+  const daPrimeiraK = new Set(daPrimeira.map((o) => chave(o.n, o.g)));
+  const sigRef0 = chave(sig0.n, sig0.g);
+
   const campoDeAssinatura = (d: PDFDict | undefined): boolean => {
     for (let i = 0, x = d; x && i < 8; i++, x = x.lookupMaybe(PDFName.of("Parent"), PDFDict)) {
       const ft = x.get(PDFName.of("FT"));
@@ -661,83 +798,146 @@ async function soAssinaturaSobreBase(b: Uint8Array, base: Uint8Array, bd: PDFDoc
     }
     return false;
   };
-
-  // O catálogo: igual ao da base, menos o que a assinatura acrescenta.
+  /** O /V do campo (herdado do pai), como referência. */
+  const valorDoCampo = (d: PDFDict | undefined): string | null => {
+    for (let i = 0, x = d; x && i < 8; i++, x = x.lookupMaybe(PDFName.of("Parent"), PDFDict)) {
+      const v = x.get(PDFName.of("V"));
+      if (v !== undefined) return v instanceof PDFRef ? chaveRef(v) : "direto";
+    }
+    return null;
+  };
+  const retangulo = (w: PDFDict) => {
+    const r = w.lookupMaybe(PDFName.of("Rect"), PDFArray)?.asArray().map((y) => (y instanceof PDFNumber ? y.asNumber() : NaN)) ?? [];
+    return r.length === 4 && r.every(Number.isFinite) ? Math.abs((r[2]! - r[0]!) * (r[3]! - r[1]!)) : NaN;
+  };
+  const anotacoes = (pg: PDFDict) => pg.lookupMaybe(PDFName.of("Annots"), PDFArray)?.asArray() ?? [];
+  const campos = (f: PDFDict | undefined) => f?.lookupMaybe(PDFName.of("Fields"), PDFArray)?.asArray() ?? [];
   const extrasCatalogo = ["AcroForm", "Perms", "DSS", "Extensions", "Metadata"];
-  if (canonLib(sd.catalog, undefined, new Set(), extrasCatalogo) !== canonLib(bd.catalog, undefined, new Set(), extrasCatalogo)) {
+
+  /**
+   * Compara um estado (depois) com o anterior (antes): as páginas iguais, só as /Annots crescendo, e
+   * os campos crescendo; cada anotação ou campo novo passa por aceitar(). Devolve o motivo ou null.
+   */
+  const compararEstados = (
+    antes: PDFDocument, depois: PDFDocument, resolverAntes: Resolver, resolverDepois: Resolver,
+    eNovo: (r: PDFRef) => boolean, aceitar: (w: PDFDict, area: number) => string | null, ondeTexto: string,
+  ): string | null => {
+    const paginasAntes = antes.getPages();
+    const paginas = depois.getPages();
+    if (paginas.length !== paginasAntes.length) return "o PDF tem outro número de páginas";
+    for (let i = 0; i < paginas.length; i++) {
+      const p = paginas[i]!.node;
+      const q = paginasAntes[i]!.node;
+      if (chaveRef(paginas[i]!.ref) !== chaveRef(paginasAntes[i]!.ref)) return `a página ${i + 1} não é a do contrato`;
+      if (canonLib(p, undefined, new Set(), ["Annots"]) !== canonLib(q, undefined, new Set(), ["Annots"])) return `a página ${i + 1} mudou${ondeTexto}`;
+      for (const [nome, a, bq] of [["conteúdo", p.Contents(), q.Contents()], ["recursos", p.Resources(), q.Resources()],
+                                    ["tamanho", p.MediaBox(), q.MediaBox()], ["corte", p.CropBox(), q.CropBox()],
+                                    ["giro", p.Rotate(), q.Rotate()]] as const) {
+        if (canonLib(a, resolverDepois) !== canonLib(bq, resolverAntes)) return `o ${nome} da página ${i + 1} mudou${ondeTexto}`;
+      }
+      const ant = anotacoes(q);
+      const dep = anotacoes(p);
+      if (ant.some((x) => !(x instanceof PDFRef))) return `a página ${i + 1} tem anotação direta`;
+      const antK = new Set(ant.map((x) => chaveRef(x as PDFRef)));
+      const depK = new Set(dep.filter((x): x is PDFRef => x instanceof PDFRef).map(chaveRef));
+      for (const k of antK) if (!depK.has(k)) return `a página ${i + 1} perdeu uma anotação`;
+      const caixa = p.MediaBox().asArray().map((x) => (x instanceof PDFNumber ? x.asNumber() : 0));
+      const areaPagina = Math.abs((caixa[2]! - caixa[0]!) * (caixa[3]! - caixa[1]!));
+      for (const x of dep) {
+        if (x instanceof PDFRef && antK.has(chaveRef(x))) continue;
+        if (!(x instanceof PDFRef) || !eNovo(x)) return `a página ${i + 1} ganhou uma anotação que não é a assinatura`;
+        const w = depois.context.lookupMaybe(x, PDFDict);
+        if (!w || w.get(PDFName.of("Subtype")) !== PDFName.of("Widget") || !campoDeAssinatura(w)) {
+          return `a página ${i + 1} ganhou uma anotação que não é a assinatura`;
+        }
+        const area = retangulo(w);
+        if (!Number.isFinite(area)) return "o desenho da assinatura não tem medida";
+        const ruim = aceitar(w, area / (areaPagina || 1));
+        if (ruim) return ruim;
+      }
+    }
+    const formAntes = antes.catalog.lookupMaybe(PDFName.of("AcroForm"), PDFDict);
+    const form = depois.catalog.lookupMaybe(PDFName.of("AcroForm"), PDFDict);
+    const camposAntes = new Set(campos(formAntes).filter((x): x is PDFRef => x instanceof PDFRef).map(chaveRef));
+    const camposDepois = campos(form);
+    for (const k of camposAntes) if (!camposDepois.some((x) => x instanceof PDFRef && chaveRef(x) === k)) return "o PDF perdeu um campo";
+    for (const x of camposDepois) {
+      if (x instanceof PDFRef && camposAntes.has(chaveRef(x))) continue;
+      const c = x instanceof PDFRef ? depois.context.lookupMaybe(x, PDFDict) : undefined;
+      if (!(x instanceof PDFRef) || !eNovo(x) || !c || !campoDeAssinatura(c)) return "o PDF ganhou um campo que não é de assinatura";
+      // Campo sem página (ou com filhos): confere o próprio campo; a área, se for widget, em relação
+      // à primeira folha.
+      const caixa1 = paginas[0]?.node.MediaBox().asArray().map((y) => (y instanceof PDFNumber ? y.asNumber() : 0)) ?? [0, 0, 1, 1];
+      const area = c.get(PDFName.of("Rect")) ? retangulo(c) / (Math.abs((caixa1[2]! - caixa1[0]!) * (caixa1[3]! - caixa1[1]!)) || 1) : 0;
+      const ruim = aceitar(c, Number.isFinite(area) ? area : 1);
+      if (ruim) return ruim;
+      const filhos = c.lookupMaybe(PDFName.of("Kids"), PDFArray)?.asArray() ?? [];
+      for (const f of filhos) {
+        const w = f instanceof PDFRef ? depois.context.lookupMaybe(f, PDFDict) : undefined;
+        if (!(f instanceof PDFRef) || !eNovo(f) || !w) return "o PDF ganhou um campo que não é de assinatura";
+        const ruimFilho = aceitar(w, 0);
+        if (ruimFilho) return ruimFilho;
+      }
+    }
+    if (formAntes && form) {
+      const semCampos = ["Fields", "SigFlags"];
+      if (canonLib(form, resolverDepois, new Set(), semCampos) !== canonLib(formAntes, resolverAntes, new Set(), semCampos)) {
+        return `o PDF muda o formulário${ondeTexto}`;
+      }
+    }
+    return null;
+  };
+
+  // 2. A atualização da assinatura, contra a base.
+  if (canonLib(sd0.catalog, undefined, new Set(), extrasCatalogo) !== canonLib(bd.catalog, undefined, new Set(), extrasCatalogo)) {
     return "o PDF muda o catálogo";
   }
+  const novo0 = (r: PDFRef) => daPrimeiraK.has(chaveRef(r)) && !daBase.has(chaveRef(r));
+  let widgets0 = 0;
+  const ruim0 = compararEstados(bd, sd0, resolverB, resolver0, novo0, (w, fracao) => {
+    if (valorDoCampo(w) !== sigRef0) return "um campo ou widget acrescentado não é o da assinatura nova";
+    if (fracao > AREA_MAXIMA_DO_DESENHO) return "o desenho da assinatura cobre demais da página";
+    widgets0++;
+    return null;
+  }, "");
+  if (ruim0) return ruim0;
+  if (widgets0 === 0) return "a assinatura nova não é a de um campo acrescentado";
 
-  // As páginas: as mesmas, na mesma ordem, com o mesmo conteúdo e os mesmos recursos; só as /Annots
-  // ganham o widget da assinatura, pequeno.
-  const paginas = sd.getPages();
-  if (paginas.length !== paginasBase.length) return "o PDF tem outro número de páginas";
-  const widgetsNovos: PDFRef[] = [];
-  for (let i = 0; i < paginas.length; i++) {
-    const p = paginas[i]!.node;
-    const q = paginasBase[i]!.node;
-    if (chaveRef(paginas[i]!.ref) !== chaveRef(paginasBase[i]!.ref)) return `a página ${i + 1} não é a do contrato`;
-    if (canonLib(p, undefined, new Set(), ["Annots"]) !== canonLib(q, undefined, new Set(), ["Annots"])) return `a página ${i + 1} mudou`;
-    for (const [nome, a, bq] of [["conteúdo", p.Contents(), q.Contents()], ["recursos", p.Resources(), q.Resources()],
-                                  ["tamanho", p.MediaBox(), q.MediaBox()], ["corte", p.CropBox(), q.CropBox()],
-                                  ["giro", p.Rotate(), q.Rotate()]] as const) {
-      if (canonLib(a, resolverS) !== canonLib(bq, resolverB)) return `o ${nome} da página ${i + 1} mudou`;
+  // 3. Depois da assinatura, só validação longa.
+  if (ultimoIndice > 0) {
+    const chaves0 = new Set<string>();
+    for (const [ref] of sd0.context.enumerateIndirectObjects()) chaves0.add(chaveRef(ref));
+    const podemMudarDepois = new Set<string>([chaveRef(raiz), ...sd0.getPages().map((p) => chaveRef(p.ref))]);
+    const form0 = sd0.catalog.get(PDFName.of("AcroForm"));
+    if (form0 instanceof PDFRef) podemMudarDepois.add(chaveRef(form0));
+    const info0 = sd0.context.trailerInfo.Info;
+    if (info0 instanceof PDFRef) podemMudarDepois.add(chaveRef(info0));
+    const depois = parte.objetos.filter((o) => secaoDe(o) > 0);
+    for (const o of depois) {
+      const k = chave(o.n, o.g);
+      if (chaves0.has(k) && !podemMudarDepois.has(k)) return "a atualização depois da assinatura muda o que foi assinado";
     }
-    const anotacoes = (pg: typeof p) => {
-      const a = pg.lookupMaybe(PDFName.of("Annots"), PDFArray);
-      return a ? a.asArray() : [];
-    };
-    const antes = anotacoes(q);
-    const depois = anotacoes(p);
-    if (antes.some((x) => !(x instanceof PDFRef))) return `a página ${i + 1} da base tem anotação direta`;
-    const antesK = new Set(antes.map((x) => chaveRef(x as PDFRef)));
-    const depoisK = new Set(depois.filter((x): x is PDFRef => x instanceof PDFRef).map(chaveRef));
-    for (const k of antesK) if (!depoisK.has(k)) return `a página ${i + 1} perdeu uma anotação`;
-    const caixa = p.MediaBox().asArray().map((x) => (x instanceof PDFNumber ? x.asNumber() : 0));
-    const areaPagina = Math.abs((caixa[2]! - caixa[0]!) * (caixa[3]! - caixa[1]!));
-    for (const x of depois) {
-      if (x instanceof PDFRef && antesK.has(chaveRef(x))) continue;
-      if (!novo(x)) return `a página ${i + 1} ganhou uma anotação que não é a assinatura`;
-      const w = sd.context.lookupMaybe(x, PDFDict);
-      if (!w || w.get(PDFName.of("Subtype")) !== PDFName.of("Widget") || !campoDeAssinatura(w)) {
-        return `a página ${i + 1} ganhou uma anotação que não é a assinatura`;
-      }
-      const r = w.lookupMaybe(PDFName.of("Rect"), PDFArray)?.asArray().map((y) => (y instanceof PDFNumber ? y.asNumber() : NaN)) ?? [0, 0, 0, 0];
-      if (r.length !== 4 || r.some((y) => !Number.isFinite(y))) return "o desenho da assinatura não tem medida";
-      if (Math.abs((r[2]! - r[0]!) * (r[3]! - r[1]!)) > AREA_MAXIMA_DO_DESENHO * areaPagina) return "o desenho da assinatura cobre a página";
-      widgetsNovos.push(x);
+    const carimbos = new Set<string>();
+    for (const o of depois.filter(ehAssinatura)) {
+      if (nomeDe((o.valor as Extract<Valor, { t: "dict" }>).v.get("Type")) !== "DocTimeStamp") return "o PDF ganhou outra assinatura depois da do contrato";
+      const r = confereFaixa(o, secaoDe(o));
+      if (r) return r;
+      carimbos.add(chave(o.n, o.g));
     }
+    // O catálogo só ganha o /DSS (e a extensão que o declara).
+    const semDss = ["DSS", "Extensions"];
+    if (canonLib(sd.catalog, undefined, new Set(), semDss) !== canonLib(sd0.catalog, undefined, new Set(), semDss)) {
+      return "a atualização depois da assinatura muda o catálogo";
+    }
+    const depoisK = new Set(depois.map((o) => chave(o.n, o.g)));
+    const ruim = compararEstados(sd0, sd, resolver0, (r) => sd.context.lookup(r), (r) => depoisK.has(chaveRef(r)) && !chaves0.has(chaveRef(r)),
+      (w, fracao) => {
+        const v = valorDoCampo(w);
+        if (!v || !carimbos.has(v) || fracao !== 0) return "a atualização depois da assinatura acrescenta um campo visível ou que não é o carimbo de tempo";
+        return null;
+      }, " depois da assinatura");
+    if (ruim) return ruim;
   }
-
-  // O AcroForm: os campos da base continuam; os novos são de assinatura.
-  const form = sd.catalog.lookupMaybe(PDFName.of("AcroForm"), PDFDict);
-  const formAntes = bd.catalog.lookupMaybe(PDFName.of("AcroForm"), PDFDict);
-  const campos = (f: PDFDict | undefined) => f?.lookupMaybe(PDFName.of("Fields"), PDFArray)?.asArray() ?? [];
-  const camposAntes = new Set(campos(formAntes).filter((x): x is PDFRef => x instanceof PDFRef).map(chaveRef));
-  const camposDepois = campos(form);
-  for (const k of camposAntes) if (!camposDepois.some((x) => x instanceof PDFRef && chaveRef(x) === k)) return "o PDF perdeu um campo";
-  for (const x of camposDepois) {
-    if (x instanceof PDFRef && camposAntes.has(chaveRef(x))) continue;
-    if (!novo(x) || !campoDeAssinatura(sd.context.lookupMaybe(x, PDFDict))) return "o PDF ganhou um campo que não é de assinatura";
-  }
-
-  // A assinatura nova: uma só, com o /ByteRange cobrindo o arquivo inteiro e o /Contents no buraco.
-  const novas = [...ultimos.values()].filter((o) => o.valor.t === "dict" && o.valor.v.has("ByteRange") && o.valor.v.has("Contents"));
-  if (novas.length !== 1) return novas.length ? "o PDF ganhou mais de uma assinatura" : "a parte acrescentada não tem assinatura";
-  const sig = novas[0]!.valor as Extract<Valor, { t: "dict" }>;
-  const faixa = sig.v.get("ByteRange");
-  const conteudo = sig.v.get("Contents");
-  const f = faixa?.t === "arr" ? faixa.v.map((x) => inteiroDe(x) ?? -1) : [];
-  if (f.length !== 4 || f[0] !== 0 || conteudo?.t !== "str" || !conteudo.hex) return "a assinatura não tem /ByteRange e /Contents";
-  if (f[1] !== conteudo.ini || f[2] !== conteudo.fim || f[2]! + f[3]! !== b.length) return "a assinatura não cobre o arquivo inteiro";
-  if (conteudo.v.length === 0 || conteudo.v[0] !== 0x30 || conteudo.v.every((x) => x === 0)) return "a assinatura está vazia";
-  const usada = widgetsNovos.length + camposDepois.length === 0 ||
-    [...widgetsNovos, ...camposDepois.filter((x): x is PDFRef => x instanceof PDFRef && !camposAntes.has(chaveRef(x)))]
-      .some((r) => {
-        const v = sd.context.lookupMaybe(r, PDFDict)?.get(PDFName.of("V"));
-        return v instanceof PDFRef && chave(v.objectNumber, v.generationNumber) === chave(novas[0]!.n, novas[0]!.g);
-      });
-  if (!usada) return "a assinatura nova não é a do campo acrescentado";
   return null;
 }
 
@@ -749,6 +949,9 @@ export async function conferirAssinatura(bytes: Uint8Array | null, base: Uint8Ar
   if (!bytes) return { valido: false, motivo: "O arquivo não chegou. Envie de novo." };
   const r = verificarArquivo(bytes, "application/pdf", TAMANHO_MAXIMO_PDF_CONTRATO);
   if (!r.ok) return { valido: false, motivo: r.motivo };
+  if (await pesadoDemais(bytes)) {
+    return { valido: false, motivo: "Este PDF não parece o contrato assinado: tem partes demais. Baixe o contrato de novo, assine pelo gov.br e envie o arquivo que ele devolver." };
+  }
   let sd: PDFDocument;
   try {
     sd = await PDFDocument.load(bytes, { updateMetadata: false });

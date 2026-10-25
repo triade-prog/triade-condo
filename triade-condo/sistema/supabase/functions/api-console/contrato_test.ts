@@ -10,10 +10,12 @@ import { conferirAssinatura, gerarPdfContrato, type RetratoContrato, sha256Bytes
 import {
   PDF_BURLA_REAL,
   PDF_FINAL_REAL,
+  PDF_LTV_REAL,
   PDF_XREF_FLUXO_REAL,
   TAMANHO_BASE_REAL,
   TAMANHO_BASE_XREF_FLUXO_REAL,
   TAMANHO_CONDOMINIO_REAL,
+  TAMANHO_DSS_REAL,
 } from "./contrato_pdfs_teste.ts";
 import {
   adminFalso,
@@ -252,9 +254,9 @@ Deno.test("0308: a conferência com PDFs de um assinador de verdade (pyHanko, PA
   const c2 = await conferirAssinatura(final, condominio);
   assertEquals([c2.valido, c2.assinaturas, c2.assinaturaNova, c2.soAssinatura], [true, 2, true, true], c2.detalhe);
   assertEquals(c2.prefixoSha256, await sha256Bytes(condominio));
-  // A burla assinada de verdade: a assinatura é válida, mas a página 1 não é a do contrato.
+  // A burla assinada de verdade: a página 1 trocada numa atualização antes da assinatura.
   const burla = await conferirAssinatura(bytes(PDF_BURLA_REAL), base);
-  assertEquals([burla.assinaturaNova, burla.soAssinatura, burla.detalhe], [true, false, "a página 1 mudou"]);
+  assertEquals([burla.assinaturaNova, burla.soAssinatura, burla.detalhe], [true, false, "há uma atualização antes da assinatura"]);
   assertEquals(burla.prefixoSha256, await sha256Bytes(base), "o começo é a base: só a leitura da parte acrescentada pega");
   // Base com índice em fluxo (/Type /XRef): o assinador grava o índice acrescentado também em fluxo.
   const xs = bytes(PDF_XREF_FLUXO_REAL);
@@ -280,8 +282,20 @@ Deno.test("0308: a parte acrescentada só pode trazer a assinatura", async () =>
   }), "a página 1 mudou");
   // A página ganha uma anotação que desenha por cima (FreeText) em vez do widget de assinatura.
   assertEquals(await motivo({ subtipo: "FreeText" }), "a página 1 ganhou uma anotação que não é a assinatura");
-  // O desenho da assinatura cobre a página.
-  assertEquals(await motivo({ rect: [0, 0, 595, 842] }), "o desenho da assinatura cobre a página");
+  // O desenho da assinatura cobre a página, ou só uma cláusula (mais de 8% da folha; caso 5 da revisão do 717fe30).
+  assertEquals(await motivo({ rect: [0, 0, 595, 842] }), "o desenho da assinatura cobre demais da página");
+  assertEquals(await motivo({ rect: [56, 320, 540, 560] }), "o desenho da assinatura cobre demais da página");
+  // O selo pequeno do gov.br passa.
+  assertEquals((await conferirAssinatura(await assinarIncremental(BASE, { rect: [380, 40, 560, 100] }), BASE)).soAssinatura, true);
+  // Um campo de assinatura a mais, vazio e com desenho próprio, na mesma atualização da assinatura.
+  let vazio = 0;
+  assertEquals(await motivo({
+    extras: (novo, { pagina }) => {
+      vazio = novo();
+      return [{ n: vazio, corpo: `<< /Type /Annot /Subtype /Widget /FT /Sig /T (Vazio) /F 4 /P ${pagina.ref} /Rect [400 100 560 150] >>` }];
+    },
+    mudarPagina: (pg) => pg.set(PDFName.of("Annots"), pg.context.obj([...(pg.lookupMaybe(PDFName.of("Annots"), PDFArray)?.asArray() ?? []), PDFRef.of(vazio)])),
+  }), "um campo ou widget acrescentado não é o da assinatura nova");
   // O índice apaga um objeto do contrato.
   assertEquals(await motivo({ livres: [3] }), "o índice acrescentado apaga um objeto");
   // O widget definido duas vezes: o leitor segue o índice (o primeiro, FreeText), o pdf-lib leria o segundo.
@@ -292,6 +306,142 @@ Deno.test("0308: a parte acrescentada só pode trazer a assinatura", async () =>
   // Algo depois da assinatura: ela não cobre o arquivo inteiro.
   const depois = await conferirAssinatura(await assinarIncremental(BASE, { depois: "1 0 obj\n<< >>\nendobj\n%%EOF\n" }), BASE);
   assertEquals([depois.assinaturaNova, depois.soAssinatura], [true, false]);
+});
+
+/** Uma atualização incremental qualquer (objetos, índice e trailer) no fim do PDF. */
+async function acrescentar(pdf: Uint8Array, partes: (n: number, d: { doc: PDFDocument; pagina: PDFPage }) => { n: number; corpo: string }[]) {
+  const doc = await PDFDocument.load(pdf, { updateMetadata: false });
+  const ctx = doc.context;
+  const ps = partes(ctx.largestObjectNumber + 1, { doc, pagina: doc.getPages()[0]! });
+  let s = "\n";
+  const pos: [number, number][] = [];
+  for (const p of ps) {
+    pos.push([p.n, pdf.length + s.length]);
+    s += `${p.n} 0 obj\n${p.corpo}\nendobj\n`;
+  }
+  const indice = pdf.length + s.length;
+  const marcas = [...new TextDecoder("latin1").decode(pdf).matchAll(/startxref\s+(\d+)/g)];
+  const tamanho = Math.max(ctx.largestObjectNumber, ...ps.map((p) => p.n)) + 1;
+  s += "xref\n0 1\n0000000000 65535 f \n" + pos.map(([n, o]) => `${n} 1\n${String(o).padStart(10, "0")} 00000 n \n`).join("");
+  const info = ctx.trailerInfo.Info;
+  s += `trailer\n<< /Size ${tamanho} /Root ${ctx.trailerInfo.Root} ${info ? `/Info ${info} ` : ""}/Prev ${marcas[marcas.length - 1]![1]} >>\n` +
+    `startxref\n${indice}\n%%EOF\n`;
+  return juntar(pdf, texto.encode(s));
+}
+
+/** Atualização "do atacante", sem assinatura: um campo (ou anotação) com desenho próprio sobre uma cláusula. */
+function campoComDesenho(subtipo: string, rect: number[]) {
+  return (n: number, { doc, pagina }: { doc: PDFDocument; pagina: PDFPage }) => {
+    const ctx = doc.context;
+    const wN = n, apN = n + 1, formN = n + 2;
+    const pg = pagina.node.clone(ctx);
+    pg.set(PDFName.of("Annots"), ctx.obj([PDFRef.of(wN)]));
+    const cat = doc.catalog.clone(ctx);
+    cat.set(PDFName.of("AcroForm"), PDFRef.of(formN));
+    const w = rect[2]! - rect[0]!, h = rect[3]! - rect[1]!;
+    const desenho = `q 1 1 1 rg 0 0 ${w} ${h} re f Q BT /Helv 14 Tf 0 g 10 ${h - 30} Td (Mensalidade: R$ 1,00 por mes) Tj ET`;
+    const ft = subtipo === "Widget" ? "/FT /Sig /T (Campo vazio) " : "/Contents (Mensalidade: R$ 1,00) ";
+    return [
+      { n: pagina.ref.objectNumber, corpo: pg.toString() },
+      { n: (ctx.trailerInfo.Root as PDFRef).objectNumber, corpo: cat.toString() },
+      { n: formN, corpo: `<< /Fields [${subtipo === "Widget" ? `${wN} 0 R` : ""}] /SigFlags 3 >>` },
+      { n: wN, corpo: `<< /Type /Annot /Subtype /${subtipo} ${ft}/F 4 /P ${pagina.ref} /Rect [${rect.join(" ")}] /AP << /N ${apN} 0 R >> >>` },
+      { n: apN, corpo: `<< /Type /XObject /Subtype /Form /BBox [0 0 ${w} ${h}] /Length ${desenho.length} >>\nstream\n${desenho}\nendstream` },
+    ];
+  };
+}
+
+Deno.test("0308: só a atualização da assinatura, e depois dela só a validação longa (revisão do 717fe30)", async () => {
+  const clausula = [56, 320, 540, 560];
+  // Caso 4: campo de assinatura vazio com desenho que cobre a cláusula, numa atualização antes, e o assinador por cima.
+  const r4 = await conferirAssinatura(await assinarIncremental(await acrescentar(BASE, campoComDesenho("Widget", clausula))), BASE);
+  assertEquals([r4.assinaturaNova, r4.soAssinatura, r4.detalhe], [true, false, "há uma atualização antes da assinatura"]);
+  // O mesmo com um FreeText.
+  const r3 = await conferirAssinatura(await assinarIncremental(await acrescentar(BASE, campoComDesenho("FreeText", clausula))), BASE);
+  assertEquals([r3.soAssinatura, r3.detalhe], [false, "há uma atualização antes da assinatura"]);
+  // Caso 5: o desenho do próprio widget de assinatura sobre a cláusula.
+  const r5 = await conferirAssinatura(await assinarIncremental(BASE, { rect: clausula }), BASE);
+  assertEquals([r5.soAssinatura, r5.detalhe], [false, "o desenho da assinatura cobre demais da página"]);
+
+  // Validação longa de um assinador de verdade: o /DSS e depois o carimbo de tempo invisível passam.
+  const bytes = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const ltv = bytes(PDF_LTV_REAL);
+  const base = ltv.subarray(0, TAMANHO_BASE_REAL);
+  const dss = await conferirAssinatura(ltv.subarray(0, TAMANHO_DSS_REAL), base);
+  assertEquals([dss.assinaturas, dss.assinaturaNova, dss.soAssinatura], [1, true, true], dss.detalhe);
+  const ts = await conferirAssinatura(ltv, base);
+  assertEquals([ts.assinaturas, ts.assinaturaNova, ts.soAssinatura], [2, true, true], ts.detalhe);
+  // E a TRÍADE assina por cima do arquivo com a validação longa.
+  const final = await assinarIncremental(ltv);
+  assertEquals((await conferirAssinatura(final, ltv)).soAssinatura, true);
+  const doFinal = bytes(PDF_FINAL_REAL);
+  assertEquals(ltv.subarray(0, TAMANHO_CONDOMINIO_REAL).every((x, i) => x === doFinal[i]), true, "começa com o assinado pelo condomínio");
+
+  // Montada aqui: uma atualização só com o /DSS e o catálogo ganhando o /DSS passa.
+  const assinado = await assinarIncremental(BASE);
+  const comDss = await acrescentar(assinado, (n, { doc }) => {
+    const cat = doc.catalog.clone(doc.context);
+    cat.set(PDFName.of("DSS"), PDFRef.of(n));
+    return [
+      { n, corpo: `<< /Type /DSS /Certs [${n + 1} 0 R] /VRI << /ABCDEF ${n + 2} 0 R >> >>` },
+      { n: n + 1, corpo: "<< /Length 4 >>\nstream\n0ABC\nendstream" },
+      { n: n + 2, corpo: `<< /Type /VRI /Cert [${n + 1} 0 R] >>` },
+      { n: (doc.context.trailerInfo.Root as PDFRef).objectNumber, corpo: cat.toString() },
+    ];
+  });
+  const rd = await conferirAssinatura(comDss, BASE);
+  assertEquals([rd.assinaturaNova, rd.soAssinatura], [true, true], rd.detalhe);
+  // Depois da assinatura, o catálogo não muda mais nada além do /DSS.
+  const outroCatalogo = await acrescentar(assinado, (_n, { doc }) => {
+    const cat = doc.catalog.clone(doc.context);
+    cat.set(PDFName.of("OpenAction"), doc.context.obj([doc.getPages()[0]!.ref, PDFName.of("Fit")]));
+    return [{ n: (doc.context.trailerInfo.Root as PDFRef).objectNumber, corpo: cat.toString() }];
+  });
+  assertEquals((await conferirAssinatura(outroCatalogo, BASE)).detalhe, "a atualização depois da assinatura muda o catálogo");
+  // Nem redefine o desenho da assinatura (o que foi assinado).
+  const desenhoNovo = await acrescentar(assinado, (_n, { doc }) => {
+    const sd = doc.getPages()[0]!.node.lookup(PDFName.of("Annots"), PDFArray).get(0) as PDFRef;
+    const w = doc.context.lookup(sd, PDFDict);
+    const ap = (w.lookup(PDFName.of("AP"), PDFDict).get(PDFName.of("N")) as PDFRef).objectNumber;
+    const d = "BT /F1 30 Tf 0 0 Td (R$ 1,00) Tj ET";
+    return [{ n: ap, corpo: `<< /Type /XObject /Subtype /Form /BBox [0 0 160 50] /Length ${d.length} >>\nstream\n${d}\nendstream` }];
+  });
+  assertEquals((await conferirAssinatura(desenhoNovo, BASE)).detalhe, "a atualização depois da assinatura muda o que foi assinado");
+  // Nem acrescenta um campo visível.
+  const visivel = await acrescentar(assinado, (n, { doc, pagina }) => {
+    const pg = pagina.node.clone(doc.context);
+    pg.set(PDFName.of("Annots"), doc.context.obj([...pagina.node.lookup(PDFName.of("Annots"), PDFArray).asArray(), PDFRef.of(n)]));
+    return [
+      { n, corpo: `<< /Type /Annot /Subtype /Widget /FT /Sig /T (Outro) /F 4 /P ${pagina.ref} /Rect [56 320 540 560] >>` },
+      { n: pagina.ref.objectNumber, corpo: pg.toString() },
+    ];
+  });
+  assertEquals((await conferirAssinatura(visivel, BASE)).detalhe,
+    "a atualização depois da assinatura acrescenta um campo visível ou que não é o carimbo de tempo");
+  // Nem uma segunda assinatura /Sig (só o carimbo /DocTimeStamp).
+  const segunda = await assinarIncremental(assinado);
+  const rs = await conferirAssinatura(segunda, BASE);
+  assertEquals([rs.soAssinatura, rs.detalhe], [false, "o PDF ganhou outra assinatura depois da do contrato"]);
+});
+
+Deno.test("0308: PDF com partes demais não chega ao pdf-lib (tempo da conferência)", async () => {
+  const demais = "Este PDF não parece o contrato assinado: tem partes demais. Baixe o contrato de novo, assine pelo gov.br e envie o arquivo que ele devolver.";
+  // Mais de 5000 objetos.
+  const muitos = await assinarIncremental(BASE, { extras: (novo) => Array.from({ length: 5001 }, () => ({ n: novo(), corpo: "<< >>" })) });
+  assertEquals(await conferirAssinatura(muitos, BASE), { valido: false, motivo: demais });
+  // Fluxo de objetos que incha (200 MB de zeros comprimidos em 200 KB).
+  const zeros = new Uint8Array(200 * 1024 * 1024);
+  const comp = new Uint8Array(await new Response(new Blob([zeros]).stream().pipeThrough(new CompressionStream("deflate"))).arrayBuffer());
+  const bomba = juntar(BASE, texto.encode(`\n9000 0 obj\n<< /Type /ObjStm /N 10 /First 20 /Filter /FlateDecode /Length ${comp.length} >>\nstream\n`), comp,
+    texto.encode("\nendstream\nendobj\n%%EOF\n"));
+  const t0 = performance.now();
+  assertEquals(await conferirAssinatura(bomba, BASE), { valido: false, motivo: demais });
+  assert(performance.now() - t0 < 2000, "para de abrir no limite");
+  // O selo com 4000 objetos acrescentados ainda é conferido, em bem menos de 2 segundos.
+  const t1 = performance.now();
+  const grande = await conferirAssinatura(await assinarIncremental(BASE, { extras: (novo) => Array.from({ length: 4000 }, () => ({ n: novo(), corpo: "<< >>" })) }), BASE);
+  assertEquals(grande.soAssinatura, true, grande.detalhe);
+  assert(performance.now() - t1 < 2000);
 });
 
 /** A base que o banco aponta para a conferência: o PDF gerado, com o resumo e o tamanho. */

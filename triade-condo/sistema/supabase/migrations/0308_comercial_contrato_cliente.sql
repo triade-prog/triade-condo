@@ -56,16 +56,27 @@
 --    - documento conferido depois do contrato assinado ou de virar cliente é recusado; um só
 --      recebido de cada tipo; o interessado é travado na conferência;
 --    - fechar (perdido, sem resposta) ou anonimizar o interessado encerra o piloto e leva o
---      condomínio a Piloto encerrado (feito pela Administração do condomínio, marcado como do
---      sistema, porque a carteira só muda com alguém da equipe no condomínio); anonimizar tira os
+--      condomínio a Piloto encerrado (sem criar vínculo; ver o item 13); anonimizar tira os
 --      contatos e o CNPJ do condomínio do piloto que não virou cliente;
 --    - anonimizar apaga também os envios conferidos de um contrato que não virou cliente (ou que
 --      ainda aguarda a TRÍADE) e manda à fila todos os arquivos, mesmo os de linhas já apagadas;
 --    - até contrato_envios_abertos_max (3) envios em aberto por interessado; uma rotina diária
 --      (comercial_limpar_envios_abertos, 3h47) recusa os que ficaram enviando mais de um dia e manda
 --      os arquivos para a fila de apagar;
---    - a conferência e o recusar travam sempre o contrato antes do envio (como gerar de novo);
+--    - a conferência e o recusar travam sempre o contrato antes do envio (como gerar de novo; o
+--      interessado antes dos dois, item 13);
 --    - o CPF de quem representa sai mascarado em toda leitura; inteiro só no retrato do PDF.
+-- 13. Reconferência do 717fe30 (25/10/2026), antes de aplicar:
+--    - travas sempre na ordem de gerar de novo: interessado, contrato, envio (conferir, recusar,
+--      a conferência automática e o começo do envio pela equipe e pelo link);
+--    - fechar o piloto não cria vínculo com ninguém: a carteira muda por quem já é da
+--      Administração do condomínio; sem ninguém, pelo sistema, sem pessoa, só de Em piloto para
+--      Piloto encerrado (três políticas estreitas, *_piloto_encerrado_pelo_sistema*); o autor real
+--      (quem mudou a etapa no Comercial, ou a anonimização) fica no motivo e no histórico do piloto;
+--      sem piloto aberto (Perdido para Sem resposta) não faz nada;
+--    - o teto de envios em aberto conta o link e a equipe separados;
+--    - a cobrança de implantação em parcelas leva a parcela e o total no JSON (cobranca_json da 0291
+--      fica como cobranca_json_r174, chamada pela nova), para a tela mostrar "Implantação (k/N)".
 --
 -- Nada aqui apaga linha nem remove função (o conector do Supabase trava nesses comandos). Sai só o
 -- índice cobrancas_implantacao_unica (0291), trocado pelo de uma implantação por parcela.
@@ -761,15 +772,19 @@ as $$
 $$;
 
 -- Envios em aberto (o link de envio do armazenamento vale 2 horas): até contrato_envios_abertos_max
--- por interessado, somando documentos e PDFs assinados, para ninguém encher o armazenamento.
-create function comercial_exigir_envios_abertos(p_interessado uuid) returns void
+-- por interessado, somando documentos e PDFs assinados, para ninguém encher o armazenamento. O teto
+-- do link e o da equipe contam separados: o síndico que abre muitos envios pelo link não impede a
+-- equipe de mandar o que recebeu por outro canal, e o contrário. Trava o interessado (o primeiro da
+-- ordem interessado, contrato, envio) para dois envios ao mesmo tempo não passarem do teto.
+create function comercial_exigir_envios_abertos(p_interessado uuid, p_pelo_link boolean) returns void
 language plpgsql
 set search_path = public
 as $$
 begin
-  if (select count(*) from documentos_aceite where interessado_id = p_interessado and situacao = 'ENVIANDO'
+  perform 1 from interessados where id = p_interessado for update;
+  if (select count(*) from documentos_aceite where interessado_id = p_interessado and situacao = 'ENVIANDO' and pelo_link = p_pelo_link
                                               and enviado_em > app_now() - interval '2 hours')
-     + (select count(*) from envios_contrato where interessado_id = p_interessado and situacao = 'ENVIANDO'
+     + (select count(*) from envios_contrato where interessado_id = p_interessado and situacao = 'ENVIANDO' and pelo_link = p_pelo_link
                                               and enviado_em > app_now() - interval '2 hours')
      >= configuracao_int('contrato_envios_abertos_max') then
     perform recusar_motivo('Há envios em aberto; termine os que começou ou espere duas horas', 'ENVIOS_EM_ABERTO');
@@ -802,7 +817,7 @@ begin
   if exists (select 1 from contratos_comercial where interessado_id = i.id and situacao = 'ASSINADO') then
     perform recusar_motivo('O contrato já foi assinado pelos dois', 'CONTRATO_ASSINADO');
   end if;
-  perform comercial_exigir_envios_abertos(i.id);
+  perform comercial_exigir_envios_abertos(i.id, p_pelo_link);
   insert into documentos_aceite (id, interessado_id, aceite_id, tipo, nome, caminho, cnpj, mandato_ate, pelo_link, ip, enviado_por)
   values (v_id, i.id, a.id, v_tipo, v_nome, v_caminho, case when v_tipo = 'CNPJ' then v_cnpj end, case when v_tipo = 'ATA_ELEICAO' then v_mandato end,
           p_pelo_link, case when p_pelo_link and length(p_ip) between 3 and 45 then p_ip end, p_pessoa);
@@ -1259,7 +1274,7 @@ begin
   if p_parte = 'TRIADE' then
     select * into e_base from envios_contrato where contrato_id = c.id and parte = 'CONDOMINIO' and situacao = 'CONFERIDO';
   end if;
-  perform comercial_exigir_envios_abertos(c.interessado_id);
+  perform comercial_exigir_envios_abertos(c.interessado_id, p_pelo_link);
   insert into envios_contrato (id, contrato_id, interessado_id, parte, nome, caminho, pelo_link, ip, enviado_por, base_sha256, base_tamanho, base_assinaturas)
   values (v_id, c.id, c.interessado_id, p_parte, v_nome, v_caminho, p_pelo_link, case when p_pelo_link and length(p_ip) between 3 and 45 then p_ip end,
           p_pessoa, coalesce(e_base.sha256, c.pdf_sha256), coalesce(e_base.tamanho, c.pdf_tamanho), coalesce(e_base.assinaturas, 0));
@@ -1356,6 +1371,10 @@ set search_path = public
 as $$
 declare e envios_contrato;
 begin
+  -- Sempre na ordem de gerar de novo: interessado, contrato, envio.
+  perform 1 from interessados
+   where id = (select interessado_id from envios_contrato where id = p_envio and (p_interessado is null or interessado_id = p_interessado))
+     for update;
   perform 1 from contratos_comercial
    where id = (select contrato_id from envios_contrato where id = p_envio and (p_interessado is null or interessado_id = p_interessado))
      for update;
@@ -1572,6 +1591,7 @@ declare
   v_parte text := coalesce(comercial_texto(p_dados, 'parte'), 'TRIADE');
 begin
   perform entrar_console(p_pessoa, case when v_parte = 'TRIADE' then 'console.comercial.assinar' else 'console.comercial.editar' end);
+  perform 1 from interessados where id = (select interessado_id from contratos_comercial where id = p_contrato) for update;
   select * into c from contratos_comercial where id = p_contrato for update;
   if not found then raise exception 'Contrato não encontrado' using errcode = 'TC404'; end if;
   i := comercial_buscar(c.interessado_id);
@@ -1716,12 +1736,12 @@ as $$
 begin
   if new.anonimizado_em is not null and old.anonimizado_em is null then
     perform comercial_revogar_links_interessado(new.id, 'Dados apagados (LGPD)', null);
-    perform comercial_fechar_piloto(new.id, 'Dados apagados (LGPD)');
+    perform comercial_fechar_piloto(new.id, 'Dados apagados (LGPD)', null);
   elsif new.etapa is distinct from old.etapa and new.etapa = 'GANHO' then
     perform comercial_revogar_links_sem_aceite(new.id, 'Interessado fechado', new.alterado_por);
   elsif new.etapa is distinct from old.etapa and not comercial_aberta(new.etapa) then
     perform comercial_revogar_links_interessado(new.id, 'Interessado fechado', new.alterado_por);
-    perform comercial_fechar_piloto(new.id, 'Interessado fechado sem virar cliente');
+    perform comercial_fechar_piloto(new.id, 'Interessado fechado sem virar cliente', coalesce(contexto_pessoa(), new.alterado_por));
   end if;
   return null;
 end $$;
@@ -1888,6 +1908,7 @@ begin
   perform limpar_contexto();
   perform set_config('app.comercial_sistema', 'on', true);
   a := publico_aceite_do_link(p_codigo);
+  perform 1 from interessados where id = (comercial_interessado_do_aceite(a)).id for update;
   select * into c from contratos_comercial
    where interessado_id = (comercial_interessado_do_aceite(a)).id and situacao <> 'SUBSTITUIDO' for update;
   if not found then raise exception 'Contrato não encontrado' using errcode = 'TC404'; end if;
@@ -2322,11 +2343,31 @@ end $$;
 -- O interessado fechou (perdido, sem resposta) ou foi anonimizado sem virar cliente: o piloto aberto
 -- termina como perdido e o condomínio vai a Piloto encerrado (antes ficava Em piloto, sem cobrança,
 -- para sempre). Vale também para o piloto que já virou proposta. Chamado pelo gatilho do
--- interessado. A carteira é da equipe (RLS e histórico interno pedem alguém da equipe no
--- condomínio): a mudança é feita pela Administração do condomínio (quem fechou, se for da
--- Administração; senão quem começou o piloto; senão quem atende o cliente), marcada como do sistema
--- e com o motivo. O contexto volta ao de quem chamou.
-create function comercial_fechar_piloto(p_interessado uuid, p_motivo text) returns void
+-- interessado, com quem mudou a etapa (p_autor; nulo na anonimização).
+-- Não cria vínculo com ninguém (revisão do 717fe30): a carteira muda por quem já é da
+-- Administração do condomínio (quem fechou, se for; senão quem começou o piloto; senão quem atende
+-- há mais tempo). Sem ninguém, a mudança é do sistema, sem pessoa, só de Em piloto para Piloto
+-- encerrado e só neste condomínio (as políticas abaixo). O autor real fica no motivo da mudança e no
+-- histórico do piloto. Sem piloto aberto não faz nada: Perdido para Sem resposta, com o piloto já
+-- encerrado, não mexe de novo na carteira. O contexto volta ao de quem chamou.
+create function comercial_encerrando_piloto(p_condominio uuid) returns boolean
+language sql stable
+set search_path = public
+as $$
+  select contexto_pessoa() is null and p_condominio = contexto_condominio()
+     and coalesce(current_setting('app.comercial_piloto_encerrando', true), '') = p_condominio::text
+$$;
+
+create policy cliente_piloto_encerrado_pelo_sistema_leitura on clientes for select
+  using (comercial_encerrando_piloto(condominio_id));
+create policy cliente_piloto_encerrado_pelo_sistema on clientes for update
+  using (comercial_encerrando_piloto(condominio_id) and estado = 'PILOTO')
+  with check (comercial_encerrando_piloto(condominio_id) and estado = 'PILOTO_ENCERRADO');
+create policy historico_piloto_encerrado_pelo_sistema on historico for insert
+  with check (comercial_encerrando_piloto(condominio_id) and interno and autor_tipo = 'SISTEMA' and autor_id is null
+              and acao = 'estado.mudou' and entidade = 'clientes');
+
+create function comercial_fechar_piloto(p_interessado uuid, p_motivo text, p_autor uuid) returns void
 language plpgsql
 set search_path = public
 as $$
@@ -2335,49 +2376,63 @@ declare
   p pilotos_comercial;
   v_pessoa uuid := contexto_pessoa();
   v_antes text := coalesce(current_setting('app.comercial_sistema', true), '');
+  v_origem text;
+  v_motivo text;
+  v_criador uuid;
   v_candidatos uuid[];
   v_adm uuid;
+  v_pilotos integer := 0;
   v_mudou integer := 0;
   v_entrou boolean := false;
 begin
   select * into i from interessados where id = p_interessado;
   if i.condominio_id is null or i.virou_cliente_em is not null then return; end if;
+  v_origem := case when p_autor is not null then 'COMERCIAL' when i.anonimizado_em is not null then 'ANONIMIZACAO' else 'AUTOMATICO' end;
+  v_motivo := format('%s (%s)', p_motivo, case v_origem
+    when 'COMERCIAL' then format('etapa mudada no Comercial por %s', coalesce(comercial_nome(p_autor), 'alguém'))
+    when 'ANONIMIZACAO' then 'anonimização'
+    else 'etapa mudada sem pessoa' end);
   perform set_config('app.comercial_sistema', 'on', true);
   for p in update pilotos_comercial
-              set situacao = 'PERDIDO', encerrado_em = coalesce(encerrado_em, app_now()), encerrado_por = coalesce(encerrado_por, v_pessoa),
+              set situacao = 'PERDIDO', encerrado_em = coalesce(encerrado_em, app_now()), encerrado_por = coalesce(encerrado_por, p_autor),
                   motivo_perda = case when i.motivo_perda is not null then i.motivo_perda when i.etapa = 'SEM_RESPOSTA' then 'NAO_RESPONDEU' else 'OUTRO' end
             where interessado_id = i.id and situacao in ('EM_ANDAMENTO', 'VIROU_PROPOSTA')
             returning * loop
+    v_pilotos := v_pilotos + 1;
+    v_criador := p.criado_por;
     perform comercial_historico('comercial.piloto', 'piloto_comercial', p.id::text,
-      jsonb_build_object('situacao', p.situacao, 'motivoPerda', p.motivo_perda, 'porque', p_motivo));
+      jsonb_strip_nulls(jsonb_build_object('situacao', p.situacao, 'motivoPerda', p.motivo_perda, 'porque', p_motivo,
+                                           'autorId', p_autor, 'origem', v_origem)));
   end loop;
+  if v_pilotos = 0 then
+    perform set_config('app.comercial_sistema', v_antes, true);
+    return;
+  end if;
   perform entrar_como_sistema(i.condominio_id);
-  select array_agg(x.id order by x.ordem, x.desde) into v_candidatos from (
-    select v_pessoa as id, 0 as ordem, null::timestamptz as desde
-    union all select criado_por, 1, criado_em from pilotos_comercial where interessado_id = i.id
-    union all select pessoa_id, 2, criado_em from vinculos where condominio_id = i.condominio_id and funcao = 'ADMINISTRACAO' and revogado_em is null) x
-   where x.id is not null;
+  select array_agg(v.pessoa_id order by (v.pessoa_id = v_pessoa) desc, (v.pessoa_id = v_criador) desc, v.criado_em) into v_candidatos
+    from vinculos v
+   where v.condominio_id = i.condominio_id and v.funcao = 'ADMINISTRACAO' and v.revogado_em is null;
   foreach v_adm in array coalesce(v_candidatos, '{}') loop
     begin
-      perform comercial_entrar_cliente(v_adm, i.condominio_id, 'console.estagio.mudar');
+      perform entrar_condominio(v_adm, i.condominio_id, 'console.estagio.mudar');
       v_entrou := true;
-    exception when sqlstate 'TC401' or sqlstate 'TC422' then
-      -- Não é (mais) da Administração: tenta o próximo.
+    exception when sqlstate 'TC401' then
+      -- Saiu da equipe ou perdeu a função: tenta o próximo.
       perform entrar_como_sistema(i.condominio_id);
     end;
     exit when v_entrou;
   end loop;
-  if v_entrou then
-    perform definir_transicao('PILOTO_ENCERRADO', p_motivo, true);
-    update clientes set estado = 'PILOTO_ENCERRADO' where condominio_id = i.condominio_id and estado = 'PILOTO';
-    get diagnostics v_mudou = row_count;
+  if not v_entrou then
+    perform entrar_como_sistema(i.condominio_id);
+    perform set_config('app.comercial_piloto_encerrando', i.condominio_id::text, true);
   end if;
+  perform definir_transicao('PILOTO_ENCERRADO', v_motivo, true);
+  update clientes set estado = 'PILOTO_ENCERRADO' where condominio_id = i.condominio_id and estado = 'PILOTO';
+  get diagnostics v_mudou = row_count;
+  perform set_config('app.comercial_piloto_encerrando', '', true);
   if v_pessoa is not null then perform definir_pessoa(v_pessoa); else perform entrar_como_sistema(null); end if;
   if v_mudou > 0 then
     perform comercial_inserir_conversa(i.id, 'NOTA', 'Piloto encerrado: o condomínio ficou na carteira como Piloto encerrado.', false, null, null);
-  elsif not v_entrou then
-    perform comercial_inserir_conversa(i.id, 'NOTA',
-      'Piloto encerrado, mas ninguém da Administração atende o condomínio: passe-o a Piloto encerrado na carteira.', false, null, null);
   end if;
   perform set_config('app.comercial_sistema', v_antes, true);
 end $$;
@@ -2457,6 +2512,21 @@ begin
   return new;
 end $$;
 create trigger cobrancas_parcela_fixa before update of parcela on cobrancas for each row execute function cobrancas_parcela_fixa();
+
+-- A parcela na tela (revisão do 717fe30): a cobrança de implantação diz qual parcela é e de
+-- quantas, para o Console mostrar "Implantação (k/N)". O mesmo JSON da 0291, com a parcela e o
+-- total quando a implantação tem mais de uma.
+alter function cobranca_json(cobrancas) rename to cobranca_json_r174;
+create function cobranca_json(c cobrancas) returns jsonb
+language sql stable
+set search_path = public
+as $$
+  select cobranca_json_r174(c) || coalesce((
+    select jsonb_build_object('parcela', c.parcela, 'parcelas', count(*))
+      from cobrancas o
+     where o.condominio_id = c.condominio_id and o.tipo = 'IMPLANTACAO'
+    having c.tipo = 'IMPLANTACAO' and count(*) > 1), '{}'::jsonb)
+$$;
 
 -- Mesmo corpo da 0291; a implantação com valor vira as suas parcelas (app.implantacao_parcelas, que
 -- só virar cliente usa; sem ele, uma parcela como antes), a última com o resto da divisão.

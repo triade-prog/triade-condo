@@ -55,6 +55,9 @@ export interface Cobranca {
   tipo: "MENSALIDADE" | "IMPLANTACAO";
   competencia?: string;
   referencia?: string;
+  /** Na implantação em mais de uma parcela: qual é e de quantas (0308). */
+  parcela?: number;
+  parcelas?: number;
   valor?: number;
   ajustes: number;
   devido?: number;
