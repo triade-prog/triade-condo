@@ -2,9 +2,12 @@
 -- da equipe, o link público com a grade de horários, o agendamento que cria ou junta o interessado
 -- e o põe em Demonstração marcada, o horário que não aceita duas pessoas, o link da equipe, marcar
 -- à mão, remarcar, a fila da confirmação e do lembrete (com e sem a chave), registrar como foi
--- (conversa e próximo passo), não compareceu, cancelar e a LGPD do agendamento.
+-- (conversa e próximo passo), não compareceu, cancelar e a LGPD do agendamento. Na revisão: só
+-- junta com o WhatsApp e o e-mail batendo, e a confirmação usa o que a pessoa digitou (r1); a mesma
+-- resposta para o não contatar e para quem já tem demonstração (r2); o lembrete no mesmo dia (r7) e
+-- a fila que não repete sem fim (r10).
 begin;
-select plan(74);
+select plan(95);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -99,40 +102,78 @@ select is(array[pg_temp.livre(bianca, '2026-10-27 14:00-03'), pg_temp.livre(bian
   'o horário marcado fica riscado; o seguinte, depois do intervalo, continua livre') from l;
 select is(pg_temp.motivo(format('select publico_agendar(%L, %L)', (select bianca from l), pg_temp.pedido('2026-10-27 14:00-03', '5561999990702'))),
   'HORARIO_OCUPADO', 'o mesmo horário não aceita outra pessoa');
-select is(pg_temp.motivo(format('select publico_agendar(%L, %L)', (select bianca from l), pg_temp.pedido('2026-10-27 15:30-03', '5561999990701'))),
-  'DEMONSTRACAO_MARCADA', 'quem já tem demonstração marcada não marca outra');
+create temp table a2 as select publico_agendar(bianca, pg_temp.pedido('2026-10-27 15:30-03', '5561999990701')) as r from l;
+select is((select array_agg(k order by k) from a2, jsonb_object_keys(r) k), (select array_agg(k order by k) from a1, jsonb_object_keys(r) k),
+  'quem já tem demonstração marcada recebe a mesma resposta de quem marcou (r2)');
+select is((select count(*)::integer from demonstracoes_comercial where interessado_id = (select i from d1))
+          || '/' || (select count(*)::integer from emails_comercial e join demonstracoes_comercial d on d.id = e.demonstracao_id where d.interessado_id = (select i from d1)),
+  '1/2', 'mas nada é marcado nem vai para a fila');
+select ok(exists (select 1 from conversas_comercial where interessado_id = (select i from d1) and canal = 'NOTA' and resumo like 'Pediu outra demonstração pelo link%'),
+  'e a equipe fica sabendo numa conversa interna');
 select throws_ok(format('insert into demonstracoes_comercial (interessado_id, pessoa_id, inicio, fim, origem) values (%L, %L, ''2026-10-27 14:15-03'', ''2026-10-27 14:45-03'', ''MAO'')',
   (select i from d1), (select com from ids)), '23P01', null, 'o banco não deixa duas demonstrações da mesma pessoa se sobreporem');
 
--- 6. Juntar no interessado que já existe.
+-- 6. Juntar no interessado que já existe: só com o WhatsApp e o e-mail batendo (r1).
 create temp table j as select
-  (comercial_criar(com, '{"condominio": "Edifício Angico", "pessoa": "Rui Lima", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990710"}') ->> 'id')::uuid as aberto,
-  (comercial_criar(com, '{"condominio": "Edifício Baru", "pessoa": "Rui Lima", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990711"}') ->> 'id')::uuid as perdido,
-  (comercial_criar(com, '{"condominio": "Edifício Caju", "pessoa": "Rui Lima", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990712"}') ->> 'id')::uuid as negociacao,
-  (comercial_criar(com, '{"condominio": "Edifício Dendê", "pessoa": "Rui Lima", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990713"}') ->> 'id')::uuid as ganho
+  (comercial_criar(com, '{"condominio": "Edifício Angico", "pessoa": "Rui Lima", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990710",
+                         "email": "rui710@exemplo.com.br"}') ->> 'id')::uuid as aberto,
+  (comercial_criar(com, '{"condominio": "Edifício Baru", "pessoa": "Rui Lima", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990711",
+                         "email": "rui711@exemplo.com.br"}') ->> 'id')::uuid as perdido,
+  (comercial_criar(com, '{"condominio": "Edifício Caju", "pessoa": "Rui Lima", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990712",
+                         "email": "rui712@exemplo.com.br"}') ->> 'id')::uuid as negociacao,
+  (comercial_criar(com, '{"condominio": "Edifício Dendê", "pessoa": "Rui Lima", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990713",
+                         "email": "rui713@exemplo.com.br"}') ->> 'id')::uuid as ganho,
+  (comercial_criar(com, '{"condominio": "Edifício Jatobá", "pessoa": "Vera Souza", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990715",
+                         "email": "vera@exemplo.com.br"}') ->> 'id')::uuid as vitima
   from ids;
 select comercial_mudar_etapa(com, perdido, (select versao from interessados where id = perdido), 'PERDIDO', 'FICOU_PARA_DEPOIS') from ids, j;
 update interessados set etapa = 'NEGOCIACAO', faixa = 'DE_41_A_100' where id = (select negociacao from j);
 update interessados set etapa = 'GANHO', faixa = 'DE_41_A_100', decisor = 'Conselho', decisao_em = '2026-10-01' where id = (select ganho from j);
 create temp table aj as select
-  (publico_agendar(bianca, pg_temp.pedido('2026-10-28 09:00-03', '5561999990710')) ->> 'id')::uuid as aberto,
-  (publico_agendar(bianca, pg_temp.pedido('2026-10-28 09:45-03', '5561999990711')) ->> 'id')::uuid as perdido,
-  (publico_agendar(bianca, pg_temp.pedido('2026-10-28 10:30-03', '5561999990712')) ->> 'id')::uuid as negociacao,
-  (publico_agendar(bianca, pg_temp.pedido('2026-10-28 11:15-03', '5561999990713')) ->> 'id')::uuid as ganho
+  (publico_agendar(bianca, pg_temp.pedido('2026-10-28 09:00-03', '5561999990710', 'rui710@exemplo.com.br')) ->> 'id')::uuid as aberto,
+  (publico_agendar(bianca, pg_temp.pedido('2026-10-28 09:45-03', '5561999990711', 'rui711@exemplo.com.br')) ->> 'id')::uuid as perdido,
+  (publico_agendar(bianca, pg_temp.pedido('2026-10-28 10:30-03', '5561999990712', 'rui712@exemplo.com.br')) ->> 'id')::uuid as negociacao,
+  (publico_agendar(bianca, pg_temp.pedido('2026-10-28 11:15-03', '5561999990713', 'rui713@exemplo.com.br')) ->> 'id')::uuid as ganho,
+  -- Quem digita o WhatsApp de outra pessoa com o próprio e-mail.
+  (publico_agendar(bianca, pg_temp.pedido('2026-10-30 09:00-03', '5561999990715', 'golpe@exemplo.com.br')) ->> 'id')::uuid as golpe
   from l;
-select is((select x.etapa || ' · ' || coalesce(x.email, '-') from demonstracoes_comercial d join interessados x on x.id = d.interessado_id where d.id = (select aberto from aj)),
-  'DEMO_MARCADA · rita710@exemplo.com.br', 'o aberto avança para Demonstração marcada e ganha o e-mail');
-select is((select interessado_id from demonstracoes_comercial where id = (select aberto from aj)), (select aberto from j), 'no mesmo interessado (mesmo WhatsApp)');
+select is((select x.etapa || ' · ' || x.nome_contato || ' · ' || x.condominio || ' · ' || x.email
+             from demonstracoes_comercial d join interessados x on x.id = d.interessado_id where d.id = (select aberto from aj)),
+  'DEMO_MARCADA · Rui Lima · Edifício Angico · rui710@exemplo.com.br', 'o aberto avança para Demonstração marcada e a ficha não muda');
+select is((select interessado_id from demonstracoes_comercial where id = (select aberto from aj)), (select aberto from j), 'no mesmo interessado (WhatsApp e e-mail iguais)');
 select is((select c.resumo || ' · ' || c.respondeu from conversas_comercial c
             where c.interessado_id = (select aberto from j) and c.canal = 'ENTRADA' order by c.criado_em desc, c.resumo limit 1),
   'Agendou a demonstração pelo link: quarta, 28/10, 09:00 (Edifício Sucupira). · true', 'o agendamento vira conversa');
+select ok(exists (select 1 from conversas_comercial where interessado_id = (select aberto from j) and canal = 'NOTA'
+                   and resumo = 'Dados digitados no agendamento: Rita Dias, Edifício Sucupira, rui710@exemplo.com.br.'),
+  'o que a pessoa digitou fica numa conversa interna, para a equipe conferir');
+select is((select nome_contato || ' · ' || condominio || ' · ' || email from demonstracoes_comercial where id = (select aberto from aj)),
+  'Rita Dias · Edifício Sucupira · rui710@exemplo.com.br', 'e na demonstração, para a confirmação e o lembrete');
 select is((select etapa || ' · ' || coalesce(motivo_perda, '-') from interessados where id = (select perdido from j)), 'DEMO_MARCADA · -',
   'o Perdido reabre em Demonstração marcada');
 select is((select etapa from interessados where id = (select negociacao from j)), 'NEGOCIACAO', 'quem já passou da demonstração não volta de etapa');
-select ok((select interessado_id <> (select ganho from j) from demonstracoes_comercial where id = (select ganho from aj)), 'o Ganho vira interessado novo');
+select is((select x.contato_de from demonstracoes_comercial d join interessados x on x.id = d.interessado_id where d.id = (select ganho from aj)), (select ganho from j),
+  'o Ganho vira oportunidade nova do mesmo contato');
+create temp table g as select d.interessado_id as novo from demonstracoes_comercial d where d.id = (select golpe from aj);
+select is((select possivel_duplicado_de from interessados where id = (select novo from g)), (select vitima from j),
+  'só o WhatsApp batendo: interessado novo, marcado como possível duplicado');
+select is((select etapa || ' · ' || email || ' · ' || nome_contato from interessados where id = (select vitima from j)), 'NOVO · vera@exemplo.com.br · Vera Souza',
+  'a ficha de quem tem o WhatsApp não muda nem ganha o e-mail digitado');
+select ok(exists (select 1 from conversas_comercial where interessado_id = (select vitima from j) and canal = 'NOTA' and resumo like 'Alguém agendou uma demonstração pelo link%')
+          and exists (select 1 from conversas_comercial where interessado_id = (select novo from g) and canal = 'NOTA' and resumo like 'Possível duplicado%'),
+  'e a equipe é avisada nas duas fichas');
+select is((select comercial_json(x, false) -> 'possivelDuplicado' ->> 'id' from interessados x where x.id = (select novo from g)), (select vitima from j)::text,
+  'a ficha nova mostra o possível duplicado');
+select is((select count(*)::integer from comercial_parecido('5561999990715', 'golpe@exemplo.com.br', null, null, (select novo from g))), 0,
+  'e salvar uma das duas não acusa duplicado enquanto a equipe confere');
 select comercial_nao_contatar(com, '5561999990720', null, null, 'Pediu para não ligar') from ids;
-select is(pg_temp.motivo(format('select publico_agendar(%L, %L)', (select bianca from l), pg_temp.pedido('2026-10-29 09:00-03', '5561999990720'))),
-  'NAO_CONTATAR', 'quem está no não contatar não agenda');
+create temp table nc as select publico_agendar(bianca, pg_temp.pedido('2026-10-29 09:00-03', '5561999990720')) as r from l;
+select is((select array_agg(k order by k) from nc, jsonb_object_keys(r) k), (select array_agg(k order by k) from a1, jsonb_object_keys(r) k),
+  'quem está no não contatar recebe a mesma resposta (r2)');
+select is((select count(*)::integer from demonstracoes_comercial where id = (select (r ->> 'id')::uuid from nc))
+          || '/' || (select count(*)::integer from emails_comercial where para = 'rita720@exemplo.com.br'), '0/0', 'sem marcar nem mandar e-mail');
+select ok(exists (select 1 from historico where acao = 'comercial.agendamento_recusado' and interno and dados ->> 'motivo' = 'NAO_CONTATAR'),
+  'e a equipe fica sabendo por dentro');
 
 -- 7. O link da equipe: o horário vai para quem está livre.
 select comercial_salvar_disponibilidade(com, dan, null, '{"faixas": [{"dia": 2, "de": "14:00", "ate": "16:00"}]}') from ids;
@@ -174,6 +215,10 @@ select is((select e ->> 'quando' || ' · ' || (e ->> 'salaUrl') || ' · ' || (e 
             where (e ->> 'id')::uuid in (select id from emails_comercial where demonstracao_id = (select id from d1) and situacao = 'ENVIANDO')),
   'quinta, 29/10, 10:30 · https://meet.exemplo.com/triade-bianca · true', 'com o horário, o link da sala e o aviso de remarcada');
 select ok((select not (r::text like '%5561999990%') from f), 'o WhatsApp não vai para o e-mail');
+select is((select e ->> 'nome' || ' · ' || (e ->> 'condominio') from f, jsonb_array_elements(r) e where e ->> 'para' = 'golpe@exemplo.com.br'),
+  'Rita Dias · Edifício Sucupira', 'pelo link, a confirmação usa o nome e o condomínio digitados (r1)');
+select ok((select r::text not like '%Vera%' and r::text not like '%Jatobá%' and r::text not like '%Rui Lima%' from f),
+  'e nunca os da ficha');
 select comercial_email_resultado((e ->> 'id')::uuid, 're_' || n, null, false) from f, jsonb_array_elements(r) with ordinality x(e, n) where n = 1;
 select comercial_email_resultado((e ->> 'id')::uuid, null, 'Resend respondeu 503', true) from f, jsonb_array_elements(r) with ordinality x(e, n) where n = 2;
 select is((select array_agg(situacao order by situacao) from emails_comercial where id in (select (e ->> 'id')::uuid from f, jsonb_array_elements(r) with ordinality x(e, n) where n <= 2)),
@@ -213,18 +258,56 @@ select is((select array_agg(tipo || ':' || situacao order by criado_em, tipo) fr
 -- 11. A agenda da equipe e a LGPD.
 create temp table ae2 as select comercial_agenda(com) as r from ids;
 select is((select jsonb_array_length(r -> 'disponibilidades') from ae2), 3, 'os horários livres de cada um da equipe (configurados ou não)');
-select is((select jsonb_array_length(r -> 'proximas') || '/' || jsonb_array_length(r -> 'aRegistrar') || '/' || jsonb_array_length(r -> 'recentes') from ae2), '1/4/3',
+select is((select jsonb_array_length(r -> 'proximas') || '/' || jsonb_array_length(r -> 'aRegistrar') || '/' || jsonb_array_length(r -> 'recentes') from ae2), '2/4/3',
   'as próximas, as que passaram sem registro e as encerradas há pouco');
 select is((select r -> 'proximas' -> 0 -> 'com' ->> 'nome' from ae2), 'Bianca', 'com quem faz cada uma');
 select comercial_excluir(adm, (select interessado_id from demonstracoes_comercial where id = (select aberto from aj))) from ids;
 select is((select situacao || ' · ' || motivo from demonstracoes_comercial where id = (select aberto from aj)), 'CANCELADA · Dados apagados (LGPD)',
   'o pedido de exclusão cancela a demonstração marcada');
 select is((select count(*)::integer from emails_comercial where demonstracao_id = (select aberto from aj) and para is not null), 0, 'e tira o e-mail da fila');
+select is((select num_nonnulls(nome_contato, condominio, email) from demonstracoes_comercial where id = (select aberto from aj)), 0,
+  'e apaga o que a pessoa digitou no agendamento');
 select pg_temp.em('2027-02-10 10:00:00-03');
 select comercial_retencao_parceiros_agenda();
 select is((select count(*)::integer from emails_comercial e join demonstracoes_comercial d on d.id = e.demonstracao_id
             where e.para is not null and d.fim < app_now() - interval '90 days'), 0, 'o e-mail do agendamento sai 90 dias depois da demonstração');
 select ok((select count(*) > 0 from demonstracoes_comercial where situacao = 'FEITA'), 'ficam o horário e a situação');
+select is((select count(*)::integer from demonstracoes_comercial where num_nonnulls(nome_contato, email) > 0 and fim < app_now() - interval '90 days'), 0,
+  'o nome e o e-mail digitados saem junto');
+
+-- 12. O lembrete da demonstração marcada para o mesmo dia (r7): às 8h ou uma hora antes, o mais
+-- cedo que ainda esteja meia hora à frente; nenhum serve, nenhum lembrete.
+select pg_temp.em('2027-02-15 10:00:00-03');
+create temp table hj as select
+  (comercial_criar(com, '{"condominio": "Edifício Ipê", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990750", "email": "ipe@exemplo.com.br"}') ->> 'id')::uuid as tarde,
+  (comercial_criar(com, '{"condominio": "Edifício Juá", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990751", "email": "jua@exemplo.com.br"}') ->> 'id')::uuid as meio,
+  (comercial_criar(com, '{"condominio": "Edifício Louro", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990752", "email": "louro@exemplo.com.br"}') ->> 'id')::uuid as cedo
+  from ids;
+create temp table hd as select
+  (comercial_marcar_demonstracao(com, tarde, '{"inicio": "2027-02-15 15:00-03"}') ->> 'id')::uuid as tarde,
+  (comercial_marcar_demonstracao(com, meio, '{"inicio": "2027-02-15 12:00-03"}') ->> 'id')::uuid as meio,
+  (comercial_marcar_demonstracao(com, cedo, '{"inicio": "2027-02-15 11:15-03"}') ->> 'id')::uuid as cedo
+  from ids, hj;
+select is((select to_char(enviar_em at time zone 'America/Sao_Paulo', 'HH24:MI') from emails_comercial where demonstracao_id = (select tarde from hd) and tipo = 'LEMBRETE'),
+  '14:00', 'marcada às 10h para as 15h: o lembrete sai uma hora antes');
+select is((select to_char(enviar_em at time zone 'America/Sao_Paulo', 'HH24:MI') from emails_comercial where demonstracao_id = (select meio from hd) and tipo = 'LEMBRETE'),
+  '11:00', 'para as 12h: às 11h, ainda meia hora à frente');
+select is((select count(*)::integer from emails_comercial where demonstracao_id = (select cedo from hd) and tipo = 'LEMBRETE'), 0,
+  'para as 11h15: nenhum horário serve e não há lembrete');
+
+-- 13. A fila não repete sem fim o que ficou preso em "enviando" (r10).
+update emails_comercial set situacao = 'ENVIANDO', pego_em = app_now() - interval '20 minutes'
+ where demonstracao_id in (select tarde from hd union all select meio from hd) and tipo = 'CONFIRMACAO';
+update emails_comercial set tentativas = 5 where demonstracao_id = (select meio from hd) and tipo = 'CONFIRMACAO';
+select comercial_encerrar_demonstracao(com, tarde, pg_temp.dv(tarde), 'CANCELADA', 'O síndico desmarcou', false) from ids, hd;
+create temp table f2 as select comercial_emails_pegar(100) as r;
+select is((select situacao from emails_comercial where demonstracao_id = (select tarde from hd) and tipo = 'CONFIRMACAO'), 'CANCELADO',
+  'o "enviando" vencido de demonstração cancelada sai da fila');
+select is((select situacao from emails_comercial where demonstracao_id = (select meio from hd) and tipo = 'CONFIRMACAO'), 'FALHOU',
+  'com 5 tentativas, o "enviando" vencido passa a falhou');
+select ok((select not exists (select 1 from f2, jsonb_array_elements(r) e where (e ->> 'id')::uuid in
+             (select id from emails_comercial where demonstracao_id in (select tarde from hd union all select meio from hd) and tipo = 'CONFIRMACAO'))),
+  'e nenhum dos dois é pego de novo');
 
 select * from finish();
 rollback;

@@ -1,7 +1,8 @@
 // Calculadora de custo por apartamento (CM-33, DC17; quadros 448 e 449): com e sem a taxa média
 // de condomínio, o "menos de R$ 5" só quando é verdade, sem JavaScript, o pedido de proposta e o
-// axe (WCAG 2.2 AA) no celular e no computador. Sem a rota do Console no teste, o preço vem da
-// oferta do site, que é a mesma tabela (DC16).
+// axe (WCAG 2.2 AA) no celular e no computador. O preço vem do Console de mentira
+// (console-falso.mjs), com o preço de fundador da Tabela; a faixa de 101 a 200 unidades fica fora do
+// ar, e a página mostra a tabela cheia do site, nunca o fundador sem a vaga confirmada (r9).
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
@@ -109,6 +110,24 @@ test.describe("Site · calculadora (CM-33)", () => {
     await expect(page.getByLabel("Unidades do prédio")).toBeFocused();
   });
 
+  test("r9: com a Tabela fora do ar, a tabela cheia com o 'a partir de' do /precos, nunca o fundador", async ({ page, request }) => {
+    await page.goto("/calculadora");
+    await page.getByLabel("Unidades do prédio").fill("150");
+    await expect(page.getByText("Faixa: 101 a 200 unidades")).toBeVisible();
+    await expect(page.locator("#por-ap")).toHaveText("R$ 3,66");
+    await expect(conta(page).getByText("R$ 549,00", { exact: true })).toBeVisible();
+    await expect(conta(page).getByText("preço de fundador")).toBeHidden();
+    await expect(page.locator("#aviso-tabela")).toHaveText(
+      "Valor da tabela cheia. Condomínios fundadores: a partir de R$ 129,00/mês, só no mensal, vagas limitadas; a proposta confirma.");
+    await conferir(page);
+    // Com a Tabela de volta (outra faixa), o aviso some.
+    await page.getByLabel("Unidades do prédio").fill("64");
+    await expect(page.locator("#por-ap")).toHaveText("R$ 3,58");
+    await expect(page.locator("#aviso-tabela")).toBeHidden();
+    // O site repassa o IP de quem usa, para o limite por pessoa no Console.
+    expect((await (await request.get("http://127.0.0.1:4399/ultimo-cliente")).json()).cliente).toEqual(expect.any(String));
+  });
+
   test("a página de preços leva à calculadora", async ({ page }) => {
     await page.goto("/precos");
     await page.getByRole("link", { name: "Use a calculadora" }).click();
@@ -145,5 +164,8 @@ test.describe("Site · calculadora sem JavaScript", () => {
     await expect(page.locator("#por-ap")).toHaveText("R$ 6,45");
     await expect(page.getByText("Menos de R$ 5 por apartamento por mês")).toBeHidden();
     await expect(page.getByText("Na taxa de condomínio")).toBeHidden();
+    await page.goto("/calculadora?unidades=150");
+    await expect(page.locator("#por-ap")).toHaveText("R$ 3,66");
+    await expect(page.locator("#aviso-tabela")).toContainText("Valor da tabela cheia.");
   });
 });

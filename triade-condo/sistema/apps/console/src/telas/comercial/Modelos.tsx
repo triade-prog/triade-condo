@@ -41,7 +41,7 @@ function JanelaMensagem({ m, aoFechar, feito }: { m: Partial<MensagemModelo>; ao
 
   return (
     <Dialogo aberto titulo={m.id ? "Editar mensagem pronta" : "Nova mensagem pronta"} aoFechar={aoFechar} media
-      apoio="[nome] vira o primeiro nome da pessoa e [condominio], o nome do condomínio.">
+      apoio="[nome] vira o primeiro nome da pessoa, [condominio], o nome do condomínio, e [link de agendamento], o link da agenda de quem atende (ou o da equipe).">
       <form onSubmit={salvar} className="grid gap-4" noValidate>
         <CampoSelecao id="msg-etapa" rotulo="Etapa" value={etapa} onChange={(e) => setEtapa(e.target.value)} opcoes={OPCOES_ETAPA} />
         <CampoTexto id="msg-titulo" rotulo="Título" maxLength={60} value={titulo} onChange={(e) => setTitulo(e.target.value)}

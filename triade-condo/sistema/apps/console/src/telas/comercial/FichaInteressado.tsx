@@ -19,6 +19,7 @@ import { useCarregar, useSessao } from "../sessao.tsx";
 import { ROTAS_CLIENTE, TELAS_CLIENTE, textoMedida, textoMeta, textoPrazo, textoRecebidos, TOM_PILOTO, type ClienteCriado, type RespostaPiloto, type RespostaTroca } from "./cliente.ts";
 import { TELAS_CONTRATO } from "./contrato.ts";
 import { JanelaEncerrarPiloto, JanelaNovaOportunidade, JanelaPiloto, JanelaVirarCliente, textoFaltaGanho } from "./janelasCliente.tsx";
+import { urlAgenda } from "./agenda.ts";
 import { iconeCanal, nomeCanal, nomeEtapa, nomeFaixa, nomeOrigem, quandoCurto, ROTAS_COMERCIAL, SeloEtapa, SelosAtencao, textoTarefa, TOM_SITUACAO } from "./comum.tsx";
 import { JanelaConfirmar, JanelaConversa, JanelaFicha, JanelaPerdido, JanelaProximoPasso } from "./janelas.tsx";
 import { CartaoJanelas } from "./JanelasCondominio.tsx";
@@ -296,8 +297,12 @@ export function FichaInteressado() {
     pronto(acao === "FEITO" ? "Passo da cadência registrado nas conversas." : "Cadência parada.");
   }
 
+  // Os campos das mensagens prontas; o [link de agendamento] é o /a/[codigo] deste Console (R17.6b).
+  const campos = { nome: f.pessoa, condominio: f.condominio,
+                   linkAgenda: f.linkAgenda && typeof window !== "undefined" ? urlAgenda(window.location.origin, f.linkAgenda) : null };
+
   function mensagem(m: { id: string; texto: string }) {
-    const texto = preencherMensagem(m.texto, { nome: f.pessoa, condominio: f.condominio });
+    const texto = preencherMensagem(m.texto, campos);
     window.open(linkWhatsappComercial(f.whatsapp!, texto), "_blank", "noopener");
     setJanela({ tipo: "conversa", canal: "WHATSAPP", resumo: texto, mensagemId: m.id });
   }
@@ -334,6 +339,12 @@ export function FichaInteressado() {
       </header>
       {f.anonimizado ? <Aviso tom="atencao" titulo="Dados apagados">Nome, contato e conversas foram apagados (LGPD). Ficam só os números do funil.</Aviso> : null}
       {aviso ? <Aviso tom={aviso.tom} papel={aviso.tom === "erro" ? "alert" : "status"}>{aviso.texto}</Aviso> : null}
+      {f.possivelDuplicado && !f.anonimizado ? (
+        <Aviso tom="atencao" titulo="Possível duplicado">
+          {"Agendou pelo link com o WhatsApp ou o e-mail de outro interessado, mas não os dois. Confira se é a mesma pessoa antes de falar dos dados do outro: "}
+          <Link href={`/comercial/${f.possivelDuplicado.id}`} className="font-semibold underline">{f.possivelDuplicado.condominio}</Link>.
+        </Aviso>
+      ) : null}
       {faltaPedida?.length ? (
         <Aviso tom="atencao" titulo={`Para ir a ${nomeEtapa(pedida!)}`}>
           {`Falta preencher: ${faltaPedida.map((k) => ({ demonstracaoEm: "a data da demonstração", faixa: "a faixa de unidades", decisor: "quem decide", decisaoEm: "a data da decisão" }[k] ?? k)).join(", ")}. `}
@@ -354,7 +365,7 @@ export function FichaInteressado() {
                   {f.mensagens.map((m) => (
                     <li key={m.id} className="grid gap-2 rounded-[14px] border border-linha p-3">
                       <span className="font-medium">{m.titulo}</span>
-                      <span className="t-apoio whitespace-pre-wrap">{preencherMensagem(m.texto, { nome: f.pessoa, condominio: f.condominio })}</span>
+                      <span className="t-apoio whitespace-pre-wrap [overflow-wrap:anywhere]">{preencherMensagem(m.texto, campos)}</span>
                       {f.podeEditar ? (
                         <Botao variante="contorno" className="justify-self-start" disabled={!f.temWhatsapp} onClick={() => mensagem(m)}><Icone nome="whats" />Abrir no WhatsApp</Botao>
                       ) : null}

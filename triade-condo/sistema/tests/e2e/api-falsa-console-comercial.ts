@@ -58,6 +58,8 @@ export function criarComercialConsole() {
         condominio: "Edifício Ipê Amarelo", cidade: "Taguatinga", uf: "DF", faixa: "ATE_40", unidades: 32, pessoa: "João Reis", whatsapp: "5561988880000", whatsappMascarado: "(61) 9 ••••-0000",
         origem: "INDICACAO", origemDetalhe: "Síndica do Jatobá", etapa: "EM_CONTATO", probabilidade: 20, temWhatsapp: false, responsavel: CAROLINA,
         proximoPasso: { texto: "Ligar para marcar a demonstração", data: hoje },
+        // O link de agendamento de quem atende (R17.6b), para o [link de agendamento].
+        linkAgenda: "abcdefgh2345",
         tarefa: { situacao: "HOJE", tarefa: "PROXIMO_PASSO", quando: hoje }, atencao: false,
         baseLegal: { tipo: "LEGITIMO_INTERESSE", texto: "A pessoa procurou a TRÍADE ou aceitou o contato.", em: agora.toISOString() },
         predio: { sistemaAtual: "Planilha e WhatsApp", decisaoEm: somarDias(hoje, 20), criterios: ["CUSTO_APARTAMENTO", "COMO_CANCELAR"],
@@ -67,6 +69,8 @@ export function criarComercialConsole() {
         condominio: "Condomínio Lago Sul", cidade: "Brasília", uf: "DF", faixa: "DE_101_A_200", unidades: 150, pessoa: "Rita Gomes", origem: "INSTAGRAM", etapa: "PROPOSTA_ENVIADA",
         probabilidade: 60, temWhatsapp: false, tarefa: { situacao: "FUTURO" }, atencao: false,
         baseLegal: { tipo: "CONSENTIMENTO", texto: "Autorizo o uso destes dados só para responder a este pedido.", em: agora.toISOString() },
+        // Agendou pelo link com só o WhatsApp ou só o e-mail do Jatobá (0310, r1).
+        possivelDuplicado: { id: SITE, condominio: "Residencial Jatobá" },
       }),
       base(CERRADO, {
         condominio: "Residencial Cerrado", cidade: "Brasília", uf: "DF", faixa: "DE_41_A_100", unidades: 64, pessoa: "Lúcia Prado", whatsapp: "5561977776666",
@@ -83,7 +87,8 @@ export function criarComercialConsole() {
     clientesCriados: [] as Json[],
     mensagens: [
       { id: "m1", etapa: "NOVO", titulo: "Primeira resposta", texto: "Olá, [nome]! Recebemos o pedido do [condominio].", ativa: true, versao: 1 },
-      { id: "m2", etapa: "EM_CONTATO", titulo: "Marcar demonstração", texto: "Oi, [nome], que dia fica bom para a demonstração?", ativa: true, versao: 1 },
+      { id: "m2", etapa: "EM_CONTATO", titulo: "Marcar demonstração",
+        texto: "Oi, [nome], que dia fica bom para a demonstração? Se preferir, escolha o horário por aqui: [link de agendamento]", ativa: true, versao: 1 },
     ] as Json[],
     cadencias: [{ id: "c1", nome: "Novo pelo site", gatilho: "NOVO", origem: "SITE", passos: [{ dia: 0, canal: "WHATSAPP", texto: "Primeira mensagem" }],
       terminaSemResposta: false, ativa: true, versao: 1, emUso: 1 }] as Json[],
@@ -246,6 +251,7 @@ export async function rotasComercialConsole(route: Route, p: ComercialConsole, c
     const t = corpo.taxaCondominio as number | null;
     if (t !== null && (typeof t !== "number" || t <= 0 || t > 20000)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["taxaCondominio"] });
     (i.predio as Json).taxaCondominioMedia = t ?? undefined;
+    i.taxaPosta = true;
     i.versao = Number(i.versao) + 1;
     return route.fulfill({ json: { id: i.id, versao: i.versao, ...(t !== null ? { taxaCondominio: t } : {}) } });
   }
@@ -301,7 +307,7 @@ function sugerir(p: ComercialConsole, i: Json, c: Json): Json {
   const livres = p.vagas.total - p.vagas.ocupadas;
   const comum = {
     validadeDias: 15, validoAtePrevisto: somarDias(p.hoje, 15), vagasFundador: { ...p.vagas, livres }, tabelaEmUso: "FUNDADOR", oferta: OFERTA,
-    interessado: { id: i.id, condominio: i.condominio, unidades: i.unidades, faixa: i.faixa, pessoa: i.pessoa, etapa: i.etapa,
+    interessado: { id: i.id, versao: i.versao, condominio: i.condominio, unidades: i.unidades, faixa: i.faixa, pessoa: i.pessoa, etapa: i.etapa,
       ...(taxaDaFicha(i) ? { taxaCondominioMedia: taxaDaFicha(i) } : {}) }, propostaId: proposta?.id ?? null,
     respostas: p.respostas.filter((r) => r.revisada && r.ativa).map((r) => ({ id: r.id, tema: r.tema, titulo: r.titulo })),
     referencias: p.referencias.filter((r) => !r.retirada).map((r) => ({ id: r.id, sindico: r.sindico, condominio: r.condominio, unidades: r.unidades, escopo: r.escopo })),
@@ -337,7 +343,7 @@ function sugerir(p: ComercialConsole, i: Json, c: Json): Json {
 }
 
 /** Os campos da versão a partir do corpo (camposVersao): o preço sai da "tabela", nunca da tela. */
-function montarVersao(p: ComercialConsole, i: Json, c: Json, extra: Json): Json | { campos: string[] } {
+function montarVersao(p: ComercialConsole, i: Json, c: Json, extra: Json): Json | { campos: string[] } | { conflito: true } {
   const campos: string[] = [];
   const unidades = (c.unidades as number | null) ?? (i.unidades as number | undefined);
   if (!unidades) campos.push("unidades");
@@ -346,8 +352,14 @@ function montarVersao(p: ComercialConsole, i: Json, c: Json, extra: Json): Json 
   // A taxa (R17.3c): sem a chave, a da ficha; nula tira; fora de (0, 20.000], recusa.
   const taxa = "taxaCondominio" in c ? (c.taxaCondominio as number | null) : taxaDaFicha(i) ?? null;
   if (taxa !== null && (typeof taxa !== "number" || taxa <= 0 || taxa > 20000)) campos.push("taxaCondominio");
+  if ("taxaCondominio" in c && taxa !== (taxaDaFicha(i) ?? null) && typeof c.interessadoVersao !== "number") campos.push("interessadoVersao");
   if (campos.length) return { campos };
-  if ("taxaCondominio" in c) (i.predio as Json).taxaCondominioMedia = taxa ?? undefined;
+  if ("taxaCondominio" in c && taxa !== (taxaDaFicha(i) ?? null)) {
+    if (c.interessadoVersao !== i.versao) return { conflito: true };
+    (i.predio as Json).taxaCondominioMedia = taxa ?? undefined;
+    i.taxaPosta = true;
+    i.versao = Number(i.versao) + 1;
+  }
   const s = sugerir(p, i, c);
   const resp = p.respostas.filter((r) => (c.respostas as string[] ?? []).includes(String(r.id)) && r.revisada && r.ativa);
   const refs = p.referencias.filter((r) => (c.referencias as string[] ?? []).includes(String(r.id)) && !r.retirada);
@@ -467,8 +479,10 @@ function kitDe(p: ComercialConsole, x: Proposta, v: Json): Json {
     },
     respostas: (v.respostas as Json[]).map((r) => ({ tema: r.tema, titulo: r.titulo, texto: r.texto })),
     referencias: pub.referencias, oferta: OFERTA,
-    // A taxa do kit (R17.3c): a da ficha (corrigida no kit ou na versão); sem ela, a da versão enviada.
-    ...(taxaDaFicha(i) ?? (v.premissas as Json | undefined)?.taxaCondominio ? { taxaCondominio: taxaDaFicha(i) ?? (v.premissas as Json).taxaCondominio } : {}),
+    // A taxa do kit (0310, r5): a ficha manda (tirada é sem taxa); só a ficha que nunca teve taxa usa a da versão enviada.
+    ...(i.taxaPosta || taxaDaFicha(i) !== undefined
+      ? (taxaDaFicha(i) !== undefined ? { taxaCondominio: taxaDaFicha(i), taxaDe: "FICHA" } : {})
+      : (v.premissas as Json | undefined)?.taxaCondominio ? { taxaCondominio: (v.premissas as Json).taxaCondominio, taxaDe: "VERSAO" } : {}),
     respostasDisponiveis: p.respostas.filter((r) => r.revisada && r.ativa).map((r) => ({ id: r.id, tema: r.tema, titulo: r.titulo })),
     ...(pilotoDoKit(p, i.id) ? { piloto: pilotoDoKit(p, i.id) } : {}),
   };
@@ -580,6 +594,7 @@ async function rotasPropostas(route: Route, p: ComercialConsole, caminho: string
     if (existe) return erro(route, 400, "VALIDATION_ERROR", { motivo: "PROPOSTA_EXISTE", propostaId: existe.id });
     const v = montarVersao(p, i, corpo, { id: novoId("8b2c3d4e"), versaoRegistro: 1, numero: 1, situacao: "RASCUNHO" });
     if ("campos" in v && Array.isArray(v.campos)) return erro(route, 400, "VALIDATION_ERROR", { campos: v.campos });
+    if ("conflito" in v) return erro(route, 409, "VERSION_CONFLICT", { versao: i.versao });
     const id = novoId("8b2c3d4e");
     p.propostas.push({ id, interessadoId: i.id, versao: 1, criadoEm: new Date().toISOString(), versoes: [v as Json] });
     return route.fulfill({ status: 201, json: { id, versaoId: (v as Json).id, numero: 1, situacao: "RASCUNHO", versao: 1 } });
@@ -592,8 +607,8 @@ async function rotasPropostas(route: Route, p: ComercialConsole, caminho: string
   if (!m[2] && !escreve) {
     return route.fulfill({ json: {
       id: x.id, versao: x.versao, criadoEm: x.criadoEm,
-      interessado: { id: i.id, condominio: i.condominio, pessoa: i.pessoa, etapa: i.etapa, unidades: i.unidades, faixa: i.faixa, anonimizado: false, naoContatar: false,
-        ...(taxaDaFicha(i) ? { taxaCondominioMedia: taxaDaFicha(i) } : {}) },
+      interessado: { id: i.id, versao: i.versao, condominio: i.condominio, pessoa: i.pessoa, etapa: i.etapa, unidades: i.unidades, faixa: i.faixa, anonimizado: false,
+        naoContatar: false, ...(taxaDaFicha(i) ? { taxaCondominioMedia: taxaDaFicha(i) } : {}) },
       versoes: x.versoes.map((v) => versaoParaTela(v, p.hoje)), kitDisponivel: x.versoes.some((v) => ["ENVIADA", "ACEITA"].includes(situacaoDe(v, p.hoje))),
       podeEditar: pode.editar, podeAprovarDesconto: pode.desconto,
     } });
@@ -609,6 +624,7 @@ async function rotasPropostas(route: Route, p: ComercialConsole, caminho: string
     const atual = x.versoes[0]!;
     const v = montarVersao(p, i, corpo, { id: novoId("8b2c3d4e"), versaoRegistro: 1, numero: Number(atual.numero) + 1, situacao: "RASCUNHO" });
     if ("campos" in v && Array.isArray(v.campos)) return erro(route, 400, "VALIDATION_ERROR", { campos: v.campos });
+    if ("conflito" in v) return erro(route, 409, "VERSION_CONFLICT", { versao: i.versao });
     if (!vencida(atual, p.hoje)) Object.assign(atual, { situacao: "SUBSTITUIDA", substituidaEm: new Date().toISOString() });
     else atual.situacao = "VENCIDA";
     for (const [k, l] of Object.entries(p.links)) if (l.versaoId === atual.id) delete p.links[k];
@@ -626,6 +642,7 @@ async function rotasPropostas(route: Route, p: ComercialConsole, caminho: string
     if (!["RASCUNHO", "PRONTA", "AGUARDA_DESCONTO"].includes(String(v.situacao))) return erro(route, 400, "VALIDATION_ERROR", { motivo: "VERSAO_ENVIADA" });
     const nova = montarVersao(p, i, corpo, { id: v.id, numero: v.numero, situacao: "RASCUNHO", versaoRegistro: v.versaoRegistro });
     if ("campos" in nova && Array.isArray(nova.campos)) return erro(route, 400, "VALIDATION_ERROR", { campos: nova.campos });
+    if ("conflito" in nova) return erro(route, 409, "VERSION_CONFLICT", { versao: i.versao });
     for (const k of Object.keys(v)) delete v[k];
     return subir(nova as Json);
   }

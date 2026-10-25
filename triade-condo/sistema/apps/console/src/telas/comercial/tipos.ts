@@ -46,6 +46,10 @@ export interface Interessado {
   tarefa: Tarefa;
   atencao: boolean;
   temWhatsapp: boolean;
+  /** O código do link de agendamento de quem atende (ou o da equipe), para o [link de agendamento] (R17.6b). */
+  linkAgenda?: string;
+  /** Agendou pelo link com só o WhatsApp ou só o e-mail de outro interessado (0310, r1). */
+  possivelDuplicado?: { id: string; condominio: string };
 }
 
 export interface EtapaParametro {

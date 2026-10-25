@@ -1,8 +1,10 @@
 // Calculadora de custo por apartamento (CM-33, DC17; quadros 448 e 449, no lugar do 348).
-// O preço vem da Tabela de preços do Console (rota /v1/site/calculadora, com o segredo do site);
-// sem a rota configurada ou fora do ar, vem da oferta do site (dados/oferta.ts, os mesmos valores
-// do DC16). O "menos de R$ 5" e o peso na taxa saem da regra única do domínio (taxa_condominio),
-// a mesma do Console. Sem ROI e sem economia prometida (EM-07).
+// O preço vem da Tabela de preços do Console (rota /v1/site/calculadora, com o segredo do site e o
+// IP de quem usa, para o limite por pessoa), guardado 10 minutos por número de unidades. Com a rota
+// fora do ar, vale o último preço que deu certo para a faixa (até 24 horas); sem ele, a tabela cheia
+// da oferta do site (dados/oferta.ts, DC16), nunca o preço de fundador sem a vaga confirmada, com o
+// "a partir de" do /precos. O "menos de R$ 5" e o peso na taxa saem da regra única do domínio
+// (taxa_condominio), a mesma do Console. Sem ROI e sem economia prometida (EM-07).
 
 import {
   custoNaTaxa,
@@ -30,6 +32,9 @@ const LIMITES: { codigo: CodigoFaixa; ate: number | null; nome: string }[] = [
 
 export const UNIDADES_MAXIMAS = 20000;
 
+const reais = (centavos: number) =>
+  (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }).replace(/\u00a0/g, " ");
+
 /** O que a rota da calculadora devolve (comercial_calculadora_site); valores em centavos. */
 export type Preco = {
   unidades: number;
@@ -39,31 +44,99 @@ export type Preco = {
   porApartamento?: number;
   depoisFundador?: number;
   fundadorMeses?: number;
+  /** De onde veio: a Tabela agora, o último preço da Tabela para a faixa ou a tabela cheia do site. */
+  origem?: "TABELA" | "ULTIMO" | "SITE";
 };
 
 export function faixaDasUnidades(unidades: number): (typeof LIMITES)[number] {
   return LIMITES.find((l) => l.ate === null || unidades <= l.ate) as (typeof LIMITES)[number];
 }
 
-/** O preço pela oferta do site, quando a Tabela de preços não responde: a mesma conta do banco. */
+const porApartamento = (mensal: number, unidades: number) => Math.max(Math.round(mensal / unidades), 1);
+
+/**
+ * O preço pela oferta do site, quando a Tabela de preços não responde e não há preço recente dela:
+ * sempre a tabela cheia (r9). O preço de fundador depende da vaga, que só a Tabela confirma.
+ */
 export function precoDoSite(unidades: number): Preco {
   const l = faixaDasUnidades(unidades);
   const i = LIMITES.indexOf(l);
   const f = faixas[i];
-  if (l.ate === null || !f) return { unidades, faixa: { codigo: l.codigo, nome: l.nome, sobConsulta: true } };
-  const fundador = fundadores.vagasAbertas;
-  const mensal = (fundador ? f.fundador : f.mensal) * 100;
-  return {
-    unidades,
-    faixa: { codigo: l.codigo, nome: l.nome, sobConsulta: false },
-    tabela: fundador ? "FUNDADOR" : "CHEIA",
-    mensal,
-    porApartamento: Math.max(Math.round(mensal / unidades), 1),
-    ...(fundador ? { depoisFundador: f.mensal * 100, fundadorMeses: fundadores.meses } : {}),
-  };
+  if (l.ate === null || !f) return { unidades, faixa: { codigo: l.codigo, nome: l.nome, sobConsulta: true }, origem: "SITE" };
+  const mensal = f.mensal * 100;
+  return { unidades, faixa: { codigo: l.codigo, nome: l.nome, sobConsulta: false }, tabela: "CHEIA", mensal, porApartamento: porApartamento(mensal, unidades), origem: "SITE" };
+}
+
+/** A linha sob a conta quando o valor é o da tabela cheia do site, como diz o /precos. */
+export function avisoTabelaCheia(): string {
+  return fundadores.vagasAbertas
+    ? `Valor da tabela cheia. Condomínios fundadores: a partir de ${reais(faixas[0]!.fundador * 100)}/mês, só no mensal, vagas limitadas; a proposta confirma.`
+    : "Valor da tabela cheia; a proposta confirma.";
 }
 
 type EnvCalculadora = { SUPABASE_FUNCTIONS_URL?: string; SITE_SEGREDO?: string };
+
+// ---------------- A memória do preço (r9), por instância do servidor.
+
+const GUARDA_MS = 10 * 60_000;
+const ULTIMO_MS = 24 * 60 * 60_000;
+const MAX_GUARDADOS = 500;
+const guardados = new Map<number, { preco: Preco; ate: number }>();
+const ultimos = new Map<CodigoFaixa, { preco: Preco; em: number }>();
+
+/** Esquece os preços guardados (para os testes). */
+export function esquecerPrecos() {
+  guardados.clear();
+  ultimos.clear();
+}
+
+function guardar(preco: Preco, agora: number) {
+  if (guardados.size >= MAX_GUARDADOS) guardados.delete(guardados.keys().next().value as number);
+  guardados.set(preco.unidades, { preco, ate: agora + GUARDA_MS });
+  if (!preco.faixa.sobConsulta) ultimos.set(preco.faixa.codigo, { preco, em: agora });
+}
+
+/** O último preço que a Tabela deu para a faixa, refeito para estas unidades. */
+function ultimoDaFaixa(unidades: number, agora: number): Preco | null {
+  const l = faixaDasUnidades(unidades);
+  if (l.ate === null) return null;
+  const u = ultimos.get(l.codigo);
+  if (!u || agora - u.em > ULTIMO_MS || typeof u.preco.mensal !== "number") return null;
+  return { ...u.preco, unidades, porApartamento: porApartamento(u.preco.mensal, unidades), origem: "ULTIMO" };
+}
+
+/** Limite por chave numa janela (r9), em memória, por instância do servidor. */
+export function criarLimite(max: number, janelaMs: number) {
+  const usos = new Map<string, { n: number; desde: number }>();
+  return (chave: string, agora = Date.now()): boolean => {
+    if (usos.size > 5000) for (const [k, u] of usos) if (agora - u.desde >= janelaMs) usos.delete(k);
+    const u = usos.get(chave);
+    if (!u || agora - u.desde >= janelaMs) {
+      usos.set(chave, { n: 1, desde: agora });
+      return true;
+    }
+    u.n += 1;
+    return u.n <= max;
+  };
+}
+
+const lerLimite = () => {
+  const n = Number((typeof process !== "undefined" ? process.env.CALCULADORA_LIMITE_IP : undefined) ?? "");
+  return Number.isInteger(n) && n > 0 ? n : 60;
+};
+/** 60 contas a cada 10 minutos por IP (CALCULADORA_LIMITE_IP muda o número). */
+export const dentroDoLimiteDaCalculadora = criarLimite(lerLimite(), 10 * 60_000);
+
+/** O IP de quem pediu: o primeiro do x-forwarded-for (a Vercel põe) ou o endereço da conexão. */
+export function ipDoPedido(request: Request, endereco: () => string | undefined): string {
+  const encaminhado = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (encaminhado) return encaminhado.slice(0, 64);
+  try {
+    return (endereco() ?? "").slice(0, 64) || "sem-ip";
+  } catch {
+    return "sem-ip";
+  }
+}
 
 function precoValido(d: unknown, unidades: number): d is Preco {
   if (!d || typeof d !== "object") return false;
@@ -73,22 +146,47 @@ function precoValido(d: unknown, unidades: number): d is Preco {
   return Number.isSafeInteger(p.mensal) && Number.isSafeInteger(p.porApartamento) && (p.porApartamento as number) > 0;
 }
 
-/** O preço pela Tabela de preços do Console; sem configuração, com erro ou resposta estranha, pela oferta do site. */
-export async function buscarPreco(unidades: number, env: EnvCalculadora, buscar: typeof fetch = fetch): Promise<Preco> {
-  if (!env.SUPABASE_FUNCTIONS_URL || !env.SITE_SEGREDO) return precoDoSite(unidades);
-  try {
-    const r = await buscar(`${env.SUPABASE_FUNCTIONS_URL.replace(/\/$/, "")}/api-console/v1/site/calculadora`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-site-segredo": env.SITE_SEGREDO },
-      body: JSON.stringify({ unidades }),
-      signal: AbortSignal.timeout(4000),
-    });
-    if (!r.ok) return precoDoSite(unidades);
-    const d = await r.json();
-    return precoValido(d, unidades) ? d : precoDoSite(unidades);
-  } catch {
-    return precoDoSite(unidades);
+export type OpcoesPreco = {
+  /** O IP de quem usa, repassado ao Console para o limite por pessoa. */
+  cliente?: string | null;
+  /** Acima do limite do site: só a memória ou a tabela cheia, sem chamar o Console. */
+  semConsultar?: boolean;
+  agora?: number;
+};
+
+/**
+ * O preço pela Tabela de preços do Console, guardado 10 minutos por unidades. Sem configuração,
+ * com erro ou resposta estranha: o último preço da Tabela para a faixa; sem ele, a tabela cheia.
+ */
+export async function buscarPreco(unidades: number, env: EnvCalculadora, buscar: typeof fetch = fetch, opcoes: OpcoesPreco = {}): Promise<Preco> {
+  const agora = opcoes.agora ?? Date.now();
+  const guardado = guardados.get(unidades);
+  if (guardado && guardado.ate > agora) return guardado.preco;
+  if (env.SUPABASE_FUNCTIONS_URL && env.SITE_SEGREDO && !opcoes.semConsultar) {
+    try {
+      const r = await buscar(`${env.SUPABASE_FUNCTIONS_URL.replace(/\/$/, "")}/api-console/v1/site/calculadora`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-site-segredo": env.SITE_SEGREDO,
+          ...(opcoes.cliente ? { "x-site-cliente": opcoes.cliente.slice(0, 64) } : {}),
+        },
+        body: JSON.stringify({ unidades }),
+        signal: AbortSignal.timeout(4000),
+      });
+      if (r.ok) {
+        const d: unknown = await r.json();
+        if (precoValido(d, unidades)) {
+          const preco: Preco = { ...d, origem: "TABELA" };
+          guardar(preco, agora);
+          return preco;
+        }
+      }
+    } catch {
+      // Fora do ar: cai na memória ou na tabela cheia.
+    }
   }
+  return ultimoDaFaixa(unidades, agora) ?? precoDoSite(unidades);
 }
 
 export type Entrada = {
@@ -118,8 +216,6 @@ export function lerEntrada(unidades: unknown, taxa: unknown): Entrada {
   return { unidades: n, taxa: lida.erro ? null : lida.taxa, campoUnidades: u, campoTaxa: t, erros };
 }
 
-const reais = (centavos: number) =>
-  (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }).replace(/\u00a0/g, " ");
 
 /** "Até 40 unidades" vira "até 40 unidades" depois de "Faixa:". */
 const nomeNaFrase = (nome: string) => nome.charAt(0).toLowerCase() + nome.slice(1);
@@ -138,13 +234,15 @@ export type Resultado = {
   destaque: { titulo: string; frase: string } | null;
   /** "cerca de 0,6% de R$ 650,00"; só com a taxa. */
   naTaxa: string | null;
+  /** Sem a Tabela de preços: a linha da tabela cheia (r9). */
+  aviso: string | null;
 };
 
 /** O que a tela mostra, a partir do preço e da taxa informada (quadros 448 e 449). */
 export function montarResultado(p: Preco, taxa: number | null): Resultado {
   const base = { unidades: p.unidades, faixa: p.faixa.codigo, faixaTexto: `Faixa: ${nomeNaFrase(p.faixa.nome)}` };
   if (p.faixa.sobConsulta || typeof p.porApartamento !== "number" || typeof p.mensal !== "number") {
-    return { ...base, sobConsulta: true, porApartamento: null, mensalidade: null, destaque: null, naTaxa: null };
+    return { ...base, sobConsulta: true, porApartamento: null, mensalidade: null, destaque: null, naTaxa: null, aviso: null };
   }
   const c = custoNaTaxa(p.porApartamento, taxa);
   return {
@@ -155,6 +253,7 @@ export function montarResultado(p: Preco, taxa: number | null): Resultado {
     // Sem a taxa, a frase do quadro 448 fica só no valor ("R$ 3,58 por apartamento."): o "por mês" já está no título.
     destaque: c.menosDeCinco ? { titulo: TEXTO_MENOS_DE_CINCO, frase: c.cerca ? fraseDoDestaque(c) : `${reais(p.porApartamento)} por apartamento.` } : null,
     naTaxa: linhaNaTaxa(c),
+    aviso: p.origem === "SITE" ? avisoTabelaCheia() : null,
   };
 }
 

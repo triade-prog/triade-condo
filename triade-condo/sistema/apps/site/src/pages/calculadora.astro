@@ -2,17 +2,29 @@
 // Calculadora de custo por apartamento (CM-33, DC17; quadros 448 e 449, no lugar do 348).
 // Roda no servidor: sem JavaScript, o formulário manda as unidades e a taxa pelo endereço e a conta
 // volta desenhada; com JavaScript, a conta muda enquanto a pessoa digita (rota /api/calculadora).
-// O preço vem da Tabela de preços de hoje; sem ROI e sem economia prometida (EM-07).
+// O preço vem da Tabela de preços de hoje; sem ROI e sem economia prometida (EM-07). Acima do
+// limite por IP (r9), a página não chama o Console: usa o preço guardado ou a tabela cheia.
 import Base from "../layouts/Base.astro";
 import Olho from "../components/Olho.astro";
 import { linkWhatsapp } from "../dados/empresa";
-import { buscarPreco, envServidor, lerEntrada, montarResultado, TEXTO_AJUDA_TAXA_SITE, TEXTO_CONSENTIMENTO_PROPOSTA } from "../lib/calculadora";
+import {
+  buscarPreco,
+  dentroDoLimiteDaCalculadora,
+  envServidor,
+  ipDoPedido,
+  lerEntrada,
+  montarResultado,
+  TEXTO_AJUDA_TAXA_SITE,
+  TEXTO_CONSENTIMENTO_PROPOSTA,
+} from "../lib/calculadora";
 
 export const prerender = false;
 
 const q = Astro.url.searchParams;
 const entrada = lerEntrada(q.get("unidades"), q.get("taxa"));
-const r = entrada.unidades === null ? null : montarResultado(await buscarPreco(entrada.unidades, envServidor()), entrada.taxa);
+const ip = ipDoPedido(Astro.request, () => Astro.clientAddress);
+const r = entrada.unidades === null ? null
+  : montarResultado(await buscarPreco(entrada.unidades, envServidor(), fetch, { cliente: ip, semConsultar: !dentroDoLimiteDaCalculadora(ip) }), entrada.taxa);
 const pedido = q.get("pedido");
 const zap = linkWhatsapp("Olá! Usei a calculadora do site e quero a proposta do meu prédio.");
 Astro.response.headers.set("Cache-Control", "no-store");
@@ -62,6 +74,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
           <div><dt>Implantação</dt><dd>à parte, na proposta</dd></div>
           <div><dt>Cancelamento</dt><dd>30 dias de aviso, sem multa</dd></div>
         </dl>
+        <span class="suave" style="font-size:12px;padding-top:6px" id="aviso-tabela" hidden={!r?.aviso}>{r?.aviso ?? ""}</span>
         <span class="suave" style="font-size:12px;padding-top:6px">Estimativa: mensalidade dividida pelas unidades. Não inclui taxa da administradora nem promete economia.</span>
       </div>
     </div>
@@ -121,7 +134,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
   // Com JavaScript, a conta muda enquanto a pessoa digita; o servidor devolve os mesmos textos.
   type Resultado = {
     unidades: number; faixaTexto: string; sobConsulta: boolean; porApartamento: string | null; mensalidade: string | null;
-    destaque: { titulo: string; frase: string } | null; naTaxa: string | null;
+    destaque: { titulo: string; frase: string } | null; naTaxa: string | null; aviso: string | null;
   };
   const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
   const formCalculo = $<HTMLFormElement>("form-calculo");
@@ -154,6 +167,8 @@ Astro.response.headers.set("Cache-Control", "no-store");
     $("na-taxa").textContent = r.naTaxa ?? "";
     linha("linha-taxa", r.naTaxa);
     $("linha-consulta").hidden = !r.sobConsulta;
+    $("aviso-tabela").textContent = r.aviso ?? "";
+    $("aviso-tabela").hidden = !r.aviso;
   }
 
   async function calcular() {
@@ -164,6 +179,8 @@ Astro.response.headers.set("Cache-Control", "no-store");
     history.replaceState(null, "", busca.size ? `/calculadora?${busca}` : "/calculadora");
     try {
       const resp = await fetch(`/api/calculadora?${busca}`, { headers: { Accept: "application/json" } });
+      // Acima do limite (r9): fica a última conta; o botão Calcular ainda manda pelo endereço.
+      if (resp.status === 429) return;
       const d = (await resp.json()) as { erros: { unidades?: string; taxa?: string }; resultado: Resultado | null };
       if (n !== ultima) return;
       erroCampo(unidades, d.erros.unidades);

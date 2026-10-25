@@ -149,13 +149,23 @@ export function faixaDoSite(texto: string): CodigoFaixa | null {
   return null;
 }
 
-/** Troca os campos entre colchetes da mensagem pronta (CM-15). Campo sem valor fica como está. */
-export function preencherMensagem(texto: string, campos: { nome?: string | null; condominio?: string | null; pessoa?: string | null }): string {
+/** O campo do link de agendamento nas mensagens prontas (CM-23, R17.6b). */
+export const CAMPO_LINK_AGENDA = "[link de agendamento]";
+
+/**
+ * Troca os campos entre colchetes da mensagem pronta (CM-15). Campo sem valor fica como está.
+ * [link de agendamento] vira o link /a/[codigo] de quem atende (ou o da equipe), que a ficha traz.
+ */
+export function preencherMensagem(
+  texto: string,
+  campos: { nome?: string | null; condominio?: string | null; pessoa?: string | null; linkAgenda?: string | null },
+): string {
   const primeiro = (s?: string | null) => (s ? s.trim().split(/\s+/)[0] ?? s : s);
   return texto
     .replaceAll("[nome]", primeiro(campos.nome) || "[nome]")
     .replaceAll("[condominio]", campos.condominio?.trim() || "[condominio]")
-    .replaceAll("[pessoa]", primeiro(campos.pessoa) || "[pessoa]");
+    .replaceAll("[pessoa]", primeiro(campos.pessoa) || "[pessoa]")
+    .replaceAll(CAMPO_LINK_AGENDA, campos.linkAgenda?.trim() || CAMPO_LINK_AGENDA);
 }
 
 /** Link do WhatsApp com o texto pronto. Nada sai sozinho: a pessoa da equipe aperta enviar. */

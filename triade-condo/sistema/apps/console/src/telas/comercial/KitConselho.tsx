@@ -30,6 +30,13 @@ import {
 } from "./propostas.ts";
 import type { FichaInteressado } from "./tipos.ts";
 
+/** De onde veio a taxa do kit (r5): a ficha manda; tirada na ficha é sem taxa. */
+const ORIGEM_TAXA = {
+  FICHA: "Esta é a taxa da ficha.",
+  VERSAO: "A ficha nunca teve taxa: esta é a da versão enviada.",
+  SEM: "Sem taxa na ficha: o kit mostra só o valor por apartamento.",
+} as const;
+
 /** "Custo na apresentação" (quadro 447): o destaque, a taxa que se corrige e as unidades da versão. */
 function CustoNaApresentacao({ k, edita, versaoFicha, feito }: { k: Kit; edita: boolean; versaoFicha?: number; feito: (texto: string) => void }) {
   const custo = custoDoKit(k);
@@ -58,7 +65,7 @@ function CustoNaApresentacao({ k, edita, versaoFicha, feito }: { k: Kit; edita: 
       {d ? <DestaqueCusto d={d} /> : <p className="t-texto">{fraseDoDestaque(custo)}</p>}
       <form onSubmit={salvar} noValidate className="grid gap-4 md:grid-cols-2">
         <CampoTexto id="kit-taxa" rotulo="Taxa média de condomínio (R$ por mês)" opcional inputMode="decimal" value={taxa} readOnly={!edita}
-          onChange={(e) => setTaxa(e.target.value)} ajuda={TEXTO_AJUDA_TAXA} erro={erro ?? undefined} placeholder="650,00" />
+          onChange={(e) => setTaxa(e.target.value)} ajuda={`${TEXTO_AJUDA_TAXA} ${ORIGEM_TAXA[k.taxaDe ?? "SEM"]}`} erro={erro ?? undefined} placeholder="650,00" />
         <CampoTexto id="kit-unidades" rotulo="Unidades" value={unidades ? String(unidades) : ""} readOnly ajuda={`Da proposta v${k.proposta.numero} enviada.`} />
         {edita ? (
           <Botao type="submit" variante="contorno" className="md:justify-self-start" disabled={enviando}><Icone nome="check" />{enviando ? "Salvando…" : "Salvar a taxa"}</Botao>

@@ -2,9 +2,11 @@
 -- origem Parceiro e o nome dele, a regra da comissão só da Administração, a comissão que nasce
 -- quando o prédio indicado vira cliente (com a regra e o plano do dia, o fundador que passa à cheia
 -- e o prazo), o extrato do mês, o pagamento registrado fora do sistema, o prédio que deixou de ser
--- cliente, o apagar a pedido e a retenção do contato do parceiro (LGPD).
+-- cliente, o apagar a pedido e a retenção do contato do parceiro (LGPD). Na revisão: o nome do
+-- parceiro não entra nas conversas do indicado e sai das que o citam, com a observação do pagamento
+-- (r4); o motivo de o prédio ter saído só para quem tem a comissão (r11).
 begin;
-select plan(55);
+select plan(59);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -95,6 +97,8 @@ create temp table i as select (r ->> 'id')::uuid as ipe from ind;
 select is((select origem || ' · ' || origem_detalhe || ' · ' || (parceiro_id = (select marta from p))::text from interessados where id = (select ipe from i)),
   'PARCEIRO · Marta Lins · true', 'CM-22: o indicado entra com a origem Parceiro e o nome dele');
 select is((select comercial_ficha(com, ipe) -> 'parceiro' ->> 'nome' from ids, i), 'Marta Lins', 'a ficha mostra o parceiro');
+select ok((select count(*) > 0 and bool_and(resumo not like '%Marta%') from conversas_comercial where interessado_id = (select ipe from i)),
+  'o nome do parceiro não vai para as conversas do indicado (r4)');
 select ok((select (comercial_indicar(com, marta, '{"condominio": "Edifício Ipê", "contatoAceito": true, "whatsapp": "5561999990611"}') ->> 'juntado')::boolean
              from ids, p), 'o contato que já estava no Comercial é juntado');
 select is((select count(*)::integer from interessados where parceiro_id = (select marta from p)), 1, 'e não vira outra indicação');
@@ -167,6 +171,9 @@ select is((select comercial_comissao_situacao(x, '2027-03-01') || ' · ' || coal
   'ENCERRADA · — · 2863', 'do mês marcado em diante, sem comissão (o extrato mostra "—")');
 select is(pg_temp.motivo(format('select comercial_encerrar_comissao(%L, %L, 2, ''2027-04-01'', ''De novo'')', (select adm from ids), (select id from c))),
   'COMISSAO_ENCERRADA', 'encerra uma vez só');
+select is((select array[(comercial_extrato_parceiro(com, marta, '2027-03-01') -> 'linhas' -> 0 ? 'motivo')::text,
+                        comercial_extrato_parceiro(adm, marta, '2027-03-01') -> 'linhas' -> 0 ->> 'motivo'] from ids, p),
+  array['false', 'O condomínio cancelou o contrato'], 'o motivo de o prédio ter saído só aparece para quem tem a comissão (r11)');
 
 -- 8. Parceiro inativo não indica; sem indicação há 90 dias.
 create temp table p2 as select (comercial_salvar_parceiro(com, null, null, '{"tipo": "ADMINISTRADORA", "nome": "Administradora Planalto",
@@ -182,10 +189,18 @@ select ok((select (x ->> 'semIndicacao90')::boolean from ids, p, jsonb_array_ele
 -- 9. LGPD: apagar a pedido e a rotina.
 select throws_ok(format('select comercial_apagar_parceiro(%L, %L)', (select com from ids), (select marta from p)), 'TC401', null,
   'só a Administração apaga o parceiro a pedido');
+select comercial_inserir_conversa(ipe, 'NOTA', 'A Marta Lins ligou e pediu retorno sobre a indicação.', false, null, null) from i;
 select comercial_apagar_parceiro(adm, marta) from ids, p;
 select is((select nome || ' · ' || coalesce(whatsapp, '-') || coalesce(email, '-') || ' · ' || ativo from parceiros_comercial where id = (select marta from p)),
   'Parceiro apagado (LGPD) · -- · false', 'o contato some; o parceiro fica inativo');
 select is((select origem_detalhe from interessados where id = (select ipe from i)), 'Parceiro (dado apagado)', 'o nome sai da origem do indicado');
+select ok((select bool_and(resumo not like '%Marta%') from conversas_comercial where interessado_id = (select ipe from i))
+          and exists (select 1 from conversas_comercial where interessado_id = (select ipe from i)
+                       and resumo = 'A Parceiro (dado apagado) ligou e pediu retorno sobre a indicação.'),
+  'e das conversas do indicado que o citam (r4)');
+select is((select count(*)::integer from pagamentos_comissao where parceiro_id = (select marta from p) and observacao is not null)
+          || '/' || (select count(*)::integer from pagamentos_comissao where parceiro_id = (select marta from p)), '0/1',
+  'a observação do pagamento sai; o pagamento fica');
 select is((select count(*)::integer from comissoes_parceiro where parceiro_id = (select marta from p)), 1, 'os valores da comissão ficam');
 select is(pg_temp.motivo(format('select comercial_salvar_parceiro(%L, %L, %s, %L)', (select com from ids), (select marta from p), pg_temp.pv((select marta from p)),
   '{"tipo": "CLIENTE", "nome": "Marta"}')), 'ANONIMIZADO', 'parceiro apagado não muda');

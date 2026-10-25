@@ -21,7 +21,7 @@ import { Cartao, Voltar } from "../comum.tsx";
 import { campoDosCentavos, centavosDoCampo } from "../planos/comum.tsx";
 import { useCarregar, useSessao } from "../sessao.tsx";
 import {
-  AVISOS_PROPOSTA, percentual, ROTAS_PROPOSTAS, rotulosAprovacao, taxaDe, TELAS_PROPOSTAS, textoImplantacao, textoNoAno, textoVaiJunto, type Ciclo, type FichaProposta,
+  AVISOS_PROPOSTA, percentual, ROTAS_PROPOSTAS, rotulosAprovacao, TELAS_PROPOSTAS, textoImplantacao, textoNoAno, textoVaiJunto, type Ciclo, type FichaProposta,
   type Sugestao, type VersaoProposta,
 } from "./propostas.ts";
 
@@ -76,10 +76,11 @@ const vazio: Formulario = {
 };
 
 /**
- * A versão em que a nova se baseia (ou o rascunho que se edita) → o formulário. A taxa: no rascunho,
- * a da versão; na versão nova, a da ficha (a mais recente), e sem ela a da versão anterior.
+ * A versão em que a nova se baseia (ou o rascunho que se edita) → o formulário. A taxa é sempre a
+ * da ficha (r8): é a que vale para a versão quando a pessoa não mexe no campo, e o rascunho antigo
+ * nunca a troca pela dele.
  */
-function formularioDe(v: VersaoProposta, taxaFicha?: number, editar = false): Formulario {
+function formularioDe(v: VersaoProposta, taxaFicha?: number): Formulario {
   const pedido = v.descontoPedido?.percentual ?? v.desconto;
   return {
     unidades: v.unidades ? String(v.unidades) : "", ciclo: v.ciclo, tabela: v.tabela === "MANUAL" ? null : v.tabela ?? null,
@@ -88,7 +89,7 @@ function formularioDe(v: VersaoProposta, taxaFicha?: number, editar = false): Fo
     valorManualMotivo: v.valorManualMotivo ?? "",
     respostas: (v.respostas ?? []).map((r) => r.id).filter((x): x is string => !!x), referencias: (v.referencias ?? []).filter((r) => !r.retirada).map((r) => r.id),
     notaInterna: v.notaInterna ?? "", validadeDias: v.validadeDias ?? null,
-    taxa: taxaParaCampo(editar ? taxaDe(v.premissas) : taxaFicha ?? taxaDe(v.premissas)),
+    taxa: taxaParaCampo(taxaFicha),
   };
 }
 
@@ -144,7 +145,11 @@ function Gerador({ modo }: { modo: Modo }) {
   const router = useRouter();
   const sessao = useSessao();
   const interessadoId = modo.tipo === "criar" ? modo.interessadoId : modo.ficha.interessado.id;
-  const [f, setF] = useState<Formulario>(() => (modo.tipo === "versao" ? formularioDe(modo.base, modo.ficha.interessado.taxaCondominioMedia, modo.editar) : vazio));
+  const [f, setF] = useState<Formulario>(() => (modo.tipo === "versao" ? formularioDe(modo.base, modo.ficha.interessado.taxaCondominioMedia) : vazio));
+  // A taxa da ficha como veio para o campo e a versão da ficha nesse momento (r8): a taxa só vai
+  // para o banco quando a pessoa a muda, e o banco grava na ficha conferindo essa versão.
+  const [taxaBase, setTaxaBase] = useState<{ campo: string; versao?: number } | null>(() => (modo.tipo === "versao"
+    ? { campo: taxaParaCampo(modo.ficha.interessado.taxaCondominioMedia), versao: modo.ficha.interessado.versao } : null));
   const [sug, setSug] = useState<Sugestao | null>(null);
   const [erroSug, setErroSug] = useState<ErroApi | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -176,9 +181,11 @@ function Gerador({ modo }: { modo: Modo }) {
         // As unidades da ficha do prédio entram no campo vazio (CM-16).
         const daFicha = r.dados.interessado.unidades;
         if (daFicha) setF((x) => (x.unidades ? x : { ...x, unidades: String(daFicha) }));
-        // A taxa da ficha entra uma vez, na nova proposta (R17.3c).
+        // A taxa da ficha entra uma vez, na nova proposta (R17.3c), com a versão da ficha (r8).
         const taxaFicha = r.dados.interessado.taxaCondominioMedia;
+        const versaoFicha = r.dados.interessado.versao;
         setF((x) => (x.taxa !== null ? x : { ...x, taxa: taxaParaCampo(taxaFicha) }));
+        setTaxaBase((b) => b ?? { campo: taxaParaCampo(taxaFicha), versao: versaoFicha });
       });
     }, 250);
     return () => { clearTimeout(t); controle.abort(); };
@@ -186,6 +193,7 @@ function Gerador({ modo }: { modo: Modo }) {
 
   const daFicha = sug?.interessado.unidades;
   const taxaLida = lerTaxaCondominio(f.taxa ?? "");
+  const taxaMudou = taxaBase !== null && (taxaLida.erro !== undefined || taxaLida.taxa !== lerTaxaCondominio(taxaBase.campo).taxa);
   const taxaDaFicha = modo.tipo === "versao" ? modo.ficha.interessado.taxaCondominioMedia : sug?.interessado.taxaCondominioMedia;
 
   if (!sug) {
@@ -230,8 +238,9 @@ function Gerador({ modo }: { modo: Modo }) {
       respostas: f.respostas.filter((id) => (s.respostas ?? []).some((r) => r.id === id)),
       referencias: f.referencias.filter((id) => (s.referencias ?? []).some((r) => r.id === id)),
       notaInterna: f.notaInterna.trim() || null, validadeDias: f.validadeDias,
-      // A taxa vai sempre: o que está no campo é o que a pessoa quer (vazio tira; vale também para a ficha).
-      taxaCondominio: taxaLida.erro ? null : taxaLida.taxa,
+      // A taxa só vai quando a pessoa a mudou (vazio tira; vale também para a ficha), com a versão
+      // da ficha que ela viu; sem mudança, a versão usa a da ficha (r8).
+      ...(taxaMudou ? { taxaCondominio: taxaLida.erro ? null : taxaLida.taxa, interessadoVersao: taxaBase?.versao } : {}),
     };
   }
 

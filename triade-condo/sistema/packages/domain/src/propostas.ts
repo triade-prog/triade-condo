@@ -148,7 +148,10 @@ const camposVersao = {
   notaInterna: textoOpcional(1000),
   validadeDias: z.number().int().min(1).max(60).optional().nullable().transform((v) => v ?? null),
   // A taxa média de condomínio (0310, R17.3c): sem o campo, a versão usa a da ficha; vazio tira.
+  // A tela só manda o campo quando a pessoa o mudou, com a versão da ficha que ela viu (r8): o
+  // banco grava na ficha com conferência de versão.
   taxaCondominio: taxaCondominioSchema.nullable().optional(),
+  interessadoVersao: z.number().int().min(1).optional(),
 };
 const regrasVersao = (d: { desconto: number | null; descontoMotivo: string | null; valorManual: number | null; valorManualMotivo: string | null },
                       ctx: z.RefinementCtx) => {

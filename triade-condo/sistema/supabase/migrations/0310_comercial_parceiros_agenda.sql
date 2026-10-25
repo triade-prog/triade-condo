@@ -61,6 +61,30 @@
 --    da comissão) e, sem comissão nenhuma, 12 meses depois de inativado. Os tipos novos ficam como
 --    "a fazer" no catálogo, como o do Comercial (32): a rotina própria do Comercial aplica.
 --
+-- Revisão independente do 4b7e8dc (11 achados), corrigida aqui antes de aplicar:
+-- r1.  O link público só junta no interessado quando o WhatsApp E o e-mail batem com a ficha; o
+--      e-mail digitado nunca vai para a ficha. Se só um bate, nasce um interessado novo marcado como
+--      possível duplicado (possivel_duplicado_de), com aviso nas conversas dos dois. A confirmação e o
+--      lembrete usam o nome, o condomínio e o e-mail digitados, guardados na demonstração.
+-- r2.  O link público não revela o não contatar nem a demonstração já marcada: responde como se
+--      tivesse marcado, sem marcar nem mandar e-mail, e avisa a equipe por dentro.
+-- r3.  O pedido do site só preenche a taxa quando a ficha não tem; a diferente vai numa conversa. O
+--      interessado Ganho ou fechado não muda (só a conversa entra).
+-- r4.  A indicação não escreve o nome do parceiro nas conversas; apagar o parceiro reescreve as
+--      conversas dos indicados que o citam e apaga a observação dos pagamentos.
+-- r5.  O kit respeita a ficha: taxa tirada (taxa_condominio_em preenchida, taxa vazia) é sem taxa;
+--      ficha que nunca teve taxa usa a da versão enviada.
+-- r6.  Ordem das travas: a trava da agenda, depois o interessado, depois a demonstração (como a
+--      anonimização), em marcar, remarcar, registrar como foi e encerrar.
+-- r7.  O lembrete: o horário mais cedo entre as 8h do dia e uma hora antes que ainda esteja a pelo
+--      menos 30 minutos de agora; se nenhum servir, não há lembrete.
+-- r8.  A taxa digitada na versão só vai para a ficha quando a tela manda o campo, com a versão do
+--      interessado (conflito) e o histórico.
+-- r9.  A calculadora tem limite por aparelho do visitante (o site manda o IP) além do limite geral.
+-- r10. A fila: o ENVIANDO preso de demonstração encerrada é cancelado e, com 5 tentativas, FALHOU.
+-- r11. O motivo de o prédio ter saído só aparece no extrato para quem tem console.comercial.comissao.
+-- E a R17.6b: o campo [link de agendamento] nas mensagens prontas (a ficha leva o link).
+--
 -- Nada aqui apaga linha nem remove função (o conector do Supabase trava nesses comandos).
 
 create extension if not exists btree_gist with schema extensions;
@@ -77,6 +101,8 @@ insert into configuracoes (chave, valor, descricao) values
   ('limite_agendar_janela_minutos', '60', 'Janela dos agendamentos pelo link'),
   ('limite_calculadora_max', '600', 'Cálculos da calculadora do site dentro da janela (todo o site)'),
   ('limite_calculadora_janela_minutos', '10', 'Janela dos cálculos da calculadora do site'),
+  ('limite_calculadora_ip_max', '60', 'Cálculos da calculadora do site pelo mesmo visitante dentro da janela'),
+  ('limite_calculadora_ip_janela_minutos', '10', 'Janela dos cálculos da calculadora pelo mesmo visitante'),
   ('comercial_agenda_email_dias', '90', 'Dias depois da demonstração em que o e-mail do agendamento sai da fila (LGPD)'),
   ('comercial_parceiro_sem_comissao_meses', '12', 'Meses depois de inativado em que o contato do parceiro sem comissão é apagado'),
   ('comercial_parceiro_com_comissao_anos', '5', 'Anos depois do último pagamento ou do fim da comissão em que o contato do parceiro inativo é apagado');
@@ -141,8 +167,30 @@ create trigger parceiros_comercial_regras before update on parceiros_comercial f
 alter table interessados
   add column parceiro_id uuid references parceiros_comercial (id),
   add column taxa_condominio_media numeric(10, 2) check (taxa_condominio_media > 0 and taxa_condominio_media <= 20000),
-  add constraint interessados_parceiro_origem check (parceiro_id is null or origem = 'PARCEIRO');
+  -- Quando a ficha recebeu ou perdeu a taxa (r5): nulo é "nunca teve"; preenchido com a taxa vazia
+  -- é "tirada por escolha".
+  add column taxa_condominio_em timestamptz,
+  -- O agendamento pelo link com o WhatsApp ou o e-mail de outro interessado, mas não os dois (r1).
+  add column possivel_duplicado_de uuid references interessados (id),
+  add constraint interessados_parceiro_origem check (parceiro_id is null or origem = 'PARCEIRO'),
+  add constraint interessados_duplicado_outro check (possivel_duplicado_de is distinct from id);
 create index interessados_parceiro on interessados (parceiro_id) where parceiro_id is not null;
+
+create function interessados_taxa_em() returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if (tg_op = 'INSERT' and new.taxa_condominio_media is not null)
+     or (tg_op = 'UPDATE' and new.taxa_condominio_media is distinct from old.taxa_condominio_media) then
+    new.taxa_condominio_em := app_now();
+  elsif tg_op = 'UPDATE' then
+    new.taxa_condominio_em := old.taxa_condominio_em;
+  end if;
+  return new;
+end $$;
+create trigger interessados_taxa_em before insert or update of taxa_condominio_media, taxa_condominio_em on interessados
+  for each row execute function interessados_taxa_em();
 
 -- As regras da 0296 e mais: o parceiro do interessado só é posto uma vez (na indicação) e nunca muda;
 -- a origem continua fixa, salvo o nome do parceiro apagado a pedido (LGPD), que sai do detalhe.
@@ -157,7 +205,9 @@ begin
   end if;
   if tg_op = 'UPDATE' and new.origem_detalhe is distinct from old.origem_detalhe
      and not (comercial_sistema() and coalesce(current_setting('app.comercial_apagar_parceiro', true), '') = 'on'
-              and new.origem_detalhe = 'Parceiro (dado apagado)') then
+              and new.origem_detalhe = 'Parceiro (dado apagado)')
+     -- A indicação (r4): o nome do parceiro entra no detalhe junto com o parceiro, uma vez.
+     and not (old.origem_detalhe is null and old.parceiro_id is null and new.parceiro_id is not null and new.origem = 'PARCEIRO') then
     raise exception 'A origem do interessado não muda' using errcode = 'TC422', detail = '{"motivo":"ORIGEM_FIXA"}';
   end if;
   if tg_op = 'UPDATE' and old.parceiro_id is not null and new.parceiro_id is distinct from old.parceiro_id then
@@ -259,7 +309,19 @@ create table pagamentos_comissao (
 call proteger_tabela_comercial('pagamentos_comissao', 'console.comercial.comissao',
   'Pagamentos de comissão feitos fora do sistema, registrados pela Administração (CM-22, O.1); só inserção');
 create trigger pagamentos_comissao_sem_exclusao before delete on pagamentos_comissao for each row execute function somente_insercao();
-create trigger pagamentos_comissao_sem_mudanca before update on pagamentos_comissao for each row execute function somente_insercao();
+create function pagamentos_comissao_fixos() returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  -- Só inserção; a LGPD do parceiro (r4) só apaga a observação.
+  if coalesce(current_setting('app.comercial_apagar_parceiro', true), '') = 'on' and new.observacao is null
+     and (to_jsonb(new) - 'observacao') = (to_jsonb(old) - 'observacao') then
+    return new;
+  end if;
+  raise exception 'O que foi registrado não se altera nem se apaga' using errcode = 'TC422', detail = '{"motivo":"SO_INSERCAO"}';
+end $$;
+create trigger pagamentos_comissao_sem_mudanca before update on pagamentos_comissao for each row execute function pagamentos_comissao_fixos();
 
 -- A comissão nasce quando o interessado indicado vira cliente (0308), com a versão aceita do contrato.
 create function comercial_nascer_comissao() returns trigger
@@ -446,9 +508,11 @@ begin
   select * into p from parceiros_comercial where id = p_parceiro;
   if not found then raise exception 'Parceiro não encontrado' using errcode = 'TC404'; end if;
   if not p.ativo then perform recusar_motivo('Parceiro inativo não indica', 'PARCEIRO_INATIVO'); end if;
-  r := comercial_criar(p_pessoa, (p_dados - 'parceiroId') || jsonb_build_object('origem', 'PARCEIRO', 'origemDetalhe', p.nome));
+  -- O nome do parceiro não vai para comercial_criar, que o escreveria na conversa da entrada (r4):
+  -- fica só no detalhe da origem, que a LGPD do parceiro troca.
+  r := comercial_criar(p_pessoa, (p_dados - 'parceiroId' - 'origemDetalhe') || jsonb_build_object('origem', 'PARCEIRO'));
   if not (r ->> 'juntado')::boolean then
-    update interessados set parceiro_id = p.id where id = (r ->> 'id')::uuid;
+    update interessados set parceiro_id = p.id, origem_detalhe = p.nome where id = (r ->> 'id')::uuid;
     perform registrar_historico_interno('comercial.indicacao', 'parceiro_comercial', p.id::text, jsonb_build_object('interessadoId', r ->> 'id'));
   end if;
   return r || jsonb_build_object('parceiroId', p.id);
@@ -475,7 +539,9 @@ begin
            'comissaoId', c.id, 'versao', c.versao, 'interessadoId', c.interessado_id, 'condominio', c.condominio, 'desde', c.inicio,
            'mensalidade', comercial_comissao_base(c, v_mes), 'comissao', comercial_comissao_mes(c, v_mes),
            'situacao', comercial_comissao_situacao(c, v_mes), 'percentual', trim_scale(c.percentual), 'prazoMeses', c.prazo_meses,
-           'semComissaoDesde', c.sem_comissao_desde, 'motivo', c.encerrada_motivo)) order by c.inicio, c.condominio), '[]'::jsonb),
+           'semComissaoDesde', c.sem_comissao_desde,
+           -- O motivo de o cliente ter saído é da Administração (CM-11, r11).
+           'motivo', case when pode_global('console.comercial.comissao') then c.encerrada_motivo end)) order by c.inicio, c.condominio), '[]'::jsonb),
          coalesce(sum(comercial_comissao_mes(c, v_mes)), 0)
     into v_linhas, v_total
     from comissoes_parceiro c where c.parceiro_id = p.id and c.inicio <= v_mes;
@@ -580,15 +646,26 @@ create function comercial_anonimizar_parceiro(p_id uuid) returns void
 language plpgsql
 set search_path = public
 as $$
-declare v_sistema text := coalesce(current_setting('app.comercial_sistema', true), '');
+declare
+  v_sistema text := coalesce(current_setting('app.comercial_sistema', true), '');
+  v_nome text;
 begin
   perform set_config('app.comercial_sistema', 'on', true);
   perform set_config('app.comercial_apagar_parceiro', 'on', true);
+  select nome into v_nome from parceiros_comercial where id = p_id and anonimizado_em is null;
   update parceiros_comercial set nome = 'Parceiro apagado (LGPD)', whatsapp = null, email = null, cnpj = null, observacao = null,
          ativo = false, inativado_em = coalesce(inativado_em, app_now()), anonimizado_em = app_now()
    where id = p_id and anonimizado_em is null;
   update interessados set origem_detalhe = 'Parceiro (dado apagado)'
    where parceiro_id = p_id and origem_detalhe is distinct from 'Parceiro (dado apagado)';
+  -- As conversas dos indicados que citam o nome (escritas à mão pela equipe, ou antes da r4) e a
+  -- observação dos pagamentos (r4).
+  if v_nome is not null and length(btrim(v_nome)) >= 2 then
+    update conversas_comercial c set resumo = replace(c.resumo, v_nome, 'Parceiro (dado apagado)')
+      from interessados i
+     where i.id = c.interessado_id and i.parceiro_id = p_id and strpos(c.resumo, v_nome) > 0;
+  end if;
+  update pagamentos_comissao set observacao = null where parceiro_id = p_id and observacao is not null;
   perform set_config('app.comercial_apagar_parceiro', '', true);
   perform set_config('app.comercial_sistema', v_sistema, true);
 end $$;
@@ -697,6 +774,11 @@ create table demonstracoes_comercial (
   alterado_em    timestamptz,
   alterado_por   uuid references pessoas (id),
   versao         integer not null default 1,
+  -- O que a pessoa digitou no link (r1): a confirmação e o lembrete usam isto, nunca a ficha. O
+  -- e-mail e o nome saem 90 dias depois da demonstração, como a fila.
+  nome_contato   text check (length(btrim(nome_contato)) between 2 and 80),
+  condominio     text check (length(btrim(condominio)) between 2 and 120),
+  email          text check (email = lower(email) and email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' and length(email) <= 120),
   check (fim > inicio and fim <= inicio + interval '4 hours'),
   check ((situacao = 'MARCADA') = (encerrada_em is null)),
   check (situacao <> 'CANCELADA' or motivo is not null),
@@ -714,9 +796,17 @@ language plpgsql
 set search_path = public
 as $$
 begin
+  if (new.id, new.interessado_id, new.origem, new.link_id, new.criado_em, new.criado_por)
+     is distinct from (old.id, old.interessado_id, old.origem, old.link_id, old.criado_em, old.criado_por) then
+    raise exception 'Demonstração encerrada não muda' using errcode = 'TC422', detail = '{"motivo":"DEMONSTRACAO_ENCERRADA"}';
+  end if;
+  -- Encerrada, só apaga o que a pessoa digitou (retenção e anonimização).
   if old.situacao <> 'MARCADA'
-     or (new.id, new.interessado_id, new.origem, new.link_id, new.criado_em, new.criado_por)
-        is distinct from (old.id, old.interessado_id, old.origem, old.link_id, old.criado_em, old.criado_por) then
+     and not ((to_jsonb(new) - array['nome_contato', 'condominio', 'email', 'versao', 'alterado_em', 'alterado_por'])
+              = (to_jsonb(old) - array['nome_contato', 'condominio', 'email', 'versao', 'alterado_em', 'alterado_por'])
+              and (new.nome_contato is null or new.nome_contato = old.nome_contato)
+              and (new.condominio is null or new.condominio = old.condominio)
+              and (new.email is null or new.email = old.email)) then
     raise exception 'Demonstração encerrada não muda' using errcode = 'TC422', detail = '{"motivo":"DEMONSTRACAO_ENCERRADA"}';
   end if;
   return new;
@@ -819,8 +909,12 @@ begin
   select * into d from demonstracoes_comercial where id = p_demo;
   insert into emails_comercial (demonstracao_id, tipo, para, enviar_em) values (p_demo, p_tipo, p_para, app_now());
   if p_tipo = 'CONFIRMACAO' then
-    v_lembrete := least((((d.inicio at time zone 'America/Sao_Paulo')::date + time '08:00') at time zone 'America/Sao_Paulo'), d.inicio - interval '1 hour');
-    if v_lembrete > app_now() + interval '30 minutes' then
+    -- O mais cedo entre as 8h do dia e uma hora antes que ainda esteja a 30 minutos de agora (r7).
+    select min(t) into v_lembrete
+      from unnest(array[(((d.inicio at time zone 'America/Sao_Paulo')::date + time '08:00') at time zone 'America/Sao_Paulo'),
+                        d.inicio - interval '1 hour']) t
+     where t >= app_now() + interval '30 minutes' and t < d.inicio;
+    if v_lembrete is not null then
       insert into emails_comercial (demonstracao_id, tipo, para, enviar_em) values (p_demo, 'LEMBRETE', p_para, v_lembrete);
     end if;
   end if;
@@ -1071,6 +1165,16 @@ end $$;
 
 -- Agendar pelo link (quadro 340). Uma trava só para a agenda: duas pessoas no mesmo horário, a
 -- segunda espera e recebe HORARIO_OCUPADO. O interessado é criado ou juntado (decisão f).
+-- O agendamento recusado por dentro (r2) fica no histórico interno, escrito pelo sistema: o link
+-- público não tem ninguém da equipe no contexto. A Comercial lê pela política da seção 5
+-- (entidade agenda_comercial); a leitura daqui é só a do "returning" da gravação.
+create policy historico_agendamento_recusado_pelo_sistema on historico for insert
+  with check (comercial_sistema() and condominio_id is null and interno and autor_tipo = 'SISTEMA' and autor_id is null
+              and acao = 'comercial.agendamento_recusado' and entidade = 'agenda_comercial');
+create policy historico_agendamento_recusado_pelo_sistema_leitura on historico for select
+  using (comercial_sistema() and condominio_id is null and interno and autor_tipo = 'SISTEMA' and autor_id is null
+         and acao = 'comercial.agendamento_recusado' and entidade = 'agenda_comercial');
+
 create function publico_agendar(p_codigo text, p_dados jsonb) returns jsonb
 language plpgsql
 security definer
@@ -1087,12 +1191,13 @@ declare
   v_faixa    text := comercial_texto(p_dados, 'faixa');
   v_texto    text := coalesce(comercial_texto(p_dados, 'consentimentoTexto'),
                               'Usamos estes dados só para a demonstração e para falar com você sobre ela.');
-  v_existe   record;
+  v_parecido uuid;
   v_pessoa   uuid;
   v_fim      timestamptz;
   v_id       uuid;
   v_demo     uuid;
   v_juntado  boolean := false;
+  v_resposta jsonb;
 begin
   perform limpar_contexto();
   perform set_config('app.comercial_sistema', 'on', true);
@@ -1109,10 +1214,8 @@ begin
   if length(coalesce(v_cond, '')) not between 2 and 120 then perform recusar_campos('Escreva o nome do condomínio', 'condominio'); end if;
   if v_faixa is not null and not exists (select 1 from faixas_preco where codigo = v_faixa) then perform recusar_campos('Escolha as unidades', 'faixa'); end if;
   if coalesce((p_dados ->> 'consentimento')::boolean, false) is not true then perform recusar_campos('Falta a autorização', 'consentimento'); end if;
-  if comercial_nao_contatar_tem(v_whatsapp, v_email, null) then
-    perform recusar_motivo('Não conseguimos agendar com este contato', 'NAO_CONTATAR');
-  end if;
 
+  -- A trava da agenda, depois o interessado, depois a demonstração (r6).
   perform pg_advisory_xact_lock(hashtext('comercial_agenda'));
   -- O horário ainda livre na grade do link; no link da equipe, quem tem menos demonstrações marcadas.
   select g.pessoa_id, g.fim into v_pessoa, v_fim
@@ -1121,29 +1224,65 @@ begin
    order by (select count(*) from demonstracoes_comercial m where m.pessoa_id = g.pessoa_id and m.situacao = 'MARCADA' and m.inicio > app_now()), g.pessoa_id
    limit 1;
   if v_pessoa is null then perform recusar_motivo('Este horário acabou de ser ocupado. Escolha outro.', 'HORARIO_OCUPADO'); end if;
+  -- A mesma resposta quando marca e quando não marca (r2): o link não conta quem está no não
+  -- contatar nem quem já tem demonstração.
+  v_resposta := jsonb_build_object('id', gen_random_uuid(), 'inicio', v_inicio, 'fim', v_fim, 'quando', comercial_quando(v_inicio),
+                                   'duracaoMinutos', (extract(epoch from v_fim - v_inicio) / 60)::integer);
 
-  select * into v_existe from comercial_parecido(v_whatsapp, v_email, null, null);
-  if v_existe.id is not null then
-    select * into i from interessados where id = v_existe.id for update;
-    if exists (select 1 from demonstracoes_comercial where interessado_id = i.id and situacao = 'MARCADA' and inicio > app_now()) then
-      perform recusar_motivo('Você já tem uma demonstração marcada. Para mudar o horário, responda o e-mail da confirmação.', 'DEMONSTRACAO_MARCADA');
+  if comercial_nao_contatar_tem(v_whatsapp, v_email, null) then
+    select p.id into v_parecido from comercial_parecido(v_whatsapp, v_email, null, null) p;
+    if v_parecido is not null then
+      perform comercial_inserir_conversa(v_parecido, 'NOTA', 'Pediu uma demonstração pelo link para ' || comercial_quando(v_inicio)
+        || ', mas o contato está no não contatar. Nada foi marcado nem enviado.', false, null, null);
     end if;
+    perform registrar_historico_interno('comercial.agendamento_recusado', 'agenda_comercial', l.id::text,
+      jsonb_build_object('motivo', 'NAO_CONTATAR', 'interessadoId', v_parecido));
+    perform set_config('app.comercial_sistema', '', true);
+    return v_resposta;
   end if;
+
+  -- Junta só quando o WhatsApp e o e-mail batem com a mesma ficha (r1).
+  select * into i from interessados x
+   where x.anonimizado_em is null and x.whatsapp = v_whatsapp and x.email = v_email
+   order by comercial_aberta(x.etapa) desc, x.criado_em desc
+   limit 1
+   for update;
+  if i.id is not null and exists (select 1 from demonstracoes_comercial where interessado_id = i.id and situacao = 'MARCADA' and inicio > app_now()) then
+    perform comercial_inserir_conversa(i.id, 'NOTA', 'Pediu outra demonstração pelo link para ' || comercial_quando(v_inicio)
+      || ', mas já tem uma marcada. Nada foi marcado nem enviado: confira com o contato.', false, null, null);
+    perform registrar_historico_interno('comercial.agendamento_recusado', 'agenda_comercial', l.id::text,
+      jsonb_build_object('motivo', 'DEMONSTRACAO_MARCADA', 'interessadoId', i.id));
+    perform set_config('app.comercial_sistema', '', true);
+    return v_resposta;
+  end if;
+
   if i.id is not null and i.etapa <> 'GANHO' then
     v_id := i.id;
     v_juntado := true;
-    update interessados set email = coalesce(email, v_email), faixa = coalesce(faixa, v_faixa), nome_contato = coalesce(nome_contato, v_nome)
-     where id = v_id;
+    -- Os dois batem: só completa o que falta, sem trocar nada da ficha.
+    update interessados set faixa = coalesce(faixa, v_faixa), nome_contato = coalesce(nome_contato, v_nome) where id = v_id;
   else
+    -- Só um bate (ou nenhum): interessado novo; com um parecido, marcado como possível duplicado.
+    if i.id is null then
+      select p.id into v_parecido from comercial_parecido(v_whatsapp, v_email, null, null) p;
+    end if;
     insert into interessados (nome_contato, whatsapp, email, condominio, faixa, origem, origem_detalhe, base_legal, base_legal_texto,
-                              primeiro_retorno_ate)
-    values (v_nome, v_whatsapp, v_email, v_cond, v_faixa, 'SITE', 'Agendamento pelo link', 'CONSENTIMENTO', left(v_texto, 1000), comercial_hora_util(app_now()))
+                              primeiro_retorno_ate, contato_de, possivel_duplicado_de)
+    values (v_nome, v_whatsapp, v_email, v_cond, v_faixa, 'SITE', 'Agendamento pelo link', 'CONSENTIMENTO', left(v_texto, 1000), comercial_hora_util(app_now()),
+            -- Ganho com os dois batendo: oportunidade nova do mesmo contato (0308).
+            case when i.id is not null then coalesce(i.contato_de, i.id) end, v_parecido)
     returning id into v_id;
     insert into etapas_interessado (interessado_id, de, para) values (v_id, null, 'NOVO');
+    if v_parecido is not null then
+      perform comercial_inserir_conversa(v_id, 'NOTA', 'Possível duplicado: o WhatsApp ou o e-mail é de outro interessado, mas não os dois. '
+        || 'Confira se é a mesma pessoa antes de falar dos dados do outro.', false, null, null);
+      perform comercial_inserir_conversa(v_parecido, 'NOTA', 'Alguém agendou uma demonstração pelo link com o WhatsApp ou o e-mail deste interessado, '
+        || 'mas não os dois. Ficou num interessado novo, marcado como possível duplicado.', false, null, null);
+    end if;
   end if;
   begin
-    insert into demonstracoes_comercial (interessado_id, pessoa_id, inicio, fim, origem, link_id)
-    values (v_id, v_pessoa, v_inicio, v_fim, 'LINK', l.id)
+    insert into demonstracoes_comercial (interessado_id, pessoa_id, inicio, fim, origem, link_id, nome_contato, condominio, email)
+    values (v_id, v_pessoa, v_inicio, v_fim, 'LINK', l.id, v_nome, v_cond, v_email)
     returning id into v_demo;
   exception when exclusion_violation then
     perform recusar_motivo('Este horário acabou de ser ocupado. Escolha outro.', 'HORARIO_OCUPADO');
@@ -1151,10 +1290,14 @@ begin
   perform comercial_demo_no_funil(v_id, v_inicio, v_pessoa, null);
   perform comercial_inserir_conversa(v_id, 'ENTRADA', 'Agendou a demonstração pelo link: ' || comercial_quando(v_inicio) || ' (' || v_cond || ').',
                                      v_juntado, null, null);
+  if v_juntado then
+    -- O que a pessoa digitou fica na demonstração e aqui, para a equipe conferir; a ficha não muda.
+    perform comercial_inserir_conversa(v_id, 'NOTA', 'Dados digitados no agendamento: ' || v_nome || ', ' || v_cond || ', ' || v_email || '.',
+                                       false, null, null);
+  end if;
   perform comercial_enfileirar_emails(v_demo, v_email, 'CONFIRMACAO');
   perform set_config('app.comercial_sistema', '', true);
-  return jsonb_build_object('id', v_demo, 'inicio', v_inicio, 'fim', v_fim, 'quando', comercial_quando(v_inicio),
-                            'duracaoMinutos', (extract(epoch from v_fim - v_inicio) / 60)::integer);
+  return v_resposta || jsonb_build_object('id', v_demo);
 end $$;
 
 -- "Marcar à mão" (quadro 341): para um interessado aberto, num horário sem outra demonstração da
@@ -1206,6 +1349,23 @@ begin
   return comercial_demo_json((select d from demonstracoes_comercial d where d.id = v_demo));
 end $$;
 
+-- Trava o interessado da demonstração e depois a demonstração (r6): a mesma ordem da anonimização
+-- (interessado, depois as demonstrações), para as duas nunca esperarem uma pela outra.
+create function comercial_travar_demonstracao(p_id uuid) returns demonstracoes_comercial
+language plpgsql
+set search_path = public
+as $$
+declare
+  v_interessado uuid;
+  d demonstracoes_comercial;
+begin
+  select interessado_id into v_interessado from demonstracoes_comercial where id = p_id;
+  if not found then raise exception 'Demonstração não encontrada' using errcode = 'TC404'; end if;
+  perform 1 from interessados where id = v_interessado for update;
+  select * into d from demonstracoes_comercial where id = p_id for update;
+  return d;
+end $$;
+
 create function comercial_remarcar_demonstracao(p_pessoa uuid, p_id uuid, p_versao integer, p_dados jsonb) returns jsonb
 language plpgsql
 security definer
@@ -1218,8 +1378,9 @@ declare
   v_email text;
 begin
   perform entrar_console(p_pessoa, 'console.comercial.editar');
-  select * into d from demonstracoes_comercial where id = p_id for update;
-  if not found then raise exception 'Demonstração não encontrada' using errcode = 'TC404'; end if;
+  -- A trava da agenda, o interessado e só então a demonstração (r6), na ordem da anonimização.
+  perform pg_advisory_xact_lock(hashtext('comercial_agenda'));
+  d := comercial_travar_demonstracao(p_id);
   if d.versao <> p_versao then perform conflito_versao('demonstracoes_comercial', p_id); end if;
   if d.situacao <> 'MARCADA' then perform recusar_motivo('Demonstração encerrada não muda', 'DEMONSTRACAO_ENCERRADA'); end if;
   begin
@@ -1229,7 +1390,6 @@ begin
   if v_inicio is null or v_inicio <= app_now() then perform recusar_campos('Escolha um horário no futuro', 'inicio'); end if;
   v_com := coalesce(nullif(p_dados ->> 'pessoaId', '')::uuid, d.pessoa_id);
   perform comercial_exigir_responsavel(v_com);
-  perform pg_advisory_xact_lock(hashtext('comercial_agenda'));
   begin
     update demonstracoes_comercial set inicio = v_inicio, fim = v_inicio + (d.fim - d.inicio), pessoa_id = v_com, remarcacoes = remarcacoes + 1,
            alterado_em = app_now(), alterado_por = p_pessoa
@@ -1240,7 +1400,8 @@ begin
   end;
   perform comercial_demo_no_funil(d.interessado_id, v_inicio, v_com, p_pessoa);
   perform comercial_inserir_conversa(d.interessado_id, 'NOTA', 'Demonstração remarcada para ' || comercial_quando(v_inicio) || '.', false, null, null);
-  select email into v_email from interessados where id = d.interessado_id;
+  -- Pelo link, o e-mail que a pessoa digitou (r1); marcada pela equipe, o da ficha.
+  select coalesce(d.email, i.email) into v_email from interessados i where i.id = d.interessado_id;
   if coalesce((p_dados ->> 'avisar')::boolean, true) then
     perform comercial_enfileirar_emails(p_id, v_email, 'CONFIRMACAO');
   else
@@ -1266,8 +1427,8 @@ declare
   v_hora time;
 begin
   perform entrar_console(p_pessoa, 'console.comercial.editar');
-  select * into d from demonstracoes_comercial where id = p_id for update;
-  if not found then raise exception 'Demonstração não encontrada' using errcode = 'TC404'; end if;
+  -- O interessado antes da demonstração (r6).
+  d := comercial_travar_demonstracao(p_id);
   if d.versao <> p_versao then perform conflito_versao('demonstracoes_comercial', p_id); end if;
   if d.situacao <> 'MARCADA' then perform recusar_motivo('Demonstração encerrada não muda', 'DEMONSTRACAO_ENCERRADA'); end if;
   if d.inicio > app_now() then perform recusar_motivo('A demonstração ainda não começou', 'DEMONSTRACAO_FUTURA'); end if;
@@ -1280,7 +1441,7 @@ begin
   if length(coalesce(v_passo, '')) not between 2 and 200 or v_data is null then
     perform recusar_campos('Diga o próximo passo e a data', 'proximoPasso', 'proximoPassoData');
   end if;
-  select * into i from interessados where id = d.interessado_id for update;
+  select * into i from interessados where id = d.interessado_id;
   if i.anonimizado_em is not null then perform recusar_motivo('Interessado anonimizado não muda', 'ANONIMIZADO'); end if;
   update demonstracoes_comercial set situacao = 'FEITA', encerrada_em = app_now(), encerrada_por = p_pessoa, alterado_em = app_now(), alterado_por = p_pessoa
    where id = p_id;
@@ -1315,8 +1476,7 @@ declare
 begin
   perform entrar_console(p_pessoa, 'console.comercial.editar');
   if p_situacao is null or p_situacao not in ('NAO_COMPARECEU', 'CANCELADA') then perform recusar_campos('Escolha o que aconteceu', 'situacao'); end if;
-  select * into d from demonstracoes_comercial where id = p_id for update;
-  if not found then raise exception 'Demonstração não encontrada' using errcode = 'TC404'; end if;
+  d := comercial_travar_demonstracao(p_id);
   if d.versao <> p_versao then perform conflito_versao('demonstracoes_comercial', p_id); end if;
   if d.situacao <> 'MARCADA' then perform recusar_motivo('Demonstração encerrada não muda', 'DEMONSTRACAO_ENCERRADA'); end if;
   if p_situacao = 'NAO_COMPARECEU' and d.inicio > app_now() then perform recusar_motivo('A demonstração ainda não começou', 'DEMONSTRACAO_FUTURA'); end if;
@@ -1324,7 +1484,7 @@ begin
   update demonstracoes_comercial set situacao = p_situacao, motivo = nullif(btrim(p_motivo), ''), encerrada_em = app_now(), encerrada_por = p_pessoa,
          alterado_em = app_now(), alterado_por = p_pessoa
    where id = p_id;
-  select email into v_email from interessados where id = d.interessado_id;
+  select coalesce(d.email, i.email) into v_email from interessados i where i.id = d.interessado_id;
   perform comercial_enfileirar_emails(p_id, case when p_situacao = 'CANCELADA' and coalesce(p_avisar, false) and d.inicio > app_now() then v_email end,
                                       'CANCELAMENTO');
   perform comercial_inserir_conversa(d.interessado_id, 'NOTA',
@@ -1333,6 +1493,20 @@ begin
   perform registrar_historico_interno('comercial.demonstracao_encerrada', 'demonstracao_comercial', p_id::text, jsonb_build_object('situacao', p_situacao));
   return comercial_demo_json((select x from demonstracoes_comercial x where x.id = p_id));
 end $$;
+
+-- Antes de pegar (r10): confirmação e lembrete de demonstração que já passou ou não está mais
+-- marcada não saem, também o ENVIANDO preso; o preso com 5 tentativas ou mais vira FALHOU.
+create function comercial_limpar_fila() returns void
+language sql
+set search_path = public
+as $$
+  update emails_comercial e set situacao = 'CANCELADO'
+    from demonstracoes_comercial d
+   where d.id = e.demonstracao_id and e.tipo <> 'CANCELAMENTO' and (d.situacao <> 'MARCADA' or d.inicio <= app_now())
+     and (e.situacao = 'NA_FILA' or (e.situacao = 'ENVIANDO' and e.pego_em <= app_now() - interval '15 minutes'));
+  update emails_comercial set situacao = 'FALHOU', erro = coalesce(erro, 'Ficou preso no envio depois de 5 tentativas')
+   where situacao = 'ENVIANDO' and pego_em <= app_now() - interval '15 minutes' and tentativas >= 5;
+$$;
 
 -- A fila (a api-console pega, manda pelo Resend e devolve o resultado). Sem pessoa.
 create function comercial_emails_pegar(p_max integer) returns jsonb
@@ -1345,13 +1519,12 @@ begin
   perform limpar_contexto();
   perform set_config('app.comercial_sistema', 'on', true);
   -- Confirmação e lembrete de demonstração que já passou ou não está mais marcada não saem.
-  update emails_comercial e set situacao = 'CANCELADO'
-    from demonstracoes_comercial d
-   where d.id = e.demonstracao_id and e.situacao = 'NA_FILA' and e.tipo <> 'CANCELAMENTO' and (d.situacao <> 'MARCADA' or d.inicio <= app_now());
+  perform comercial_limpar_fila();
   with lote as (
     select e.id from emails_comercial e
      where e.para is not null
-       and ((e.situacao = 'NA_FILA' and e.enviar_em <= app_now()) or (e.situacao = 'ENVIANDO' and e.pego_em <= app_now() - interval '15 minutes'))
+       and ((e.situacao = 'NA_FILA' and e.enviar_em <= app_now())
+            or (e.situacao = 'ENVIANDO' and e.pego_em <= app_now() - interval '15 minutes' and e.tentativas < 5))
      order by e.enviar_em
      limit least(greatest(coalesce(p_max, 50), 1), 100)
      for update skip locked
@@ -1361,7 +1534,10 @@ begin
     returning e.*
   )
   select coalesce(jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
-           'id', p.id, 'tipo', p.tipo, 'para', p.para, 'nome', i.nome_contato, 'condominio', i.condominio,
+           'id', p.id, 'tipo', p.tipo, 'para', p.para,
+           -- O que a pessoa digitou no link (r1); marcada pela equipe, o da ficha.
+           'nome', case when d.origem = 'LINK' then d.nome_contato else i.nome_contato end,
+           'condominio', case when d.origem = 'LINK' then d.condominio else i.condominio end,
            'inicio', d.inicio, 'fim', d.fim, 'quando', comercial_quando(d.inicio), 'duracaoMinutos', (extract(epoch from d.fim - d.inicio) / 60)::integer,
            'salaUrl', s.sala_url, 'remarcada', d.remarcacoes > 0, 'motivo', case when p.tipo = 'CANCELAMENTO' then d.motivo end))), '[]'::jsonb)
     into v
@@ -1400,9 +1576,7 @@ declare v integer;
 begin
   perform limpar_contexto();
   perform set_config('app.comercial_sistema', 'on', true);
-  update emails_comercial e set situacao = 'CANCELADO'
-    from demonstracoes_comercial d
-   where d.id = e.demonstracao_id and e.situacao = 'NA_FILA' and e.tipo <> 'CANCELAMENTO' and (d.situacao <> 'MARCADA' or d.inicio <= app_now());
+  perform comercial_limpar_fila();
   with x as (update emails_comercial set situacao = 'SEM_CHAVE', erro = 'Sem a chave do Resend na api-console'
               where situacao = 'NA_FILA' and enviar_em <= app_now() returning 1)
   select count(*)::integer into v from x;
@@ -1476,6 +1650,7 @@ declare
   v_faixa    text := comercial_texto(p_dados, 'faixa');
   v_resumo   text;
   v_existe   record;
+  i          interessados;
   v_id       uuid;
   v_texto    text := coalesce(comercial_texto(p_dados, 'consentimentoTexto'),
                               'Autorizo o uso destes dados só para responder a este pedido, como diz a política de privacidade.');
@@ -1510,14 +1685,26 @@ begin
          coalesce(' (' || comercial_texto(p_dados, 'unidadesTexto') || ')', '') || '.' end;
   select * into v_existe from comercial_parecido(v_whatsapp, v_email, null, null);
   if v_existe.id is not null then
-    perform comercial_inserir_conversa(v_existe.id, 'ENTRADA', v_resumo, true, null, null);
-    update interessados set faixa = coalesce(faixa, v_faixa), unidades = coalesce(unidades, v_unidades),
-                            taxa_condominio_media = coalesce(v_taxa, taxa_condominio_media)
-     where id = v_existe.id
-       and (faixa is null and v_faixa is not null or unidades is null and v_unidades is not null
-            or v_taxa is not null and taxa_condominio_media is distinct from v_taxa);
+    select * into i from interessados where id = v_existe.id for update;
+    perform comercial_inserir_conversa(i.id, 'ENTRADA', v_resumo, true, null, null);
+    -- Ganho ou fechado não muda (r3); aberto só completa o que está vazio. A taxa da ficha nunca é
+    -- trocada pelo site: a diferente fica numa conversa para a equipe conferir.
+    if comercial_aberta(i.etapa) then
+      update interessados set faixa = coalesce(faixa, v_faixa), unidades = coalesce(unidades, v_unidades),
+                              taxa_condominio_media = case when taxa_condominio_media is null and taxa_condominio_em is null then v_taxa
+                                                           else taxa_condominio_media end
+       where id = i.id
+         and (faixa is null and v_faixa is not null or unidades is null and v_unidades is not null
+              or v_taxa is not null and taxa_condominio_media is null and taxa_condominio_em is null);
+    end if;
+    if v_taxa is not null and (i.taxa_condominio_media is not null or i.taxa_condominio_em is not null or not comercial_aberta(i.etapa))
+       and i.taxa_condominio_media is distinct from v_taxa then
+      perform comercial_inserir_conversa(i.id, 'NOTA', 'No site, a taxa média de condomínio informada foi ' || reais(round(v_taxa * 100)::bigint::centavos)
+        || coalesce('; a ficha tem ' || reais(round(i.taxa_condominio_media * 100)::bigint::centavos), '; a ficha está sem taxa')
+        || '. A ficha não mudou.', false, null, null);
+    end if;
     perform set_config('app.comercial_sistema', '', true);
-    return jsonb_build_object('id', v_existe.id, 'juntado', true);
+    return jsonb_build_object('id', i.id, 'juntado', true);
   end if;
   insert into interessados (nome_contato, whatsapp, email, condominio, faixa, unidades, taxa_condominio_media, origem, origem_detalhe, utm,
                             base_legal, base_legal_texto, optin_em, optin_canal, optin_texto, primeiro_retorno_ate)
@@ -1532,7 +1719,44 @@ begin
   return jsonb_build_object('id', v_id, 'juntado', false);
 end $$;
 
--- A ficha passa a levar o parceiro e a taxa média de condomínio. Mesmo corpo da 0307.
+-- Parecido (0308): o par que o link marcou como possível duplicado (r1) não conta pelo WhatsApp nem
+-- pelo e-mail, para a equipe poder salvar as duas fichas enquanto confere; CNPJ e endereço continuam.
+create or replace function comercial_parecido(p_whatsapp text, p_email text, p_cnpj text, p_endereco text, p_ignorar uuid default null)
+returns table (id uuid, campo text)
+language sql stable
+set search_path = public
+as $$
+  with grupo as (select coalesce(x.contato_de, x.id) as g, x.possivel_duplicado_de as par from interessados x where x.id = p_ignorar),
+  candidatos as (
+    select i.*,
+           exists (select 1 from grupo where grupo.g = coalesce(i.contato_de, i.id) or grupo.par = i.id or i.possivel_duplicado_de = p_ignorar) as do_grupo
+      from interessados i
+     where i.anonimizado_em is null and i.id is distinct from p_ignorar),
+  marcados as (
+    select c.*,
+           (p_whatsapp is not null and c.whatsapp = p_whatsapp and not c.do_grupo) as por_whatsapp,
+           (p_cnpj is not null and c.cnpj = p_cnpj) as por_cnpj,
+           (p_email is not null and c.email = lower(p_email) and not c.do_grupo) as por_email,
+           (comercial_normalizar(p_endereco) is not null and comercial_normalizar(c.endereco) = comercial_normalizar(p_endereco)) as por_endereco
+      from candidatos c)
+  select m.id,
+         case when m.por_whatsapp then 'WHATSAPP' when m.por_cnpj then 'CNPJ' when m.por_email then 'EMAIL' else 'ENDERECO' end
+    from marcados m
+   where m.por_whatsapp or m.por_cnpj or m.por_email or m.por_endereco
+   order by comercial_aberta(m.etapa) desc, m.criado_em desc
+   limit 1
+$$;
+
+-- A mensagem pronta de marcar a demonstração passa a levar o link de agendamento (R17.6b). Só
+-- troca o texto da 0296 que ninguém mudou.
+update mensagens_comercial
+   set texto = 'Oi, [nome]! Conseguimos marcar a demonstração do [condominio]? Leva 30 minutos, por vídeo, e pode chamar o conselho. '
+            || 'Se preferir, escolha o horário por aqui: [link de agendamento]'
+ where etapa = 'EM_CONTATO' and titulo = 'Marcar a demonstração'
+   and texto = 'Oi, [nome]! Conseguimos marcar a demonstração do [condominio]? Leva 30 minutos, por vídeo, e pode chamar o conselho.';
+
+-- A ficha passa a levar o parceiro, a taxa média de condomínio, o possível duplicado e o link de
+-- agendamento. Mesmo corpo da 0307.
 create or replace function comercial_json(i interessados, p_completo boolean) returns jsonb
 language plpgsql stable
 set search_path = public
@@ -1555,7 +1779,14 @@ begin
     'motivoPerda', i.motivo_perda, 'anonimizado', i.anonimizado_em is not null, 'criadoEm', i.criado_em,
     'tarefa', v_tarefa, 'atencao', comercial_atencao(v_tarefa),
     'temWhatsapp', i.optin_em is not null and i.whatsapp is not null and not comercial_nao_contatar_tem(i.whatsapp, i.email, i.cnpj),
-    'parceiro', (select jsonb_build_object('id', p.id, 'nome', p.nome) from parceiros_comercial p where p.id = i.parceiro_id));
+    'parceiro', (select jsonb_build_object('id', p.id, 'nome', p.nome) from parceiros_comercial p where p.id = i.parceiro_id),
+    -- O agendamento pelo link com só o WhatsApp ou só o e-mail de outro interessado (r1).
+    'possivelDuplicado', (select jsonb_build_object('id', o.id, 'condominio', o.condominio) from interessados o
+                           where o.id = i.possivel_duplicado_de and o.anonimizado_em is null),
+    -- O campo [link de agendamento] das mensagens prontas (R17.6b): o link de quem atende; sem ele, o da equipe.
+    'linkAgenda', (select l.codigo from links_agenda l
+                    where l.revogado_em is null and (l.pessoa_id = i.responsavel_id or l.pessoa_id is null)
+                    order by l.pessoa_id nulls last limit 1));
   if p_completo then
     v := v || jsonb_build_object(
       'whatsapp', i.whatsapp, 'email', i.email, 'cnpj', i.cnpj, 'endereco', i.endereco, 'utm', i.utm,
@@ -1682,7 +1913,8 @@ begin
 end $$;
 
 -- A versão (0304) com a taxa: vem preenchida da ficha; a taxa digitada na versão passa a ser a da
--- ficha (a mais recente que o prédio informou), para o kit e a próxima versão.
+-- ficha (a mais recente que o prédio informou), para o kit e a próxima versão. Sem o campo, a da
+-- ficha; com o campo, grava na ficha com a versão dela (r8).
 create or replace function comercial_preparar_versao(i interessados, p_dados jsonb) returns versoes_proposta
 language plpgsql
 set search_path = public
@@ -1734,8 +1966,15 @@ begin
   v.referencias := comercial_exigir_referencias(p_dados -> 'referencias');
   v.validade_dias := v_dias;
   v.nota_interna := comercial_texto(p_dados, 'notaInterna');
-  if v_taxa is distinct from i.taxa_condominio_media then
-    update interessados set taxa_condominio_media = v_taxa, alterado_em = app_now(), alterado_por = contexto_pessoa() where id = i.id;
+  -- Só quando a tela manda o campo (a pessoa mudou a taxa) e com a versão da ficha que ela viu (r8).
+  if p_dados ? 'taxaCondominio' and v_taxa is distinct from i.taxa_condominio_media then
+    if coalesce(p_dados ->> 'interessadoVersao', '') !~ '^[0-9]{1,9}$' then
+      perform recusar_campos('Falta a versão da ficha para gravar a taxa', 'interessadoVersao');
+    end if;
+    update interessados set taxa_condominio_media = v_taxa, alterado_em = app_now(), alterado_por = contexto_pessoa()
+     where id = i.id and versao = (p_dados ->> 'interessadoVersao')::integer;
+    if not found then perform conflito_versao('interessados', i.id); end if;
+    perform registrar_historico_interno('comercial.taxa_condominio', 'interessado', i.id::text, jsonb_build_object('taxa', v_taxa, 'de', 'PROPOSTA'));
   end if;
   return v;
 end $$;
@@ -1755,7 +1994,7 @@ begin
   i := comercial_buscar(p_interessado);
   return comercial_calcular_proposta(coalesce(p_unidades, i.unidades), p_ciclo, p_tabela, p_valor_manual, p_implantacao_manual, p_desconto)
     || jsonb_build_object(
-      'interessado', jsonb_strip_nulls(jsonb_build_object('id', i.id, 'condominio', i.condominio, 'unidades', i.unidades, 'faixa', i.faixa,
+      'interessado', jsonb_strip_nulls(jsonb_build_object('id', i.id, 'versao', i.versao, 'condominio', i.condominio, 'unidades', i.unidades, 'faixa', i.faixa,
                                                           'pessoa', i.nome_contato, 'etapa', i.etapa, 'taxaCondominioMedia', i.taxa_condominio_media)),
       'propostaId', (select id from propostas_comercial where interessado_id = i.id),
       'oferta', jsonb_build_object('incluido', comercial_oferta_incluido(), 'planejado', comercial_oferta_planejado()),
@@ -1778,7 +2017,7 @@ begin
   i := comercial_buscar(p.interessado_id);
   return jsonb_build_object(
     'id', p.id, 'versao', p.versao, 'criadoEm', p.criado_em,
-    'interessado', jsonb_strip_nulls(jsonb_build_object('id', i.id, 'condominio', i.condominio, 'pessoa', i.nome_contato, 'etapa', i.etapa,
+    'interessado', jsonb_strip_nulls(jsonb_build_object('id', i.id, 'versao', i.versao, 'condominio', i.condominio, 'pessoa', i.nome_contato, 'etapa', i.etapa,
                                                         'unidades', i.unidades, 'faixa', i.faixa, 'anonimizado', i.anonimizado_em is not null,
                                                         'naoContatar', comercial_nao_contatar_tem(i.whatsapp, i.email, i.cnpj),
                                                         'taxaCondominioMedia', i.taxa_condominio_media)),
@@ -1788,12 +2027,17 @@ begin
     'podeAprovarDesconto', pode_global('console.comercial.desconto'));
 end $$;
 
--- O kit (quadro 447): a taxa da ficha (corrigida no kit ou na versão); sem ela, a da versão enviada.
+-- O kit (quadro 447) respeita a ficha (r5): com a taxa posta ou tirada na ficha (no kit, na versão
+-- ou no site), a da ficha, e tirada é sem taxa; a ficha que nunca teve taxa usa a da versão enviada.
 create function comercial_taxa_do_kit(v versoes_proposta, i interessados) returns jsonb
 language sql stable
 set search_path = public
 as $$
-  select jsonb_build_object('taxaCondominio', coalesce(i.taxa_condominio_media, (v.premissas ->> 'taxaCondominio')::numeric))
+  select case when i.taxa_condominio_em is not null
+              then jsonb_build_object('taxaCondominio', i.taxa_condominio_media, 'taxaDe', case when i.taxa_condominio_media is not null then 'FICHA' end)
+              when v.premissas ? 'taxaCondominio'
+              then jsonb_build_object('taxaCondominio', (v.premissas ->> 'taxaCondominio')::numeric, 'taxaDe', 'VERSAO')
+              else '{}'::jsonb end
 $$;
 
 create or replace function comercial_kit(p_pessoa uuid, p_id uuid) returns jsonb
@@ -1945,6 +2189,8 @@ begin
   -- A agenda (0310): a demonstração marcada é cancelada sem aviso e o e-mail sai da fila.
   update demonstracoes_comercial set situacao = 'CANCELADA', motivo = 'Dados apagados (LGPD)', encerrada_em = app_now(), encerrada_por = v_pessoa
    where interessado_id = p_id and situacao = 'MARCADA';
+  update demonstracoes_comercial set nome_contato = null, condominio = null, email = null
+   where interessado_id = p_id and num_nonnulls(nome_contato, condominio, email) > 0;
   update emails_comercial e set situacao = case when e.situacao in ('NA_FILA', 'ENVIANDO') then 'CANCELADO' else e.situacao end, para = null
     from demonstracoes_comercial d
    where d.id = e.demonstracao_id and d.interessado_id = p_id and e.para is not null;
@@ -1986,6 +2232,9 @@ begin
    where d.id = e.demonstracao_id and e.para is not null
      and d.fim < app_now() - make_interval(days => configuracao_int('comercial_agenda_email_dias'));
   get diagnostics v_n = row_count;
+  -- O nome e o e-mail digitados no link saem junto (r1); fica o condomínio, que não é de pessoa.
+  update demonstracoes_comercial set nome_contato = null, email = null
+   where num_nonnulls(nome_contato, email) > 0 and fim < app_now() - make_interval(days => configuracao_int('comercial_agenda_email_dias'));
   perform set_config('app.comercial_sistema', '', true);
   return v_total + v_n;
 end $$;

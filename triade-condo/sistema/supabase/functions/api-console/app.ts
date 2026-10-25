@@ -192,6 +192,8 @@ export interface DepsConsole extends DepsSessao {
 
 /** Cabeçalho com o segredo do site na entrada dos pedidos de demonstração. */
 export const CABECALHO_SITE = "x-site-segredo";
+/** O IP de quem usa a calculadora, repassado pelo site (que manda o segredo) para o limite por pessoa. */
+export const CABECALHO_SITE_CLIENTE = "x-site-cliente";
 
 /** Código do link de agendamento (12 letras e números, 0310). */
 const CODIGO_AGENDA = /^[a-z2-9]{12}$/;
@@ -1010,12 +1012,16 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     return c.json(await rpc("comercial_entrada_site", { p_dados: taxaCondominio === null ? resto : { ...resto, taxaCondominio } }), 201);
   });
 
-  // A calculadora do site (CM-33, quadros 448 e 449): fora do repasse, com o segredo do site e um
-  // limite para o site inteiro. Só a faixa, a tabela aplicada, a mensalidade e o valor por
-  // apartamento; nunca a tabela inteira, a implantação ou as vagas.
+  // A calculadora do site (CM-33, quadros 448 e 449): fora do repasse, com o segredo do site, um
+  // limite por quem usa (r9: o IP que o site repassa, guardado só como hash) e um limite para o site
+  // inteiro. Só a faixa, a tabela aplicada, a mensalidade e o valor por apartamento; nunca a tabela
+  // inteira, a implantação ou as vagas.
   app.post("/v1/site/calculadora", async (c) => {
     if (!deps.segredoSite || !segredoConfere(c.req.header(CABECALHO_SITE) ?? null, deps.segredoSite)) throw new ErroDominio("FORBIDDEN");
     const d = await lerCorpo(c, calculadoraSiteSchema);
+    const cliente = (c.req.header(CABECALHO_SITE_CLIENTE) ?? "").trim().slice(0, 64) || "sem-ip";
+    const chave = await hmacHex(`calculadora-ip|${deps.segredoSite}`, cliente);
+    if (!(await rpc<boolean>("limite_contar", { p_tipo: "calculadora_ip", p_chave: chave }))) throw new ErroDominio("RATE_LIMITED");
     if (!(await rpc<boolean>("limite_contar", { p_tipo: "calculadora", p_chave: "site" }))) throw new ErroDominio("RATE_LIMITED");
     return c.json(await rpc("comercial_calculadora_site", { p_unidades: d.unidades }));
   });
@@ -1155,12 +1161,15 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   const idsVersao = (c: Context<VarsSessao>) => ({ p_pessoa: pessoa(c), p_proposta: idDaRota(c, "id"), p_id: idDaRota(c, "versaoId") });
   const dadosVersao = (d: { unidades: number | null; ciclo: string; tabela: string | null; valorManual: number | null; valorManualMotivo: string | null;
                             implantacaoManual: number | null; desconto: number | null; descontoMotivo: string | null; respostas: string[];
-                            referencias: string[]; notaInterna: string | null; validadeDias: number | null; taxaCondominio?: number | null }) => ({
+                            referencias: string[]; notaInterna: string | null; validadeDias: number | null; taxaCondominio?: number | null;
+                            interessadoVersao?: number }) => ({
     unidades: d.unidades, ciclo: d.ciclo, tabela: d.tabela, valorManual: d.valorManual, valorManualMotivo: d.valorManualMotivo,
     implantacaoManual: d.implantacaoManual, desconto: d.desconto, descontoMotivo: d.descontoMotivo, respostas: d.respostas,
     referencias: d.referencias, notaInterna: d.notaInterna, validadeDias: d.validadeDias,
     // Sem o campo, a versão usa a taxa da ficha (R17.3c); vazio tira a taxa.
     ...(d.taxaCondominio === undefined ? {} : { taxaCondominio: d.taxaCondominio }),
+    // Com a taxa mudada, a versão da ficha que a tela viu (r8): o banco confere antes de gravar.
+    ...(d.interessadoVersao === undefined ? {} : { interessadoVersao: d.interessadoVersao }),
   });
 
   app.get("/v1/comercial/propostas", async (c) => {

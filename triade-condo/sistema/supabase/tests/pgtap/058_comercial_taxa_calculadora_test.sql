@@ -2,8 +2,11 @@
 -- a rota da calculadora só devolve o necessário (nunca a tabela inteira, a implantação ou as vagas),
 -- o pedido de proposta com a faixa e a taxa preenchidas, a taxa na ficha, nas premissas da versão
 -- (a enviada não muda), no link e no kit, a correção da taxa pelo kit e a anonimização que não quebra.
+-- Na revisão: o site não troca a taxa da ficha nem mexe no Ganho (r3); o kit respeita a ficha, e a
+-- taxa tirada é sem taxa (r5); a versão só grava a taxa na ficha quando a tela manda o campo, com a
+-- versão da ficha (r8).
 begin;
-select plan(49);
+select plan(60);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -63,6 +66,19 @@ select is(pg_temp.campos($$ select pg_temp.site('{"whatsapp": "5561999990403", "
 select is(pg_temp.site('{"whatsapp": "5561999990402", "pedido": "PROPOSTA", "unidades": 20, "taxaCondominio": 480.5}') ->> 'juntado', 'true',
   'o mesmo WhatsApp junta no interessado que já existe');
 select is((select taxa_condominio_media from interessados where id = (select buriti from s)), 480.50::numeric, 'e a taxa informada completa a ficha');
+select pg_temp.site('{"whatsapp": "5561999990402", "pedido": "PROPOSTA", "unidades": 20, "taxaCondominio": 520}');
+select is((select taxa_condominio_media from interessados where id = (select buriti from s)), 480.50::numeric,
+  'com a taxa já na ficha, o site não a troca (r3)');
+select is((select resumo from conversas_comercial where interessado_id = (select buriti from s) and canal = 'NOTA' order by criado_em desc, id desc limit 1),
+  'No site, a taxa média de condomínio informada foi R$ 520,00; a ficha tem R$ 480,50. A ficha não mudou.', 'a taxa diferente fica numa conversa para a equipe');
+create temp table gs as select (pg_temp.site('{"whatsapp": "5561999990404", "pedido": "PROPOSTA", "unidades": 30}') ->> 'id')::uuid as ganho;
+update interessados set etapa = 'GANHO', decisor = 'Conselho', decisao_em = '2026-10-01', unidades = null where id = (select ganho from gs);
+select pg_temp.site('{"whatsapp": "5561999990404", "pedido": "PROPOSTA", "unidades": 35, "taxaCondominio": 700}');
+select is((select array[coalesce(unidades::text, '-'), coalesce(taxa_condominio_media::text, 'sem taxa'), etapa] from interessados where id = (select ganho from gs)),
+  array['-', 'sem taxa', 'GANHO'], 'o interessado Ganho não muda pelo site');
+select ok(exists (select 1 from conversas_comercial where interessado_id = (select ganho from gs) and canal = 'NOTA'
+                   and resumo = 'No site, a taxa média de condomínio informada foi R$ 700,00; a ficha está sem taxa. A ficha não mudou.'),
+  'e a taxa informada fica na conversa');
 select is((select count(*)::int from interessados where whatsapp = '5561999990403'), 0, 'pedido recusado não cria interessado');
 
 -- 3. A taxa na ficha.
@@ -86,20 +102,31 @@ select pg_temp.salvar(aroeira, '{"taxaCondominioMedia": 650}') from s;
 select is((select comercial_sugestao_proposta(com, aroeira) -> 'interessado' ->> 'taxaCondominioMedia' from ids, s), '650.00',
   'a nova proposta já vem com a taxa da ficha');
 create temp table p as select comercial_criar_proposta((select com from ids), (select aroeira from s), '{}') as a,
-                              comercial_criar_proposta((select com from ids), (select buriti from s), '{"taxaCondominio": null}') as b;
+                              comercial_criar_proposta((select com from ids), (select buriti from s),
+                                                       jsonb_build_object('taxaCondominio', null, 'interessadoVersao', pg_temp.iv((select buriti from s)))) as b;
 select is((select pg_temp.premissas((a ->> 'versaoId')::uuid) ->> 'taxaCondominio' from p), '650.00', 'sem mexer no campo, a versão guarda a taxa da ficha');
 select is((select pg_temp.premissas((a ->> 'versaoId')::uuid) ->> 'texto' from p),
   'Estimativa: R$ 229,00 por mês divididos por 64 unidades dá R$ 3,58 por apartamento por mês. A implantação é à parte. Não é cálculo de retorno. '
   || 'Taxa média de condomínio informada: R$ 650,00 por mês.', 'e o texto das premissas diz a taxa, sem prometer retorno');
 select is((select array[pg_temp.premissas((b ->> 'versaoId')::uuid) ? 'taxaCondominio', (select taxa_condominio_media is null from interessados where id = (select buriti from s))]
              from p), array[false, true], 'apagar a taxa na versão: a versão fica sem a taxa e a ficha também');
+select pg_temp.site('{"whatsapp": "5561999990402", "pedido": "PROPOSTA", "taxaCondominio": 300}');
+select is((select coalesce(taxa_condominio_media::text, 'sem taxa') from interessados where id = (select buriti from s)), 'sem taxa',
+  'a taxa tirada de propósito não volta pelo site');
+select is((select pg_temp.campos(format('select comercial_nova_versao(%L, %L, %s, ''{"taxaCondominio": 700}'')', com, (a ->> 'id')::uuid, pg_temp.pp((a ->> 'id')::uuid)))
+             from ids, p), '["interessadoVersao"]'::jsonb, 'mudar a taxa na versão pede a versão da ficha (r8)');
+select is((select pg_temp.erro(format('select comercial_nova_versao(%L, %L, %s, ''{"taxaCondominio": 700, "interessadoVersao": 1}'')', com, (a ->> 'id')::uuid,
+                                      pg_temp.pp((a ->> 'id')::uuid))) ->> 'codigo' from ids, p), 'TC409', 'e, com a ficha mudada depois, dá conflito');
 select is((select pg_temp.campos(format('select comercial_nova_versao(%L, %L, %s, ''{"taxaCondominio": 0}'')', com, (a ->> 'id')::uuid, pg_temp.pp((a ->> 'id')::uuid)))
              from ids, p), '["taxaCondominio"]'::jsonb, 'a versão recusa taxa zero');
 select is((select pg_temp.campos(format('select comercial_nova_versao(%L, %L, %s, ''{"taxaCondominio": 20001}'')', com, (a ->> 'id')::uuid, pg_temp.pp((a ->> 'id')::uuid)))
              from ids, p), '["taxaCondominio"]'::jsonb, 'e taxa acima de R$ 20.000');
-create temp table v2 as select comercial_nova_versao((select com from ids), (a ->> 'id')::uuid, pg_temp.pp((a ->> 'id')::uuid), '{"taxaCondominio": 700}') as r from p;
+create temp table v2 as select comercial_nova_versao((select com from ids), (a ->> 'id')::uuid, pg_temp.pp((a ->> 'id')::uuid),
+                                                    jsonb_build_object('taxaCondominio', 700, 'interessadoVersao', pg_temp.iv((select aroeira from s)))) as r from p;
 select is((select pg_temp.premissas((r ->> 'versaoId')::uuid) ->> 'taxaCondominio' from v2), '700', 'a taxa digitada na versão fica na versão');
 select is((select taxa_condominio_media from interessados where id = (select aroeira from s)), 700.00::numeric, 'e passa a ser a da ficha');
+select ok(exists (select 1 from historico where acao = 'comercial.taxa_condominio' and interno and entidade_id = (select aroeira::text from s)
+                   and dados ->> 'de' = 'PROPOSTA'), 'com o histórico');
 create temp table env as select comercial_enviar_proposta((select com from ids), (r ->> 'id')::uuid, (r ->> 'versaoId')::uuid,
                                                           (select versao from versoes_proposta where id = (r ->> 'versaoId')::uuid)) as e,
                                 (r ->> 'id')::uuid as proposta, (r ->> 'versaoId')::uuid as versao from v2;
@@ -107,7 +134,8 @@ create temp table env as select comercial_enviar_proposta((select com from ids),
 -- 5. O link e o kit (quadros 446 e 447).
 select is((select publico_proposta(e -> 'link' ->> 'codigo', null) -> 'premissas' ->> 'taxaCondominio' from env), '700', 'o link mostra a taxa da versão enviada');
 select is((select publico_proposta(e -> 'link' ->> 'codigo', null) ->> 'porApartamento' from env), '358', 'com o valor por apartamento');
-select is((select comercial_kit(com, proposta) ->> 'taxaCondominio' from ids, env), '700.00', 'o kit usa a taxa da ficha');
+select is((select comercial_kit(com, proposta) ->> 'taxaCondominio' || ' · ' || (comercial_kit(com, proposta) ->> 'taxaDe') from ids, env), '700.00 · FICHA',
+  'o kit usa a taxa da ficha');
 select is((select comercial_salvar_taxa(com, aroeira, pg_temp.iv(aroeira), 650) ->> 'taxaCondominio' from ids, s), '650', 'o kit corrige a taxa');
 select is((select comercial_kit(com, proposta) ->> 'taxaCondominio' from ids, env), '650.00', 'o kit passa a mostrar a taxa corrigida');
 select is((select publico_kit_proposta(e -> 'link' ->> 'codigo') ->> 'taxaCondominio' from env), '650.00', 'e o kit pelo link também');
@@ -121,10 +149,20 @@ select is((select pg_temp.campos(format('select comercial_salvar_taxa(%L, %L, %s
 select ok(exists (select 1 from historico where acao = 'comercial.taxa_condominio' and interno and entidade_id = (select aroeira::text from s)),
   'a correção fica no histórico interno');
 select comercial_salvar_taxa(com, aroeira, pg_temp.iv(aroeira), null) from ids, s;
-select is((select comercial_kit(com, proposta) ->> 'taxaCondominio' from ids, env), '700', 'sem a taxa na ficha, o kit usa a da versão enviada');
+select is((select coalesce(comercial_kit(com, proposta) ->> 'taxaCondominio', 'sem taxa') || ' · ' || coalesce(comercial_kit(com, proposta) ->> 'taxaDe', '-') from ids, env),
+  'sem taxa · -', 'tirar a taxa no kit deixa o kit sem taxa, sem voltar à da versão (r5)');
+select is((select coalesce(publico_kit_proposta(e -> 'link' ->> 'codigo') ->> 'taxaCondominio', 'sem taxa') from env), 'sem taxa', 'e o kit pelo link também');
+-- A ficha que nunca teve taxa (como antes da taxa existir): o kit usa a da versão enviada.
+alter table interessados disable trigger interessados_taxa_em;
+update interessados set taxa_condominio_em = null where id = (select aroeira from s);
+alter table interessados enable trigger interessados_taxa_em;
+select is((select comercial_kit(com, proposta) ->> 'taxaCondominio' || ' · ' || (comercial_kit(com, proposta) ->> 'taxaDe') from ids, env), '700 · VERSAO',
+  'a ficha que nunca teve taxa usa a da versão enviada');
 select comercial_salvar_taxa(com, aroeira, pg_temp.iv(aroeira), 650) from ids, s;
 create temp table v3 as select comercial_nova_versao((select com from ids), proposta, pg_temp.pp(proposta), '{}') as r from env;
 select is((select pg_temp.premissas((r ->> 'versaoId')::uuid) ->> 'taxaCondominio' from v3), '650.00', 'a próxima versão já vem com a taxa corrigida');
+select is((select taxa_condominio_media from interessados where id = (select aroeira from s)), 650.00::numeric,
+  'e salvar a versão sem mexer na taxa não troca a da ficha (r8)');
 
 -- 6. A anonimização (a taxa não é dado pessoal): nada quebra.
 select comercial_excluir(adm, aroeira) from ids, s;

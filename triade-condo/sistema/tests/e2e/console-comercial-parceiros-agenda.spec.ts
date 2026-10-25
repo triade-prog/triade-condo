@@ -3,12 +3,14 @@
 // abas e a regra que só a Administração muda, o extrato com o perdido em traço, o PDF e o pagamento
 // registrado; a agenda com as próximas, a que falta registrar, os horários livres e o link; a
 // página pública do link, com o horário que acabou de ser ocupado; e o "menos de R$ 5" com e sem a
-// taxa na nova proposta, no link e no kit. Cada tela passa no axe, não usa emoji e não rola para o
-// lado no celular.
+// taxa na nova proposta, no link e no kit. Na revisão: a taxa só vai quando a pessoa a muda, com a
+// versão da ficha (r8); tirar a taxa no kit deixa o kit sem taxa (r5); o aviso de possível duplicado
+// (r1) e o [link de agendamento] nas mensagens prontas (R17.6b). Cada tela passa no axe, não usa
+// emoji e não rola para o lado no celular.
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiFalsa } from "./api-falsa";
-import { CODIGO_IPE, PROPOSTA_IPE, SITE } from "./api-falsa-console-comercial";
+import { CODIGO_IPE, INDICADO, LAGO, PROPOSTA_IPE, SITE } from "./api-falsa-console-comercial";
 import { CODIGO_CERRADO } from "./api-falsa-console-contrato";
 import { CODIGO_AGENDA, MARTA } from "./api-falsa-console-parceiros";
 
@@ -228,7 +230,18 @@ test.describe("Console · Taxa média de condomínio (R17.3c)", () => {
     await page.getByLabel("Taxa média de condomínio (R$ por mês)").fill("650,00");
     await page.getByRole("button", { name: "Salvar rascunho" }).first().click();
     await expect(page).toHaveURL(/\/comercial\/propostas\?proposta=/);
-    expect(api.comercial.pedidos.find((x) => x.caminho === "/v1/comercial/propostas")?.corpo).toMatchObject({ taxaCondominio: 650 });
+    expect(api.comercial.pedidos.find((x) => x.caminho === "/v1/comercial/propostas")?.corpo).toMatchObject({ taxaCondominio: 650, interessadoVersao: 1 });
+  });
+
+  test("r8: a versão nova sem mexer na taxa não manda a taxa; mudada, vai com a versão da ficha", async ({ page }) => {
+    const api = await instalarApiFalsa(page);
+    await page.goto(`${CONSOLE}/comercial/propostas/${PROPOSTA_IPE}/versao`);
+    await expect(page.getByLabel("Taxa média de condomínio (R$ por mês)")).toHaveValue("");
+    await page.getByRole("button", { name: "Salvar rascunho" }).first().click();
+    await expect(page).toHaveURL(/\/comercial\/propostas\?proposta=/);
+    const sem = api.comercial.pedidos.find((x) => x.caminho === `/v1/comercial/propostas/${PROPOSTA_IPE}/versoes`)?.corpo as Record<string, unknown>;
+    expect(sem).toBeDefined();
+    expect("taxaCondominio" in sem || "interessadoVersao" in sem).toBe(false);
   });
 
   test("o link: com a taxa (Cerrado), o peso nela; sem a taxa (Ipê), só o valor", async ({ page }) => {
@@ -268,5 +281,33 @@ test.describe("Console · Taxa média de condomínio (R17.3c)", () => {
     // A versão enviada não muda.
     const ipe = api.comercial.propostas.find((x) => x.id === PROPOSTA_IPE)!;
     expect(((ipe.versoes as Record<string, unknown>[])[0]!.premissas as Record<string, unknown>).taxaCondominio).toBeUndefined();
+
+    // r5: tirar a taxa deixa o kit sem taxa, sem voltar à da versão.
+    await expect(custo).toContainText("Esta é a taxa da ficha.");
+    await custo.getByLabel("Taxa média de condomínio (R$ por mês)").fill("");
+    await custo.getByRole("button", { name: "Salvar a taxa" }).click();
+    await expect(page.getByRole("status")).toContainText("Taxa tirada da ficha");
+    await expect(custo).toContainText("R$ 4,03 por apartamento por mês.");
+    await expect(custo).toContainText("Sem taxa na ficha: o kit mostra só o valor por apartamento.");
+    await expect(custo.getByText("Taxa informada")).toHaveCount(0);
+    await expect(custo.getByLabel("Taxa média de condomínio (R$ por mês)")).toHaveValue("");
+  });
+});
+
+test.describe("Console · Agendamento na ficha (r1, R17.6b)", () => {
+  test("a mensagem pronta troca o [link de agendamento] pelo link de quem atende", async ({ page }) => {
+    await instalarApiFalsa(page);
+    await page.goto(`${CONSOLE}/comercial/${INDICADO}`);
+    await expect(page.getByText(`Oi, João, que dia fica bom para a demonstração? Se preferir, escolha o horário por aqui: ${CONSOLE}/a/abcdefgh2345`)).toBeVisible();
+    await conferir(page);
+  });
+
+  test("o possível duplicado do agendamento pelo link aparece na ficha, com o outro interessado", async ({ page }) => {
+    await instalarApiFalsa(page);
+    await page.goto(`${CONSOLE}/comercial/${LAGO}`);
+    const aviso = page.getByText("Agendou pelo link com o WhatsApp ou o e-mail de outro interessado, mas não os dois.");
+    await expect(aviso).toBeVisible();
+    await expect(page.getByRole("link", { name: "Residencial Jatobá" })).toHaveAttribute("href", `/comercial/${SITE}`);
+    await conferir(page);
   });
 });

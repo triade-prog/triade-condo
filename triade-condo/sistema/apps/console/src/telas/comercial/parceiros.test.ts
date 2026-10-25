@@ -2,6 +2,7 @@
 // PDF com o "—" do perdido, os horários livres em texto e de volta, o selo de cada demonstração e o
 // horário de Brasília.
 import { describe, expect, it } from "vitest";
+import { CAMPO_LINK_AGENDA, preencherMensagem } from "@triade/domain";
 import {
   apoioDisponibilidade, campoBrasilia, chipDia, faixasParaCampo, instanteBrasilia, lerFaixasDoDia, linhasHorarios, primeiroDiaLivre, quandoCurtoDemo, seloDemonstracao,
   textoConfirmar, textoEmails, urlAgenda, type Demonstracao,
@@ -132,5 +133,12 @@ describe("agenda de demonstrações (CM-23)", () => {
     expect(primeiroDiaLivre(dias)).toBe("2026-10-28");
     expect(primeiroDiaLivre([])).toBeNull();
     expect(urlAgenda("https://console.triadecondo.com.br/", "abcdefgh2345")).toBe("https://console.triadecondo.com.br/a/abcdefgh2345");
+  });
+
+  it("R17.6b: o [link de agendamento] da mensagem pronta vira o link de quem atende; sem link, fica o campo", () => {
+    const texto = "Oi, [nome]! Escolha o horário da demonstração do [condominio]: [link de agendamento]";
+    expect(preencherMensagem(texto, { nome: "João Reis", condominio: "Edifício Ipê", linkAgenda: urlAgenda("https://console.triadecondo.com.br", "abcdefgh2345") }))
+      .toBe("Oi, João! Escolha o horário da demonstração do Edifício Ipê: https://console.triadecondo.com.br/a/abcdefgh2345");
+    expect(preencherMensagem(texto, { nome: "João", condominio: "Edifício Ipê" })).toBe(`Oi, João! Escolha o horário da demonstração do Edifício Ipê: ${CAMPO_LINK_AGENDA}`);
   });
 });

@@ -169,6 +169,8 @@ export interface FichaProposta {
     id: string; condominio: string; pessoa?: string; etapa: EtapaComercial; unidades?: number; faixa?: string; anonimizado?: boolean; naoContatar?: boolean;
     /** A taxa da ficha (R17.3c): a versão nova já vem com ela. */
     taxaCondominioMedia?: number;
+    /** A versão da ficha, para gravar a taxa mudada na versão com conferência (r8). */
+    versao?: number;
   };
   versoes: VersaoProposta[];
   kitDisponivel: boolean;
@@ -183,7 +185,7 @@ export interface Sugestao extends Condicoes {
   validoAtePrevisto?: string;
   vagasFundador?: { total: number; ocupadas: number; livres: number };
   avisos: AvisoProposta[];
-  interessado: { id: string; condominio: string; unidades?: number; faixa?: string; pessoa?: string; etapa: EtapaComercial; taxaCondominioMedia?: number };
+  interessado: { id: string; versao?: number; condominio: string; unidades?: number; faixa?: string; pessoa?: string; etapa: EtapaComercial; taxaCondominioMedia?: number };
   propostaId?: string | null;
   oferta?: { incluido: string[]; planejado: string[] };
   respostas?: { id: string; tema: TemaResposta; titulo: string }[];
@@ -257,8 +259,14 @@ export interface Kit {
   respostasDisponiveis?: { id: string; tema: TemaResposta; titulo: string }[];
   /** O piloto (CM-21, 0308) quando houver e não foi perdido: prazo, meta e resultado; nunca com quem foi combinado. */
   piloto?: Piloto;
-  /** A taxa do kit (R17.3c): a da ficha (corrigida no kit ou na versão); sem ela, a da versão enviada. */
+  /**
+   * A taxa do kit (R17.3c, revisão r5): o kit respeita a ficha. Taxa posta ou tirada na ficha (no
+   * kit, na versão ou no site) vale, e tirada é sem taxa; só a ficha que nunca teve taxa usa a da
+   * versão enviada.
+   */
   taxaCondominio?: number;
+  /** De onde veio a taxa: da ficha ou da versão enviada; sem taxa, ausente. */
+  taxaDe?: "FICHA" | "VERSAO";
   /** Só no Console: o interessado (para o Escolher critérios) e os fatos com a fonte. */
   interessado?: { id: string; versao: number };
   fatos?: FatoComparativo[];

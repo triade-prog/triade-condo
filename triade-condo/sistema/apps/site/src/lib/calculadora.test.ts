@@ -1,10 +1,15 @@
 // Calculadora do site (CM-33, DC17; quadros 448 e 449): com e sem a taxa, o "menos de R$ 5" só
-// quando é verdade, o preço da Tabela de preços com a oferta do site como reserva, e o pedido de
+// quando é verdade, o preço da Tabela de preços guardado por unidades, o último preço dela e a
+// tabela cheia do site como reserva (nunca o fundador sem a vaga), o limite por IP, e o pedido de
 // proposta que vira interessado com a faixa e a taxa.
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  avisoTabelaCheia,
   buscarPreco,
   corpoDaProposta,
+  criarLimite,
+  esquecerPrecos,
+  ipDoPedido,
   enviarProposta,
   faixaDasUnidades,
   lerEntrada,
@@ -37,6 +42,7 @@ describe("calculadora: a conta", () => {
       mensalidade: "R$ 229,00 · preço de fundador",
       destaque: { titulo: "Menos de R$ 5 por apartamento por mês", frase: "R$ 3,58 por apartamento, cerca de 0,6% da taxa de R$ 650,00." },
       naTaxa: "cerca de 0,6% de R$ 650,00",
+      aviso: null,
     });
   });
 
@@ -46,17 +52,21 @@ describe("calculadora: a conta", () => {
     expect(r.naTaxa).toBeNull();
   });
 
+  const TABELA_20: Preco = { unidades: 20, faixa: { codigo: "ATE_40", nome: "Até 40 unidades", sobConsulta: false }, tabela: "FUNDADOR", mensal: 12900,
+                              porApartamento: 645, depoisFundador: 19900, fundadorMeses: 12 };
+
   it("quadro 449: 20 unidades, sem taxa, R$ 6,45 e nada de 'menos de R$ 5'", () => {
-    const r = montarResultado(precoDoSite(20), null);
+    const r = montarResultado(TABELA_20, null);
     expect(r.faixaTexto).toBe("Faixa: até 40 unidades");
     expect(r.porApartamento).toBe("R$ 6,45");
     expect(r.mensalidade).toBe("R$ 129,00 · preço de fundador");
     expect(r.destaque).toBeNull();
     expect(r.naTaxa).toBeNull();
+    expect(r.aviso).toBeNull();
   });
 
   it("com taxa e valor acima de R$ 5: mostra o peso, sem o destaque", () => {
-    const r = montarResultado(precoDoSite(20), 480);
+    const r = montarResultado(TABELA_20, 480);
     expect(r.destaque).toBeNull();
     expect(r.naTaxa).toBe("cerca de 1,3% de R$ 480,00");
   });
@@ -71,11 +81,15 @@ describe("calculadora: a conta", () => {
     expect(r).toMatchObject({ faixa: "ACIMA_DE_400", faixaTexto: "Faixa: acima de 400 unidades", sobConsulta: true, porApartamento: null, mensalidade: null, destaque: null, naTaxa: null });
   });
 
-  it("a oferta do site faz a mesma conta do banco (DC16, preço de fundador)", () => {
-    expect(precoDoSite(64)).toEqual(TABELA_64);
-    expect(precoDoSite(150)).toMatchObject({ faixa: { codigo: "DE_101_A_200" }, mensal: 34900, porApartamento: 233 });
-    expect(precoDoSite(400)).toMatchObject({ faixa: { codigo: "DE_201_A_400" }, mensal: 54900, porApartamento: 137 });
-    expect(precoDoSite(1)).toMatchObject({ porApartamento: 12900 });
+  it("sem a Tabela, a oferta do site usa a tabela cheia e nunca o fundador (r9), com o 'a partir de' do /precos", () => {
+    expect(precoDoSite(64)).toEqual({ unidades: 64, faixa: TABELA_64.faixa, tabela: "CHEIA", mensal: 34900, porApartamento: 545, origem: "SITE" });
+    expect(precoDoSite(150)).toMatchObject({ faixa: { codigo: "DE_101_A_200" }, tabela: "CHEIA" });
+    expect(precoDoSite(1)).toMatchObject({ tabela: "CHEIA", porApartamento: 19900 });
+    const r = montarResultado(precoDoSite(64), null);
+    expect([r.porApartamento, r.mensalidade, r.destaque]).toEqual(["R$ 5,45", "R$ 349,00", null]);
+    expect(r.aviso).toBe(avisoTabelaCheia());
+    expect(r.aviso).toBe("Valor da tabela cheia. Condomínios fundadores: a partir de R$ 129,00/mês, só no mensal, vagas limitadas; a proposta confirma.");
+    expect(JSON.stringify(r)).not.toMatch(/preço de fundador|R\$ 3,58/);
     expect([40, 41, 100, 101, 200, 201, 400, 401].map((u) => faixaDasUnidades(u).codigo)).toEqual([
       "ATE_40", "DE_41_A_100", "DE_41_A_100", "DE_101_A_200", "DE_101_A_200", "DE_201_A_400", "DE_201_A_400", "ACIMA_DE_400",
     ]);
@@ -105,17 +119,44 @@ describe("calculadora: o que a pessoa digita", () => {
 
 describe("calculadora: o preço da Tabela de preços", () => {
   const env = { SUPABASE_FUNCTIONS_URL: "https://x.functions.supabase.co/", SITE_SEGREDO: "s" };
+  beforeEach(() => esquecerPrecos());
 
-  it("pede à rota do Console com o segredo do site e só as unidades", async () => {
+  it("pede à rota do Console com o segredo do site, o IP de quem usa e só as unidades", async () => {
     const buscar = vi.fn(async () => new Response(JSON.stringify(TABELA_64), { status: 200 }));
-    expect(await buscarPreco(64, env, buscar as unknown as typeof fetch)).toEqual(TABELA_64);
+    expect(await buscarPreco(64, env, buscar as unknown as typeof fetch, { cliente: "200.1.2.3" })).toEqual({ ...TABELA_64, origem: "TABELA" });
     const [url, init] = buscar.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://x.functions.supabase.co/api-console/v1/site/calculadora");
     expect((init.headers as Record<string, string>)["x-site-segredo"]).toBe("s");
+    expect((init.headers as Record<string, string>)["x-site-cliente"]).toBe("200.1.2.3");
     expect(JSON.parse(String(init.body))).toEqual({ unidades: 64 });
   });
 
-  it("sem configuração, com erro ou resposta estranha, usa a oferta do site", async () => {
+  it("guarda o preço por 10 minutos por unidades: a mesma conta não chama o Console de novo (r9)", async () => {
+    const buscar = vi.fn(async () => new Response(JSON.stringify(TABELA_64), { status: 200 }));
+    const t = 1_000_000;
+    await buscarPreco(64, env, buscar as unknown as typeof fetch, { agora: t });
+    await buscarPreco(64, env, buscar as unknown as typeof fetch, { agora: t + 9 * 60_000 });
+    expect(buscar).toHaveBeenCalledTimes(1);
+    await buscarPreco(64, env, buscar as unknown as typeof fetch, { agora: t + 11 * 60_000 });
+    expect(buscar).toHaveBeenCalledTimes(2);
+  });
+
+  it("com o Console fora do ar, vale o último preço da Tabela para a faixa, até 24 horas (r9)", async () => {
+    const ok = vi.fn(async () => new Response(JSON.stringify(TABELA_64), { status: 200 }));
+    const fora = vi.fn(async () => new Response("{}", { status: 503 }));
+    const t = 5_000_000;
+    await buscarPreco(64, env, ok as unknown as typeof fetch, { agora: t });
+    expect(await buscarPreco(80, env, fora as unknown as typeof fetch, { agora: t + 60_000 }))
+      .toEqual({ ...TABELA_64, unidades: 80, porApartamento: 286, origem: "ULTIMO" });
+    expect(montarResultado(await buscarPreco(80, env, fora as unknown as typeof fetch, { agora: t + 60_000 }), null).aviso).toBeNull();
+    expect(await buscarPreco(80, env, fora as unknown as typeof fetch, { agora: t + 25 * 60 * 60_000 })).toEqual(precoDoSite(80));
+    // Acima do limite do site, nem chama o Console.
+    const nunca = vi.fn();
+    expect((await buscarPreco(90, env, nunca as unknown as typeof fetch, { agora: t + 60_000, semConsultar: true })).origem).toBe("ULTIMO");
+    expect(nunca).not.toHaveBeenCalled();
+  });
+
+  it("sem configuração, com erro ou resposta estranha, e sem preço guardado, usa a tabela cheia do site", async () => {
     const nunca = vi.fn();
     expect(await buscarPreco(64, {}, nunca as unknown as typeof fetch)).toEqual(precoDoSite(64));
     expect(nunca).not.toHaveBeenCalled();
@@ -127,6 +168,22 @@ describe("calculadora: o preço da Tabela de preços", () => {
       throw new Error("rede");
     });
     expect(await buscarPreco(64, env, fora as unknown as typeof fetch)).toEqual(precoDoSite(64));
+  });
+});
+
+describe("calculadora: o limite por IP (r9)", () => {
+  it("conta por chave numa janela", () => {
+    const dentro = criarLimite(2, 60_000);
+    expect([dentro("a", 0), dentro("a", 1), dentro("a", 2), dentro("b", 2), dentro("a", 60_001)]).toEqual([true, true, false, true, true]);
+  });
+
+  it("o IP vem do x-forwarded-for ou da conexão", () => {
+    const comCabecalho = new Request("https://site/api", { headers: { "x-forwarded-for": "200.1.2.3, 10.0.0.1" } });
+    expect(ipDoPedido(comCabecalho, () => "10.9.9.9")).toBe("200.1.2.3");
+    expect(ipDoPedido(new Request("https://site/api"), () => "10.9.9.9")).toBe("10.9.9.9");
+    expect(ipDoPedido(new Request("https://site/api"), () => {
+      throw new Error("sem endereço");
+    })).toBe("sem-ip");
   });
 });
 

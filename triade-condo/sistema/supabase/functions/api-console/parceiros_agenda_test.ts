@@ -4,7 +4,7 @@
 // com o segredo do site; a fila de e-mails da agenda sai pelo Resend e, sem a chave, não falha.
 import { assert, assertEquals } from "@std/assert";
 import { SITUACOES_DEMONSTRACAO, TIPOS_PARCEIRO } from "@triade/domain";
-import { CABECALHO_SITE, criarApiConsole } from "./app.ts";
+import { CABECALHO_SITE, CABECALHO_SITE_CLIENTE, criarApiConsole } from "./app.ts";
 import type { Correio, EmailPronto } from "../_shared/email.ts";
 import { montarEmailComercial } from "./email_comercial.ts";
 import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, erroBanco, limitesFalsos, pedido } from "../_shared/teste_util.ts";
@@ -32,7 +32,7 @@ function montar(opcoes: { correio?: Correio } = {}) {
   const db = bancoFalso({
     acesso_console: () => true,
     registrar_acesso: () => 1,
-    ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2, site: 3, calculadora: 1, agenda: 3, agendar: 1 }),
+    ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2, site: 3, calculadora: 2, calculadora_ip: 1, agenda: 3, agendar: 1 }),
     comercial_parceiros: () => ({ mes: "2026-10", regra: { percentual: 10, versao: 1 }, parceiros: [], podeEditar: true, podeComissao: true }),
     comercial_salvar_parceiro: (a) => (a.p_id ? { id: a.p_id, versao: (a.p_versao as number) + 1 } : { id: MARTA, versao: 1 }),
     comercial_indicar: () => ({ id: AROEIRA, juntado: false, parceiroId: MARTA }),
@@ -72,10 +72,11 @@ function montar(opcoes: { correio?: Correio } = {}) {
     banco: db.banco, auth: falso.auth, admin: adminFalso().admin, urlApp: "https://console.exemplo", urlPlataforma: "https://plataforma.exemplo",
     segredoSite: SITE, correio: opcoes.correio, responderComercial: "comercial@triade.exemplo",
   });
-  const site = (rota: string, corpo: unknown, segredo: string | null = SITE) =>
+  const site = (rota: string, corpo: unknown, segredo: string | null = SITE, cliente?: string) =>
     app.request(`/api-console/v1/site/${rota}`, {
       method: "POST",
-      headers: { "content-type": "application/json", ...(segredo ? { [CABECALHO_SITE]: segredo } : {}) },
+      headers: { "content-type": "application/json", ...(segredo ? { [CABECALHO_SITE]: segredo } : {}),
+                 ...(cliente ? { [CABECALHO_SITE_CLIENTE]: cliente } : {}) },
       body: JSON.stringify(corpo),
     });
   return { pedir: pedido(app, "api-console"), site, ...db };
@@ -216,15 +217,20 @@ Deno.test("0310: dois agendamentos no mesmo horário: o segundo recebe HORARIO_O
   assertEquals([e.codigo, e.detalhes?.motivo], ["VALIDATION_ERROR", "HORARIO_OCUPADO"]);
 });
 
-Deno.test("0310: a calculadora do site fica fora do repasse, com o segredo do site e limite", async () => {
+Deno.test("0310: a calculadora do site fica fora do repasse, com o segredo do site e limite por quem usa e do site", async () => {
   const m = montar();
   assertEquals((await m.site("calculadora", { unidades: 64 }, null)).status, 403);
   assertEquals((await m.site("calculadora", { unidades: 64 }, "errado")).status, 403);
-  const r = await m.site("calculadora", { unidades: "64" });
+  const r = await m.site("calculadora", { unidades: "64" }, SITE, "200.1.2.3");
   assertEquals([r.status, (await r.json()).porApartamento], [200, 358]);
   assertEquals(chamada(m, "comercial_calculadora_site"), { p_unidades: 64 });
-  assertEquals((await erro(await m.site("calculadora", { unidades: 0 }))).codigo, "VALIDATION_ERROR");
-  assertEquals((await erro(await m.site("calculadora", { unidades: 30 }))).codigo, "RATE_LIMITED");
+  assertEquals((await erro(await m.site("calculadora", { unidades: 0 }, SITE, "200.1.2.3"))).codigo, "VALIDATION_ERROR");
+  // r9: o mesmo IP esgota o dele, sem gastar o do site; o IP fica só como hash.
+  assertEquals((await erro(await m.site("calculadora", { unidades: 30 }, SITE, "200.1.2.3"))).codigo, "RATE_LIMITED");
+  const chaves = m.chamadas.filter((c) => c.funcao === "limite_contar" && c.args.p_tipo === "calculadora_ip").map((c) => String(c.args.p_chave));
+  assert(chaves.every((k) => /^[0-9a-f]{64}$/.test(k) && !k.includes("200.1.2.3")));
+  assertEquals((await m.site("calculadora", { unidades: 30 }, SITE, "200.9.9.9")).status, 200);
+  assertEquals((await erro(await m.site("calculadora", { unidades: 30 }, SITE, "200.7.7.7"))).codigo, "RATE_LIMITED");
 });
 
 Deno.test("0310: o pedido de proposta da calculadora leva as unidades e a taxa, quando informada", async () => {
@@ -249,8 +255,11 @@ Deno.test("0310: a taxa na ficha, na versão e no kit (R17.3c)", async () => {
 
   await m.pedir("/v1/comercial/propostas", { cookie, corpo: { interessadoId: AROEIRA } });
   assert(!("taxaCondominio" in (chamada(m, "comercial_criar_proposta")!.p_dados as object)), "sem o campo, a versão usa a taxa da ficha");
-  await m.pedir("/v1/comercial/propostas/" + AROEIRA + "/versoes", { cookie, corpo: { versao: 1, taxaCondominio: 700 } });
-  assertEquals((chamada(m, "comercial_nova_versao")!.p_dados as Record<string, unknown>).taxaCondominio, 700);
+  await m.pedir("/v1/comercial/propostas/" + AROEIRA + "/versoes", { cookie, corpo: { versao: 1, taxaCondominio: 700, interessadoVersao: 4 } });
+  const nova = chamada(m, "comercial_nova_versao")!.p_dados as Record<string, unknown>;
+  assertEquals([nova.taxaCondominio, nova.interessadoVersao], [700, 4], "a taxa mudada vai com a versão da ficha que a tela viu (r8)");
+  assertEquals((await erro(await m.pedir("/v1/comercial/propostas/" + AROEIRA + "/versoes", { cookie, corpo: { versao: 1, interessadoVersao: 0 } }))).detalhes?.campos,
+    ["interessadoVersao"]);
   await m.pedir("/v1/comercial/propostas/" + AROEIRA + "/versoes", { cookie, corpo: { versao: 1, taxaCondominio: null } });
   assertEquals((chamada(m, "comercial_nova_versao")!.p_dados as Record<string, unknown>).taxaCondominio, null);
   assertEquals((await erro(await m.pedir("/v1/comercial/propostas", { cookie, corpo: { interessadoId: AROEIRA, taxaCondominio: 0 } }))).detalhes?.campos,
