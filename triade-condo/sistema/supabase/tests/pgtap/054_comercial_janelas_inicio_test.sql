@@ -4,7 +4,7 @@
 -- não contatar) e o Início com o primeiro retorno fora da meta, os atrasados, os parados e as
 -- janelas, sem dado de pessoa.
 begin;
-select plan(47);
+select plan(50);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -149,6 +149,19 @@ select comercial_nao_contatar(com, '5561999990802', null, null, 'Pediu para não
 select is(pg_temp.resumo((select caju from i)), array['RETOMAR ABERTA', 'SINDICO_NOVO ABERTA', 'FIDELIDADE PROXIMA'],
   'no não contatar, as janelas aparecem mas não pedem atenção');
 select is((select comercial_janelas_ficha(com, caju) ->> 'naoContatar' from ids, i), 'true', 'e a ficha avisa');
+-- LGPD: quem está no não contatar sai do Início, qualquer que seja o motivo (pelo WhatsApp, pelo
+-- e-mail ou pelo CNPJ).
+select is(pg_temp.linhas((select com from ids)),
+  array['PRIMEIRO_RETORNO Edifício Goiaba', 'ATRASADO Edifício Hortelã', 'PARADO Edifício Kiwi', 'JANELA Edifício Figueira'],
+  'antes do não contatar, o Goiaba, a Hortelã e o Kiwi pedem atenção');
+update interessados set email = 'sindico@hortela.com.br' where id = (select hortela from i);
+update interessados set cnpj = '11222333000181' where id = (select kiwi from i);
+select comercial_nao_contatar(com, '5561999990805', null, null, 'Pediu para não receber contato') from ids;
+select comercial_nao_contatar(com, null, 'SINDICO@hortela.com.br', null, 'Pediu por e-mail') from ids;
+select comercial_nao_contatar(com, null, null, '11222333000181', 'Pediu pelo CNPJ do condomínio') from ids;
+select is(pg_temp.linhas((select com from ids)), array['JANELA Edifício Figueira'], 'fica só quem pode receber contato');
+select is((select pg_temp.inicio(com) -> 'contagens' from ids), '{"primeiroRetorno": 0, "atrasados": 0, "parados": 0, "janelas": 1}'::jsonb,
+  'no não contatar, o primeiro retorno, o atrasado e o parado saem do Início');
 select comercial_anonimizar(zimbro, 'Teste') from i;
 select is(pg_temp.motivo($$ select comercial_sindico_novo(com, zimbro, pg_temp.iv(zimbro), null, null) from ids, i $$), 'ANONIMIZADO',
   'anonimizado não ganha síndico novo');

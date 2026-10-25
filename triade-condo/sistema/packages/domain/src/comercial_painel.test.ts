@@ -36,6 +36,22 @@ describe("painel comercial e janelas (0309)", () => {
     expect(repetida.error?.issues[0]?.path).toEqual(["porPessoa"]);
   });
 
+  it("a meta por pessoa tem o mesmo limite do banco", () => {
+    const m = SQL.match(/coalesce\(x ->> 'centavos', ''\) !~ '\^\[1-9\]\[0-9\]\{0,(\d+)\}\$'/);
+    expect(m).not.toBeNull();
+    const maior = Number("9".repeat(Number(m![1]) + 1));
+    expect(maior).toBe(99_999_999_999);
+    const com = (centavos: number) => metaComercialSchema.safeParse({ mes: "2026-10", total: 1, porPessoa: [{ pessoaId: PESSOA, centavos }] });
+    expect(com(maior).success).toBe(true);
+    expect(com(maior + 1).success).toBe(false);
+    const maiuscula = metaComercialSchema.parse({ mes: "2026-10", total: 1, porPessoa: [{ pessoaId: PESSOA.toUpperCase(), centavos: 1 }] });
+    expect(maiuscula.porPessoa[0]?.pessoaId).toBe(PESSOA);
+    const repetida = metaComercialSchema.safeParse({
+      mes: "2026-10", total: 1, porPessoa: [{ pessoaId: PESSOA, centavos: 1 }, { pessoaId: PESSOA.toUpperCase(), centavos: 2 }],
+    });
+    expect(repetida.success).toBe(false);
+  });
+
   it("os tipos de janela são os mesmos do banco", () => {
     const m = SQL.match(/tipo\s+text not null check \(tipo in \(([^)]*)\)\)/);
     expect(m).not.toBeNull();

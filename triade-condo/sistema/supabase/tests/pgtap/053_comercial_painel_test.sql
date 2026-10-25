@@ -4,7 +4,7 @@
 -- por pessoa, cada concorrente), o retrato de agora (previsão = valor × chance da etapa, parados,
 -- atrasados, propostas vencendo, vagas de fundador), a meta herdada e nenhum dado de pessoa.
 begin;
-select plan(59);
+select plan(63);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -52,7 +52,8 @@ select is((select array_agg(x ->> 'etapa' || ' ' || (x ->> 'chegaram') order by 
   array['NOVO 0', 'EM_CONTATO 0', 'DEMO_MARCADA 0', 'DEMO_FEITA 0', 'PROPOSTA_ENVIADA 0', 'NEGOCIACAO 0', 'APROVACAO 0', 'GANHO 0'],
   'o funil vazio tem as oito etapas até o Ganho, todas com zero');
 select is((select p -> 'ganhos' from p0), '{"quantos": 0, "novoMrr": 0, "semValor": 0}'::jsonb, 'sem ganho, o novo MRR é zero e não há ciclo médio');
-select is((select p -> 'primeiroRetorno' from p0), '{"total": 0, "noPrazo": 0, "foraDoPrazo": 0, "aguardando": 0, "site": {"total": 0, "noPrazo": 0}}'::jsonb,
+select is((select p -> 'primeiroRetorno' from p0),
+  '{"total": 0, "noPrazo": 0, "foraDoPrazo": 0, "aguardando": 0, "cotacoes": {"total": 0, "noPrazo": 0, "aguardando": 0}, "site": {"total": 0, "noPrazo": 0, "aguardando": 0}}'::jsonb,
   'sem novos, o primeiro retorno é zero, sem mediana');
 select is((select (p -> 'agora') - 'porEtapa' - 'vagasFundador' from p0),
   '{"abertos": 0, "previsao": {"centavos": 0, "comValor": 0, "semValor": 0}, "parados": 0, "atrasados": 0, "propostasVencendo": [], "vencendoDias": 7}'::jsonb,
@@ -88,8 +89,9 @@ select pg_temp.em('2026-10-05 10:30:00-03');
 select comercial_registrar_conversa(com, aroeira, 'WHATSAPP', 'Primeiro retorno.') from ids, i;
 select comercial_registrar_conversa(com, caju, 'NOTA', 'Tentar de novo amanhã.') from ids, i;
 select is((select pg_temp.painel(com) -> 'primeiroRetorno' from ids),
-  '{"total": 5, "noPrazo": 1, "foraDoPrazo": 0, "aguardando": 4, "site": {"total": 1, "noPrazo": 0}, "medianaMinutosUteis": 30}'::jsonb,
-  'às 10:30, um respondeu em 30 minutos úteis e quatro ainda estão dentro da hora útil; a nota interna não conta');
+  '{"total": 1, "noPrazo": 1, "foraDoPrazo": 0, "aguardando": 4, "cotacoes": {"total": 0, "noPrazo": 0, "aguardando": 0},
+    "site": {"total": 0, "noPrazo": 0, "aguardando": 1}, "medianaMinutosUteis": 30}'::jsonb,
+  'às 10:30, um respondeu em 30 minutos úteis e quatro aguardam dentro da hora útil, fora do total; o site também aguarda; a nota interna não conta');
 select pg_temp.em('2026-10-05 13:00:00-03');
 select comercial_registrar_conversa(com, bambu, 'LIGACAO', 'Ligou de volta.') from ids, i;
 select pg_temp.em('2026-10-06 10:00:00-03');
@@ -155,10 +157,15 @@ select is((select p -> 'porOrigem' from p),
   '[{"origem": "INDICACAO", "novos": 2, "ganhos": 1}, {"origem": "INSTAGRAM", "novos": 2, "ganhos": 0}, {"origem": "SITE", "novos": 1, "ganhos": 0}]'::jsonb,
   'conversão por origem dos novos do mês');
 select is((select p -> 'primeiroRetorno' from p),
-  '{"total": 5, "noPrazo": 1, "foraDoPrazo": 4, "aguardando": 0, "site": {"total": 1, "noPrazo": 1}, "medianaMinutosUteis": 180}'::jsonb,
+  '{"total": 5, "noPrazo": 1, "foraDoPrazo": 4, "aguardando": 0, "cotacoes": {"total": 0, "noPrazo": 0, "aguardando": 0},
+    "site": {"total": 1, "noPrazo": 1, "aguardando": 0}, "medianaMinutosUteis": 180}'::jsonb,
   'primeiro retorno: um em 1 hora útil, quatro fora (dois responderam tarde, dois nunca); mediana de 30, 180 e 540 minutos úteis; o site, dentro do próximo dia útil');
 select is(comercial_minutos_uteis('2026-10-05 10:00-03', '2026-10-06 10:00-03'), 540, 'de segunda 10h a terça 10h são 540 minutos úteis');
 select is(comercial_minutos_uteis('2026-10-09 17:00-03', '2026-10-12 09:30-03'), 90, 'o fim de semana não conta');
+select is(array[comercial_minutos_uteis('2026-10-10 12:00-03', '2026-10-12 10:00-03'), comercial_minutos_uteis('2026-10-05 07:00-03', '2026-10-05 19:00-03'),
+                comercial_minutos_uteis('2026-10-05 09:00-03', '2026-10-19 09:00-03'), comercial_minutos_uteis('2026-10-05 19:00-03', '2026-10-06 08:00-03'),
+                comercial_minutos_uteis('2026-10-06 10:00-03', '2026-10-05 10:00-03')],
+  array[60, 540, 5400, 0, 0], 'sem laço: do sábado à segunda, fora do horário, duas semanas, de noite e de trás para a frente');
 select is(comercial_promessa_site('2026-10-09 10:00-03'), '2026-10-13 00:00-03'::timestamptz, 'pedido na sexta: a promessa do site vai até o fim de segunda');
 select is((select p -> 'ganhos' from p), jsonb_build_object('quantos', 1, 'novoMrr', (select aroeira from v), 'semValor', 0, 'cicloMedioDias', 15),
   'um ganho: o novo MRR é a mensalidade aceita e o ciclo, 15 dias da entrada ao Ganho');
@@ -207,6 +214,40 @@ select ok((select position('Lúcia' in p::text) = 0 and position('Renata' in p::
   'o painel não mostra a pessoa de contato nem o telefone');
 select ok((select position('Aroeira' in p::text) = 0 and position('Caju' in p::text) = 0 from p), 'nem o nome dos condomínios fora das propostas vencendo');
 select ok((select (p -> 'novos')::int = 5 from (select pg_temp.painel(com) as p from ids) x), 'o painel conta as mesmas coisas lido de novo');
+
+-- 8. Revisão do dfff721. Segunda, 9 de novembro, às 10h: uma cotação (prazo de 24 horas), um pedido
+-- pelo site, uma indicação e o Ingá, sem prazo de primeiro retorno.
+select pg_temp.em('2026-11-09 10:00:00-03');
+alter table i add column dende uuid, add column embauba uuid, add column freijo uuid, add column inga uuid, add column gameleira uuid, add column hortensia uuid;
+update i set dende = pg_temp.novo('Edifício Dendê', '5561999990710', 'COTACAO', (select com from ids)),
+             freijo = pg_temp.novo('Edifício Freijó', '5561999990711', 'INDICACAO', (select com from ids)),
+             inga = pg_temp.novo('Edifício Ingá', '5561999990712', 'INDICACAO', (select com from ids)),
+             gameleira = pg_temp.novo('Edifício Gameleira', '5561999990713', 'INDICACAO', (select com from ids)),
+             hortensia = pg_temp.novo('Edifício Hortênsia', '5561999990714', 'INDICACAO', (select com from ids));
+update i set embauba = (comercial_entrada_site(jsonb_build_object('nome', 'Renata Moura', 'whatsapp', '5561999990715', 'condominio', 'Edifício Embaúba',
+                                                                  'faixa', 'DE_41_A_100', 'consentimento', true, 'pagina', '/demonstracao')) ->> 'id')::uuid;
+update interessados set primeiro_retorno_ate = null where id in (select inga from i union all select gameleira from i union all select hortensia from i);
+select pg_temp.em('2026-11-09 10:20:00-03');
+select comercial_registrar_conversa(com, freijo, 'WHATSAPP', 'Primeiro retorno.') from ids, i;
+-- A Gameleira perde para o App X, é reaberta e ganha; a Hortênsia perde para a Uau Síndico, escrita de dois jeitos.
+update interessados set concorrentes = '[{"nome": "App X", "venceu": true}]' where id = (select gameleira from i);
+update interessados set concorrentes = '[{"nome": "Uau Síndico"}, {"nome": "uau sindico", "venceu": true}]' where id = (select hortensia from i);
+select pg_temp.para(gameleira, 'PERDIDO', '2026-11-09 11:00-03', 'OUTRO_SISTEMA') from i;
+select pg_temp.para(gameleira, 'NEGOCIACAO', '2026-11-09 12:00-03') from i;
+select pg_temp.para(gameleira, 'GANHO', '2026-11-09 14:00-03') from i;
+select pg_temp.para(hortensia, 'PERDIDO', '2026-11-09 11:00-03', 'OUTRO_SISTEMA') from i;
+select pg_temp.em('2026-11-09 15:00:00-03');
+select comercial_registrar_conversa(com, dende, 'WHATSAPP', 'Mandou a cotação.') from ids, i;
+select comercial_registrar_conversa(com, inga, 'WHATSAPP', 'Retorno.') from ids, i;
+create temp table pn as select pg_temp.painel(com) as p from ids;
+select is((select p -> 'primeiroRetorno' from pn),
+  '{"total": 2, "noPrazo": 1, "foraDoPrazo": 1, "aguardando": 0, "cotacoes": {"total": 1, "noPrazo": 1, "aguardando": 0},
+    "site": {"total": 0, "noPrazo": 0, "aguardando": 1}, "medianaMinutosUteis": 20}'::jsonb,
+  'K.1 pelos minutos úteis da entrada à resposta: a cotação (5 horas úteis, dentro das 24) fica fora da meta e conta à parte; a mediana é só de quem tem prazo; o site ainda dentro da promessa aguarda, fora do total');
+select is((select x - 'nome' from pn, jsonb_array_elements(p -> 'concorrentes') x where x ->> 'nome' = 'App X'),
+  '{"disputas": 1, "ganhamos": 1, "perdemosParaEle": 0}'::jsonb, 'perdido para o App X, reaberto e ganho: ganhamos, e não conta como perdido para ele');
+select is((select jsonb_agg(x - 'nome') from pn, jsonb_array_elements(p -> 'concorrentes') x where comercial_normalizar(x ->> 'nome') = 'uausindico'),
+  '[{"disputas": 1, "ganhamos": 0, "perdemosParaEle": 1}]'::jsonb, 'o mesmo concorrente escrito de dois jeitos no mesmo interessado conta uma disputa');
 
 select * from finish();
 rollback;

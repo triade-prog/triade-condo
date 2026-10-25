@@ -47,6 +47,9 @@ test.describe("Console · Painel comercial", () => {
     await expect(numeros).toContainText("R$ 687,00");
     await expect(numeros).toContainText("sem meta para o mês");
     await expect(numeros).toContainText("10 de 14");
+    await expect(numeros).toContainText("meta interna (K.1), sem as cotações · 1 aguarda no prazo");
+    await expect(numeros).toContainText("Site: 8 de 8 respondidos até o fim do próximo dia útil (a promessa do site), 1 aguarda no prazo.");
+    await expect(numeros).toContainText("Cotações: 2 de 2 respondidas em 24 horas.");
     await expect(numeros).toContainText("valor × chance da etapa");
     await expect(numeros).toContainText("2 de 5");
     const funil = page.getByRole("list", { name: /Até onde chegaram os 14 novos/ });

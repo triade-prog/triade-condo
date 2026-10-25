@@ -38,7 +38,13 @@ export interface PainelComercial {
   novos: number;
   funil: { etapa: EtapaComercial; chegaram: number }[];
   porOrigem: { origem: OrigemComercial; novos: number; ganhos: number }[];
-  primeiroRetorno: { total: number; noPrazo: number; foraDoPrazo: number; aguardando: number; medianaMinutosUteis?: number; site: { total: number; noPrazo: number } };
+  /** K.1: meta de 1 hora útil, sem as cotações (prazo de 24 horas, contadas à parte). Quem aguarda
+   *  dentro do prazo fica fora do total. */
+  primeiroRetorno: {
+    total: number; noPrazo: number; foraDoPrazo: number; aguardando: number; medianaMinutosUteis?: number;
+    cotacoes: { total: number; noPrazo: number; aguardando: number };
+    site: { total: number; noPrazo: number; aguardando: number };
+  };
   ganhos: { quantos: number; novoMrr: number; semValor: number; cicloMedioDias?: number };
   perdas: { quantos: number; motivos: { motivo: MotivoPerda; quantos: number }[] };
   semResposta: number;
@@ -141,10 +147,23 @@ export function textoPrimeiroRetorno(r: PainelComercial["primeiroRetorno"]): str
 }
 
 export function apoioPrimeiroRetorno(r: PainelComercial["primeiroRetorno"]): string {
-  const partes = ["meta interna (K.1)"];
-  if (r.aguardando) partes.push(`${r.aguardando} no prazo ainda`);
+  const partes = ["meta interna (K.1), sem as cotações"];
+  if (r.aguardando) partes.push(`${r.aguardando} ${r.aguardando === 1 ? "aguarda" : "aguardam"} no prazo`);
   if (r.medianaMinutosUteis !== undefined) partes.push(`mediana ${duracaoUtil(r.medianaMinutosUteis)}`);
   return partes.join(" · ");
+}
+
+/** As promessas com prazo próprio: a do site (até o fim do próximo dia útil) e a da cotação (24 horas).
+ *  Quem ainda está no prazo fica fora da conta e aparece como aguardando. */
+export function textoPromessas(r: PainelComercial["primeiroRetorno"]): string {
+  const aguardam = (n: number) => (n ? `, ${n} ${n === 1 ? "aguarda" : "aguardam"} no prazo` : "");
+  const site = r.site.total || r.site.aguardando
+    ? `Site: ${r.site.noPrazo} de ${r.site.total} respondidos até o fim do próximo dia útil (a promessa do site)${aguardam(r.site.aguardando)}.`
+    : "Site: nenhum pedido no mês.";
+  const cotacoes = r.cotacoes.total || r.cotacoes.aguardando
+    ? ` Cotações: ${r.cotacoes.noPrazo} de ${r.cotacoes.total} respondidas em 24 horas${aguardam(r.cotacoes.aguardando)}.`
+    : "";
+  return site + cotacoes;
 }
 
 /** Minutos úteis em texto curto: "45 min", "3 h", "2 h 30 min". */

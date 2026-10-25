@@ -15,7 +15,7 @@ import { campoDosCentavos, centavosDoCampo, ErroJanela, RodapeJanela } from "../
 import { useCarregar } from "../sessao.tsx";
 import { hojeLocal } from "./comum.tsx";
 import {
-  apoioPrimeiroRetorno, barrasFunil, mesesDoSeletor, nomeMotivo, nomeOrigemPainel, reais, ROTAS_PAINEL, textoMes, textoMeta, textoPrimeiroRetorno, textoVence,
+  apoioPrimeiroRetorno, barrasFunil, mesesDoSeletor, nomeMotivo, nomeOrigemPainel, reais, ROTAS_PAINEL, textoMes, textoMeta, textoPrimeiroRetorno, textoPromessas, textoVence,
   type PainelComercial,
 } from "./painel.ts";
 import { TELAS_PROPOSTAS } from "./propostas.ts";
@@ -184,7 +184,7 @@ function Conteudo({ p, hoje }: { p: PainelComercial; hoje: string }) {
           <Numero rotulo="Vagas de fundador" valor={`${fundador.livres} de ${fundador.total}`} apoio="restantes" tom={fundador.livres ? undefined : "atencao"} />
         </dl>
         <p className="t-apoio">
-          {`Site: ${r.site.total ? `${r.site.noPrazo} de ${r.site.total} respondidos até o fim do próximo dia útil (a promessa do site)` : "nenhum pedido no mês"}. `}
+          {`${textoPromessas(r)} `}
           {`Agora: ${plural(a.abertos, "interessado aberto", "interessados abertos")}, ${plural(a.atrasados, "atrasado", "atrasados")}.`}
         </p>
       </section>

@@ -425,7 +425,8 @@ export const metaComercialSchema = z
     versao: versao.optional().nullable().transform((v) => v ?? null),
     total: z.number().int().min(1).max(100_000_000_000),
     porPessoa: z
-      .array(z.object({ pessoaId: z.string().uuid(), centavos: z.number().int().min(1).max(100_000_000_000) }))
+      // O mesmo limite do banco (metas_por_pessoa_validas: até 11 dígitos; o id em minúsculas).
+      .array(z.object({ pessoaId: z.string().uuid().transform((v) => v.toLowerCase()), centavos: z.number().int().min(1).max(99_999_999_999) }))
       .max(30)
       .default([]),
   })

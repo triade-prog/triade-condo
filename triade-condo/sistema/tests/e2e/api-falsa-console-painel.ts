@@ -62,8 +62,10 @@ function painel(p: PainelFalso, mes: string, pode: PodeComercial): Json {
     funil: etapas.map((etapa, n) => ({ etapa, chegaram: chegaram[n] })),
     porOrigem: cheio ? [{ origem: "SITE", novos: 8, ganhos: 2 }, { origem: "WHATSAPP_COMERCIAL", novos: 3, ganhos: 1 }, { origem: "INDICACAO", novos: 2, ganhos: 0 },
       { origem: "INSTAGRAM", novos: 1, ganhos: 0 }] : [],
-    primeiroRetorno: cheio ? { total: 14, noPrazo: 10, foraDoPrazo: 3, aguardando: 1, medianaMinutosUteis: 42, site: { total: 8, noPrazo: 8 } }
-      : { total: 0, noPrazo: 0, foraDoPrazo: 0, aguardando: 0, site: { total: 0, noPrazo: 0 } },
+    primeiroRetorno: cheio
+      ? { total: 14, noPrazo: 10, foraDoPrazo: 4, aguardando: 1, medianaMinutosUteis: 42,
+          cotacoes: { total: 2, noPrazo: 2, aguardando: 0 }, site: { total: 8, noPrazo: 8, aguardando: 1 } }
+      : { total: 0, noPrazo: 0, foraDoPrazo: 0, aguardando: 0, cotacoes: { total: 0, noPrazo: 0, aguardando: 0 }, site: { total: 0, noPrazo: 0, aguardando: 0 } },
     ganhos: cheio ? { quantos: 3, novoMrr: 68700, semValor: 0, cicloMedioDias: 19 } : { quantos: 0, novoMrr: 0, semValor: 0 },
     perdas: cheio ? { quantos: 4, motivos: [{ motivo: "FICOU_PARA_DEPOIS", quantos: 2 }, { motivo: "OUTRO_SISTEMA", quantos: 1 }, { motivo: "PRECO", quantos: 1 }] }
       : { quantos: 0, motivos: [] },

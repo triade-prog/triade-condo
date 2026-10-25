@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import {
   apoioPrimeiroRetorno, barrasFunil, detalheInicio, duracaoUtil, mesesDoSeletor, seloInicio, seloJanela, somarMeses, textoJanela, textoMes, textoMeta,
-  textoPrimeiroRetorno, textoVence, type ItemInicioComercial, type JanelaCondominio,
+  textoPrimeiroRetorno, textoPromessas, textoVence, type ItemInicioComercial, type JanelaCondominio,
 } from "./painel.ts";
 
 const janela = (j: Partial<JanelaCondominio>): JanelaCondominio => ({
@@ -38,10 +38,16 @@ describe("painel comercial (0309)", () => {
   });
 
   it("primeiro retorno: 10 de 14, com a mediana em horas úteis; sem novos, traço", () => {
-    const r = { total: 14, noPrazo: 10, foraDoPrazo: 3, aguardando: 1, medianaMinutosUteis: 150, site: { total: 8, noPrazo: 8 } };
+    const r = { total: 14, noPrazo: 10, foraDoPrazo: 4, aguardando: 1, medianaMinutosUteis: 150,
+      cotacoes: { total: 0, noPrazo: 0, aguardando: 0 }, site: { total: 8, noPrazo: 8, aguardando: 0 } };
     expect(textoPrimeiroRetorno(r)).toBe("10 de 14");
-    expect(apoioPrimeiroRetorno(r)).toBe("meta interna (K.1) · 1 no prazo ainda · mediana 2 h 30 min");
+    expect(apoioPrimeiroRetorno(r)).toBe("meta interna (K.1), sem as cotações · 1 aguarda no prazo · mediana 2 h 30 min");
+    expect(apoioPrimeiroRetorno({ ...r, aguardando: 2 })).toContain("2 aguardam no prazo");
     expect(textoPrimeiroRetorno({ ...r, total: 0 })).toBe("—");
+    expect(textoPromessas(r)).toBe("Site: 8 de 8 respondidos até o fim do próximo dia útil (a promessa do site).");
+    expect(textoPromessas({ ...r, site: { total: 0, noPrazo: 0, aguardando: 1 }, cotacoes: { total: 3, noPrazo: 2, aguardando: 2 } })).toBe(
+      "Site: 0 de 0 respondidos até o fim do próximo dia útil (a promessa do site), 1 aguarda no prazo. Cotações: 2 de 3 respondidas em 24 horas, 2 aguardam no prazo.");
+    expect(textoPromessas({ ...r, site: { total: 0, noPrazo: 0, aguardando: 0 } })).toBe("Site: nenhum pedido no mês.");
     expect(duracaoUtil(45)).toBe("45 min");
     expect(duracaoUtil(180)).toBe("3 h");
   });

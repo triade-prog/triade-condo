@@ -35,7 +35,9 @@
 --    responsável do interessado. O ciclo médio é do primeiro contato (entrada) ao Ganho, em dias.
 -- d. Atividades = conversas registradas por alguém da equipe, sem a entrada e sem a nota interna.
 -- e. Contra cada concorrente: os interessados fechados (Ganho ou Perdido) até o fim do mês que
---    tinham o concorrente na disputa; "ganhamos" é Ganho; "perdemos para ele" é o vencedor marcado.
+--    tinham o concorrente na disputa, cada interessado uma vez (o nome escrito de dois jeitos junta);
+--    "ganhamos" é Ganho; "perdemos para ele" é o vencedor marcado num Perdido (perdido, reaberto e
+--    ganho não conta contra).
 -- f. A meta vale do mês em que foi posta em diante, até alguém pôr outra ("herdada" nos meses
 --    seguintes). Só se muda a meta do mês atual ou dos 12 seguintes: o resultado de um mês que já
 --    passou não ganha meta nova (META_MES_PASSADO).
@@ -51,6 +53,18 @@
 -- j. As tabelas novas (metas e janelas) não guardam dado de pessoa: nada entra no catálogo de
 --    retenção, e a anonimização não precisa mexer nelas.
 --
+-- Revisão do dfff721 (antes de aplicar):
+-- k. Meta de 1 hora útil (K.1) medida em minutos úteis da entrada à primeira resposta. A cotação tem
+--    prazo próprio de 24 horas: fica fora da meta e conta à parte (cotacoes). Total, mediana e prazo
+--    só de quem tem prazo de primeiro retorno; quem ainda não foi respondido e está dentro do prazo
+--    fica em "aguardando", fora do total (na meta, na cotação e na promessa do site).
+-- l. O Início não mostra quem está no não contatar, por motivo nenhum (LGPD).
+-- m. Desempenho: com 10 mil interessados, o Início e o painel levavam de 2 a 22 segundos. A regra de
+--    leitura das tabelas do Comercial passa a avaliar o contexto uma vez por consulta, a tarefa e as
+--    janelas recebem o que já foi lido, os fechados sem data de janela nem entram, os minutos úteis
+--    saem sem laço e as conversas, as etapas e os interessados ganham índice pela data. Teste de
+--    carga em 055.
+--
 -- Nada aqui apaga linha nem remove função (o conector do Supabase trava nesses comandos).
 
 -- ---------------------------------------------------------------------------------------
@@ -65,6 +79,107 @@ insert into configuracoes (chave, valor, descricao) values
   ('comercial_janela_fidelidade_dias', '60', 'Dias antes do fim da fidelidade do sistema atual em que a janela de troca abre'),
   ('comercial_propostas_vencendo_dias', '7', 'Dias à frente em que o painel comercial mostra as propostas vencendo'),
   ('comercial_inicio_max', '8', 'Interessados que o cartão do Comercial no Início do Console mostra');
+
+-- A regra de leitura das tabelas do Comercial (0296) chamava as funções do contexto para cada linha;
+-- com milhares de interessados, só isso levava segundos. Em subconsulta, o Postgres as avalia uma vez
+-- por consulta. A regra é a mesma; a escrita (with check) não muda.
+create or replace procedure proteger_tabela_comercial(p_tabela regclass, p_escrita text, p_motivo text)
+language plpgsql
+set search_path = public
+as $$
+begin
+  execute format('alter table %s enable row level security', p_tabela);
+  execute format('alter table %s force row level security', p_tabela);
+  if not exists (select 1 from pg_policy where polrelid = p_tabela and polname = 'so_comercial') then
+    execute format('create policy so_comercial on %s using ((select comercial_sistema()) or ((select contexto_equipe()) and (select pode_global(''console.comercial.ver'')))) '
+                   'with check (comercial_sistema() or (contexto_equipe() and pode_global(%L)))', p_tabela, p_escrita);
+  end if;
+  if exists (select 1 from pg_attribute where attrelid = p_tabela and attname = 'versao' and not attisdropped)
+     and not exists (select 1 from pg_trigger where tgrelid = p_tabela and tgname = 'controle_versao') then
+    execute format('create trigger controle_versao before update on %s for each row execute function controle_versao()', p_tabela);
+  end if;
+  insert into tabelas_sem_condominio (tabela, motivo) values (p_tabela::text, p_motivo)
+  on conflict (tabela) do update set motivo = excluded.motivo;
+end $$;
+
+do $$
+declare r record;
+begin
+  for r in select polrelid::regclass as tabela from pg_policy where polname = 'so_comercial' loop
+    execute format('alter policy so_comercial on %s using ((select comercial_sistema()) or ((select contexto_equipe()) and (select pode_global(''console.comercial.ver''))))', r.tabela);
+  end loop;
+end $$;
+
+-- A tarefa da vez (0296) sem consulta dentro: quem lê muitos interessados (o Início e o painel) passa
+-- o limite da etapa e os passos da cadência já lidos. Só para interessado aberto e não anonimizado.
+-- A comercial_tarefa continua igual e passa a chamar esta.
+create function comercial_tarefa_de(i interessados, p_lim integer, p_passos jsonb, p_agora timestamptz) returns jsonb
+language plpgsql stable
+set search_path = public
+as $$
+declare
+  v_hoje   date := (p_agora at time zone 'America/Sao_Paulo')::date;
+  v_quando timestamptz;
+  v_tipo   text;
+  v_texto  text;
+  v_canal  text;
+  v_c      timestamptz;
+  v_passo  jsonb;
+  v_ref    timestamptz;
+  v_parado integer;
+begin
+  if i.primeira_resposta_em is null and i.primeiro_retorno_ate is not null then
+    v_quando := i.primeiro_retorno_ate; v_tipo := 'PRIMEIRO_RETORNO'; v_texto := 'Primeiro retorno';
+  end if;
+  if i.proximo_passo is not null then
+    v_c := (i.proximo_passo_data + coalesce(i.proximo_passo_hora, time '23:59:59')) at time zone 'America/Sao_Paulo';
+    if v_quando is null or v_c < v_quando then v_quando := v_c; v_tipo := 'PROXIMO_PASSO'; v_texto := i.proximo_passo; v_canal := null; end if;
+  end if;
+  if i.cadencia_id is not null and i.cadencia_fim_em is null then
+    v_passo := p_passos -> i.cadencia_feitos;
+    if v_passo is not null then
+      v_c := ((i.cadencia_inicio + (v_passo ->> 'dia')::integer) + time '23:59:59') at time zone 'America/Sao_Paulo';
+      if v_quando is null or v_c < v_quando then
+        v_quando := v_c; v_tipo := 'CADENCIA'; v_texto := v_passo ->> 'texto'; v_canal := v_passo ->> 'canal';
+      end if;
+    end if;
+  end if;
+  v_ref := coalesce(i.ultima_conversa_em, i.criado_em);
+  if p_lim is not null and p_agora - v_ref > make_interval(days => p_lim) then
+    v_parado := v_hoje - (v_ref at time zone 'America/Sao_Paulo')::date;
+  end if;
+  return jsonb_strip_nulls(jsonb_build_object(
+    'situacao', case when v_quando is null then 'SEM_PASSO'
+                     when v_quando < p_agora then 'ATRASADO'
+                     when (v_quando at time zone 'America/Sao_Paulo')::date = v_hoje then 'HOJE'
+                     else 'FUTURO' end,
+    'tarefa', v_tipo,
+    'texto', v_texto,
+    'canal', v_canal,
+    'quando', v_quando,
+    'passo', case when v_tipo = 'CADENCIA' then i.cadencia_feitos + 1 end,
+    'passos', case when v_tipo = 'CADENCIA' then jsonb_array_length(p_passos) end,
+    'diasParado', v_parado));
+end $$;
+
+create or replace function comercial_tarefa(i interessados) returns jsonb
+language plpgsql stable
+set search_path = public
+as $$
+declare
+  v_aberta boolean;
+  v_lim    integer;
+  v_passos jsonb;
+begin
+  select aberta, limite_dias into v_aberta, v_lim from parametros_etapa_comercial where etapa = i.etapa;
+  if not coalesce(v_aberta, false) or i.anonimizado_em is not null then
+    return jsonb_build_object('situacao', 'FECHADO');
+  end if;
+  if i.cadencia_id is not null and i.cadencia_fim_em is null then
+    select passos into v_passos from cadencias_comercial where id = i.cadencia_id;
+  end if;
+  return comercial_tarefa_de(i, v_lim, v_passos, app_now());
+end $$;
 
 -- O histórico das metas e das janelas é do Comercial, como o dos interessados.
 alter policy historico_leitura on historico
@@ -160,33 +275,40 @@ end $$;
 create trigger janelas_comercial_fixas before update on janelas_comercial for each row execute function janelas_comercial_fixas();
 
 -- ---------------------------------------------------------------------------------------
+-- Índices para o painel e o Início lerem por mês e por etapa sem varrer as tabelas.
+
+create index conversas_comercial_criado_em on conversas_comercial (criado_em);
+create index etapas_interessado_para on etapas_interessado (para, criado_em);
+create index interessados_criado_em on interessados (criado_em);
+create index nao_contatar_cnpj on nao_contatar (cnpj) where cnpj is not null;
+
+-- ---------------------------------------------------------------------------------------
 -- Ajudantes do painel.
 
 -- Minutos úteis entre dois instantes (K.1): de segunda a sexta, das 9h às 18h de Brasília, como
--- comercial_hora_util. Feriado não entra na conta.
+-- comercial_hora_util. Feriado não entra na conta. Sem laço (o painel chama para cada novo do
+-- mês): os minutos úteis desde uma segunda-feira de referência (01/01/2001) até cada instante, e a
+-- diferença.
 create function comercial_minutos_uteis(p_de timestamptz, p_ate timestamptz) returns integer
 language plpgsql stable
 set search_path = public
 as $$
 declare
-  a timestamp := p_de at time zone 'America/Sao_Paulo';
-  b timestamp := p_ate at time zone 'America/Sao_Paulo';
+  a timestamp;
+  b timestamp;
+  m numeric[];
   d date;
-  v_total numeric := 0;
-  v_ini timestamp;
-  v_fim timestamp;
+  t timestamp;
 begin
   if p_de is null or p_ate is null or p_ate <= p_de then return 0; end if;
-  d := a::date;
-  while d <= b::date and d - a::date <= 400 loop
-    if extract(isodow from d) < 6 then
-      v_ini := greatest(a, d + time '09:00');
-      v_fim := least(b, d + time '18:00');
-      if v_fim > v_ini then v_total := v_total + extract(epoch from v_fim - v_ini) / 60; end if;
-    end if;
-    d := d + 1;
+  a := p_de at time zone 'America/Sao_Paulo';
+  b := p_ate at time zone 'America/Sao_Paulo';
+  foreach t in array array[a, b] loop
+    d := t::date;
+    m := m || (((d - date '2001-01-01') / 7 * 5 + least((d - date '2001-01-01') % 7, 5)) * 540
+               + case when extract(isodow from d) < 6 then least(greatest(extract(epoch from t::time - time '09:00') / 60, 0), 540) else 0 end);
   end loop;
-  return round(v_total)::integer;
+  return round(m[2] - m[1])::integer;
 end $$;
 
 -- A promessa do site (CM-04): até o fim do próximo dia útil depois da entrada, em Brasília.
@@ -263,7 +385,7 @@ begin
   v_meta := comercial_meta_do_mes(v_mes);
 
   -- O que aconteceu no mês (decisões b a e).
-  with coorte as (
+  with coorte as materialized (
     select i.id, i.origem, i.criado_em, i.primeiro_retorno_ate, i.primeira_resposta_em,
            greatest(
              coalesce((select max(p.ordem) from etapas_interessado e join parametros_etapa_comercial p on p.etapa = e.para
@@ -272,13 +394,13 @@ begin
       from interessados i
      where i.criado_em >= v_ini and i.criado_em < v_fim
   ),
-  ganhos as (
+  ganhos as materialized (
     select i.id, i.responsavel_id, i.criado_em, max(e.criado_em) as em, comercial_mrr(i.id) as mrr
       from etapas_interessado e join interessados i on i.id = e.interessado_id
      where e.para = 'GANHO' and e.criado_em >= v_ini and e.criado_em < v_fim and i.etapa = 'GANHO'
      group by i.id
   ),
-  perdas as (
+  perdas as materialized (
     select distinct on (e.interessado_id) e.interessado_id, coalesce(e.motivo_perda, i.motivo_perda, 'OUTRO') as motivo
       from etapas_interessado e join interessados i on i.id = e.interessado_id
      where e.para = 'PERDIDO' and e.criado_em >= v_ini and e.criado_em < v_fim
@@ -301,11 +423,15 @@ begin
   gente as (
     select pessoa from atividades union select pessoa from mrr_pessoa union select pessoa from meta_pessoa
   ),
-  disputas as (
-    select distinct i.id, comercial_normalizar(x ->> 'nome') as chave, btrim(x ->> 'nome') as nome, i.etapa,
-           coalesce((x ->> 'venceu')::boolean, false) as venceu
+  -- Um concorrente por interessado (o mesmo nome escrito de dois jeitos conta uma vez). "Perdemos
+  -- para ele" só no Perdido: quem foi perdido, reaberto e ganho não conta contra a TRÍADE.
+  disputas as materialized (
+    select i.id, comercial_normalizar(x ->> 'nome') as chave, min(btrim(x ->> 'nome')) as nome, i.etapa,
+           i.etapa = 'PERDIDO' and bool_or(coalesce((x ->> 'venceu')::boolean, false)) as venceu
       from interessados i, jsonb_array_elements(i.concorrentes) x
      where i.etapa in ('GANHO', 'PERDIDO') and i.etapa_desde < v_fim and comercial_normalizar(x ->> 'nome') is not null
+       and i.concorrentes <> '[]'::jsonb
+     group by i.id, i.etapa, comercial_normalizar(x ->> 'nome')
   )
   select jsonb_build_object(
     'novos', (select count(*)::integer from coorte),
@@ -314,18 +440,32 @@ begin
     'porOrigem', coalesce((select jsonb_agg(jsonb_build_object('origem', o.origem, 'novos', o.novos, 'ganhos', o.ganhos) order by o.novos desc, o.origem)
                              from (select c.origem, count(*)::integer as novos, count(*) filter (where c.chegou >= 8)::integer as ganhos
                                      from coorte c group by c.origem) o), '[]'::jsonb),
+    -- K.1: a meta interna de 1 hora útil, medida da entrada à primeira resposta. A cotação tem prazo
+    -- próprio (24 horas) e fica fora da meta, contada à parte. Quem ainda não foi respondido e está
+    -- dentro do prazo fica em "aguardando", fora do total.
     'primeiroRetorno', (select jsonb_strip_nulls(jsonb_build_object(
-        'total', count(*) filter (where c.primeiro_retorno_ate is not null),
-        'noPrazo', count(*) filter (where c.primeira_resposta_em is not null and c.primeira_resposta_em <= c.primeiro_retorno_ate),
-        'foraDoPrazo', count(*) filter (where c.primeiro_retorno_ate is not null
-                                          and (c.primeira_resposta_em > c.primeiro_retorno_ate or (c.primeira_resposta_em is null and c.primeiro_retorno_ate < v_agora))),
-        'aguardando', count(*) filter (where c.primeiro_retorno_ate is not null and c.primeira_resposta_em is null and c.primeiro_retorno_ate >= v_agora),
-        'medianaMinutosUteis', round((percentile_cont(0.5) within group (order by comercial_minutos_uteis(c.criado_em, c.primeira_resposta_em)::double precision)
-                                        filter (where c.primeira_resposta_em is not null))::numeric),
+        'total', count(*) filter (where c.k1 and (c.primeira_resposta_em is not null or c.min_ate_agora > 60))::integer,
+        'noPrazo', count(*) filter (where c.k1 and c.min_resposta <= 60)::integer,
+        'foraDoPrazo', count(*) filter (where c.k1 and (c.min_resposta > 60 or (c.primeira_resposta_em is null and c.min_ate_agora > 60)))::integer,
+        'aguardando', count(*) filter (where c.k1 and c.primeira_resposta_em is null and c.min_ate_agora <= 60)::integer,
+        'medianaMinutosUteis', round((percentile_cont(0.5) within group (order by c.min_resposta::double precision)
+                                        filter (where c.k1 and c.primeira_resposta_em is not null))::numeric),
+        'cotacoes', jsonb_build_object(
+          'total', count(*) filter (where c.origem = 'COTACAO' and c.primeiro_retorno_ate is not null
+                                      and (c.primeira_resposta_em is not null or c.primeiro_retorno_ate < v_agora))::integer,
+          'noPrazo', count(*) filter (where c.origem = 'COTACAO' and c.primeira_resposta_em <= c.primeiro_retorno_ate)::integer,
+          'aguardando', count(*) filter (where c.origem = 'COTACAO' and c.primeira_resposta_em is null and c.primeiro_retorno_ate >= v_agora)::integer),
         'site', jsonb_build_object(
-          'total', count(*) filter (where c.origem = 'SITE'),
-          'noPrazo', count(*) filter (where c.origem = 'SITE' and c.primeira_resposta_em is not null and c.primeira_resposta_em < comercial_promessa_site(c.criado_em)))))
-      from coorte c),
+          'total', count(*) filter (where c.origem = 'SITE' and c.primeiro_retorno_ate is not null
+                                      and (c.primeira_resposta_em is not null or c.promessa < v_agora))::integer,
+          'noPrazo', count(*) filter (where c.origem = 'SITE' and c.primeiro_retorno_ate is not null and c.primeira_resposta_em < c.promessa)::integer,
+          'aguardando', count(*) filter (where c.origem = 'SITE' and c.primeiro_retorno_ate is not null and c.primeira_resposta_em is null
+                                           and c.promessa >= v_agora)::integer)))
+      from (select c.*, c.primeiro_retorno_ate is not null and c.origem is distinct from 'COTACAO' as k1,
+                   case when c.primeira_resposta_em is not null then comercial_minutos_uteis(c.criado_em, c.primeira_resposta_em) end as min_resposta,
+                   case when c.primeira_resposta_em is null then comercial_minutos_uteis(c.criado_em, v_agora) end as min_ate_agora,
+                   case when c.origem = 'SITE' then comercial_promessa_site(c.criado_em) end as promessa
+              from coorte c) c),
     'ganhos', (select jsonb_strip_nulls(jsonb_build_object(
         'quantos', count(*)::integer, 'novoMrr', coalesce(sum(g.mrr), 0)::bigint, 'semValor', count(*) filter (where g.mrr is null)::integer,
         'cicloMedioDias', round(avg(extract(epoch from g.em - g.criado_em) / 86400)::numeric)))
@@ -343,15 +483,26 @@ begin
                              from gente g left join atividades a on a.pessoa = g.pessoa left join mrr_pessoa m on m.pessoa = g.pessoa
                              left join meta_pessoa mp on mp.pessoa = g.pessoa), '[]'::jsonb),
     'concorrentes', coalesce((select jsonb_agg(jsonb_build_object('nome', s.nome, 'disputas', s.d, 'ganhamos', s.g, 'perdemosParaEle', s.pe) order by s.d desc, s.nome)
-                                from (select min(nome) as nome, count(*)::integer as d, count(*) filter (where etapa = 'GANHO')::integer as g,
-                                             count(*) filter (where venceu)::integer as pe
+                                from (select min(nome) as nome, count(distinct id)::integer as d,
+                                             count(distinct id) filter (where etapa = 'GANHO')::integer as g,
+                                             count(distinct id) filter (where venceu)::integer as pe
                                         from disputas group by chave) s), '[]'::jsonb))
   into v_mesj;
 
   -- O que está assim agora (decisão b).
-  with abertos as (
-    select i.id, i.etapa, comercial_tarefa(i) as t, p.probabilidade, comercial_mrr(i.id) as mrr
+  with abertos as materialized (
+    select i.id, i.etapa, comercial_tarefa_de(i, p.limite_dias, cd.passos, v_agora) as t, p.probabilidade, m.mrr
       from interessados i join parametros_etapa_comercial p on p.etapa = i.etapa
+      left join cadencias_comercial cd on cd.id = i.cadencia_id and i.cadencia_fim_em is null
+      -- o mesmo que comercial_mrr(i.id), sem uma chamada por linha
+      left join lateral (
+        select case when v.ciclo = 'ANUAL' and v.anual_centavos is not null then round(v.anual_centavos / 12.0)::bigint else v.mensal_centavos::bigint end as mrr
+          from propostas_comercial pr join versoes_proposta v on v.proposta_id = pr.id
+         where pr.interessado_id = i.id and v.mensal_centavos is not null
+           and (v.situacao = 'ACEITA' or (v.situacao in ('RASCUNHO', 'AGUARDA_DESCONTO', 'PRONTA', 'ENVIADA')
+                                          and not (v.situacao = 'ENVIADA' and v.valido_ate < v_hoje)))
+         order by (v.situacao = 'ACEITA') desc, v.numero desc
+         limit 1) m on true
      where i.anonimizado_em is null and p.aberta
   )
   select jsonb_build_object(
@@ -434,31 +585,34 @@ end $$;
 -- ---------------------------------------------------------------------------------------
 -- Janelas do condomínio (CM-18).
 
--- As janelas de um interessado (decisão g), com a situação de hoje. pedeAtencao: aberta, não
--- tratada e com quem se pode falar.
-create function comercial_janelas(i interessados) returns jsonb
+-- Os dias das janelas, lidos uma vez: assembleia de, assembleia até, mandato e fidelidade.
+create function comercial_dias_janela() returns integer[]
+language sql stable
+set search_path = public
+as $$
+  select array[configuracao_int('comercial_janela_assembleia_de_dias'), configuracao_int('comercial_janela_assembleia_ate_dias'),
+               configuracao_int('comercial_janela_mandato_dias'), configuracao_int('comercial_janela_fidelidade_dias')]
+$$;
+
+-- As janelas de um interessado (decisão g), com a situação do dia. pedeAtencao: aberta, não
+-- tratada e com quem se pode falar. Quem chama para muitos interessados (o Início) passa o dia,
+-- os dias e o não contatar já lidos.
+create function comercial_janelas_de(i interessados, p_aberto boolean, p_hoje date, p_dias integer[], p_pode boolean) returns jsonb
 language plpgsql stable
 set search_path = public
 as $$
 declare
-  v_hoje    date := comercial_hoje();
-  v_aberto  boolean := comercial_aberta(i.etapa);
   v_fechado boolean := i.etapa in ('PERDIDO', 'SEM_RESPOSTA');
-  v_ass_de  integer := configuracao_int('comercial_janela_assembleia_de_dias');
-  v_ass_ate integer := configuracao_int('comercial_janela_assembleia_ate_dias');
-  v_mand    integer := configuracao_int('comercial_janela_mandato_dias');
-  v_fid     integer := configuracao_int('comercial_janela_fidelidade_dias');
-  v_pode    boolean := not comercial_nao_contatar_tem(i.whatsapp, i.email, i.cnpj);
 begin
-  if i.anonimizado_em is not null or i.virou_cliente_em is not null or not (v_aberto or v_fechado) then return '[]'::jsonb; end if;
+  if i.anonimizado_em is not null or i.virou_cliente_em is not null or not (p_aberto or v_fechado) then return '[]'::jsonb; end if;
   return coalesce((
     with c (tipo, data_ref, de, ate) as (
-      select 'ASSEMBLEIA', i.assembleia_ordinaria, i.assembleia_ordinaria - v_ass_de, i.assembleia_ordinaria - v_ass_ate
-       where v_aberto and i.assembleia_ordinaria is not null
+      select 'ASSEMBLEIA', i.assembleia_ordinaria, i.assembleia_ordinaria - p_dias[1], i.assembleia_ordinaria - p_dias[2]
+       where p_aberto and i.assembleia_ordinaria is not null
       union all
-      select 'MANDATO', i.mandato_ate, i.mandato_ate - v_mand, i.mandato_ate where v_aberto and i.mandato_ate is not null
+      select 'MANDATO', i.mandato_ate, i.mandato_ate - p_dias[3], i.mandato_ate where p_aberto and i.mandato_ate is not null
       union all
-      select 'FIDELIDADE', i.fidelidade_ate, i.fidelidade_ate - v_fid, i.fidelidade_ate where i.fidelidade_ate is not null
+      select 'FIDELIDADE', i.fidelidade_ate, i.fidelidade_ate - p_dias[4], i.fidelidade_ate where i.fidelidade_ate is not null
       union all
       select 'RETOMAR', i.retomar_em, i.retomar_em, null::date where v_fechado and i.retomar_em is not null
       union all
@@ -467,17 +621,26 @@ begin
        where v_fechado and j.interessado_id = i.id and j.tipo = 'SINDICO_NOVO' and j.criado_em >= i.etapa_desde
     ), s as (
       select c.*, t.tratada_em, t.tratada_por,
-             case when c.de > v_hoje then 'PROXIMA' when c.ate is not null and c.ate < v_hoje then 'PASSOU' else 'ABERTA' end as situacao
+             case when c.de > p_hoje then 'PROXIMA' when c.ate is not null and c.ate < p_hoje then 'PASSOU' else 'ABERTA' end as situacao
         from c left join janelas_comercial t on t.interessado_id = i.id and t.tipo = c.tipo and t.data_ref = c.data_ref and t.tratada_em is not null
     )
     select jsonb_agg(jsonb_strip_nulls(jsonb_build_object(
              'tipo', s.tipo, 'data', s.data_ref, 'de', s.de, 'ate', s.ate, 'situacao', s.situacao,
              'tratada', s.tratada_em is not null, 'tratadaEm', s.tratada_em,
              'tratadaPor', case when s.tratada_por is not null then jsonb_build_object('id', s.tratada_por, 'nome', comercial_nome(s.tratada_por)) end,
-             'pedeAtencao', s.situacao = 'ABERTA' and s.tratada_em is null and v_pode))
+             'pedeAtencao', s.situacao = 'ABERTA' and s.tratada_em is null and p_pode))
            order by s.de, s.tipo)
       from s), '[]'::jsonb);
 end $$;
+
+-- As janelas de um interessado, lendo o dia, os dias e o não contatar (a ficha e o tratar).
+create function comercial_janelas(i interessados) returns jsonb
+language sql stable
+set search_path = public
+as $$
+  select comercial_janelas_de(i, comercial_aberta(i.etapa), comercial_hoje(), comercial_dias_janela(),
+                              not comercial_nao_contatar_tem(i.whatsapp, i.email, i.cnpj))
+$$;
 
 -- As janelas na ficha do interessado.
 create function comercial_janelas_ficha(p_pessoa uuid, p_id uuid) returns jsonb
@@ -581,20 +744,41 @@ set search_path = public
 as $$
 declare
   v_agora timestamptz := app_now();
+  v_hoje  date := comercial_hoje();
+  v_dias  integer[] := comercial_dias_janela();
   v_max   integer := configuracao_int('comercial_inicio_max');
   v jsonb;
 begin
   perform entrar_console(p_pessoa, 'console.comercial.ver');
-  with base as (
-    select i.id, i.condominio, i.etapa, i.responsavel_id, i.primeiro_retorno_ate,
-           comercial_aberta(i.etapa) as aberto,
-           comercial_aberta(i.etapa) and i.primeira_resposta_em is null and i.primeiro_retorno_ate < v_agora as sem_retorno,
-           case when comercial_aberta(i.etapa) then comercial_tarefa(i) end as t,
-           (select jsonb_agg(x order by x ->> 'de') from jsonb_array_elements(comercial_janelas(i)) x where (x ->> 'pedeAtencao')::boolean) as j
-      from interessados i
+  -- Os candidatos numa leitura só: os abertos e, dos fechados, só os que podem ter janela (fidelidade,
+  -- voltar a falar ou síndico novo sem tratar). Quem está no não contatar não aparece (LGPD).
+  with cand as materialized (
+    select i as r, p.aberta as aberto, p.limite_dias as lim, cd.passos
+      from interessados i join parametros_etapa_comercial p on p.etapa = i.etapa
+      left join cadencias_comercial cd on cd.id = i.cadencia_id and i.cadencia_fim_em is null
      where i.anonimizado_em is null and i.virou_cliente_em is null
-       and (comercial_aberta(i.etapa) or i.etapa in ('PERDIDO', 'SEM_RESPOSTA'))
-  ), itens as (
+       and (p.aberta
+            or (i.etapa in ('PERDIDO', 'SEM_RESPOSTA')
+                and (i.fidelidade_ate between v_hoje and v_hoje + v_dias[4] or i.retomar_em <= v_hoje
+                     or exists (select 1 from janelas_comercial s where s.interessado_id = i.id and s.tipo = 'SINDICO_NOVO'
+                                   and s.tratada_em is null and s.criado_em >= i.etapa_desde))))
+       -- a regra de comercial_nao_contatar_tem, em junção (uma chamada por linha levava segundos)
+       and not exists (select 1 from nao_contatar n where n.whatsapp = i.whatsapp)
+       and not exists (select 1 from nao_contatar n where n.email = lower(i.email))
+       and not exists (select 1 from nao_contatar n where n.cnpj = i.cnpj)
+  ), base as materialized (
+    select (c.r).id, (c.r).condominio, (c.r).etapa, (c.r).responsavel_id, (c.r).primeiro_retorno_ate,
+           c.aberto and (c.r).primeira_resposta_em is null and (c.r).primeiro_retorno_ate < v_agora as sem_retorno,
+           case when c.aberto then comercial_tarefa_de(c.r, c.lim, c.passos, v_agora) end as t,
+           -- Só calcula as janelas de quem tem alguma data dentro do aviso.
+           case when (c.aberto and ((c.r).assembleia_ordinaria between v_hoje + v_dias[2] and v_hoje + v_dias[1]
+                                     or (c.r).mandato_ate between v_hoje and v_hoje + v_dias[3]))
+                     or (c.r).fidelidade_ate between v_hoje and v_hoje + v_dias[4]
+                     or not c.aberto
+                then (select jsonb_agg(x order by x ->> 'de') from jsonb_array_elements(comercial_janelas_de(c.r, c.aberto, v_hoje, v_dias, true)) x
+                       where (x ->> 'pedeAtencao')::boolean) end as j
+      from cand c
+  ), itens as materialized (
     select b.*,
            case when b.sem_retorno then 'PRIMEIRO_RETORNO'
                 when b.t ->> 'situacao' = 'ATRASADO' then 'ATRASADO'
@@ -603,7 +787,7 @@ begin
            (case when b.sem_retorno then 1 else 0 end) + (case when not b.sem_retorno and b.t ->> 'situacao' = 'ATRASADO' then 1 else 0 end)
              + (case when b.t ? 'diasParado' then 1 else 0 end) + coalesce(jsonb_array_length(b.j), 0) as razoes
       from base b
-  ), ordenados as (
+  ), ordenados as materialized (
     select it.*,
            case it.motivo when 'PRIMEIRO_RETORNO' then 1 when 'ATRASADO' then 2 when 'PARADO' then 3 else 4 end as prioridade,
            case it.motivo when 'PRIMEIRO_RETORNO' then it.primeiro_retorno_ate
