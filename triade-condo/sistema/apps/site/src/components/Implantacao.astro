@@ -1,5 +1,5 @@
 ---
-// Implantação presencial: a foto em tela cheia e os quatro passos.
+// Implantação presencial no fundo claro aprovado, com as etapas em uma faixa própria.
 import Destaque from "./Destaque.astro";
 const passos = [
   { titulo: "Reunião", texto: "Um pedido do início ao fim, com os moradores vendo." },
@@ -8,12 +8,17 @@ const passos = [
   { titulo: "Orientação", texto: "Ao síndico e à equipe, com etiquetas QR para o mural." },
 ];
 ---
-<section class="foto-faixa" id="implantacao">
-  <img src="/encontro-1400.webp" srcset="/encontro-800.webp 800w, /encontro-1400.webp 1400w" sizes="100vw" loading="lazy" width="1400" height="933" alt="Síndica com um tablet conversa com uma moradora e um prestador no jardim do condomínio, ao fim da tarde." />
-  <div class="wrap">
-    <h2 class="titulo-g">Gente da TRÍADE <Destaque semTraco>na reunião</Destaque> do seu prédio</h2>
-    <p>Em Brasília e no DF, a equipe apresenta o sistema aos moradores, cadastra o prédio com você e deixa o WhatsApp do condomínio funcionando. Depois, continua por perto.</p>
-    <ol class="passos-impl">{passos.map((p, i) => <li><span class="mono-d">{i + 1}</span><b>{p.titulo}</b><span>{p.texto}</span></li>)}</ol>
-    <a href="/precos#implantacao" class="link-claro">Quanto custa a implantação</a>
+<section class="implantacao-clara ancora" id="implantacao" aria-labelledby="titulo-implantacao">
+  <picture class="implantacao-cena">
+    <source media="(max-width: 640px)" srcset="/encontro-claro-800.webp" />
+    <img src="/encontro-claro-1800.webp" loading="lazy" width="1800" height="870" alt="Uma profissional com tablet conversa com uma moradora e um prestador no jardim do condomínio." />
+  </picture>
+  <div class="wrap implantacao-conteudo">
+    <div class="implantacao-intro">
+      <h2 class="titulo-g" id="titulo-implantacao">Gente da TRÍADE <Destaque semTraco>na reunião</Destaque> do seu prédio</h2>
+      <p class="lead2">Em Brasília e no DF, a equipe apresenta o sistema aos moradores, cadastra o prédio com você e deixa o WhatsApp do condomínio funcionando. Depois, continua por perto.</p>
+    </div>
+    <ol class="implantacao-passos">{passos.map((p, i) => <li><span class="mono-d" aria-hidden="true">{i + 1}</span><b>{p.titulo}</b><span>{p.texto}</span></li>)}</ol>
+    <a href="/precos#implantacao" class="implantacao-link">Quanto custa a implantação</a>
   </div>
 </section>
