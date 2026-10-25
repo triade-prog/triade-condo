@@ -504,7 +504,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | CM-16 | **Ficha do prédio no interessado**: unidades, administradora e o app que ela usa, sistema atual e quando acaba a fidelidade dele, data da próxima assembleia ordinária, fim do mandato do síndico, quem decide (quem trouxe, síndico, conselho, assembleia) e o roteiro da visita ao prédio, que alimenta a proposta | [C] |
 | CM-17 | **Objeções e concorrentes**: lista fechada de objeções (vai aumentar a taxa, moradores idosos, já temos app da administradora, a assembleia decide) com resposta pronta para cada uma; cada negócio registra os concorrentes na disputa, o preço deles e quem ganhou | [C] |
 | CM-18 | **Janelas do condomínio**: aviso 30 a 60 dias antes da assembleia ordinária (para entrar no orçamento), perto do fim do mandato e do fim da fidelidade do sistema atual ("janela de troca"). Perdido volta a ser lembrado na troca de síndico, por evento e não por calendário | [C] |
-| CM-19 | **Custo por apartamento**: na proposta e no kit, o valor mensal dividido pelas unidades (R$ por apartamento por mês), com a implantação à parte. Marcado como estimativa, com as premissas guardadas na versão; sem ROI e sem citar o que ainda não existe (EM-07) | [C] |
+| CM-19 | **Custo por apartamento**: na proposta e no kit, o valor mensal dividido pelas unidades (R$ por apartamento por mês), com a implantação à parte. Marcado como estimativa, com as premissas guardadas na versão; sem ROI e sem citar o que ainda não existe (EM-07). Campo opcional da taxa média de condomínio do prédio: quando preenchido, mostra também quanto a TRÍADE pesa nessa taxa (ex.: R$ 3,49 por apartamento, cerca de 0,5% de uma taxa de R$ 650); a mensagem principal é "menos de R$ 5 por apartamento por mês" (DC17) | [C] |
 | CM-20 | **Kit para o conselho e a assembleia**: sai dos dados do prédio e da proposta: apresentação curta (problema, como funciona pelo WhatsApp, custo por apartamento, piloto, como cancelar), comparativo TRÍADE × sistema atual × concorrente pelos critérios do síndico, proposta em PDF, minuta de texto para a ata e explicação de privacidade para o morador | [C] |
 | CM-21 | **Piloto com critério de sucesso**: prazo de 30 a 60 dias e meta combinada antes (por exemplo, pedidos com prazo cumprido), medida pela própria Plataforma; no fim, vira proposta ou perdido com motivo | [C] |
 | CM-22 | **Parceiros e indicação**: síndico profissional, administradora, construtora ou cliente que indica (NG-08, NG-20); comissão recorrente por prédio ativo calculada no Console e extrato para o parceiro. O pagamento da comissão fica fora do sistema no começo | [C] |
@@ -518,7 +518,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | CM-30 | **Renovação e reajuste**: aniversário do contrato, índice e aviso ao síndico antes de aplicar, fim do preço de fundador e aditivo gerado (CM-13). Nada muda sem o aviso enviado | [C] |
 | CM-31 | **Cancelamento e retenção**: motivo de cancelamento em lista própria (separada do motivo de perda), uma tentativa de retenção registrada, devolução dos dados e sinais de risco: síndico novo eleito, uso caindo (PI-13), troca de sistema na pauta da assembleia | [C] |
 | CM-32 | **Expansão**: oportunidade de mais um prédio do mesmo síndico ou administradora, mudança de faixa e reconquista de quem saiu, num funil próprio ligado ao cliente | [C] |
-| CM-33 | **Calculadora de custo por apartamento no site** (EM-04): o síndico digita as unidades e vê o valor por apartamento pela Tabela de preços (CM-19, sem ROI). Se quiser a proposta, deixa o contato e vira interessado com a faixa preenchida | [C] |
+| CM-33 | **Calculadora de custo por apartamento no site** (EM-04): o síndico digita as unidades e vê o valor por apartamento pela Tabela de preços (CM-19, sem ROI); se digitar também a taxa média de condomínio, que é opcional, vê quanto isso pesa na taxa (DC17). Se quiser a proposta, deixa o contato e vira interessado com a faixa preenchida | [C] |
 
 ---
 
@@ -763,3 +763,11 @@ Pedido pela Carolina: um painel comercial dentro do Console, com CRM, gerador de
 - Parceiros com comissão calculada no Console e paga fora dele (O.1); consentimento no site e legítimo interesse documentado no registro à mão (P.1).
 - Renovação, cancelamento e expansão ficam no Comercial (Q.1); cadência só cria tarefas (R.1); calculadora pública no site (S.1); contrato-quadro com desconto por volume na Tabela de preços (T.1).
 - Fica para depois: pontuação automática, rodízio entre vendedores, automações livres, registro automático de e-mail e WhatsApp, IA que resume antes da ligação e demonstração autoguiada.
+
+---
+
+## Pesquisa da Carolina sobre o preço por apartamento (25/10/2026)
+
+A pedido da Carolina, uma busca web sobre quanto cada morador paga de taxa de condomínio (média no Brasil de R$ 516 a R$ 828 por mês; no Distrito Federal, perto de R$ 494, e em Águas Claras de R$ 650 a R$ 670) mostrou que a TRÍADE custa de R$ 2 a R$ 10 por apartamento por mês na tabela cheia, perto de 0,5% a 1,5% da taxa. Página da pesquisa: https://claude.ai/artifact/8J8LcjjrSxuFAezurF71jA. As decisões A a D foram aprovadas pela Carolina em 25/10/2026 (DC17).
+
+**Nenhuma ideia nova.** **Ajustes:** CM-19 e CM-33 ganham o campo opcional da taxa média do prédio, que mostra quanto a TRÍADE pesa nessa taxa, sem ROI (EM-07).

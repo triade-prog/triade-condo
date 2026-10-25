@@ -23,7 +23,7 @@ O `arquivo/` **não é base de construção**: o que for útil de lá entra prim
 
 ## Decisões fechadas
 
-As mesmas decisões estão no painel de execução (DC1 a DC16). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
+As mesmas decisões estão no painel de execução (DC1 a DC17). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
 
 - **DC1 · Dois sistemas.** Plataforma do síndico (painel web do síndico, WhatsApp do morador e acessos por link ou QR) e Console TRÍADE (sistema interno da equipe). A Base comum são as regras que os dois seguem por baixo; não é um terceiro sistema.
 - **DC2 · O cliente é o condomínio.** É a unidade que contrata e a unidade de separação dos dados: toda informação pertence a um condomínio e nunca aparece em outro (PT-01). Uma pessoa pode ter vínculo com mais de um condomínio (MU-04), o que atende o síndico profissional.
@@ -65,6 +65,11 @@ As mesmas decisões estão no painel de execução (DC1 a DC16). Mudar qualquer 
   - Preço aberto no site, "a partir de", com a tabela e a implantação explicada (D3, EM-07). Um plano por faixa, com tudo o que está pronto; os conjuntos viram adicionais depois (D5). Avisos do atendimento pelo WhatsApp incluídos; comunicados pelo WhatsApp com franquia mensal, nada ilimitado (D6). Começo por demonstração e teste assistido, sem teste grátis aberto (D7).
   - A tabela fica no Console (PI-21, E1 a E4 e F1 a F4): só Administração e Financeiro mudam, com motivo e histórico; "Usar a tabela" preenche o plano do cliente sem gravar e marca todos os conjuntos; mudar a tabela nunca mexe em quem já tem plano. Substitui a regra da R2 de que nenhum preço ficava no sistema.
   - Pendentes: o desconto de síndico profissional (NG-05, proposto 15% a partir do 2º condomínio) e a franquia exata de comunicados, que sai da planilha de custo (NG-13) quando o WhatsApp oficial estiver no ar.
+- **DC17 · Preço por apartamento (Carolina, 25/10/2026).** Fecha as decisões A a D da pesquisa sobre a taxa de condomínio (https://claude.ai/artifact/8J8LcjjrSxuFAezurF71jA). Não muda os valores da DC16.
+  - A mensagem principal da venda é "menos de R$ 5 por apartamento por mês", com o peso na taxa daquele prédio, no site, na proposta e no kit para o conselho. Sem ROI e sem economia prometida (EM-07).
+  - A proposta e o kit (CM-19) e a calculadora do site (CM-33) ganham o campo opcional da taxa média de condomínio do prédio; preenchido, mostram quanto a TRÍADE pesa nessa taxa.
+  - O preço de fundador continua (R$ 129, 229, 349 e 549). A tabela cheia é revista quando for passar a valer, com os números dos fundadores (uso, tempo da equipe e custo do WhatsApp); o ponto de partida estudado é R$ 249, 449, 699 e 1.049.
+  - Abre o estudo do preço dos serviços humanos (SH-03, SH-04, SH-05 e SH-08) cobrados por apartamento, onde o valor pode ser maior.
 
 ## Como as ideias viram código
 
