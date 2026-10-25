@@ -70,11 +70,11 @@ insert into partes_exportacao (condominio_id, exportacao_id, numero, tipo, situa
 select agua, id, 1, 'DADOS', 'PRONTA', agua || '/' || id || '/dados.zip', 1000, app_now() from exportacoes, c where condominio_id = agua;
 
 -- O catálogo (regra 1).
-select is((select count(*)::integer from retencao_tipos), 34, 'PT-11: o catálogo tem os 34 tipos de dado do inventário (32 da F0.11 e 2 da R5)');
+select is((select count(*)::integer from retencao_tipos), 36, 'PT-11: o catálogo tem os 36 tipos de dado do inventário (32 da F0.11, 2 da R5 e 2 da R17.4)');
 select is((select string_agg(sistema || ':' || n, ', ' order by sistema) from (select sistema, count(*) n from retencao_tipos group by sistema) x),
-  'CONSOLE:4, PLATAFORMA:30', 'PT-11: 30 tipos na Plataforma e 4 no Console');
-select is((select array_agg(numero order by numero) from retencao_tipos), (select array_agg(n) from generate_series(1, 34) n),
-  'PT-11: numerados de 1 a 34, sem buraco');
+  'CONSOLE:6, PLATAFORMA:30', 'PT-11: 30 tipos na Plataforma e 6 no Console');
+select is((select array_agg(numero order by numero) from retencao_tipos), (select array_agg(n) from generate_series(1, 36) n),
+  'PT-11: numerados de 1 a 36, sem buraco');
 select is((select count(*)::integer from retencao_tipos where situacao = 'NA_ROTINA'), 18, 'PT-11: 18 tipos já com a rotina aplicando o prazo (o conselho entrou na 0305)');
 select is((select count(*)::integer from retencao_tipos t
             where t.situacao = 'NA_ROTINA' and t.codigo <> 'TRANSCRICAO'

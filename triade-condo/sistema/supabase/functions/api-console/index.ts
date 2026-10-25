@@ -25,6 +25,8 @@ const app = criarApiConsole(Deno.env.get("REPASSE_SEGREDO"), {
   urlApp: exigir("CONSOLE_URL"),
   urlPlataforma: exigir("PLATAFORMA_URL"),
   armazenamentoSuporte: armazenamentoSupabase(url, chaveServico, fetch, "suporte"),
+  // Documentos do aceite e contratos do Comercial (0308): bucket privado "comercial", só PDF, até 10 MB.
+  armazenamentoContrato: armazenamentoSupabase(url, chaveServico, fetch, "comercial"),
   whatsapp: waflyToken && chaveWhatsapp
     ? { conector: conectorWafly(waflyToken), chave: await chaveCredenciais(chaveWhatsapp), urlAvisos: `${url}/functions/v1/api-plataforma` }
     : undefined,

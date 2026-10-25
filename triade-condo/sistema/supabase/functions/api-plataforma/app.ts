@@ -249,6 +249,8 @@ export interface DepsPlataforma extends DepsSessao {
   armazenamentoRelatorios?: Armazenamento;
   /** Fotos da etiqueta e da retirada das encomendas (Portaria 1, PA-01). */
   armazenamentoPortaria?: Armazenamento;
+  /** Documentos do aceite e contratos do Comercial (0308): aqui só a rotina da retenção apaga. */
+  armazenamentoComercial?: Armazenamento;
   /** Imagens dos chamados de suporte (peça R4, PI-20). */
   armazenamentoSuporte?: Armazenamento;
   /** E-mail dos comunicados e documentos (CD-13, CD-14). Sem correio, a fila espera. */
@@ -365,7 +367,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     armazenamentos: {
       pedidos: deps.armazenamento, manutencoes: deps.armazenamentoManutencao, comunicados: deps.armazenamentoComunicados,
       documentos: deps.armazenamentoDocumentos, exportacoes: deps.armazenamentoExportacoes, suporte: deps.armazenamentoSuporte,
-      relatorios: deps.armazenamentoRelatorios, portaria: deps.armazenamentoPortaria,
+      relatorios: deps.armazenamentoRelatorios, portaria: deps.armazenamentoPortaria, comercial: deps.armazenamentoComercial,
     },
   });
 
