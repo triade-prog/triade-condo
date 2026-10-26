@@ -12,7 +12,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { cpfValido, formatarCpf, linkWhatsappComercial, mostrarValor, TEXTO_ACEITE, TEXTO_CONCORDO, TEXTO_PLANEJADO } from "@triade/domain";
 import { Aviso, Botao, CampoTexto, Carregando, chamarApi, classeBotao, Icone, Logo, Marca, textoDoErro, type ErroApi } from "@triade/ui";
 import {
-  conteudoDoLink, documentoKit, documentoProposta, horaCompleta, linhasDoPreco, ondeFica, ORDEM_PECAS, ROTAS_PROPOSTAS, textoImpressao, tituloPreco, type Kit,
+  conteudoDoLink, destaqueCusto, documentoKit, documentoProposta, horaCompleta, linhasDoPreco, ondeFica, ORDEM_PECAS, ROTAS_PROPOSTAS, textoImpressao, tituloPreco, type Kit,
   type PropostaPublica,
 } from "./propostas.ts";
 
@@ -58,6 +58,17 @@ export function Duvida({ texto = "Tenho uma dúvida", mensagem = "Olá! Tenho um
       className={classeBotao("discreto", "w-full sm:w-auto")}>
       <Icone nome="whats" />{texto}
     </a>
+  );
+}
+
+/** O destaque "Menos de R$ 5 por apartamento por mês" (quadros 446 e 447): só quando é verdade. */
+export function DestaqueCusto({ d }: { d: { titulo: string; frase: string } | null }) {
+  if (!d) return null;
+  return (
+    <div className="grid gap-0.5 rounded-[14px] border border-ok/30 bg-ok-fundo px-4 py-3">
+      <p className="t-titulo-cartao text-ok">{d.titulo}</p>
+      <p className="t-texto">{d.frase}</p>
+    </div>
   );
 }
 
@@ -183,6 +194,7 @@ function Proposta({ codigo, inicial }: { codigo: string; inicial: PropostaPublic
 
       <p className="t-apoio">{`Para ${para}${p.aosCuidados ? ` · aos cuidados de ${p.aosCuidados}` : ""}`}</p>
       {aceita ? <h2 className="t-titulo-tela">Proposta para organizar os pedidos do seu prédio</h2> : <h1 className="t-titulo-tela">Proposta para organizar os pedidos do seu prédio</h1>}
+      <DestaqueCusto d={destaqueCusto(c, "que o prédio informou")} />
 
       <Bloco rotulo="Preço">
         <span className="t-apoio">{tituloPreco(c)}</span>

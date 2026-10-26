@@ -46,6 +46,19 @@ export interface Interessado {
   tarefa: Tarefa;
   atencao: boolean;
   temWhatsapp: boolean;
+  /** O código do link de agendamento de quem atende (ou o da equipe), para o [link de agendamento] (R17.6b). */
+  linkAgenda?: string;
+  /** Agendou pelo link com só o WhatsApp ou só o e-mail de outro interessado (0310, r1). */
+  possivelDuplicado?: { id: string; condominio: string };
+}
+
+/** O agendamento pelo link que não marcou (0310, C): fica em destaque na ficha até alguém da
+ *  equipe registrar uma conversa. */
+export interface AgendamentoRecusado {
+  motivo: "NAO_CONTATAR" | "DEMONSTRACAO_MARCADA";
+  em: string;
+  /** O horário que a pessoa pediu, já em texto ("terça, 27/10, 15:30"). */
+  pedido: string;
 }
 
 export interface EtapaParametro {
@@ -107,6 +120,8 @@ export interface Predio {
   criterioOutro?: string;
   /** O problema do prédio, em texto curto: abre a apresentação do kit. */
   problema?: string;
+  /** A taxa média de condomínio informada, em reais (DC17, 0310): só para mostrar o peso na taxa. */
+  taxaCondominioMedia?: number;
 }
 
 export interface Objecao {
@@ -122,6 +137,7 @@ export interface PassoCadencia {
 }
 
 export interface FichaInteressado extends Interessado {
+  agendamentoRecusado?: AgendamentoRecusado;
   whatsapp?: string;
   email?: string;
   cnpj?: string;

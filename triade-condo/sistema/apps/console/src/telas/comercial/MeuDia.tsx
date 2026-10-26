@@ -10,7 +10,8 @@ import { linkWhatsappComercial, preencherMensagem } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, ErroCarregar, Icone, textoDoErro, Vazio } from "@triade/ui";
 import { CabecaPagina, CLASSE_LINK_LINHA, plural } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
-import { linhaInteressado, ROTAS_COMERCIAL, SelosAtencao, textoTarefa } from "./comum.tsx";
+import { urlAgenda } from "./agenda.ts";
+import { linhaInteressado, linkComConvite, ROTAS_COMERCIAL, SelosAtencao, textoTarefa } from "./comum.tsx";
 import { JanelaConversa, JanelaNovoInteressado } from "./janelas.tsx";
 import type { FichaInteressado, Interessado, MeuDia as DadosMeuDia } from "./tipos.ts";
 
@@ -26,7 +27,13 @@ function Item({ i, podeEditar, feito, registrar, avisar }: {
     if (!r.ok || !r.dados.whatsapp) return avisar(r.ok ? "Este interessado está sem WhatsApp." : textoDoErro(r.erro));
     const f = r.dados;
     const passo = i.tarefa.tarefa === "CADENCIA" ? i.tarefa.texto : undefined;
-    window.location.href = canal === "tel" ? `tel:+${f.whatsapp}` : linkWhatsappComercial(f.whatsapp!, preencherMensagem(passo ?? "", { nome: f.pessoa, condominio: f.condominio }));
+    if (canal === "tel") return void (window.location.href = `tel:+${f.whatsapp}`);
+    // O [link de agendamento] sai com o convite desta ficha (0310, A).
+    const l = await linkComConvite(f.id, f.linkAgenda, passo ?? "");
+    if (!l.ok) return avisar(textoDoErro(l.erro));
+    window.location.href = linkWhatsappComercial(f.whatsapp!, preencherMensagem(passo ?? "", {
+      nome: f.pessoa, condominio: f.condominio, linkAgenda: l.link ?? (f.linkAgenda ? urlAgenda(window.location.origin, f.linkAgenda) : null),
+    }));
   }
 
   async function cadenciaFeita() {
