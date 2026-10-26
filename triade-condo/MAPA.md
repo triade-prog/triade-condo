@@ -9,30 +9,30 @@ Versão visual e interativa (com busca e filtro por forma): [`mapa.html`](mapa.h
 
 | Parte | Peças | Ideias |
 |---|---|---|
-| Plataforma do síndico | 16 | 202 |
-| Console TRÍADE | 10 | 72 |
+| Plataforma do síndico | 16 | 206 |
+| Console TRÍADE | 10 | 73 |
 | Base comum | 6 | 38 |
 | Fora do software | 4 | 34 |
-| **Total** | **36** | **346** |
+| **Total** | **36** | **351** |
 
 ## Mapa mental
 
 ```mermaid
 mindmap
-  root((TRÍADE Condo · 346 ideias))
-    Plataforma do síndico · 202
+  root((TRÍADE Condo · 351 ideias))
+    Plataforma do síndico · 206
       Painel web do síndico
         Início · 4
         Pedidos · 25
         Decisões e aprovações · 4
         Moradores e unidades · 8
-        Comunicados e documentos · 16
-        Manutenção e prestadores · 14
+        Comunicados e documentos · 17
+        Manutenção e prestadores · 16
         Agenda · 9
         Orçamentos e compras · 9
         Dinheiro do prédio · 30
         Portaria e encomendas · 10
-        Vida em condomínio · 7
+        Vida em condomínio · 8
         Indicadores e relatórios · 10
         Memória do prédio · 6
         Configurações · 19
@@ -40,7 +40,7 @@ mindmap
         WhatsApp do morador · 24
       Participação sem conta
         Links e QR · 7
-    Console TRÍADE · 72
+    Console TRÍADE · 73
       Carteira de clientes · 4
       Implantação · 5
       Planos e liberação · 6
@@ -50,7 +50,7 @@ mindmap
       Equipe interna · 3
       Saúde e capacidade · 3
       Mensagens e custos · 2
-      Comercial · 33
+      Comercial · 34
     Base comum · 38
       Segurança e acesso · 8
       Dados e histórico · 6
@@ -77,13 +77,13 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Pedidos | AT-01 a 04, 06, 07, 09, 11 a 15, 17, 18, 20, 26, 27, 31 a 33; IA-03, 04, 12, 13, 17 |
 | Decisões e aprovações | V-14; AT-23; IA-08; FC-10 |
 | Moradores e unidades | MU-01, 02, 06 a 11 |
-| Comunicados e documentos | CD-01, 02, 04 a 11, 13 a 15; IA-05 a 07 |
-| Manutenção e prestadores | V-13; MP-01 a 07, 09 a 11, 13, 15, 16 |
+| Comunicados e documentos | CD-01, 02, 04 a 11, 13 a 15; IA-05 a 07, 21 |
+| Manutenção e prestadores | V-13; MP-01 a 07, 09 a 11, 13, 15 a 18 |
 | Agenda | AG-01 a 09 |
 | Orçamentos e compras | OC-01, 02, 04 a 10 |
 | Dinheiro do prédio | FC-01 a 03, 05 a 09, 11; DR-01 a 13, 15 a 22 |
 | Portaria e encomendas | PA-01 a 05, 07 a 11 |
-| Vida em condomínio | AC-01 a 07 |
+| Vida em condomínio | AC-01 a 08 |
 | Indicadores e relatórios | TR-01 a 05, 07 a 10; IA-14 |
 | Memória do prédio | MP-12, 14; CT-02 a 04; IA-09 |
 | Configurações | V-04 a 06, 09; AT-05, 10, 25, 29; CF-01 a 08, 10, 12; NG-21 |
@@ -103,7 +103,7 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Equipe interna | PI-10, 12, 18 |
 | Saúde e capacidade | PI-13, 15; TR-06 |
 | Mensagens e custos | NG-13, 15 |
-| Comercial | CM-01 a 33 |
+| Comercial | CM-01 a 34 |
 
 **Base comum**
 
@@ -217,7 +217,7 @@ Quem mora em cada unidade, os contatos autorizados e as mudanças.
 | MU-11 | Lista de unidades com contadores, etiquetas à venda e à locação, busca por nome, telefone e placa | Função |
 | MU-02 | Verificação do vínculo contato ↔ unidade; contato desconhecido não acessa nada restrito | Regra |
 
-#### Comunicados e documentos (16)
+#### Comunicados e documentos (17)
 
 Avisos, regimento, convenção, atas e o arquivo do prédio.
 
@@ -234,13 +234,14 @@ Avisos, regimento, convenção, atas e o arquivo do prédio.
 | IA-05 | Redação de comunicados e avisos | Função |
 | IA-06 | Rascunho de ata a partir de anotações de reunião real | Função |
 | IA-07 | Resumo de documentos longos: orçamento anual, laudos, contratos | Função |
+| IA-21 | Rascunho de ata a partir da gravação transcrita da assembleia, aprovado por pessoa | Função |
 | CD-02 | Público autorizado: todo o condomínio, torre ou bloco, unidade ou contatos escolhidos (uCondo, MeuVizy) | Regra |
 | CD-04 | Arquivos privados com acesso por permissão; nada em pasta pública | Regra |
 | CD-11 | Plano de comunicação do condomínio: o que o morador recebe, quando, e sobre o que é consultado | Configuração |
 | CD-08 | Acompanhar recebimento dos comunicados quando o canal permitir | Indicador |
 | CD-10 | Carta física ou eletrônica para convocação formal | Integração |
 
-#### Manutenção e prestadores (14)
+#### Manutenção e prestadores (16)
 
 Preventivas, tarefas, vistorias e quem executa cada serviço.
 
@@ -257,6 +258,8 @@ Preventivas, tarefas, vistorias e quem executa cada serviço.
 | MP-11 | Identificar dano causado por morador e cobrar ressarcimento | Função |
 | MP-15 | Canal de defeitos construtivos com a construtora, separado da manutenção do condomínio | Função |
 | MP-16 | Plano de manutenção de longo prazo com previsão orçamentária | Função |
+| MP-17 | Vencimentos legais do prédio (bombeiros, SPDA, NR-13, elevadores, seguro) com aviso antes de vencer | Função |
+| MP-18 | Reforma de unidade pela NBR 16280: pedido, documentos do responsável técnico, autorização e termo | Função |
 | V-13 | Construtora/incorporadora como ator: defeitos de obra e canal de venda | Função |
 | MP-04 | Vínculo opcional entre manutenção, pedido do morador e agenda | Regra |
 | MP-13 | Programa de manutenção alinhado à ABNT NBR 5674 | Regra |
@@ -347,7 +350,7 @@ Encomendas, visitantes, turnos de portaria e chaves.
 | PA-08 | Receptor sonoro local: interfone coletivo, campainha sem fio por unidade, controlador integrável (Intelbras, Shelly) | Integração |
 | PA-09 | Armário de encomendas em locação, com sistema, manutenção e aviso no WhatsApp | Integração |
 
-#### Vida em condomínio (7)
+#### Vida em condomínio (8)
 
 Reservas, enquetes, assembleias e convivência.
 
@@ -359,6 +362,7 @@ Reservas, enquetes, assembleias e convivência.
 | AC-05 | Classificados entre moradores | Função |
 | AC-06 | Limite de reservas por unidade e por período, com tolerância | Regra |
 | AC-07 | Áreas comuns já cadastradas com regras sugeridas, para o síndico ajustar e ativar | Configuração |
+| AC-08 | Agendamento de mudança dentro das regras do regimento, com confirmação e as mudanças do dia na portaria | Função |
 | AC-04 | Marketplace de serviços para o morador: internet, energia, serviços residenciais | Integração |
 
 #### Indicadores e relatórios (10)
@@ -574,7 +578,7 @@ Quanto custa operar cada condomínio, a começar pelo WhatsApp.
 | NG-15 | Planejar custo das mensagens: cobrança por mensagem desde 01/10/2026; comunicados podem cair na categoria marketing,… | Regra |
 | NG-13 | Planilha de custo por condomínio: mensagens, provedor, hospedagem, horas de implantação | Indicador |
 
-#### Comercial (33)
+#### Comercial (34)
 
 Interessados, funil, propostas e contrato, até o condomínio virar cliente.
 
@@ -613,6 +617,7 @@ Interessados, funil, propostas e contrato, até o condomínio virar cliente.
 | CM-31 | Cancelamento e retenção, com motivo próprio, tentativa registrada e sinais de risco | Função |
 | CM-32 | Expansão: mais um prédio, mudança de faixa e reconquista, num funil próprio | Aba |
 | CM-33 | Calculadora de custo por apartamento no site, que vira interessado ao pedir proposta | Função |
+| CM-34 | Proposta em formato de apresentação: grade de apartamentos, tabela com a faixa, incluído e à parte com preço, quem cuida | Função |
 
 ---
 

@@ -130,6 +130,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | IA-18 | IA conversa com o morador para completar a descrição e pedir foto antes de registrar o pedido (Vendoroo) | [INT] |
 | IA-19 | **Ajuda de cada tela**: texto curto sobre o que a tela faz e como usar, aberto por um botão na própria tela. O mesmo texto alimenta o assistente que tira dúvidas do síndico e é atualizado na mesma entrega que muda a tela (SeuCondomínio) | [BR] |
 | IA-20 | **Motor de IA com freio**: todas as funções de IA passam por um conector que dá para trocar, como o do WhatsApp. Cada chamada fica registrada por condomínio, com função, modelo, tamanho e custo. Cada condomínio tem um limite por mês para cada função, definido pela TRÍADE. Quando o limite acaba, a função para até o mês virar, sem travar o atendimento. A TRÍADE tem uma chave no Console que desliga a IA do condomínio, e só a Administração muda essa chave. O síndico liga ou desliga cada função em Configurações › Ajuda da IA, onde vê o que vai para a IA e o uso do mês, sem valores. Nome e telefone saem do texto antes do envio | [C] |
+| IA-21 | **Ata a partir da gravação da assembleia**: com o aviso de gravação aos presentes, o áudio da assembleia ou reunião é transcrito e a IA monta o rascunho da ata (pauta, presença, votações e deliberações), que o síndico ou o secretário revisa e aprova antes de valer (IA-15). Amplia a IA-06, que parte de anotações, e depende da transcrição de áudio (W-06) (Seu Condomínio) | [BR] |
 
 ---
 
@@ -212,6 +213,8 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | MP-14 | Manual de uso e manutenção do prédio acessível | [INT] |
 | MP-15 | **Canal de defeitos construtivos com a construtora**, separado da manutenção do condomínio (i-Neighbour) | [INT] |
 | MP-16 | Plano de manutenção de longo prazo com previsão orçamentária (strata australiano) | [INT] |
+| MP-17 | **Vencimentos legais do prédio**: certificado do Corpo de Bombeiros (AVCB, CLCB ou o nome usado no estado), SPDA, vasos de pressão (NR-13), elevadores, seguro obrigatório e outros laudos com validade, cada um com o documento no prontuário (MP-12), a data de vencimento e o aviso ao síndico antes de vencer, com antecedência ajustável. A renovação vira manutenção ou compromisso e a data aparece na agenda (AG-09). A lista de obrigações vem sugerida e o condomínio ajusta, porque muda por estado e por prédio; o sistema avisa, não certifica nem dá parecer técnico (Seu Condomínio) | [BR] |
+| MP-18 | **Reforma de unidade pela ABNT NBR 16280**: o morador pede autorização pelo painel ou pelo WhatsApp com o plano de reforma, o responsável técnico e a ART ou RRT; o síndico analisa, pede ajuste, autoriza ou recusa com motivo, e o termo de responsabilidade fica assinado no pedido. Datas, horários permitidos e prestadores da obra ficam registrados, com check-in pelo QR (MP-08), e a reforma termina com o registro de conclusão. O sistema organiza o rito da norma; a análise técnica é de profissional habilitado (Seu Condomínio) | [BR] |
 
 ---
 
@@ -295,6 +298,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | AC-05 | Classificados entre moradores (SindIA) | [BR] |
 | AC-06 | Limite de reservas por unidade e por período (ex.: duas por mês na churrasqueira), com tolerância configurável e aviso claro quando o limite foi atingido (SeuCondomínio) | [BR] |
 | AC-07 | **Áreas comuns já cadastradas**: os tipos comuns (salão de festas, churrasqueira, quadra, academia) vêm prontos, com regras sugeridas de aprovação, antecedência, horário, capacidade e limite, para o síndico só ajustar e ativar (SeuCondomínio) | [BR] |
+| AC-08 | **Agendamento de mudança**: o morador pede data e horário da mudança (entrada ou saída) dentro das regras do regimento (dias, horários, elevador, proteção, aviso prévio); a gestão confirma ou propõe outro horário, a portaria vê as mudanças do dia e o conflito com outra mudança ou reserva aparece antes. Liga com a entrada e saída de morador (MU-07) sem mudar o vínculo sozinho (Seu Condomínio) | [BR] |
 
 ---
 
@@ -519,6 +523,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | CM-31 | **Cancelamento e retenção**: motivo de cancelamento em lista própria (separada do motivo de perda), uma tentativa de retenção registrada, devolução dos dados e sinais de risco: síndico novo eleito, uso caindo (PI-13), troca de sistema na pauta da assembleia | [C] |
 | CM-32 | **Expansão**: oportunidade de mais um prédio do mesmo síndico ou administradora, mudança de faixa e reconquista de quem saiu, num funil próprio ligado ao cliente | [C] |
 | CM-33 | **Calculadora de custo por apartamento no site** (EM-04): o síndico digita as unidades e vê o valor por apartamento pela Tabela de preços (CM-19, sem ROI). Se quiser a proposta, deixa o contato e vira interessado com a faixa preenchida | [C] |
+| CM-34 | **Proposta em formato de apresentação**: a proposta (CM-07) ganha uma estrutura fixa e personalizada: capa com o nome do condomínio, a cidade e as unidades; a grade de apartamentos (um quadrado por unidade) ao lado do custo por apartamento (CM-19); a Tabela de preços inteira com a faixa do cliente destacada; o quadro do que está incluído, do que é cobrado à parte, sempre com preço, e do que a TRÍADE não faz (EM-07); a página de quem vende e de quem vai implantar, com nome e contato; as condições (vigência, reajuste, cancelamento, dados e LGPD) e o próximo passo com o aceite pelo link. Vale para o link e para o PDF. Ideia vinda da proposta da Seu Condomínio, sem copiar o que ela tem de fraco (extras sem preço, aceite em papel) | [C] [BR] |
 
 ---
 
@@ -529,16 +534,16 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 1. Visão e pessoas | 17 |
 | 2. Canal WhatsApp | 22 |
 | 3. Atendimento | 33 |
-| 4. Inteligência artificial | 20 |
+| 4. Inteligência artificial | 21 |
 | 5. Comunicados e documentos | 15 |
 | 6. Configuração e ficha | 12 |
 | 7. Moradores e unidades | 11 |
-| 8. Manutenção e prédio | 16 |
+| 8. Manutenção e prédio | 18 |
 | 9. Agenda | 9 |
 | 10. Orçamentos e compras | 10 |
 | 11. Financeiro do condomínio | 11 |
 | 12. Portaria, acesso, encomendas | 11 |
-| 13. Áreas comuns e vida em condomínio | 7 |
+| 13. Áreas comuns e vida em condomínio | 8 |
 | 14. Transparência e indicadores | 11 |
 | 15. Continuidade e troca de síndico | 4 |
 | 16. Painel interno TRÍADE | 21 |
@@ -548,8 +553,8 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 20. Princípios técnicos | 18 |
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
-| 23. Comercial TRÍADE | 33 |
-| **Total** | **346** |
+| 23. Comercial TRÍADE | 34 |
+| **Total** | **351** |
 
 ---
 
@@ -763,3 +768,17 @@ Pedido pela Carolina: um painel comercial dentro do Console, com CRM, gerador de
 - Parceiros com comissão calculada no Console e paga fora dele (O.1); consentimento no site e legítimo interesse documentado no registro à mão (P.1).
 - Renovação, cancelamento e expansão ficam no Comercial (Q.1); cadência só cria tarefas (R.1); calculadora pública no site (S.1); contrato-quadro com desconto por volume na Tabela de preços (T.1).
 - Fica para depois: pontuação automática, rodízio entre vendedores, automações livres, registro automático de e-mail e WhatsApp, IA que resume antes da ligação e demonstração autoguiada.
+
+---
+
+## Ideias vistas nos materiais de venda da Seu Condomínio (26/10/2026)
+
+Fontes: dois livretos (institucional e portaria remota) e uma proposta comercial da Seu Condomínio, enviados pela Carolina. Análise completa em https://claude.ai/artifact/Fh2ZWLNV6jg4g4ueTH5GN9. Só as ideias vieram para cá; nada do material foi guardado no repositório.
+
+**5 ideias novas:** MP-17 (vencimentos legais do prédio), MP-18 (reforma de unidade pela NBR 16280), AC-08 (agendamento de mudança), IA-21 (ata a partir da gravação da assembleia) e CM-34 (proposta em formato de apresentação).
+
+**Decisão da Carolina:** melhorar a estrutura e a apresentação da proposta (CM-34) e registrar as cinco ideias. Continuam valendo ficar fora do financeiro e do controle de acesso físico (L1 e L3 da análise de lacunas de 23/10/2026), e o preço da DC16 não muda.
+
+**Ficaram de fora:** financeiro, cobrança, conta digital, nada consta e 2ª via (dependem do financeiro); controle de acesso, câmeras com IA, alarmes e central de portaria remota; RH, eSocial, pacote fiscal, PABX, TV no elevador e hospedagem. Marca própria já é a NG-14, empréstimo de chaves a PA-11 e armário de encomendas a PA-09.
+
+**Códigos:** MP-17 e IA-21 seguem a sequência atual. Nas seções datadas acima, MP-17 e IA-21 aparecem com o sentido da época (a MP-17 antiga virou OC-10 e a IA-21 antiga virou IA-19).
