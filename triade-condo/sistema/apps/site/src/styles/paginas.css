@@ -1073,3 +1073,17 @@ h2, .titulo-g { font-size: var(--t-58); font-weight: 600; }
 }
 .modulo2#comunicacao .modulo2-nota { margin-top: 48px; }
 @media (max-width: 1000px) { .modulo2#comunicacao .modulo2-nota { margin-top: 8px; } }
+
+/* Custo por apartamento (DC17, 26/10/2026): o prédio de exemplo no topo do Início e de Preços, o
+   valor por apartamento em cada faixa e o atalho para a calculadora. Só os tokens da escala. */
+.hero-preco { margin-top: var(--e-5); max-width: 34em; padding-left: var(--e-4); border-left: var(--e-1) solid var(--laranja-500); font-size: var(--t-16); line-height: 1.5; color: var(--tinta-suave); }
+.hero-preco b { color: var(--tinta); font-weight: 700; }
+.link-conta { color: var(--violeta-600); font-weight: 600; white-space: nowrap; text-underline-offset: var(--e-1); }
+.topo-precos .precos-lead { margin-top: var(--e-5); max-width: 32em; }
+.faixa3 .por-ap { font-size: var(--t-14); line-height: 1.4; margin-top: calc(-1 * var(--e-2)); }
+.faixa3 .por-ap b { color: var(--violeta-700); font-weight: 800; font-variant-numeric: tabular-nums; }
+.faixa3.destaque .por-ap b { color: #fff; }
+@media (max-width: 640px) {
+  .hero-preco { margin-top: var(--e-4); }
+  .topo-precos .precos-lead { margin-top: var(--e-4); }
+}
