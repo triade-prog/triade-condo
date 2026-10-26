@@ -75,12 +75,15 @@ export const ROTAS_AGENDA = {
   feita: (id: string) => `/v1/comercial/demonstracoes/${id}/feita`,
   encerrar: (id: string) => `/v1/comercial/demonstracoes/${id}/encerrar`,
   publico: (codigo: string) => `/v1/publico/agenda/${encodeURIComponent(codigo)}`,
+  /** O convite da mensagem pronta (0310, A): o ?c= desta ficha. */
+  convite: (interessadoId: string) => `/v1/comercial/interessados/${interessadoId}/convite-agenda`,
 };
 
 export const TELA_AGENDA = "/comercial/agenda";
 
 /** O endereço que vai no site, na mensagem pronta e na assinatura do e-mail. */
-export const urlAgenda = (origem: string, codigo: string) => `${origem.replace(/\/$/, "")}/a/${codigo}`;
+export const urlAgenda = (origem: string, codigo: string, convite?: string | null) =>
+  `${origem.replace(/\/$/, "")}/a/${codigo}${convite ? `?c=${encodeURIComponent(convite)}` : ""}`;
 
 /** Os horários de um dia em texto: "10:00 a 12:00 · 14:00 a 17:00" ou "sem demonstração". */
 export function textoDoDia(faixas: FaixaHorario[], dia: number): string {
@@ -199,4 +202,5 @@ export const MOTIVOS_AGENDA: Record<string, string> = {
   DEMONSTRACAO_FUTURA: "A demonstração ainda não começou.",
   DEMONSTRACAO_ENCERRADA: "Esta demonstração já foi encerrada.",
   REMARCACOES: "Esta demonstração já foi remarcada muitas vezes.",
+  SEM_LINK_AGENDA: "Copie o link de agendamento na Agenda de demonstrações antes de mandar a mensagem.",
 };

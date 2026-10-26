@@ -189,6 +189,9 @@ export const bloqueioAgendaSchema = z
 /** O link de agendamento: de uma pessoa ou da equipe (pessoaId vazio); trocar revoga o anterior. */
 export const linkAgendaSchema = z.object({ pessoaId: uuidOpcional, trocar: z.boolean().optional().default(false) });
 
+/** O convite do link de agendamento: 128 bits em hexadecimal (0310, A). */
+export const FORMATO_CONVITE_AGENDA = /^[0-9a-f]{32}$/;
+
 /** Agendar pela página pública (quadro 340). */
 export const agendarDemonstracaoSchema = z.object({
   inicio: dataHora,
@@ -209,8 +212,17 @@ export const agendarDemonstracaoSchema = z.object({
   condominio: z.string().trim().min(2).max(120),
   faixa: z.enum(["ATE_40", "DE_41_A_100", "DE_101_A_200", "DE_201_A_400", "ACIMA_DE_400"]).optional().nullable().transform((v) => v ?? null),
   consentimento: z.literal(true),
+  // O convite da mensagem pronta (?c= do link, 0310 A). O que não tem o formato é como se não
+  // viesse: o agendamento segue pela regra do WhatsApp e do e-mail.
+  convite: z.string().trim().max(64).optional().nullable()
+    .transform((v) => (v && FORMATO_CONVITE_AGENDA.test(v.toLowerCase()) ? v.toLowerCase() : null)),
 });
 export type AgendarDemonstracao = z.infer<typeof agendarDemonstracaoSchema>;
+
+/** O que o agendamento pelo link devolve: marcado, ou a demonstração que já existe (0310, C). */
+export type RespostaAgendar =
+  | { id: string; inicio: string; fim: string; quando: string; duracaoMinutos: number; jaMarcada?: undefined }
+  | { jaMarcada: true; inicio: string; quando: string };
 
 /** "Marcar à mão" pela equipe (quadro 341): pode ficar fora da grade, nunca em cima de outra. */
 export const marcarDemonstracaoSchema = z.object({

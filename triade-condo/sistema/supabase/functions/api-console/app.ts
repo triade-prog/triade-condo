@@ -1527,6 +1527,10 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const d = await lerCorpo(c, linkAgendaSchema);
     return c.json(await rpc("comercial_link_agenda", { p_pessoa: pessoa(c), p_de: d.pessoaId, p_trocar: d.trocar }));
   });
+  // O convite da mensagem pronta (0310, A): o link de agendamento com o ?c= desta ficha. O convite
+  // em claro só sai aqui; o banco guarda o hash.
+  app.post("/v1/comercial/interessados/:id/convite-agenda", async (c) =>
+    c.json(await rpc("comercial_convite_agenda", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") })));
   app.post("/v1/comercial/interessados/:id/demonstracoes", async (c) => {
     const d = await lerCorpo(c, marcarDemonstracaoSchema);
     return c.json(await rpc("comercial_marcar_demonstracao", { p_pessoa: pessoa(c), p_interessado: idDaRota(c, "id"), p_dados: d }), 201);
@@ -1628,7 +1632,9 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const codigo = codigoAgenda(c);
     await dentroDoLimite("agendar", await aparelho(c));
     const d = await lerCorpo(c, agendarDemonstracaoSchema);
-    return c.json(await rpc("publico_agendar", { p_codigo: codigo, p_dados: d }), 201);
+    // Quem já tem demonstração marcada recebe a data dela, sem marcar outra (0310, C).
+    const r = await rpc<{ jaMarcada?: boolean }>("publico_agendar", { p_codigo: codigo, p_dados: d });
+    return c.json(r, r?.jaMarcada ? 200 : 201);
   });
 
   // Depois do aceite (quadro 441): os documentos, o contrato para assinar pelo gov.br e o PDF

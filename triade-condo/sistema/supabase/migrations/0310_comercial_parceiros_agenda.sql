@@ -85,6 +85,22 @@
 -- r11. O motivo de o prédio ter saído só aparece no extrato para quem tem console.comercial.comissao.
 -- E a R17.6b: o campo [link de agendamento] nas mensagens prontas (a ficha leva o link).
 --
+-- Reconferência do 1ac93d1 (5 achados), corrigida aqui antes de aplicar:
+-- A.  A mensagem pronta leva um convite por interessado: /a/<codigo>?c=<convite>, 128 bits
+--     aleatórios, guardados só como hash no interessado (os 5 últimos, um por mensagem aberta) e
+--     válidos enquanto ele estiver aberto; Perdido, Ganho, Sem resposta e a anonimização revogam.
+--     Com o convite, a demonstração junta naquela ficha sem exigir o e-mail; o e-mail digitado fica
+--     só na demonstração e numa conversa. Sem convite (ou com um que não vale), a regra da r1.
+-- B.  O parecido prefere a ficha que não é possível duplicado.
+-- C.  Quem já tem demonstração marcada (WhatsApp e e-mail batendo, ou o convite) recebe a resposta
+--     honesta, com a data; o não contatar segue com a resposta genérica (o risco que sobra, o
+--     horário continuar livre, fica no painel). Nos dois casos, a ficha mostra o aviso em destaque
+--     até alguém da equipe registrar uma conversa.
+-- D.  Apagar o parceiro troca o nome por palavra inteira, sem diferença de maiúsculas, e cada parte
+--     do nome com 3 letras ou mais.
+-- E.  O [link de agendamento] é o de quem atende só quando a pessoa tem disponibilidade ativa e
+--     continua na equipe; senão, o da equipe.
+--
 -- Nada aqui apaga linha nem remove função (o conector do Supabase trava nesses comandos).
 
 create extension if not exists btree_gist with schema extensions;
@@ -172,9 +188,41 @@ alter table interessados
   add column taxa_condominio_em timestamptz,
   -- O agendamento pelo link com o WhatsApp ou o e-mail de outro interessado, mas não os dois (r1).
   add column possivel_duplicado_de uuid references interessados (id),
+  -- Os convites do link de agendamento (A): só o hash (sha256) dos 5 últimos; o convite em claro
+  -- só existe na mensagem que a equipe abriu.
+  add column agenda_convites bytea[],
+  -- O agendamento pelo link que não marcou (C): o motivo, quando e o horário pedido, para o aviso.
+  add column agendamento_recusado_em timestamptz,
+  add column agendamento_recusado_motivo text check (agendamento_recusado_motivo in ('NAO_CONTATAR', 'DEMONSTRACAO_MARCADA')),
+  add column agendamento_recusado_para timestamptz,
   add constraint interessados_parceiro_origem check (parceiro_id is null or origem = 'PARCEIRO'),
-  add constraint interessados_duplicado_outro check (possivel_duplicado_de is distinct from id);
+  add constraint interessados_duplicado_outro check (possivel_duplicado_de is distinct from id),
+  add constraint interessados_convites check (agenda_convites is null
+    or (cardinality(agenda_convites) between 1 and 5 and array_position(agenda_convites, null) is null)),
+  add constraint interessados_agendamento_recusado check ((agendamento_recusado_em is null) = (agendamento_recusado_motivo is null)
+    and (agendamento_recusado_em is null) = (agendamento_recusado_para is null));
 create index interessados_parceiro on interessados (parceiro_id) where parceiro_id is not null;
+create index interessados_convites on interessados using gin (agenda_convites) where agenda_convites is not null;
+
+-- O convite vale enquanto o interessado está aberto (A): fechar ou anonimizar revoga. Gerar um
+-- convite não é mexer na ficha: não muda a versão (quem está com a ficha aberta não recebe conflito).
+-- Roda depois do controle_versao (ordem alfabética dos gatilhos).
+create function interessados_convite_agenda() returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if new.anonimizado_em is not null or not comercial_aberta(new.etapa) then
+    new.agenda_convites := null;
+  end if;
+  if new.agenda_convites is distinct from old.agenda_convites
+     and (to_jsonb(new) - array['agenda_convites', 'versao']) = (to_jsonb(old) - array['agenda_convites', 'versao']) then
+    new.versao := old.versao;
+  end if;
+  return new;
+end $$;
+create trigger interessados_convite_agenda before update on interessados
+  for each row execute function interessados_convite_agenda();
 
 create function interessados_taxa_em() returns trigger
 language plpgsql
@@ -640,6 +688,12 @@ begin
   return jsonb_build_object('id', p_id, 'versao', v_versao);
 end $$;
 
+-- O texto escapado para entrar numa expressão regular como ele é (D).
+create function comercial_regex_literal(p text) returns text
+language sql immutable
+set search_path = public
+as $$ select regexp_replace(p, '([.\\+*?\[^\]$(){}=!<>|:\-#/])', '\\\1', 'g') $$;
+
 -- Apagar o contato do parceiro (LGPD): a pedido (Administração) ou pela rotina. Ficam o tipo, os
 -- valores e as indicações; o nome sai do detalhe da origem dos interessados.
 create function comercial_anonimizar_parceiro(p_id uuid) returns void
@@ -649,6 +703,7 @@ as $$
 declare
   v_sistema text := coalesce(current_setting('app.comercial_sistema', true), '');
   v_nome text;
+  v_padrao text;
 begin
   perform set_config('app.comercial_sistema', 'on', true);
   perform set_config('app.comercial_apagar_parceiro', 'on', true);
@@ -659,11 +714,21 @@ begin
   update interessados set origem_detalhe = 'Parceiro (dado apagado)'
    where parceiro_id = p_id and origem_detalhe is distinct from 'Parceiro (dado apagado)';
   -- As conversas dos indicados que citam o nome (escritas à mão pela equipe, ou antes da r4) e a
-  -- observação dos pagamentos (r4).
+  -- observação dos pagamentos (r4). Por palavra inteira e sem diferença de maiúsculas (D): o nome
+  -- todo e depois cada parte com 3 letras ou mais ("Marta Lins": "Marta Lins", "Marta" e "Lins"),
+  -- sem estragar outra palavra ("Ana" não mexe em "banana").
   if v_nome is not null and length(btrim(v_nome)) >= 2 then
-    update conversas_comercial c set resumo = replace(c.resumo, v_nome, 'Parceiro (dado apagado)')
-      from interessados i
-     where i.id = c.interessado_id and i.parceiro_id = p_id and strpos(c.resumo, v_nome) > 0;
+    for v_padrao in
+      select '\m' || comercial_regex_literal(t) || '\M'
+        from (select btrim(v_nome) as t, 0 as ordem
+              union all
+              select p, 1 from regexp_split_to_table(btrim(v_nome), '\s+') p where char_length(p) >= 3 and p <> btrim(v_nome)) x
+       order by x.ordem, char_length(x.t) desc
+    loop
+      update conversas_comercial c set resumo = regexp_replace(c.resumo, v_padrao, 'Parceiro (dado apagado)', 'gi')
+        from interessados i
+       where i.id = c.interessado_id and i.parceiro_id = p_id and c.resumo ~* v_padrao;
+    end loop;
   end if;
   update pagamentos_comissao set observacao = null where parceiro_id = p_id and observacao is not null;
   perform set_config('app.comercial_apagar_parceiro', '', true);
@@ -1120,6 +1185,69 @@ begin
   return jsonb_build_object('codigo', v_codigo, 'pessoaId', p_de);
 end $$;
 
+-- O link do [link de agendamento] (E): o de quem atende só quando a pessoa tem disponibilidade
+-- ativa e continua na equipe (a mesma regra da grade); senão, o da equipe. Nulo quando ninguém
+-- copiou o link ainda.
+create function comercial_link_de(p_responsavel uuid) returns text
+language sql stable
+set search_path = public
+as $$
+  select l.codigo from links_agenda l
+   where l.revogado_em is null
+     and (l.pessoa_id is null
+          or (l.pessoa_id = p_responsavel
+              and exists (select 1 from disponibilidade_comercial d where d.pessoa_id = l.pessoa_id and d.ativa)
+              and exists (select 1 from equipe_triade e join equipe_funcoes ef on ef.pessoa_id = e.pessoa_id
+                           where e.pessoa_id = l.pessoa_id and e.ativa and ef.retirada_em is null and ef.funcao in ('COMERCIAL', 'ADMINISTRACAO'))))
+   order by l.pessoa_id nulls last
+   limit 1
+$$;
+
+-- O convite do interessado (A): a ficha pede um ao abrir a mensagem pronta com o [link de
+-- agendamento]. 128 bits aleatórios; o banco guarda só o hash, nos 5 últimos (uma cadência manda
+-- mais de uma mensagem). Não muda a versão da ficha (gatilho interessados_convite_agenda).
+create function comercial_convite_agenda(p_pessoa uuid, p_id uuid) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  i interessados;
+  v_codigo text;
+  v_convite text := encode(extensions.gen_random_bytes(16), 'hex');
+begin
+  perform entrar_console(p_pessoa, 'console.comercial.editar');
+  select * into i from interessados where id = p_id for update;
+  if not found then raise exception 'Interessado não encontrado' using errcode = 'TC404'; end if;
+  if i.anonimizado_em is not null then perform recusar_motivo('Interessado anonimizado não muda', 'ANONIMIZADO'); end if;
+  if not comercial_aberta(i.etapa) then
+    perform recusar_motivo('Interessado fechado não recebe link de agendamento', 'INTERESSADO_FECHADO');
+  end if;
+  if comercial_nao_contatar_tem(i.whatsapp, i.email, i.cnpj) then
+    perform recusar_motivo('Este contato pediu para não ser procurado', 'NAO_CONTATAR');
+  end if;
+  v_codigo := comercial_link_de(i.responsavel_id);
+  if v_codigo is null then
+    perform recusar_motivo('Copie o link de agendamento na Agenda de demonstrações antes', 'SEM_LINK_AGENDA');
+  end if;
+  update interessados
+     set agenda_convites = (array[extensions.digest(v_convite, 'sha256')] || coalesce(agenda_convites, '{}'::bytea[]))[1:5]
+   where id = p_id;
+  return jsonb_build_object('codigo', v_codigo, 'convite', v_convite);
+end $$;
+
+-- O agendamento pelo link que não marcou (C): fica na ficha em destaque, além da nota e do
+-- histórico interno.
+create function comercial_avisar_agendamento(p_id uuid, p_motivo text, p_para timestamptz) returns void
+language plpgsql
+set search_path = public
+as $$
+begin
+  if p_id is null then return; end if;
+  update interessados set agendamento_recusado_em = app_now(), agendamento_recusado_motivo = p_motivo, agendamento_recusado_para = p_para
+   where id = p_id and anonimizado_em is null;
+end $$;
+
 create function publico_link_agenda(p_codigo text) returns links_agenda
 language plpgsql
 set search_path = public
@@ -1198,6 +1326,9 @@ declare
   v_demo     uuid;
   v_juntado  boolean := false;
   v_resposta jsonb;
+  v_convite  text := lower(comercial_texto(p_dados, 'convite'));
+  v_por_convite boolean := false;
+  v_marcada  demonstracoes_comercial;
 begin
   perform limpar_contexto();
   perform set_config('app.comercial_sistema', 'on', true);
@@ -1229,11 +1360,27 @@ begin
   v_resposta := jsonb_build_object('id', gen_random_uuid(), 'inicio', v_inicio, 'fim', v_fim, 'quando', comercial_quando(v_inicio),
                                    'duracaoMinutos', (extract(epoch from v_fim - v_inicio) / 60)::integer);
 
-  if comercial_nao_contatar_tem(v_whatsapp, v_email, null) then
-    select p.id into v_parecido from comercial_parecido(v_whatsapp, v_email, null, null) p;
+  -- O convite da mensagem pronta (A): só o de um interessado aberto vale; o que não vale é como
+  -- se não tivesse convite.
+  if v_convite ~ '^[0-9a-f]{32}$' then
+    select * into i from interessados x
+     where x.agenda_convites @> array[extensions.digest(v_convite, 'sha256')]
+       and x.anonimizado_em is null and comercial_aberta(x.etapa)
+     for update;
+    v_por_convite := i.id is not null;
+  end if;
+
+  if comercial_nao_contatar_tem(v_whatsapp, v_email, null)
+     or (v_por_convite and comercial_nao_contatar_tem(i.whatsapp, i.email, i.cnpj)) then
+    if v_por_convite then
+      v_parecido := i.id;
+    else
+      select p.id into v_parecido from comercial_parecido(v_whatsapp, v_email, null, null) p;
+    end if;
     if v_parecido is not null then
       perform comercial_inserir_conversa(v_parecido, 'NOTA', 'Pediu uma demonstração pelo link para ' || comercial_quando(v_inicio)
         || ', mas o contato está no não contatar. Nada foi marcado nem enviado.', false, null, null);
+      perform comercial_avisar_agendamento(v_parecido, 'NAO_CONTATAR', v_inicio);
     end if;
     perform registrar_historico_interno('comercial.agendamento_recusado', 'agenda_comercial', l.id::text,
       jsonb_build_object('motivo', 'NAO_CONTATAR', 'interessadoId', v_parecido));
@@ -1241,22 +1388,30 @@ begin
     return v_resposta;
   end if;
 
-  -- Junta só quando o WhatsApp e o e-mail batem com a mesma ficha (r1).
-  select * into i from interessados x
-   where x.anonimizado_em is null and x.whatsapp = v_whatsapp and x.email = v_email
-   order by comercial_aberta(x.etapa) desc, x.criado_em desc
-   limit 1
-   for update;
-  if i.id is not null and exists (select 1 from demonstracoes_comercial where interessado_id = i.id and situacao = 'MARCADA' and inicio > app_now()) then
+  -- Sem convite, junta só quando o WhatsApp e o e-mail batem com a mesma ficha (r1).
+  if not v_por_convite then
+    select * into i from interessados x
+     where x.anonimizado_em is null and x.whatsapp = v_whatsapp and x.email = v_email
+     order by comercial_aberta(x.etapa) desc, x.criado_em desc
+     limit 1
+     for update;
+  end if;
+  -- Já tem demonstração marcada (C): quem chegou aqui tem o convite ou os dois dados da ficha, então
+  -- a resposta é honesta, com a data; a equipe vê o aviso na ficha.
+  select * into v_marcada from demonstracoes_comercial
+   where i.id is not null and interessado_id = i.id and situacao = 'MARCADA' and inicio > app_now()
+   order by inicio limit 1;
+  if v_marcada.id is not null then
     perform comercial_inserir_conversa(i.id, 'NOTA', 'Pediu outra demonstração pelo link para ' || comercial_quando(v_inicio)
-      || ', mas já tem uma marcada. Nada foi marcado nem enviado: confira com o contato.', false, null, null);
+      || ', mas já tem uma marcada para ' || comercial_quando(v_marcada.inicio) || '. Nada foi marcado nem enviado: confira com o contato.', false, null, null);
+    perform comercial_avisar_agendamento(i.id, 'DEMONSTRACAO_MARCADA', v_inicio);
     perform registrar_historico_interno('comercial.agendamento_recusado', 'agenda_comercial', l.id::text,
       jsonb_build_object('motivo', 'DEMONSTRACAO_MARCADA', 'interessadoId', i.id));
     perform set_config('app.comercial_sistema', '', true);
-    return v_resposta;
+    return jsonb_build_object('jaMarcada', true, 'inicio', v_marcada.inicio, 'quando', comercial_quando(v_marcada.inicio));
   end if;
 
-  if i.id is not null and i.etapa <> 'GANHO' then
+  if v_por_convite or (i.id is not null and i.etapa <> 'GANHO') then
     v_id := i.id;
     v_juntado := true;
     -- Os dois batem: só completa o que falta, sem trocar nada da ficha.
@@ -1292,7 +1447,9 @@ begin
                                      v_juntado, null, null);
   if v_juntado then
     -- O que a pessoa digitou fica na demonstração e aqui, para a equipe conferir; a ficha não muda.
-    perform comercial_inserir_conversa(v_id, 'NOTA', 'Dados digitados no agendamento: ' || v_nome || ', ' || v_cond || ', ' || v_email || '.',
+    perform comercial_inserir_conversa(v_id, 'NOTA', 'Dados digitados no agendamento'
+      || case when v_por_convite then ' (pelo link da mensagem desta ficha)' else '' end || ': ' || v_nome || ', ' || v_cond || ', ' || v_email
+      || case when i.whatsapp is distinct from v_whatsapp then ', WhatsApp ' || v_whatsapp else '' end || '.',
                                        false, null, null);
   end if;
   perform comercial_enfileirar_emails(v_demo, v_email, 'CONFIRMACAO');
@@ -1721,6 +1878,7 @@ end $$;
 
 -- Parecido (0308): o par que o link marcou como possível duplicado (r1) não conta pelo WhatsApp nem
 -- pelo e-mail, para a equipe poder salvar as duas fichas enquanto confere; CNPJ e endereço continuam.
+-- Entre as parecidas, a original vem antes da possível duplicada (B).
 create or replace function comercial_parecido(p_whatsapp text, p_email text, p_cnpj text, p_endereco text, p_ignorar uuid default null)
 returns table (id uuid, campo text)
 language sql stable
@@ -1743,7 +1901,8 @@ as $$
          case when m.por_whatsapp then 'WHATSAPP' when m.por_cnpj then 'CNPJ' when m.por_email then 'EMAIL' else 'ENDERECO' end
     from marcados m
    where m.por_whatsapp or m.por_cnpj or m.por_email or m.por_endereco
-   order by comercial_aberta(m.etapa) desc, m.criado_em desc
+   -- A ficha que não é possível duplicado vem antes da que o link marcou (B).
+   order by (m.possivel_duplicado_de is null) desc, comercial_aberta(m.etapa) desc, m.criado_em desc
    limit 1
 $$;
 
@@ -1783,12 +1942,17 @@ begin
     -- O agendamento pelo link com só o WhatsApp ou só o e-mail de outro interessado (r1).
     'possivelDuplicado', (select jsonb_build_object('id', o.id, 'condominio', o.condominio) from interessados o
                            where o.id = i.possivel_duplicado_de and o.anonimizado_em is null),
-    -- O campo [link de agendamento] das mensagens prontas (R17.6b): o link de quem atende; sem ele, o da equipe.
-    'linkAgenda', (select l.codigo from links_agenda l
-                    where l.revogado_em is null and (l.pessoa_id = i.responsavel_id or l.pessoa_id is null)
-                    order by l.pessoa_id nulls last limit 1));
+    -- O campo [link de agendamento] das mensagens prontas (R17.6b): o link de quem atende, se tem
+    -- disponibilidade ativa e continua na equipe; senão, o da equipe (E). O convite (A) vem à parte.
+    'linkAgenda', comercial_link_de(i.responsavel_id));
   if p_completo then
     v := v || jsonb_build_object(
+      -- O agendamento pelo link que não marcou (C), até alguém da equipe registrar uma conversa.
+      'agendamentoRecusado', case when i.agendamento_recusado_em is not null and i.anonimizado_em is null
+                                   and not exists (select 1 from conversas_comercial c where c.interessado_id = i.id and c.criado_por is not null
+                                                      and c.criado_em > i.agendamento_recusado_em)
+        then jsonb_build_object('motivo', i.agendamento_recusado_motivo, 'em', i.agendamento_recusado_em,
+                                'pedido', comercial_quando(i.agendamento_recusado_para)) end,
       'whatsapp', i.whatsapp, 'email', i.email, 'cnpj', i.cnpj, 'endereco', i.endereco, 'utm', i.utm,
       'lote', (select jsonb_build_object('id', l.id, 'arquivo', l.arquivo, 'origem', l.origem_texto) from lotes_comercial l where l.id = i.lote_id),
       'baseLegal', jsonb_build_object('tipo', i.base_legal, 'texto', i.base_legal_texto, 'em', i.base_legal_em),

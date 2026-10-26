@@ -4,10 +4,12 @@
 -- à mão, remarcar, a fila da confirmação e do lembrete (com e sem a chave), registrar como foi
 -- (conversa e próximo passo), não compareceu, cancelar e a LGPD do agendamento. Na revisão: só
 -- junta com o WhatsApp e o e-mail batendo, e a confirmação usa o que a pessoa digitou (r1); a mesma
--- resposta para o não contatar e para quem já tem demonstração (r2); o lembrete no mesmo dia (r7) e
--- a fila que não repete sem fim (r10).
+-- resposta para o não contatar (r2); o lembrete no mesmo dia (r7) e a fila que não repete sem fim
+-- (r10). Na reconferência: o convite por interessado na mensagem pronta (A), o parecido que prefere
+-- a ficha original (B), a resposta honesta para quem já tem demonstração e o aviso na ficha (C) e o
+-- link de quem atende só com disponibilidade ativa (E).
 begin;
-select plan(95);
+select plan(119);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -103,13 +105,15 @@ select is(array[pg_temp.livre(bianca, '2026-10-27 14:00-03'), pg_temp.livre(bian
 select is(pg_temp.motivo(format('select publico_agendar(%L, %L)', (select bianca from l), pg_temp.pedido('2026-10-27 14:00-03', '5561999990702'))),
   'HORARIO_OCUPADO', 'o mesmo horário não aceita outra pessoa');
 create temp table a2 as select publico_agendar(bianca, pg_temp.pedido('2026-10-27 15:30-03', '5561999990701')) as r from l;
-select is((select array_agg(k order by k) from a2, jsonb_object_keys(r) k), (select array_agg(k order by k) from a1, jsonb_object_keys(r) k),
-  'quem já tem demonstração marcada recebe a mesma resposta de quem marcou (r2)');
+select is((select (r ->> 'jaMarcada') || ' · ' || (r ->> 'quando') from a2), 'true · terça, 27/10, 14:00',
+  'quem já tem demonstração marcada (WhatsApp e e-mail batendo) recebe a resposta honesta, com a data (C)');
 select is((select count(*)::integer from demonstracoes_comercial where interessado_id = (select i from d1))
           || '/' || (select count(*)::integer from emails_comercial e join demonstracoes_comercial d on d.id = e.demonstracao_id where d.interessado_id = (select i from d1)),
   '1/2', 'mas nada é marcado nem vai para a fila');
 select ok(exists (select 1 from conversas_comercial where interessado_id = (select i from d1) and canal = 'NOTA' and resumo like 'Pediu outra demonstração pelo link%'),
   'e a equipe fica sabendo numa conversa interna');
+select is((select (comercial_json(x, true) -> 'agendamentoRecusado') - 'em' from interessados x where x.id = (select i from d1)),
+  '{"motivo": "DEMONSTRACAO_MARCADA", "pedido": "terça, 27/10, 15:30"}'::jsonb, 'e com o aviso em destaque na ficha (C)');
 select throws_ok(format('insert into demonstracoes_comercial (interessado_id, pessoa_id, inicio, fim, origem) values (%L, %L, ''2026-10-27 14:15-03'', ''2026-10-27 14:45-03'', ''MAO'')',
   (select i from d1), (select com from ids)), '23P01', null, 'o banco não deixa duas demonstrações da mesma pessoa se sobreporem');
 
@@ -308,6 +312,100 @@ select is((select situacao from emails_comercial where demonstracao_id = (select
 select ok((select not exists (select 1 from f2, jsonb_array_elements(r) e where (e ->> 'id')::uuid in
              (select id from emails_comercial where demonstracao_id in (select tarde from hd union all select meio from hd) and tipo = 'CONFIRMACAO'))),
   'e nenhum dos dois é pego de novo');
+
+-- 14. O convite da mensagem pronta (A): /a/<codigo>?c=<convite>, um por interessado.
+create temp table cv as select
+  (comercial_criar(com, '{"condominio": "Edifício Mangaba", "pessoa": "Lia Prado", "origem": "INDICACAO", "contatoAceito": true,
+                         "whatsapp": "5561999990760"}') ->> 'id')::uuid as mangaba,
+  (comercial_criar(com, '{"condominio": "Edifício Pequi", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990761"}') ->> 'id')::uuid as perdido,
+  (comercial_criar(com, '{"condominio": "Edifício Murici", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990762"}') ->> 'id')::uuid as ganho,
+  (comercial_criar(com, '{"condominio": "Edifício Buriti", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990763"}') ->> 'id')::uuid as apagado,
+  (comercial_criar(com, '{"condominio": "Edifício Araçá", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990764"}') ->> 'id')::uuid as calado,
+  (comercial_criar(adm, '{"condominio": "Edifício Cagaita", "origem": "INDICACAO", "contatoAceito": true, "whatsapp": "5561999990765"}') ->> 'id')::uuid as da_carolina
+  from ids;
+update interessados set responsavel_id = (select com from ids) where id = (select mangaba from cv);
+create temp table cvv as select (select versao from interessados where id = mangaba) as antes from cv;
+create temp table c1 as select comercial_convite_agenda(com, mangaba) as r from ids, cv;
+select is((select r ->> 'codigo' from c1), (select bianca from l), 'o convite usa o link de quem atende, com disponibilidade ativa e na equipe (E)');
+select matches((select r ->> 'convite' from c1), '^[0-9a-f]{32}$', 'o convite tem 128 bits aleatórios');
+select ok((select agenda_convites = array[extensions.digest(r ->> 'convite', 'sha256')] and to_jsonb(x)::text not like '%' || (r ->> 'convite') || '%'
+             from interessados x, c1 where x.id = (select mangaba from cv)), 'o banco guarda só o hash do convite');
+select is((select versao from interessados where id = (select mangaba from cv)), (select antes from cvv), 'e gerar o convite não muda a versão da ficha');
+create temp table ac as select publico_agendar(bianca, pg_temp.pedido('2027-02-16 09:00-03', '5561999990769', 'sindico.mangaba@exemplo.com.br')
+                                                 || jsonb_build_object('convite', (select r ->> 'convite' from c1))) as r from l;
+select is((select d.interessado_id from demonstracoes_comercial d where d.id = (select (r ->> 'id')::uuid from ac)), (select mangaba from cv),
+  'com o convite, a demonstração junta na ficha da mensagem, sem o WhatsApp nem o e-mail da ficha');
+select is((select etapa || ' · ' || coalesce(email, '-') || ' · ' || whatsapp || ' · ' || nome_contato from interessados where id = (select mangaba from cv)),
+  'DEMO_MARCADA · - · 5561999990760 · Lia Prado', 'a ficha avança e não ganha o e-mail nem o WhatsApp digitados');
+select ok(exists (select 1 from conversas_comercial where interessado_id = (select mangaba from cv) and canal = 'NOTA'
+                   and resumo = 'Dados digitados no agendamento (pelo link da mensagem desta ficha): Rita Dias, Edifício Sucupira, sindico.mangaba@exemplo.com.br, WhatsApp 5561999990769.'),
+  'o que a pessoa digitou fica numa conversa interna');
+select is((select email from demonstracoes_comercial where id = (select (r ->> 'id')::uuid from ac)), 'sindico.mangaba@exemplo.com.br',
+  'e o e-mail na demonstração, para a confirmação');
+select ok((select not exists (select 1 from conversas_comercial c, c1 where c.resumo like '%' || (c1.r ->> 'convite') || '%')
+              and not exists (select 1 from historico h, c1 where h.dados::text like '%' || (c1.r ->> 'convite') || '%')),
+  'o convite em claro não fica em conversa nem no histórico');
+create temp table ac2 as select publico_agendar(bianca, pg_temp.pedido('2027-02-16 09:45-03', '5561999990760', 'outro@exemplo.com.br')
+                                                  || '{"convite": "ffffffffffffffffffffffffffffffff"}') as r from l;
+select is((select x.possivel_duplicado_de from demonstracoes_comercial d join interessados x on x.id = d.interessado_id where d.id = (select (r ->> 'id')::uuid from ac2)),
+  (select mangaba from cv), 'convite que não vale é como sem convite: só o WhatsApp batendo, possível duplicado');
+create temp table ac3 as select publico_agendar(bianca, pg_temp.pedido('2027-02-16 10:30-03', '5561999990769', 'sindico.mangaba@exemplo.com.br')
+                                                  || jsonb_build_object('convite', (select r ->> 'convite' from c1))) as r from l;
+select is((select (r ->> 'jaMarcada') || ' · ' || (r ->> 'quando') from ac3), 'true · terça, 16/02, 09:00',
+  'o mesmo convite com a demonstração já marcada: a resposta honesta, com a data (C)');
+select is((select comercial_json(x, true) -> 'agendamentoRecusado' ->> 'motivo' from interessados x where x.id = (select mangaba from cv)), 'DEMONSTRACAO_MARCADA',
+  'e o aviso na ficha');
+select pg_temp.em('2027-02-15 10:05:00-03');
+select comercial_registrar_conversa(com, mangaba, 'WHATSAPP', 'Combinamos manter terça às 9h.') from ids, cv;
+select ok((select not (comercial_json(x, true) ? 'agendamentoRecusado') from interessados x where x.id = (select mangaba from cv)),
+  'o aviso sai quando alguém da equipe registra uma conversa');
+select comercial_convite_agenda(com, mangaba) from ids, cv, generate_series(1, 6);
+select is((select cardinality(agenda_convites) from interessados where id = (select mangaba from cv)), 5, 'ficam os 5 convites mais novos');
+
+-- O parecido prefere a ficha original à possível duplicada, mais nova (B).
+create temp table bo as select (comercial_criar(com, '{"condominio": "Edifício Guapeva", "origem": "INDICACAO", "contatoAceito": true,
+  "whatsapp": "5561999990790", "email": "guapeva@exemplo.com.br"}') ->> 'id')::uuid as original from ids;
+select pg_temp.em('2027-02-15 10:10:00-03');
+create temp table bd as select d.interessado_id as duplicada from demonstracoes_comercial d
+ where d.id = (select (publico_agendar(bianca, pg_temp.pedido('2027-02-17 10:30-03', '5561999990790', 'outra.guapeva@exemplo.com.br')) ->> 'id')::uuid from l);
+select is((select p.id from comercial_parecido('5561999990790', null, null, null) p), (select original from bo),
+  'o parecido prefere a ficha original à possível duplicada, mais nova (B)');
+
+-- O convite é revogado no Perdido, no Ganho e na anonimização; o do não contatar não marca.
+create temp table c2 as select
+  comercial_convite_agenda(com, perdido) ->> 'convite' as perdido, comercial_convite_agenda(com, ganho) ->> 'convite' as ganho,
+  comercial_convite_agenda(com, apagado) ->> 'convite' as apagado, comercial_convite_agenda(com, calado) ->> 'convite' as calado
+  from ids, cv;
+select comercial_mudar_etapa(com, perdido, (select versao from interessados where id = perdido), 'PERDIDO', 'FICOU_PARA_DEPOIS') from ids, cv;
+update interessados set etapa = 'GANHO', faixa = 'DE_41_A_100', decisor = 'Conselho', decisao_em = '2027-02-01' where id = (select ganho from cv);
+select comercial_excluir(adm, apagado) from ids, cv;
+select is((select count(*)::integer from interessados where id in (select perdido from cv union all select ganho from cv union all select apagado from cv)
+             and agenda_convites is not null), 0, 'Perdido, Ganho e a anonimização revogam o convite');
+create temp table ac4 as select publico_agendar(bianca, pg_temp.pedido('2027-02-16 11:15-03', '5561999990768', 'pequi@exemplo.com.br')
+                                                  || jsonb_build_object('convite', (select perdido from c2))) as r from l;
+select ok((select d.interessado_id <> (select perdido from cv) and x.possivel_duplicado_de is null
+             from demonstracoes_comercial d join interessados x on x.id = d.interessado_id where d.id = (select (r ->> 'id')::uuid from ac4)),
+  'o convite revogado não junta na ficha fechada');
+select is(pg_temp.motivo(format('select comercial_convite_agenda(%L, %L)', (select com from ids), (select ganho from cv))), 'INTERESSADO_FECHADO',
+  'interessado fechado não recebe convite');
+select comercial_nao_contatar(com, '5561999990764', null, null, 'Pediu para não ligar') from ids;
+select is(pg_temp.motivo(format('select comercial_convite_agenda(%L, %L)', (select com from ids), (select calado from cv))), 'NAO_CONTATAR',
+  'nem quem pediu para não ser contatado');
+create temp table ac5 as select publico_agendar(bianca, pg_temp.pedido('2027-02-17 09:00-03', '5561999990767', 'araca@exemplo.com.br')
+                                                  || jsonb_build_object('convite', (select calado from c2))) as r from l;
+select is((select array_agg(k order by k) from ac5, jsonb_object_keys(r) k), (select array_agg(k order by k) from a1, jsonb_object_keys(r) k),
+  'o convite de quem está no não contatar recebe a resposta genérica, sem marcar (r2)');
+select is((select count(*)::integer || ' · ' || (select comercial_json(x, true) -> 'agendamentoRecusado' ->> 'motivo' from interessados x where x.id = (select calado from cv))
+             from demonstracoes_comercial where id = (select (r ->> 'id')::uuid from ac5)), '0 · NAO_CONTATAR',
+  'e a ficha mostra o aviso do não contatar (C)');
+
+-- O [link de agendamento] de quem não tem disponibilidade ativa é o da equipe (E).
+select comercial_link_agenda(adm, adm) from ids;
+select is((select comercial_json(x, false) ->> 'linkAgenda' from interessados x where x.id = (select da_carolina from cv)), (select equipe from le),
+  'quem atende sem disponibilidade ativa: o link da equipe');
+update disponibilidade_comercial set ativa = false where pessoa_id = (select com from ids);
+select is((select comercial_json(x, false) ->> 'linkAgenda' from interessados x where x.id = (select mangaba from cv)), (select equipe from le),
+  'e a Bianca com a disponibilidade desligada também cai no link da equipe');
 
 select * from finish();
 rollback;

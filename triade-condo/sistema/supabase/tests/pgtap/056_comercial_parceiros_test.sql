@@ -4,9 +4,10 @@
 -- e o prazo), o extrato do mês, o pagamento registrado fora do sistema, o prédio que deixou de ser
 -- cliente, o apagar a pedido e a retenção do contato do parceiro (LGPD). Na revisão: o nome do
 -- parceiro não entra nas conversas do indicado e sai das que o citam, com a observação do pagamento
--- (r4); o motivo de o prédio ter saído só para quem tem a comissão (r11).
+-- (r4); o motivo de o prédio ter saído só para quem tem a comissão (r11). Na reconferência: o nome
+-- sai por palavra inteira, sem diferença de maiúsculas, e cada parte com 3 letras ou mais (D).
 begin;
-select plan(59);
+select plan(62);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -190,7 +191,15 @@ select ok((select (x ->> 'semIndicacao90')::boolean from ids, p, jsonb_array_ele
 select throws_ok(format('select comercial_apagar_parceiro(%L, %L)', (select com from ids), (select marta from p)), 'TC401', null,
   'só a Administração apaga o parceiro a pedido');
 select comercial_inserir_conversa(ipe, 'NOTA', 'A Marta Lins ligou e pediu retorno sobre a indicação.', false, null, null) from i;
+select comercial_inserir_conversa(ipe, 'NOTA', 'Falei com a MARTA LINS e depois com a MARTA de novo.', false, null, null) from i;
+select comercial_inserir_conversa(ipe, 'NOTA', 'A Marta mandou mais dois prédios; o Lins é o sobrenome. Martinha é outra pessoa.', false, null, null) from i;
+create temp table ana as select (comercial_salvar_parceiro(com, null, null, '{"tipo": "CLIENTE", "nome": "Ana"}') ->> 'id')::uuid as id from ids;
+create temp table ana_i as select (comercial_indicar(com, (select id from ana), '{"condominio": "Edifício Tucum", "contatoAceito": true,
+  "whatsapp": "5561999990620"}') ->> 'id')::uuid as id from ids;
+select comercial_inserir_conversa(id, 'NOTA', 'A Ana trouxe banana para a reunião e a ANA pediu o contrato.',
+                                  false, null, null) from ana_i;
 select comercial_apagar_parceiro(adm, marta) from ids, p;
+select comercial_apagar_parceiro(adm, id) from ids, ana;
 select is((select nome || ' · ' || coalesce(whatsapp, '-') || coalesce(email, '-') || ' · ' || ativo from parceiros_comercial where id = (select marta from p)),
   'Parceiro apagado (LGPD) · -- · false', 'o contato some; o parceiro fica inativo');
 select is((select origem_detalhe from interessados where id = (select ipe from i)), 'Parceiro (dado apagado)', 'o nome sai da origem do indicado');
@@ -198,6 +207,15 @@ select ok((select bool_and(resumo not like '%Marta%') from conversas_comercial w
           and exists (select 1 from conversas_comercial where interessado_id = (select ipe from i)
                        and resumo = 'A Parceiro (dado apagado) ligou e pediu retorno sobre a indicação.'),
   'e das conversas do indicado que o citam (r4)');
+select ok(exists (select 1 from conversas_comercial where interessado_id = (select ipe from i)
+                   and resumo = 'Falei com a Parceiro (dado apagado) e depois com a Parceiro (dado apagado) de novo.'),
+  'em maiúsculas também sai (D)');
+select ok(exists (select 1 from conversas_comercial where interessado_id = (select ipe from i)
+                   and resumo = 'A Parceiro (dado apagado) mandou mais dois prédios; o Parceiro (dado apagado) é o sobrenome. Martinha é outra pessoa.'),
+  'cada parte do nome com 3 letras ou mais sai, por palavra inteira (D)');
+select is((select resumo from conversas_comercial where interessado_id = (select id from ana_i) and resumo like '%reunião%'),
+  'A Parceiro (dado apagado) trouxe banana para a reunião e a Parceiro (dado apagado) pediu o contrato.',
+  'a parceira Ana sai sem estragar "banana" (D)');
 select is((select count(*)::integer from pagamentos_comissao where parceiro_id = (select marta from p) and observacao is not null)
           || '/' || (select count(*)::integer from pagamentos_comissao where parceiro_id = (select marta from p)), '0/1',
   'a observação do pagamento sai; o pagamento fica');

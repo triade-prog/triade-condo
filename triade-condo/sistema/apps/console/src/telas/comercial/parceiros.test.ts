@@ -2,7 +2,7 @@
 // PDF com o "—" do perdido, os horários livres em texto e de volta, o selo de cada demonstração e o
 // horário de Brasília.
 import { describe, expect, it } from "vitest";
-import { CAMPO_LINK_AGENDA, preencherMensagem } from "@triade/domain";
+import { agendarDemonstracaoSchema, CAMPO_LINK_AGENDA, preencherMensagem } from "@triade/domain";
 import {
   apoioDisponibilidade, campoBrasilia, chipDia, faixasParaCampo, instanteBrasilia, lerFaixasDoDia, linhasHorarios, primeiroDiaLivre, quandoCurtoDemo, seloDemonstracao,
   textoConfirmar, textoEmails, urlAgenda, type Demonstracao,
@@ -140,5 +140,15 @@ describe("agenda de demonstrações (CM-23)", () => {
     expect(preencherMensagem(texto, { nome: "João Reis", condominio: "Edifício Ipê", linkAgenda: urlAgenda("https://console.triadecondo.com.br", "abcdefgh2345") }))
       .toBe("Oi, João! Escolha o horário da demonstração do Edifício Ipê: https://console.triadecondo.com.br/a/abcdefgh2345");
     expect(preencherMensagem(texto, { nome: "João", condominio: "Edifício Ipê" })).toBe(`Oi, João! Escolha o horário da demonstração do Edifício Ipê: ${CAMPO_LINK_AGENDA}`);
+  });
+
+  it("0310 A: o link da mensagem leva o convite da ficha no ?c=; o convite do agendamento só vale no formato", () => {
+    expect(urlAgenda("https://console.triadecondo.com.br", "abcdefgh2345", "0123456789abcdef0123456789abcdef"))
+      .toBe("https://console.triadecondo.com.br/a/abcdefgh2345?c=0123456789abcdef0123456789abcdef");
+    expect(urlAgenda("https://console.triadecondo.com.br", "abcdefgh2345", null)).toBe("https://console.triadecondo.com.br/a/abcdefgh2345");
+    const pedido = { inicio: "2026-10-27T14:00:00-03:00", nome: "Rita Dias", whatsapp: "61999990701", email: "rita@exemplo.com.br", condominio: "Edifício Sucupira", consentimento: true };
+    expect(agendarDemonstracaoSchema.parse({ ...pedido, convite: "0123456789ABCDEF0123456789ABCDEF" }).convite).toBe("0123456789abcdef0123456789abcdef");
+    expect(agendarDemonstracaoSchema.parse({ ...pedido, convite: "curto" }).convite).toBeNull();
+    expect(agendarDemonstracaoSchema.parse(pedido).convite).toBeNull();
   });
 });

@@ -3,11 +3,12 @@
 // celular e no computador. Os dias e os horários livres da equipe, com os ocupados riscados; o
 // nome, o WhatsApp, o e-mail (para a confirmação), o condomínio, as unidades e a autorização.
 // Nada de quem está do outro lado nem de quem já marcou. O código fica só no endereço, a página
-// não tem referrer (cabecalhos.ts) e nada vai para o armazenamento do navegador.
+// não tem referrer (cabecalhos.ts) e nada vai para o armazenamento do navegador. O ?c= da mensagem
+// pronta (0310, A) vai junto no agendamento, para a demonstração entrar na ficha certa.
 
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { normalizarWhatsappBr, quandoDemonstracao, TEXTO_AUTORIZA_AGENDA } from "@triade/domain";
+import { FORMATO_CONVITE_AGENDA, normalizarWhatsappBr, quandoDemonstracao, TEXTO_AUTORIZA_AGENDA, type RespostaAgendar } from "@triade/domain";
 import { Aviso, Botao, CampoSelecao, CampoTexto, Carregando, chamarApi, Icone, textoDoErro, type ErroApi } from "@triade/ui";
 import { chipDia, MOTIVOS_AGENDA, primeiroDiaLivre, ROTAS_AGENDA, textoConfirmar, type AgendaPublica } from "./agenda.ts";
 import { Bloco, Duvida, Pagina } from "./LinkProposta.tsx";
@@ -60,7 +61,7 @@ function Escolher({ codigo, a, recarregar }: { codigo: string; a: AgendaPublica;
   const [falhas, setFalhas] = useState<string[]>([]);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [feito, setFeito] = useState<{ quando: string; duracaoMinutos: number } | null>(null);
+  const [feito, setFeito] = useState<RespostaAgendar | null>(null);
   const doDia = a.dias.find((d) => d.data === dia);
   const muda = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((v) => ({ ...v, [k]: e.target.value }));
   const erroDe = (campo: string, texto: string) => (falhas.includes(campo) ? texto : undefined);
@@ -75,8 +76,10 @@ function Escolher({ codigo, a, recarregar }: { codigo: string; a: AgendaPublica;
     setFalhas(lista);
     if (lista.length) return;
     setEnviando(true);
-    const r = await chamarApi<{ quando: string; duracaoMinutos: number }>(ROTAS_AGENDA.publico(codigo), {
-      corpo: { inicio, nome: f.nome.trim(), whatsapp: f.whatsapp, email: f.email.trim(), condominio: f.condominio.trim(), faixa: f.faixa || null, consentimento: true },
+    const convite = new URLSearchParams(window.location.search).get("c")?.toLowerCase() ?? "";
+    const r = await chamarApi<RespostaAgendar>(ROTAS_AGENDA.publico(codigo), {
+      corpo: { inicio, nome: f.nome.trim(), whatsapp: f.whatsapp, email: f.email.trim(), condominio: f.condominio.trim(), faixa: f.faixa || null, consentimento: true,
+               ...(FORMATO_CONVITE_AGENDA.test(convite) ? { convite } : {}) },
     });
     setEnviando(false);
     if (!r.ok) {
@@ -89,6 +92,17 @@ function Escolher({ codigo, a, recarregar }: { codigo: string; a: AgendaPublica;
     window.scrollTo({ top: 0 });
   }
 
+  if (feito?.jaMarcada) {
+    return (
+      <Pagina rotulo={ROTULO}>
+        <h1 className="t-titulo-tela">Você já tem uma demonstração marcada</h1>
+        <Aviso tom="atencao" papel="status">
+          {`Ela está marcada para ${feito.quando}, horário de Brasília. Nenhum horário novo foi marcado. Para mudar, responda o e-mail de confirmação.`}
+        </Aviso>
+        <Duvida texto="Falar pelo WhatsApp comercial" mensagem="Olá! Já tenho uma demonstração marcada da TRÍADE Condo e quero mudar o horário." />
+      </Pagina>
+    );
+  }
   if (feito) {
     return (
       <Pagina rotulo={ROTULO}>
