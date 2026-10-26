@@ -361,12 +361,12 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 |---|---|---|
 | SH-01 | **Implantação presencial**: demonstração e orientação em reunião ou assembleia combinada. Em Brasília/DF; não é requisito jurídico nem exclusividade | [A] |
 | SH-02 | **Orientação de novos moradores** em condomínio já cliente. Explica só as regras fornecidas e aprovadas pelo condomínio, sem inventar nem substituir documentos | [A] |
-| SH-03 | **Apoio documental**: criar ou revisar regimento, regras e atas (atas sempre de reuniões reais). O condomínio aprova as regras; não é serviço jurídico, com revisão profissional quando aplicável; nunca exigir documentação para usar o sistema | [A] |
-| SH-04 | **Atendimento humano no WhatsApp** contratado pelo condomínio. Com horários, cobertura e substituição definidos no contrato; nunca prometer atendimento humano a quem contratou só a plataforma. A equipe TRÍADE só age no painel do condomínio com o serviço contratado e autorizado; encerrar o serviço revoga esses acessos sem perder histórico nem interromper a plataforma | [A] |
-| SH-05 | **Plantão fora do horário**: triagem emergência × pode esperar, orientação e registro (Latchel, Vendoroo) | [INT] |
+| SH-03 | **Apoio documental**: criar ou revisar regimento, regras e atas (atas sempre de reuniões reais). O condomínio aprova as regras; não é serviço jurídico, com revisão profissional quando aplicável; nunca exigir documentação para usar o sistema. Cobrado por documento, pelo número de apartamentos, com piso e teto; a convenção fica fora do serviço (DC18) | [A] |
+| SH-04 | **Atendimento humano no WhatsApp** contratado pelo condomínio. Com horários, cobertura e substituição definidos no contrato; nunca prometer atendimento humano a quem contratou só a plataforma. A equipe TRÍADE só age no painel do condomínio com o serviço contratado e autorizado; encerrar o serviço revoga esses acessos sem perder histórico nem interromper a plataforma. Cobrado por apartamento por mês, com mínimo por condomínio (DC18) | [A] |
+| SH-05 | **Plantão fora do horário**: triagem emergência × pode esperar, orientação e registro (Latchel, Vendoroo). Nunca socorro; só com os responsáveis de emergência cadastrados (AT-22). Vendido junto com o SH-04 e cobrado por apartamento por mês, com mínimo (DC18) | [INT] |
 | SH-06 | Assessoria operacional recorrente: triagem, vistoria, acompanhamento de prestadores. Com escopo, exclusões, capacidade e atividades que exigem presença local definidos; ausência de portaria não obriga contratar a TRÍADE | [A] |
 | SH-07 | **Rede de especialistas sob demanda**: contador, advogado, engenheiro ("síndico cooperativo", Matera). Fácil de contatar (lição da reputação da Matera) | [INT] |
-| SH-08 | Produção e instalação de etiquetas e plaquinhas QR no prédio. Inclui a manutenção das etiquetas; o serviço físico é separado do recurso do sistema (AT-30, PA-06) | [A] [INT] |
+| SH-08 | Produção e instalação de etiquetas e plaquinhas QR no prédio. Inclui a manutenção das etiquetas; o serviço físico é separado do recurso do sistema (AT-30, PA-06). Cobrado por local, não por apartamento: o kit básico vem na implantação e os locais a mais e as reposições são cobrados à parte (DC18) | [A] [INT] |
 | SH-09 | Pacote de conteúdo de autoajuda adaptado às regras do prédio | [INT] |
 | SH-10 | Apoio na transição de síndico | [INT] |
 | SH-11 | Sindicatura profissional como serviço distinto (Unique, ABC Síndicos) | [A] [BR] |
@@ -771,3 +771,5 @@ Pedido pela Carolina: um painel comercial dentro do Console, com CRM, gerador de
 A pedido da Carolina, uma busca web sobre quanto cada morador paga de taxa de condomínio (média no Brasil de R$ 516 a R$ 828 por mês; no Distrito Federal, perto de R$ 494, e em Águas Claras de R$ 650 a R$ 670) mostrou que a TRÍADE custa de R$ 2 a R$ 10 por apartamento por mês na tabela cheia, perto de 0,5% a 1,5% da taxa. Página da pesquisa: https://claude.ai/artifact/8J8LcjjrSxuFAezurF71jA. As decisões A a D foram aprovadas pela Carolina em 25/10/2026 (DC17).
 
 **Nenhuma ideia nova.** **Ajustes:** CM-19 e CM-33 ganham o campo opcional da taxa média do prédio, que mostra quanto a TRÍADE pesa nessa taxa, sem ROI (EM-07).
+
+**Estudo do preço dos serviços (25/10/2026), aprovado pela Carolina em 26/10/2026 (DC18):** https://claude.ai/artifact/6znwTXMUuFchmEsLjXT3ZV. **Nenhuma ideia nova.** **Ajustes:** SH-03, SH-04, SH-05 e SH-08 ganham a forma de cobrança.

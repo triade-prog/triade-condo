@@ -23,7 +23,7 @@ O `arquivo/` **não é base de construção**: o que for útil de lá entra prim
 
 ## Decisões fechadas
 
-As mesmas decisões estão no painel de execução (DC1 a DC17). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
+As mesmas decisões estão no painel de execução (DC1 a DC18). Mudar qualquer uma atualiza primeiro este arquivo e o painel.
 
 - **DC1 · Dois sistemas.** Plataforma do síndico (painel web do síndico, WhatsApp do morador e acessos por link ou QR) e Console TRÍADE (sistema interno da equipe). A Base comum são as regras que os dois seguem por baixo; não é um terceiro sistema.
 - **DC2 · O cliente é o condomínio.** É a unidade que contrata e a unidade de separação dos dados: toda informação pertence a um condomínio e nunca aparece em outro (PT-01). Uma pessoa pode ter vínculo com mais de um condomínio (MU-04), o que atende o síndico profissional.
@@ -70,6 +70,12 @@ As mesmas decisões estão no painel de execução (DC1 a DC17). Mudar qualquer 
   - A proposta e o kit (CM-19) e a calculadora do site (CM-33) ganham o campo opcional da taxa média de condomínio do prédio; preenchido, mostram quanto a TRÍADE pesa nessa taxa.
   - O preço de fundador continua (R$ 129, 229, 349 e 549). A tabela cheia é revista quando for passar a valer, com os números dos fundadores (uso, tempo da equipe e custo do WhatsApp); o ponto de partida estudado é R$ 249, 449, 699 e 1.049.
   - Abre o estudo do preço dos serviços humanos (SH-03, SH-04, SH-05 e SH-08) cobrados por apartamento, onde o valor pode ser maior.
+- **DC18 · Preço dos serviços com a equipe da TRÍADE (Carolina, 26/10/2026).** Fecha as decisões S1 a S5 do estudo (https://claude.ai/artifact/6znwTXMUuFchmEsLjXT3ZV). Valores de partida, fixados depois do piloto e da planilha de custo (NG-13).
+  - Atendimento humano no WhatsApp (SH-04): R$ 7 por apartamento por mês, mínimo de R$ 390, de segunda a sexta, das 8h às 18h.
+  - Plantão fora do horário (SH-05): R$ 3 por apartamento por mês, mínimo de R$ 250, só junto com o SH-04. Triagem, orientação e registro, nunca socorro.
+  - Apoio documental (SH-03), por documento: regimento a R$ 15 por apartamento (de R$ 900 a R$ 2.400) e ata de reunião real a R$ 4 por apartamento (de R$ 250 a R$ 600). Convenção fora do serviço.
+  - Etiquetas QR (SH-08), por local: o kit básico (cerca de 10 a 15 locais) vem na implantação da tabela cheia; cada local a mais e cada reposição custam R$ 40, depois de cotar o fornecedor.
+  - Começo: o SH-04 é oferecido primeiro no piloto do Águas Claras por 60 dias, para medir o volume por apartamento. Depois, os valores são fixados e os serviços entram na Tabela de preços do Console e na proposta (R3.4). Até lá, não aparecem no site.
 
 ## Como as ideias viram código
 
