@@ -5,6 +5,10 @@ import Destaque from "../components/Destaque.astro";
 import Etapas from "../components/Etapas.astro";
 import FaixaFinal from "../components/FaixaFinal.astro";
 import { protocolo } from "../dados/vitrine";
+import { exemploDoPredio } from "../lib/por-apartamento";
+
+// DC17: o custo por apartamento logo abaixo do título, com um prédio de exemplo e a conta do prédio na calculadora.
+const exemplo = exemploDoPredio();
 
 const grupo = [
   { quem: "Marcos · 104", texto: "Bom dia, vizinhos!" },
@@ -31,6 +35,7 @@ const comTriade = ["Cada pedido tem um responsável", "Data combinada para dar n
     <div class="hero-texto">
       <h1>Nenhum pedido do seu prédio fica <Destaque>sem resposta</Destaque></h1>
       <p class="lead2">O morador escreve no WhatsApp do condomínio. A TRÍADE dá um número ao pedido, um responsável e uma data para dar notícia. Você acompanha tudo por um painel.</p>
+      <p class="hero-preco"><b>{exemplo.porApartamento} por apartamento por mês</b> num prédio de {exemplo.unidades} apartamentos, cerca de {exemplo.percentual} de uma taxa de <span class="nw">{exemplo.taxa}</span>. <a href="/calculadora" class="link-conta">Faça a conta do seu prédio<span aria-hidden="true"> →</span></a></p>
       <div class="acoes"><a href="#pedir" class="botao primario">Solicitar demonstração</a><a href="#etapas" class="botao claro">Ver um pedido do início ao fim</a></div>
     </div>
     <div class="palco-predio" role="img" aria-label={`O prédio da TRÍADE. Ao lado, um exemplo: a moradora escreve no WhatsApp, recebe o protocolo ${protocolo} com a data do retorno, e o pedido aparece no painel com responsável e prazo.`}>

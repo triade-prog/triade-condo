@@ -130,7 +130,7 @@ test.describe("Site · calculadora (CM-33)", () => {
 
   test("a página de preços leva à calculadora", async ({ page }) => {
     await page.goto("/precos");
-    await page.getByRole("link", { name: "Use a calculadora" }).click();
+    await page.getByRole("link", { name: "Faça a conta do seu prédio" }).click();
     await expect(page).toHaveURL(/\/calculadora$/);
     await expect(page.getByRole("heading", { level: 1, name: "Quanto custa por apartamento?" })).toBeVisible();
   });

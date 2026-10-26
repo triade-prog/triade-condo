@@ -20,7 +20,7 @@ const paginas = [
   { caminho: "/plataforma", titulo: "Um painel para o que acontece no prédio" },
   { caminho: "/solucoes", titulo: "Do prédio pequeno ao condomínio de muitos blocos" },
   { caminho: "/como-funciona", titulo: "Um pedido, do WhatsApp ao fim" },
-  { caminho: "/precos", titulo: /^Um plano\. O preço muda só com o tamanho do prédio/ },
+  { caminho: "/precos", titulo: /^R\$ 3,49 por apartamento num prédio de 100 unidades/ },
   { caminho: "/demonstracao", titulo: "Veja o sistema com um pedido do seu prédio" },
   { caminho: "/guia", titulo: "O que aprendemos organizando prédios" },
   { caminho: "/guia/organizar-pedidos", titulo: "Organizar os pedidos sem virar refém do grupo" },
@@ -156,6 +156,15 @@ test.describe("Site · verificação do Facebook", () => {
   });
 });
 
+test.describe("Site · início", () => {
+  test("DC17: o custo por apartamento logo abaixo do título, com o atalho para a calculadora", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".hero-preco")).toHaveText("R$ 3,49 por apartamento por mês num prédio de 100 apartamentos, cerca de 0,5% de uma taxa de R$ 650. Faça a conta do seu prédio →");
+    await page.locator(".hero-preco").getByRole("link", { name: "Faça a conta do seu prédio" }).click();
+    await expect(page).toHaveURL(/\/calculadora$/);
+  });
+});
+
 test.describe("Site · preços", () => {
   test("Mensal e Anual trocam o valor e a implantação", async ({ page }) => {
     await page.goto("/precos");
@@ -167,6 +176,20 @@ test.describe("Site · preços", () => {
     await expect(faixa).toContainText("R$ 182");
     await expect(faixa).toContainText("Implantação grátis no anual");
     await expect(page.locator("#explica-forma")).toContainText("12 meses pelo preço de 11");
+    await expect(page.locator(".faixa-preco").nth(1).locator(".por-ap")).toHaveText("R$ 3,20 por apartamento com 100 unidades");
+  });
+
+  test("DC17: o valor por apartamento é o destaque, com o prédio de exemplo e o de cada faixa", async ({ page }) => {
+    await page.goto("/precos");
+    await expect(page.locator(".precos-lead")).toContainText("Por mês, cerca de 0,5% de uma taxa de R$ 650.");
+    await expect(page.locator(".faixa-preco .por-ap")).toHaveText([
+      "R$ 4,98 por apartamento com 40 unidades",
+      "R$ 3,49 por apartamento com 100 unidades",
+      "R$ 2,75 por apartamento com 200 unidades",
+      "R$ 2,12 por apartamento com 400 unidades",
+    ]);
+    // Nunca "menos de R$ 5" para todos (EM-07): a conta do prédio fica na calculadora.
+    expect(await page.locator("main").innerText()).not.toMatch(/menos de R\$ ?5/i);
   });
 
   test("mostra o preço decidido em 24/10: fundadores, franquia a confirmar e nada sem decisão", async ({ page }) => {
