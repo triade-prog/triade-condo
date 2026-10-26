@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { TEXTO_INDICE_A_DEFINIR } from "@triade/domain";
 import { detalheInicio, linkInicio, seloInicio, type ItemInicioComercial } from "./painel.ts";
 import {
-  abaDoEndereco, avisoSugerido, clientesAtivos, contagemAba, detalheCancelamento, detalheExpansao, detalheRenovacao, mesesRenovacoes, podeAvisar, seloAviso,
+  abaDoEndereco, avisoSugerido, clientesAtivos, contagemAba, detalheCancelamento, detalheExpansao, detalheRenovacao, mesesRenovacoes, podeAvisar, podeDispensar, seloAviso,
   textoComReajuste, textoPedidoPor, textoPlanoCancelamento, textoRegra, textoSeConfirmar, textoSinal, textoUltimoDia, textoValeDesde, textoValorHoje,
   type Cancelamento, type ClienteRenovacao, type Expansao, type RegraReajusteTela, type Renovacao,
 } from "./renovacoes.ts";
@@ -37,9 +37,16 @@ describe("reajuste e renovação (CM-30, quadro 346)", () => {
     expect(textoComReajuste(ren({ novo: undefined }))).toBe(TEXTO_INDICE_A_DEFINIR);
     expect(textoComReajuste(ren({ novo: undefined, semPlano: true, hoje: undefined }))).toBe("Sem plano: nada a calcular");
     expect(textoValorHoje(ren({ hoje: undefined }))).toBe("Sem plano");
-    expect(podeAvisar(ren({ novo: undefined }))).toBe(false);
-    expect(podeAvisar(ren())).toBe(true);
-    expect(podeAvisar(ren({ id: "r1", situacao: "AVISO_ENVIADO" }))).toBe(false);
+    expect(podeAvisar(ren({ novo: undefined }), "2026-10-20")).toBe(false);
+    expect(podeAvisar(ren(), "2026-10-20")).toBe(true);
+    expect(podeAvisar(ren({ id: "r1", situacao: "AVISO_ENVIADO" }), "2026-10-20")).toBe(false);
+    // r2: antes do "avisar desde", o aviso espera; r9: sem o valor do plano, não renova sem reajuste.
+    expect(podeAvisar(ren({ avisarDesde: "2026-11-01" }), "2026-10-20")).toBe(false);
+    expect(seloAviso(ren({ avisarDesde: "2026-11-01" }), "2026-10-20")).toEqual({ texto: "Aviso a partir de 01/11", tom: "neutro" });
+    expect(podeDispensar(ren(), "2026-10-20")).toBe(true);
+    expect(podeDispensar(ren({ hoje: { ciclo: "MENSAL" } }), "2026-10-20")).toBe(false);
+    expect(textoValorHoje(ren({ hoje: { ciclo: "MENSAL" } }))).toBe("Valor a definir");
+    expect(seloAviso(ren({ id: "r1", situacao: "SUPERADO" }), "2026-12-02")).toEqual({ texto: "Superado: o plano mudou antes", tom: "neutro" });
     expect(textoRegra(regra({ definida: false, indice: undefined, percentual: undefined }))).toBe(`Índice ${TEXTO_INDICE_A_DEFINIR} · aviso 30 dias antes do aniversário`);
     expect(textoRegra(regra({ referencia: "12 meses até setembro" }))).toBe("IPCA 4,8% (12 meses até setembro) · aviso 30 dias antes do aniversário");
   });

@@ -2,9 +2,11 @@
 -- do contrato assinado, o índice da Administração (sem ele, nada calculado), o fim do fundador pela
 -- tabela cheia do dia, o aviso registrado (data, canal e texto) antes de qualquer mudança, o valor
 -- novo na competência seguinte ao prazo, o aditivo do modelo em uso com a impressão digital, renovar
--- sem reajuste, o cartão do Início e a retenção do texto do aviso.
+-- sem reajuste, o cartão do Início e a retenção do texto do aviso. Da revisão: o valor que a tela mostrou
+-- (r4), o aviso seguinte que espera o anterior e o aviso cedo demais (r2), o reajuste superado quando o
+-- plano mudou (r1), renovar sem reajuste só pela Administração e com o valor do plano (r6, r9).
 begin;
-select plan(58);
+select plan(70);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -133,6 +135,9 @@ select is(pg_temp.campos(format('select comercial_registrar_aviso(%L, %L, %L, %L
   '{"avisoEm": "2027-10-05", "canal": "EMAIL", "para": "Lúcia", "texto": "O contrato faz aniversário."}')), '["avisoEm"]'::jsonb,
   'o aviso não é registrado no futuro');
 select is((select count(*)::integer from reajustes_plano), 0, 'antes do aviso, nada muda no plano');
+select is((select teste.erro(format('select comercial_registrar_aviso(%L, %L, %L, %L)', com, pequi, date '2027-11-01',
+  '{"valorNovo": 23500, "canal": "WHATSAPP", "para": "Lúcia", "texto": "O contrato faz aniversário e muda."}')) -> 'detalhe' from ids, i),
+  '{"motivo": "REGRA_MUDOU", "valorNovo": 23999}'::jsonb, 'r4: se o valor mudou desde que a tela abriu, o aviso é recusado com o valor de agora');
 create temp table a1 as select pg_temp.aviso(pequi, date '2027-11-01') as r from i;
 select is((select r -> 'renovacao' ->> 'situacao' from a1), 'AVISO_ENVIADO', 'o aviso fica registrado');
 select is((select r -> 'renovacao' ->> 'valeDesde' from a1), '2027-11-01',
@@ -145,6 +150,8 @@ select is((select valor_centavos::bigint from planos_cliente where condominio_id
 select is(pg_temp.motivo(format('select pg_temp.aviso(%L, %L)', (select pequi from i), date '2027-11-01')), 'RENOVACAO_REGISTRADA',
   'o mesmo aniversário não é avisado duas vezes');
 select is((select pg_temp.ren(com, pequi) ->> 'situacao' from ids, i), 'AVISO_ENVIADO', 'a lista mostra o aviso enviado');
+select is(pg_temp.motivo(format('select pg_temp.aviso(%L, %L)', (select pequi from i), date '2028-11-01')), 'RENOVACAO_PENDENTE',
+  'r2: com o aviso anterior ainda fora do plano, o aniversário seguinte espera');
 select ok((select count(*) = 1 from conversas_comercial where interessado_id = (select pequi from i) and resumo like 'Aviso de reajuste registrado%'),
   'a ficha guarda uma nota do aviso, sem o texto');
 select is(pg_temp.motivo(format('update renovacoes_cliente set valor_novo = 1 where interessado_id = %L', (select pequi from i))), 'SO_INSERCAO',
@@ -194,10 +201,28 @@ select is((select array_agg(situacao order by aniversario, interessado_id) from 
 
 -- 7. Renovar sem reajuste e o aniversário seguinte.
 select pg_temp.em('2028-10-01 10:00:00-03');
-select is(pg_temp.campos(format('select comercial_dispensar_renovacao(%L, %L, %L, %L)', (select com from ids), (select pequi from i), date '2028-11-01', '')),
+select throws_ok($$ select comercial_dispensar_renovacao(com, pequi, date '2028-11-01', 'Combinado com a síndica') from ids, i $$, 'TC401', null,
+  'r6: o Comercial não segura o valor; renovar sem reajuste é da Administração');
+select is(pg_temp.campos(format('select comercial_dispensar_renovacao(%L, %L, %L, %L)', (select adm from ids), (select pequi from i), date '2028-11-01', '')),
   '["motivo"]'::jsonb, 'renovar sem reajuste pede o motivo');
-select is((select comercial_dispensar_renovacao(com, pequi, date '2028-11-01', 'Combinado com a síndica na renovação') ->> 'situacao' from ids, i),
+do $$
+begin
+  perform set_config('app.plano_tabela', 'CHEIA', true);
+  update planos_cliente set valor_centavos = null where condominio_id = (select c_ipiranga from cc);
+  perform set_config('app.plano_tabela', '', true);
+end $$;
+select is(pg_temp.motivo(format('select comercial_dispensar_renovacao(%L, %L, %L, %L)', (select adm from ids), (select ipiranga from i), date '2028-11-01',
+  'Combinado')), 'PLANO_SEM_VALOR', 'r9: com o valor do plano a definir, não renova sem reajuste');
+do $$
+begin
+  perform set_config('app.plano_tabela', 'CHEIA', true);
+  update planos_cliente set valor_centavos = 34900 where condominio_id = (select c_ipiranga from cc);
+  perform set_config('app.plano_tabela', '', true);
+end $$;
+select is((select comercial_dispensar_renovacao(adm, pequi, date '2028-11-01', 'Combinado com a síndica na renovação') ->> 'situacao' from ids, i),
   'DISPENSADO', 'renova sem reajuste');
+select is((select teste.erro(format('select pg_temp.aviso(%L, %L)', pequi, date '2029-11-01')) -> 'detalhe' from i),
+  '{"motivo": "AVISO_CEDO", "desde": "2029-07-04"}'::jsonb, 'r2: o aviso só se registra a partir de 90 dias antes do avisar até');
 select is((select pg_temp.ren(com, pequi) ->> 'situacao' from ids, i), 'DISPENSADO', 'a lista mostra a renovação sem reajuste');
 
 -- 8. O cartão do Início: a renovação perto do "avisar até".
@@ -205,11 +230,31 @@ select is((select x -> 'renovacao' ->> 'avisarAte' from jsonb_array_elements(com
             where x ->> 'id' = (select ipiranga::text from i)), '2028-10-02', 'quadro 335: a renovação que pede aviso aparece no Início');
 select is((select comercial_inicio(com) -> 'contagens' ->> 'renovacoes' from ids), '1', 'e conta no cartão');
 
+-- 8b. r1: a Administração mudou o plano depois do aviso; o reajuste avisado fica superado.
+create temp table a3 as select pg_temp.aviso(ipiranga, date '2028-11-01') as r from i;
+select is((select r -> 'renovacao' -> 'novo' ->> 'valor' from a3), '36575', 'o aviso do Ipiranga, com o IPCA sobre a tabela cheia');
+do $$
+begin
+  perform set_config('app.plano_tabela', 'CHEIA', true);
+  update planos_cliente set nome = 'Tabela cheia, 101 a 200 unidades', valor_centavos = 54900 where condominio_id = (select c_ipiranga from cc);
+  perform set_config('app.plano_tabela', '', true);
+end $$;
+select pg_temp.em('2028-11-02 10:00:00-03');
+select lives_ok($$ select console_abrir_competencia(adm, date '2028-11-01') from ids $$, 'a competência de novembro de 2028 abre');
+select is((select valor_centavos::bigint from cobrancas where condominio_id = (select c_ipiranga from cc) and competencia = '2028-11-01'), 54900::bigint,
+  'cobra o plano novo, não o valor avisado sobre o antigo');
+select is((select situacao from renovacoes_cliente where id = (select (r -> 'renovacao' ->> 'id')::uuid from a3)), 'SUPERADO', 'e a renovação fica superada');
+select ok((select superado and aplicado_em is not null from reajustes_plano where renovacao_id = (select (r -> 'renovacao' ->> 'id')::uuid from a3)),
+  'o reajuste guardado diz que foi superado');
+select ok(exists (select 1 from historico where acao = 'plano.reajuste_superado'), 'com o registro no histórico');
+
 -- 9. Retenção: o texto do aviso e quem recebeu saem 5 anos depois.
-select pg_temp.em('2032-10-02 10:00:00-03');
+select pg_temp.em('2033-10-02 10:00:00-03');
 select ok(comercial_rotina_renovacoes() >= 1, 'a rotina diária roda');
 select ok((select bool_and(aviso_texto is null and aviso_para is null and textos_apagados_em is not null and valor_novo is not null)
              from renovacoes_cliente where aviso_em is not null), 'LGPD: o texto e o nome saem; ficam o valor e as datas');
+select ok((select dispensa_motivo is null and textos_apagados_em is not null from renovacoes_cliente where situacao = 'DISPENSADO'),
+  'r8: o motivo de renovar sem reajuste também sai');
 
 select * from finish();
 rollback;

@@ -416,6 +416,11 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   EXPANSAO_ABERTA: "Este cliente já tem uma expansão deste tipo em andamento. Siga pela que existe.",
   EXPANSAO_ENCERRADA: "Esta expansão já foi encerrada e não reabre. Abra outra, se for o caso.",
   CONTRATO_ENCERRADO: "O contrato deste condomínio com a TRÍADE terminou. Dá para ver o que existe e exportar o histórico; mudar não dá mais.",
+  RENOVACAO_PENDENTE: "O aviso do aniversário anterior ainda não entrou no plano. Este aniversário espera a competência do aviso anterior abrir.",
+  AVISO_CEDO: "Ainda é cedo para avisar este aniversário: o aviso usa o índice de perto da data. Volte mais perto do prazo.",
+  REGRA_MUDOU: "O valor com reajuste mudou desde que a tela abriu (a regra ou a tabela de preços). Atualize a página e confira o valor e o texto antes de registrar.",
+  PLANO_SEM_VALOR: "O plano deste cliente está com o valor a definir. A Administração põe o valor na ficha do cliente antes de renovar.",
+  ULTIMO_DIA_PASSOU: "O último dia deste pedido já passou sem a confirmação. Se o síndico ainda quer cancelar, feche este pedido em Decidiu ficar, com a nota de que passou do prazo, e registre um pedido novo com a data de hoje, para valerem os 30 dias de aviso.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

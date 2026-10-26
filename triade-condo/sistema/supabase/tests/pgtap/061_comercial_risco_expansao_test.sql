@@ -3,7 +3,7 @@
 -- pedidos (sem a medida de adoção, PI-13), o "já vi", o cartão do Início, a mudança de faixa sugerida,
 -- o mais um prédio pela oportunidade nova do mesmo contato (CM-09), a reconquista de quem saiu e a LGPD.
 begin;
-select plan(38);
+select plan(46);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -152,6 +152,7 @@ select is(pg_temp.campos(format('select comercial_encerrar_expansao(%L, %L, %s, 
 select is((select comercial_encerrar_expansao(com, faixa, pg_temp.ev(faixa), 'GANHA', null) ->> 'etapa' from ids, e), 'GANHA', 'ganhou');
 select is((select valor_centavos::bigint from planos_cliente where condominio_id = (select c_ipiranga from cc)), 22900::bigint,
   'ganhar a mudança de faixa não muda o plano sozinho');
+select ok(pg_temp.sugestao('MUDAR_FAIXA') is null, 'r12: encerrada há pouco, a sugestão de mudar de faixa não volta');
 select is(pg_temp.motivo(format('select comercial_salvar_expansao(%L, %L, %s, %L)', (select com from ids), (select faixa from e), pg_temp.ev((select faixa from e)),
   jsonb_build_object('etapa', 'ABERTA', 'motivo', 'Reabrir', 'responsavelId', (select com from ids), 'proximoPasso', 'Ligar'))), 'EXPANSAO_ENCERRADA',
   'encerrada não reabre');
@@ -176,9 +177,12 @@ select lives_ok($$ select comercial_marcar_risco(com, pequi, '{"tipo": "SINDICO_
   'o síndico novo de quem saiu é marcado à mão');
 select is((select pg_temp.sugestao('RECONQUISTA') ->> 'motivo'), 'Saiu em 03/2027; síndico novo em 04/2027', 'e vira lembrete de reconquista');
 select ok((select jsonb_array_length(pg_temp.sinais(pequi)) = 0 from i), 'quem saiu não aparece em Risco');
-select is((select comercial_salvar_expansao(com, null, null, jsonb_build_object('interessadoId', pequi, 'tipo', 'RECONQUISTA',
-  'motivo', 'Saiu em 03/2027; síndico novo em 04/2027', 'responsavelId', com, 'proximoPasso', 'Apresentar ao síndico novo')) ->> 'tipo' from ids, i),
-  'RECONQUISTA', 'a reconquista entra no funil de expansão');
+create temp table rq as select comercial_salvar_expansao(com, null, null, jsonb_build_object('interessadoId', pequi, 'tipo', 'RECONQUISTA',
+  'motivo', 'Saiu em 03/2027; síndico novo em 04/2027', 'responsavelId', com, 'proximoPasso', 'Apresentar ao síndico novo')) as r from ids, i;
+select is((select r ->> 'tipo' from rq), 'RECONQUISTA', 'a reconquista entra no funil de expansão');
+select is((select comercial_encerrar_expansao(com, (r ->> 'id')::uuid, (r ->> 'versao')::integer, 'PERDIDA', 'O síndico novo ficou com outro sistema') ->> 'etapa'
+             from ids, rq), 'PERDIDA', 'a reconquista é perdida');
+select ok(pg_temp.sugestao('RECONQUISTA') is null, 'r12: perdida, o mesmo síndico novo não vira lembrete de novo');
 
 -- 8. LGPD: a anonimização fecha a expansão e apaga os textos; a rotina apaga o detalhe dos sinais tratados.
 select lives_ok($$ select comercial_anonimizar(pequi, 'Dado apagado (LGPD)') from i $$, 'a anonimização roda');
@@ -186,6 +190,17 @@ select ok((select bool_and(etapa = 'PERDIDA' and motivo = 'Dado apagado (LGPD)' 
             where interessado_id = (select pequi from i)), 'a expansão fecha sem os textos');
 select ok((select bool_and(detalhe is null and tratado_nota is null) from riscos_cliente where interessado_id = (select pequi from i)),
   'e os sinais ficam sem detalhe');
+select ok((select bool_and(resultado = 'Dado apagado (LGPD)') from expansoes_cliente where interessado_id = (select pequi from i)),
+  'r8: e o resultado da expansão encerrada também sai');
+-- A nota de um sinal automático tratado e os textos da expansão encerrada saem 12 meses depois.
+select is((select comercial_tratar_risco(com, s.id, s.versao, 'Falei com o Rui, síndico novo') ->> 'tratado' from ids, riscos_cliente s
+            where s.interessado_id = (select ipiranga from i) and s.origem = 'TROCA_SINDICO'), 'true', 'o sinal da troca é tratado com uma nota');
+select pg_temp.em('2028-05-01 10:00:00-03');
+select ok(comercial_rotina_renovacoes() >= 0, 'a rotina roda um ano depois');
+select ok((select tratado_nota is null and detalhe = 'Troca de síndico registrada no Console' from riscos_cliente
+            where interessado_id = (select ipiranga from i) and origem = 'TROCA_SINDICO'), 'r8: a nota sai; o detalhe automático, sem pessoa, fica');
+select ok((select motivo = 'Dado apagado (LGPD)' and proximo_passo is null from expansoes_cliente where id = (select faixa from e)),
+  'r8: a expansão encerrada perde os textos');
 
 select * from finish();
 rollback;

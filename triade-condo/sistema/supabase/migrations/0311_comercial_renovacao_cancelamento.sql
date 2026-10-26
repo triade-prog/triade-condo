@@ -76,6 +76,27 @@
 -- m. Ordem das travas: o interessado (o cliente) antes do cancelamento e da renovação, como a
 --    anonimização; a expansão de mais um prédio trava o interessado na 0308.
 --
+-- Revisão de 26/10/2026 (17 achados), corrigida aqui:
+-- r1. O reajuste só entra no plano se o plano ainda for o do aviso (valor e ciclo); se a Administração
+--     mudou o plano antes, o reajuste fica superado (SUPERADO), com o registro no histórico.
+-- r2. Com um aviso ainda não aplicado, o aniversário seguinte não é avisado nem dispensado
+--     (RENOVACAO_PENDENTE); e o aviso só se registra a partir de 90 dias antes do "avisar até"
+--     (parâmetro; AVISO_CEDO), para não usar o índice de hoje num aniversário distante.
+-- r3. Reativar quem saiu (reconquista ganha) fica para depois: pendente no painel (R17.7c).
+-- r4. O aviso leva o valor que a tela mostrou; se a regra ou a tabela mudou, é recusado (REGRA_MUDOU).
+-- r5. Confirmar depois do último dia é recusado (ULTIMO_DIA_PASSOU); a resposta conta as cobranças
+--     já abertas de competência depois do último dia, para a Administração ajustar.
+-- r6. Renovar sem reajuste muda o valor do contrato: é da Administração (console.comercial.cliente).
+-- r7. Depois do último dia, os módulos do plano ficam só para consulta (conjunto_modo), o que fecha
+--     também o link do prestador; o WhatsApp dos moradores e as filas ficam pendentes (R17.7c).
+-- r8. Retenção e anonimização: a nota de qualquer sinal tratado, o detalhe do sinal de quem saiu, o
+--     motivo de renovar sem reajuste, os textos das expansões e os pedidos nunca decididos.
+-- r9. Renovar sem reajuste com o plano de valor a definir é recusado (PLANO_SEM_VALOR).
+-- r10. A exportação do cancelamento trava o condomínio, como a da Plataforma (0180).
+-- r11. O modelo de aditivo novo e o pôr em uso esperam um ao outro (trava por transação).
+-- r12. A sugestão de mudar de faixa e a de reconquista não voltam logo depois de encerradas.
+-- r16. A lista de Renovações mostra também o que o cartão do Início aponta (prazo de aviso longo).
+--
 -- Nada aqui apaga linha nem remove função (o conector do Supabase trava nesses comandos).
 
 -- ---------------------------------------------------------------------------------------
@@ -85,6 +106,7 @@ insert into configuracoes (chave, valor, descricao) values
   ('comercial_renovacao_horizonte_dias', '120', 'Dias depois do começo do mês escolhido em que Renovações mostra os aniversários de contrato'),
   ('comercial_renovacao_atraso_dias', '60', 'Dias depois do aniversário em que a renovação sem aviso ainda aparece'),
   ('comercial_renovacao_inicio_dias', '15', 'Dias antes do "avisar até" em que a renovação entra no cartão do Comercial no Início'),
+  ('comercial_renovacao_antecedencia_dias', '90', 'Dias antes do "avisar até" a partir dos quais o aviso de reajuste pode ser registrado'),
   ('comercial_cancelamento_aviso_dias', '30', 'Dias de aviso do cancelamento, sem multa (N.1)'),
   ('comercial_uso_queda_percentual', '40', 'Queda dos pedidos em 30 dias, em %, que vira sinal de uso caindo'),
   ('comercial_uso_base_minima', '10', 'Pedidos nos 30 dias anteriores abaixo dos quais a queda não vira sinal'),
@@ -92,12 +114,12 @@ insert into configuracoes (chave, valor, descricao) values
   ('comercial_cancelamento_texto_meses', '12', 'Meses depois do último dia (ou do sinal tratado) em que os textos do cancelamento e dos sinais são apagados');
 
 insert into retencao_tipos (numero, codigo, sistema, grupo, nome, o_que, para_que, base, quem, prazo, no_fim, situacao) values
- (39, 'AVISO_REAJUSTE', 'CONSOLE', 'Console TRÍADE', 'Aviso de reajuste ao síndico', 'Texto do aviso, o canal e o nome de quem recebeu',
-  'Provar o aviso antes do valor novo', 'Execução do contrato', 'TRÍADE', '5 anos depois do aviso',
+ (39, 'AVISO_REAJUSTE', 'CONSOLE', 'Console TRÍADE', 'Aviso de reajuste ao síndico', 'Texto do aviso, o canal e o nome de quem recebeu, e o motivo de renovar sem reajuste',
+  'Provar o aviso antes do valor novo', 'Execução do contrato', 'TRÍADE', '5 anos depois do aviso (ou do registro sem reajuste)',
   'Texto e nome apagados; ficam os valores, as datas e o aditivo', 'A_FAZER'),
  (40, 'CANCELAMENTO', 'CONSOLE', 'Console TRÍADE', 'Cancelamento, retenção e sinais de risco',
-  'Quem pediu, a tentativa de retenção, as notas e o detalhe dos sinais', 'Atender o pedido e tentar manter o cliente',
-  'Execução do contrato; legítimo interesse', 'TRÍADE', '12 meses depois do último dia (ou do sinal tratado)',
+  'Quem pediu, a tentativa de retenção, as notas, o detalhe dos sinais e os textos da expansão', 'Atender o pedido e tentar manter o cliente',
+  'Execução do contrato; legítimo interesse', 'TRÍADE', '12 meses depois do último dia (ou do sinal tratado ou da expansão encerrada)',
   'Textos apagados; ficam o motivo da lista e as datas', 'A_FAZER');
 
 -- ---------------------------------------------------------------------------------------
@@ -190,7 +212,7 @@ create table renovacoes_cliente (
   condominio_id      uuid not null references condominios (id),
   aniversario        date not null,
   tipo               text not null check (tipo in ('REAJUSTE', 'FIM_FUNDADOR')),
-  situacao           text not null check (situacao in ('AVISO_ENVIADO', 'APLICADO', 'DISPENSADO')),
+  situacao           text not null check (situacao in ('AVISO_ENVIADO', 'APLICADO', 'SUPERADO', 'DISPENSADO')),
   valor_atual        centavos not null check (valor_atual > 0),
   valor_novo         centavos check (valor_novo > 0),
   ciclo              text not null check (ciclo in ('MENSAL', 'ANUAL')),
@@ -210,7 +232,8 @@ create table renovacoes_cliente (
   registrado_por     uuid references pessoas (id),
   versao             integer not null default 1,
   unique (interessado_id, aniversario),
-  check ((situacao = 'DISPENSADO') = (dispensa_motivo is not null)),
+  check (dispensa_motivo is null or situacao = 'DISPENSADO'),
+  check (situacao <> 'DISPENSADO' or dispensa_motivo is not null or textos_apagados_em is not null),
   check (situacao = 'DISPENSADO'
          or (valor_novo is not null and aviso_em is not null and aviso_canal is not null and vale_desde is not null
              and (textos_apagados_em is not null or (aviso_para is not null and aviso_texto is not null)))),
@@ -222,18 +245,19 @@ call proteger_tabela_comercial('renovacoes_cliente', 'console.comercial.editar',
   'Renovação de cada aniversário do contrato do cliente: aviso de reajuste ou dispensa (CM-30); o valor e as datas ficam');
 create trigger renovacoes_cliente_sem_exclusao before delete on renovacoes_cliente for each row execute function somente_insercao();
 
--- Só o que a rotina faz: o aviso que passa a valer e os textos apagados (LGPD).
+-- Só o que a rotina faz: o aviso que passa a valer (ou fica superado, r1) e os textos apagados (LGPD).
 create function renovacoes_cliente_fixas() returns trigger
 language plpgsql
 set search_path = public
 as $$
-declare v_livres text[] := array['situacao', 'aplicado_em', 'aviso_para', 'aviso_texto', 'textos_apagados_em', 'versao'];
+declare v_livres text[] := array['situacao', 'aplicado_em', 'aviso_para', 'aviso_texto', 'dispensa_motivo', 'textos_apagados_em', 'versao'];
 begin
   if (to_jsonb(new) - v_livres) is distinct from (to_jsonb(old) - v_livres)
-     or (new.situacao is distinct from old.situacao and not (old.situacao = 'AVISO_ENVIADO' and new.situacao = 'APLICADO'))
+     or (new.situacao is distinct from old.situacao and not (old.situacao = 'AVISO_ENVIADO' and new.situacao in ('APLICADO', 'SUPERADO')))
      or (new.aplicado_em is distinct from old.aplicado_em and new.situacao <> 'APLICADO')
      or (num_nonnulls(new.aviso_para, new.aviso_texto) > 0
          and (new.aviso_para, new.aviso_texto) is distinct from (old.aviso_para, old.aviso_texto))
+     or (new.dispensa_motivo is not null and new.dispensa_motivo is distinct from old.dispensa_motivo)
      or (new.textos_apagados_em is distinct from old.textos_apagados_em and old.textos_apagados_em is not null) then
     raise exception 'O aviso registrado não se altera' using errcode = 'TC422', detail = '{"motivo":"SO_INSERCAO"}';
   end if;
@@ -251,9 +275,14 @@ create table reajustes_plano (
   valor_centavos centavos not null check (valor_centavos > 0),
   tabela         text check (tabela = 'CHEIA'),
   nome           text check (length(btrim(nome)) between 2 and 60),
+  -- O plano do dia do aviso (r1): o reajuste só entra se o plano ainda for este.
+  valor_de       centavos not null check (valor_de > 0),
+  ciclo_de       text not null check (ciclo_de in ('MENSAL', 'ANUAL')),
   aplicado_em    timestamptz,
+  superado       boolean not null default false,
   criado_em      timestamptz not null default app_now(),
-  check ((tipo = 'FIM_FUNDADOR') = (tabela is not null and nome is not null))
+  check ((tipo = 'FIM_FUNDADOR') = (tabela is not null and nome is not null)),
+  check (not superado or aplicado_em is not null)
 );
 create index reajustes_plano_pendentes on reajustes_plano (condominio_id, vale_desde) where aplicado_em is null;
 call proteger_tabela_interna('reajustes_plano', 'Valor novo do plano depois do aviso de reajuste e desde qual competência (CM-30); o cliente não vê');
@@ -262,14 +291,15 @@ create trigger reajustes_plano_sem_exclusao before delete on reajustes_plano for
 -- como sistema, dentro do condomínio (entrar_como_sistema), como o piloto encerrado da 0308.
 -- Só a inserção; aplicar (na competência) é com a Administração já no condomínio.
 create policy reajuste_registrado_pelo_comercial on reajustes_plano for insert
-  with check (comercial_sistema() and contexto_pessoa() is null and condominio_id = contexto_condominio() and aplicado_em is null);
+  with check (comercial_sistema() and contexto_pessoa() is null and condominio_id = contexto_condominio() and aplicado_em is null and not superado);
 create function reajustes_plano_fixos() returns trigger
 language plpgsql
 set search_path = public
 as $$
 begin
-  if old.aplicado_em is not null or new.aplicado_em is null or (to_jsonb(new) - 'aplicado_em') is distinct from (to_jsonb(old) - 'aplicado_em') then
-    raise exception 'O reajuste só muda para aplicado, uma vez' using errcode = 'TC422', detail = '{"motivo":"SO_INSERCAO"}';
+  if old.aplicado_em is not null or new.aplicado_em is null
+     or (to_jsonb(new) - array['aplicado_em', 'superado']) is distinct from (to_jsonb(old) - array['aplicado_em', 'superado']) then
+    raise exception 'O reajuste só muda para aplicado (ou superado), uma vez' using errcode = 'TC422', detail = '{"motivo":"SO_INSERCAO"}';
   end if;
   return new;
 end $$;
@@ -720,6 +750,8 @@ declare
   v_mes date := date_trunc('month', coalesce(p_mes, comercial_hoje()))::date;
   v_ate date;
   v_atraso integer := configuracao_int('comercial_renovacao_atraso_dias');
+  v_antes integer := configuracao_int('comercial_renovacao_antecedencia_dias');
+  v_inicio integer := configuracao_int('comercial_renovacao_inicio_dias');
   r regra_reajuste;
   v jsonb;
 begin
@@ -730,11 +762,13 @@ begin
   pend as materialized (
     select cl.*, comercial_proximo_aniversario(cl.cli_id, cl.inicio, v_hoje, v_atraso) as aniversario
       from cl where cl.inicio is not null and cl.canc_situacao is distinct from 'CONFIRMADO'
+       and not exists (select 1 from renovacoes_cliente rc where rc.interessado_id = cl.cli_id and rc.situacao = 'AVISO_ENVIADO')
   ),
   ren as (
     select jsonb_strip_nulls(jsonb_build_object(
              'interessadoId', p.cli_id, 'condominio', p.nome, 'contrato', p.contrato, 'aniversario', p.aniversario,
-             'avisarAte', p.aniversario - r.prazo_aviso_dias, 'tipo', comercial_tipo_renovacao(p.plano),
+             'avisarAte', p.aniversario - r.prazo_aviso_dias, 'avisarDesde', p.aniversario - r.prazo_aviso_dias - v_antes,
+             'tipo', comercial_tipo_renovacao(p.plano),
              'situacao', case when p.aniversario - r.prazo_aviso_dias < v_hoje then 'ATRASADO' else 'AVISAR' end,
              'hoje', case when p.plano is not null and jsonb_typeof(p.plano) = 'object'
                           then jsonb_build_object('valor', p.plano -> 'valor', 'ciclo', p.plano -> 'ciclo', 'tabela', p.plano -> 'tabela') end,
@@ -747,7 +781,8 @@ begin
              'semPlano', p.plano is null or jsonb_typeof(p.plano) <> 'object')) as j,
            case when p.aniversario - r.prazo_aviso_dias < v_hoje then 1 else 2 end as ordem, p.aniversario as quando, p.nome as cond
       from pend p
-     where p.aniversario is not null and (p.aniversario - r.prazo_aviso_dias < v_hoje or p.aniversario between v_mes and v_ate)
+     where p.aniversario is not null
+       and (p.aniversario - r.prazo_aviso_dias <= v_hoje + v_inicio or p.aniversario between v_mes and v_ate)
     union all
     select comercial_renovacao_json(rc, cl.nome, cl.contrato), case rc.situacao when 'AVISO_ENVIADO' then 3 else 4 end, rc.aniversario, cl.nome
       from renovacoes_cliente rc join cl on cl.cli_id = rc.interessado_id
@@ -775,19 +810,22 @@ begin
       from cl
      where cl.canc_situacao is distinct from 'CONFIRMADO' and jsonb_typeof(cl.plano) = 'object'
        and (cl.plano ->> 'unidadesAte')::integer < cl.unidades
-       and not exists (select 1 from expansoes_cliente e where e.interessado_id = cl.cli_id and e.tipo = 'MUDAR_FAIXA' and e.etapa not in ('GANHA', 'PERDIDA'))
+       and not exists (select 1 from expansoes_cliente e where e.interessado_id = cl.cli_id and e.tipo = 'MUDAR_FAIXA'
+                          and (e.etapa not in ('GANHA', 'PERDIDA') or e.encerrada_em > app_now() - interval '90 days'))
     union all
     select jsonb_build_object('interessadoId', cl.cli_id, 'condominio', cl.nome, 'tipo', 'RECONQUISTA',
                               'motivo', 'Saiu em ' || to_char(cl.ultimo_dia, 'MM/YYYY')
                                         || coalesce('; síndico novo em ' || to_char(sn.data_ref, 'MM/YYYY'), '; lembrar em ' || to_char(k.lembrar_em, 'DD/MM/YYYY'))),
            cl.nome
       from cl join cancelamentos_cliente k on k.id = cl.canc_id
-      left join lateral (select s.data_ref from riscos_cliente s
+      left join lateral (select s.data_ref, s.criado_em from riscos_cliente s
                           where s.interessado_id = cl.cli_id and s.tipo = 'SINDICO_NOVO' and s.tratado_em is null and s.criado_em > k.decidido_em
                           order by s.data_ref desc limit 1) sn on true
      where cl.canc_situacao = 'CONFIRMADO' and cl.ultimo_dia < v_hoje
        and (sn.data_ref is not null or k.lembrar_em <= v_hoje + 30)
-       and not exists (select 1 from expansoes_cliente e where e.interessado_id = cl.cli_id and e.tipo = 'RECONQUISTA' and e.etapa not in ('GANHA', 'PERDIDA'))
+       and not exists (select 1 from expansoes_cliente e where e.interessado_id = cl.cli_id and e.tipo = 'RECONQUISTA'
+                          and (e.etapa not in ('GANHA', 'PERDIDA')
+                               or e.encerrada_em >= coalesce(sn.criado_em, (k.lembrar_em - 30)::timestamp at time zone 'America/Sao_Paulo')))
   ),
   can as (
     select comercial_cancelamento_json(k, cl.nome, cl.plano) as j, k.situacao in ('PEDIDO', 'EM_RETENCAO') as aberto, k.pedido_em as quando
@@ -879,7 +917,9 @@ create function comercial_contrato_da_renovacao(i interessados, p_aniversario da
 language plpgsql
 set search_path = public
 as $$
-declare c contratos_comercial;
+declare
+  c contratos_comercial;
+  v_desde date;
 begin
   select * into c from contratos_comercial where interessado_id = i.id and situacao = 'ASSINADO' order by gerado_em desc limit 1;
   if c.id is null or c.dados ->> 'dataInicio' is null then
@@ -891,6 +931,15 @@ begin
   if p_aniversario is null or p_aniversario is distinct from
      comercial_proximo_aniversario(i.id, (c.dados ->> 'dataInicio')::date, comercial_hoje(), configuracao_int('comercial_renovacao_atraso_dias')) then
     perform recusar_campos('Este não é o aniversário da vez do contrato', 'aniversario');
+  end if;
+  -- r2: o aviso anterior ainda não entrou no plano; o seguinte espera.
+  if exists (select 1 from renovacoes_cliente where interessado_id = i.id and situacao = 'AVISO_ENVIADO') then
+    perform recusar_motivo('O aviso do aniversário anterior ainda não entrou no plano', 'RENOVACAO_PENDENTE');
+  end if;
+  v_desde := p_aniversario - (select prazo_aviso_dias from regra_reajuste) - configuracao_int('comercial_renovacao_antecedencia_dias');
+  if v_desde > comercial_hoje() then
+    raise exception 'Cedo para este aviso' using errcode = 'TC422',
+      detail = jsonb_build_object('motivo', 'AVISO_CEDO', 'desde', v_desde)::text;
   end if;
   return c;
 end $$;
@@ -932,6 +981,10 @@ begin
   if v_novo is null then
     perform recusar_motivo('O valor com reajuste ainda não está definido', 'REAJUSTE_A_DEFINIR');
   end if;
+  if coalesce(p_dados ->> 'valorNovo', '') <> '' and (p_dados ->> 'valorNovo') is distinct from v_novo::text then
+    raise exception 'O valor com reajuste mudou desde que a tela abriu' using errcode = 'TC422',
+      detail = jsonb_build_object('motivo', 'REGRA_MUDOU', 'valorNovo', v_novo)::text;
+  end if;
   if v_aviso is null or v_aviso > v_hoje or v_aviso < v_hoje - 30 then perform recusar_campos('O aviso foi enviado hoje ou nos últimos 30 dias', 'avisoEm'); end if;
   if v_canal is null or v_canal not in ('WHATSAPP', 'EMAIL', 'CARTA', 'PRESENCIAL', 'OUTRO') then perform recusar_campos('Diga por onde o aviso foi', 'canal'); end if;
   if coalesce(length(v_para), 0) not between 2 and 120 then perform recusar_campos('Diga quem recebeu o aviso', 'para'); end if;
@@ -950,9 +1003,9 @@ begin
   v_sistema := coalesce(current_setting('app.comercial_sistema', true), '');
   perform set_config('app.comercial_sistema', 'on', true);
   perform entrar_como_sistema(i.condominio_id);
-  insert into reajustes_plano (condominio_id, renovacao_id, tipo, vale_desde, valor_centavos, tabela, nome)
+  insert into reajustes_plano (condominio_id, renovacao_id, tipo, vale_desde, valor_centavos, tabela, nome, valor_de, ciclo_de)
   values (i.condominio_id, rc.id, v_tipo, v_vale, v_novo, case when v_tipo = 'FIM_FUNDADOR' then 'CHEIA' end,
-          case when v_tipo = 'FIM_FUNDADOR' then left('Tabela cheia, ' || lower(f.nome), 60) end);
+          case when v_tipo = 'FIM_FUNDADOR' then left('Tabela cheia, ' || lower(f.nome), 60) end, rc.valor_atual, rc.ciclo);
   perform definir_pessoa(p_pessoa);
   perform set_config('app.comercial_sistema', v_sistema, true);
   -- O aditivo, quando há modelo em uso (decisão 5).
@@ -968,6 +1021,7 @@ begin
 end $$;
 
 -- Renovar sem reajuste (decisão a): o aniversário fica registrado com o motivo; o valor não muda.
+-- Segurar o valor é decisão sobre o contrato: da Administração (r6).
 create function comercial_dispensar_renovacao(p_pessoa uuid, p_interessado uuid, p_aniversario date, p_motivo text) returns jsonb
 language plpgsql
 security definer
@@ -980,7 +1034,7 @@ declare
   rc renovacoes_cliente;
   v_plano jsonb;
 begin
-  perform entrar_console(p_pessoa, 'console.comercial.editar');
+  perform entrar_console(p_pessoa, 'console.comercial.cliente');
   i := comercial_buscar_cliente(p_interessado, true);
   perform comercial_exigir_sem_cancelamento(i.id);
   c := comercial_contrato_da_renovacao(i, p_aniversario);
@@ -988,6 +1042,7 @@ begin
   select * into r from regra_reajuste;
   v_plano := comercial_leitura_cliente(i.condominio_id) -> 'plano';
   if v_plano is null or jsonb_typeof(v_plano) <> 'object' then perform recusar_motivo('O cliente ainda não tem plano', 'SEM_PLANO'); end if;
+  if v_plano ->> 'valor' is null then perform recusar_motivo('O plano do cliente está com o valor a definir', 'PLANO_SEM_VALOR'); end if;
   insert into renovacoes_cliente (interessado_id, condominio_id, aniversario, tipo, situacao, valor_atual, ciclo, avisar_ate, dispensa_motivo, registrado_por)
   values (i.id, i.condominio_id, p_aniversario, comercial_tipo_renovacao(v_plano), 'DISPENSADO', (v_plano ->> 'valor')::bigint, v_plano ->> 'ciclo',
           p_aniversario - r.prazo_aviso_dias, btrim(p_motivo), p_pessoa)
@@ -1091,6 +1146,7 @@ begin
     raise exception 'Campo escrito errado ou que não existe' using errcode = 'TC422',
       detail = jsonb_build_object('motivo', 'CAMPO_ERRADO', 'campos', jsonb_build_array('texto'), 'camposErrados', to_jsonb(v_errados))::text;
   end if;
+  perform pg_advisory_xact_lock(hashtext('modelos_aditivo'));
   if p_id is null then
     insert into modelos_aditivo (numero, titulo, texto, criado_por)
     values ((select coalesce(max(numero), 0) + 1 from modelos_aditivo), v_titulo, v_texto, p_pessoa)
@@ -1115,6 +1171,7 @@ as $$
 declare m modelos_aditivo;
 begin
   perform entrar_console(p_pessoa, 'console.comercial.modelos');
+  perform pg_advisory_xact_lock(hashtext('modelos_aditivo'));
   select * into m from modelos_aditivo where id = p_id for update;
   if not found then raise exception 'Modelo não encontrado' using errcode = 'TC404'; end if;
   if m.versao <> p_versao then perform conflito_versao('modelos_aditivo', p_id); end if;
@@ -1347,6 +1404,7 @@ declare
   v_numero integer := 1;
   v_id uuid;
 begin
+  perform 1 from condominios where id = p_cond for update;
   select id into v_exp from exportacoes where condominio_id = p_cond and situacao = 'MONTANDO';
   if v_exp is not null then return v_exp; end if;
   select pessoa_id into v_sindico from vinculos
@@ -1392,9 +1450,13 @@ declare
   v_exp uuid;
   v_desde date;
   v_comissao uuid;
+  v_cobrancas integer;
 begin
   perform entrar_console(p_pessoa, 'console.comercial.cliente');
   k := comercial_travar_cancelamento(p_id, p_versao);
+  if k.ultimo_dia < comercial_hoje() then
+    perform recusar_motivo('O último dia deste pedido já passou', 'ULTIMO_DIA_PASSOU');
+  end if;
   v_motivo := comercial_motivo_cancelamento(p_dados, k.motivo);
   v_texto := case when v_motivo = 'OUTRO' then coalesce(v_texto, k.motivo_texto) end;
   if v_motivo = 'OUTRO' and coalesce(length(v_texto), 0) not between 3 and 300 then perform recusar_campos('Diga qual é o outro motivo', 'motivoTexto'); end if;
@@ -1405,6 +1467,8 @@ begin
   perform entrar_como_sistema(k.condominio_id);
   insert into encerramentos_contrato (condominio_id, cancelamento_id, ultimo_dia) values (k.condominio_id, k.id, k.ultimo_dia);
   v_exp := comercial_exportacao_do_cancelamento(k.condominio_id);
+  select count(*)::integer into v_cobrancas from cobrancas
+   where condominio_id = k.condominio_id and tipo = 'MENSALIDADE' and competencia > k.ultimo_dia;
   -- No histórico do condomínio (o síndico vê) sai como sistema, com o último dia; quem confirmou
   -- fica no evento do Console abaixo. A exportação também fica no histórico dele, como pedida.
   perform registrar_historico('contrato.encerramento_marcado', 'encerramentos_contrato', k.condominio_id::text,
@@ -1430,7 +1494,7 @@ begin
                                      false, null, null);
   perform registrar_historico_interno('comercial.cancelamento_confirmado', 'cancelamento_cliente', k.id::text,
     jsonb_build_object('motivo', v_motivo, 'ultimoDia', k.ultimo_dia, 'exportacao', v_exp is not null, 'comissao', v_comissao is not null));
-  return comercial_cancelamento_resposta(k) || jsonb_build_object('semSindico', v_exp is null);
+  return comercial_cancelamento_resposta(k) || jsonb_build_object('semSindico', v_exp is null, 'cobrancasDepois', v_cobrancas);
 end $$;
 
 -- ---------------------------------------------------------------------------------------
@@ -1551,6 +1615,17 @@ declare
 begin
   for r in select * from reajustes_plano where condominio_id = pl.condominio_id and aplicado_em is null and vale_desde <= p_comp
             order by vale_desde, criado_em loop
+    -- r1: a Administração mudou o plano depois do aviso; o reajuste avisado fica superado.
+    if (pl.valor_centavos, pl.ciclo) is distinct from (r.valor_de, r.ciclo_de)
+       or (r.tipo = 'FIM_FUNDADOR' and pl.tabela_origem is distinct from 'FUNDADOR') then
+      update reajustes_plano set aplicado_em = app_now(), superado = true where id = r.id;
+      perform set_config('app.comercial_sistema', 'on', true);
+      update renovacoes_cliente set situacao = 'SUPERADO' where id = r.renovacao_id and situacao = 'AVISO_ENVIADO';
+      perform set_config('app.comercial_sistema', v_sistema, true);
+      perform registrar_historico_interno('plano.reajuste_superado', 'plano', pl.id::text,
+        jsonb_build_object('valorAvisado', r.valor_centavos, 'valorDoAviso', r.valor_de, 'valorHoje', pl.valor_centavos, 'desde', r.vale_desde));
+      continue;
+    end if;
     perform set_config('app.plano_tabela', coalesce(r.tabela, pl.tabela_origem, ''), true);
     update planos_cliente set valor_centavos = r.valor_centavos, nome = coalesce(r.nome, nome) where id = pl.id returning * into pl;
     perform set_config('app.plano_tabela', '', true);
@@ -1611,6 +1686,24 @@ begin
   return jsonb_build_object('criadas', v_criadas, 'jaAbertas', v_ja, 'semPlano', v_sem_plano, 'encerrados', v_encerrados);
 end $$;
 
+-- O módulo do plano (0291), agora com o contrato que terminou (r7): depois do último dia, só consulta.
+-- É o que o link do prestador (link_prestador_vale) e o exigir_conjunto leem.
+create or replace function conjunto_modo(p_condominio uuid, p_conjunto text) returns text
+language sql stable
+set search_path = public
+as $$
+  select case
+    when exists (select 1 from encerramentos_contrato e where e.condominio_id = p_condominio and e.ultimo_dia < comercial_hoje()) then 'CONSULTA'
+    when (select base from conjuntos where codigo = p_conjunto) then 'COMPLETO'
+    when cc.id is null then 'FORA'
+    when cc.estado = 'LIBERADO' and cc.contratado then 'COMPLETO'
+    when cc.estado = 'TESTE' and cc.teste_ate >= hoje_no_condominio() then 'COMPLETO'
+    when cc.estado = 'NAO_LIBERADO' and not cc.ja_liberado then 'FORA'
+    else 'CONSULTA' end
+  from (select 1) x
+  left join conjuntos_cliente cc on cc.condominio_id = p_condominio and cc.conjunto = p_conjunto
+$$;
+
 -- O que o plano deixa (0291), agora com o contrato que terminou (decisão g): depois do último dia,
 -- ficam a consulta, a exportação, a privacidade e o suporte.
 create or replace function exigir_conjunto(p_condominio uuid, p_acao text) returns void
@@ -1621,9 +1714,12 @@ declare
   v_conjunto text;
   v_modo text;
 begin
-  if p_acao not like 'console.%' and p_acao not like '%.ver' and p_acao not like 'privacidade.%'
-     and p_acao not in ('memoria.exportar', 'memoria.dossie', 'suporte.chamados', 'acesso_excepcional.aprovar')
-     and exists (select 1 from encerramentos_contrato e where e.condominio_id = p_condominio and e.ultimo_dia < comercial_hoje()) then
+  -- Depois do último dia, o que fica não depende do módulo (conjunto_modo já diz consulta para todos).
+  if exists (select 1 from encerramentos_contrato e where e.condominio_id = p_condominio and e.ultimo_dia < comercial_hoje()) then
+    if p_acao like 'console.%' or p_acao like '%.ver' or p_acao like 'privacidade.%'
+       or p_acao in ('memoria.exportar', 'memoria.dossie', 'suporte.chamados', 'acesso_excepcional.aprovar') then
+      return;
+    end if;
     perform recusar_motivo('O contrato deste condomínio terminou: ficam a consulta e a exportação', 'CONTRATO_ENCERRADO');
   end if;
   v_conjunto := conjunto_da_acao(p_acao);
@@ -1704,6 +1800,7 @@ begin
       left join contratos_comercial c on c.interessado_id = i.id and c.situacao = 'ASSINADO'
      where i.virou_cliente_em is not null and i.condominio_id is not null and i.anonimizado_em is null
        and not exists (select 1 from cancelamentos_cliente k where k.interessado_id = i.id and k.situacao = 'CONFIRMADO')
+       and not exists (select 1 from renovacoes_cliente rc where rc.interessado_id = i.id and rc.situacao = 'AVISO_ENVIADO')
   ), cli_itens as materialized (
     select cl.*, case when cl.aniversario - v_prazo <= v_hoje + v_ren then 'RENOVACAO' when cl.sinais is not null then 'RISCO' end as motivo,
            (case when cl.aniversario - v_prazo <= v_hoje + v_ren then 1 else 0 end) + coalesce(jsonb_array_length(cl.sinais), 0) as razoes
@@ -1838,15 +1935,17 @@ begin
    where d.id = e.demonstracao_id and d.interessado_id = p_id and e.para is not null;
   -- Renovação, risco, cancelamento e expansão (0311): saem os textos de pessoa; ficam os valores,
   -- as datas e o motivo da lista.
-  update renovacoes_cliente set aviso_para = null, aviso_texto = null, textos_apagados_em = coalesce(textos_apagados_em, app_now())
-   where interessado_id = p_id and num_nonnulls(aviso_para, aviso_texto) > 0;
+  update renovacoes_cliente set aviso_para = null, aviso_texto = null, dispensa_motivo = null, textos_apagados_em = coalesce(textos_apagados_em, app_now())
+   where interessado_id = p_id and num_nonnulls(aviso_para, aviso_texto, dispensa_motivo) > 0;
   update cancelamentos_cliente set pedido_por = null, retencao = null, decisao_nota = null, motivo_texto = null, textos_apagados_em = app_now()
    where interessado_id = p_id and textos_apagados_em is null;
   update riscos_cliente set detalhe = null, tratado_nota = null where interessado_id = p_id and num_nonnulls(detalhe, tratado_nota) > 0;
   update expansoes_cliente set etapa = 'PERDIDA', resultado = 'Dados apagados (LGPD)', encerrada_em = app_now(), encerrada_por = v_pessoa
    where interessado_id = p_id and encerrada_em is null;
-  update expansoes_cliente set motivo = 'Dado apagado (LGPD)', proximo_passo = null
-   where interessado_id = p_id and (motivo <> 'Dado apagado (LGPD)' or proximo_passo is not null);
+  update expansoes_cliente set motivo = 'Dado apagado (LGPD)', proximo_passo = null,
+         resultado = case when resultado is not null then 'Dado apagado (LGPD)' end
+   where interessado_id = p_id
+     and (motivo <> 'Dado apagado (LGPD)' or proximo_passo is not null or resultado is distinct from case when resultado is not null then 'Dado apagado (LGPD)' end);
   perform set_config('app.comercial_sistema', '', true);
 end $$;
 
@@ -1893,20 +1992,31 @@ begin
     end if;
   end loop;
   -- Retenção (catálogo 39 e 40).
-  update renovacoes_cliente set aviso_para = null, aviso_texto = null, textos_apagados_em = v_agora
-   where num_nonnulls(aviso_para, aviso_texto) > 0 and aviso_em < v_hoje - make_interval(years => configuracao_int('comercial_aviso_texto_anos'));
+  update renovacoes_cliente set aviso_para = null, aviso_texto = null, dispensa_motivo = null, textos_apagados_em = v_agora
+   where num_nonnulls(aviso_para, aviso_texto, dispensa_motivo) > 0
+     and coalesce(aviso_em, (registrado_em at time zone 'America/Sao_Paulo')::date)
+         < v_hoje - make_interval(years => configuracao_int('comercial_aviso_texto_anos'));
   get diagnostics v_n = row_count;
   v_total := v_total + v_n;
   update cancelamentos_cliente set pedido_por = null, retencao = null, decisao_nota = null, motivo_texto = null, textos_apagados_em = v_agora
    where textos_apagados_em is null
      and (case when situacao = 'FICOU' then (decidido_em at time zone 'America/Sao_Paulo')::date else ultimo_dia end)
-         < v_hoje - make_interval(months => configuracao_int('comercial_cancelamento_texto_meses'))
-     and situacao in ('FICOU', 'CONFIRMADO');
+         < v_hoje - make_interval(months => configuracao_int('comercial_cancelamento_texto_meses'));
   get diagnostics v_n = row_count;
   v_total := v_total + v_n;
-  update riscos_cliente set detalhe = null, tratado_nota = null
-   where num_nonnulls(detalhe, tratado_nota) > 0 and origem = 'A_MAO'
-     and tratado_em < v_agora - make_interval(months => configuracao_int('comercial_cancelamento_texto_meses'));
+  -- A nota de qualquer sinal tratado; o detalhe só do marcado à mão (o automático não tem pessoa),
+  -- também do sinal de quem saiu, que não aparece mais para ser tratado.
+  update riscos_cliente s set detalhe = case when s.origem = 'A_MAO' then null else s.detalhe end, tratado_nota = null
+   where (s.tratado_nota is not null or (s.origem = 'A_MAO' and s.detalhe is not null))
+     and (s.tratado_em < v_agora - make_interval(months => configuracao_int('comercial_cancelamento_texto_meses'))
+          or exists (select 1 from cancelamentos_cliente k where k.interessado_id = s.interessado_id and k.situacao = 'CONFIRMADO'
+                        and k.ultimo_dia < v_hoje - make_interval(months => configuracao_int('comercial_cancelamento_texto_meses'))));
+  get diagnostics v_n = row_count;
+  v_total := v_total + v_n;
+  update expansoes_cliente set motivo = 'Dado apagado (LGPD)', proximo_passo = null,
+         resultado = case when resultado is not null then 'Dado apagado (LGPD)' end
+   where encerrada_em < v_agora - make_interval(months => configuracao_int('comercial_cancelamento_texto_meses'))
+     and (motivo <> 'Dado apagado (LGPD)' or proximo_passo is not null or resultado is distinct from case when resultado is not null then 'Dado apagado (LGPD)' end);
   get diagnostics v_n = row_count;
   v_total := v_total + v_n;
   perform set_config('app.comercial_sistema', '', true);

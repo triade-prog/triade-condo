@@ -93,6 +93,14 @@ export function JanelaAviso({ r, regra, cliente, hoje, comAditivo, aoFechar, fei
   const [canal, setCanal] = useState<CanalAviso | null>("WHATSAPP");
   const [para, setPara] = useState(cliente?.contato ?? "");
   const [texto, setTexto] = useState(avisoSugerido(r, regra, cliente, hoje) ?? "");
+  // O texto sugerido acompanha a data do aviso (o vale desde muda com ela) até a equipe mexer nele (r4).
+  const [sugerido, setSugerido] = useState(texto);
+  function mudarData(nova: string) {
+    setAvisoEm(nova);
+    const proximo = avisoSugerido(r, regra, cliente, nova || hoje) ?? "";
+    if (texto === sugerido) setTexto(proximo);
+    setSugerido(proximo);
+  }
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const campos = camposComErro(erro);
@@ -101,7 +109,7 @@ export function JanelaAviso({ r, regra, cliente, hoje, comAditivo, aoFechar, fei
     ev.preventDefault();
     setEnviando(true);
     const res = await chamarApi<{ renovacao: Renovacao }>(ROTAS_RENOVACOES.aviso, {
-      corpo: { interessadoId: r.interessadoId, aniversario: r.aniversario, avisoEm: avisoEm || null, canal, para, texto },
+      corpo: { interessadoId: r.interessadoId, aniversario: r.aniversario, valorNovo: r.novo?.valor, avisoEm: avisoEm || null, canal, para, texto },
     });
     setEnviando(false);
     if (!res.ok) return setErro(res.erro);
@@ -119,7 +127,7 @@ export function JanelaAviso({ r, regra, cliente, hoje, comAditivo, aoFechar, fei
           <Linha nome="Vale desde">{textoValeDesde(r, regra, cliente, avisoEm || hoje)}</Linha>
         </dl>
         <div className="grid gap-4 md:grid-cols-2">
-          <CampoTexto id="aviso-em" rotulo="Aviso enviado em" type="date" min={somarDias(hoje, -30)} max={hoje} value={avisoEm} onChange={(e) => setAvisoEm(e.target.value)}
+          <CampoTexto id="aviso-em" rotulo="Aviso enviado em" type="date" min={somarDias(hoje, -30)} max={hoje} value={avisoEm} onChange={(e) => mudarData(e.target.value)}
             erro={erroDe(campos, "avisoEm", "Hoje ou nos últimos 30 dias.")} />
           <CampoTexto id="aviso-para" rotulo="Quem recebeu" maxLength={120} value={para} onChange={(e) => setPara(e.target.value)} autoComplete="off"
             erro={erroDe(campos, "para", "Diga quem recebeu o aviso.")} />
@@ -180,7 +188,8 @@ export function JanelaMarcarRisco({ clientes, interessadoId, aoFechar, feito }: 
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const campos = camposComErro(erro);
-  const lista = clientes.filter((c) => c.situacao !== "ENCERRADO" || c.id === interessadoId);
+  // O síndico novo vale também para quem saiu (reconquista); a troca na pauta, só para quem é cliente.
+  const lista = clientes.filter((c) => c.situacao !== "ENCERRADO" || c.id === interessadoId || tipo === "SINDICO_NOVO");
 
   async function salvar(ev: FormEvent) {
     ev.preventDefault();
@@ -297,8 +306,8 @@ export function JanelaRegistrarPedido({ clientes, avisoDias, hoje, aoFechar, fei
  * Pedido de cancelamento (quadro 347): o motivo obrigatório, uma tentativa de retenção (ela decide) e
  * a confirmação, que é da Administração e não volta. "Decidiu ficar" fecha o pedido sem mudar nada.
  */
-export function JanelaCancelamento({ k, podeEditar, podeConfirmar, aoFechar, feito }: {
-  k: Cancelamento; podeEditar: boolean; podeConfirmar: boolean; aoFechar: () => void; feito: (texto: string) => void;
+export function JanelaCancelamento({ k, hoje, podeEditar, podeConfirmar, aoFechar, feito }: {
+  k: Cancelamento; hoje: string; podeEditar: boolean; podeConfirmar: boolean; aoFechar: () => void; feito: (texto: string) => void;
 }) {
   const [motivo, setMotivo] = useState<MotivoCancelamento | null>(k.motivo ?? null);
   const [motivoTexto, setMotivoTexto] = useState(k.motivoTexto ?? "");
@@ -308,8 +317,12 @@ export function JanelaCancelamento({ k, podeEditar, podeConfirmar, aoFechar, fei
   const [enviando, setEnviando] = useState<null | "retencao" | "confirmar" | "ficou">(null);
   const campos = camposComErro(erro);
   const tentou = !!k.retencaoEm;
+  const passou = k.ultimoDia < hoje;
+  // A tentativa digitada não se perde: confirma depois de registrar ou de apagar o texto.
+  const tentativaPorRegistrar = !tentou && retencao.trim().length > 0;
 
   async function enviar(acao: "retencao" | "confirmar" | "ficou") {
+    if (acao === "confirmar" && (!podeConfirmar || passou || tentativaPorRegistrar)) return;
     setErro(null);
     const faltam = [
       ...(acao !== "ficou" && !motivo ? ["motivo"] : []),
@@ -324,12 +337,14 @@ export function JanelaCancelamento({ k, podeEditar, podeConfirmar, aoFechar, fei
       ? { versao: k.versao, motivo, motivoTexto: motivoTexto.trim() || null, retencao: retencao.trim() }
       : { versao: k.versao, motivo, motivoTexto: motivoTexto.trim() || null, lembrarEm: lembrar || null };
     const rota = acao === "ficou" ? ROTAS_RENOVACOES.ficou(k.id) : acao === "retencao" ? ROTAS_RENOVACOES.retencao(k.id) : ROTAS_RENOVACOES.confirmar(k.id);
-    const res = await chamarApi<{ semSindico?: boolean }>(rota, { corpo });
+    const res = await chamarApi<{ semSindico?: boolean; cobrancasDepois?: number }>(rota, { corpo });
     setEnviando(null);
     if (!res.ok) return setErro(res.erro);
     if (acao === "ficou") return feito(`${k.condominio} decidiu ficar. O pedido foi fechado.`);
     if (acao === "retencao") return feito("Tentativa de retenção registrada. Agora a decisão é do síndico.");
-    feito(`Cancelamento confirmado. O acesso continua até ${k.ultimoDia.slice(8, 10)}/${k.ultimoDia.slice(5, 7)}${res.dados.semSindico ? "; sem síndico ativo, a exportação não foi pedida" : " e a exportação está sendo montada"}.`);
+    const depois = res.dados.cobrancasDepois ?? 0;
+    feito(`Cancelamento confirmado. O acesso continua até ${k.ultimoDia.slice(8, 10)}/${k.ultimoDia.slice(5, 7)}${res.dados.semSindico ? "; sem síndico ativo, a exportação não foi pedida" : " e a exportação está sendo montada"}.${
+      depois ? ` Há ${depois === 1 ? "1 cobrança já aberta" : `${depois} cobranças já abertas`} de competência depois do último dia: ajuste em Pagamentos.` : ""}`);
   }
 
   return (
@@ -364,6 +379,8 @@ export function JanelaCancelamento({ k, podeEditar, podeConfirmar, aoFechar, fei
         ) : null}
         <p className="rounded-[12px] bg-superficie-2 px-3.5 py-3 t-apoio">{textoSeConfirmar(k)}</p>
         {!podeConfirmar ? <p className="t-apoio">Confirmar o cancelamento é da Administração: ela para a cobrança, a comissão e abre a exportação.</p> : null}
+        {podeConfirmar && passou ? <Aviso tom="atencao">O último dia deste pedido já passou sem a confirmação. Se o síndico ainda quer cancelar, feche este pedido em Decidiu ficar, com a nota de que passou do prazo, e registre um pedido novo com a data de hoje.</Aviso> : null}
+        {podeConfirmar && !passou && tentativaPorRegistrar ? <p className="t-apoio">Para confirmar, registre a tentativa primeiro ou apague o texto dela.</p> : null}
         {erro && !campos.length ? <ErroJanela erro={erro} /> : null}
         <div className="flex flex-wrap items-center justify-between gap-2 max-md:grid">
           <span className="flex flex-wrap gap-2 max-md:grid">
@@ -374,7 +391,7 @@ export function JanelaCancelamento({ k, podeEditar, podeConfirmar, aoFechar, fei
             {podeEditar && !tentou ? (
               <Botao variante="secundario" disabled={!!enviando} onClick={() => void enviar("retencao")}>{enviando === "retencao" ? "Salvando…" : "Registrar tentativa e esperar"}</Botao>
             ) : null}
-            <Botao variante="primario" disabled={!podeConfirmar || !!enviando} onClick={() => void enviar("confirmar")}>
+            <Botao variante="primario" disabled={!podeConfirmar || passou || tentativaPorRegistrar || !!enviando} onClick={() => void enviar("confirmar")}>
               <Icone nome="check" />{enviando === "confirmar" ? "Confirmando…" : "Confirmar o cancelamento"}
             </Botao>
           </span>

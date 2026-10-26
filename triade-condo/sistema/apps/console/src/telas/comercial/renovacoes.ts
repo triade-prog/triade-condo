@@ -74,9 +74,12 @@ export interface Renovacao {
   contrato?: number;
   aniversario: string;
   avisarAte: string;
+  /** Desde quando o aviso pode ser registrado (90 dias antes do "avisar até"); só na calculada. */
+  avisarDesde?: string;
   tipo: TipoRenovacao;
   situacao: SituacaoRenovacao;
-  hoje?: { valor: number; ciclo: "MENSAL" | "ANUAL"; tabela?: string };
+  /** O plano de hoje; sem valor quando o plano está com o valor a definir. */
+  hoje?: { valor?: number; ciclo: "MENSAL" | "ANUAL"; tabela?: string };
   novo?: { valor: number; indice?: string; percentual?: number; referencia?: string; tabela?: "CHEIA" };
   semPlano?: boolean;
   aviso?: { em: string; canal: CanalAviso; para?: string; texto?: string };
@@ -209,6 +212,7 @@ function diasEntre(de: string, ate: string): number {
 /** "R$ 229,00" ou "R$ 129,00 · fundador". */
 export function textoValorHoje(r: Pick<Renovacao, "hoje" | "semPlano">): string {
   if (!r.hoje) return "Sem plano";
+  if (r.hoje.valor === undefined || r.hoje.valor === null) return "Valor a definir";
   return `${reais(r.hoje.valor)}${r.hoje.tabela === "FUNDADOR" ? " · fundador" : ""}${r.hoje.ciclo === "ANUAL" ? " por ano" : ""}`;
 }
 
@@ -225,17 +229,27 @@ export function textoComReajuste(r: Pick<Renovacao, "tipo" | "novo" | "semPlano"
 }
 
 /** O selo do aviso ao síndico (quadro 346): perto do prazo em atenção; atrasado em erro. */
-export function seloAviso(r: Pick<Renovacao, "situacao" | "avisarAte" | "valeDesde">, hoje: string, inicioDias = 15): { texto: string; tom: Tom } {
+export function seloAviso(r: Pick<Renovacao, "situacao" | "avisarAte" | "avisarDesde" | "valeDesde">, hoje: string, inicioDias = 15): { texto: string; tom: Tom } {
   if (r.situacao === "ATRASADO") return { texto: `Aviso atrasado: era até ${diaMes(r.avisarAte)}`, tom: "erro" };
+  if (r.situacao === "AVISAR" && cedoParaAvisar(r, hoje)) return { texto: `Aviso a partir de ${diaMes(r.avisarDesde!)}`, tom: "neutro" };
   if (r.situacao === "AVISAR") return { texto: `Avisar até ${diaMes(r.avisarAte)}`, tom: diasEntre(hoje, r.avisarAte) <= inicioDias ? "atencao" : "neutro" };
   if (r.situacao === "AVISO_ENVIADO") return { texto: "Aviso enviado", tom: "ok" };
   if (r.situacao === "APLICADO") return { texto: `Valor novo desde ${r.valeDesde ? mesAno(r.valeDesde) : "a competência"}`, tom: "ok" };
+  if (r.situacao === "SUPERADO") return { texto: "Superado: o plano mudou antes", tom: "neutro" };
   return { texto: "Renovado sem reajuste", tom: "neutro" };
 }
 
-/** O que dá para fazer na linha: registrar o aviso (só com valor calculado) ou renovar sem reajuste. */
-export function podeAvisar(r: Pick<Renovacao, "id" | "novo" | "situacao">): boolean {
-  return !r.id && (r.situacao === "AVISAR" || r.situacao === "ATRASADO") && r.novo !== undefined;
+/** Antes do "avisar desde", o aviso espera: o índice é o de perto da data (r2). */
+export const cedoParaAvisar = (r: Pick<Renovacao, "avisarDesde">, hoje: string) => !!r.avisarDesde && r.avisarDesde > hoje;
+
+/** O que dá para fazer na linha: registrar o aviso (só com valor calculado e a partir do "avisar desde"). */
+export function podeAvisar(r: Pick<Renovacao, "id" | "novo" | "situacao" | "avisarDesde">, hoje: string): boolean {
+  return !r.id && (r.situacao === "AVISAR" || r.situacao === "ATRASADO") && r.novo !== undefined && !cedoParaAvisar(r, hoje);
+}
+
+/** Renovar sem reajuste: da Administração (r6), com o valor do plano (r9) e no mesmo prazo do aviso. */
+export function podeDispensar(r: Pick<Renovacao, "id" | "hoje" | "situacao" | "avisarDesde">, hoje: string): boolean {
+  return !r.id && (r.situacao === "AVISAR" || r.situacao === "ATRASADO") && typeof r.hoje?.valor === "number" && !cedoParaAvisar(r, hoje);
 }
 
 /** A linha de baixo de uma renovação registrada: quando e por onde foi o aviso e desde quando vale. */
@@ -243,7 +257,8 @@ export function detalheRenovacao(r: Renovacao): string | null {
   if (r.situacao === "DISPENSADO") return r.dispensaMotivo ? `Sem reajuste: ${r.dispensaMotivo}` : null;
   if (!r.aviso) return null;
   const partes = [`Aviso em ${data(r.aviso.em)}`];
-  if (r.valeDesde) partes.push(`vale desde a competência ${mesAno(r.valeDesde)}`);
+  if (r.situacao === "SUPERADO") partes.push("o plano mudou antes de valer; o valor avisado não entrou");
+  else if (r.valeDesde) partes.push(`vale desde a competência ${mesAno(r.valeDesde)}`);
   if (r.aditivo) partes.push(r.aditivo.situacao === "PRONTO" ? `aditivo nº ${r.aditivo.numero}` : "aditivo sendo montado");
   return partes.join(" · ");
 }
@@ -255,13 +270,13 @@ export function textoRegra(r: RegraReajusteTela): string {
   return `${r.indice} ${percentualBr(r.percentual)}${r.referencia ? ` (${r.referencia})` : ""} · ${aviso}`;
 }
 
-/** O texto sugerido do aviso, com o vale-desde que o banco vai calcular se o aviso sair hoje. */
-export function avisoSugerido(r: Renovacao, regra: RegraReajusteTela, cliente: ClienteRenovacao | undefined, hoje: string): string | null {
-  if (!r.novo || !r.hoje) return null;
+/** O texto sugerido do aviso, com o vale-desde que o banco vai calcular para o aviso nesta data. */
+export function avisoSugerido(r: Renovacao, regra: RegraReajusteTela, cliente: ClienteRenovacao | undefined, avisoEm: string): string | null {
+  if (!r.novo || !r.hoje || typeof r.hoje.valor !== "number") return null;
   return textoAvisoReajuste({
     contato: cliente?.contato, condominio: r.condominio, aniversario: r.aniversario, tipo: r.tipo, valorAtual: r.hoje.valor, valorNovo: r.novo.valor,
     ciclo: r.hoje.ciclo, indice: r.novo.indice, percentual: r.novo.percentual, referencia: r.novo.referencia,
-    valeDesde: valeDesde(r.aniversario, hoje, regra.prazoAvisoDias, cliente?.plano?.diaVencimento),
+    valeDesde: valeDesde(r.aniversario, avisoEm, regra.prazoAvisoDias, cliente?.plano?.diaVencimento),
   });
 }
 
@@ -307,7 +322,8 @@ export const textoSeConfirmar = (k: Pick<Cancelamento, "ultimoDia">) =>
 
 /** A linha de um pedido na aba Cancelamentos. */
 export function detalheCancelamento(k: Cancelamento): string {
-  const partes = [`Pedido em ${data(k.pedidoEm.slice(0, 10))}`];
+  const pedido = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(k.pedidoEm));
+  const partes = [`Pedido em ${pedido}`];
   if (k.motivo) partes.push(nomeMotivoCancelamento(k.motivo));
   if (k.situacao === "PEDIDO" || k.situacao === "EM_RETENCAO" || k.situacao === "CONFIRMADO") partes.push(`último dia ${data(k.ultimoDia)}`);
   if (k.situacao === "ENCERRADO") partes.push(`saiu em ${data(k.ultimoDia)}`);

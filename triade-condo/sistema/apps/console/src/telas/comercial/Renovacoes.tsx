@@ -20,7 +20,7 @@ import {
 } from "./janelasRenovacoes.tsx";
 import {
   ABAS_RENOVACOES, abaDoEndereco, contagemAba, detalheCancelamento, detalheExpansao, detalheRenovacao, mesesRenovacoes, nomeExpansao, nomeSituacaoCancelamento,
-  podeAvisar, ROTAS_RENOVACOES, seloAviso, TELA_RENOVACOES, textoClientesRisco, textoComReajuste, textoRegra, textoSinal, textoValorHoje, TOM_CANCELAMENTO,
+  podeAvisar, podeDispensar, ROTAS_RENOVACOES, seloAviso, TELA_RENOVACOES, textoClientesRisco, textoComReajuste, textoRegra, textoSinal, textoValorHoje, TOM_CANCELAMENTO,
   type AbaRenovacoes, type Cancelamento, type Expansao, type Renovacao, type SugestaoExpansao, type TelaRenovacoes,
 } from "./renovacoes.ts";
 
@@ -38,8 +38,9 @@ type Janela =
   | { tipo: "encerrar"; e: Expansao };
 
 /** Os botões de uma renovação: registrar o aviso, renovar sem reajuste ou baixar o aditivo. */
-function AcoesRenovacao({ r, pode, abrir, baixar, baixando, montar }: {
-  r: Renovacao; pode: boolean; abrir: (j: Janela) => void; baixar: (caminho: string) => void; baixando: string | null; montar: (id: string) => void;
+function AcoesRenovacao({ r, pode, podeSemReajuste, hoje, abrir, baixar, baixando, montar }: {
+  r: Renovacao; pode: boolean; podeSemReajuste: boolean; hoje: string; abrir: (j: Janela) => void; baixar: (caminho: string) => void; baixando: string | null;
+  montar: (id: string) => void;
 }) {
   if (r.aditivo?.situacao === "PRONTO" && r.id) {
     const caminho = ROTAS_RENOVACOES.linkAditivo(r.id);
@@ -55,8 +56,8 @@ function AcoesRenovacao({ r, pode, abrir, baixar, baixando, montar }: {
   if (r.id || !pode) return null;
   return (
     <span className="flex flex-wrap gap-1.5">
-      {podeAvisar(r) ? <Botao variante="secundario" tamanho="p" onClick={() => abrir({ tipo: "aviso", r })} aria-label={`Registrar o aviso do ${r.condominio}`}><Icone nome="enviar" />Registrar o aviso</Botao> : null}
-      {!r.semPlano ? <Botao variante="discreto" tamanho="p" onClick={() => abrir({ tipo: "semReajuste", r })} aria-label={`Renovar o ${r.condominio} sem reajuste`}>Sem reajuste</Botao> : null}
+      {podeAvisar(r, hoje) ? <Botao variante="secundario" tamanho="p" onClick={() => abrir({ tipo: "aviso", r })} aria-label={`Registrar o aviso do ${r.condominio}`}><Icone nome="enviar" />Registrar o aviso</Botao> : null}
+      {podeSemReajuste && podeDispensar(r, hoje) ? <Botao variante="discreto" tamanho="p" onClick={() => abrir({ tipo: "semReajuste", r })} aria-label={`Renovar o ${r.condominio} sem reajuste`}>Sem reajuste</Botao> : null}
     </span>
   );
 }
@@ -101,7 +102,7 @@ function AbaReajuste({ d, abrir, montar }: { d: TelaRenovacoes; abrir: (j: Janel
                 <td className="px-5 py-3">
                   <span className="grid justify-items-start gap-2">
                     <Selo tom={s.tom}>{s.texto}</Selo>
-                    <AcoesRenovacao r={r} pode={d.pode.editar} abrir={abrir} baixar={(c) => void baixar(c)} baixando={baixando} montar={montar} />
+                    <AcoesRenovacao r={r} pode={d.pode.editar} podeSemReajuste={d.pode.confirmar} hoje={d.hoje} abrir={abrir} baixar={(c) => void baixar(c)} baixando={baixando} montar={montar} />
                   </span>
                 </td>
               </tr>
@@ -122,7 +123,7 @@ function AbaReajuste({ d, abrir, montar }: { d: TelaRenovacoes; abrir: (j: Janel
               <span className="t-apoio">{`Aniversário ${dataBr(r.aniversario)}`}</span>
               <span className="t-texto tabular-nums">{`Hoje ${textoValorHoje(r)} · com reajuste ${textoComReajuste(r)}`}</span>
               {det ? <span className="t-apoio">{det}</span> : null}
-              <AcoesRenovacao r={r} pode={d.pode.editar} abrir={abrir} baixar={(c) => void baixar(c)} baixando={baixando} montar={montar} />
+              <AcoesRenovacao r={r} pode={d.pode.editar} podeSemReajuste={d.pode.confirmar} hoje={d.hoje} abrir={abrir} baixar={(c) => void baixar(c)} baixando={baixando} montar={montar} />
             </li>
           );
         })}
@@ -351,7 +352,7 @@ export function Renovacoes() {
           feito={(k) => { setJanela(null); setAviso({ tom: "ok", texto: `Pedido registrado. Se confirmar, o último dia é ${dataBr(k.ultimoDia)}.` }); carga.recarregar(); }} />
       ) : null}
       {d && janela?.tipo === "cancelamento" ? (
-        <JanelaCancelamento k={janela.k} podeEditar={d.pode.editar} podeConfirmar={d.pode.confirmar} aoFechar={() => setJanela(null)} feito={pronto} />
+        <JanelaCancelamento k={janela.k} hoje={d.hoje} podeEditar={d.pode.editar} podeConfirmar={d.pode.confirmar} aoFechar={() => setJanela(null)} feito={pronto} />
       ) : null}
       {d && janela?.tipo === "expansao" ? (
         <JanelaExpansao e={janela.e} sugestao={janela.sugestao} clientes={d.clientes} equipe={d.equipe} eu={sessao.pessoaId} hoje={d.hoje}

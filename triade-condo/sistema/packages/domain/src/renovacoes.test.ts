@@ -158,8 +158,13 @@ describe("o que a tela manda", () => {
   });
 
   it("o aviso e a dispensa", () => {
-    const aviso = { interessadoId: ID, aniversario: "2026-12-01", canal: "WHATSAPP", para: "Marta (síndica)", texto: "Olá, Marta. O reajuste..." };
+    const aviso = { interessadoId: ID, aniversario: "2026-12-01", valorNovo: 23999, canal: "WHATSAPP", para: "Marta (síndica)", texto: "Olá, Marta. O reajuste..." };
     expect(avisoReajusteSchema.parse(aviso).avisoEm).toBeNull();
+    // r4: o valor que a tela mostrou vai junto; r17: a data tem de existir.
+    expect(avisoReajusteSchema.safeParse({ ...aviso, valorNovo: undefined }).success).toBe(false);
+    expect(avisoReajusteSchema.safeParse({ ...aviso, aniversario: "2027-02-30" }).success).toBe(false);
+    expect(dispensarRenovacaoSchema.safeParse({ interessadoId: ID, aniversario: "2027-02-29", motivo: "Combinado na proposta" }).success).toBe(false);
+    expect(dispensarRenovacaoSchema.safeParse({ interessadoId: ID, aniversario: "2028-02-29", motivo: "Combinado na proposta" }).success).toBe(true);
     expect(avisoReajusteSchema.safeParse({ ...aviso, canal: "SMS" }).success).toBe(false);
     expect(avisoReajusteSchema.safeParse({ ...aviso, texto: "curto" }).success).toBe(false);
     expect(dispensarRenovacaoSchema.safeParse({ interessadoId: ID, aniversario: "2026-12-01", motivo: "ok" }).success).toBe(false);

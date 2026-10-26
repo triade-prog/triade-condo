@@ -27,7 +27,7 @@ const RETRATO: RetratoAditivo = {
   contrato: { numero: 3, hash: "b".repeat(64) },
   geradoEm: "2026-11-20T10:00:00-03:00",
 };
-const AVISO = { interessadoId: PEQUI, aniversario: "2026-12-01", canal: "WHATSAPP", para: "Marta (síndica)", texto: "Olá, Marta. O contrato faz aniversário..." };
+const AVISO = { interessadoId: PEQUI, aniversario: "2026-12-01", valorNovo: 23999, canal: "WHATSAPP", para: "Marta (síndica)", texto: "Olá, Marta. O contrato faz aniversário..." };
 
 function montar(opcoes: { semArmazenamento?: boolean } = {}) {
   const falso = authFalso([{ id: CAROLINA, email: ENTRAR.email, senha: ENTRAR.senha }]);
@@ -113,7 +113,7 @@ Deno.test("0311: o aviso registra, monta o PDF do aditivo, guarda e manda o sha2
   assertEquals(r.status, 201);
   assertEquals(chamada(m, "comercial_registrar_aviso"), {
     p_pessoa: CAROLINA, p_interessado: PEQUI, p_aniversario: "2026-12-01",
-    p_dados: { avisoEm: null, canal: "WHATSAPP", para: "Marta (síndica)", texto: AVISO.texto },
+    p_dados: { valorNovo: 23999, avisoEm: null, canal: "WHATSAPP", para: "Marta (síndica)", texto: AVISO.texto },
   });
   const guardado = m.arm.objetos.get(CAMINHO)!;
   assertEquals(guardado, await gerarPdfAditivo(RETRATO, HASH), "o PDF guardado é o do retrato");

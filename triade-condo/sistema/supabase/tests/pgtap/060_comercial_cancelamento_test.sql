@@ -4,7 +4,7 @@
 -- exportação completa para o síndico, o acesso até o último dia (depois, só consulta e exportação),
 -- a cobrança que para, a comissão do parceiro que acaba, a anonimização e a retenção dos textos.
 begin;
-select plan(46);
+select plan(52);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -115,6 +115,7 @@ select is(pg_temp.campos(format('select comercial_confirmar_cancelamento(%L, %L,
   '{"lembrarEm": "2027-02-01"}')), '["lembrarEm"]'::jsonb, 'lembrar de reconquistar é depois do último dia');
 create temp table conf as select comercial_confirmar_cancelamento(adm, k1, pg_temp.kv(k1), '{"lembrarEm": "2028-03-01"}') as r from ids, k;
 select is((select r ->> 'situacao' from conf), 'CONFIRMADO', 'a decisão da síndica fica registrada');
+select is((select r ->> 'cobrancasDepois' from conf), '0', 'r5: a resposta conta as cobranças já abertas depois do último dia');
 select is((select motivo from cancelamentos_cliente where id = (select k1 from k)), 'SINDICO_NOVO', 'com o motivo da tentativa');
 select is((select ultimo_dia from encerramentos_contrato where condominio_id = (select c_ipiranga from cc)), date '2027-02-23',
   'o condomínio guarda o último dia');
@@ -152,6 +153,8 @@ select lives_ok(format('select entrar_condominio(%L, %L, %L)', (select ana from 
 select lives_ok(format('select entrar_condominio(%L, %L, %L)', (select ana from ids), (select c_ipiranga from cc), 'memoria.exportar'), 'exportar continua');
 select lives_ok(format('select entrar_condominio(%L, %L, %L)', (select adm from ids), (select c_ipiranga from cc), 'console.contrato.editar'),
   'a equipe continua no Console');
+select is((select conjunto_modo(c_ipiranga, 'MANUTENCAO') from cc), 'CONSULTA', 'r7: os módulos do plano ficam só para consulta (o link do prestador fecha)');
+select is((select conjunto_modo(c_ipiranga, codigo) from cc, conjuntos where base limit 1), 'CONSULTA', 'até o módulo da base');
 select is((select x ->> 'situacao' from jsonb_array_elements((select pg_temp.lista(com) -> 'cancelamentos' from ids)) x), 'ENCERRADO',
   'a aba mostra o encerrado');
 select is((select x ->> 'situacao' from jsonb_array_elements((select pg_temp.lista(com) -> 'clientes' from ids)) x
@@ -163,6 +166,10 @@ select is((select comercial_cliente_ficou(com, k, pg_temp.kv(k), 'Ficou com o ac
   'a síndica decidiu ficar');
 select ok(not exists (select 1 from encerramentos_contrato where condominio_id = (select c_pequi from cc)), 'nada muda no contrato');
 select lives_ok($$ select comercial_pedir_cancelamento(com, pequi, '{"pedidoPor": "Rui, síndico"}') from ids, i $$, 'um pedido novo pode vir depois');
+select pg_temp.em('2027-04-02 09:00:00-03');
+select is(pg_temp.motivo(format('select comercial_confirmar_cancelamento(%L, %L, %s, %L)', (select adm from ids), k.id, k.versao, '{"motivo": "PRECO"}'))
+            , 'ULTIMO_DIA_PASSOU', 'r5: depois do último dia do pedido, não se confirma')
+  from cancelamentos_cliente k where k.interessado_id = (select pequi from i) and k.situacao = 'PEDIDO';
 
 -- 6. LGPD: a rotina apaga os textos 12 meses depois do último dia; a anonimização, na hora.
 select pg_temp.em('2028-02-25 09:00:00-03');
@@ -171,6 +178,10 @@ select ok((select pedido_por is null and retencao is null and textos_apagados_em
              from cancelamentos_cliente where id = (select k1 from k)), 'quem pediu e a tentativa saem; o motivo da lista fica');
 select ok((select pedido_por is not null from cancelamentos_cliente where interessado_id = (select pequi from i) and situacao = 'PEDIDO'),
   'o pedido aberto fica');
+select pg_temp.em('2028-04-02 09:00:00-03');
+select ok(comercial_rotina_renovacoes() >= 1, 'a rotina roda de novo');
+select ok((select pedido_por is null and textos_apagados_em is not null from cancelamentos_cliente where interessado_id = (select pequi from i) and situacao = 'PEDIDO'),
+  'r8: o pedido nunca decidido também perde os textos 12 meses depois do último dia');
 select lives_ok($$ select comercial_anonimizar(pequi, 'Dado apagado (LGPD)') from i $$, 'a anonimização roda');
 select ok((select bool_and(pedido_por is null and textos_apagados_em is not null) from cancelamentos_cliente where interessado_id = (select pequi from i)),
   'e apaga quem pediu');

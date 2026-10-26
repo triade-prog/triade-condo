@@ -103,7 +103,7 @@ test.describe("Console · Renovações (CM-30, CM-31, CM-32)", () => {
     await expect(aviso).toBeHidden();
     await expect(page.getByRole("status")).toContainText("Aviso registrado para o Residencial Pequi. Aditivo nº 2 pronto para baixar.");
     const enviado = api.comercial.pedidos.find((x) => x.caminho === "/v1/comercial/renovacoes/aviso")?.corpo;
-    expect(enviado).toMatchObject({ interessadoId: PEQUI, aniversario: somarDias(hoje(), 40), canal: "WHATSAPP", para: "Ana, síndica", avisoEm: hoje() });
+    expect(enviado).toMatchObject({ interessadoId: PEQUI, aniversario: somarDias(hoje(), 40), valorNovo: 23999, canal: "WHATSAPP", para: "Ana, síndica", avisoEm: hoje() });
     await expect(pequi).toContainText("Aviso enviado");
     await expect(page.getByRole("button", { name: "Baixar o aditivo nº 2 do Residencial Pequi" })).toBeVisible();
 
@@ -195,6 +195,9 @@ test.describe("Console · Renovações (CM-30, CM-31, CM-32)", () => {
     await expect(janela.getByText(/Diga o que foi oferecido/)).toBeVisible();
     await janela.getByRole("radio", { name: "Síndico novo" }).check({ force: true });
     await janela.getByLabel("Tentativa de retenção").fill("Apresentar à síndica nova; oferecer 2 meses de acompanhamento");
+    // A tentativa digitada não se perde: confirmar espera ela ser registrada.
+    await expect(janela.getByRole("button", { name: "Confirmar o cancelamento" })).toBeDisabled();
+    await expect(janela).toContainText("Para confirmar, registre a tentativa primeiro ou apague o texto dela.");
     await janela.getByRole("button", { name: "Registrar tentativa e esperar" }).click();
     await expect(page.getByRole("status")).toContainText("Tentativa de retenção registrada. Agora a decisão é do síndico.");
     expect(api.comercial.pedidos.find((x) => x.caminho === `/v1/comercial/cancelamentos/${PEDIDO_BURITI}/retencao`)?.corpo).toEqual({

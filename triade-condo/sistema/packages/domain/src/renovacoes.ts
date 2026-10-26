@@ -20,7 +20,11 @@ const textoOpcional = (min: number, max: number) =>
     .nullable()
     .transform((v) => (v ? v : null))
     .refine((v) => v === null || v.length >= min, { message: `De ${min} a ${max} letras` });
-const data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+// A data existe de verdade (30/02 não passa): o banco recusaria com erro de conversão (r17).
+const data = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((v) => !Number.isNaN(Date.parse(`${v}T12:00:00Z`)) && new Date(`${v}T12:00:00Z`).toISOString().slice(0, 10) === v, { message: "Data que não existe" });
 const dataOpcional = data.optional().nullable().or(z.literal("")).transform((v) => (v ? v : null));
 const dataHoraOpcional = z.string().datetime({ offset: true }).optional().nullable().or(z.literal("")).transform((v) => (v ? v : null));
 const uuid = z.string().uuid();
@@ -41,6 +45,7 @@ export const SITUACOES_RENOVACAO = {
   AVISAR: "Avisar o síndico",
   AVISO_ENVIADO: "Aviso enviado",
   APLICADO: "Valor novo aplicado",
+  SUPERADO: "Superado: o plano mudou antes",
   DISPENSADO: "Renovado sem reajuste",
 } as const;
 export type SituacaoRenovacao = keyof typeof SITUACOES_RENOVACAO;
@@ -262,10 +267,11 @@ export const regraReajusteSchema = z
   .refine((d) => d.referencia === null || d.indice !== null, { path: ["referencia"], message: "A referência vem com o índice" });
 export type RegraReajuste = z.infer<typeof regraReajusteSchema>;
 
-/** O aviso enviado ao síndico (decisão 4). Sem data, é hoje. */
+/** O aviso enviado ao síndico (decisão 4). Sem data, é hoje. Leva o valor que a tela mostrou (r4). */
 export const avisoReajusteSchema = z.object({
   interessadoId: uuid,
   aniversario: data,
+  valorNovo: z.number().int().positive(),
   avisoEm: dataOpcional,
   canal: z.enum(chaves(CANAIS_AVISO)),
   para: texto(2, 120),
