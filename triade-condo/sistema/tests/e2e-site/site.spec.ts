@@ -154,6 +154,12 @@ test.describe("Site · verificação do Facebook", () => {
     const head = html.slice(0, html.indexOf("</head>"));
     expect(head).toContain('<meta name="facebook-domain-verification" content="izvsyquqhlsogfhwsevh6p0ddzb2sv">');
   });
+
+  test("o arquivo de verificação do Facebook fica na raiz, com o código e nada mais", async ({ request }) => {
+    const resposta = await request.get("/ukpkx8mm8hmazyu13yyk5dsuf1vue4.html");
+    expect(resposta.status()).toBe(200);
+    expect(await resposta.text()).toBe("ukpkx8mm8hmazyu13yyk5dsuf1vue4");
+  });
 });
 
 test.describe("Site · início", () => {
