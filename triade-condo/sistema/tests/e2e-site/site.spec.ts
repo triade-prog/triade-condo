@@ -148,6 +148,14 @@ test.describe("Site · rodapé", () => {
   });
 });
 
+test.describe("Site · verificação do Facebook", () => {
+  test("a página inicial traz a metatag do Facebook no head, sem depender de JavaScript", async ({ request }) => {
+    const html = await (await request.get("/")).text();
+    const head = html.slice(0, html.indexOf("</head>"));
+    expect(head).toContain('<meta name="facebook-domain-verification" content="izvsyquqhlsogfhwsevh6p0ddzb2sv">');
+  });
+});
+
 test.describe("Site · preços", () => {
   test("Mensal e Anual trocam o valor e a implantação", async ({ page }) => {
     await page.goto("/precos");
