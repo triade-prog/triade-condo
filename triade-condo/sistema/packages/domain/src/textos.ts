@@ -399,6 +399,23 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   NAO_COMECOU: "O piloto ainda não começou; a medida aparece a partir do primeiro dia.",
   // Painel comercial e janelas (0309).
   META_MES_PASSADO: "A meta de um mês que já passou não muda. Escolha o mês atual ou um dos próximos.",
+  // Renovação, cancelamento, risco e expansão (0311).
+  REAJUSTE_A_DEFINIR: "O valor com reajuste ainda não está definido: falta o índice, que a Administração define com o advogado, ou a faixa é sob consulta.",
+  RENOVACAO_REGISTRADA: "O aviso deste aniversário já foi registrado. Atualize a página.",
+  SEM_CONTRATO_ASSINADO: "Este cliente não tem contrato assinado com a data de início. Confira o contrato na ficha do cliente.",
+  SEM_PLANO: "Este cliente ainda não tem plano. A Administração cadastra o plano na ficha do cliente.",
+  CLIENTE_CANCELADO: "Este cliente confirmou o cancelamento. Para voltar a falar com ele, abra uma reconquista em Expansão.",
+  ADITIVO_PRONTO: "Este aditivo já foi montado e não muda. Atualize a página.",
+  ADITIVO_GERANDO: "O aditivo ainda está sendo montado. Espere um instante ou monte de novo.",
+  SINAL_REGISTRADO: "Este sinal já foi registrado para este cliente.",
+  SINAL_TRATADO: "Este sinal já foi tratado. Atualize a página.",
+  CANCELAMENTO_ABERTO: "Este cliente já tem um pedido de cancelamento. Abra o pedido em Cancelamentos.",
+  CANCELAMENTO_DECIDIDO: "Este pedido de cancelamento já foi decidido e não muda. Atualize a página.",
+  RETENCAO_REGISTRADA: "A tentativa de retenção já foi registrada. Agora a decisão é do síndico.",
+  NAO_SAIU: "A reconquista é de quem confirmou o cancelamento. Para um cliente ativo, use mais um prédio ou mudar de faixa.",
+  EXPANSAO_ABERTA: "Este cliente já tem uma expansão deste tipo em andamento. Siga pela que existe.",
+  EXPANSAO_ENCERRADA: "Esta expansão já foi encerrada e não reabre. Abra outra, se for o caso.",
+  CONTRATO_ENCERRADO: "O contrato deste condomínio com a TRÍADE terminou. Dá para ver o que existe e exportar o histórico; mudar não dá mais.",
 };
 
 /** Convite enviado para quem já tinha conta: nenhum e-mail novo sai, o acesso aparece no próximo login. */

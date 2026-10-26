@@ -151,11 +151,33 @@ import {
   regraComissaoSchema,
   remarcarDemonstracaoSchema,
   taxaKitSchema,
+  avisoReajusteSchema,
+  clienteFicouSchema,
+  confirmarCancelamentoSchema,
+  dispensarRenovacaoSchema,
+  editarExpansaoSchema,
+  encerrarExpansaoSchema,
+  marcarRiscoSchema,
+  modeloAditivoSchema,
+  novaExpansaoSchema,
+  pedirCancelamentoSchema,
+  regraReajusteSchema,
+  retencaoCancelamentoSchema,
+  tratarRiscoSchema,
+  usarModeloAditivoSchema,
 } from "@triade/domain";
 import type { Correio } from "../_shared/email.ts";
 import { type EmailComercialFila, montarEmailComercial } from "./email_comercial.ts";
 import { type Armazenamento, verificarArquivo } from "../_shared/arquivos.ts";
-import { type ConferenciaAssinatura, conferirAssinatura, gerarPdfContrato, type RetratoContrato, sha256Bytes } from "./contrato.ts";
+import {
+  type ConferenciaAssinatura,
+  conferirAssinatura,
+  gerarPdfAditivo,
+  gerarPdfContrato,
+  type RetratoAditivo,
+  type RetratoContrato,
+  sha256Bytes,
+} from "./contrato.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { registrar } from "../_shared/registro.ts";
 import { criarApp } from "../_shared/app.ts";
@@ -1505,6 +1527,112 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const d = await lerCorpo(c, encerrarComissaoSchema);
     return c.json(await rpc("comercial_encerrar_comissao", {
       p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_desde: diaDoMes(d.desde), p_motivo: d.motivo,
+    }));
+  });
+
+  // ---------------------------------------------------------------------------------------
+  // Renovações (0311; CM-30, CM-31 e CM-32; quadros 346 e 347): reajuste e renovação, sinais de
+  // risco, expansão e cancelamentos. O banco decide quem pode, as contas e a ordem; aqui fica o
+  // PDF do aditivo, guardado como o contrato.
+
+  app.get("/v1/comercial/renovacoes", async (c) => c.json(await rpc("comercial_renovacoes", { p_pessoa: pessoa(c), p_mes: mesDaConsulta(c) })));
+  app.put("/v1/comercial/renovacoes/regra", async (c) => {
+    const d = await lerCorpo(c, regraReajusteSchema);
+    return c.json(await rpc("comercial_salvar_regra_reajuste", {
+      p_pessoa: pessoa(c), p_versao: d.versao, p_indice: d.indice, p_percentual: d.percentual, p_referencia: d.referencia,
+      p_prazo_aviso_dias: d.prazoAvisoDias,
+    }));
+  });
+
+  type AditivoAMontar = { aditivoId: string; caminho: string; hash: string; dados: RetratoAditivo };
+  /** Monta o PDF do retrato, guarda e avisa o banco (o mesmo caminho se a API caiu no meio). */
+  async function montarAditivo(c: Context<VarsSessao>, a: AditivoAMontar) {
+    const pdf = await gerarPdfAditivo(a.dados, a.hash);
+    await contratos().gravar(a.caminho, pdf, "application/pdf");
+    return await rpc("comercial_aditivo_pronto", { p_pessoa: pessoa(c), p_aditivo: a.aditivoId, p_sha256: await sha256Bytes(pdf), p_tamanho: pdf.length });
+  }
+
+  // O aviso enviado ao síndico: o banco registra o valor novo e o retrato do aditivo (com modelo em uso).
+  app.post("/v1/comercial/renovacoes/aviso", async (c) => {
+    const { interessadoId, aniversario, ...d } = await lerCorpo(c, avisoReajusteSchema);
+    if (deps.armazenamentoContrato === undefined) throw new ErroDominio("INTERNAL_ERROR");
+    const r = await rpc<{ renovacao: Record<string, unknown>; aditivo: AditivoAMontar | null }>("comercial_registrar_aviso", {
+      p_pessoa: pessoa(c), p_interessado: interessadoId, p_aniversario: aniversario, p_dados: d,
+    });
+    const aditivo = r.aditivo ? await montarAditivo(c, r.aditivo) : null;
+    return c.json({ renovacao: { ...r.renovacao, ...(aditivo ? { aditivo } : {}) } }, 201);
+  });
+  app.post("/v1/comercial/renovacoes/dispensar", async (c) => {
+    const d = await lerCorpo(c, dispensarRenovacaoSchema);
+    return c.json(await rpc("comercial_dispensar_renovacao", {
+      p_pessoa: pessoa(c), p_interessado: d.interessadoId, p_aniversario: d.aniversario, p_motivo: d.motivo,
+    }), 201);
+  });
+  // O aditivo que ficou montando: o mesmo retrato, montado de novo.
+  app.post("/v1/comercial/renovacoes/:id/aditivo", async (c) => {
+    const a = await rpc<AditivoAMontar>("comercial_aditivo_para_montar", { p_pessoa: pessoa(c), p_renovacao: idDaRota(c, "id") });
+    return c.json(await montarAditivo(c, a));
+  });
+  app.get("/v1/comercial/renovacoes/:id/aditivo/link", async (c) => {
+    const a = await rpc<{ caminho: string; nome: string; tipo: string }>("comercial_abrir_aditivo", { p_pessoa: pessoa(c), p_renovacao: idDaRota(c, "id") });
+    return c.json(await linkArquivo(a, c.req.query("baixar") === "1"));
+  });
+
+  // Modelos › Contrato aditivo: o Comercial vê; só a Administração muda e põe em uso.
+  app.get("/v1/comercial/modelos/aditivo", async (c) => c.json(await rpc("comercial_modelos_aditivo", { p_pessoa: pessoa(c) })));
+  async function salvarModeloAditivo(c: Context<VarsSessao>, id: string | null) {
+    const { versao, ...d } = await lerCorpo(c, modeloAditivoSchema);
+    if (id && !versao) throw new ErroDominio("VALIDATION_ERROR", { campos: ["versao"] });
+    return await rpc("comercial_salvar_modelo_aditivo", { p_pessoa: pessoa(c), p_id: id, p_versao: versao, p_dados: d });
+  }
+  app.post("/v1/comercial/modelos/aditivo", async (c) => c.json(await salvarModeloAditivo(c, null), 201));
+  app.put("/v1/comercial/modelos/aditivo/:id", async (c) => c.json(await salvarModeloAditivo(c, idDaRota(c, "id"))));
+  app.post("/v1/comercial/modelos/aditivo/:id/usar", async (c) => {
+    const d = await lerCorpo(c, usarModeloAditivoSchema);
+    return c.json(await rpc("comercial_usar_modelo_aditivo", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: d.versao }));
+  });
+
+  // Sinais de risco: marcar à mão e "Já vi".
+  app.post("/v1/comercial/riscos", async (c) => {
+    const { interessadoId, ...d } = await lerCorpo(c, marcarRiscoSchema);
+    return c.json(await rpc("comercial_marcar_risco", { p_pessoa: pessoa(c), p_interessado: interessadoId, p_dados: d }), 201);
+  });
+  app.post("/v1/comercial/riscos/:id/tratar", async (c) => {
+    const d = await lerCorpo(c, tratarRiscoSchema);
+    return c.json(await rpc("comercial_tratar_risco", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_nota: d.nota }));
+  });
+
+  // Cancelamento (quadro 347): o pedido, uma tentativa de retenção, "decidiu ficar" e a confirmação.
+  app.post("/v1/comercial/cancelamentos", async (c) => {
+    const { interessadoId, ...d } = await lerCorpo(c, pedirCancelamentoSchema);
+    return c.json(await rpc("comercial_pedir_cancelamento", { p_pessoa: pessoa(c), p_interessado: interessadoId, p_dados: d }), 201);
+  });
+  app.post("/v1/comercial/cancelamentos/:id/retencao", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, retencaoCancelamentoSchema);
+    return c.json(await rpc("comercial_tentar_retencao", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+  app.post("/v1/comercial/cancelamentos/:id/ficou", async (c) => {
+    const d = await lerCorpo(c, clienteFicouSchema);
+    return c.json(await rpc("comercial_cliente_ficou", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_nota: d.nota }));
+  });
+  app.post("/v1/comercial/cancelamentos/:id/confirmar", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, confirmarCancelamentoSchema);
+    return c.json(await rpc("comercial_confirmar_cancelamento", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+
+  // Expansão: abrir (o mais um prédio abre a oportunidade nova), mudar e encerrar.
+  app.post("/v1/comercial/expansoes", async (c) => {
+    const d = await lerCorpo(c, novaExpansaoSchema);
+    return c.json(await rpc("comercial_salvar_expansao", { p_pessoa: pessoa(c), p_id: null, p_versao: null, p_dados: d }), 201);
+  });
+  app.put("/v1/comercial/expansoes/:id", async (c) => {
+    const { versao, ...d } = await lerCorpo(c, editarExpansaoSchema);
+    return c.json(await rpc("comercial_salvar_expansao", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: versao, p_dados: d }));
+  });
+  app.post("/v1/comercial/expansoes/:id/encerrar", async (c) => {
+    const d = await lerCorpo(c, encerrarExpansaoSchema);
+    return c.json(await rpc("comercial_encerrar_expansao", {
+      p_pessoa: pessoa(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_etapa: d.etapa, p_resultado: d.resultado,
     }));
   });
 

@@ -5,6 +5,7 @@
 // As regras de verdade estão no banco (pgTAP 053 e 054) e na API (Deno); aqui se confere a tela.
 import type { Route } from "@playwright/test";
 import type { ComercialConsole, PodeComercial } from "./api-falsa-console-comercial";
+import { itensInicioRenovacoes } from "./api-falsa-console-renovacoes";
 
 type Json = Record<string, unknown>;
 
@@ -94,9 +95,11 @@ function inicio(c: ComercialConsole, p: PainelFalso): Json {
       const j = (p.janelas[String(i.id)] ?? []).find((x) => x.pedeAtencao);
       if (j) itens.push({ id: i.id, condominio: i.condominio, etapa: i.etapa, motivo: "JANELA", responsavel: i.responsavel, meu: true, janela: j, outros: 0 });
     }
+    itens.push(...itensInicioRenovacoes(c));
   }
   return { total: itens.length, contagens: { primeiroRetorno: 0, atrasados: 0, parados: itens.filter((x) => x.motivo === "PARADO").length,
-    janelas: itens.filter((x) => x.motivo === "JANELA").length }, itens, max: 8, podeEditar: true };
+    janelas: itens.filter((x) => x.motivo === "JANELA").length, renovacoes: itens.filter((x) => x.motivo === "RENOVACAO").length,
+    riscos: itens.filter((x) => x.motivo === "RISCO").length }, itens, max: 8, podeEditar: true };
 }
 
 export async function rotasPainel(route: Route, c: ComercialConsole, caminho: string, metodo: string, corpo: Json, pode: PodeComercial, url: URL) {

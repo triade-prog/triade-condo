@@ -11,6 +11,7 @@ import type { Route } from "@playwright/test";
 import { CODIGO_CERRADO, criarContratos, rotasContrato, situacaoDoContrato } from "./api-falsa-console-contrato";
 import { criarPainel, rotasPainel } from "./api-falsa-console-painel";
 import { criarParceirosAgenda, rotasParceirosAgenda } from "./api-falsa-console-parceiros";
+import { criarRenovacoes, rotasRenovacoes } from "./api-falsa-console-renovacoes";
 
 type Json = Record<string, unknown>;
 
@@ -105,6 +106,8 @@ export function criarComercialConsole() {
     painel: criarPainel(hoje),
     /** Parceiros, comissão e a agenda de demonstrações (0310, api-falsa-console-parceiros.ts). */
     parceiros: criarParceirosAgenda(hoje),
+    /** Renovações, risco, expansão e cancelamento (0311, api-falsa-console-renovacoes.ts). */
+    renovacoes: criarRenovacoes(hoje),
   };
 }
 
@@ -215,6 +218,8 @@ export async function rotasComercialConsole(route: Route, p: ComercialConsole, c
   if (painel !== null) return painel;
   const parceiros = await rotasParceirosAgenda(route, p, caminho, metodo, corpo, pode, url);
   if (parceiros !== null) return parceiros;
+  const renovacoes = await rotasRenovacoes(route, p, caminho, metodo, corpo, pode, url);
+  if (renovacoes !== null) return renovacoes;
   if (metodo !== "GET" && !pode.editar) return erro(route, 403, "FORBIDDEN");
   const equipe = [CAROLINA];
   if (caminho === "/v1/comercial/interessados" && metodo === "GET") {

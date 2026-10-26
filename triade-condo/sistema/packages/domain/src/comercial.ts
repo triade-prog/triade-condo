@@ -478,12 +478,14 @@ export type TipoJanela = keyof typeof TIPOS_JANELA;
 export const SITUACOES_JANELA = { PROXIMA: "Ainda não abriu", ABERTA: "Aberta", PASSOU: "Passou" } as const;
 export type SituacaoJanela = keyof typeof SITUACOES_JANELA;
 
-/** Por que o interessado aparece no cartão do Início, na ordem em que aparece. */
+/** Por que o interessado (ou o cliente) aparece no cartão do Início, na ordem em que aparece. A renovação e o risco são dos clientes (0311). */
 export const MOTIVOS_INICIO_COMERCIAL = {
   PRIMEIRO_RETORNO: "Primeiro retorno: meta passou",
   ATRASADO: "Atrasado",
   PARADO: "Parado",
   JANELA: "Janela",
+  RENOVACAO: "Avisar o síndico",
+  RISCO: "Sinal de risco",
 } as const;
 export type MotivoInicioComercial = keyof typeof MOTIVOS_INICIO_COMERCIAL;
 

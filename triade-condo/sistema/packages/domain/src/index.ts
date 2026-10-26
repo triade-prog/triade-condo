@@ -34,3 +34,4 @@ export * from "./propostas.ts";
 export * from "./contrato.ts";
 export * from "./taxa_condominio.ts";
 export * from "./parceiros.ts";
+export * from "./renovacoes.ts";
