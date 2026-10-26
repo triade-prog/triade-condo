@@ -5,8 +5,10 @@
 // página pública do link, com o horário que acabou de ser ocupado; e o "menos de R$ 5" com e sem a
 // taxa na nova proposta, no link e no kit. Na revisão: a taxa só vai quando a pessoa a muda, com a
 // versão da ficha (r8); tirar a taxa no kit deixa o kit sem taxa (r5); o aviso de possível duplicado
-// (r1) e o [link de agendamento] nas mensagens prontas (R17.6b). Cada tela passa no axe, não usa
-// emoji e não rola para o lado no celular.
+// (r1) e o [link de agendamento] nas mensagens prontas (R17.6b). Na reconferência: o link da
+// mensagem com o convite da ficha e a conversa sem ele (A), o aviso do agendamento que não marcou e
+// a resposta honesta de quem já tem demonstração (C). Cada tela passa no axe, não usa emoji e não
+// rola para o lado no celular.
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiFalsa } from "./api-falsa";
@@ -294,7 +296,7 @@ test.describe("Console · Taxa média de condomínio (R17.3c)", () => {
   });
 });
 
-test.describe("Console · Agendamento na ficha (r1, R17.6b)", () => {
+test.describe("Console · Agendamento na ficha (r1, R17.6b, A, C)", () => {
   test("a mensagem pronta troca o [link de agendamento] pelo link de quem atende", async ({ page }) => {
     await instalarApiFalsa(page);
     await page.goto(`${CONSOLE}/comercial/${INDICADO}`);
@@ -308,6 +310,71 @@ test.describe("Console · Agendamento na ficha (r1, R17.6b)", () => {
     const aviso = page.getByText("Agendou pelo link com o WhatsApp ou o e-mail de outro interessado, mas não os dois.");
     await expect(aviso).toBeVisible();
     await expect(page.getByRole("link", { name: "Residencial Jatobá" })).toHaveAttribute("href", `/comercial/${SITE}`);
+    // C: o pedido pelo link que não marcou fica em destaque, até alguém registrar uma conversa.
+    await expect(page.getByText("Pediu outra demonstração pelo link")).toBeVisible();
+    await expect(page.getByText("o pedido para quinta, 29/10, 15:30 não foi marcado")).toBeVisible();
+    await expect(page.getByText("O aviso sai quando você registrar uma conversa.")).toBeVisible();
+    await conferir(page);
+  });
+
+  test("A: a mensagem abre o WhatsApp com o convite da ficha no link; a conversa fica sem o convite", async ({ page, context }) => {
+    const api = await instalarApiFalsa(page);
+    api.comercial.interessados.find((x) => x.id === INDICADO)!.temWhatsapp = true;
+    await page.goto(`${CONSOLE}/comercial/${INDICADO}`);
+    await expect(page.getByText("O link de agendamento sai com um código desta ficha: quem marcar por ele entra aqui, mesmo sem o e-mail.")).toBeVisible();
+    await conferir(page);
+    await context.route("https://wa.me/**", (r) => r.fulfill({ contentType: "text/html", body: "<title>WhatsApp</title>" }));
+    const aba = context.waitForEvent("page");
+    await page.getByRole("listitem").filter({ hasText: "Marcar demonstração" }).getByRole("button", { name: "Abrir no WhatsApp" }).click();
+    const nova = await aba;
+    await nova.waitForURL(/wa\.me/);
+    expect(decodeURIComponent(nova.url())).toMatch(new RegExp(`${CONSOLE}/a/abcdefgh2345\\?c=[0-9a-f]{32}`));
+    await nova.close();
+    expect(api.comercial.pedidos.some((x) => x.caminho === `/v1/comercial/interessados/${INDICADO}/convite-agenda`)).toBe(true);
+    const conversa = page.getByRole("dialog", { name: "Registrar conversa" });
+    await expect(conversa.getByLabel("O que conversaram")).toHaveValue(`Oi, João, que dia fica bom para a demonstração? Se preferir, escolha o horário por aqui: ${CONSOLE}/a/abcdefgh2345`);
+  });
+});
+
+test.describe("Console · Link de agendamento com o convite (A, C)", () => {
+  async function preencher(page: Page, email: string) {
+    await page.getByRole("button", { name: "15:30", exact: true }).click();
+    await page.getByLabel("Seu nome").fill("Renata Moura");
+    await page.getByLabel("WhatsApp").fill("(61) 99876-5230");
+    await page.getByLabel("E-mail").fill(email);
+    await page.getByLabel("Condomínio").fill("Edifício Jatobá");
+    await page.getByRole("checkbox", { name: /Autorizo a TRÍADE/ }).check();
+    await page.getByRole("button", { name: /^Confirmar / }).click();
+  }
+
+  test("o ?c= da mensagem vai junto no agendamento; o que não tem o formato não vai", async ({ page }) => {
+    const api = await instalarApiFalsa(page);
+    const convite = "c".repeat(31) + "1";
+    await page.goto(`${CONSOLE}/a/${CODIGO_AGENDA}?c=${convite}`);
+    await preencher(page, "renata@exemplo.com.br");
+    await expect(page.getByRole("status")).toContainText("Demonstração marcada");
+    expect(api.comercial.pedidos.filter((x) => x.caminho === `/v1/publico/agenda/${CODIGO_AGENDA}`).at(-1)!.corpo).toMatchObject({ convite });
+
+    await page.goto(`${CONSOLE}/a/${CODIGO_AGENDA}?c=torto`);
+    await page.getByRole("button", { name: "15:30 (ocupado)" }).waitFor();
+    await page.getByRole("button", { name: "14:45", exact: true }).click();
+    await page.getByLabel("Seu nome").fill("Renata Moura");
+    await page.getByLabel("WhatsApp").fill("(61) 99876-5230");
+    await page.getByLabel("E-mail").fill("renata@exemplo.com.br");
+    await page.getByLabel("Condomínio").fill("Edifício Jatobá");
+    await page.getByRole("checkbox", { name: /Autorizo a TRÍADE/ }).check();
+    await page.getByRole("button", { name: /^Confirmar / }).click();
+    await expect(page.getByRole("status")).toContainText("Demonstração marcada");
+    expect("convite" in (api.comercial.pedidos.filter((x) => x.caminho === `/v1/publico/agenda/${CODIGO_AGENDA}`).at(-1)!.corpo as object)).toBe(false);
+  });
+
+  test("C: quem já tem demonstração marcada vê a data dela, sem marcar outra", async ({ page }) => {
+    await instalarApiFalsa(page);
+    await page.goto(`${CONSOLE}/a/${CODIGO_AGENDA}`);
+    await preencher(page, "ja.marcada@exemplo.com.br");
+    await expect(page.getByRole("heading", { name: "Você já tem uma demonstração marcada", level: 1 })).toBeVisible();
+    await expect(page.getByRole("status")).toContainText("Nenhum horário novo foi marcado. Para mudar, responda o e-mail de confirmação.");
+    await expect(page.getByRole("status")).toContainText("14:00");
     await conferir(page);
   });
 });

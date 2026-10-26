@@ -12,7 +12,7 @@
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { ETAPAS_ABERTAS, formatarWhatsapp, SITUACOES_CONTRATO, SITUACOES_PILOTO, linkWhatsappComercial, mostrarDataSemHora, MOTIVOS_PERDA, PAPEIS_CONTATO, preencherMensagem, taxaTexto, type EtapaComercial } from "@triade/domain";
+import { CAMPO_LINK_AGENDA, ETAPAS_ABERTAS, formatarWhatsapp, SITUACOES_CONTRATO, SITUACOES_PILOTO, linkWhatsappComercial, mostrarDataSemHora, MOTIVOS_PERDA, PAPEIS_CONTATO, preencherMensagem, taxaTexto, type EtapaComercial } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
 import { Cartao, Dado, diaHora, LinhaDoTempo, MenuAcoes, plural, Voltar, type ItemMenu, type PassoTempo } from "../comum.tsx";
 import { useCarregar, useSessao } from "../sessao.tsx";
@@ -20,7 +20,7 @@ import { ROTAS_CLIENTE, TELAS_CLIENTE, textoMedida, textoMeta, textoPrazo, texto
 import { TELAS_CONTRATO } from "./contrato.ts";
 import { JanelaEncerrarPiloto, JanelaNovaOportunidade, JanelaPiloto, JanelaVirarCliente, textoFaltaGanho } from "./janelasCliente.tsx";
 import { urlAgenda } from "./agenda.ts";
-import { iconeCanal, nomeCanal, nomeEtapa, nomeFaixa, nomeOrigem, quandoCurto, ROTAS_COMERCIAL, SeloEtapa, SelosAtencao, textoTarefa, TOM_SITUACAO } from "./comum.tsx";
+import { iconeCanal, linkComConvite, nomeCanal, nomeEtapa, nomeFaixa, nomeOrigem, quandoCurto, ROTAS_COMERCIAL, SeloEtapa, SelosAtencao, textoTarefa, TOM_SITUACAO } from "./comum.tsx";
 import { JanelaConfirmar, JanelaConversa, JanelaFicha, JanelaPerdido, JanelaProximoPasso } from "./janelas.tsx";
 import { CartaoJanelas } from "./JanelasCondominio.tsx";
 import { nomeCriterio, ROTAS_PROPOSTAS, resumoVersao, TELAS_PROPOSTAS, textoAberturas, textoSituacao, TOM_SITUACAO_PROPOSTA, type ListaPropostas } from "./propostas.ts";
@@ -300,11 +300,25 @@ export function FichaInteressado() {
   // Os campos das mensagens prontas; o [link de agendamento] é o /a/[codigo] deste Console (R17.6b).
   const campos = { nome: f.pessoa, condominio: f.condominio,
                    linkAgenda: f.linkAgenda && typeof window !== "undefined" ? urlAgenda(window.location.origin, f.linkAgenda) : null };
+  const comLink = !!f.linkAgenda && f.mensagens.some((m) => m.texto.includes(CAMPO_LINK_AGENDA));
 
-  function mensagem(m: { id: string; texto: string }) {
-    const texto = preencherMensagem(m.texto, campos);
-    window.open(linkWhatsappComercial(f.whatsapp!, texto), "_blank", "noopener");
-    setJanela({ tipo: "conversa", canal: "WHATSAPP", resumo: texto, mensagemId: m.id });
+  async function mensagem(m: { id: string; texto: string }) {
+    // Com o [link de agendamento], o link sai com o convite desta ficha (0310, A). A aba abre já no
+    // clique (o navegador bloqueia a que abre depois de esperar a API) e recebe o endereço depois.
+    const pedeConvite = !!f.linkAgenda && m.texto.includes(CAMPO_LINK_AGENDA);
+    const aba = pedeConvite ? window.open("", "_blank") : null;
+    const l = await linkComConvite(f.id, f.linkAgenda, m.texto);
+    if (!l.ok) {
+      aba?.close();
+      return setAviso({ tom: "erro", texto: textoDoErro(l.erro) });
+    }
+    const url = linkWhatsappComercial(f.whatsapp!, preencherMensagem(m.texto, { ...campos, linkAgenda: l.link ?? campos.linkAgenda }));
+    if (aba) {
+      aba.opener = null;
+      aba.location.href = url;
+    } else window.open(url, "_blank", "noopener");
+    // A conversa registrada leva o link sem o convite: o convite em claro não fica guardado.
+    setJanela({ tipo: "conversa", canal: "WHATSAPP", resumo: preencherMensagem(m.texto, { ...campos, linkAgenda: l.semConvite ?? campos.linkAgenda }), mensagemId: m.id });
   }
 
   const mais: ItemMenu[] = f.anonimizado ? [] : [
@@ -345,6 +359,14 @@ export function FichaInteressado() {
           <Link href={`/comercial/${f.possivelDuplicado.id}`} className="font-semibold underline">{f.possivelDuplicado.condominio}</Link>.
         </Aviso>
       ) : null}
+      {f.agendamentoRecusado ? (
+        <Aviso tom="atencao" titulo={f.agendamentoRecusado.motivo === "NAO_CONTATAR" ? "Pediu demonstração, mas está no não contatar" : "Pediu outra demonstração pelo link"}>
+          {f.agendamentoRecusado.motivo === "NAO_CONTATAR"
+            ? `Alguém com este contato tentou marcar pelo link para ${f.agendamentoRecusado.pedido}. Nada foi marcado nem enviado, e a página mostrou que deu certo. Confira antes de falar com a pessoa. `
+            : `Já existe demonstração marcada; o pedido para ${f.agendamentoRecusado.pedido} não foi marcado, e a pessoa viu a data da que existe. Confira se ela quer remarcar. `}
+          O aviso sai quando você registrar uma conversa.
+        </Aviso>
+      ) : null}
       {faltaPedida?.length ? (
         <Aviso tom="atencao" titulo={`Para ir a ${nomeEtapa(pedida!)}`}>
           {`Falta preencher: ${faltaPedida.map((k) => ({ demonstracaoEm: "a data da demonstração", faixa: "a faixa de unidades", decisor: "quem decide", decisaoEm: "a data da decisão" }[k] ?? k)).join(", ")}. `}
@@ -367,13 +389,14 @@ export function FichaInteressado() {
                       <span className="font-medium">{m.titulo}</span>
                       <span className="t-apoio whitespace-pre-wrap [overflow-wrap:anywhere]">{preencherMensagem(m.texto, campos)}</span>
                       {f.podeEditar ? (
-                        <Botao variante="contorno" className="justify-self-start" disabled={!f.temWhatsapp} onClick={() => mensagem(m)}><Icone nome="whats" />Abrir no WhatsApp</Botao>
+                        <Botao variante="contorno" className="justify-self-start" disabled={!f.temWhatsapp} onClick={() => void mensagem(m)}><Icone nome="whats" />Abrir no WhatsApp</Botao>
                       ) : null}
                     </li>
                   ))}
                 </ul>
               ) : <p className="t-apoio">Nenhuma mensagem pronta para esta etapa. Elas ficam em Modelos.</p>}
               <p className="t-apoio">Abre o WhatsApp com o texto pronto; você aperta enviar. A conversa fica registrada aqui.</p>
+              {comLink ? <p className="t-apoio">O link de agendamento sai com um código desta ficha: quem marcar por ele entra aqui, mesmo sem o e-mail.</p> : null}
             </Cartao>
           ) : null}
           <Cartao id="ficha-2" titulo="Conversas" icone="balao"

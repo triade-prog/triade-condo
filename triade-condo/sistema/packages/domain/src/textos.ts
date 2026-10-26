@@ -340,6 +340,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   DEMONSTRACAO_FUTURA: "A demonstração ainda não começou.",
   DEMONSTRACAO_ENCERRADA: "Esta demonstração já foi encerrada.",
   REMARCACOES: "Esta demonstração já foi remarcada muitas vezes. Cancele e marque outra.",
+  SEM_LINK_AGENDA: "Copie o link de agendamento na Agenda de demonstrações antes de mandar a mensagem.",
   // Propostas do Comercial (0304).
   INTERESSADO_FECHADO: "Este interessado já foi fechado. Volte a etapa para um passo aberto antes de fazer a proposta.",
   PROPOSTA_EXISTE: "Este interessado já tem proposta. Abra a proposta e faça uma versão nova.",

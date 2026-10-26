@@ -71,6 +71,8 @@ export function criarComercialConsole() {
         baseLegal: { tipo: "CONSENTIMENTO", texto: "Autorizo o uso destes dados só para responder a este pedido.", em: agora.toISOString() },
         // Agendou pelo link com só o WhatsApp ou só o e-mail do Jatobá (0310, r1).
         possivelDuplicado: { id: SITE, condominio: "Residencial Jatobá" },
+        // Pediu outra demonstração pelo link com a que já existe (0310, C).
+        agendamentoRecusado: { motivo: "DEMONSTRACAO_MARCADA", em: agora.toISOString(), pedido: "quinta, 29/10, 15:30" },
       }),
       base(CERRADO, {
         condominio: "Residencial Cerrado", cidade: "Brasília", uf: "DF", faixa: "DE_41_A_100", unidades: 64, pessoa: "Lúcia Prado", whatsapp: "5561977776666",

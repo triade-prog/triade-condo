@@ -122,6 +122,16 @@ export async function rotasParceirosAgenda(route: Route, p: ComercialConsole, ca
   const escreve = metodo !== "GET";
   const ehParceiros = /^\/v1\/comercial\/(parceiros|comissao|comissoes)/.test(caminho);
   const ehAgenda = /^\/v1\/comercial\/(agenda|demonstracoes)/.test(caminho) || /^\/v1\/comercial\/interessados\/[0-9a-f-]{36}\/demonstracoes$/.test(caminho);
+  // O convite da mensagem pronta (0310, A): o link de quem atende com um ?c= novo a cada mensagem.
+  const mconv = /^\/v1\/comercial\/interessados\/([0-9a-f-]{36})\/convite-agenda$/.exec(caminho);
+  if (mconv && metodo === "POST") {
+    if (!pode.editar) return erro(route, 403, "FORBIDDEN");
+    const i = p.interessados.find((y) => y.id === mconv[1]);
+    if (!i) return erro(route, 404, "NOT_FOUND");
+    if (!i.linkAgenda) return erro(route, 400, "VALIDATION_ERROR", { motivo: "SEM_LINK_AGENDA" });
+    const convite = String(p.pedidos.length).padStart(32, "c");
+    return route.fulfill({ json: { codigo: i.linkAgenda, convite } });
+  }
   if (!ehParceiros && !ehAgenda) return null;
   const soAdministracao = caminho === "/v1/comercial/comissao/regra" || /\/(pagamentos)$/.test(caminho) || /^\/v1\/comercial\/comissoes\//.test(caminho);
   if (soAdministracao && !pode.comissao) return erro(route, 403, "FORBIDDEN");
@@ -304,6 +314,10 @@ export async function rotasPublicasAgenda(route: Route, p: ComercialConsole, cam
     ];
     if (campos.length) return erro(route, 400, "VALIDATION_ERROR", { campos });
     const inicio = new Date(String(corpo.inicio)).toISOString();
+    // Quem já tem demonstração (o WhatsApp e o e-mail da ficha, ou o convite): a data da que existe (0310, C).
+    if (corpo.email === "ja.marcada@exemplo.com.br") {
+      return route.fulfill({ status: 200, json: { jaMarcada: true, inicio: a.ocupados[0], quando: quando(a.ocupados[0]!) } });
+    }
     if (inicio === a.corrida || a.ocupados.includes(inicio)) {
       a.ocupados.push(inicio);
       return erro(route, 400, "VALIDATION_ERROR", { motivo: "HORARIO_OCUPADO" });

@@ -52,6 +52,15 @@ export interface Interessado {
   possivelDuplicado?: { id: string; condominio: string };
 }
 
+/** O agendamento pelo link que não marcou (0310, C): fica em destaque na ficha até alguém da
+ *  equipe registrar uma conversa. */
+export interface AgendamentoRecusado {
+  motivo: "NAO_CONTATAR" | "DEMONSTRACAO_MARCADA";
+  em: string;
+  /** O horário que a pessoa pediu, já em texto ("terça, 27/10, 15:30"). */
+  pedido: string;
+}
+
 export interface EtapaParametro {
   etapa: EtapaComercial;
   ordem: number;
@@ -128,6 +137,7 @@ export interface PassoCadencia {
 }
 
 export interface FichaInteressado extends Interessado {
+  agendamentoRecusado?: AgendamentoRecusado;
   whatsapp?: string;
   email?: string;
   cnpj?: string;

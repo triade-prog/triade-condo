@@ -17,6 +17,7 @@ const COMISSAO = "7c8d9e0f-1a2b-4c3d-8e4f-5a6b7c8d9e0f";
 const EMAIL1 = "8d9e0f1a-2b3c-4d4e-9f5a-6b7c8d9e0f1a";
 const EMAIL2 = "9e0f1a2b-3c4d-4e5f-8a6b-7c8d9e0f1a2b";
 const CODIGO = "abc23def45gh";
+const CONVITE = "0123456789abcdef0123456789abcdef";
 const ENTRAR = { email: "carolina@triade.exemplo", senha: "senha-forte-da-equipe" };
 const SITE = "segredo-do-site-de-teste";
 
@@ -56,7 +57,10 @@ function montar(opcoes: { correio?: Correio } = {}) {
     publico_agenda: (a) => (a.p_codigo === CODIGO ? { duracaoMinutos: 30, fuso: "America/Sao_Paulo", dias: [], faixas: [] } : erroBanco("TC404")),
     publico_agendar: (a) => ((a.p_dados as { inicio: string }).inicio.startsWith("2026-10-27T14:00")
       ? { id: DEMO, quando: "terça, 27/10, 14:00", duracaoMinutos: 30 }
+      : (a.p_dados as { inicio: string }).inicio.startsWith("2026-10-28T09:00")
+      ? { jaMarcada: true, inicio: "2026-10-27T17:00:00Z", quando: "terça, 27/10, 14:00" }
       : erroBanco("TC422", { motivo: "HORARIO_OCUPADO" })),
+    comercial_convite_agenda: () => ({ codigo: CODIGO, convite: CONVITE }),
     comercial_calculadora_site: (a) => ({ unidades: a.p_unidades, faixa: { codigo: "DE_41_A_100", nome: "41 a 100 unidades", sobConsulta: false },
                                           tabela: "FUNDADOR", mensal: 22900, porApartamento: 358 }),
     comercial_entrada_site: () => ({ id: AROEIRA, juntado: false }),
@@ -207,6 +211,28 @@ Deno.test("0310: o link de agendamento abre sem sessão, com limite por aparelho
   assertEquals([a.p_codigo, (a.p_dados as Record<string, unknown>).whatsapp, (a.p_dados as Record<string, unknown>).email], [CODIGO, "5561999990701", "rita@exemplo.com.br"]);
   // O limite de agendamentos por aparelho (1 no teste) vem antes de olhar a entrada.
   assertEquals((await erro(await m.pedir(`/v1/publico/agenda/${CODIGO}`, { corpo: { ...pedidoAgenda, inicio: "2026-10-27T14:45:00-03:00" } }))).codigo, "RATE_LIMITED");
+});
+
+Deno.test("0310: o convite da mensagem pronta e a resposta de quem já tem demonstração (A, C)", async () => {
+  const m = montar();
+  assertEquals((await erro(await m.pedir(`/v1/comercial/interessados/${AROEIRA}/convite-agenda`, { corpo: {} }))).codigo, "UNAUTHORIZED");
+  const cookie = await entrar(m);
+  const cv = await m.pedir(`/v1/comercial/interessados/${AROEIRA}/convite-agenda`, { cookie, corpo: {} });
+  assertEquals([cv.status, await cv.json()], [200, { codigo: CODIGO, convite: CONVITE }]);
+  assertEquals(chamada(m, "comercial_convite_agenda"), { p_pessoa: CAROLINA, p_id: AROEIRA });
+
+  const pedidoAgenda = { inicio: "2026-10-27T14:00:00-03:00", nome: "Rita Dias", whatsapp: "61999990701", email: "rita@exemplo.com.br",
+                         condominio: "Edifício Sucupira", consentimento: true };
+  // O limite de agendar é 1 por aparelho no teste: cada pedido num app novo.
+  const com = montar();
+  assertEquals((await com.pedir(`/v1/publico/agenda/${CODIGO}`, { corpo: { ...pedidoAgenda, convite: CONVITE.toUpperCase() } })).status, 201);
+  assertEquals((chamada(com, "publico_agendar")!.p_dados as Record<string, unknown>).convite, CONVITE);
+  const torto = montar();
+  assertEquals((await torto.pedir(`/v1/publico/agenda/${CODIGO}`, { corpo: { ...pedidoAgenda, convite: "nao-e-um-convite" } })).status, 201);
+  assertEquals((chamada(torto, "publico_agendar")!.p_dados as Record<string, unknown>).convite, null);
+  const ja = montar();
+  const r = await ja.pedir(`/v1/publico/agenda/${CODIGO}`, { corpo: { ...pedidoAgenda, inicio: "2026-10-28T09:00:00-03:00" } });
+  assertEquals([r.status, await r.json()], [200, { jaMarcada: true, inicio: "2026-10-27T17:00:00Z", quando: "terça, 27/10, 14:00" }]);
 });
 
 Deno.test("0310: dois agendamentos no mesmo horário: o segundo recebe HORARIO_OCUPADO", async () => {

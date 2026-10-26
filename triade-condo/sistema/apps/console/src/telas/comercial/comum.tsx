@@ -3,9 +3,10 @@
 // os selos da etapa e da tarefa, o texto do próximo passo, a linha de quem é o interessado e as
 // rotas da api-console.
 
-import { CANAIS_CONVERSA, ETAPAS_COMERCIAL, FAIXAS_PRECO, mostrarDataSemHora, ORIGENS_COMERCIAL, type CodigoFaixa, type EtapaComercial } from "@triade/domain";
-import { Selo, type NomeIcone, type Tom } from "@triade/ui";
+import { CAMPO_LINK_AGENDA, CANAIS_CONVERSA, ETAPAS_COMERCIAL, FAIXAS_PRECO, mostrarDataSemHora, ORIGENS_COMERCIAL, type CodigoFaixa, type EtapaComercial } from "@triade/domain";
+import { chamarApi, Selo, type ErroApi, type NomeIcone, type Tom } from "@triade/ui";
 import { diaHora, plural } from "../comum.tsx";
+import { ROTAS_AGENDA, urlAgenda } from "./agenda.ts";
 import type { Interessado, Tarefa } from "./tipos.ts";
 
 export const ROTAS_COMERCIAL = {
@@ -100,3 +101,15 @@ export function iconeCanal(canal?: string): NomeIcone {
 }
 
 export { diaHora };
+
+/** O [link de agendamento] de uma mensagem que vai sair agora (0310, A): com o campo no texto, a
+ *  ficha pede um convite novo e o link leva o ?c= deste interessado; quem marcar por ele entra
+ *  nesta ficha. Sem o campo ou sem o link da equipe, nada é pedido. O convite fica só no link que
+ *  sai: a conversa registrada usa o link sem ele. */
+export async function linkComConvite(interessadoId: string, codigo: string | undefined, texto: string)
+  : Promise<{ ok: true; link: string | null; semConvite: string | null } | { ok: false; erro: ErroApi }> {
+  if (!codigo || !texto.includes(CAMPO_LINK_AGENDA)) return { ok: true, link: null, semConvite: null };
+  const r = await chamarApi<{ codigo: string; convite: string }>(ROTAS_AGENDA.convite(interessadoId), { corpo: {} });
+  if (!r.ok) return { ok: false, erro: r.erro };
+  return { ok: true, link: urlAgenda(window.location.origin, r.dados.codigo, r.dados.convite), semConvite: urlAgenda(window.location.origin, r.dados.codigo) };
+}
