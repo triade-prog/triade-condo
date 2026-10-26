@@ -226,7 +226,7 @@ select pg_temp.em('2028-04-01 10:00:00-03');
 select ok((select comercial_retencao_parceiros_agenda() >= 1), 'a rotina diária roda');
 select is((select nome from parceiros_comercial where id = (select planalto from p2)), 'Parceiro apagado (LGPD)',
   'sem comissão, o contato do parceiro inativo some 12 meses depois');
-select is((select array_agg(codigo || ':' || sistema || ':' || situacao order by numero) from retencao_tipos where numero > 36),
+select is((select array_agg(codigo || ':' || sistema || ':' || situacao order by numero) from retencao_tipos where numero between 37 and 38),
   array['PARCEIRO:CONSOLE:A_FAZER', 'AGENDAMENTO:CONSOLE:A_FAZER'], 'o parceiro e o agendamento entram no catálogo de retenção');
 
 select * from finish();

@@ -1085,3 +1085,48 @@ export async function gerarPdfContrato(d: RetratoContrato, hash: string): Promis
   });
   return await doc.save({ useObjectStreams: false });
 }
+
+// ---------------------------------------------------------------------------------------
+// O aditivo de reajuste (0311; CM-13, CM-30): o retrato que o banco gravou no aviso.
+
+export interface RetratoAditivo {
+  numero: number;
+  titulo: string;
+  texto: string;
+  campos: Record<string, string | null>;
+  modelo: { numero: number };
+  contrato: { numero: number; hash: string | null };
+  geradoEm: string;
+}
+
+/** Monta o PDF do aditivo, com a impressão digital em cada folha e a do contrato que ele altera. */
+export async function gerarPdfAditivo(d: RetratoAditivo, hash: string): Promise<Uint8Array> {
+  const doc = await PDFDocument.create({ updateMetadata: false });
+  const fonte = await doc.embedFont(StandardFonts.Helvetica);
+  const negrito = await doc.embedFont(StandardFonts.HelveticaBold);
+  const aceitos = new Set(fonte.getCharacterSet());
+  const quando = new Date(d.geradoEm);
+  doc.setTitle(`Aditivo nº ${d.numero} ao contrato TRÍADE nº ${d.contrato.numero} · ${d.campos.condominio ?? ""}`.trim());
+  doc.setAuthor("TRÍADE Condo");
+  doc.setSubject(`Impressão digital (sha256): ${hash}`);
+  doc.setCreator("TRÍADE Condo");
+  doc.setProducer("TRÍADE Condo");
+  doc.setCreationDate(quando);
+  doc.setModificationDate(quando);
+
+  const e = new Escritor(doc, aceitos);
+  e.texto(d.titulo, negrito, 14, { depois: 4 });
+  e.texto(`Aditivo nº ${d.numero} ao contrato nº ${d.contrato.numero} · modelo v${d.modelo.numero} · gerado em ${dataBr(d.geradoEm)}`, fonte, 8.5,
+          { cor: CINZA });
+  if (d.contrato.hash) e.texto(`Contrato alterado, impressão digital (sha256): ${d.contrato.hash}`, fonte, 7.5, { cor: CINZA, depois: 10 });
+  e.texto(d.texto, fonte, 10.5, { depois: 18 });
+  e.texto("O valor novo vale pelo aviso ao síndico registrado na data acima. A assinatura deste aditivo pelo gov.br ainda não é pedida pelo sistema.",
+          fonte, 9, { cor: CINZA });
+
+  const paginas = doc.getPages();
+  paginas.forEach((p, i) => {
+    const linha = limpar(`Aditivo nº ${d.numero} ao contrato TRÍADE nº ${d.contrato.numero} · Impressão digital (sha256): ${hash} · Página ${i + 1} de ${paginas.length}`, aceitos);
+    p.drawText(linha, { x: MARGEM, y: 24, size: 6.5, font: fonte, color: CINZA });
+  });
+  return await doc.save({ useObjectStreams: false });
+}

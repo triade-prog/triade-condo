@@ -64,7 +64,8 @@ describe("painel comercial e janelas (0309)", () => {
   it("os motivos do Início são os que o banco devolve, na mesma ordem", () => {
     const m = SQL.match(/case it\.motivo when 'PRIMEIRO_RETORNO' then 1 when 'ATRASADO' then 2 when 'PARADO' then 3 else 4 end/);
     expect(m).not.toBeNull();
-    expect(Object.keys(MOTIVOS_INICIO_COMERCIAL)).toEqual(["PRIMEIRO_RETORNO", "ATRASADO", "PARADO", "JANELA"]);
+    // A 0311 junta a renovação e o risco dos clientes depois (renovacoes.test.ts confere).
+    expect(Object.keys(MOTIVOS_INICIO_COMERCIAL).slice(0, 4)).toEqual(["PRIMEIRO_RETORNO", "ATRASADO", "PARADO", "JANELA"]);
   });
 
   it("síndico novo: o mandato acaba depois do começo; sem datas, vale hoje", () => {

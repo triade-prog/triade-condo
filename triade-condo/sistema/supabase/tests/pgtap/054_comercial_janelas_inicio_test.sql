@@ -43,7 +43,7 @@ create function pg_temp.linhas(p_pessoa uuid) returns text[] language sql as $$
 -- 1. Sem nada.
 select pg_temp.em('2026-10-01 10:00:00-03');
 select is((select pg_temp.inicio(com) from ids),
-  '{"total": 0, "contagens": {"primeiroRetorno": 0, "atrasados": 0, "parados": 0, "janelas": 0}, "itens": [], "max": 8, "podeEditar": true}'::jsonb,
+  '{"total": 0, "contagens": {"primeiroRetorno": 0, "atrasados": 0, "parados": 0, "janelas": 0, "renovacoes": 0, "riscos": 0}, "itens": [], "max": 8, "podeEditar": true}'::jsonb,
   'sem interessados, o Início não tem o que pedir (o cartão some)');
 select throws_ok($$ select comercial_inicio(imp) from ids $$, 'TC401', null, 'a Implantação não vê o cartão do Comercial');
 
@@ -87,7 +87,7 @@ select throws_ok($$ select comercial_janelas_ficha(imp, figueira) from ids, i $$
 select is(pg_temp.linhas((select com from ids)),
   array['PRIMEIRO_RETORNO Edifício Goiaba', 'ATRASADO Edifício Hortelã', 'PARADO Edifício Kiwi', 'JANELA Edifício Figueira', 'JANELA Edifício Caju'],
   'primeiro o retorno fora da meta, depois o atrasado, o parado e as janelas que se aproximam');
-select is((select pg_temp.inicio(com) -> 'contagens' from ids), '{"primeiroRetorno": 1, "atrasados": 1, "parados": 1, "janelas": 3}'::jsonb,
+select is((select pg_temp.inicio(com) -> 'contagens' from ids), '{"primeiroRetorno": 1, "atrasados": 1, "parados": 1, "janelas": 3, "renovacoes": 0, "riscos": 0}'::jsonb,
   'as contagens: três janelas pedem atenção (a da Hortelã vai junto do atrasado)');
 select is((select (pg_temp.inicio(com) ->> 'total')::int from ids), 5, 'cinco interessados pedem atenção');
 select is((select (pg_temp.inicio(com) -> 'itens' -> 0) - 'id' from ids),
@@ -160,7 +160,7 @@ select comercial_nao_contatar(com, '5561999990805', null, null, 'Pediu para não
 select comercial_nao_contatar(com, null, 'SINDICO@hortela.com.br', null, 'Pediu por e-mail') from ids;
 select comercial_nao_contatar(com, null, null, '11222333000181', 'Pediu pelo CNPJ do condomínio') from ids;
 select is(pg_temp.linhas((select com from ids)), array['JANELA Edifício Figueira'], 'fica só quem pode receber contato');
-select is((select pg_temp.inicio(com) -> 'contagens' from ids), '{"primeiroRetorno": 0, "atrasados": 0, "parados": 0, "janelas": 1}'::jsonb,
+select is((select pg_temp.inicio(com) -> 'contagens' from ids), '{"primeiroRetorno": 0, "atrasados": 0, "parados": 0, "janelas": 1, "renovacoes": 0, "riscos": 0}'::jsonb,
   'no não contatar, o primeiro retorno, o atrasado e o parado saem do Início');
 select comercial_anonimizar(zimbro, 'Teste') from i;
 select is(pg_temp.motivo($$ select comercial_sindico_novo(com, zimbro, pg_temp.iv(zimbro), null, null) from ids, i $$), 'ANONIMIZADO',
