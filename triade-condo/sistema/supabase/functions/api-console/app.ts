@@ -22,6 +22,7 @@
 
 import type { Context } from "hono";
 import {
+  emailDaEquipe,
   abrirSuporteAcessoSchema,
   atribuirSchema,
   atualizarChamadoSchema,
@@ -1184,7 +1185,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   const dadosVersao = (d: { unidades: number | null; ciclo: string; tabela: string | null; valorManual: number | null; valorManualMotivo: string | null;
                             implantacaoManual: number | null; desconto: number | null; descontoMotivo: string | null; respostas: string[];
                             referencias: string[]; notaInterna: string | null; validadeDias: number | null; taxaCondominio?: number | null;
-                            interessadoVersao?: number }) => ({
+                            interessadoVersao?: number; implantadorId?: string | null }, emailComercial: string | null = null) => ({
     unidades: d.unidades, ciclo: d.ciclo, tabela: d.tabela, valorManual: d.valorManual, valorManualMotivo: d.valorManualMotivo,
     implantacaoManual: d.implantacaoManual, desconto: d.desconto, descontoMotivo: d.descontoMotivo, respostas: d.respostas,
     referencias: d.referencias, notaInterna: d.notaInterna, validadeDias: d.validadeDias,
@@ -1192,7 +1193,14 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     ...(d.taxaCondominio === undefined ? {} : { taxaCondominio: d.taxaCondominio }),
     // Com a taxa mudada, a versão da ficha que a tela viu (r8): o banco confere antes de gravar.
     ...(d.interessadoVersao === undefined ? {} : { interessadoVersao: d.interessadoVersao }),
+    // A apresentação (0312, R17.8): quem vai implantar e o e-mail de quem salva, lido na conta
+    // (nunca da tela) e só quando é do domínio da TRÍADE; o banco confere de novo.
+    implantadorId: d.implantadorId ?? null, emailComercial,
   });
+  // O e-mail da conta de quem salva a versão; sem ele (ou fora do domínio), a proposta vai sem e-mail.
+  const emailComercial = async (c: Context<VarsSessao>) => {
+    try { return emailDaEquipe(await deps.admin.emailDe(pessoa(c))); } catch { return null; }
+  };
 
   app.get("/v1/comercial/propostas", async (c) => {
     const aba = c.req.query("aba") || null;
@@ -1205,15 +1213,20 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   // Sugestão pela Tabela de preços (CM-06, H.1): não grava nada.
   app.post("/v1/comercial/propostas/sugestao", async (c) => {
     const d = await lerCorpo(c, sugestaoPropostaSchema);
-    return c.json(await rpc("comercial_sugestao_proposta", {
+    const r = await rpc<{ apresentacao?: { equipe?: { comercial?: { nome: string; email?: string } } } }>("comercial_sugestao_proposta", {
       p_pessoa: pessoa(c), p_interessado: d.interessadoId, p_unidades: d.unidades, p_ciclo: d.ciclo, p_tabela: d.tabela,
       p_valor_manual: d.valorManual, p_implantacao_manual: d.implantacaoManual, p_desconto: d.desconto,
-    }));
+    });
+    // A prévia "Ver como o síndico vai ver" (quadro 456) com o e-mail que a versão vai guardar.
+    const quem = r.apresentacao?.equipe?.comercial;
+    const email = quem ? await emailComercial(c) : null;
+    if (quem && email) quem.email = email;
+    return c.json(r);
   });
 
   app.post("/v1/comercial/propostas", async (c) => {
     const d = await lerCorpo(c, novaPropostaSchema);
-    return c.json(await rpc("comercial_criar_proposta", { p_pessoa: pessoa(c), p_interessado: d.interessadoId, p_dados: dadosVersao(d) }), 201);
+    return c.json(await rpc("comercial_criar_proposta", { p_pessoa: pessoa(c), p_interessado: d.interessadoId, p_dados: dadosVersao(d, await emailComercial(c)) }), 201);
   });
 
   app.get("/v1/comercial/propostas/:id", async (c) => c.json(await rpc("comercial_proposta", { p_pessoa: pessoa(c), p_id: idDaRota(c, "id") })));
@@ -1253,14 +1266,14 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   app.post("/v1/comercial/propostas/:id/versoes", async (c) => {
     const d = await lerCorpo(c, salvarVersaoSchema);
     return c.json(await rpc("comercial_nova_versao", {
-      p_pessoa: pessoa(c), p_proposta: idDaRota(c, "id"), p_versao: d.versao, p_dados: dadosVersao(d),
+      p_pessoa: pessoa(c), p_proposta: idDaRota(c, "id"), p_versao: d.versao, p_dados: dadosVersao(d, await emailComercial(c)),
     }), 201);
   });
 
   // Salvar o rascunho: a versão da linha da versão.
   app.put("/v1/comercial/propostas/:id/versoes/:versaoId", async (c) => {
     const d = await lerCorpo(c, salvarVersaoSchema);
-    return c.json(await rpc("comercial_salvar_versao", { ...idsVersao(c), p_versao: d.versao, p_dados: dadosVersao(d) }));
+    return c.json(await rpc("comercial_salvar_versao", { ...idsVersao(c), p_versao: d.versao, p_dados: dadosVersao(d, await emailComercial(c)) }));
   });
 
   // Desconto (F.1): o Comercial pede; aprovar e recusar só a Administração (decidido no banco).

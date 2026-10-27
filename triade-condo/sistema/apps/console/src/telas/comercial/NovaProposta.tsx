@@ -7,7 +7,10 @@
 // A nota interna fica só para a equipe (CM-12). Quem vê a Tabela de preços abre o simulador já
 // com as unidades do prédio. A taxa média de condomínio (R17.3c, quadro 445) vem da ficha, é
 // opcional e fica nas premissas da versão; com ela, o resumo diz o peso na taxa. O destaque "menos
-// de R$ 5" só aparece quando o valor por apartamento é menor que R$ 5,00.
+// de R$ 5" só aparece quando o valor por apartamento é menor que R$ 5,00. Quem cuida (R17.8, quadro
+// 456): quem faz a proposta vem da sessão e quem vai implantar é escolhido na equipe ativa (opcional);
+// o fundador é só no mensal, e o Anual troca a tabela para a cheia. "Ver como o síndico vai ver" abre
+// a apresentação com os valores de agora, sem gravar nada.
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -16,13 +19,18 @@ import {
   custoNaTaxa, custoPorApartamento, lerTaxaCondominio, mensalComDesconto, mostrarValor, resumoPorApartamento, sugestaoPropostaSchema, taxaParaCampo, TEMAS_RESPOSTA,
   ESCOPOS_REFERENCIA, TEXTO_AJUDA_TAXA, TEXTO_AJUDA_TAXA_FICHA, TEXTO_MENOS_DE_CINCO,
 } from "@triade/domain";
-import { Aviso, Botao, CampoAreaTexto, CampoTexto, camposComErro, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
+import {
+  Aviso, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Carregando, chamarApi, classeBotao, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi,
+} from "@triade/ui";
+import { ApresentacaoProposta } from "./ApresentacaoProposta.tsx";
+import { EQUIPE_IMPLANTACAO, montarApresentacao } from "./apresentacao.ts";
+import { WHATSAPP_COMERCIAL } from "./LinkProposta.tsx";
 import { Cartao, Voltar } from "../comum.tsx";
 import { campoDosCentavos, centavosDoCampo } from "../planos/comum.tsx";
 import { useCarregar, useSessao } from "../sessao.tsx";
 import {
-  AVISOS_PROPOSTA, percentual, ROTAS_PROPOSTAS, rotulosAprovacao, TELAS_PROPOSTAS, textoImplantacao, textoNoAno, textoVaiJunto, type Ciclo, type FichaProposta,
-  type Sugestao, type VersaoProposta,
+  AVISOS_PROPOSTA, percentual, ROTAS_PROPOSTAS, rotulosAprovacao, TELAS_PROPOSTAS, textoImplantacao, textoNoAno, textoVaiJunto, type Ciclo, type ConteudoSindico,
+  type FichaProposta, type Sugestao, type VersaoProposta,
 } from "./propostas.ts";
 
 const brl = (c?: number) => mostrarValor(c ?? null);
@@ -68,11 +76,13 @@ interface Formulario {
   validadeDias: number | null;
   /** A taxa média de condomínio, como a pessoa digita ("650,00"). Nulo: ainda não veio da ficha. */
   taxa: string | null;
+  /** Quem vai implantar (R17.8); vazio: a proposta fala da equipe de implantação. */
+  implantadorId: string;
 }
 
 const vazio: Formulario = {
   unidades: "", ciclo: "MENSAL", tabela: null, desconto: "", descontoMotivo: "", valorManual: "", implantacaoManual: "", valorManualMotivo: "",
-  respostas: [], referencias: [], notaInterna: "", validadeDias: null, taxa: null,
+  respostas: [], referencias: [], notaInterna: "", validadeDias: null, taxa: null, implantadorId: "",
 };
 
 /**
@@ -90,6 +100,7 @@ function formularioDe(v: VersaoProposta, taxaFicha?: number): Formulario {
     respostas: (v.respostas ?? []).map((r) => r.id).filter((x): x is string => !!x), referencias: (v.referencias ?? []).filter((r) => !r.retirada).map((r) => r.id),
     notaInterna: v.notaInterna ?? "", validadeDias: v.validadeDias ?? null,
     taxa: taxaParaCampo(taxaFicha),
+    implantadorId: v.implantador?.id ?? "",
   };
 }
 
@@ -155,6 +166,7 @@ function Gerador({ modo }: { modo: Modo }) {
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [falhaLocal, setFalhaLocal] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
+  const [previa, setPrevia] = useState(false);
   const muda = (p: Partial<Formulario>) => setF((x) => ({ ...x, ...p }));
 
   const unidades = lerUnidades(f.unidades);
@@ -238,6 +250,7 @@ function Gerador({ modo }: { modo: Modo }) {
       respostas: f.respostas.filter((id) => (s.respostas ?? []).some((r) => r.id === id)),
       referencias: f.referencias.filter((id) => (s.referencias ?? []).some((r) => r.id === id)),
       notaInterna: f.notaInterna.trim() || null, validadeDias: f.validadeDias,
+      implantadorId: f.implantadorId || null,
       // A taxa só vai quando a pessoa a mudou (vazio tira; vale também para a ficha), com a versão
       // da ficha que ela viu; sem mudança, a versão usa a da ficha (r8).
       ...(taxaMudou ? { taxaCondominio: taxaLida.erro ? null : taxaLida.taxa, interessadoVersao: taxaBase?.versao } : {}),
@@ -253,6 +266,7 @@ function Gerador({ modo }: { modo: Modo }) {
     if (sobConsulta && !f.valorManualMotivo.trim()) falhas.valorManualMotivo = "Diga de onde veio o valor.";
     if ("erro" in implantacaoManual) falhas.implantacaoManual = implantacaoManual.erro;
     if (taxaLida.erro) falhas.taxaCondominio = taxaLida.erro;
+    if (f.implantadorId && !(s.implantadores ?? []).some((p) => p.id === f.implantadorId)) falhas.implantadorId = "Escolha alguém da equipe ativa.";
     setFalhaLocal(falhas);
     return Object.keys(falhas).length === 0;
   }
@@ -296,6 +310,24 @@ function Gerador({ modo }: { modo: Modo }) {
   const erroCampo = (nome: string, texto: string) => falhaLocal[nome] ?? (campos.includes(nome) ? texto : undefined);
   const avisos = s.avisos.filter((a) => a !== "SEM_UNIDADES" || !f.unidades);
   const submeter = (ev: FormEvent) => { ev.preventDefault(); void salvar(pedeAprovacao); };
+
+  // A prévia (quadro 456): a apresentação montada com a sugestão e o que está no formulário.
+  function conteudoPrevia(): ConteudoSindico {
+    const implantador = (s.implantadores ?? []).find((p) => p.id === f.implantadorId);
+    const ap = s.apresentacao;
+    return {
+      unidades: typeof unidades === "number" ? unidades : s.unidades, ciclo: f.ciclo, tabela: s.tabela, mensalTabela: s.mensalTabela, mensal: s.mensalTabela ?? s.mensal,
+      anual: s.mensalTabela !== undefined && f.ciclo === "ANUAL" ? s.mensalTabela * (s.mesesPagos ?? 11) : s.anual, mesesPagos: s.mesesPagos,
+      depoisFundador: s.depoisFundador, fundadorMeses: s.fundadorMeses, implantacaoSemCusto: s.implantacaoSemCusto, implantacao: s.implantacao,
+      implantacaoParcelas: s.implantacaoParcelas,
+      porApartamento: s.mensalTabela !== undefined && typeof unidades === "number" ? custoPorApartamento(s.mensalTabela, unidades) ?? undefined : s.porApartamento,
+      numero: modo.tipo === "criar" ? 1 : modo.editar ? modo.base.numero : modo.base.numero + 1, situacao: "RASCUNHO",
+      condominio, cidade: s.interessado.cidade, uf: s.interessado.uf, aosCuidados: s.interessado.pessoa,
+      taxaCondominio: taxaLida.erro ? undefined : taxaLida.taxa ?? undefined, incluido: [...(s.oferta?.incluido ?? [])], planejado: [...(s.oferta?.planejado ?? [])],
+      respostas: [], referencias: [], validadeDias: f.validadeDias ?? s.validadeDias, faixa: s.faixa?.codigo,
+      apresentacao: ap ? { ...ap, equipe: { ...ap.equipe, implantacao: implantador ? { nome: implantador.nome } : undefined } } : undefined,
+    };
+  }
 
   const resumoMensal = () => {
     if (mensalPrevisto === undefined) return <>Valor a definir na Tabela de preços</>;
@@ -366,8 +398,8 @@ function Gerador({ modo }: { modo: Modo }) {
               <div className="grid gap-3 md:grid-cols-2">
                 <Opcao nome="np-ciclo" valor="MENSAL" marcada={f.ciclo === "MENSAL"} aoMarcar={() => muda({ ciclo: "MENSAL" })} titulo="Mensal"
                   apoio={f.ciclo === "MENSAL" && s.mensalTabela !== undefined ? `${brl(s.mensalTabela)} por mês` : "Paga todo mês"} />
-                <Opcao nome="np-ciclo" valor="ANUAL" marcada={f.ciclo === "ANUAL"} aoMarcar={() => muda({ ciclo: "ANUAL" })} titulo="Anual"
-                  apoio={`12 por ${s.mesesPagos ?? 11} · implantação sem custo`} />
+                <Opcao nome="np-ciclo" valor="ANUAL" marcada={f.ciclo === "ANUAL"} aoMarcar={() => muda({ ciclo: "ANUAL", tabela: sobConsulta ? f.tabela : "CHEIA" })} titulo="Anual"
+                  apoio={`Só na tabela cheia · 12 por ${s.mesesPagos ?? 11}, implantação isenta`} />
               </div>
             </fieldset>
             {!sobConsulta ? (
@@ -403,6 +435,16 @@ function Gerador({ modo }: { modo: Modo }) {
                 ajuda="Vai para a Administração; nunca para o síndico." erro={erroCampo("descontoMotivo", "Diga por que o desconto. Vai só para a Administração.")} />
             </div>
             <p className="t-apoio">A proposta com desconto ou sob consulta só pode ser enviada depois que a Administração aprovar (F.1). Na tabela e sem desconto, envia direto.</p>
+          </Cartao>
+
+          <Cartao id="np-quem" titulo="Quem cuida" icone="pessoas">
+            <div className="grid gap-4 md:grid-cols-2">
+              <CampoTexto id="np-quem-fez" rotulo="Quem fez a proposta" value={s.quemFez?.nome ?? ""} readOnly
+                ajuda="Você. Na proposta vão o WhatsApp comercial da TRÍADE e o e-mail da sua conta, quando é @trihub.com.br." />
+              <CampoSelecao id="np-implantador" rotulo="Quem vai implantar" opcional value={f.implantadorId} onChange={(e) => muda({ implantadorId: e.target.value })}
+                opcoes={[{ valor: "", texto: "Sem escolher" }, ...(s.implantadores ?? []).map((p) => ({ valor: p.id, texto: p.nome }))]}
+                ajuda={`Sem escolher, a proposta diz “${EQUIPE_IMPLANTACAO}”.`} erro={erroCampo("implantadorId", "Escolha alguém da equipe ativa.")} />
+            </div>
           </Cartao>
 
           <Cartao id="np-junto" titulo="Vai junto" icone="clipe">
@@ -468,15 +510,23 @@ function Gerador({ modo }: { modo: Modo }) {
             {pedeAprovacao ? (
               <>
                 <Botao type="submit" disabled={enviando || !!jaTem}><Icone nome="enviar" />{enviando ? "Salvando…" : rotulos.pedir}</Botao>
+                <Botao variante="contorno" disabled={mensalPrevisto === undefined} onClick={() => setPrevia(true)}><Icone nome="olho" />Ver como o síndico vai ver</Botao>
                 <Botao variante="contorno" disabled={enviando || !!jaTem} onClick={() => void salvar(false)}><Icone nome="check" />Salvar rascunho</Botao>
               </>
             ) : (
-              <Botao type="submit" disabled={enviando || !!jaTem}><Icone nome="check" />{enviando ? "Salvando…" : "Salvar rascunho"}</Botao>
+              <>
+                <Botao type="submit" disabled={enviando || !!jaTem}><Icone nome="check" />{enviando ? "Salvando…" : "Salvar rascunho"}</Botao>
+                <Botao variante="contorno" disabled={mensalPrevisto === undefined} onClick={() => setPrevia(true)}><Icone nome="olho" />Ver como o síndico vai ver</Botao>
+              </>
             )}
           </div>
           <p className="t-apoio">O envio é na lista de propostas, com o link e o PDF.</p>
         </div>
       </div>
+      <Dialogo aberto={previa} titulo="Como o síndico vai ver" larga aoFechar={() => setPrevia(false)}
+        apoio="Prévia com os valores de agora. Desconto e valor sob consulta só aparecem depois da aprovação; nada é gravado.">
+        {previa ? <div className="grid gap-4 bg-fundo p-1">{<ApresentacaoProposta a={montarApresentacao(conteudoPrevia(), { whatsapp: WHATSAPP_COMERCIAL })} />}</div> : null}
+      </Dialogo>
     </form>
   );
 }

@@ -33,6 +33,23 @@ test.describe("Console · Propostas", () => {
     await expect(resumo).toContainText("R$");
     await conferir(page);
 
+    // Quem cuida (R17.8): quem fez é quem está no Console; quem vai implantar vem da equipe ativa.
+    await expect(page.getByLabel("Quem fez a proposta")).toHaveValue("Bianca");
+    await page.getByLabel("Quem vai implantar").selectOption({ label: "Carolina" });
+    // O Anual só na tabela cheia.
+    await expect(page.getByText(/Só na tabela cheia/)).toBeVisible();
+    // A prévia mostra as quatro partes, como no link.
+    await page.getByRole("button", { name: "Ver como o síndico vai ver" }).click();
+    const previa = page.getByRole("dialog", { name: "Como o síndico vai ver" });
+    await expect(previa.getByRole("heading", { name: "Menos pedidos sem retorno. Cada pedido com dono e prazo." })).toBeVisible();
+    await expect(previa.getByRole("heading", { name: "Investimento transparente." })).toBeVisible();
+    await expect(previa.getByRole("heading", { name: "O que está incluído." })).toBeVisible();
+    await expect(previa).toContainText("Seu prédio");
+    await expect(previa).toContainText("Carolina");
+    await conferir(page);
+    await page.keyboard.press("Escape");
+    await expect(previa).toHaveCount(0);
+
     await page.getByLabel("Desconto na mensalidade (%)").fill("10");
     await page.getByLabel("Motivo").first().fill("Síndica fecha esta semana se o valor couber");
     await page.getByLabel("Só para a equipe").fill("Conselho reúne dia 30.");
@@ -40,7 +57,7 @@ test.describe("Console · Propostas", () => {
     await page.getByRole("button", { name: "Pedir aprovação do desconto" }).click();
     await expect(page).toHaveURL(/\/comercial\/propostas\?proposta=.*feito=pedido/);
     const criada = api.comercial.pedidos.find((x) => x.caminho === "/v1/comercial/propostas");
-    expect(criada?.corpo).toMatchObject({ interessadoId: SITE, desconto: 10, unidades: 72 });
+    expect(criada?.corpo).toMatchObject({ interessadoId: SITE, desconto: 10, unidades: 72, implantadorId: "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f" });
 
     const proposta = page.getByRole("region", { name: "Proposta de Residencial Jatobá" });
     await expect(proposta.getByText("Esperando a Administração")).toBeVisible();
@@ -62,8 +79,11 @@ test.describe("Console · Propostas", () => {
 
     // O síndico abre o link sem conta, confere e aceita.
     await page.goto(endereco);
-    await expect(page.getByRole("heading", { name: "Proposta para organizar os pedidos do seu prédio", level: 1 })).toBeVisible();
-    await expect(page.getByText(/^Para Residencial Jatobá/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Menos pedidos sem retorno. Cada pedido com dono e prazo.", level: 1 })).toBeVisible();
+    await expect(page.getByText(/^Residencial Jatobá/).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Investimento transparente." })).toBeVisible();
+    await expect(page.locator("body")).toContainText("CarolinaImplantação e configuração");
+    await expect(page.locator("body")).toContainText("bianca@trihub.com.br");
     await expect(page.getByRole("navigation", { name: "Console" })).toHaveCount(0);
     const corpo = await page.locator("body").innerText();
     expect(corpo).not.toContain("Conselho reúne dia 30.");
@@ -210,12 +230,13 @@ test.describe("Console · Propostas", () => {
   test("Link público: abre a proposta e o kit; vencida e inexistente avisam", async ({ page }) => {
     const api = await instalarApiFalsa(page, { logado: false });
     await page.goto(`${CONSOLE}/o/${CODIGO_IPE}`);
-    await expect(page.getByRole("heading", { name: "Proposta para organizar os pedidos do seu prédio", level: 1 })).toBeVisible();
-    await expect(page.getByText(/^Para Edifício Ipê Amarelo/)).toBeVisible();
+    // Versão de antes da 0312: sem a Tabela guardada, a apresentação sai sem a tabela e com a equipe.
+    await expect(page.getByRole("heading", { name: "Menos pedidos sem retorno. Cada pedido com dono e prazo.", level: 1 })).toBeVisible();
+    await expect(page.getByText(/^Edifício Ipê Amarelo/).first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Aceitar a proposta" })).toBeVisible();
     await conferir(page);
     const baixa = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Baixar o PDF" }).click();
+    await page.getByRole("button", { name: "Baixar em PDF" }).click();
     expect((await baixa).suggestedFilename()).toMatch(/\.pdf$/);
 
     // O kit pelo link traz o mesmo comparativo do Console, sem a fonte nem as notas da equipe (CM-12).

@@ -7,6 +7,9 @@ import {
   cpfValido,
   custoPorApartamento,
   dadosVersaoSchema,
+  emailDaEquipe,
+  ESCOPO_INCLUIDO,
+  ESCOPO_NAO_INCLUIDO,
   formatarCpf,
   mensalComDesconto,
   OFERTA_INCLUIDO,
@@ -76,6 +79,23 @@ describe("propostas do Comercial (0304)", () => {
     expect(referenciaComercialSchema.safeParse(base).error?.issues.map((i) => i.path[0])).toEqual(["whatsapp"]);
     expect(referenciaComercialSchema.parse({ ...base, whatsapp: "61 98888-7777" }).whatsapp).toBe("5561988887777");
     expect(referenciaComercialSchema.safeParse({ ...base, escopo: "SO_NOME", casoTexto: "Metade do tempo nos pedidos" }).success).toBe(false);
+  });
+
+  it("o escopo da apresentação é o mesmo do banco (0312, CM-34)", () => {
+    const sql = readFileSync(new URL("../../../supabase/migrations/0312_comercial_proposta_apresentacao.sql", import.meta.url), "utf8");
+    const literal = (f: string) => JSON.parse(new RegExp(`function ${f}\\(\\)[\\s\\S]*?select '([^']*)'::jsonb`).exec(sql)![1]!);
+    expect(literal("comercial_escopo_incluido")).toEqual(ESCOPO_INCLUIDO);
+    expect(literal("comercial_escopo_nao_incluido")).toEqual(ESCOPO_NAO_INCLUIDO);
+    expect(sql).toContain("@trihub\\.com\\.br$");
+  });
+
+  it("o e-mail de quem é da equipe só vai para o síndico quando é da TRÍADE (0312)", () => {
+    expect(emailDaEquipe(" Bianca@TriHub.com.br ")).toBe("bianca@trihub.com.br");
+    expect(emailDaEquipe("bianca.rocha@gmail.com")).toBeNull();
+    expect(emailDaEquipe("bianca@trihub.com.br.golpe.com")).toBeNull();
+    expect(emailDaEquipe(null)).toBeNull();
+    expect(dadosVersaoSchema.parse({ implantadorId: "" }).implantadorId).toBeNull();
+    expect(dadosVersaoSchema.safeParse({ implantadorId: "Davi" }).success).toBe(false);
   });
 
   it("o incluído e o planejado são os mesmos do banco (EM-07)", () => {
