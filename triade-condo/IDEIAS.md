@@ -368,12 +368,12 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 |---|---|---|
 | SH-01 | **Implantação presencial**: demonstração e orientação em reunião ou assembleia combinada. Em Brasília/DF; não é requisito jurídico nem exclusividade | [A] |
 | SH-02 | **Orientação de novos moradores** em condomínio já cliente. Explica só as regras fornecidas e aprovadas pelo condomínio, sem inventar nem substituir documentos | [A] |
-| SH-03 | **Apoio documental**: criar ou revisar regimento, regras e atas (atas sempre de reuniões reais). O condomínio aprova as regras; não é serviço jurídico, com revisão profissional quando aplicável; nunca exigir documentação para usar o sistema | [A] |
-| SH-04 | **Atendimento humano no WhatsApp** contratado pelo condomínio. Com horários, cobertura e substituição definidos no contrato; nunca prometer atendimento humano a quem contratou só a plataforma. A equipe TRÍADE só age no painel do condomínio com o serviço contratado e autorizado; encerrar o serviço revoga esses acessos sem perder histórico nem interromper a plataforma | [A] |
-| SH-05 | **Plantão fora do horário**: triagem emergência × pode esperar, orientação e registro (Latchel, Vendoroo) | [INT] |
+| SH-03 | **Apoio documental**: criar ou revisar regimento, regras e atas (atas sempre de reuniões reais). O condomínio aprova as regras; não é serviço jurídico, com revisão profissional quando aplicável; nunca exigir documentação para usar o sistema. Cobrado por documento, pelo número de apartamentos, com piso e teto; a convenção fica fora do serviço (DC18) | [A] |
+| SH-04 | **Atendimento humano no WhatsApp** contratado pelo condomínio. Com horários, cobertura e substituição definidos no contrato; nunca prometer atendimento humano a quem contratou só a plataforma. A equipe TRÍADE só age no painel do condomínio com o serviço contratado e autorizado; encerrar o serviço revoga esses acessos sem perder histórico nem interromper a plataforma. Cobrado por apartamento por mês, com mínimo por condomínio (DC18) | [A] |
+| SH-05 | **Plantão fora do horário**: triagem emergência × pode esperar, orientação e registro (Latchel, Vendoroo). Nunca socorro; só com os responsáveis de emergência cadastrados (AT-22). Vendido junto com o SH-04 e cobrado por apartamento por mês, com mínimo (DC18) | [INT] |
 | SH-06 | Assessoria operacional recorrente: triagem, vistoria, acompanhamento de prestadores. Com escopo, exclusões, capacidade e atividades que exigem presença local definidos; ausência de portaria não obriga contratar a TRÍADE | [A] |
 | SH-07 | **Rede de especialistas sob demanda**: contador, advogado, engenheiro ("síndico cooperativo", Matera). Fácil de contatar (lição da reputação da Matera) | [INT] |
-| SH-08 | Produção e instalação de etiquetas e plaquinhas QR no prédio. Inclui a manutenção das etiquetas; o serviço físico é separado do recurso do sistema (AT-30, PA-06) | [A] [INT] |
+| SH-08 | Produção e instalação de etiquetas e plaquinhas QR no prédio. Inclui a manutenção das etiquetas; o serviço físico é separado do recurso do sistema (AT-30, PA-06). Cobrado por local, não por apartamento: o kit básico vem na implantação e os locais a mais e as reposições são cobrados à parte (DC18) | [A] [INT] |
 | SH-09 | Pacote de conteúdo de autoajuda adaptado às regras do prédio | [INT] |
 | SH-10 | Apoio na transição de síndico | [INT] |
 | SH-11 | Sindicatura profissional como serviço distinto (Unique, ABC Síndicos) | [A] [BR] |
@@ -511,7 +511,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | CM-16 | **Ficha do prédio no interessado**: unidades, administradora e o app que ela usa, sistema atual e quando acaba a fidelidade dele, data da próxima assembleia ordinária, fim do mandato do síndico, quem decide (quem trouxe, síndico, conselho, assembleia) e o roteiro da visita ao prédio, que alimenta a proposta | [C] |
 | CM-17 | **Objeções e concorrentes**: lista fechada de objeções (vai aumentar a taxa, moradores idosos, já temos app da administradora, a assembleia decide) com resposta pronta para cada uma; cada negócio registra os concorrentes na disputa, o preço deles e quem ganhou | [C] |
 | CM-18 | **Janelas do condomínio**: aviso 30 a 60 dias antes da assembleia ordinária (para entrar no orçamento), perto do fim do mandato e do fim da fidelidade do sistema atual ("janela de troca"). Perdido volta a ser lembrado na troca de síndico, por evento e não por calendário | [C] |
-| CM-19 | **Custo por apartamento**: na proposta e no kit, o valor mensal dividido pelas unidades (R$ por apartamento por mês), com a implantação à parte. Marcado como estimativa, com as premissas guardadas na versão; sem ROI e sem citar o que ainda não existe (EM-07) | [C] |
+| CM-19 | **Custo por apartamento**: na proposta e no kit, o valor mensal dividido pelas unidades (R$ por apartamento por mês), com a implantação à parte. Marcado como estimativa, com as premissas guardadas na versão; sem ROI e sem citar o que ainda não existe (EM-07). Campo opcional da taxa média de condomínio do prédio: quando preenchido, mostra também quanto a TRÍADE pesa nessa taxa (ex.: R$ 3,49 por apartamento, cerca de 0,5% de uma taxa de R$ 650); a mensagem principal é "menos de R$ 5 por apartamento por mês" (DC17) | [C] |
 | CM-20 | **Kit para o conselho e a assembleia**: sai dos dados do prédio e da proposta: apresentação curta (problema, como funciona pelo WhatsApp, custo por apartamento, piloto, como cancelar), comparativo TRÍADE × sistema atual × concorrente pelos critérios do síndico, proposta em PDF, minuta de texto para a ata e explicação de privacidade para o morador | [C] |
 | CM-21 | **Piloto com critério de sucesso**: prazo de 30 a 60 dias e meta combinada antes (por exemplo, pedidos com prazo cumprido), medida pela própria Plataforma; no fim, vira proposta ou perdido com motivo | [C] |
 | CM-22 | **Parceiros e indicação**: síndico profissional, administradora, construtora ou cliente que indica (NG-08, NG-20); comissão recorrente por prédio ativo calculada no Console e extrato para o parceiro. O pagamento da comissão fica fora do sistema no começo | [C] |
@@ -525,7 +525,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | CM-30 | **Renovação e reajuste**: aniversário do contrato, índice e aviso ao síndico antes de aplicar, fim do preço de fundador e aditivo gerado (CM-13). Nada muda sem o aviso enviado | [C] |
 | CM-31 | **Cancelamento e retenção**: motivo de cancelamento em lista própria (separada do motivo de perda), uma tentativa de retenção registrada, devolução dos dados e sinais de risco: síndico novo eleito, uso caindo (PI-13), troca de sistema na pauta da assembleia | [C] |
 | CM-32 | **Expansão**: oportunidade de mais um prédio do mesmo síndico ou administradora, mudança de faixa e reconquista de quem saiu, num funil próprio ligado ao cliente | [C] |
-| CM-33 | **Calculadora de custo por apartamento no site** (EM-04): o síndico digita as unidades e vê o valor por apartamento pela Tabela de preços (CM-19, sem ROI). Se quiser a proposta, deixa o contato e vira interessado com a faixa preenchida | [C] |
+| CM-33 | **Calculadora de custo por apartamento no site** (EM-04): o síndico digita as unidades e vê o valor por apartamento pela Tabela de preços (CM-19, sem ROI); se digitar também a taxa média de condomínio, que é opcional, vê quanto isso pesa na taxa (DC17). Se quiser a proposta, deixa o contato e vira interessado com a faixa preenchida | [C] |
 | CM-34 | **Proposta em formato de apresentação**: a proposta (CM-07) ganha uma estrutura fixa e personalizada: capa com o nome do condomínio, a cidade e as unidades, o problema que a TRÍADE resolve, o exemplo de um pedido acompanhado e o preço em destaque com o custo por apartamento (CM-19); a Tabela de preços inteira com a faixa do cliente destacada; o quadro do que está incluído, do que não está incluído (EM-07) e do que é cobrado à parte, este só com preço; a página de quem vende e de quem vai implantar, com nome e contato; as condições (vigência, reajuste, cancelamento, dados e LGPD) e o próximo passo com o aceite pelo link e um QR code no PDF. Vale para o link e para o PDF, nas mesmas quatro partes. Ideia vinda da proposta da Seu Condomínio, sem copiar o que ela tem de fraco (extras sem preço, aceite em papel) | [C] [BR] |
 
 ---
@@ -771,6 +771,16 @@ Pedido pela Carolina: um painel comercial dentro do Console, com CRM, gerador de
 - Parceiros com comissão calculada no Console e paga fora dele (O.1); consentimento no site e legítimo interesse documentado no registro à mão (P.1).
 - Renovação, cancelamento e expansão ficam no Comercial (Q.1); cadência só cria tarefas (R.1); calculadora pública no site (S.1); contrato-quadro com desconto por volume na Tabela de preços (T.1).
 - Fica para depois: pontuação automática, rodízio entre vendedores, automações livres, registro automático de e-mail e WhatsApp, IA que resume antes da ligação e demonstração autoguiada.
+
+---
+
+## Pesquisa da Carolina sobre o preço por apartamento (25/10/2026)
+
+A pedido da Carolina, uma busca web sobre quanto cada morador paga de taxa de condomínio (média no Brasil de R$ 516 a R$ 828 por mês; no Distrito Federal, perto de R$ 494, e em Águas Claras de R$ 650 a R$ 670) mostrou que a TRÍADE custa de R$ 2 a R$ 10 por apartamento por mês na tabela cheia, perto de 0,5% a 1,5% da taxa. Página da pesquisa: https://claude.ai/artifact/8J8LcjjrSxuFAezurF71jA. As decisões A a D foram aprovadas pela Carolina em 25/10/2026 (DC17).
+
+**Nenhuma ideia nova.** **Ajustes:** CM-19 e CM-33 ganham o campo opcional da taxa média do prédio, que mostra quanto a TRÍADE pesa nessa taxa, sem ROI (EM-07).
+
+**Estudo do preço dos serviços (25/10/2026), aprovado pela Carolina em 26/10/2026 (DC18):** https://claude.ai/artifact/6znwTXMUuFchmEsLjXT3ZV. **Nenhuma ideia nova.** **Ajustes:** SH-03, SH-04, SH-05 e SH-08 ganham a forma de cobrança.
 
 ---
 
