@@ -5,6 +5,7 @@
 // só há o que a tela precisa para mostrar e conferir a entrada.
 
 import { z } from "zod";
+import { taxaCondominioSchema } from "./taxa_condominio.ts";
 
 /** Situações da versão (quadro 326). */
 export const SITUACOES_PROPOSTA = {
@@ -67,6 +68,25 @@ export const OFERTA_INCLUIDO = [
 ] as const;
 export const OFERTA_PLANEJADO = ["WhatsApp oficial", "Inteligência artificial"] as const;
 export const TEXTO_PLANEJADO = "Ainda planejado, sem data prometida.";
+
+/**
+ * O escopo da proposta como apresentação (0312, R17.8, CM-34): o que está incluído, com a
+ * explicação, e o que não está. Texto pronto, igual ao do banco; a versão guarda a cópia do dia.
+ */
+export const ESCOPO_INCLUIDO = [
+  { titulo: "Solicitações organizadas", texto: "Responsável, prazo, próximo retorno e conclusão explicada." },
+  { titulo: "Comunicação com moradores", texto: "Comunicados, documentos e mural do prédio por link." },
+  { titulo: "Agenda e manutenção", texto: "Ações preventivas, acompanhamento e prestadores." },
+  { titulo: "Implantação acompanhada", texto: "Configuração e reunião presencial em Brasília." },
+] as const;
+export const ESCOPO_NAO_INCLUIDO = ["Financeiro, boletos e cobrança condominial.", "Portaria, controle de acesso e câmeras.", "Serviços jurídicos ou contábeis."] as const;
+
+/** O e-mail de quem é da equipe só vai para o síndico quando é do domínio da TRÍADE (0312). */
+export const DOMINIO_EMAIL_EQUIPE = "trihub.com.br";
+export function emailDaEquipe(email: string | null | undefined): string | null {
+  const e = email?.trim().toLowerCase();
+  return e && /^[a-z0-9._%+-]+@trihub\.com\.br$/.test(e) ? e : null;
+}
 
 /** Textos fixos do link e do aceite (quadros 328 e 329). */
 export const TEXTO_CUSTO_APARTAMENTO = "Estimativa: a mensalidade dividida pelas unidades. A implantação é à parte.";
@@ -146,6 +166,13 @@ const camposVersao = {
   referencias: z.array(uuid).max(10).optional().default([]),
   notaInterna: textoOpcional(1000),
   validadeDias: z.number().int().min(1).max(60).optional().nullable().transform((v) => v ?? null),
+  // A taxa média de condomínio (0310, R17.3c): sem o campo, a versão usa a da ficha; vazio tira.
+  // A tela só manda o campo quando a pessoa o mudou, com a versão da ficha que ela viu (r8): o
+  // banco grava na ficha com conferência de versão.
+  taxaCondominio: taxaCondominioSchema.nullable().optional(),
+  interessadoVersao: z.number().int().min(1).optional(),
+  // Quem vai implantar (0312, quadro 456): alguém da equipe ativa; vazio, a proposta fala da equipe.
+  implantadorId: uuid.optional().nullable().or(z.literal("")).transform((v) => (v ? v : null)),
 };
 const regrasVersao = (d: { desconto: number | null; descontoMotivo: string | null; valorManual: number | null; valorManualMotivo: string | null },
                       ctx: z.RefinementCtx) => {
@@ -173,6 +200,9 @@ export const sugestaoPropostaSchema = z.object({
 });
 
 export const acaoVersaoSchema = z.object({ versao });
+
+/** "Corrigir a taxa" no kit (quadro 447): grava na ficha; vale para o kit e a próxima versão. */
+export const taxaKitSchema = z.object({ versao, taxaCondominio: taxaCondominioSchema.nullable() });
 
 /** A resposta da Administração ao desconto (quadro 327). Recusar pede a resposta. */
 export const responderDescontoSchema = z.object({ versao, resposta: textoOpcional(500) });

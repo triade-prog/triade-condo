@@ -9,11 +9,11 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { ASSUNTOS_COMUNICADO, MOTIVOS_FORA_DO_MURAL, MURAL_CONFERIR_S, textoConferido } from "@triade/domain";
+import { ASSUNTOS_COMUNICADO, contar, MOTIVOS_FORA_DO_MURAL, MURAL_CONFERIR_S, textoAtualizado, textoConferido } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Selo, textoDoErro } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import { useCarregar } from "../sessao.tsx";
-import { CabecaPublica } from "../publico/comum.tsx";
+import { FaixaMural } from "../publico/comum.tsx";
 import { enderecoDaVista } from "../publico/Mural.tsx";
 import { FaixaPainel, MuralConteudo, type FaixasDoPainel, type LinksDoMural, type VistaMural } from "../publico/MuralConteudo.tsx";
 import { Tirar } from "../vida/Classificados.tsx";
@@ -232,8 +232,7 @@ export function NoMural() {
       </FaixaPainel>
     ),
   };
-  const subtitulo = vista.aba === "classificados" ? "Classificados entre moradores" : vista.aba === "manual" ? "Manual do prédio"
-    : `Avisos para todo o condomínio${m.atualizadoEm ? ` · atualizado ${diaHora(m.atualizadoEm)}` : ""}`;
+  const linha = [m.atualizadoEm ? textoAtualizado(m.atualizadoEm) : "", m.comunicados?.length ? contar(m.comunicados.length, "aviso", "avisos") : ""].filter(Boolean).join(" · ");
   const aAprovar = anunciosTela.filter((a) => a.estado === "A_APROVAR");
 
   return (
@@ -249,7 +248,7 @@ export function NoMural() {
               <code className="truncate font-mono t-codigo text-tinta-suave max-sm:hidden">{`/m/${codigo}`}</code>
             </div>
             <div className="mx-auto grid w-full max-w-[640px] gap-3 p-3 sm:p-6">
-              <CabecaPublica titulo={`Mural do ${m.condominio}`} subtitulo={subtitulo} nivel={2} className="rounded-2xl" />
+              <FaixaMural condominio={m.condominio} linha={linha || undefined} whatsapp={m.comunicadosWhatsapp} nivel={2} />
               <MuralConteudo m={m} codigo={codigo} vista={vista} ir={setVista} links={links} painel={faixas} />
             </div>
           </section>

@@ -139,7 +139,7 @@ select ok((select console_plano(sup, ipe) -> 'cobrancas' from ids, c) is null, '
 
 -- Cobrança por competência aberta por botão (PI-07, decisão D).
 create temp table comp as select console_abrir_competencia(fin, mes) as r from ids, d;
-select is((select r from comp), '{"criadas": 1, "jaAbertas": 0, "semPlano": 0}'::jsonb, 'PI-07: abrir a competência cria a cobrança do mês');
+select is((select r from comp), '{"criadas": 1, "jaAbertas": 0, "semPlano": 0, "encerrados": 0}'::jsonb, 'PI-07: abrir a competência cria a cobrança do mês');
 select is((select console_abrir_competencia(fin, mes) ->> 'jaAbertas' from ids, d), '1', 'PI-07: abrir de novo não duplica');
 create temp table cb as select id as mensal from cobrancas where condominio_id = (select ipe from c) and tipo = 'MENSALIDADE';
 select is((select console_cobranca(fin, ipe, mensal) ->> 'situacao' from ids, c, cb), 'A_DEFINIR', 'sem valor, a cobrança fica a definir');

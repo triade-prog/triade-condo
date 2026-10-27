@@ -241,7 +241,7 @@ select is((select nome from aceites_proposta where id = (select aceite_id from c
 select is((select carta from trocas_sistema where interessado_id = (select aroeira from i)), 'Carta apagada (LGPD).', 'a carta com o nome some');
 
 -- 6. Retenção e sessão.
-select is((select array_agg(codigo || ':' || situacao order by numero) from retencao_tipos where numero > 34), array['COMERCIAL_ARQUIVO:A_FAZER', 'CONTRATO_ASSINADO:A_FAZER'],
+select is((select array_agg(codigo || ':' || situacao order by numero) from retencao_tipos where numero between 35 and 36), array['COMERCIAL_ARQUIVO:A_FAZER', 'CONTRATO_ASSINADO:A_FAZER'],
   'documentos e contratos entram no catálogo de retenção');
 select ok((select console_sessao(adm) -> 'acoes' ? 'console.comercial.assinar' and console_sessao(adm) -> 'acoes' ? 'console.comercial.cliente' from ids),
   'a sessão do Console leva as ações novas');

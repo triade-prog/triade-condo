@@ -4,7 +4,7 @@
 
 import {
   dinheiro, ETAPAS_COMERCIAL, formatar, mostrarDataSemHora, MOTIVOS_PERDA, ORIGENS_COMERCIAL, percentual, TIPOS_JANELA,
-  type EtapaComercial, type MotivoInicioComercial, type MotivoPerda, type OrigemComercial, type SituacaoJanela, type TipoJanela,
+  TIPOS_RISCO, type EtapaComercial, type MotivoInicioComercial, type MotivoPerda, type OrigemComercial, type SituacaoJanela, type TipoJanela, type TipoRisco,
 } from "@triade/domain";
 import type { Tom } from "@triade/ui";
 import { plural } from "../comum.tsx";
@@ -96,12 +96,16 @@ export interface ItemInicioComercial {
   tarefa?: string;
   diasParado?: number;
   janela?: JanelaCondominio;
+  /** O aniversário do contrato do cliente perto do "avisar até" (0311, CM-30). */
+  renovacao?: { aniversario: string; avisarAte: string; dias: number };
+  /** O primeiro sinal de risco sem tratar do cliente (0311, CM-31). */
+  risco?: { tipo: TipoRisco; data: string };
   outros: number;
 }
 
 export interface InicioComercial {
   total: number;
-  contagens: { primeiroRetorno: number; atrasados: number; parados: number; janelas: number };
+  contagens: { primeiroRetorno: number; atrasados: number; parados: number; janelas: number; renovacoes: number; riscos: number };
   itens: ItemInicioComercial[];
   max: number;
   podeEditar: boolean;
@@ -210,7 +214,12 @@ export function seloJanela(j: JanelaCondominio): { texto: string; tom: Tom } {
 }
 
 /** O selo de uma linha do Início (quadro 335). */
-export function seloInicio(i: ItemInicioComercial): { texto: string; tom: Tom } {
+export function seloInicio(i: ItemInicioComercial, hoje?: string): { texto: string; tom: Tom } {
+  if (i.motivo === "RENOVACAO") {
+    const atrasado = i.renovacao && hoje ? i.renovacao.avisarAte < hoje : false;
+    return atrasado ? { texto: "Aviso atrasado", tom: "erro" } : { texto: "Avisar o síndico", tom: "atencao" };
+  }
+  if (i.motivo === "RISCO") return { texto: i.risco ? TIPOS_RISCO[i.risco.tipo] : "Sinal de risco", tom: "atencao" };
   if (i.motivo === "PRIMEIRO_RETORNO") return { texto: "Primeiro retorno: meta passou", tom: "erro" };
   if (i.motivo === "ATRASADO") return { texto: "Atrasado", tom: "erro" };
   if (i.motivo === "PARADO") return { texto: `Parado · ${plural(i.diasParado ?? 0, "dia", "dias")}`, tom: "atencao" };
@@ -223,8 +232,24 @@ export function seloInicio(i: ItemInicioComercial): { texto: string; tom: Tom } 
 
 /** A linha de baixo: a etapa e de quem é; "mais N" quando pede atenção por mais de um motivo. */
 export function detalheInicio(i: ItemInicioComercial): string {
+  if (i.motivo === "RENOVACAO" || i.motivo === "RISCO") {
+    const partes = ["Cliente"];
+    if (i.renovacao) {
+      const d = i.renovacao.dias;
+      partes.push(d > 0 ? `reajuste em ${plural(d, "dia", "dias")}` : d === 0 ? "aniversário hoje" : `aniversário há ${plural(-d, "dia", "dias")}`);
+    } else if (i.risco) partes.push(`sinal de ${diaMes(i.risco.data)}`);
+    if (i.outros) partes.push(`mais ${plural(i.outros, "aviso", "avisos")}`);
+    return partes.join(" · ");
+  }
   const quem = i.meu ? "com você" : i.responsavel ? i.responsavel.nome : "sem responsável";
   const partes = [ETAPAS_COMERCIAL[i.etapa], quem];
   if (i.outros) partes.push(`mais ${plural(i.outros, "aviso", "avisos")}`);
   return partes.join(" · ");
+}
+
+/** Para onde a linha do Início leva: o interessado; a renovação e o risco, à tela de Renovações. */
+export function linkInicio(i: ItemInicioComercial): string {
+  if (i.motivo === "RENOVACAO") return "/comercial/renovacoes";
+  if (i.motivo === "RISCO") return "/comercial/renovacoes?aba=risco";
+  return `/comercial/${i.id}`;
 }

@@ -102,8 +102,16 @@ Deno.test("CD-01, CD-02, CD-06: escrever leva o público, a ação e a versão a
   assertEquals(chamada(m, "plataforma_salvar_comunicado"), {
     p_pessoa: ANA, p_condominio: AURORA, p_id: null, p_versao: null, p_assunto: "OBRAS", p_titulo: "Falta de água na quinta",
     p_texto: "Das 9h às 13h.", p_publico: "BLOCOS", p_blocos: [BLOCO], p_unidades: [], p_contatos: [], p_pedido: PEDIDO,
-    p_manutencao: null, p_acao: "PUBLICAR", p_programado_para: null, p_no_mural: null, p_por_email: null, p_por_whatsapp: null,
+    p_manutencao: null, p_acao: "PUBLICAR", p_programado_para: null, p_no_mural: null, p_por_email: null, p_por_whatsapp: null, p_evento: null,
   });
+  m.chamadas.length = 0;
+  // O evento do aviso (CD-17) vai ao banco conferido: só o dia é obrigatório e o fim vem depois do início.
+  await m.pedir("/v1/condominio/comunicados", { corpo: { ...BASE, acao: "RASCUNHO", evento: { dia: "2026-10-28", inicio: "08:00", fim: "14:00", local: " Salão de festas " } }, cookie });
+  assertEquals(chamada(m, "plataforma_salvar_comunicado")?.p_evento, { dia: "2026-10-28", inicio: "08:00", fim: "14:00", local: "Salão de festas" });
+  const fimAntes = await m.pedir("/v1/condominio/comunicados", { corpo: { ...BASE, acao: "RASCUNHO", evento: { dia: "2026-10-28", inicio: "14:00", fim: "08:00" } }, cookie });
+  assertEquals((await erro(fimAntes)).detalhes?.campos, ["evento"]);
+  const semDia = await m.pedir("/v1/condominio/comunicados", { corpo: { ...BASE, acao: "RASCUNHO", evento: { local: "Salão" } }, cookie });
+  assertEquals((await erro(semDia)).detalhes?.campos, ["evento"]);
   m.chamadas.length = 0;
   const sem = await m.pedir("/v1/condominio/comunicados", { corpo: { ...BASE, blocos: [], acao: "RASCUNHO" }, cookie });
   assertEquals((await erro(sem)).detalhes?.campos, ["blocos"]);

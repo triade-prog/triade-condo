@@ -130,6 +130,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | IA-18 | IA conversa com o morador para completar a descrição e pedir foto antes de registrar o pedido (Vendoroo) | [INT] |
 | IA-19 | **Ajuda de cada tela**: texto curto sobre o que a tela faz e como usar, aberto por um botão na própria tela. O mesmo texto alimenta o assistente que tira dúvidas do síndico e é atualizado na mesma entrega que muda a tela (SeuCondomínio) | [BR] |
 | IA-20 | **Motor de IA com freio**: todas as funções de IA passam por um conector que dá para trocar, como o do WhatsApp. Cada chamada fica registrada por condomínio, com função, modelo, tamanho e custo. Cada condomínio tem um limite por mês para cada função, definido pela TRÍADE. Quando o limite acaba, a função para até o mês virar, sem travar o atendimento. A TRÍADE tem uma chave no Console que desliga a IA do condomínio, e só a Administração muda essa chave. O síndico liga ou desliga cada função em Configurações › Ajuda da IA, onde vê o que vai para a IA e o uso do mês, sem valores. Nome e telefone saem do texto antes do envio | [C] |
+| IA-21 | **Ata a partir da gravação da assembleia**: com o aviso de gravação aos presentes, o áudio da assembleia ou reunião é transcrito e a IA monta o rascunho da ata (pauta, presença, votações e deliberações), que o síndico ou o secretário revisa e aprova antes de valer (IA-15). Amplia a IA-06, que parte de anotações, e depende da transcrição de áudio (W-06) (Seu Condomínio) | [BR] |
 
 ---
 
@@ -152,6 +153,9 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | CD-13 | **Comunicados por e-mail**: o contato pode ter um e-mail, confirmado por ele num link antes do primeiro envio, e escolhe receber os comunicados também por e-mail. Ao publicar, o e-mail vai para os mesmos destinatários da CD-02 que têm e-mail confirmado, respeitando o horário sem envio do plano de comunicação (CD-11); a tela mostra antes quantos recebem por e-mail e quantos ficam só no grupo ou no mural. Cada e-mail traz o texto, as fotos e um link pessoal para o comunicado (com os arquivos), que deixa de funcionar quando o vínculo com a unidade termina; traz também "parar de receber" em um clique. Correção só reenvia se o síndico pedir, dizendo o que mudou. Sai pelo Resend em nome do condomínio, com respostas indo para quem o síndico indicar; devoluções e marcações de spam desligam aquele e-mail e aparecem para o síndico. O histórico guarda quantos e-mails saíram, voltaram ou foram recusados. Em convocação, o e-mail é prova de envio, não de recebimento, e só vale como convocação formal se a convenção aceitar (CD-10) | [C] (W-18) |
 | CD-14 | **Documento por e-mail quando pedido**: o morador pede pelo mural (CD-12), e depois pelo WhatsApp (CD-03), um documento marcado "pode ir ao morador", e o síndico também pode enviar pela tela do documento. Vai a versão em vigor, por um link que expira em 7 dias e pode ser revogado (CD-04), nunca como anexo solto. Se o e-mail pedido for de um contato com vínculo confirmado, o envio é automático ou passa pela aprovação do síndico, conforme a configuração; se não for, o pedido fica numa fila para o síndico decidir (comprador, imobiliária, advogado). A resposta na tela é sempre neutra ("se o e-mail estiver cadastrado, o documento chega em instantes"), para não revelar quem mora no prédio, e há limite de pedidos por e-mail e por aparelho. Cada envio e cada abertura ficam no histórico do documento | [C] |
 | CD-15 | **Mural visto do painel**: o síndico vê, dentro do painel, o mural como o morador vê pelo link (CD-12), ao vivo. A tela confere de novo sozinha a cada 30 segundos e logo depois de pôr ou tirar um aviso, e ver por ali não conta como abertura do mural. Embaixo de cada aviso, só no painel, ficam abrir a ficha e tirar do mural; ao lado, os comunicados publicados que não aparecem, cada um com o motivo (só para um bloco ou unidade, assunto que começa fora, tirado) e "pôr no mural", e as aberturas do link nos últimos 7 dias. Um cartão no Início mostra as três primeiras coisas do mural. O mural, no link e no painel, é um feed: um cartão por aviso com a foto grande, a enquete aberta fixada no alto e "compartilhar"; os classificados (AC-05) ficam numa vitrine com foto, preço e a página do anúncio. Sem curtidas, comentários nem seguidores, porque o mural não tem conta, e sem nomes ou unidades nos avisos | [C] |
+| CD-16 | **Novo desde a última visita no mural**: o mural (CD-12) guarda só no aparelho do morador a data da última abertura e, na visita seguinte, marca com "Novo" os avisos publicados depois dela e diz quantos são ("3 avisos novos desde a sua última visita, quinta 23/10"). Nada sobe para o servidor: ninguém sabe que a pessoa abriu, e a contagem de aberturas da CD-12 continua sem saber quem foi. Na primeira visita, ou sem nada novo, a linha some | [C] |
+| CD-17 | **Dia, hora e local no aviso com evento**: ao escrever o comunicado (CD-01), o síndico pode marcar quando acontece (o dia é obrigatório para virar evento; hora de início, de fim e local são opcionais), em campos próprios além do texto. O edital da assembleia (AC-02) já nasce com a data da primeira chamada, as duas chamadas e o local. Com o evento, o mural (CD-12) mostra o bloco de data no cartão, escolhe o destaque "O que importa agora" (um só: a assembleia convocada com evento futuro ou, sem ela, o próximo evento) e a ficha do painel mostra "Quando". A correção (CD-01) leva o evento à versão nova | [C] |
+| CD-18 | **Pôr na agenda pelo mural**: todo aviso com evento (CD-17) tem "Pôr na agenda" no mural (CD-12) e no comunicado do link pessoal (CD-13): baixa um arquivo de calendário com o título, o dia, as horas no fuso do condomínio, o local e o texto, e quem abre escolhe o calendário do próprio celular. Sem conta e sem o sistema saber quem baixou | [C] |
 
 ---
 
@@ -212,6 +216,8 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | MP-14 | Manual de uso e manutenção do prédio acessível | [INT] |
 | MP-15 | **Canal de defeitos construtivos com a construtora**, separado da manutenção do condomínio (i-Neighbour) | [INT] |
 | MP-16 | Plano de manutenção de longo prazo com previsão orçamentária (strata australiano) | [INT] |
+| MP-17 | **Vencimentos legais do prédio**: certificado do Corpo de Bombeiros (AVCB, CLCB ou o nome usado no estado), SPDA, vasos de pressão (NR-13), elevadores, seguro obrigatório e outros laudos com validade, cada um com o documento no prontuário (MP-12), a data de vencimento e o aviso ao síndico antes de vencer, com antecedência ajustável. A renovação vira manutenção ou compromisso e a data aparece na agenda (AG-09). A lista de obrigações vem sugerida e o condomínio ajusta, porque muda por estado e por prédio; o sistema avisa, não certifica nem dá parecer técnico (Seu Condomínio) | [BR] |
+| MP-18 | **Reforma de unidade pela ABNT NBR 16280**: o morador pede autorização pelo painel ou pelo WhatsApp com o plano de reforma, o responsável técnico e a ART ou RRT; o síndico analisa, pede ajuste, autoriza ou recusa com motivo, e o termo de responsabilidade fica assinado no pedido. Datas, horários permitidos e prestadores da obra ficam registrados, com check-in pelo QR (MP-08), e a reforma termina com o registro de conclusão. O sistema organiza o rito da norma; a análise técnica é de profissional habilitado (Seu Condomínio) | [BR] |
 
 ---
 
@@ -295,6 +301,7 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | AC-05 | Classificados entre moradores (SindIA) | [BR] |
 | AC-06 | Limite de reservas por unidade e por período (ex.: duas por mês na churrasqueira), com tolerância configurável e aviso claro quando o limite foi atingido (SeuCondomínio) | [BR] |
 | AC-07 | **Áreas comuns já cadastradas**: os tipos comuns (salão de festas, churrasqueira, quadra, academia) vêm prontos, com regras sugeridas de aprovação, antecedência, horário, capacidade e limite, para o síndico só ajustar e ativar (SeuCondomínio) | [BR] |
+| AC-08 | **Agendamento de mudança**: o morador pede data e horário da mudança (entrada ou saída) dentro das regras do regimento (dias, horários, elevador, proteção, aviso prévio); a gestão confirma ou propõe outro horário, a portaria vê as mudanças do dia e o conflito com outra mudança ou reserva aparece antes. Liga com a entrada e saída de morador (MU-07) sem mudar o vínculo sozinho (Seu Condomínio) | [BR] |
 
 ---
 
@@ -519,6 +526,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | CM-31 | **Cancelamento e retenção**: motivo de cancelamento em lista própria (separada do motivo de perda), uma tentativa de retenção registrada, devolução dos dados e sinais de risco: síndico novo eleito, uso caindo (PI-13), troca de sistema na pauta da assembleia | [C] |
 | CM-32 | **Expansão**: oportunidade de mais um prédio do mesmo síndico ou administradora, mudança de faixa e reconquista de quem saiu, num funil próprio ligado ao cliente | [C] |
 | CM-33 | **Calculadora de custo por apartamento no site** (EM-04): o síndico digita as unidades e vê o valor por apartamento pela Tabela de preços (CM-19, sem ROI); se digitar também a taxa média de condomínio, que é opcional, vê quanto isso pesa na taxa (DC17). Se quiser a proposta, deixa o contato e vira interessado com a faixa preenchida | [C] |
+| CM-34 | **Proposta em formato de apresentação**: a proposta (CM-07) ganha uma estrutura fixa e personalizada: capa com o nome do condomínio, a cidade e as unidades, o problema que a TRÍADE resolve, o exemplo de um pedido acompanhado e o preço em destaque com o custo por apartamento (CM-19); a Tabela de preços inteira com a faixa do cliente destacada; o quadro do que está incluído, do que não está incluído (EM-07) e do que é cobrado à parte, este só com preço; a página de quem vende e de quem vai implantar, com nome e contato; as condições (vigência, reajuste, cancelamento, dados e LGPD) e o próximo passo com o aceite pelo link e um QR code no PDF. Vale para o link e para o PDF, nas mesmas quatro partes. Ideia vinda da proposta da Seu Condomínio, sem copiar o que ela tem de fraco (extras sem preço, aceite em papel) | [C] [BR] |
 
 ---
 
@@ -529,16 +537,16 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 1. Visão e pessoas | 17 |
 | 2. Canal WhatsApp | 22 |
 | 3. Atendimento | 33 |
-| 4. Inteligência artificial | 20 |
-| 5. Comunicados e documentos | 15 |
+| 4. Inteligência artificial | 21 |
+| 5. Comunicados e documentos | 18 |
 | 6. Configuração e ficha | 12 |
 | 7. Moradores e unidades | 11 |
-| 8. Manutenção e prédio | 16 |
+| 8. Manutenção e prédio | 18 |
 | 9. Agenda | 9 |
 | 10. Orçamentos e compras | 10 |
 | 11. Financeiro do condomínio | 11 |
 | 12. Portaria, acesso, encomendas | 11 |
-| 13. Áreas comuns e vida em condomínio | 7 |
+| 13. Áreas comuns e vida em condomínio | 8 |
 | 14. Transparência e indicadores | 11 |
 | 15. Continuidade e troca de síndico | 4 |
 | 16. Painel interno TRÍADE | 21 |
@@ -548,8 +556,8 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 20. Princípios técnicos | 18 |
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
-| 23. Comercial TRÍADE | 33 |
-| **Total** | **346** |
+| 23. Comercial TRÍADE | 34 |
+| **Total** | **354** |
 
 ---
 
@@ -773,3 +781,31 @@ A pedido da Carolina, uma busca web sobre quanto cada morador paga de taxa de co
 **Nenhuma ideia nova.** **Ajustes:** CM-19 e CM-33 ganham o campo opcional da taxa média do prédio, que mostra quanto a TRÍADE pesa nessa taxa, sem ROI (EM-07).
 
 **Estudo do preço dos serviços (25/10/2026), aprovado pela Carolina em 26/10/2026 (DC18):** https://claude.ai/artifact/6znwTXMUuFchmEsLjXT3ZV. **Nenhuma ideia nova.** **Ajustes:** SH-03, SH-04, SH-05 e SH-08 ganham a forma de cobrança.
+
+---
+
+## Ideias vistas nos materiais de venda da Seu Condomínio (26/10/2026)
+
+Fontes: dois livretos (institucional e portaria remota) e uma proposta comercial da Seu Condomínio, enviados pela Carolina. Análise completa em https://claude.ai/artifact/Fh2ZWLNV6jg4g4ueTH5GN9. Só as ideias vieram para cá; nada do material foi guardado no repositório.
+
+**5 ideias novas:** MP-17 (vencimentos legais do prédio), MP-18 (reforma de unidade pela NBR 16280), AC-08 (agendamento de mudança), IA-21 (ata a partir da gravação da assembleia) e CM-34 (proposta em formato de apresentação).
+
+**Decisão da Carolina:** melhorar a estrutura e a apresentação da proposta (CM-34) e registrar as cinco ideias. Continuam valendo ficar fora do financeiro e do controle de acesso físico (L1 e L3 da análise de lacunas de 23/10/2026), e o preço da DC16 não muda.
+
+**Ficaram de fora:** financeiro, cobrança, conta digital, nada consta e 2ª via (dependem do financeiro); controle de acesso, câmeras com IA, alarmes e central de portaria remota; RH, eSocial, pacote fiscal, PABX, TV no elevador e hospedagem. Marca própria já é a NG-14, empréstimo de chaves a PA-11 e armário de encomendas a PA-09.
+
+**Códigos:** MP-17 e IA-21 seguem a sequência atual. Nas seções datadas acima, MP-17 e IA-21 aparecem com o sentido da época (a MP-17 antiga virou OC-10 e a IA-21 antiga virou IA-19).
+
+---
+
+## Mural do morador, conceito Janela acesa (26/10/2026)
+
+A Carolina achou o mural do link (CD-12) sem vida, sem identidade e nada intuitivo. A análise na tela e no código, a pesquisa de referências e o agente especialista em design e inovação (`.claude/agents/designer-inovacao.md`) produziram o conceito "Janela acesa" (`docs/design/mural-morador-conceito.md`, com as telas-modelo `mural-morador-celular` e `mural-morador-computador`), aprovado pela Carolina em 26/10/2026 com a frase "o que o prédio precisa saber" e as três ideias novas do feed.
+
+**3 ideias novas:** CD-16 (novo desde a última visita), CD-17 (dia, hora e local no aviso com evento) e CD-18 (pôr na agenda pelo mural). Total de 354 ideias.
+
+**Como conversa com o que já está decidido:**
+- O mural continua sem conta, sem nomes, telefones ou unidades e sem curtidas, comentários ou seguidores (CD-12, CD-15): a marca de "novo" fica só no aparelho e a contagem de aberturas segue sem saber quem abriu.
+- O evento é um dado do comunicado (CD-01), não uma tela nova: o assunto, o título, o texto, as fotos e a correção em versão nova continuam iguais, e a assembleia (AC-02) preenche o evento sozinha.
+- "Pôr na agenda" é um arquivo de calendário, sem integração com nenhum calendário em particular e sem o sistema guardar quem baixou (CD-04, PT-01).
+- Ficam para depois, por decisão: a foto do próprio prédio no topo e a frase do mural trocáveis pelo síndico, e o modo "tela da portaria" (um aviso por tela, para a TV do hall).

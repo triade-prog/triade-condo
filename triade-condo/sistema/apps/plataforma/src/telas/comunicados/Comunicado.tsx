@@ -19,6 +19,7 @@ import { diaHora } from "../pedidos/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
 import type { ComunicadoDetalhe, Recado } from "../tipos.ts";
 import { abrirLink, nomeAssunto, SeloComunicado } from "./comum.tsx";
+import { BlocoDeData } from "../publico/comum.tsx";
 
 const FEITO: Record<string, string> = {
   PUBLICAR: "Comunicado publicado.",
@@ -181,6 +182,10 @@ function ComunicadoAberto() {
           <dd className="t-texto">{c.publicadoEm ? `${diaHora(c.publicadoEm)} por ${c.publicadoPor ?? "alguém"}` : `${diaHora(c.criadoEm)} por ${c.autor ?? "alguém"}`}</dd></div>
         <div><dt className="t-apoio">Para quem</dt>
           <dd className="t-texto">{c.publicoResumo}{c.destinatarios !== undefined ? ` · ${c.destinatarios === 1 ? "1 contato" : `${c.destinatarios} contatos`} na publicação` : ""}</dd></div>
+        {c.evento ? (
+          <div><dt className="t-apoio">Quando</dt>
+            <dd className="t-texto"><BlocoDeData evento={c.evento} assembleia={c.assunto === "ASSEMBLEIA"} /></dd></div>
+        ) : null}
         <div><dt className="t-apoio">Ligado a</dt>
           <dd className="grid t-texto">
             {c.pedido ? <Link href={`/pedidos/pedido?id=${c.pedido.id}`} className="text-violeta-600 hover:underline">Pedido {c.pedido.protocolo}</Link> : null}

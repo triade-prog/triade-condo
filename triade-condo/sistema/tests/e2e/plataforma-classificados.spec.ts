@@ -78,7 +78,7 @@ test.describe("Classificados", () => {
   test("CD-12, CD-15: a aba Classificados do mural é uma vitrine, com o primeiro nome, o bloco e o aviso", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/m/${MURAL_FALSO}`);
-    await page.getByRole("button", { name: "Classificados" }).click();
+    await page.getByRole("tab", { name: /^Classificados/ }).click();
     await expect(page).toHaveURL(/aba=classificados/);
     const vitrine = page.getByRole("list", { name: "Classificados entre moradores" });
     await expect(vitrine.getByRole("link", { name: /Aulas de violão para crianças/ })).toBeVisible();

@@ -3,6 +3,12 @@ import Base from "../layouts/Base.astro";
 import Destaque from "../components/Destaque.astro";
 import FaixaFinal from "../components/FaixaFinal.astro";
 import { aDefinir, armazenamentoGb, faixas, franquiaComunicados, fundadores, mensalNoAnual, precosProvisorios, reais } from "../dados/oferta";
+import { exemploDoPredio, porApartamentoNoTopo } from "../lib/por-apartamento";
+
+// DC17: o valor por apartamento é o destaque, com um prédio de exemplo (nunca "menos de R$ 5" para todos).
+const exemplo = exemploDoPredio();
+const porApMensal = porApartamentoNoTopo("mensal");
+const porApAnual = porApartamentoNoTopo("anual");
 
 const textoMensal = "Mensal: sem fidelidade, cancela quando quiser, sem multa. A implantação é paga uma vez, em até 3 parcelas.";
 const textoAnual = "Anual: 12 meses pelo preço de 11 pagando à vista, ou 12 parcelas sem desconto. Nos dois casos a implantação é grátis.";
@@ -16,14 +22,14 @@ const perguntas = [
   { p: "Posso testar antes?", r: "Sim, com um teste assistido: registramos um pedido real do seu prédio na demonstração e acompanhamos com você. Não há teste grátis aberto, porque sem os moradores cadastrados ele não mostra nada." },
 ];
 ---
-<Base titulo="Preços" atual="/precos" lavanda descricao={`Um plano com todas as funções; o preço muda só com o tamanho do prédio. A partir de ${reais(faixas[0].mensal)} por mês. Mensal sem fidelidade ou anual com implantação grátis.`}>
+<Base titulo="Preços" atual="/precos" lavanda descricao={`Num prédio de ${exemplo.unidades} apartamentos, ${exemplo.porApartamento} por apartamento por mês. Um plano com todas as funções; o preço muda só com o tamanho do prédio. A partir de ${reais(faixas[0].mensal)} por mês. Mensal sem fidelidade ou anual com implantação grátis.`}>
 
 <section class="topo-precos">
   <span class="cor-cunha deco-a" aria-hidden="true"></span><span class="cor-cunha deco-b" aria-hidden="true"></span><span class="cor-cunha deco-c" aria-hidden="true"></span>
   <div class="wrap">
     <div>
-      <h1>Um plano. O preço muda só com o <Destaque quebra>tamanho do prédio</Destaque>.</h1>
-      <p class="lead2" style="margin-top:24px">Todas as funções em qualquer faixa. Contamos só as unidades ativas.</p>
+      <h1><Destaque>{exemplo.porApartamento}</Destaque> por apartamento num prédio de {exemplo.unidades} unidades.</h1>
+      <p class="lead2 precos-lead">Por mês, cerca de {exemplo.percentual} de uma taxa de <span class="nw">{exemplo.taxa}</span>. Todas as funções em qualquer faixa. <a href="/calculadora" class="link-conta">Faça a conta do seu prédio<span aria-hidden="true"> →</span></a></p>
     </div>
     <div class="forma-cartao pilha" style="--gap:16px">
       <span class="forma-rot">Como você prefere pagar</span>
@@ -47,6 +53,7 @@ const perguntas = [
         <span class="faixa-tam" aria-hidden="true">{faixas.map((_, j) => <i class:list={[j <= i && "acesa"]}></i>)}</span>
         <b class="rot">{f.rotulo}</b>
         <div><span class="valor3" data-mensal={reais(f.mensal)} data-anual={reais(mensalNoAnual(f.mensal))}>{reais(f.mensal)}</span><span class="suave"> por mês</span></div>
+        <span class="por-ap"><b data-mensal={porApMensal[i]!.texto} data-anual={porApAnual[i]!.texto}>{porApMensal[i]!.texto}</b> por apartamento com {porApMensal[i]!.unidades} unidades</span>
         <span class="suave" data-mensal={`Implantação de ${reais(f.implantacao)}, uma vez, em até 3x`} data-anual="Implantação grátis no anual">Implantação de {reais(f.implantacao)}, uma vez, em até 3x</span>
         <span class="suave">Comunicados por WhatsApp: franquia {franquiaComunicados}</span>
         <a href="#pedir" class:list={["botao", f.destaque ? "branco" : "claro"]}>Solicitar demonstração</a>

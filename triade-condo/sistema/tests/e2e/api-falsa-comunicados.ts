@@ -22,7 +22,10 @@ interface ComunicadoFalso {
   noMural?: boolean; porEmail?: boolean; emails?: number;
   /** Comunicado pelo WhatsApp (F6.6): mensagens que saíram e as que não chegaram. */
   porWhatsapp?: boolean; whatsapps?: number; whatsappFalhas?: { contatoId: string; motivo: string }[];
+  /** Dia, hora e local do aviso com evento (CD-17). */
+  evento?: EventoFalso | null;
 }
+type EventoFalso = { dia: string; inicio?: string; fim?: string; local?: string };
 interface PedidoDocFalso { id: string; documentoId: string; email: string; contato?: { id: string; nome: string; unidades: string }; estado: string;
   automatico: boolean; criadoEm: string; motivo?: string }
 interface EnvioDocFalso { id: string; documentoId: string; para: string; contato?: string; criadoEm: string; cancelado: boolean; pedido: boolean }
@@ -59,6 +62,8 @@ export function criarComunicados(pedidoId: string): EstadoComunicados {
   const iso = (ms: number) => new Date(ms).toISOString();
   const agua = novoId();
   const rascunho = novoId();
+  const festa = novoId();
+  const coleta = novoId();
   const c = (x: Partial<ComunicadoFalso> & { id: string; titulo: string }): ComunicadoFalso => ({
     familiaId: x.id, numero: 1, assunto: "OBRAS", texto: "A água será desligada das 9h às 13h para a troca da bomba.", publico: "TODOS", blocos: [], unidades: [], contatos: [],
     pedidoId: null, manutencaoId: null, estado: "RASCUNHO", programadoPara: null, publicadoEm: null, publicadoPor: null, destinatarios: null, assinatura: null,
@@ -72,10 +77,19 @@ export function criarComunicados(pedidoId: string): EstadoComunicados {
         assinatura: "Ana, síndica do Residencial Ipê", pedidoId, noMural: true, porEmail: true, emails: 1, porWhatsapp: true, whatsapps: 2 }),
       c({ id: rascunho, titulo: "Assembleia geral ordinária: convocação", assunto: "ASSEMBLEIA", texto: "Convocamos todos para a assembleia.",
         atualizadoEm: iso(agora - 4 * 86400_000) }),
+      c({ id: festa, titulo: "Festa das crianças no salão", assunto: "AVISO", texto: "Brincadeiras, pipoca e algodão-doce. Cada família leva um prato.",
+        estado: "PUBLICADO", publicadoEm: iso(agora - 2 * 86400_000), publicadoPor: "Ana Souza", destinatarios: 3, assinatura: "Comissão de festas",
+        criadoEm: iso(agora - 2 * 86400_000), atualizadoEm: iso(agora - 2 * 86400_000), noMural: true, porEmail: true, emails: 1,
+        evento: { dia: somar(h, 5), inicio: "16:00", local: "Salão de festas" } }),
+      c({ id: coleta, titulo: "Coleta de recicláveis às quartas", assunto: "LEMBRETE", texto: "Deixe os recicláveis limpos e secos no abrigo até as 7h.",
+        estado: "PUBLICADO", publicadoEm: iso(agora - 10 * 86400_000), publicadoPor: "Ana Souza", destinatarios: 3,
+        criadoEm: iso(agora - 10 * 86400_000), atualizadoEm: iso(agora - 10 * 86400_000), noMural: true, porEmail: true, emails: 1 }),
     ],
     arquivos: [],
     historico: new Map([[agua, [{ acao: "comunicado.publicado", em: iso(agora - 86400_000), autor: "Ana Souza", dados: { numero: 1 } }]],
-      [rascunho, [{ acao: "comunicado.escrito", em: iso(agora - 4 * 86400_000), autor: "Ana Souza", dados: {} }]]]),
+      [rascunho, [{ acao: "comunicado.escrito", em: iso(agora - 4 * 86400_000), autor: "Ana Souza", dados: {} }]],
+      [festa, [{ acao: "comunicado.publicado", em: iso(agora - 2 * 86400_000), autor: "Ana Souza", dados: { numero: 1 } }]],
+      [coleta, [{ acao: "comunicado.publicado", em: iso(agora - 10 * 86400_000), autor: "Ana Souza", dados: { numero: 1 } }]]]),
     documentos: [
       { id: regimento, tipo: "REGIMENTO", titulo: "Regimento interno", descricao: null, restrito: false, aoMorador: true, valeAte: null, arquivado: null,
         criadoEm: iso(agora - 30 * 86400_000), versao: 1, historico: [],
@@ -94,7 +108,7 @@ export function criarComunicados(pedidoId: string): EstadoComunicados {
 }
 
 const publicoDe = (est: EstadoComunicados) => (c: ComunicadoFalso) => ({ id: c.id, assunto: c.assunto, titulo: c.titulo, texto: c.texto,
-  assinatura: c.assinatura ?? undefined, publicadoEm: c.publicadoEm, numero: c.numero, mudanca: c.mudanca ?? undefined,
+  assinatura: c.assinatura ?? undefined, publicadoEm: c.publicadoEm, numero: c.numero, mudanca: c.mudanca ?? undefined, evento: c.evento ?? undefined,
   arquivos: est.arquivos.filter((a) => a.familiaId === c.familiaId && a.situacao === "LIBERADO").map((a) => ({ id: a.id, nome: a.nome, tipo: a.tipo })) });
 const doMural = (est: EstadoComunicados) => est.comunicados.filter((c) => c.estado === "PUBLICADO" && c.noMural && c.publico === "TODOS");
 const docsDoMural = (est: EstadoComunicados) =>
@@ -237,7 +251,7 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
       id: c.id, familiaId: c.familiaId, numero: c.numero, assunto: c.assunto, titulo: c.titulo, estado: c.estado, publico: c.publico, publicoResumo: resumoPublico(c),
       destinatarios: c.destinatarios ?? undefined, programadoPara: c.programadoPara ?? undefined, publicadoEm: c.publicadoEm ?? undefined,
       publicadoPor: c.publicadoPor ?? undefined, autor: c.autor, pedido: ped && pode("pedidos.ver") ? { id: ped.id, protocolo: ped.protocolo, assunto: ped.assunto } : undefined,
-      substituidoEm: c.substituidoEm ?? undefined, criadoEm: c.criadoEm, atualizadoEm: c.atualizadoEm, versao: c.versao,
+      substituidoEm: c.substituidoEm ?? undefined, criadoEm: c.criadoEm, atualizadoEm: c.atualizadoEm, versao: c.versao, evento: c.evento ?? undefined,
     };
   };
   const hist = (familia: string, acao: string, dados: Record<string, unknown> = {}) => {
@@ -472,12 +486,16 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
     if (String(corpo.texto ?? "").trim().length < 3) campos.push("texto");
     if (corpo.publico === "BLOCOS" && !(corpo.blocos as string[]).length) campos.push("blocos");
     if (corpo.acao === "PROGRAMAR" && (!corpo.programadoPara || Date.parse(String(corpo.programadoPara)) < Date.now())) campos.push("programadoPara");
+    // O evento (CD-17): só o dia é obrigatório; o fim pede o início e vem depois dele.
+    const ev = corpo.evento as Partial<EventoFalso> | null | undefined;
+    if (ev && (!/^\d{4}-\d{2}-\d{2}$/.test(String(ev.dia ?? "")) || (ev.fim && (!ev.inicio || ev.fim <= ev.inicio)) || (ev.local && ev.local.trim().length < 2))) campos.push("evento");
     if (campos.length) return erro(route, 400, "VALIDATION_ERROR", { campos });
     const dados = { assunto: String(corpo.assunto), titulo: String(corpo.titulo).trim(), texto: String(corpo.texto).trim(), publico: String(corpo.publico),
       blocos: (corpo.blocos as string[]) ?? [], unidades: (corpo.unidades as string[]) ?? [], contatos: (corpo.contatos as string[]) ?? [],
       pedidoId: (corpo.pedidoId as string) ?? null, manutencaoId: (corpo.manutencaoId as string) ?? null, atualizadoEm: agora,
       noMural: corpo.publico === "TODOS" && (typeof corpo.noMural === "boolean" ? corpo.noMural : est.mural.assuntos.includes(String(corpo.assunto))),
-      porEmail: corpo.porEmail !== false, ...(typeof corpo.porWhatsapp === "boolean" ? { porWhatsapp: corpo.porWhatsapp } : {}) };
+      porEmail: corpo.porEmail !== false, ...(typeof corpo.porWhatsapp === "boolean" ? { porWhatsapp: corpo.porWhatsapp } : {}),
+      evento: ev ? { dia: String(ev.dia), ...(ev.inicio ? { inicio: ev.inicio } : {}), ...(ev.fim ? { fim: ev.fim } : {}), ...(ev.local?.trim() ? { local: ev.local.trim() } : {}) } : null };
     if (!c) {
       const id = novoId();
       c = { id, familiaId: id, numero: 1, ...dados, estado: "RASCUNHO", programadoPara: null, publicadoEm: null, publicadoPor: null, destinatarios: null,

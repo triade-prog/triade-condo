@@ -83,12 +83,13 @@ export function Pagamentos() {
 
   async function abrirCompetencia() {
     setAbrindo(true);
-    const r = await chamarApi<{ criadas: number; jaAbertas: number; semPlano: number }>("/v1/pagamentos/competencias", { corpo: { competencia: aAbrir } });
+    const r = await chamarApi<{ criadas: number; jaAbertas: number; semPlano: number; encerrados?: number }>("/v1/pagamentos/competencias", { corpo: { competencia: aAbrir } });
     setAbrindo(false);
     if (!r.ok) return setRecado({ tom: "erro", texto: textoDoErro(r.erro) });
-    const { criadas, jaAbertas, semPlano } = r.dados;
+    const { criadas, jaAbertas, semPlano, encerrados = 0 } = r.dados;
     setRecado({ tom: "ok", texto: [`${nomeCompetencia(aAbrir)}: ${plural(criadas, "cobrança aberta", "cobranças abertas")}`,
-      jaAbertas ? `${jaAbertas} já existia${jaAbertas === 1 ? "" : "m"}` : null, semPlano ? `${plural(semPlano, "cliente sem plano ou fora do ciclo", "clientes sem plano ou fora do ciclo")}` : null]
+      jaAbertas ? `${jaAbertas} já existia${jaAbertas === 1 ? "" : "m"}` : null, semPlano ? `${plural(semPlano, "cliente sem plano ou fora do ciclo", "clientes sem plano ou fora do ciclo")}` : null,
+      encerrados ? `${plural(encerrados, "contrato encerrado antes do mês", "contratos encerrados antes do mês")}` : null]
       .filter(Boolean).join(" · ") + "." });
     carga.recarregar();
   }

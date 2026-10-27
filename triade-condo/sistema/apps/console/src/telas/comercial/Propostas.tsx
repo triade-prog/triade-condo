@@ -13,9 +13,11 @@ import { Aviso, Botao, CampoTexto, Carregando, chamarApi, classeBotao, ErroCarre
 import { AbasLista, CabecaPagina, CaixaLista, Cartao, CLASSE_LINHA, CLASSE_LINK_LINHA, diaHora, useCelular } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import { ROTAS_COMERCIAL } from "./comum.tsx";
+import { montarApresentacao } from "./apresentacao.ts";
 import { JanelaAprovarDesconto, JanelaEscolherInteressado, JanelaMandarWhatsapp, JanelaMotivo } from "./janelasPropostas.tsx";
+import { WHATSAPP_COMERCIAL } from "./LinkProposta.tsx";
 import {
-  aprovacaoDaVersao, conteudoDaVersao, depoisDoEnvio, diaMes, documentoProposta, enderecoDoLink, horaCompleta, mensagemDoLink, percentual, resumoVersao, ROTAS_PROPOSTAS, TELAS_PROPOSTAS,
+  aprovacaoDaVersao, conteudoDaVersao, depoisDoEnvio, diaMes, enderecoDoLink, horaCompleta, mensagemDoLink, percentual, resumoVersao, ROTAS_PROPOSTAS, TELAS_PROPOSTAS,
   rotulosAprovacao, textoAberturas, textoAprovacao, textoSituacao, TOM_SITUACAO_PROPOSTA, type FichaProposta, type ItemListaProposta, type ListaPropostas, type VersaoProposta,
 } from "./propostas.ts";
 import type { FichaInteressado } from "./tipos.ts";
@@ -170,8 +172,9 @@ function DetalheProposta({ id, aoMudar }: { id: string; aoMudar: () => void }) {
   });
   const pdf = () => acao("pdf", async () => {
     try {
-      const { baixarPdf } = await import("./pdf.ts");
-      await baixarPdf(documentoProposta(conteudoDaVersao(v, pessoa)));
+      // A apresentação em quatro folhas (R17.8); o QR code só vai quando o link acabou de ser gerado.
+      const { baixarApresentacao } = await import("./pdfApresentacao.ts");
+      await baixarApresentacao(montarApresentacao(conteudoDaVersao(v, pessoa), { whatsapp: WHATSAPP_COMERCIAL, endereco: endereco ?? undefined }));
     } catch {
       setAviso({ tom: "erro", texto: "Não deu para montar o PDF. Tente de novo." });
     }

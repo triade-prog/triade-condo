@@ -5,19 +5,32 @@
 // proposta fica sob consulta e o valor é digitado com motivo. O texto do incluído e do planejado
 // vem pronto (EM-07). Desconto pede motivo e a aprovação da Administração antes de enviar (F.1).
 // A nota interna fica só para a equipe (CM-12). Quem vê a Tabela de preços abre o simulador já
-// com as unidades do prédio.
+// com as unidades do prédio. A taxa média de condomínio (R17.3c, quadro 445) vem da ficha, é
+// opcional e fica nas premissas da versão; com ela, o resumo diz o peso na taxa. O destaque "menos
+// de R$ 5" só aparece quando o valor por apartamento é menor que R$ 5,00. Quem cuida (R17.8, quadro
+// 456): quem faz a proposta vem da sessão e quem vai implantar é escolhido na equipe ativa (opcional);
+// o fundador é só no mensal, e o Anual troca a tabela para a cheia. "Ver como o síndico vai ver" abre
+// a apresentação com os valores de agora, sem gravar nada.
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { custoPorApartamento, mensalComDesconto, mostrarValor, sugestaoPropostaSchema, TEMAS_RESPOSTA, ESCOPOS_REFERENCIA } from "@triade/domain";
-import { Aviso, Botao, CampoAreaTexto, CampoTexto, camposComErro, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
+import {
+  custoNaTaxa, custoPorApartamento, lerTaxaCondominio, mensalComDesconto, mostrarValor, resumoPorApartamento, sugestaoPropostaSchema, taxaParaCampo, TEMAS_RESPOSTA,
+  ESCOPOS_REFERENCIA, TEXTO_AJUDA_TAXA, TEXTO_AJUDA_TAXA_FICHA, TEXTO_MENOS_DE_CINCO,
+} from "@triade/domain";
+import {
+  Aviso, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Carregando, chamarApi, classeBotao, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, type ErroApi,
+} from "@triade/ui";
+import { ApresentacaoProposta } from "./ApresentacaoProposta.tsx";
+import { EQUIPE_IMPLANTACAO, montarApresentacao } from "./apresentacao.ts";
+import { WHATSAPP_COMERCIAL } from "./LinkProposta.tsx";
 import { Cartao, Voltar } from "../comum.tsx";
 import { campoDosCentavos, centavosDoCampo } from "../planos/comum.tsx";
 import { useCarregar, useSessao } from "../sessao.tsx";
 import {
-  AVISOS_PROPOSTA, percentual, ROTAS_PROPOSTAS, rotulosAprovacao, TELAS_PROPOSTAS, textoImplantacao, textoNoAno, textoVaiJunto, type Ciclo, type FichaProposta, type Sugestao,
-  type VersaoProposta,
+  AVISOS_PROPOSTA, percentual, ROTAS_PROPOSTAS, rotulosAprovacao, TELAS_PROPOSTAS, textoImplantacao, textoNoAno, textoVaiJunto, type Ciclo, type ConteudoSindico,
+  type FichaProposta, type Sugestao, type VersaoProposta,
 } from "./propostas.ts";
 
 const brl = (c?: number) => mostrarValor(c ?? null);
@@ -61,15 +74,23 @@ interface Formulario {
   referencias: string[];
   notaInterna: string;
   validadeDias: number | null;
+  /** A taxa média de condomínio, como a pessoa digita ("650,00"). Nulo: ainda não veio da ficha. */
+  taxa: string | null;
+  /** Quem vai implantar (R17.8); vazio: a proposta fala da equipe de implantação. */
+  implantadorId: string;
 }
 
 const vazio: Formulario = {
   unidades: "", ciclo: "MENSAL", tabela: null, desconto: "", descontoMotivo: "", valorManual: "", implantacaoManual: "", valorManualMotivo: "",
-  respostas: [], referencias: [], notaInterna: "", validadeDias: null,
+  respostas: [], referencias: [], notaInterna: "", validadeDias: null, taxa: null, implantadorId: "",
 };
 
-/** A versão em que a nova se baseia (ou o rascunho que se edita) → o formulário. */
-function formularioDe(v: VersaoProposta): Formulario {
+/**
+ * A versão em que a nova se baseia (ou o rascunho que se edita) → o formulário. A taxa é sempre a
+ * da ficha (r8): é a que vale para a versão quando a pessoa não mexe no campo, e o rascunho antigo
+ * nunca a troca pela dele.
+ */
+function formularioDe(v: VersaoProposta, taxaFicha?: number): Formulario {
   const pedido = v.descontoPedido?.percentual ?? v.desconto;
   return {
     unidades: v.unidades ? String(v.unidades) : "", ciclo: v.ciclo, tabela: v.tabela === "MANUAL" ? null : v.tabela ?? null,
@@ -78,6 +99,8 @@ function formularioDe(v: VersaoProposta): Formulario {
     valorManualMotivo: v.valorManualMotivo ?? "",
     respostas: (v.respostas ?? []).map((r) => r.id).filter((x): x is string => !!x), referencias: (v.referencias ?? []).filter((r) => !r.retirada).map((r) => r.id),
     notaInterna: v.notaInterna ?? "", validadeDias: v.validadeDias ?? null,
+    taxa: taxaParaCampo(taxaFicha),
+    implantadorId: v.implantador?.id ?? "",
   };
 }
 
@@ -133,12 +156,17 @@ function Gerador({ modo }: { modo: Modo }) {
   const router = useRouter();
   const sessao = useSessao();
   const interessadoId = modo.tipo === "criar" ? modo.interessadoId : modo.ficha.interessado.id;
-  const [f, setF] = useState<Formulario>(() => (modo.tipo === "versao" ? formularioDe(modo.base) : vazio));
+  const [f, setF] = useState<Formulario>(() => (modo.tipo === "versao" ? formularioDe(modo.base, modo.ficha.interessado.taxaCondominioMedia) : vazio));
+  // A taxa da ficha como veio para o campo e a versão da ficha nesse momento (r8): a taxa só vai
+  // para o banco quando a pessoa a muda, e o banco grava na ficha conferindo essa versão.
+  const [taxaBase, setTaxaBase] = useState<{ campo: string; versao?: number } | null>(() => (modo.tipo === "versao"
+    ? { campo: taxaParaCampo(modo.ficha.interessado.taxaCondominioMedia), versao: modo.ficha.interessado.versao } : null));
   const [sug, setSug] = useState<Sugestao | null>(null);
   const [erroSug, setErroSug] = useState<ErroApi | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [falhaLocal, setFalhaLocal] = useState<Record<string, string>>({});
   const [enviando, setEnviando] = useState(false);
+  const [previa, setPrevia] = useState(false);
   const muda = (p: Partial<Formulario>) => setF((x) => ({ ...x, ...p }));
 
   const unidades = lerUnidades(f.unidades);
@@ -165,12 +193,20 @@ function Gerador({ modo }: { modo: Modo }) {
         // As unidades da ficha do prédio entram no campo vazio (CM-16).
         const daFicha = r.dados.interessado.unidades;
         if (daFicha) setF((x) => (x.unidades ? x : { ...x, unidades: String(daFicha) }));
+        // A taxa da ficha entra uma vez, na nova proposta (R17.3c), com a versão da ficha (r8).
+        const taxaFicha = r.dados.interessado.taxaCondominioMedia;
+        const versaoFicha = r.dados.interessado.versao;
+        setF((x) => (x.taxa !== null ? x : { ...x, taxa: taxaParaCampo(taxaFicha) }));
+        setTaxaBase((b) => b ?? { campo: taxaParaCampo(taxaFicha), versao: versaoFicha });
       });
     }, 250);
     return () => { clearTimeout(t); controle.abort(); };
   }, [chaveSug]);
 
   const daFicha = sug?.interessado.unidades;
+  const taxaLida = lerTaxaCondominio(f.taxa ?? "");
+  const taxaMudou = taxaBase !== null && (taxaLida.erro !== undefined || taxaLida.taxa !== lerTaxaCondominio(taxaBase.campo).taxa);
+  const taxaDaFicha = modo.tipo === "versao" ? modo.ficha.interessado.taxaCondominioMedia : sug?.interessado.taxaCondominioMedia;
 
   if (!sug) {
     if (erroSug) {
@@ -198,6 +234,7 @@ function Gerador({ modo }: { modo: Modo }) {
   // Enquanto digita, a conta da tela usa as funções do domínio; o valor que vale é o do banco.
   const mensalPrevisto = s.mensalTabela !== undefined ? mensalComDesconto(s.mensalTabela, temDesconto ? desconto : null) : s.mensal;
   const apPrevisto = mensalPrevisto !== undefined && typeof unidades === "number" ? custoPorApartamento(mensalPrevisto, unidades) : s.porApartamento;
+  const custo = apPrevisto !== undefined && apPrevisto !== null ? custoNaTaxa(apPrevisto, taxaLida.erro ? null : taxaLida.taxa) : null;
   const escolhidasResp = (s.respostas ?? []).filter((r) => f.respostas.includes(r.id));
   const escolhidasRef = (s.referencias ?? []).filter((r) => f.referencias.includes(r.id));
   const condominio = s.interessado.condominio;
@@ -213,6 +250,10 @@ function Gerador({ modo }: { modo: Modo }) {
       respostas: f.respostas.filter((id) => (s.respostas ?? []).some((r) => r.id === id)),
       referencias: f.referencias.filter((id) => (s.referencias ?? []).some((r) => r.id === id)),
       notaInterna: f.notaInterna.trim() || null, validadeDias: f.validadeDias,
+      implantadorId: f.implantadorId || null,
+      // A taxa só vai quando a pessoa a mudou (vazio tira; vale também para a ficha), com a versão
+      // da ficha que ela viu; sem mudança, a versão usa a da ficha (r8).
+      ...(taxaMudou ? { taxaCondominio: taxaLida.erro ? null : taxaLida.taxa, interessadoVersao: taxaBase?.versao } : {}),
     };
   }
 
@@ -224,6 +265,8 @@ function Gerador({ modo }: { modo: Modo }) {
     if (sobConsulta && !("centavos" in valorManual && valorManual.centavos)) falhas.valorManual = "Digite o valor combinado, como 1.290,00.";
     if (sobConsulta && !f.valorManualMotivo.trim()) falhas.valorManualMotivo = "Diga de onde veio o valor.";
     if ("erro" in implantacaoManual) falhas.implantacaoManual = implantacaoManual.erro;
+    if (taxaLida.erro) falhas.taxaCondominio = taxaLida.erro;
+    if (f.implantadorId && !(s.implantadores ?? []).some((p) => p.id === f.implantadorId)) falhas.implantadorId = "Escolha alguém da equipe ativa.";
     setFalhaLocal(falhas);
     return Object.keys(falhas).length === 0;
   }
@@ -267,6 +310,24 @@ function Gerador({ modo }: { modo: Modo }) {
   const erroCampo = (nome: string, texto: string) => falhaLocal[nome] ?? (campos.includes(nome) ? texto : undefined);
   const avisos = s.avisos.filter((a) => a !== "SEM_UNIDADES" || !f.unidades);
   const submeter = (ev: FormEvent) => { ev.preventDefault(); void salvar(pedeAprovacao); };
+
+  // A prévia (quadro 456): a apresentação montada com a sugestão e o que está no formulário.
+  function conteudoPrevia(): ConteudoSindico {
+    const implantador = (s.implantadores ?? []).find((p) => p.id === f.implantadorId);
+    const ap = s.apresentacao;
+    return {
+      unidades: typeof unidades === "number" ? unidades : s.unidades, ciclo: f.ciclo, tabela: s.tabela, mensalTabela: s.mensalTabela, mensal: s.mensalTabela ?? s.mensal,
+      anual: s.mensalTabela !== undefined && f.ciclo === "ANUAL" ? s.mensalTabela * (s.mesesPagos ?? 11) : s.anual, mesesPagos: s.mesesPagos,
+      depoisFundador: s.depoisFundador, fundadorMeses: s.fundadorMeses, implantacaoSemCusto: s.implantacaoSemCusto, implantacao: s.implantacao,
+      implantacaoParcelas: s.implantacaoParcelas,
+      porApartamento: s.mensalTabela !== undefined && typeof unidades === "number" ? custoPorApartamento(s.mensalTabela, unidades) ?? undefined : s.porApartamento,
+      numero: modo.tipo === "criar" ? 1 : modo.editar ? modo.base.numero : modo.base.numero + 1, situacao: "RASCUNHO",
+      condominio, cidade: s.interessado.cidade, uf: s.interessado.uf, aosCuidados: s.interessado.pessoa,
+      taxaCondominio: taxaLida.erro ? undefined : taxaLida.taxa ?? undefined, incluido: [...(s.oferta?.incluido ?? [])], planejado: [...(s.oferta?.planejado ?? [])],
+      respostas: [], referencias: [], validadeDias: f.validadeDias ?? s.validadeDias, faixa: s.faixa?.codigo,
+      apresentacao: ap ? { ...ap, equipe: { ...ap.equipe, implantacao: implantador ? { nome: implantador.nome } : undefined } } : undefined,
+    };
+  }
 
   const resumoMensal = () => {
     if (mensalPrevisto === undefined) return <>Valor a definir na Tabela de preços</>;
@@ -327,14 +388,18 @@ function Gerador({ modo }: { modo: Modo }) {
                 onChange={(e) => muda({ unidades: e.target.value.replace(/\D/g, "") })}
                 ajuda={`${daFicha ? "Informadas pelo síndico na ficha do prédio." : "A ficha não tem as unidades: digite as ativas."}${s.faixa ? ` Faixa: ${s.faixa.nome}.` : ""}`}
                 erro={erroCampo("unidades", "Digite as unidades ativas, de 1 a 20.000.")} />
+              <CampoTexto id="np-taxa" rotulo="Taxa média de condomínio (R$ por mês)" opcional inputMode="decimal" maxLength={12} placeholder="650,00" value={f.taxa ?? ""}
+                onChange={(e) => muda({ taxa: e.target.value })}
+                ajuda={taxaDaFicha !== undefined && taxaParaCampo(taxaDaFicha) === (f.taxa ?? "") ? TEXTO_AJUDA_TAXA_FICHA : TEXTO_AJUDA_TAXA}
+                erro={erroCampo("taxaCondominio", "A taxa vai de R$ 0,01 a R$ 20.000")} />
             </div>
             <fieldset className="grid gap-2">
               <legend className="mb-1 t-apoio font-medium">Ciclo</legend>
               <div className="grid gap-3 md:grid-cols-2">
                 <Opcao nome="np-ciclo" valor="MENSAL" marcada={f.ciclo === "MENSAL"} aoMarcar={() => muda({ ciclo: "MENSAL" })} titulo="Mensal"
                   apoio={f.ciclo === "MENSAL" && s.mensalTabela !== undefined ? `${brl(s.mensalTabela)} por mês` : "Paga todo mês"} />
-                <Opcao nome="np-ciclo" valor="ANUAL" marcada={f.ciclo === "ANUAL"} aoMarcar={() => muda({ ciclo: "ANUAL" })} titulo="Anual"
-                  apoio={`12 por ${s.mesesPagos ?? 11} · implantação sem custo`} />
+                <Opcao nome="np-ciclo" valor="ANUAL" marcada={f.ciclo === "ANUAL"} aoMarcar={() => muda({ ciclo: "ANUAL", tabela: sobConsulta ? f.tabela : "CHEIA" })} titulo="Anual"
+                  apoio={`Só na tabela cheia · 12 por ${s.mesesPagos ?? 11}, implantação isenta`} />
               </div>
             </fieldset>
             {!sobConsulta ? (
@@ -372,6 +437,16 @@ function Gerador({ modo }: { modo: Modo }) {
             <p className="t-apoio">A proposta com desconto ou sob consulta só pode ser enviada depois que a Administração aprovar (F.1). Na tabela e sem desconto, envia direto.</p>
           </Cartao>
 
+          <Cartao id="np-quem" titulo="Quem cuida" icone="pessoas">
+            <div className="grid gap-4 md:grid-cols-2">
+              <CampoTexto id="np-quem-fez" rotulo="Quem fez a proposta" value={s.quemFez?.nome ?? ""} readOnly
+                ajuda="Você. Na proposta vão o WhatsApp comercial da TRÍADE e o e-mail da sua conta, quando é @trihub.com.br." />
+              <CampoSelecao id="np-implantador" rotulo="Quem vai implantar" opcional value={f.implantadorId} onChange={(e) => muda({ implantadorId: e.target.value })}
+                opcoes={[{ valor: "", texto: "Sem escolher" }, ...(s.implantadores ?? []).map((p) => ({ valor: p.id, texto: p.nome }))]}
+                ajuda={`Sem escolher, a proposta diz “${EQUIPE_IMPLANTACAO}”.`} erro={erroCampo("implantadorId", "Escolha alguém da equipe ativa.")} />
+            </div>
+          </Cartao>
+
           <Cartao id="np-junto" titulo="Vai junto" icone="clipe">
             <fieldset className="grid gap-1">
               <legend className="mb-1 t-apoio font-medium">Respostas prontas (CM-27)</legend>
@@ -406,6 +481,9 @@ function Gerador({ modo }: { modo: Modo }) {
         <div className="grid min-w-0 content-start gap-4">
           <section aria-labelledby="np-resumo" className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1 max-md:p-4">
             <h2 id="np-resumo" className="t-titulo-cartao">O que vai na proposta</h2>
+            {custo?.menosDeCinco ? (
+              <p className="rounded-[14px] border border-ok/30 bg-ok-fundo px-4 py-2.5 t-texto font-semibold text-ok">{TEXTO_MENOS_DE_CINCO}</p>
+            ) : null}
             <dl className="grid">
               <Linha nome="Mensalidade">{resumoMensal()}</Linha>
               <Linha nome="Implantação">
@@ -417,8 +495,8 @@ function Gerador({ modo }: { modo: Modo }) {
               <Linha nome="O que está incluído">{(s.oferta?.incluido ?? []).join("; ") || "—"}</Linha>
               <Linha nome="Ainda planejado">{`${(s.oferta?.planejado ?? []).join(", ")}. Aparece como planejado, sem data prometida (EM-07).`}</Linha>
               <Linha nome="Por apartamento">
-                {apPrevisto !== undefined && apPrevisto !== null && typeof unidades === "number"
-                  ? <><b>{brl(apPrevisto)}</b>{` por mês com ${unidades} unidades (estimativa; implantação à parte) (CM-19, L.1)`}</>
+                {custo && typeof unidades === "number"
+                  ? <><b>{brl(custo.porApartamento)}</b>{`${resumoPorApartamento(custo, unidades).slice(brl(custo.porApartamento).length)} (estimativa; implantação à parte)`}</>
                   : "Precisa das unidades e do valor"}
               </Linha>
               <Linha nome="Vai junto">{textoVaiJunto(escolhidasResp.map((r) => r.titulo), escolhidasRef.length)}</Linha>
@@ -432,15 +510,23 @@ function Gerador({ modo }: { modo: Modo }) {
             {pedeAprovacao ? (
               <>
                 <Botao type="submit" disabled={enviando || !!jaTem}><Icone nome="enviar" />{enviando ? "Salvando…" : rotulos.pedir}</Botao>
+                <Botao variante="contorno" disabled={mensalPrevisto === undefined} onClick={() => setPrevia(true)}><Icone nome="olho" />Ver como o síndico vai ver</Botao>
                 <Botao variante="contorno" disabled={enviando || !!jaTem} onClick={() => void salvar(false)}><Icone nome="check" />Salvar rascunho</Botao>
               </>
             ) : (
-              <Botao type="submit" disabled={enviando || !!jaTem}><Icone nome="check" />{enviando ? "Salvando…" : "Salvar rascunho"}</Botao>
+              <>
+                <Botao type="submit" disabled={enviando || !!jaTem}><Icone nome="check" />{enviando ? "Salvando…" : "Salvar rascunho"}</Botao>
+                <Botao variante="contorno" disabled={mensalPrevisto === undefined} onClick={() => setPrevia(true)}><Icone nome="olho" />Ver como o síndico vai ver</Botao>
+              </>
             )}
           </div>
           <p className="t-apoio">O envio é na lista de propostas, com o link e o PDF.</p>
         </div>
       </div>
+      <Dialogo aberto={previa} titulo="Como o síndico vai ver" larga aoFechar={() => setPrevia(false)}
+        apoio="Prévia com os valores de agora. Desconto e valor sob consulta só aparecem depois da aprovação; nada é gravado.">
+        {previa ? <div className="grid gap-4 bg-fundo p-1">{<ApresentacaoProposta a={montarApresentacao(conteudoPrevia(), { whatsapp: WHATSAPP_COMERCIAL })} />}</div> : null}
+      </Dialogo>
     </form>
   );
 }

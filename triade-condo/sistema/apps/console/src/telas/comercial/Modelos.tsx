@@ -3,7 +3,8 @@
 // prontas de cada etapa, as cadências, as respostas prontas e as referências de clientes, e a
 // chance de fechar e o limite de dias parado de cada etapa. Quem tem só o ver lê; quem edita muda.
 // A cadência em uso continua para quem já está nela. Da R17.4 (0308, quadro 443): a aba Contrato, só
-// para a Administração, com o texto revisado por advogado; ?aba=contrato abre direto nela.
+// para a Administração, com o texto revisado por advogado; ?aba=contrato abre direto nela. Da R17.7
+// (0311): a aba Aditivo, do mesmo jeito, com o modelo do aditivo de reajuste (?aba=aditivo).
 
 import { useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
@@ -12,13 +13,14 @@ import { Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Carrega
 import { AbasLista, CabecaPagina, Cartao, plural, Voltar } from "../comum.tsx";
 import { ErroJanela, RodapeJanela } from "../planos/comum.tsx";
 import { useCarregar, useSessao } from "../sessao.tsx";
+import { AbaAditivo } from "./ModeloAditivo.tsx";
 import { AbaContrato } from "./ModeloContrato.tsx";
 import { nomeCanal, nomeEtapa, ROTAS_COMERCIAL } from "./comum.tsx";
 import { ListaReferencias, ListaRespostas } from "./ModelosPropostas.tsx";
 import { ROTAS_PROPOSTAS, type Referencia, type RespostaPronta } from "./propostas.ts";
 import type { CadenciaModelo, EtapaParametro, MensagemModelo, ModelosComercial, PassoCadencia } from "./tipos.ts";
 
-type Aba = "mensagens" | "cadencias" | "respostas" | "referencias" | "etapas" | "contrato";
+type Aba = "mensagens" | "cadencias" | "respostas" | "referencias" | "etapas" | "contrato" | "aditivo";
 const OPCOES_ETAPA = Object.entries(ETAPAS_COMERCIAL).map(([valor, texto]) => ({ valor, texto }));
 
 function JanelaMensagem({ m, aoFechar, feito }: { m: Partial<MensagemModelo>; aoFechar: () => void; feito: () => void }) {
@@ -41,7 +43,7 @@ function JanelaMensagem({ m, aoFechar, feito }: { m: Partial<MensagemModelo>; ao
 
   return (
     <Dialogo aberto titulo={m.id ? "Editar mensagem pronta" : "Nova mensagem pronta"} aoFechar={aoFechar} media
-      apoio="[nome] vira o primeiro nome da pessoa e [condominio], o nome do condomínio.">
+      apoio="[nome] vira o primeiro nome da pessoa, [condominio], o nome do condomínio, e [link de agendamento], o link da agenda de quem atende (ou o da equipe).">
       <form onSubmit={salvar} className="grid gap-4" noValidate>
         <CampoSelecao id="msg-etapa" rotulo="Etapa" value={etapa} onChange={(e) => setEtapa(e.target.value)} opcoes={OPCOES_ETAPA} />
         <CampoTexto id="msg-titulo" rotulo="Título" maxLength={60} value={titulo} onChange={(e) => setTitulo(e.target.value)}
@@ -163,7 +165,8 @@ export function ModelosComercial() {
   const sessao = useSessao();
   const contrato = sessao.acoes.includes("console.comercial.modelos");
   const busca = useSearchParams();
-  const [aba, setAba] = useState<Aba>(busca.get("aba") === "contrato" && contrato ? "contrato" : "mensagens");
+  const pedida = busca.get("aba");
+  const [aba, setAba] = useState<Aba>((pedida === "contrato" || pedida === "aditivo") && contrato ? pedida : "mensagens");
   const [mensagem, setMensagem] = useState<Partial<MensagemModelo> | null>(null);
   const [cadencia, setCadencia] = useState<Partial<CadenciaModelo> | null>(null);
   const [etapa, setEtapa] = useState<EtapaParametro | null>(null);
@@ -173,7 +176,7 @@ export function ModelosComercial() {
   return (
     <div className="grid gap-5">
       <Voltar href="/comercial" texto="Voltar aos interessados" />
-      <CabecaPagina titulo="Modelos do Comercial" apoio={`Mensagens prontas, cadências, respostas para questionário e cotação, referências de clientes e as etapas do funil${contrato ? ", e o texto do contrato" : ""}. Só a Administração muda; o Comercial usa.`} />
+      <CabecaPagina titulo="Modelos do Comercial" apoio={`Mensagens prontas, cadências, respostas para questionário e cotação, referências de clientes e as etapas do funil${contrato ? ", e o texto do contrato e do aditivo" : ""}. Só a Administração muda; o Comercial usa.`} />
       {carga.estado === "carregando" ? <Carregando /> : null}
       {carga.estado === "erro" ? <ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /> : null}
       {d ? (
@@ -184,9 +187,10 @@ export function ModelosComercial() {
             { valor: "respostas", texto: "Respostas prontas", n: resp?.respostas.length },
             { valor: "referencias", texto: "Referências", n: refs?.referencias.filter((r) => !r.retirada).length },
             { valor: "etapas", texto: "Etapas", n: d.etapas.length },
-            ...(contrato ? [{ valor: "contrato" as const, texto: "Contrato" }] : []),
+            ...(contrato ? [{ valor: "contrato" as const, texto: "Contrato" }, { valor: "aditivo" as const, texto: "Aditivo" }] : []),
           ]} />
           {aba === "contrato" ? <AbaContrato /> : null}
+          {aba === "aditivo" ? <AbaAditivo /> : null}
           {aba === "mensagens" ? (
             <div className="grid gap-4">
               {d.podeEditar ? <Botao className="justify-self-start" onClick={() => setMensagem({})}><Icone nome="mais" />Nova mensagem</Botao> : null}

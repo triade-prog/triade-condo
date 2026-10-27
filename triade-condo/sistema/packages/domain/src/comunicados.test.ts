@@ -28,6 +28,22 @@ describe("comunicados (peça R1)", () => {
     expect(salvarComunicadoSchema.safeParse({ ...BASE, assunto: "PROPAGANDA" }).success).toBe(false);
   });
 
+  it("CD-17: o evento do aviso pede o dia; o fim vem depois do início; o local tem de 2 a 120 letras", () => {
+    const com = (evento: unknown) => salvarComunicadoSchema.safeParse({ ...BASE, evento });
+    expect(com(null).success).toBe(true);
+    expect(com(undefined).data?.evento).toBeNull();
+    expect(com({ dia: "2026-10-28" }).data?.evento).toEqual({ dia: "2026-10-28" });
+    expect(com({ dia: "2026-10-28", inicio: "08:00", fim: "14:00", local: " Salão " }).data?.evento).toEqual({ dia: "2026-10-28", inicio: "08:00", fim: "14:00", local: "Salão" });
+    expect(com({ dia: "2026-10-28", inicio: null, fim: null, local: "" }).data?.evento).toEqual({ dia: "2026-10-28" });
+    const caminhos = (evento: unknown) => com(evento).error?.issues.map((i) => i.path.join("."));
+    expect(caminhos({ local: "Salão" })).toEqual(["evento.dia"]);
+    expect(caminhos({ dia: "28/10/2026" })).toEqual(["evento.dia"]);
+    expect(caminhos({ dia: "2026-10-28", inicio: "8h" })).toEqual(["evento.inicio"]);
+    expect(caminhos({ dia: "2026-10-28", fim: "14:00" })).toEqual(["evento.fim"]);
+    expect(caminhos({ dia: "2026-10-28", inicio: "14:00", fim: "08:00" })).toEqual(["evento.fim"]);
+    expect(caminhos({ dia: "2026-10-28", local: "S" })).toEqual(["evento.local"]);
+  });
+
   it("CD-02: por bloco, unidade ou contato pede a escolha", () => {
     const r = salvarComunicadoSchema.safeParse({ ...BASE, publico: "BLOCOS" });
     expect(r.success).toBe(false);
