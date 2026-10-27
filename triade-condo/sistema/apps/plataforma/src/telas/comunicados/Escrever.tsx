@@ -81,7 +81,10 @@ function LinhaCanal({ icone, tom, nome, valor, apagado }: { icone: NomeIcone; to
 }
 
 /** Em que passo do celular mora cada campo, para voltar a ele quando a API recusa. */
-const PASSO_DO_CAMPO: Record<string, Passo> = { assunto: 1, titulo: 1, texto: 1, pedidoId: 1, manutencaoId: 1, blocos: 2, unidades: 2, contatos: 2, programadoPara: 3 };
+const PASSO_DO_CAMPO: Record<string, Passo> = {
+  assunto: 1, titulo: 1, texto: 1, pedidoId: 1, manutencaoId: 1, evento: 1, "evento.dia": 1, "evento.inicio": 1, "evento.fim": 1, "evento.local": 1,
+  blocos: 2, unidades: 2, contatos: 2, programadoPara: 3,
+};
 
 export function Escrever() {
   const busca = useSearchParams();
@@ -138,6 +141,11 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
     noMural: (detalhe?.canais?.noMural ?? null) as boolean | null,
     porEmail: detalhe?.canais?.porEmail ?? true,
     porWhatsapp: detalhe?.canais?.porWhatsapp ?? true,
+    // Quando acontece (CD-17): só o dia é obrigatório para o aviso virar evento no mural.
+    eventoDia: c?.evento?.dia ?? "",
+    eventoInicio: c?.evento?.inicio ?? "",
+    eventoFim: c?.evento?.fim ?? "",
+    eventoLocal: c?.evento?.local ?? "",
   });
   const [novos, setNovos] = useState<{ arquivo: File; problema: string | null }[]>([]);
   const [tirar, setTirar] = useState<ArquivoComunicado | null>(null);
@@ -201,6 +209,7 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
     pedidoId: v.pedidoId || null, manutencaoId: v.manutencaoId || null,
     programadoPara: acao === "PROGRAMAR" ? deDataHoraLocal(v.programadoPara) : null,
     noMural, porEmail: v.porEmail, porWhatsapp: whatsappLigado ? v.porWhatsapp && !ninguemNoWhatsapp : undefined,
+    evento: v.eventoDia ? { dia: v.eventoDia, inicio: v.eventoInicio || null, fim: v.eventoFim || null, local: v.eventoLocal.trim() || null } : null,
   });
   const gravar = (corpo: ReturnType<typeof corpoDe>, acao: Acao) => (guardado
     ? chamarApi<{ id: string; versao: number }>(`/v1/condominio/comunicados/${guardado.id}`, { metodo: "PUT", corpo: { ...corpo, versao: guardado.versao, acao } })
@@ -303,6 +312,21 @@ function Formulario({ o, detalhe, pedidoInicial, manutencaoInicial, voltar, reca
       <CampoAreaTexto id="cm-texto" rotulo="Texto" required maxLength={4000} rows={6} value={v.texto} onChange={(e) => mudar({ texto: e.target.value })}
         erro={msg("texto", "De 3 a 4000 caracteres.")}
         ajuda={o.assinatura ? `Sai assinado como "${o.assinatura}". A assinatura fica em Configurações › Comunicados.` : "Sem assinatura padrão: defina em Configurações › Comunicados."} />
+
+      <fieldset className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-4">
+        <legend className="px-1 t-apoio font-medium">Quando acontece <span className="font-normal text-tinta-suave">(opcional)</span></legend>
+        <p className="t-apoio text-tinta-suave">Com o dia, o aviso ganha o bloco de data no mural, pode ser o destaque e entra na agenda do morador.</p>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+          <CampoTexto id="cm-evento-dia" rotulo="Dia" type="date" value={v.eventoDia} onChange={(e) => mudar({ eventoDia: e.target.value })}
+            erro={msg("evento.dia") ?? msg("evento", "Confira o dia, as horas e o local.")} />
+          <CampoTexto id="cm-evento-inicio" rotulo="Começa às" type="time" value={v.eventoInicio} disabled={!v.eventoDia} onChange={(e) => mudar({ eventoInicio: e.target.value })}
+            erro={msg("evento.inicio", "Hora como 08:00.")} />
+          <CampoTexto id="cm-evento-fim" rotulo="Termina às" type="time" value={v.eventoFim} disabled={!v.eventoInicio} onChange={(e) => mudar({ eventoFim: e.target.value })}
+            erro={msg("evento.fim", "Depois da hora de início.")} />
+        </div>
+        <CampoTexto id="cm-evento-local" rotulo="Local" maxLength={120} value={v.eventoLocal} disabled={!v.eventoDia} onChange={(e) => mudar({ eventoLocal: e.target.value })}
+          erro={msg("evento.local", "De 2 a 120 caracteres.")} className="max-w-md" />
+      </fieldset>
 
       <div className="grid gap-2">
         <span className="t-apoio font-medium">Fotos ou PDF <span className="font-normal text-tinta-suave">(opcional)</span></span>

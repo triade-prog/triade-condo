@@ -1666,7 +1666,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       ...quem(c), p_id: id, p_versao: id ? d.versao : null, p_assunto: d.assunto, p_titulo: d.titulo, p_texto: d.texto,
       p_publico: d.publico, p_blocos: d.blocos, p_unidades: d.unidades, p_contatos: d.contatos, p_pedido: d.pedidoId,
       p_manutencao: d.manutencaoId, p_acao: d.acao, p_programado_para: d.programadoPara, p_no_mural: d.noMural,
-      p_por_email: d.porEmail, p_por_whatsapp: d.porWhatsapp,
+      p_por_email: d.porEmail, p_por_whatsapp: d.porWhatsapp, p_evento: d.evento,
     }).finally(() => {
       if (d.acao === "PUBLICAR") {
         esvaziarFila();

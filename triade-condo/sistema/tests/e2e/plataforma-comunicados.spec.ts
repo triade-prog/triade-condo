@@ -33,7 +33,7 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
     await expect(page.getByRole("link", { name: "Falta de água na quinta" })).toBeVisible();
     await expect(page.getByText("Pedido 2026-0001")).toBeVisible();
     await expect(page.getByRole("button", { name: /Publicados/ })).toHaveAttribute("aria-pressed", "true");
-    await expect(page.getByText("Publicado · ").filter({ visible: true })).toBeVisible();
+    await expect(page.getByText("Publicado · ").filter({ visible: true }).first()).toBeVisible();
     await expect(page.getByRole("link", { name: "Assembleia geral ordinária: convocação" })).toHaveCount(0);
     await conferir(page);
     await page.getByRole("button", { name: /Rascunhos parados há mais de 3 dias 1/ }).click();

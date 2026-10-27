@@ -67,7 +67,7 @@ test.describe("Mural no painel", () => {
     await expect(page.getByRole("button", { name: /Tirar do mural/ })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Escrever comunicado" })).toHaveCount(0);
     // Sem cuidar dos classificados, a vitrine aparece igual, com a foto pelo caminho do morador.
-    await previa(page).getByRole("button", { name: "Classificados" }).click();
+    await previa(page).getByRole("tab", { name: /^Classificados/ }).click();
     await expect(previa(page).getByRole("list", { name: "Classificados entre moradores" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Esperando aprovação" })).toHaveCount(0);
     await conferir(page);
@@ -76,7 +76,7 @@ test.describe("Mural no painel", () => {
   test("CD-15, AC-05: no painel, os classificados são uma vitrine com a página de cada anúncio", async ({ page }) => {
     await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/comunicados/no-mural`);
-    await previa(page).getByRole("button", { name: "Classificados" }).click();
+    await previa(page).getByRole("tab", { name: /^Classificados/ }).click();
     const vitrine = previa(page).getByRole("list", { name: "Classificados entre moradores" });
     await expect(vitrine.getByRole("listitem")).toHaveCount(2);
     await expect(vitrine.getByText("Grátis")).toBeVisible();

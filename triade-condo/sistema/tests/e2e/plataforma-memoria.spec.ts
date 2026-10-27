@@ -218,7 +218,7 @@ test.describe("Documentos e memória", () => {
     await expect(page).toHaveURL(/\/comunicados\/no-mural\?aba=manual$/);
 
     await page.goto(`${PLATAFORMA}/m/${MURAL_FALSO}`);
-    await page.getByRole("button", { name: "Manual do prédio" }).click();
+    await page.getByRole("tab", { name: /^Manual do prédio/ }).click();
     await expect(page.getByRole("heading", { name: "Água e gás" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Lixo e coleta seletiva" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Casa de máquinas" })).toHaveCount(0);

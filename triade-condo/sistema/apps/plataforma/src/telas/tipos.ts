@@ -2,6 +2,7 @@
 // pessoas (plataforma_pessoas), nos moradores e unidades (passo 3) e nos pedidos (passo 4).
 
 import type {
+  EventoComunicado,
   CanalEnquete, ConfirmacaoArea, EscopoEnquete, EstadoReserva, Ligacao, ModoArea, Ocupacao, Parentesco, PeriodoLimite, SituacaoEnquete,
   EstadoAssembleia, EstadoItem, EstadoProcuracao, FormaAssembleia, PesoAssembleia, Quorum, SituacaoItem, TipoAssembleia, TipoItem,
   EstadoAnuncio, TipoAnuncio, TipoVeiculo, DecisaoQueda, EstadoQueda, AvisoNovoSindico, DestinoAvisoRegistro, MeioAvisoRegistro,
@@ -1296,6 +1297,8 @@ export interface ComunicadoDetalhe {
     manutencaoId?: string;
     arquivamento?: { motivo: string; em: string; por?: string };
     pedidoOculto?: boolean;
+    /** Dia, hora e local do aviso com evento (CD-17). */
+    evento?: EventoComunicado;
   };
   publicoAgora: PublicoCalculado;
   versoes: { id: string; numero: number; estado: SituacaoComunicado; titulo: string; texto: string; mudanca?: string;
@@ -1445,6 +1448,8 @@ export interface ComunicadoPublico {
   publicadoEm: string;
   numero: number;
   mudanca?: string;
+  /** Dia, hora e local do aviso com evento (CD-17). */
+  evento?: EventoComunicado;
   arquivos: { id: string; nome: string; tipo: string }[];
 }
 

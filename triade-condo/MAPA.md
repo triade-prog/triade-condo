@@ -9,24 +9,24 @@ Versão visual e interativa (com busca e filtro por forma): [`mapa.html`](mapa.h
 
 | Parte | Peças | Ideias |
 |---|---|---|
-| Plataforma do síndico | 16 | 206 |
+| Plataforma do síndico | 16 | 209 |
 | Console TRÍADE | 10 | 73 |
 | Base comum | 6 | 38 |
 | Fora do software | 4 | 34 |
-| **Total** | **36** | **351** |
+| **Total** | **36** | **354** |
 
 ## Mapa mental
 
 ```mermaid
 mindmap
-  root((TRÍADE Condo · 351 ideias))
-    Plataforma do síndico · 206
+  root((TRÍADE Condo · 354 ideias))
+    Plataforma do síndico · 209
       Painel web do síndico
         Início · 4
         Pedidos · 25
         Decisões e aprovações · 4
         Moradores e unidades · 8
-        Comunicados e documentos · 17
+        Comunicados e documentos · 18
         Manutenção e prestadores · 16
         Agenda · 9
         Orçamentos e compras · 9
@@ -39,7 +39,7 @@ mindmap
       WhatsApp do condomínio
         WhatsApp do morador · 24
       Participação sem conta
-        Links e QR · 7
+        Links e QR · 9
     Console TRÍADE · 73
       Carteira de clientes · 4
       Implantação · 5
@@ -77,7 +77,7 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Pedidos | AT-01 a 04, 06, 07, 09, 11 a 15, 17, 18, 20, 26, 27, 31 a 33; IA-03, 04, 12, 13, 17 |
 | Decisões e aprovações | V-14; AT-23; IA-08; FC-10 |
 | Moradores e unidades | MU-01, 02, 06 a 11 |
-| Comunicados e documentos | CD-01, 02, 04 a 11, 13 a 15; IA-05 a 07, 21 |
+| Comunicados e documentos | CD-01, 02, 04 a 11, 13 a 15, 17; IA-05 a 07, 21 |
 | Manutenção e prestadores | V-13; MP-01 a 07, 09 a 11, 13, 15 a 18 |
 | Agenda | AG-01 a 09 |
 | Orçamentos e compras | OC-01, 02, 04 a 10 |
@@ -88,7 +88,7 @@ Em que peça está cada ideia. "AT-01 a 04" quer dizer AT-01, AT-02, AT-03 e AT-
 | Memória do prédio | MP-12, 14; CT-02 a 04; IA-09 |
 | Configurações | V-04 a 06, 09; AT-05, 10, 25, 29; CF-01 a 08, 10, 12; NG-21 |
 | WhatsApp do morador | V-07; W-05 a 10, 12, 16, 19, 21, 22; AT-16, 19, 21, 22, 28; CD-03; IA-01, 02, 18; MU-05; FC-04; DR-14 |
-| Links e QR | V-11, 12; AT-30; MP-08; OC-03; PA-06; CD-12 |
+| Links e QR | V-11, 12; AT-30; MP-08; OC-03; PA-06; CD-12, 16, 18 |
 
 **Console TRÍADE**
 
@@ -217,7 +217,7 @@ Quem mora em cada unidade, os contatos autorizados e as mudanças.
 | MU-11 | Lista de unidades com contadores, etiquetas à venda e à locação, busca por nome, telefone e placa | Função |
 | MU-02 | Verificação do vínculo contato ↔ unidade; contato desconhecido não acessa nada restrito | Regra |
 
-#### Comunicados e documentos (17)
+#### Comunicados e documentos (18)
 
 Avisos, regimento, convenção, atas e o arquivo do prédio.
 
@@ -231,6 +231,7 @@ Avisos, regimento, convenção, atas e o arquivo do prédio.
 | CD-13 | Comunicados por e-mail, com e-mail confirmado, link pessoal e "parar de receber" | Função |
 | CD-14 | Documento por e-mail quando pedido, por link que expira | Função |
 | CD-15 | Mural visto do painel, ao vivo e sem contar abertura; o mural em feed e os classificados em vitrine | Aba |
+| CD-17 | Dia, hora e local no aviso com evento: o bloco de data e o destaque do mural, o edital já preenchido e a ficha com "Quando" | Função |
 | IA-05 | Redação de comunicados e avisos | Função |
 | IA-06 | Rascunho de ata a partir de anotações de reunião real | Função |
 | IA-07 | Resumo de documentos longos: orçamento anual, laudos, contratos | Função |
@@ -456,13 +457,15 @@ Tudo o que o morador faz e recebe pelo WhatsApp, sem app e sem senha.
 
 ### Participação sem conta
 
-#### Links e QR (7)
+#### Links e QR (9)
 
 Quem participa sem ter conta: fornecedor, prestador, visitante e etiquetas por local.
 
 | ID | Ideia | Forma |
 |---|---|---|
 | CD-12 | Mural online do prédio: link e QR, sem conta, com os comunicados para todo o condomínio | Função |
+| CD-16 | Novo desde a última visita no mural: a marca fica só no aparelho, ninguém sabe quem abriu | Função |
+| CD-18 | Pôr na agenda pelo mural: o arquivo de calendário do aviso com evento, sem conta | Função |
 | AT-30 | Etiquetas QR por local: QR fixado no elevador, garagem ou hall abre o WhatsApp do condomínio com o local já escrito (… | Função |
 | MP-08 | Check-in e check-out do prestador por QR no local | Função |
 | OC-03 | Link para o fornecedor enviar proposta sem conta, que expira e pode ser revogado (HabitaOne, Cota Todos) | Função |
@@ -780,7 +783,7 @@ Ferramentas do planejamento, guardadas no arquivo.
 | Forma | Ideias |
 |---|---|
 | Aba | 20 |
-| Função | 123 |
+| Função | 126 |
 | Regra | 80 |
 | Aviso | 10 |
 | Configuração | 15 |
