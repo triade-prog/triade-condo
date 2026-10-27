@@ -12,6 +12,7 @@ import {
   type SituacaoProposta, type TemaResposta, custoNaTaxa, fraseDoDestaque, linhaNaTaxa, percentualTexto, taxaTexto, TEXTO_MENOS_DE_CINCO,
   textoCustoComparativo, type CustoNaTaxa,
 } from "@triade/domain";
+import type { ApresentacaoGuardada } from "./apresentacao.ts";
 import { linhasPilotoKit, type Piloto } from "./cliente.ts";
 
 export type Ciclo = "MENSAL" | "ANUAL";
@@ -159,6 +160,10 @@ export interface VersaoProposta extends Condicoes {
   aceite?: { nome: string; cargo: string; em: string; ip?: string; hashVersao?: string; cpfMascarado?: string; anonimizado?: boolean };
   recusa?: { em: string; motivo: string; por?: PessoaRef };
   substituidaEm?: string;
+  /** O que a apresentação usa (0312): a tabela do dia, quem cuida, o escopo e as condições. */
+  apresentacao?: ApresentacaoGuardada;
+  /** Quem vai implantar (0312), para editar o rascunho. */
+  implantador?: PessoaRef;
 }
 
 export interface FichaProposta {
@@ -185,11 +190,18 @@ export interface Sugestao extends Condicoes {
   validoAtePrevisto?: string;
   vagasFundador?: { total: number; ocupadas: number; livres: number };
   avisos: AvisoProposta[];
-  interessado: { id: string; versao?: number; condominio: string; unidades?: number; faixa?: string; pessoa?: string; etapa: EtapaComercial; taxaCondominioMedia?: number };
+  interessado: {
+    id: string; versao?: number; condominio: string; unidades?: number; faixa?: string; pessoa?: string; etapa: EtapaComercial; taxaCondominioMedia?: number;
+    cidade?: string; uf?: string;
+  };
   propostaId?: string | null;
   oferta?: { incluido: string[]; planejado: string[] };
   respostas?: { id: string; tema: TemaResposta; titulo: string }[];
   referencias?: { id: string; sindico: string; condominio: string; unidades?: number; escopo: EscopoReferencia; temCaso?: boolean }[];
+  /** A prévia da apresentação do dia (0312) e quem pode implantar (quadro 456). */
+  apresentacao?: ApresentacaoGuardada;
+  quemFez?: PessoaRef;
+  implantadores?: PessoaRef[];
 }
 
 export interface PropostaPublica extends Condicoes {
@@ -213,6 +225,7 @@ export interface PropostaPublica extends Condicoes {
   podeAceitar: boolean;
   kitDisponivel?: boolean;
   aceite?: { nome: string; cargo: string; em: string; numero: number; hash: string };
+  apresentacao?: ApresentacaoGuardada;
 }
 
 export interface PlanoConcorrente { plano?: string; modelo?: string; preco?: number; porApartamento?: number; fonte?: string; lidoEm?: string }
@@ -471,6 +484,11 @@ export interface ConteudoSindico extends Condicoes {
   enviadaEm?: string;
   hash?: string;
   aceite?: { nome: string; cargo: string; em: string };
+  /** A faixa da versão, para marcar "Seu prédio" na tabela (R17.8). */
+  faixa?: string;
+  validadeDias?: number;
+  /** O que a apresentação usa (0312); nas versões de antes, ausente. */
+  apresentacao?: ApresentacaoGuardada;
 }
 
 const CONDICOES: (keyof Condicoes)[] = ["unidades", "ciclo", "tabela", "mensalTabela", "mensal", "anual", "mesesPagos", "depoisFundador", "fundadorMeses",
@@ -506,6 +524,7 @@ export function conteudoDaVersao(v: VersaoProposta, aosCuidados?: string): Conte
     respostas: respostasDe(v.respostas), referencias: referenciasDe(v.referencias),
     validoAte: v.validoAte, enviadaEm: v.enviadaEm, hash: v.hash,
     aceite: v.aceite ? { nome: v.aceite.nome, cargo: v.aceite.cargo, em: v.aceite.em } : undefined,
+    faixa: v.faixa, validadeDias: v.validadeDias, apresentacao: v.apresentacao,
   };
 }
 
@@ -518,6 +537,7 @@ export function conteudoDoLink(p: PropostaPublica): ConteudoSindico {
     respostas: respostasDe(p.respostas), referencias: referenciasDe(p.referencias),
     validoAte: p.validoAte, enviadaEm: p.enviadaEm, hash: p.hash,
     aceite: p.aceite ? { nome: p.aceite.nome, cargo: p.aceite.cargo, em: p.aceite.em } : undefined,
+    faixa: p.faixa, validadeDias: p.validadeDias, apresentacao: p.apresentacao,
   };
 }
 

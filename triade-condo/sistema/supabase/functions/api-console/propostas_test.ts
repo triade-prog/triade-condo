@@ -26,14 +26,15 @@ const FATO = "3a4b5c6d-7e8f-4a9b-8c0d-1e2f3a4b5c6d";
 const CODIGO = "Qm9hLXByb3Bvc3RhLWRvLUNlcnJhZG8tY29tLTMyLWJ5dGVz";
 const ENTRAR = { email: "carolina@triade.exemplo", senha: "senha-forte-da-equipe" };
 
-function montar() {
+function montar(contas: Record<string, string> = {}) {
   const falso = authFalso([{ id: CAROLINA, email: ENTRAR.email, senha: ENTRAR.senha }]);
   const db = bancoFalso({
     acesso_console: () => true,
     registrar_acesso: () => 1,
     ...limitesFalsos({ login: 5, autenticador: 10, recuperacao: 3, convite: 2, proposta: 3, aceite: 2 }),
     comercial_propostas: () => ({ propostas: [], contagens: {}, podeEditar: true, podeAprovarDesconto: true }),
-    comercial_sugestao_proposta: () => ({ faixa: { codigo: "DE_41_A_100" }, tabela: "FUNDADOR", mensal: 22900, porApartamento: 318 }),
+    comercial_sugestao_proposta: () => ({ faixa: { codigo: "DE_41_A_100" }, tabela: "FUNDADOR", mensal: 22900, porApartamento: 318,
+                                          apresentacao: { equipe: { comercial: { nome: "Carolina" } } } }),
     comercial_criar_proposta: (a) => (a.p_interessado === CERRADO
       ? { id: PROPOSTA, versaoId: VERSAO, numero: 1, situacao: "RASCUNHO", versao: 1 }
       : erroBanco("TC422", { motivo: "PROPOSTA_EXISTE", propostaId: PROPOSTA })),
@@ -63,7 +64,7 @@ function montar() {
     comercial_retirar_fato: () => ({ id: FATO, versao: 3 }),
   });
   const app = criarApiConsole("segredo-de-repasse-de-teste", {
-    banco: db.banco, auth: falso.auth, admin: adminFalso().admin, urlApp: "https://console.exemplo", urlPlataforma: "https://plataforma.exemplo",
+    banco: db.banco, auth: falso.auth, admin: adminFalso(contas).admin, urlApp: "https://console.exemplo", urlPlataforma: "https://plataforma.exemplo",
   });
   return { pedir: pedido(app, "api-console"), ...db };
 }
@@ -76,7 +77,8 @@ async function entrar(m: ReturnType<typeof montar>): Promise<string> {
 const chamada = (m: ReturnType<typeof montar>, funcao: string) => m.chamadas.findLast((c) => c.funcao === funcao)?.args;
 const versaoUrl = `/v1/comercial/propostas/${PROPOSTA}/versoes/${VERSAO}`;
 const dadosVazios = { unidades: null, ciclo: "MENSAL", tabela: null, valorManual: null, valorManualMotivo: null, implantacaoManual: null, desconto: null,
-                      descontoMotivo: null, respostas: [], referencias: [], notaInterna: null, validadeDias: null };
+                      descontoMotivo: null, respostas: [], referencias: [], notaInterna: null, validadeDias: null, implantadorId: null,
+                      emailComercial: null };
 
 Deno.test("0304: as rotas das propostas pedem a sessão completa", async () => {
   const m = montar();
@@ -313,4 +315,26 @@ Deno.test("0307: a lista dos critérios do domínio é a mesma do banco", async 
   }
   assert(!/\bROI\b|retorno/i.test(sql.slice(sql.indexOf("create function comercial_criterios()"), sql.indexOf("create function comercial_criterio_valido"))),
     "EM-07: os textos da TRÍADE não prometem retorno");
+});
+
+Deno.test("0312: quem vai implantar vai para o banco; o e-mail sai da conta e só do domínio da TRÍADE", async () => {
+  const IMPLANTA = "5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e";
+  const fora = montar();
+  const cookieFora = await entrar(fora);
+  await fora.pedir("/v1/comercial/propostas", { cookie: cookieFora, corpo: { interessadoId: CERRADO, implantadorId: IMPLANTA, emailComercial: "eu@trihub.com.br" } });
+  assertEquals(chamada(fora, "comercial_criar_proposta")?.p_dados, { ...dadosVazios, implantadorId: IMPLANTA },
+    "e-mail de fora do domínio não vai, e a tela não manda o e-mail");
+  const sugFora = await (await fora.pedir("/v1/comercial/propostas/sugestao", { cookie: cookieFora, corpo: { interessadoId: CERRADO } })).json();
+  assertEquals(sugFora.apresentacao.equipe.comercial, { nome: "Carolina" });
+  assertEquals((await erro(await fora.pedir("/v1/comercial/propostas", { cookie: cookieFora, corpo: { interessadoId: CERRADO, implantadorId: "Davi" } })))
+    .detalhes?.campos, ["implantadorId"]);
+
+  const m = montar({ "Carolina@TriHub.com.br": CAROLINA });
+  const cookie = await entrar(m);
+  await m.pedir(`/v1/comercial/propostas/${PROPOSTA}/versoes`, { cookie, corpo: { versao: 1, implantadorId: "" } });
+  assertEquals(chamada(m, "comercial_nova_versao")?.p_dados, { ...dadosVazios, emailComercial: "carolina@trihub.com.br" });
+  await m.pedir(versaoUrl, { cookie, metodo: "PUT", corpo: { versao: 2, implantadorId: IMPLANTA } });
+  assertEquals(chamada(m, "comercial_salvar_versao")?.p_dados, { ...dadosVazios, implantadorId: IMPLANTA, emailComercial: "carolina@trihub.com.br" });
+  const sug = await (await m.pedir("/v1/comercial/propostas/sugestao", { cookie, corpo: { interessadoId: CERRADO } })).json();
+  assertEquals(sug.apresentacao.equipe.comercial, { nome: "Carolina", email: "carolina@trihub.com.br" }, "a prévia mostra o e-mail que a versão vai guardar");
 });
