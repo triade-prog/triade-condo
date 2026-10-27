@@ -25,7 +25,8 @@ test.describe("Plataforma · comunicação e vida com banco", () => {
       titulo: "Dedetização das garagens", publicadoEm: new Date(Date.now() - 60 * 86400_000).toISOString() });
     await page.goto(`${PLATAFORMA}/comunicados`);
     const lista = page.getByRole("list", { name: "Comunicados" });
-    await expect(lista.getByRole("listitem")).toHaveCount(2);
+    // Os quatro publicados: a falta de água, a festa, a coleta (há 10 dias) e a dedetização (há 60).
+    await expect(lista.getByRole("listitem")).toHaveCount(4);
 
     await page.getByRole("button", { name: "Filtros" }).click();
     const d = page.getByRole("dialog", { name: "Filtrar comunicados" });
@@ -37,15 +38,16 @@ test.describe("Plataforma · comunicação e vida com banco", () => {
     await d.getByRole("button", { name: "Mostrar comunicados" }).click();
 
     await expect(page).toHaveURL(/de=\d{4}-\d{2}-\d{2}&ate=\d{4}-\d{2}-\d{2}/);
-    await expect(lista.getByRole("listitem")).toHaveCount(1);
+    await expect(lista.getByRole("listitem")).toHaveCount(3);
     await expect(lista).toContainText("Falta de água na quinta");
-    await expect(page.getByText("1 comunicado · últimos 30 dias")).toBeVisible();
+    await expect(lista).not.toContainText("Dedetização das garagens");
+    await expect(page.getByText("3 comunicados · últimos 30 dias")).toBeVisible();
     await expect(page.getByRole("button", { name: "Filtros, 1 em uso" })).toBeVisible();
     await conferir(page);
 
     if (!isMobile) {
       await page.getByRole("button", { name: "Tirar o período" }).click();
-      await expect(lista.getByRole("listitem")).toHaveCount(2);
+      await expect(lista.getByRole("listitem")).toHaveCount(4);
       await expect(page).not.toHaveURL(/de=/);
     }
 

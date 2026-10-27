@@ -30,7 +30,7 @@ test.describe("Plataforma · comunicado pelo WhatsApp", () => {
     await expect(page.getByRole("switch", { name: /Vai pelo WhatsApp do condomínio/ })).toHaveCount(0);
     await page.goto(`${PLATAFORMA}/m/${MURAL_FALSO}`);
     await expect(page.getByRole("heading", { level: 1, name: "Mural do Residencial Ipê" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Receber pelo WhatsApp" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Receber os avisos no WhatsApp" })).toHaveCount(0);
 
     await page.goto(`${PLATAFORMA}/configuracoes/comunicados`);
     const cartao = page.getByRole("region", { name: "Comunicados pelo WhatsApp" });
@@ -142,8 +142,7 @@ test.describe("Plataforma · comunicado pelo WhatsApp", () => {
   test("W-20: o mural e o link pessoal têm o botão que abre o WhatsApp com COMUNICADOS", async ({ page }) => {
     await instalarApiPlataformaFalsa(page, { logado: false, comComunicadosWhatsapp: true });
     await page.goto(`${PLATAFORMA}/m/${MURAL_FALSO}`);
-    await expect(page.getByRole("heading", { name: "Receba os comunicados no WhatsApp" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Receber pelo WhatsApp" })).toHaveAttribute("href", CONVITE);
+    await expect(page.getByRole("link", { name: "Receber os avisos no WhatsApp" })).toHaveAttribute("href", CONVITE);
     await conferir(page);
     await page.goto(`${PLATAFORMA}/c/${LINK_FALSO}`);
     await expect(page.getByRole("heading", { name: "Falta de água na quinta" })).toBeVisible();

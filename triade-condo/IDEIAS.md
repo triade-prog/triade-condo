@@ -152,6 +152,9 @@ Quando uma ideia aparece em mais de uma origem, as marcas se somam. Entre parên
 | CD-13 | **Comunicados por e-mail**: o contato pode ter um e-mail, confirmado por ele num link antes do primeiro envio, e escolhe receber os comunicados também por e-mail. Ao publicar, o e-mail vai para os mesmos destinatários da CD-02 que têm e-mail confirmado, respeitando o horário sem envio do plano de comunicação (CD-11); a tela mostra antes quantos recebem por e-mail e quantos ficam só no grupo ou no mural. Cada e-mail traz o texto, as fotos e um link pessoal para o comunicado (com os arquivos), que deixa de funcionar quando o vínculo com a unidade termina; traz também "parar de receber" em um clique. Correção só reenvia se o síndico pedir, dizendo o que mudou. Sai pelo Resend em nome do condomínio, com respostas indo para quem o síndico indicar; devoluções e marcações de spam desligam aquele e-mail e aparecem para o síndico. O histórico guarda quantos e-mails saíram, voltaram ou foram recusados. Em convocação, o e-mail é prova de envio, não de recebimento, e só vale como convocação formal se a convenção aceitar (CD-10) | [C] (W-18) |
 | CD-14 | **Documento por e-mail quando pedido**: o morador pede pelo mural (CD-12), e depois pelo WhatsApp (CD-03), um documento marcado "pode ir ao morador", e o síndico também pode enviar pela tela do documento. Vai a versão em vigor, por um link que expira em 7 dias e pode ser revogado (CD-04), nunca como anexo solto. Se o e-mail pedido for de um contato com vínculo confirmado, o envio é automático ou passa pela aprovação do síndico, conforme a configuração; se não for, o pedido fica numa fila para o síndico decidir (comprador, imobiliária, advogado). A resposta na tela é sempre neutra ("se o e-mail estiver cadastrado, o documento chega em instantes"), para não revelar quem mora no prédio, e há limite de pedidos por e-mail e por aparelho. Cada envio e cada abertura ficam no histórico do documento | [C] |
 | CD-15 | **Mural visto do painel**: o síndico vê, dentro do painel, o mural como o morador vê pelo link (CD-12), ao vivo. A tela confere de novo sozinha a cada 30 segundos e logo depois de pôr ou tirar um aviso, e ver por ali não conta como abertura do mural. Embaixo de cada aviso, só no painel, ficam abrir a ficha e tirar do mural; ao lado, os comunicados publicados que não aparecem, cada um com o motivo (só para um bloco ou unidade, assunto que começa fora, tirado) e "pôr no mural", e as aberturas do link nos últimos 7 dias. Um cartão no Início mostra as três primeiras coisas do mural. O mural, no link e no painel, é um feed: um cartão por aviso com a foto grande, a enquete aberta fixada no alto e "compartilhar"; os classificados (AC-05) ficam numa vitrine com foto, preço e a página do anúncio. Sem curtidas, comentários nem seguidores, porque o mural não tem conta, e sem nomes ou unidades nos avisos | [C] |
+| CD-16 | **Novo desde a última visita no mural**: o mural (CD-12) guarda só no aparelho do morador a data da última abertura e, na visita seguinte, marca com "Novo" os avisos publicados depois dela e diz quantos são ("3 avisos novos desde a sua última visita, quinta 23/10"). Nada sobe para o servidor: ninguém sabe que a pessoa abriu, e a contagem de aberturas da CD-12 continua sem saber quem foi. Na primeira visita, ou sem nada novo, a linha some | [C] |
+| CD-17 | **Dia, hora e local no aviso com evento**: ao escrever o comunicado (CD-01), o síndico pode marcar quando acontece (o dia é obrigatório para virar evento; hora de início, de fim e local são opcionais), em campos próprios além do texto. O edital da assembleia (AC-02) já nasce com a data da primeira chamada, as duas chamadas e o local. Com o evento, o mural (CD-12) mostra o bloco de data no cartão, escolhe o destaque "O que importa agora" (um só: a assembleia convocada com evento futuro ou, sem ela, o próximo evento) e a ficha do painel mostra "Quando". A correção (CD-01) leva o evento à versão nova | [C] |
+| CD-18 | **Pôr na agenda pelo mural**: todo aviso com evento (CD-17) tem "Pôr na agenda" no mural (CD-12) e no comunicado do link pessoal (CD-13): baixa um arquivo de calendário com o título, o dia, as horas no fuso do condomínio, o local e o texto, e quem abre escolhe o calendário do próprio celular. Sem conta e sem o sistema saber quem baixou | [C] |
 
 ---
 
@@ -530,7 +533,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 2. Canal WhatsApp | 22 |
 | 3. Atendimento | 33 |
 | 4. Inteligência artificial | 20 |
-| 5. Comunicados e documentos | 15 |
+| 5. Comunicados e documentos | 18 |
 | 6. Configuração e ficha | 12 |
 | 7. Moradores e unidades | 11 |
 | 8. Manutenção e prédio | 16 |
@@ -549,7 +552,7 @@ Detalhes, pesquisa e regras de tom em [`transparencia-do-dinheiro.md`](transpare
 | 21. Ferramentas internas | 3 |
 | 22. Transparência do dinheiro | 22 |
 | 23. Comercial TRÍADE | 33 |
-| **Total** | **346** |
+| **Total** | **349** |
 
 ---
 
@@ -763,3 +766,18 @@ Pedido pela Carolina: um painel comercial dentro do Console, com CRM, gerador de
 - Parceiros com comissão calculada no Console e paga fora dele (O.1); consentimento no site e legítimo interesse documentado no registro à mão (P.1).
 - Renovação, cancelamento e expansão ficam no Comercial (Q.1); cadência só cria tarefas (R.1); calculadora pública no site (S.1); contrato-quadro com desconto por volume na Tabela de preços (T.1).
 - Fica para depois: pontuação automática, rodízio entre vendedores, automações livres, registro automático de e-mail e WhatsApp, IA que resume antes da ligação e demonstração autoguiada.
+
+---
+
+## Mural do morador, conceito Janela acesa (26/10/2026)
+
+A Carolina achou o mural do link (CD-12) sem vida, sem identidade e nada intuitivo. A análise na tela e no código, a pesquisa de referências e o agente especialista em design e inovação (`.claude/agents/designer-inovacao.md`) produziram o conceito "Janela acesa" (`docs/design/mural-morador-conceito.md`, com as telas-modelo `mural-morador-celular` e `mural-morador-computador`), aprovado pela Carolina em 26/10/2026 com a frase "o que o prédio precisa saber" e as três ideias novas do feed.
+
+**3 ideias novas:** CD-16 (novo desde a última visita), CD-17 (dia, hora e local no aviso com evento) e CD-18 (pôr na agenda pelo mural). Total de 349 ideias.
+
+**Como conversa com o que já está decidido:**
+- O mural continua sem conta, sem nomes, telefones ou unidades e sem curtidas, comentários ou seguidores (CD-12, CD-15): a marca de "novo" fica só no aparelho e a contagem de aberturas segue sem saber quem abriu.
+- O evento é um dado do comunicado (CD-01), não uma tela nova: o assunto, o título, o texto, as fotos e a correção em versão nova continuam iguais, e a assembleia (AC-02) preenche o evento sozinha.
+- "Pôr na agenda" é um arquivo de calendário, sem integração com nenhum calendário em particular e sem o sistema guardar quem baixou (CD-04, PT-01).
+- Ficam para depois, por decisão: a foto do próprio prédio no topo e a frase do mural trocáveis pelo síndico, e o modo "tela da portaria" (um aviso por tela, para a TV do hall).
+

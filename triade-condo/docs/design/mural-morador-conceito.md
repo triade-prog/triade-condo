@@ -1,8 +1,10 @@
 # Mural do morador: conceito "Janela acesa"
 
-Proposta de 26/10/2026 para a página pública do mural (CD-12, CD-15, AC-03, AC-05, MP-14): a que o morador abre pelo link ou pelo QR do elevador, sem conta nem senha. Substitui o feed atual de `sistema/apps/plataforma/src/telas/publico/Mural.tsx`, `MuralConteudo.tsx` e `comum.tsx`. Aguarda a aprovação da Carolina.
+Proposta de 26/10/2026 para a página pública do mural (CD-12, CD-15, AC-03, AC-05, MP-14): a que o morador abre pelo link ou pelo QR do elevador, sem conta nem senha. Substituiu o feed anterior de `sistema/apps/plataforma/src/telas/publico/Mural.tsx`, `MuralConteudo.tsx` e `comum.tsx`.
 
 Telas-modelo: `telas-modelo/mural-morador-celular.html` (390 px, página inteira) e `telas-modelo/mural-morador-computador.html` (1280 px), com os PNGs ao lado.
+
+**Aprovado pela Carolina em 26/10/2026**, com a frase "o que o prédio precisa saber" e as ideias novas 1 a 3 (CD-16, CD-17 e CD-18 no `IDEIAS.md`); as ideias 4 e 5 ficaram para depois. Construído no D4.40. O que ficou diferente do desenho: as enquetes ficam na coluna principal também no computador; o feed mostra uma foto por aviso (as outras ao abrir); o selo do assunto é a pílula do padrão (DC15), sem a faixa lateral; o destaque que não tem PDF mostra "Ler o aviso" no lugar de "Ler o edital (PDF)".
 
 ## 1. O que a identidade já tem, e o que o mural não usava
 

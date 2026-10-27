@@ -27,7 +27,7 @@ test.describe("Mural online e e-mail", () => {
     await expect(page.getByText("Assembleia geral ordinária")).toHaveCount(0);
     await expect(page.getByText("Ana Souza")).toHaveCount(0);
     await conferir(page);
-    await page.getByRole("link", { name: /Ler tudo/ }).click();
+    await page.getByRole("link", { name: "Ler o aviso: Falta de água na quinta" }).click();
     await expect(page.getByText("Ana, síndica do Residencial Ipê")).toBeVisible();
     await conferir(page);
     await page.getByRole("button", { name: "Voltar ao mural" }).click();

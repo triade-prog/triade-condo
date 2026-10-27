@@ -110,6 +110,31 @@ function publicoCompleto(d: { publico: PublicoComunicado; blocos: string[]; unid
 }
 
 /** Escrever ou mudar o rascunho ou o programado, e decidir o que fazer (CD-01, CD-06). */
+/**
+ * Dia, hora e local do aviso com evento (CD-17): só o dia é obrigatório; o fim pede o início e
+ * vem depois dele. Alimenta o bloco de data, o destaque e o "Pôr na agenda" do mural (CD-18).
+ */
+export const eventoComunicadoSchema = z
+  .object({
+    dia: data,
+    inicio: hora.nullable().optional().transform((v) => v ?? undefined),
+    fim: hora.nullable().optional().transform((v) => v ?? undefined),
+    local: z.string().trim().max(120).nullable().optional().transform((v) => (v ? v : undefined)),
+  })
+  .superRefine((e, ctx) => {
+    if (e.local !== undefined && e.local.length < 2) ctx.addIssue({ code: "custom", path: ["local"], message: "De 2 a 120 caracteres" });
+    if (e.fim && !e.inicio) ctx.addIssue({ code: "custom", path: ["fim"], message: "O fim pede a hora de início" });
+    if (e.fim && e.inicio && e.fim <= e.inicio) ctx.addIssue({ code: "custom", path: ["fim"], message: "O fim vem depois do início" });
+  });
+export interface EventoComunicado {
+  /** AAAA-MM-DD. */
+  dia: string;
+  /** HH:MM. */
+  inicio?: string;
+  fim?: string;
+  local?: string;
+}
+
 export const salvarComunicadoSchema = z
   .object({
     versao: versao.optional(),
@@ -127,6 +152,8 @@ export const salvarComunicadoSchema = z
     porEmail: z.boolean().nullable().optional().transform((v) => v ?? null),
     /** Vai pelo WhatsApp do condomínio a quem aceitou receber por lá (CD-02, W-20). */
     porWhatsapp: z.boolean().nullable().optional().transform((v) => v ?? null),
+    /** O evento do aviso (CD-17); sem ele, o aviso fica sem dia, hora e local. */
+    evento: eventoComunicadoSchema.nullable().optional().transform((v) => v ?? null),
   })
   .superRefine((d, ctx) => {
     publicoCompleto(d, ctx);
