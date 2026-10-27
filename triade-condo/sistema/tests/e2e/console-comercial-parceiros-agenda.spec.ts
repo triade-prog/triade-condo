@@ -249,15 +249,14 @@ test.describe("Console · Taxa média de condomínio (R17.3c)", () => {
   test("o link: com a taxa (Cerrado), o peso nela; sem a taxa (Ipê), só o valor", async ({ page }) => {
     await instalarApiFalsa(page, { logado: false });
     await page.goto(`${CONSOLE}/o/${CODIGO_CERRADO}`);
-    await expect(page.getByText("Menos de R$ 5 por apartamento por mês")).toBeVisible();
+    // Proposta nova (R17.8): o peso na taxa vai na capa e no investimento.
+    await expect(page.getByText("cerca de 0,6% da taxa média de R$ 650,00", { exact: true })).toBeVisible();
     await expect(page.getByText("R$ 3,58 por apartamento, cerca de 0,6% da taxa média de R$ 650,00 que o prédio informou.")).toBeVisible();
-    await expect(page.getByText("cerca de 0,6% de R$ 650,00")).toBeVisible();
     await conferir(page);
 
     await page.goto(`${CONSOLE}/o/${CODIGO_IPE}`);
-    await expect(page.getByText("Menos de R$ 5 por apartamento por mês")).toBeVisible();
-    await expect(page.getByText("R$ 4,03 por apartamento por mês.", { exact: true })).toBeVisible();
-    await expect(page.getByText("Na taxa de condomínio")).toHaveCount(0);
+    await expect(page.getByText("Cerca de R$ 4,03 por apartamento.", { exact: true })).toBeVisible();
+    await expect(page.getByText(/da taxa média/)).toHaveCount(0);
     await conferir(page);
   });
 

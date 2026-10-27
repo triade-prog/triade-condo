@@ -113,6 +113,7 @@ export function criarComercialConsole() {
 
 const CAROLINA_REF = { id: "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f", nome: "Carolina" };
 const BIANCA = { id: "2d9e5b20-0000-4000-8000-00000000bb01", nome: "Bianca" };
+const IMPLANTADORES = [BIANCA, CAROLINA_REF];
 const HASH_IPE = "5d1f".padEnd(64, "c");
 const OFERTA = {
   incluido: ["Todo pedido com responsável, prazo e conclusão explicada", "Comunicados, documentos e mural do prédio por link", "Agenda, manutenção e prestadores"],
@@ -126,6 +127,26 @@ const FAIXAS: [string, string, number, number | null, { fundador: number; cheia:
   ["DE_201_A_400", "201 a 400 unidades", 201, 400, { fundador: 44900, cheia: 59900, implantacao: 150000 }],
   ["ACIMA_DE_400", "Acima de 400 unidades", 401, null, null],
 ];
+
+/** O que a versão guarda para a apresentação (0312): a Tabela inteira, a equipe, o escopo e as condições. */
+function apresentacaoFalsa(hoje: string, implantador: { nome: string } | null): Json {
+  return {
+    tabela: { em: hoje, mesesPagos: 11, parcelas: 3, vagasFundador: 5,
+      faixas: FAIXAS.map(([codigo, nome, de, ate, v]) => ({ codigo, nome, de, ...(ate ? { ate } : {}), sobConsulta: !v,
+        ...(v ? { fundador: v.fundador, cheia: v.cheia, implantacao: v.implantacao } : {}) })) },
+    equipe: { comercial: { nome: BIANCA.nome, email: "bianca@trihub.com.br" }, ...(implantador ? { implantacao: { nome: implantador.nome } } : {}) },
+    escopo: {
+      incluido: [
+        { titulo: "Solicitações organizadas", texto: "Todo pedido com responsável, prazo e conclusão explicada." },
+        { titulo: "Comunicação com moradores", texto: "Comunicados, documentos e mural do prédio por link." },
+        { titulo: "Agenda e manutenção", texto: "Agenda, manutenção e prestadores em um só lugar." },
+        { titulo: "Implantação acompanhada", texto: "Configuração e reunião presencial em Brasília." },
+      ],
+      naoIncluido: ["Serviços de administradora", "Obras e reparos", "Cobrança de taxas"],
+    },
+    condicoes: { cancelamentoDias: 30, avisoReajusteDias: 30 },
+  };
+}
 
 function somarDias(data: string, dias: number): string {
   const d = new Date(`${data}T12:00:00Z`);
@@ -318,6 +339,7 @@ function sugerir(p: ComercialConsole, i: Json, c: Json): Json {
       ...(taxaDaFicha(i) ? { taxaCondominioMedia: taxaDaFicha(i) } : {}) }, propostaId: proposta?.id ?? null,
     respostas: p.respostas.filter((r) => r.revisada && r.ativa).map((r) => ({ id: r.id, tema: r.tema, titulo: r.titulo })),
     referencias: p.referencias.filter((r) => !r.retirada).map((r) => ({ id: r.id, sindico: r.sindico, condominio: r.condominio, unidades: r.unidades, escopo: r.escopo })),
+    apresentacao: apresentacaoFalsa(p.hoje, null), quemFez: BIANCA, implantadores: IMPLANTADORES,
   };
   const ciclo = c.ciclo === "ANUAL" ? "ANUAL" : "MENSAL";
   const unidades = (c.unidades as number | null) ?? (i.unidades as number | undefined) ?? null;
@@ -381,6 +403,8 @@ function montarVersao(p: ComercialConsole, i: Json, c: Json, extra: Json): Json 
     validadeDias: (c.validadeDias as number | null) ?? 15, notaInterna: c.notaInterna ?? undefined, valorManualMotivo: c.valorManualMotivo ?? undefined,
     descontoSituacao: "SEM", _pct: c.desconto ?? null, _motivo: c.descontoMotivo ?? null, aberturas: { total: 0, aparelhos: 0 },
     pedeAprovacao: !!c.desconto || s.tabela === "MANUAL",
+    implantador: IMPLANTADORES.find((x) => x.id === c.implantadorId) ?? undefined,
+    apresentacao: apresentacaoFalsa(p.hoje, IMPLANTADORES.find((x) => x.id === c.implantadorId) ?? null),
     criadoEm: new Date().toISOString(), criadoPor: BIANCA, ...extra,
   };
 }
@@ -407,7 +431,7 @@ function propostaPublica(p: ComercialConsole, x: Proposta, v: Json): Json {
   const i = p.interessados.find((y) => y.id === x.interessadoId) ?? {};
   const pegar = ["numero", "condominio", "cidade", "uf", "faixa", "unidades", "ciclo", "tabela", "moeda", "mensalTabela", "mensal", "anual", "mesesPagos", "depoisFundador",
     "fundadorMeses", "implantacaoSemCusto", "implantacao", "implantacaoParcelas", "porApartamento", "premissas", "incluido", "planejado", "validadeDias", "validoAte", "hash",
-    "enviadaEm"];
+    "enviadaEm", "apresentacao"];
   const aceite = v.aceite as Json | undefined;
   return {
     ...Object.fromEntries(pegar.filter((k) => v[k] !== undefined).map((k) => [k, v[k]])), versao: v.numero, situacao: situacaoDe(v, p.hoje),
