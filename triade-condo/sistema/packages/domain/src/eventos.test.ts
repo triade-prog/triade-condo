@@ -54,4 +54,15 @@ describe("repasse ao revogar (0297; CF-05, MP-01)", () => {
     expect(descreverEvento({ acao: "pessoa.repasse", entidade: "vinculo", dados: { pedidos: { para: null, quantidade: 0 } } }))
       .toBe("Repasse ao revogar · nada em aberto");
   });
+  it("conta as pendências, quem executa e as decisões (0316; D4.37)", () => {
+    expect(descreverEvento({ acao: "pessoa.repasse", entidade: "vinculo", dados: {
+      pendencias: { para: "x", quantidade: 2 }, execucoes: { para: "y", manutencoes: 1, preventivas: 0, providencias: 1 },
+      decisoes: { para: "s", quantidade: 1, despesas: 2 } } }))
+      .toBe("Repasse ao revogar · 2 pendências passaram para quem assumiu · quem executa 1 manutenção, 1 providência: quem assumiu · 1 decisão e 2 despesas para o síndico decidir");
+    expect(descreverEvento({ acao: "pessoa.repasse", entidade: "vinculo", dados: { execucoes: { para: null, manutencoes: 1, preventivas: 0, providencias: 0 } } }))
+      .toBe("Repasse ao revogar · 1 manutenção sem quem executa");
+    expect(descreverEvento({ acao: "sindico.repasse", entidade: "vinculo", dados: {
+      atendimento: true, padrao: true, pedidos: { para: "n", quantidade: 3 }, ausencia: true } }))
+      .toBe("Repasse na troca de síndico · entrou em quem atende, como responsável padrão · 3 pedidos passaram para quem assumiu · a ausência marcada se encerrou");
+  });
 });

@@ -407,6 +407,10 @@ export function descreverEventoPedido(acao: string, d: Record<string, unknown>):
       return `Pendência aberta · ${nomeDe(TIPOS_PENDENCIA, d.tipo)}`;
     case "pedido.pendencia_resolvida":
       return `Pendência resolvida · ${nomeDe(TIPOS_PENDENCIA, d.tipo)}`;
+    case "pedido.pendencia_repassada":
+      return comMotivo(`Pendência passou a outro responsável · ${nomeDe(TIPOS_PENDENCIA, d.tipo)}`);
+    case "pedido.decisao_repassada":
+      return comMotivo("Decisão passou a outra pessoa");
     case "pedido.arquivo_enviado":
       return `Arquivo enviado no ${nomeDe(PARTES_ARQUIVO, d.parte).toLowerCase()}: ${String(d.arquivoNome ?? "")}`;
     case "pedido.arquivo_recusado":
