@@ -447,6 +447,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   LIMITE_ARQUIVOS_ORCAMENTO: "Já há 10 arquivos aqui. Tire um antes de enviar outro.",
   // Pelo link do fornecedor.
   REVOGADO: "O condomínio cancelou este link.",
+  VENCIDO: "Este link venceu. Peça um novo ao condomínio.",
   JA_RESPONDEU: "Você já respondeu a este convite.",
   PRAZO_PROPOSTAS_ACABOU: "O prazo para mandar propostas acabou.",
   SEM_PEDIDO_DE_CONFIRMACAO: "O condomínio não pediu a confirmação do preço.",

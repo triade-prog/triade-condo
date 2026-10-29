@@ -5,7 +5,7 @@
 -- ficam registradas. Um segundo orçamento mostra o prestador que nasce da cotação e o cancelamento;
 -- um terceiro, o link que vence. O relógio começa numa segunda-feira, 26/10/2026, às 09:00.
 begin;
-select plan(182);
+select plan(194);
 
 create function pg_temp.em(p timestamptz) returns void language sql as $$ select ajustar_relogio(p - now()) $$;
 select pg_temp.em('2026-10-26 09:00:00-03');
@@ -453,6 +453,48 @@ select pg_temp.em('2026-12-06 09:00:00-03');
 select is((select publico_orcamento(pg_temp.cod('L')) ->> 'estado'), 'PRAZO_ACABOU', 'OC-03: passado o prazo sem proposta, o link diz que acabou');
 select pg_temp.em('2027-01-10 09:00:00-03');
 select is((select publico_orcamento(pg_temp.cod('L')) ->> 'motivo'), 'VENCIDO', 'OC-03: 30 dias depois do prazo, o link vence');
+select is(pg_temp.motivo($$ select publico_recusar_orcamento(pg_temp.cod('L'), 'Não faço mais muro') $$), 'VENCIDO', 'OC-03: o link vencido também não age');
+
+-- ---------------------------------------------------------------------------------------
+-- O quarto orçamento (revisão): o fornecedor aceita, o conselho recusa e a escolha volta; o aceite
+-- antigo sai junto, a nova escolha pede aceite de novo e segue para a compra.
+
+create temp table o4r as select plataforma_criar_orcamento(bruna, ipe, 'Troca do portão', 'Motor do portão da garagem', 'Garagem', 'SERVICO', null, null, 300000,
+  '2027-01-15 18:00-03', 15, '[{"nome": "Portões Rocha", "celular": "61999990006", "canal": "WHATSAPP"},
+                              {"nome": "Portal Norte", "celular": "61999990007", "canal": "WHATSAPP"}]', true) as r from ids, c;
+create temp table o4 as select (r ->> 'id')::uuid as o4 from o4r;
+select pg_temp.guardar('R', r -> 'links' -> 0 ->> 'codigo'), pg_temp.guardar('N', r -> 'links' -> 1 ->> 'codigo') from o4r;
+select publico_enviar_proposta(pg_temp.cod('R'), 250000, true, 0, null, '5 dias', null, '2027-03-30', null, 'Motor e instalação', null, null);
+select publico_enviar_proposta(pg_temp.cod('N'), 280000, true, 0, null, '5 dias', null, '2027-01-20', null, 'Motor e instalação', null, null);
+select plataforma_fechar_propostas(bruna, ipe, o4, pg_temp.vo(o4)) from ids, c, o4;
+create temp table p4 as select p.id as p4 from propostas_orcamento p join convites_orcamento k on k.id = p.convite_id where k.nome = 'Portões Rocha';
+select plataforma_escolher_proposta(gil, ipe, o4, pg_temp.vo(o4), p4, null, 'CONSELHO') from ids, c, o4, p4;
+select is((select publico_aceitar_orcamento(pg_temp.cod('R'), 'Rui Rocha') ->> 'estado'), 'ACEITA', 'OC-01: o escolhido aceita pelo link antes do conselho');
+select plataforma_retirar_despesa(gil, ipe, d.id, d.versao, 'Vamos decidir sem o conselho') from ids, c, o4, despesas_aprovacao d where d.orcamento_id = o4;
+select is((select estado from orcamentos, o4 where id = o4) || ' ' || (select count(*) from convites_orcamento, o4 where orcamento_id = o4 and aceite_em is not null),
+  'COMPARANDO 0', 'OC-01: a despesa retirada devolve a comparar e o aceite antigo sai junto');
+select is((select publico_orcamento(pg_temp.cod('R')) ->> 'estado'), 'ENVIADA', 'OC-03: o link não mostra mais o aceite de uma escolha que caiu');
+select is((select plataforma_escolher_proposta(gil, ipe, o4, pg_temp.vo(o4), p4, null, 'PESSOA') ->> 'estado' from ids, c, o4, p4), 'ESCOLHIDA',
+  'OC-01: escolhe de novo, agora sem o conselho');
+select is((select publico_aceitar_orcamento(pg_temp.cod('R'), 'Rui Rocha') ->> 'estado'), 'ACEITA', 'OC-01: a nova escolha pede aceite de novo');
+select is((select estado from orcamentos, o4 where id = o4), 'COMPRANDO', 'OC-01: aprovada e aceita, segue para a compra');
+select is(pg_temp.motivo($$ select plataforma_revogar_convite(bruna, ipe, o4, k.id, 'Depois da escolha') from ids, c, o4, convites_orcamento k where k.nome = 'Portal Norte' $$),
+  'ORCAMENTO_FECHADO', 'OC-04: depois da escolha os convites não mudam');
+
+-- A proposta vencida muito depois do prazo: o link da confirmação vale a partir do pedido.
+select pg_temp.em('2027-03-01 09:00:00-03');
+select is(pg_temp.motivo($$ select publico_recusar_orcamento(pg_temp.cod('N'), 'Sem agenda') $$), 'VENCIDO', 'OC-03: o link do não escolhido venceu');
+create temp table o5r as select plataforma_criar_orcamento(bruna, ipe, 'Limpeza da caixa d''água', 'Limpeza e laudo', 'Cobertura', 'SERVICO', null, null, 100000,
+  '2027-03-05 18:00-03', 15, '[{"nome": "Águas Limpas", "celular": "61999990008", "canal": "WHATSAPP"}]', true) as r from ids, c;
+create temp table o5 as select (r ->> 'id')::uuid as o5, (select k.id from convites_orcamento k where k.orcamento_id = (r ->> 'id')::uuid) as k5 from o5r;
+select pg_temp.guardar('A', r -> 'links' -> 0 ->> 'codigo') from o5r;
+select publico_enviar_proposta(pg_temp.cod('A'), 90000, true, 0, null, '1 dia', null, '2027-03-10', null, 'Limpeza e laudo', null, null);
+select plataforma_fechar_propostas(bruna, ipe, o5, pg_temp.vo(o5)) from ids, c, o5;
+select pg_temp.em('2027-05-01 09:00:00-03');
+select is((select publico_orcamento(pg_temp.cod('A')) ->> 'motivo'), 'VENCIDO', 'OC-04: a proposta e o link venceram');
+select pg_temp.guardar('A', plataforma_pedir_confirmacao_preco(bruna, ipe, o5, k5) -> 'link' ->> 'codigo') from ids, c, o5;
+select is((select publico_orcamento(pg_temp.cod('A')) ->> 'estado'), 'CONFIRMAR_PRECO', 'OC-04: o link da confirmação abre para confirmar o preço');
+select lives_ok($$ select publico_confirmar_preco(pg_temp.cod('A'), '2027-06-01') $$, 'OC-04: e o fornecedor confirma');
 
 -- ---------------------------------------------------------------------------------------
 -- Isolamento (PT-01) e retenção (PT-11).

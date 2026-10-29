@@ -88,7 +88,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await conferir(page);
   });
 
-  test("OC-02: Novo orçamento nasce da manutenção, convida do cadastro e de fora, sobe a foto, e a janela Mandar convite abre o WhatsApp com a mensagem ou copia o link", async ({ page }) => {
+  test("OC-01/OC-03: Novo orçamento nasce da manutenção, convida do cadastro e de fora, sobe a foto, e a janela Mandar convite abre o WhatsApp com a mensagem ou copia o link", async ({ page }) => {
     test.slow();
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true });
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => undefined);
@@ -177,7 +177,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await conferir(page);
   });
 
-  test("OC-02: Guardar sem mandar cria o rascunho; os convidados ficam guardados e Mandar os convites leva a Pedindo propostas", async ({ page }) => {
+  test("OC-01: Guardar sem mandar cria o rascunho; os convidados ficam guardados e Mandar os convites leva a Pedindo propostas", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true });
     await page.goto(`${PLATAFORMA}/orcamentos/novo`);
     await page.getByLabel("O que é").fill("Pintura da fachada");
@@ -214,7 +214,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await expect(page.getByRole("button", { name: "Mandar os convites" })).toHaveCount(0);
   });
 
-  test("OC-02/OC-04: a ficha mostra os convites e os links, o que chegou, a regra e os dados; Ver proposta, Pedir confirmação do preço e Estender o prazo", async ({ page }) => {
+  test("OC-03/OC-04: a ficha mostra os convites e os links, o que chegou, a regra e os dados; Ver proposta, Pedir confirmação do preço e Estender o prazo", async ({ page }) => {
     test.slow();
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true, comAprovacoes: true });
     const o = bomba(estado);
@@ -283,7 +283,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await expect(page.getByRole("region", { name: "Propostas recebidas" })).toContainText("o prazo vai até 20/12, 18h; dá para comparar o que já chegou");
   });
 
-  test("OC-02: Reenviar troca o link e o antigo para; Revogar para na hora e quem foi revogado volta por Convidar mais; Cancelar guarda tudo em Cancelados", async ({ page }) => {
+  test("OC-03/OC-04: Reenviar troca o link e o antigo para; Revogar para na hora e quem foi revogado volta por Convidar mais; Cancelar guarda tudo em Cancelados", async ({ page }) => {
     test.slow();
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true });
     const o = pintura(estado);
@@ -361,7 +361,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await conferir(page);
   });
 
-  test("OC-04: Comparar põe as propostas lado a lado com as diferenças marcadas, as versões e a nota do menor total; Escolher pede o motivo e manda ao conselho", async ({ page }) => {
+  test("OC-02/OC-04/OC-06: Comparar põe as propostas lado a lado com as diferenças marcadas, as versões e a nota do menor total; Escolher pede o motivo e manda ao conselho", async ({ page }) => {
     test.slow();
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true, comAprovacoes: true });
     const o = bomba(estado);
@@ -448,7 +448,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await conferir(page);
   });
 
-  test("OC-04: abaixo do mínimo a regra avisa e deixa comparar assim mesmo; com o prazo fechado, convidar mais pede estender; a escolha sem o conselho vale com o motivo", async ({ page }) => {
+  test("OC-05: abaixo do mínimo a regra avisa e deixa comparar assim mesmo; com o prazo fechado, convidar mais pede estender; a escolha sem o conselho vale com o motivo", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true, comAprovacoes: true });
     const o = bomba(estado);
     o.convites[1]!.estado = "REVOGADO";
@@ -488,7 +488,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await expect(page.getByText("Esperando o aceite do fornecedor").first()).toBeVisible();
   });
 
-  test("OC-06/OC-07: Acompanhamento registra o aceite fora do link, a compra com a ordem de serviço já preenchida e a entrega; o resumo para os moradores vai para o comunicado", async ({ page }) => {
+  test("OC-01/OC-10: Acompanhamento registra o aceite fora do link, a compra com a ordem de serviço já preenchida e a entrega; o resumo para os moradores vai para o comunicado", async ({ page }) => {
     test.slow();
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true, comAprovacoes: true });
     const o = extintores(estado);
@@ -579,7 +579,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await expect(page.getByLabel("Texto")).toHaveValue(/Comparamos 2 orçamentos e escolhemos o da Fogo Zero \(R\$ 980\)\./);
   });
 
-  test("OC-05: a planilha comparativa sai numa folha A4 com o pedido, as propostas, a decisão e os anexos; Baixar em PDF imprime", async ({ page }) => {
+  test("OC-07: a planilha comparativa sai numa folha A4 com o pedido, as propostas, a decisão e os anexos; Baixar em PDF imprime", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true, comAprovacoes: true });
     const o = bomba(estado);
     await page.addInitScript(() => { (window as unknown as { impresso: number }).impresso = 0; window.print = () => { (window as unknown as { impresso: number }).impresso += 1; }; });
@@ -616,7 +616,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await expect(folha).toContainText("Escolhida a proposta de HidroPress Bombas, R$ 6.480,00, por Ana Souza em 16/10/2026. Motivo: Inclui a retirada da bomba velha e 12 meses de garantia");
   });
 
-  test("OC-10: Configurações › Decisões e conselho traz as Regras dos orçamentos: as faixas, o que fazer abaixo do mínimo e os prazos; Guardar grava", async ({ page }) => {
+  test("OC-05: Configurações › Decisões e conselho traz as Regras dos orçamentos: as faixas, o que fazer abaixo do mínimo e os prazos; Guardar grava", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true, comAprovacoes: true });
     await page.goto(`${PLATAFORMA}/configuracoes/decisoes`);
     await expect(page.getByRole("heading", { level: 2, name: "Regras dos orçamentos" })).toBeVisible();

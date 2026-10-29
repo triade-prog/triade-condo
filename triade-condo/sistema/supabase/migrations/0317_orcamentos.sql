@@ -1237,6 +1237,7 @@ begin
   if c.orcamento_id <> o.id then raise exception 'Convite não encontrado' using errcode = 'TC404'; end if;
   if c.estado = 'REVOGADO' then perform recusar_motivo('Este link já foi revogado', 'CONVITE_REVOGADO'); end if;
   if c.escolhido then perform recusar_motivo('É o convite escolhido: desfaça a escolha antes', 'CONVITE_ESCOLHIDO'); end if;
+  if o.estado not in ('RASCUNHO', 'PEDINDO', 'COMPARANDO') then perform recusar_motivo('Depois da escolha os convites não mudam', 'ORCAMENTO_FECHADO'); end if;
   v_motivo := exigir_motivo(p_motivo);
   perform transicao_orcamento('REVOGADO', v_motivo);
   update convites_orcamento set estado = 'REVOGADO', revogado_em = app_now(), revogado_por = p_pessoa, revogado_motivo = v_motivo where id = c.id;
@@ -1310,6 +1311,8 @@ begin
   if not found then perform recusar_motivo('Este fornecedor ainda não mandou proposta', 'SEM_PROPOSTA'); end if;
   if not proposta_vencida(p) then perform recusar_motivo('A proposta ainda vale: não precisa confirmar', 'PROPOSTA_VALE'); end if;
   update propostas_orcamento set confirmacao_pedida_em = app_now() where id = p.id;
+  -- O link da confirmação vale a partir de agora, mesmo com o prazo das propostas fechado há tempo.
+  update convites_orcamento set expira_em = greatest(expira_em, app_now()) where id = c.id returning * into c;
   perform registrar_historico('orcamento.confirmacao_pedida', 'orcamentos', o.id::text, jsonb_build_object('convite', c.id, 'proposta', p.id));
   return jsonb_build_object('link', mandar_convite(c, p_pessoa));
 end $$;
@@ -1638,7 +1641,9 @@ begin
     update orcamentos set estado = 'COMPARANDO', proposta_escolhida_id = null, motivo_escolha = null, escolhida_em = null, escolhida_por = null,
                           quem_aprova = null, aprovada_em = null, despesa_id = null, fechamento_visto_em = null
      where id = o.id;
-    update convites_orcamento set escolhido = false, resultado_avisado_em = null where orcamento_id = o.id and (escolhido or resultado_avisado_em is not null);
+    -- O aceite era da escolha que caiu: sai junto (fica no histórico), para a próxima escolha pedir aceite de novo.
+    update convites_orcamento set escolhido = false, resultado_avisado_em = null, aceite_em = null, aceite_nome = null, aceite_fora_do_link = false
+     where orcamento_id = o.id and (escolhido or resultado_avisado_em is not null or aceite_em is not null);
     perform retirar_anexos_do_orcamento(new.id, coalesce(contexto_pessoa(), o.cuidador_id), 'A despesa do orçamento foi ' || lower(new.estado));
     perform registrar_historico('orcamento.recusada', 'orcamentos', o.id::text,
       jsonb_strip_nulls(jsonb_build_object('despesa', new.id, 'estado', new.estado, 'justificativa', coalesce(new.justificativa, new.retirada_motivo))));
@@ -2021,6 +2026,10 @@ begin
   l := exigir_convite_por_codigo(c);
   if l.estado = 'REVOGADO' then perform recusar_motivo('O condomínio cancelou este link', 'REVOGADO'); end if;
   if c.revogado_em is not null then perform recusar_motivo('Um link novo foi mandado e este parou', 'LINK_TROCADO'); end if;
+  -- A mesma regra de estado_link_orcamento: fora o escolhido, o link vence dias depois do prazo.
+  if not l.escolhido and app_now() > l.expira_em + make_interval(days => (select orcamento_link_dias from configuracao_condominio)) then
+    perform recusar_motivo('Este link venceu: peça um novo ao condomínio', 'VENCIDO');
+  end if;
   perform conferir_orcamento(exigir_orcamento(l.orcamento_id));
   select * into l from convites_orcamento where id = l.id for update;
   return l;
@@ -2162,7 +2171,8 @@ begin
   if p_tipo is null or p_tipo <> 'application/pdf' then perform recusar_motivo('A proposta vai em PDF', 'PROPOSTA_SO_PDF'); end if;
   if p_tamanho is null or p_tamanho < 1 then perform recusar_campos('Arquivo vazio', 'tamanho'); end if;
   if p_tamanho > 10485760 then perform recusar_motivo('Arquivo com mais de 10 MB', 'ARQUIVO_GRANDE'); end if;
-  if (select count(*) from arquivos_orcamento where convite_id = l.id and retirado_em is null) >= 10 then perform recusar_motivo('Já há 10 arquivos', 'LIMITE_ARQUIVOS_ORCAMENTO'); end if;
+  if (select count(*) from arquivos_orcamento where convite_id = l.id and retirado_em is null
+       and (situacao = 'LIBERADO' or (situacao = 'ENVIANDO' and enviado_em > app_now() - interval '1 hour'))) >= 10 then perform recusar_motivo('Já há 10 arquivos', 'LIMITE_ARQUIVOS_ORCAMENTO'); end if;
   v_caminho := l.condominio_id || '/orcamentos/' || o.id || '/' || v_id;
   insert into arquivos_orcamento (id, condominio_id, orcamento_id, convite_id, parte, nome, tipo, tamanho_declarado, caminho)
   values (v_id, l.condominio_id, o.id, l.id, 'PROPOSTA', btrim(p_nome), p_tipo, p_tamanho, v_caminho);

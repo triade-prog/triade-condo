@@ -607,6 +607,7 @@ export async function rotasOrcamentos(route: Route, e: EstadoOrcamentos, x: Cont
     if (r[4] === "revogar") {
       if (c.estado === "REVOGADO") return motivo(route, "CONVITE_REVOGADO");
       if (c.escolhido) return motivo(route, "CONVITE_ESCOLHIDO");
+      if (!["RASCUNHO", "PEDINDO", "COMPARANDO"].includes(o.estado)) return motivo(route, "ORCAMENTO_FECHADO");
       if (texto("motivo").length < 3) return campos(route, "motivo");
       c.estado = "REVOGADO"; c.revogado = { em: AGORA, motivo: texto("motivo") }; c.versao++;
       hist(o, "orcamento.revogado", `Link de ${c.nome} revogado`, "neutro");
