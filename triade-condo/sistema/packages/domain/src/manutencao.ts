@@ -309,8 +309,14 @@ export function descreverEventoManutencao(acao: string, d: Record<string, unknow
       if (d.preventiva) return `Aberta pela preventiva, para ${mostrarDataCurta(String(d.dataPrevista))}`;
       if (d.origem) return "Aberta a partir de um item da vistoria";
       return `Registrada como ${TIPOS_MANUTENCAO[d.tipo as TipoManutencao]?.toLowerCase() ?? "manutenção"}`;
-    case "manutencao.alterada":
+    case "manutencao.alterada": {
+      const campos = Array.isArray(d.campos) ? d.campos.map(String) : [];
+      const motivo = d.motivo ? `. Motivo: ${String(d.motivo)}` : "";
+      if (campos.includes("executor")) return `${d.para ? "Quem executa passou a outra pessoa" : "Ficou sem quem executa"}${motivo}`;
+      if (campos.includes("providencia")) return `${d.para ? "Quem executa a providência passou a outra pessoa" : "Providência ficou sem quem executa"}${motivo}`;
+      if (campos.includes("responsavel") && d.motivo) return `Responsável passou a outra pessoa${motivo}`;
       return "Dados alterados";
+    }
     case "manutencao.retorno_mudou":
       return d.para ? "Próximo retorno mudou" : "Próximo retorno tirado";
     case "manutencao.previsao_mudou":

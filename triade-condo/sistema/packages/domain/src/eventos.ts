@@ -141,7 +141,9 @@ export function descreverEvento(e: EventoHistorico): string {
     case "pessoa.revogada":
       return d.pendente ? "Acesso revogado · responsável padrão ficou pendente" : "Acesso revogado";
     case "pessoa.repasse":
-      return descreverRepasse(d);
+      return descreverRepasse(d, "Repasse ao revogar");
+    case "sindico.repasse":
+      return descreverRepasse(d, "Repasse na troca de síndico");
     case "atendimento.alterado":
       return "Responsáveis pelo atendimento alterados";
     case "estrutura.alterada":
@@ -226,11 +228,15 @@ export function mostrarTelefone(e164: string | null | undefined): string {
   return m ? `+55 ${m[1]} ${m[2]}-${m[3]}` : e164;
 }
 
-/** O que passou para quem assumiu ao revogar o acesso (0297; CF-05, MP-01). Sem nomes: o histórico guarda só ids. */
-function descreverRepasse(d: Record<string, unknown>): string {
+/**
+ * O que passou para quem assumiu ao revogar o acesso ou trocar o síndico (0297 e 0316; CF-05, MP-01,
+ * AT-11, AT-23). Sem nomes: o histórico guarda só ids.
+ */
+function descreverRepasse(d: Record<string, unknown>, titulo: string): string {
   const n = (v: unknown) => Number(v ?? 0);
   const plural = (q: number, um: string, varios: string) => `${q} ${q === 1 ? um : varios}`;
   const partes: string[] = [];
+  if (d.atendimento) partes.push(d.padrao ? "entrou em quem atende, como responsável padrão" : "entrou em quem atende");
   const p = d.pedidos as { para?: string | null; quantidade?: number } | undefined;
   if (p && n(p.quantidade) > 0) {
     partes.push(p.para
@@ -243,5 +249,21 @@ function descreverRepasse(d: Record<string, unknown>): string {
       n(m.preventivas) ? plural(n(m.preventivas), "preventiva", "preventivas") : null].filter(Boolean);
     partes.push(`${itens.join(" e ")} com quem assumiu`);
   }
-  return partes.length ? `Repasse ao revogar · ${partes.join(" · ")}` : "Repasse ao revogar · nada em aberto";
+  const pe = d.pendencias as { quantidade?: number } | undefined;
+  if (pe && n(pe.quantidade) > 0) partes.push(`${plural(n(pe.quantidade), "pendência passou", "pendências passaram")} para quem assumiu`);
+  const x = d.execucoes as { para?: string | null; manutencoes?: number; preventivas?: number; providencias?: number } | undefined;
+  if (x && n(x.manutencoes) + n(x.preventivas) + n(x.providencias) > 0) {
+    const itens = [n(x.manutencoes) ? plural(n(x.manutencoes), "manutenção", "manutenções") : null,
+      n(x.preventivas) ? plural(n(x.preventivas), "preventiva", "preventivas") : null,
+      n(x.providencias) ? plural(n(x.providencias), "providência", "providências") : null].filter(Boolean);
+    partes.push(x.para ? `quem executa ${itens.join(", ")}: quem assumiu` : `${itens.join(", ")} sem quem executa`);
+  }
+  const dc = d.decisoes as { quantidade?: number; despesas?: number } | undefined;
+  if (dc && n(dc.quantidade) + n(dc.despesas) > 0) {
+    const itens = [n(dc.quantidade) ? plural(n(dc.quantidade), "decisão", "decisões") : null,
+      n(dc.despesas) ? plural(n(dc.despesas), "despesa", "despesas") : null].filter(Boolean);
+    partes.push(`${itens.join(" e ")} para o síndico decidir`);
+  }
+  if (d.ausencia) partes.push("a ausência marcada se encerrou");
+  return partes.length ? `${titulo} · ${partes.join(" · ")}` : `${titulo} · nada em aberto`;
 }
