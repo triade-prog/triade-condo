@@ -6,7 +6,7 @@
 
 import { useState, type FormEvent } from "react";
 import { CANAIS_CONVITE, type CanalConvite } from "@triade/domain";
-import { AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, classeBotao, Dialogo, Icone, textoDoErro, type ErroApi } from "@triade/ui";
+import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, classeBotao, Dialogo, Icone, textoDoErro, type ErroApi } from "@triade/ui";
 import { Caixa, Escolha } from "../moradores/comum.tsx";
 import { diaHoraPrazo, enderecoWhatsapp, linkDoConvite, NOTA_CONVITE } from "./comum.tsx";
 import type { LinkConvite, OpcoesOrcamento } from "./tipos.ts";
@@ -159,8 +159,10 @@ export function JanelaConvites({ links, titulo, prazo, aoFechar }: { links: Link
 }
 
 /** Convidar mais (quadro 474): os mesmos cartões, só para quem ainda não foi convidado. */
-export function JanelaConvidarMais({ aberto, orcamentoId, o, jaConvidados, aoFechar, convidados }: {
-  aberto: boolean; orcamentoId: string; o: OpcoesOrcamento | null; jaConvidados: string[]; aoFechar: () => void; convidados: (links: LinkConvite[]) => void;
+export function JanelaConvidarMais({ aberto, orcamentoId, o, jaConvidados, aoFechar, convidados, prazoFechado }: {
+  aberto: boolean; orcamentoId: string; o: OpcoesOrcamento | null; jaConvidados: string[]; aoFechar: () => void; convidados: (links: LinkConvite[], quantos: number) => void;
+  /** O prazo fechou: a API só convida de novo depois de estender (PRAZO_FECHADO). */
+  prazoFechado?: () => void;
 }) {
   const [valor, setValor] = useState<Convidados>(SEM_CONVIDADOS);
   const [erro, setErro] = useState<ErroApi | null>(null);
@@ -177,12 +179,21 @@ export function JanelaConvidarMais({ aberto, orcamentoId, o, jaConvidados, aoFec
     const r = await chamarApi<{ versao: number; links: LinkConvite[] }>(`/v1/condominio/orcamentos/${orcamentoId}/convites`, { corpo: { convites: convitesParaApi(valor, o!) } });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
+    const quantos = totalConvidados(valor);
     setValor(SEM_CONVIDADOS);
-    convidados(r.dados.links);
+    convidados(r.dados.links, quantos);
   }
   return (
     <Dialogo aberto={aberto} titulo="Convidar mais" aoFechar={fechar} media apoio="Cada convidado recebe um link só dele">
-      {aberto && o ? (
+      {aberto && prazoFechado ? (
+        <div className="grid gap-4">
+          <Aviso tom="atencao">O prazo das propostas fechou. Para convidar mais fornecedores, estenda o prazo antes: o convite novo vale até o prazo novo.</Aviso>
+          <div className="flex flex-wrap justify-end gap-2 max-md:flex-col-reverse">
+            <Botao variante="contorno" onClick={fechar}>Cancelar</Botao>
+            <Botao onClick={() => { fechar(); prazoFechado(); }}><Icone nome="relogio" />Estender o prazo</Botao>
+          </div>
+        </div>
+      ) : aberto && o ? (
         <form onSubmit={enviar} noValidate className="grid gap-4">
           {erro && !camposComErro(erro).length ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
           <EscolherConvidados o={o} valor={valor} mudar={setValor} jaConvidados={jaConvidados} prefixo="mais" erro={falta ?? (camposComErro(erro).length ? "Confira os convidados: o nome e o contato de cada um." : null)} />

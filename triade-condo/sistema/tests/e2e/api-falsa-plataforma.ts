@@ -459,7 +459,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       categoria: (id: string) => c.categorias.find((x) => x.id === id)!.nome });
     const votaNoConselho = naDecisao.ganchos?.minhaVotacao;
     // R8: o orçamento lê a alçada e o conselho da R5 e, ao mandar ao conselho, vira uma despesa para aprovar.
-    const noOrcamento: ContextoOrcamentos = { eu, pode, sindico: quem === "SINDICA", alcada: () => aprovacoes.regras.alcada,
+    const noOrcamento: ContextoOrcamentos = { eu, pode, sindico: quem === "SINDICA", cargo: quem === "SINDICA" ? "Síndica" : quem === "SECRETARIA" ? "Secretária" : "Conselheiro",
+      alcada: () => aprovacoes.regras.alcada, gravarAlcada: (v) => { aprovacoes.regras.alcada = v; },
       conselho: () => ({ podePedir: aprovacoes.ligado && aprovacoes.membros.length > 0, titulares: aprovacoes.membros.length }),
       manutencoes: () => manutencao.manutencoes.filter((m) => !MANUTENCAO_FECHADA.includes(m.estado)).map((m) => ({ id: m.id, titulo: m.titulo, local: m.local })),
       pedidos: () => estado.pedidos.filter((p) => PEDIDO_ABERTO.includes(p.estado)).map((p) => ({ id: p.id, numero: p.protocolo, titulo: p.assunto })),
@@ -488,7 +489,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
           mesFechado: MES_FECHADO,
         } : {}),
         ...(acoes().includes("manutencao.ver") ? { manutencao: resumoManutencao(manutencao) } : {}),
-        ...(acoes().includes("orcamentos.ver") ? { orcamentos: resumoOrcamentos(orcamentos) } : {}),
+        ...(acoes().includes("orcamentos.ver") ? { orcamentos: resumoOrcamentos(orcamentos, acoes().includes("orcamentos.decidir")) } : {}),
         ...(acoes().includes("portaria.ver") ? { portaria: resumoPortaria(portaria) } : {}),
         ...(acoes().includes("comunicados.ver") || acoes().includes("documentos.ver") ? { comunicados: resumoComunicados(comunicados, pode) } : {}),
         ...(acoes().includes("documentos.ver") ? { memoria: { prontuario: resumoProntuario(memoria) } } : {}),

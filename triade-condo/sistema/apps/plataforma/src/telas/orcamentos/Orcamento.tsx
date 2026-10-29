@@ -130,12 +130,11 @@ export function FichaOrcamento() {
                   {p ? <p className="t-texto">{linhaDoTotal(p)} · {textoValidade(p)}{p.vencida && p.confirmacaoPedidaEm ? <> · <Selo tom="andamento">Pedido em {ddmm(p.confirmacaoPedidaEm)} · esperando</Selo></> : null}</p> : null}
                   {p?.vencida && !p.confirmacaoPedidaEm && !decidido ? <p className="t-apoio">Para escolher esta, o fornecedor precisa confirmar o preço pelo link. Se ele mandar outro valor, entra como versão {c.versoes + 1}.</p> : null}
                   {c.estado === "RECUSOU" ? <p className="t-texto">Recusou{c.recusaMotivo ? `: ${c.recusaMotivo}` : ""}{c.recusouEm ? ` · ${ddmm(c.recusouEm.slice(0, 10))}` : ""}<span className="block t-apoio">Ele não recebe lembretes. A recusa conta como resposta, mas não como proposta para o mínimo.</span></p> : null}
-                  {c.estado === "REVOGADO" ? <p className="t-apoio">O link parou na hora{c.revogado ? ` (${ddmm(c.revogado.em.slice(0, 10))}: ${c.revogado.motivo})` : ""}. {p ? "A proposta que já tinha chegado continua guardada e marcada “link revogado”." : "Nenhuma proposta tinha chegado."}</p> : null}
+                  {c.estado === "REVOGADO" ? <p className="t-apoio">O link parou na hora{c.revogado ? ` (${ddmm(c.revogado.em.slice(0, 10))}: ${c.revogado.motivo})` : ""}. {p ? "A proposta que já tinha chegado continua guardada e marcada “link revogado”." : "Nenhuma proposta tinha chegado."}{d.pode.convidar ? " Para chamar de novo, use Convidar mais: sai um convite novo." : ""}</p> : null}
                   <div className="flex flex-wrap gap-2">
                     {p ? <Botao variante="contorno" tamanho="m" onClick={() => setVendo(c)} aria-label={`Ver proposta de ${c.nome}`}><Icone nome="olho" />Ver proposta</Botao> : null}
                     {p?.vencida && !p.confirmacaoPedidaEm && d.pode.convidar && !decidido ? <Botao variante="secundario" tamanho="m" onClick={() => void pedirConfirmacao(c)} aria-label={`Pedir confirmação do preço a ${c.nome}`}>Pedir confirmação do preço</Botao> : null}
-                    {c.estado === "REVOGADO" && d.pode.convidar ? <Botao variante="secundario" tamanho="m" onClick={() => void reenviar(c)} aria-label={`Mandar link novo para ${c.nome}`}><Icone nome="link" />Mandar link novo</Botao> : null}
-                    {c.estado !== "REVOGADO" && c.estado !== "RECUSOU" && d.pode.convidar && !c.escolhido ? <Botao variante="discreto" tamanho="m" onClick={() => void reenviar(c)} aria-label={`Reenviar link para ${c.nome}`}><Icone nome="link" />Reenviar link</Botao> : null}
+                    {c.estado !== "REVOGADO" && c.estado !== "RECUSOU" && (o.estado === "PEDINDO" ? d.pode.convidar && !c.escolhido : o.estado === "ESCOLHIDA" && c.escolhido && d.pode.aceiteFora) ? <Botao variante="discreto" tamanho="m" onClick={() => void reenviar(c)} aria-label={`Reenviar link para ${c.nome}`}><Icone nome="link" />Reenviar link</Botao> : null}
                     {c.estado !== "REVOGADO" && c.estado !== "RECUSOU" && d.pode.convidar && !c.escolhido ? <Botao variante="discreto" tamanho="m" onClick={() => setRevogando(c)} aria-label={`Revogar link de ${c.nome}`}><Icone nome="fechar" />Revogar link</Botao> : null}
                   </div>
                 </div>
@@ -296,8 +295,12 @@ export function FichaOrcamento() {
       )}
       <p className="t-apoio">{NOTA_RODAPE}</p>
 
-      <JanelaConvidarMais aberto={janela === "convidar"} orcamentoId={o.id} o={o_} jaConvidados={d.convites.map((c) => c.prestadorId).filter((x): x is string => !!x)}
-        aoFechar={() => setJanela(null)} convidados={(l) => { depois(l.length === 1 ? "1 convite mandado." : `${l.length} convites mandados.`); if (l.some((x) => x.envio === "COPIAR" || x.envio === "EMAIL")) setLinks(l); }} />
+      <JanelaConvidarMais aberto={janela === "convidar"} orcamentoId={o.id} o={o_} jaConvidados={d.convites.filter((c) => c.estado !== "REVOGADO").map((c) => c.prestadorId).filter((x): x is string => !!x)}
+        prazoFechado={o.estado === "COMPARANDO" ? () => setJanela("estender") : undefined}
+        aoFechar={() => setJanela((j) => (j === "convidar" ? null : j))} convidados={(l, n) => {
+          if (o.estado === "RASCUNHO") return depois(n === 1 ? "1 convidado guardado. O convite sai quando você mandar." : `${n} convidados guardados. Os convites saem quando você mandar.`);
+          depois(l.length === 1 ? "1 convite mandado." : `${l.length} convites mandados.`); if (l.some((x) => x.envio === "COPIAR" || x.envio === "EMAIL")) setLinks(l);
+        }} />
       <JanelaConvites links={links} titulo={o.titulo} prazo={o.prazoPropostas} aoFechar={() => setLinks(null)} />
       <JanelaEditar o={o} aberto={janela === "editar"} aoFechar={() => setJanela(null)} salvo={depois} recarregar={carga.recarregar} />
       <JanelaEstender o={o} aberto={janela === "estender"} aoFechar={() => setJanela(null)} salvo={depois} />

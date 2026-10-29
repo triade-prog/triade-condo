@@ -14,6 +14,8 @@ const FOTO = { name: "Parede do hall.jpg", mimeType: "image/jpeg", buffer: Buffe
 const celular = () => test.info().project.name === "celular";
 
 async function conferir(page: Page) {
+  // Depois de uma navegação no cliente, o Next troca o título um instante depois: espera ele chegar.
+  await expect(page).toHaveTitle(/\S/);
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(r.violations).toEqual([]);
   const texto = await page.locator("body").innerText();
@@ -137,14 +139,15 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await expect(janela).toBeVisible();
     const corpo = ultimo(estado, /POST \/v1\/condominio\/orcamentos$/)!;
     expect(corpo).toMatchObject({ titulo: "Troca da bomba de recalque 2", manutencaoId: manutencao.id, local: "Casa de bombas · Bomba 2", valorEstimado: 650000, tipo: "SERVICO", validadeMinimaDias: 15, mandar: true });
-    expect(corpo.convites).toEqual([{ prestadorId: estado.orcamentos.prestadores[0]!.id }, { prestadorId: estado.orcamentos.prestadores[1]!.id }, { nome: "Águia Hidráulica", canal: "WHATSAPP", celular: "61981234567", email: null }]);
+    expect(corpo.convites).toEqual([{ prestadorId: estado.orcamentos.prestadores[0]!.id, canal: "WHATSAPP" }, { prestadorId: estado.orcamentos.prestadores[1]!.id, canal: "EMAIL" }, { nome: "Águia Hidráulica", canal: "WHATSAPP", celular: "61981234567", email: null }]);
     const novo = estado.orcamentos.orcamentos[0]!;
     expect(novo.arquivos.map((a) => [a.nome, a.situacao])).toEqual([["Parede do hall.jpg", "LIBERADO"]]);
     await expect(janela).toContainText("Um link só para este fornecedor, sem conta");
     await expect(janela).toContainText("Convite 1 de 2");
     await expect(janela.getByRole("definition").filter({ hasText: "HidroPress Bombas" })).toBeVisible();
     const mensagem = janela.getByLabel("Mensagem pronta");
-    await expect(mensagem).toHaveValue(/Olá, aqui é Ana Souza, síndica do Residencial Ipê\. Queremos um orçamento para troca da bomba de recalque 2\./);
+    await expect(mensagem).toHaveValue(/Olá, aqui é Ana Souza, Síndica do Residencial Ipê\. Queremos um orçamento para troca da bomba de recalque 2\./);
+    expect(novo.convites[0]!.codigo).toHaveLength(43);
     await expect(mensagem).toHaveValue(new RegExp(`${PLATAFORMA}/o/${novo.convites[0]!.codigo}`));
     await expect(janela.getByText("Sai do seu WhatsApp, com o seu número. Você pode mudar o texto.")).toBeVisible();
     await expect(janela.getByText("O mesmo prazo das propostas")).toBeVisible();
@@ -152,7 +155,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await expect(janela.getByText("Nunca vê quem mais foi convidado nem os preços dos outros.", { exact: false })).toBeVisible();
     const abrir = janela.getByRole("link", { name: "Abrir o WhatsApp com a mensagem" });
     await expect(abrir).toHaveAttribute("target", "_blank");
-    expect(await abrir.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/5561981230001\?text=Ol%C3%A1%2C%20aqui%20%C3%A9%20Ana%20Souza/);
+    expect(await abrir.getAttribute("href")).toMatch(/^https:\/\/wa\.me\/\?text=Ol%C3%A1%2C%20aqui%20%C3%A9%20Ana%20Souza/);
     await conferir(page);
     await janela.getByRole("group", { name: "Mandar por" }).getByRole("button", { name: "Copiar o link" }).click();
     await expect(janela.getByLabel("Link de HidroPress Bombas")).toHaveText(`${PLATAFORMA}/o/${novo.convites[0]!.codigo}`);
@@ -161,7 +164,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await janela.getByRole("button", { name: "Próximo convidado" }).click();
     await expect(janela).toContainText("Convite 2 de 2");
     await expect(janela.getByRole("definition").filter({ hasText: "Águia Hidráulica" })).toBeVisible();
-    expect(await janela.getByRole("link", { name: "Abrir o WhatsApp com a mensagem" }).getAttribute("href")).toMatch(/^https:\/\/wa\.me\/5561981234567\?text=/);
+    expect(await janela.getByRole("link", { name: "Abrir o WhatsApp com a mensagem" }).getAttribute("href")).toMatch(/^https:\/\/wa\.me\/\?text=Ol%C3%A1/);
     await expect(janela.getByText("Pelo e-mail: Bombas Brasília. Esses já foram.")).toBeVisible();
     await janela.getByRole("button", { name: "Pronto" }).click();
 
@@ -174,7 +177,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await conferir(page);
   });
 
-  test("OC-02: Guardar sem mandar cria o rascunho sem convites", async ({ page }) => {
+  test("OC-02: Guardar sem mandar cria o rascunho; os convidados ficam guardados e Mandar os convites leva a Pedindo propostas", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true });
     await page.goto(`${PLATAFORMA}/orcamentos/novo`);
     await page.getByLabel("O que é").fill("Pintura da fachada");
@@ -189,6 +192,26 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await expect(page.getByText("Rascunho").first()).toBeVisible();
     await expect(page.getByText("Ninguém convidado ainda. O orçamento só começa quando os convites saem.")).toBeVisible();
     await conferir(page);
+
+    // No rascunho, Convidar mais só guarda; Mandar os convites (POST /mandar) leva a Pedindo propostas.
+    const novo = estado.orcamentos.orcamentos[0]!;
+    await page.getByRole("button", { name: "Convidar mais" }).first().click();
+    const mais = page.getByRole("dialog", { name: "Convidar mais" });
+    await mais.getByRole("checkbox", { name: /HidroPress Bombas/ }).check();
+    await mais.getByRole("button", { name: "Mandar os convites" }).click();
+    await expect(recado(page, "1 convidado guardado. O convite sai quando você mandar.")).toBeVisible();
+    expect(novo.convites[0]!.mandadoEm).toBeNull();
+    await expect(page.getByText("Guardado sem mandar. Os convites saem quando você mandar; cada convidado recebe um link só dele.")).toBeVisible();
+    await conferir(page);
+    await page.getByRole("button", { name: "Mandar os convites" }).click();
+    const janela = page.getByRole("dialog", { name: "Mandar convite" });
+    await expect(janela.getByRole("definition").filter({ hasText: "HidroPress Bombas" })).toBeVisible();
+    expect(ultimo(estado, /\/mandar$/)).toEqual({ versao: 2 });
+    await expect(janela.getByLabel("Mensagem pronta")).toHaveValue(new RegExp(`${PLATAFORMA}/o/${novo.convites[0]!.codigo}`));
+    await janela.getByRole("button", { name: "Pronto" }).click();
+    await expect(recado(page, "1 convite mandado.")).toBeVisible();
+    await expect(page.getByText("Pedindo propostas").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mandar os convites" })).toHaveCount(0);
   });
 
   test("OC-02/OC-04: a ficha mostra os convites e os links, o que chegou, a regra e os dados; Ver proposta, Pedir confirmação do preço e Estender o prazo", async ({ page }) => {
@@ -219,7 +242,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await expect(resumo).toContainText("Mínimo da regra: 3 · todas chegaram antes de 14/10, 15h");
     await expect(resumo.getByRole("link", { name: "Comparar propostas" })).toHaveAttribute("href", `/orcamentos/${o.id}/comparar`);
     const dados = page.getByRole("region", { name: "Dados" });
-    await expect(dados).toContainText("Ana Souza, síndica");
+    await expect(dados).toContainText("Ana Souza");
     await expect(dados).toContainText("Manutenção · Bomba de recalque com ruído");
     await expect(dados).toContainText("14/10/2026, 15h · fechado");
     await expect(dados).toContainText("Acima de R$ 3.000: 3 propostas e o conselho aprova");
@@ -260,84 +283,81 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await expect(page.getByRole("region", { name: "Propostas recebidas" })).toContainText("o prazo vai até 20/12, 18h; dá para comparar o que já chegou");
   });
 
-  test("OC-02: Reenviar troca o link e o antigo para; Revogar para na hora e Mandar link novo reabre; Convidar mais; Cancelar guarda tudo em Cancelados", async ({ page }) => {
+  test("OC-02: Reenviar troca o link e o antigo para; Revogar para na hora e quem foi revogado volta por Convidar mais; Cancelar guarda tudo em Cancelados", async ({ page }) => {
     test.slow();
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true });
-    const o = bomba(estado);
-    const aguia = o.convites[2]!;
-    const codigoAntigo = aguia.codigo;
+    const o = pintura(estado);
+    const lima = o.convites[0]!;
+    const codigoAntigo = lima.codigo;
     await page.goto(`${PLATAFORMA}/orcamentos/${o.id}`);
-    const linha = page.getByRole("list", { name: "Convidados" }).getByRole("listitem").filter({ hasText: "Águia Hidráulica" });
-    await linha.getByRole("button", { name: "Reenviar link para Águia Hidráulica" }).click();
-    await expect(recado(page, "Link novo de Águia Hidráulica pronto. O anterior parou na hora.")).toBeVisible();
+    const linha = page.getByRole("list", { name: "Convidados" }).getByRole("listitem").filter({ hasText: "Pinturas Lima" });
+    await linha.getByRole("button", { name: "Reenviar link para Pinturas Lima" }).click();
+    await expect(recado(page, "Link novo de Pinturas Lima pronto. O anterior parou na hora.")).toBeVisible();
     const janela = page.getByRole("dialog", { name: "Mandar convite" });
-    await expect(janela.getByRole("definition").filter({ hasText: "Águia Hidráulica" })).toBeVisible();
-    expect(aguia.codigo).not.toBe(codigoAntigo);
-    await expect(janela.getByLabel("Mensagem pronta")).toHaveValue(new RegExp(`/o/${aguia.codigo}`));
+    await expect(janela.getByRole("definition").filter({ hasText: "Pinturas Lima" })).toBeVisible();
+    expect(lima.codigo).not.toBe(codigoAntigo);
+    expect(lima.codigo).toHaveLength(43);
+    await expect(janela.getByLabel("Mensagem pronta")).toHaveValue(new RegExp(`/o/${lima.codigo}`));
     await janela.getByRole("button", { name: "Pronto" }).click();
+    await page.goto(`${PLATAFORMA}/o/${codigoAntigo}`);
+    await expect(page.getByRole("heading", { name: "Este link não vale mais" })).toBeVisible();
+    await expect(page.getByText("Um link novo foi mandado e este parou. Ele não abre mais. Se recebeu um link novo, use o novo.")).toBeVisible();
+    await conferir(page);
+    await page.goto(`${PLATAFORMA}/orcamentos/${o.id}`);
 
-    // Revogar um link (quadro 485): para na hora; a proposta que já tinha chegado continua guardada.
-    await linha.getByRole("button", { name: "Revogar link de Águia Hidráulica" }).click();
+    // Revogar um link (quadro 485): para na hora; para chamar de novo, um convite novo.
+    await linha.getByRole("button", { name: "Revogar link de Pinturas Lima" }).click();
     const revogar = page.getByRole("dialog", { name: "Revogar um link" });
     await revogar.getByRole("button", { name: "Revogar o link" }).click();
     await expect(revogar.getByText("Escreva o motivo (3 a 500 caracteres).")).toBeVisible();
     await revogar.getByLabel("Por que revogar").fill("Mandou o link para outra pessoa");
     await conferir(page);
     await revogar.getByRole("button", { name: "Revogar o link" }).click();
-    await expect(recado(page, "Link de Águia Hidráulica revogado. Ele parou na hora.")).toBeVisible();
+    await expect(recado(page, "Link de Pinturas Lima revogado. Ele parou na hora.")).toBeVisible();
     expect(ultimo(estado, /\/revogar$/)).toEqual({ motivo: "Mandou o link para outra pessoa" });
     await expect(linha).toContainText("Link revogado");
-    await expect(linha).toContainText("A proposta que já tinha chegado continua guardada e marcada “link revogado”.");
+    await expect(linha).toContainText("Nenhuma proposta tinha chegado. Para chamar de novo, use Convidar mais: sai um convite novo.");
+    await expect(linha.getByRole("button", { name: /Reenviar link/ })).toHaveCount(0);
     await expect(page.getByText("3 convidados · cada um com um link só dele")).toBeVisible();
     await conferir(page);
 
-    // Pelo link: o antigo parou; o revogado diz que foi cancelado pelo condomínio.
-    await page.goto(`${PLATAFORMA}/o/${codigoAntigo}`);
-    await expect(page.getByRole("heading", { name: "Este link não vale mais" })).toBeVisible();
-    await expect(page.getByText("Um link novo foi mandado e este parou. Ele não abre mais. Se recebeu um link novo, use o novo.")).toBeVisible();
-    await conferir(page);
-    await page.goto(`${PLATAFORMA}/o/${aguia.codigo}`);
+    // Pelo link: o revogado diz que foi cancelado pelo condomínio (o antigo também, pois o convite foi revogado).
+    await page.goto(`${PLATAFORMA}/o/${lima.codigo}`);
     await expect(page.getByRole("heading", { name: "Este link foi cancelado pelo condomínio" })).toBeVisible();
     await expect(page.getByText("O condomínio cancelou este link. Ele não abre mais. Se recebeu um link novo, use o novo.")).toBeVisible();
     await conferir(page);
 
-    // Mandar link novo reabre o convite; Convidar mais chama quem ainda não foi.
+    // Convidar mais chama quem ainda não foi.
     await page.goto(`${PLATAFORMA}/orcamentos/${o.id}`);
-    await linha.getByRole("button", { name: "Mandar link novo para Águia Hidráulica" }).click();
-    await expect(recado(page, "Link novo de Águia Hidráulica pronto.")).toBeVisible();
-    await page.getByRole("dialog", { name: "Mandar convite" }).getByRole("button", { name: "Pronto" }).click();
-    await expect(linha).toContainText("Mandou a proposta · versão 1");
     await page.getByRole("button", { name: "Convidar mais" }).click();
     const mais = page.getByRole("dialog", { name: "Convidar mais" });
-    await expect(mais.getByRole("checkbox", { name: /HidroPress Bombas/ })).toHaveCount(0);
     await mais.getByRole("button", { name: "Mandar os convites" }).click();
     await expect(mais.getByText("Marque pelo menos um convidado.")).toBeVisible();
     await mais.getByRole("checkbox", { name: /Elétrica Central/ }).check();
     await conferir(page);
     await mais.getByRole("button", { name: "Mandar os convites" }).click();
     await expect(recado(page, "1 convite mandado.")).toBeVisible();
-    expect(ultimo(estado, /\/convites$/)).toEqual({ convites: [{ prestadorId: estado.orcamentos.prestadores[2]!.id }] });
+    expect(ultimo(estado, /\/convites$/)).toEqual({ convites: [{ prestadorId: estado.orcamentos.prestadores[2]!.id, canal: "WHATSAPP" }] });
     await page.getByRole("dialog", { name: "Mandar convite" }).getByRole("button", { name: "Pronto" }).click();
-    await expect(page.getByText("5 convidados · cada um com um link só dele")).toBeVisible();
+    await expect(page.getByText("4 convidados · cada um com um link só dele")).toBeVisible();
 
     // Cancelar o orçamento: nada é apagado.
     await maisAcoes(page, "Cancelar o orçamento");
     const cancelar = page.getByRole("dialog", { name: "Cancelar o orçamento" });
-    await cancelar.getByLabel("Por que cancelar").fill("A bomba foi consertada pela equipe");
+    await cancelar.getByLabel("Por que cancelar").fill("A pintura ficou para o ano que vem");
     await cancelar.getByRole("button", { name: "Cancelar o orçamento" }).click();
     await expect(recado(page, "Orçamento cancelado. Os fornecedores são avisados no link.")).toBeVisible();
+    expect(ultimo(estado, /\/cancelar$/)).toEqual({ versao: o.versao - 1, motivo: "A pintura ficou para o ano que vem" });
     await expect(page.getByText("Cancelado em 16/10/2026")).toBeVisible();
     await expect(page.getByText("Nada é apagado: as propostas, as versões e o histórico ficam em Cancelados, e os fornecedores são avisados no link.")).toBeVisible();
-    await page.getByRole("button", { name: "Mais ações" }).click();
-    await expect(page.getByRole("group", { name: "Mais ações" }).getByRole("button", { name: "Cancelar o orçamento" })).toHaveCount(0);
-    await expect(page.getByRole("group", { name: "Mais ações" }).getByRole("button", { name: "Estender o prazo" })).toHaveCount(0);
-    await page.keyboard.press("Escape");
+    // Cancelado e sem proposta, não sobra ação: nem estender, nem cancelar de novo.
+    await expect(page.getByRole("button", { name: "Mais ações" })).toHaveCount(0);
     await conferir(page);
     await page.goto(`${PLATAFORMA}/orcamentos?filtro=CANCELADOS`);
-    await expect(page.getByRole("region", { name: "Orçamentos" }).getByRole("link", { name: /Troca da bomba de recalque 2/ })).toContainText("Cancelado em 16/10");
-    await page.goto(`${PLATAFORMA}/o/${o.convites[0]!.codigo}`);
+    await expect(page.getByRole("region", { name: "Orçamentos" }).getByRole("link", { name: /Pintura do hall da Torre A/ })).toContainText("Cancelado em 16/10");
+    await page.goto(`${PLATAFORMA}/o/${o.convites[1]!.codigo}`);
     await expect(page.getByRole("heading", { name: "O condomínio cancelou este pedido de orçamento" })).toBeVisible();
-    await expect(page.getByText("Motivo: A bomba foi consertada pela equipe")).toBeVisible();
+    await expect(page.getByText("Obrigado por participar. O condomínio não vai seguir com este pedido; se precisar de novo, manda outro convite.")).toBeVisible();
     await conferir(page);
   });
 
@@ -406,7 +426,9 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await expect(escolher.getByText("Obrigatório quando não é a mais barata (mínimo 20 letras)")).toBeVisible();
     await expect(escolher.getByRole("radio", { name: /O conselho/ })).toBeChecked();
     await expect(escolher.getByText("Passa da alçada de R$ 3.000. Vira uma despesa para aprovar em Decisões, com as 3 propostas e a planilha")).toBeVisible();
-    await expect(escolher.getByText("Escolha sem o conselho: a alçada só avisa, não bloqueia")).toBeVisible();
+    // A faixa acima de R$ 3.000 pede o conselho: decidir sozinha fica desligado (a alçada sozinha só avisaria).
+    await expect(escolher.getByRole("radio", { name: /Ana Souza, síndica/ })).toBeDisabled();
+    await expect(escolher.getByText("A regra do condomínio pede o conselho acima de R$ 3.000")).toBeVisible();
     await expect(escolher.getByText("Aprovar não é contratar nem pagar. Depois do sim, o fornecedor confirma pelo link e você registra a compra e a entrega.")).toBeVisible();
     await escolher.getByRole("button", { name: "Mandar para o conselho" }).click();
     await expect(escolher.getByText("Escreva o motivo da escolha, com pelo menos 20 letras.")).toBeVisible();
@@ -414,7 +436,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await conferir(page);
     await escolher.getByRole("button", { name: "Mandar para o conselho" }).click();
     await expect(page).toHaveURL(new RegExp(`/orcamentos/${o.id}$`));
-    expect(ultimo(estado, /\/escolher$/)).toMatchObject({ propostaId: o.convites[2]!.propostas[0]!.id, motivo: "Inclui a revisão do quadro elétrico e dá 24 meses de garantia.", quemAprova: "CONSELHO" });
+    expect(ultimo(estado, /\/escolher$/)).toEqual({ versao: 1, propostaId: o.convites[2]!.propostas[0]!.id, motivo: "Inclui a revisão do quadro elétrico e dá 24 meses de garantia.", quemAprova: "CONSELHO" });
     await expect(recado(page, "Proposta de Águia Hidráulica mandada ao conselho como despesa para aprovar.")).toBeVisible();
     await expect(page.getByText("Esperando o conselho").first()).toBeVisible();
     await expect(page.getByRole("tab", { name: "Acompanhamento" })).toHaveAttribute("aria-selected", "true");
@@ -426,15 +448,23 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await conferir(page);
   });
 
-  test("OC-04: abaixo do mínimo a regra avisa e deixa comparar assim mesmo; a escolha sem o conselho vale com o motivo", async ({ page }) => {
+  test("OC-04: abaixo do mínimo a regra avisa e deixa comparar assim mesmo; com o prazo fechado, convidar mais pede estender; a escolha sem o conselho vale com o motivo", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true, comAprovacoes: true });
     const o = bomba(estado);
     o.convites[1]!.estado = "REVOGADO";
+    // Nesta faixa quem aprova é o síndico: a alçada só avisa e a escolha pode ser sem o conselho.
+    estado.orcamentos.regras.faixas[2]!.quemAprova = "SINDICO";
     await page.goto(`${PLATAFORMA}/orcamentos/${o.id}`);
     const resumo = page.getByRole("region", { name: "Propostas recebidas" });
     await expect(resumo).toContainText("Chegaram 2 propostas; a regra pede 3 acima de R$ 3.000.");
     await expect(resumo.getByRole("button", { name: "Estender o prazo" })).toBeVisible();
-    await expect(resumo.getByRole("button", { name: "Convidar mais" })).toBeVisible();
+    await resumo.getByRole("button", { name: "Convidar mais" }).click();
+    const mais = page.getByRole("dialog", { name: "Convidar mais" });
+    await expect(mais.getByText("O prazo das propostas fechou. Para convidar mais fornecedores, estenda o prazo antes: o convite novo vale até o prazo novo.")).toBeVisible();
+    await conferir(page);
+    await mais.getByRole("button", { name: "Estender o prazo" }).click();
+    await expect(page.getByRole("dialog", { name: "Estender o prazo" })).toBeVisible();
+    await page.getByRole("dialog", { name: "Estender o prazo" }).getByRole("button", { name: "Cancelar" }).click();
     await conferir(page);
     await resumo.getByRole("link", { name: "Comparar assim mesmo" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Comparar propostas" })).toBeVisible();
@@ -454,7 +484,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await conferir(page);
     await escolher.getByRole("button", { name: "Escolher esta proposta" }).click();
     await expect(recado(page, "Proposta de HidroPress Bombas escolhida. O fornecedor confirma pelo link; depois você registra a compra.")).toBeVisible();
-    expect(ultimo(estado, /\/escolher$/)).toMatchObject({ propostaId: o.convites[0]!.propostas[0]!.id, quemAprova: "PESSOA" });
+    expect(ultimo(estado, /\/escolher$/)).toMatchObject({ versao: 1, propostaId: o.convites[0]!.propostas[0]!.id, quemAprova: "PESSOA" });
     await expect(page.getByText("Esperando o aceite do fornecedor").first()).toBeVisible();
   });
 
@@ -515,13 +545,20 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await page.goto(`${PLATAFORMA}/orcamentos/${o.id}`);
     await expect(etapas.getByRole("listitem").filter({ hasText: "Registrar a compra" })).toContainText("Comprada em 16/10/2026 · R$ 980,00 · igual à proposta");
     await expect(etapas.getByRole("listitem").filter({ hasText: "Registrar a compra" }).getByRole("link", { name: "Criar ordem de serviço" })).toBeVisible();
+    // A nota fiscal entra no orçamento como anexo de parte NOTA_FISCAL.
+    await expect(etapas.getByText("Nota fiscal: anexar quando chegar")).toBeVisible();
+    await etapas.getByLabel("Anexar a nota fiscal").setInputFiles({ name: "NF 1234.pdf", mimeType: "application/pdf", buffer: PDF.buffer });
+    await expect(recado(page, "Nota fiscal anexada.")).toBeVisible();
+    expect(ultimo(estado, /\/anexos$/)).toEqual({ parte: "NOTA_FISCAL", nome: "NF 1234.pdf", tipo: "application/pdf", tamanho: PDF.buffer.length });
+    await expect(etapas.getByText("Nota fiscal: NF 1234.pdf")).toBeVisible();
+    await expect(etapas.getByLabel("Anexar a nota fiscal")).toHaveCount(0);
     const entrega = etapas.getByRole("form", { name: "Registrar a entrega" });
     await entrega.getByLabel("Data da entrega").fill("2026-10-16");
     await entrega.getByRole("checkbox", { name: "Recebido em parte" }).check();
     await entrega.getByLabel("Observação").fill("Faltam 2 extintores do subsolo");
     await entrega.getByRole("button", { name: "Registrar a entrega" }).click();
     await expect(recado(page, "Entrega parcial registrada em 16/10/2026.")).toBeVisible();
-    expect(ultimo(estado, /\/entrega$/)).toEqual({ versao: 3, data: "2026-10-16", parcial: true, observacao: "Faltam 2 extintores do subsolo" });
+    expect(ultimo(estado, /\/entrega$/)).toEqual({ versao: 4, data: "2026-10-16", parcial: true, observacao: "Faltam 2 extintores do subsolo" });
     await expect(etapas.getByRole("listitem").filter({ hasText: "Entrega e execução" })).toContainText("Recebido em parte em 16/10/2026 · Faltam 2 extintores do subsolo");
     await entrega.getByLabel("Data da entrega").fill("2026-10-16");
     await entrega.getByRole("button", { name: "Registrar a entrega" }).click();
@@ -622,7 +659,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await page.getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByText("Regras dos orçamentos salvas.", { exact: false })).toBeVisible();
     expect(ultimo(estado, /PUT \/v1\/condominio\/regras-orcamento$/)).toEqual({
-      versao: 1, ligada: true, abaixoMinimo: "BLOQUEIA", prazoDias: 10, validadeDias: 15, linkDias: 30,
+      versao: 1, ligada: true, abaixoMinimo: "BLOQUEIA", prazoDias: 10, validadeDias: 15, linkDias: 30, alcadaConselho: 300000,
       faixas: [{ ate: 100000, minimo: 1, quemAprova: "SINDICO" }, { ate: 300000, minimo: 2, quemAprova: "SINDICO" }, { ate: 1000000, minimo: 4, quemAprova: "CONSELHO" }, { ate: null, minimo: 3, quemAprova: "CONSELHO" }],
     });
     await page.reload();
@@ -638,7 +675,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     test.slow();
     const estado = await instalarApiPlataformaFalsa(page, { comOrcamentos: true });
     const o = pintura(estado);
-    await page.goto(`${PLATAFORMA}/o/link-lima`);
+    await page.goto(`${PLATAFORMA}/o/${o.convites[0]!.codigo}`);
     await expect(page.getByRole("heading", { level: 1, name: "Residencial Ipê" })).toBeVisible();
     await expect(page.getByText("Pedido de orçamento para Pinturas Lima")).toBeVisible();
     await expect(page.getByRole("progressbar", { name: "Passos da proposta" })).toHaveAttribute("aria-valuetext", "Passo 1 de 3: Ver o pedido");
@@ -698,7 +735,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     await expect(page.getByRole("list", { name: "Convidados" }).getByRole("listitem").filter({ hasText: "Pinturas Lima" })).toContainText("Mandou a proposta · versão 2");
 
     // Não vou participar: o motivo é opcional; conta como resposta, não como proposta.
-    await page.goto(`${PLATAFORMA}/o/link-cor`);
+    await page.goto(`${PLATAFORMA}/o/${o.convites[1]!.codigo}`);
     await page.getByRole("button", { name: "Não vou participar" }).click();
     await expect(page.getByText("Se não for participar, diga o motivo (opcional). O síndico fica sabendo e não manda lembrete.")).toBeVisible();
     await page.getByLabel("Motivo").fill("Agenda cheia até dezembro");
@@ -711,6 +748,8 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
 
     await page.goto(`${PLATAFORMA}/o/nao-existe`);
     await expect(page.getByText("Este link não existe. Confira o endereço ou peça um novo ao condomínio.")).toBeVisible();
+    await page.goto(`${PLATAFORMA}/o/${"x".repeat(43)}`);
+    await expect(page.getByText("Este link não existe. Confira o endereço ou peça um novo ao condomínio.")).toBeVisible();
   });
 
   test("OC-03: o link em cada estado: enviada com o prazo fechado, confirmar o preço, escolhida e o aceite, não escolhida, aceita, prazo acabou e link vencido", async ({ page }) => {
@@ -719,7 +758,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     const o = bomba(estado);
 
     // Enviada, com o prazo fechado: sem versão nova.
-    await page.goto(`${PLATAFORMA}/o/link-hidropress`);
+    await page.goto(`${PLATAFORMA}/o/${o.convites[0]!.codigo}`);
     await expect(page.getByRole("heading", { name: "Proposta enviada · versão 1" })).toBeVisible();
     await expect(page.getByText("recebeu sua proposta de R$ 6.480,00", { exact: false })).toBeVisible();
     await expect(page.getByText("O prazo para propostas acabou: a sua já está com o condomínio.")).toBeVisible();
@@ -729,10 +768,11 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
 
     // Confirmar o preço (quadro 478): a validade venceu e o condomínio pediu.
     o.convites[1]!.propostas[1]!.confirmacaoPedidaEm = "2026-10-16T18:00:00.000Z";
-    await page.goto(`${PLATAFORMA}/o/link-brasilia`);
+    await page.goto(`${PLATAFORMA}/o/${o.convites[1]!.codigo}`);
     await expect(page.getByRole("heading", { name: "O condomínio pede para confirmar o preço" })).toBeVisible();
     await expect(page.getByText("Sua proposta venceu em 15/10. Confirme se R$ 6.130,00 continua valendo, ou mande um preço novo.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Mandar um preço novo" })).toBeVisible();
+    // O prazo já fechou: só confirmar; preço novo só enquanto o pedido aceita propostas.
+    await expect(page.getByRole("button", { name: "Mandar um preço novo" })).toHaveCount(0);
     await page.getByLabel("O preço vale até").fill("2026-11-20");
     await conferir(page);
     await page.getByRole("button", { name: "Confirmar R$ 6.130,00" }).click();
@@ -743,7 +783,7 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
 
     // Escolhida: aceitar pelo link vira prestador do cadastro; a outra vê que não foi a escolhida.
     const ext = extintores(estado);
-    await page.goto(`${PLATAFORMA}/o/link-fogo`);
+    await page.goto(`${PLATAFORMA}/o/${ext.convites[0]!.codigo}`);
     await expect(page.getByRole("heading", { name: "Sua proposta foi escolhida" })).toBeVisible();
     await expect(page.getByText("Confirme se aceita fazer o serviço nas condições da sua proposta. Aceitar aqui não é contrato nem pagamento.")).toBeVisible();
     await page.getByRole("button", { name: "Aceito fazer o serviço" }).click();
@@ -756,23 +796,23 @@ test.describe("Plataforma · orçamentos e compras (R8)", () => {
     expect(ultimo(estado, /\/aceitar$/)).toEqual({ nome: "Marcos, da Fogo Zero" });
     expect(ext.estado).toBe("COMPRANDO");
     await conferir(page);
-    await page.goto(`${PLATAFORMA}/o/link-planalto`);
+    await page.goto(`${PLATAFORMA}/o/${ext.convites[1]!.codigo}`);
     await expect(page.getByRole("heading", { name: "O condomínio escolheu outra proposta" })).toBeVisible();
     await expect(page.getByText("Obrigado por participar. Você não vê qual foi a escolhida nem o preço dela.")).toBeVisible();
     await conferir(page);
-    await page.goto(`${PLATAFORMA}/o/link-hidroserv`);
+    await page.goto(`${PLATAFORMA}/o/${estado.orcamentos.orcamentos.find((x) => x.titulo === "Limpeza da caixa d’água")!.convites[0]!.codigo}`);
     await expect(page.getByRole("heading", { name: "Você aceitou fazer o serviço" })).toBeVisible();
     await expect(page.getByText("Carlos Hidro aceitou em 01/10.")).toBeVisible();
 
     // O prazo acabou sem proposta; o link vencido.
     const pint = pintura(estado);
     pint.prazoPropostas = "2026-10-16T17:00:00.000Z";
-    await page.goto(`${PLATAFORMA}/o/link-jb`);
+    await page.goto(`${PLATAFORMA}/o/${pint.convites[2]!.codigo}`);
     await expect(page.getByRole("heading", { name: "O prazo para propostas acabou" })).toBeVisible();
     await expect(page.getByText("Este pedido fechou em 16/10, 14h. Fale com o condomínio se ainda quiser participar.")).toBeVisible();
     await conferir(page);
     pint.convites[2]!.expiraEm = "2026-08-01T12:00:00.000Z";
-    await page.goto(`${PLATAFORMA}/o/link-jb`);
+    await page.goto(`${PLATAFORMA}/o/${pint.convites[2]!.codigo}`);
     await expect(page.getByRole("heading", { name: "Este link não vale mais" })).toBeVisible();
     await expect(page.getByText("Este link venceu. Ele não abre mais. Se recebeu um link novo, use o novo.")).toBeVisible();
     await conferir(page);
