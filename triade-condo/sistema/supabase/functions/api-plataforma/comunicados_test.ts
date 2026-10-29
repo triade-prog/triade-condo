@@ -141,6 +141,14 @@ Deno.test("CD-01: corrigir pede o que mudou; arquivar pede motivo; copiar fica r
   const c = await m.pedir(`${base}/corrigir`, { corpo: { versao: 1, titulo: "Falta de água", texto: "Das 9h às 13h.", mudanca: "Horário" }, cookie });
   assertEquals(c.status, 201);
   assertEquals(chamada(m, "plataforma_corrigir_comunicado")?.p_mudanca, "Horário");
+  // Sem o evento, a versão nova herda; com ele, muda (CD-17).
+  assertEquals(chamada(m, "plataforma_corrigir_comunicado")?.p_mudar_evento, false);
+  await m.pedir(`${base}/corrigir`, { corpo: { versao: 1, titulo: "Falta de água", texto: "Quinta.", mudanca: "Dia", evento: { dia: "2026-11-05", inicio: "09:00" } }, cookie });
+  assertEquals(chamada(m, "plataforma_corrigir_comunicado")?.p_mudar_evento, true);
+  assertEquals(chamada(m, "plataforma_corrigir_comunicado")?.p_evento, { dia: "2026-11-05", inicio: "09:00" });
+  await m.pedir(`${base}/corrigir`, { corpo: { versao: 1, titulo: "Falta de água", texto: "Sem dia.", mudanca: "Tirar", evento: null }, cookie });
+  assertEquals(chamada(m, "plataforma_corrigir_comunicado")?.p_mudar_evento, true);
+  assertEquals(chamada(m, "plataforma_corrigir_comunicado")?.p_evento, null);
   assertEquals((await erro(await m.pedir(`${base}/arquivar`, { corpo: { versao: 2 }, cookie }))).detalhes?.campos, ["motivo"]);
   await m.pedir(`${base}/uso`, { corpo: { uso: "MURAL" }, cookie });
   assertEquals(chamada(m, "plataforma_uso_comunicado")?.p_uso, "MURAL");

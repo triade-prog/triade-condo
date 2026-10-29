@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   aoMoradorPadrao,
   buscaComunicadosSchema,
+  corrigirComunicadoSchema,
   descreverAlcance,
   descreverEventoComunicado,
   descreverEventoDocumento,
@@ -42,6 +43,14 @@ describe("comunicados (peça R1)", () => {
     expect(caminhos({ dia: "2026-10-28", fim: "14:00" })).toEqual(["evento.fim"]);
     expect(caminhos({ dia: "2026-10-28", inicio: "14:00", fim: "08:00" })).toEqual(["evento.fim"]);
     expect(caminhos({ dia: "2026-10-28", local: "S" })).toEqual(["evento.local"]);
+  });
+
+  it("CD-17: corrigir sem o evento herda o da versão anterior; com ele, vale o novo, e null tira", () => {
+    const BASE_C = { versao: 1, titulo: "Coleta seletiva", texto: "Nova data da coleta", mudanca: "A data" };
+    expect(corrigirComunicadoSchema.parse(BASE_C).evento).toBeUndefined();
+    expect(corrigirComunicadoSchema.parse({ ...BASE_C, evento: null }).evento).toBeNull();
+    expect(corrigirComunicadoSchema.parse({ ...BASE_C, evento: { dia: "2026-11-04", inicio: "08:00" } }).evento).toEqual({ dia: "2026-11-04", inicio: "08:00" });
+    expect(corrigirComunicadoSchema.safeParse({ ...BASE_C, evento: { dia: "2026-11-04", fim: "08:00" } }).error?.issues[0]?.path).toEqual(["evento", "fim"]);
   });
 
   it("CD-02: por bloco, unidade ou contato pede a escolha", () => {

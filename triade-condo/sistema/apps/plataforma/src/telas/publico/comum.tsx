@@ -5,7 +5,7 @@
 // no lugar da faixa violeta lisa, e o miolo largo com duas colunas no computador.
 
 import { useEffect, useState, type ReactNode } from "react";
-import { ASSUNTOS_COMUNICADO, blocoDeData, icsDoEvento, nomeDoIcs, type AssuntoComunicado, type EventoComunicado } from "@triade/domain";
+import { ASSUNTOS_COMUNICADO, blocoDeData, type AssuntoComunicado, type EventoComunicado } from "@triade/domain";
 import { Aviso, chamarApi, classeBotao, Icone, Marca, Selo, type NomeIcone, type Tom } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import type { ComunicadoPublico } from "../tipos.ts";
@@ -141,15 +141,23 @@ export function BlocoDeData({ evento, assembleia = false }: { evento: EventoComu
   );
 }
 
-/** "Pôr na agenda" (CD-18): baixa o arquivo de calendário do evento; quem abre escolhe o calendário. */
-export function PorNaAgenda({ c, condominio, tamanho = "m" }: { c: { id: string; titulo: string; texto: string; evento?: EventoComunicado | null }; condominio: string; tamanho?: "m" | "p" }) {
-  if (!c.evento) return null;
-  const href = `data:text/calendar;charset=utf-8,${encodeURIComponent(icsDoEvento({ id: c.id, titulo: c.titulo, texto: c.texto, evento: c.evento }, condominio))}`;
+/**
+ * "Pôr na agenda" (CD-18): o endereço de verdade do arquivo de calendário, que a API monta com o
+ * fuso do condomínio. O celular abre direto na agenda, inclusive pelo navegador de dentro do
+ * WhatsApp; no computador, o arquivo baixa. Sem conta e sem o sistema saber quem baixou.
+ */
+export function PorNaAgenda({ c, href, tamanho = "m" }: { c: { titulo: string; evento?: EventoComunicado | null }; href?: string; tamanho?: "m" | "p" }) {
+  if (!c.evento || !href) return null;
   return (
-    <a href={href} download={nomeDoIcs(c.titulo)} className={classeBotao("discreto", "", tamanho)} aria-label={`Pôr na agenda: ${c.titulo}`}>
+    <a href={href} className={classeBotao("discreto", "", tamanho)} aria-label={`Pôr na agenda: ${c.titulo}`}>
       <Icone nome="calendario" />Pôr na agenda
     </a>
   );
+}
+
+/** O edital de uma assembleia cancelada continua no mural, mas avisa (AC-02). */
+export function SeloCancelada({ c }: { c: { assembleiaCancelada?: boolean } }) {
+  return c.assembleiaCancelada ? <Selo tom="atencao"><Icone nome="info" className="h-3.5 w-3.5" />Assembleia cancelada</Selo> : null;
 }
 
 /** Abre o PDF do aviso numa aba, pelo link curto que a API devolve. */
@@ -166,7 +174,7 @@ export function useAbrirArquivo(linkArquivo: (arquivo: string) => string) {
 }
 
 /** O comunicado como o morador lê: assunto, título, evento, texto, assinatura, fotos e PDF. */
-export function ComunicadoLido({ c, linkArquivo, condominio }: { c: ComunicadoPublico; linkArquivo: (arquivo: string) => string; condominio?: string }) {
+export function ComunicadoLido({ c, linkArquivo, agenda }: { c: ComunicadoPublico; linkArquivo: (arquivo: string) => string; agenda?: string }) {
   const [fotos, setFotos] = useState<Record<string, string>>({});
   const { falha, abrir } = useAbrirArquivo(linkArquivo);
   useEffect(() => {
@@ -181,7 +189,7 @@ export function ComunicadoLido({ c, linkArquivo, condominio }: { c: ComunicadoPu
   return (
     <Cartao>
       <span className="flex flex-wrap items-center justify-between gap-2">
-        <SeloAssunto assunto={c.assunto} />
+        <span className="flex flex-wrap items-center gap-2"><SeloAssunto assunto={c.assunto} /><SeloCancelada c={c} /></span>
         <span className="font-mono t-codigo text-tinta-suave">{diaHora(c.publicadoEm)}</span>
       </span>
       <h2 className="t-titulo-secao font-medium">{c.titulo}</h2>
@@ -193,7 +201,7 @@ export function ComunicadoLido({ c, linkArquivo, condominio }: { c: ComunicadoPu
       {c.evento ? (
         <span className="flex flex-wrap items-center gap-2">
           <BlocoDeData evento={c.evento} assembleia={c.assunto === "ASSEMBLEIA"} />
-          {condominio ? <PorNaAgenda c={c} condominio={condominio} tamanho="p" /> : null}
+          <PorNaAgenda c={c} href={agenda} tamanho="p" />
         </span>
       ) : null}
       <div className="t-texto leading-relaxed whitespace-pre-line">{c.texto}</div>

@@ -174,31 +174,81 @@ export function contar(n: number, um: string, varios: string): string {
 }
 
 const escaparIcs = (s: string) => s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
-const compacto = (dia: string, hora?: string) => dia.replace(/-/g, "") + (hora ? `T${hora.replace(":", "")}00` : "");
+const compacto = (dia: string) => dia.replace(/-/g, "");
+const MINUTO = 60_000;
 
-/**
- * O arquivo de calendário do evento (CD-18): um VEVENT no fuso de Brasília, com título, local e o
- * texto do aviso. Sem hora, é o dia inteiro. Quem abre o arquivo escolhe o calendário.
- */
-export function icsDoEvento(a: { id: string; titulo: string; texto: string; evento: EventoComunicado }, condominio: string, agora: Date = new Date()): string {
-  const e = a.evento;
-  const proximoDia = (() => { const d = new Date(`${e.dia}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); })();
-  const quando = e.inicio
-    ? [`DTSTART;TZID=${FUSO}:${compacto(e.dia, e.inicio)}`, `DTEND;TZID=${FUSO}:${compacto(e.dia, e.fim ?? somarHora(e.inicio))}`]
-    : [`DTSTART;VALUE=DATE:${compacto(e.dia)}`, `DTEND;VALUE=DATE:${compacto(proximoDia)}`];
-  const carimbo = agora.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-  return [
-    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//TRIADE Condo//Mural//PT", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
-    "BEGIN:VEVENT", `UID:mural-${a.id}@triade-condo`, `DTSTAMP:${carimbo}`, ...quando,
-    `SUMMARY:${escaparIcs(a.titulo)}`, ...(e.local ? [`LOCATION:${escaparIcs(e.local)}`] : []),
-    `DESCRIPTION:${escaparIcs(`${a.texto}\n\n${condominio}`)}`,
-    "END:VEVENT", "END:VCALENDAR", "",
-  ].join("\r\n");
+/** Quanto o fuso está à frente de UTC (em ms) num instante: -3 h em Brasília. */
+function deslocamento(fuso: string, instante: number): number {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+    timeZone: fuso, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+  }).formatToParts(new Date(instante)).map((x) => [x.type, x.value]));
+  return Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour), Number(p.minute), Number(p.second)) - instante;
 }
 
-function somarHora(hhmm: string): string {
-  const [h, m] = hhmm.split(":").map(Number);
-  return `${String(Math.min(23, (h ?? 0) + 1)).padStart(2, "0")}:${String(m ?? 0).padStart(2, "0")}`;
+/** O instante (ms) de um dia e hora do relógio do condomínio. */
+export function instanteNoFuso(dia: string, hora: string, fuso: string = FUSO): number {
+  const [a, m, d] = dia.split("-").map(Number);
+  const [h, mi] = hora.split(":").map(Number);
+  const relogio = Date.UTC(a ?? 0, (m ?? 1) - 1, d ?? 1, h ?? 0, mi ?? 0);
+  const primeiro = relogio - deslocamento(fuso, relogio);
+  return relogio - deslocamento(fuso, primeiro);
+}
+
+const emUtc = (ms: number) => new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+
+/** Linhas de no máximo 75 bytes, continuadas com um espaço (RFC 5545, 3.1), sem partir um caractere. */
+function dobrar(linha: string): string {
+  const cod = new TextEncoder();
+  const partes: string[] = [];
+  let atual = "";
+  let bytes = 0;
+  for (const ch of linha) {
+    const n = cod.encode(ch).length;
+    if (bytes + n > (partes.length ? 74 : 75)) { partes.push(atual); atual = ""; bytes = 0; }
+    atual += ch;
+    bytes += n;
+  }
+  partes.push(atual);
+  return partes.join("\r\n ");
+}
+
+/** Quanto a assembleia ocupa na agenda depois da segunda chamada. */
+export const ASSEMBLEIA_DURACAO_MIN = 120;
+
+/**
+ * O arquivo de calendário do evento (CD-18): um VEVENT com título, local e o texto do aviso.
+ * As horas saem em UTC, contadas no fuso do condomínio, para todo calendário entender sem
+ * VTIMEZONE; sem hora, é o dia inteiro. Na assembleia, as horas são a primeira e a segunda
+ * chamada: a agenda reserva da primeira até duas horas depois da segunda, e a descrição diz as
+ * duas. Quem abre o arquivo escolhe o calendário.
+ */
+export function icsDoEvento(
+  a: { id: string; titulo: string; texto: string; assunto?: string; evento: EventoComunicado },
+  condominio: string,
+  { fuso = FUSO, agora = new Date() }: { fuso?: string; agora?: Date } = {},
+): string {
+  const e = a.evento;
+  const assembleia = a.assunto === "ASSEMBLEIA";
+  const proximoDia = (() => { const d = new Date(`${e.dia}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); })();
+  let quando: string[];
+  let chamadas = "";
+  if (e.inicio) {
+    const inicio = instanteNoFuso(e.dia, e.inicio, fuso);
+    const fim = assembleia
+      ? (e.fim ? instanteNoFuso(e.dia, e.fim, fuso) : inicio) + ASSEMBLEIA_DURACAO_MIN * MINUTO
+      : e.fim ? instanteNoFuso(e.dia, e.fim, fuso) : inicio + 60 * MINUTO;
+    quando = [`DTSTART:${emUtc(inicio)}`, `DTEND:${emUtc(fim)}`];
+    if (assembleia) chamadas = `Primeira chamada às ${horaCurta(e.inicio)}${e.fim ? `; segunda chamada às ${horaCurta(e.fim)}` : ""}.\n\n`;
+  } else {
+    quando = [`DTSTART;VALUE=DATE:${compacto(e.dia)}`, `DTEND;VALUE=DATE:${compacto(proximoDia)}`];
+  }
+  return [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//TRIADE Condo//Mural//PT", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "BEGIN:VEVENT", `UID:mural-${a.id}@triade-condo`, `DTSTAMP:${emUtc(agora.getTime())}`, ...quando,
+    `SUMMARY:${escaparIcs(a.titulo)}`, ...(e.local ? [`LOCATION:${escaparIcs(e.local)}`] : []),
+    `DESCRIPTION:${escaparIcs(`${chamadas}${a.texto}\n\n${condominio}`)}`,
+    "END:VEVENT", "END:VCALENDAR", "",
+  ].map(dobrar).join("\r\n");
 }
 
 /** O nome do arquivo .ics, sem acento nem espaço. */

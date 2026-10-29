@@ -118,6 +118,9 @@ export function criarRepasse(obterOpcoes: () => OpcoesRepasse) {
     const saida = new Headers({ "cache-control": "no-store" });
     const tipo = resposta.headers.get("content-type");
     if (tipo) saida.set("content-type", tipo);
+    // O arquivo de agenda (CD-18) vem com o nome; o resto é JSON e não tem.
+    const disposicao = resposta.headers.get("content-disposition");
+    if (disposicao) saida.set("content-disposition", disposicao);
     for (const c of filtrarSetCookie(resposta.headers.getSetCookie(), op.cookies)) saida.append("set-cookie", c);
     return new Response(resposta.body, { status: resposta.status, headers: saida });
   };

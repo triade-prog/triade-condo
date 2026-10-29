@@ -30,7 +30,7 @@ export function ComunicadoDoLink() {
   if (!d) return <TelaPublica titulo="Comunicado do condomínio"><Carregando rotulo="Abrindo o comunicado…" /></TelaPublica>;
   return (
     <TelaPublica titulo={`Comunicado do ${d.condominio}`}>
-      {d.comunicado ? <ComunicadoLido c={d.comunicado} linkArquivo={linkArquivo} condominio={d.condominio} />
+      {d.comunicado ? <ComunicadoLido c={d.comunicado} linkArquivo={linkArquivo} agenda={`/api/v1/publico/c/${encodeURIComponent(codigo)}/agenda`} />
         : <Aviso tom="info" titulo="Este comunicado saiu de uso">O condomínio arquivou este comunicado.</Aviso>}
       <ReceberPeloWhatsapp numero={d.comunicadosWhatsapp} />
     </TelaPublica>

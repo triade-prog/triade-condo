@@ -14,6 +14,14 @@ function mockFetch(resposta: Response) {
 }
 
 describe("F0.8: repasse /api", () => {
+  it("CD-18: o arquivo de agenda passa com o tipo e o nome", async () => {
+    mockFetch(new Response("BEGIN:VCALENDAR", { status: 200, headers: { "content-type": "text/calendar; charset=utf-8", "content-disposition": 'attachment; filename="festa.ics"' } }));
+    const r = await repassar(new Request("https://plataforma.exemplo/api/v1/publico/mural/X/comunicados/1/agenda"), ctx(["v1", "publico", "mural", "X", "comunicados", "1", "agenda"]));
+    expect(r.headers.get("content-type")).toBe("text/calendar; charset=utf-8");
+    expect(r.headers.get("content-disposition")).toBe('attachment; filename="festa.ics"');
+    expect(await r.text()).toBe("BEGIN:VCALENDAR");
+  });
+
   it("chama a função com o segredo, o IP real e só os cookies permitidos", async () => {
     const f = mockFetch(new Response('{"ok":true}', { status: 200, headers: { "content-type": "application/json" } }));
     const req = new Request("https://plataforma.exemplo/api/v1/saude?x=1", {

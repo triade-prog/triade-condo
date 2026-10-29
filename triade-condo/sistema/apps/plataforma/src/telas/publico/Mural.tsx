@@ -94,6 +94,8 @@ export function Mural() {
   const links: LinksDoMural = {
     arquivo: (comunicado, arquivo) => `${base}/comunicados/${comunicado}/arquivos/${arquivo}`,
     fotoAnuncio: (id) => `${base}/classificados/${id}/foto`,
+    // Endereço de verdade, pelo repasse /api: o celular abre a agenda e nada é contado (CD-18).
+    agenda: (id) => `/api${base}/comunicados/${id}/agenda`,
     publico: (v) => enderecoDaVista(codigo, v),
   };
   return (

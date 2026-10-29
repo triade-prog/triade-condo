@@ -304,12 +304,26 @@ function ComunicadoAberto() {
             ajuda: `O e-mail começa com o que mudou. Desligado, a versão ${c.numero + 1} só aparece no mural e no link pessoal.` }] : []),
           ...(d.pode.avisarWhatsapp ? [{ id: "avisarWhatsapp", rotulo: `Avisar pelo WhatsApp quem recebeu a versão ${c.numero}`, tipo: "caixa" as const,
             ajuda: `A mensagem começa com "Corrigido:". Desligado, a versão ${c.numero + 1} só aparece no mural e no link pessoal, que sempre abre a versão mais nova.` }] : []),
+          // Quando acontece (CD-17): a data errada se corrige aqui; o edital muda na própria assembleia.
+          ...(c.assunto !== "ASSEMBLEIA" ? [
+            { id: "evento.dia", rotulo: "Quando acontece: dia", tipo: "data" as const, erro: "Dia como AAAA-MM-DD, ou vazio para tirar o evento.",
+              ajuda: c.evento ? "Apague o dia para o aviso ficar sem evento." : "Opcional: com o dia, o aviso ganha o bloco de data e o Pôr na agenda no mural." },
+            { id: "evento.inicio", rotulo: "Começa às", tipo: "hora" as const, erro: "Hora como 08:00." },
+            { id: "evento.fim", rotulo: "Termina às", tipo: "hora" as const, erro: "Depois da hora de início." },
+            { id: "evento.local", rotulo: "Local", tipo: "texto" as const, max: 120, erro: "De 2 a 120 caracteres." },
+          ] : []),
         ]}
-        iniciais={{ titulo: c.titulo, texto: c.texto, mudanca: "", avisarEmail: false, avisarWhatsapp: false }}
+        iniciais={{ titulo: c.titulo, texto: c.texto, mudanca: "", avisarEmail: false, avisarWhatsapp: false,
+          "evento.dia": c.evento?.dia ?? "", "evento.inicio": c.evento?.inicio ?? "", "evento.fim": c.evento?.fim ?? "", "evento.local": c.evento?.local ?? "" }}
         aoSalvar={async (v) => {
+          const dia = String(v["evento.dia"] ?? "");
+          const evento = dia ? { dia, inicio: String(v["evento.inicio"] ?? "") || null, fim: String(v["evento.fim"] ?? "") || null, local: String(v["evento.local"] ?? "").trim() || null } : null;
+          const antes = c.evento ? { dia: c.evento.dia, inicio: c.evento.inicio ?? null, fim: c.evento.fim ?? null, local: c.evento.local ?? null } : null;
+          // Só manda o evento quando mudou; sem mandar, a versão nova herda o da anterior.
+          const mudouEvento = c.assunto !== "ASSEMBLEIA" && JSON.stringify(evento) !== JSON.stringify(antes);
           const r = await chamarApi<{ id: string }>(`/v1/condominio/comunicados/${c.id}/corrigir`, {
             corpo: { versao: c.versao, titulo: v.titulo, texto: v.texto, mudanca: v.mudanca, avisarEmail: v.avisarEmail === true,
-              avisarWhatsapp: v.avisarWhatsapp === true } });
+              avisarWhatsapp: v.avisarWhatsapp === true, ...(mudouEvento ? { evento } : {}) } });
           if (r.ok) { setAcao(null); atualizar(); router.push(`/comunicados/comunicado?id=${r.dados.id}&feito=CORRIGIR`); }
           return r;
         }} />

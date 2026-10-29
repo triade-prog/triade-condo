@@ -54,6 +54,10 @@ function montar(opcoes: { correio?: Correio; fila?: MensagemFila[] } = {}) {
     publico_mural: () => ({ condominio: "Residencial Aurora", comunicados: [], documentos: [] }),
     plataforma_mural: () => ({ ligado: true, codigo: MURAL, aberturas: 4, mural: { condominio: "Residencial Aurora", comunicados: [] }, fora: [], versoes: {} }),
     publico_mural_arquivo: () => ({ caminho: `${AURORA}/${COMUNICADO}/${ARQUIVO}`, nome: "foto.jpg", tipo: "image/jpeg" }),
+    publico_mural_agenda: () => ({ id: COMUNICADO, assunto: "AVISO", titulo: "Festa das crianças", texto: "No salão.", condominio: "Residencial Aurora",
+      fuso: "America/Sao_Paulo", evento: { dia: "2026-11-07", inicio: "16:00", local: "Salão de festas" } }),
+    publico_comunicado_agenda: () => ({ id: COMUNICADO, assunto: "OBRAS", titulo: "Falta de água", texto: "Das 9h às 13h.", condominio: "Residencial Aurora",
+      fuso: "America/Manaus", evento: { dia: "2026-11-05", inicio: "09:00", fim: "13:00" } }),
     publico_pedir_documento: () => ({ ok: true }),
     publico_comunicado: () => ({ condominio: "Residencial Aurora", comunicado: { titulo: "Falta de água" } }),
     publico_documento: () => ({ caminho: `${AURORA}/${DOCUMENTO}/${ARQUIVO}`, nome: "regimento.pdf", tipo: "application/pdf", titulo: "Regimento", numero: 3, condominio: "Residencial Aurora" }),
@@ -126,6 +130,23 @@ Deno.test("CD-15: o mural no painel pede a sessão e não passa pelo limite nem 
   assertEquals(chamada(m, "plataforma_mural"), { p_pessoa: ANA, p_condominio: AURORA });
   assertEquals(quantas(m, "publico_mural"), 0);
   assert(!m.chamadas.some((x) => x.funcao === "limite_contar" && x.args.p_tipo === "mural"), "a prévia não gasta o limite do mural");
+});
+
+Deno.test("CD-18: o Pôr na agenda sai como arquivo de calendário, em UTC no fuso do condomínio, pelo mural e pelo link pessoal", async () => {
+  const m = montar();
+  const r = await m.pedir(`/v1/publico/mural/${MURAL}/comunicados/${COMUNICADO}/agenda`);
+  assertEquals(r.status, 200);
+  assertEquals(r.headers.get("content-type"), "text/calendar; charset=utf-8");
+  assertEquals(r.headers.get("content-disposition"), 'attachment; filename="festa-das-criancas.ics"');
+  const ics = await r.text();
+  assert(ics.includes("DTSTART:20261107T190000Z"), "16h em Brasília é 19h UTC");
+  assert(ics.includes("LOCATION:Salão de festas"));
+  assertEquals(chamada(m, "publico_mural_agenda"), { p_codigo: MURAL, p_comunicado: COMUNICADO });
+  assertEquals(quantas(m, "publico_mural"), 0);
+  assertEquals(chamada(m, "limite_contar")?.p_tipo, "mural");
+  const l = await m.pedir(`/v1/publico/c/${CODIGO}/agenda`);
+  assert((await l.text()).includes("DTSTART:20261105T130000Z"), "9h em Manaus é 13h UTC");
+  assertEquals(chamada(m, "publico_comunicado_agenda"), { p_codigo: CODIGO });
 });
 
 Deno.test("CD-12, CD-04: a foto do mural sai por link de 5 minutos do armazenamento dos comunicados", async () => {

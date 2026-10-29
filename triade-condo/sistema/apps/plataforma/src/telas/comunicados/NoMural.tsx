@@ -188,6 +188,7 @@ export function NoMural() {
     arquivo: (comunicado, arquivo) => `/v1/condominio/comunicados/${comunicado}/arquivos/${arquivo}/link`,
     // Quem não cuida dos classificados vê a foto pelo mesmo caminho do morador.
     fotoAnuncio: (id) => (d.pode.classificados ? `/v1/condominio/classificados/${id}/foto` : `/v1/publico/mural/${encodeURIComponent(codigo)}/classificados/${id}/foto`),
+    agenda: (id) => `/api/v1/condominio/comunicados/${id}/agenda`,
     publico: (v) => enderecoDaVista(codigo, v),
   };
   const faixas: FaixasDoPainel = {

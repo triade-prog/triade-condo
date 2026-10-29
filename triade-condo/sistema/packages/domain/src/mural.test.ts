@@ -93,20 +93,40 @@ describe("mural do morador, conceito Janela acesa (D4.40)", () => {
     expect(novosDesde(avisos, "não é data").size).toBe(0);
   });
 
-  it("CD-18: o arquivo de agenda tem o evento no fuso de Brasília, com local e texto", () => {
-    const ics = icsDoEvento({ id: "x1", titulo: "Assembleia; geral", texto: "Pauta:\ncontas", evento: { dia: "2026-11-06", inicio: "19:00", fim: "19:30", local: "Salão, térreo" } }, "Condomínio Águas Claras", agora);
-    expect(ics).toContain("DTSTART;TZID=America/Sao_Paulo:20261106T190000");
-    expect(ics).toContain("DTEND;TZID=America/Sao_Paulo:20261106T193000");
-    expect(ics).toContain("SUMMARY:Assembleia\\; geral");
+  it("CD-18: o arquivo de agenda tem o evento em UTC, contado no fuso do condomínio, com local e texto", () => {
+    const desdobrar = (ics: string) => ics.replace(/\r\n /g, "");
+    const ics = icsDoEvento({ id: "x1", titulo: "Mutirão; geral", texto: "Pauta:\ncontas", evento: { dia: "2026-11-06", inicio: "19:00", fim: "21:30", local: "Salão, térreo" } }, "Condomínio Águas Claras", { agora });
+    expect(ics).toContain("DTSTART:20261106T220000Z");
+    expect(ics).toContain("DTEND:20261107T003000Z");
+    expect(ics).not.toContain("TZID");
+    expect(ics).toContain("SUMMARY:Mutirão\\; geral");
     expect(ics).toContain("LOCATION:Salão\\, térreo");
     expect(ics).toContain("DESCRIPTION:Pauta:\\ncontas\\n\\nCondomínio Águas Claras");
     expect(ics).toContain("UID:mural-x1@triade-condo");
     expect(ics.split("\r\n")).toContain("END:VCALENDAR");
-    // Sem fim, uma hora; sem hora, o dia inteiro.
-    expect(icsDoEvento({ id: "x2", titulo: "T", texto: "t", evento: { dia: "2026-10-28", inicio: "08:00" } }, "C", agora)).toContain("DTEND;TZID=America/Sao_Paulo:20261028T090000");
-    const diaTodo = icsDoEvento({ id: "x3", titulo: "T", texto: "t", evento: { dia: "2026-10-31" } }, "C", agora);
+    // Sem fim, uma hora, mesmo perto da meia-noite; sem hora, o dia inteiro.
+    expect(icsDoEvento({ id: "x2", titulo: "T", texto: "t", evento: { dia: "2026-10-28", inicio: "08:00" } }, "C", { agora })).toContain("DTEND:20261028T120000Z");
+    expect(icsDoEvento({ id: "x2", titulo: "T", texto: "t", evento: { dia: "2026-10-28", inicio: "23:30" } }, "C", { agora })).toContain("DTEND:20261029T033000Z");
+    const diaTodo = icsDoEvento({ id: "x3", titulo: "T", texto: "t", evento: { dia: "2026-10-31" } }, "C", { agora });
     expect(diaTodo).toContain("DTSTART;VALUE=DATE:20261031");
     expect(diaTodo).toContain("DTEND;VALUE=DATE:20261101");
+    // Outro fuso do condomínio (Manaus, -4 h).
+    expect(icsDoEvento({ id: "x4", titulo: "T", texto: "t", evento: { dia: "2026-11-06", inicio: "19:00" } }, "C", { agora, fuso: "America/Manaus" })).toContain("DTSTART:20261106T230000Z");
+    // Linhas longas dobradas em 75 bytes, sem partir acento; desdobradas, o texto volta inteiro.
+    const longo = icsDoEvento({ id: "x5", titulo: "T", texto: "ção ".repeat(60), evento: { dia: "2026-11-06" } }, "C", { agora });
+    for (const l of longo.split("\r\n")) expect(new TextEncoder().encode(l).length).toBeLessThanOrEqual(75);
+    expect(desdobrar(longo)).toContain(`DESCRIPTION:${"ção ".repeat(60)}\\n\\nC`);
+  });
+
+  it("CD-18: na assembleia, a agenda vai da primeira chamada a duas horas depois da segunda, e a descrição diz as duas", () => {
+    const ics = icsDoEvento({ id: "a1", assunto: "ASSEMBLEIA", titulo: "Edital: AGO", texto: "Pauta", evento: { dia: "2026-11-06", inicio: "19:00", fim: "19:30", local: "Salão" } }, "C", { agora });
+    expect(ics).toContain("DTSTART:20261106T220000Z");
+    expect(ics).toContain("DTEND:20261107T003000Z");
+    expect(ics.replace(/\r\n /g, "")).toContain("DESCRIPTION:Primeira chamada às 19h\\; segunda chamada às 19h30.\\n\\nPauta");
+    expect(icsDoEvento({ id: "a2", assunto: "ASSEMBLEIA", titulo: "E", texto: "P", evento: { dia: "2026-11-06", inicio: "20:00" } }, "C", { agora })).toContain("DTEND:20261107T010000Z");
+  });
+
+  it("CD-18: o nome do arquivo não tem acento nem espaço", () => {
     expect(nomeDoIcs("Assembleia geral ordinária: orçamento de 2027")).toBe("assembleia-geral-ordinaria-orcamento-de-2027.ics");
     expect(nomeDoIcs("???")).toBe("evento.ics");
   });

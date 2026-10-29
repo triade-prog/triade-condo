@@ -198,6 +198,11 @@ export const corrigirComunicadoSchema = z.object({
   avisarEmail: z.boolean().default(false),
   /** Avisar pelo WhatsApp quem recebeu a versão anterior, com "Corrigido:" no título (CD-01). */
   avisarWhatsapp: z.boolean().default(false),
+  /**
+   * O evento da versão nova (CD-17): sem o campo, a versão nova herda o da anterior; com ele, vale
+   * o que vier (null tira o evento). O edital da assembleia não muda por aqui.
+   */
+  evento: eventoComunicadoSchema.nullable().optional(),
 });
 /** Tirar do mural ou pôr de volta (CD-12). */
 export const muralComunicadoSchema = z.object({ versao, noMural: z.boolean() });

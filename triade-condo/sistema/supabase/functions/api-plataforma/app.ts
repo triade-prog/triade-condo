@@ -204,6 +204,9 @@ import {
   registrarReservaSchema,
   semanaAreaSchema,
   pedirConjuntoSchema,
+  icsDoEvento,
+  nomeDoIcs,
+  type EventoComunicado,
 } from "@triade/domain";
 import { verificarArquivo, verificarMidia, type Armazenamento } from "../_shared/arquivos.ts";
 import {
@@ -272,6 +275,18 @@ const REMETENTE = "nao-responda@t3condo.trihub.com.br";
 const CODIGO = /^[A-Za-z0-9_-]{14,64}$/;
 
 /** Código de link sem conta: fora do formato, responde como não encontrado. */
+/** O que o banco devolve para montar o arquivo de calendário de um aviso (CD-18). */
+interface AgendaComunicado { id: string; assunto: string; titulo: string; texto: string; evento: EventoComunicado; condominio: string; fuso: string }
+
+/** O arquivo .ics como resposta: o navegador baixa ou abre na agenda; sem cache. */
+function respostaAgenda(c: Context, a: AgendaComunicado): Response {
+  return c.body(icsDoEvento(a, a.condominio, { fuso: a.fuso }), 200, {
+    "content-type": "text/calendar; charset=utf-8",
+    "content-disposition": `attachment; filename="${nomeDoIcs(a.titulo)}"`,
+    "cache-control": "no-store",
+  });
+}
+
 function codigoDaRota(c: Context, nome = "codigo"): string {
   const v = c.req.param(nome);
   if (!v || !CODIGO.test(v)) throw new ErroDominio("NOT_FOUND");
@@ -1683,11 +1698,16 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const r = await rpc("plataforma_corrigir_comunicado", {
       ...quem(c), p_id: idDaRota(c, "id"), p_versao: d.versao, p_titulo: d.titulo, p_texto: d.texto, p_mudanca: d.mudanca,
       p_avisar_email: d.avisarEmail, p_avisar_whatsapp: d.avisarWhatsapp,
+      // Sem o campo, a versão nova herda o evento; com ele (mesmo null), vale o que veio (CD-17).
+      p_mudar_evento: d.evento !== undefined, p_evento: d.evento ?? null,
     });
     if (d.avisarEmail) esvaziarFila();
     if (d.avisarWhatsapp) noFundo(processarFilaWhatsapp);
     return c.json(r, 201);
   });
+  // "Pôr na agenda" pela prévia do painel e pela ficha (CD-18, CD-15).
+  app.get("/v1/condominio/comunicados/:id/agenda", async (c) =>
+    respostaAgenda(c, await rpc<AgendaComunicado>("plataforma_comunicado_agenda", { ...quem(c), p_id: idDaRota(c, "id") })));
   // O mural visto do painel (CD-15): o mesmo do link, sem contar abertura e sem o limite por aparelho.
   app.get("/v1/condominio/mural", async (c) => c.json(await rpc("plataforma_mural", quem(c))));
   app.put("/v1/condominio/comunicados/:id/mural", async (c) => {
@@ -1873,6 +1893,13 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     });
     return c.json(await linkPublico(guarda(deps.armazenamentoComunicados), a));
   });
+  // "Pôr na agenda" (CD-18): o arquivo de calendário do aviso, montado aqui a partir do evento que o
+  // banco devolve; é um endereço de verdade, que o celular abre direto na agenda. Não conta abertura.
+  app.get("/v1/publico/mural/:codigo/comunicados/:id/agenda", async (c) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("mural", await aparelho(c));
+    return respostaAgenda(c, await rpc<AgendaComunicado>("publico_mural_agenda", { p_codigo: codigo, p_comunicado: idDaRota(c, "id") }));
+  });
   app.get("/v1/publico/mural/:codigo/classificados/:id/foto", async (c) => {
     const codigo = codigoDaRota(c);
     await dentroDoLimite("mural", await aparelho(c));
@@ -1895,6 +1922,11 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     const codigo = codigoDaRota(c);
     await dentroDoLimite("link", await aparelho(c));
     return c.json(await rpc("publico_comunicado", { p_codigo: codigo }));
+  });
+  app.get("/v1/publico/c/:codigo/agenda", async (c) => {
+    const codigo = codigoDaRota(c);
+    await dentroDoLimite("link", await aparelho(c));
+    return respostaAgenda(c, await rpc<AgendaComunicado>("publico_comunicado_agenda", { p_codigo: codigo }));
   });
   app.get("/v1/publico/c/:codigo/arquivos/:arquivo", async (c) => {
     const codigo = codigoDaRota(c);
