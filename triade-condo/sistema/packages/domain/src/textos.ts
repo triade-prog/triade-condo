@@ -49,6 +49,8 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   ASSUME_PEDIDOS_INVALIDO: "Quem assume os pedidos precisa estar na lista de quem atende e disponível.",
   ASSUME_MANUTENCOES_INVALIDO: "Quem assume as manutenções precisa ter acesso e ver a manutenção.",
   MANUTENCOES_SEM_RESPONSAVEL: "Esta pessoa cuida de manutenções. Escolha quem assume antes de revogar.",
+  SEM_QUEM_ASSUME: "Esta pessoa tem pendências ou decisões em aberto e o condomínio está sem síndico para assumir.",
+  TEM_ALGO_EM_ABERTO: "Esta pessoa ainda tem algo em aberto. Revogue pela tela de Pessoas, que pergunta quem assume.",
   PADRAO_NECESSARIO: "Escolha o responsável padrão da fila.",
   PADRAO_INDISPONIVEL: "O responsável padrão precisa estar na lista e disponível.",
   RESPONSAVEL_INVALIDO: "Só o síndico ou uma pessoa autorizada, com acesso ativo, atende os pedidos.",
