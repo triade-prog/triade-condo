@@ -14,9 +14,10 @@ import { Caixa } from "../moradores/comum.tsx";
 import { Cartao, Dado, MaisAcoes } from "../Ficha.tsx";
 import { deDataHoraLocal, diaHora, paraDataHoraLocal } from "../pedidos/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
-import { ddmm, diaCompleto, diaHoraPrazo, enderecoWhatsapp, ICONE_ORIGEM, linhaDoTotal, ListaInclui, NOTA_RODAPE, reais, seloConvite, seloSituacao, textoValidade } from "./comum.tsx";
+import { ddmm, diaCompleto, diaHoraPrazo, enderecoWhatsapp, faixaPorExtenso, ICONE_ORIGEM, linhaDoTotal, ListaInclui, NOTA_RODAPE, reais, seloConvite, seloSituacao, textoValidade } from "./comum.tsx";
 import { abrirPdf } from "./Comparar.tsx";
 import { JanelaConvidarMais, JanelaConvites } from "./Convite.tsx";
+import { enviarArquivosDoOrcamento } from "./NovoOrcamento.tsx";
 import type { ConviteDoOrcamento, LinkConvite, OpcoesOrcamento, Orcamento as DadosOrcamento, OrcamentoDetalhe } from "./tipos.ts";
 
 type Recado = { tom: Tom; texto: string } | null;
@@ -33,7 +34,8 @@ export function subtituloDaFicha(o: DadosOrcamento): string {
 /** "Acima de R$ 3.000: 3 propostas e o conselho aprova". */
 export function textoDaRegra(r: DadosOrcamento["regra"]): string {
   if (!r.ligada || !r.faixa) return "Sem mínimo de propostas escrito nas Regras";
-  const faixa = r.faixa.ate === null ? (r.anterior !== null ? `Acima de ${reais(r.anterior).replace(/,00$/, "")}` : "Em qualquer valor") : `Até ${reais(r.faixa.ate).replace(/,00$/, "")}`;
+  const extenso = faixaPorExtenso(r).trim();
+  const faixa = extenso ? `${extenso.charAt(0).toUpperCase()}${extenso.slice(1)}` : "Em qualquer valor";
   const quem = r.faixa.quemAprova === "CONSELHO" ? "o conselho aprova" : "o síndico aprova";
   return `${faixa}: ${r.faixa.minimo === 1 ? "1 proposta" : `${r.faixa.minimo} propostas`} e ${quem}`;
 }
@@ -66,6 +68,7 @@ export function FichaOrcamento() {
   const depois = (texto: string, tom: Tom = "ok") => { setRecado({ tom, texto }); setJanela(null); carga.recarregar(); atualizar(); };
   const o_ = opcoes.estado === "pronto" ? opcoes.dados : null;
   const escolhido = d.convites.find((c) => c.escolhido) ?? null;
+  const arquivosDoPedido = d.arquivos.filter((a) => a.parte !== "NOTA_FISCAL");
 
   async function reenviar(c: ConviteDoOrcamento) {
     const r = await chamarApi<{ link: LinkConvite }>(`/v1/condominio/orcamentos/${o.id}/convites/${c.id}/reenviar`, { corpo: {} });
@@ -74,9 +77,16 @@ export function FichaOrcamento() {
     if (r.dados.link.envio === "COPIAR" || r.dados.link.envio === "EMAIL") setLinks([r.dados.link]);
   }
   async function pedirConfirmacao(c: ConviteDoOrcamento) {
-    const r = await chamarApi(`/v1/condominio/orcamentos/${o.id}/convites/${c.id}/pedir-confirmacao`, { corpo: {} });
+    const r = await chamarApi<{ link: LinkConvite }>(`/v1/condominio/orcamentos/${o.id}/convites/${c.id}/pedir-confirmacao`, { corpo: {} });
     if (!r.ok) return depois(`Não deu para pedir a confirmação: ${textoDoErro(r.erro)}`, "atencao");
     depois(`Pedido de confirmação do preço mandado a ${c.nome}, pelo link. Se ele mandar outro valor, entra como versão ${c.versoes + 1}.`);
+    if (r.dados.link?.envio === "COPIAR") setLinks([r.dados.link]);
+  }
+  async function mandar() {
+    const r = await chamarApi<{ versao: number; estado: string; links: LinkConvite[] }>(`/v1/condominio/orcamentos/${o.id}/mandar`, { corpo: { versao: o.versao } });
+    if (!r.ok) return depois(`Não deu para mandar os convites: ${textoDoErro(r.erro)}`, "atencao");
+    depois(r.dados.links.length === 1 ? "1 convite mandado." : `${r.dados.links.length} convites mandados.`);
+    if (r.dados.links.length) setLinks(r.dados.links);
   }
   async function desfazer() {
     const r = await chamarApi(`/v1/condominio/orcamentos/${o.id}/desfazer-escolha`, { corpo: { versao: o.versao } });
@@ -95,7 +105,7 @@ export function FichaOrcamento() {
     ...(d.pode.cancelar ? [{ texto: "Cancelar o orçamento", icone: "fechar" as const, acao: () => setJanela("cancelar"), perigo: true }] : []),
   ];
   const semAceite = o.escolha?.semAceiteHaDias !== null && o.escolha?.semAceiteHaDias !== undefined ? textoSemAceite(o.escolha.semAceiteHaDias) : null;
-  const lembrar = escolhido && o.escolha ? enderecoWhatsapp(null, `Olá, ${escolhido.nome}. A proposta de vocês para ${o.titulo.charAt(0).toLowerCase()}${o.titulo.slice(1)} (${reais(o.escolha.total)}) foi a escolhida pelo condomínio. Pode confirmar pelo link que mandamos? Obrigado.`) : null;
+  const lembrar = escolhido && o.escolha ? enderecoWhatsapp(`Olá, ${escolhido.nome}. A proposta de vocês para ${o.titulo.charAt(0).toLowerCase()}${o.titulo.slice(1)} (${reais(o.escolha.total)}) foi a escolhida pelo condomínio. Pode confirmar pelo link que mandamos? Obrigado.`) : null;
 
   const convites = (
     <Cartao id="t-convites" titulo="Convites" icone="pessoas"
@@ -134,6 +144,12 @@ export function FichaOrcamento() {
           })}
         </ul>
       ) : <p className="t-apoio">Ninguém convidado ainda. O orçamento só começa quando os convites saem.</p>}
+      {d.pode.mandar ? (
+        <div className="grid gap-1 border-t border-linha pt-3">
+          <p className="t-apoio">Guardado sem mandar. Os convites saem quando você mandar; cada convidado recebe um link só dele.</p>
+          <Botao className="justify-self-start" onClick={() => void mandar()}><Icone nome="enviar" />Mandar os convites</Botao>
+        </div>
+      ) : null}
     </Cartao>
   );
 
@@ -142,13 +158,13 @@ export function FichaOrcamento() {
       {d.pode.comparar && o.regra.minimoAtendido ? (
         <>
           <h2 className="t-titulo-cartao">{o.recebidas === 1 ? "1 proposta para comparar" : `${o.recebidas} propostas para comparar`}</h2>
-          <p className="t-apoio">{o.regra.faixa ? `Mínimo da regra: ${o.regra.faixa.minimo} · ` : ""}{o.prazoFechou ? `todas chegaram antes de ${diaHoraCurtaDe(o.prazoPropostas)}` : `o prazo vai até ${diaHoraCurtaDe(o.prazoPropostas)}; dá para comparar o que já chegou`}</p>
+          <p className="t-apoio">{o.regra.ligada && o.regra.faixa ? `Mínimo da regra: ${o.regra.minimo} · ` : ""}{o.prazoFechou ? `todas chegaram antes de ${diaHoraCurtaDe(o.prazoPropostas)}` : `o prazo vai até ${diaHoraCurtaDe(o.prazoPropostas)}; dá para comparar o que já chegou`}</p>
           <Link href={`/orcamentos/${o.id}/comparar`} className={classeBotao("primario", "justify-self-start")}><Icone nome="lista" />Comparar propostas</Link>
         </>
       ) : d.pode.comparar ? (
         <>
           <h2 className="t-titulo-cartao">Ainda não chegou o mínimo da regra</h2>
-          <p className="t-texto">Chegaram {o.recebidas === 1 ? "1 proposta" : `${o.recebidas} propostas`}; a regra pede {o.regra.faixa?.minimo}{o.regra.faixa ? (o.regra.faixa.ate === null ? (o.regra.anterior !== null ? ` acima de ${reais(o.regra.anterior).replace(/,00$/, "")}` : "") : ` até ${reais(o.regra.faixa.ate).replace(/,00$/, "")}`) : ""}.</p>
+          <p className="t-texto">Chegaram {o.recebidas === 1 ? "1 proposta" : `${o.recebidas} propostas`}; a regra pede {o.regra.minimo}{faixaPorExtenso(o.regra)}.</p>
           <div className="flex flex-wrap gap-2">
             {d.pode.estender ? <Botao variante="contorno" onClick={() => setJanela("estender")}>Estender o prazo</Botao> : null}
             {d.pode.convidar ? <Botao variante="contorno" onClick={() => setJanela("convidar")}>Convidar mais</Botao> : null}
@@ -169,7 +185,7 @@ export function FichaOrcamento() {
     <Cartao id="t-dados" titulo="Dados" icone="info">
       <div className="grid">
         <Dado icone="relogio" nome="Situação">{s.texto}</Dado>
-        <Dado icone="pessoa" nome="Quem cuida">{o.cuidador.nome}, {o.cuidador.cargo}</Dado>
+        <Dado icone="pessoa" nome="Quem cuida">{o.cuidador.nome}</Dado>
         <Dado icone={o.origem ? ICONE_ORIGEM[o.origem.tipo] ?? "editar" : "editar"} nome="Nasceu de">
           {o.origem?.tipo === "MANUTENCAO" && o.origem.id ? <Link href={`/manutencao/manutencao?id=${o.origem.id}`} className="font-medium text-violeta-600 hover:underline">{o.origem.texto}</Link>
             : o.origem?.tipo === "PEDIDO" && o.origem.id ? <Link href={`/pedidos/pedido?id=${o.origem.id}`} className="font-medium text-violeta-600 hover:underline">{o.origem.texto}</Link>
@@ -179,7 +195,7 @@ export function FichaOrcamento() {
         <Dado icone="escudo" nome="Regra">{textoDaRegra(o.regra)}</Dado>
         {o.valorEstimado !== null ? <Dado icone="dinheiro" nome="Valor estimado">{reais(o.valorEstimado)}</Dado> : null}
       </div>
-      {!decidido && o.regra.ligada ? <p className="t-apoio">{textoRegraMinimo({ ligada: o.regra.ligada, faixa: o.regra.faixa, anterior: o.regra.anterior }, o.convidados)}</p> : null}
+      {!decidido && o.regra.ligada ? <p className="t-apoio">{textoRegraMinimo({ ligada: o.regra.ligada, faixa: o.regra.faixa ? { ate: o.regra.faixa.ate ?? null, minimo: o.regra.faixa.minimo } : null, anterior: o.regra.anterior ?? null }, o.convidados)}</p> : null}
     </Cartao>
   );
 
@@ -187,9 +203,9 @@ export function FichaOrcamento() {
     <Cartao id="t-pedido" titulo="O que foi pedido" icone="documento">
       <p className="t-texto whitespace-pre-line">{o.descricao}</p>
       {o.editadoEm ? <p className="t-apoio">Alterado em {diaHora(o.editadoEm)}. Quem já respondeu foi avisado no link.</p> : null}
-      {d.arquivos.length ? (
+      {arquivosDoPedido.length ? (
         <ul className="flex flex-wrap gap-2" aria-label="Arquivos para o fornecedor">
-          {d.arquivos.map((a) => (
+          {arquivosDoPedido.map((a) => (
             <li key={a.id}>
               <button type="button" onClick={() => void abrirPdf(a.id).then((f) => (f ? setRecado({ tom: "atencao", texto: f }) : null))}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-linha px-3 py-1.5 t-apoio font-medium text-violeta-600 hover:underline">
@@ -236,6 +252,11 @@ export function FichaOrcamento() {
       {o.cancelado ? (
         <Aviso tom="neutro" titulo={`Cancelado em ${diaCompleto(o.cancelado.em)}`}>
           {o.cancelado.motivo}. Nada é apagado: as propostas, as versões e o histórico ficam em Cancelados, e os fornecedores são avisados no link.
+        </Aviso>
+      ) : null}
+      {o.recusa && o.estado === "COMPARANDO" ? (
+        <Aviso tom="atencao" titulo={o.recusa.estado === "RECUSADA" ? "O conselho recusou a escolha" : "A despesa da escolha foi retirada"}>
+          {o.recusa.justificativa ? `${o.recusa.justificativa}. ` : ""}As propostas voltaram para a comparação: escolha de novo, com o motivo.
         </Aviso>
       ) : null}
       {semAceite && o.escolha ? (
@@ -307,7 +328,7 @@ function Acompanhamento({ d, depois, abrir, lembrar }: { d: OrcamentoDetalhe; de
   if (!e) return <p className="t-apoio">Sem escolha registrada.</p>;
   const aprovada = !!e.aprovadaEm;
   const aceitou = !!e.aceiteEm;
-  const prestadorId = e.convite.prestadorId;
+  const prestadorId = d.convites.find((c) => c.id === e.convite.id)?.prestadorId ?? null;
   const ordem = `/manutencao?nova=1&titulo=${encodeURIComponent(o.titulo)}&local=${encodeURIComponent(o.local ?? "")}&prestador=${encodeURIComponent(prestadorId ?? "")}`;
   const resumo = resumoParaMoradores({ titulo: o.titulo, propostas: o.recebidas, fornecedor: e.convite.nome, total: e.total, motivo: e.motivo, aprovadoPeloConselhoEm: e.quemAprova === "CONSELHO" && e.aprovadaEm ? e.aprovadaEm.slice(0, 10) : null });
   const comunicado = `/comunicados/escrever?titulo=${encodeURIComponent(o.titulo)}&texto=${encodeURIComponent(resumo)}`;
@@ -327,7 +348,7 @@ function Acompanhamento({ d, depois, abrir, lembrar }: { d: OrcamentoDetalhe; de
           {etapa(1, "Escolhida e aprovada", aprovada ? "Feito" : "Agora", (
             <p className="t-texto">
               {e.convite.nome} · {reais(e.total)} · escolhida por {e.escolhidaPor.split(" ")[0]} em {ddmm(e.escolhidaEm.slice(0, 10))}
-              {e.quemAprova === "CONSELHO" ? (aprovada ? <span className="block t-apoio">{e.aprovadaTexto ?? "O conselho aprovou"}</span>
+              {e.quemAprova === "CONSELHO" ? (aprovada ? <span className="block t-apoio">{e.despesaJustificativa ?? "O conselho aprovou"}</span>
                 : <span className="block t-apoio">Esperando o conselho{e.despesaId ? <> · <Link href={`/decisoes/despesa?id=${e.despesaId}`} className="font-medium text-violeta-600 hover:underline">ver a despesa em Decisões</Link></> : null}</span>)
                 : <span className="block t-apoio">Escolha sem o conselho: a alçada só avisa</span>}
               {e.motivo ? <span className="block t-apoio">Por quê: {e.motivo}</span> : null}
@@ -347,6 +368,7 @@ function Acompanhamento({ d, depois, abrir, lembrar }: { d: OrcamentoDetalhe; de
           {etapa(3, "Registrar a compra", o.compra ? "Feito" : d.pode.registrarCompra ? "Agora" : "Depois", o.compra ? (
             <p className="t-texto">Comprada em {diaCompleto(o.compra.compradaEm)} · {reais(o.compra.valorFechado)}{o.compra.valorFechado !== e.total ? ` (a proposta era ${reais(e.total)})` : " · igual à proposta"}
               <span className="block t-apoio">Nota fiscal: {o.compra.notaFiscal ? o.compra.notaFiscal.nome : "anexar quando chegar"}</span>
+              {!o.compra.notaFiscal && d.pode.anexar ? <AnexarNotaFiscal orcamentoId={o.id} salvo={depois} /> : null}
               {prestadorId ? <Link href={ordem} className={classeBotao("contorno", "mt-2 justify-self-start", "m")}><Icone nome="ferramenta" />Criar ordem de serviço</Link> : null}
             </p>
           ) : d.pode.registrarCompra ? <FormCompra d={d} ordem={prestadorId ? ordem : null} salvo={(t, criarOrdem) => { depois(t); if (criarOrdem) router.push(ordem); }} /> : <p className="t-apoio">Depois do aceite do fornecedor.</p>)}
@@ -623,5 +645,25 @@ function JanelaProposta({ c, aoFechar }: { c: ConviteDoOrcamento | null; aoFecha
         </dl>
       ) : null}
     </Dialogo>
+  );
+}
+
+/** A nota fiscal, quando chegar (quadro 482): o mesmo ciclo dos anexos, com a parte NOTA_FISCAL. */
+function AnexarNotaFiscal({ orcamentoId, salvo }: { orcamentoId: string; salvo: (t: string, tom?: Tom) => void }) {
+  const [enviando, setEnviando] = useState(false);
+  async function escolher(arquivo: File | undefined) {
+    if (!arquivo) return;
+    setEnviando(true);
+    const r = await enviarArquivosDoOrcamento(orcamentoId, [{ chave: arquivo.name, arquivo, descricao: "", problema: null, progresso: 0 }], "NOTA_FISCAL");
+    setEnviando(false);
+    const ok = r[0]?.liberado;
+    salvo(ok ? "Nota fiscal anexada." : `A nota fiscal não foi anexada: ${r[0]?.motivo ?? "tente de novo."}`, ok ? "ok" : "atencao");
+  }
+  return (
+    <span className="mt-2 grid gap-1">
+      <label htmlFor="nota-fiscal" className="t-apoio font-medium">Anexar a nota fiscal</label>
+      <input id="nota-fiscal" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={enviando} className="t-texto" onChange={(ev) => void escolher(ev.target.files?.[0])} />
+      {enviando ? <span className="t-apoio" role="status">Enviando…</span> : null}
+    </span>
   );
 }

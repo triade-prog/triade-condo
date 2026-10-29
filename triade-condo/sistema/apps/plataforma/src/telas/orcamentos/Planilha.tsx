@@ -26,7 +26,7 @@ export function Planilha() {
   const c = comp.dados;
   const nome = cond.estado === "pronto" ? cond.dados.nome : "Condomínio";
   const escolhida = o.escolha?.propostaId ?? null;
-  const propostas = [...c.propostas].sort((a, b) => (a.propostaId === escolhida ? -1 : b.propostaId === escolhida ? 1 : a.letra.localeCompare(b.letra)));
+  const propostas = [...c.propostas].sort((a, b) => (a.id === escolhida ? -1 : b.id === escolhida ? 1 : a.letra.localeCompare(b.letra)));
   const linhas: [string, (p: Comparacao["propostas"][number]) => string][] = [
     ["Total", (p) => reais(p.total)],
     ["Frete", (p) => (p.freteIncluso ? "Incluso" : reais(p.frete))],
@@ -77,7 +77,7 @@ export function Planilha() {
                     {propostas.map((p) => (
                       <th key={p.conviteId} scope="col" className="border-b border-linha px-2 py-1.5 align-top font-semibold">
                         {p.letra} · {p.nome}
-                        {p.propostaId === escolhida ? <span className="block text-[10px] font-semibold tracking-[.1em] text-violeta-700 uppercase">Escolhida</span> : null}
+                        {p.id === escolhida ? <span className="block text-[10px] font-semibold tracking-[.1em] text-violeta-700 uppercase">Escolhida</span> : null}
                         {p.conviteId === c.menorTotal ? <span className="block text-[10px] font-normal text-tinta-suave">Menor total</span> : null}
                       </th>
                     ))}
@@ -87,7 +87,7 @@ export function Planilha() {
                   {linhas.map(([n, f]) => (
                     <tr key={n}>
                       <th scope="row" className="border-b border-linha py-1.5 pr-2 align-top font-medium text-tinta-suave">{n}</th>
-                      {propostas.map((p) => <td key={p.conviteId} className={`border-b border-linha px-2 py-1.5 align-top ${p.propostaId === escolhida ? "bg-violeta-50" : ""}`}>{f(p)}</td>)}
+                      {propostas.map((p) => <td key={p.conviteId} className={`border-b border-linha px-2 py-1.5 align-top ${p.id === escolhida ? "bg-violeta-50" : ""}`}>{f(p)}</td>)}
                     </tr>
                   ))}
                 </tbody>
@@ -102,7 +102,7 @@ export function Planilha() {
               <p>
                 Escolhida a proposta de <b className="font-semibold">{o.escolha.convite.nome}</b>, {reais(o.escolha.total)}, por {o.escolha.escolhidaPor} em {diaCompleto(o.escolha.escolhidaEm)}.
                 {o.escolha.motivo ? ` Motivo: ${o.escolha.motivo}` : " A de menor total."}
-                {o.escolha.quemAprova === "CONSELHO" ? (o.escolha.aprovadaEm ? ` ${o.escolha.aprovadaTexto ?? "O conselho aprovou"} em ${diaCompleto(o.escolha.aprovadaEm)}.` : " Esperando a aprovação do conselho.") : ""}
+                {o.escolha.quemAprova === "CONSELHO" ? (o.escolha.aprovadaEm ? ` ${o.escolha.despesaJustificativa ?? "O conselho aprovou"} em ${diaCompleto(o.escolha.aprovadaEm)}.` : " Esperando a aprovação do conselho.") : ""}
                 {o.escolha.aceiteEm ? ` O fornecedor aceitou em ${diaCompleto(o.escolha.aceiteEm)}.` : ""}
               </p>
             ) : <p className="text-tinta-suave">Ainda sem decisão.{c.minimo.pedido > 1 ? ` A regra pede ${c.minimo.pedido} propostas; chegaram ${c.minimo.recebidas}.` : ""}{c.alcadaConselho !== null ? ` Alçada do conselho: ${mostrarTotal(c.alcadaConselho, false)}.` : ""}</p>}

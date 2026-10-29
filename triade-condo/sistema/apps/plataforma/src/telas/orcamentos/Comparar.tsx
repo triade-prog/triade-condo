@@ -7,14 +7,16 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { mostrarTotal } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Selo, textoDoErro, Vazio } from "@triade/ui";
 import { useCelular } from "../celular.ts";
 import { Escolha } from "../moradores/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
-import { ddmm, linhaDaOrigem, ListaInclui, reais, textoValidade } from "./comum.tsx";
+import { ddmm, faixaPorExtenso, linhaDaOrigem, ListaInclui, reais, textoValidade } from "./comum.tsx";
+import { LinksMandados, temLinkParaCopiar } from "../decisoes/votacao.tsx";
+import type { LinkMandado } from "../tipos.ts";
 import { EscolherProposta } from "./Escolher.tsx";
-import type { Comparacao, OpcoesOrcamento, OrcamentoDetalhe, PropostaComparada } from "./tipos.ts";
+import { JanelaConvites } from "./Convite.tsx";
+import type { Comparacao, LinkConvite, OpcoesOrcamento, OrcamentoDetalhe, PropostaComparada } from "./tipos.ts";
 
 type Linha = { id: string; nome: string; valor: (p: PropostaComparada) => string; mostrar?: (p: PropostaComparada) => ReactNode; sempre?: boolean };
 
@@ -62,6 +64,9 @@ export function Comparar() {
   const opcoes = useCarregar<OpcoesOrcamento>("/v1/condominio/orcamentos/opcoes");
   const [soDiferente, setSoDiferente] = useState(false);
   const [escolhendo, setEscolhendo] = useState<PropostaComparada | null>(null);
+  const [linkConvite, setLinkConvite] = useState<LinkConvite[] | null>(null);
+  const [linksConselho, setLinksConselho] = useState<LinkMandado[] | null>(null);
+  const [depoisDosLinks, setDepois] = useState<(() => void) | null>(null);
   const [aberta, setAberta] = useState<string | null>(null);
   const [versoes, setVersoes] = useState<string[]>([]);
   const [falha, setFalha] = useState<string | null>(null);
@@ -82,15 +87,16 @@ export function Comparar() {
   const semMinimo = !c.minimo.atendido && !assimMesmo;
 
   async function pedirConfirmacao(p: PropostaComparada) {
-    const r = await chamarApi(`/v1/condominio/orcamentos/${o.id}/convites/${p.conviteId}/pedir-confirmacao`, { corpo: {} });
+    const r = await chamarApi<{ link: LinkConvite }>(`/v1/condominio/orcamentos/${o.id}/convites/${p.conviteId}/pedir-confirmacao`, { corpo: {} });
     if (!r.ok) return setRecado({ tom: "atencao", texto: `Não deu para pedir a confirmação: ${textoDoErro(r.erro)}` });
     setRecado({ tom: "ok", texto: `Pedido de confirmação do preço mandado a ${p.nome}, pelo link. Se ele mandar outro valor, entra como versão ${p.versoes + 1}.` });
+    if (r.dados.link?.envio === "COPIAR") setLinkConvite([r.dados.link]);
     comp.recarregar();
   }
 
   const Pilulas = ({ p }: { p: PropostaComparada }) => (
     <span className="flex flex-wrap gap-1.5">
-      {p.conviteId === c.menorTotal ? <Selo tom="ok">Menor total</Selo> : null}
+      {p.menorTotal ? <Selo tom="ok">Menor total</Selo> : null}
       {p.vencida ? <Selo tom="atencao">Validade venceu</Selo> : null}
       {p.faltaAlgo ? <Selo tom="atencao">Falta algo pedido</Selo> : null}
       {p.confirmada ? <Selo tom="ok">Preço confirmado</Selo> : null}
@@ -99,7 +105,7 @@ export function Comparar() {
   const Validade = ({ p }: { p: PropostaComparada }) => (
     <span className="grid gap-1">
       <span className={p.vencida ? "text-atencao" : ""}>{ddmm(p.validaAte)}{p.vencida ? " · venceu" : ""}</span>
-      {p.vencida && !p.confirmacaoPedidaEm && podeDecidir ? <Botao variante="contorno" tamanho="p" className="justify-self-start" onClick={() => void pedirConfirmacao(p)}>Pedir confirmação</Botao> : null}
+      {p.vencida && !p.confirmacaoPedidaEm && (c.pode.pedirConfirmacao ?? podeDecidir) ? <Botao variante="contorno" tamanho="p" className="justify-self-start" onClick={() => void pedirConfirmacao(p)}>Pedir confirmação</Botao> : null}
       {p.vencida && p.confirmacaoPedidaEm ? <Selo tom="andamento">Pedido em {ddmm(p.confirmacaoPedidaEm)} · esperando</Selo> : null}
     </span>
   );
@@ -141,7 +147,7 @@ export function Comparar() {
       {falha ? <Aviso tom="atencao">{falha}</Aviso> : null}
       {semMinimo ? (
         <Aviso tom="atencao" titulo="Ainda não chegou o mínimo da regra">
-          {`Chegaram ${c.minimo.recebidas === 1 ? "1 proposta" : `${c.minimo.recebidas} propostas`}; a regra pede ${c.minimo.pedido}${c.faixa ? (c.faixa.ate === null ? (o.regra.anterior ? ` acima de ${mostrarTotal(o.regra.anterior, false)}` : "") : ` até ${mostrarTotal(c.faixa.ate, false)}`) : ""}.`}
+          {`Chegaram ${c.minimo.recebidas === 1 ? "1 proposta" : `${c.minimo.recebidas} propostas`}; a regra pede ${c.minimo.pedido}${faixaPorExtenso(c.regra ?? o.regra)}.`}
           <span className="mt-2 flex flex-wrap gap-2">
             <Link href={`/orcamentos/${o.id}?acao=estender`} className={classeBotao("contorno", "", "m")}>Estender o prazo</Link>
             <Link href={`/orcamentos/${o.id}?acao=convidar`} className={classeBotao("contorno", "", "m")}>Convidar mais</Link>
@@ -227,7 +233,14 @@ export function Comparar() {
       {nota ? <Aviso tom="info">{nota}</Aviso> : null}
       {!podeDecidir && propostas.length ? <p className="t-apoio">{o.estado === "ESCOLHIDA" || o.estado === "COMPRANDO" || o.estado === "ENTREGUE" ? "A escolha já foi feita: a comparação fica guardada." : "Só quem pode decidir escolhe a proposta."}</p> : null}
       <EscolherProposta o={o} c={c} p={escolhendo} opcoes={opcoes.estado === "pronto" ? opcoes.dados : null} aoFechar={() => setEscolhendo(null)}
-        escolhida={(texto) => { setEscolhendo(null); atualizar(); router.push(`/orcamentos/${o.id}?recado=${encodeURIComponent(texto)}`); }} />
+        escolhida={(texto, _despesa, links) => {
+          setEscolhendo(null);
+          atualizar();
+          const ir = () => router.push(`/orcamentos/${o.id}?recado=${encodeURIComponent(texto)}`);
+          if (temLinkParaCopiar(links)) { setLinksConselho(links); setDepois(() => ir); } else ir();
+        }} />
+      <JanelaConvites links={linkConvite} titulo={o.titulo} prazo={o.prazoPropostas} aoFechar={() => setLinkConvite(null)} />
+      <LinksMandados links={linksConselho} aoFechar={() => { setLinksConselho(null); depoisDosLinks?.(); }} />
     </div>
   );
 }

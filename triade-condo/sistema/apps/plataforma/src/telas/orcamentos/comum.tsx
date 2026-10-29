@@ -3,12 +3,23 @@
 // jeito dos quadros ("26/10/2026, 18h"), o endereço do link do fornecedor e os textos que só as
 // telas usam. O domínio (packages/domain/src/orcamentos.ts) dá os nomes e as regras.
 
-import { dinheiro, ESTADOS_CONVITE, formatar, mostrarDataSemHora, mostrarTotal } from "@triade/domain";
+import { caminhoLinkOrcamento, dinheiro, ESTADOS_CONVITE, formatar, mensagemConvite, mostrarDataSemHora, mostrarTotal } from "@triade/domain";
 import { Icone, Selo, type NomeIcone, type Tom } from "@triade/ui";
-import type { ConviteDoOrcamento, OrcamentoDaLista, PropostaComparada, PropostaEmUso } from "./tipos.ts";
+import type { ConviteDoOrcamento, LinkConvite, OrcamentoDaLista, PropostaComparada, PropostaEmUso } from "./tipos.ts";
 
 /** "R$ 6.480,00": sempre com centavos, como nos quadros de detalhe (o mostrarCusto tira o ",00"). */
 export const reais = (centavos: number) => formatar(dinheiro(centavos));
+
+/** " acima de R$ 3.000" ou " até R$ 1.000": a faixa da regra que vale para o orçamento (vazio sem faixa). */
+export function faixaPorExtenso(r: { faixa?: { ate?: number | null } | null; anterior?: number | null }): string {
+  if (!r.faixa) return "";
+  const ate = r.faixa.ate ?? null;
+  if (ate === null) return r.anterior !== undefined && r.anterior !== null ? ` acima de ${mostrarTotal(r.anterior, false)}` : "";
+  return ` até ${mostrarTotal(ate, false)}`;
+}
+
+/** Os códigos de "pede atenção" da lista, em palavras (quadro 470). */
+export const TEXTO_ATENCAO: Record<string, string> = { PRAZO_FECHOU: "O prazo fechou: hora de comparar", PROPOSTA_VENCIDA: "Proposta vencida", SEM_ACEITE: "Sem aceite do fornecedor" };
 
 /** O que a lista e a ficha dizem em cada situação, e a cor. */
 export function seloSituacao(o: Pick<OrcamentoDaLista, "estado" | "situacao" | "prazoFechou">): { texto: string; tom: Tom } {
@@ -53,14 +64,18 @@ export function diaCompleto(d: string): string {
   return `${p.day}/${p.month}/${p.year}`;
 }
 
-/** O endereço do link do fornecedor (/o/<código>), para copiar ou mandar pelo WhatsApp. */
-export const enderecoDoLinkOrcamento = (codigo: string) => `${typeof window === "undefined" ? "" : window.location.origin}/o/${codigo}`;
+/** O endereço do link do fornecedor (/o/<código>), quando a API não mandou o `link` pronto. */
+export const enderecoDoLinkOrcamento = (codigo: string) => `${typeof window === "undefined" ? "" : window.location.origin}${caminhoLinkOrcamento(codigo)}`;
 
-/** O WhatsApp já aberto com a mensagem: na conversa do número, quando ele existe; senão, para escolher o contato. */
-export function enderecoWhatsapp(celular: string | null | undefined, texto: string): string {
-  const numero = (celular ?? "").replace(/\D/g, "");
-  const n = numero ? (numero.startsWith("55") ? numero : `55${numero}`) : "";
-  return `https://wa.me/${n}?text=${encodeURIComponent(texto)}`;
+/** O link e o texto pronto do convite: os da API; sem eles, montados com a mensagem do domínio. */
+export function linkDoConvite(l: LinkConvite): { link: string; texto: string } {
+  const link = l.link ?? (l.codigo ? enderecoDoLinkOrcamento(l.codigo) : "");
+  return { link, texto: l.texto ?? mensagemConvite({ ...l.mensagem, link }) };
+}
+
+/** O WhatsApp de quem manda, já com a mensagem; a pessoa escolhe o contato (o sistema não guarda o número na resposta). */
+export function enderecoWhatsapp(texto: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(texto)}`;
 }
 
 /** "R$ 6.480,00 · frete incluso" ou "R$ 6.130,00 · R$ 5.950,00 + frete R$ 180,00". */

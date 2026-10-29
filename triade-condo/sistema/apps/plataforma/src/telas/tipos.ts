@@ -309,7 +309,9 @@ export interface AvisoDoPainel {
     | "TROCA_TROCOU" | "TROCA_MANDAR_LINK" | "TROCA_NAO_TROCOU" | "TROCA_RESERVA_SEM_RESPOSTA" | "TROCA_SEM_RESPOSTA"
     | "DECISAO_PEDIDA" | "DECISAO_VENCIDA" | "DECISAO_RESPONDIDA" | "DECISAO_VOTO" | "DECISAO_VOLTOU"
     | "DESPESA_PEDIDA" | "DESPESA_VENCIDA" | "DESPESA_RESPONDIDA" | "DESPESA_VOTO" | "DESPESA_ESCALADA" | "DESPESA_VOLTOU"
-    | "MANDATO_VENCENDO" | "AUSENCIA_INICIO" | "AUSENCIA_FIM";
+    | "MANDATO_VENCENDO" | "AUSENCIA_INICIO" | "AUSENCIA_FIM"
+    | "ORCAMENTO_PROPOSTA_RECEBIDA" | "ORCAMENTO_RECUSOU" | "ORCAMENTO_PRAZO_FECHOU" | "ORCAMENTO_PRECO_CONFIRMADO"
+    | "ORCAMENTO_ACEITE" | "ORCAMENTO_SEM_ACEITE_5D" | "ORCAMENTO_APROVADA";
   pedidoId?: string;
   protocolo?: string;
   assunto?: string | null;
@@ -338,12 +340,16 @@ export interface AvisoDoPainel {
   /** Nos avisos das decisões (F7.4, AT-23): o título é a pergunta; prazo e situação de agora. */
   decisaoId?: string;
   prazo?: string;
-  estado?: EstadoDecisao | EstadoDespesa | "PAGA";
+  estado?: EstadoDecisao | EstadoDespesa | "PAGA" | string;
   /** Nos avisos das despesas, do mandato e da ausência (R5). */
   despesaId?: string;
   valor?: number;
   membroId?: string;
   ausenciaId?: string;
+  /** Nos avisos dos orçamentos (R8): o fornecedor do convite e, na resposta da escolha, o resultado. */
+  orcamentoId?: string;
+  fornecedor?: string;
+  resultado?: string;
   criadoEm: string;
   vistoEm: string | null;
 }

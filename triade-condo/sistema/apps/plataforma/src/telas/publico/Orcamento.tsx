@@ -17,6 +17,8 @@ import { Cartao, TelaPublica, useAbrirArquivo } from "./comum.tsx";
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: OrcamentoPublico };
 const RODAPE = "Não precisa de conta nem senha. O link é só seu: não repasse.";
 const PASSOS = ["Ver o pedido", "Proposta", "Pronto"] as const;
+/** Hoje no horário de Brasília, quando a API não manda `hoje`. */
+const hojeAqui = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const somarDias = (data: string, n: number) => new Date(Date.UTC(Number(data.slice(0, 4)), Number(data.slice(5, 7)) - 1, Number(data.slice(8, 10)) + n)).toISOString().slice(0, 10);
 
 function Mini({ icone, tom, titulo, children }: { icone: NomeIcone; tom: string; titulo: string; children: ReactNode }) {
@@ -64,6 +66,8 @@ export function OrcamentoLink() {
   const d = carga.dados;
   const p = d.pedido;
   const prazoAberto = p ? Date.parse(p.prazoPropostas) > new Date().getTime() : false;
+  // O que a página deixa fazer vem da API (pode); sem ele, vale o prazo.
+  const podeMandar = d.pode ? d.pode.mandarProposta : prazoAberto;
   const pronto = (dados: OrcamentoPublico, texto: string) => { setCarga({ estado: "pronto", dados }); setTela("ver"); setRecado(texto); window.scrollTo({ top: 0 }); };
   const passo: 1 | 2 | 3 | null = d.estado === "VER" ? (tela === "proposta" ? 2 : 1) : d.estado === "ENVIADA" || d.estado === "CONFIRMAR_PRECO" ? (tela === "proposta" ? 2 : 3) : null;
 
@@ -77,15 +81,16 @@ export function OrcamentoLink() {
         </Mini>
       ) : d.estado === "CANCELADO" ? (
         <Mini icone="fechar" tom="neutro" titulo={ESTADOS_LINK_ORCAMENTO.CANCELADO}>
-          <p>Obrigado por participar. {d.mensagens.join(" ")}</p>
+          <p>Obrigado por participar. O condomínio não vai seguir com este pedido; se precisar de novo, manda outro convite.</p>
         </Mini>
       ) : d.estado === "PRAZO_ACABOU" ? (
         <Mini icone="relogio" tom="atencao" titulo={ESTADOS_LINK_ORCAMENTO.PRAZO_ACABOU}>
-          <p>Este pedido fechou em {p ? diaHoraCurta(p.prazoPropostas) : "o prazo"}. Fale com o condomínio se ainda quiser participar.</p>
+          <p>{p ? `Este pedido fechou em ${p.prazoTexto ?? diaHoraCurta(p.prazoPropostas)}.` : "Este pedido fechou."} Fale com o condomínio se ainda quiser participar.</p>
         </Mini>
       ) : d.estado === "RECUSOU" ? (
         <Mini icone="check" tom="neutro" titulo={ESTADOS_LINK_ORCAMENTO.RECUSOU}>
           <p>Obrigado por avisar. O condomínio fica sabendo e não manda lembrete.</p>
+          {d.recusa?.motivo ? <p className="t-apoio">Seu motivo: {d.recusa.motivo}</p> : null}
         </Mini>
       ) : d.estado === "NAO_ESCOLHIDA" ? (
         <Mini icone="info" tom="neutro" titulo={ESTADOS_LINK_ORCAMENTO.NAO_ESCOLHIDA}>
@@ -102,6 +107,7 @@ export function OrcamentoLink() {
         <>
           <Mini icone="estrela" tom="ok" titulo={ESTADOS_LINK_ORCAMENTO.ESCOLHIDA}>
             <p>Confirme se aceita fazer o serviço nas condições da sua proposta. Aceitar aqui não é contrato nem pagamento.</p>
+            {d.escolha?.esperaAprovacao ? <p className="t-apoio">O conselho do condomínio ainda vai aprovar. Você pode aceitar agora; o serviço só começa depois do sim.</p> : null}
           </Mini>
           {d.proposta ? <ResumoProposta d={d} /> : null}
           <FormAceite base={base} fornecedor={d.fornecedor.nome} pronto={pronto} />
@@ -113,7 +119,7 @@ export function OrcamentoLink() {
               <Mini icone="relogio" tom="atencao" titulo={ESTADOS_LINK_ORCAMENTO.CONFIRMAR_PRECO}>
                 <p>Sua proposta venceu em {ddmm(d.proposta.validaAte)}. Confirme se {reais(d.proposta.total)} continua valendo, ou mande um preço novo.</p>
               </Mini>
-              <FormConfirmar d={d} base={base} pronto={pronto} precoNovo={() => setTela("proposta")} />
+              <FormConfirmar d={d} base={base} pronto={pronto} precoNovo={d.pedido && podeMandar ? () => setTela("proposta") : null} />
               <ResumoProposta d={d} />
             </>
           )
@@ -123,9 +129,10 @@ export function OrcamentoLink() {
             <>
               <Mini icone="check" tom="ok" titulo={`${ESTADOS_LINK_ORCAMENTO.ENVIADA} · versão ${d.proposta.numero}`}>
                 <p>O síndico do {d.condominio} recebeu sua proposta de {reais(d.proposta.total)}. Você recebe a resposta por aqui e pelo WhatsApp.</p>
-                {d.mensagens.map((m) => <p key={m} className="t-apoio">{m}</p>)}
+                {p?.alteradoEm ? <p className="t-apoio">O condomínio alterou o pedido depois da sua proposta. Confira o que precisa.</p> : null}
+                {!podeMandar ? <p className="t-apoio">O prazo para propostas acabou: a sua já está com o condomínio.</p> : null}
               </Mini>
-              {prazoAberto && p ? (
+              {podeMandar && p ? (
                 <Cartao>
                   <h2 className="t-texto font-medium">Mandar uma versão nova</h2>
                   <p className="t-apoio">Até {diaHoraCurta(p.prazoPropostas)}. A versão {d.proposta.numero} continua guardada; o síndico vê as duas.</p>
@@ -161,11 +168,12 @@ function Pedido({ d, base }: { d: OrcamentoPublico; base: string }) {
   return (
     <Cartao className="gap-3">
       <h2 className="t-titulo-secao font-medium">{p.titulo}</h2>
-      {p.editadoEm ? <Aviso tom="info">O condomínio alterou o pedido. Confira o que precisa antes de mandar.</Aviso> : null}
+      {p.alteradoEm ? <Aviso tom="info">O condomínio alterou o pedido. Confira o que precisa antes de mandar.</Aviso> : null}
       <div className="t-texto leading-relaxed whitespace-pre-line">{p.descricao}</div>
       <dl className="grid gap-2 sm:grid-cols-3">
+        {p.quem ? <div className="grid gap-0.5"><dt className="t-apoio">Quem pede</dt><dd className="t-texto font-medium">{p.quem.nome}, {p.quem.cargo.toLowerCase()}</dd></div> : null}
         {p.local ? <div className="grid gap-0.5"><dt className="t-apoio">Local</dt><dd className="t-texto font-medium">{p.local}</dd></div> : null}
-        <div className="grid gap-0.5"><dt className="t-apoio">Propostas até</dt><dd className="t-texto font-medium">{diaHoraCurta(p.prazoPropostas)}</dd></div>
+        <div className="grid gap-0.5"><dt className="t-apoio">Propostas até</dt><dd className="t-texto font-medium">{p.prazoTexto ?? diaHoraCurta(p.prazoPropostas)}</dd></div>
         <div className="grid gap-0.5"><dt className="t-apoio">Preço válido por</dt><dd className="t-texto font-medium">pelo menos {p.validadeMinimaDias} dias</dd></div>
       </dl>
       {p.arquivos.length ? (
@@ -187,16 +195,20 @@ function Pedido({ d, base }: { d: OrcamentoPublico; base: string }) {
 /** A proposta que o fornecedor mandou, como ficou. */
 function ResumoProposta({ d }: { d: OrcamentoPublico }) {
   const p = d.proposta!;
+  // Em alguns estados a API manda só o total e a validade: mostra o que veio.
+  const completa = p.inclui !== undefined;
+  const total = p.valor === undefined || p.freteIncluso ? `${reais(p.total)}${p.freteIncluso ? " · frete incluso" : ""}` : `${reais(p.total)} (${reais(p.valor)} + frete ${reais(p.frete ?? 0)})`;
+  const linhas: [string, string][] = [["Total", total], ...(completa ? [["Marca e modelo", p.marcaModelo ?? "—"], ["Prazo para fazer", p.prazoExecucao ?? "—"], ["Garantia", p.garantia ?? "—"]] as [string, string][] : []),
+    ["Preço vale até", `${ddmm(p.validaAte)}${p.vencida ? " · venceu" : ""}${p.confirmada || p.confirmadaEm ? " · confirmado" : ""}`], ...(completa ? [["Pagamento", p.pagamento ?? "—"]] as [string, string][] : [])];
   return (
     <Cartao className="gap-3">
       <h2 className="t-texto font-medium">Sua proposta · versão {p.numero}</h2>
       <dl className="grid gap-2 sm:grid-cols-2">
-        {([["Total", p.freteIncluso ? `${reais(p.total)} · frete incluso` : `${reais(p.total)} (${reais(p.valor)} + frete ${reais(p.frete)})`], ["Marca e modelo", p.marcaModelo ?? "—"],
-          ["Prazo para fazer", p.prazoExecucao], ["Garantia", p.garantia ?? "—"], ["Preço vale até", `${ddmm(p.validaAte)}${p.vencida ? " · venceu" : ""}${p.confirmadaEm ? " · confirmado" : ""}`], ["Pagamento", p.pagamento ?? "—"]] as const).map(([n, t]) => (
+        {linhas.map(([n, t]) => (
           <div key={n} className="grid gap-0.5"><dt className="t-apoio">{n}</dt><dd className="t-texto">{t}</dd></div>
         ))}
-        <div className="grid gap-0.5"><dt className="t-apoio">Inclui</dt><dd className="t-texto"><ListaInclui texto={p.inclui ?? null} /></dd></div>
-        <div className="grid gap-0.5"><dt className="t-apoio">Não inclui</dt><dd className="t-texto">{p.naoInclui ? <ListaInclui texto={p.naoInclui} tom="atencao" /> : <span className="t-apoio">Nada fora do pedido</span>}</dd></div>
+        {completa ? <div className="grid gap-0.5"><dt className="t-apoio">Inclui</dt><dd className="t-texto"><ListaInclui texto={p.inclui ?? null} /></dd></div> : null}
+        {completa ? <div className="grid gap-0.5"><dt className="t-apoio">Não inclui</dt><dd className="t-texto">{p.naoInclui ? <ListaInclui texto={p.naoInclui} tom="atencao" /> : <span className="t-apoio">Nada fora do pedido</span>}</dd></div> : null}
         {p.pdf ? <div className="grid gap-0.5 sm:col-span-2"><dt className="t-apoio">Arquivo</dt><dd className="t-texto">{p.pdf.nome}</dd></div> : null}
       </dl>
     </Cartao>
@@ -209,11 +221,12 @@ const CAMPOS = ["valor", "frete", "marcaModelo", "prazoExecucao", "garantia", "v
 function FormProposta({ d, base, pronto, voltar }: { d: OrcamentoPublico; base: string; pronto: (x: OrcamentoPublico, t: string) => void; voltar: () => void }) {
   const p = d.pedido!;
   const antes = d.proposta;
+  const hoje = d.hoje ?? hojeAqui();
   const noCampo = (c: number) => reais(c).replace(/^R\$\s?/, "");
   const [v, setV] = useState({
     valor: antes ? noCampo(antes.valor) : "", freteIncluso: antes ? antes.freteIncluso : true, frete: antes && !antes.freteIncluso ? noCampo(antes.frete) : "",
     marcaModelo: antes?.marcaModelo ?? "", prazoExecucao: antes?.prazoExecucao ?? "", garantia: antes?.garantia ?? "",
-    validaAte: somarDias(d.hoje, p.validadeMinimaDias), pagamento: antes?.pagamento ?? "", inclui: antes?.inclui ?? "", naoInclui: antes?.naoInclui ?? "",
+    validaAte: somarDias(hoje, p.validadeMinimaDias), pagamento: antes?.pagamento ?? "", inclui: antes?.inclui ?? "", naoInclui: antes?.naoInclui ?? "",
   });
   const [pdf, setPdf] = useState<File | null>(null);
   const [pdfRecusado, setPdfRecusado] = useState(false);
@@ -230,7 +243,7 @@ function FormProposta({ d, base, pronto, voltar }: { d: OrcamentoPublico; base: 
     const valor = centavos(v.valor);
     const frete = v.freteIncluso ? 0 : centavos(v.frete);
     const f = [valor === null || valor <= 0 ? "valor" : null, !v.freteIncluso && (frete === null || frete < 0) ? "frete" : null, v.prazoExecucao.trim() ? null : "prazoExecucao",
-      !v.validaAte || v.validaAte < d.hoje ? "validaAte" : null, v.inclui.trim().length < 3 ? "inclui" : null].filter((x): x is string => !!x);
+      !v.validaAte || v.validaAte < hoje ? "validaAte" : null, v.inclui.trim().length < 3 ? "inclui" : null].filter((x): x is string => !!x);
     setFaltas(f);
     if (f.length) return;
     setEnviando(true);
@@ -250,7 +263,8 @@ function FormProposta({ d, base, pronto, voltar }: { d: OrcamentoPublico; base: 
     });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
-    pronto(r.dados, r.dados.numero > 1 ? `Versão ${r.dados.numero} enviada. A anterior continua guardada.` : "Proposta enviada. Obrigado.");
+    const n = r.dados.numero ?? r.dados.proposta?.numero ?? 1;
+    pronto(r.dados, [n > 1 ? `Versão ${n} enviada. A anterior continua guardada.` : "Proposta enviada. Obrigado.", r.dados.avisoValidade ?? ""].filter(Boolean).join(" "));
   }
 
   return (
@@ -272,7 +286,7 @@ function FormProposta({ d, base, pronto, voltar }: { d: OrcamentoPublico; base: 
           <div className="grid gap-3 sm:grid-cols-2">
             <CampoTexto id="prop-prazo" rotulo="Prazo para fazer" required maxLength={60} value={v.prazoExecucao} onChange={(e) => mudar({ prazoExecucao: e.target.value })} placeholder="5 dias úteis" erro={comErro.includes("prazoExecucao") ? "Diga o prazo, como 5 dias úteis." : null} />
             <CampoTexto id="prop-garantia" rotulo="Garantia" opcional maxLength={60} value={v.garantia} onChange={(e) => mudar({ garantia: e.target.value })} placeholder="12 meses" />
-            <CampoTexto id="prop-vale" rotulo="Preço vale até" required type="date" min={d.hoje} value={v.validaAte} onChange={(e) => mudar({ validaAte: e.target.value })} ajuda={`O condomínio pede pelo menos ${p.validadeMinimaDias} dias.`} erro={comErro.includes("validaAte") ? "Escolha uma data de hoje em diante." : null} />
+            <CampoTexto id="prop-vale" rotulo="Preço vale até" required type="date" min={hoje} value={v.validaAte} onChange={(e) => mudar({ validaAte: e.target.value })} ajuda={`O condomínio pede pelo menos ${p.validadeMinimaDias} dias.`} erro={comErro.includes("validaAte") ? "Escolha uma data de hoje em diante." : null} />
             <CampoTexto id="prop-pagamento" rotulo="Pagamento" opcional maxLength={120} value={v.pagamento} onChange={(e) => mudar({ pagamento: e.target.value })} placeholder="À vista, na entrega" />
           </div>
         </fieldset>
@@ -326,8 +340,9 @@ function FormRecusa({ base, pronto, voltar }: { base: string; pronto: (x: Orcame
 }
 
 /** Confirmar o preço (quadro 478): a validade nova; ou um preço novo, que entra como versão. */
-function FormConfirmar({ d, base, pronto, precoNovo }: { d: OrcamentoPublico; base: string; pronto: (x: OrcamentoPublico, t: string) => void; precoNovo: () => void }) {
-  const [validaAte, setValidaAte] = useState(somarDias(d.hoje, d.pedido?.validadeMinimaDias ?? 15));
+function FormConfirmar({ d, base, pronto, precoNovo }: { d: OrcamentoPublico; base: string; pronto: (x: OrcamentoPublico, t: string) => void; precoNovo: (() => void) | null }) {
+  const hoje = d.hoje ?? hojeAqui();
+  const [validaAte, setValidaAte] = useState(somarDias(hoje, d.pedido?.validadeMinimaDias ?? 15));
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   async function enviar(ev: FormEvent) {
@@ -342,11 +357,11 @@ function FormConfirmar({ d, base, pronto, precoNovo }: { d: OrcamentoPublico; ba
     <form onSubmit={enviar} noValidate className="grid gap-3">
       {erro ? <AvisoErro erro={erro} texto={textoDoErro(erro)} /> : null}
       <Cartao className="gap-3">
-        <CampoTexto id="confirmar-vale" rotulo="O preço vale até" required type="date" min={d.hoje} value={validaAte} onChange={(e) => setValidaAte(e.target.value)} erro={camposComErro(erro).includes("validaAte") ? "Escolha uma data de hoje em diante." : null} />
+        <CampoTexto id="confirmar-vale" rotulo="O preço vale até" required type="date" min={hoje} value={validaAte} onChange={(e) => setValidaAte(e.target.value)} erro={camposComErro(erro).includes("validaAte") ? "Escolha uma data de hoje em diante." : null} />
       </Cartao>
       <div className="grid gap-2">
         <Botao type="submit" className="w-full" disabled={enviando}><Icone nome="check" />{enviando ? "Confirmando…" : `Confirmar ${reais(d.proposta!.total)}`}</Botao>
-        <Botao variante="contorno" className="w-full" onClick={precoNovo} disabled={enviando}><Icone nome="editar" />Mandar um preço novo</Botao>
+        {precoNovo ? <Botao variante="contorno" className="w-full" onClick={precoNovo} disabled={enviando}><Icone nome="editar" />Mandar um preço novo</Botao> : null}
       </div>
     </form>
   );

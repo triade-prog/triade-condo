@@ -36,12 +36,12 @@ function Parte({ n, passo, children }: { n: Passo; passo: Passo; children: React
   );
 }
 
-/** Sobe os arquivos do pedido um a um: pede o lugar, sobe e pede a verificação. */
-async function enviarArquivosDoOrcamento(id: string, itens: ItemEnvio[]): Promise<ResultadoEnvio[]> {
+/** Sobe os arquivos um a um (do pedido ou a nota fiscal): pede o lugar, sobe e pede a verificação. */
+export async function enviarArquivosDoOrcamento(id: string, itens: ItemEnvio[], parte: "PEDIDO" | "NOTA_FISCAL" = "PEDIDO"): Promise<ResultadoEnvio[]> {
   const r: ResultadoEnvio[] = [];
   for (const it of itens.filter((i) => !i.problema)) {
     const nome = it.arquivo.name;
-    const inicio = await chamarApi<{ arquivoId: string; envio: { url: string; tipo: string } }>(`/v1/condominio/orcamentos/${id}/anexos`, { corpo: { nome, tipo: it.arquivo.type, tamanho: it.arquivo.size } });
+    const inicio = await chamarApi<{ arquivoId: string; envio: { url: string; tipo: string } }>(`/v1/condominio/orcamentos/${id}/anexos`, { corpo: { parte, nome, tipo: it.arquivo.type, tamanho: it.arquivo.size } });
     if (!inicio.ok) { r.push({ nome, liberado: false, motivo: textoDoErro(inicio.erro) }); continue; }
     await subir(inicio.dados.envio.url, it.arquivo, inicio.dados.envio.tipo, () => {});
     const fim = await chamarApi<{ situacao: string; motivo?: string }>(`/v1/condominio/orcamentos/anexos/${inicio.dados.arquivoId}/verificar`, { corpo: {} });
@@ -137,11 +137,11 @@ function Formulario({ o }: { o: OpcoesOrcamento }) {
       return;
     }
     setEnviando(mandar ? "MANDAR" : "GUARDAR");
-    const r = await chamarApi<{ id: string; versao: number; links: LinkConvite[] }>("/v1/condominio/orcamentos", {
+    const r = await chamarApi<{ id: string; versao: number; estado: string; links: LinkConvite[] }>("/v1/condominio/orcamentos", {
       corpo: {
         titulo: v.titulo.trim(), descricao: v.descricao.trim(), local: v.local.trim() || null, tipo: v.tipo,
         manutencaoId: v.origem.startsWith("M:") ? v.origem.slice(2) : null, pedidoId: v.origem.startsWith("P:") ? v.origem.slice(2) : null,
-        valorEstimado: estimado, prazoPropostas: quando(v.prazo), validadeMinimaDias: Number(v.validade), convites: convitesParaApi(convidados), mandar,
+        valorEstimado: estimado, prazoPropostas: quando(v.prazo), validadeMinimaDias: Number(v.validade), convites: convitesParaApi(convidados, o), mandar,
       },
     });
     if (!r.ok) {
@@ -155,7 +155,7 @@ function Formulario({ o }: { o: OpcoesOrcamento }) {
     setEnviando(null);
     const n = r.dados.links.length;
     const recado = [mandar ? `Orçamento criado e ${n === 1 ? "1 convite mandado" : `${n} convites mandados`}.` : "Orçamento guardado sem mandar os convites.", anexos].filter(Boolean).join(" ");
-    const temLink = r.dados.links.some((l) => l.envio === "COPIAR" && l.codigo);
+    const temLink = r.dados.links.some((l) => l.envio === "COPIAR");
     if (mandar && (temLink || r.dados.links.some((l) => l.envio === "EMAIL"))) setCriado({ id: r.dados.id, links: r.dados.links, recado });
     else router.push(`/orcamentos/${r.dados.id}?recado=${encodeURIComponent(recado)}`);
   }

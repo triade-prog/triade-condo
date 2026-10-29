@@ -8,7 +8,7 @@ import { useState, type FormEvent } from "react";
 import { CANAIS_CONVITE, type CanalConvite } from "@triade/domain";
 import { AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, classeBotao, Dialogo, Icone, textoDoErro, type ErroApi } from "@triade/ui";
 import { Caixa, Escolha } from "../moradores/comum.tsx";
-import { diaHoraPrazo, enderecoDoLinkOrcamento, enderecoWhatsapp, NOTA_CONVITE } from "./comum.tsx";
+import { diaHoraPrazo, enderecoWhatsapp, linkDoConvite, NOTA_CONVITE } from "./comum.tsx";
 import type { LinkConvite, OpcoesOrcamento } from "./tipos.ts";
 
 /** Quem não está no cadastro: nome e WhatsApp ou e-mail. Vira prestador só se a proposta dele for a escolhida. */
@@ -21,9 +21,9 @@ export const SEM_CONVIDADOS: Convidados = { prestadores: [], novos: [] };
 export const totalConvidados = (c: Convidados) => c.prestadores.length + c.novos.length;
 
 /** O corpo da API: o prestador pelo id; o novo com nome e contato. */
-export function convitesParaApi(c: Convidados) {
+export function convitesParaApi(c: Convidados, o: OpcoesOrcamento) {
   return [
-    ...c.prestadores.map((prestadorId) => ({ prestadorId })),
+    ...c.prestadores.map((prestadorId) => ({ prestadorId, canal: o.prestadores.find((p) => p.id === prestadorId)?.canal ?? "WHATSAPP" })),
     ...c.novos.map((n) => ({ nome: n.nome.trim(), canal: n.canal, celular: n.canal === "WHATSAPP" ? n.celular.replace(/\D/g, "") : null, email: n.canal === "EMAIL" ? n.email.trim() : null })),
   ];
 }
@@ -89,7 +89,7 @@ export function faltaNosConvidados(c: Convidados): string | null {
 /** A janela "Mandar convite" (quadro 475): um link só para cada fornecedor, sem conta. */
 export function JanelaConvites({ links, titulo, prazo, aoFechar }: { links: LinkConvite[] | null; titulo: string; prazo: string; aoFechar: () => void }) {
   const lista = links ?? [];
-  const paraMandar = lista.filter((l) => l.envio === "COPIAR" && l.codigo);
+  const paraMandar = lista.filter((l) => l.envio === "COPIAR" && (l.link || l.codigo));
   const pelosEmails = lista.filter((l) => l.envio === "EMAIL");
   const [i, setI] = useState(0);
   const [mensagens, setMensagens] = useState<Record<string, string>>({});
@@ -107,8 +107,9 @@ export function JanelaConvites({ links, titulo, prazo, aoFechar }: { links: Link
       </Dialogo>
     );
   }
-  const endereco = enderecoDoLinkOrcamento(atual.codigo!);
-  const mensagem = mensagens[atual.conviteId] ?? atual.mensagem.replace(/\/o\/[A-Za-z0-9-]+/, endereco);
+  const pronto = linkDoConvite(atual);
+  const endereco = pronto.link;
+  const mensagem = mensagens[atual.conviteId] ?? pronto.texto;
   const jeito = como[atual.conviteId] ?? "WHATSAPP";
   const copiar = async () => {
     try { await navigator.clipboard.writeText(jeito === "COPIAR" ? endereco : mensagem); setCopiado(atual.conviteId); } catch { setCopiado(null); }
@@ -140,7 +141,7 @@ export function JanelaConvites({ links, titulo, prazo, aoFechar }: { links: Link
         <p className="t-apoio">{NOTA_CONVITE}</p>
         <div className="flex flex-wrap justify-end gap-2 max-md:flex-col-reverse">
           {jeito === "WHATSAPP" ? (
-            <a href={enderecoWhatsapp(atual.celular, mensagem)} target="_blank" rel="noopener noreferrer" className={classeBotao("primario")}>
+            <a href={enderecoWhatsapp(mensagem)} target="_blank" rel="noopener noreferrer" className={classeBotao("primario")}>
               <Icone nome="whats" />Abrir o WhatsApp com a mensagem
             </a>
           ) : null}
@@ -173,7 +174,7 @@ export function JanelaConvidarMais({ aberto, orcamentoId, o, jaConvidados, aoFec
     setFalta(f);
     if (f) return;
     setEnviando(true);
-    const r = await chamarApi<{ links: LinkConvite[] }>(`/v1/condominio/orcamentos/${orcamentoId}/convites`, { corpo: { convites: convitesParaApi(valor) } });
+    const r = await chamarApi<{ versao: number; links: LinkConvite[] }>(`/v1/condominio/orcamentos/${orcamentoId}/convites`, { corpo: { convites: convitesParaApi(valor, o!) } });
     setEnviando(false);
     if (!r.ok) return setErro(r.erro);
     setValor(SEM_CONVIDADOS);

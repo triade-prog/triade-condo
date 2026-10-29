@@ -95,7 +95,7 @@ function FormRegras({ r, recarregar }: { r: RegrasOrcamento; recarregar: () => v
     const res = await chamarApi(naBase("/regras-orcamento"), {
       metodo: "PUT",
       corpo: { versao: versao.atual(), ligada, faixas: lidas.map((f) => ({ ate: f.ate ?? null, minimo: f.minimo, quemAprova: f.quemAprova })), abaixoMinimo: abaixo,
-        prazoDias: Number(prazo), validadeDias: Number(validade), linkDias: Number(link) },
+        prazoDias: Number(prazo), validadeDias: Number(validade), linkDias: Number(link), alcadaConselho: r.alcadaConselho },
     });
     if (!res.ok) { setErro(res.erro); return null; }
     versao.gravou(res.dados);

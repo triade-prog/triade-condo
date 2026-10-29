@@ -8,12 +8,12 @@ export function linhasOrcamentos(r: NonNullable<Painel["orcamentos"]>): LinhaIni
     const titulo = r.pedeAtencao === 1 ? "1 orçamento pede atenção" : `${r.pedeAtencao} orçamentos pedem atenção`;
     linhas.push({ icone: "alerta", tom: "atencao", titulo, detalhe: "Prazo que fechou, proposta vencida ou aceite atrasado", href: "/orcamentos", rotuloBotao: `Ver: ${titulo}` });
   }
-  if (r.comparar) {
-    const titulo = r.comparar === 1 ? "1 pronto para comparar" : `${r.comparar} prontos para comparar`;
+  if (r.paraDecidir) {
+    const titulo = r.paraDecidir === 1 ? "1 pronto para decidir" : `${r.paraDecidir} prontos para decidir`;
     linhas.push({ icone: "carrinho", tom: "violeta", titulo, href: "/orcamentos", rotuloBotao: `Ver: ${titulo}` });
   }
-  if (r.pedindo) {
-    const titulo = r.pedindo === 1 ? "1 pedindo propostas" : `${r.pedindo} pedindo propostas`;
+  if (r.emAndamento) {
+    const titulo = r.emAndamento === 1 ? "1 orçamento em andamento" : `${r.emAndamento} orçamentos em andamento`;
     linhas.push({ icone: "relogio", tom: "neutro", titulo, href: "/orcamentos", rotuloBotao: `Ver: ${titulo}` });
   }
   return linhas;

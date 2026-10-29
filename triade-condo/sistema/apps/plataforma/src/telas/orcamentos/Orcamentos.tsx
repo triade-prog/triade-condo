@@ -9,22 +9,22 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FILTROS_ORCAMENTO, textoRecebidas, type FiltroOrcamento } from "@triade/domain";
 import { Abas, Carregando, classeBotao, ErroCarregar, Icone, Selo, Vazio } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
-import { ddmm, ICONE_ORIGEM, NOTA_RODAPE, seloSituacao, totalCurto } from "./comum.tsx";
+import { ddmm, ICONE_ORIGEM, NOTA_RODAPE, seloSituacao, TEXTO_ATENCAO, totalCurto } from "./comum.tsx";
 import type { ListaOrcamentos, OrcamentoDaLista } from "./tipos.ts";
 
 const ABAS = (Object.keys(FILTROS_ORCAMENTO) as FiltroOrcamento[]).map((id) => ({ id, texto: FILTROS_ORCAMENTO[id] }));
 
 /** A segunda linha do orçamento: "Serviço · 3 convidados" ou, decidido, quem foi escolhido. */
 export function linhaDoOrcamento(o: OrcamentoDaLista): string {
-  if (o.estado === "CANCELADO") return `Cancelado${o.concluidoEm ? ` em ${ddmm(o.concluidoEm)}` : ""}`;
+  if (o.estado === "CANCELADO") return `Cancelado${o.canceladoEm ? ` em ${ddmm(o.canceladoEm.slice(0, 10))}` : ""}`;
   if (o.escolhida) return `Escolhida: ${o.escolhida.nome} · ${totalCurto(o.escolhida.total)}`;
   return `${o.tipo === "ITENS" ? "Lista de itens" : "Serviço"} · ${o.convidados === 1 ? "1 convidado" : `${o.convidados} convidados`}`;
 }
 
 /** A coluna Propostas: "3 de 3 chegaram · 1 recusou" ou, decidido, quando foi. */
 function textoPropostas(o: OrcamentoDaLista): string {
-  if (o.estado === "ENTREGUE") return `Concluído${o.concluidoEm ? ` em ${ddmm(o.concluidoEm)}` : ""}`;
-  if (o.escolhida && o.decididoEm) return `Decidido em ${ddmm(o.decididoEm)}`;
+  if (o.estado === "ENTREGUE") return `Concluído${o.concluidoEm ? ` em ${ddmm(o.concluidoEm.slice(0, 10))}` : ""}`;
+  if (o.escolhida && o.decididoEm) return `Decidido em ${ddmm(o.decididoEm.slice(0, 10))}`;
   return [textoRecebidas(o.recebidas, o.convidados), o.recusas ? `${o.recusas} ${o.recusas === 1 ? "recusou" : "recusaram"}` : null].filter(Boolean).join(" · ");
 }
 
@@ -93,11 +93,11 @@ export function Orcamentos() {
                             <span className="flex flex-wrap gap-1.5">
                               <Selo tom={s.tom}>{s.texto}</Selo>
                               {o.vencidas && (o.estado === "PEDINDO" || o.estado === "COMPARANDO") ? <Selo tom="atencao">{o.vencidas === 1 ? "1 proposta vencida" : `${o.vencidas} propostas vencidas`}</Selo> : null}
-                              {o.pedeAtencao.some((a) => a.includes("não confirma")) ? <Selo tom="atencao">Sem aceite</Selo> : null}
+                              {o.pedeAtencao.includes("SEM_ACEITE") ? <Selo tom="atencao">Sem aceite</Selo> : null}
                             </span>
                             <span className="t-apoio">
                               {o.estado === "PEDINDO" || o.estado === "COMPARANDO" ? (o.prazoFechou ? `Prazo era ${ddmm(o.prazoPropostas)}` : `Até ${ddmm(o.prazoPropostas)}`)
-                                : o.pedeAtencao[0] ?? ""}
+                                : o.pedeAtencao.filter((a) => a !== "SEM_ACEITE").map((a) => TEXTO_ATENCAO[a] ?? a)[0] ?? ""}
                             </span>
                           </span>
                           <Icone nome="dir" className="h-4 w-4 text-tinta-suave max-md:hidden" />
