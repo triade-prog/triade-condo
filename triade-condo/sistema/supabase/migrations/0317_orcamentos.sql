@@ -1464,7 +1464,7 @@ begin
   if not found then perform recusar_campos('Escolha uma das propostas em uso', 'propostaId'); end if;
   c := exigir_convite_orcamento(p.convite_id);
   if c.estado = 'REVOGADO' then perform recusar_motivo('O link deste fornecedor foi revogado', 'CONVITE_REVOGADO'); end if;
-  if proposta_vencida(p) then perform recusar_motivo('A proposta venceu: peça a confirmação do preço antes', 'PROPOSTA_VENCIDA'); end if;
+  if proposta_vencida(p) then perform recusar_motivo('A proposta venceu: peça a confirmação do preço antes', 'PROPOSTA_ORCAMENTO_VENCIDA'); end if;
   if p_quem_aprova is null or p_quem_aprova not in ('PESSOA', 'CONSELHO') then perform recusar_campos('Diga quem aprova', 'quemAprova'); end if;
   v_regra := regra_do_orcamento_json(o);
   v_menor := menor_total(o);
@@ -1810,7 +1810,7 @@ begin
   if p_tamanho > 10485760 then perform recusar_motivo('Arquivo com mais de 10 MB', 'ARQUIVO_GRANDE'); end if;
   perform 1 from orcamentos where id = o.id for update;
   if (select count(*) from arquivos_orcamento where orcamento_id = o.id and parte = 'PEDIDO' and retirado_em is null) >= 10 and v_parte = 'PEDIDO' then
-    perform recusar_motivo('Já há 10 anexos', 'LIMITE_ARQUIVOS');
+    perform recusar_motivo('Já há 10 anexos', 'LIMITE_ARQUIVOS_ORCAMENTO');
   end if;
   v_caminho := p_condominio || '/orcamentos/' || o.id || '/' || v_id;
   insert into arquivos_orcamento (id, condominio_id, orcamento_id, parte, nome, tipo, tamanho_declarado, caminho, enviado_por)
@@ -2038,7 +2038,7 @@ declare
 begin
   l := exigir_link_orcamento_vivo(p_codigo);
   o := exigir_orcamento(l.orcamento_id);
-  if o.estado <> 'PEDINDO' or l.expira_em <= app_now() then perform recusar_motivo('O prazo para propostas acabou', 'PRAZO_ACABOU'); end if;
+  if o.estado <> 'PEDINDO' or l.expira_em <= app_now() then perform recusar_motivo('O prazo para propostas acabou', 'PRAZO_PROPOSTAS_ACABOU'); end if;
   if l.estado <> 'CONVIDADO' then perform recusar_motivo('Você já respondeu a este convite', 'JA_RESPONDEU'); end if;
   if length(v_motivo) > 500 then perform recusar_campos('Motivo até 500 caracteres', 'motivo'); end if;
   perform transicao_orcamento('RECUSOU');
@@ -2066,7 +2066,7 @@ declare
 begin
   l := exigir_link_orcamento_vivo(p_codigo);
   o := exigir_orcamento(l.orcamento_id);
-  if o.estado <> 'PEDINDO' or l.expira_em <= app_now() then perform recusar_motivo('O prazo para propostas acabou', 'PRAZO_ACABOU'); end if;
+  if o.estado <> 'PEDINDO' or l.expira_em <= app_now() then perform recusar_motivo('O prazo para propostas acabou', 'PRAZO_PROPOSTAS_ACABOU'); end if;
   if p_valor is null or p_valor <= 0 then perform recusar_campos('O valor, em reais, maior que zero', 'valor'); end if;
   if v_frete < 0 then perform recusar_campos('O frete não pode ser negativo', 'frete'); end if;
   if length(nullif(btrim(coalesce(p_marca_modelo, '')), '')) > 200 then perform recusar_campos('Marca e modelo até 200 caracteres', 'marcaModelo'); end if;
@@ -2157,12 +2157,12 @@ declare
 begin
   l := exigir_link_orcamento_vivo(p_codigo);
   o := exigir_orcamento(l.orcamento_id);
-  if o.estado <> 'PEDINDO' or l.expira_em <= app_now() then perform recusar_motivo('O prazo para propostas acabou', 'PRAZO_ACABOU'); end if;
+  if o.estado <> 'PEDINDO' or l.expira_em <= app_now() then perform recusar_motivo('O prazo para propostas acabou', 'PRAZO_PROPOSTAS_ACABOU'); end if;
   if length(btrim(coalesce(p_nome, ''))) not between 1 and 200 then perform recusar_campos('Nome do arquivo de 1 a 200 caracteres', 'nome'); end if;
-  if p_tipo is null or p_tipo <> 'application/pdf' then perform recusar_motivo('A proposta vai em PDF', 'TIPO_NAO_ACEITO'); end if;
+  if p_tipo is null or p_tipo <> 'application/pdf' then perform recusar_motivo('A proposta vai em PDF', 'PROPOSTA_SO_PDF'); end if;
   if p_tamanho is null or p_tamanho < 1 then perform recusar_campos('Arquivo vazio', 'tamanho'); end if;
   if p_tamanho > 10485760 then perform recusar_motivo('Arquivo com mais de 10 MB', 'ARQUIVO_GRANDE'); end if;
-  if (select count(*) from arquivos_orcamento where convite_id = l.id and retirado_em is null) >= 10 then perform recusar_motivo('Já há 10 arquivos', 'LIMITE_ARQUIVOS'); end if;
+  if (select count(*) from arquivos_orcamento where convite_id = l.id and retirado_em is null) >= 10 then perform recusar_motivo('Já há 10 arquivos', 'LIMITE_ARQUIVOS_ORCAMENTO'); end if;
   v_caminho := l.condominio_id || '/orcamentos/' || o.id || '/' || v_id;
   insert into arquivos_orcamento (id, condominio_id, orcamento_id, convite_id, parte, nome, tipo, tamanho_declarado, caminho)
   values (v_id, l.condominio_id, o.id, l.id, 'PROPOSTA', btrim(p_nome), p_tipo, p_tamanho, v_caminho);

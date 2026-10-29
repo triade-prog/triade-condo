@@ -161,7 +161,7 @@ select is((select pg_temp.aviso(bruna, o1, 'PROPOSTA_RECEBIDA') ->> 'fornecedor'
 -- O PDF da proposta pelo link e a segunda versão.
 create temp table pdfa as select publico_iniciar_pdf_orcamento(pg_temp.cod('A'), 'Proposta HidroPress.pdf', 'application/pdf', 3000) as r;
 select ok((select (r ->> 'caminho') = ipe || '/orcamentos/' || o1 || '/' || (r ->> 'arquivoId') from pdfa, c, o1), 'OC-04: o caminho é do condomínio e do orçamento');
-select is(pg_temp.motivo($$ select publico_iniciar_pdf_orcamento(pg_temp.cod('A'), 'foto.png', 'image/png', 3000) $$), 'TIPO_NAO_ACEITO', 'OC-04: a proposta vai em PDF');
+select is(pg_temp.motivo($$ select publico_iniciar_pdf_orcamento(pg_temp.cod('A'), 'foto.png', 'image/png', 3000) $$), 'PROPOSTA_SO_PDF', 'OC-04: a proposta vai em PDF');
 select is((select publico_verificar_pdf_orcamento(pg_temp.cod('A'), (r ->> 'arquivoId')::uuid, true, 2900, null) ->> 'situacao' from pdfa), 'LIBERADO',
   'OC-04: o PDF verificado fica liberado');
 create temp table pa2 as select publico_enviar_proposta(pg_temp.cod('A'), 760000, true, null, 'Bomba Schneider 2 cv', '5 dias úteis', '1 ano', '2026-11-20',
@@ -226,7 +226,7 @@ select is((select plataforma_painel(gil, ipe) -> 'orcamentos' ->> 'paraDecidir' 
 select is((select plataforma_orcamento(bruna, ipe, o1) -> 'orcamento' -> 'pedeAtencao' from ids, c, o1), '[]'::jsonb, 'OC-02: abrir a ficha é olhar: deixa de pedir atenção');
 select is((select publico_orcamento(pg_temp.cod('A')) -> 'pode' ->> 'mandarProposta'), 'false', 'OC-03: fechado o prazo, o link não recebe mais');
 select is(pg_temp.motivo($$ select publico_enviar_proposta(pg_temp.cod('A'), 750000, true, null, null, '5 dias', null, '2026-11-20', null, 'Bomba', null, null) $$),
-  'PRAZO_ACABOU', 'OC-03: nem pela função');
+  'PRAZO_PROPOSTAS_ACABOU', 'OC-03: nem pela função');
 select is((select publico_orcamento(pg_temp.cod('C')) ->> 'estado'), 'RECUSOU', 'OC-03: quem recusou vê a recusa');
 select is(pg_temp.campos($$ select plataforma_estender_prazo(bruna, ipe, o1, pg_temp.vo(o1), '2026-11-01 18:00-03') from ids, c, o1 $$), '["prazoPropostas"]'::jsonb,
   'OC-03: estender é para depois');
@@ -293,7 +293,7 @@ select is(pg_temp.campos($$ select plataforma_escolher_proposta(gil, ipe, o1, pg
 select pg_temp.em('2026-11-21 10:00:00-03');
 select is((select x ->> 'vencidas' || ' ' || (x -> 'pedeAtencao')::text from ids, c, jsonb_array_elements(plataforma_orcamentos(bruna, ipe, null) -> 'orcamentos') x),
   '1 ["PROPOSTA_VENCIDA"]', 'OC-04: a proposta vencida pede atenção');
-select is(pg_temp.motivo($$ select plataforma_escolher_proposta(gil, ipe, o1, pg_temp.vo(o1), pa, 'Melhor garantia', 'CONSELHO') from ids, c, o1, pp $$), 'PROPOSTA_VENCIDA',
+select is(pg_temp.motivo($$ select plataforma_escolher_proposta(gil, ipe, o1, pg_temp.vo(o1), pa, 'Melhor garantia', 'CONSELHO') from ids, c, o1, pp $$), 'PROPOSTA_ORCAMENTO_VENCIDA',
   'OC-04: vencida, não se escolhe');
 select is(pg_temp.motivo($$ select plataforma_pedir_confirmacao_preco(bruna, ipe, o1, k.id) from ids, c, o1, convites_orcamento k where k.nome = 'Bombas Silva' $$), 'PROPOSTA_VALE',
   'OC-04: a que ainda vale não precisa confirmar');
