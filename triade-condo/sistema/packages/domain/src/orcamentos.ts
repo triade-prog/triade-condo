@@ -98,6 +98,7 @@ export const AVISOS_ORCAMENTO = {
   PROPOSTA_RECEBIDA: "Chegou uma proposta",
   RECUSOU: "Um fornecedor recusou o convite",
   PRAZO_FECHOU: "O prazo das propostas fechou",
+  PRECO_CONFIRMADO: "O fornecedor confirmou o preço",
   ACEITE: "O fornecedor aceitou",
   SEM_ACEITE_5D: "Faz 5 dias que o fornecedor não confirma",
   APROVADA: "A escolha foi respondida",
@@ -210,7 +211,10 @@ export const confirmarPrecoSchema = z.object({ validaAte: data });
 export const aceitarPublicoSchema = z.object({ nome: z.string().trim().min(2).max(120) });
 
 /** Anexos do pedido e PDF da proposta: o mesmo ciclo das despesas (iniciar, verificar, link, tirar). */
+export const PARTES_ANEXO_ORCAMENTO = { PEDIDO: "Arquivo do pedido", NOTA_FISCAL: "Nota fiscal" } as const;
+export type ParteAnexoOrcamento = keyof typeof PARTES_ANEXO_ORCAMENTO;
 export const enviarAnexoOrcamentoSchema = z.object({
+  parte: z.enum(chaves(PARTES_ANEXO_ORCAMENTO)).default("PEDIDO"),
   nome: z.string().trim().min(1).max(200),
   tipo: z.string().trim().min(3).max(100),
   tamanho: z.number().int().min(1),
@@ -268,6 +272,11 @@ export function motivoObrigatorio(d: { escolhidaTotal: number; menorTotal: numbe
 export function mensagemConvite(d: { quem: string; cargo: string; condominio: string; titulo: string; prazo: string; link: string }): string {
   return `Olá, aqui é ${d.quem}, ${d.cargo} do ${d.condominio}. Queremos um orçamento para ${d.titulo.charAt(0).toLowerCase()}${d.titulo.slice(1)}. ` +
     `Veja o que precisa e mande sua proposta até ${d.prazo}, por este link: ${d.link}. Se não puder participar, é só dizer no link.`;
+}
+
+/** O caminho do link do fornecedor, sem conta (quadro 476). */
+export function caminhoLinkOrcamento(codigo: string): string {
+  return `/o/${encodeURIComponent(codigo)}`;
 }
 
 /** O resumo para os moradores (quadro 482): nunca cita quem não foi escolhido. */
