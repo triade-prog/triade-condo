@@ -287,6 +287,8 @@ export function descreverEventoAprovacao(acao: string, d: Record<string, unknown
       return d.semQuorum ? "Sem quórum no conselho" : d.aprovada ? "Aprovada" : "Recusada";
     case "despesa.voltou_ao_sindico":
       return "Sem quórum no conselho: passou para o síndico";
+    case "despesa.repassada":
+      return `Passou a outra pessoa aprovar${d.motivo ? `. Motivo: ${String(d.motivo)}` : ""}`;
     case "despesa.retirada":
       return `Retirada${d.motivo ? `. Motivo: ${String(d.motivo)}` : ""}`;
     case "despesa.paga_fora":
