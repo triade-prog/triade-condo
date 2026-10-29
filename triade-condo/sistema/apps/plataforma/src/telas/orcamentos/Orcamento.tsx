@@ -8,13 +8,13 @@
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { CANAIS_CONVITE, mostrarCusto, resumoParaMoradores, textoRegraMinimo, textoSemAceite } from "@triade/domain";
+import { CANAIS_CONVITE, resumoParaMoradores, textoRegraMinimo, textoSemAceite } from "@triade/domain";
 import { Abas, Aviso, AvisoErro, Botao, CampoAreaTexto, CampoTexto, camposComErro, Carregando, chamarApi, classeBotao, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi, type Tom } from "@triade/ui";
 import { Caixa } from "../moradores/comum.tsx";
 import { Cartao, Dado, MaisAcoes } from "../Ficha.tsx";
 import { deDataHoraLocal, diaHora, paraDataHoraLocal } from "../pedidos/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
-import { ddmm, diaCompleto, diaHoraPrazo, enderecoWhatsapp, ICONE_ORIGEM, linhaDoTotal, ListaInclui, NOTA_RODAPE, seloConvite, seloSituacao, textoValidade } from "./comum.tsx";
+import { ddmm, diaCompleto, diaHoraPrazo, enderecoWhatsapp, ICONE_ORIGEM, linhaDoTotal, ListaInclui, NOTA_RODAPE, reais, seloConvite, seloSituacao, textoValidade } from "./comum.tsx";
 import { abrirPdf } from "./Comparar.tsx";
 import { JanelaConvidarMais, JanelaConvites } from "./Convite.tsx";
 import type { ConviteDoOrcamento, LinkConvite, OpcoesOrcamento, Orcamento as DadosOrcamento, OrcamentoDetalhe } from "./tipos.ts";
@@ -33,7 +33,7 @@ export function subtituloDaFicha(o: DadosOrcamento): string {
 /** "Acima de R$ 3.000: 3 propostas e o conselho aprova". */
 export function textoDaRegra(r: DadosOrcamento["regra"]): string {
   if (!r.ligada || !r.faixa) return "Sem mínimo de propostas escrito nas Regras";
-  const faixa = r.faixa.ate === null ? (r.anterior !== null ? `Acima de ${mostrarCusto(r.anterior).replace(/,00$/, "")}` : "Em qualquer valor") : `Até ${mostrarCusto(r.faixa.ate).replace(/,00$/, "")}`;
+  const faixa = r.faixa.ate === null ? (r.anterior !== null ? `Acima de ${reais(r.anterior).replace(/,00$/, "")}` : "Em qualquer valor") : `Até ${reais(r.faixa.ate).replace(/,00$/, "")}`;
   const quem = r.faixa.quemAprova === "CONSELHO" ? "o conselho aprova" : "o síndico aprova";
   return `${faixa}: ${r.faixa.minimo === 1 ? "1 proposta" : `${r.faixa.minimo} propostas`} e ${quem}`;
 }
@@ -95,7 +95,7 @@ export function FichaOrcamento() {
     ...(d.pode.cancelar ? [{ texto: "Cancelar o orçamento", icone: "fechar" as const, acao: () => setJanela("cancelar"), perigo: true }] : []),
   ];
   const semAceite = o.escolha?.semAceiteHaDias !== null && o.escolha?.semAceiteHaDias !== undefined ? textoSemAceite(o.escolha.semAceiteHaDias) : null;
-  const lembrar = escolhido && o.escolha ? enderecoWhatsapp(null, `Olá, ${escolhido.nome}. A proposta de vocês para ${o.titulo.charAt(0).toLowerCase()}${o.titulo.slice(1)} (${mostrarCusto(o.escolha.total)}) foi a escolhida pelo condomínio. Pode confirmar pelo link que mandamos? Obrigado.`) : null;
+  const lembrar = escolhido && o.escolha ? enderecoWhatsapp(null, `Olá, ${escolhido.nome}. A proposta de vocês para ${o.titulo.charAt(0).toLowerCase()}${o.titulo.slice(1)} (${reais(o.escolha.total)}) foi a escolhida pelo condomínio. Pode confirmar pelo link que mandamos? Obrigado.`) : null;
 
   const convites = (
     <Cartao id="t-convites" titulo="Convites" icone="pessoas"
@@ -148,7 +148,7 @@ export function FichaOrcamento() {
       ) : d.pode.comparar ? (
         <>
           <h2 className="t-titulo-cartao">Ainda não chegou o mínimo da regra</h2>
-          <p className="t-texto">Chegaram {o.recebidas === 1 ? "1 proposta" : `${o.recebidas} propostas`}; a regra pede {o.regra.faixa?.minimo}{o.regra.faixa ? (o.regra.faixa.ate === null ? (o.regra.anterior !== null ? ` acima de ${mostrarCusto(o.regra.anterior).replace(/,00$/, "")}` : "") : ` até ${mostrarCusto(o.regra.faixa.ate).replace(/,00$/, "")}`) : ""}.</p>
+          <p className="t-texto">Chegaram {o.recebidas === 1 ? "1 proposta" : `${o.recebidas} propostas`}; a regra pede {o.regra.faixa?.minimo}{o.regra.faixa ? (o.regra.faixa.ate === null ? (o.regra.anterior !== null ? ` acima de ${reais(o.regra.anterior).replace(/,00$/, "")}` : "") : ` até ${reais(o.regra.faixa.ate).replace(/,00$/, "")}`) : ""}.</p>
           <div className="flex flex-wrap gap-2">
             {d.pode.estender ? <Botao variante="contorno" onClick={() => setJanela("estender")}>Estender o prazo</Botao> : null}
             {d.pode.convidar ? <Botao variante="contorno" onClick={() => setJanela("convidar")}>Convidar mais</Botao> : null}
@@ -177,7 +177,7 @@ export function FichaOrcamento() {
         </Dado>
         <Dado icone="calendario" nome="Propostas até">{diaHoraPrazo(o.prazoPropostas)}{o.prazoFechou ? " · fechado" : ""}</Dado>
         <Dado icone="escudo" nome="Regra">{textoDaRegra(o.regra)}</Dado>
-        {o.valorEstimado !== null ? <Dado icone="dinheiro" nome="Valor estimado">{mostrarCusto(o.valorEstimado)}</Dado> : null}
+        {o.valorEstimado !== null ? <Dado icone="dinheiro" nome="Valor estimado">{reais(o.valorEstimado)}</Dado> : null}
       </div>
       {!decidido && o.regra.ligada ? <p className="t-apoio">{textoRegraMinimo({ ligada: o.regra.ligada, faixa: o.regra.faixa, anterior: o.regra.anterior }, o.convidados)}</p> : null}
     </Cartao>
@@ -257,7 +257,7 @@ export function FichaOrcamento() {
             {aba === "comparacao" ? (
               <section aria-label="Comparação" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
                 <h2 className="t-titulo-cartao">A comparação fica guardada</h2>
-                <p className="t-texto">{o.recebidas === 1 ? "1 proposta comparada" : `${o.recebidas} propostas comparadas`}{o.escolha ? ` · escolhida a de ${o.escolha.convite.nome} (${mostrarCusto(o.escolha.total)})` : ""}.</p>
+                <p className="t-texto">{o.recebidas === 1 ? "1 proposta comparada" : `${o.recebidas} propostas comparadas`}{o.escolha ? ` · escolhida a de ${o.escolha.convite.nome} (${reais(o.escolha.total)})` : ""}.</p>
                 <div className="flex flex-wrap gap-2">
                   <Link href={`/orcamentos/${o.id}/comparar`} className={classeBotao("contorno")}><Icone nome="lista" />Ver a comparação</Link>
                   <Link href={`/orcamentos/${o.id}/planilha`} className={classeBotao("contorno")}><Icone nome="imprimir" />Abrir a planilha</Link>
@@ -326,7 +326,7 @@ function Acompanhamento({ d, depois, abrir, lembrar }: { d: OrcamentoDetalhe; de
         <ol className="grid">
           {etapa(1, "Escolhida e aprovada", aprovada ? "Feito" : "Agora", (
             <p className="t-texto">
-              {e.convite.nome} · {mostrarCusto(e.total)} · escolhida por {e.escolhidaPor.split(" ")[0]} em {ddmm(e.escolhidaEm.slice(0, 10))}
+              {e.convite.nome} · {reais(e.total)} · escolhida por {e.escolhidaPor.split(" ")[0]} em {ddmm(e.escolhidaEm.slice(0, 10))}
               {e.quemAprova === "CONSELHO" ? (aprovada ? <span className="block t-apoio">{e.aprovadaTexto ?? "O conselho aprovou"}</span>
                 : <span className="block t-apoio">Esperando o conselho{e.despesaId ? <> · <Link href={`/decisoes/despesa?id=${e.despesaId}`} className="font-medium text-violeta-600 hover:underline">ver a despesa em Decisões</Link></> : null}</span>)
                 : <span className="block t-apoio">Escolha sem o conselho: a alçada só avisa</span>}
@@ -345,7 +345,7 @@ function Acompanhamento({ d, depois, abrir, lembrar }: { d: OrcamentoDetalhe; de
             </div>
           ))}
           {etapa(3, "Registrar a compra", o.compra ? "Feito" : d.pode.registrarCompra ? "Agora" : "Depois", o.compra ? (
-            <p className="t-texto">Comprada em {diaCompleto(o.compra.compradaEm)} · {mostrarCusto(o.compra.valorFechado)}{o.compra.valorFechado !== e.total ? ` (a proposta era ${mostrarCusto(e.total)})` : " · igual à proposta"}
+            <p className="t-texto">Comprada em {diaCompleto(o.compra.compradaEm)} · {reais(o.compra.valorFechado)}{o.compra.valorFechado !== e.total ? ` (a proposta era ${reais(e.total)})` : " · igual à proposta"}
               <span className="block t-apoio">Nota fiscal: {o.compra.notaFiscal ? o.compra.notaFiscal.nome : "anexar quando chegar"}</span>
               {prestadorId ? <Link href={ordem} className={classeBotao("contorno", "mt-2 justify-self-start", "m")}><Icone nome="ferramenta" />Criar ordem de serviço</Link> : null}
             </p>
@@ -354,7 +354,7 @@ function Acompanhamento({ d, depois, abrir, lembrar }: { d: OrcamentoDetalhe; de
             <div className="grid gap-2">
               {o.entrega ? <p className="t-texto">{o.entrega.parcial ? "Recebido em parte" : "Recebido inteiro"} em {diaCompleto(o.entrega.entregueEm)}{o.entrega.observacao ? ` · ${o.entrega.observacao}` : ""}</p> : null}
               <p className="t-apoio">Recebido inteiro ou em parte, com foto e a nota fiscal. Se veio de uma manutenção, a conclusão dela continua sendo lá.</p>
-              {d.pode.registrarEntrega ? <FormEntrega d={d} salvo={depois} /> : null}
+              {d.pode.registrarEntrega ? <FormEntrega key={o.versao} d={d} salvo={depois} /> : null}
             </div>
           ))}
           {etapa(5, "Contrato com o prestador (se houver)", "Opcional", (
@@ -366,7 +366,7 @@ function Acompanhamento({ d, depois, abrir, lembrar }: { d: OrcamentoDetalhe; de
         <Cartao id="t-decisao" titulo="Decisão" icone="decisao">
           <div className="grid">
             <Dado icone="relogio" nome="Situação">{o.situacao}</Dado>
-            <Dado icone="check" nome="Escolhida">{e.convite.nome} · {mostrarCusto(e.total)}</Dado>
+            <Dado icone="check" nome="Escolhida">{e.convite.nome} · {reais(e.total)}</Dado>
             <Dado icone="documento" nome="Por quê">{e.motivo ?? "A de menor total: sem motivo escrito"}</Dado>
             <Dado icone="imprimir" nome="Planilha"><Link href={`/orcamentos/${o.id}/planilha`} className="font-medium text-violeta-600 hover:underline">Abrir a planilha comparativa</Link></Dado>
           </div>
@@ -386,7 +386,7 @@ function Acompanhamento({ d, depois, abrir, lembrar }: { d: OrcamentoDetalhe; de
 function FormCompra({ d, ordem, salvo }: { d: OrcamentoDetalhe; ordem: string | null; salvo: (t: string, criarOrdem: boolean) => void }) {
   const o = d.orcamento;
   const [data, setData] = useState(hoje());
-  const [valor, setValor] = useState(mostrarCusto(o.escolha!.total).replace(/^R\$\s?/, ""));
+  const [valor, setValor] = useState(reais(o.escolha!.total).replace(/^R\$\s?/, ""));
   const [criarOrdem, setCriarOrdem] = useState(false);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [valorErrado, setValorErrado] = useState(false);

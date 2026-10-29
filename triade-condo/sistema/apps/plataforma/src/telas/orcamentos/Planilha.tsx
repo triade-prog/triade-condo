@@ -4,11 +4,11 @@
 // ou para a pasta. "Baixar em PDF" é a impressão do navegador: nada sai da máquina de quem imprime.
 // Fora da moldura do painel, para a folha sair limpa.
 
-import { mostrarCusto, mostrarTotal } from "@triade/domain";
+import { mostrarTotal } from "@triade/domain";
 import { Botao, Carregando, ErroCarregar, FolhaA4, Icone, Logo, PreviaImpressao } from "@triade/ui";
 import { useParams } from "next/navigation";
 import { useCarregar } from "../sessao.tsx";
-import { ddmm, diaCompleto, diaHoraPrazo } from "./comum.tsx";
+import { ddmm, diaCompleto, diaHoraPrazo, reais } from "./comum.tsx";
 import type { Comparacao, OrcamentoDetalhe } from "./tipos.ts";
 
 const HORA = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
@@ -28,8 +28,8 @@ export function Planilha() {
   const escolhida = o.escolha?.propostaId ?? null;
   const propostas = [...c.propostas].sort((a, b) => (a.propostaId === escolhida ? -1 : b.propostaId === escolhida ? 1 : a.letra.localeCompare(b.letra)));
   const linhas: [string, (p: Comparacao["propostas"][number]) => string][] = [
-    ["Total", (p) => mostrarCusto(p.total)],
-    ["Frete", (p) => (p.freteIncluso ? "Incluso" : mostrarCusto(p.frete))],
+    ["Total", (p) => reais(p.total)],
+    ["Frete", (p) => (p.freteIncluso ? "Incluso" : reais(p.frete))],
     ["Marca e modelo", (p) => p.marcaModelo ?? "—"],
     ["Prazo", (p) => p.prazoExecucao],
     ["Garantia", (p) => p.garantia ?? "—"],
@@ -100,7 +100,7 @@ export function Planilha() {
             <h3 className="text-[10px] font-semibold tracking-[.14em] text-tinta-suave uppercase">Decisão e motivo</h3>
             {o.escolha ? (
               <p>
-                Escolhida a proposta de <b className="font-semibold">{o.escolha.convite.nome}</b>, {mostrarCusto(o.escolha.total)}, por {o.escolha.escolhidaPor} em {diaCompleto(o.escolha.escolhidaEm)}.
+                Escolhida a proposta de <b className="font-semibold">{o.escolha.convite.nome}</b>, {reais(o.escolha.total)}, por {o.escolha.escolhidaPor} em {diaCompleto(o.escolha.escolhidaEm)}.
                 {o.escolha.motivo ? ` Motivo: ${o.escolha.motivo}` : " A de menor total."}
                 {o.escolha.quemAprova === "CONSELHO" ? (o.escolha.aprovadaEm ? ` ${o.escolha.aprovadaTexto ?? "O conselho aprovou"} em ${diaCompleto(o.escolha.aprovadaEm)}.` : " Esperando a aprovação do conselho.") : ""}
                 {o.escolha.aceiteEm ? ` O fornecedor aceitou em ${diaCompleto(o.escolha.aceiteEm)}.` : ""}

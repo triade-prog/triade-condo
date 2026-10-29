@@ -3,9 +3,12 @@
 // jeito dos quadros ("26/10/2026, 18h"), o endereço do link do fornecedor e os textos que só as
 // telas usam. O domínio (packages/domain/src/orcamentos.ts) dá os nomes e as regras.
 
-import { ESTADOS_CONVITE, mostrarCusto, mostrarDataSemHora, mostrarTotal } from "@triade/domain";
+import { dinheiro, ESTADOS_CONVITE, formatar, mostrarDataSemHora, mostrarTotal } from "@triade/domain";
 import { Icone, Selo, type NomeIcone, type Tom } from "@triade/ui";
 import type { ConviteDoOrcamento, OrcamentoDaLista, PropostaComparada, PropostaEmUso } from "./tipos.ts";
+
+/** "R$ 6.480,00": sempre com centavos, como nos quadros de detalhe (o mostrarCusto tira o ",00"). */
+export const reais = (centavos: number) => formatar(dinheiro(centavos));
 
 /** O que a lista e a ficha dizem em cada situação, e a cor. */
 export function seloSituacao(o: Pick<OrcamentoDaLista, "estado" | "situacao" | "prazoFechou">): { texto: string; tom: Tom } {
@@ -62,7 +65,7 @@ export function enderecoWhatsapp(celular: string | null | undefined, texto: stri
 
 /** "R$ 6.480,00 · frete incluso" ou "R$ 6.130,00 · R$ 5.950,00 + frete R$ 180,00". */
 export function linhaDoTotal(p: Pick<PropostaEmUso, "total" | "valor" | "frete" | "freteIncluso">): string {
-  return p.freteIncluso ? `${mostrarCusto(p.total)} · frete incluso` : `${mostrarCusto(p.total)} · ${mostrarCusto(p.valor)} + frete ${mostrarCusto(p.frete)}`;
+  return p.freteIncluso ? `${reais(p.total)} · frete incluso` : `${reais(p.total)} · ${reais(p.valor)} + frete ${reais(p.frete)}`;
 }
 
 /** "vale até 10/11" ou "venceu em 27/10". */

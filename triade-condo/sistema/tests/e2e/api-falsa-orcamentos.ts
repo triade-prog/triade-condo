@@ -23,6 +23,8 @@ export interface PropostaFalsa {
   id: string; numero: number; valor: number; frete: number; freteIncluso: boolean; marcaModelo: string | null; prazoExecucao: string; garantia: string | null;
   validaAte: string; pagamento: string | null; inclui: string; naoInclui: string | null; pdfId: string | null; enviadaEm: string; confirmadaEm: string | null;
   confirmacaoPedidaEm: string | null; emUso: boolean;
+  /** O que não inclui é algo que foi pedido (quadro 479: "Falta algo pedido"). */
+  faltaAlgo?: boolean;
 }
 export interface ConviteFalso {
   id: string; prestadorId: string | null; nome: string; celular: string | null; email: string | null; canal: "WHATSAPP" | "EMAIL";
@@ -96,9 +98,9 @@ export function semearOrcamentos(e: EstadoOrcamentos, manutencao?: { id: string;
       convite({ prestadorId: brasilia!.id, nome: brasilia!.nome, email: brasilia!.email, canal: "EMAIL", codigo: "link-brasilia", expiraEm: prazoBomba, estado: "RESPONDEU", aberturas: 5,
         propostas: [
           proposta({ numero: 1, valor: 642000, marcaModelo: "Dancor CAM-W 3 cv", prazoExecucao: "10 dias úteis", garantia: "6 meses", validaAte: somarDias(HOJE, 20), pagamento: "30 dias depois",
-            inclui: "Bomba e instalação\nTeste com a caixa cheia", naoInclui: "Retirada da velha: R$ 250,00 à parte", enviadaEm: depois(-7 * 24), emUso: false }),
+            inclui: "Bomba e instalação\nTeste com a caixa cheia", naoInclui: "Retirada da velha: R$ 250,00 à parte", faltaAlgo: true, enviadaEm: depois(-7 * 24), emUso: false }),
           proposta({ numero: 2, valor: 595000, frete: 18000, freteIncluso: false, marcaModelo: "Dancor CAM-W 3 cv", prazoExecucao: "10 dias úteis", garantia: "6 meses", validaAte: somarDias(HOJE, -1),
-            pagamento: "30 dias depois", inclui: "Bomba e instalação\nTeste com a caixa cheia", naoInclui: "Retirada da velha: R$ 250,00 à parte", enviadaEm: depois(-3 * 24) }),
+            pagamento: "30 dias depois", inclui: "Bomba e instalação\nTeste com a caixa cheia", naoInclui: "Retirada da velha: R$ 250,00 à parte", faltaAlgo: true, enviadaEm: depois(-3 * 24) }),
         ] }),
       convite({ nome: "Águia Hidráulica", celular: "61981234567", canal: "WHATSAPP", codigo: "link-aguia", expiraEm: prazoBomba, estado: "RESPONDEU", aberturas: 2,
         propostas: [proposta({ numero: 1, valor: 720000, marcaModelo: "Schneider BC-92 S 3 cv", prazoExecucao: "3 dias úteis", garantia: "24 meses", validaAte: somarDias(HOJE, 30),
@@ -304,7 +306,7 @@ function detalheJson(e: EstadoOrcamentos, x: ContextoOrcamentos, o: OrcamentoFal
     pode: {
       editar: edita && ["RASCUNHO", "PEDINDO", "COMPARANDO"].includes(o.estado), convidar: edita && ["RASCUNHO", "PEDINDO", "COMPARANDO"].includes(o.estado),
       estender: edita && ["PEDINDO", "COMPARANDO"].includes(o.estado), fechar: edita && o.estado === "PEDINDO" && !fechou,
-      comparar: comparando && recebidas(o) > 0, decidir: decide && comparando && recebidas(o) > 0,
+      comparar: (o.estado === "PEDINDO" || o.estado === "COMPARANDO") && recebidas(o) > 0, decidir: decide && comparando && recebidas(o) > 0,
       desfazerEscolha: decide && o.estado === "ESCOLHIDA" && !esc?.aceiteEm && despesaEstado !== "APROVADA",
       registrarCompra: edita && o.estado === "COMPRANDO" && !o.compra, registrarEntrega: edita && o.estado === "COMPRANDO" && !!o.compra && (!o.entrega || o.entrega.parcial),
       cancelar: edita && aberto, aceiteFora: edita && o.estado === "ESCOLHIDA" && !esc?.aceiteEm,
@@ -318,7 +320,7 @@ function comparacaoJson(e: EstadoOrcamentos, x: ContextoOrcamentos, o: Orcamento
       const pdf = p.pdfId ? o.arquivos.find((a) => a.id === p.pdfId) : null;
       return { conviteId: c.id, propostaId: p.id, letra: letra(i), nome: c.nome, origem: c.prestadorId ? "PRESTADOR" : "LINK", numero: p.numero, versoes: c.propostas.length,
         total: total(p), valor: p.valor, frete: p.frete, freteIncluso: p.freteIncluso, marcaModelo: p.marcaModelo, prazoExecucao: p.prazoExecucao, garantia: p.garantia,
-        inclui: p.inclui, naoInclui: p.naoInclui, faltaAlgo: !!p.naoInclui, validaAte: p.validaAte, vencida: vencida(p), confirmada: !!p.confirmadaEm, confirmacaoPedidaEm: p.confirmacaoPedidaEm,
+        inclui: p.inclui, naoInclui: p.naoInclui, faltaAlgo: !!p.faltaAlgo, validaAte: p.validaAte, vencida: vencida(p), confirmada: !!p.confirmadaEm, confirmacaoPedidaEm: p.confirmacaoPedidaEm,
         pagamento: p.pagamento, pdf: pdf ? { id: pdf.id, nome: pdf.nome } : null,
         anteriores: c.propostas.filter((q) => !q.emUso).map((q) => ({ numero: q.numero, total: total(q), validaAte: q.validaAte, enviadaEm: q.enviadaEm })) };
     });
@@ -606,6 +608,7 @@ export async function rotasOrcamentoPublico(route: Route, e: EstadoOrcamentos, c
   const p = emUso(c);
   const base = { condominio: "Residencial Ipê", fornecedor: { nome: c.nome }, hoje: HOJE };
   const estadoLink = (): { estado: string; motivo?: string; mensagens: string[] } => {
+    const p = emUso(c!);
     if (trocado) return { estado: "NAO_VALE", motivo: "LINK_TROCADO", mensagens: [] };
     if (c!.estado === "REVOGADO") return { estado: "NAO_VALE", motivo: "REVOGADO", mensagens: [] };
     if (Date.parse(c!.expiraEm) + e.regras.linkDias * DIA < Date.parse(AGORA)) return { estado: "NAO_VALE", motivo: "VENCIDO", mensagens: [] };
@@ -622,6 +625,7 @@ export async function rotasOrcamentoPublico(route: Route, e: EstadoOrcamentos, c
   };
   const json = () => {
     const s = estadoLink();
+    const p = emUso(c!);
     const escondido = s.estado === "NAO_VALE";
     return { ...base, ...s,
       ...(escondido ? {} : { pedido: { titulo: o!.titulo, descricao: o!.descricao, local: o!.local, prazoPropostas: o!.prazoPropostas, validadeMinimaDias: o!.validadeMinimaDias,

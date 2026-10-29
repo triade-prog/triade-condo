@@ -7,12 +7,12 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { mostrarCusto, mostrarTotal } from "@triade/domain";
+import { mostrarTotal } from "@triade/domain";
 import { Aviso, Botao, Carregando, chamarApi, classeBotao, ErroCarregar, Icone, Selo, textoDoErro, Vazio } from "@triade/ui";
 import { useCelular } from "../celular.ts";
 import { Escolha } from "../moradores/comum.tsx";
 import { useCarregar, usePlataforma } from "../sessao.tsx";
-import { ddmm, linhaDaOrigem, ListaInclui, textoValidade } from "./comum.tsx";
+import { ddmm, linhaDaOrigem, ListaInclui, reais, textoValidade } from "./comum.tsx";
 import { EscolherProposta } from "./Escolher.tsx";
 import type { Comparacao, OpcoesOrcamento, OrcamentoDetalhe, PropostaComparada } from "./tipos.ts";
 
@@ -20,8 +20,8 @@ type Linha = { id: string; nome: string; valor: (p: PropostaComparada) => string
 
 /** As linhas da tabela, na ordem do quadro 479. O "valor" é o que se compara; o "mostrar", o que aparece. */
 const LINHAS: Linha[] = [
-  { id: "total", nome: "Total", valor: (p) => String(p.total), sempre: true, mostrar: (p) => <span className="grid"><span className="t-codigo font-semibold">{mostrarCusto(p.total)}</span>{p.freteIncluso ? null : <span className="t-apoio">{mostrarCusto(p.valor)} + frete {mostrarCusto(p.frete)}</span>}</span> },
-  { id: "frete", nome: "Frete", valor: (p) => (p.freteIncluso ? "Incluso" : mostrarCusto(p.frete)) },
+  { id: "total", nome: "Total", valor: (p) => String(p.total), sempre: true, mostrar: (p) => <span className="grid"><span className="t-codigo font-semibold">{reais(p.total)}</span>{p.freteIncluso ? null : <span className="t-apoio">{reais(p.valor)} + frete {reais(p.frete)}</span>}</span> },
+  { id: "frete", nome: "Frete", valor: (p) => (p.freteIncluso ? "Incluso" : reais(p.frete)) },
   { id: "marca", nome: "Marca e modelo", valor: (p) => p.marcaModelo ?? "—" },
   { id: "prazo", nome: "Prazo para fazer", valor: (p) => p.prazoExecucao },
   { id: "garantia", nome: "Garantia", valor: (p) => p.garantia ?? "—" },
@@ -48,7 +48,7 @@ export function notaDoMenor(c: Comparacao): string | null {
   if (!menor || !menor.faltaAlgo || !menor.naoInclui) return null;
   const falta = menor.naoInclui.split("\n")[0]!.split(":")[0]!.trim();
   const completa = c.propostas.filter((p) => p !== menor && !p.faltaAlgo).sort((a, b) => a.total - b.total)[0];
-  const diferenca = completa ? ` ${completa.nome} custa ${mostrarCusto(completa.total - menor.total)} a mais e inclui tudo.` : "";
+  const diferenca = completa ? ` ${completa.nome} custa ${reais(completa.total - menor.total)} a mais e inclui tudo.` : "";
   return `${menor.nome} tem o menor total, mas não inclui ${falta.charAt(0).toLowerCase()}${falta.slice(1)}, que foi pedido.${diferenca} O sistema não escolhe por você: só mostra a diferença.`;
 }
 
@@ -110,8 +110,8 @@ export function Comparar() {
   ) : <span className="t-apoio">Sem arquivo</span>);
   const Versoes = ({ p }: { p: PropostaComparada }) => (p.anteriores.length ? (
     <span className="grid gap-1">
-      <span>Versão {p.numero} · {mostrarCusto(p.total)} · vale até {ddmm(p.validaAte)}</span>
-      {versoes.includes(p.conviteId) ? p.anteriores.map((a) => <span key={a.numero} className="t-apoio">Versão {a.numero} · {mostrarCusto(a.total)} · vale até {ddmm(a.validaAte)} · guardada</span>) : null}
+      <span>Versão {p.numero} · {reais(p.total)} · vale até {ddmm(p.validaAte)}</span>
+      {versoes.includes(p.conviteId) ? p.anteriores.map((a) => <span key={a.numero} className="t-apoio">Versão {a.numero} · {reais(a.total)} · vale até {ddmm(a.validaAte)} · guardada</span>) : null}
       <Botao variante="discreto" tamanho="p" className="justify-self-start" aria-expanded={versoes.includes(p.conviteId)}
         onClick={() => setVersoes(versoes.includes(p.conviteId) ? versoes.filter((x) => x !== p.conviteId) : [...versoes, p.conviteId])}>
         {versoes.includes(p.conviteId) ? "Esconder as versões" : `Ver versão ${p.anteriores[p.anteriores.length - 1]!.numero}`}
@@ -121,7 +121,7 @@ export function Comparar() {
   const celula = (l: Linha, p: PropostaComparada) => l.id === "vale" ? <Validade p={p} /> : l.id === "arquivos" ? <Arquivos p={p} /> : l.id === "versoes" ? <Versoes p={p} /> : l.mostrar ? l.mostrar(p) : l.valor(p);
   const escolher = (p: PropostaComparada) => (podeDecidir ? (
     <Botao variante={p.vencida ? "contorno" : "primario"} tamanho="m" className="w-full" disabled={p.vencida && !p.confirmada} onClick={() => setEscolhendo(p)}
-      aria-label={`Escolher esta: ${p.nome}`}>{p.vencida && !p.confirmada ? "Confirme o preço antes" : "Escolher esta"}</Botao>
+      aria-label={`${p.vencida && !p.confirmada ? "Confirme o preço antes" : "Escolher esta"}: ${p.nome}`}>{p.vencida && !p.confirmada ? "Confirme o preço antes" : "Escolher esta"}</Botao>
   ) : null);
 
   return (
@@ -163,7 +163,7 @@ export function Comparar() {
                     <span className="t-texto font-medium">{p.letra} · {p.nome}</span>
                     <span className="t-apoio">{linhaDaOrigem(p)}</span>
                   </span>
-                  <span className="t-codigo font-semibold">{mostrarCusto(p.total)}</span>
+                  <span className="t-codigo font-semibold">{reais(p.total)}</span>
                 </div>
                 <Pilulas p={p} />
                 {aberta === p.conviteId ? (

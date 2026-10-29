@@ -5,10 +5,10 @@
 // contratar nem pagar.
 
 import { useState, type FormEvent } from "react";
-import { avisoNaoMaisBarata, mostrarCusto, mostrarTotal, motivoObrigatorio } from "@triade/domain";
+import { avisoNaoMaisBarata, mostrarTotal, motivoObrigatorio } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, camposComErro, chamarApi, Dialogo, Icone, textoDoErro, type ErroApi } from "@triade/ui";
 import { Escolha as EscolhaCartao } from "../decisoes/Despesas.tsx";
-import { NOTA_DECIDIR, textoValidade } from "./comum.tsx";
+import { NOTA_DECIDIR, reais, textoValidade } from "./comum.tsx";
 import type { Comparacao, OpcoesOrcamento, Orcamento, PropostaComparada } from "./tipos.ts";
 
 export function EscolherProposta({ o, c, p, opcoes, aoFechar, escolhida }: {
@@ -63,7 +63,7 @@ function Formulario({ o, c, p, opcoes, aoFechar, escolhida }: {
       <div className="grid gap-1 rounded-[14px] border-2 border-violeta-600 bg-violeta-50 p-4">
         <span className="flex flex-wrap items-center justify-between gap-2">
           <span className="t-texto font-medium">{p.letra} · {p.nome}</span>
-          <span className="t-codigo">{mostrarCusto(p.total)}</span>
+          <span className="t-codigo">{reais(p.total)}</span>
         </span>
         <span className="t-apoio">{[p.garantia ? `garantia ${p.garantia}` : null, p.prazoExecucao, textoValidade(p)].filter(Boolean).join(" · ")}</span>
       </div>
