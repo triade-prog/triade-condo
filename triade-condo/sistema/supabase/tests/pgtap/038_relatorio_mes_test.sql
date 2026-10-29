@@ -116,7 +116,7 @@ select is((select array_agg(x ->> 'nome' || ' ' || (x ->> 'registrados') || ' ' 
   'TR-05: por torre na ordem dos blocos, com as áreas comuns no fim');
 select is((select (select sum((x ->> 'retornos')::int) from jsonb_array_elements(r -> 'torres') x) = (r -> 'atendimento' -> 'atual' -> 'retornos' ->> 'total')::int from pv),
   true, 'TR-05: os retornos das torres somam os do mês');
-select is((select (r -> 'decisoes') - 'medianaHoras' - 'despesas' from pv),
+select is((select (r -> 'decisoes') - 'medianaHoras' - 'despesas' - 'orcamentos' from pv),
   '{"pedidas": 2, "decididas": 1, "aprovadas": 1, "devolvidas": 0, "aguardandoNoFim": 1, "peloConselho": 0}'::jsonb,
   'TR-01: decisões pedidas, decididas e as que esperavam no fim do mês');
 select is((select plataforma_previa_relatorio(bruno, ipe, '2027-02') -> 'foraPorPermissao' from ids, c), '["DECISOES"]'::jsonb,
