@@ -2288,7 +2288,9 @@ begin
               union all
               select jsonb_strip_nulls(jsonb_build_object(
                        'id', a.id, 'tipo', 'ORCAMENTO_' || a.tipo, 'orcamentoId', o.id, 'titulo', o.titulo,
-                       'fornecedor', c.nome, 'estado', o.estado, 'resultado', nullif(a.referencia, '') ,
+                       'fornecedor', c.nome, 'estado', o.estado,
+                       'resultado', case when a.tipo = 'APROVADA' then nullif(a.referencia, '') end,
+                       'numero', case when a.tipo = 'PROPOSTA_RECEBIDA' then nullif(a.referencia, '')::integer end,
                        'criadoEm', a.criado_em, 'vistoEm', a.visto_em))
                 from avisos_orcamento a join orcamentos o on o.id = a.orcamento_id left join convites_orcamento c on c.id = a.convite_id
                where a.pessoa_id = p_pessoa and a.criado_em >= app_now() - interval '30 days') y), '[]'::jsonb),
