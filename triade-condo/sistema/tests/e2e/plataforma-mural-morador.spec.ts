@@ -83,10 +83,14 @@ test.describe("Mural do morador", () => {
     const agenda = page.getByRole("link", { name: "Pôr na agenda: Festa das crianças no salão" });
     // O endereço é de verdade (o celular abre a agenda), sem download forçado; o arquivo vem em UTC (16h em Brasília = 19h UTC).
     await expect(agenda).not.toHaveAttribute("download", /.*/);
-    const resposta = await page.request.get(new URL((await agenda.getAttribute("href"))!, PLATAFORMA).toString());
-    expect(resposta.headers()["content-type"]).toContain("text/calendar");
-    expect(resposta.headers()["content-disposition"]).toContain('filename="festa-das-criancas-no-salao.ics"');
-    const ics = await resposta.text();
+    // Buscado de dentro da página, para passar pela API falsa.
+    const resposta = await page.evaluate(async (href) => {
+      const r = await fetch(href);
+      return { tipo: r.headers.get("content-type") ?? "", nome: r.headers.get("content-disposition") ?? "", texto: await r.text() };
+    }, (await agenda.getAttribute("href"))!);
+    expect(resposta.tipo).toContain("text/calendar");
+    expect(resposta.nome).toContain('filename="festa-das-criancas-no-salao.ics"');
+    const ics = resposta.texto;
     expect(ics).toContain(`DTSTART:${somar(hojeFalso(), 5).replace(/-/g, "")}T190000Z`);
     expect(ics).toContain("SUMMARY:Festa das crianças no salão");
     expect(ics).toContain("LOCATION:Salão de festas");

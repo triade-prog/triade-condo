@@ -118,7 +118,7 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
     await j.getByRole("button", { name: "Publicar versão 2" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Falta de água na quinta, das 9h às 13h" })).toBeVisible();
     await expect(page.getByText("Quando", { exact: true })).toBeVisible();
-    await expect(page.getByText(/9h às 13h/)).toBeVisible();
+    await expect(page.getByText(/^(dom|seg|ter|qua|qui|sex|sáb) · 9h às 13h$/)).toBeVisible();
     await expect(page.getByText("Versão 2", { exact: true }).first()).toBeVisible();
     const andamento = page.getByRole("region", { name: "Andamento" });
     await expect(andamento).toContainText("Horário corrigido: termina às 13h");
