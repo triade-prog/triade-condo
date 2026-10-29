@@ -36,6 +36,8 @@ export interface Painel {
   vida?: ResumoVida;
   /** Decisões esperando a resposta da pessoa, para quem pode aprovar (F7.4, AT-23). */
   decisoes?: { aguardando: number; vencidas: number; maisAntigaDias: number | null; votos?: number; despesas?: number; votando?: number };
+  /** R8: os orçamentos que pedem atenção (prazo fechou, proposta vencida, aceite atrasado), os pedindo propostas e os prontos para comparar. */
+  orcamentos?: { pedeAtencao: number; pedindo: number; comparar: number };
   /** Encomendas guardadas, para quem vê a portaria (Portaria 1, PA-01). */
   portaria?: { guardadas: number; semAviso: number; avisoFalhou: number; antigas: number; dias: number };
 }

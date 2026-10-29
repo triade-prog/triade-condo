@@ -20,6 +20,8 @@ export interface InicioManutencao {
   titulo?: string;
   local?: string;
   pedidoId?: string;
+  /** O prestador que executa, já escolhido (a ordem de serviço que nasce de um orçamento, R8). */
+  prestadorId?: string;
 }
 
 type Props = {
@@ -68,7 +70,7 @@ function Formulario({ opcoes, aoFechar, salvo, recarregar, manutencao, inicio }:
     local: m?.local ?? inicio?.local ?? "",
     prioridadeId: m?.prioridade?.id ?? "",
     responsavelId: m?.responsavel.vinculoId ?? eu?.vinculoId ?? "",
-    executor: exec.escolha,
+    executor: exec.escolha || (inicio?.prestadorId && opcoes.prestadores.some((p) => p.id === inicio.prestadorId) ? `P:${inicio.prestadorId}` : ""),
     executorTexto: exec.texto,
     proximoRetorno: "",
     previsao: "",

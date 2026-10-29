@@ -12,6 +12,7 @@ const IMPRESSOS = [
   "apps/plataforma/src/telas/comunicados/Cartaz.tsx",
   "apps/plataforma/src/telas/comunicados/ComunicadosWhatsapp.tsx",
   "apps/plataforma/src/telas/memoria/DossieImpresso.tsx",
+  "apps/plataforma/src/telas/orcamentos/Planilha.tsx",
   "apps/console/src/telas/ficha/ResumoConfiguracao.tsx",
   "packages/configuracoes/src/ImprimirEtiquetas.tsx",
   "packages/ui/src/Impressos.tsx",
