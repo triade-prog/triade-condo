@@ -225,6 +225,7 @@ import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
 import { montarZip, planilhaCsv, type ItemZip } from "../_shared/zip.ts";
 import { rotasEncomendas } from "./encomendas.ts";
 import { algumPorEmail, algumPorWhatsapp, rotasAprovacoes, rotasConselhoPublico, type DepsAprovacoes } from "./aprovacoes.ts";
+import { type DepsOrcamentos, rotasOrcamentoPublico, rotasOrcamentos } from "./orcamentos.ts";
 import { rotasPrivacidade } from "./privacidade.ts";
 
 export type VarsPlataforma = { Variables: VarsSessao["Variables"] & { condominioId: string } };
@@ -1879,6 +1880,14 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   };
   rotasAprovacoes(app, "/v1/condominio", quem, depsAprovacoes);
   rotasConselhoPublico(app, depsAprovacoes);
+
+  // Peça R8: orçamentos e compras, e o link do fornecedor (/o/<código>).
+  const depsOrcamentos: DepsOrcamentos = {
+    banco: deps.banco, armazenamento: deps.armazenamento, esvaziarFila: () => esvaziarFila(), codigoDaRota,
+    limitar: async (c) => dentroDoLimite("link", await aparelho(c)), urlApp: deps.urlApp,
+  };
+  rotasOrcamentos(app, "/v1/condominio", quem, depsOrcamentos);
+  rotasOrcamentoPublico(app, depsOrcamentos);
 
   app.get("/v1/publico/mural/:codigo", async (c) => {
     const codigo = codigoDaRota(c);

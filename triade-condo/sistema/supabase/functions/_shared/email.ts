@@ -1,5 +1,5 @@
 // E-mail dos comunicados, documentos, convites de enquete e de assembleia (CD-13, CD-14, AC-02, AC-03) e do pedido registrado
-// (protocolo a quem pediu e aviso ao prestador, AT-26) e do link do conselheiro (V-14, peça R5). O banco monta a fila e diz o que vai em
+// (protocolo a quem pediu e aviso ao prestador, AT-26), do link do conselheiro (V-14, peça R5) e do convite do fornecedor (OC-03, peça R8). O banco monta a fila e diz o que vai em
 // cada e-mail; aqui o e-mail ganha forma (HTML e texto), sai pelo Resend e os avisos do provedor
 // (entregue, devolvido, spam) são conferidos pela assinatura antes de voltar ao banco.
 
@@ -9,7 +9,7 @@ import { ASSUNTOS_COMUNICADO, type AssuntoComunicado } from "@triade/domain";
 export interface MensagemFila {
   envio: string;
   condominio: string;
-  tipo: "COMUNICADO" | "CONFIRMACAO" | "DOCUMENTO" | "ENQUETE" | "ASSEMBLEIA" | "PROTOCOLO" | "PRESTADOR" | "CONSELHO";
+  tipo: "COMUNICADO" | "CONFIRMACAO" | "DOCUMENTO" | "ENQUETE" | "ASSEMBLEIA" | "PROTOCOLO" | "PRESTADOR" | "CONSELHO" | "ORCAMENTO";
   para: string;
   condominioNome: string;
   responderPara?: string;
@@ -46,6 +46,20 @@ export interface MensagemFila {
     prazo: string;
     papel?: string;
     pedidaPor?: string;
+  };
+  /** O convite do fornecedor (peça R8): pedir a proposta, confirmar o preço vencido ou aceitar a escolhida. */
+  orcamento?: {
+    finalidade: "CONVITE" | "CONFIRMAR_PRECO" | "ESCOLHIDA";
+    titulo: string;
+    local?: string;
+    /** Já formatado ("02/11, 18h"). */
+    prazo: string;
+    quem: string;
+    cargo: string;
+    /** Já formatado ("05/11/2026"), quando há proposta. */
+    validaAte?: string;
+    /** Já formatado ("R$ 7.600,00"), só na escolhida. */
+    total?: string;
   };
 }
 
@@ -233,6 +247,30 @@ export function montarEmail(m: MensagemFila, e: EnderecosEmail): EmailPronto {
     return {
       ...base,
       assunto: `[${m.condominioNome}] ${assunto}: ${k.titulo}`,
+      html: pagina(m.condominioNome,
+        `<p style="margin:0 0 14px">${esc(ola)}</p><p style="margin:0 0 14px">${esc(linha)}</p>${botao(rotulo, url)}<p style="margin:0 0 14px">${esc(nota)}</p>`,
+        [esc(AVISO_GOLPE)]),
+      texto: `${ola}\n\n${linha}\n\n${rotulo}: ${url}\n\n${nota}\n\n${AVISO_GOLPE}`,
+    };
+  }
+
+  if (m.tipo === "ORCAMENTO" && m.orcamento) {
+    // OC-03: o link do fornecedor, sem conta; só ele vê a própria proposta.
+    const o = m.orcamento;
+    const url = `${app}/o/${encodeURIComponent(m.codigos.abrir ?? "")}`;
+    const ola = m.nome ? `Olá, ${m.nome}.` : "Olá.";
+    const servico = `${o.titulo}${o.local ? ` (${o.local})` : ""}`;
+    const linha = o.finalidade === "CONVITE"
+      ? `${o.quem}, ${o.cargo} do ${m.condominioNome}, pede um orçamento para: ${servico}. Veja o que precisa e mande sua proposta até ${o.prazo}. Se não puder participar, é só dizer no link.`
+      : o.finalidade === "CONFIRMAR_PRECO"
+        ? `A sua proposta para ${servico} valia até ${o.validaAte ?? "a data informada"}. O ${m.condominioNome} quer saber se o preço continua valendo: confirme a nova validade pelo link.`
+        : `A sua proposta para ${servico}${o.total ? `, de ${o.total},` : ""} foi a escolhida pelo ${m.condominioNome}. Confirme pelo link que aceita fazer o serviço.`;
+    const rotulo = o.finalidade === "CONVITE" ? "Ver o pedido e mandar a proposta" : o.finalidade === "CONFIRMAR_PRECO" ? "Confirmar o preço" : "Ver e aceitar";
+    const nota = "O link é só seu e não precisa de conta. Não repasse: quem abre o link fala em nome da sua empresa.";
+    const assunto = o.finalidade === "CONVITE" ? "Pedido de orçamento" : o.finalidade === "CONFIRMAR_PRECO" ? "Confirme o preço" : "Sua proposta foi a escolhida";
+    return {
+      ...base,
+      assunto: `[${m.condominioNome}] ${assunto}: ${o.titulo}`,
       html: pagina(m.condominioNome,
         `<p style="margin:0 0 14px">${esc(ola)}</p><p style="margin:0 0 14px">${esc(linha)}</p>${botao(rotulo, url)}<p style="margin:0 0 14px">${esc(nota)}</p>`,
         [esc(AVISO_GOLPE)]),

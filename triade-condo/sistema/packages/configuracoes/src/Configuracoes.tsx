@@ -27,6 +27,7 @@ import { AbaWhatsapp } from "./AbaWhatsapp.tsx";
 import { AbaAreasComuns } from "./AbaAreasComuns.tsx";
 import { AbaIa, type AjudaIa } from "./AbaIa.tsx";
 import { AbaDecisoes } from "./AbaDecisoes.tsx";
+import { AbaOrcamentos } from "./AbaOrcamentos.tsx";
 import type { Conexao } from "./conexao.tsx";
 
 export interface PropsAba {
@@ -128,7 +129,7 @@ function Pagina_({ pagina, aoVoltar }: { pagina: IdPagina; aoVoltar?: () => void
         {pagina === "etiquetas" ? <AbaLinksQr {...props} parte="etiquetas" /> : null}
         {pagina === "abertos" ? <AbaLinksQr {...props} parte="abertos" /> : null}
         {pagina === "ia" ? <AbaIa /> : null}
-        {pagina === "decisoes" ? <AbaDecisoes /> : null}
+        {pagina === "decisoes" ? <><AbaDecisoes /><AbaOrcamentos /></> : null}
       </PaginaSalvavel>
     </div>
   );

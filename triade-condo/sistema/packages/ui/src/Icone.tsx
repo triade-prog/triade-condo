@@ -68,6 +68,7 @@ const ICONES = {
   convivio: <path d="M12 3a9 9 0 0 1 9 9H3a9 9 0 0 1 9-9zM12 12v7a2 2 0 0 0 4 0" />,
   // Encomenda guardada na portaria (Portaria 1, PA-01).
   caixa: <path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5zM3.5 7.5 12 12l8.5-4.5M12 12v9M7.8 5.3l8.5 4.5" />,
+  carrinho: <path d="M3 4h2.5l2.2 11h10.6l2-8H6.6M9.5 19.5a1.2 1.2 0 1 0 0 .1M17 19.5a1.2 1.2 0 1 0 0 .1" />,
   // O que vence o prazo e é apagado (F0.11, Privacidade e dados).
   lixeira: <path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5" />,
 } satisfies Record<string, ReactNode>;
