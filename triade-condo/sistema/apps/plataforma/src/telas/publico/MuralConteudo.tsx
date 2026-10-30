@@ -16,7 +16,7 @@ import {
 import { Abas, Botao, CampoTexto, chamarApi, Chip, classeBotao, Icone, Selo, textoDoErro } from "@triade/ui";
 import { prazoCurto } from "../vida/Enquetes.tsx";
 import type { AnuncioPublico, ComunicadoPublico, MuralPublico } from "../tipos.ts";
-import { BlocoDeData, Cartao, ComunicadoLido, FaixaQueda, PorNaAgenda, SeloAssunto, useAbrirArquivo } from "./comum.tsx";
+import { BlocoDeData, Cartao, ComunicadoLido, FaixaQueda, PorNaAgenda, SeloAssunto, SeloCancelada, useAbrirArquivo } from "./comum.tsx";
 
 export type AbaMural = "avisos" | "classificados" | "manual";
 export interface VistaMural { aba: AbaMural; comunicado?: string; anuncio?: string }
@@ -34,6 +34,8 @@ export interface LinksDoMural {
   arquivo: (comunicado: string, arquivo: string) => string;
   /** A API que devolve o link curto da foto do anúncio. */
   fotoAnuncio: (anuncio: string) => string;
+  /** O endereço do arquivo de calendário do aviso (CD-18), para o href do "Pôr na agenda". */
+  agenda: (comunicado: string) => string;
   /** O endereço público de uma vista, para o href dos links. */
   publico: (v: VistaMural) => string;
 }
@@ -136,8 +138,8 @@ function abrirPeloCartao(ev: MouseEvent<HTMLElement>, abrir: () => void) {
   abrir();
 }
 
-function Postagem({ c, condominio, links, novo, agora, aoLer, aoCompartilhar, lado }: {
-  c: ComunicadoPublico; condominio: string; links: LinksDoMural; novo: boolean; agora: Date; aoLer: () => void; aoCompartilhar: () => void;
+function Postagem({ c, links, novo, agora, aoLer, aoCompartilhar, lado }: {
+  c: ComunicadoPublico; links: LinksDoMural; novo: boolean; agora: Date; aoLer: () => void; aoCompartilhar: () => void;
   /** No computador, a foto fica à direita do texto. */
   lado: boolean;
 }) {
@@ -151,7 +153,7 @@ function Postagem({ c, condominio, links, novo, agora, aoLer, aoCompartilhar, la
     <article ref={ref} aria-labelledby={`p-${c.id}`} onClick={(ev) => abrirPeloCartao(ev, aoLer)}
       className={`grid cursor-pointer gap-2.5 p-4 ${CARTAO} hover:border-violeta-200 lg:px-5`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <SeloAssunto assunto={c.assunto} />
+        <span className="flex flex-wrap items-center gap-2"><SeloAssunto assunto={c.assunto} /><SeloCancelada c={c} /></span>
         <span className="flex items-center gap-2.5">
           {novo ? <span className="flex items-center gap-1.5 t-apoio font-bold text-laranja-800"><span aria-hidden="true" className="h-2 w-2 rounded-full bg-laranja-500 ring-[3px] ring-laranja-100" />Novo</span> : null}
           <span className="font-mono t-codigo text-tinta-suave">{dataHumana(c.publicadoEm, agora)}</span>
@@ -180,7 +182,7 @@ function Postagem({ c, condominio, links, novo, agora, aoLer, aoCompartilhar, la
             Ler o aviso<Icone nome="dir" className="h-3.5 w-3.5" />
           </a>
           {pdfs ? <span className="flex items-center gap-1 t-apoio text-tinta-suave"><Icone nome="documento" className="h-3.5 w-3.5" />{pdfs === 1 ? "1 PDF" : `${pdfs} PDFs`}</span> : null}
-          {c.evento ? <PorNaAgenda c={c} condominio={condominio} tamanho="p" /> : null}
+          <PorNaAgenda c={c} href={links.agenda(c.id)} tamanho="p" />
         </span>
         <BotaoCompartilhar titulo={c.titulo} aoCompartilhar={aoCompartilhar} />
       </div>
@@ -189,8 +191,8 @@ function Postagem({ c, condominio, links, novo, agora, aoLer, aoCompartilhar, la
 }
 
 /** O que importa agora: um só, com o bloco de data em relevo (CD-17). */
-function Destaque({ c, condominio, links, agora, aoLer, aoCompartilhar }: {
-  c: ComunicadoPublico; condominio: string; links: LinksDoMural; agora: Date; aoLer: () => void; aoCompartilhar: () => void;
+function Destaque({ c, links, agora, aoLer, aoCompartilhar }: {
+  c: ComunicadoPublico; links: LinksDoMural; agora: Date; aoLer: () => void; aoCompartilhar: () => void;
 }) {
   const e = c.evento!;
   const b = (() => {
@@ -247,7 +249,7 @@ function Destaque({ c, condominio, links, agora, aoLer, aoCompartilhar }: {
             Ler o aviso
           </a>
         )}
-        <PorNaAgenda c={c} condominio={condominio} />
+        <PorNaAgenda c={c} href={links.agenda(c.id)} />
         <span className="ml-auto"><BotaoCompartilhar titulo={c.titulo} aoCompartilhar={aoCompartilhar} /></span>
       </div>
       {falha ? <p className="t-texto text-erro" role="alert">{falha}</p> : null}
@@ -514,7 +516,7 @@ export function MuralConteudo({ m, codigo, vista, ir, links, painel, novos, ulti
           <Icone nome="esq" className="h-4 w-4" />Voltar ao mural
         </button>
         <div className="mx-auto grid w-full max-w-2xl gap-3">
-          <ComunicadoLido c={comunicado} linkArquivo={(arquivo) => links.arquivo(comunicado.id, arquivo)} condominio={m.condominio} />
+          <ComunicadoLido c={comunicado} linkArquivo={(arquivo) => links.arquivo(comunicado.id, arquivo)} agenda={links.agenda(comunicado.id)} />
           {painel ? painel.aviso(comunicado) : null}
         </div>
       </>
@@ -591,7 +593,7 @@ export function MuralConteudo({ m, codigo, vista, ir, links, painel, novos, ulti
       <ul className="grid gap-3" aria-label={titulo}>
         {lista.map((c) => (
           <li key={c.id} className="grid gap-3">
-            <Postagem c={c} condominio={m.condominio} links={links} novo={!!novos?.has(c.id)} agora={agora} lado={lado}
+            <Postagem c={c} links={links} novo={!!novos?.has(c.id)} agora={agora} lado={lado}
               aoLer={() => ir({ aba: "avisos", comunicado: c.id })} aoCompartilhar={() => compartilharAviso(c)} />
             {painel ? painel.aviso(c) : null}
           </li>
@@ -615,7 +617,7 @@ export function MuralConteudo({ m, codigo, vista, ir, links, painel, novos, ulti
         <div className="grid min-w-0 gap-3.5">
           {grupos.destaque ? (
             <div className="grid gap-3">
-              <Destaque c={grupos.destaque} condominio={m.condominio} links={links} agora={agora}
+              <Destaque c={grupos.destaque} links={links} agora={agora}
                 aoLer={() => ir({ aba: "avisos", comunicado: grupos.destaque!.id })} aoCompartilhar={() => compartilharAviso(grupos.destaque!)} />
               {painel ? painel.aviso(grupos.destaque) : null}
             </div>

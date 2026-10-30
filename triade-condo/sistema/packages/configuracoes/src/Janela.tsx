@@ -7,7 +7,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { AvisoErro, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, Dialogo, textoDoErro, type ErroApi, type Resposta } from "@triade/ui";
 
 export type Campo =
-  | { id: string; rotulo: string; tipo: "texto" | "data" | "datahora" | "numero"; obrigatorio?: boolean; max?: number; ajuda?: string; erro?: string }
+  | { id: string; rotulo: string; tipo: "texto" | "data" | "datahora" | "hora" | "numero"; obrigatorio?: boolean; max?: number; ajuda?: string; erro?: string }
   | { id: string; rotulo: string; tipo: "area"; obrigatorio?: boolean; max?: number; ajuda?: string; erro?: string }
   | { id: string; rotulo: string; tipo: "selecao"; opcoes: { valor: string; texto: string }[]; ajuda?: string; erro?: string; desligado?: boolean }
   | { id: string; rotulo: string; tipo: "caixa"; ajuda?: string; desligado?: boolean };
@@ -75,7 +75,7 @@ function Formulario({ campos, iniciais, textoBotao, aoFechar, aoSalvar, recarreg
             value={String(valores[c.id] ?? "")} onChange={(e) => mudar(c.id, e.target.value)} />;
         }
         return <CampoTexto key={c.id} id={id} rotulo={c.rotulo} required={c.obrigatorio} maxLength={c.max} ajuda={c.ajuda} erro={msg}
-          type={c.tipo === "data" ? "date" : c.tipo === "datahora" ? "datetime-local" : "text"} inputMode={c.tipo === "numero" ? "numeric" : undefined}
+          type={c.tipo === "data" ? "date" : c.tipo === "datahora" ? "datetime-local" : c.tipo === "hora" ? "time" : "text"} inputMode={c.tipo === "numero" ? "numeric" : undefined}
           value={String(valores[c.id] ?? "")} onChange={(e) => mudar(c.id, e.target.value)} />;
       })}
       {extra}

@@ -1456,6 +1456,8 @@ export interface ComunicadoPublico {
   mudanca?: string;
   /** Dia, hora e local do aviso com evento (CD-17). */
   evento?: EventoComunicado;
+  /** O edital de uma assembleia que foi cancelada: fica no mural, sem evento nem agenda. */
+  assembleiaCancelada?: boolean;
   arquivos: { id: string; nome: string; tipo: string }[];
 }
 

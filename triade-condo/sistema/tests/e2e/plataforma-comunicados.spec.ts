@@ -7,6 +7,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { instalarApiPlataformaFalsa } from "./api-falsa-plataforma";
 import { abrirArea } from "./inicio";
 import { irAoPasso } from "./registro";
+import { hojeFalso, somar } from "./api-falsa-agenda";
 
 const PLATAFORMA = "http://localhost:3000";
 const PDF = Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n");
@@ -109,9 +110,15 @@ test.describe("Plataforma do síndico · comunicados e documentos", () => {
     await j.getByRole("button", { name: "Publicar versão 2" }).click();
     await expect(j.getByText("Diga o que mudou, de 3 a 500 caracteres.")).toBeVisible();
     await j.getByRole("textbox", { name: "O que mudou" }).fill("Horário corrigido: termina às 13h");
+    // Quando acontece (CD-17): a data entra na correção e a ficha passa a mostrar o Quando.
+    await j.getByLabel("Quando acontece: dia").fill(somar(hojeFalso(), 3));
+    await j.getByLabel("Começa às").fill("09:00");
+    await j.getByLabel("Termina às").fill("13:00");
     await conferir(page);
     await j.getByRole("button", { name: "Publicar versão 2" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Falta de água na quinta, das 9h às 13h" })).toBeVisible();
+    await expect(page.getByText("Quando", { exact: true })).toBeVisible();
+    await expect(page.getByText(/^(dom|seg|ter|qua|qui|sex|sáb) · 9h às 13h$/)).toBeVisible();
     await expect(page.getByText("Versão 2", { exact: true }).first()).toBeVisible();
     const andamento = page.getByRole("region", { name: "Andamento" });
     await expect(andamento).toContainText("Horário corrigido: termina às 13h");

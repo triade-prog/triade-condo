@@ -4,6 +4,7 @@
 // arquivar, copiar, plano de comunicação e documentos com versões. O comunicado pelo WhatsApp do
 // condomínio (F6.6): o cartão de Configurações, a conta por canal e como chegou (pgTAP 033).
 import type { Route } from "@playwright/test";
+import { icsDoEvento, nomeDoIcs } from "../../packages/domain/src/mural.ts";
 import { hojeFalso, somar } from "./api-falsa-agenda";
 import { conferir, conteudoEnviado } from "./api-falsa-arquivos";
 import { recebeNoWhatsapp, type EstadoMoradores } from "./api-falsa-moradores";
@@ -107,6 +108,14 @@ export function criarComunicados(pedidoId: string): EstadoComunicados {
   };
 }
 
+/** O arquivo de calendário (CD-18) como a API devolve: montado pela mesma função do domínio, no fuso de Brasília. */
+function agendaFalsa(route: Route, c: ComunicadoFalso): Promise<void> {
+  if (!c.evento) return erro(route, 404, "NOT_FOUND");
+  return route.fulfill({ status: 200, contentType: "text/calendar; charset=utf-8",
+    headers: { "content-disposition": `attachment; filename="${nomeDoIcs(c.titulo)}"`, "cache-control": "no-store" },
+    body: icsDoEvento({ id: c.id, assunto: c.assunto, titulo: c.titulo, texto: c.texto, evento: c.evento }, "Residencial Ipê") });
+}
+
 const publicoDe = (est: EstadoComunicados) => (c: ComunicadoFalso) => ({ id: c.id, assunto: c.assunto, titulo: c.titulo, texto: c.texto,
   assinatura: c.assinatura ?? undefined, publicadoEm: c.publicadoEm, numero: c.numero, mudanca: c.mudanca ?? undefined, evento: c.evento ?? undefined,
   arquivos: est.arquivos.filter((a) => a.familiaId === c.familiaId && a.situacao === "LIBERADO").map((a) => ({ id: a.id, nome: a.nome, tipo: a.tipo })) });
@@ -145,7 +154,7 @@ export async function rotasPublicas(route: Route, est: EstadoComunicados, caminh
   const botao = zap?.ligado ? { comunicadosWhatsapp: zap.numero } : {};
   const pub = publicoDe(est);
   const docs = () => docsDoMural(est);
-  const m = /^\/v1\/publico\/mural\/([^/]+)(\/documentos|\/comunicados\/([^/]+)\/arquivos\/([^/]+))?$/.exec(caminho);
+  const m = /^\/v1\/publico\/mural\/([^/]+)(\/documentos|\/comunicados\/([^/]+)\/(?:arquivos\/([^/]+)|agenda))?$/.exec(caminho);
   if (m) {
     const codigo = decodeURIComponent(m[1]!).toUpperCase();
     if (mu.codigosAntigos.includes(codigo)) return route.fulfill({ json: { condominio: "Residencial Ipê", trocado: true } });
@@ -157,13 +166,21 @@ export async function rotasPublicas(route: Route, est: EstadoComunicados, caminh
       if (d) est.pedidosDoc.unshift({ id: novoId(), documentoId: d.id, email: String(corpo.email), estado: "ESPERANDO", automatico: false, criadoEm: new Date().toISOString() });
       return route.fulfill({ json: { ok: true } });
     }
+    if (m[3] && !m[4]) {
+      const alvo = doMural(est).find((x) => x.id === m[3]);
+      return alvo ? agendaFalsa(route, alvo) : erro(route, 404, "NOT_FOUND");
+    }
     if (m[3]) return route.fulfill({ json: { url: `/api/v1/armazenamento/${m[4]}`, nome: "foto", tipo: "image/jpeg" } });
     mu.aberturas++;
     return route.fulfill({ json: muralFalso(est, manual, extra, zap) });
   }
-  const c = /^\/v1\/publico\/c\/([^/]+)(?:\/arquivos\/([^/]+))?$/.exec(caminho);
+  const c = /^\/v1\/publico\/c\/([^/]+)(?:\/arquivos\/([^/]+)|\/(agenda))?$/.exec(caminho);
   if (c) {
     if (c[1] !== LINK_FALSO) return erro(route, 400, "VALIDATION_ERROR", { motivo: "LINK_VENCIDO" });
+    if (c[3]) {
+      const alvo = est.comunicados.filter((x) => x.estado === "PUBLICADO")[0];
+      return alvo ? agendaFalsa(route, alvo) : erro(route, 404, "NOT_FOUND");
+    }
     if (c[2]) return route.fulfill({ json: { url: `/api/v1/armazenamento/${c[2]}`, nome: "foto", tipo: "image/jpeg" } });
     const agua = est.comunicados.filter((x) => x.estado === "PUBLICADO")[0];
     return route.fulfill({ json: agua ? { condominio: "Residencial Ipê", comunicado: pub(agua), ...botao } : { condominio: "Residencial Ipê", foraDeUso: true } });
@@ -516,7 +533,7 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
   };
   if (caminho === "/v1/condominio/comunicados" && metodo === "POST") return salvar(null);
 
-  const r = /^\/v1\/condominio\/comunicados\/([^/]+)(?:\/(corrigir|arquivar|uso|arquivos|mural)(?:\/([^/]+)\/(verificar|link|tirar))?)?$/.exec(caminho);
+  const r = /^\/v1\/condominio\/comunicados\/([^/]+)(?:\/(corrigir|arquivar|uso|arquivos|mural|agenda)(?:\/([^/]+)\/(verificar|link|tirar))?)?$/.exec(caminho);
   const c = r ? est.comunicados.find((x) => x.id === r[1]) : undefined;
   if (!r || !c) return erro(route, 404, "NOT_FOUND");
   if (!r[2] && metodo === "PUT") return salvar(c);
@@ -558,6 +575,7 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
     hist(c.familiaId, c.noMural ? "comunicado.mural_ligado" : "comunicado.mural_tirado");
     return route.fulfill({ json: { versao: c.versao } });
   }
+  if (r[2] === "agenda") return agendaFalsa(route, c);
   if (r[2] === "uso") {
     if (c.estado !== "PUBLICADO") return erro(route, 422, "VALIDATION_ERROR", { motivo: "COMUNICADO_NAO_PUBLICADO" });
     hist(c.familiaId, corpo.uso === "COPIADO" ? "comunicado.copiado" : "comunicado.mural", { numero: c.numero });
@@ -569,6 +587,12 @@ export async function rotasComunicados(route: Route, est: EstadoComunicados, ctx
     c.estado = "SUBSTITUIDO"; c.substituidoEm = agora; c.versao++;
     const nova: ComunicadoFalso = { ...c, id: novoId(), numero: c.numero + 1, titulo: String(corpo.titulo).trim(), texto: String(corpo.texto).trim(),
       estado: "PUBLICADO", mudanca: String(corpo.mudanca).trim(), substituidoEm: null, publicadoEm: agora, publicadoPor: ctx.eu.nome, versao: 1, criadoEm: agora, atualizadoEm: agora };
+    // O evento (CD-17): sem o campo, a versão nova herda; com ele, vale o que veio (null tira).
+    if ("evento" in corpo) {
+      const ev = corpo.evento as Partial<EventoFalso> | null;
+      if (ev && (!/^\d{4}-\d{2}-\d{2}$/.test(String(ev.dia ?? "")) || (ev.fim && (!ev.inicio || ev.fim <= ev.inicio)))) return erro(route, 400, "VALIDATION_ERROR", { campos: [ev.fim ? "evento.fim" : "evento.dia"] });
+      nova.evento = ev ? { dia: String(ev.dia), ...(ev.inicio ? { inicio: ev.inicio } : {}), ...(ev.fim ? { fim: ev.fim } : {}), ...(ev.local?.trim() ? { local: ev.local.trim() } : {}) } : null;
+    }
     nova.emails = 0;
     nova.whatsapps = 0;
     nova.whatsappFalhas = [];

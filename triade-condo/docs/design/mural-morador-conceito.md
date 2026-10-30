@@ -4,7 +4,7 @@ Proposta de 26/10/2026 para a página pública do mural (CD-12, CD-15, AC-03, AC
 
 Telas-modelo: `telas-modelo/mural-morador-celular.html` (390 px, página inteira) e `telas-modelo/mural-morador-computador.html` (1280 px), com os PNGs ao lado.
 
-**Aprovado pela Carolina em 26/10/2026**, com a frase "o que o prédio precisa saber" e as ideias novas 1 a 3 (CD-16, CD-17 e CD-18 no `IDEIAS.md`); as ideias 4 e 5 ficaram para depois. Construído no D4.40. O que ficou diferente do desenho: as enquetes ficam na coluna principal também no computador; o feed mostra uma foto por aviso (as outras ao abrir); o selo do assunto é a pílula do padrão (DC15), sem a faixa lateral; o destaque que não tem PDF mostra "Ler o aviso" no lugar de "Ler o edital (PDF)".
+**Aprovado pela Carolina em 26/10/2026**, com a frase "o que o prédio precisa saber" e as ideias novas 1 a 3 (CD-16, CD-17 e CD-18 no `IDEIAS.md`); as ideias 4 e 5 ficaram para depois. Construído no D4.40. O que ficou diferente do desenho: as enquetes ficam na coluna principal também no computador; o feed mostra uma foto por aviso (as outras ao abrir); o selo do assunto é a pílula do padrão (DC15), sem a faixa lateral; o destaque que não tem PDF mostra "Ler o aviso" no lugar de "Ler o edital (PDF)". Ajustes da revisão de 27/10/2026 (D4.41): a assembleia cancelada sai do "O que importa agora" e fica no feed com o selo "Assembleia cancelada"; o "Pôr na agenda" baixa o arquivo por um endereço de verdade, em UTC no fuso do condomínio, e na assembleia reserva da primeira chamada até duas horas depois da segunda; a correção do aviso pode mudar o dia, as horas e o local.
 
 ## 1. O que a identidade já tem, e o que o mural não usava
 

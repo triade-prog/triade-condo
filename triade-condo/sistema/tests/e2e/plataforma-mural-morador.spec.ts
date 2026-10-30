@@ -37,7 +37,7 @@ test.describe("Mural do morador", () => {
     await expect(agora.getByText("faltam 5 dias")).toBeVisible();
     await expect(agora.getByText("16:00")).toBeVisible();
     await expect(agora.getByText("Salão de festas")).toBeVisible();
-    await expect(agora.getByRole("link", { name: "Pôr na agenda: Festa das crianças no salão" })).toHaveAttribute("download", "festa-das-criancas-no-salao.ics");
+    await expect(agora.getByRole("link", { name: "Pôr na agenda: Festa das crianças no salão" })).toHaveAttribute("href", new RegExp(`^/api/v1/publico/mural/${MURAL_FALSO}/comunicados/[^/]+/agenda$`));
     await expect(page.getByRole("region", { name: "O que importa agora" })).toHaveCount(1);
 
     // Esta semana tem a falta de água (ontem); Antes tem a coleta (há 10 dias). O destaque não repete no feed.
@@ -81,9 +81,17 @@ test.describe("Mural do morador", () => {
     await expect(page.getByText("Comissão de festas")).toBeVisible();
     await expect(page.getByText(/^(dom|seg|ter|qua|qui|sex|sáb) · 16h · Salão de festas$/)).toBeVisible();
     const agenda = page.getByRole("link", { name: "Pôr na agenda: Festa das crianças no salão" });
-    await expect(agenda).toHaveAttribute("href", /^data:text\/calendar/);
-    const ics = decodeURIComponent((await agenda.getAttribute("href"))!.replace(/^data:text\/calendar;charset=utf-8,/, ""));
-    expect(ics).toContain(`DTSTART;TZID=America/Sao_Paulo:${somar(hojeFalso(), 5).replace(/-/g, "")}T160000`);
+    // O endereço é de verdade (o celular abre a agenda), sem download forçado; o arquivo vem em UTC (16h em Brasília = 19h UTC).
+    await expect(agenda).not.toHaveAttribute("download", /.*/);
+    // Buscado de dentro da página, para passar pela API falsa.
+    const resposta = await page.evaluate(async (href) => {
+      const r = await fetch(href);
+      return { tipo: r.headers.get("content-type") ?? "", nome: r.headers.get("content-disposition") ?? "", texto: await r.text() };
+    }, (await agenda.getAttribute("href"))!);
+    expect(resposta.tipo).toContain("text/calendar");
+    expect(resposta.nome).toContain('filename="festa-das-criancas-no-salao.ics"');
+    const ics = resposta.texto;
+    expect(ics).toContain(`DTSTART:${somar(hojeFalso(), 5).replace(/-/g, "")}T190000Z`);
     expect(ics).toContain("SUMMARY:Festa das crianças no salão");
     expect(ics).toContain("LOCATION:Salão de festas");
     await conferir(page);

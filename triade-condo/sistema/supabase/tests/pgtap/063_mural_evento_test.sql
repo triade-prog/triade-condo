@@ -53,8 +53,8 @@ select is(pg_temp.campos($$ select pg_temp.escrever('Fim sem início', '{"dia": 
   'CD-17: o fim pede o início');
 select is(pg_temp.campos($$ select pg_temp.escrever('Local curto', '{"dia": "2027-03-10", "local": "S"}', 'RASCUNHO') $$), '["evento.local"]'::jsonb,
   'CD-17: o local tem de 2 a 120 letras');
-select throws_ok($$ update comunicados set evento_fim = '07:00' where id = (select agua from cm) $$, '23514', null,
-  'CD-17: o banco também recusa fim antes do início');
+select throws_ok($$ update comunicados set evento_fim = '07:00' where id = (select festa from cm) $$, '23514', null,
+  'CD-17: o banco também recusa fim sem início (no publicado, o evento nem muda: 0314)');
 
 -- O rascunho que perde o evento fica sem ele.
 select plataforma_salvar_comunicado(ana, ipe, festa, pg_temp.vc(festa), 'AVISO', 'Festa junina no salão', 'Traga um prato.', 'TODOS', '{}', '{}', '{}',
