@@ -22,6 +22,7 @@ import { criarRelatorios, rotasArquivoRelatorio, rotasRelatorios } from "./api-f
 import { criarPortaria, resumoPortaria, rotasPortaria } from "./api-falsa-portaria";
 import { criarPrivacidade, rotasPrivacidade } from "./api-falsa-privacidade";
 import { avisosDecisoes, criarDecisoes, detalheDecisoes, marcarAvisosDecisoes, resumoDecisoes, rotasDecisoes, semearDecisoes, type Contexto } from "./api-falsa-decisoes";
+import { criarOrcamentos, resumoOrcamentos, rotasOrcamentoPublico, rotasOrcamentos, semearOrcamentos, type ContextoOrcamentos } from "./api-falsa-orcamentos";
 import { criarAprovacoes, ganchosAprovacoes, resumoAprovacoes, rotasAprovacoes, rotasConselhoPublico, semearAprovacoes, type ContextoAprovacoes } from "./api-falsa-aprovacoes";
 
 /** As 24 permissões do banco (permissoes), na ordem de @triade/domain. */
@@ -82,6 +83,8 @@ export interface OpcoesPlataforma {
   comPortaria?: boolean;
   /** R5: o conselho (a Bruna é a subsíndica), uma decisão em votação, as despesas e os links do conselheiro; a síndica vê e edita o conselho e as despesas. */
   comAprovacoes?: boolean;
+  /** R8: os orçamentos e compras (a bomba com 3 propostas, a pintura, os extintores e a caixa d'água); a síndica vê, edita e decide. */
+  comOrcamentos?: boolean;
   /** Privacidade e dados (F0.11): a síndica vê e cuida (privacidade.ver e privacidade.cuidar). */
   comPrivacidade?: boolean;
 }
@@ -221,6 +224,15 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
   if (opcoes.comDecisoes) semearDecisoes(decisoes, estado.pedidos, V_ANA, estado.config.etapas.find((e) => e.nome === "Concluído")!.id);
   const aprovacoes = criarAprovacoes();
   if (opcoes.comAprovacoes) semearAprovacoes(aprovacoes, decisoes, estado.pedidos, V_ANA, V_BRUNA);
+  const orcamentos = criarOrcamentos();
+  // Os prestadores do orçamento são os do cadastro da Manutenção: o mesmo id abre a ficha e a ordem de serviço.
+  for (const p of orcamentos.prestadores) {
+    const doCadastro = manutencao.prestadores.find((x) => x.nome === p.nome);
+    if (doCadastro) p.id = doCadastro.id;
+    else manutencao.prestadores.push({ id: p.id, nome: p.nome, servico: p.servico, contato: null, telefone: p.celular ? `+55${p.celular}` : null, email: p.email, documento: null,
+      acordo: "CHAMADO", contratoAte: null, desde: null, reservaId: null, observacao: null, arquivado: false, versao: 1 });
+  }
+  if (opcoes.comOrcamentos) semearOrcamentos(orcamentos, manutencao.manutencoes[0] ? { id: manutencao.manutencoes[0].id, titulo: manutencao.manutencoes[0].titulo } : undefined);
   if (!opcoes.comAcessoPedido) suporte.acessos = [];
   if (opcoes.comAtendimento) {
     for (const p of estado.pessoas) { p.responsavel = true; p.disponivel = true; }
@@ -237,6 +249,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
       "enquetes.editar", "enquetes.ver", "assembleias.editar", "assembleias.ver", "classificados.editar", "classificados.ver", "decisoes.aprovar",
       ...(opcoes.comPortaria ? ["portaria.ver", "portaria.cuidar"] : []),
       ...(opcoes.comAprovacoes ? ["conselho.ver", "conselho.editar", "despesas.ver", "despesas.registrar"] : []),
+      ...(opcoes.comOrcamentos ? ["orcamentos.ver", "orcamentos.editar", "orcamentos.decidir"] : []),
       ...(opcoes.comPrivacidade ? ["privacidade.ver", "privacidade.cuidar"] : [])]
     : quem === "SECRETARIA" ? ["config.editar", "config.ver", "moradores.editar", "moradores.ver", "pedidos.responder", "pedidos.ver", "plataforma.painel.ver", "suporte.chamados",
       ...(opcoes.secretariaRegistra ? ["pedidos.atualizar"] : [])]
@@ -348,6 +361,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     const linkDoConselho = await rotasConselhoPublico(route, aprovacoes, comAprovacoes({ pedidos: estado.pedidos, pessoas: estado.pessoas, etapas: c.etapas,
       unidade: () => null, eu: { vinculo: "", nome: "" }, pode: () => false, categoria: () => "" }), caminho, metodo, corpo);
     if (linkDoConselho !== null) return linkDoConselho;
+    const linkDoFornecedor = await rotasOrcamentoPublico(route, orcamentos, caminho, metodo, corpo);
+    if (linkDoFornecedor !== null) return linkDoFornecedor;
     const publicas = await rotasPublicas(route, comunicados, caminho, metodo, corpo, manualMural, extraMural, estado.moradores.zap);
     if (publicas !== null) return publicas;
     if (!estado.logado) return erro(route, 401, "UNAUTHORIZED");
@@ -443,6 +458,19 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     const naDecisao = comAprovacoes({ pedidos: estado.pedidos, pessoas: estado.pessoas, etapas: c.etapas, unidade: nomeUnidade, eu, pode,
       categoria: (id: string) => c.categorias.find((x) => x.id === id)!.nome });
     const votaNoConselho = naDecisao.ganchos?.minhaVotacao;
+    // R8: o orçamento lê a alçada e o conselho da R5 e, ao mandar ao conselho, vira uma despesa para aprovar.
+    const noOrcamento: ContextoOrcamentos = { eu, pode, sindico: quem === "SINDICA", cargo: quem === "SINDICA" ? "Síndica" : quem === "SECRETARIA" ? "Secretária" : "Conselheiro",
+      alcada: () => aprovacoes.regras.alcada, gravarAlcada: (v) => { aprovacoes.regras.alcada = v; },
+      conselho: () => ({ podePedir: aprovacoes.ligado && aprovacoes.membros.length > 0, titulares: aprovacoes.membros.length }),
+      manutencoes: () => manutencao.manutencoes.filter((m) => !MANUTENCAO_FECHADA.includes(m.estado)).map((m) => ({ id: m.id, titulo: m.titulo, local: m.local })),
+      pedidos: () => estado.pedidos.filter((p) => PEDIDO_ABERTO.includes(p.estado)).map((p) => ({ id: p.id, numero: p.protocolo, titulo: p.assunto })),
+      criarDespesa: (o, valor, fornecedor) => {
+        const id = `despesa-do-orcamento-${aprovacoes.despesas.length + 1}`;
+        aprovacoes.despesas.unshift({ id, versao: 1, estado: "AGUARDANDO", modo: "CONSELHO", descricao: o.titulo, valor, fornecedor: { nome: fornecedor }, prazo: AGORA.slice(0, 10),
+          pedidaEm: AGORA, pedidaPor: eu.nome, anexos: [], historico: [] });
+        return id;
+      },
+      despesaEstado: (id) => aprovacoes.despesas.find((d) => d.id === id)?.estado ?? null };
     const resumoDasDecisoes = () => {
       const base = resumoDecisoes(decisoes, eu.vinculo, votaNoConselho);
       return aprovacoes.ligado ? resumoAprovacoes(aprovacoes, naDecisao, base) : base;
@@ -461,6 +489,7 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
           mesFechado: MES_FECHADO,
         } : {}),
         ...(acoes().includes("manutencao.ver") ? { manutencao: resumoManutencao(manutencao) } : {}),
+        ...(acoes().includes("orcamentos.ver") ? { orcamentos: resumoOrcamentos(orcamentos, acoes().includes("orcamentos.decidir")) } : {}),
         ...(acoes().includes("portaria.ver") ? { portaria: resumoPortaria(portaria) } : {}),
         ...(acoes().includes("comunicados.ver") || acoes().includes("documentos.ver") ? { comunicados: resumoComunicados(comunicados, pode) } : {}),
         ...(acoes().includes("documentos.ver") ? { memoria: { prontuario: resumoProntuario(memoria) } } : {}),
@@ -533,6 +562,8 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     if (noWhatsapp !== null) return noWhatsapp;
     const nasAprovacoes = await rotasAprovacoes(route, aprovacoes, naDecisao, caminho, metodo, corpo, url);
     if (nasAprovacoes !== null) return nasAprovacoes;
+    const nosOrcamentos = await rotasOrcamentos(route, orcamentos, noOrcamento, caminho, metodo, corpo, url);
+    if (nosOrcamentos !== null) return nosOrcamentos;
     // Antes dos pedidos: as rotas da F7.4 dividem o prefixo /pedidos/:id.
     const nasDecisoes = await rotasDecisoes(route, decisoes, naDecisao, caminho, metodo, corpo, url);
     if (nasDecisoes !== null) return nasDecisoes;
@@ -663,5 +694,5 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     return erro(route, 404, "NOT_FOUND");
   }
   await page.route("**/api/v1/**", atender);
-  return Object.assign(estado, { privacidade, pedidosPlano, comunicados, links, manutencao, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios, aprovacoes });
+  return Object.assign(estado, { privacidade, pedidosPlano, comunicados, links, manutencao, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios, aprovacoes, orcamentos });
 }

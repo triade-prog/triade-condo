@@ -12,7 +12,7 @@ import { Aviso, Botao, Carregando, CampoSelecao, Dialogo, ErroCarregar, Icone, V
 import { useCarregar, useContagens, usePlataforma } from "../sessao.tsx";
 import type { ListaManutencoes, OpcoesManutencao, Recado } from "../tipos.ts";
 import { LinhaManutencao, PartesManutencao } from "./comum.tsx";
-import { FormManutencao } from "./FormManutencao.tsx";
+import { FormManutencao, type InicioManutencao } from "./FormManutencao.tsx";
 import { MarcarVisita } from "./MarcarVisita.tsx";
 
 type Filtros = { situacao: string; tipo: string; prestador: string; atencao: string; busca: string; pagina: number };
@@ -67,7 +67,10 @@ export function Manutencoes() {
   const lista = useCarregar<ListaManutencoes>(`/v1/condominio/manutencao${q ? `?${q}` : ""}`);
   const contagens = useContagens("manutencao", q);
   const opcoes = useCarregar<OpcoesManutencao>("/v1/condominio/manutencao/opcoes");
-  const [nova, setNova] = useState(false);
+  // R8 (quadro 482): a ordem de serviço nasce do orçamento já preenchida (?nova=1&titulo=&local=&prestador=).
+  const [nova, setNova] = useState(busca.get("nova") === "1");
+  const inicio: InicioManutencao | undefined = busca.get("nova") === "1"
+    ? { titulo: busca.get("titulo") ?? undefined, local: busca.get("local") ?? undefined, prestadorId: busca.get("prestador") ?? undefined } : undefined;
   const [visita, setVisita] = useState<string | null>(null);
   const [recado, setRecado] = useState<Recado>(null);
   const [texto, setTexto] = useState(f.busca);
@@ -177,7 +180,7 @@ export function Manutencoes() {
         aplicar={(m) => { setFiltrandoAberto(false); ir(m); }} />
 
       {o ? (
-        <FormManutencao aberto={nova} opcoes={o} aoFechar={() => setNova(false)}
+        <FormManutencao aberto={nova} opcoes={o} inicio={inicio} aoFechar={() => setNova(false)}
           salvo={(id, t, marcar) => {
             setNova(false);
             setRecado({ tom: "ok", texto: t });

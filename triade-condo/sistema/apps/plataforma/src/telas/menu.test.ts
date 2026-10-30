@@ -7,7 +7,7 @@ describe("menu da Plataforma (DC15)", () => {
   it("o Início e os quatro grupos, na ordem do desenho aprovado", () => {
     expect(ITENS_MENU.map((i) => `${i.grupo ?? "-"}: ${i.texto}`)).toEqual([
       "-: Início",
-      "Dia a dia: Pedidos", "Dia a dia: Decisões", "Dia a dia: Agenda", "Dia a dia: Manutenção", "Dia a dia: Portaria",
+      "Dia a dia: Pedidos", "Dia a dia: Decisões", "Dia a dia: Orçamentos", "Dia a dia: Agenda", "Dia a dia: Manutenção", "Dia a dia: Portaria",
       "Comunicação: Comunicados", "Comunicação: WhatsApp", "Comunicação: Vida em condomínio",
       "Prédio e pessoas: Moradores e unidades", "Prédio e pessoas: Documentos e memória", "Prédio e pessoas: Indicadores",
       "Gestão: Configurações", "Gestão: Pessoas e acesso", "Gestão: Ajuda e suporte",

@@ -40,6 +40,8 @@ export const ITENS_MENU: ItemDoMenu[] = [
       || (d.decisoes?.votando ?? 0) > 0,
     caminhos: ["/decisoes"],
     contagem: (d) => conta(d.decisoes?.aguardando, "aguardando você"), permissao: PERMISSOES.APROVAR },
+  { href: "/orcamentos", texto: "Orçamentos", icone: "carrinho", grupo: "Dia a dia", ve: (p) => p("orcamentos.ver"), caminhos: ["/orcamentos"],
+    contagem: (d) => conta(d.orcamentos?.pedeAtencao, "pedindo atenção"), permissao: PERMISSOES.APROVAR },
   { href: "/agenda", texto: "Agenda", icone: "calendario", grupo: "Dia a dia", ve: (p) => p("agenda.ver"), caminhos: ["/agenda"],
     permissao: PERMISSOES.VER_AGENDA, atalho: true, conjunto: "AGENDA" },
   { href: "/manutencao", texto: "Manutenção", icone: "ferramenta", grupo: "Dia a dia", ve: (p) => p("manutencao.ver"), caminhos: ["/manutencao"],

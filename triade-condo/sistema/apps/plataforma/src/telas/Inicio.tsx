@@ -20,6 +20,7 @@ import { CartaoMural } from "./comunicados/CartaoMural.tsx";
 import { documentoNoProntuario, itensVencendo, linhaItem, linhasProntuario, MAXIMO_VENCIMENTOS, maisVencimentos } from "./memoria/CartaoMemoria.tsx";
 import { useAcessoNoInicio } from "./suporte/AcessoTriade.tsx";
 import { linhasVida, temVida } from "./vida/CartaoVida.tsx";
+import { linhasOrcamentos } from "./orcamentos/CartaoOrcamentos.tsx";
 import { useCelular } from "./celular.ts";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
 import type { Configuracoes, MesFechado, Prontuario } from "./tipos.ts";
@@ -205,6 +206,7 @@ export function Inicio() {
   const temVencimentos = !!(painel.comunicados || painel.manutencao || painel.memoria);
   const manutencao = painel.manutencao ? linhasManutencao(painel.manutencao) : [];
   const vida = painel.vida && temVida(painel.vida) ? linhasVida(painel.vida) : [];
+  const orcamentos = painel.orcamentos ? linhasOrcamentos(painel.orcamentos) : [];
   const comunicacao = [...(painel.comunicados ? linhasComunicados(painel.comunicados) : []), ...(painel.moradores ? linhasMoradores(painel.moradores) : [])];
   const pedemAtencao = (l: LinhaInicio[]) => l.filter((x) => x.tom === "erro" || x.tom === "atencao").length;
 
@@ -242,6 +244,12 @@ export function Inicio() {
             <CartaoInicio titulo="Manutenção" icone="ferramenta" href="/manutencao"
               area={{ resumo: manutencao.length ? resumoDasLinhas(manutencao) : vazioManutencao(painel.manutencao), quantos: pedemAtencao(manutencao), tom: manutencao.some((l) => l.tom === "erro") ? "erro" : "atencao" }}>
               {manutencao.length ? <LinhasInicio linhas={manutencao} /> : <p className="t-apoio">{vazioManutencao(painel.manutencao)}</p>}
+            </CartaoInicio>
+          ) : null}
+          {painel.orcamentos?.pedeAtencao ? (
+            <CartaoInicio titulo="Orçamentos" icone="carrinho" href="/orcamentos"
+              area={{ resumo: resumoDasLinhas(orcamentos), quantos: painel.orcamentos.pedeAtencao, tom: "atencao" }}>
+              <LinhasInicio linhas={orcamentos} />
             </CartaoInicio>
           ) : null}
           {temVencimentos && celular ? <Vencimentos {...vencimentos} /> : null}

@@ -10,10 +10,12 @@
 // esperando aprovação e reserva cancelada pelo morador perto da data. Da F5.9 (MP-09): o prestador
 // confirmou ou não pode, e a troca para a reserva. Da F5.10 (W-17): a queda do WhatsApp e a volta do número.
 // Da F7.4 (AT-23): decisão pedida a você, decisão com o prazo vencido e a resposta da que você pediu.
+// Da R8: os avisos dos orçamentos (proposta que chegou, recusa, prazo fechado, preço confirmado, aceite,
+// 5 dias sem aceite e a resposta da escolha), cada um levando à ficha do orçamento.
 
 import Link from "next/link";
 import { useState } from "react";
-import { formatarDataHora, mostrarCusto, mostrarDataCurta, TIPOS_AVISO } from "@triade/domain";
+import { AVISOS_ORCAMENTO, formatarDataHora, mostrarCusto, mostrarDataCurta, TIPOS_AVISO } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, Carregando, chamarApi, Dialogo, ErroCarregar, Icone, Selo, textoDoErro, Vazio, type ErroApi } from "@triade/ui";
 import { useCarregar, usePlataforma } from "./sessao.tsx";
 import type { AvisoDoPainel, Avisos as ListaAvisos } from "./tipos.ts";
@@ -119,6 +121,20 @@ function detalhe(a: AvisoDoPainel): string {
       return a.texto ?? "A ausência do síndico começou: você responde no lugar dele.";
     case "AUSENCIA_FIM":
       return a.texto ?? "A ausência do síndico terminou: o que ficou sem resposta voltou para ele.";
+    case "ORCAMENTO_PROPOSTA_RECEBIDA":
+      return `${a.fornecedor ?? "Um fornecedor"} mandou ${a.numero && a.numero > 1 ? `a versão ${a.numero} da proposta` : "a proposta"}.`;
+    case "ORCAMENTO_RECUSOU":
+      return `${a.fornecedor ?? "Um fornecedor"} recusou o convite.`;
+    case "ORCAMENTO_PRAZO_FECHOU":
+      return "O prazo das propostas fechou: já dá para comparar.";
+    case "ORCAMENTO_PRECO_CONFIRMADO":
+      return `${a.fornecedor ?? "O fornecedor"} confirmou o preço da proposta.`;
+    case "ORCAMENTO_ACEITE":
+      return `${a.fornecedor ?? "O fornecedor"} aceitou o serviço.`;
+    case "ORCAMENTO_SEM_ACEITE_5D":
+      return `Faz 5 dias que ${a.fornecedor ?? "o fornecedor"} não confirma o serviço.`;
+    case "ORCAMENTO_APROVADA":
+      return a.resultado === "RECUSADA" ? "A escolha foi recusada por quem aprova." : a.resultado === "APROVADA" ? "A escolha foi aprovada." : "A escolha foi respondida.";
     default:
       return a.texto ?? "";
   }
@@ -275,6 +291,26 @@ function Lista({ aoFechar }: { aoFechar: () => void }) {
                       {despesa ? "Abrir a despesa" : "Abrir o conselho"}
                     </Link>
                     {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso: ${a.titulo ?? rotulo}`}>Marcar como visto</Botao>}
+                  </span>
+                </li>
+              );
+            }
+            if (a.tipo.startsWith("ORCAMENTO_")) {
+              const nome = AVISOS_ORCAMENTO[a.tipo.slice(10) as keyof typeof AVISOS_ORCAMENTO] ?? "Orçamento";
+              const tom = a.tipo === "ORCAMENTO_SEM_ACEITE_5D" || (a.tipo === "ORCAMENTO_APROVADA" && a.resultado === "RECUSADA") ? "erro" : a.tipo === "ORCAMENTO_RECUSOU" ? "atencao" : a.tipo === "ORCAMENTO_ACEITE" || a.tipo === "ORCAMENTO_PRECO_CONFIRMADO" || a.tipo === "ORCAMENTO_APROVADA" ? "ok" : "info";
+              return (
+                <li key={a.id} className={`grid gap-1 rounded-lg border p-3 t-texto ${a.vistoEm ? "border-linha" : "border-atencao-borda bg-atencao-fundo"}`}>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Selo tom={tom}>Orçamento</Selo>
+                    {a.vistoEm ? <span className="t-apoio text-tinta-suave">Visto</span> : <span className="t-apoio font-semibold">Sem ver</span>}
+                  </span>
+                  <span className="font-semibold">{a.titulo ?? nome}</span>
+                  <span className="t-apoio text-tinta-suave">{detalhe(a)} {formatarDataHora(a.criadoEm)}.</span>
+                  <span className="flex flex-wrap gap-2">
+                    <Link href={`/orcamentos/${a.orcamentoId}`} className="font-medium text-violeta-600 hover:underline" onClick={() => { if (!a.vistoEm) void marcar([a.id]); aoFechar(); }}>
+                      Abrir o orçamento
+                    </Link>
+                    {a.vistoEm ? null : <Botao variante="discreto" onClick={() => void marcar([a.id])} aria-label={`Marcar como visto o aviso: ${a.titulo ?? nome}`}>Marcar como visto</Botao>}
                   </span>
                 </li>
               );
