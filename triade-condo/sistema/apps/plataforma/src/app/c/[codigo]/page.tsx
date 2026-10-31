@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Carregando } from "@triade/ui";
 import { ComunicadoDoLink } from "@/telas/publico/Links";
+import { ComEncerramento } from "@/telas/publico/comum";
 
 export const metadata: Metadata = { title: { absolute: "Comunicado do condomínio" } };
 
@@ -9,7 +10,9 @@ export const metadata: Metadata = { title: { absolute: "Comunicado do condomíni
 export default function Pagina() {
   return (
     <Suspense fallback={<Carregando />}>
-      <ComunicadoDoLink />
+      <ComEncerramento rotulo="Comunicado">
+        <ComunicadoDoLink />
+      </ComEncerramento>
     </Suspense>
   );
 }

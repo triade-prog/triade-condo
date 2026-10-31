@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Carregando } from "@triade/ui";
 import { OrcamentoLink } from "@/telas/publico/Orcamento";
+import { ComEncerramento } from "@/telas/publico/comum";
 
 export const metadata: Metadata = { title: { absolute: "Pedido de orçamento" } };
 
@@ -9,7 +10,9 @@ export const metadata: Metadata = { title: { absolute: "Pedido de orçamento" } 
 export default function Pagina() {
   return (
     <Suspense fallback={<Carregando />}>
-      <OrcamentoLink />
+      <ComEncerramento rotulo="Pedido de orçamento">
+        <OrcamentoLink />
+      </ComEncerramento>
     </Suspense>
   );
 }

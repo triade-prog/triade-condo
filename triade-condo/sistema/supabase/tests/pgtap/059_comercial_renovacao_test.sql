@@ -88,8 +88,8 @@ end $$;
 -- 1. O catálogo e quem pode o quê.
 select is((select array_agg(codigo || ':' || sistema || ':' || situacao order by numero) from retencao_tipos where numero between 39 and 40),
   array['AVISO_REAJUSTE:CONSOLE:A_FAZER', 'CANCELAMENTO:CONSOLE:A_FAZER'], 'LGPD: o aviso e o cancelamento entram no catálogo de retenção');
-select ok((select comercial_renovacoes(com, null) -> 'pode' = '{"editar": true, "regra": false, "confirmar": false}'::jsonb
-              and comercial_renovacoes(adm, null) -> 'pode' = '{"editar": true, "regra": true, "confirmar": true}'::jsonb from ids),
+select ok((select comercial_renovacoes(com, null) -> 'pode' = '{"editar": true, "regra": false, "confirmar": false, "desfazer": false, "reativar": false, "assinar": false}'::jsonb
+              and comercial_renovacoes(adm, null) -> 'pode' = '{"editar": true, "regra": true, "confirmar": true, "desfazer": true, "reativar": true, "assinar": true}'::jsonb from ids),
   'o Comercial avisa; a regra e a confirmação do cancelamento são da Administração');
 select throws_ok($$ select comercial_renovacoes(imp, null) from ids $$, 'TC401', null, 'quem não é do Comercial não vê Renovações');
 

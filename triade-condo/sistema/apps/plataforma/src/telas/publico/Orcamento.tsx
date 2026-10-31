@@ -12,7 +12,7 @@ import { Caixa } from "../moradores/comum.tsx";
 import { ddmm, diaHoraCurta, ListaInclui, reais } from "../orcamentos/comum.tsx";
 import { subir } from "../pedidos/Arquivos.tsx";
 import type { OrcamentoPublico } from "../orcamentos/tipos.ts";
-import { Cartao, TelaPublica, useAbrirArquivo } from "./comum.tsx";
+import { Cartao, TelaPublica, useAbrirArquivo, useEncerrou } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: OrcamentoPublico };
 const RODAPE = "Não precisa de conta nem senha. O link é só seu: não repasse.";
@@ -53,12 +53,13 @@ export function OrcamentoLink() {
   const [carga, setCarga] = useState<Carga>({ estado: "carregando" });
   const [tela, setTela] = useState<"ver" | "proposta" | "recusar" | "confirmar">("ver");
   const [recado, setRecado] = useState<string | null>(null);
+  const encerrou = useEncerrou();
   const carregar = useCallback(() => {
     void chamarApi<OrcamentoPublico>(base).then((r) => {
       if (r.ok) setCarga({ estado: "pronto", dados: r.dados });
-      else setCarga({ estado: "erro", texto: r.status === 404 ? "Este link não existe. Confira o endereço ou peça um novo ao condomínio." : textoDoErro(r.erro) });
+      else if (!encerrou(r.erro)) setCarga({ estado: "erro", texto: r.status === 404 ? "Este link não existe. Confira o endereço ou peça um novo ao condomínio." : textoDoErro(r.erro) });
     });
-  }, [base]);
+  }, [base, encerrou]);
   useEffect(carregar, [carregar]);
 
   if (carga.estado === "carregando") return <TelaPublica titulo="Pedido de orçamento" icone="carrinho" rodape={RODAPE}><Carregando rotulo="Abrindo…" /></TelaPublica>;

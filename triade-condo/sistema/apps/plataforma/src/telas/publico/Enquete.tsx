@@ -10,7 +10,7 @@ import { Aviso, AvisoErro, Botao, Carregando, chamarApi, Icone, Selo, textoDoErr
 import { diaHora } from "../pedidos/comum.tsx";
 import { Barras, prazoCurto } from "../vida/Enquetes.tsx";
 import type { EnquetePublica } from "../tipos.ts";
-import { Cartao, Opcao, TelaPublica } from "./comum.tsx";
+import { Cartao, Opcao, TelaPublica, useEncerrou } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: EnquetePublica };
 
@@ -21,13 +21,14 @@ export function Enquete() {
   const [escolha, setEscolha] = useState<number | null>(null);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const encerrou = useEncerrou();
 
   useEffect(() => {
     void chamarApi<EnquetePublica>(base).then((r) => {
       if (r.ok) { setCarga({ estado: "pronto", dados: r.dados }); setEscolha(r.dados.escolha ?? null); }
-      else setCarga({ estado: "erro", texto: r.status === 404 ? "Este link não existe. Confira o endereço ou peça um novo ao condomínio." : textoDoErro(r.erro) });
+      else if (!encerrou(r.erro)) setCarga({ estado: "erro", texto: r.status === 404 ? "Este link não existe. Confira o endereço ou peça um novo ao condomínio." : textoDoErro(r.erro) });
     });
-  }, [base]);
+  }, [base, encerrou]);
 
   const rodape = "Não precisa de conta nem senha. O link é só seu: não repasse.";
   if (carga.estado === "carregando") return <TelaPublica titulo="Enquete do condomínio" icone="grafico" rodape={rodape}><Carregando rotulo="Abrindo a enquete…" /></TelaPublica>;
@@ -41,7 +42,7 @@ export function Enquete() {
     setEnviando(true);
     const r = await chamarApi<EnquetePublica>(base, { corpo: { opcao: escolha } });
     setEnviando(false);
-    if (!r.ok) return setErro(r.erro);
+    if (!r.ok) return encerrou(r.erro) ? undefined : setErro(r.erro);
     setCarga({ estado: "pronto", dados: r.dados });
     setEscolha(r.dados.escolha ?? escolha);
   }
