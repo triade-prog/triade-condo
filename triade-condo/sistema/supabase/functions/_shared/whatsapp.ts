@@ -9,6 +9,8 @@
 export interface CredenciaisWhatsapp {
   instancia: string;
   token: string;
+  /** Só no oficial pela Meta: o PIN do registro do número (0315). */
+  pin?: string;
 }
 
 /** Falha de envio (W-14): passageira repete; tempo esgotado pode ter saído e não repete. */

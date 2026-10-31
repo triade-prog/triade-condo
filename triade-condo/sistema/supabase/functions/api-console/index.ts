@@ -5,6 +5,7 @@ import { armazenamentoSupabase } from "../_shared/arquivos.ts";
 import { adminGoTrue, authGoTrue } from "../_shared/auth.ts";
 import { bancoPostgrest } from "../_shared/banco.ts";
 import { correioResend } from "../_shared/email.ts";
+import { clienteMeta } from "../_shared/meta.ts";
 import { chaveCredenciais, conectorWafly } from "../_shared/whatsapp.ts";
 import { criarApiConsole } from "./app.ts";
 
@@ -30,6 +31,13 @@ const app = criarApiConsole(Deno.env.get("REPASSE_SEGREDO"), {
   armazenamentoContrato: armazenamentoSupabase(url, chaveServico, fetch, "comercial"),
   whatsapp: waflyToken && chaveWhatsapp
     ? { conector: conectorWafly(waflyToken), chave: await chaveCredenciais(chaveWhatsapp), urlAvisos: `${url}/functions/v1/api-plataforma` }
+    : undefined,
+  // WhatsApp oficial pela Meta (0315): META_APP_SECRET e META_TOKEN (usuário do sistema do app).
+  meta: Deno.env.get("META_APP_SECRET") && Deno.env.get("META_TOKEN") && chaveWhatsapp
+    ? {
+      cliente: clienteMeta({ segredoApp: Deno.env.get("META_APP_SECRET")!, tokenSistema: Deno.env.get("META_TOKEN")! }),
+      chave: await chaveCredenciais(chaveWhatsapp),
+    }
     : undefined,
   // Pedido de demonstração do site (0296, CM-01): sem SITE_SEGREDO, a entrada fica fechada.
   segredoSite: Deno.env.get("SITE_SEGREDO"),

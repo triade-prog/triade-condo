@@ -55,6 +55,7 @@ import {
   corpoModeloSchema,
   decidirModeloSchema,
   desconectarWhatsappSchema,
+  ligarContaMetaSchema,
   editarModeloSchema,
   ajusteAnexarSchema,
   ajusteEtapaManutencaoSchema,
@@ -187,6 +188,7 @@ import { hmacHex } from "../_shared/cripto.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
+import { novoPin, type ClienteMeta, type ModeloParaMeta } from "../_shared/meta.ts";
 import { cifrarCredenciais, decifrarCredenciais, type ConectorWhatsapp, type CredenciaisWhatsapp } from "../_shared/whatsapp.ts";
 
 export interface DepsConsole extends DepsSessao {
@@ -202,6 +204,8 @@ export interface DepsConsole extends DepsSessao {
    * da api-plataforma, onde chegam os avisos do provedor.
    */
   whatsapp?: { conector: ConectorWhatsapp; chave: CryptoKey; urlAvisos: string };
+  /** WhatsApp oficial pela Meta (0315): o cliente da Graph API e a chave das credenciais. */
+  meta?: { cliente: ClienteMeta; chave: CryptoKey };
   /** Segredo que o site manda no pedido de demonstração (CM-01). Sem ele, a entrada fica fechada. */
   segredoSite?: string;
   /** Documentos do aceite, contratos gerados e PDFs assinados (bucket "comercial", 0308). */
@@ -1018,6 +1022,58 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const cred = await credenciais(c, "DESCONECTAR");
     await noProvedor("desconectar", () => whatsapp().conector.desconectar(cred));
     return c.json(await rpc("console_whatsapp_situacao", { ...cliente(c), p_situacao: "DESCONECTADO", p_aparelho: null, p_motivo: d.motivo }));
+  });
+
+  // WhatsApp oficial pela Meta (0315; W-01, W-20, DC4). O síndico faz o cadastro na Meta; a conta
+  // chega pelo aviso e a equipe a liga ao cliente aqui (quadros 463 a 465). O token e o PIN do
+  // número ficam cifrados e nunca voltam para a tela.
+  const meta = () => {
+    if (!deps.meta) throw new ErroDominio("UPSTREAM_UNAVAILABLE");
+    return deps.meta;
+  };
+  /** Manda à conta do cliente os modelos que ainda faltam e guarda o que a Meta respondeu. */
+  async function mandarModelosMeta(c: Context<VarsSessao>, token: string, wabaId: string): Promise<number> {
+    const faltando = await rpc<(ModeloParaMeta & { variaveis: string[] })[]>("console_modelos_meta_faltando", cliente(c));
+    if (!faltando.length) return 0;
+    const resultados = await meta().cliente.criarModelos(token, wabaId, faltando);
+    const r = await rpc<{ enviados: number }>("console_modelos_meta_enviados", { ...cliente(c), p_resultados: resultados });
+    return r.enviados;
+  }
+
+  app.get("/v1/whatsapp/meta/contas", async (c) => c.json(await rpc("console_contas_meta", { p_pessoa: pessoa(c) })));
+  app.get("/v1/clientes/:id/whatsapp/meta", async (c) => c.json(await rpc("console_whatsapp_meta", cliente(c))));
+
+  app.post("/v1/clientes/:id/whatsapp/meta/ligar", async (c) => {
+    const d = await lerCorpo(c, ligarContaMetaSchema);
+    const m = meta();
+    const p = await rpc<{ wabaId: string; empresaId?: string }>("console_meta_preparar", { ...cliente(c), p_waba: d.wabaId });
+    const token = await noProvedor("meta/token", () => m.cliente.tokenDoCondominio(p.empresaId ?? null));
+    await noProvedor("meta/avisos", () => m.cliente.assinarAvisos(token, p.wabaId));
+    const numeros = await noProvedor("meta/numeros", () => m.cliente.numeros(token, p.wabaId));
+    const n = d.numeroId ? numeros.find((x) => x.id === d.numeroId) : numeros.length === 1 ? numeros[0] : undefined;
+    if (!n) throw new ErroDominio("VALIDATION_ERROR", { campos: ["numeroId"] });
+    const pin = novoPin();
+    await noProvedor("meta/registrar", () => m.cliente.registrar(token, n.id, pin));
+    const nomeEmpresa = await m.cliente.nomeDaEmpresa(token, p.wabaId);
+    const conexao = await rpc("console_ligar_conta_meta", {
+      ...cliente(c), p_waba: p.wabaId, p_empresa: p.empresaId ?? null, p_nome_empresa: nomeEmpresa, p_numero_id: n.id,
+      p_numero: n.numero, p_nome_exibicao: n.nome, p_qualidade: n.qualidade, p_limite: n.limite,
+      p_credenciais: await cifrarCredenciais(m.chave, { instancia: p.wabaId, token, pin }),
+    });
+    // Os modelos vão logo depois; se a Meta falhar, a equipe manda de novo pela ficha.
+    let modelos = 0;
+    try {
+      modelos = await mandarModelosMeta(c, token, p.wabaId);
+    } catch (erro) {
+      registrar("aviso", { funcao: "api-console", rota: "whatsapp/meta/modelos", erro: erro instanceof Error ? erro.message : "falha" });
+    }
+    return c.json({ conexao, modelosEnviados: modelos });
+  });
+
+  app.post("/v1/clientes/:id/whatsapp/meta/modelos", async (c) => {
+    const a = await rpc<{ wabaId: string; credenciais: string }>("console_meta_acesso", cliente(c));
+    const cred = await decifrarCredenciais(meta().chave, a.credenciais);
+    return c.json({ modelosEnviados: await noProvedor("meta/modelos", () => mandarModelosMeta(c, cred.token, a.wabaId)) });
   });
 
   // ---------------------------------------------------------------------------------------

@@ -6,6 +6,7 @@ import { armazenamentoSupabase } from "../_shared/arquivos.ts";
 import { bancoPostgrest } from "../_shared/banco.ts";
 import { correioResend } from "../_shared/email.ts";
 import { conectorAnthropic, conectorIaTeste, conectorTranscricaoTeste } from "../_shared/ia.ts";
+import { clienteMeta } from "../_shared/meta.ts";
 import { chaveCredenciais, conectorWafly } from "../_shared/whatsapp.ts";
 import { criarApiPlataforma } from "./app.ts";
 
@@ -22,6 +23,10 @@ const url = exigir("SUPABASE_URL");
 // WhatsApp (passo 5, piloto pelo Wafly): sem WAFLY_CLIENT_TOKEN e WHATSAPP_CHAVE, a fila espera.
 const waflyToken = Deno.env.get("WAFLY_CLIENT_TOKEN");
 const chaveWhatsapp = Deno.env.get("WHATSAPP_CHAVE");
+// WhatsApp oficial pela Meta (0315): sem META_APP_SECRET, META_WEBHOOK_VERIFY e WHATSAPP_CHAVE,
+// o endereço do aviso não existe e os envios de condomínio na Meta esperam.
+const segredoMeta = Deno.env.get("META_APP_SECRET");
+const verificacaoMeta = Deno.env.get("META_WEBHOOK_VERIFY");
 const chaveServico = exigir("SUPABASE_SERVICE_ROLE_KEY");
 // Motor de IA (IA-20): a chave fica só no segredo da função; sem ela, a sugestão fica indisponível
 // e o pedido segue como sempre. IA_TESTE=1 liga o provedor de teste (local e testes, nunca em produção).
@@ -53,6 +58,14 @@ const app = criarApiPlataforma(Deno.env.get("REPASSE_SEGREDO"), {
     transcrever: iaTeste ? { TESTE: conectorTranscricaoTeste() } : {},
   },
   whatsapp: waflyToken && chaveWhatsapp ? { conector: conectorWafly(waflyToken), chave: await chaveCredenciais(chaveWhatsapp) } : undefined,
+  meta: segredoMeta && verificacaoMeta && chaveWhatsapp
+    ? {
+      cliente: clienteMeta({ segredoApp: segredoMeta, tokenSistema: Deno.env.get("META_TOKEN") ?? "" }),
+      segredoApp: segredoMeta,
+      verificacao: verificacaoMeta,
+      chave: await chaveCredenciais(chaveWhatsapp),
+    }
+    : undefined,
 });
 
 Deno.serve(app.fetch);

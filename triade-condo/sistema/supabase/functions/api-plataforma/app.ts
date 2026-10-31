@@ -210,11 +210,13 @@ import {
 } from "@triade/domain";
 import { verificarArquivo, verificarMidia, type Armazenamento } from "../_shared/arquivos.ts";
 import {
-  decifrarCredenciais, motivoMidiaParaMorador, textoComLinkDoPainel, TIPOS_AVISO_WHATSAPP, type ConectorWhatsapp, type TipoAvisoWhatsapp,
+  decifrarCredenciais, motivoMidiaParaMorador, textoComLinkDoPainel, TIPOS_AVISO_WHATSAPP, type ConectorWhatsapp, type ResultadoEnvioWhatsapp,
+  type TipoAvisoWhatsapp,
 } from "../_shared/whatsapp.ts";
+import { assinaturaMetaConfere, lerAvisoMeta, PREFIXO_MIDIA_META, type ClienteMeta } from "../_shared/meta.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
 import { avisoAssinado, lerEventoResend, montarEmail, type Correio, type MensagemFila } from "../_shared/email.ts";
-import { ipDaChamada } from "../_shared/repasse.ts";
+import { ipDaChamada, segredoConfere } from "../_shared/repasse.ts";
 import { registrar } from "../_shared/registro.ts";
 import type { AdminAuth } from "../_shared/auth.ts";
 import { criarIa, type DepsIa } from "./rotas_ia.ts";
@@ -268,6 +270,11 @@ export interface DepsPlataforma extends DepsSessao {
   aoFundo?: (p: Promise<unknown>) => void;
   /** WhatsApp do condomínio (passo 5): o conector e a chave que decifra as credenciais. Sem ele, a fila espera. */
   whatsapp?: { conector: ConectorWhatsapp; chave: CryptoKey };
+  /**
+   * WhatsApp oficial pela Meta (0315): o cliente da Graph API, a chave secreta do app (confere
+   * a assinatura dos avisos), o token de verificação do endereço e a chave das credenciais.
+   */
+  meta?: { cliente: ClienteMeta; segredoApp: string; verificacao: string; chave: CryptoKey };
   /** Motor de IA (IA-20): os conectores que a função tem agora. Sem a chave, nenhum, e o pedido segue como sempre. */
   ia?: DepsIa;
 }
@@ -302,7 +309,9 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     /^\/v1\/email\/eventos$/, /^\/v1\/email\/parar\/[A-Za-z0-9_-]{14,64}$/,
     // Avisos do provedor do WhatsApp: protegidos pelo segredo do condomínio no caminho (W-15).
     /^\/v1\/whatsapp\/[A-Za-z0-9_-]{32,64}\/(recebida|entrega|conectado|desconectado)$/,
-  ]);
+    // Avisos da Meta: assinados com a chave secreta do app (0315).
+    /^\/v1\/whatsapp\/meta$/,
+  ], [/^\/v1\/whatsapp\/meta$/]);
   const sessao = criarSessao(
     { sistema: "plataforma", cookie: COOKIES_PLATAFORMA.sessao, autenticadorObrigatorio: false, funcaoAcesso: "acesso_plataforma", urlApp: deps.urlApp },
     deps,
@@ -2359,6 +2368,57 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
     return c.json({ ok: true });
   });
 
+  // WhatsApp oficial pela Meta (0315): um endereço só para todos os condomínios. O GET é a
+  // conferência do endereço (token de verificação); o POST vem assinado com a chave secreta do
+  // app. O condomínio sai do número (mensagens e situações) ou da conta (modelos, qualidade).
+  app.get("/v1/whatsapp/meta", (c) => {
+    if (!deps.meta) throw new ErroDominio("NOT_FOUND");
+    const token = c.req.query("hub.verify_token") ?? "";
+    if (c.req.query("hub.mode") !== "subscribe" || !segredoConfere(token, deps.meta.verificacao)) throw new ErroDominio("FORBIDDEN");
+    return c.text(c.req.query("hub.challenge") ?? "");
+  });
+
+  app.post("/v1/whatsapp/meta", async (c) => {
+    if (!deps.meta) throw new ErroDominio("NOT_FOUND");
+    const corpo = await c.req.text();
+    if (corpo.length > 1_048_576) throw new ErroDominio("VALIDATION_ERROR");
+    if (!(await assinaturaMetaConfere(corpo, c.req.header("x-hub-signature-256") ?? null, deps.meta.segredoApp))) {
+      throw new ErroDominio("FORBIDDEN");
+    }
+    let json: unknown;
+    try {
+      json = JSON.parse(corpo);
+    } catch {
+      throw new ErroDominio("VALIDATION_ERROR");
+    }
+    // A Meta repete o aviso que não teve 200: cada um é tratado sozinho, e o que falhar fica no registro.
+    let novas = false;
+    const midias: MidiaPendente[] = [];
+    for (const a of lerAvisoMeta(json)) {
+      try {
+        if (a.tipo === "RECEBIDA") {
+          const r = await rpc<{ repetida: boolean; midias: MidiaPendente[] }>("whatsapp_receber_meta", { p_numero_id: a.numeroId, p_msg: a.mensagem });
+          if (!r.repetida) { novas = true; midias.push(...r.midias); }
+        } else if (a.tipo === "SITUACAO") {
+          await rpc("whatsapp_evento_meta", { p_numero_id: a.numeroId, p_tipo: a.situacao, p_provedor_id: a.id, p_codigo: a.codigo, p_erro: a.erro });
+        } else if (a.tipo === "CONTA_RECEBIDA") {
+          await rpc("whatsapp_conta_meta_recebida", { p_waba: a.wabaId, p_empresa: a.empresaId, p_dados: a.dados });
+        } else if (a.tipo === "CONTA") {
+          await rpc("whatsapp_conta_meta_evento", { p_waba: a.wabaId, p_tipo: a.evento, p_qualidade: a.qualidade, p_limite: a.limite, p_motivo: a.motivo });
+        } else {
+          await rpc("whatsapp_modelo_meta", { p_waba: a.wabaId, p_nome: a.nome, p_meta_id: a.metaId, p_situacao: a.situacao, p_motivo: a.motivo });
+        }
+      } catch (erro) {
+        registrar("aviso", { funcao: "api-plataforma", rota: `whatsapp/meta/${a.tipo.toLowerCase()}`, erro: erro instanceof Error ? erro.message : "falha" });
+      }
+    }
+    if (novas) noFundo(async () => {
+      for (const m of midias) await baixarMidia(m);
+      await processarFilaWhatsapp();
+    });
+    return c.json({ ok: true });
+  });
+
   // O banco chama (pg_cron + pg_net, com o segredo de repasse) quando há envio ou mídia esperando.
   app.post("/v1/interno/fila-whatsapp", async (c) => {
     let baixadas = 0;
@@ -2372,9 +2432,16 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   interface MidiaPendente { condominio: string; mensagem: string; url: string; tipo: MidiaWhatsapp; caminho: string }
   interface LoteWhatsapp {
     condominio: string;
+    provedor?: string;
     instancia: string;
+    /** No META, o id do número que envia (0315). */
+    numeroId?: string;
     credenciais: string;
-    envios: { envio: string; para: string; texto: string; pedido?: string; link?: string; rota?: "v" | "a" | "p" | "c" }[];
+    envios: {
+      envio: string; para: string; texto: string; pedido?: string; link?: string; rota?: "v" | "a" | "p" | "c";
+      /** Fora da janela de 24h: o modelo aprovado e as variáveis; no META, com o nome na Meta. */
+      modelo?: { chave: string; parametros: string[]; nome?: string; idioma?: string };
+    }[];
   }
 
   function noFundo(trabalho: () => Promise<unknown>) {
@@ -2384,8 +2451,18 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
 
   /** Baixa a mídia do provedor, confere (W-05) e guarda no armazenamento dos pedidos. */
   async function baixarMidia(m: MidiaPendente) {
-    if (!deps.whatsapp) return;
-    const bytes = await deps.whatsapp.conector.baixar(m.url, TAMANHO_MAXIMO_MIDIA);
+    let bytes: Uint8Array | null;
+    if (m.url.startsWith(PREFIXO_MIDIA_META)) {
+      // Mídia da Meta: o id vira endereço com o token do condomínio.
+      if (!deps.meta) return;
+      const a = await rpc<{ credenciais: string | null }>("whatsapp_credenciais_meta", { p_condominio: m.condominio });
+      if (!a.credenciais) return;
+      const cred = await decifrarCredenciais(deps.meta.chave, a.credenciais);
+      bytes = await deps.meta.cliente.baixar(cred.token, m.url.slice(PREFIXO_MIDIA_META.length), TAMANHO_MAXIMO_MIDIA);
+    } else {
+      if (!deps.whatsapp) return;
+      bytes = await deps.whatsapp.conector.baixar(m.url, TAMANHO_MAXIMO_MIDIA);
+    }
     const r = bytes ? verificarMidia(bytes, m.tipo) : { ok: false as const, motivo: "O arquivo passa de 16 MB." };
     if (r.ok) await deps.armazenamento.gravar(m.caminho, r.bytes, m.tipo);
     await rpc("whatsapp_midia_resultado", {
@@ -2401,20 +2478,39 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
 
   /** Pega os lotes da fila, manda pelo conector, um por vez, e devolve o resultado de cada envio. */
   async function processarFilaWhatsapp(rodadas = 3): Promise<number> {
-    if (!deps.whatsapp) return 0;
-    const { conector, chave } = deps.whatsapp;
+    if (!deps.whatsapp && !deps.meta) return 0;
     let total = 0;
     for (let i = 0; i < rodadas; i++) {
       const lotes = await rpc<LoteWhatsapp[]>("whatsapp_pegar_lote", { p_max: 20 });
       if (!lotes.length) break;
       for (const l of lotes) {
-        const cred = await decifrarCredenciais(chave, l.credenciais);
+        const meta = l.provedor === "META";
+        // Sem o provedor deste lote na função, os envios voltam para a fila mais tarde.
+        const prov = meta ? deps.meta : deps.whatsapp;
+        if (!prov) {
+          for (const e of l.envios) {
+            await rpc("whatsapp_resultado", { p_condominio: l.condominio, p_envio: e.envio, p_provedor_id: null,
+                                             p_erro: "O provedor não está configurado na função", p_falha: "PASSAGEIRA" });
+          }
+          continue;
+        }
+        const cred = await decifrarCredenciais(prov.chave, l.credenciais);
         for (const e of l.envios) {
           // O link pessoal da enquete (/v), da assembleia (/a), do prestador reserva (/p) ou do
           // comunicado (/c) entra só aqui: o banco guarda o texto com [link] (peça R12, MP-09, F6.6).
-          const comLink = e.link ? e.texto.replaceAll("[link]", `${deps.urlApp.replace(/\/$/, "")}/${e.rota ?? "v"}/${e.link}`) : e.texto;
-          const texto = textoComLinkDoPainel(comLink, e.pedido ? `${deps.urlApp}/pedidos/pedido?id=${e.pedido}` : null);
-          const r = await conector.enviarTexto({ instancia: l.instancia || cred.instancia, token: cred.token }, e.para, texto);
+          const comLinkDe = (t: string) => e.link ? t.replaceAll("[link]", `${deps.urlApp.replace(/\/$/, "")}/${e.rota ?? "v"}/${e.link}`) : t;
+          const painel = e.pedido ? `${deps.urlApp}/pedidos/pedido?id=${e.pedido}` : null;
+          const texto = textoComLinkDoPainel(comLinkDe(e.texto), painel);
+          let r: ResultadoEnvioWhatsapp;
+          if (meta && deps.meta) {
+            // Na Meta, fora da janela vai o modelo pelo nome, com as variáveis (o link no lugar de [link] e de {{painel}}).
+            r = e.modelo?.nome
+              ? await deps.meta.cliente.enviarModelo(cred.token, l.numeroId ?? "", e.para, e.modelo.nome, e.modelo.idioma ?? "pt_BR",
+                                                     e.modelo.parametros.map((p) => comLinkDe(String(p ?? "")).replaceAll("{{painel}}", painel ?? "")))
+              : await deps.meta.cliente.enviarTexto(cred.token, l.numeroId ?? "", e.para, texto);
+          } else {
+            r = await deps.whatsapp!.conector.enviarTexto({ instancia: l.instancia || cred.instancia, token: cred.token }, e.para, texto);
+          }
           await rpc("whatsapp_resultado", {
             p_condominio: l.condominio, p_envio: e.envio, p_provedor_id: r.ok ? r.id : null,
             p_erro: r.ok ? null : r.erro, p_falha: r.ok ? null : r.falha,
@@ -2504,6 +2600,8 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   });
 
   app.post("/v1/condominio/whatsapp/termo", async (c) => c.json(await rpc("plataforma_aceitar_termo_whatsapp", quem(c))));
+  // O síndico voltou do cadastro na Meta (0315, quadro 461): a equipe reconhece a conta que chegou.
+  app.post("/v1/condominio/whatsapp/meta/terminei", async (c) => c.json(await rpc("plataforma_whatsapp_meta_terminei", quem(c))));
 
   // Comunicados pelo WhatsApp do condomínio (F6.6): ligar, desligar e o convite.
   app.get("/v1/condominio/whatsapp/comunicados", async (c) => c.json(await rpc("plataforma_comunicados_whatsapp", quem(c))));

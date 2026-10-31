@@ -83,6 +83,12 @@ export const credenciaisWhatsappSchema = z.object({
   token: z.string().trim().min(8).max(500),
 });
 
+/** Ligar ao cliente a conta que chegou pelo cadastro da Meta (0315). Sem o número, vale o único da conta. */
+export const ligarContaMetaSchema = z.object({
+  wabaId: z.string().trim().regex(/^[0-9]{5,30}$/),
+  numeroId: z.string().trim().regex(/^[0-9]{5,30}$/).nullable().optional().transform((v) => v ?? null),
+});
+
 export const desconectarWhatsappSchema = z.object({ motivo: z.string().trim().min(3).max(300) });
 
 export const triarWhatsappSchema = z
