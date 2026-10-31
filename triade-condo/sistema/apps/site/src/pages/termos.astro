@@ -1,0 +1,49 @@
+---
+import Base from "../layouts/Base.astro";
+import Olho from "../components/Olho.astro";
+import { emailContato } from "../dados/empresa";
+// Termos de uso (EM-06, versão inicial), link pedido pela Meta no app do WhatsApp oficial. O contrato de
+// cada condomínio (CM-13) vale mais onde os dois tratarem do mesmo assunto.
+---
+<Base titulo="Termos de uso" descricao="As regras de uso da TRÍADE Condo: o serviço, o WhatsApp do condomínio, o que não é permitido e as responsabilidades.">
+<article class="wrap secao pilha" style="--gap:24px;max-width:780px">
+  <Olho>Termos</Olho>
+  <h1 class="titulo-texto">Termos de uso da TRÍADE Condo</h1>
+  <p class="suave">Versão inicial de 31/10/2026, em revisão por advogado.</p>
+
+  <h2 style="font-size:20px">1. O que é o serviço</h2>
+  <p>A TRÍADE Condo é uma plataforma para a gestão de condomínios: a Plataforma do síndico na internet e o atendimento pelo WhatsApp em nome do condomínio, que recebe pedidos de moradores e manda avisos de serviço. Quem contrata é o condomínio, representado pelo síndico. Moradores, funcionários e prestadores usam o serviço porque o condomínio os cadastrou.</p>
+
+  <h2 style="font-size:20px">2. Aceite</h2>
+  <p>Ao entrar na Plataforma ou conversar com o número do condomínio, você aceita estes termos. O contrato assinado com cada condomínio vale mais do que estes termos onde os dois tratarem do mesmo assunto.</p>
+
+  <h2 style="font-size:20px">3. Conta e acesso</h2>
+  <p>Cada pessoa da equipe do condomínio entra com o próprio e-mail e responde pelo que faz. O síndico decide quem tem acesso e com que função, e deve tirar o acesso de quem sai.</p>
+
+  <h2 style="font-size:20px">4. Uso do WhatsApp</h2>
+  <p>O número do condomínio usa a API oficial do WhatsApp Business, da Meta, e segue as políticas da Meta. Ele só manda mensagens de serviço a quem tem vínculo com o condomínio: nada de propaganda, correntes ou mensagens em massa a quem não pediu. Quem responder PARAR deixa de receber avisos por ali. A entrega das mensagens depende da Meta; a TRÍADE não responde por falhas ou bloqueios do WhatsApp que não causou.</p>
+
+  <h2 style="font-size:20px">5. O que não é permitido</h2>
+  <p>Usar o serviço para spam, assédio, conteúdo ilegal ou fraude; cadastrar dados de quem não tem relação com o condomínio; tentar acessar dados de outro condomínio; copiar, revender ou desmontar o sistema. A TRÍADE pode suspender o acesso de quem fizer isso, avisando o condomínio.</p>
+
+  <h2 style="font-size:20px">6. Responsabilidades</h2>
+  <p>O condomínio responde pelo que publica, decide e cadastra, e pela base legal para tratar os dados dos moradores. A TRÍADE responde por manter o serviço funcionando com cuidado, proteger os dados e cumprir as instruções do condomínio. A TRÍADE não substitui o síndico, a administradora, o contador nem o advogado do condomínio.</p>
+
+  <h2 style="font-size:20px">7. Dados pessoais</h2>
+  <p>Seguem a nossa <a href="/privacidade">política de privacidade</a>. Para pedir a exclusão, veja <a href="/apagar-dados">como apagar seus dados</a>.</p>
+
+  <h2 style="font-size:20px">8. Preço, cancelamento e devolução dos dados</h2>
+  <p>Preço, prazo e cancelamento estão no contrato de cada condomínio. Quando o contrato termina, o condomínio pode baixar todos os seus dados, e depois apagamos o que a lei não manda guardar.</p>
+
+  <h2 style="font-size:20px">9. Propriedade</h2>
+  <p>O sistema e a marca TRÍADE são da TRÍADE. Os dados e documentos do condomínio são do condomínio.</p>
+
+  <h2 style="font-size:20px">10. Mudanças</h2>
+  <p>Quando estes termos mudarem, a data no topo muda e avisamos os condomínios clientes antes.</p>
+
+  <h2 style="font-size:20px">11. Lei e foro</h2>
+  <p>Vale a lei brasileira. Fica eleito o foro de Brasília, DF, sem prejudicar o direito do consumidor de usar o foro do próprio domicílio.</p>
+
+  <p>Dúvidas: <a href={`mailto:${emailContato}`}>{emailContato}</a>.</p>
+</article>
+</Base>

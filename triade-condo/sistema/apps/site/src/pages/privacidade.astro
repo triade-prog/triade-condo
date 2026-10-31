@@ -1,36 +1,64 @@
 ---
 import Base from "../layouts/Base.astro";
 import Olho from "../components/Olho.astro";
-import { cnpj, linkWhatsapp, promessaRetorno, razaoSocial } from "../dados/empresa";
-// Política deste site (formulário de demonstração). A política da Plataforma, os termos de uso e o
-// termo de tratamento de dados dependem da revisão profissional da EM-06.
-const quem = razaoSocial ? `${razaoSocial}${cnpj ? `, CNPJ ${cnpj}` : ""}` : "TRÍADE";
-const zap = linkWhatsapp("Olá! Quero saber dos meus dados no site da TRÍADE Condo.");
+import { cnpj, emailContato, razaoSocial } from "../dados/empresa";
+// Política do site, da Plataforma e do WhatsApp do condomínio (EM-06, versão inicial). É o link que a
+// Meta pede no app do WhatsApp oficial. A revisão profissional da EM-06 troca o texto depois.
+const quem = razaoSocial ? `${razaoSocial}${cnpj ? `, CNPJ ${cnpj}` : ""}` : "A TRÍADE";
+// Prazos do inventário de dados (F0.11, migrations 0301 e 0305): mudar lá é mudar aqui.
+const prazos: [string, string][] = [
+  ["Mensagem de WhatsApp que não virou pedido", "90 dias"],
+  ["Mensagem que virou pedido", "enquanto o pedido existir no condomínio"],
+  ["Conversa parada", "30 dias sem mensagem"],
+  ["Registro de envio (número e texto)", "12 meses; depois ficam só a data e a situação"],
+  ["Contato de morador que saiu", "180 dias depois de sair da última unidade"],
+  ["Família, pets e veículos", "90 dias depois de sair"],
+  ["Pedido de demonstração no site", "até 12 meses, se não virar cliente"],
+];
 ---
-<Base titulo="Política de privacidade deste site" descricao="Que dados o site da TRÍADE Condo coleta, para quê, por quanto tempo e como pedir para ver ou apagar.">
+<Base titulo="Política de privacidade" descricao="Que dados a TRÍADE Condo trata no site, na Plataforma e no WhatsApp do condomínio, para quê, por quanto tempo e como pedir para ver ou apagar.">
 <article class="wrap secao pilha" style="--gap:24px;max-width:780px">
   <Olho>Privacidade</Olho>
-  <h1 class="titulo-texto">Política de privacidade deste site</h1>
-  <p class="suave">Vale para este site e para o formulário de demonstração. Versão de 22/10/2026.</p>
+  <h1 class="titulo-texto">Política de privacidade da TRÍADE Condo</h1>
+  <p class="suave">Versão inicial de 31/10/2026, em revisão por advogado.</p>
 
-  <h2 style="font-size:20px">Quem cuida dos dados</h2>
-  <p>{quem}, controladora dos dados que você envia por este site, conforme a Lei Geral de Proteção de Dados (Lei 13.709/2018).</p>
+  <h2 style="font-size:20px">Quem somos e em que papel</h2>
+  <p>{quem}, de Brasília, DF, faz a TRÍADE Condo: este site, a Plataforma do síndico em condominio.trihub.com.br e o atendimento pelo WhatsApp em nome dos condomínios clientes.</p>
+  <p>No site e no relacionamento comercial, a TRÍADE é controladora dos dados. Na Plataforma e no WhatsApp do condomínio, o condomínio é o controlador e a TRÍADE é operadora: tratamos os dados de moradores, proprietários, funcionários e prestadores só para prestar o serviço contratado e conforme as instruções do condomínio, como manda a Lei 13.709/2018 (LGPD).</p>
 
-  <h2 style="font-size:20px">O que coletamos</h2>
-  <p>Só o que você escreve no pedido de demonstração: nome, WhatsApp, nome do condomínio e a faixa de unidades. Não usamos cookies de propaganda. Medimos visitas de forma agregada, sem cookies e sem identificar você.</p>
+  <h2 style="font-size:20px">Que dados tratamos</h2>
+  <ul class="pilha" style="--gap:8px">
+    <li>No site: o que você escreve no pedido de demonstração (nome, WhatsApp, condomínio e número de unidades). Medimos visitas de forma agregada, sem cookies de propaganda.</li>
+    <li>Na Plataforma: nome, telefone, e-mail, unidade e vínculo; família, pets e veículos quando o condomínio cadastra; pedidos e respostas, reservas, encomendas, votos e documentos do condomínio.</li>
+    <li>No WhatsApp: o número, o nome do perfil, as mensagens, fotos e áudios que você manda ao número do condomínio, e a situação das mensagens que enviamos (enviada, entregue, lida, falhou).</li>
+  </ul>
 
   <h2 style="font-size:20px">Para que usamos</h2>
-  <p>Para responder ao seu pedido pelo WhatsApp, {promessaRetorno}, e marcar a demonstração. A base legal é o seu consentimento, dado ao marcar a autorização do formulário. Não colocamos você em lista de e-mails e não vendemos nem emprestamos os dados.</p>
+  <p>Para registrar e responder pedidos, avisar sobre o que é do seu interesse no condomínio (pedido concluído, encomenda guardada, reserva decidida, assembleia, enquete, comunicado) e provar que o aviso foi enviado. Não usamos os dados para propaganda e não vendemos nem emprestamos dados.</p>
+  <p>O WhatsApp do condomínio manda só mensagens de serviço. Responda PARAR a qualquer momento e você deixa de receber avisos por ali.</p>
 
-  <h2 style="font-size:20px">Por quanto tempo</h2>
-  <p>Enquanto conversamos sobre a demonstração e, se você não virar cliente, por até 12 meses. Depois, apagamos.</p>
+  <h2 style="font-size:20px">Bases legais</h2>
+  <p>Execução do contrato entre o condomínio e a TRÍADE, legítimo interesse do condomínio na gestão do prédio, cumprimento de obrigação legal e, no formulário do site, o seu consentimento.</p>
 
   <h2 style="font-size:20px">Com quem compartilhamos</h2>
-  <p>Com os serviços que fazem o site funcionar: a hospedagem do site e o serviço que entrega o seu pedido por e-mail à nossa equipe. Eles só tratam os dados para isso.</p>
+  <p>Só com os serviços que fazem a TRÍADE Condo funcionar, e só para isso: Meta Platforms (WhatsApp Business), que entrega as mensagens; Supabase, onde ficam o banco de dados e os arquivos; Vercel, que hospeda o site e a Plataforma; Resend, que entrega os e-mails. Alguns guardam dados fora do Brasil, com as garantias da LGPD.</p>
+
+  <h2 style="font-size:20px">Por quanto tempo guardamos</h2>
+  <ul class="pilha" style="--gap:8px">
+    {prazos.map(([dado, prazo]) => <li><b>{dado}:</b> {prazo}.</li>)}
+  </ul>
+  <p>Quando o contrato com o condomínio termina, devolvemos os dados a ele e apagamos o que a lei não manda guardar.</p>
+
+  <h2 style="font-size:20px">Como protegemos</h2>
+  <p>Conexões cifradas, credenciais guardadas cifradas, conferência da assinatura de cada aviso que a Meta nos manda, acesso por pessoa e por função, e registro de quem fez o quê.</p>
 
   <h2 style="font-size:20px">Seus direitos</h2>
-  <p>Você pode pedir para ver, corrigir ou apagar os seus dados, ou retirar a autorização, a qualquer momento{zap ? <>, pelo <a href={zap}>WhatsApp comercial</a></> : ", respondendo à mensagem que mandarmos"}.</p>
+  <p>Você pode pedir para ver, corrigir, levar ou apagar seus dados, saber com quem foram compartilhados e retirar uma autorização. Se você é morador, o pedido vai ao condomínio, que decide; nós ajudamos a cumprir. Veja o passo a passo em <a href="/apagar-dados">como apagar seus dados</a>.</p>
 
-  <p class="suave" style="font-size:14px">Os dados dos condomínios clientes, dentro da Plataforma, seguem outra política e o termo de tratamento de dados do contrato, em que a TRÍADE é operadora.</p>
+  <h2 style="font-size:20px">Contato</h2>
+  <p>Encarregado de dados pelo e-mail <a href={`mailto:${emailContato}`}>{emailContato}</a>. Respondemos em até 15 dias.</p>
+
+  <h2 style="font-size:20px">Mudanças</h2>
+  <p>Quando esta política mudar, a data no topo muda e avisamos os condomínios clientes antes. Veja também os <a href="/termos">termos de uso</a>.</p>
 </article>
 </Base>
