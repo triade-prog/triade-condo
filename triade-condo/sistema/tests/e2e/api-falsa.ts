@@ -64,7 +64,7 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
         notas: [] as { id: string; texto: string; criadoEm: string; autor: { id: string; nome: string } }[],
         whatsapp: {
           conexao: { situacao: "SEM_CREDENCIAIS", provedor: "WAFLY", oficial: false, termoAceitoEm: "2026-10-18T16:40:00Z", termoAceitoPor: "Ana Souza" } as Record<string, unknown>,
-          historico: [] as { acao: string; em: string; autor: string | null; dados: Record<string, string> }[],
+          historico: [] as { acao: string; em: string; autor: string | null; dados: Record<string, string | boolean> }[],
         },
       },
     ],
@@ -149,20 +149,38 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     ligadas: [] as { wabaId: string; condominioId: string; nome: string; ligadaEm: string; ligadaPor?: string }[],
     terminaram: [{ condominioId: IPE, nome: "Residencial Ipê", em: "2026-10-31T17:02:00Z" }],
     numerosDaConta: 1,
+    conferidoEm: undefined as string | undefined,
+    desligado: undefined as { em: string; por: string; motivo: string } | undefined,
     modelos: [] as { chave: string; titulo: string; nome?: string; situacao: string; motivo?: string; enviadoEm?: string; decididoEm?: string }[],
   };
   // Aba WhatsApp da ficha (passo 5; W-01): credenciais, conectar pelo QR ou código, conferir e desconectar.
   const QR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==";
   function rotaWhatsapp(route: Route, c: (typeof estado.clientes)[number], resto: string, corpo: Record<string, unknown>) {
     const w = c.whatsapp;
-    const marcar = (acao: string, dados: Record<string, string> = {}) => w.historico.unshift({ acao, em: new Date().toISOString(), autor: "Carolina", dados });
+    const marcar = (acao: string, dados: Record<string, string | boolean> = {}) => w.historico.unshift({ acao, em: new Date().toISOString(), autor: "Carolina", dados });
     const contar = () => { suporte.whatsappDesconectados = estado.clientes.filter((x) => x.whatsapp.conexao.situacao === "DESCONECTADO").length; };
-    // Número oficial pela Meta (F5.12; quadros 463 a 465).
+    // Número oficial pela Meta (F5.12; quadros 463 a 465 e 469).
     if (resto === "/whatsapp/meta") {
       if (w.conexao.provedor !== "META") return route.fulfill({ json: { ligada: false } });
       const conta = meta.ligadas.find((x) => x.condominioId === c.condominio.id);
-      return route.fulfill({ json: { ligada: true, wabaId: conta?.wabaId, numeroId: "1112223334", ligadaEm: conta?.ligadaEm, ligadaPor: conta?.ligadaPor,
+      return route.fulfill({ json: { ligada: true, numero: c.condominio.numeroWhatsapp ?? undefined, wabaId: conta?.wabaId, numeroId: "1112223334",
+        ligadaEm: conta?.ligadaEm, ligadaPor: conta?.ligadaPor, ligadaPeloSindico: false, conferidoEm: meta.conferidoEm, saude: "OK",
+        desligadoEm: meta.desligado?.em, desligadoPor: meta.desligado?.por, motivoDesligado: meta.desligado?.motivo,
         modelos: meta.modelos, pode: { conectar: true } } });
+    }
+    if (resto === "/whatsapp/meta/conferir") {
+      meta.conferidoEm = new Date().toISOString();
+      marcar("whatsapp.meta_conferida", { mudou: false });
+      return route.fulfill({ json: { conferidoEm: meta.conferidoEm, mudou: false, saude: "OK", qualidade: "VERDE", nomeExibicao: "Residencial Ipê", limiteDiario: 1000 } });
+    }
+    if (resto === "/whatsapp/meta/desligar") {
+      const motivo = String(corpo.motivo ?? "").trim();
+      if (motivo.length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
+      meta.desligado = { em: new Date().toISOString(), por: "Carolina", motivo };
+      Object.assign(w.conexao, { situacao: "DESCONECTADO", desconectadoEm: meta.desligado.em });
+      marcar("whatsapp.meta_desligada", { motivo });
+      contar();
+      return route.fulfill({ json: { desligadoEm: meta.desligado.em } });
     }
     if (resto === "/whatsapp/meta/ligar") {
       const conta = meta.esperando.find((x) => x.wabaId === corpo.wabaId);

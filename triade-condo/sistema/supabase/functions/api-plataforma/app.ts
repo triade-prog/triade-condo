@@ -156,6 +156,8 @@ import {
   encerrarQuedaSchema,
   linkPrestadorSchema,
   termineiSchema,
+  cadastroMetaSchema,
+  codigoMetaSchema,
   anotacaoSchema,
   buscaLinhaDoTempoSchema,
   buscaHistoricoProntuarioSchema,
@@ -210,10 +212,13 @@ import {
 } from "@triade/domain";
 import { verificarArquivo, verificarMidia, type Armazenamento } from "../_shared/arquivos.ts";
 import {
-  decifrarCredenciais, motivoMidiaParaMorador, textoComLinkDoPainel, TIPOS_AVISO_WHATSAPP, type ConectorWhatsapp, type ResultadoEnvioWhatsapp,
+  cifrarCredenciais, decifrarCredenciais, motivoMidiaParaMorador, textoComLinkDoPainel, TIPOS_AVISO_WHATSAPP, type ConectorWhatsapp, type ResultadoEnvioWhatsapp,
   type TipoAvisoWhatsapp,
 } from "../_shared/whatsapp.ts";
-import { assinaturaMetaConfere, lerAvisoMeta, PREFIXO_MIDIA_META, type ClienteMeta } from "../_shared/meta.ts";
+import {
+  assinaturaMetaConfere, ErroMeta, lerAvisoMeta, novoPin, PRECISA_CODIGO, PREFIXO_MIDIA_META, recusaDoCodigo, type ClienteMeta,
+  type ModeloParaMeta,
+} from "../_shared/meta.ts";
 import { sha256Hex } from "../_shared/cripto.ts";
 import { avisoAssinado, lerEventoResend, montarEmail, type Correio, type MensagemFila } from "../_shared/email.ts";
 import { ipDaChamada, segredoConfere } from "../_shared/repasse.ts";
@@ -2602,6 +2607,106 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
   app.post("/v1/condominio/whatsapp/termo", async (c) => c.json(await rpc("plataforma_aceitar_termo_whatsapp", quem(c))));
   // O síndico voltou do cadastro na Meta (0315, quadro 461): a equipe reconhece a conta que chegou.
   app.post("/v1/condominio/whatsapp/meta/terminei", async (c) => c.json(await rpc("plataforma_whatsapp_meta_terminei", quem(c))));
+
+  // A janela da Meta (0319, quadros 466 a 468): o síndico faz o cadastro dentro da Plataforma e o
+  // número liga sozinho ao condomínio da sessão. O código da janela vale 30 s: a troca vem logo
+  // depois da conferência de quem pode. Se o número ainda não foi confirmado na Meta, o cadastro
+  // fica pendente (token cifrado) até o código por SMS ou ligação.
+  const metaJanela = () => {
+    if (!deps.meta) throw new ErroDominio("UPSTREAM_UNAVAILABLE", { motivo: "PROVEDOR" });
+    return deps.meta;
+  };
+  const recusaMeta = (motivo: string, extra: Record<string, unknown> = {}) => new ErroDominio("VALIDATION_ERROR", { motivo, ...extra });
+  async function naMeta<T>(oQue: string, f: () => Promise<T>): Promise<T> {
+    try {
+      return await f();
+    } catch (erro) {
+      if (erro instanceof ErroDominio) throw erro;
+      registrar("aviso", { funcao: "api-plataforma", rota: `whatsapp/meta/${oQue}`, erro: erro instanceof Error ? erro.message : "falha" });
+      throw new ErroDominio("UPSTREAM_UNAVAILABLE", { motivo: "PROVEDOR" });
+    }
+  }
+  interface CadastroMeta { wabaId: string; empresaId: string | null; numeroId: string }
+
+  /** Registra o número, guarda a conta no condomínio e manda os modelos; ou pede o código. */
+  async function ligarPelaJanela(c: Context<VarsPlataforma>, k: CadastroMeta, token: string, pin: string) {
+    const m = metaJanela();
+    const n = await naMeta("numero", () => m.cliente.situacaoNumero(token, k.numeroId));
+    const pendente = async () => {
+      if (!n.numero) throw recusaMeta("SEM_CADASTRO");
+      await rpc("plataforma_meta_guardar_pendente", {
+        ...quem(c), p_waba: k.wabaId, p_empresa: k.empresaId, p_numero_id: k.numeroId, p_numero: n.numero,
+        p_credenciais: await cifrarCredenciais(m.chave, { instancia: k.wabaId, token, pin }),
+      });
+      return { etapa: "CODIGO" as const, numero: n.numero, metodos: ["SMS", "VOICE"] };
+    };
+    if (!n.confirmado) return await pendente();
+    try {
+      await m.cliente.registrar(token, k.numeroId, pin);
+    } catch (erro) {
+      if (erro instanceof ErroMeta && PRECISA_CODIGO.has(erro.codigo ?? -1)) return await pendente();
+      return await naMeta("registrar", () => Promise.reject(erro));
+    }
+    // O cartão: sem ele, o primeiro aviso não sai (quadro 468). Se a Meta não responder, o Console confere depois.
+    const saude = await m.cliente.saudeConta(token, k.wabaId).catch(() => null);
+    const nomeEmpresa = await m.cliente.nomeDaEmpresa(token, k.wabaId);
+    const conexao = await rpc("plataforma_ligar_conta_meta", {
+      ...quem(c), p_waba: k.wabaId, p_empresa: k.empresaId, p_nome_empresa: nomeEmpresa, p_numero_id: k.numeroId,
+      p_numero: n.numero, p_nome_exibicao: n.nome, p_qualidade: n.qualidade, p_limite: n.limite,
+      p_credenciais: await cifrarCredenciais(m.chave, { instancia: k.wabaId, token, pin }), p_falta_cartao: saude === "FALTA_CARTAO",
+    });
+    let modelos = 0;
+    try {
+      const faltando = await rpc<ModeloParaMeta[]>("plataforma_modelos_meta_faltando", quem(c));
+      if (faltando.length) {
+        const resultados = await m.cliente.criarModelos(token, k.wabaId, faltando);
+        modelos = (await rpc<{ enviados: number }>("plataforma_modelos_meta_enviados", { ...quem(c), p_resultados: resultados })).enviados;
+      }
+    } catch (erro) {
+      // A equipe manda de novo pela ficha no Console.
+      registrar("aviso", { funcao: "api-plataforma", rota: "whatsapp/meta/modelos", erro: erro instanceof Error ? erro.message : "falha" });
+    }
+    return { etapa: "LIGADO" as const, conexao, modelosEnviados: modelos, faltaCartao: saude === "FALTA_CARTAO" };
+  }
+
+  app.post("/v1/condominio/whatsapp/meta/cadastro", async (c) => {
+    const d = await lerCorpo(c, cadastroMetaSchema);
+    const m = metaJanela();
+    await rpc("plataforma_meta_preparar", { ...quem(c), p_waba: d.wabaId, p_empresa: d.empresaId, p_numero_id: d.numeroId });
+    let token: string;
+    try {
+      token = await m.cliente.trocarCodigo(d.code);
+    } catch (erro) {
+      if (erro instanceof ErroMeta && erro.status >= 400 && erro.status < 500) throw recusaMeta("CODIGO_VENCIDO");
+      return await naMeta("codigo", () => Promise.reject(erro));
+    }
+    await naMeta("avisos", () => m.cliente.assinarAvisos(token, d.wabaId));
+    return c.json(await ligarPelaJanela(c, { wabaId: d.wabaId, empresaId: d.empresaId, numeroId: d.numeroId }, token, novoPin()));
+  });
+
+  app.post("/v1/condominio/whatsapp/meta/codigo", async (c) => {
+    const d = await lerCorpo(c, codigoMetaSchema);
+    const m = metaJanela();
+    const p = await rpc<{ wabaId: string; empresaId?: string | null; numeroId: string; credenciais: string }>("plataforma_meta_pendente", quem(c));
+    const cred = await decifrarCredenciais(m.chave, p.credenciais);
+    try {
+      if (d.acao === "PEDIR") {
+        await m.cliente.pedirCodigo(cred.token, p.numeroId, d.metodo);
+        return c.json({ pedidoEm: new Date().toISOString(), reenviarEmSegundos: 60 });
+      }
+      await m.cliente.confirmarCodigo(cred.token, p.numeroId, d.codigo);
+    } catch (erro) {
+      if (erro instanceof ErroMeta && erro.status >= 400 && erro.status < 500 && erro.codigo !== 190) {
+        const motivo = recusaDoCodigo(erro);
+        // Pedir de novo cedo demais não é código errado: só o limite conta.
+        if (d.acao === "PEDIR" && motivo !== "TENTATIVAS_DEMAIS") return await naMeta("pedir", () => Promise.reject(erro));
+        throw recusaMeta(motivo);
+      }
+      return await naMeta(d.acao === "PEDIR" ? "pedir" : "confirmar", () => Promise.reject(erro));
+    }
+    return c.json(await ligarPelaJanela(c, { wabaId: p.wabaId, empresaId: p.empresaId ?? null, numeroId: p.numeroId }, cred.token,
+                                        cred.pin || novoPin()));
+  });
 
   // Comunicados pelo WhatsApp do condomínio (F6.6): ligar, desligar e o convite.
   app.get("/v1/condominio/whatsapp/comunicados", async (c) => c.json(await rpc("plataforma_comunicados_whatsapp", quem(c))));

@@ -3,7 +3,8 @@
 // conexão de piloto pelo Wafly (não oficial, dito sem rodeio), as credenciais da instância (que
 // nunca mais aparecem), a conexão pelo QR ou por código, a conferência do aparelho e o histórico.
 // Só administração e implantação conectam, trocam credenciais e desconectam (com motivo). Com o
-// número oficial pela Meta ligado, a aba mostra o número oficial e os modelos (F5.12, quadro 465).
+// número oficial pela Meta ligado, a aba mostra o número oficial, conferir e desligar, e os modelos
+// (F5.12, quadros 465 e 469).
 
 import { useState, type FormEvent } from "react";
 import { formatarDataHora, mostrarTelefone, SITUACOES_CONEXAO, type SituacaoConexao } from "@triade/domain";
@@ -26,7 +27,7 @@ interface DadosWhatsapp {
     termoAceitoPor?: string;
     versao?: number;
   } & ConexaoOficialFicha;
-  historico: { acao: string; em: string; autor: string | null; dados: { origem?: string; motivo?: string } }[];
+  historico: { acao: string; em: string; autor: string | null; dados: { origem?: string; motivo?: string; mudou?: boolean } }[];
   pode: { conectar: boolean };
 }
 
@@ -46,6 +47,8 @@ const EVENTOS: Record<string, string> = {
   "whatsapp.liberado": "A Meta liberou o número",
   "whatsapp.meta_ligada": "Conta da Meta ligada ao cliente e número registrado",
   "whatsapp.modelos_meta_enviados": "Modelos de mensagem mandados para a Meta aprovar",
+  "whatsapp.meta_conferida": "Conferido na Meta",
+  "whatsapp.meta_desligada": "Número oficial desligado na Meta",
 };
 
 function JanelaCredenciais({ id, versao, aoFechar, aoSalvar }: { id: string; versao?: number; aoFechar: () => void; aoSalvar: (avisos: boolean) => void }) {
@@ -160,8 +163,8 @@ export function AbaWhatsapp({ ficha, avisar, pedido }: PropsAba) {
         <ul className="divide-y divide-linha t-texto">
           {d.historico.map((h, i) => (
             <li key={i} className="grid gap-0.5 py-2">
-              <span>{EVENTOS[h.acao] ?? h.acao}{h.dados.origem === "PROVEDOR" ? " (pelo provedor)" : ""}{h.dados.motivo ? `. Motivo: ${h.dados.motivo}` : ""}</span>
-              <span className="t-apoio text-tinta-suave">{formatarDataHora(h.em)}{h.autor ? ` · ${h.autor}` : ""}</span>
+              <span>{EVENTOS[h.acao] ?? h.acao}{h.acao === "whatsapp.meta_conferida" && h.dados.mudou !== undefined ? (h.dados.mudou ? ": algo mudou" : ": nada mudou") : ""}{h.dados.origem === "PROVEDOR" ? " (pelo provedor)" : ""}{h.dados.motivo ? `. Motivo: ${h.dados.motivo}` : ""}</span>
+              <span className="t-apoio text-tinta-suave">{formatarDataHora(h.em)}{h.autor ? ` · ${h.autor}` : h.acao === "whatsapp.meta_conferida" ? " · sozinho" : ""}</span>
             </li>
           ))}
         </ul>
@@ -172,7 +175,7 @@ export function AbaWhatsapp({ ficha, avisar, pedido }: PropsAba) {
   if (cx.provedor === "META") {
     return (
       <div className="grid gap-4">
-        <WhatsappOficial id={id} numeroFicha={d.numeroFicha} cx={cx} />
+        <WhatsappOficial id={id} nome={ficha.condominio.nome} numeroFicha={d.numeroFicha} cx={cx} aoMudar={carga.recarregar} />
         {historico}
       </div>
     );

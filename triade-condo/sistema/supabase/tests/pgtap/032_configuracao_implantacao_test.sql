@@ -79,7 +79,7 @@ select throws_ok($$ select plataforma_definir_horarios(sup, ipe, 'ATENDIMENTO', 
 select lives_ok($$ select plataforma_configuracoes(sup, ipe) from ids, c $$, 'PI-10: o suporte lê as configurações');
 select lives_ok($$ select plataforma_config_whatsapp(sup, ipe) from ids, c $$, 'PI-10: o suporte lê o WhatsApp das configurações');
 select lives_ok($$ select plataforma_locais(impl, ipe) from ids, c $$, 'PI-10: a implantação lê os locais das etiquetas');
-select is((select (plataforma_config_whatsapp(impl, ipe) -> 'pode') from ids, c), '{"editar": true, "tecnica": true, "aceitarTermo": false}',
+select is((select (plataforma_config_whatsapp(impl, ipe) -> 'pode') from ids, c), '{"editar": true, "tecnica": true, "aceitarTermo": false, "cadastrarMeta": false}',
   'CF-03: a TRÍADE nunca aceita o termo do piloto');
 select is((select plataforma_definir_aviso_novo(impl, ipe, pg_temp.vcfg(), 'TODOS', true) from ids, c) > 0, true,
   'CF-01: a implantação deixa pronto quem é avisado de pedido novo');

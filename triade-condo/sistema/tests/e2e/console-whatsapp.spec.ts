@@ -1,6 +1,7 @@
 // WhatsApp do condomínio no Console (passo 5; W-01, W-17, DC14) com a API falsa: a aba WhatsApp da
 // ficha (credenciais, conectar pelo QR ou código, conferir, desconectar com motivo) e a lista de
-// números no menu, e os modelos de mensagem (F5.4, W-20). Cada tela passa no axe (WCAG 2.2 AA) no celular e no computador e não usa emoji.
+// números no menu, e os modelos de mensagem (F5.4, W-20), o número oficial (conferir e desligar,
+// quadro 469) e as contas recebidas da Meta como plano B. Cada tela passa no axe (WCAG 2.2 AA) no celular e no computador e não usa emoji.
 import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { instalarApiFalsa, IPE } from "./api-falsa";
@@ -147,5 +148,60 @@ test.describe("Console · WhatsApp do condomínio", () => {
     await modelos.getByRole("button", { name: "Mandar os modelos que faltam" }).click();
     await expect(aba.getByText("1 modelo mandado para a Meta aprovar.")).toBeVisible();
     await expect(modelos).toContainText("0 recusados");
+
+    // Quadro 469: o número como o morador vê, Conferir na Meta agora com o resultado na hora.
+    await expect(numero).toContainText("Conta comercial");
+    await expect(numero).toContainText("É assim que o morador vê o número.");
+    await expect(numero).toContainText("Ligado");
+    await expect(numero).toContainText("Criado e guardado pelo sistema");
+    await expect(numero).toContainText("Ainda não conferido");
+    await numero.getByRole("button", { name: "Conferir na Meta agora" }).click();
+    await expect(numero.getByText(/^Conferido agora, \d{2}:\d{2}\.$/)).toBeVisible();
+    await expect(numero).toContainText("Situação da conta, cartão e qualidade iguais aos da conferência anterior.");
+    await expect(aba.getByRole("region", { name: "Histórico da conexão" })).toContainText("Conferido na Meta: nada mudou");
+    await conferir(page);
+
+    // Desligar o número: a janela diz as consequências e o motivo é obrigatório.
+    await numero.getByRole("button", { name: "Desligar o número" }).click();
+    const des = page.getByRole("dialog", { name: "Desligar o número do Residencial Ipê?" });
+    await expect(des).toContainText("As mensagens param");
+    await expect(des).toContainText("A conta continua do condomínio");
+    await expect(des).toContainText("O síndico fica sabendo");
+    await des.getByRole("button", { name: "Desligar o número" }).click();
+    await expect(des.getByText("Diga o motivo (3 a 300 caracteres).")).toBeVisible();
+    await expect(des.getByLabel("Motivo")).toHaveAttribute("aria-invalid", "true");
+    expect(estado.meta.desligado).toBeUndefined();
+    await conferir(page);
+    await des.getByLabel("Motivo").fill("Condomínio encerrou o contrato em 30/11.");
+    await des.getByRole("button", { name: "Desligar o número" }).click();
+    await expect(des).toBeHidden();
+
+    // O estado Desligado: sem Conferir nem Desligar, com quem, quando e o motivo.
+    await expect(aba.getByText("Número desligado. O síndico foi avisado no sino e por e-mail.")).toBeVisible();
+    await expect(numero.getByText("Desligado", { exact: true }).first()).toBeVisible();
+    await expect(numero).toContainText("Condomínio encerrou o contrato em 30/11.");
+    await expect(numero).toContainText("Ligar de novo é com o síndico, pela janela da Meta.");
+    await expect(numero.getByRole("button", { name: "Conferir na Meta agora" })).toHaveCount(0);
+    await expect(numero.getByRole("button", { name: "Desligar o número" })).toHaveCount(0);
+    await expect(aba.getByRole("region", { name: "Histórico da conexão" })).toContainText("Número oficial desligado na Meta. Motivo: Condomínio encerrou o contrato em 30/11.");
+    expect(estado.meta.desligado?.motivo).toBe("Condomínio encerrou o contrato em 30/11.");
+    await conferir(page);
+  });
+
+  test("F5.12: Contas recebidas da Meta é plano B e só aparece no trilho com conta esperando", async ({ page }) => {
+    const estado = await instalarApiFalsa(page);
+    estado.meta.esperando = [];
+    await page.goto(`${CONSOLE}/whatsapp`);
+    const trilho = page.getByRole("group", { name: "Partes do WhatsApp" });
+    await expect(page.getByRole("button", { name: "Modelos de mensagem" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Contas recebidas da Meta/ })).toHaveCount(0);
+    await expect(trilho.getByRole("button")).toHaveCount(2);
+    await conferir(page);
+
+    estado.meta.esperando = [{ wabaId: "1029384756", empresaId: "8877665544", nomeEmpresa: "Condomínio Residencial Ipê", recebidaEm: "2026-10-31T17:01:00Z" }];
+    await page.reload();
+    await page.getByRole("button", { name: "Contas recebidas da Meta (1)" }).click();
+    await expect(page.getByRole("region", { name: "Esperando ligar a um cliente" })).toContainText("Condomínio Residencial Ipê");
+    await conferir(page);
   });
 });

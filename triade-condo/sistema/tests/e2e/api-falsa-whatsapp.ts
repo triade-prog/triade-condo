@@ -2,7 +2,9 @@
 // regras de verdade estão testadas no banco (pgTAP 021) e na API (Deno); aqui só o bastante para
 // a tela: a identificar, falhas de envio, a conversa no pedido e as configurações. Da F5.10 (W-17;
 // pgTAP 028): a queda do número, o canal alternativo, a conferência do que ficou parado e quem cuida.
-import type { Route } from "@playwright/test";
+// Da F5.12 (quadros 466 a 468): o cadastro pela janela da Meta e o código por SMS ou ligação, com
+// um SDK do Facebook falso servido no lugar do de verdade.
+import type { Page, Route } from "@playwright/test";
 
 let n = 0;
 const novoId = () => `5d6e7f80-9a1b-4c2d-8e3f-${String(++n).padStart(12, "0")}`;
@@ -32,7 +34,11 @@ export function criarWhatsapp(pedido: { id: string; protocolo: string }, categor
   return {
     numero: "+5561998124400",
     conexao: { situacao: "CONECTADO", oficial: false, conectadoEm: "2026-10-18T17:02:00Z", ultimaRecebida: "2026-10-18T18:47:00Z",
-               termoAceitoEm: null as string | null, termoAceitoPor: null as string | null, provedor: "WAFLY", cadastroMetaEm: null as string | null },
+               termoAceitoEm: null as string | null, termoAceitoPor: null as string | null, provedor: "WAFLY", cadastroMetaEm: null as string | null,
+               cadastroPendente: null as { numero: string; desde: string } | null },
+    /** O que a janela da Meta faz na próxima vez: liga direto, pede o código ou o code vence. */
+    meta: { proximo: "LIGADO" as "LIGADO" | "CODIGO" | "CODIGO_VENCIDO", codigoCerto: "482193", codigoVencido: false, restantes: 3, reenviarEmSegundos: 60,
+            cadastros: [] as Record<string, unknown>[], pedidos: [] as string[], codigos: [] as string[] },
     aIdentificar: [
       { id: novoId(), telefone: "+5561988771234", tipo: "TEXTO", texto: "Oi, sou nova no 504, como faço para reservar o salão?", enviadaEm: "2026-10-18T14:20:00Z",
         triagem: "A_IDENTIFICAR", vinculoPendente: false },
@@ -71,6 +77,42 @@ export type EstadoWhatsapp = ReturnType<typeof criarWhatsapp>;
 
 export function resumoWhatsapp(w: EstadoWhatsapp) {
   return { situacao: w.conexao.situacao, aIdentificar: new Set(w.aIdentificar.map((m) => m.telefone)).size, falhas: w.falhas.length };
+}
+
+const NUMERO_META = "+556133330101";
+
+/** O SDK do Facebook falso: o login devolve o code e manda o FINISH como se viesse do facebook.com. */
+const SDK_FALSO = `
+window.FB = {
+  init: function (o) { window.__metaInit = o; },
+  login: function (cb, o) {
+    window.__metaLogin = o;
+    var cenario = window.__cenarioMeta || "FINISH";
+    // O postMessage da própria página tem a origem dela: a tela precisa ignorar.
+    window.postMessage(JSON.stringify({ type: "WA_EMBEDDED_SIGNUP", event: "FINISH",
+      data: { waba_id: "11111", phone_number_id: "22222", business_id: "33333" } }), "*");
+    setTimeout(function () {
+      function daMeta(d) { window.dispatchEvent(new MessageEvent("message", { origin: "https://www.facebook.com", data: JSON.stringify(d) })); }
+      if (cenario === "CANCEL") {
+        daMeta({ type: "WA_EMBEDDED_SIGNUP", event: "CANCEL", data: { current_step: "PHONE_NUMBER_SETUP" } });
+        cb({ authResponse: null, status: "unknown" });
+        return;
+      }
+      cb({ authResponse: { code: "${"x".repeat(20)}" }, status: "connected" });
+      daMeta({ type: "WA_EMBEDDED_SIGNUP", event: "FINISH", data: { waba_id: "102938475610", phone_number_id: "564738291001", business_id: "998877665544" } });
+    }, 300);
+  },
+};`;
+
+export async function instalarSdkMetaFalso(page: Page) {
+  await page.route("https://connect.facebook.net/**", (r) => r.fulfill({ contentType: "application/javascript", body: SDK_FALSO }));
+}
+
+function ligarMeta(w: EstadoWhatsapp) {
+  w.numero = NUMERO_META;
+  Object.assign(w.conexao, { provedor: "META", oficial: true, situacao: "CONECTADO", nomeExibicao: "Residencial Ipê", conectadoEm: agora(),
+    faltaCartaoEm: agora(), modelos: { aprovados: 0, emAnalise: 20, recusados: 0, total: 20 }, cadastroPendente: null });
+  return { etapa: "LIGADO", conexao: { ...w.conexao, numero: NUMERO_META }, modelosEnviados: 20, faltaCartao: true };
 }
 
 /** O número caiu (o provedor avisou): abre a queda com três mensagens paradas na fila. */
@@ -133,7 +175,7 @@ export async function rotasWhatsapp(route: Route, w: EstadoWhatsapp, caminho: st
     return route.fulfill({ json: { numero: w.numero, conexao: w.conexao, config: w.config,
       avisoGolpe: "O condomínio e a TRÍADE nunca pedem senha, código ou pagamento por mensagem.",
       categorias: opcoes.categorias, prioridades: opcoes.prioridades, ...(w.meusAvisos ? { meusAvisos: w.meusAvisos } : {}),
-      pode: { editar: pode("config.editar"), aceitarTermo: opcoes.sindica && !w.conexao.termoAceitoEm },
+      pode: { editar: pode("config.editar"), aceitarTermo: opcoes.sindica && !w.conexao.termoAceitoEm, cadastrarMeta: opcoes.sindica },
       quedas: { pessoaId: w.quedasPessoa ?? undefined, quemCuida: w.quedasPessoa ? "Bruna Lima" : "Ana Souza" },
       pessoasQuedas: [{ id: "0b7c3f0e-5d1a-4c2b-9e8f-1a2b3c4d5e6f", nome: "Ana Souza", sindico: true },
         { id: "1c8d4a1f-6e2b-4d3c-8f9a-2b3c4d5e6f7a", nome: "Bruna Lima", sindico: false }] } });
@@ -163,6 +205,43 @@ export async function rotasWhatsapp(route: Route, w: EstadoWhatsapp, caminho: st
     if (!opcoes.sindica) return erro(route, 403, "FORBIDDEN");
     w.conexao.cadastroMetaEm = agora();
     return route.fulfill({ json: w.conexao });
+  }
+  if (caminho === "/v1/condominio/whatsapp/meta/cadastro") {
+    if (!opcoes.sindica) return erro(route, 403, "FORBIDDEN");
+    const ok = String(corpo.code ?? "").length >= 10 && /^[0-9]{5,30}$/.test(String(corpo.wabaId)) && /^[0-9]{5,30}$/.test(String(corpo.numeroId));
+    if (!ok) return erro(route, 400, "VALIDATION_ERROR", { campos: ["code"] });
+    w.meta.cadastros.push(corpo);
+    // A resposta só chega depois de todos os passos: a tela mostra os passos andando.
+    await new Promise((fim) => setTimeout(fim, 900));
+    if (w.conexao.provedor === "META") return erro(route, 400, "VALIDATION_ERROR", { motivo: "JA_LIGADO" });
+    const proximo = w.meta.proximo;
+    if (proximo === "CODIGO_VENCIDO") {
+      w.meta.proximo = "LIGADO";
+      return erro(route, 400, "VALIDATION_ERROR", { motivo: "CODIGO_VENCIDO" });
+    }
+    if (proximo === "CODIGO") {
+      w.conexao.cadastroPendente = { numero: NUMERO_META, desde: agora() };
+      return route.fulfill({ json: { etapa: "CODIGO", numero: NUMERO_META, metodos: ["SMS", "VOICE"] } });
+    }
+    return route.fulfill({ json: ligarMeta(w) });
+  }
+  if (caminho === "/v1/condominio/whatsapp/meta/codigo") {
+    if (!opcoes.sindica) return erro(route, 403, "FORBIDDEN");
+    if (!w.conexao.cadastroPendente) return erro(route, 400, "VALIDATION_ERROR", { motivo: "SEM_CADASTRO" });
+    if (corpo.acao === "PEDIR") {
+      if (corpo.metodo !== "SMS" && corpo.metodo !== "VOICE") return erro(route, 400, "VALIDATION_ERROR", { campos: ["metodo"] });
+      w.meta.pedidos.push(String(corpo.metodo));
+      w.meta.codigoVencido = false;
+      return route.fulfill({ json: { pedidoEm: agora(), reenviarEmSegundos: w.meta.reenviarEmSegundos } });
+    }
+    if (corpo.acao !== "CONFIRMAR" || !/^[0-9]{6}$/.test(String(corpo.codigo))) return erro(route, 400, "VALIDATION_ERROR", { campos: ["codigo"] });
+    w.meta.codigos.push(String(corpo.codigo));
+    if (w.meta.restantes <= 0) return erro(route, 400, "VALIDATION_ERROR", { motivo: "TENTATIVAS_DEMAIS", liberaEm: "2026-11-01T12:00:00Z" });
+    if (w.meta.codigoVencido) return erro(route, 400, "VALIDATION_ERROR", { motivo: "CODIGO_VENCIDO" });
+    if (corpo.codigo === w.meta.codigoCerto) return route.fulfill({ json: ligarMeta(w) });
+    w.meta.restantes--;
+    if (w.meta.restantes <= 0) return erro(route, 400, "VALIDATION_ERROR", { motivo: "TENTATIVAS_DEMAIS", liberaEm: "2026-11-01T12:00:00Z" });
+    return erro(route, 400, "VALIDATION_ERROR", { motivo: "CODIGO_ERRADO", restantes: w.meta.restantes });
   }
   if (caminho === "/v1/condominio/whatsapp/meus-avisos") {
     if (!/^\+[1-9][0-9]{9,14}$/.test(String(corpo.telefone))) return erro(route, 400, "VALIDATION_ERROR", { campos: ["telefone"] });

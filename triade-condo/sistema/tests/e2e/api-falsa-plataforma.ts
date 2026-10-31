@@ -12,7 +12,7 @@ import { criarComunicados, muralNoPainelFalso, resumoComunicados, rotasComunicad
 import { criarLinks, rotasLinks, rotasLinksPublicas } from "./api-falsa-links";
 import { criarMemoria, manualDoMural, resumoProntuario, rotasMemoria } from "./api-falsa-memoria";
 import { criarSuporte, resumoAcessos, rotasSuporte } from "./api-falsa-suporte";
-import { criarWhatsapp, resumoWhatsapp, rotasWhatsapp } from "./api-falsa-whatsapp";
+import { criarWhatsapp, instalarSdkMetaFalso, resumoWhatsapp, rotasWhatsapp } from "./api-falsa-whatsapp";
 import { criarVida, resumoVida, rotasVida } from "./api-falsa-vida";
 import { criarEnquetes, resumoEnquetes, rotasEnquetePublica, rotasEnquetes } from "./api-falsa-enquetes";
 import { criarAssembleias, resumoAssembleia, rotasAssembleiaPublica, rotasAssembleias } from "./api-falsa-assembleias";
@@ -694,5 +694,6 @@ export async function instalarApiPlataformaFalsa(page: Page, opcoes: OpcoesPlata
     return erro(route, 404, "NOT_FOUND");
   }
   await page.route("**/api/v1/**", atender);
+  await instalarSdkMetaFalso(page);
   return Object.assign(estado, { privacidade, pedidosPlano, comunicados, links, manutencao, memoria, suporte, vida, whatsapp, avisoRegistro, decisoes, relatorios, aprovacoes, orcamentos });
 }

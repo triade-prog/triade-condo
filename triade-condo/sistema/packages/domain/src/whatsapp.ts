@@ -118,6 +118,7 @@ export type SituacaoModeloCondominio = keyof typeof SITUACOES_MODELO_CONDOMINIO;
 
 export const ESTADOS_NUMERO_OFICIAL = {
   NAO_LIGADO: "Ainda não ligado",
+  DESLIGADO: "Desligado",
   ESPERANDO: "Esperando a TRÍADE",
   EM_ANALISE: "Modelos em análise",
   FALTA_CARTAO: "Falta o cartão",
@@ -132,6 +133,7 @@ export interface ConexaoOficial {
   cadastroMetaEm?: string | null;
   faltaCartaoEm?: string | null;
   suspensoEm?: string | null;
+  situacao?: string;
   modelos?: { aprovados: number; emAnalise: number; recusados: number; total: number } | null;
 }
 
@@ -141,6 +143,7 @@ export interface ConexaoOficial {
  */
 export function estadoNumeroOficial(c: ConexaoOficial): EstadoNumeroOficial {
   if (c.provedor !== "META") return c.cadastroMetaEm ? "ESPERANDO" : "NAO_LIGADO";
+  if (c.situacao === "DESCONECTADO") return "DESLIGADO";
   if (c.suspensoEm) return "SUSPENSO";
   if (c.faltaCartaoEm) return "FALTA_CARTAO";
   const m = c.modelos;
@@ -148,6 +151,39 @@ export function estadoNumeroOficial(c: ConexaoOficial): EstadoNumeroOficial {
   if (m && (m.emAnalise > 0 || m.aprovados < m.total)) return "EM_ANALISE";
   return "LIGADO";
 }
+
+/**
+ * Cadastro pela janela da Meta (cadastro incorporado; quadros 466 a 469). A janela devolve o
+ * código (vale 30 s) e os ids da conta e do número; a API troca o código pelo token do condomínio.
+ */
+export const cadastroMetaSchema = z.object({
+  code: z.string().trim().min(10).max(2000),
+  wabaId: z.string().trim().regex(/^[0-9]{5,30}$/),
+  numeroId: z.string().trim().regex(/^[0-9]{5,30}$/),
+  empresaId: z.string().trim().regex(/^[0-9]{5,30}$/).nullable().optional().transform((v) => v ?? null),
+});
+
+/** O código por SMS ou ligação, quando a Meta devolve o número ainda não confirmado (quadro 467). */
+export const codigoMetaSchema = z.discriminatedUnion("acao", [
+  z.object({ acao: z.literal("PEDIR"), metodo: z.enum(["SMS", "VOICE"]) }),
+  z.object({ acao: z.literal("CONFIRMAR"), codigo: z.string().trim().regex(/^[0-9]{6}$/) }),
+]);
+
+/** Desligar o número oficial no Console, com motivo (quadro 469). */
+export const desligarMetaSchema = z.object({ motivo: z.string().trim().min(3).max(300) });
+
+/** Os motivos de recusa do cadastro e do código, para a tela dizer o que fazer. */
+export const MOTIVOS_CADASTRO_META = {
+  CODIGO_VENCIDO: "A resposta da Meta venceu. Tente de novo: a Meta continua de onde parou.",
+  CODIGO_ERRADO: "Código errado. Confira o SMS e digite de novo.",
+  TENTATIVAS_DEMAIS: "A Meta pediu para esperar antes de tentar de novo.",
+  SEM_CADASTRO: "Comece de novo pela janela da Meta.",
+  CONTA_LIGADA: "Esta conta do WhatsApp já está ligada a outro condomínio.",
+  NUMERO_LIGADO: "Este número já está ligado a outro condomínio.",
+  JA_LIGADO: "O número oficial já está ligado.",
+  PILOTO_CONECTADO: "O número de teste ainda está conectado. Peça à TRÍADE para desconectar antes.",
+} as const;
+export type MotivoCadastroMeta = keyof typeof MOTIVOS_CADASTRO_META;
 
 export const desconectarWhatsappSchema = z.object({ motivo: z.string().trim().min(3).max(300) });
 

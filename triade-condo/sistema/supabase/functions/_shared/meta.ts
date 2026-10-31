@@ -228,6 +228,42 @@ export function exemploDaVariavel(nome: string): string {
   return EXEMPLOS[nome] ?? EXEMPLOS[nome.toLowerCase()] ?? (nome.trim() ? nome.trim()[0]!.toUpperCase() + nome.trim().slice(1) : "Exemplo");
 }
 
+/** O número que a janela devolveu: se já foi confirmado na Meta e como aparece. */
+export interface SituacaoNumeroMeta {
+  numero: string | null;
+  nome: string | null;
+  confirmado: boolean;
+  qualidade: NumeroMeta["qualidade"];
+  limite: number | null;
+}
+
+/** A conta do condomínio na Meta: em dia, sem cartão ou bloqueada (health_status). */
+export type SaudeMeta = "OK" | "FALTA_CARTAO" | "BLOQUEADA";
+
+/** O que a Meta disse ao conferir o código de 6 dígitos. */
+export type RecusaCodigoMeta = "CODIGO_ERRADO" | "CODIGO_VENCIDO" | "TENTATIVAS_DEMAIS";
+
+/** O registro do número pede a confirmação por SMS antes (133006, verificação vencida ou faltando). */
+export const PRECISA_CODIGO = new Set([133006, 133010]);
+
+/**
+ * Traduz a recusa do request_code ou do verify_code. A Meta não documenta um código só para cada
+ * caso: limite e tentativas (133008, 133009, 136024, 4, 80007, 130429) viram TENTATIVAS_DEMAIS, o
+ * texto "expired" vira CODIGO_VENCIDO e o resto, CODIGO_ERRADO.
+ */
+export function recusaDoCodigo(e: ErroMeta): RecusaCodigoMeta {
+  if (e.status === 429 || [4, 80007, 130429, 133008, 133009, 136024].includes(e.codigo ?? -1) || /too many|limit|tentativas/i.test(e.message)) {
+    return "TENTATIVAS_DEMAIS";
+  }
+  if (/expired|vencid|expirad/i.test(e.message)) return "CODIGO_VENCIDO";
+  return "CODIGO_ERRADO";
+}
+
+function qualidadeDe(q: unknown): NumeroMeta["qualidade"] {
+  const t = texto(q);
+  return t === "GREEN" ? "VERDE" : t === "YELLOW" ? "AMARELO" : t === "RED" ? "VERMELHO" : "DESCONHECIDA";
+}
+
 export class ErroMeta extends Error {
   constructor(readonly status: number, readonly codigo: number | null, mensagem: string) {
     super(mensagem);
@@ -238,6 +274,8 @@ export interface OpcoesClienteMeta {
   segredoApp: string;
   /** Token do usuário do sistema da TRÍADE (META_TOKEN). */
   tokenSistema: string;
+  /** Id do app da TRÍADE na Meta, para trocar o código da janela pelo token do condomínio. */
+  appId?: string;
   buscar?: typeof fetch;
   base?: string;
 }
@@ -367,12 +405,75 @@ export function clienteMeta(o: OpcoesClienteMeta) {
         if (!id || !numero) return [];
         const q = texto(n?.quality_rating);
         return [{ id, numero: `+${numero}`, nome: texto(n?.verified_name) ?? null, limite: limiteDoNivel(n?.messaging_limit_tier),
-                  qualidade: q === "GREEN" ? "VERDE" : q === "YELLOW" ? "AMARELO" : q === "RED" ? "VERMELHO" : "DESCONHECIDA" } as NumeroMeta];
+                  qualidade: qualidadeDe(q) } as NumeroMeta];
       });
     },
 
     async registrar(token: string, numeroId: string, pin: string): Promise<void> {
       await chamar(token, "POST", `${numeroId}/register`, { messaging_product: "whatsapp", pin });
+    },
+
+    /** Tira o registro do número na Meta (desligar no Console). A conta continua do condomínio. */
+    async desregistrar(token: string, numeroId: string): Promise<void> {
+      await chamar(token, "POST", `${numeroId}/deregister`);
+    },
+
+    /**
+     * Troca o código que a janela devolveu pelo token da conta do condomínio (vale 30 s e uma vez
+     * só). Esta chamada não leva token nem appsecret_proof: o segredo do app vai no próprio pedido.
+     */
+    async trocarCodigo(code: string): Promise<string> {
+      if (!o.appId) throw new ErroMeta(500, null, "Falta o id do app da Meta");
+      const url = new URL(`${base}/oauth/access_token`);
+      url.searchParams.set("client_id", o.appId);
+      url.searchParams.set("client_secret", o.segredoApp);
+      url.searchParams.set("code", code);
+      const r = await buscar(url, { method: "GET", signal: AbortSignal.timeout(20_000) });
+      const j = obj(await r.json().catch(() => null)) ?? {};
+      const token = texto(j.access_token);
+      if (!r.ok || !token) {
+        const e = obj(j.error);
+        throw new ErroMeta(r.ok ? 502 : r.status, typeof e?.code === "number" ? e.code : null, texto(e?.message) ?? `HTTP ${r.status}`);
+      }
+      return token;
+    },
+
+    /** O número: se já foi confirmado (code_verification_status) e como aparece. */
+    async situacaoNumero(token: string, numeroId: string): Promise<SituacaoNumeroMeta> {
+      const n = await chamar(token, "GET", `${numeroId}?fields=display_phone_number,verified_name,code_verification_status,quality_rating,messaging_limit_tier`);
+      const numero = texto(n.display_phone_number)?.replace(/\D/g, "");
+      return {
+        numero: numero ? `+${numero}` : null,
+        nome: texto(n.verified_name) ?? null,
+        confirmado: texto(n.code_verification_status) === "VERIFIED",
+        qualidade: qualidadeDe(n.quality_rating),
+        limite: limiteDoNivel(n.messaging_limit_tier),
+      };
+    },
+
+    /** Pede o código de 6 dígitos por SMS ou ligação, em português. */
+    async pedirCodigo(token: string, numeroId: string, metodo: "SMS" | "VOICE"): Promise<void> {
+      await chamar(token, "POST", `${numeroId}/request_code`, { code_method: metodo, language: "pt_BR" });
+    },
+
+    async confirmarCodigo(token: string, numeroId: string, codigo: string): Promise<void> {
+      await chamar(token, "POST", `${numeroId}/verify_code`, { code: codigo });
+    },
+
+    /** A conta tem cartão e está liberada para mandar (health_status da WABA). */
+    async saudeConta(token: string, wabaId: string): Promise<SaudeMeta> {
+      const j = await chamar(token, "GET", `${wabaId}?fields=health_status`);
+      const h = obj(j.health_status);
+      const estados = [texto(h?.can_send_message), ...lista(h?.entities).map((x) => texto(obj(x)?.can_send_message))];
+      if (estados.includes("BLOCKED")) {
+        const erros = [h, ...lista(h?.entities).map(obj)].flatMap((x) => lista(x?.errors)).map((x) => `${obj(x)?.error_code ?? ""} ${texto(obj(x)?.error_description) ?? ""}`);
+        return erros.some((t) => /141006|payment|pagamento|credit|cart/i.test(t)) ? "FALTA_CARTAO" : "BLOQUEADA";
+      }
+      if (estados.includes("LIMITED")) {
+        const erros = [h, ...lista(h?.entities).map(obj)].flatMap((x) => lista(x?.errors)).map((x) => `${obj(x)?.error_code ?? ""} ${texto(obj(x)?.error_description) ?? ""}`);
+        return erros.some((t) => /141006|payment|pagamento|credit|cart/i.test(t)) ? "FALTA_CARTAO" : "OK";
+      }
+      return "OK";
     },
 
     /** Manda os modelos para a conta do condomínio; um que falha não para os outros. */
