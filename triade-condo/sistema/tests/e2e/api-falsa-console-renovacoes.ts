@@ -242,6 +242,13 @@ export async function rotasRenovacoes(route: Route, c: ComercialConsole, caminho
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["mes"] });
     return route.fulfill({ json: tela(c, mes, pode) });
   }
+  // Um cancelamento sozinho (0318), para a página Reativar.
+  const um = /^\/([0-9a-f-]{36})$/.exec(resto);
+  if (raiz === "cancelamentos" && um && metodo === "GET") {
+    const k = r.cancelamentos.find((x) => x.id === um[1]);
+    if (!k) return erro(route, 404, "NOT_FOUND");
+    return route.fulfill({ json: { cancelamento: k, pode: tela(c, atual, pode).pode, hoje: r.hoje } });
+  }
   // O PDF do aditivo, servido pelo "armazenamento" do contrato.
   const link = /^\/([0-9a-f-]{36})\/aditivo\/link$/.exec(resto);
   if (raiz === "renovacoes" && link && metodo === "GET") {

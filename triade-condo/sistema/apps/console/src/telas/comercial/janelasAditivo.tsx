@@ -141,6 +141,8 @@ export function JanelaConferirAditivo({ aditivo, envio, condominio, aoFechar, fe
 }) {
   const sessao = useSessao();
   const doCondominio = envio.parte === "CONDOMINIO";
+  // O reajuste não tem representante no retrato: o banco pede o CPF e o nome também do condomínio.
+  const exigeAssinante = !doCondominio || aditivo.tipo === "REAJUSTE";
   const campos0 = aditivo.dados?.campos ?? {};
   const [marcas, setMarcas] = useState({ assinaturaValida: false, pessoaConfere: false, dataConfere: false });
   const [cpf, setCpf] = useState("");
@@ -162,7 +164,8 @@ export function JanelaConferirAditivo({ aditivo, envio, condominio, aoFechar, fe
     ev.preventDefault();
     setErro(null);
     if (!todas) return setErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: Object.entries(marcas).filter(([, v]) => !v).map(([k]) => k) } });
-    if (!doCondominio && cpf.replace(/\D/g, "").length !== 11) return setErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: ["cpf"] } });
+    const faltam = [...(exigeAssinante && cpf.replace(/\D/g, "").length !== 11 ? ["cpf"] : []), ...(exigeAssinante && !nome.trim() ? ["assinanteNome"] : [])];
+    if (faltam.length) return setErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: faltam } });
     setEnviando(true);
     const x = await chamarApi(ROTAS_RENOVACOES.conferirEnvioAditivo(envio.id), {
       corpo: { versao: envio.versao, ...marcas, cpf: cpf || null, assinanteNome: nome.trim() || null, observacao: obs.trim() || null },
@@ -249,11 +252,11 @@ export function JanelaConferirAditivo({ aditivo, envio, condominio, aoFechar, fe
         </div>
         {!conferivel ? <Aviso tom="atencao">{envio.motivoTexto ?? "Este envio não passou na conferência automática. Recuse e peça de novo."}</Aviso> : null}
         <div className="grid gap-4 md:grid-cols-2">
-          <CampoTexto id="aditivo-conferir-cpf" rotulo={doCondominio ? "CPF que o validador mostra" : "CPF de quem assinou pela TRÍADE"} opcional={doCondominio} inputMode="numeric" maxLength={14}
+          <CampoTexto id="aditivo-conferir-cpf" rotulo={doCondominio ? "CPF que o validador mostra" : "CPF de quem assinou pela TRÍADE"} opcional={!exigeAssinante} inputMode="numeric" maxLength={14}
             value={cpf} onChange={(e) => setCpf(formatarCpf(e.target.value))} disabled={!conferivel}
-            ajuda={doCondominio ? "Se digitar, o sistema confere com o do aditivo. Fica guardado só mascarado." : "Como o validador mostra. Fica guardado só mascarado."}
+            ajuda={doCondominio && !exigeAssinante ? "Se digitar, o sistema confere com o do aditivo. Fica guardado só mascarado." : "Como o validador mostra. Fica guardado só mascarado."}
             erro={campos.includes("cpf") ? "Digite o CPF que o validador mostra." : undefined} />
-          <CampoTexto id="aditivo-conferir-nome" rotulo="Nome de quem assinou" opcional={doCondominio} maxLength={120} value={nome} onChange={(e) => setNome(e.target.value)} disabled={!conferivel}
+          <CampoTexto id="aditivo-conferir-nome" rotulo="Nome de quem assinou" opcional={!exigeAssinante} maxLength={120} value={nome} onChange={(e) => setNome(e.target.value)} disabled={!conferivel}
             erro={campos.includes("assinanteNome") ? "Diga o nome de quem assinou." : undefined} />
         </div>
         <CampoAreaTexto id="aditivo-conferir-obs" rotulo="Observação" opcional maxLength={300} value={obs} onChange={(e) => setObs(e.target.value)} disabled={!conferivel}

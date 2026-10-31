@@ -1777,7 +1777,7 @@ begin
   if i.anonimizado_em is not null then raise exception 'Cancelamento não encontrado' using errcode = 'TC404'; end if;
   return jsonb_build_object(
     'cancelamento', comercial_cancelamento_json(k, i.condominio, comercial_leitura_cliente(i.condominio_id) -> 'plano'),
-    'pode', comercial_renovacoes_pode());
+    'pode', comercial_renovacoes_pode(), 'hoje', comercial_hoje());
 end $$;
 
 -- O aviso de reajuste usa só o modelo de reajuste em uso.

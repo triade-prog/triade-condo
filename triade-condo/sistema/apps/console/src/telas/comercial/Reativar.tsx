@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { Aviso, Botao, Carregando, classeBotao, ErroCarregar, Icone, Selo, Vazio } from "@triade/ui";
+import { Aviso, Botao, Carregando, classeBotao, ErroCarregar, Icone, Selo } from "@triade/ui";
 import { Cartao, Dado, diaHora, Voltar } from "../comum.tsx";
 import { useCarregar } from "../sessao.tsx";
 import { hashCurto } from "./contrato.ts";
@@ -19,7 +19,7 @@ import type { ModeloAditivo } from "./ModeloAditivo.tsx";
 import { reais } from "./painel.ts";
 import {
   AO_REATIVAR_VOLTA, envioConferido, faltaParaReativar, linhasRetorno, NAO_VOLTA, podeEnviarParte, ROTAS_RENOVACOES, TELA_RENOVACOES, textoReativado,
-  type TelaRenovacoes,
+  type TelaCancelamento,
 } from "./renovacoes.ts";
 
 type Janela = { tipo: "gerar" } | { tipo: "reativar" } | JanelaAssinatura;
@@ -28,7 +28,7 @@ const dataBr = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4
 
 export function Reativar() {
   const { id } = useParams<{ id: string }>();
-  const carga = useCarregar<TelaRenovacoes>(ROTAS_RENOVACOES.tela());
+  const carga = useCarregar<TelaCancelamento>(ROTAS_RENOVACOES.cancelamento(id));
   const modelos = useCarregar<{ versoes: ModeloAditivo[] }>(ROTAS_RENOVACOES.modelos);
   const [janela, setJanela] = useState<Janela | null>(null);
   const [aviso, setAviso] = useState<{ tom: "ok" | "erro"; texto: string } | null>(null);
@@ -38,16 +38,7 @@ export function Reativar() {
   if (carga.estado === "carregando") return <div className="grid gap-4">{voltar}<Carregando rotulo="Abrindo o cancelamento…" /></div>;
   if (carga.estado === "erro") return <div className="grid gap-4">{voltar}<ErroCarregar erro={carga.erro} texto={carga.texto} tentarDeNovo={carga.recarregar} /></div>;
   const d = carga.dados;
-  const k = d.cancelamentos.find((x) => x.id === id);
-  if (!k) {
-    return (
-      <div className="grid gap-4">
-        {voltar}
-        <h1 className="t-titulo-tela">Reativar</h1>
-        <Vazio titulo="Cancelamento não encontrado" icone="busca">Este cancelamento não está na lista de Renovações. Confira o endereço ou abra pela aba Cancelamentos.</Vazio>
-      </div>
-    );
-  }
+  const k = d.cancelamento;
 
   // Sem a lista de modelos (por exemplo, sem permissão de ler), Gerar fica ligado e o banco decide.
   const modeloEmUso = modelos.estado === "pronto" ? modelos.dados.versoes.find((m) => m.tipo === "RETORNO" && m.situacao === "EM_USO") : undefined;

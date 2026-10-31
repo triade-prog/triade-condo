@@ -35,6 +35,8 @@ export const ROTAS_RENOVACOES = {
   retencao: (id: string) => `/v1/comercial/cancelamentos/${id}/retencao`,
   ficou: (id: string) => `/v1/comercial/cancelamentos/${id}/ficou`,
   confirmar: (id: string) => `/v1/comercial/cancelamentos/${id}/confirmar`,
+  /** Um cancelamento sozinho, com `pode` e `hoje` (0318): a página Reativar abre um antigo que já saiu da lista. */
+  cancelamento: (id: string) => `/v1/comercial/cancelamentos/${id}`,
   desfazer: (id: string) => `/v1/comercial/cancelamentos/${id}/desfazer`,
   reativar: (id: string) => `/v1/comercial/cancelamentos/${id}/reativar`,
   gerarRetorno: (id: string) => `/v1/comercial/cancelamentos/${id}/retorno/aditivo`,
@@ -98,6 +100,8 @@ export type SituacaoAditivo = "GERANDO" | "PRONTO" | "SUBSTITUIDO";
 export interface AditivoResumo {
   id: string;
   numero: number;
+  /** REAJUSTE ou RETORNO (0318). */
+  tipo?: "REAJUSTE" | "RETORNO";
   situacao: SituacaoAditivo;
   hash: string;
   geradoEm?: string;
@@ -218,6 +222,13 @@ export interface ClienteRenovacao {
   contato?: string;
   plano?: PlanoCliente;
   situacao: SituacaoClienteRenovacao;
+}
+
+/** `GET /v1/comercial/cancelamentos/:id` (0318). */
+export interface TelaCancelamento {
+  cancelamento: Cancelamento;
+  pode: TelaRenovacoes["pode"];
+  hoje: string;
 }
 
 export interface TelaRenovacoes {
