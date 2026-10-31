@@ -5,6 +5,10 @@
 // índice do advogado, que só a Administração muda; a sugestão de mudar de faixa e uma expansão aberta.
 // O cartão do Início só ganha as renovações quando o teste liga `noInicio` (os testes da 0309 ficam
 // como estão). As regras de verdade estão no banco (pgTAP 059 a 061) e na API (Deno).
+// R17.7c (0318; quadros 487 a 491): `ligarRetorno` põe na lista um cancelamento confirmado antes do
+// último dia (Cerrado Alto), um encerrado (Jatobá), um desfeito e um reativado; as rotas de desfazer,
+// gerar o aditivo de retorno, enviar e conferir os PDFs assinados (dos dois aditivos) e reativar; e as
+// duas partes de Modelos › Aditivo. A conferência automática lê as mesmas marcas do contrato.
 import type { Route } from "@playwright/test";
 import { avisarAte, ultimoDiaCancelamento, valeDesde, valorComReajuste } from "../../packages/domain/src/renovacoes.ts";
 import type { ComercialConsole, PodeComercial } from "./api-falsa-console-comercial";
@@ -31,6 +35,13 @@ function somarDias(data: string, dias: number): string {
 }
 const instante = (data: string, hora: string) => new Date(`${data}T${hora}:00-03:00`).toISOString();
 const novoId = (n: number) => `9c3d4e5f-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const br = (d: string) => d.split("-").reverse().join("/");
+
+export const K_CERRADO = novoId(901);
+export const K_JATOBA = novoId(902);
+export const K_IPE = novoId(903);
+export const K_AROEIRA = novoId(904);
+export const CPF_RETORNO = "529.982.247-25";
 
 type Cliente = { id: string; condominio: string; contato: string; plano: Json; aniversario: string; situacao: string };
 
@@ -60,7 +71,7 @@ export function criarRenovacoes(hoje: string) {
         hoje: { valor: 34900, ciclo: "MENSAL", tabela: "CHEIA" }, novo: { valor: 36580, indice: "IPCA", percentual: 4.8 },
         aviso: { em: somarDias(hoje, -5), canal: "WHATSAPP", para: "Paula, síndica" }, valeDesde: valeDesde(somarDias(hoje, 25), somarDias(hoje, -5), prazo, 10),
         registradoEm: instante(somarDias(hoje, -5), "10:00"), registradoPor: CAROLINA,
-        aditivo: { id: ARQUIVO_ADITIVO, numero: 1, situacao: "PRONTO", hash: "a3f9c2d17be04c55" } },
+        aditivo: { id: ARQUIVO_ADITIVO, numero: 1, situacao: "PRONTO", hash: "a3f9c2d17be04c55", geradoEm: instante(somarDias(hoje, -5), "10:00"), envios: [] } },
     ] as Json[],
     sinais: [
       { id: novoId(1), versao: 1, interessadoId: IPIRANGA, tipo: "SINDICO_NOVO", origem: "TROCA_SINDICO", data: somarDias(hoje, -10), criadoEm: instante(somarDias(hoje, -10), "09:00") },
@@ -78,13 +89,68 @@ export function criarRenovacoes(hoje: string) {
         situacao: "PEDIDO" },
     ] as Json[],
     modelos: [
-      { id: novoId(5), versao: 1, numero: 1, titulo: "Aditivo de reajuste", situacao: "EM_USO",
+      { id: novoId(5), versao: 1, numero: 1, tipo: "REAJUSTE", titulo: "Aditivo de reajuste", situacao: "EM_USO",
         texto: "Aditivo ao contrato «contrato» do «condominio». A mensalidade passa de «valor_atual» para «valor_novo» a partir da «vale_desde».",
         emUsoEm: instante("2026-09-01", "10:00"), emUsoPor: CAROLINA, criadoEm: instante("2026-09-01", "09:00"), criadoPor: CAROLINA, aditivos: 1 },
     ] as Json[],
   };
 }
 export type RenovacoesFalsas = ReturnType<typeof criarRenovacoes>;
+
+/**
+ * Os cancelamentos fechados do quadro 491 (R17.7c): o confirmado antes do último dia, o encerrado
+ * (com a prévia do plano da volta), o desfeito e o reativado. Com `modeloRetorno`, já há uma versão
+ * do aditivo de retorno em uso.
+ */
+export function ligarRetorno(r: RenovacoesFalsas, o: { modeloRetorno?: boolean } = {}) {
+  const hoje = r.hoje;
+  const conferido = (parte: string, n: number) => ({ id: novoId(n), versao: 2, parte, situacao: "CONFERIDO", enviadoEm: instante(somarDias(hoje, -7), "10:00"), enviadoPor: CAROLINA,
+    conferidoEm: instante(somarDias(hoje, -7), "11:00"), conferidoPor: CAROLINA, nome: `assinado-${parte.toLowerCase()}.pdf` });
+  r.cancelamentos.push(
+    { id: K_CERRADO, versao: 2, interessadoId: novoId(911), condominio: "Residencial Cerrado Alto", plano: { valor: 22900, ciclo: "MENSAL", inicio: "2025-03-01", tabela: "CHEIA" },
+      pedidoPor: "Marta Lima, síndica", pedidoEm: instante(somarDias(hoje, -6), "10:00"), avisoDias: 30, ultimoDia: somarDias(hoje, 24), motivo: "SINDICO_NOVO",
+      situacao: "CONFIRMADO", decididoEm: instante(somarDias(hoje, -2), "15:40"), decididoPor: CAROLINA, exportacaoPedida: true },
+    { id: K_JATOBA, versao: 3, interessadoId: novoId(912), condominio: "Edifício Jatobá", plano: { valor: 12900, ciclo: "MENSAL", inicio: "2025-01-10", tabela: "FUNDADOR" },
+      pedidoPor: "Rui Campos, síndico", pedidoEm: instante(somarDias(hoje, -45), "09:00"), avisoDias: 30, ultimoDia: somarDias(hoje, -15), motivo: "PRECO",
+      situacao: "ENCERRADO", decididoEm: instante(somarDias(hoje, -40), "14:00"), decididoPor: CAROLINA, exportacaoPedida: true,
+      retornoPlano: { unidades: 38, faixa: "até 40 unidades", valor: 22900, sobConsulta: false } },
+    { id: K_IPE, versao: 4, interessadoId: novoId(913), condominio: "Condomínio Ipê Amarelo", plano: { valor: 22900, ciclo: "MENSAL", inicio: "2025-05-01", tabela: "CHEIA" },
+      pedidoPor: "Paula Reis, síndica", pedidoEm: instante(somarDias(hoje, -10), "10:00"), avisoDias: 30, ultimoDia: somarDias(hoje, 20), motivo: "POUCO_USO",
+      situacao: "DESFEITO", decididoEm: instante(somarDias(hoje, -8), "10:00"), decididoPor: CAROLINA, exportacaoPedida: true,
+      desfeitoEm: instante(somarDias(hoje, -1), "09:30"), desfeitoPor: CAROLINA, desfeitoNota: "Paula Reis, síndica, pelo WhatsApp comercial" },
+    { id: K_AROEIRA, versao: 6, interessadoId: novoId(914), condominio: "Residencial Aroeira", plano: { valor: 22900, ciclo: "MENSAL", inicio: "2024-08-01", tabela: "CHEIA" },
+      pedidoPor: "Ana Souza, síndica", pedidoEm: instante(somarDias(hoje, -95), "10:00"), avisoDias: 30, ultimoDia: somarDias(hoje, -65), motivo: "SINDICO_NOVO",
+      situacao: "REATIVADO", decididoEm: instante(somarDias(hoje, -90), "10:00"), decididoPor: CAROLINA, exportacaoPedida: true,
+      reativadoEm: instante(somarDias(hoje, -5), "16:00"), reativadoPor: CAROLINA,
+      retorno: { id: novoId(921), numero: 2, situacao: "PRONTO", hash: "e5".repeat(32), geradoEm: instante(somarDias(hoje, -9), "10:00"),
+        dados: { campos: { vale_desde: `${hoje.slice(5, 7)}/${hoje.slice(0, 4)}` } }, envios: [conferido("CONDOMINIO", 922), conferido("TRIADE", 923)] } },
+  );
+  if (o.modeloRetorno) {
+    r.modelos.push({ id: novoId(6), versao: 1, numero: 1, tipo: "RETORNO", titulo: "Aditivo de retorno ao contrato", situacao: "EM_USO",
+      texto: "Aditivo de retorno ao contrato «contrato» do «condominio». A cobrança volta a partir da «vale_desde», pelo plano «plano», por «valor_mensal».",
+      emUsoEm: instante("2026-10-30", "10:00"), emUsoPor: CAROLINA, criadoEm: instante("2026-10-30", "09:00"), criadoPor: CAROLINA, aditivos: 1 });
+  }
+}
+
+/** Um aditivo (de reajuste ou de retorno) pelo id, para as rotas dos envios. */
+function acharAditivo(r: RenovacoesFalsas, id: string): Json | undefined {
+  for (const g of r.registradas) if ((g.aditivo as Json | undefined)?.id === id) return g.aditivo as Json;
+  for (const k of r.cancelamentos) if ((k.retorno as Json | undefined)?.id === id) return k.retorno as Json;
+  return undefined;
+}
+function acharEnvio(r: RenovacoesFalsas, id: string): { a: Json; e: Json } | undefined {
+  for (const g of [...r.registradas.map((x) => x.aditivo), ...r.cancelamentos.map((x) => x.retorno)] as (Json | undefined)[]) {
+    const e = ((g?.envios ?? []) as Json[]).find((x) => x.id === id);
+    if (e) return { a: g!, e };
+  }
+  return undefined;
+}
+const conferidoDe = (a: Json, parte: string) => ((a.envios ?? []) as Json[]).some((e) => e.parte === parte && e.situacao === "CONFERIDO");
+const TEXTOS_AUTO_ADITIVO: Record<string, string> = {
+  ARQUIVO_INVALIDO: "O arquivo não é um PDF que dá para conferir.",
+  SEM_ASSINATURA: "O PDF enviado não tem assinatura digital nova. Assine pelo gov.br e envie o arquivo que ele devolver.",
+  NAO_E_O_GERADO: "O conteúdo assinado não é o aditivo gerado. Baixe o aditivo, assine sem mudar nada e envie de novo.",
+};
 
 function plano(c: Cliente) {
   return c.plano as { valor: number; ciclo: "MENSAL" | "ANUAL"; tabela: string; diaVencimento: number; inicio: string };
@@ -133,7 +199,7 @@ function tela(c: ComercialConsole, mes: string, pode: PodeComercial): Json {
     contagens: { renovacoes: renovacoes.length, riscos: riscos.length, expansoes: r.expansoes.filter((e) => !e.encerradaEm).length + sugestoes.length,
       cancelamentos: r.cancelamentos.filter((k) => k.situacao === "PEDIDO" || k.situacao === "EM_RETENCAO").length },
     avisoCancelamentoDias: 30,
-    pode: { editar: pode.editar, regra: !!pode.modelos, confirmar: !!pode.cliente },
+    pode: { editar: pode.editar, regra: !!pode.modelos, confirmar: !!pode.cliente, desfazer: !!pode.cliente, reativar: !!pode.cliente, assinar: !!pode.assinar },
   };
 }
 
@@ -160,7 +226,7 @@ export function itensInicioRenovacoes(c: ComercialConsole): Json[] {
   return itens;
 }
 
-const ROTAS = /^\/v1\/comercial\/(renovacoes|riscos|cancelamentos|expansoes|modelos\/aditivo)(\/.*)?$/;
+const ROTAS = /^\/v1\/comercial\/(renovacoes|riscos|cancelamentos|expansoes|modelos\/aditivo|aditivos|envios-aditivo)(\/.*)?$/;
 
 export async function rotasRenovacoes(route: Route, c: ComercialConsole, caminho: string, metodo: string, corpo: Json, pode: PodeComercial, url: URL) {
   const m = ROTAS.exec(caminho);
@@ -187,9 +253,24 @@ export async function rotasRenovacoes(route: Route, c: ComercialConsole, caminho
     }
     return route.fulfill({ json: { url: `/api/v1/arquivos-comercial/${a.id}?baixar=1`, tipo: "application/pdf", expiraEm: new Date(Date.now() + 300_000).toISOString() } });
   }
+  // O PDF de um aditivo (o gerado ou o de um envio), servido pelo "armazenamento" do contrato (R17.7c).
+  const linkA = /^\/([0-9a-f-]{36})\/link$/.exec(resto);
+  if (raiz === "aditivos" && linkA && metodo === "GET") {
+    const a = acharAditivo(r, linkA[1]!);
+    if (!a) return erro(route, 404, "NOT_FOUND");
+    const envio = url.searchParams.get("envio");
+    if (envio && !((a.envios ?? []) as Json[]).some((e) => e.id === envio)) return erro(route, 404, "NOT_FOUND");
+    const arquivo = envio ?? String(a.id);
+    if (!c.contrato.arquivos.has(arquivo)) {
+      c.contrato.arquivos.set(arquivo, { nome: `aditivo-${a.numero}.pdf`, conteudo: Buffer.from("%PDF-1.4\n% aditivo falso\n%%EOF\n") });
+    }
+    return route.fulfill({ json: { url: `/api/v1/arquivos-comercial/${arquivo}?baixar=1`, tipo: "application/pdf", expiraEm: new Date(Date.now() + 300_000).toISOString() } });
+  }
   if (raiz === "modelos/aditivo" && resto === "" && metodo === "GET") {
-    const emUso = r.modelos.find((x) => x.situacao === "EM_USO");
-    return route.fulfill({ json: { versoes: [...r.modelos].reverse(), ...(emUso ? { emUso } : {}), campos: ["contrato", "condominio", "valor_atual", "valor_novo", "vale_desde"],
+    const emUso = r.modelos.find((x) => x.situacao === "EM_USO" && (x.tipo ?? "REAJUSTE") === "REAJUSTE");
+    return route.fulfill({ json: { versoes: [...r.modelos].reverse(), ...(emUso ? { emUso } : {}),
+      campos: { REAJUSTE: ["contrato", "condominio", "valor_atual", "valor_novo", "vale_desde"],
+        RETORNO: ["condominio", "cnpj", "representante", "cpf_representante", "contrato", "data_contrato", "ultimo_dia", "plano", "valor_mensal", "vale_desde"] },
       regra: r.regra, podeEditar: !!pode.modelos } });
   }
   if (metodo === "GET") return erro(route, 404, "NOT_FOUND");
@@ -280,6 +361,111 @@ export async function rotasRenovacoes(route: Route, c: ComercialConsole, caminho
     k.versao = Number(k.versao) + 1;
     return route.fulfill({ json: { ...k, ...(acao[2] === "confirmar" ? { semSindico: false } : {}) } });
   }
+  // Desfazer antes do último dia (quadro 487): só a Administração, com a nota.
+  const fechado = /^\/([0-9a-f-]{36})\/(desfazer|reativar|retorno\/aditivo)$/.exec(resto);
+  if (raiz === "cancelamentos" && fechado && metodo === "POST") {
+    const k = r.cancelamentos.find((x) => x.id === fechado[1]);
+    if (!k) return erro(route, 404, "NOT_FOUND");
+    if (!pode.cliente) return erro(route, 403, "FORBIDDEN");
+    if (fechado[2] === "desfazer") {
+      if (k.situacao !== "CONFIRMADO") return erro(route, 422, "VALIDATION_ERROR", { motivo: "CANCELAMENTO_FECHADO" });
+      if (String(k.ultimoDia) < r.hoje) return erro(route, 422, "VALIDATION_ERROR", { motivo: "ULTIMO_DIA_PASSOU" });
+      if (k.versao !== corpo.versao) return conflito(k);
+      const nota = String(corpo.nota ?? "").trim();
+      if (nota.length < 3 || nota.length > 300) return erro(route, 400, "VALIDATION_ERROR", { campos: ["nota"] });
+      Object.assign(k, { situacao: "DESFEITO", desfeitoEm: new Date().toISOString(), desfeitoPor: CAROLINA, desfeitoNota: nota, versao: Number(k.versao) + 1 });
+      const x = r.clientes.find((g) => g.id === k.interessadoId);
+      if (x) x.situacao = "ATIVO";
+      return route.fulfill({ json: { cancelamento: k } });
+    }
+    if (k.situacao !== "ENCERRADO") return erro(route, 422, "VALIDATION_ERROR", { motivo: "CANCELAMENTO_NAO_ENCERRADO" });
+    const atualRet = k.retorno as Json | undefined;
+    if (fechado[2] === "reativar") {
+      if (k.versao !== corpo.versao) return conflito(k);
+      if (!atualRet || !conferidoDe(atualRet, "CONDOMINIO") || !conferidoDe(atualRet, "TRIADE")) return erro(route, 422, "VALIDATION_ERROR", { motivo: "ADITIVO_SEM_ASSINATURAS" });
+      Object.assign(k, { situacao: "REATIVADO", reativadoEm: new Date().toISOString(), reativadoPor: CAROLINA, versao: Number(k.versao) + 1 });
+      return route.fulfill({ json: { cancelamento: k } });
+    }
+    const modelo = r.modelos.find((x) => x.situacao === "EM_USO" && x.tipo === "RETORNO");
+    if (!modelo) return erro(route, 422, "VALIDATION_ERROR", { motivo: "SEM_MODELO_RETORNO" });
+    const cpf = String(corpo.cpf ?? "").replace(/\D/g, "");
+    const comp = String(corpo.competencia ?? "");
+    const faltam = [...(String(corpo.representante ?? "").trim().length < 3 ? ["representante"] : []), ...(cpf.length !== 11 ? ["cpf"] : []),
+      ...(!/^\d{4}-\d{2}-01$/.test(comp) ? ["competencia"] : []), ...(!["MENSAL", "ANUAL"].includes(String(corpo.ciclo)) ? ["ciclo"] : []),
+      ...(atualRet && String(corpo.motivo ?? "").trim().length < 3 ? ["motivo"] : [])];
+    if (faltam.length) return erro(route, 400, "VALIDATION_ERROR", { campos: faltam });
+    const plano = (k.retornoPlano ?? {}) as Json;
+    const anual = corpo.ciclo === "ANUAL";
+    const a: Json = { id: novoId(r.seq++), numero: atualRet ? Number(atualRet.numero) + 1 : 2, situacao: "PRONTO", hash: `${(r.seq % 10)}f`.repeat(32),
+      geradoEm: new Date().toISOString(), envios: [],
+      dados: { campos: { condominio: k.condominio, cnpj: "12.345.678/0001-90", representante: String(corpo.representante).trim(),
+        cpf_representante: `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**`, contrato: "1", data_contrato: br(String((k.plano as Json).inicio)), ultimo_dia: br(String(k.ultimoDia)),
+        plano: `Até 40 unidades, ${anual ? "anual" : "mensal"}`, valor_mensal: `R$ ${(Number(plano.valor ?? 22900) / 100).toFixed(2).replace(".", ",")} por mês`,
+        vale_desde: `${comp.slice(5, 7)}/${comp.slice(0, 4)}` } } };
+    k.retorno = a;
+    modelo.aditivos = Number(modelo.aditivos) + 1;
+    return route.fulfill({ status: 201, json: { aditivo: a } });
+  }
+  // Os PDFs assinados dos aditivos (R17.7b e R17.7c): a equipe envia o do condomínio e o da TRÍADE.
+  const envios = /^\/([0-9a-f-]{36})\/envios$/.exec(resto);
+  if (raiz === "aditivos" && envios && metodo === "POST") {
+    const a = acharAditivo(r, envios[1]!);
+    if (!a) return erro(route, 404, "NOT_FOUND");
+    const parte = String(corpo.parte);
+    if (parte === "TRIADE" && !pode.assinar) return erro(route, 403, "FORBIDDEN");
+    if (a.situacao !== "PRONTO") return erro(route, 422, "VALIDATION_ERROR", { motivo: "ADITIVO_SUBSTITUIDO" });
+    if (conferidoDe(a, parte)) return erro(route, 422, "VALIDATION_ERROR", { motivo: "PARTE_JA_CONFERIDA" });
+    if (parte === "TRIADE" && !conferidoDe(a, "CONDOMINIO")) return erro(route, 422, "VALIDATION_ERROR", { motivo: "ORDEM_DAS_ASSINATURAS" });
+    if (!(Number(corpo.tamanho) >= 1 && Number(corpo.tamanho) <= 10 * 1024 * 1024)) return erro(route, 400, "VALIDATION_ERROR", { campos: ["tamanho"] });
+    const id = novoId(r.seq++);
+    (a.envios as Json[]).push({ id, versao: 1, parte, situacao: "ENVIANDO", enviadoEm: new Date().toISOString(), enviadoPor: CAROLINA, nome: corpo.nome });
+    c.contrato.arquivos.set(id, { nome: String(corpo.nome), conteudo: Buffer.alloc(0) });
+    return route.fulfill({ status: 201, json: { envioId: id, envio: { url: `/api/v1/arquivos-comercial/${id}`, metodo: "PUT", tipo: "application/pdf" } } });
+  }
+  const ea = /^\/([0-9a-f-]{36})\/(verificar|conferir|recusar)$/.exec(resto);
+  if (raiz === "envios-aditivo" && ea && metodo === "POST") {
+    const achado = acharEnvio(r, ea[1]!);
+    if (!achado) return erro(route, 404, "NOT_FOUND");
+    const { a, e } = achado;
+    const lista = a.envios as Json[];
+    if (ea[2] === "verificar") {
+      if (e.situacao !== "ENVIANDO") return erro(route, 422, "VALIDATION_ERROR", { motivo: "ENVIO_CONFERIDO" });
+      const t = (c.contrato.arquivos.get(String(e.id))?.conteudo ?? Buffer.alloc(0)).toString("latin1");
+      const motivo = !t.startsWith("%PDF-") || t.includes("NAO-E-PDF") ? "ARQUIVO_INVALIDO" : t.includes("SEM-ASSINATURA") ? "SEM_ASSINATURA" : t.includes("OUTRO-ARQUIVO") ? "NAO_E_O_GERADO" : null;
+      const em = new Date().toISOString();
+      if (!motivo) {
+        for (const x of lista) if (x.parte === e.parte && ["A_CONFERIR", "NAO_E_O_GERADO"].includes(String(x.situacao))) x.situacao = "SUBSTITUIDO";
+        Object.assign(e, { situacao: "A_CONFERIR", automatica: { temAssinatura: true, assinaturas: e.parte === "TRIADE" ? 2 : 1, eOGerado: true, em } });
+      } else {
+        Object.assign(e, { situacao: motivo === "NAO_E_O_GERADO" ? "NAO_E_O_GERADO" : "RECUSADO_NA_HORA", motivo, motivoTexto: TEXTOS_AUTO_ADITIVO[motivo],
+          automatica: motivo === "ARQUIVO_INVALIDO" ? undefined : { temAssinatura: motivo !== "SEM_ASSINATURA", assinaturas: motivo === "SEM_ASSINATURA" ? 0 : 1, eOGerado: false, em } });
+      }
+      return route.fulfill({ json: e });
+    }
+    if (corpo.versao !== e.versao) return conflito(e);
+    if (ea[2] === "recusar") {
+      if (!["A_CONFERIR", "NAO_E_O_GERADO"].includes(String(e.situacao))) return erro(route, 422, "VALIDATION_ERROR", { motivo: "ENVIO_NAO_CONFERIVEL" });
+      const motivo = String(corpo.motivo ?? "").trim();
+      if (motivo.length < 3) return erro(route, 400, "VALIDATION_ERROR", { campos: ["motivo"] });
+      Object.assign(e, { situacao: "RECUSADO", motivo: "RECUSADO_NA_CONFERENCIA", motivoTexto: motivo, recusa: { motivo, por: CAROLINA, em: new Date().toISOString() }, versao: Number(e.versao) + 1 });
+      return route.fulfill({ json: e });
+    }
+    if (e.situacao !== "A_CONFERIR") return erro(route, 422, "VALIDATION_ERROR", { motivo: "ENVIO_NAO_CONFERIVEL" });
+    if (e.parte === "TRIADE" && !pode.assinar) return erro(route, 403, "FORBIDDEN");
+    const falta = ["assinaturaValida", "pessoaConfere", "dataConfere"].filter((x) => corpo[x] !== true);
+    if (falta.length) return erro(route, 400, "VALIDATION_ERROR", { campos: falta });
+    const cpf = String(corpo.cpf ?? "").replace(/\D/g, "");
+    const doRepresentante = String(((a.dados as Json | undefined)?.campos as Json | undefined)?.cpf_representante ?? "");
+    if (e.parte === "CONDOMINIO" && cpf && doRepresentante && !doRepresentante.includes(`${cpf.slice(3, 6)}.${cpf.slice(6, 9)}`)) {
+      return erro(route, 422, "VALIDATION_ERROR", { motivo: "CPF_NAO_CONFERE" });
+    }
+    if (e.parte === "TRIADE" && cpf.length !== 11) return erro(route, 400, "VALIDATION_ERROR", { campos: ["cpf"] });
+    const em = new Date().toISOString();
+    Object.assign(e, { situacao: "CONFERIDO", conferidoEm: em, conferidoPor: CAROLINA, versao: Number(e.versao) + 1,
+      conferencia: { assinanteNome: corpo.assinanteNome ?? undefined, cpfMascarado: cpf ? `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**` : undefined,
+        observacao: corpo.observacao ?? undefined, por: CAROLINA, em } });
+    return route.fulfill({ json: e });
+  }
   if (raiz === "expansoes" && resto === "" && metodo === "POST") {
     const x = r.clientes.find((k) => k.id === corpo.interessadoId);
     if (!x) return erro(route, 404, "NOT_FOUND");
@@ -313,7 +499,10 @@ export async function rotasRenovacoes(route: Route, c: ComercialConsole, caminho
       const novo = r.modelos.find((x) => x.id === usar[1]);
       if (!novo) return erro(route, 404, "NOT_FOUND");
       if (novo.versao !== corpo.versao) return conflito(novo);
-      for (const x of r.modelos) if (x.situacao === "EM_USO") Object.assign(x, { situacao: "SUBSTITUIDA", substituidaEm: new Date().toISOString(), versao: Number(x.versao) + 1 });
+      const tipo = novo.tipo ?? "REAJUSTE";
+      for (const x of r.modelos) {
+        if (x.situacao === "EM_USO" && (x.tipo ?? "REAJUSTE") === tipo) Object.assign(x, { situacao: "SUBSTITUIDA", substituidaEm: new Date().toISOString(), versao: Number(x.versao) + 1 });
+      }
       Object.assign(novo, { situacao: "EM_USO", emUsoEm: new Date().toISOString(), emUsoPor: CAROLINA, versao: Number(novo.versao) + 1 });
       return route.fulfill({ json: novo });
     }
@@ -326,7 +515,9 @@ export async function rotasRenovacoes(route: Route, c: ComercialConsole, caminho
         Object.assign(existe, { titulo: corpo.titulo, texto: corpo.texto, versao: Number(existe.versao) + 1 });
         return route.fulfill({ json: existe });
       }
-      const novo = { id: novoId(r.seq++), versao: 1, numero: r.modelos.length + 1, titulo: corpo.titulo, texto: corpo.texto, situacao: "RASCUNHO",
+      const tipo = corpo.tipo === "RETORNO" ? "RETORNO" : "REAJUSTE";
+      if (String(corpo.texto ?? "").trim().length < 50) return erro(route, 400, "VALIDATION_ERROR", { campos: ["texto"] });
+      const novo = { id: novoId(r.seq++), versao: 1, numero: r.modelos.filter((x) => (x.tipo ?? "REAJUSTE") === tipo).length + 1, tipo, titulo: corpo.titulo, texto: corpo.texto, situacao: "RASCUNHO",
         criadoEm: new Date().toISOString(), criadoPor: CAROLINA, aditivos: 0 };
       r.modelos.push(novo);
       return route.fulfill({ status: 201, json: novo });

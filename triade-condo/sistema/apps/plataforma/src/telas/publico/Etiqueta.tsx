@@ -10,7 +10,7 @@ import { linkWhatsapp, mensagemEtiqueta } from "@triade/domain";
 import { Aviso, Carregando, chamarApi, classeBotao, Icone, textoDoErro } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import type { EtiquetaPublica } from "../tipos.ts";
-import { Cartao, FaixaQueda, TelaPublica } from "./comum.tsx";
+import { Cartao, FaixaQueda, TelaPublica, useEncerrou } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: EtiquetaPublica };
 const RODAPE = "Sem conta e sem senha. Esta página não mostra nomes nem unidades e não guarda nada no seu celular.";
@@ -18,13 +18,14 @@ const RODAPE = "Sem conta e sem senha. Esta página não mostra nomes nem unidad
 export function Etiqueta() {
   const { codigo } = useParams<{ codigo: string }>();
   const [carga, setCarga] = useState<Carga>({ estado: "carregando" });
+  const encerrou = useEncerrou();
 
   useEffect(() => {
     void chamarApi<EtiquetaPublica>(`/v1/publico/etiqueta/${encodeURIComponent(codigo)}`).then((r) => {
       if (r.ok) setCarga({ estado: "pronto", dados: r.dados });
-      else setCarga({ estado: "erro", texto: r.status === 404 ? "Esta etiqueta não existe. Avise o condomínio pelo WhatsApp de sempre." : textoDoErro(r.erro) });
+      else if (!encerrou(r.erro)) setCarga({ estado: "erro", texto: r.status === 404 ? "Esta etiqueta não existe. Avise o condomínio pelo WhatsApp de sempre." : textoDoErro(r.erro) });
     });
-  }, [codigo]);
+  }, [codigo, encerrou]);
 
   if (carga.estado === "carregando") return <TelaPublica titulo="Avisar um problema" icone="pin" rodape={RODAPE}><Carregando rotulo="Abrindo…" /></TelaPublica>;
   if (carga.estado === "erro") return <TelaPublica titulo="Avisar um problema" icone="pin" rodape={RODAPE}><Aviso tom="atencao">{carga.texto}</Aviso></TelaPublica>;

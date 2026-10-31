@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Carregando } from "@triade/ui";
 import { ConfirmarEmail } from "@/telas/publico/Links";
+import { ComEncerramento } from "@/telas/publico/comum";
 
 export const metadata: Metadata = { title: { absolute: "Confirmar o e-mail" } };
 
@@ -9,7 +10,9 @@ export const metadata: Metadata = { title: { absolute: "Confirmar o e-mail" } };
 export default function Pagina() {
   return (
     <Suspense fallback={<Carregando />}>
-      <ConfirmarEmail />
+      <ComEncerramento rotulo="Confirmar o e-mail" ligacao="no">
+        <ConfirmarEmail />
+      </ComEncerramento>
     </Suspense>
   );
 }

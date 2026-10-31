@@ -16,7 +16,7 @@ import {
 import { Abas, Botao, CampoTexto, chamarApi, Chip, classeBotao, Icone, Selo, textoDoErro } from "@triade/ui";
 import { prazoCurto } from "../vida/Enquetes.tsx";
 import type { AnuncioPublico, ComunicadoPublico, MuralPublico } from "../tipos.ts";
-import { BlocoDeData, Cartao, ComunicadoLido, FaixaQueda, PorNaAgenda, SeloAssunto, SeloCancelada, useAbrirArquivo } from "./comum.tsx";
+import { BlocoDeData, Cartao, ComunicadoLido, FaixaQueda, PorNaAgenda, SeloAssunto, SeloCancelada, useAbrirArquivo, useEncerrou } from "./comum.tsx";
 
 export type AbaMural = "avisos" | "classificados" | "manual";
 export interface VistaMural { aba: AbaMural; comunicado?: string; anuncio?: string }
@@ -439,6 +439,7 @@ function PedirDocumento({ codigo, documentos }: { codigo: string; documentos: No
   const [email, setEmail] = useState("");
   const [estado, setEstado] = useState<"livre" | "enviando" | "feito">("livre");
   const [erro, setErro] = useState<string | null>(null);
+  const encerrou = useEncerrou();
 
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
@@ -447,6 +448,7 @@ function PedirDocumento({ codigo, documentos }: { codigo: string; documentos: No
     const r = await chamarApi(`/v1/publico/mural/${encodeURIComponent(codigo)}/documentos`, { corpo: { documentoId, email } });
     if (r.ok) return setEstado("feito");
     setEstado("livre");
+    if (encerrou(r.erro)) return;
     setErro(r.erro.codigo === "VALIDATION_ERROR" ? "Confira o e-mail: precisa do @ e do domínio." : textoDoErro(r.erro));
   }
 
