@@ -48,7 +48,9 @@ export function montarCsp({ nonce, dev = false, armazenamento, janelaMeta = fals
   const diretivas: Record<string, string[]> = {
     "default-src": ["'self'"],
     "script-src": ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", ...(dev ? ["'unsafe-eval'"] : [])],
-    "style-src": ["'self'", `'nonce-${nonce}'`, ...(dev ? ["'unsafe-inline'"] : [])],
+    // Na janela da Meta, o SDK do Facebook põe <style> sem nonce; com nonce na lista, o navegador
+    // ignora o 'unsafe-inline', então essa página fica só com ele (estilo não executa código).
+    "style-src": janelaMeta || dev ? ["'self'", "'unsafe-inline'"] : ["'self'", `'nonce-${nonce}'`],
     // Atributos style não executam código; <style> e scripts continuam presos ao nonce.
     "style-src-attr": ["'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:", ...arq, ...(janelaMeta ? ["https://*.facebook.com", "https://*.fbcdn.net"] : [])],

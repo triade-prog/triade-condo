@@ -70,5 +70,8 @@ describe("F0.8: cabeçalhos de segurança e CSP com nonce", () => {
     expect(csp).toContain("https://graph.facebook.com");
     expect(csp).toContain("script-src 'self' 'nonce-abc' 'strict-dynamic';");
     expect(montarCsp({ nonce: "abc" })).toContain("frame-src 'none';");
+    // O SDK da Meta põe <style> sem nonce: só nessa página o estilo inline vale.
+    expect(csp).toContain("style-src 'self' 'unsafe-inline';");
+    expect(montarCsp({ nonce: "abc" })).toContain("style-src 'self' 'nonce-abc';");
   });
 });
