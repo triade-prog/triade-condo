@@ -1,6 +1,6 @@
 // WhatsApp oficial pela Meta no Console (0315; W-01, W-20, DC4): a equipe liga ao cliente a conta
-// que chegou do cadastro da Meta. A API pega o token da conta, assina os avisos, registra o número
-// com um PIN novo, guarda tudo cifrado e manda os modelos que faltam; o token nunca volta.
+// que chegou do cadastro da Meta. A API põe o usuário do sistema da TRÍADE na conta, assina os
+// avisos, registra o número com um PIN novo, guarda o PIN cifrado e manda os modelos que faltam.
 import { assert, assertEquals } from "@std/assert";
 import { criarApiConsole } from "./app.ts";
 import { adminFalso, authFalso, bancoFalso, CODIGO_CERTO, cookieDe, erro, limitesFalsos, pedido } from "../_shared/teste_util.ts";
@@ -34,13 +34,14 @@ async function montar(numeros: unknown[] = [{ id: "1403308709535370", display_ph
                                             corpo: "Pedido {{1}}", variaveis: ["protocolo"] }],
     console_modelos_meta_enviados: (a) => ({ enviados: (a.p_resultados as unknown[]).length }),
   });
-  const graph: { metodo: string; caminho: string; corpo: unknown }[] = [];
+  const graph: { metodo: string; caminho: string; corpo: unknown; auth: string | null }[] = [];
   const buscar = (async (entrada: URL | string, init?: RequestInit) => {
     await Promise.resolve();
     const url = new URL(String(entrada));
     const corpo = init?.body ? JSON.parse(String(init.body)) : undefined;
-    graph.push({ metodo: init?.method ?? "GET", caminho: url.pathname, corpo });
-    if (url.pathname.endsWith("/system_user_access_tokens")) return Response.json({ access_token: "token-da-conta-do-ipe" });
+    graph.push({ metodo: init?.method ?? "GET", caminho: url.pathname, corpo, auth: new Headers(init?.headers).get("authorization") });
+    if (url.pathname === "/v26.0/me") return Response.json({ id: "61550000000001" });
+    if (url.pathname.endsWith("/assigned_users")) return Response.json({ success: true });
     if (url.pathname.endsWith("/phone_numbers")) return Response.json({ data: numeros });
     if (url.pathname.endsWith("/message_templates")) return Response.json({ id: "778899", status: "PENDING" });
     if (url.pathname === `/v26.0/${WABA}`) return Response.json({ name: "Condomínio Residencial Ipê" });
@@ -65,7 +66,7 @@ Deno.test("as rotas da Meta no Console pedem a sessão completa", async () => {
   for (const rota of ["/v1/whatsapp/meta/contas", `/v1/clientes/${IPE}/whatsapp/meta`]) assertEquals((await erro(await m.pedir(rota))).codigo, "UNAUTHORIZED", rota);
 });
 
-Deno.test("W-01: ligar a conta pega o token, assina os avisos, registra o número e guarda tudo cifrado", async () => {
+Deno.test("W-01: ligar a conta põe o usuário do sistema nela, assina os avisos, registra o número e guarda o PIN cifrado", async () => {
   const m = await montar();
   const cookie = await entrar(m);
   assertEquals((await (await m.pedir("/v1/whatsapp/meta/contas", { cookie })).json()).esperando, [{ wabaId: WABA }]);
@@ -73,20 +74,22 @@ Deno.test("W-01: ligar a conta pega o token, assina os avisos, registra o númer
   assertEquals(r.status, 200);
   const corpo = await r.json();
   assertEquals(corpo.modelosEnviados, 1);
-  assert(!JSON.stringify(corpo).includes("token-da-conta"));
+  assert(!JSON.stringify(corpo).includes("token-do-sistema"));
   assertEquals(m.graph.map((g) => `${g.metodo} ${g.caminho}`), [
-    "POST /v26.0/4433221100/system_user_access_tokens", `POST /v26.0/${WABA}/subscribed_apps`, `GET /v26.0/${WABA}/phone_numbers`,
+    "GET /v26.0/me", `POST /v26.0/${WABA}/assigned_users`, `POST /v26.0/${WABA}/subscribed_apps`, `GET /v26.0/${WABA}/phone_numbers`,
     "POST /v26.0/1403308709535370/register", `GET /v26.0/${WABA}`, `POST /v26.0/${WABA}/message_templates`,
   ]);
-  const pin = (m.graph[3]!.corpo as { pin: string }).pin;
+  assertEquals(m.graph[1]!.corpo, { user: "61550000000001", tasks: ["MANAGE"] });
+  assert(m.graph.every((g) => g.auth === "Bearer token-do-sistema"));
+  const pin = (m.graph[4]!.corpo as { pin: string }).pin;
   assert(/^[0-9]{6}$/.test(pin));
   const ligar = m.chamadas.find((c) => c.funcao === "console_ligar_conta_meta")!.args;
   assertEquals([ligar.p_numero_id, ligar.p_numero, ligar.p_nome_exibicao, ligar.p_qualidade, ligar.p_limite, ligar.p_nome_empresa],
                ["1403308709535370", "+556133334444", "Residencial Ipê", "VERDE", 250, "Condomínio Residencial Ipê"]);
-  assert(!m.guardado()!.includes("token"));
+  assert(m.guardado()!.startsWith("\\x"));
   const hex = m.guardado()!.slice(2);
   const cred = await decifrarCredenciais(m.chave, btoa(String.fromCharCode(...hex.match(/../g)!.map((h) => parseInt(h, 16)))));
-  assertEquals(cred, { instancia: WABA, token: "token-da-conta-do-ipe", pin });
+  assertEquals(cred, { instancia: WABA, token: "", pin });
   assertEquals(m.chamadas.find((c) => c.funcao === "console_modelos_meta_enviados")!.args.p_resultados,
                [{ modeloId: "m1", metaId: "778899", situacao: "PENDING" }]);
 });

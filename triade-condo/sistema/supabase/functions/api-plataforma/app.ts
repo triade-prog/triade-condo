@@ -2458,7 +2458,7 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
       const a = await rpc<{ credenciais: string | null }>("whatsapp_credenciais_meta", { p_condominio: m.condominio });
       if (!a.credenciais) return;
       const cred = await decifrarCredenciais(deps.meta.chave, a.credenciais);
-      bytes = await deps.meta.cliente.baixar(cred.token, m.url.slice(PREFIXO_MIDIA_META.length), TAMANHO_MAXIMO_MIDIA);
+      bytes = await deps.meta.cliente.baixar(deps.meta.cliente.tokenDe(cred.token), m.url.slice(PREFIXO_MIDIA_META.length), TAMANHO_MAXIMO_MIDIA);
     } else {
       if (!deps.whatsapp) return;
       bytes = await deps.whatsapp.conector.baixar(m.url, TAMANHO_MAXIMO_MIDIA);
@@ -2505,9 +2505,9 @@ export function criarApiPlataforma(segredo: string | undefined, deps: DepsPlataf
           if (meta && deps.meta) {
             // Na Meta, fora da janela vai o modelo pelo nome, com as variáveis (o link no lugar de [link] e de {{painel}}).
             r = e.modelo?.nome
-              ? await deps.meta.cliente.enviarModelo(cred.token, l.numeroId ?? "", e.para, e.modelo.nome, e.modelo.idioma ?? "pt_BR",
+              ? await deps.meta.cliente.enviarModelo(deps.meta.cliente.tokenDe(cred.token), l.numeroId ?? "", e.para, e.modelo.nome, e.modelo.idioma ?? "pt_BR",
                                                      e.modelo.parametros.map((p) => comLinkDe(String(p ?? "")).replaceAll("{{painel}}", painel ?? "")))
-              : await deps.meta.cliente.enviarTexto(cred.token, l.numeroId ?? "", e.para, texto);
+              : await deps.meta.cliente.enviarTexto(deps.meta.cliente.tokenDe(cred.token), l.numeroId ?? "", e.para, texto);
           } else {
             r = await deps.whatsapp!.conector.enviarTexto({ instancia: l.instancia || cred.instancia, token: cred.token }, e.para, texto);
           }

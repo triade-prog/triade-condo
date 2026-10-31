@@ -1050,7 +1050,8 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const d = await lerCorpo(c, ligarContaMetaSchema);
     const m = meta();
     const p = await rpc<{ wabaId: string; empresaId?: string }>("console_meta_preparar", { ...cliente(c), p_waba: d.wabaId });
-    const token = await noProvedor("meta/token", () => m.cliente.tokenDoCondominio(p.empresaId ?? null));
+    await noProvedor("meta/conta", () => m.cliente.entrarNaConta(p.wabaId));
+    const token = m.cliente.tokenDe(null);
     await noProvedor("meta/avisos", () => m.cliente.assinarAvisos(token, p.wabaId));
     const numeros = await noProvedor("meta/numeros", () => m.cliente.numeros(token, p.wabaId));
     const n = d.numeroId ? numeros.find((x) => x.id === d.numeroId) : numeros.length === 1 ? numeros[0] : undefined;
@@ -1061,7 +1062,8 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const conexao = await rpc("console_ligar_conta_meta", {
       ...cliente(c), p_waba: p.wabaId, p_empresa: p.empresaId ?? null, p_nome_empresa: nomeEmpresa, p_numero_id: n.id,
       p_numero: n.numero, p_nome_exibicao: n.nome, p_qualidade: n.qualidade, p_limite: n.limite,
-      p_credenciais: await cifrarCredenciais(m.chave, { instancia: p.wabaId, token, pin }),
+      // O token não vai junto: é o do usuário do sistema (META_TOKEN), que pode ser trocado sem religar.
+      p_credenciais: await cifrarCredenciais(m.chave, { instancia: p.wabaId, token: "", pin }),
     });
     // Os modelos vão logo depois; se a Meta falhar, a equipe manda de novo pela ficha.
     let modelos = 0;
@@ -1076,7 +1078,7 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
   app.post("/v1/clientes/:id/whatsapp/meta/modelos", async (c) => {
     const a = await rpc<{ wabaId: string; credenciais: string }>("console_meta_acesso", cliente(c));
     const cred = await decifrarCredenciais(meta().chave, a.credenciais);
-    return c.json({ modelosEnviados: await noProvedor("meta/modelos", () => mandarModelosMeta(c, cred.token, a.wabaId)) });
+    return c.json({ modelosEnviados: await noProvedor("meta/modelos", () => mandarModelosMeta(c, meta().cliente.tokenDe(cred.token), a.wabaId)) });
   });
 
   // ---------------------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 // WhatsApp oficial pela Meta (Cloud API, Graph v26.0), no modelo de parceiro (0315; W-01, W-13
 // a W-15, W-17, W-20, DC4). Cada condomínio tem a própria conta (WABA) e o próprio token; a
-// TRÍADE tem o app (META_APP_SECRET) e o usuário do sistema (META_TOKEN), que pega o token do
-// condomínio depois do cadastro hospedado.
+// TRÍADE tem o app (META_APP_SECRET) e o usuário do sistema (META_TOKEN), que entra na conta do
+// condomínio depois do cadastro hospedado e fala com ela pelo próprio token.
 //
 // Toda chamada com token vai com o appsecret_proof (HMAC-SHA256 do token com a chave secreta
 // do app), porque o app exige. Os avisos da Meta chegam num endereço só e são conferidos pela
@@ -245,6 +245,7 @@ export interface OpcoesClienteMeta {
 export function clienteMeta(o: OpcoesClienteMeta) {
   const buscar = o.buscar ?? fetch;
   const base = `${o.base ?? "https://graph.facebook.com"}/${VERSAO_GRAPH}`;
+  let usuarioSistema: string | null = null;
 
   async function chamar(token: string, metodo: string, caminho: string, corpo?: unknown, tempoMs = 20_000): Promise<Record<string, unknown>> {
     const url = new URL(`${base}/${caminho}`);
@@ -326,19 +327,23 @@ export function clienteMeta(o: OpcoesClienteMeta) {
       }
     },
 
+    /** O token de uma conta: o guardado, se houver; senão, o do usuário do sistema da TRÍADE. */
+    tokenDe(guardado: string | null | undefined): string {
+      return guardado || o.tokenSistema;
+    },
+
     /**
-     * Token da conta do condomínio, pelo usuário do sistema da TRÍADE (cadastro hospedado):
-     * a empresa do condomínio deu acesso à TRÍADE como parceira. Sem ele, usa o token do
-     * próprio usuário do sistema, que também alcança a conta compartilhada.
+     * Põe o usuário do sistema da TRÍADE na conta que o condomínio compartilhou pelo cadastro
+     * hospedado (POST /{waba}/assigned_users, como na especificação da Meta): daí em diante o
+     * próprio META_TOKEN alcança a conta. Repetir não muda nada.
      */
-    async tokenDoCondominio(empresaId: string | null): Promise<string> {
-      if (!empresaId) return o.tokenSistema;
-      try {
-        const j = await chamar(o.tokenSistema, "POST", `${empresaId}/system_user_access_tokens?fetch_only=true`);
-        return texto(j.access_token) ?? o.tokenSistema;
-      } catch {
-        return o.tokenSistema;
+    async entrarNaConta(wabaId: string): Promise<void> {
+      if (!usuarioSistema) {
+        const id = idNumerico((await chamar(o.tokenSistema, "GET", "me?fields=id")).id);
+        if (!id) throw new ErroMeta(500, null, "A Meta não devolveu o usuário do sistema");
+        usuarioSistema = id;
       }
+      await chamar(o.tokenSistema, "POST", `${wabaId}/assigned_users`, { user: usuarioSistema, tasks: ["MANAGE"] });
     },
 
     async assinarAvisos(token: string, wabaId: string): Promise<void> {
