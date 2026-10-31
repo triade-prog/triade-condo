@@ -123,7 +123,7 @@ export function ligarRetorno(r: RenovacoesFalsas, o: { modeloRetorno?: boolean }
       situacao: "REATIVADO", decididoEm: instante(somarDias(hoje, -90), "10:00"), decididoPor: CAROLINA, exportacaoPedida: true,
       reativadoEm: instante(somarDias(hoje, -5), "16:00"), reativadoPor: CAROLINA,
       retorno: { id: novoId(921), numero: 2, situacao: "PRONTO", hash: "e5".repeat(32), geradoEm: instante(somarDias(hoje, -9), "10:00"),
-        dados: { campos: { vale_desde: `${hoje.slice(5, 7)}/${hoje.slice(0, 4)}` } }, envios: [conferido("CONDOMINIO", 922), conferido("TRIADE", 923)] } },
+        dados: { campos: { vale_desde: `competência de ${hoje.slice(5, 7)}/${hoje.slice(0, 4)}` } }, envios: [conferido("CONDOMINIO", 922), conferido("TRIADE", 923)] } },
   );
   if (o.modeloRetorno) {
     r.modelos.push({ id: novoId(6), versao: 1, numero: 1, tipo: "RETORNO", titulo: "Aditivo de retorno ao contrato", situacao: "EM_USO",
@@ -406,9 +406,9 @@ export async function rotasRenovacoes(route: Route, c: ComercialConsole, caminho
     const a: Json = { id: novoId(r.seq++), numero: atualRet ? Number(atualRet.numero) + 1 : 2, situacao: "PRONTO", hash: `${(r.seq % 10)}f`.repeat(32),
       geradoEm: new Date().toISOString(), envios: [],
       dados: { campos: { condominio: k.condominio, cnpj: "12.345.678/0001-90", representante: String(corpo.representante).trim(),
-        cpf_representante: `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**`, contrato: "1", data_contrato: br(String((k.plano as Json).inicio)), ultimo_dia: br(String(k.ultimoDia)),
+        cpf_representante: `***.${cpf.slice(3, 6)}.${cpf.slice(6, 9)}-**`, contrato: "nº 1", data_contrato: br(String((k.plano as Json).inicio)), ultimo_dia: br(String(k.ultimoDia)),
         plano: `Até 40 unidades, ${anual ? "anual" : "mensal"}`, valor_mensal: `R$ ${(Number(plano.valor ?? 22900) / 100).toFixed(2).replace(".", ",")} por mês`,
-        vale_desde: `${comp.slice(5, 7)}/${comp.slice(0, 4)}` } } };
+        vale_desde: `competência de ${comp.slice(5, 7)}/${comp.slice(0, 4)}` } } };
     k.retorno = a;
     modelo.aditivos = Number(modelo.aditivos) + 1;
     return route.fulfill({ status: 201, json: { aditivo: a } });

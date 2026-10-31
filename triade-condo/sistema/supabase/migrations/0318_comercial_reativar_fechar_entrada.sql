@@ -288,6 +288,7 @@ end $$;
 -- 4. O WhatsApp recebido (A2): não grava, não responde e não baixa mídia.
 
 alter function whatsapp_receber(text, text, jsonb) rename to whatsapp_receber_r177c;
+alter function whatsapp_receber_r177c(text, text, jsonb) security invoker;
 create function whatsapp_receber(p_segredo text, p_instancia text, p_msg jsonb) returns jsonb
 language plpgsql
 security definer
@@ -349,6 +350,7 @@ end $$;
 -- 5. As filas (A3): o que está na fila do condomínio encerrado é cancelado e não sai.
 
 alter function whatsapp_pegar_lote(integer) rename to pegar_lote_whatsapp_r177c;
+alter function pegar_lote_whatsapp_r177c(integer) security invoker;
 create function whatsapp_pegar_lote(p_max integer) returns jsonb
 language plpgsql
 security definer
@@ -370,6 +372,7 @@ begin
 end $$;
 
 alter function email_pegar_lote(integer) rename to pegar_lote_email_r177c;
+alter function pegar_lote_email_r177c(integer) security invoker;
 create function email_pegar_lote(p_max integer) returns jsonb
 language plpgsql
 security definer
@@ -496,7 +499,6 @@ end $$;
 -- As decisões vencidas (0280, o invólucro da 0303 chama).
 create or replace function verificar_decisoes_f303() returns integer
 language plpgsql
-security definer
 set search_path = public
 as $$
 declare
@@ -597,6 +599,77 @@ begin
     perform registrar_historico('assembleia.lembrete', 'assembleias', a.id::text, '{}');
   end loop;
   return v_n;
+end $$;
+
+-- As reservas dos prestadores (0270, com o invólucro da 0282): também pulam o condomínio
+-- encerrado. Sem isso, o link que não vale mais (CONSULTA) marcaria NAO_TROCOU para sempre e, depois
+-- de reativar, a troca para a reserva não aconteceria.
+create or replace function verificar_reservas_r6() returns integer
+language plpgsql
+set search_path = public
+as $$
+declare
+  c record;
+  l links_prestador;
+  v_total integer := 0;
+begin
+  perform set_config('app.verificador', 'on', true);
+  for c in select id from condominios order by id loop
+    perform entrar_como_sistema(c.id);
+    continue when contrato_encerrado(c.id);
+    begin
+      if dentro_do_horario('FUNCIONAMENTO', app_now()) then
+        for l in select * from links_prestador
+                  where revogado_em is null and respondido_em is null and trocado_em is null and troca_desligada_em is null
+                    and reserva_id is not null and responder_ate <= app_now() order by responder_ate loop
+          if trocar_para_reserva(l.id, 'SEM_RESPOSTA') then v_total := v_total + 1; end if;
+        end loop;
+      end if;
+      for l in update links_prestador x set sem_resposta_avisado_em = app_now()
+                where x.troca_de is not null and x.revogado_em is null and x.respondido_em is null and x.sem_resposta_avisado_em is null
+                  and x.responder_ate <= app_now() and link_prestador_vale(x) returning * loop
+        perform avisar_reserva(l.id, l.manutencao_id, 'RESERVA_SEM_RESPOSTA');
+        perform registrar_historico('manutencao.reserva_sem_resposta', 'manutencoes', l.manutencao_id::text, jsonb_build_object('link', l.id));
+      end loop;
+    exception when others then
+      raise warning 'Reservas do condomínio % não conferidas: %', c.id, sqlerrm;
+    end;
+  end loop;
+  perform entrar_como_sistema(null);
+  perform set_config('app.verificador', '', true);
+  return v_total;
+end $$;
+
+create or replace function verificar_reservas() returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c record;
+  l links_prestador;
+  v_total integer;
+begin
+  v_total := verificar_reservas_r6();
+  perform set_config('app.verificador', 'on', true);
+  for c in select id from condominios order by id loop
+    perform entrar_como_sistema(c.id);
+    continue when contrato_encerrado(c.id);
+    begin
+      for l in update links_prestador x set sem_resposta_avisado_em = app_now()
+                where x.troca_de is null and (x.reserva_id is null or x.troca_desligada_em is not null) and x.prazo_no_envio is not null
+                  and x.revogado_em is null and x.respondido_em is null and x.sem_resposta_avisado_em is null
+                  and x.responder_ate <= app_now() and link_prestador_vale(x) returning * loop
+        perform avisar_reserva(l.id, l.manutencao_id, 'SEM_RESPOSTA');
+        perform registrar_historico('manutencao.prestador_sem_resposta', 'manutencoes', l.manutencao_id::text, jsonb_build_object('link', l.id));
+      end loop;
+    exception when others then
+      raise warning 'Prazos do condomínio % não conferidos: %', c.id, sqlerrm;
+    end;
+  end loop;
+  perform entrar_como_sistema(null);
+  perform set_config('app.verificador', '', true);
+  return v_total;
 end $$;
 
 -- ---------------------------------------------------------------------------------------
@@ -838,7 +911,8 @@ begin
   perform set_config('app.comercial_sistema', 'on', true);
   perform set_config('app.comissao_reabrir',
     coalesce((select c.id::text from comissoes_parceiro c
-               where c.interessado_id = k.interessado_id and c.encerrada_motivo = 'Cancelamento: último dia ' || comercial_data_br(k.ultimo_dia)), ''), true);
+               where c.interessado_id = k.interessado_id and c.encerrada_motivo = 'Cancelamento: último dia ' || comercial_data_br(k.ultimo_dia)
+               order by c.encerrada_em desc, c.id limit 1), ''), true);
   update comissoes_parceiro c set sem_comissao_desde = null, encerrada_motivo = null, encerrada_em = null, encerrada_por = null
    where c.id::text = current_setting('app.comissao_reabrir', true)
   returning c.id into v_comissao;
@@ -1174,7 +1248,8 @@ as $$
 $$;
 
 -- 0311, agora com o tipo, as datas, o cartão das assinaturas e os envios; no retorno, os campos
--- e o plano do retrato (enquanto não apagados).
+-- e o plano do retrato (enquanto não apagados), com o CPF de quem representa mascarado como no
+-- contrato (inteiro só no retrato que monta o PDF).
 create or replace function comercial_aditivo_json(a aditivos_comercial) returns jsonb
 language sql stable
 set search_path = public
@@ -1187,7 +1262,7 @@ as $$
     'envios', coalesce((select jsonb_agg(envio_aditivo_json(e) order by e.enviado_em, e.id) from envios_aditivo e
                          where e.aditivo_id = a.id and e.situacao <> 'SUBSTITUIDO'), '[]'::jsonb),
     'dados', case when a.tipo = 'RETORNO' and a.dados_apagados_em is null
-                  then jsonb_build_object('campos', a.dados -> 'campos', 'retorno', a.dados -> 'retorno') end)) end
+                  then jsonb_build_object('campos', comercial_campos_leitura(a.dados -> 'campos'), 'retorno', a.dados -> 'retorno') end)) end
 $$;
 
 -- O aditivo travado na ordem de gerar de novo: interessado, cancelamento (no retorno), aditivo.
@@ -1646,6 +1721,11 @@ begin
   end if;
   v_ret := a.dados -> 'retorno';
   v_comp := (v_ret ->> 'competencia')::date;
+  -- A volta assinada não vale para trás: competência passada cobraria meses sem acesso. O texto
+  -- assinado diz "vale desde", então não se muda a data; gera-se o aditivo de novo.
+  if v_comp < date_trunc('month', comercial_hoje())::date then
+    perform recusar_motivo('A data da volta do aditivo já passou; gere o aditivo de novo', 'VOLTA_PASSOU');
+  end if;
   v_motivo := 'Reativado pelo aditivo nº ' || a.numero;
   -- No condomínio: o último dia revogado (fica no histórico) e o plano do aditivo.
   perform entrar_como_sistema(k.condominio_id);

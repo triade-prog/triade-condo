@@ -718,7 +718,7 @@ export function JanelaReativar({ k, aoFechar, feito }: { k: Cancelamento; aoFech
     const res = await chamarApi<{ cancelamento: Cancelamento }>(ROTAS_RENOVACOES.reativar(k.id), { corpo: { versao: k.versao } });
     setEnviando(false);
     if (!res.ok) return setErro(res.erro);
-    feito(`${k.condominio} reativado. O acesso volta no modo completo${vale ? ` e a cobrança volta na competência ${vale}` : ""}.`);
+    feito(`${k.condominio} reativado. O acesso volta no modo completo${vale ? ` e a cobrança volta na ${vale}` : ""}.`);
   }
 
   return (

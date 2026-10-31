@@ -21,8 +21,8 @@ const k = (x: Partial<Cancelamento> = {}): Cancelamento => ({
 const envio = (x: Partial<EnvioAditivo>): EnvioAditivo => ({ id: "e1", parte: "CONDOMINIO", situacao: "A_CONFERIR", enviadoEm: "2027-03-02T13:00:00Z", enviadoPor: carolina, ...x });
 const aditivo = (envios: EnvioAditivo[] = [], x: Partial<AditivoResumo> = {}): AditivoResumo => ({
   id: "a2", numero: 2, situacao: "PRONTO", hash: "ab".repeat(32), envios,
-  dados: { campos: { contrato: "17", data_contrato: "01/12/2025", ultimo_dia: "23/11/2026", representante: "Ana Ribeiro", cpf_representante: "***.456.789-**",
-    plano: "Faixa até 40 unidades, mensal", valor_mensal: "R$ 199,00 por mês", vale_desde: "03/2027" } },
+  dados: { campos: { contrato: "nº 17", data_contrato: "01/12/2025", ultimo_dia: "23/11/2026", representante: "Ana Ribeiro", cpf_representante: "***.456.789-**",
+    plano: "Faixa até 40 unidades, mensal", valor_mensal: "R$ 199,00 por mês", vale_desde: "competência de 03/2027" } },
   ...x,
 });
 const conferido = (parte: "CONDOMINIO" | "TRIADE", id = parte) =>
@@ -71,7 +71,7 @@ describe("os estados da lista (quadro 491)", () => {
     expect(textoDesfeito(d)).toBe('Desfeito em 30/10 por Carolina: "Ana Ribeiro, síndica, pelo WhatsApp comercial". O contrato de hoje continua.');
     expect(textoDesfeito({ ...d, desfeitoNota: undefined })).toContain("a nota foi apagada (LGPD)");
     const r = k({ situacao: "REATIVADO", reativadoEm: "2027-03-05T13:00:00Z", reativadoPor: carolina, retorno: aditivo() });
-    expect(textoReativado(r)).toBe("Reativado em 05/03/2027 por Carolina pelo aditivo nº 2, com a cobrança desde a competência 03/2027. Se havia reconquista aberta, ela ficou Ganha.");
+    expect(textoReativado(r)).toBe("Reativado em 05/03/2027 por Carolina pelo aditivo nº 2, com a cobrança desde a competência de 03/2027. Se havia reconquista aberta, ela ficou Ganha.");
   });
 });
 
@@ -133,7 +133,7 @@ describe("reativar (quadros 488 e 491)", () => {
       ["Contrato", "nº 17, de 01/12/2025 · encerrado em 23/11/2026"],
       ["Representante", "Ana Ribeiro · CPF ***.456.789-**"],
       ["Plano", "Faixa até 40 unidades, mensal · R$ 199,00 por mês"],
-      ["Volta", "Acesso a partir da reativação · cobrança desde a competência 03/2027"],
+      ["Volta", "Acesso a partir da reativação · cobrança desde a competência de 03/2027"],
     ]);
     expect(linhasRetorno(undefined)).toEqual([]);
     const c = competenciasRetorno("2027-03-02");

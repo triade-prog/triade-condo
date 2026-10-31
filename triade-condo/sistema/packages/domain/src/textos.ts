@@ -433,6 +433,7 @@ export const TEXTOS_MOTIVO: Record<string, string> = {
   ADITIVO_ASSINADO: "Este aditivo já foi assinado pelos dois e conferido. Não recebe outro arquivo.",
   CPF_NAO_CONFERE_ADITIVO: "O CPF que o validador mostra não é o de quem assina pelo condomínio no aditivo. Recuse o envio e peça a assinatura certa.",
   ADITIVO_SEM_ASSINATURAS: "Para reativar, o aditivo de retorno precisa das duas assinaturas conferidas: a do condomínio e a da TRÍADE.",
+  VOLTA_PASSOU: "A data da volta escrita no aditivo já passou. Gere o aditivo de retorno de novo, com a competência deste mês ou de um mês adiante, e peça as assinaturas outra vez.",
   // Orçamentos e compras (R8, 0317).
   TIPO_ITENS_DEPOIS: "A lista de itens ainda não está pronta. Por enquanto, peça o orçamento como serviço.",
   LIMITE_CONVITES: "Este orçamento já tem 20 convidados, contando os revogados.",

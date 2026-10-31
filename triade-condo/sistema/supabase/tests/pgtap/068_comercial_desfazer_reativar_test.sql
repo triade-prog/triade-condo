@@ -5,7 +5,7 @@
 -- contrato; reativar só com as duas conferidas (plano novo, reconquista ganha, aniversário da
 -- reativação); o pedido novo depois; a retenção e a anonimização.
 begin;
-select plan(131);
+select plan(133);
 
 create temp table ids as select
   teste.equipe('Carolina', 'ADMINISTRACAO') as adm,
@@ -314,6 +314,15 @@ select is((select comercial_abrir_aditivo_arquivo(com, (r ->> 'aditivoId')::uuid
   (select caminho from envios_aditivo where id = (select e4 from en4)), 'baixar traz o assinado mais recente (o da TRÍADE)');
 select is((select comercial_abrir_aditivo_arquivo(com, (r ->> 'aditivoId')::uuid, null, true) ->> 'nome' from ids, ad2), 'aditivo-2.pdf', 'ou o gerado');
 select is((select comercial_abrir_aditivo_arquivo(com, (r ->> 'aditivoId')::uuid, e3, null) ->> 'nome' from ids, ad2, en3), 'condominio.pdf', 'ou um envio');
+
+-- A leitura (Console) traz o CPF de quem representa mascarado; inteiro só no retrato do PDF.
+select is((select pg_temp.canc(k2) -> 'retorno' -> 'dados' -> 'campos' ->> 'cpf_representante' from k), '***.982.247-**',
+  'C7: na leitura, o CPF do representante sai mascarado');
+-- A volta assinada não vale para trás: depois da competência do aditivo, gera de novo.
+select pg_temp.em('2027-04-02 09:00:00-03');
+select is(pg_temp.motivo(format('select comercial_reativar_cliente(%L, %L, %s, %L)', (select adm from ids), (select k2 from k), pg_temp.kv((select k2 from k)), '{}')),
+  'VOLTA_PASSOU', 'com a competência do aditivo já passada, não reativa');
+select pg_temp.em('2027-02-24 09:00:00-03');
 
 -- 5. Reativar (C5).
 select throws_ok(format('select comercial_reativar_cliente(%L, %L, %s, %L)', (select com from ids), (select k2 from k), pg_temp.kv((select k2 from k)), '{}'),

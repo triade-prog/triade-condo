@@ -522,7 +522,7 @@ export function textoDesfeito(k: Pick<Cancelamento, "desfeitoEm" | "desfeitoPor"
 export function textoReativado(k: Pick<Cancelamento, "reativadoEm" | "reativadoPor" | "retorno">): string {
   const vale = k.retorno?.dados?.campos?.vale_desde;
   return `Reativado${k.reativadoEm ? ` em ${quandoAnoBr(k.reativadoEm)}` : ""}${k.reativadoPor ? ` por ${k.reativadoPor.nome}` : ""}`
-    + `${k.retorno ? ` pelo aditivo nº ${k.retorno.numero}` : ""}${vale ? `, com a cobrança desde a competência ${vale}` : ""}.`
+    + `${k.retorno ? ` pelo aditivo nº ${k.retorno.numero}` : ""}${vale ? `, com a cobrança desde a ${vale}` : ""}.`
     + " Se havia reconquista aberta, ela ficou Ganha.";
 }
 
@@ -607,10 +607,10 @@ export function linhasRetorno(campos: Record<string, string> | undefined): [stri
   if (!campos) return [];
   const c = campos;
   const linhas: [string, string | null][] = [
-    ["Contrato", c.contrato ? `nº ${c.contrato}${c.data_contrato ? `, de ${c.data_contrato}` : ""}${c.ultimo_dia ? ` · encerrado em ${c.ultimo_dia}` : ""}` : null],
+    ["Contrato", c.contrato ? `${c.contrato}${c.data_contrato ? `, de ${c.data_contrato}` : ""}${c.ultimo_dia ? ` · encerrado em ${c.ultimo_dia}` : ""}` : null],
     ["Representante", c.representante ? `${c.representante}${c.cpf_representante ? ` · CPF ${c.cpf_representante}` : ""}` : null],
     ["Plano", c.plano ? `${c.plano}${c.valor_mensal ? ` · ${c.valor_mensal}` : ""}` : null],
-    ["Volta", `Acesso a partir da reativação${c.vale_desde ? ` · cobrança desde a competência ${c.vale_desde}` : ""}`],
+    ["Volta", `Acesso a partir da reativação${c.vale_desde ? ` · cobrança desde a ${c.vale_desde}` : ""}`],
   ];
   return linhas.filter((l): l is [string, string] => l[1] !== null);
 }

@@ -167,9 +167,10 @@ create or replace function verificar_prazos_condominio(p_agora timestamptz) retu
 create or replace function abrir_preventivas() returns integer language sql as $$ select pg_temp.anotar('manutencao') $$;
 create or replace function lembrar_encomendas() returns integer language sql as $$ select pg_temp.anotar('encomendas') $$;
 create or replace function verificar_aprovacoes() returns integer language sql as $$ select pg_temp.anotar('decisoes') $$;
-select verificar_comunicados(), verificar_prazos(), verificar_manutencao(), verificar_encomendas(), verificar_decisoes();
+create or replace function dentro_do_horario(p_tipo text, p_quando timestamptz) returns boolean language sql as $$ select pg_temp.anotar('reservas') = 1 $$;
+select verificar_comunicados(), verificar_prazos(), verificar_manutencao(), verificar_encomendas(), verificar_decisoes(), verificar_reservas();
 select is((select array_agg(distinct rotina order by rotina) from pg_temp.visitas where condominio = (select jatoba from c)),
-  array['comunicados', 'decisoes', 'encomendas', 'manutencao', 'prazos'], 'as rotinas passam pelo condomínio que segue');
+  array['comunicados', 'decisoes', 'encomendas', 'manutencao', 'prazos', 'reservas'], 'as rotinas passam pelo condomínio que segue');
 select is((select count(*)::integer from pg_temp.visitas where condominio = (select ipe from c)), 0, 'e pulam o condomínio encerrado');
 select entrar_como_sistema(ipe) from c;
 insert into enquetes (condominio_id, pergunta, opcoes, por, secreta, aberta_ate, canais, criado_por, criado_em)

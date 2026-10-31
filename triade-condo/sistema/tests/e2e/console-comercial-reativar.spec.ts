@@ -145,7 +145,7 @@ test.describe("Console · Desfazer e reativar (R17.7c)", () => {
       .toEqual({ representante: "Rui Campos, síndico", cpf: "52998224725", competencia: mesQueVem(), ciclo: "MENSAL" });
     const n2 = page.getByRole("region", { name: "Aditivo de retorno nº 2" });
     await expect(n2).toContainText("Rui Campos, síndico · CPF ***.982.247-**");
-    await expect(n2).toContainText(`cobrança desde a competência ${mesQueVem().slice(5, 7)}/${mesQueVem().slice(0, 4)}`);
+    await expect(n2).toContainText(`cobrança desde a competência de ${mesQueVem().slice(5, 7)}/${mesQueVem().slice(0, 4)}`);
     await expect(n2).toContainText("Aditivo de retorno ao contrato v1");
 
     // Gerar de novo pede o motivo; as assinaturas começam do zero.
@@ -232,7 +232,7 @@ test.describe("Console · Desfazer e reativar (R17.7c)", () => {
     await expect(confirmar).toContainText(`O último dia (${br(somarDias(hoje(), -15))}) é revogado e fica no histórico.`);
     await conferir(page);
     await confirmar.getByRole("button", { name: "Reativar o cliente" }).click();
-    await expect(page.getByRole("status").filter({ hasText: `Edifício Jatobá reativado. O acesso volta no modo completo e a cobrança volta na competência ${mesQueVem().slice(5, 7)}/${mesQueVem().slice(0, 4)}.` })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: `Edifício Jatobá reativado. O acesso volta no modo completo e a cobrança volta na competência de ${mesQueVem().slice(5, 7)}/${mesQueVem().slice(0, 4)}.` })).toBeVisible();
     expect(api.comercial.pedidos.find((x) => x.caminho === `/v1/comercial/cancelamentos/${K_JATOBA}/reativar`)?.corpo).toEqual({ versao: 3 });
     await expect(page.getByText("Cliente de novo")).toBeVisible();
     await expect(page.getByRole("button", { name: "Reativar o cliente" })).toHaveCount(0);
