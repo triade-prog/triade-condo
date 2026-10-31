@@ -258,6 +258,47 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
     expect(estado.whatsapp.meusAvisos?.telefone).toBe("+5561991002233");
   });
 
+  test("F5.12: o número oficial ainda não ligado leva à Meta e o Já terminei avisa a TRÍADE", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page);
+    await page.goto(`${PLATAFORMA}/configuracoes/whatsapp`);
+    const cartao = page.getByRole("region", { name: "Número oficial do WhatsApp" });
+    await expect(cartao).toContainText("Ainda não ligado");
+    await expect(cartao).toContainText("Antes de começar, tenha à mão");
+    await expect(page.getByRole("region", { name: "Número de teste (piloto)" })).toContainText("Conexão de piloto, não oficial");
+    await conferir(page);
+    const conectar = cartao.getByRole("link", { name: /Conectar pelo WhatsApp oficial/ });
+    await expect(conectar).toHaveAttribute("target", "_blank");
+    expect(new URL((await conectar.getAttribute("href")) ?? "").searchParams.get("config_id")).toBe("3481812468673012");
+    // A página da Meta abre numa aba nova; aqui só o clique conta.
+    await page.context().route("https://business.facebook.com/**", (r) => r.fulfill({ body: "Meta" }));
+    const [aba] = await Promise.all([page.context().waitForEvent("page"), conectar.click()]);
+    await aba.close();
+    await cartao.getByRole("button", { name: "Já terminei" }).click();
+    await expect(page.getByText("Avisamos a TRÍADE. Ela liga o número em até um dia útil.")).toBeVisible();
+    await expect(cartao).toContainText("Esperando a TRÍADE");
+    await expect(cartao).toContainText("A TRÍADE liga o número em até um dia útil");
+    expect(estado.whatsapp.conexao.cadastroMetaEm).not.toBeNull();
+    await cartao.getByRole("button", { name: "Não consegui terminar" }).click();
+    await expect(cartao).toContainText("continue de onde parou");
+    await conferir(page);
+  });
+
+  test("F5.12: com o número oficial ligado, o aviso de piloto some e o cartão mostra o que falta", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page);
+    Object.assign(estado.whatsapp.conexao, { provedor: "META", oficial: true, nomeExibicao: "Residencial Ipê", qualidade: "VERDE", limiteDiario: 1000,
+      faltaCartaoEm: "2026-10-31T18:00:00Z", modelos: { aprovados: 18, emAnalise: 1, recusados: 1, total: 20 } });
+    await page.goto(`${PLATAFORMA}/configuracoes/whatsapp`);
+    const cartao = page.getByRole("region", { name: "Número oficial do WhatsApp" });
+    await expect(cartao).toContainText("Falta o cartão");
+    await expect(cartao).toContainText("Os avisos pagos estão parados");
+    await expect(cartao.getByRole("link", { name: /Pôr o cartão na Meta/ })).toBeVisible();
+    await expect(cartao).toContainText("18 de 20 aprovados");
+    await expect(cartao).toContainText("até 1.000 moradores diferentes");
+    await expect(page.getByText("Conexão de piloto, não oficial")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Termo do piloto do WhatsApp" })).toHaveCount(0);
+    await conferir(page);
+  });
+
   test("W-20: conversa fechada: a resposta vai pelo modelo, até 800 caracteres, e sem modelo avisa", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page, { comAtendimento: true });
     const pedido = estado.pedidos[0]!;

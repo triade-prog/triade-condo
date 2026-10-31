@@ -110,4 +110,42 @@ test.describe("Console · WhatsApp do condomínio", () => {
     await expect(j.getByText(/Versão 2: Recusado\. A Meta classificou como marketing/)).toBeVisible();
     await conferir(page);
   });
+
+  test("F5.12: a conta que chega da Meta é ligada ao cliente provável e a ficha mostra o número oficial e os modelos", async ({ page }) => {
+    const estado = await instalarApiFalsa(page);
+    estado.meta.numerosDaConta = 2;
+    await page.goto(`${CONSOLE}/whatsapp`);
+    await page.getByRole("button", { name: "Contas recebidas da Meta (2)" }).click();
+    const lista = page.getByRole("region", { name: "Esperando ligar a um cliente" });
+    await expect(lista.getByText("Provável: Residencial Ipê")).toBeVisible();
+    await expect(lista.getByText("Sem cliente provável")).toBeVisible();
+    await conferir(page);
+
+    await lista.getByRole("button", { name: "Ligar ao cliente" }).first().click();
+    const janela = page.getByRole("dialog", { name: "Ligar a conta ao cliente" });
+    await expect(janela.getByLabel("Cliente")).toHaveValue(IPE);
+    await expect(janela).toContainText("Condomínio Residencial Ipê");
+    await conferir(page);
+    await janela.getByRole("button", { name: "Ligar e registrar o número" }).click();
+    await expect(janela.getByText("A conta tem mais de um número. Diga qual ligar.")).toBeVisible();
+    await janela.getByLabel("Id do número na Meta").fill("1112223334");
+    await janela.getByRole("button", { name: "Ligar e registrar o número" }).click();
+    await expect(janela).toBeHidden();
+    await expect(page.getByText("Conta ligada a Residencial Ipê. Número registrado e 3 modelos enviados para a Meta aprovar.")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Ligadas nos últimos 30 dias" })).toContainText("Residencial Ipê");
+
+    await page.getByRole("link", { name: "Abrir a ficha" }).click();
+    const aba = page.getByRole("tabpanel");
+    const numero = aba.getByRole("region", { name: "Número oficial" });
+    await expect(numero).toContainText("Oficial (Meta)");
+    await expect(numero).toContainText("1029384756");
+    await expect(aba.getByText("Conexão de piloto, não oficial (Wafly)")).toHaveCount(0);
+    const modelos = aba.getByRole("region", { name: "Modelos de mensagem deste condomínio" });
+    await expect(modelos).toContainText("1 aprovado · 1 em análise · 1 recusado");
+    await expect(modelos).toContainText("“parece promoção”");
+    await conferir(page);
+    await modelos.getByRole("button", { name: "Mandar os modelos que faltam" }).click();
+    await expect(aba.getByText("1 modelo mandado para a Meta aprovar.")).toBeVisible();
+    await expect(modelos).toContainText("0 recusados");
+  });
 });

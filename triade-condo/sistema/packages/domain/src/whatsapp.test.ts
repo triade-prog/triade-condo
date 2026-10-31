@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   configWhatsappSchema,
   diaDaConversa,
+  estadoNumeroOficial,
+  LINK_CADASTRO_META,
   relatoDasMensagens,
   decidirModeloSchema,
   LIMITE_FORA_DA_JANELA,
@@ -92,5 +94,28 @@ describe("A conversa de um número em A identificar (D4, B.1)", () => {
       { texto: " O portão da garagem travou aberto. ", enviadaEm: "2026-10-15T21:40:00Z" },
     ])).toBe("O portão da garagem travou aberto.\nMandei ontem: o portão travou");
     expect(relatoDasMensagens([{ texto: "a".repeat(5000), enviadaEm: "2026-10-16T09:00:00Z" }])).toHaveLength(4000);
+  });
+});
+
+describe("Número oficial pela Meta (F5.12, quadro 461)", () => {
+  const modelos = (aprovados: number, emAnalise: number, recusados: number) => ({ aprovados, emAnalise, recusados, total: aprovados + emAnalise + recusados });
+  it("antes de ligar: ainda não ligado, ou esperando a TRÍADE depois do Já terminei", () => {
+    expect(estadoNumeroOficial({ provedor: "WAFLY" })).toBe("NAO_LIGADO");
+    expect(estadoNumeroOficial({})).toBe("NAO_LIGADO");
+    expect(estadoNumeroOficial({ provedor: "WAFLY", cadastroMetaEm: "2026-10-31T17:02:00Z" })).toBe("ESPERANDO");
+  });
+  it("ligado: o mais grave ganha", () => {
+    const base = { provedor: "META", modelos: modelos(20, 0, 0) };
+    expect(estadoNumeroOficial(base)).toBe("LIGADO");
+    expect(estadoNumeroOficial({ ...base, modelos: modelos(14, 6, 0) })).toBe("EM_ANALISE");
+    expect(estadoNumeroOficial({ ...base, modelos: modelos(18, 1, 1) })).toBe("RECUSADO");
+    expect(estadoNumeroOficial({ ...base, modelos: modelos(18, 1, 1), faltaCartaoEm: "2026-10-31T18:00:00Z" })).toBe("FALTA_CARTAO");
+    expect(estadoNumeroOficial({ ...base, faltaCartaoEm: "x", suspensoEm: "2026-10-31T11:40:00Z" })).toBe("SUSPENSO");
+  });
+  it("o link do cadastro leva o aplicativo e a configuração da TRÍADE", () => {
+    const u = new URL(LINK_CADASTRO_META);
+    expect(u.hostname).toBe("business.facebook.com");
+    expect(u.searchParams.get("app_id")).toBe("28914484134911319");
+    expect(u.searchParams.get("config_id")).toBe("3481812468673012");
   });
 });

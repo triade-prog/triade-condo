@@ -32,7 +32,7 @@ export function criarWhatsapp(pedido: { id: string; protocolo: string }, categor
   return {
     numero: "+5561998124400",
     conexao: { situacao: "CONECTADO", oficial: false, conectadoEm: "2026-10-18T17:02:00Z", ultimaRecebida: "2026-10-18T18:47:00Z",
-               termoAceitoEm: null as string | null, termoAceitoPor: null as string | null },
+               termoAceitoEm: null as string | null, termoAceitoPor: null as string | null, provedor: "WAFLY", cadastroMetaEm: null as string | null },
     aIdentificar: [
       { id: novoId(), telefone: "+5561988771234", tipo: "TEXTO", texto: "Oi, sou nova no 504, como faço para reservar o salão?", enviadaEm: "2026-10-18T14:20:00Z",
         triagem: "A_IDENTIFICAR", vinculoPendente: false },
@@ -157,6 +157,11 @@ export async function rotasWhatsapp(route: Route, w: EstadoWhatsapp, caminho: st
     if (!opcoes.sindica) return erro(route, 403, "FORBIDDEN");
     w.conexao.termoAceitoEm = agora();
     w.conexao.termoAceitoPor = eu.nome;
+    return route.fulfill({ json: w.conexao });
+  }
+  if (caminho === "/v1/condominio/whatsapp/meta/terminei") {
+    if (!opcoes.sindica) return erro(route, 403, "FORBIDDEN");
+    w.conexao.cadastroMetaEm = agora();
     return route.fulfill({ json: w.conexao });
   }
   if (caminho === "/v1/condominio/whatsapp/meus-avisos") {
