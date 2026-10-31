@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { contar, novosDesde, textoAtualizado } from "@triade/domain";
 import { Aviso, Carregando, chamarApi, textoDoErro } from "@triade/ui";
 import type { MuralPublico } from "../tipos.ts";
-import { FaixaMural, TelaPublica } from "./comum.tsx";
+import { FaixaMural, TelaPublica, useEncerrou } from "./comum.tsx";
 import { MuralConteudo, type LinksDoMural, type VistaMural } from "./MuralConteudo.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: MuralPublico; ultimaVisita: string | null };
@@ -57,15 +57,16 @@ export function Mural() {
   const busca = useSearchParams();
   const router = useRouter();
   const [carga, setCarga] = useState<Carga>({ estado: "carregando" });
+  const encerrou = useEncerrou();
   const ultimaVisita = carga.estado === "pronto" ? carga.ultimaVisita : null;
   const novos = useMemo(() => novosDesde(carga.estado === "pronto" ? carga.dados.comunicados ?? [] : [], ultimaVisita), [carga, ultimaVisita]);
 
   useEffect(() => {
     void chamarApi<MuralPublico>(`/v1/publico/mural/${encodeURIComponent(codigo)}`).then((r) => {
       if (r.ok) setCarga({ estado: "pronto", dados: r.dados, ultimaVisita: registrarVisita(codigo, r.dados) });
-      else setCarga({ estado: "erro", texto: r.status === 404 ? "Este mural não existe. Confira o endereço ou peça o link ao condomínio." : textoDoErro(r.erro) });
+      else if (!encerrou(r.erro)) setCarga({ estado: "erro", texto: r.status === 404 ? "Este mural não existe. Confira o endereço ou peça o link ao condomínio." : textoDoErro(r.erro) });
     });
-  }, [codigo]);
+  }, [codigo, encerrou]);
 
   if (carga.estado === "carregando") {
     return <TelaPublica titulo="Mural do condomínio" largo faixa={<FaixaMural />}><Carregando rotulo="Abrindo o mural…" /></TelaPublica>;

@@ -2,19 +2,27 @@
 // As janelas de Renovações (0311, R17.7; quadros 346 e 347): a regra do reajuste, o aviso ao síndico
 // e a renovação sem reajuste (CM-30), marcar e tratar um sinal de risco (CM-31), o pedido de
 // cancelamento com a tentativa de retenção (quadro 347) e a expansão (CM-32). O banco confere tudo de
-// novo; aqui ficam os textos e o que o banco recusou em cada campo.
+// novo; aqui ficam os textos e o que o banco recusou em cada campo. Da R17.7c (0318; quadros 487 a 491):
+// o cancelamento confirmado com o desfazer, o aditivo de retorno, o reativar e o aditivo de reajuste
+// com as assinaturas pelo gov.br (R17.7b).
 
+import Link from "next/link";
 import { useState, type FormEvent, type ReactNode } from "react";
 import {
   CANAIS_AVISO, ETAPAS_EXPANSAO_ABERTAS, MOTIVOS_CANCELAMENTO, TIPOS_EXPANSAO, TIPOS_RISCO, TIPOS_RISCO_A_MAO,
-  type CanalAviso, type EtapaExpansao, type MotivoCancelamento, type TipoExpansao,
+  formatarCpf, type CanalAviso, type EtapaExpansao, type MotivoCancelamento, type TipoExpansao,
 } from "@triade/domain";
-import { Aviso, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, Dialogo, Icone, type ErroApi } from "@triade/ui";
-import { EscolhaBotoes, ErroJanela, RodapeJanela } from "../planos/comum.tsx";
+import { Aviso, Botao, CampoAreaTexto, CampoSelecao, CampoTexto, camposComErro, chamarApi, classeBotao, Dialogo, Icone, type ErroApi } from "@triade/ui";
+import { centavosDoCampo, EscolhaBotoes, ErroJanela, RodapeJanela } from "../planos/comum.tsx";
 import { somarDias } from "./comum.tsx";
+import { hashCurto } from "./contrato.ts";
+import { CartaoAssinaturasAditivo, type JanelaAssinatura } from "./janelasAditivo.tsx";
+import { useBaixar } from "./janelasContrato.tsx";
 import {
-  avisoSugerido, clientesAtivos, nomeEtapaExpansao, nomeExpansao, ROTAS_RENOVACOES, textoComReajuste, textoPedidoPor, textoPlanoCancelamento, textoSeConfirmar, textoUltimoDia,
-  textoValeDesde, textoValorHoje, type Cancelamento, type ClienteRenovacao, type Expansao, type RegraReajusteTela, type Renovacao, type SugestaoExpansao,
+  AO_DESFAZER, AO_REATIVAR_VOLTA, avisoSugerido, clientesAtivos, competenciasRetorno, corpoRetorno, nomeEtapaExpansao, nomeExpansao, passouUltimoDia, podeDesfazer, problemasRetorno,
+  ROTAS_RENOVACOES, telaReativar, textoComReajuste, textoConfirmado, textoDesfeito, textoExportacao, textoPedidoPor, textoPlanoCancelamento, textoReativado, textoSeConfirmar,
+  textoUltimoDia, textoUltimoDiaConfirmado, textoValeDesde, textoValorHoje,
+  type AditivoResumo, type Cancelamento, type ClienteRenovacao, type Expansao, type RegraReajusteTela, type Renovacao, type SugestaoExpansao, type TelaRenovacoes,
 } from "./renovacoes.ts";
 import type { Pessoa } from "./tipos.ts";
 
@@ -139,7 +147,7 @@ export function JanelaAviso({ r, regra, cliente, hoje, comAditivo, aoFechar, fei
           erro={erroDe(campos, "texto", "Cole o texto do aviso (de 10 a 2.000 letras).")} />
         <Aviso tom={comAditivo ? "info" : "atencao"}>
           {comAditivo
-            ? "O aviso gera o aditivo do contrato (CM-13), em PDF com a impressão digital. A assinatura do aditivo pelo gov.br ainda não é pedida pelo sistema."
+            ? "O aviso gera o aditivo do contrato (CM-13), em PDF com a impressão digital. As duas partes podem assinar pelo gov.br depois; o valor novo vale pelo aviso, com ou sem as assinaturas."
             : "Sem modelo de aditivo em uso (Modelos › Aditivo): o valor novo vale só pelo aviso, sem aditivo."}
         </Aviso>
         {erro && !campos.length ? <ErroJanela erro={erro} /> : null}
@@ -511,6 +519,252 @@ export function JanelaEncerrarExpansao({ e, aoFechar, feito }: { e: Expansao; ao
         {erro && !campos.length ? <ErroJanela erro={erro} /> : null}
         <RodapeJanela aoFechar={aoFechar} enviando={enviando} texto="Encerrar" />
       </form>
+    </Dialogo>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// R17.7c (0318; quadros 487 a 491): o cancelamento confirmado (desfazer antes do último dia), o
+// aditivo de retorno e o reativar depois dele, e o aditivo de reajuste com as assinaturas.
+
+/** Uma lista com marca: o que volta (ok), o que fecha (atencao) e o que não volta (neutro). */
+export function ListaMarcada({ itens, tom, rotulo }: { itens: readonly string[]; tom: "ok" | "atencao" | "neutro"; rotulo: string }) {
+  const cor = { ok: "text-ok", atencao: "text-atencao", neutro: "text-tinta-suave" }[tom];
+  return (
+    <ul className="grid" aria-label={rotulo}>
+      {itens.map((t) => (
+        <li key={t} className="flex items-start gap-2.5 border-t border-linha py-2 t-texto first:border-t-0">
+          <Icone nome={tom === "ok" ? "check" : "cadeado"} className={`mt-0.5 h-4 w-4 shrink-0 ${cor}`} />
+          <span>{t}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const TITULO_FECHADO: Partial<Record<Cancelamento["situacao"], string>> = {
+  CONFIRMADO: "Cancelamento confirmado", ENCERRADO: "Cancelamento encerrado", DESFEITO: "Cancelamento desfeito", REATIVADO: "Cliente reativado",
+};
+
+/**
+ * O cancelamento confirmado (quadro 487) e os estados do 491: antes do último dia, a Administração
+ * desfaz com a nota de quem pediu e como; depois dele, a volta é pela página Reativar.
+ */
+export function JanelaCancelamentoFechado({ k, hoje, pode, aoFechar, feito }: {
+  k: Cancelamento; hoje: string; pode: TelaRenovacoes["pode"]; aoFechar: () => void; feito: (texto: string) => void;
+}) {
+  const [nota, setNota] = useState("");
+  const [erro, setErro] = useState<ErroApi | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const campos = camposComErro(erro);
+  const desfaz = podeDesfazer(k, pode, hoje);
+  const passou = passouUltimoDia(k, hoje);
+  const confirmadoEm = k.decididoEm ? ` · confirmado em ${k.decididoEm.slice(8, 10)}/${k.decididoEm.slice(5, 7)}` : "";
+
+  async function desfazer(ev: FormEvent) {
+    ev.preventDefault();
+    if (!desfaz) return;
+    setErro(null);
+    const n = nota.trim();
+    if (n.length < 3 || n.length > 300) return setErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: ["nota"] } });
+    setEnviando(true);
+    const res = await chamarApi<{ cancelamento: Cancelamento }>(ROTAS_RENOVACOES.desfazer(k.id), { corpo: { versao: k.versao, nota: n } });
+    setEnviando(false);
+    if (!res.ok) return setErro(res.erro);
+    feito(`Cancelamento desfeito. O ${k.condominio} segue com tudo, sem nada para religar.`);
+  }
+
+  return (
+    <Dialogo aberto titulo={TITULO_FECHADO[k.situacao] ?? "Cancelamento"} aoFechar={aoFechar} larga
+      apoio={`${k.condominio}${confirmadoEm}, último dia ${k.ultimoDia.slice(8, 10)}/${k.ultimoDia.slice(5, 7)} (CM-31).`}>
+      <form onSubmit={desfazer} className="grid gap-4" noValidate>
+        <dl className="grid rounded-[16px] border border-linha px-4">
+          <Linha nome="Cliente">{textoPlanoCancelamento(k)}</Linha>
+          <Linha nome="Confirmado">{textoConfirmado(k)}</Linha>
+          <Linha nome="Último dia">{textoUltimoDiaConfirmado(k, hoje)}</Linha>
+          <Linha nome="Exportação">{textoExportacao(k)}</Linha>
+        </dl>
+        {k.situacao === "DESFEITO" ? <Aviso tom="ok" titulo="Desfeito">{textoDesfeito(k)}</Aviso> : null}
+        {k.situacao === "REATIVADO" ? <Aviso tom="ok" titulo="Cliente de novo">{textoReativado(k)}</Aviso> : null}
+        {k.situacao === "ENCERRADO" || (k.situacao === "CONFIRMADO" && passou) ? (
+          <Aviso tom="info" titulo="O último dia passou">
+            Desfazer não aparece mais. A volta é por Reativar, com o aditivo de retorno assinado pelos dois.
+            <span className="mt-2 block">
+              <Link href={telaReativar(k.id)} className={classeBotao("secundario")}><Icone nome="retorno" />Reativar o cliente</Link>
+            </span>
+          </Aviso>
+        ) : null}
+        {k.situacao === "CONFIRMADO" && !passou && desfaz ? (
+          <>
+            <div className="grid gap-1">
+              <h3 className="t-titulo-cartao">O síndico desistiu de cancelar?</h3>
+              <p className="t-apoio">Até o último dia, a Administração pode desfazer o cancelamento. O contrato de hoje continua.</p>
+            </div>
+            <CampoAreaTexto id="desfazer-nota" rotulo="Quem pediu para desfazer e como" maxLength={300} rows={3} value={nota} onChange={(e) => setNota(e.target.value)}
+              placeholder="Ana Ribeiro, síndica, pelo WhatsApp comercial em 30/10" ajuda="Obrigatório. Fica no histórico do cliente."
+              erro={erroDe(campos, "nota", "Diga quem pediu para desfazer e como (de 3 a 300 letras).")} />
+            <section aria-labelledby="ao-desfazer" className="grid gap-1 rounded-[16px] border border-linha px-4 py-3">
+              <h3 id="ao-desfazer" className="t-titulo-cartao">Ao desfazer</h3>
+              <ListaMarcada itens={AO_DESFAZER} tom="ok" rotulo="O que acontece ao desfazer" />
+            </section>
+          </>
+        ) : null}
+        {k.situacao === "CONFIRMADO" && !passou && !desfaz ? (
+          <p className="t-apoio">O Comercial vê o pedido e a volta, mas desfazer, gerar o aditivo e reativar são da Administração.</p>
+        ) : null}
+        {erro?.detalhes?.motivo === "ULTIMO_DIA_PASSOU" ? (
+          <Aviso tom="atencao" papel="alert">O último dia já passou. Desfazer não dá mais: a volta é por Reativar, com o aditivo de retorno.</Aviso>
+        ) : erro && !campos.length ? <ErroJanela erro={erro} /> : null}
+        <div className="flex flex-wrap items-center justify-between gap-2 max-md:grid">
+          <Botao variante="discreto" onClick={aoFechar}>Fechar</Botao>
+          {desfaz ? (
+            <Botao type="submit" disabled={enviando}><Icone nome="retorno" />{enviando ? "Desfazendo…" : "Desfazer o cancelamento"}</Botao>
+          ) : null}
+        </div>
+      </form>
+    </Dialogo>
+  );
+}
+
+/**
+ * Gerar o aditivo de retorno (quadro 488): quem assina pelo condomínio, o CPF, a competência em que a
+ * cobrança volta e o ciclo. O valor, só na faixa sob consulta (acima de 400 unidades); o motivo, ao
+ * gerar de novo (as assinaturas começam do zero).
+ */
+export function JanelaGerarRetorno({ k, hoje, sobConsulta, aoFechar, feito }: {
+  k: Cancelamento; hoje: string; sobConsulta?: boolean; aoFechar: () => void; feito: (texto: string) => void;
+}) {
+  const deNovo = !!k.retorno && k.retorno.situacao !== "SUBSTITUIDO";
+  const opcoes = competenciasRetorno(hoje);
+  const [representante, setRepresentante] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [competencia, setCompetencia] = useState(opcoes[1]?.valor ?? opcoes[0]!.valor);
+  const [ciclo, setCiclo] = useState<"MENSAL" | "ANUAL" | null>("MENSAL");
+  const [valor, setValor] = useState("");
+  const [motivo, setMotivo] = useState("");
+  const [pedeValor, setPedeValor] = useState(!!sobConsulta);
+  const [erro, setErro] = useState<ErroApi | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const campos = camposComErro(erro);
+
+  async function salvar(ev: FormEvent) {
+    ev.preventDefault();
+    setErro(null);
+    const v = pedeValor ? centavosDoCampo(valor) : { centavos: null };
+    const dados = { representante, cpf, competencia, ciclo, valorCentavos: "centavos" in v ? v.centavos : null, motivo };
+    const o = { deNovo, sobConsulta: pedeValor };
+    const faltam = problemasRetorno(dados, o);
+    if (faltam.length) return setErro({ codigo: "VALIDATION_ERROR", detalhes: { campos: faltam } });
+    setEnviando(true);
+    const res = await chamarApi<{ aditivo: AditivoResumo }>(ROTAS_RENOVACOES.gerarRetorno(k.id), { corpo: corpoRetorno(dados, o) });
+    setEnviando(false);
+    if (!res.ok) {
+      if (camposComErro(res.erro).includes("valorCentavos")) setPedeValor(true);
+      return setErro(res.erro);
+    }
+    const a = res.dados.aditivo;
+    if (a?.situacao === "GERANDO") return feito("O aditivo foi gravado, mas o PDF não ficou pronto. Gere de novo.");
+    feito(deNovo ? "Aditivo gerado de novo. As duas assinaturas começam do zero; o anterior fica guardado como substituído."
+      : `Aditivo de retorno ${a?.numero ? `nº ${a.numero} ` : ""}gerado. Baixe o PDF e mande ao síndico para assinar pelo gov.br.`);
+  }
+
+  return (
+    <Dialogo aberto titulo={deNovo ? "Gerar o aditivo de novo" : "Gerar o aditivo de retorno"} aoFechar={aoFechar} media
+      apoio={`${k.condominio}: a volta é um aditivo ao contrato antigo, com o plano do dia e a data da volta.`}>
+      <form onSubmit={salvar} className="grid gap-4" noValidate>
+        <p className="t-texto">
+          {deNovo
+            ? "Gerar de novo (por exemplo, para corrigir um dado) cria um PDF novo e pede as duas assinaturas outra vez; o anterior fica guardado como substituído."
+            : "O plano vem da Tabela de preços do dia, pela faixa de unidades, na tabela cheia, sem fundador e sem desconto."}
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <CampoTexto id="retorno-representante" rotulo="Quem assina pelo condomínio" maxLength={120} placeholder="Paulo Mendes, síndico" value={representante}
+            onChange={(e) => setRepresentante(e.target.value)} autoComplete="off" erro={erroDe(campos, "representante", "Diga o nome de quem assina pelo condomínio.")} />
+          <CampoTexto id="retorno-cpf" rotulo="CPF de quem assina" inputMode="numeric" maxLength={14} value={cpf} onChange={(e) => setCpf(formatarCpf(e.target.value))}
+            autoComplete="off" ajuda="Vai no aditivo; nas telas aparece mascarado." erro={erroDe(campos, "cpf", "Confira o CPF: os números não batem.")} />
+          <CampoSelecao id="retorno-competencia" rotulo="Cobrança volta na competência" value={competencia} onChange={(e) => setCompetencia(e.target.value)} opcoes={opcoes}
+            erro={erroDe(campos, "competencia", "Escolha uma competência de hoje a 6 meses.")} />
+          {pedeValor ? (
+            <CampoTexto id="retorno-valor" rotulo="Valor combinado por mês (R$)" inputMode="decimal" maxLength={12} placeholder="1.290,00" value={valor}
+              onChange={(e) => setValor(e.target.value)} ajuda="Fora da tabela (acima de 400 unidades), o valor é combinado com a Administração."
+              erro={erroDe(campos, "valorCentavos", "Diga o valor combinado, em reais.")} />
+          ) : null}
+        </div>
+        <EscolhaBotoes nome="retorno-ciclo" legenda="Ciclo" opcoes={[{ valor: "MENSAL" as const, texto: "Mensal" }, { valor: "ANUAL" as const, texto: "Anual" }]} valor={ciclo} aoMudar={setCiclo}
+          ajuda={campos.includes("ciclo") ? <span className="text-erro">Escolha o ciclo.</span> : undefined} />
+        {deNovo ? (
+          <CampoAreaTexto id="retorno-motivo" rotulo="Por que gerar de novo" maxLength={300} rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)}
+            ajuda="Fica no histórico do aditivo." erro={erroDe(campos, "motivo", "Diga por que gerar de novo (as assinaturas começam do zero).")} />
+        ) : null}
+        {erro?.detalhes?.motivo === "SEM_MODELO_RETORNO" ? (
+          <Aviso tom="atencao" papel="alert">Nenhuma versão do aditivo de retorno está em uso. Cadastre o texto do advogado em Modelos › Aditivo › Retorno.</Aviso>
+        ) : erro && !campos.length ? <ErroJanela erro={erro} /> : null}
+        <RodapeJanela aoFechar={aoFechar} enviando={enviando} texto={deNovo ? "Gerar de novo" : "Gerar o aditivo"} icone="documento" perigo={deNovo} />
+      </form>
+    </Dialogo>
+  );
+}
+
+/** Reativar (quadro 488): só com o aditivo de retorno assinado pelos dois e conferido. */
+export function JanelaReativar({ k, aoFechar, feito }: { k: Cancelamento; aoFechar: () => void; feito: (texto: string) => void }) {
+  const [erro, setErro] = useState<ErroApi | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const vale = k.retorno?.dados?.campos?.vale_desde;
+
+  async function reativar(ev: FormEvent) {
+    ev.preventDefault();
+    setErro(null);
+    setEnviando(true);
+    const res = await chamarApi<{ cancelamento: Cancelamento }>(ROTAS_RENOVACOES.reativar(k.id), { corpo: { versao: k.versao } });
+    setEnviando(false);
+    if (!res.ok) return setErro(res.erro);
+    feito(`${k.condominio} reativado. O acesso volta no modo completo${vale ? ` e a cobrança volta na ${vale}` : ""}.`);
+  }
+
+  return (
+    <Dialogo aberto titulo="Reativar o cliente" aoFechar={aoFechar} media apoio={`${k.condominio} · aditivo de retorno nº ${k.retorno?.numero ?? ""}`}>
+      <form onSubmit={reativar} className="grid gap-4" noValidate>
+        <p className="t-texto">{`O último dia (${k.ultimoDia.slice(8, 10)}/${k.ultimoDia.slice(5, 7)}/${k.ultimoDia.slice(0, 4)}) é revogado e fica no histórico. A reconquista aberta fica Ganha e o cliente volta para Reajuste e renovação.`}</p>
+        <ListaMarcada itens={AO_REATIVAR_VOLTA} tom="ok" rotulo="O que volta" />
+        {erro?.detalhes?.motivo === "ADITIVO_SEM_ASSINATURAS" ? (
+          <Aviso tom="atencao" papel="alert">O aditivo de retorno ainda não está assinado pelos dois e conferido.</Aviso>
+        ) : erro ? <ErroJanela erro={erro} /> : null}
+        <RodapeJanela aoFechar={aoFechar} enviando={enviando} texto="Reativar o cliente" icone="retorno" />
+      </form>
+    </Dialogo>
+  );
+}
+
+/**
+ * O aditivo de reajuste (R17.7b, parte de software): o PDF e as assinaturas pelo gov.br. O reajuste
+ * continua valendo pelo aviso; a assinatura só fica registrada no aditivo.
+ */
+export function JanelaAditivoReajuste({ r, pode, aoFechar, abrir }: {
+  r: Renovacao; pode: TelaRenovacoes["pode"]; aoFechar: () => void; abrir: (j: JanelaAssinatura) => void;
+}) {
+  const b = useBaixar();
+  const a = r.aditivo!;
+  return (
+    <Dialogo aberto titulo={`Aditivo nº ${a.numero}`} aoFechar={aoFechar} larga apoio={`${r.condominio}: aditivo do reajuste (CM-13, CM-30).`}>
+      <div className="grid gap-4">
+        <Aviso tom="info" titulo="O reajuste vale pelo aviso">
+          {`O valor novo vale pelo aviso${r.aviso ? ` de ${r.aviso.em.slice(8, 10)}/${r.aviso.em.slice(5, 7)}/${r.aviso.em.slice(0, 4)}` : ""}, com ou sem estas assinaturas. Assinar pelo gov.br só fica registrado no aditivo.`}
+        </Aviso>
+        <dl className="grid rounded-[16px] border border-linha px-4">
+          <Linha nome="Com reajuste">{textoComReajuste(r)}</Linha>
+          {r.valeDesde ? <Linha nome="Vale desde">{`Competência ${r.valeDesde.slice(5, 7)}/${r.valeDesde.slice(0, 4)}`}</Linha> : null}
+          <Linha nome="Impressão digital"><span className="t-codigo" title={a.hash}>{`sha256 ${hashCurto(a.hash)}`}</span></Linha>
+        </dl>
+        <div className="flex flex-wrap gap-2 max-md:grid">
+          <Botao variante="contorno" disabled={a.situacao !== "PRONTO" || !!b.baixando} onClick={() => r.id && void b.baixar(ROTAS_RENOVACOES.linkAditivo(r.id))}>
+            <Icone nome="baixar" />Baixar o PDF do aditivo
+          </Botao>
+        </div>
+        {b.problema ? <Aviso tom="erro" papel="alert">{b.problema}</Aviso> : null}
+        <CartaoAssinaturasAditivo id="reajuste-assinaturas" aditivo={a} quemCondominio="O síndico" podeEditar={pode.editar} podeAssinar={!!(pode.assinar ?? pode.confirmar)}
+          abrir={abrir} nota="No aditivo de reajuste, a assinatura só fica registrada: o reajuste continua valendo pelo aviso." />
+        <div className="flex justify-end"><Botao variante="discreto" onClick={aoFechar}>Fechar</Botao></div>
+      </div>
     </Dialogo>
   );
 }

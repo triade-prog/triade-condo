@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sobe um Postgres temporário, aplica as migrations em ordem, roda os testes pgTAP e o teste
-# de edição simultânea, do fato do comparativo registrado duas vezes, da ordem das travas do contrato, da demonstração e do cancelamento,
-# com conexões de verdade.
+# de edição simultânea, do fato do comparativo registrado duas vezes, da ordem das travas do contrato, da demonstração, do cancelamento
+# e do desfazer e reativar, com conexões de verdade.
 # Uso: bash scripts/test-db.sh   (precisa de PostgreSQL 16+ com pgTAP e pg_prove)
 set -euo pipefail
 RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
@@ -47,3 +47,6 @@ PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/demonstracao-anon
 
 # Dois pedidos de cancelamento e a confirmação enquanto o cliente está travado (0311): a mesma ordem de travas.
 PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/cancelamento-simultaneo.sh"
+
+# Dois desfazer, o pedido novo depois do desfeito e reativar enquanto o cliente está travado (0318): a mesma ordem de travas.
+PSQL_BIN="$PGBIN/psql" bash "$RAIZ/supabase/tests/concorrencia/desfazer-simultaneo.sh"

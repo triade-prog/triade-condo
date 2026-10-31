@@ -1,11 +1,14 @@
 // Renovação e reajuste, cancelamento com retenção, sinais de risco e expansão dos clientes (0311,
-// R17.7; CM-30, CM-31 e CM-32; quadros 346 e 347). As mesmas listas e limites estão no banco
-// (0311_comercial_renovacao_cancelamento.sql); os testes conferem as duas. O valor com reajuste e o
+// R17.7; CM-30, CM-31 e CM-32; quadros 346 e 347), mais desfazer o cancelamento e reativar pelo
+// aditivo de retorno (0318, R17.7c; quadros 487 a 491). As mesmas listas e limites estão no banco
+// (0311_comercial_renovacao_cancelamento.sql e 0318_comercial_reativar_fechar_entrada.sql); os
+// testes conferem as duas. O valor com reajuste e o
 // último dia são calculados no banco; as contas daqui são as mesmas, para a tela mostrar antes de
 // registrar.
 
 import { z } from "zod";
 import { novaOportunidadeSchema } from "./contrato.ts";
+import { cpfValido } from "./propostas.ts";
 
 const chaves = <T extends Record<string, unknown>>(o: T) => Object.keys(o) as [keyof T & string, ...(keyof T & string)[]];
 const versao = z.number().int().min(1);
@@ -74,6 +77,34 @@ export const ADITIVO_CAMPOS = {
 } as const;
 export type CampoAditivo = keyof typeof ADITIVO_CAMPOS;
 
+/** As duas partes de Modelos › Aditivo (0318, C1): cada uma com os seus campos e a sua versão em uso. */
+export const TIPOS_ADITIVO = {
+  REAJUSTE: "Reajuste",
+  RETORNO: "Retorno",
+} as const;
+export type TipoAditivo = keyof typeof TIPOS_ADITIVO;
+
+/** Os campos do aditivo de retorno (0318, C1), entre « e ». */
+export const ADITIVO_CAMPOS_RETORNO = {
+  condominio: "Nome do condomínio",
+  cnpj: "CNPJ do condomínio",
+  representante: "Quem assina pelo condomínio",
+  cpf_representante: "CPF de quem assina pelo condomínio",
+  contrato: "Número do contrato",
+  data_contrato: "Data de início do contrato",
+  ultimo_dia: "Último dia antes da saída",
+  plano: "Plano da volta (faixa e ciclo)",
+  valor_mensal: "Valor do plano da volta",
+  vale_desde: "Competência em que a cobrança volta",
+} as const;
+export type CampoAditivoRetorno = keyof typeof ADITIVO_CAMPOS_RETORNO;
+
+/** Os campos de cada parte. */
+export const camposDoAditivo = (tipo: TipoAditivo): Record<string, string> => (tipo === "RETORNO" ? ADITIVO_CAMPOS_RETORNO : ADITIVO_CAMPOS);
+
+/** Os ciclos do plano da volta. No anual, o valor é o mensal vezes os meses pagos (0295). */
+export const CICLOS_RETORNO = ["MENSAL", "ANUAL"] as const;
+
 /** Sem índice, a tela mostra isto e não calcula valor nenhum (decisão 2). */
 export const TEXTO_INDICE_A_DEFINIR = "[a definir com o advogado]";
 
@@ -117,6 +148,17 @@ export const SITUACOES_CANCELAMENTO = {
   ENCERRADO: "Encerrado",
 } as const;
 export type SituacaoCancelamento = keyof typeof SITUACOES_CANCELAMENTO;
+
+/**
+ * As duas saídas do confirmado (0318): desfeito antes do último dia e reativado depois dele pelo
+ * aditivo de retorno. Ficam numa lista à parte para as telas que já usam a lista acima continuarem
+ * conferindo todas as chaves; a leitura traz as sete.
+ */
+export const SITUACOES_VOLTA_CANCELAMENTO = {
+  DESFEITO: "Desfeito",
+  REATIVADO: "Reativado",
+} as const;
+export type SituacaoVoltaCancelamento = keyof typeof SITUACOES_VOLTA_CANCELAMENTO;
 
 /** A situação do cliente na lista de Renovações. */
 export const SITUACOES_CLIENTE_RENOVACAO = {
@@ -199,11 +241,12 @@ export function valeDesde(aniversario: string, avisoEm: string, prazoAvisoDias: 
 export const ultimoDiaCancelamento = (pedidoEm: string, avisoDias: number = LIMITES_RENOVACAO.avisoCancelamentoDias) =>
   somarDias(pedidoEm.slice(0, 10), avisoDias);
 
-/** Os campos errados do modelo de aditivo: os que não existem e as aspas soltas (como o banco). */
-export function camposErradosAditivo(textoModelo: string): string[] {
+/** Os campos errados do modelo de aditivo: os que não existem na parte e as aspas soltas (como o banco). */
+export function camposErradosAditivo(textoModelo: string, tipo: TipoAditivo = "REAJUSTE"): string[] {
+  const campos = camposDoAditivo(tipo);
   const errados = new Set<string>();
   for (const m of textoModelo.matchAll(/«([^«»]*)»/g)) {
-    if (!(m[1]! in ADITIVO_CAMPOS)) errados.add(`«${m[1]}»`);
+    if (!Object.hasOwn(campos, m[1]!)) errados.add(`«${m[1]}»`);
   }
   const resto = textoModelo.replace(/«[^«»]*»/g, "");
   for (const s of ["«", "»"]) if (resto.includes(s)) errados.add(s);
@@ -282,11 +325,19 @@ export type AvisoReajuste = z.infer<typeof avisoReajusteSchema>;
 /** Renovar sem reajuste: o aniversário fica registrado com o motivo. */
 export const dispensarRenovacaoSchema = z.object({ interessadoId: uuid, aniversario: data, motivo: texto(3, 300) });
 
-/** O modelo de aditivo (Modelos › Contrato). */
+/**
+ * O modelo de aditivo (Modelos › Aditivo). O tipo diz a parte (sem ele, o reajuste, como na 0311) e
+ * não muda depois de cadastrado: o banco recusa.
+ */
 export const modeloAditivoSchema = z
-  .object({ versao: versaoOpcional, titulo: texto(3, 120), texto: texto(50, 20000) })
+  .object({
+    versao: versaoOpcional,
+    tipo: z.enum(chaves(TIPOS_ADITIVO)).optional().nullable().transform((v) => v ?? null),
+    titulo: texto(3, 120),
+    texto: texto(50, 20000),
+  })
   .superRefine((d, ctx) => {
-    const errados = camposErradosAditivo(d.texto);
+    const errados = camposErradosAditivo(d.texto, d.tipo ?? "REAJUSTE");
     if (errados.length) ctx.addIssue({ code: "custom", path: ["texto"], message: `Campo escrito errado ou que não existe: ${errados.join(", ")}` });
   });
 export const usarModeloAditivoSchema = z.object({ versao });
@@ -324,6 +375,37 @@ export const confirmarCancelamentoSchema = z
   .object({ versao, ...motivoCancelamento, lembrarEm: dataOpcional })
   .refine(outroComTexto, { path: ["motivoTexto"], message: "Diga qual é o outro motivo" });
 export type ConfirmarCancelamento = z.infer<typeof confirmarCancelamentoSchema>;
+
+/** Desfazer o cancelamento confirmado antes do último dia (0318, F5): a Administração, com nota. */
+export const desfazerCancelamentoSchema = z.object({ versao, nota: texto(3, 300) });
+export type DesfazerCancelamento = z.infer<typeof desfazerCancelamentoSchema>;
+
+// O CPF de quem assina pelo condomínio: com ou sem pontos; vai só com os dígitos.
+const cpfObrigatorio = z
+  .string()
+  .trim()
+  .max(20)
+  .refine(cpfValido, { message: "CPF inválido" })
+  .transform((v) => v.replace(/\D/g, ""));
+
+/**
+ * Gerar o aditivo de retorno (0318, C3): quem assina pelo condomínio, a competência em que a
+ * cobrança volta (dia 1, do mês de hoje a seis meses) e o ciclo. O valor vem da tabela do dia; só a
+ * faixa sob consulta (acima de 400) recebe o valor combinado, e o banco confere. Gerar de novo pede o
+ * motivo (o banco confere).
+ */
+export const aditivoRetornoSchema = z.object({
+  representante: texto(2, 120),
+  cpf: cpfObrigatorio,
+  competencia: data.refine((v) => v.endsWith("-01"), { message: "A competência é o dia 1 do mês" }),
+  ciclo: z.enum(CICLOS_RETORNO),
+  valorCentavos: z.number().int().positive().optional().nullable().transform((v) => v ?? null),
+  motivo: textoOpcional(3, 300),
+});
+export type AditivoRetorno = z.infer<typeof aditivoRetornoSchema>;
+
+/** Reativar o cliente pelo aditivo de retorno assinado pelos dois (0318, C5). */
+export const reativarClienteSchema = z.object({ versao });
 
 const expansaoBase = {
   etapa: z.enum(ETAPAS_EXPANSAO_ABERTAS).optional().nullable().transform((v) => v ?? "ABERTA"),

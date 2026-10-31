@@ -3,7 +3,10 @@
 // sinais de risco, a chance de crescer e os pedidos de cancelamento, em quatro abas. Nada muda no
 // valor sem o aviso enviado; o aviso gera o aditivo (CM-13). O índice vem do advogado: sem ele, a tela
 // mostra "[a definir com o advogado]" e não calcula. Confirmar o cancelamento é da Administração. O
-// Comercial vê o nome do cliente e o plano, não os dados do condomínio (CM-11).
+// Comercial vê o nome do cliente e o plano, não os dados do condomínio (CM-11). Da R17.7c (0318;
+// quadros 487, 490 e 491): o cancelamento confirmado abre com o desfazer (antes do último dia) ou leva
+// à página Reativar (depois dele), os selos Desfeito e Reativado, o cartão do que fecha e do que fica
+// no último dia, e o aditivo de reajuste com as assinaturas pelo gov.br (R17.7b).
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -13,15 +16,17 @@ import { Aviso, Botao, CampoSelecao, Carregando, chamarApi, ErroCarregar, Icone,
 import { AbasLista, CabecaPagina, Cartao, plural } from "../comum.tsx";
 import { useCarregar, useSessao } from "../sessao.tsx";
 import { hojeLocal } from "./comum.tsx";
+import { JanelaConferirAditivo, JanelaEnviarAditivo } from "./janelasAditivo.tsx";
 import { useBaixar } from "./janelasContrato.tsx";
 import {
-  JanelaAviso, JanelaCancelamento, JanelaEncerrarExpansao, JanelaExpansao, JanelaMarcarRisco, JanelaRegistrarPedido, JanelaRegraReajuste, JanelaSemReajuste,
-  JanelaTratarRisco,
+  JanelaAditivoReajuste, JanelaAviso, JanelaCancelamento, JanelaCancelamentoFechado, JanelaEncerrarExpansao, JanelaExpansao, JanelaMarcarRisco, JanelaRegistrarPedido,
+  JanelaRegraReajuste, JanelaSemReajuste, JanelaTratarRisco, ListaMarcada,
 } from "./janelasRenovacoes.tsx";
 import {
-  ABAS_RENOVACOES, abaDoEndereco, contagemAba, detalheCancelamento, detalheExpansao, detalheRenovacao, mesesRenovacoes, nomeExpansao, nomeSituacaoCancelamento,
-  podeAvisar, podeDispensar, ROTAS_RENOVACOES, seloAviso, TELA_RENOVACOES, textoClientesRisco, textoComReajuste, textoRegra, textoSinal, textoValorHoje, TOM_CANCELAMENTO,
-  type AbaRenovacoes, type Cancelamento, type Expansao, type Renovacao, type SugestaoExpansao, type TelaRenovacoes,
+  ABAS_RENOVACOES, abaDoEndereco, contagemAba, detalheCancelamento, detalheExpansao, detalheRenovacao, FECHA_NO_ULTIMO_DIA, FICA_DEPOIS, mesesRenovacoes, nomeExpansao,
+  nomeSituacaoCancelamento, podeAvisar, podeDispensar, ROTAS_RENOVACOES, seloAviso, TELA_RENOVACOES, textoClientesRisco, textoComReajuste, textoRegra, textoSinal, textoValorHoje,
+  TOM_CANCELAMENTO, type AbaRenovacoes, type AditivoResumo, type Cancelamento, type EnvioAditivo, type Expansao, type ParteAditivo, type Renovacao, type SugestaoExpansao,
+  type TelaRenovacoes,
 } from "./renovacoes.ts";
 
 const dataBr = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
@@ -34,6 +39,10 @@ type Janela =
   | { tipo: "tratar"; sinal: { id: string; versao: number; texto: string }; condominio: string }
   | { tipo: "pedido" }
   | { tipo: "cancelamento"; k: Cancelamento }
+  | { tipo: "fechado"; k: Cancelamento }
+  | { tipo: "aditivo"; renovacao: string }
+  | { tipo: "enviarAditivo"; aditivo: AditivoResumo; parte: ParteAditivo }
+  | { tipo: "conferirAditivo"; aditivo: AditivoResumo; envio: EnvioAditivo; condominio: string }
   | { tipo: "expansao"; e?: Expansao; sugestao?: SugestaoExpansao }
   | { tipo: "encerrar"; e: Expansao };
 
@@ -45,9 +54,14 @@ function AcoesRenovacao({ r, pode, podeSemReajuste, hoje, abrir, baixar, baixand
   if (r.aditivo?.situacao === "PRONTO" && r.id) {
     const caminho = ROTAS_RENOVACOES.linkAditivo(r.id);
     return (
-      <Botao variante="discreto" tamanho="p" disabled={baixando === caminho} onClick={() => baixar(caminho)} aria-label={baixando === caminho ? `Baixando o aditivo nº ${r.aditivo.numero} do ${r.condominio}` : `Baixar o aditivo nº ${r.aditivo.numero} do ${r.condominio}`}>
-        <Icone nome="baixar" />{baixando === caminho ? "Baixando…" : `Aditivo nº ${r.aditivo.numero}`}
-      </Botao>
+      <span className="flex flex-wrap gap-1.5">
+        <Botao variante="discreto" tamanho="p" disabled={baixando === caminho} onClick={() => baixar(caminho)} aria-label={baixando === caminho ? `Baixando o aditivo nº ${r.aditivo.numero} do ${r.condominio}` : `Baixar o aditivo nº ${r.aditivo.numero} do ${r.condominio}`}>
+          <Icone nome="baixar" />{baixando === caminho ? "Baixando…" : `Aditivo nº ${r.aditivo.numero}`}
+        </Botao>
+        <Botao variante="discreto" tamanho="p" onClick={() => abrir({ tipo: "aditivo", renovacao: r.id! })} aria-label={`Assinaturas do aditivo nº ${r.aditivo.numero} do ${r.condominio}`}>
+          <Icone nome="escudo" />Assinaturas
+        </Botao>
+      </span>
     );
   }
   if (r.aditivo?.situacao === "GERANDO" && r.id && pode) {
@@ -218,6 +232,23 @@ function AbaExpansao({ d, abrir }: { d: TelaRenovacoes; abrir: (j: Janela) => vo
   );
 }
 
+/** No último dia, o que fecha e o que fica (quadro 490). */
+function CartaoFechaFica() {
+  return (
+    <div className="grid items-start gap-5 lg:grid-cols-2">
+      <Cartao id="cancelamentos-fecha" titulo="No último dia, fecha" icone="cadeado" acao={<Selo tom="neutro">Sozinho, à meia-noite</Selo>}>
+        <ListaMarcada itens={FECHA_NO_ULTIMO_DIA} tom="atencao" rotulo="O que fecha no último dia" />
+      </Cartao>
+      <Cartao id="cancelamentos-fica" titulo="Fica" icone="check">
+        <ListaMarcada itens={FICA_DEPOIS} tom="ok" rotulo="O que fica depois do último dia" />
+        <p className="border-t border-linha pt-3 t-apoio">
+          Para a equipe: no último dia, desconecte o número do WhatsApp do condomínio na Configuração. Antes do último dia, a Administração ainda pode desfazer o cancelamento.
+        </p>
+      </Cartao>
+    </div>
+  );
+}
+
 function AbaCancelamentos({ d, abrir }: { d: TelaRenovacoes; abrir: (j: Janela) => void }) {
   if (!d.cancelamentos.length) {
     return (
@@ -230,14 +261,18 @@ function AbaCancelamentos({ d, abrir }: { d: TelaRenovacoes; abrir: (j: Janela) 
     <ul className="divide-y divide-linha max-md:grid max-md:gap-3 max-md:divide-y-0" aria-label="Pedidos de cancelamento">
       {d.cancelamentos.map((k) => {
         const aberto = k.situacao === "PEDIDO" || k.situacao === "EM_RETENCAO";
+        const fechado = k.situacao === "CONFIRMADO" || k.situacao === "ENCERRADO" || k.situacao === "DESFEITO" || k.situacao === "REATIVADO";
         return (
           <li key={k.id} className="grid gap-2 px-5 py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_auto] md:items-center max-md:rounded-[18px] max-md:border max-md:border-linha max-md:bg-superficie max-md:p-4">
             <b className="t-texto [overflow-wrap:anywhere]">{k.condominio}</b>
-            <span className="t-apoio">{detalheCancelamento(k)}</span>
+            <span className="t-apoio">{detalheCancelamento(k, d.hoje)}</span>
             <span className="flex flex-wrap items-center gap-2">
               <Selo tom={TOM_CANCELAMENTO[k.situacao]}>{nomeSituacaoCancelamento(k.situacao)}</Selo>
               {aberto ? (
                 <Botao variante="secundario" tamanho="p" aria-label={`Abrir o pedido de cancelamento do ${k.condominio}`} onClick={() => abrir({ tipo: "cancelamento", k })}>Abrir</Botao>
+              ) : null}
+              {fechado ? (
+                <Botao variante="discreto" tamanho="p" aria-label={`Abrir o cancelamento do ${k.condominio}`} onClick={() => abrir({ tipo: "fechado", k })}>Abrir<Icone nome="dir" className="h-4 w-4" /></Botao>
               ) : null}
             </span>
           </li>
@@ -277,6 +312,7 @@ export function Renovacoes() {
   }
   const abas = (Object.keys(ABAS_RENOVACOES) as AbaRenovacoes[]).map((a) => ({ valor: a, texto: ABAS_RENOVACOES[a].texto, n: d ? contagemAba(d, a) : undefined }));
   const cliente = (id: string) => d?.clientes.find((c) => c.id === id);
+  const renovacaoAberta = janela?.tipo === "aditivo" ? d?.renovacoes.find((r) => r.id === janela.renovacao) : undefined;
 
   return (
     <div className="grid gap-5">
@@ -312,6 +348,7 @@ export function Renovacoes() {
               </p>
             ) : null}
           </section>
+          {aba === "CANCELAMENTOS" ? <CartaoFechaFica /> : null}
           <div className="grid items-start gap-5 lg:grid-cols-2">
             <Cartao id="renovacoes-regra" titulo="Regra do reajuste" icone="ajuste"
               acao={d.pode.regra ? <Botao variante="discreto" onClick={() => setJanela({ tipo: "regra" })}><Icone nome="editar" />Mudar</Botao> : undefined}>
@@ -353,6 +390,18 @@ export function Renovacoes() {
       ) : null}
       {d && janela?.tipo === "cancelamento" ? (
         <JanelaCancelamento k={janela.k} hoje={d.hoje} podeEditar={d.pode.editar} podeConfirmar={d.pode.confirmar} aoFechar={() => setJanela(null)} feito={pronto} />
+      ) : null}
+      {d && janela?.tipo === "fechado" ? (
+        <JanelaCancelamentoFechado k={d.cancelamentos.find((x) => x.id === janela.k.id) ?? janela.k} hoje={d.hoje} pode={d.pode} aoFechar={() => setJanela(null)} feito={pronto} />
+      ) : null}
+      {d && janela?.tipo === "aditivo" && renovacaoAberta?.aditivo ? (
+        <JanelaAditivoReajuste r={renovacaoAberta} pode={d.pode} aoFechar={() => setJanela(null)}
+          abrir={(j) => setJanela(j.tipo === "enviarAditivo" ? { ...j, aditivo: renovacaoAberta.aditivo! }
+            : { ...j, aditivo: renovacaoAberta.aditivo!, condominio: renovacaoAberta.condominio })} />
+      ) : null}
+      {d && janela?.tipo === "enviarAditivo" ? <JanelaEnviarAditivo aditivo={janela.aditivo} parte={janela.parte} aoFechar={() => setJanela(null)} feito={pronto} /> : null}
+      {d && janela?.tipo === "conferirAditivo" ? (
+        <JanelaConferirAditivo aditivo={janela.aditivo} envio={janela.envio} condominio={janela.condominio} aoFechar={() => setJanela(null)} feito={pronto} />
       ) : null}
       {d && janela?.tipo === "expansao" ? (
         <JanelaExpansao e={janela.e} sugestao={janela.sugestao} clientes={d.clientes} equipe={d.equipe} eu={sessao.pessoaId} hoje={d.hoje}

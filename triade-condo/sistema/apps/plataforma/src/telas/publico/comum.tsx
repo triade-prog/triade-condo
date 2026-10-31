@@ -4,11 +4,12 @@
 // do morador (D4.40, conceito Janela acesa) usa a faixa com a foto dos prédios ao entardecer
 // no lugar da faixa violeta lisa, e o miolo largo com duas colunas no computador.
 
-import { useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { ASSUNTOS_COMUNICADO, blocoDeData, type AssuntoComunicado, type EventoComunicado } from "@triade/domain";
-import { Aviso, chamarApi, classeBotao, Icone, Marca, Selo, type NomeIcone, type Tom } from "@triade/ui";
+import { Aviso, chamarApi, classeBotao, Icone, Marca, Selo, type ErroApi, type NomeIcone, type Tom } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import type { ComunicadoPublico } from "../tipos.ts";
+import { encerramentoDe, subtituloEncerrado, textoForaDoAr, type Encerramento } from "./encerrado.ts";
 
 export function TelaPublica({ titulo, subtitulo, icone = "megafone", rodape, faixa, largo = false, children }: {
   titulo: string; subtitulo?: string; icone?: NomeIcone; rodape?: string;
@@ -160,14 +161,59 @@ export function SeloCancelada({ c }: { c: { assembleiaCancelada?: boolean } }) {
   return c.assembleiaCancelada ? <Selo tom="atencao"><Icone nome="info" className="h-3.5 w-3.5" />Assembleia cancelada</Selo> : null;
 }
 
+/**
+ * Este condomínio não usa mais a TRÍADE (quadro 489; R17.7c, decisão F1): a mesma página para todo
+ * link público depois do último dia, com o nome do condomínio e o dia em que saiu do ar.
+ */
+export function ContratoEncerrado({ e, rotulo, ligacao }: { e: Encerramento; rotulo: string; ligacao?: string }) {
+  return (
+    <TelaPublica titulo="Este condomínio não usa mais a TRÍADE" subtitulo={subtituloEncerrado(rotulo, e, ligacao)} icone="cadeado"
+      rodape="Esta página não guarda nada no seu celular.">
+      <Cartao>
+        <p className="t-texto">{textoForaDoAr(e)}</p>
+        <p className="t-texto">Para falar com o condomínio, procure o síndico ou a portaria.</p>
+      </Cartao>
+      <Cartao>
+        <h2 className="t-titulo-secao font-medium">Recebeu um link?</h2>
+        <p className="t-texto text-tinta-suave">Comunicados, enquetes, cadastro, orçamentos e o link do prestador mostram esta mesma página.</p>
+      </Cartao>
+      <Cartao>
+        <h2 className="t-titulo-secao font-medium">Recebe e-mails do condomínio?</h2>
+        <p className="t-texto text-tinta-suave">Nada mais será enviado. O link para parar de receber, no rodapé dos e-mails antigos, continua funcionando.</p>
+      </Cartao>
+    </TelaPublica>
+  );
+}
+
+const AoEncerrar = createContext<(x: ErroApi | Record<string, unknown>) => boolean>(() => false);
+
+/**
+ * Diz se a recusa é do contrato encerrado; se for, a página inteira vira a do quadro 489. Fora de
+ * uma página pública (a prévia do mural no painel), não faz nada.
+ */
+export const useEncerrou = () => useContext(AoEncerrar);
+
+/** Envolve uma página pública: a primeira recusa CONTRATO_ENCERRADO troca tudo pela página do quadro 489. */
+export function ComEncerramento({ rotulo, ligacao, children }: { rotulo: string; ligacao?: string; children: ReactNode }) {
+  const [e, setE] = useState<Encerramento | null>(null);
+  const encerrou = useCallback((x: ErroApi | Record<string, unknown>) => {
+    const y = encerramentoDe(x);
+    if (y) setE(y);
+    return !!y;
+  }, []);
+  if (e) return <ContratoEncerrado e={e} rotulo={rotulo} ligacao={ligacao} />;
+  return <AoEncerrar.Provider value={encerrou}>{children}</AoEncerrar.Provider>;
+}
+
 /** Abre o PDF do aviso numa aba, pelo link curto que a API devolve. */
 export function useAbrirArquivo(linkArquivo: (arquivo: string) => string) {
   const [falha, setFalha] = useState<string | null>(null);
+  const encerrou = useEncerrou();
   async function abrir(id: string) {
     setFalha(null);
     const aba = window.open("about:blank", "_blank");
     const r = await chamarApi<{ url: string }>(linkArquivo(id));
-    if (!r.ok) { aba?.close(); return setFalha("Não deu para abrir o arquivo agora. Tente de novo."); }
+    if (!r.ok) { aba?.close(); if (encerrou(r.erro)) return; return setFalha("Não deu para abrir o arquivo agora. Tente de novo."); }
     if (aba) aba.location.href = r.dados.url;
   }
   return { falha, abrir };
