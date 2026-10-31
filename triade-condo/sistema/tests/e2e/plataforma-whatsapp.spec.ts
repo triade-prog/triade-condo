@@ -258,29 +258,134 @@ test.describe("Plataforma · WhatsApp do condomínio", () => {
     expect(estado.whatsapp.meusAvisos?.telefone).toBe("+5561991002233");
   });
 
-  test("F5.12: o número oficial ainda não ligado leva à Meta e o Já terminei avisa a TRÍADE", async ({ page }) => {
+  test("F5.12 (466): o síndico conecta pela janela da Meta e o número liga na hora, com a prévia e o cartão", async ({ page }) => {
     const estado = await instalarApiPlataformaFalsa(page);
     await page.goto(`${PLATAFORMA}/configuracoes/whatsapp`);
     const cartao = page.getByRole("region", { name: "Número oficial do WhatsApp" });
     await expect(cartao).toContainText("Ainda não ligado");
-    await expect(cartao).toContainText("Antes de começar, tenha à mão");
+    await expect(cartao).toContainText("Tenha à mão");
+    await expect(cartao.getByRole("link", { name: /Conectar/ })).toHaveCount(0);
+    await expect(cartao.getByRole("button", { name: "Já terminei" })).toHaveCount(0);
     await expect(page.getByRole("region", { name: "Número de teste (piloto)" })).toContainText("Conexão de piloto, não oficial");
+    const conectar = cartao.getByRole("button", { name: "Conectar pelo WhatsApp oficial" });
+    await expect(conectar).toBeVisible();
     await conferir(page);
-    const conectar = cartao.getByRole("link", { name: /Conectar pelo WhatsApp oficial/ });
-    await expect(conectar).toHaveAttribute("target", "_blank");
-    expect(new URL((await conectar.getAttribute("href")) ?? "").searchParams.get("config_id")).toBe("3481812468673012");
-    // A página da Meta abre numa aba nova; aqui só o clique conta.
-    await page.context().route("https://business.facebook.com/**", (r) => r.fulfill({ body: "Meta" }));
-    const [aba] = await Promise.all([page.context().waitForEvent("page"), conectar.click()]);
-    await aba.close();
-    await cartao.getByRole("button", { name: "Já terminei" }).click();
-    await expect(page.getByText("Avisamos a TRÍADE. Ela liga o número em até um dia útil.")).toBeVisible();
-    await expect(cartao).toContainText("Esperando a TRÍADE");
-    await expect(cartao).toContainText("A TRÍADE liga o número em até um dia útil");
-    expect(estado.whatsapp.conexao.cadastroMetaEm).not.toBeNull();
-    await cartao.getByRole("button", { name: "Não consegui terminar" }).click();
-    await expect(cartao).toContainText("continue de onde parou");
+    await conectar.click();
+    await expect(cartao.getByText("Ligando o número do condomínio")).toBeVisible();
+    await expect(cartao.getByText("Conta recebida da Meta")).toBeVisible();
+    const ligado = page.getByRole("region", { name: "O Residencial Ipê já está no WhatsApp oficial" });
+    await expect(ligado).toBeVisible();
+    await expect(ligado).toContainText("+55 61 3333-0101");
+    await expect(ligado).toContainText("20 com a Meta, que aprova de minutos a 1 dia");
+    await expect(ligado.getByRole("figure", { name: "Assim o morador vê" })).toContainText("Esta é uma conta comercial do condomínio.");
+    await expect(ligado).toContainText("Falta um passo: o cartão na Meta");
+    await expect(ligado.getByRole("link", { name: /Pôr o cartão na Meta/ })).toHaveAttribute("target", "_blank");
     await conferir(page);
+    // A janela recebeu o app e a configuração certos; só a mensagem do facebook.com contou.
+    expect(await page.evaluate(() => (window as unknown as { __metaInit: unknown }).__metaInit)).toEqual({ appId: "28914484134911319", version: "v26.0", xfbml: false, cookie: false });
+    expect(await page.evaluate(() => (window as unknown as { __metaLogin: { config_id: string; response_type: string } }).__metaLogin))
+      .toMatchObject({ config_id: "3481812468673012", response_type: "code", override_default_response_type: true });
+    expect(estado.whatsapp.meta.cadastros).toEqual([{ code: "x".repeat(20), wabaId: "102938475610", numeroId: "564738291001", empresaId: "998877665544" }]);
+    await ligado.getByRole("button", { name: "Fazer depois" }).click();
+    await expect(cartao).toContainText("Falta o cartão");
+    await expect(page.getByText("Conexão de piloto, não oficial")).toHaveCount(0);
+  });
+
+  test("F5.12 (467): a Meta pede o código; o errado avisa quantas tentativas restam e o certo liga", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page);
+    estado.whatsapp.meta.proximo = "CODIGO";
+    // A API manda esperar 60 s para reenviar; aqui, 3 s, para o teste ver a contagem acabar.
+    estado.whatsapp.meta.reenviarEmSegundos = 3;
+    await page.goto(`${PLATAFORMA}/configuracoes/whatsapp`);
+    await page.getByRole("button", { name: "Conectar pelo WhatsApp oficial" }).click();
+    const codigo = page.getByRole("dialog", { name: "Confirme o número do condomínio" });
+    await expect(codigo).toContainText("A Meta mandou um código de 6 números por SMS para +55 61 3333-0101.");
+    await expect(codigo.getByText(/Reenviar em/)).toBeVisible();
+    expect(estado.whatsapp.meta.pedidos).toEqual(["SMS"]);
+    const caixa1 = codigo.getByLabel("Número 1 de 6");
+    await expect(caixa1).toHaveAttribute("autocomplete", "one-time-code");
+    await expect(caixa1).toHaveAttribute("inputmode", "numeric");
+    await expect(codigo.getByRole("button", { name: "Confirmar" })).toBeDisabled();
+    await conferir(page);
+    // Colar o código inteiro preenche as seis caixinhas e confere sozinho.
+    await caixa1.fill("111111");
+    await expect(codigo.getByText("Esse código não confere")).toBeVisible();
+    await expect(codigo).toContainText("Restam 2 tentativas.");
+    await expect(codigo.getByLabel("Número 6 de 6")).toHaveValue("1");
+    await conferir(page);
+    // Acabada a contagem, dá para pedir por ligação.
+    await expect(codigo.getByText(/Receber por ligação em/)).toHaveCount(0, { timeout: 6000 });
+    await codigo.getByRole("button", { name: "Receber por ligação" }).click();
+    const voz = page.getByRole("dialog", { name: "Atenda a ligação da Meta" });
+    await expect(voz).toContainText("A Meta está ligando para +55 61 3333-0101. Uma voz lê os 6 números.");
+    await expect(voz.getByText(/Ligar de novo em/)).toBeVisible();
+    expect(estado.whatsapp.meta.pedidos).toEqual(["SMS", "VOICE"]);
+    await voz.getByLabel("Número 1 de 6").focus();
+    await page.keyboard.type("482193");
+    await expect(page.getByRole("dialog", { name: "Número confirmado" })).toContainText("Tudo certo com a Meta");
+    await expect(page.getByRole("heading", { name: "O Residencial Ipê já está no WhatsApp oficial" })).toBeVisible();
+    expect(estado.whatsapp.meta.codigos).toEqual(["111111", "482193"]);
+  });
+
+  test("F5.12 (466): fechou a janela no meio; quando o código da Meta vence, tentar de novo liga", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page);
+    await page.goto(`${PLATAFORMA}/configuracoes/whatsapp`);
+    const cartao = page.getByRole("region", { name: "Número oficial do WhatsApp" });
+    await page.evaluate(() => { (window as unknown as { __cenarioMeta: string }).__cenarioMeta = "CANCEL"; });
+    await cartao.getByRole("button", { name: "Conectar pelo WhatsApp oficial" }).click();
+    await expect(cartao).toContainText("Você fechou a janela antes de terminar");
+    await expect(cartao).toContainText("Nada foi ligado e nada foi cobrado.");
+    expect(estado.whatsapp.meta.cadastros).toEqual([]);
+    await conferir(page);
+
+    await page.evaluate(() => { (window as unknown as { __cenarioMeta: string }).__cenarioMeta = "FINISH"; });
+    estado.whatsapp.meta.proximo = "CODIGO_VENCIDO";
+    await cartao.getByRole("button", { name: "Continuar na Meta" }).click();
+    await expect(cartao).toContainText("A Meta terminou, mas o número não ligou");
+    await expect(cartao).toContainText("Não ligou");
+    await expect(cartao).toContainText("Parou aqui.");
+    await conferir(page);
+    await cartao.getByRole("button", { name: "Tentar de novo" }).click();
+    await expect(page.getByRole("heading", { name: "O Residencial Ipê já está no WhatsApp oficial" })).toBeVisible();
+    expect(estado.whatsapp.meta.cadastros).toHaveLength(2);
+  });
+
+  test("F5.12 (467): o número que espera o código abre a janela do código; o código vencido pede outro", async ({ page }) => {
+    const estado = await instalarApiPlataformaFalsa(page);
+    estado.whatsapp.conexao.cadastroPendente = { numero: "+556133330101", desde: "2026-10-31T12:00:00Z" };
+    await page.goto(`${PLATAFORMA}/configuracoes/whatsapp`);
+    const codigo = page.getByRole("dialog", { name: "Confirme o número do condomínio" });
+    await expect(codigo).toContainText("A Meta precisa confirmar que +55 61 3333-0101 é do condomínio.");
+    expect(estado.whatsapp.meta.pedidos).toEqual([]);
+    await conferir(page);
+    await codigo.getByRole("button", { name: "Mandar SMS" }).click();
+    await expect(codigo.getByText(/Reenviar em/)).toBeVisible();
+    estado.whatsapp.meta.codigoVencido = true;
+    await codigo.getByLabel("Número 1 de 6").fill("482193");
+    await expect(codigo).toContainText("O código venceu");
+    await conferir(page);
+    await codigo.getByRole("button", { name: "Mandar outro SMS" }).click();
+    expect(estado.whatsapp.meta.pedidos).toEqual(["SMS", "SMS"]);
+    await codigo.getByLabel("Número 1 de 6").fill("482193");
+    await expect(page.getByRole("heading", { name: "O Residencial Ipê já está no WhatsApp oficial" })).toBeVisible();
+  });
+
+  test("F5.12 (466): vindo de outra página pelo menu, a página recarrega uma vez para a janela da Meta poder abrir", async ({ page }) => {
+    await instalarApiPlataformaFalsa(page);
+    await page.goto(`${PLATAFORMA}/configuracoes`);
+    await page.getByRole("region", { name: "Comunicação" }).getByRole("link", { name: /^WhatsApp/ }).click();
+    await expect(page).toHaveURL(`${PLATAFORMA}/configuracoes/whatsapp`);
+    await expect(page.getByRole("button", { name: "Conectar pelo WhatsApp oficial" })).toBeVisible();
+    // O documento agora nasceu nesta rota, com a CSP e o COOP da janela.
+    expect(await page.evaluate(() => new URL(performance.getEntriesByType("navigation")[0]!.name).pathname)).toBe("/configuracoes/whatsapp");
+  });
+
+  test("F5.12: quem não é síndico vê o cartão sem o botão da janela", async ({ page }) => {
+    await instalarApiPlataformaFalsa(page, { quem: "SECRETARIA" });
+    await page.goto(`${PLATAFORMA}/configuracoes/whatsapp`);
+    const cartao = page.getByRole("region", { name: "Número oficial do WhatsApp" });
+    await expect(cartao).toContainText("Quem faz o cadastro na Meta é o síndico, no app.");
+    await expect(cartao.getByRole("button", { name: "Conectar pelo WhatsApp oficial" })).toHaveCount(0);
   });
 
   test("F5.12: com o número oficial ligado, o aviso de piloto some e o cartão mostra o que falta", async ({ page }) => {

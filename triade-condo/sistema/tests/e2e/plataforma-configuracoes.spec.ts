@@ -45,6 +45,8 @@ test.describe("Configurações por tarefa", () => {
     await page.goto(`${PLATAFORMA}/configuracoes?aba=whatsapp`);
     await expect(page).toHaveURL(`${PLATAFORMA}/configuracoes/whatsapp`);
     await expect(page.getByRole("heading", { level: 1, name: "WhatsApp" })).toBeVisible();
+    // Vinda de outra rota, a página recarrega uma vez para a janela da Meta (quadro 466): espera o botão.
+    await expect(page.getByRole("button", { name: "Conectar pelo WhatsApp oficial" })).toBeVisible();
     await page.goto(`${PLATAFORMA}/configuracoes/nao-existe`);
     await expect(page).toHaveURL(`${PLATAFORMA}/configuracoes`);
   });

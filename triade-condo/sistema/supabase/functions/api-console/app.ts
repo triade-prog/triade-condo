@@ -56,6 +56,7 @@ import {
   decidirModeloSchema,
   desconectarWhatsappSchema,
   ligarContaMetaSchema,
+  desligarMetaSchema,
   editarModeloSchema,
   ajusteAnexarSchema,
   ajusteEtapaManutencaoSchema,
@@ -191,7 +192,7 @@ import { hmacHex } from "../_shared/cripto.ts";
 import { criarSessao, type DepsSessao, type VarsSessao } from "../_shared/sessao.ts";
 import { lerCorpo } from "../_shared/validar.ts";
 import { idDaRota, rotasConfiguracao } from "../_shared/rotas_configuracao.ts";
-import { novoPin, type ClienteMeta, type ModeloParaMeta } from "../_shared/meta.ts";
+import { ErroMeta, novoPin, type ClienteMeta, type ModeloParaMeta } from "../_shared/meta.ts";
 import { cifrarCredenciais, decifrarCredenciais, type ConectorWhatsapp, type CredenciaisWhatsapp } from "../_shared/whatsapp.ts";
 
 export interface DepsConsole extends DepsSessao {
@@ -1079,6 +1080,36 @@ export function criarApiConsole(segredo: string | undefined, deps: DepsConsole) 
     const a = await rpc<{ wabaId: string; credenciais: string }>("console_meta_acesso", cliente(c));
     const cred = await decifrarCredenciais(meta().chave, a.credenciais);
     return c.json({ modelosEnviados: await noProvedor("meta/modelos", () => mandarModelosMeta(c, meta().cliente.tokenDe(cred.token), a.wabaId)) });
+  });
+
+  // Conferir na Meta e desligar o número (0319, quadro 469). Conferir pergunta à Meta o cartão
+  // (health_status), a qualidade, o nome e o limite; quem vê a ficha pode.
+  app.post("/v1/clientes/:id/whatsapp/meta/conferir", async (c) => {
+    const m = meta();
+    const a = await rpc<{ wabaId: string; numeroId: string; credenciais: string }>("console_meta_conferir_acesso", cliente(c));
+    const token = m.cliente.tokenDe((await decifrarCredenciais(m.chave, a.credenciais)).token);
+    const saude = await noProvedor("meta/saude", () => m.cliente.saudeConta(token, a.wabaId));
+    const n = await noProvedor("meta/numero", () => m.cliente.situacaoNumero(token, a.numeroId));
+    return c.json(await rpc("console_meta_conferido", {
+      ...cliente(c), p_saude: saude, p_qualidade: n.qualidade, p_nome_exibicao: n.nome, p_limite: n.limite,
+    }));
+  });
+
+  // Desligar tira o registro do número na Meta (a conta continua do condomínio) e avisa o síndico,
+  // que pode ligar de novo pela janela. Número que a Meta já não tinha registrado desliga igual.
+  app.post("/v1/clientes/:id/whatsapp/meta/desligar", async (c) => {
+    const d = await lerCorpo(c, desligarMetaSchema);
+    const m = meta();
+    const a = await rpc<{ wabaId: string; numeroId: string; credenciais: string }>("console_meta_acesso", cliente(c));
+    const token = m.cliente.tokenDe((await decifrarCredenciais(m.chave, a.credenciais)).token);
+    await noProvedor("meta/desregistrar", async () => {
+      try {
+        await m.cliente.desregistrar(token, a.numeroId);
+      } catch (erro) {
+        if (!(erro instanceof ErroMeta && erro.codigo === 133010)) throw erro;
+      }
+    });
+    return c.json(await rpc("console_meta_desligar", { ...cliente(c), p_motivo: d.motivo }));
   });
 
   // ---------------------------------------------------------------------------------------

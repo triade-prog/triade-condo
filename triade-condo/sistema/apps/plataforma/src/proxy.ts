@@ -1,7 +1,7 @@
 // Proxy (antigo middleware): gera um nonce por requisição e grava a CSP e os cabeçalhos de
 // segurança (F0.8). O nonce exige renderização dinâmica das páginas.
 import { NextResponse, type NextRequest } from "next/server";
-import { cabecalhosSeguranca, gerarNonce, montarCsp, origemArmazenamento } from "@triade/servidor/cabecalhos";
+import { cabecalhosSeguranca, gerarNonce, montarCsp, origemArmazenamento, usaJanelaMeta } from "@triade/servidor/cabecalhos";
 
 export function proxy(request: NextRequest) {
   const nonce = gerarNonce();
@@ -10,6 +10,8 @@ export function proxy(request: NextRequest) {
     nonce,
     dev: process.env.NODE_ENV === "development",
     armazenamento: origemArmazenamento(process.env.SUPABASE_FUNCTIONS_URL),
+    // A janela da Meta (cadastro incorporado do WhatsApp) só na página que a abre.
+    janelaMeta: usaJanelaMeta("plataforma", request.nextUrl.pathname),
   });
 
   const headers = new Headers(request.headers);

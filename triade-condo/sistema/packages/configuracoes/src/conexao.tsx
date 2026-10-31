@@ -21,6 +21,11 @@ export interface Conexao {
   faltaCartaoEm?: string;
   suspensoEm?: string;
   cadastroMetaEm?: string;
+  /** A janela da Meta terminou, mas o número espera o código por SMS ou ligação (quadro 467). */
+  cadastroPendente?: { numero: string; desde: string } | null;
+  /** O Console desligou o número oficial (quadro 469). */
+  desligadoEm?: string;
+  motivoDesligado?: string;
   modelos?: { aprovados: number; emAnalise: number; recusados: number; total: number };
 }
 

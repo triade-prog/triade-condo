@@ -9,8 +9,8 @@
 // comunicados pelo WhatsApp (F6.6; CD-11, W-20) ligam em Comunicados. Na página por tarefa
 // (decisão B.1) as partes gravam pela barra do rodapé; o tempo de anexar fica no bloco "Feito pela
 // TRÍADE" (D.1) e os avisos de cada pessoa foram para o menu da conta, em Meus avisos (C.1). No
-// alto, o número oficial pela Meta (F5.12, quadros 460 a 462); o de teste fica embaixo dele até
-// o oficial ser ligado.
+// alto, o número oficial pela Meta (F5.12, quadros 460 a 462), ligado pela janela da Meta
+// (quadros 466 a 468, só o síndico, no app); o de teste fica embaixo dele até o oficial ser ligado.
 
 import { useState } from "react";
 import { AVISOS_NO_WHATSAPP, MINUTOS_ANEXAR, prometePrazo, type AvisoNoWhatsapp } from "@triade/domain";
@@ -31,7 +31,7 @@ interface ConfigWhatsapp {
   meusAvisos?: { telefone: string; tipos: AvisoNoWhatsapp[]; ligado: boolean; versao: number };
   quedas?: { pessoaId?: string; quemCuida?: string };
   pessoasQuedas?: { id: string; nome: string; sindico: boolean }[];
-  pode: { editar: boolean; tecnica?: boolean; aceitarTermo: boolean };
+  pode: { editar: boolean; tecnica?: boolean; aceitarTermo: boolean; cadastrarMeta?: boolean };
 }
 
 function Termo({ aoAceitar }: { aoAceitar: () => void }) {
@@ -189,7 +189,8 @@ export function AbaWhatsapp({ aoSalvar, tecnica }: { aoSalvar: (texto: string) =
   const salvo = (texto: string) => { aoSalvar(texto); carga.recarregar(); };
   return (
     <>
-      <NumeroOficial numero={d.numero} conexao={d.conexao} podeCadastrar={onde === "app" && d.pode.editar} aoMudar={() => { salvo("Avisamos a TRÍADE. Ela liga o número em até um dia útil."); aoMudar?.(); }} />
+      <NumeroOficial numero={d.numero} conexao={d.conexao} podeCadastrar={onde === "app" && d.pode.cadastrarMeta === true}
+        aoMudar={(texto) => { if (texto) salvo(texto); else carga.recarregar(); aoMudar?.(); }} />
       {d.conexao.provedor === "META" ? null : (
         <section aria-labelledby="t-numero-teste" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
           <h2 id="t-numero-teste" className="t-titulo-secao font-medium">Número de teste (piloto)</h2>

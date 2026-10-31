@@ -60,4 +60,15 @@ describe("F0.8: cabeçalhos de segurança e CSP com nonce", () => {
     expect(cabecalhosSeguranca("plataforma", "/")["Permissions-Policy"]).toMatch(/^camera=\(\),/);
     expect(cabecalhosSeguranca("plataforma", "/pedidos")["Permissions-Policy"]).toMatch(/^camera=\(\),/);
   });
+
+  it("a janela da Meta só na página do WhatsApp das Configurações da Plataforma (quadro 466)", () => {
+    expect(cabecalhosSeguranca("plataforma", "/configuracoes/whatsapp")["Cross-Origin-Opener-Policy"]).toBe("same-origin-allow-popups");
+    expect(cabecalhosSeguranca("plataforma", "/configuracoes")["Cross-Origin-Opener-Policy"]).toBe("same-origin");
+    expect(cabecalhosSeguranca("console", "/configuracoes/whatsapp")["Cross-Origin-Opener-Policy"]).toBe("same-origin");
+    const csp = montarCsp({ nonce: "abc", janelaMeta: true });
+    expect(csp).toContain("frame-src https://www.facebook.com https://web.facebook.com https://staticxx.facebook.com;");
+    expect(csp).toContain("https://graph.facebook.com");
+    expect(csp).toContain("script-src 'self' 'nonce-abc' 'strict-dynamic';");
+    expect(montarCsp({ nonce: "abc" })).toContain("frame-src 'none';");
+  });
 });

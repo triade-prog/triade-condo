@@ -6,6 +6,7 @@ import { armazenamentoSupabase } from "../_shared/arquivos.ts";
 import { bancoPostgrest } from "../_shared/banco.ts";
 import { correioResend } from "../_shared/email.ts";
 import { conectorAnthropic, conectorIaTeste, conectorTranscricaoTeste } from "../_shared/ia.ts";
+import { META_APP_ID } from "@triade/domain";
 import { clienteMeta } from "../_shared/meta.ts";
 import { chaveCredenciais, conectorWafly } from "../_shared/whatsapp.ts";
 import { criarApiPlataforma } from "./app.ts";
@@ -60,7 +61,7 @@ const app = criarApiPlataforma(Deno.env.get("REPASSE_SEGREDO"), {
   whatsapp: waflyToken && chaveWhatsapp ? { conector: conectorWafly(waflyToken), chave: await chaveCredenciais(chaveWhatsapp) } : undefined,
   meta: segredoMeta && verificacaoMeta && chaveWhatsapp
     ? {
-      cliente: clienteMeta({ segredoApp: segredoMeta, tokenSistema: Deno.env.get("META_TOKEN") ?? "" }),
+      cliente: clienteMeta({ segredoApp: segredoMeta, tokenSistema: Deno.env.get("META_TOKEN") ?? "", appId: META_APP_ID }),
       segredoApp: segredoMeta,
       verificacao: verificacaoMeta,
       chave: await chaveCredenciais(chaveWhatsapp),
