@@ -1087,10 +1087,13 @@ export async function gerarPdfContrato(d: RetratoContrato, hash: string): Promis
 }
 
 // ---------------------------------------------------------------------------------------
-// O aditivo de reajuste (0311; CM-13, CM-30): o retrato que o banco gravou no aviso.
+// O aditivo de reajuste (0311; CM-13, CM-30): o retrato que o banco gravou no aviso. O de retorno
+// (0318, CM-31) usa o mesmo retrato, com o tipo RETORNO e o plano da volta.
 
 export interface RetratoAditivo {
   numero: number;
+  /** Sem o tipo, é o de reajuste (os retratos da 0311). */
+  tipo?: "REAJUSTE" | "RETORNO";
   titulo: string;
   texto: string;
   campos: Record<string, string | null>;
@@ -1120,7 +1123,10 @@ export async function gerarPdfAditivo(d: RetratoAditivo, hash: string): Promise<
           { cor: CINZA });
   if (d.contrato.hash) e.texto(`Contrato alterado, impressão digital (sha256): ${d.contrato.hash}`, fonte, 7.5, { cor: CINZA, depois: 10 });
   e.texto(d.texto, fonte, 10.5, { depois: 18 });
-  e.texto("O valor novo vale pelo aviso ao síndico registrado na data acima. A assinatura deste aditivo pelo gov.br ainda não é pedida pelo sistema.",
+  e.texto(d.tipo === "RETORNO"
+    ? "O contrato volta a valer quando as duas partes assinarem este aditivo pelo gov.br e a TRÍADE conferir as assinaturas. "
+      + "A cobrança volta na competência dita acima, pelo plano deste aditivo."
+    : "O valor novo vale pelo aviso ao síndico registrado na data acima. As partes podem assinar este aditivo pelo gov.br.",
           fonte, 9, { cor: CINZA });
 
   const paginas = doc.getPages();

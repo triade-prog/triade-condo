@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   ADITIVO_CAMPOS,
+  ADITIVO_CAMPOS_RETORNO,
+  aditivoRetornoSchema,
   avisarAte,
   avisoReajusteSchema,
   CANAIS_AVISO,
@@ -10,6 +12,7 @@ import {
   clienteFicouSchema,
   competenciaDesde,
   confirmarCancelamentoSchema,
+  desfazerCancelamentoSchema,
   dispensarRenovacaoSchema,
   editarExpansaoSchema,
   encerrarExpansaoSchema,
@@ -20,11 +23,14 @@ import {
   novaExpansaoSchema,
   ORIGENS_RISCO,
   pedirCancelamentoSchema,
+  reativarClienteSchema,
   regraReajusteSchema,
   retencaoCancelamentoSchema,
   SITUACOES_CANCELAMENTO,
+  SITUACOES_VOLTA_CANCELAMENTO,
   SITUACOES_RENOVACAO,
   textoAvisoReajuste,
+  TIPOS_ADITIVO,
   TIPOS_EXPANSAO,
   TIPOS_RENOVACAO,
   TIPOS_RISCO,
@@ -37,6 +43,7 @@ import { MOTIVOS_INICIO_COMERCIAL } from "./comercial.ts";
 import { TEXTOS_MOTIVO } from "./textos.ts";
 
 const SQL = readFileSync(new URL("../../../supabase/migrations/0311_comercial_renovacao_cancelamento.sql", import.meta.url), "utf8");
+const SQL_0318 = readFileSync(new URL("../../../supabase/migrations/0318_comercial_reativar_fechar_entrada.sql", import.meta.url), "utf8");
 const ID = "6f1f3a1e-4a55-4c43-9d40-5a2f7e9c1b10";
 const listaDoBanco = (re: RegExp) => {
   const m = SQL.match(re);
@@ -75,6 +82,29 @@ describe("listas iguais às do banco (0311)", () => {
       Object.keys(SITUACOES_CANCELAMENTO).filter((s) => s !== "ENCERRADO"),
     );
     expect(SQL).toContain("then 'ENCERRADO' else k.situacao end");
+  });
+
+  it("0318: o cancelamento desfeito e o reativado; as duas partes do aditivo e os campos do retorno", () => {
+    const m = SQL_0318.match(/add constraint cancelamentos_cliente_situacao_check\s+check \(situacao in \(([^)]*)\)\)/);
+    expect(m).not.toBeNull();
+    expect([...m![1]!.matchAll(/'([A-Z_]+)'/g)].map((x) => x[1])).toEqual([
+      ...Object.keys(SITUACOES_CANCELAMENTO).filter((s) => s !== "ENCERRADO"), ...Object.keys(SITUACOES_VOLTA_CANCELAMENTO),
+    ]);
+    expect(SQL_0318).toContain("then 'ENCERRADO' else k.situacao end");
+    const t = SQL_0318.match(/alter table modelos_aditivo add column tipo text not null default 'REAJUSTE' check \(tipo in \(([^)]*)\)\)/);
+    expect(t).not.toBeNull();
+    expect([...t![1]!.matchAll(/'([A-Z_]+)'/g)].map((x) => x[1])).toEqual(Object.keys(TIPOS_ADITIVO));
+    const c = SQL_0318.match(/when 'RETORNO' then array\[([^\]]*)\]/);
+    expect(c).not.toBeNull();
+    expect([...c![1]!.matchAll(/'([a-z_]+)'/g)].map((x) => x[1])).toEqual(Object.keys(ADITIVO_CAMPOS_RETORNO));
+  });
+
+  it("0318: cada motivo de recusa tem texto (também os que saem por variável)", () => {
+    const motivos = [...SQL_0318.matchAll(/recusar_motivo\('(?:[^']|'')*',\s*'([A-Z_]+)'\)/g)].map((x) => x[1]!);
+    expect(motivos.length).toBeGreaterThan(10);
+    for (const x of [...motivos, "ADITIVO_SUBSTITUIDO", "ADITIVO_ASSINADO", "ADITIVO_GERANDO", "CONDOMINIO_JA_CONFERIDO", "ORDEM_DAS_ASSINATURAS"]) {
+      expect(TEXTOS_MOTIVO[x], x).toBeTruthy();
+    }
   });
 
   it("expansão: tipo e etapa", () => {
@@ -142,6 +172,14 @@ describe("as contas da renovação e do cancelamento", () => {
     expect(camposErradosAditivo("O valor passa de «valor_atual» para «valor_novo».")).toEqual([]);
     expect(camposErradosAditivo("«valor» e «sindico» e « solta")).toEqual(["«", "«sindico»", "«valor»"]);
   });
+
+  it("cada parte do aditivo tem os seus campos (0318)", () => {
+    const retorno = "O «condominio», por «representante» (CPF «cpf_representante»), volta a partir da «vale_desde».";
+    expect(camposErradosAditivo(retorno, "RETORNO")).toEqual([]);
+    expect(camposErradosAditivo(retorno)).toEqual(["«cpf_representante»", "«representante»"]);
+    expect(camposErradosAditivo("Reajuste em «aniversario».", "RETORNO")).toEqual(["«aniversario»"]);
+    expect(camposErradosAditivo("«constructor» e «toString»", "RETORNO")).toEqual(["«constructor»", "«toString»"]);
+  });
 });
 
 describe("o que a tela manda", () => {
@@ -175,6 +213,34 @@ describe("o que a tela manda", () => {
     const texto = "Aditivo ao contrato «contrato» do «condominio». O valor passa a «valor_novo» desde a «vale_desde».";
     expect(modeloAditivoSchema.safeParse({ titulo: "Aditivo de reajuste", texto }).success).toBe(true);
     expect(modeloAditivoSchema.safeParse({ titulo: "Aditivo de reajuste", texto: texto.replace("«valor_novo»", "«valor»") }).success).toBe(false);
+  });
+
+  it("o modelo de aditivo de retorno confere os campos do retorno; o tipo é Reajuste ou Retorno", () => {
+    const texto = "O «condominio» (CNPJ «cnpj»), por «representante», volta ao contrato «contrato» no plano «plano», por «valor_mensal».";
+    expect(modeloAditivoSchema.parse({ tipo: "RETORNO", titulo: "Aditivo de retorno", texto }).tipo).toBe("RETORNO");
+    expect(modeloAditivoSchema.parse({ titulo: "Aditivo de reajuste", texto: "Aditivo ao contrato «contrato» do «condominio» com o valor «valor_novo»." }).tipo).toBeNull();
+    expect(modeloAditivoSchema.safeParse({ tipo: "RETORNO", titulo: "Aditivo de retorno", texto: `${texto} Reajuste em «aniversario».` }).success).toBe(false);
+    expect(modeloAditivoSchema.safeParse({ tipo: "OUTRO", titulo: "Aditivo de retorno", texto }).success).toBe(false);
+  });
+
+  it("desfazer pede a nota; reativar, a versão", () => {
+    expect(desfazerCancelamentoSchema.safeParse({ versao: 3 }).success).toBe(false);
+    expect(desfazerCancelamentoSchema.safeParse({ versao: 3, nota: "  " }).success).toBe(false);
+    expect(desfazerCancelamentoSchema.parse({ versao: 3, nota: " A síndica desistiu " })).toEqual({ versao: 3, nota: "A síndica desistiu" });
+    expect(reativarClienteSchema.safeParse({}).success).toBe(false);
+    expect(reativarClienteSchema.parse({ versao: 4 })).toEqual({ versao: 4 });
+  });
+
+  it("o aditivo de retorno: quem assina, CPF válido, competência no dia 1 e o ciclo", () => {
+    const base = { representante: "Lúcia Prado", cpf: "529.982.247-25", competencia: "2027-03-01", ciclo: "MENSAL" };
+    expect(aditivoRetornoSchema.parse(base)).toEqual({ ...base, cpf: "52998224725", valorCentavos: null, motivo: null });
+    expect(aditivoRetornoSchema.safeParse({ ...base, cpf: "529.982.247-24" }).success).toBe(false);
+    expect(aditivoRetornoSchema.safeParse({ ...base, cpf: undefined }).success).toBe(false);
+    expect(aditivoRetornoSchema.safeParse({ ...base, competencia: "2027-03-15" }).success).toBe(false);
+    expect(aditivoRetornoSchema.safeParse({ ...base, ciclo: "SEMESTRAL" }).success).toBe(false);
+    expect(aditivoRetornoSchema.safeParse({ ...base, representante: "L" }).success).toBe(false);
+    expect(aditivoRetornoSchema.safeParse({ ...base, valorCentavos: 0 }).success).toBe(false);
+    expect(aditivoRetornoSchema.parse({ ...base, valorCentavos: 159900, motivo: "Prefere o anual" })).toMatchObject({ valorCentavos: 159900, motivo: "Prefere o anual" });
   });
 
   it("o sinal à mão é síndico novo ou troca na pauta; uso caindo vem dos pedidos", () => {
