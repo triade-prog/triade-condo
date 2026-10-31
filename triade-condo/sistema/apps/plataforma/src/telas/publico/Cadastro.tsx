@@ -18,7 +18,7 @@ import {
 import { dia } from "../pedidos/comum.tsx";
 import { aniversarioDoCampo, aniversarioNoCampo, CampoAniversario, type AniversarioNoCampo } from "../moradores/FamiliaPets.tsx";
 import type { CadastroPublico } from "../tipos.ts";
-import { Cartao, TelaPublica } from "./comum.tsx";
+import { Cartao, TelaPublica, useEncerrou } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: CadastroPublico };
 const RODAPE = "Link só para o cadastro do condomínio. Não precisa de conta.";
@@ -70,6 +70,7 @@ export function Cadastro() {
   const base = `/v1/publico/cadastro/${encodeURIComponent(codigo)}`;
   const [carga, setCarga] = useState<Carga>({ estado: "carregando" });
   const [corrigindo, setCorrigindo] = useState(false);
+  const encerrou = useEncerrou();
 
   useEffect(() => {
     let vivo = true;
@@ -82,11 +83,12 @@ export function Cadastro() {
         r = await chamarApi<CadastroPublico>(base);
       }
       if (!vivo) return;
+      if (!r.ok && encerrou(r.erro)) return;
       setCarga(r.ok ? { estado: "pronto", dados: r.dados }
         : { estado: "erro", texto: r.status === 404 ? "Este link não existe. Confira o endereço ou peça um novo ao condomínio." : textoDoErro(r.erro) });
     })();
     return () => { vivo = false; };
-  }, [base, codigo]);
+  }, [base, codigo, encerrou]);
 
   if (carga.estado === "carregando") return <TelaPublica titulo="Cadastro do condomínio" icone="pessoa" rodape={RODAPE}><Carregando rotulo="Abrindo o cadastro…" /></TelaPublica>;
   if (carga.estado === "erro") return <TelaPublica titulo="Cadastro do condomínio" icone="pessoa" rodape={RODAPE}><Aviso tom="atencao">{carga.texto}</Aviso></TelaPublica>;
@@ -202,6 +204,7 @@ function Formulario({ d, base, chave, enviado }: { d: CadastroPublico; base: str
   const nomes = temPasso2 ? PASSOS : ([PASSOS[0], PASSOS[2]] as const);
   const ultimo = nomes.length;
   const muda = (x: Partial<Rascunho>) => setR({ ...r, ...x });
+  const encerrou = useEncerrou();
 
   const corpo = () => ({
     unidadeId: r.unidadeId || null,
@@ -231,6 +234,7 @@ function Formulario({ d, base, chave, enviado }: { d: CadastroPublico; base: str
     const res = await chamarApi<CadastroPublico>(base, { corpo: { ...corpo(), ...(chave ? { chave } : {}) } });
     setEnviando(false);
     if (!res.ok) {
+      if (encerrou(res.erro)) return;
       setErro(res.erro);
       const c = camposComErro(res.erro);
       setCampos(c);

@@ -200,7 +200,7 @@ export function JanelaEnviarAssinado({ contrato, parte, condominioEnvio, nomeCon
   );
 }
 
-function Marca({ feito, titulo, texto }: { feito: boolean; titulo: string; texto: string }) {
+export function Marca({ feito, titulo, texto }: { feito: boolean; titulo: string; texto: string }) {
   return (
     <li className="flex items-start gap-3 border-t border-linha py-3 first:border-t-0">
       <span className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full ${feito ? "bg-ok-fundo text-ok" : "bg-erro-fundo text-erro"}`} aria-hidden="true">
@@ -212,7 +212,7 @@ function Marca({ feito, titulo, texto }: { feito: boolean; titulo: string; texto
   );
 }
 
-function Parte({ titulo, acao, children }: { titulo: string; acao?: ReactNode; children: ReactNode }) {
+export function Parte({ titulo, acao, children }: { titulo: string; acao?: ReactNode; children: ReactNode }) {
   return (
     <section aria-label={titulo} className="grid gap-1 rounded-[16px] border border-linha px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="t-titulo-cartao">{titulo}</h3>{acao}</div>

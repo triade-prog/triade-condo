@@ -15,7 +15,7 @@ import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoTexto, Carregando, campos
 import { diaHora } from "../pedidos/comum.tsx";
 import { subir } from "../pedidos/Arquivos.tsx";
 import type { EnvioDoPrestador, PrestadorPublico } from "../tipos.ts";
-import { Cartao, TelaPublica } from "./comum.tsx";
+import { Cartao, TelaPublica, useEncerrou } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: PrestadorPublico };
 type Modo = "chegada" | "impedimento" | "terminei" | "recusar";
@@ -38,12 +38,15 @@ export function Prestador() {
   const [recado, setRecado] = useState<string | null>(null);
   const [falha, setFalha] = useState<string | null>(null);
 
+  const encerrou = useEncerrou();
   const carregar = useCallback(() => {
     void chamarApi<PrestadorPublico>(base).then((r) => {
+      // O link do prestador encerrado pelo fim do contrato (A4) também mostra a página do quadro 489.
+      if (r.ok && r.dados.encerrado && encerrou({ ...r.dados })) return;
       if (r.ok) setCarga({ estado: "pronto", dados: r.dados });
-      else setCarga({ estado: "erro", texto: r.status === 404 ? "Este link não existe. Confira o endereço ou peça um novo ao condomínio." : textoDoErro(r.erro) });
+      else if (!encerrou(r.erro)) setCarga({ estado: "erro", texto: r.status === 404 ? "Este link não existe. Confira o endereço ou peça um novo ao condomínio." : textoDoErro(r.erro) });
     });
-  }, [base]);
+  }, [base, encerrou]);
   useEffect(carregar, [carregar]);
 
   const titulo = carga.estado === "pronto" ? carga.dados.condominio : "Serviço no condomínio";
@@ -73,7 +76,7 @@ export function Prestador() {
   async function confirmar() {
     setFalha(null);
     const r = await chamarApi(`${base}/confirmar`, { corpo: {} });
-    if (!r.ok) return setFalha(textoDoErro(r.erro));
+    if (!r.ok) return encerrou(r.erro) ? undefined : setFalha(textoDoErro(r.erro));
     pronto(null);
   }
   const recadoOk = recado ? <Aviso tom="ok">{recado}</Aviso> : null;

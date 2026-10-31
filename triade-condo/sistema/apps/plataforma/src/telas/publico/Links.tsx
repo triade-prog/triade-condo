@@ -8,7 +8,8 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Aviso, Botao, Carregando, chamarApi, Icone, textoDoErro, type ErroApi } from "@triade/ui";
 import type { ComunicadoPublico } from "../tipos.ts";
-import { Cartao, ComunicadoLido, ReceberPeloWhatsapp, TelaPublica } from "./comum.tsx";
+import { encerramentoDe } from "./encerrado.ts";
+import { Cartao, ComunicadoLido, ReceberPeloWhatsapp, TelaPublica, useEncerrou } from "./comum.tsx";
 
 const vencido = (e: ErroApi) => textoDoErro(e);
 
@@ -21,10 +22,11 @@ export function ComunicadoDoLink() {
   const { codigo } = useParams<{ codigo: string }>();
   const [d, setD] = useState<{ condominio: string; comunicado?: ComunicadoPublico; foraDeUso?: boolean; comunicadosWhatsapp?: string } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const encerrou = useEncerrou();
   useEffect(() => {
     void chamarApi<{ condominio: string; comunicado?: ComunicadoPublico; foraDeUso?: boolean; comunicadosWhatsapp?: string }>(`/v1/publico/c/${encodeURIComponent(codigo)}`)
-      .then((r) => (r.ok ? setD(r.dados) : setErro(r.status === 404 ? "Este link não existe. Confira o endereço." : vencido(r.erro))));
-  }, [codigo]);
+      .then((r) => (r.ok ? setD(r.dados) : encerrou(r.erro) ? undefined : setErro(r.status === 404 ? "Este link não existe. Confira o endereço." : vencido(r.erro))));
+  }, [codigo, encerrou]);
   const linkArquivo = useCallback((arquivo: string) => `/v1/publico/c/${encodeURIComponent(codigo)}/arquivos/${arquivo}`, [codigo]);
   if (erro) return <TelaPublica titulo="Comunicado do condomínio"><Aviso tom="atencao">{erro}</Aviso></TelaPublica>;
   if (!d) return <TelaPublica titulo="Comunicado do condomínio"><Carregando rotulo="Abrindo o comunicado…" /></TelaPublica>;
@@ -42,13 +44,14 @@ export function ConfirmarEmail() {
   const [estado, setEstado] = useState<"livre" | "enviando">("livre");
   const [feito, setFeito] = useState<{ nome?: string; email: string; condominio: string } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const encerrou = useEncerrou();
   async function confirmar() {
     setErro(null);
     setEstado("enviando");
     const r = await chamarApi<{ nome?: string; email: string; condominio: string }>("/v1/publico/email/confirmar", { corpo: { codigo } });
     setEstado("livre");
     if (r.ok) setFeito(r.dados);
-    else setErro(r.status === 404 || r.erro.codigo === "VALIDATION_ERROR" ? "Este link venceu ou foi cancelado. Peça um novo ao condomínio." : vencido(r.erro));
+    else if (!encerrou(r.erro)) setErro(r.status === 404 || r.erro.codigo === "VALIDATION_ERROR" ? "Este link venceu ou foi cancelado. Peça um novo ao condomínio." : vencido(r.erro));
   }
   if (feito) {
     return (
@@ -86,6 +89,7 @@ export function PararEmail() {
     const x = await chamarApi<{ condominio: string; parou: boolean }>(`/v1/publico/email/${acao}`, { corpo: { codigo } });
     setEstado("livre");
     if (x.ok) setR(x.dados);
+    else if (encerramentoDe(x.erro)) setErro("Este condomínio não usa mais a TRÍADE: nada mais será enviado por e-mail.");
     else setErro(x.status === 404 || x.erro.codigo === "VALIDATION_ERROR" ? "Este link venceu. Peça ajuda ao condomínio." : vencido(x.erro));
   }
   return (
@@ -122,12 +126,13 @@ export function DocumentoDoLink() {
   const [estado, setEstado] = useState<"livre" | "abrindo">("livre");
   const [aberto, setAberto] = useState<{ titulo: string; numero: number; condominio: string } | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const encerrou = useEncerrou();
   async function abrir() {
     setErro(null);
     setEstado("abrindo");
     const r = await chamarApi<{ url: string; titulo: string; numero: number; condominio: string }>(`/v1/publico/d/${encodeURIComponent(codigo)}`);
     setEstado("livre");
-    if (!r.ok) return setErro(r.status === 404 ? "Este link não existe. Confira o endereço." : vencido(r.erro));
+    if (!r.ok) return encerrou(r.erro) ? undefined : setErro(r.status === 404 ? "Este link não existe. Confira o endereço." : vencido(r.erro));
     setAberto(r.dados);
     window.location.href = r.dados.url;
   }

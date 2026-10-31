@@ -9,7 +9,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { ESTADOS_PROCURACAO, formatarDataHora, PESOS_ASSEMBLEIA, porcento, QUORUNS, SITUACOES_ITEM } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, CampoSelecao, CampoTexto, Carregando, camposComErro, chamarApi, classeBotao, Icone, Selo, textoDoErro, type ErroApi } from "@triade/ui";
 import type { AssembleiaPublica } from "../tipos.ts";
-import { Cartao, Opcao, TelaPublica } from "./comum.tsx";
+import { Cartao, Opcao, TelaPublica, useEncerrou } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: AssembleiaPublica };
 type Item = AssembleiaPublica["itens"][number];
@@ -20,13 +20,14 @@ export function Assembleia() {
   const { codigo } = useParams<{ codigo: string }>();
   const base = `/v1/publico/a/${encodeURIComponent(codigo)}`;
   const [carga, setCarga] = useState<Carga>({ estado: "carregando" });
+  const encerrou = useEncerrou();
 
   useEffect(() => {
     void chamarApi<AssembleiaPublica>(base).then((r) => {
       if (r.ok) setCarga({ estado: "pronto", dados: r.dados });
-      else setCarga({ estado: "erro", texto: r.status === 404 ? "Este link não existe. Confira o endereço ou peça um novo ao condomínio." : textoDoErro(r.erro) });
+      else if (!encerrou(r.erro)) setCarga({ estado: "erro", texto: r.status === 404 ? "Este link não existe. Confira o endereço ou peça um novo ao condomínio." : textoDoErro(r.erro) });
     });
-  }, [base]);
+  }, [base, encerrou]);
 
   if (carga.estado === "carregando") return <TelaPublica titulo="Assembleia do condomínio" icone="convivio" rodape={RODAPE}><Carregando rotulo="Abrindo a assembleia…" /></TelaPublica>;
   if (carga.estado === "erro") return <TelaPublica titulo="Assembleia do condomínio" icone="convivio" rodape={RODAPE}><Aviso tom="atencao">{carga.texto}</Aviso></TelaPublica>;
@@ -88,6 +89,7 @@ function Procuracao({ a, base, aoMudar }: { a: AssembleiaPublica; base: string; 
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const comErro = camposComErro(erro);
+  const encerrou = useEncerrou();
 
   async function enviar(ev: FormEvent) {
     ev.preventDefault();
@@ -95,7 +97,7 @@ function Procuracao({ a, base, aoMudar }: { a: AssembleiaPublica; base: string; 
     setEnviando(true);
     const r = await chamarApi<AssembleiaPublica>(`${base}/procuracao`, { corpo: quem === "eu" ? { nome: null } : { nome, unidadeId: unidade || null } });
     setEnviando(false);
-    if (!r.ok) return setErro(r.erro);
+    if (!r.ok) return encerrou(r.erro) ? undefined : setErro(r.erro);
     aoMudar(r.dados);
   }
 
@@ -241,6 +243,7 @@ function Voto({ i, base, aoMudar }: { i: Item; base: string; aoMudar: (d: Assemb
   const [escolha, setEscolha] = useState<number | null>(i.meuVoto ?? null);
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const encerrou = useEncerrou();
 
   async function votar(ev: FormEvent) {
     ev.preventDefault();
@@ -249,7 +252,7 @@ function Voto({ i, base, aoMudar }: { i: Item; base: string; aoMudar: (d: Assemb
     setEnviando(true);
     const r = await chamarApi<AssembleiaPublica>(`${base}/voto`, { corpo: { itemId: i.id, opcao: escolha } });
     setEnviando(false);
-    if (!r.ok) return setErro(r.erro);
+    if (!r.ok) return encerrou(r.erro) ? undefined : setErro(r.erro);
     aoMudar(r.dados);
   }
 

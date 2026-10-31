@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Carregando } from "@triade/ui";
 import { Etiqueta } from "@/telas/publico/Etiqueta";
+import { ComEncerramento } from "@/telas/publico/comum";
 
 export const metadata: Metadata = { title: { absolute: "Avisar um problema" } };
 
@@ -9,7 +10,9 @@ export const metadata: Metadata = { title: { absolute: "Avisar um problema" } };
 export default function Pagina() {
   return (
     <Suspense fallback={<Carregando />}>
-      <Etiqueta />
+      <ComEncerramento rotulo="Avisar um problema" ligacao="no">
+        <Etiqueta />
+      </ComEncerramento>
     </Suspense>
   );
 }

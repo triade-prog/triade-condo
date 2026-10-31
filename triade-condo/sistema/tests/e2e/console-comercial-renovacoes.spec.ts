@@ -95,7 +95,7 @@ test.describe("Console · Renovações (CM-30, CM-31, CM-32)", () => {
     const aviso = page.getByRole("dialog", { name: "Registrar o aviso ao síndico" });
     await expect(aviso).toContainText("R$ 239,99 · IPCA 4,8%");
     await expect(aviso.getByLabel("Texto do aviso")).toHaveValue(/R\$\s239,99/);
-    await expect(aviso).toContainText("A assinatura do aditivo pelo gov.br ainda não é pedida pelo sistema.");
+    await expect(aviso).toContainText("As duas partes podem assinar pelo gov.br depois; o valor novo vale pelo aviso, com ou sem as assinaturas.");
     await aviso.getByLabel("Quem recebeu").fill("Ana, síndica");
     await aviso.getByRole("radio", { name: "WhatsApp" }).check({ force: true });
     await conferir(page);

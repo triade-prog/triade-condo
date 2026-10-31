@@ -10,7 +10,7 @@ import { ESTADOS_LINK_CONSELHO, LINK_NAO_VALE, mostrarCusto, PAPEIS_CONSELHO, te
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, camposComErro, Carregando, chamarApi, Icone, Selo, textoDoErro, type ErroApi, type NomeIcone } from "@triade/ui";
 import { diaHora } from "../pedidos/comum.tsx";
 import type { ConselhoPublico } from "../tipos.ts";
-import { Cartao, Opcao, TelaPublica } from "./comum.tsx";
+import { Cartao, Opcao, TelaPublica, useEncerrou } from "./comum.tsx";
 
 type Carga = { estado: "carregando" } | { estado: "erro"; texto: string } | { estado: "pronto"; dados: ConselhoPublico };
 const RODAPE = "Não precisa de conta nem senha. O link é só seu: não repasse.";
@@ -49,13 +49,14 @@ export function ConselhoLink() {
   const [carga, setCarga] = useState<Carga>({ estado: "carregando" });
   const [trocando, setTrocando] = useState(false);
   const [recado, setRecado] = useState<string | null>(null);
+  const encerrou = useEncerrou();
 
   const carregar = useCallback(() => {
     void chamarApi<ConselhoPublico>(base).then((r) => {
       if (r.ok) setCarga({ estado: "pronto", dados: r.dados });
-      else setCarga({ estado: "erro", texto: r.status === 404 ? "Este link não existe. Confira o endereço ou peça um novo ao síndico." : textoDoErro(r.erro) });
+      else if (!encerrou(r.erro)) setCarga({ estado: "erro", texto: r.status === 404 ? "Este link não existe. Confira o endereço ou peça um novo ao síndico." : textoDoErro(r.erro) });
     });
-  }, [base]);
+  }, [base, encerrou]);
   useEffect(carregar, [carregar]);
 
   if (carga.estado === "carregando") return <TelaPublica titulo="Conselho do condomínio" icone="pessoas" rodape={RODAPE}><Carregando rotulo="Abrindo…" /></TelaPublica>;
@@ -173,6 +174,7 @@ function FormVoto({ c, base, pronto, recarregar }: PropsForm) {
   const [erro, setErro] = useState<ErroApi | null>(null);
   const [enviando, setEnviando] = useState(false);
   const comErro = camposComErro(erro);
+  const encerrou = useEncerrou();
   const opcoes = despesa
     ? [{ valor: "APROVAR", texto: "Aprovar a despesa", sub: "" }, { valor: "RECUSAR", texto: "Recusar", sub: "Escreva o porquê" }]
     : [...(c.item?.alternativas ?? []).map((a) => ({ valor: String(a.numero), texto: `${a.numero} · ${a.descricao}`, sub: [a.custo !== undefined && a.custo !== null ? mostrarCusto(a.custo) : null, a.detalhe].filter(Boolean).join(" · ") })),
@@ -186,7 +188,7 @@ function FormVoto({ c, base, pronto, recarregar }: PropsForm) {
     setEnviando(true);
     const r = await chamarApi<ConselhoPublico>(`${base}/voto`, { corpo: { escolha, justificativa: justificativa.trim() || null } });
     setEnviando(false);
-    if (!r.ok) return setErro(r.erro);
+    if (!r.ok) return encerrou(r.erro) ? undefined : setErro(r.erro);
     pronto(r.dados, r.dados.estado === "FECHADA" ? "Voto registrado. Com ele, a votação fechou." : c.meuVoto ? "Voto trocado." : "Voto registrado.");
   }
   return (
