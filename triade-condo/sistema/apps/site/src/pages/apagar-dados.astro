@@ -1,0 +1,31 @@
+---
+import Base from "../layouts/Base.astro";
+import Olho from "../components/Olho.astro";
+import { emailContato, linkWhatsapp } from "../dados/empresa";
+// Instruções de exclusão de dados (EM-06), o terceiro link que a Meta pede no app do WhatsApp oficial.
+// O botão citado é o da tela Privacidade da Plataforma (DadosPessoa).
+const zap = linkWhatsapp("Olá! Quero apagar os meus dados do pedido de demonstração.");
+---
+<Base titulo="Como apagar seus dados" descricao="Como pedir para apagar seus dados da TRÍADE Condo, seja você morador de um condomínio cliente ou alguém que pediu demonstração.">
+<article class="wrap secao pilha" style="--gap:24px;max-width:780px">
+  <Olho>Privacidade</Olho>
+  <h1 class="titulo-texto">Como pedir para apagar seus dados</h1>
+  <p class="suave">Versão inicial de 31/10/2026.</p>
+  <p>Você pode pedir a exclusão dos seus dados a qualquer momento. O caminho depende de onde eles estão.</p>
+
+  <h2 style="font-size:20px">Se você é morador, proprietário, funcionário ou prestador de um condomínio cliente</h2>
+  <ol class="pilha" style="--gap:8px">
+    <li>Peça ao síndico ou à administração do seu condomínio. Na Plataforma, eles abrem Configurações, Privacidade, buscam a pessoa e usam "Remover os dados agora".</li>
+    <li>Se preferir, escreva para <a href={`mailto:${emailContato}`}>{emailContato}</a> com seu nome, o condomínio e o número de WhatsApp. Nós levamos o pedido ao condomínio, que é o responsável pelos dados, e acompanhamos até o fim.</li>
+    <li>Você recebe a resposta em até 15 dias.</li>
+  </ol>
+  <p>Para só parar de receber avisos pelo WhatsApp, basta responder PARAR ao número do condomínio. Isso não apaga o seu cadastro.</p>
+
+  <h2 style="font-size:20px">Se você pediu uma demonstração pelo site</h2>
+  <p>Escreva para <a href={`mailto:${emailContato}`}>{emailContato}</a>{zap ? <> ou pelo <a href={zap}>WhatsApp comercial</a></> : null}. Apagamos em até 15 dias e confirmamos.</p>
+
+  <h2 style="font-size:20px">O que acontece depois</h2>
+  <p>Nome, telefone, e-mail, mensagens, fotos e áudios são apagados. Fica só o que a lei manda guardar, como registros de assembleia e de prestação de contas, em que o nome aparece como "contato removido" quando a lei permite.</p>
+  <p>Mais detalhes na <a href="/privacidade">política de privacidade</a>.</p>
+</article>
+</Base>
