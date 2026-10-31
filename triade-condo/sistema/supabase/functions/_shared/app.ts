@@ -17,13 +17,17 @@ export function respostaErro(e: ErroDominio): Response {
 /**
  * semRepasse: rotas chamadas de fora do app, que não passam pelo repasse e se protegem de
  * outro jeito (o aviso assinado do provedor de e-mail e o "parar de receber" pelo código).
+ * semRepasseGet: o mesmo para GET (a Meta confere o endereço do aviso com um GET e o token de
+ * verificação).
  */
 // deno-lint-ignore ban-types
-export function criarApp<E extends Env = {}>(nome: string, segredo: string | undefined, semRepasse: RegExp[] = []): Hono<E> {
+export function criarApp<E extends Env = {}>(nome: string, segredo: string | undefined, semRepasse: RegExp[] = [], semRepasseGet: RegExp[] = []): Hono<E> {
   const app = new Hono<E>().basePath(`/${nome}`);
 
   app.use("*", async (c, next) => {
-    const livre = c.req.method === "POST" && semRepasse.some((r) => r.test(c.req.path.slice(nome.length + 1)));
+    const caminho = c.req.path.slice(nome.length + 1);
+    const livre = (c.req.method === "POST" && semRepasse.some((r) => r.test(caminho)))
+      || (c.req.method === "GET" && semRepasseGet.some((r) => r.test(caminho)));
     if (!livre && (!segredo || !segredoConfere(c.req.header(CABECALHO_SEGREDO) ?? null, segredo))) {
       return respostaErro(new ErroDominio("FORBIDDEN"));
     }
