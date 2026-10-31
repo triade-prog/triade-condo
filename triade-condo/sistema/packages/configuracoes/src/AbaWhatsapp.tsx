@@ -8,7 +8,9 @@
 // os avisos de cada pessoa são só do condomínio, e o Console mostra só a situação (CF-03). Os
 // comunicados pelo WhatsApp (F6.6; CD-11, W-20) ligam em Comunicados. Na página por tarefa
 // (decisão B.1) as partes gravam pela barra do rodapé; o tempo de anexar fica no bloco "Feito pela
-// TRÍADE" (D.1) e os avisos de cada pessoa foram para o menu da conta, em Meus avisos (C.1).
+// TRÍADE" (D.1) e os avisos de cada pessoa foram para o menu da conta, em Meus avisos (C.1). No
+// alto, o número oficial pela Meta (F5.12, quadros 460 a 462); o de teste fica embaixo dele até
+// o oficial ser ligado.
 
 import { useState } from "react";
 import { AVISOS_NO_WHATSAPP, MINUTOS_ANEXAR, prometePrazo, type AvisoNoWhatsapp } from "@triade/domain";
@@ -17,6 +19,7 @@ import { useAmbiente, useCarregar, naBase } from "./contexto.tsx";
 import { AjusteTecnico, BlocoTriade, type Tecnica } from "./tecnica.tsx";
 import { contarMudancas, PaginaSalvavel, useParte, useVersao } from "./salvar.tsx";
 import { SituacaoDaConexao, type Conexao } from "./conexao.tsx";
+import { NumeroOficial } from "./NumeroOficial.tsx";
 
 interface ConfigWhatsapp {
   numero: string | null;
@@ -186,8 +189,14 @@ export function AbaWhatsapp({ aoSalvar, tecnica }: { aoSalvar: (texto: string) =
   const salvo = (texto: string) => { aoSalvar(texto); carga.recarregar(); };
   return (
     <>
-      <SituacaoDaConexao numero={d.numero} conexao={d.conexao} />
-      {d.pode.aceitarTermo ? <Termo aoAceitar={() => { salvo("Termo do piloto aceito. A TRÍADE pode conectar o número."); aoMudar?.(); }} /> : null}
+      <NumeroOficial numero={d.numero} conexao={d.conexao} podeCadastrar={onde === "app" && d.pode.editar} aoMudar={() => { salvo("Avisamos a TRÍADE. Ela liga o número em até um dia útil."); aoMudar?.(); }} />
+      {d.conexao.provedor === "META" ? null : (
+        <section aria-labelledby="t-numero-teste" className="grid gap-3 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+          <h2 id="t-numero-teste" className="t-titulo-secao font-medium">Número de teste (piloto)</h2>
+          <SituacaoDaConexao numero={d.numero} conexao={d.conexao} />
+        </section>
+      )}
+      {d.pode.aceitarTermo && d.conexao.provedor !== "META" ? <Termo aoAceitar={() => { salvo("Termo do piloto aceito. A TRÍADE pode conectar o número."); aoMudar?.(); }} /> : null}
       <Mensagens key={`m-${d.config.versao}`} d={d} />
       {d.quedas ? <QuemCuidaDasQuedas key={`q-${d.config.versao}`} d={d} /> : null}
       {onde === "app" ? null : (

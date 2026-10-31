@@ -89,6 +89,66 @@ export const ligarContaMetaSchema = z.object({
   numeroId: z.string().trim().regex(/^[0-9]{5,30}$/).nullable().optional().transform((v) => v ?? null),
 });
 
+// ---------------------------------------------------------------------------------------
+// Número oficial pela Meta (F5.12, W-01, DC4; quadros 460 a 465). O síndico faz o cadastro
+// hospedado da Meta no Facebook dele; a TRÍADE, como parceira, recebe a conta e liga ao cliente.
+
+/** Aplicativo da TRÍADE na Meta e a configuração do cadastro hospedado (Embedded Signup). */
+export const META_APP_ID = "28914484134911319";
+export const META_CONFIG_CADASTRO = "3481812468673012";
+/** A página da Meta onde o síndico faz o cadastro (cadastro hospedado), numa aba nova. */
+export const LINK_CADASTRO_META = `https://business.facebook.com/messaging/whatsapp/onboard/?app_id=${META_APP_ID}&config_id=${META_CONFIG_CADASTRO}`;
+/** O Gerenciador do WhatsApp da conta do condomínio e a página de pagamentos dele. */
+export const LINK_GERENCIADOR_META = "https://business.facebook.com/wa/manage/home/";
+export const LINK_PAGAMENTO_META = "https://business.facebook.com/billing_hub/payment_settings/";
+
+export const QUALIDADES_META = { VERDE: "Alta", AMARELO: "Média", VERMELHO: "Baixa", DESCONHECIDA: "Ainda sem nota" } as const;
+export type QualidadeMeta = keyof typeof QUALIDADES_META;
+
+/** Situação de cada modelo na conta de um condomínio (modelos_whatsapp_condominio). */
+export const SITUACOES_MODELO_CONDOMINIO = {
+  ENVIADO: "Em análise",
+  APROVADO: "Aprovado",
+  RECUSADO: "Recusado",
+  PAUSADO: "Pausado",
+  DESATIVADO: "Desativado",
+  FALHOU: "Não foi enviado",
+} as const;
+export type SituacaoModeloCondominio = keyof typeof SITUACOES_MODELO_CONDOMINIO;
+
+export const ESTADOS_NUMERO_OFICIAL = {
+  NAO_LIGADO: "Ainda não ligado",
+  ESPERANDO: "Esperando a TRÍADE",
+  EM_ANALISE: "Modelos em análise",
+  FALTA_CARTAO: "Falta o cartão",
+  RECUSADO: "Modelo recusado",
+  SUSPENSO: "Fora do ar",
+  LIGADO: "Ligado",
+} as const;
+export type EstadoNumeroOficial = keyof typeof ESTADOS_NUMERO_OFICIAL;
+
+export interface ConexaoOficial {
+  provedor?: string;
+  cadastroMetaEm?: string | null;
+  faltaCartaoEm?: string | null;
+  suspensoEm?: string | null;
+  modelos?: { aprovados: number; emAnalise: number; recusados: number; total: number } | null;
+}
+
+/**
+ * O estado do cartão do número oficial (quadro 461). O mais grave ganha: fora do ar, depois
+ * falta o cartão, depois modelo recusado, depois modelos em análise.
+ */
+export function estadoNumeroOficial(c: ConexaoOficial): EstadoNumeroOficial {
+  if (c.provedor !== "META") return c.cadastroMetaEm ? "ESPERANDO" : "NAO_LIGADO";
+  if (c.suspensoEm) return "SUSPENSO";
+  if (c.faltaCartaoEm) return "FALTA_CARTAO";
+  const m = c.modelos;
+  if (m && m.recusados > 0) return "RECUSADO";
+  if (m && (m.emAnalise > 0 || m.aprovados < m.total)) return "EM_ANALISE";
+  return "LIGADO";
+}
+
 export const desconectarWhatsappSchema = z.object({ motivo: z.string().trim().min(3).max(300) });
 
 export const triarWhatsappSchema = z

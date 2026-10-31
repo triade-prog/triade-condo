@@ -141,12 +141,49 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     eventosModelo.push({ chave: v.chave, numero: v.numero, situacao: s, ...(corpo.motivo ? { motivo: String(corpo.motivo) } : {}), em: new Date().toISOString(), por: "Carolina" });
     return route.fulfill({ json: { situacao: s, versao: v.versao } });
   }
+  const meta = {
+    esperando: [
+      { wabaId: "1029384756", empresaId: "8877665544", nomeEmpresa: "Condomínio Residencial Ipê", recebidaEm: "2026-10-31T17:01:00Z" },
+      { wabaId: "5647382910", nomeEmpresa: "Aurora Administração Ltda", recebidaEm: "2026-10-30T21:30:00Z" },
+    ],
+    ligadas: [] as { wabaId: string; condominioId: string; nome: string; ligadaEm: string; ligadaPor?: string }[],
+    terminaram: [{ condominioId: IPE, nome: "Residencial Ipê", em: "2026-10-31T17:02:00Z" }],
+    numerosDaConta: 1,
+    modelos: [] as { chave: string; titulo: string; nome?: string; situacao: string; motivo?: string; enviadoEm?: string; decididoEm?: string }[],
+  };
   // Aba WhatsApp da ficha (passo 5; W-01): credenciais, conectar pelo QR ou código, conferir e desconectar.
   const QR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGNgAAAAAgABSK+kcQAAAABJRU5ErkJggg==";
   function rotaWhatsapp(route: Route, c: (typeof estado.clientes)[number], resto: string, corpo: Record<string, unknown>) {
     const w = c.whatsapp;
     const marcar = (acao: string, dados: Record<string, string> = {}) => w.historico.unshift({ acao, em: new Date().toISOString(), autor: "Carolina", dados });
     const contar = () => { suporte.whatsappDesconectados = estado.clientes.filter((x) => x.whatsapp.conexao.situacao === "DESCONECTADO").length; };
+    // Número oficial pela Meta (F5.12; quadros 463 a 465).
+    if (resto === "/whatsapp/meta") {
+      if (w.conexao.provedor !== "META") return route.fulfill({ json: { ligada: false } });
+      const conta = meta.ligadas.find((x) => x.condominioId === c.condominio.id);
+      return route.fulfill({ json: { ligada: true, wabaId: conta?.wabaId, numeroId: "1112223334", ligadaEm: conta?.ligadaEm, ligadaPor: conta?.ligadaPor,
+        modelos: meta.modelos, pode: { conectar: true } } });
+    }
+    if (resto === "/whatsapp/meta/ligar") {
+      const conta = meta.esperando.find((x) => x.wabaId === corpo.wabaId);
+      if (!conta) return erro(route, 404, "NOT_FOUND");
+      if (meta.numerosDaConta > 1 && !corpo.numeroId) return erro(route, 400, "VALIDATION_ERROR", { campos: ["numeroId"] });
+      meta.esperando = meta.esperando.filter((x) => x !== conta);
+      meta.ligadas.unshift({ wabaId: conta.wabaId, condominioId: c.condominio.id, nome: c.condominio.nome, ligadaEm: new Date().toISOString(), ligadaPor: "Carolina" });
+      Object.assign(w.conexao, { provedor: "META", oficial: true, situacao: "CONECTADO", nomeExibicao: "Residencial Ipê", qualidade: "VERDE", limiteDiario: 1000,
+        conectadoEm: new Date().toISOString() });
+      meta.modelos = [
+        { chave: "noticia_pedido", titulo: "Protocolo do pedido", nome: "noticia_pedido_v2", situacao: "APROVADO", decididoEm: new Date().toISOString() },
+        { chave: "encomenda_guardada", titulo: "Encomenda na portaria", nome: "encomenda_guardada_v1", situacao: "RECUSADO", motivo: "parece promoção" },
+        { chave: "enquete_convite", titulo: "Convite de enquete", nome: "enquete_convite_v1", situacao: "ENVIADO", enviadoEm: new Date().toISOString() },
+      ];
+      marcar("whatsapp.meta_ligada");
+      return route.fulfill({ json: { conexao: w.conexao, modelosEnviados: 3 } });
+    }
+    if (resto === "/whatsapp/meta/modelos") {
+      meta.modelos = meta.modelos.map((m) => (m.situacao === "RECUSADO" ? { ...m, situacao: "ENVIADO", motivo: undefined, enviadoEm: new Date().toISOString() } : m));
+      return route.fulfill({ json: { modelosEnviados: 1 } });
+    }
     if (resto === "/whatsapp") {
       return route.fulfill({ json: { numeroFicha: c.condominio.numeroWhatsapp ?? null, conexao: w.conexao, historico: w.historico, pode: { conectar: true } } });
     }
@@ -329,6 +366,9 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
       if (resto.startsWith("/whatsapp")) return rotaWhatsapp(route, c, resto, corpo);
     }
     if (caminho.startsWith("/v1/whatsapp/modelos")) return rotaModelos(route, caminho.slice("/v1/whatsapp/modelos".length), metodo, corpo);
+    if (caminho === "/v1/whatsapp/meta/contas") {
+      return route.fulfill({ json: { esperando: meta.esperando, ligadas: meta.ligadas, terminaram: meta.terminaram, pode: { ligar: admin } } });
+    }
     if (caminho === "/v1/whatsapp") {
       return route.fulfill({ json: { numeros: estado.clientes.map((x) => ({ condominioId: x.condominio.id, nome: x.condominio.nome,
         numero: x.condominio.numeroWhatsapp ?? undefined, situacao: x.whatsapp.conexao.situacao, oficial: false,
@@ -372,5 +412,5 @@ export async function instalarApiFalsa(page: Page, opcoes: Opcoes = {}) {
     if (r4 !== null) return r4;
     return erro(route, 404, "NOT_FOUND");
   });
-  return Object.assign(estado, { suporte, modelos, configuracao, planos, precos, retencao, comercial });
+  return Object.assign(estado, { suporte, modelos, configuracao, planos, precos, retencao, comercial, meta });
 }

@@ -2,13 +2,15 @@
 // Aba WhatsApp da ficha (passo 5; W-01, DC14), tela 1 do desenho: o número do condomínio, a
 // conexão de piloto pelo Wafly (não oficial, dito sem rodeio), as credenciais da instância (que
 // nunca mais aparecem), a conexão pelo QR ou por código, a conferência do aparelho e o histórico.
-// Só administração e implantação conectam, trocam credenciais e desconectam (com motivo).
+// Só administração e implantação conectam, trocam credenciais e desconectam (com motivo). Com o
+// número oficial pela Meta ligado, a aba mostra o número oficial e os modelos (F5.12, quadro 465).
 
 import { useState, type FormEvent } from "react";
 import { formatarDataHora, mostrarTelefone, SITUACOES_CONEXAO, type SituacaoConexao } from "@triade/domain";
 import { Aviso, AvisoErro, Botao, CampoAreaTexto, CampoTexto, camposComErro, Carregando, chamarApi, Dialogo, ErroCarregar, Selo, textoDoErro, type ErroApi, type Tom } from "@triade/ui";
 import { useCarregar } from "../sessao.tsx";
 import type { PropsAba } from "./tipos.ts";
+import { WhatsappOficial, type ConexaoOficialFicha } from "./WhatsappOficial.tsx";
 
 interface DadosWhatsapp {
   numeroFicha: string | null;
@@ -23,7 +25,7 @@ interface DadosWhatsapp {
     termoAceitoEm?: string;
     termoAceitoPor?: string;
     versao?: number;
-  };
+  } & ConexaoOficialFicha;
   historico: { acao: string; em: string; autor: string | null; dados: { origem?: string; motivo?: string } }[];
   pode: { conectar: boolean };
 }
@@ -36,6 +38,14 @@ const EVENTOS: Record<string, string> = {
   "whatsapp.desconectado": "Desconectado",
   "whatsapp.aparelho_diferente": "Aparelho diferente do número da ficha: desconectado na hora",
   "whatsapp.termo_aceito": "Termo do piloto aceito pelo síndico",
+  "whatsapp.cadastro_meta": "O síndico terminou o cadastro na Meta (Já terminei)",
+  "whatsapp.modelo_meta": "A Meta decidiu um modelo de mensagem",
+  "whatsapp.falta_cartao": "A Meta recusou cobrar: falta o cartão",
+  "whatsapp.cartao_voltou": "A Meta voltou a cobrar os avisos",
+  "whatsapp.suspenso": "A Meta suspendeu o número",
+  "whatsapp.liberado": "A Meta liberou o número",
+  "whatsapp.meta_ligada": "Conta da Meta ligada ao cliente e número registrado",
+  "whatsapp.modelos_meta_enviados": "Modelos de mensagem mandados para a Meta aprovar",
 };
 
 function JanelaCredenciais({ id, versao, aoFechar, aoSalvar }: { id: string; versao?: number; aoFechar: () => void; aoSalvar: (avisos: boolean) => void }) {
@@ -143,6 +153,31 @@ export function AbaWhatsapp({ ficha, avisar, pedido }: PropsAba) {
     carga.recarregar();
   }
 
+  const historico = (
+    <section aria-labelledby="t-hist-zap" className="grid max-w-5xl gap-2 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
+      <h2 id="t-hist-zap" className="t-titulo-secao font-medium">Histórico da conexão</h2>
+      {d.historico.length === 0 ? <p className="t-apoio text-tinta-suave">Nada ainda.</p> : (
+        <ul className="divide-y divide-linha t-texto">
+          {d.historico.map((h, i) => (
+            <li key={i} className="grid gap-0.5 py-2">
+              <span>{EVENTOS[h.acao] ?? h.acao}{h.dados.origem === "PROVEDOR" ? " (pelo provedor)" : ""}{h.dados.motivo ? `. Motivo: ${h.dados.motivo}` : ""}</span>
+              <span className="t-apoio text-tinta-suave">{formatarDataHora(h.em)}{h.autor ? ` · ${h.autor}` : ""}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+
+  if (cx.provedor === "META") {
+    return (
+      <div className="grid gap-4">
+        <WhatsappOficial id={id} numeroFicha={d.numeroFicha} cx={cx} />
+        {historico}
+      </div>
+    );
+  }
+
   return (
     <div className="grid max-w-4xl gap-4">
       <Aviso tom="atencao" titulo="Conexão de piloto, não oficial (Wafly)">
@@ -174,19 +209,7 @@ export function AbaWhatsapp({ ficha, avisar, pedido }: PropsAba) {
           </div>
         ) : cx.situacao !== "SEM_CREDENCIAIS" ? <div><Botao variante="contorno" tamanho="m" onClick={() => void conferir()}>Conferir agora</Botao></div> : null}
       </section>
-      <section aria-labelledby="t-hist-zap" className="grid gap-2 rounded-[18px] border border-linha bg-superficie p-5 shadow-s1">
-        <h2 id="t-hist-zap" className="t-titulo-secao font-medium">Histórico da conexão</h2>
-        {d.historico.length === 0 ? <p className="t-apoio text-tinta-suave">Nada ainda.</p> : (
-          <ul className="divide-y divide-linha t-texto">
-            {d.historico.map((h, i) => (
-              <li key={i} className="grid gap-0.5 py-2">
-                <span>{EVENTOS[h.acao] ?? h.acao}{h.dados.origem === "PROVEDOR" ? " (pelo provedor)" : ""}{h.dados.motivo ? `. Motivo: ${h.dados.motivo}` : ""}</span>
-                <span className="t-apoio text-tinta-suave">{formatarDataHora(h.em)}{h.autor ? ` · ${h.autor}` : ""}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {historico}
       {janela === "credenciais" && d.pode.conectar ? (
         <JanelaCredenciais id={id} versao={cx.versao} aoFechar={() => setJanela(null)} aoSalvar={(avisos) => {
           setJanela(null);

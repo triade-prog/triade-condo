@@ -2,7 +2,7 @@
 // Situação da conexão do WhatsApp do condomínio (passo 5, W-15), nas Configurações e na tela do
 // WhatsApp.
 
-import { formatarDataHora, mostrarTelefone, SITUACOES_CONEXAO, type SituacaoConexao } from "@triade/domain";
+import { formatarDataHora, mostrarTelefone, SITUACOES_CONEXAO, type QualidadeMeta, type SituacaoConexao } from "@triade/domain";
 import { Aviso, Selo, type Tom } from "@triade/ui";
 
 export interface Conexao {
@@ -13,17 +13,28 @@ export interface Conexao {
   ultimaRecebida?: string;
   termoAceitoEm?: string;
   termoAceitoPor?: string;
+  /** Número oficial pela Meta (0315, F5.12). */
+  provedor?: "WAFLY" | "META";
+  nomeExibicao?: string;
+  qualidade?: QualidadeMeta;
+  limiteDiario?: number;
+  faltaCartaoEm?: string;
+  suspensoEm?: string;
+  cadastroMetaEm?: string;
+  modelos?: { aprovados: number; emAnalise: number; recusados: number; total: number };
 }
 
 export const TOM_CONEXAO: Record<SituacaoConexao, Tom> = { SEM_CREDENCIAIS: "neutro", DESCONECTADO: "erro", CONECTANDO: "atencao", CONECTADO: "ok" };
 
 export function SituacaoDaConexao({ numero, conexao }: { numero: string | null; conexao: Conexao }) {
+  // Com o número oficial ligado, o aviso de piloto some (quadro 460).
+  const oficial = conexao.provedor === "META";
   return (
     <div className="grid gap-3">
       <p className="flex flex-wrap items-center gap-2">
         <span className="font-medium">{numero ? mostrarTelefone(numero) : "Sem número na ficha"}</span>
         <Selo tom={TOM_CONEXAO[conexao.situacao]}>{SITUACOES_CONEXAO[conexao.situacao]}</Selo>
-        {conexao.oficial === false || conexao.situacao === "SEM_CREDENCIAIS" ? <Selo tom="atencao">Piloto</Selo> : null}
+        {oficial ? <Selo tom="info">Oficial (Meta)</Selo> : conexao.oficial === false || conexao.situacao === "SEM_CREDENCIAIS" ? <Selo tom="atencao">Piloto</Selo> : null}
       </p>
       {conexao.situacao === "DESCONECTADO" && conexao.desconectadoEm ? (
         <Aviso tom="erro" titulo="O WhatsApp do condomínio está desconectado">
@@ -37,10 +48,10 @@ export function SituacaoDaConexao({ numero, conexao }: { numero: string | null; 
           Conectado desde {formatarDataHora(conexao.conectadoEm ?? "")}{conexao.ultimaRecebida ? ` · última mensagem recebida ${formatarDataHora(conexao.ultimaRecebida)}` : ""}.
         </p>
       ) : null}
-      <Aviso tom="atencao" titulo="Conexão de piloto, não oficial">
+      {oficial ? null : <Aviso tom="atencao" titulo="Conexão de piloto, não oficial">
         O número está ligado pelo WhatsApp Web, como um aparelho conectado. O WhatsApp pode restringir ou bloquear o número sem aviso.
         {conexao.termoAceitoEm ? ` Termo do piloto aceito por ${conexao.termoAceitoPor ?? "o síndico"} em ${formatarDataHora(conexao.termoAceitoEm)}.` : ""}
-      </Aviso>
+      </Aviso>}
     </div>
   );
 }
